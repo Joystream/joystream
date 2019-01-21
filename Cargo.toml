@@ -1,0 +1,48 @@
+[package]
+name = "joystream-node"
+version = "0.9.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+build = "build.rs"
+
+[[bin]]
+name = "joystream-node"
+path = "src/main.rs"
+
+[dependencies]
+error-chain = "0.12"
+futures = "0.1"
+ctrlc = { version = "3.0", features = ["termination"] }
+log = "0.4"
+tokio = "0.1.7"
+exit-future = "0.1"
+parking_lot = "0.4"
+hex-literal = "0.1"
+slog = "^2"
+parity-codec = { version = "2.1" }
+trie-root = { git = "https://github.com/paritytech/trie" }
+sr-io = { git = "https://github.com/paritytech/substrate" }
+sr-primitives = { git = "https://github.com/paritytech/substrate" }
+substrate-cli = { git = "https://github.com/paritytech/substrate" }
+substrate-primitives = { git = "https://github.com/paritytech/substrate" }
+substrate-executor = { git = "https://github.com/paritytech/substrate" }
+substrate-service = { git = "https://github.com/paritytech/substrate" }
+substrate-transaction-pool = { git = "https://github.com/paritytech/substrate" }
+substrate-network = { git = "https://github.com/paritytech/substrate" }
+substrate-consensus-aura = { git = "https://github.com/paritytech/substrate" }
+substrate-client = { git = "https://github.com/paritytech/substrate", default-features = false }
+substrate-finality-grandpa = { git = "https://github.com/paritytech/substrate" }
+substrate-basic-authorship = { git = "https://github.com/paritytech/substrate" }
+joystream-node-runtime = { path = "runtime" }
+node-executor = { git = "https://github.com/paritytech/substrate" }
+structopt = "0.2.13"
+
+[build-dependencies]
+vergen = "2"
+
+[workspace]
+members = [ "runtime" ]
+exclude = [ "runtime/wasm" ]
+
+[profile.release]
+# Substrate runtime requires unwinding.
+panic = "unwind"
