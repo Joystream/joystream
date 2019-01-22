@@ -34,11 +34,12 @@ pub use substrate_cli::{VersionInfo, IntoExit, error};
 
 fn run() -> cli::error::Result<()> {
 	let version = VersionInfo {
+		name: "Joystream Node",
 		commit: env!("VERGEN_SHA_SHORT"),
 		version: env!("CARGO_PKG_VERSION"),
 		executable_name: "joystream-node",
-		author: "jsgenesis",
-		description: "joystream-node",
+		author: "Jsgenesis",
+		description: "Joystream Node",
 	};
 	cli::run(::std::env::args(), cli::Exit, version)
 }
