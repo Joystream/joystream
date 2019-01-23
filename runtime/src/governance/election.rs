@@ -243,7 +243,7 @@ impl<T: Trait> Module<T> {
 
         let mut available_council_stake: T::Balance = Default::default(); //zero
         
-        if <ApplicantsMap<T>>::exists(&applicant){
+        if <AvailableCouncilStakesMap<T>>::exists(&applicant){
             available_council_stake = <AvailableCouncilStakesMap<T>>::get(&applicant);
         }
 
