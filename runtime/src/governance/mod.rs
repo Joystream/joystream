@@ -8,15 +8,16 @@ extern crate substrate_primitives;
 extern crate sr_primitives;
 #[cfg(feature = "std")]
 extern crate parity_codec as codec;
-//extern crate srml_system as system;
+extern crate srml_system as system;
 use runtime_io::print;
 
 pub mod election;
 pub mod council;
+pub mod transferable_stake;
 
 use srml_support::{StorageValue, dispatch::Result};
 use runtime_primitives::traits::{Hash, As};
-use {balances, system::{self, ensure_signed}};
+use {balances, system::{ensure_signed}};
 
 pub trait Trait: system::Trait + council::Trait + election::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;

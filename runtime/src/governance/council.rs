@@ -26,7 +26,7 @@ pub struct Seat<Id, Stake> {
     pub backers: Vec<Backer<Id, Stake>>,
 }
 
-#[derive(Clone, Encode, Decode)]
+#[derive(Copy, Clone, Encode, Decode)]
 pub struct Backer<Id, Stake> {
     pub member: Id,
     pub stake: Stake,
