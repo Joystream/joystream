@@ -16,9 +16,9 @@ use srml_support::dispatch::Vec;
 pub struct SealedVote<AccountId, Stake, Hash, Vote> 
     where Vote: Encode, Hash: PartialEq, AccountId: PartialEq
 {
-  voter: AccountId,
+  pub voter: AccountId,
   commitment: Hash, // 32 bytes - salted hash of serialized Vote
-  stake: Stake,
+  pub stake: Stake,
   vote: Option<Vote>, // will be set when unsealing
 }
 
@@ -36,7 +36,7 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
 
     pub fn unseal(&mut self, vote: Vote, salt: &mut Vec<u8>, hasher: fn(&[u8]) -> Hash) -> Result<bool, &'static str> {
         // only unseal once
-        if self.vote.is_some() {
+        if self.was_revealed() {
             return Err("vote already unsealed");
         }
 
@@ -50,7 +50,7 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
             false => None,
         };
 
-        Ok(self.vote.is_some())
+        Ok(self.was_revealed())
     }
 
     pub fn get_vote(&self) -> &Option<Vote> {
@@ -59,5 +59,9 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
 
     pub fn owned_by(&self, someone: AccountId) -> bool {
         someone == self.voter
+    }
+
+    pub fn was_revealed(&self) -> bool {
+        self.vote.is_some()
     }
 }
