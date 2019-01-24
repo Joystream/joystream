@@ -7,12 +7,14 @@ extern crate sr_io;
 extern crate substrate_primitives as primitives;
 extern crate sr_primitives;
 #[cfg(feature = "std")]
-extern crate parity_codec as codec;
+extern crate parity_codec;
+use parity_codec::Encode;
 
+use srml_support::dispatch::Vec;
 
 #[derive(Clone, Copy, Encode, Decode, Default)]
 pub struct SealedVote<AccountId, Stake, Hash, Vote> 
-    where Vote: codec::Encode, Hash: PartialEq, AccountId: PartialEq
+    where Vote: Encode, Hash: PartialEq, AccountId: PartialEq
 {
   voter: AccountId,
   commitment: Hash, // 32 bytes - salted hash of serialized Vote
@@ -21,7 +23,7 @@ pub struct SealedVote<AccountId, Stake, Hash, Vote>
 }
 
 impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>    
-    where Vote: codec::Encode, Hash: PartialEq, AccountId: PartialEq
+    where Vote: Encode, Hash: PartialEq, AccountId: PartialEq
 {
     pub fn new(voter: AccountId, stake: Stake, commitment: Hash) -> SealedVote<AccountId, Stake, Hash, Vote> {
         SealedVote {
@@ -59,4 +61,3 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
         someone == self.voter
     }
 }
-
