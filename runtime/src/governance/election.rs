@@ -16,8 +16,8 @@ pub trait Trait: system::Trait + council::Trait + balances::Trait {
 
 #[derive(Clone, Copy, Encode, Decode)]
 pub struct Period<T: PartialOrd + PartialEq + Copy> {
-    pub start: T,
-    pub end: T
+    pub starts: T,
+    pub ends: T
 }
 
 #[derive(Clone, Copy, Encode, Decode)]
@@ -84,23 +84,26 @@ decl_event!(
 impl<T: Trait> Module<T> {
     pub fn start_election() -> Result {
         if Self::stage().is_some() {
-            Err("election in progress")
-        } else {
-            print("Election: Starting");
-            let current_block = <system::Module<T>>::block_number();
+            return Err("election in progress")
+        }
+        
+        let current_block = <system::Module<T>>::block_number();
+    
+        if <council::Module<T>>::term_ended(current_block) {
             Self::deposit_event(RawEvent::ElectionStarted(current_block));
             // take snapshot of council and backing stakes
             Self::initialize_transferable_stakes();
             Self::move_to_announcing_stage();
-            Ok(())
         }
+
+        Ok(())
     }
 
     fn new_period(length: T::BlockNumber) -> Period<T::BlockNumber> {
         let current_block = <system::Module<T>>::block_number();
         Period {
-            start: current_block,
-            end: current_block + length
+            starts: current_block,
+            ends: current_block + length
         }
     }
 
@@ -134,7 +137,7 @@ impl<T: Trait> Module<T> {
             // equal stake for bottom slot - order in applicants vector.
             // This is highly ineffieicent (cloning ApplicationId twice)
             // using functional style should help
-            let mut applicants: Vec<(T::AccountId, Stake<T::Balance>)> = Vec::new();
+            let mut applicants = Vec::new();
             for applicant in Self::applicants().iter() {
                 let stake = Self::applicants_map(applicant);
                 applicants.push((applicant.clone(), stake));
@@ -177,40 +180,86 @@ impl<T: Trait> Module<T> {
     }
 
     fn on_revealing_ended() {
+        // tally the revealed votes
+
+
         <ElectionStage<T>>::kill();
         Self::deposit_event(RawEvent::ElectionCompleted());
-        //Self::set_new_council(X);
         print("Election Round Ended");
     }
 
-    fn tick(n: T::BlockNumber) {
+    fn tally_votes() -> Result {
+
+/* Notes from specs:
+Tally votes => create a new Council
+(what is the success criteria for a valid/successful election:
+  minimum backing stake for each candidate,
+  minimum total backing stake == %participation/quorum,
+  size of elected council < CouncilSize)
+
+refund vote stakes of un-revealed commitments
+if (successfulElection) {
+  refund all vote stakes for candidates that did not get elected
+  refund all unused availableBackingStakes
+  refund all applicantsPool stakes for applicants that did not get elected
+  refund all unused availableCouncilStakes
+  set new council
+  electionCompleted()
+} else {
+  refund refundable vote stakes
+  return transferred stake from votes back to backingStakes
+  clear Votes
+  clear candidatePool
+  start new election round - startRevealingPeriod()
+}
+*/
+        // iterate over <Votes<T>>
+        // for commitment in Self::commitments().iter() {
+        //     let sealed_vote = Self::votes(commitment);
+        //     if sealed_vote.was_revealed() {
+                
+        //     } else {
+        //         // return stake to voter's account
+        //         if sealed_vote.stake.refundable > T::Balance::zero() {
+        //             <balances::Module<T>>::
+        //         }
+
+        //         // return transferred stake to available stake
+        //         if sealed_vote.stake.transferred > T::Balance::zero() {
+
+        //         }
+
+        //         // remove vote
+        //         <Votes<T>>::remove(commitment);
+        //     }
+        // }
+
+        Ok(())
+    }
+    fn tick(now: T::BlockNumber) {
         print("Election: tick");
         if let Some(stage) = Self::stage() {
             match stage {
                 Stage::Announcing(period) => {
-                    if period.end == n {
+                    if period.ends == now {
                         Self::deposit_event(RawEvent::AnnouncingEnded());
                         Self::on_announcing_ended();
                     }
                 },
                 Stage::Voting(period) => {
-                    if period.end == n {
+                    if period.ends == now {
                         Self::deposit_event(RawEvent::VotingEnded());
                         Self::on_voting_ended();
                     }
                 },
                 Stage::Revealing(period) => {
-                    if period.end == n {
+                    if period.ends == now {
                         Self::deposit_event(RawEvent::RevealingEnded());
                         Self::on_revealing_ended();
                     }
                 },
             }
         }
-    }
-
-    pub fn can_start_election() -> bool {
-        Self::stage().is_none()
     }
 
     /// Takes a snapshot of the stakes from the current council
@@ -244,7 +293,8 @@ impl<T: Trait> Module<T> {
             true => <ApplicantsMap<T>>::get(&applicant)
         };
 
-        let transferable_stake = match <AvailableCouncilStakesMap<T>>::exists(&applicant) {
+        let applicant_has_council_stake = <AvailableCouncilStakesMap<T>>::exists(&applicant);
+        let transferable_stake = match applicant_has_council_stake {
             false => Default::default(), //zero
             true => <AvailableCouncilStakesMap<T>>::get(&applicant)
         };
@@ -264,36 +314,43 @@ impl<T: Trait> Module<T> {
         if new_stake.refundable > balance {
             return Err("not enough balance to cover stake");
         }
+        
+        let total_stake = applicant_stake.add(&new_stake);
+        
+        let min_stake = Stake {
+            refundable: T::Balance::sa(COUNCIL_MIN_STAKE),
+            transferred: T::Balance::zero()
+        };
+
+        if min_stake > total_stake {
+            return Err("minimum stake not met");
+        }   
 
         if <balances::Module<T>>::decrease_free_balance(&applicant, new_stake.refundable).is_err() {
             return Err("failed to update balance");
         }
 
-        <AvailableCouncilStakesMap<T>>::insert(&applicant, transferable_stake - new_stake.transferred);
+        if applicant_has_council_stake {
+            <AvailableCouncilStakesMap<T>>::insert(&applicant, transferable_stake - new_stake.transferred);
+        }
        
         if !<ApplicantsMap<T>>::exists(&applicant) {
             <Applicants<T>>::mutate(|applicants| applicants.push(applicant.clone()));
         }
-        
-        if let Some(total_stake) = applicant_stake.checked_add(&new_stake) {
-            let min_stake = Stake {
-                refundable: T::Balance::sa(COUNCIL_MIN_STAKE),
-                transferred: T::Balance::zero()
-            };
 
-            if min_stake > total_stake {
-                return Err("minimum stake not met");
-            }
+        <ApplicantsMap<T>>::insert(applicant.clone(), total_stake);
 
-            <ApplicantsMap<T>>::insert(applicant.clone(), total_stake);
-            return Ok(());
-        } else {
-            return Err("overflow adding new stake");
-        }
+        Ok(())
     }
 
     fn try_add_vote(voter: T::AccountId, stake: T::Balance, commitment: T::Hash) -> Result {
-        let transferable_stake: T::Balance = match <AvailableBackingStakesMap<T>>::exists(&voter) {
+        if <Votes<T>>::exists(commitment) {
+            return Err("duplicate commitment");
+        }
+
+        let voter_has_backing_stake = <AvailableBackingStakesMap<T>>::exists(&voter);
+
+        let transferable_stake: T::Balance = match voter_has_backing_stake {
             false => Default::default(), //zero
             true => <AvailableBackingStakesMap<T>>::get(&voter)
         };
@@ -321,8 +378,10 @@ impl<T: Trait> Module<T> {
         <Commitments<T>>::mutate(|commitments| commitments.push(commitment));
 
         <Votes<T>>::insert(commitment, SealedVote::new(voter.clone(), vote_stake, commitment));
-
-        <AvailableBackingStakesMap<T>>::insert(voter.clone(), transferable_stake - vote_stake.transferred);
+        
+        if voter_has_backing_stake {
+            <AvailableBackingStakesMap<T>>::insert(voter.clone(), transferable_stake - vote_stake.transferred);
+        }
 
         Ok(())
     }
@@ -340,7 +399,7 @@ impl<T: Trait> Module<T> {
 
         // only voter can reveal their own votes
         if !sealed_vote.owned_by(voter) {
-            return Err("sender is not owner of vote");
+            return Err("only voter can reveal vote");
         }
 
         let mut salt = salt.clone();
@@ -362,8 +421,8 @@ decl_module! {
         fn deposit_event<T>() = default;
 
         // No origin so this is a priviledged call
-        fn on_finalise(n: T::BlockNumber){
-            let _ = Self::tick(n);
+        fn on_finalise(now: T::BlockNumber){
+            let _ = Self::tick(now);
         }
 
         fn announce_candidacy(origin, stake: T::Balance) -> Result {

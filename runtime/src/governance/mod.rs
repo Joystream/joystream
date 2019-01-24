@@ -46,14 +46,10 @@ decl_module! {
         fn deposit_event<T>() = default;
 
         fn on_finalise(n: T::BlockNumber) {
-            print("Governance::tick");
+            // print("Governance::tick");
             // Determine if we need to start an election
-            if <election::Module<T>>::can_start_election() {
-                if <council::Module<T>>::council().is_none() || <council::Module<T>>::term_ended(n) {
-                    print("Governance: Starting Election");
-                    // panic means broken invariant!
-                    <election::Module<T>>::start_election().expect("must be able to start election");
-                }
+            if <election::Module<T>>::start_election().is_ok() {
+                print("Election Started");
             }
         }
     }
