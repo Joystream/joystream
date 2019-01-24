@@ -13,7 +13,8 @@ use runtime_io::print;
 
 pub mod election;
 pub mod council;
-pub mod transferable_stake;
+mod transferable_stake;
+mod sealed_vote;
 
 use srml_support::{StorageValue, dispatch::Result};
 use runtime_primitives::traits::{Hash, As};

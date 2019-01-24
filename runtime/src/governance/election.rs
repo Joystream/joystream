@@ -1,13 +1,14 @@
 extern crate parity_codec;
 use self::parity_codec::Encode;
 use srml_support::{StorageValue, StorageMap, StorageVec, dispatch::Result};
-use runtime_primitives::traits::{Hash, As, SimpleArithmetic, CheckedAdd, CheckedSub, Zero};
+use runtime_primitives::traits::{Hash, As, Zero};
 use {balances, system::{self, ensure_signed}};
 use runtime_io::print;
 use srml_support::dispatch::Vec;
 
 use governance::transferable_stake::Stake;
 use governance::council;
+use governance::sealed_vote::SealedVote;
 
 pub trait Trait: system::Trait + council::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -54,10 +55,13 @@ decl_storage! {
         Applicants get(applicants): Vec<T::AccountId>;
         ApplicantsMap get(applicants_map): map T::AccountId => Stake<T::Balance>;
 
+        // probably don't need this state we only check existance in map
+        // put in event instead good enough for ui
         Candidates get(candidates): Vec<T::AccountId>;
         CandidatesMap get(candidates_map): map T::AccountId => bool;
 
-        //UsesStorageVec get(dummy): vec<T::AccountId>;
+        Votes get(votes): Vec<SealedVote<T::AccountId, Stake<T::Balance>, T::AccountId, T::Hash, T::Hash>>;
+        //Voters get(voters): Vec<T::AccountId>; // not needed as far as I can see
     }
 }
 
@@ -235,60 +239,90 @@ impl<T: Trait> Module<T> {
     }
 
     fn try_add_applicant(applicant: T::AccountId, stake: T::Balance) -> Result {
-        let mut current_stake: Stake<T::Balance> = Default::default(); //zero
+        let applicant_stake = match <ApplicantsMap<T>>::exists(&applicant) {
+            false => Default::default(), //zero
+            true => <ApplicantsMap<T>>::get(&applicant)
+        };
 
-        if <ApplicantsMap<T>>::exists(&applicant) {
-            current_stake = <ApplicantsMap<T>>::get(&applicant);
+        let transferable_stake = match <AvailableCouncilStakesMap<T>>::exists(&applicant) {
+            false => Default::default(), //zero
+            true => <AvailableCouncilStakesMap<T>>::get(&applicant)
+        };
+
+        let mut new_stake: Stake<T::Balance> = Default::default();
+
+        new_stake.transferred = if transferable_stake >= stake {
+            stake
+        } else {
+            transferable_stake
+        };
+
+        new_stake.refundable = stake - new_stake.transferred;
+ 
+        let balance = <balances::Module<T>>::free_balance(&applicant);
+
+        if new_stake.refundable > balance {
+            return Err("not enough balance to cover stake");
         }
 
-        let mut available_council_stake: T::Balance = Default::default(); //zero
+        if <balances::Module<T>>::decrease_free_balance(&applicant, new_stake.refundable).is_err() {
+            return Err("failed to update balance");
+        }
+
+        <AvailableCouncilStakesMap<T>>::insert(&applicant, transferable_stake - new_stake.transferred);
+       
+        if !<ApplicantsMap<T>>::exists(&applicant) {
+            <Applicants<T>>::mutate(|applicants| applicants.push(applicant.clone()));
+        }
         
-        if <AvailableCouncilStakesMap<T>>::exists(&applicant){
-            available_council_stake = <AvailableCouncilStakesMap<T>>::get(&applicant);
+        if let Some(total_stake) = applicant_stake.checked_add(&new_stake) {
+            let min_stake = Stake {
+                refundable: T::Balance::sa(COUNCIL_MIN_STAKE),
+                transferred: T::Balance::zero()
+            };
+
+            if min_stake > total_stake {
+                return Err("minimum stake not met");
+            }
+
+            <ApplicantsMap<T>>::insert(applicant.clone(), total_stake);
+            return Ok(());
+        } else {
+            return Err("overflow adding new stake");
+        }
+    }
+
+    fn try_add_vote(voter: T::AccountId, stake: T::Balance, commitment: T::Hash) -> Result {
+        let transferable_stake: T::Balance = match <AvailableBackingStakesMap<T>>::exists(&voter) {
+            false => Default::default(), //zero
+            true => <AvailableBackingStakesMap<T>>::get(&voter)
+        };
+
+        let mut vote_stake: Stake<T::Balance> = Default::default();
+
+        vote_stake.transferred = if transferable_stake >= stake {
+            stake
+        } else {
+            transferable_stake
+        };
+
+        vote_stake.refundable = stake - vote_stake.transferred;
+        
+        let balance = <balances::Module<T>>::free_balance(&voter);
+
+        if vote_stake.refundable > balance {
+            return Err("not enough balance to cover voting stake");
+        }
+        
+        if <balances::Module<T>>::decrease_free_balance(&voter, vote_stake.refundable).is_err() {
+            return Err("failed to update balance");
         }
 
-        if available_council_stake > T::Balance::zero() {
-            if available_council_stake >= stake {
-                available_council_stake -= stake;
-                current_stake.transferred += stake;
-            } else {
-                let diff = stake - available_council_stake;
-                if <balances::Module<T>>::free_balance(&applicant) >= diff {
-                    current_stake.transferred += available_council_stake;
-                    available_council_stake = T::Balance::zero();
-                    current_stake.refundable += diff;
-                    // deduct the difference from the applicant's balance
-                    if <balances::Module<T>>::decrease_free_balance(&applicant, diff).is_err() {
-                        return Err("failed to update balance");
-                    }
-                } else {
-                    return Err("not enough balance to cover stake")
-                }
-            }
-            <AvailableCouncilStakesMap<T>>::insert(&applicant, available_council_stake);
-        } else {
-            if <balances::Module<T>>::free_balance(&applicant) >= stake {
-                current_stake.refundable += stake;
-                if <balances::Module<T>>::decrease_free_balance(&applicant, stake).is_err() {
-                    return Err("failed to update balance");
-                }
-            } else {
-                return Err("not enough balance to cover stake");
-            }
-        }
+        <Votes<T>>::mutate(|votes| votes.push(SealedVote::new(voter.clone(), commitment, vote_stake)));
 
-        // Make sure total staked meets minimum council stake requirement
-        if current_stake.total() >= T::Balance::sa(COUNCIL_MIN_STAKE) {
-            if !<ApplicantsMap<T>>::exists(&applicant) {
-                let mut applicants = Self::applicants();
-                applicants.push(applicant.clone());
-                <Applicants<T>>::put(applicants);
-            }
-            <ApplicantsMap<T>>::insert(&applicant, current_stake);
-            Ok(())
-        } else {
-            Err("minimum stake not met")
-        }
+        <AvailableBackingStakesMap<T>>::insert(voter.clone(), transferable_stake - vote_stake.transferred);
+
+        Ok(())
     }
 }
 
@@ -306,8 +340,21 @@ decl_module! {
             // Can only announce candidacy during election announcing stage
             if let Some(stage) = Self::stage() {
                 match stage {
-                    Stage::Announcing(period) => Self::try_add_applicant(sender, stake),
+                    Stage::Announcing(_) => Self::try_add_applicant(sender, stake),
                     _ => Err("election not in announcing stage")
+                }
+            } else {
+                Err("election not running")
+            }
+        }
+
+        fn vote_for_candidate(origin, commitment: T::Hash, stake: T::Balance) -> Result {
+            let sender = ensure_signed(origin)?;
+            // Can only vote during election voting stage
+            if let Some(stage) = Self::stage() {
+                match stage {
+                    Stage::Voting(_) => Self::try_add_vote(sender, stake, commitment),
+                    _ => Err("election not in voting stage")
                 }
             } else {
                 Err("election not running")
