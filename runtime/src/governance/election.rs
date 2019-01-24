@@ -326,6 +326,35 @@ impl<T: Trait> Module<T> {
 
         Ok(())
     }
+
+    fn try_reveal_vote(voter: T::AccountId, commitment: T::Hash, candidate: T::AccountId, salt: Vec<u8>) -> Result {
+        if !<CandidatesMap<T>>::exists(&candidate) {
+            return Err("vote for non-candidate not allowed");
+        }
+
+        if !<Votes<T>>::exists(&commitment) {
+            return Err("commitment not found");
+        }
+        
+        let mut sealed_vote = <Votes<T>>::get(&commitment);
+
+        // only voter can reveal their own votes
+        if !sealed_vote.owned_by(voter) {
+            return Err("sender is not owner of vote");
+        }
+
+        let mut salt = salt.clone();
+        let valid = sealed_vote.unseal(candidate, &mut salt, <T as system::Trait>::Hashing::hash)?;
+        match valid {
+            true => {
+                // update the sealed vote
+                <Votes<T>>::insert(commitment, sealed_vote);
+                Ok(())
+            },
+
+            false => Err("invalid salt")
+        }
+    }
 }
 
 decl_module! {
@@ -365,29 +394,19 @@ decl_module! {
 
         fn reveal_vote(origin, commitment: T::Hash, vote: T::AccountId, salt: Vec<u8>) -> Result {
             let sender = ensure_signed(origin)?;
-
-            if !<Votes<T>>::exists(commitment) {
-                return Err("commitment not found");
-            }
             
-            let mut sealed_vote = <Votes<T>>::get(commitment);
-
-            // only voter can reveal their own votes
-            if !sealed_vote.owned_by(sender) {
-                return Err("sender is not owner of vote");
-            }
-
-            let mut salt = salt.clone();
-            let valid = sealed_vote.unseal(vote, &mut salt, <T as system::Trait>::Hashing::hash)?;
-            match valid {
-                true => {
-                    // update the sealed vote
-                    <Votes<T>>::insert(commitment, sealed_vote);
-                    Ok(())
-                },
-
-                false => Err("invalid salt")
+            // Can only reveal vote during election revealing stage
+            if let Some(stage) = Self::stage() {
+                match stage {
+                    Stage::Revealing(_) => Self::try_reveal_vote(sender, commitment, vote, salt),
+                    _ => Err("election not in revealing stage")
+                }
+            } else {
+                Err("election not running")
             }
         }
+
+        // fn withdraw_candidacy()
+        // fn withdraw_vote()
     }
 }
