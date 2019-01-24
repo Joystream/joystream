@@ -380,7 +380,12 @@ decl_module! {
             let mut salt = salt.clone();
             let valid = sealed_vote.unseal(vote, &mut salt, <T as system::Trait>::Hashing::hash)?;
             match valid {
-                true => Ok(()),
+                true => {
+                    // update the sealed vote
+                    <Votes<T>>::insert(commitment, sealed_vote);
+                    Ok(())
+                },
+
                 false => Err("invalid salt")
             }
         }
