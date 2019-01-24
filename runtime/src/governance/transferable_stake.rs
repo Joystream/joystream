@@ -13,7 +13,7 @@ use srml_support::inherent::cmp::Ordering;
 use runtime_primitives::traits::{SimpleArithmetic, CheckedAdd, Zero};
 
 //use std::ops::Add; // cant use this in WASM runtime
-use rstd::ops::Add;
+//use rstd::ops::Add;
 
 #[derive(Clone, Copy, Encode, Decode, Default)]
 pub struct Stake<Balance> 
@@ -26,17 +26,8 @@ pub struct Stake<Balance>
 impl<Balance> Stake<Balance>
     where Balance: Copy + SimpleArithmetic + CheckedAdd + Zero,
 {
-    pub fn checked_total(&self) -> <Balance as Add>::Output {
-        // sum is not Balance but enum Option<Balance> because implementaiton does a checked add
+    pub fn total(&self) -> Balance {
         self.refundable + self.transferred
-    }
-
-    // Overflow results in total being zero - only use this for sorting purposes!
-    fn sorting_total(&self) -> Balance {
-        match self.refundable.checked_add(&self.transferred) {
-            Some(t) => t,
-            None => Balance::zero(),
-        }
     }
 
     pub fn checked_add(&self, v: &Self) -> Option<Self> {
@@ -50,6 +41,13 @@ impl<Balance> Stake<Balance>
         }
 
         None
+    }
+
+    pub fn add(&self, v: &Self) -> Self {
+        Self {
+            refundable: self.refundable + v.refundable,
+            transferred: self.transferred + v.transferred
+        }
     }
 }
 
@@ -78,13 +76,13 @@ impl<T: Copy + SimpleArithmetic + CheckedAdd + Zero> PartialOrd for Stake<T> {
 
 impl<T: Copy + SimpleArithmetic + CheckedAdd + Zero> Ord for Stake<T> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.sorting_total().cmp(&other.sorting_total())
+        self.total().cmp(&other.total())
     }
 }
 
 impl<T: Copy + SimpleArithmetic + CheckedAdd + Zero> PartialEq for Stake<T> {
     fn eq(&self, other: &Self) -> bool {
-        self.refundable == other.refundable && self.transferred == other.transferred
+        self.total() == other.total()
     }
 }
 
