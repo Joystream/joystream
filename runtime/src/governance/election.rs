@@ -106,11 +106,11 @@ impl<T: Trait> Module<T> {
 
     fn bump_round() -> Round {
         // bump the round number
-        // <ElectionRound<T>>::mutate(|n| *n += 1) // doesn't return anything
-        let next_round = Self::round() + 1;
-        <ElectionRound<T>>::put(next_round);
         print("Bumping Election Round");
-        next_round
+        <ElectionRound<T>>::mutate(|n| {
+            *n += 1;
+            *n
+        })
     }
 
     fn move_to_announcing_stage() {
