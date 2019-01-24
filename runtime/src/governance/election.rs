@@ -60,8 +60,8 @@ decl_storage! {
         Candidates get(candidates): Vec<T::AccountId>;
         CandidatesMap get(candidates_map): map T::AccountId => bool;
 
-        Votes get(votes): Vec<SealedVote<T::AccountId, Stake<T::Balance>, T::AccountId, T::Hash, T::Hash>>;
-        //Voters get(voters): Vec<T::AccountId>; // not needed as far as I can see
+        Commitments get(commitments): Vec<T::Hash>;
+        Votes get(votes): map T::Hash => SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>;
     }
 }
 
@@ -318,7 +318,9 @@ impl<T: Trait> Module<T> {
             return Err("failed to update balance");
         }
 
-        <Votes<T>>::mutate(|votes| votes.push(SealedVote::new(voter.clone(), commitment, vote_stake)));
+        <Commitments<T>>::mutate(|commitments| commitments.push(commitment));
+
+        <Votes<T>>::insert(commitment, SealedVote::new(voter.clone(), vote_stake, commitment));
 
         <AvailableBackingStakesMap<T>>::insert(voter.clone(), transferable_stake - vote_stake.transferred);
 
@@ -358,6 +360,28 @@ decl_module! {
                 }
             } else {
                 Err("election not running")
+            }
+        }
+
+        fn reveal_vote(origin, commitment: T::Hash, vote: T::AccountId, salt: Vec<u8>) -> Result {
+            let sender = ensure_signed(origin)?;
+
+            if !<Votes<T>>::exists(commitment) {
+                return Err("commitment not found");
+            }
+            
+            let mut sealed_vote = <Votes<T>>::get(commitment);
+
+            // only voter can reveal their own votes
+            if !sealed_vote.owned_by(sender) {
+                return Err("sender is not owner of vote");
+            }
+
+            let mut salt = salt.clone();
+            let valid = sealed_vote.unseal(vote, &mut salt, <T as system::Trait>::Hashing::hash)?;
+            match valid {
+                true => Ok(()),
+                false => Err("invalid salt")
             }
         }
     }

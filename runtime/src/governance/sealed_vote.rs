@@ -9,23 +9,21 @@ extern crate sr_primitives;
 #[cfg(feature = "std")]
 extern crate parity_codec as codec;
 
-// commitment of a sealed vote is calculated over this structure
-#[derive(Clone, Copy, Encode, Decode, Default)]
-pub struct Vote<Payload, Salt> {
-    payload: Payload,
-    salt: Salt  // 32 bytes - secret which seals the payload
-}
 
 #[derive(Clone, Copy, Encode, Decode, Default)]
-pub struct SealedVote<AccountId, Stake, Payload, Hash, Salt> {
+pub struct SealedVote<AccountId, Stake, Hash, Vote> 
+    where Vote: codec::Encode, Hash: PartialEq, AccountId: PartialEq
+{
   voter: AccountId,
-  commitment: Hash, // 32 bytes - SHA256 hash of payload
+  commitment: Hash, // 32 bytes - salted hash of serialized Vote
   stake: Stake,
-  vote: Option<Vote<Payload, Salt>>,
+  vote: Option<Vote>, // will be set when unsealing
 }
 
-impl<AccountId, Stake, Payload, Hash, Salt> SealedVote<AccountId, Stake, Payload, Hash, Salt> {
-    pub fn new(voter: AccountId, commitment: Hash, stake: Stake) -> SealedVote<AccountId, Stake, Payload, Hash, Salt> {
+impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>    
+    where Vote: codec::Encode, Hash: PartialEq, AccountId: PartialEq
+{
+    pub fn new(voter: AccountId, stake: Stake, commitment: Hash) -> SealedVote<AccountId, Stake, Hash, Vote> {
         SealedVote {
             voter,
             commitment,
@@ -34,12 +32,31 @@ impl<AccountId, Stake, Payload, Hash, Salt> SealedVote<AccountId, Stake, Payload
         }
     }
 
-    pub fn unseal(&self, vote: Vote<Payload, Salt>) -> bool {
+    pub fn unseal(&mut self, vote: Vote, salt: &mut Vec<u8>, hasher: fn(&[u8]) -> Hash) -> Result<bool, &'static str> {
+        // only unseal once
+        if self.vote.is_some() {
+            return Err("vote already unsealed");
+        }
 
-        false
+        // seralize the vote and append the salt
+        let mut payload = vote.encode();
+        payload.append(salt);
+
+        // hash the payload, if it matches the commitment it is a valid revealing of the vote
+        self.vote = match self.commitment ==  hasher(&payload) {
+            true => Some(vote),
+            false => None,
+        };
+
+        Ok(self.vote.is_some())
     }
 
-    pub fn unsealed(&self) -> bool {
-        self.vote.is_some()
+    pub fn get_vote(&self) -> &Option<Vote> {
+        &self.vote
+    }
+
+    pub fn owned_by(&self, someone: AccountId) -> bool {
+        someone == self.voter
     }
 }
+
