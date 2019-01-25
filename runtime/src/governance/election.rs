@@ -1,14 +1,14 @@
 extern crate parity_codec;
 use self::parity_codec::Encode;
-use srml_support::{StorageValue, StorageMap, StorageVec, dispatch::Result};
+use srml_support::{StorageValue, StorageMap, dispatch::Result};
 use runtime_primitives::traits::{Hash, As, Zero};
 use {balances, system::{self, ensure_signed}};
 use runtime_io::print;
 use srml_support::dispatch::Vec;
 
-use governance::transferable_stake::Stake;
-use governance::council;
-use governance::sealed_vote::SealedVote;
+use super::transferable_stake::Stake;
+use super::council;
+use super::sealed_vote::SealedVote;
 
 pub trait Trait: system::Trait + council::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
