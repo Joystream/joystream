@@ -33,6 +33,8 @@ impl Default for ProposalStatus {
     }
 }
 
+use self::ProposalStatus::*;
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub enum VoteKind {
@@ -52,6 +54,8 @@ impl Default for VoteKind {
         VoteKind::Abstention // TODO use another *special* value as default?
     }
 }
+
+use self::VoteKind::*;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
@@ -88,6 +92,7 @@ pub trait Trait: balances::Trait + timestamp::Trait {
 decl_event!(
 	pub enum Event<T>
     where
+        <T as system::Trait>::Hash,
         <T as system::Trait>::BlockNumber,
         <T as system::Trait>::AccountId
     {
@@ -107,6 +112,9 @@ decl_event!(
         Voted(AccountId, ProposalId, VoteKind),
 
         TallyFinalized(TallyResult<BlockNumber>),
+
+        /// * Hash - hash of wasm code of runtime update.
+        RuntimeUpdated(ProposalId, Hash),
 	}
 );
 
@@ -191,7 +199,7 @@ decl_module! {
                 description,
                 wasm_code,
                 proposed_on: Self::current_block(),
-                status: ProposalStatus::Pending
+                status: Pending
             };
 
             <Proposals<T>>::insert(proposal_id, new_proposal);
@@ -214,7 +222,7 @@ decl_module! {
             let proposal = Self::proposal(proposal_id);
 
             ensure!(voter != proposal.proposer, "You cannot vote on your proposals");
-            ensure!(proposal.status == ProposalStatus::Pending, "Proposal is finalized already");
+            ensure!(proposal.status == Pending, "Proposal is finalized already");
 
             let not_expired = !Self::is_voting_period_expired(proposal.proposed_on);
             ensure!(not_expired, "Voting period is expired for this proposal");
@@ -244,7 +252,7 @@ decl_module! {
             let proposal = Self::proposal(proposal_id);
 
             ensure!(proposer == proposal.proposer, "You do not own this proposal");
-            ensure!(proposal.status == ProposalStatus::Pending, "Proposal is finalized already");
+            ensure!(proposal.status == Pending, "Proposal is finalized already");
 
             // Spend some minimum fee on proposer's balance for canceling a proposal
             let fee = Self::cancellation_fee();
@@ -254,26 +262,20 @@ decl_module! {
             let left_stake = proposal.stake - fee;
 			let _ = <balances::Module<T>>::unreserve(&proposer, left_stake);
 
-            Self::_update_proposal_status(proposal_id, ProposalStatus::Cancelled)?;
+            Self::_update_proposal_status(proposal_id, Cancelled)?;
             Self::deposit_event(RawEvent::ProposalCanceled(proposer, proposal_id));
 
             Ok(())
         }
 
-		fn update_runtime(origin, proposal_id: ProposalId, wasm_code: Vec<u8>) -> Result {
+		// fn update_runtime(origin, proposal_id: ProposalId, wasm_code: Vec<u8>) -> Result {
+        //     ensure!(<Proposals<T>>::exists(proposal_id), "This proposal does not exist");
+        //     let proposal = Self::proposal(proposal_id);
 
-            // TODO compare hash of wasm code with a hash from approved proposal.
-            // See in substrate repo @ srml/contract/src/wasm/code_cache.rs:73
-            let code_hash = T::Hashing::hash(&wasm_code);
+        //     ensure!(proposal.status == Approved, "Proposal is not approved");
 
-            // TODO run software update here
-
-            // TODO throw event: RuntimeUpdated(proposal_id, wasm_hash)
-
-            // TODO return locked stake to proposer's balance
-
-            Ok(())
-        }
+        //     Self::_update_runtime(proposal_id)?
+        // }
 
         // Called on every block
         fn on_finalise(n: T::BlockNumber) {
@@ -339,28 +341,24 @@ impl<T: Trait> Module<T> {
 
             for (_, vote) in votes.iter() {
                 match vote {
-                    VoteKind::Abstention => abstentions += 1,
-                    VoteKind::Approve => approvals += 1,
-                    VoteKind::Reject => rejections += 1,
-                    VoteKind::Slash => slashes += 1,
+                    Abstention => abstentions += 1,
+                    Approve => approvals += 1,
+                    Reject => rejections += 1,
+                    Slash => slashes += 1,
                 }
             }
 
             let new_status: Option<ProposalStatus> = 
                 if slashes == councilors {
-                    Self::_slash_proposal(proposal_id);   // TODO move to _update_proposal_status()
-                    Some(ProposalStatus::Slashed)
+                    Some(Slashed)
                 } else if approvals >= quorum {
-                    Self::_approve_proposal(proposal_id); // TODO move to _update_proposal_status()
-                    Some(ProposalStatus::Approved)
+                    Some(Approved)
                 } else if all_councilors_voted { 
                     // All councilors voted but an approval quorum was not reached.
-                    Self::_reject_proposal(proposal_id);  // TODO move to _update_proposal_status()
-                    Some(ProposalStatus::Rejected)
+                    Some(Rejected)
                 } else if is_expired { 
                     // Proposal has been expired and quorum not reached.
-                    Self::_reject_proposal(proposal_id);  // TODO move to _update_proposal_status()
-                    Some(ProposalStatus::Expired)
+                    Some(Expired)
                 } else {
                     None
                 };
@@ -402,6 +400,13 @@ impl<T: Trait> Module<T> {
             // Seems like this proposal's status has been updated and removed from pendings.
             Err("Proposal status has been updated already")
         } else {
+            let pid = proposal_id.clone();
+            match new_status {
+                Slashed => Self::_slash_proposal(pid)?,
+                Rejected | Expired => Self::_reject_proposal(pid)?,
+                Approved => Self::_approve_proposal(pid)?,
+                Pending | Cancelled => { /* nothing */ },
+            }
             <PendingProposalIds<T>>::put(other_pendings);
             <Proposals<T>>::mutate(proposal_id, |p| p.status = new_status.clone());
             Self::deposit_event(RawEvent::ProposalStatusUpdated(proposal_id, new_status));
@@ -410,15 +415,17 @@ impl<T: Trait> Module<T> {
     }
 
     /// Slash a proposal. The staked deposit will be slashed.
-    fn _slash_proposal(proposal_id: ProposalId) {
+    fn _slash_proposal(proposal_id: ProposalId) -> Result {
         let proposal = Self::proposal(proposal_id);
 
         // Slash proposer's stake:
 		let _ = <balances::Module<T>>::slash_reserved(&proposal.proposer, proposal.stake);
+
+        Ok(())
     }
 
     /// Reject a proposal. The staked deposit will be returned to a proposer.
-    fn _reject_proposal(proposal_id: ProposalId) {
+    fn _reject_proposal(proposal_id: ProposalId) -> Result {
         let proposal = Self::proposal(proposal_id);
         let proposer = proposal.proposer;
 
@@ -429,15 +436,25 @@ impl<T: Trait> Module<T> {
         // Return unspent part of remaining staked deposit (after taking some fee):
         let left_stake = proposal.stake - fee;
 	    let _ = <balances::Module<T>>::unreserve(&proposer, left_stake);
+
+        Ok(())
     }
 
     /// Approve a proposal. The staked deposit will be returned.
-    fn _approve_proposal(proposal_id: ProposalId) {
+    fn _approve_proposal(proposal_id: ProposalId) -> Result {
         let proposal = Self::proposal(proposal_id);
-
+        
         // Return staked deposit to proposer:
         let _ = <balances::Module<T>>::unreserve(&proposal.proposer, proposal.stake);
+        
+        // TODO run software update here
+        // consensus::set_code(wasm_code)
+        // See https://github.com/paritytech/substrate/blob/53bf81e57cdcae34f50bb9359813053e9498b1cd/srml/consensus/src/lib.rs#L225
 
-        // TODO Self::update_runtime(...)
+        // See in substrate repo @ srml/contract/src/wasm/code_cache.rs:73
+        let wasm_hash = T::Hashing::hash(&proposal.wasm_code);
+        Self::deposit_event(RawEvent::RuntimeUpdated(proposal_id, wasm_hash));
+
+        Ok(())
     }
 }
