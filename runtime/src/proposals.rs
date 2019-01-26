@@ -446,10 +446,9 @@ impl<T: Trait> Module<T> {
         
         // Return staked deposit to proposer:
         let _ = <balances::Module<T>>::unreserve(&proposal.proposer, proposal.stake);
-        
-        // TODO run software update here
-        // consensus::set_code(wasm_code)
-        // See https://github.com/paritytech/substrate/blob/53bf81e57cdcae34f50bb9359813053e9498b1cd/srml/consensus/src/lib.rs#L225
+
+        // Update wasm code of node's runtime:
+        <consensus::Module<T>>::set_code(proposal.wasm_code.clone());
 
         // See in substrate repo @ srml/contract/src/wasm/code_cache.rs:73
         let wasm_hash = T::Hashing::hash(&proposal.wasm_code);
