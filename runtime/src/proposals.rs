@@ -8,7 +8,6 @@ const VOTING_PERIOD_IN_DAYS: u64 = 10;
 const VOTING_PERIOD_IN_SECS: u64 = VOTING_PERIOD_IN_DAYS * 24 * 60 * 60;
 
 pub type ProposalId = u32;
-pub type Count = usize;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
@@ -73,10 +72,10 @@ pub struct Proposal<AccountId, Balance, BlockNumber> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct TallyResult<BlockNumber> {
     proposal_id: ProposalId,
-    abstentions: Count,
-    approvals: Count,
-    rejections: Count,
-    slashes: Count,
+    abstentions: u32,
+    approvals: u32,
+    rejections: u32,
+    slashes: u32,
     status: ProposalStatus,
     finalized_on: BlockNumber,
 }
@@ -118,7 +117,7 @@ decl_storage! {
 
         /// The percentage (up to 100) of the council participants
         /// which must vote affirmatively in order for it to pass.
-        ApprovalQuorum get(approval_quorum): usize = 60;
+        ApprovalQuorum get(approval_quorum): u32 = 60;
 
         /// Minimum balance amount to be staked in order to make a proposal.
         MinimumStake get(minimum_stake): T::Balance = T::Balance::sa(100);
@@ -136,7 +135,7 @@ decl_storage! {
 
         // Persistent state (always relevant, changes constantly):
 
-        NextProposalId get(next_proposal_id): ProposalId; // TODO start w/ 1 (one) ?
+        ProposalCount get(proposal_count): ProposalId;
 
         Proposals get(proposal): map ProposalId => Proposal<T::AccountId, T::Balance, T::BlockNumber>;
 
@@ -156,6 +155,10 @@ decl_module! {
 
         fn deposit_event<T>() = default;
 
+        /// Use next code to create a proposal from Substrate UI's web console:
+        /// ```js
+        /// post({ sender: runtime.indices.ss58Decode('F7Gh'), call: calls.proposals.createProposal(2500, "0x" + "Cool Proposal #1".toString("hex"), "0x" + "New features and bug fixes. For more info, see the latest CHANGELOG.md joystream-node repo on GitHub.".toString("hex"), "0x" + "...TODO some wasm code goes here...".toString("hex")) }).tie(console.log)
+        /// ```
         fn create_proposal(
             origin,
             stake: T::Balance,
@@ -177,8 +180,8 @@ decl_module! {
             <balances::Module<T>>::reserve(&proposer, stake)
 				.map_err(|_| "Proposer's balance is too low to be staked")?;
 
-            let proposal_id = Self::next_proposal_id();
-            <NextProposalId<T>>::mutate(|id| *id += 1);
+            let proposal_id = Self::proposal_count() + 1;
+            <ProposalCount<T>>::put(proposal_id);
 
             let new_proposal = Proposal {
                 id: proposal_id,
@@ -199,14 +202,18 @@ decl_module! {
             Ok(())
         }
 
-        // DONE
-        fn vote_for_proposal(origin, proposal_id: ProposalId, vote: VoteKind) -> Result {
+        /// Use next code to create a proposal from Substrate UI's web console:
+        /// ```js
+        /// post({ sender: runtime.indices.ss58Decode('F7Gh'), call: calls.proposals.voteForProposal(1, { option: "Approve", _type: "VoteKind" }) }).tie(console.log)
+        /// ```
+        fn vote_on_proposal(origin, proposal_id: ProposalId, vote: VoteKind) -> Result {
             let voter = ensure_signed(origin)?;
             ensure!(Self::is_council_member(voter.clone()), "Only council members can vote on proposals");
 
             ensure!(<Proposals<T>>::exists(proposal_id), "This proposal does not exist");
             let proposal = Self::proposal(proposal_id);
 
+            ensure!(voter != proposal.proposer, "You cannot vote on your proposals");
             ensure!(proposal.status == ProposalStatus::Pending, "Proposal is finalized already");
 
             let not_expired = !Self::is_voting_period_expired(proposal.proposed_on);
@@ -293,7 +300,7 @@ impl<T: Trait> Module<T> {
         true
     }
 
-    pub fn council_members_count() -> usize {
+    pub fn council_members_count() -> u32 {
         // TODO This method should be implemented in Council module.
         10
     }
@@ -316,14 +323,14 @@ impl<T: Trait> Module<T> {
 
     /// Get the voters for the current proposal.
     pub fn tally(/* proposal_id: ProposalId */) -> Result {
-        let councilors: usize = Self::council_members_count();
-        let quorum: usize = ((Self::approval_quorum() as u32 * councilors as u32) / 100) as usize;
+        let councilors = Self::council_members_count();
+        let quorum = (Self::approval_quorum() * councilors) / 100;
 
         for proposal_id in Self::pending_proposal_ids() {
             let proposal = Self::proposal(proposal_id);
             let is_expired = Self::is_voting_period_expired(proposal.proposed_on);
             let votes = Self::votes_by_proposal(proposal_id);
-            let all_councilors_voted = votes.len() == councilors;
+            let all_councilors_voted = votes.len() as u32 == councilors;
             
             let mut abstentions = 0;
             let mut approvals = 0;
@@ -346,11 +353,14 @@ impl<T: Trait> Module<T> {
                 } else if approvals >= quorum {
                     Self::_approve_proposal(proposal_id); // TODO move to _update_proposal_status()
                     Some(ProposalStatus::Approved)
-                } else if all_councilors_voted || is_expired { 
-                    // All councilors voted but an approval quorum was not reached
-                    // or proposal has been expired.
+                } else if all_councilors_voted { 
+                    // All councilors voted but an approval quorum was not reached.
                     Self::_reject_proposal(proposal_id);  // TODO move to _update_proposal_status()
                     Some(ProposalStatus::Rejected)
+                } else if is_expired { 
+                    // Proposal has been expired and quorum not reached.
+                    Self::_reject_proposal(proposal_id);  // TODO move to _update_proposal_status()
+                    Some(ProposalStatus::Expired)
                 } else {
                     None
                 };
