@@ -11,7 +11,6 @@ extern crate parity_codec as codec;
 extern crate srml_system as system;
 
 extern crate parity_codec;
-//use self::parity_codec::Encode;
 use srml_support::{StorageValue, StorageMap, dispatch::Result};
 use runtime_primitives::traits::{Hash, As, Zero};
 use {balances, system::{ensure_signed}};
@@ -242,37 +241,40 @@ impl<T: Trait> Module<T> {
 
         // unless we want to add more filtering criteria to what is considered a successful election
         // other than just the minimum stake for candidacy, we have a new council!
-
-
-//   refund all vote stakes for candidates that did not get elected
-//   refund all applicantsPool stakes for applicants that did not get elected 
-        // (maybe this should have been done when moving to voting stage, so applicants who did not make it to
-        // to be candidates can reuse their stake for voting?)
-        // since candidates is a subest of applicants, this will obvioulsy include non elected candidates.
-//   refund all unused availableBackingStakes
-//   refund all unused availableCouncilStakes
   
         Self::refund_voting_stakes(&votes, &new_council);
         Self::refund_applicant_stakes(&new_council);
         Self::refund_unused_transferable_stakes();
 
         <ElectionStage<T>>::kill();
-        
-        //<council::Module<T>>::set_council(&new_council);
+
+        <council::Module<T>>::set_council(&new_council);
         
         Self::deposit_event(RawEvent::ElectionCompleted());
         print("Election Completed");
     }
 
     fn refund_unused_transferable_stakes() {
-        // BackingStakeHolders get(backing_stakeholders): Vec<T::AccountId>;
-        // CouncilStakeHolders get(council_stakeholders): Vec<T::AccountId>;
-        // AvailableBackingStakesMap get(backing_stakes): map T::AccountId => T::Balance;
-        // AvailableCouncilStakesMap get(council_stakes): map T::AccountId => T::Balance;
-        
         // move stakes back to account holder's free balance
+        for stakeholder in Self::backing_stakeholders().iter() {
+            let stake = Self::backing_stakes(stakeholder);
+            if stake > T::Balance::zero() {
+                let balance = <balances::Module<T>>::free_balance(stakeholder);
+                <balances::Module<T>>::set_free_balance(stakeholder, balance + stake);
+            }
+            <AvailableBackingStakesMap<T>>::remove(stakeholder);
+        }
+        <BackingStakeHolders<T>>::kill();
 
-        // clear snapshot
+        for stakeholder in Self::council_stakeholders().iter() {
+            let stake = Self::council_stakes(stakeholder);
+            if stake > T::Balance::zero() {
+                let balance = <balances::Module<T>>::free_balance(stakeholder);
+                <balances::Module<T>>::set_free_balance(stakeholder, balance + stake);
+            }
+            <AvailableCouncilStakesMap<T>>::remove(stakeholder);
+        }
+        <CouncilStakeHolders<T>>::kill();
     }
 
     fn refund_applicant_stakes(new_council: &BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>>) {

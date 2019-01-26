@@ -10,6 +10,7 @@ extern crate sr_primitives;
 extern crate parity_codec as codec;
 extern crate srml_system as system;
 use srml_support::dispatch::Vec;
+use rstd::collections::btree_map::BTreeMap;
 
 use srml_support::{StorageValue, dispatch::Result};
 use runtime_primitives::traits::{Hash, As};
@@ -48,6 +49,8 @@ pub struct Backer<Id, Stake> {
 
 pub type Council<AccountId, Balance> = Vec<Seat<AccountId, Balance>>;
 
+const COUNCIL_TERM: u64 = 1000;
+
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilInSession {
         // Initial state - council is empty and resigned, which will trigger
@@ -67,8 +70,17 @@ decl_event!(
 );
 
 impl<T: Trait> Module<T> {
-    pub fn set_council() {
+    pub fn set_council(council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>) {
+        let mut new_council = Vec::new();
 
+        for (_, seat) in council.iter() {
+            new_council.push(seat.clone());
+        }
+
+        <ActiveCouncil<T>>::put(new_council);
+
+        let next_term_ends = <system::Module<T>>::block_number() + T::BlockNumber::sa(COUNCIL_TERM);
+        <TermEnds<T>>::put(next_term_ends);
     }
 
     pub fn term_ended(n: T::BlockNumber) -> bool {
