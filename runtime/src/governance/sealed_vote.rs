@@ -1,15 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate sr_std;
-#[cfg(test)]
-extern crate sr_io;
-#[cfg(test)]
-extern crate substrate_primitives as primitives;
-extern crate sr_primitives;
-#[cfg(feature = "std")]
-extern crate parity_codec;
 use parity_codec::Encode;
-
 use srml_support::dispatch::Vec;
 
 #[derive(Clone, Copy, Encode, Decode, Default)]

@@ -10,7 +10,6 @@ extern crate sr_primitives;
 extern crate parity_codec as codec;
 extern crate srml_system as system;
 
-extern crate parity_codec;
 use srml_support::{StorageValue, StorageMap, dispatch::Result};
 use runtime_primitives::traits::{Hash, As, Zero};
 use {balances, system::{ensure_signed}};
