@@ -8,12 +8,14 @@ extern crate substrate_primitives;
 extern crate sr_primitives;
 #[cfg(feature = "std")]
 extern crate parity_codec as codec;
-//extern crate srml_system as system;
+extern crate srml_system as system;
 use srml_support::dispatch::Vec;
 
 use srml_support::{StorageValue, dispatch::Result};
 use runtime_primitives::traits::{Hash, As};
-use {balances, system::{self, ensure_signed}};
+use {balances, system::{ensure_signed}};
+
+use rstd::ops::Add;
 
 pub trait Trait: system::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -24,6 +26,18 @@ pub struct Seat<Id, Stake> {
     pub member: Id,
     pub stake: Stake,
     pub backers: Vec<Backer<Id, Stake>>,
+}
+
+impl<Id, Stake> Seat<Id, Stake> 
+    where Stake: Add<Output=Stake> + Copy,
+{
+    pub fn total_stake(&self) -> Stake {
+        let mut stake = self.stake;
+        for backer in self.backers.iter() {
+            stake = stake + backer.stake;
+        }
+        stake
+    }
 }
 
 #[derive(Copy, Clone, Encode, Decode)]

@@ -12,9 +12,6 @@ extern crate parity_codec as codec;
 use srml_support::inherent::cmp::Ordering;
 use runtime_primitives::traits::{SimpleArithmetic, CheckedAdd, Zero};
 
-//use std::ops::Add; // cant use this in WASM runtime
-//use rstd::ops::Add;
-
 #[derive(Clone, Copy, Encode, Decode, Default)]
 pub struct Stake<Balance> 
     where Balance: Copy + SimpleArithmetic + CheckedAdd + Zero,

@@ -17,7 +17,7 @@ pub struct SealedVote<AccountId, Stake, Hash, Vote>
     where Vote: Encode, Hash: PartialEq, AccountId: PartialEq
 {
   pub voter: AccountId,
-  commitment: Hash, // 32 bytes - salted hash of serialized Vote
+  pub commitment: Hash, // 32 bytes - salted hash of serialized Vote
   pub stake: Stake,
   vote: Option<Vote>, // will be set when unsealing
 }

@@ -1,10 +1,24 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate sr_std;
+#[cfg(test)]
+extern crate sr_io;
+#[cfg(test)]
+extern crate substrate_primitives;
+extern crate sr_primitives;
+#[cfg(feature = "std")]
+extern crate parity_codec as codec;
+extern crate srml_system as system;
+
 extern crate parity_codec;
-use self::parity_codec::Encode;
+//use self::parity_codec::Encode;
 use srml_support::{StorageValue, StorageMap, dispatch::Result};
 use runtime_primitives::traits::{Hash, As, Zero};
-use {balances, system::{self, ensure_signed}};
+use {balances, system::{ensure_signed}};
 use runtime_io::print;
 use srml_support::dispatch::Vec;
+
+use rstd::collections::btree_map::BTreeMap;
 
 use super::transferable_stake::Stake;
 use super::council;
@@ -61,6 +75,8 @@ decl_storage! {
         CandidatesMap get(candidates_map): map T::AccountId => bool;
 
         Commitments get(commitments): Vec<T::Hash>;
+        // simply a Yes vote for a candidate. Consider changing the vote payload to support
+        // For and Against. 
         Votes get(votes): map T::Hash => SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>;
     }
 }
@@ -181,61 +197,201 @@ impl<T: Trait> Module<T> {
 
     fn on_revealing_ended() {
         // tally the revealed votes
+        let mut votes = Vec::new();
 
+        for commitment in Self::commitments().iter() {
+            votes.push(Self::votes(commitment));
+        }
+
+        let mut new_council = Self::tally_votes(&votes);
+
+        // Note here that candidates with zero votes have been excluded from the tally.
+        // Is a candidate with some votes but less total stake than another candidate with zero votes
+        // more qualified to be on the council?
+        // Consider implications - if a council can be formed purely by staking are we fine with that?
+        for candidate in Self::candidates() {
+           match new_council.get(&candidate) {
+                Some(_) => (),
+                None => {
+                    new_council.insert(candidate.clone(), council::Seat {
+                        member: candidate.clone(),
+                        stake: Self::applicants_map(candidate).total(),
+                        backers: Vec::new(),
+                    });
+                }
+           }
+        }
+
+        if new_council.len() == COUNCIL_SIZE {
+            // all candidates in the tally will form the new council
+        } else if new_council.len() > COUNCIL_SIZE {
+            // we have more than enough elected candidates to form the new council
+            // select top COUNCIL_SIZE prioritised by stake
+            Self::filter_top_staked(&mut new_council, COUNCIL_SIZE);
+        } else {
+            // Not enough candidates with votes to form a council.
+            // This may happen if we didn't add candidates with zero votes to the tally,
+            // or in future if we allow candidates to withdraw candidacy during voting or revealing stages.
+            // Solution 1. Restart election.
+            // Solution 2. Add to the tally candidates with zero votes.
+            //      selection criteria: 
+            //          -> priority by largest stake?
+            //          -> priority given to candidates who announced first?
+            //          -> deterministic random selection?
+        }
+
+        // unless we want to add more filtering criteria to what is considered a successful election
+        // other than just the minimum stake for candidacy, we have a new council!
+
+
+//   refund all vote stakes for candidates that did not get elected
+//   refund all applicantsPool stakes for applicants that did not get elected 
+        // (maybe this should have been done when moving to voting stage, so applicants who did not make it to
+        // to be candidates can reuse their stake for voting?)
+        // since candidates is a subest of applicants, this will obvioulsy include non elected candidates.
+//   refund all unused availableBackingStakes
+//   refund all unused availableCouncilStakes
+  
+        Self::refund_voting_stakes(&votes, &new_council);
+        Self::refund_applicant_stakes(&new_council);
+        Self::refund_unused_transferable_stakes();
 
         <ElectionStage<T>>::kill();
+        
+        //<council::Module<T>>::set_council(&new_council);
+        
         Self::deposit_event(RawEvent::ElectionCompleted());
-        print("Election Round Ended");
+        print("Election Completed");
     }
 
-    fn tally_votes() -> Result {
+    fn refund_unused_transferable_stakes() {
+        // BackingStakeHolders get(backing_stakeholders): Vec<T::AccountId>;
+        // CouncilStakeHolders get(council_stakeholders): Vec<T::AccountId>;
+        // AvailableBackingStakesMap get(backing_stakes): map T::AccountId => T::Balance;
+        // AvailableCouncilStakesMap get(council_stakes): map T::AccountId => T::Balance;
+        
+        // move stakes back to account holder's free balance
 
-/* Notes from specs:
-Tally votes => create a new Council
-(what is the success criteria for a valid/successful election:
-  minimum backing stake for each candidate,
-  minimum total backing stake == %participation/quorum,
-  size of elected council < CouncilSize)
-
-refund vote stakes of un-revealed commitments
-if (successfulElection) {
-  refund all vote stakes for candidates that did not get elected
-  refund all unused availableBackingStakes
-  refund all applicantsPool stakes for applicants that did not get elected
-  refund all unused availableCouncilStakes
-  set new council
-  electionCompleted()
-} else {
-  refund refundable vote stakes
-  return transferred stake from votes back to backingStakes
-  clear Votes
-  clear candidatePool
-  start new election round - startRevealingPeriod()
-}
-*/
-        // iterate over <Votes<T>>
-        // for commitment in Self::commitments().iter() {
-        //     let sealed_vote = Self::votes(commitment);
-        //     if sealed_vote.was_revealed() {
-                
-        //     } else {
-        //         // return stake to voter's account
-        //         if sealed_vote.stake.refundable > T::Balance::zero() {
-        //             <balances::Module<T>>::
-        //         }
-
-        //         // return transferred stake to available stake
-        //         if sealed_vote.stake.transferred > T::Balance::zero() {
-
-        //         }
-
-        //         // remove vote
-        //         <Votes<T>>::remove(commitment);
-        //     }
-        // }
-
-        Ok(())
+        // clear snapshot
     }
+
+    fn refund_applicant_stakes(new_council: &BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>>) {
+        for applicant in Self::applicants().iter() {
+            let do_refund = match new_council.get(&applicant) {
+                Some(_) => false,
+                None => true
+            };
+
+            if do_refund {
+                Self::return_stake_to(&applicant, <ApplicantsMap<T>>::get(applicant));
+            }
+
+            <ApplicantsMap<T>>::remove(applicant);
+        }
+
+        <Applicants<T>>::kill();
+    }
+
+    fn return_stake_to(who: &T::AccountId, stake_to_return: Stake<T::Balance>) {
+        // return refundable stake to account's free balance
+        if stake_to_return.refundable > T::Balance::zero() {
+            let balance = <balances::Module<T>>::free_balance(who);
+            <balances::Module<T>>::set_free_balance(who, balance + stake_to_return.refundable);
+        }
+
+        // return unused transferable stake
+        if stake_to_return.transferred > T::Balance::zero() {
+            <AvailableBackingStakesMap<T>>::mutate(who, |stake| *stake += stake_to_return.transferred);
+        }
+    }
+
+    fn refund_voting_stakes(
+        sealed_votes: &Vec<SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>>,
+        new_council: &BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>>)
+    {
+        for sealed_vote in sealed_votes.iter() {
+            // Do a refund if commitment was not revealed or vote was for candidate that did
+            // not get elected to the council
+            let do_refund = match sealed_vote.get_vote() {
+                Some(candidate) => {
+                    match new_council.get(&candidate) {
+                        None => true,
+                        Some(_) => false
+                    }
+                },
+                None => true
+            };
+
+            if do_refund {
+                Self::return_stake_to(&sealed_vote.voter, sealed_vote.stake);
+            }
+    
+            // remove vote
+            <Votes<T>>::remove(sealed_vote.commitment);
+        }
+
+        // clear commitments
+        //<Commitments<T>>::put(Vec::new());
+        <Commitments<T>>::kill();
+    }
+
+    fn tally_votes(sealed_votes: &Vec<SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>>) -> BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>> {
+        let mut tally: BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>> = BTreeMap::new();
+
+        for sealed_vote in sealed_votes.iter() {
+            if let Some(candidate) = sealed_vote.get_vote() {
+                match tally.get(&candidate) {
+                    // Add new seat and first backer
+                    None => {
+                        let backers = [council::Backer {
+                            member: sealed_vote.voter.clone(),
+                            stake: sealed_vote.stake.total()
+                        }].to_vec();
+
+                        let seat = council::Seat {
+                            member: candidate.clone(),
+                            stake: Self::applicants_map(candidate).total(),
+                            backers: backers,
+                        };
+
+                        tally.insert(candidate.clone(), seat);
+                    },
+
+                    // Add backer to existing seat
+                    Some(_) => {
+                        if let Some(seat) = tally.get_mut(&candidate) {
+                            seat.backers.push(council::Backer {
+                                member: sealed_vote.voter.clone(),
+                                stake: sealed_vote.stake.total()
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        tally
+    }
+
+    fn filter_top_staked(tally: &mut BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>>, limit: usize) {
+        // 
+        let mut seats = Vec::new();
+
+        // is iteration deterministic???
+        for (id, seat) in tally.iter() {
+            seats.push((id.clone(), seat.total_stake()));
+        }
+
+        seats.sort_by_key(|&(_, stake)| stake); // ASC
+
+        // seats at bottom of list
+        let filtered_out_seats = &seats[0 .. seats.len() - rstd::cmp::min(limit, seats.len())];
+
+        for (id, _) in filtered_out_seats.iter() {
+            tally.remove(&id);
+        }
+    }
+
     fn tick(now: T::BlockNumber) {
         print("Election: tick");
         if let Some(stage) = Self::stage() {
