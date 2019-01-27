@@ -65,12 +65,7 @@ decl_storage! {
         AvailableCouncilStakesMap get(council_stakes): map T::AccountId => T::Balance;
 
         Applicants get(applicants): Vec<T::AccountId>;
-        ApplicantsMap get(applicants_map): map T::AccountId => Stake<T::Balance>;
-
-        // probably don't need this state we only check existance in map
-        // put in event instead good enough for ui
-        Candidates get(candidates): Vec<T::AccountId>;
-        CandidatesMap get(candidates_map): map T::AccountId => bool;
+        ApplicantStakes get(applicant_stakes): map T::AccountId => Stake<T::Balance>;
 
         Commitments get(commitments): Vec<T::Hash>;
         // simply a Yes vote for a candidate. Consider changing the vote payload to support
@@ -142,7 +137,9 @@ impl<T: Trait> Module<T> {
     }
 
     fn on_announcing_ended() {
-        if Self::applicants().len() < COUNCIL_SIZE {
+        let applicants = Self::applicants();
+
+        if applicants.len() < COUNCIL_SIZE {
             // Not enough candidates announced candidacy
             Self::move_to_announcing_stage();
         } else {
@@ -151,22 +148,33 @@ impl<T: Trait> Module<T> {
             // equal stake for bottom slot - order in applicants vector.
             // This is highly ineffieicent (cloning ApplicationId twice)
             // using functional style should help
-            let mut applicants = Vec::new();
-            for applicant in Self::applicants().iter() {
-                let stake = Self::applicants_map(applicant);
-                applicants.push((applicant.clone(), stake));
+            let mut sorted_applicants = Vec::new();
+            for applicant in applicants.iter() {
+                let stake = Self::applicant_stakes(applicant);
+                sorted_applicants.push((applicant, stake));
             }
 
-            applicants.sort_by_key(|&(_, stake)| stake); // ASC or DESC ?
-            applicants.reverse(); // If ASC
-            applicants.truncate(CANDIDACY_LIMIT);
+            sorted_applicants.sort_by_key(|&(_, stake)| stake); // ASC or DESC ?
 
-            let mut candidates: Vec<T::AccountId> = Vec::new();
-            for (applicant, _) in applicants.iter() {
-                <CandidatesMap<T>>::insert(applicant, true);
-                candidates.push(applicant.clone());
+            let bottom_applicants = &sorted_applicants[0 .. sorted_applicants.len() - COUNCIL_SIZE];
+            let candidates = &sorted_applicants[sorted_applicants.len() - COUNCIL_SIZE..];
+
+            for (applicant, stake) in bottom_applicants.iter() {
+                // refund applicants
+                Self::return_stake_to(applicant, *stake);
+                // remove applicant
+                <ApplicantStakes<T>>::remove(*applicant);
+                //applicants.remove_item(applicant); // unstable feature
+
             }
-            <Candidates<T>>::put(candidates);
+
+            let mut updated_candidates = Vec::new();
+            for (applicant,_) in candidates.iter() {
+                updated_candidates.push(*applicant);
+            }
+
+            <Applicants<T>>::put(updated_candidates);
+            
             Self::move_to_voting_stage();
         }
     }
@@ -207,13 +215,13 @@ impl<T: Trait> Module<T> {
         // Is a candidate with some votes but less total stake than another candidate with zero votes
         // more qualified to be on the council?
         // Consider implications - if a council can be formed purely by staking are we fine with that?
-        for candidate in Self::candidates() {
+        for candidate in Self::applicants() {
            match new_council.get(&candidate) {
                 Some(_) => (),
                 None => {
                     new_council.insert(candidate.clone(), council::Seat {
                         member: candidate.clone(),
-                        stake: Self::applicants_map(candidate).total(),
+                        stake: Self::applicant_stakes(candidate).total(),
                         backers: Vec::new(),
                     });
                 }
@@ -244,7 +252,6 @@ impl<T: Trait> Module<T> {
         Self::refund_voting_stakes(&votes, &new_council);
         Self::refund_applicant_stakes(&new_council);
         Self::refund_unused_transferable_stakes();
-
         <ElectionStage<T>>::kill();
 
         <council::Module<T>>::set_council(&new_council);
@@ -284,10 +291,10 @@ impl<T: Trait> Module<T> {
             };
 
             if do_refund {
-                Self::return_stake_to(&applicant, <ApplicantsMap<T>>::get(applicant));
+                Self::return_stake_to(&applicant, <ApplicantStakes<T>>::get(applicant));
             }
 
-            <ApplicantsMap<T>>::remove(applicant);
+            <ApplicantStakes<T>>::remove(applicant);
         }
 
         <Applicants<T>>::kill();
@@ -351,7 +358,7 @@ impl<T: Trait> Module<T> {
 
                         let seat = council::Seat {
                             member: candidate.clone(),
-                            stake: Self::applicants_map(candidate).total(),
+                            stake: Self::applicant_stakes(candidate).total(),
                             backers: backers,
                         };
 
@@ -445,9 +452,9 @@ impl<T: Trait> Module<T> {
     }
 
     fn try_add_applicant(applicant: T::AccountId, stake: T::Balance) -> Result {
-        let applicant_stake = match <ApplicantsMap<T>>::exists(&applicant) {
+        let applicant_stake = match <ApplicantStakes<T>>::exists(&applicant) {
             false => Default::default(), //zero
-            true => <ApplicantsMap<T>>::get(&applicant)
+            true => <ApplicantStakes<T>>::get(&applicant)
         };
 
         let applicant_has_council_stake = <AvailableCouncilStakesMap<T>>::exists(&applicant);
@@ -491,11 +498,11 @@ impl<T: Trait> Module<T> {
             <AvailableCouncilStakesMap<T>>::insert(&applicant, transferable_stake - new_stake.transferred);
         }
        
-        if !<ApplicantsMap<T>>::exists(&applicant) {
+        if !<ApplicantStakes<T>>::exists(&applicant) {
             <Applicants<T>>::mutate(|applicants| applicants.push(applicant.clone()));
         }
 
-        <ApplicantsMap<T>>::insert(applicant.clone(), total_stake);
+        <ApplicantStakes<T>>::insert(applicant.clone(), total_stake);
 
         Ok(())
     }
@@ -544,7 +551,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn try_reveal_vote(voter: T::AccountId, commitment: T::Hash, candidate: T::AccountId, salt: Vec<u8>) -> Result {
-        if !<CandidatesMap<T>>::exists(&candidate) {
+        if !<ApplicantStakes<T>>::exists(&candidate) {
             return Err("vote for non-candidate not allowed");
         }
 

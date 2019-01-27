@@ -56,7 +56,7 @@ decl_module! {
     }
 }
 
-// Tests
+/* Tests
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -118,7 +118,6 @@ mod tests {
 	}
 	type Governance = Module<Test>;
 
-	/*
 	// This function basically just builds a genesis storage key/value store according to
 	// our desired mockup.
 	fn new_test_ext() -> sr_io::TestExternalities<Blake2Hasher> {
@@ -135,5 +134,5 @@ mod tests {
 			assert_eq!(Governance::something(), Some(42));
 		});
 	}
-	*/
 }
+*/
