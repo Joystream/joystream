@@ -18,18 +18,17 @@ impl<Balance> Stake<Balance>
         self.refundable + self.transferred
     }
 
-    pub fn checked_add(&self, v: &Self) -> Option<Self> {
-        if let Some(refundable) = self.refundable.checked_add(&v.refundable) {
-            if let Some(transferred) = self.transferred.checked_add(&v.transferred) {
-                return Some(Self {
-                    refundable,
-                    transferred
-                })
-            }
-        }
-
-        None
-    }
+    // pub fn checked_add(&self, v: &Self) -> Option<Self> {
+    //     if let Some(refundable) = self.refundable.checked_add(&v.refundable) {
+    //         if let Some(transferred) = self.transferred.checked_add(&v.transferred) {
+    //             return Some(Self {
+    //                 refundable,
+    //                 transferred
+    //             })
+    //         }
+    //     }
+    //     None
+    // }
 
     pub fn add(&self, v: &Self) -> Self {
         Self {
@@ -75,7 +74,7 @@ mod tests {
     }
 
     #[test]
-    fn can_add_stakes() {
+    fn adding() {
         let a1: u128 = 3; let b1: u128 = 2;
         let a2: u128 = 5; let b2: u128 = 7;
 
@@ -95,4 +94,33 @@ mod tests {
         assert_eq!(sum.transferred, 9);
     }
 
+    #[test]
+    fn equality(){
+        let a1: u128 = 3; let b1: u128 = 2;
+        let a2: u128 = 2; let b2: u128 = 3;
+        let a3: u128 = 10; let b3: u128 = 10;
+
+        let s1 = Stake {
+            refundable: a1,
+            transferred: b1,
+        };
+
+        let s2 = s1;
+
+        assert_eq!(s1, s2);
+
+        let s3 = Stake {
+            refundable: a2,
+            transferred: b2,
+        };
+        
+        assert_eq!(s1, s3);
+
+        let s4 = Stake {
+            refundable: a3,
+            transferred: b3,
+        };
+
+        assert_ne!(s1, s4);
+    }
 }

@@ -641,8 +641,12 @@ mod tests {
     #[test]
     fn election_starts_if_not_started() {
         with_externalities(&mut initial_test_ext(), || {
-            assert_eq!(Election::round(), 0);
             System::set_block_number(1);
+
+            assert!(Council::term_ended(1));
+            assert!(Council::council().is_none());
+            assert!(Election::stage().is_none());
+            assert_eq!(Election::round(), 0);
 
             assert!(Election::start_election().is_ok());
 
@@ -657,11 +661,15 @@ mod tests {
 
             if let Some(election_stage) = Election::stage() {
                 match election_stage {
-                    election::Stage::Announcing(period) => assert_eq!(period, expected_period),
-                    _ => assert!(false)
+                    election::Stage::Announcing(period) => {
+                        assert_eq!(period, expected_period, "Election period not set correctly")
+                    }
+                    _ => {
+                        assert!(false, "Election Stage was not correctly set to Announcing")
+                    }
                 }
             } else {
-                assert!(false);
+                assert!(false, "Election Stage was not set");
             }
         });
     }
