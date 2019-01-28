@@ -170,7 +170,7 @@ impl<T: Trait> Module<T> {
 
             let mut updated_candidates = Vec::new();
             for (applicant,_) in candidates.iter() {
-                updated_candidates.push(*applicant);
+                updated_candidates.push((*applicant).clone());
             }
 
             <Applicants<T>>::put(updated_candidates);
