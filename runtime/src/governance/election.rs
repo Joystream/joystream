@@ -26,7 +26,7 @@ pub trait Trait: system::Trait + council::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
-#[derive(Clone, Copy, Encode, Decode)]
+#[derive(Clone, Copy, Encode, Decode, PartialEq, Debug)]
 pub struct Period<T: PartialOrd + PartialEq + Copy> {
     pub starts: T,
     pub ends: T
@@ -39,7 +39,7 @@ pub enum Stage<T: PartialOrd + PartialEq + Copy> {
     Revealing(Period<T>),
 }
 
-const ANNOUNCING_PERIOD:u64 = 20;
+pub const ANNOUNCING_PERIOD:u64 = 20;
 const VOTING_PERIOD:u64 = 20;
 const REVEALING_PERIOD:u64 = 20;
 const COUNCIL_SIZE: usize = 10;

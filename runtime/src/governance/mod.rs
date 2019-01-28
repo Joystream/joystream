@@ -82,7 +82,7 @@ pub mod tests {
 
     // This function basically just builds a genesis storage key/value store according to
     // our desired mockup.
-    fn new_test_ext() -> sr_io::TestExternalities<Blake2Hasher> {
+    fn  initial_test_ext() -> sr_io::TestExternalities<Blake2Hasher> {
         let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
         /*
         t.extend(governance::GenesisConfig::<Test>{
@@ -93,13 +93,36 @@ pub mod tests {
     }
 
     #[test]
-    fn it_works_for_default_value() {
-        with_externalities(&mut new_test_ext(), || {
-            assert!(true);
+    fn election_starts() {
+        with_externalities(&mut initial_test_ext(), || {
+            assert_eq!(Election::round(), 0);
+            System::set_block_number(1);
+
+            assert!(Election::start_election().is_ok());
+
+            // election round is bumped
+            assert_eq!(Election::round(), 1);
+
+            // we enter the announcing stage for a specified period
+            let expected_period = election::Period {
+                starts: 1,
+                ends: 1 + election::ANNOUNCING_PERIOD
+            };
+
+            if let Some(election_stage) = Election::stage() {
+                match election_stage {
+                    election::Stage::Announcing(period) => assert_eq!(period, expected_period),
+                    _ => assert!(false)
+                }
+            } else {
+                assert!(false);
+            }
         });
     }
 
     pub type Governance = Module<Test>;
+    pub type Election = election::Module<Test>;
+    pub type Council = council::Module<Test>;
 	pub type System = system::Module<Test>;
 	pub type Balances = balances::Module<Test>;
 }
