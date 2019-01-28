@@ -1,18 +1,18 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use srml_support::inherent::cmp::Ordering;
-use runtime_primitives::traits::{SimpleArithmetic, Zero};
+use runtime_primitives::traits::{SimpleArithmetic};
 
-#[derive(Clone, Copy, Encode, Decode, Default)]
-pub struct Stake<Balance> 
-    where Balance: Copy + SimpleArithmetic + Zero,
+#[derive(Encode, Decode, Clone, Copy, Default, Debug)]
+pub struct Stake<Balance>
+    where Balance: Copy + SimpleArithmetic,
 {
     pub refundable: Balance,
     pub transferred: Balance,
 }
 
 impl<Balance> Stake<Balance>
-    where Balance: Copy + SimpleArithmetic + Zero,
+    where Balance: Copy + SimpleArithmetic,
 {
     pub fn total(&self) -> Balance {
         self.refundable + self.transferred
@@ -39,22 +39,60 @@ impl<Balance> Stake<Balance>
     }
 }
 
-impl<T: Copy + SimpleArithmetic + Zero> PartialOrd for Stake<T> {
+impl<T: Copy + SimpleArithmetic> PartialOrd for Stake<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(&other))
     }
 }
 
-impl<T: Copy + SimpleArithmetic + Zero> Ord for Stake<T> {
+impl<T: Copy + SimpleArithmetic> Ord for Stake<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.total().cmp(&other.total())
     }
 }
 
-impl<T: Copy + SimpleArithmetic + Zero> PartialEq for Stake<T> {
+impl<T: Copy + SimpleArithmetic> PartialEq for Stake<T> {
     fn eq(&self, other: &Self) -> bool {
         self.total() == other.total()
     }
 }
 
-impl<T: Copy + SimpleArithmetic + Zero> Eq for Stake<T> {}
+impl<T: Copy + SimpleArithmetic> Eq for Stake<T> {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn total() {
+        let a: u128 = 4;
+        let b: u128 = 5;
+        let s = Stake {
+            refundable: a,
+            transferred: b,
+        };
+        assert_eq!(a + b, s.total());
+    }
+
+    #[test]
+    fn can_add_stakes() {
+        let a1: u128 = 3; let b1: u128 = 2;
+        let a2: u128 = 5; let b2: u128 = 7;
+
+        let s1 = Stake {
+            refundable: a1,
+            transferred: b1,
+        };
+
+        let s2 = Stake {
+            refundable: a2,
+            transferred: b2,
+        };
+
+        let sum = s1.add(&s2);
+
+        assert_eq!(sum.refundable, 8);
+        assert_eq!(sum.transferred, 9);
+    }
+
+}
