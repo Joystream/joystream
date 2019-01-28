@@ -11,7 +11,7 @@ extern crate parity_codec as codec;
 extern crate srml_system as system;
 
 use srml_support::{StorageValue, StorageMap, dispatch::Result};
-use runtime_primitives::traits::{Hash, As, Zero};
+use runtime_primitives::traits::{Hash, As, Zero, SimpleArithmetic};
 use {balances, system::{ensure_signed}};
 use runtime_io::print;
 use srml_support::dispatch::Vec;
@@ -39,8 +39,6 @@ pub enum Stage<T: PartialOrd + PartialEq + Copy> {
     Revealing(Period<T>),
 }
 
-type Round = u32; // should go in the Trait? - only if it needs to configurabel
-
 const ANNOUNCING_PERIOD:u64 = 20;
 const VOTING_PERIOD:u64 = 20;
 const REVEALING_PERIOD:u64 = 20;
@@ -54,7 +52,7 @@ decl_storage! {
         ElectionStage get(stage): Option<Stage<T::BlockNumber>>;
 
         // The election round
-        ElectionRound get(round): Round = 0;
+        ElectionRound get(round): u32;
 
         // map doesn't have a clear() method so need to keep track of keys to know 
         // what keys to delete later < if council is not modified during election
@@ -78,14 +76,14 @@ decl_storage! {
 decl_event!(
 	pub enum Event<T> where <T as system::Trait>::BlockNumber {
 		/// A new election started
-		ElectionStarted(BlockNumber),
-        AnnouncingStarted(Round),
+        AnnouncingStarted(u32),
         AnnouncingEnded(),
         VotingStarted(),
         VotingEnded(),
         RevealingStarted(),
         RevealingEnded(),
         ElectionCompleted(),
+        Dummy(BlockNumber),
 	}
 );
 
@@ -99,7 +97,6 @@ impl<T: Trait> Module<T> {
         let current_block = <system::Module<T>>::block_number();
     
         if <council::Module<T>>::term_ended(current_block) {
-            Self::deposit_event(RawEvent::ElectionStarted(current_block));
             // take snapshot of council and backing stakes
             Self::initialize_transferable_stakes();
             Self::move_to_announcing_stage();
@@ -116,7 +113,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn bump_round() -> Round {
+    fn bump_round() -> u32 {
         // bump the round number
         print("Bumping Election Round");
         <ElectionRound<T>>::mutate(|n| {
