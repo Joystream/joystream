@@ -6,8 +6,8 @@ pub trait Trait: system::Trait + council::Trait + election::Trait {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Gov {
-
+    trait Store for Module<T: Trait> as Root {
+        Dummy get(dummy) config(): u32;
     }
 }
 
@@ -19,7 +19,9 @@ decl_event!(
 );
 
 impl<T: Trait> Module<T> {
-
+    fn private_function() -> bool {
+        true
+    }
 }
 
 decl_module! {
@@ -32,5 +34,18 @@ decl_module! {
                 Self::deposit_event(RawEvent::ElectionStarted(n));
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use ::governance::tests::*;
+
+    #[test]
+    fn can_test_private_function() {
+        with_externalities(&mut initial_test_ext(), || {
+            assert!(Governance::private_function());
+        });
     }
 }

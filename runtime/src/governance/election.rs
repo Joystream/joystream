@@ -40,11 +40,11 @@ pub enum Stage<T: PartialOrd + PartialEq + Copy> {
 }
 
 pub const ANNOUNCING_PERIOD:u64 = 20;
-const VOTING_PERIOD:u64 = 20;
-const REVEALING_PERIOD:u64 = 20;
-const COUNCIL_SIZE: usize = 10;
-const CANDIDACY_LIMIT: usize = 20;
-const COUNCIL_MIN_STAKE: u64 = 100;
+pub const VOTING_PERIOD:u64 = 20;
+pub const REVEALING_PERIOD:u64 = 20;
+pub const COUNCIL_SIZE: usize = 10;
+pub const CANDIDACY_LIMIT: usize = 20;
+pub const COUNCIL_MIN_STAKE: u64 = 100;
 
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilElection {
@@ -630,5 +630,39 @@ decl_module! {
 
         // fn withdraw_candidacy()
         // fn withdraw_vote()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use ::governance::tests::*;
+
+    #[test]
+    fn election_starts_if_not_started() {
+        with_externalities(&mut initial_test_ext(), || {
+            assert_eq!(Election::round(), 0);
+            System::set_block_number(1);
+
+            assert!(Election::start_election().is_ok());
+
+            // election round is bumped
+            assert_eq!(Election::round(), 1);
+
+            // we enter the announcing stage for a specified period
+            let expected_period = election::Period {
+                starts: 1,
+                ends: 1 + election::ANNOUNCING_PERIOD
+            };
+
+            if let Some(election_stage) = Election::stage() {
+                match election_stage {
+                    election::Stage::Announcing(period) => assert_eq!(period, expected_period),
+                    _ => assert!(false)
+                }
+            } else {
+                assert!(false);
+            }
+        });
     }
 }

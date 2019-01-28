@@ -93,3 +93,16 @@ decl_module! {
         fn deposit_event<T>() = default;
     }
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use ::governance::tests::*;
+
+    #[test]
+    fn dummy() {
+        with_externalities(&mut initial_test_ext(), || {
+            assert!(true);
+        });
+    }
+}

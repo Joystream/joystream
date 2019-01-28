@@ -12,23 +12,20 @@ extern crate srml_system as system;
 
 pub mod election;
 pub mod council;
-pub mod governance;
+pub mod root;
 
 mod transferable_stake;
 mod sealed_vote;
-
-pub use self::governance::{Trait, Module, RawEvent, Event};
 
 #[cfg(test)]
 pub mod tests {
     pub use super::*;
 
-    use self::sr_io::with_externalities;
-    use self::substrate_primitives::{H256, Blake2Hasher};
-    use self::sr_primitives::{
+    pub use self::sr_io::with_externalities;
+    pub use self::substrate_primitives::{H256, Blake2Hasher};
+    pub use self::sr_primitives::{
         BuildStorage, traits::BlakeTwo256, traits::IdentityLookup, testing::{Digest, DigestItem, Header}
     };
-
 
     impl_outer_origin! {
         pub enum Origin for Test {}
@@ -76,51 +73,24 @@ pub mod tests {
         /// A function that returns true iff a given account can transfer its funds to another account.
         type EnsureAccountLiquid = ();
     }
-    impl governance::Trait for Test {
+    impl root::Trait for Test {
         type Event = ();
     }
 
     // This function basically just builds a genesis storage key/value store according to
     // our desired mockup.
-    fn  initial_test_ext() -> sr_io::TestExternalities<Blake2Hasher> {
+    pub fn  initial_test_ext() -> sr_io::TestExternalities<Blake2Hasher> {
         let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
-        /*
-        t.extend(governance::GenesisConfig::<Test>{
-            //items
+
+        t.extend(root::GenesisConfig::<Test> {
+            dummy: 0,
+            _genesis_phantom_data: Default::default(),
         }.build_storage().unwrap().0);
-        */
+
         runtime_io::TestExternalities::new(t)
     }
 
-    #[test]
-    fn election_starts() {
-        with_externalities(&mut initial_test_ext(), || {
-            assert_eq!(Election::round(), 0);
-            System::set_block_number(1);
-
-            assert!(Election::start_election().is_ok());
-
-            // election round is bumped
-            assert_eq!(Election::round(), 1);
-
-            // we enter the announcing stage for a specified period
-            let expected_period = election::Period {
-                starts: 1,
-                ends: 1 + election::ANNOUNCING_PERIOD
-            };
-
-            if let Some(election_stage) = Election::stage() {
-                match election_stage {
-                    election::Stage::Announcing(period) => assert_eq!(period, expected_period),
-                    _ => assert!(false)
-                }
-            } else {
-                assert!(false);
-            }
-        });
-    }
-
-    pub type Governance = Module<Test>;
+    pub type Governance = root::Module<Test>;
     pub type Election = election::Module<Test>;
     pub type Council = council::Module<Test>;
 	pub type System = system::Module<Test>;

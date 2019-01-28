@@ -34,7 +34,7 @@ extern crate srml_indices as indices;
 extern crate substrate_consensus_aura_primitives as consensus_aura;
 
 mod governance;
-use governance::{election, council};
+use governance::{election, council, root};
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -225,6 +225,7 @@ construct_runtime!(
 		Sudo: sudo,
 		Proposals: proposals::{Module, Call, Storage, Event<T>},
 		Governance: governance::{Module, Call, Storage, Event<T>},
+		Governance: root::{Module, Call, Storage, Event<T>},
 		CouncilElection: election::{Module, Call, Storage, Event<T>},
 		Council: council::{Module, Call, Storage, Event<T>},
 	}
