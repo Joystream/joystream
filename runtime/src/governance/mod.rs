@@ -56,15 +56,15 @@ decl_module! {
     }
 }
 
-/* Tests
+// Tests
 #[cfg(test)]
-mod tests {
+pub mod tests {
 	use super::*;
 
 	use self::sr_io::with_externalities;
 	use self::substrate_primitives::{H256, Blake2Hasher};
 	use self::sr_primitives::{
-		BuildStorage, traits::BlakeTwo256, testing::{Digest, DigestItem, Header}
+		BuildStorage, traits::BlakeTwo256, traits::IdentityLookup, testing::{Digest, DigestItem, Header}
 	};
 
 	impl_outer_origin! {
@@ -87,7 +87,7 @@ mod tests {
 		type Header = Header;
 		type Event = ();
 		type Log = DigestItem;
-		// type Lookup = ();   // StaticLookup<Target = Self::AccountId>;
+		type Lookup = IdentityLookup<u64>;
 	}
     impl council::Trait for Test {
         type Event = ();
@@ -116,23 +116,26 @@ mod tests {
 	impl Trait for Test {
 		type Event = ();
 	}
-	type Governance = Module<Test>;
+
+	type gov = Module<Test>;
 
 	// This function basically just builds a genesis storage key/value store according to
 	// our desired mockup.
 	fn new_test_ext() -> sr_io::TestExternalities<Blake2Hasher> {
+		runtime_io::TestExternalities::new(system::GenesisConfig::<Test>::default().build_storage().unwrap().0)
+		/*
 		let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap();
-		t.extend(GenesisConfig::<Test>{
+		t.extend(gov::GenesisConfig::<Test> {
 			something: 42,
-		}.build_storage().unwrap());
+		}.build_storage().unwrap().0);
 		t.into()
+		*/
 	}
 
 	#[test]
 	fn it_works_for_default_value() {
 		with_externalities(&mut new_test_ext(), || {
-			assert_eq!(Governance::something(), Some(42));
+			assert_eq!(gov::something(), Some(42)); // this should fail!
 		});
 	}
 }
-*/
