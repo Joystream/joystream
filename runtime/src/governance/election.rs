@@ -148,33 +148,35 @@ impl<T: Trait> Module<T> {
             // equal stake for bottom slot - order in applicants vector.
             // This is highly ineffieicent (cloning ApplicationId twice)
             // using functional style should help
-            let mut sorted_applicants = Vec::new();
-            for applicant in applicants.iter() {
-                let stake = Self::applicant_stakes(applicant);
-                sorted_applicants.push((applicant, stake));
+            if applicants.len() > CANDIDACY_LIMIT {
+                let mut sorted_applicants = Vec::new();
+                for applicant in applicants.iter() {
+                    let stake = Self::applicant_stakes(applicant);
+                    sorted_applicants.push((applicant, stake));
+                }
+
+                sorted_applicants.sort_by_key(|&(_, stake)| stake); // ASC or DESC ?
+
+                let bottom_applicants = &sorted_applicants[0 .. sorted_applicants.len() - CANDIDACY_LIMIT];
+                let candidates = &sorted_applicants[sorted_applicants.len() - CANDIDACY_LIMIT..];
+
+                for (applicant, stake) in bottom_applicants.iter() {
+                    // refund applicants
+                    Self::return_stake_to(applicant, *stake);
+                    // remove applicant
+                    <ApplicantStakes<T>>::remove(*applicant);
+                    //applicants.remove_item(applicant); // unstable feature
+
+                }
+
+                let mut updated_candidates = Vec::new();
+                for (applicant,_) in candidates.iter() {
+                    updated_candidates.push((*applicant).clone());
+                }
+
+                <Applicants<T>>::put(updated_candidates);
             }
 
-            sorted_applicants.sort_by_key(|&(_, stake)| stake); // ASC or DESC ?
-
-            let bottom_applicants = &sorted_applicants[0 .. sorted_applicants.len() - COUNCIL_SIZE];
-            let candidates = &sorted_applicants[sorted_applicants.len() - COUNCIL_SIZE..];
-
-            for (applicant, stake) in bottom_applicants.iter() {
-                // refund applicants
-                Self::return_stake_to(applicant, *stake);
-                // remove applicant
-                <ApplicantStakes<T>>::remove(*applicant);
-                //applicants.remove_item(applicant); // unstable feature
-
-            }
-
-            let mut updated_candidates = Vec::new();
-            for (applicant,_) in candidates.iter() {
-                updated_candidates.push((*applicant).clone());
-            }
-
-            <Applicants<T>>::put(updated_candidates);
-            
             Self::move_to_voting_stage();
         }
     }
