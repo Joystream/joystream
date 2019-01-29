@@ -43,7 +43,7 @@ pub const ANNOUNCING_PERIOD:u64 = 20;
 pub const VOTING_PERIOD:u64 = 20;
 pub const REVEALING_PERIOD:u64 = 20;
 pub const COUNCIL_SIZE: usize = 10;
-pub const CANDIDACY_LIMIT: usize = 20;
+pub const CANDIDACY_LIMIT: usize = 20; // should be greater than COUNCIL_SIZE
 pub const COUNCIL_MIN_STAKE: u64 = 100;
 
 decl_storage! {
@@ -122,7 +122,7 @@ impl<T: Trait> Module<T> {
         })
     }
 
-    fn move_to_announcing_stage() {
+    fn move_to_announcing_stage() -> Period<T::BlockNumber> {
         let period = Self::new_period(T::BlockNumber::sa(ANNOUNCING_PERIOD));
 
         <ElectionStage<T>>::put(Stage::Announcing(period));
@@ -131,6 +131,7 @@ impl<T: Trait> Module<T> {
 
         Self::deposit_event(RawEvent::AnnouncingStarted(next_round));
         print("Announcing Started");
+        period
     }
 
     fn on_announcing_ended() {
@@ -639,7 +640,17 @@ mod tests {
 	use ::governance::tests::*;
 
     #[test]
-    fn election_starts_if_not_started() {
+    fn default_paramas_should_work () {
+
+    }
+
+    #[test]
+    fn election_start_when_term_ends_should_work() {
+
+    }
+
+    #[test]
+    fn election_starts_only_if_not_started_should_work() {
         with_externalities(&mut initial_test_ext(), || {
             System::set_block_number(1);
 
@@ -671,6 +682,106 @@ mod tests {
             } else {
                 assert!(false, "Election Stage was not set");
             }
+
+            // Should fail to start election if already ongoing
+            assert!(Election::start_election().is_err());
         });
+    }
+
+    #[test]
+    fn init_transferable_stake_should_work () {
+
+    }
+
+    #[test]
+    fn announcing_should_work() {
+
+    }
+
+    #[test]
+    fn announcing_with_transferable_council_stake_should_work() {
+
+    }
+
+    #[test]
+    fn increasing_stake_when_announcing_should_work () {
+
+    }
+
+    #[test]
+    fn applicants_announcing_when_not_in_announcing_stage_should_not_work () {
+
+    }
+
+    #[test]
+    fn moving_to_voting_without_enough_applicants_should_not_work() {
+        with_externalities(&mut initial_test_ext(), || {
+            System::set_block_number(1);
+            let ann_period = Election::move_to_announcing_stage();
+            let round = Election::round();
+
+            System::set_block_number(ann_period.ends);
+            Election::on_announcing_ended();
+
+            // A new round should have been started
+            assert_eq!(Election::round(), round + 1);
+
+            match Election::stage() {
+                Some(stage) => {
+                    match stage {
+                        // ensure a new announcing period was created
+                        election::Stage::Announcing(period) => {
+                            assert_eq!(period.ends, ann_period.ends + election::ANNOUNCING_PERIOD, "A new announcing period should have been created");
+                        },
+                        _ => {
+                            assert!(false, "Election should have returned to announcing stage")
+                        }
+                    }
+                },
+                _ => assert!(false, "Election should not have ended")
+            }
+
+            // applicants list should be the same
+        });
+    }
+
+    #[test]
+    fn top_applicants_become_candidates_should_work() {
+
+    }
+
+    #[test]
+    fn refunding_applicant_stakes_should_work () {
+
+    }
+
+    #[test]
+    fn votes_can_be_submitted_in_voting_stage () {
+
+    }
+
+    #[test]
+    fn votes_can_be_revealed_in_revealing_stage () {
+
+    }
+
+    #[test]
+    fn invalid_votes_should_not_work () {
+
+    }
+
+    #[test]
+    fn vote_tallying_should_work () {
+
+    }
+
+    #[test]
+    fn refunding_voting_stakes_should_work () {
+
+    }
+
+    #[test]
+    fn council_is_set_after_revealing_should_work() {
+
     }
 }
