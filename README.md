@@ -7,7 +7,7 @@ Joystream node built on top of Substrate.
 Call this script once. It will init WASM environment and build a node.
 It will take some time (tens of minutes), so be patient.
 
-```sh
+```bash
 ./init.sh
 ```
 
@@ -15,13 +15,13 @@ It will take some time (tens of minutes), so be patient.
 
 Call this script every time you updated a runtime, before restarting a node.
 
-```sh
+```bash
 ./build.sh
 ```
 
 ## Start node
 
-```sh
+```bash
 ./start-node.sh
 ```
 
@@ -29,6 +29,12 @@ Call this script every time you updated a runtime, before restarting a node.
 
 It's a good practice to clean chain data after a runtime updated and you are about to restart a node.
 
-```sh
+```bash
 ./clean-chain.sh
+```
+
+## Test
+
+```bash
+./test-all.sh
 ```
