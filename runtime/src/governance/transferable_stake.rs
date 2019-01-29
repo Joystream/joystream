@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::inherent::cmp::Ordering;
+use rstd::cmp::Ordering;
 use runtime_primitives::traits::{SimpleArithmetic};
 
 #[derive(Encode, Decode, Clone, Copy, Default, Debug)]

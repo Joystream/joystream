@@ -210,6 +210,10 @@ impl governance::council::Trait for Runtime {
 	type Event = Event;
 }
 
+impl governance::root::Trait for Runtime {
+	type Event = Event;
+}
+
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, Ed25519AuthorityId>) where
 		Block = Block,
@@ -224,7 +228,6 @@ construct_runtime!(
 		Balances: balances,
 		Sudo: sudo,
 		Proposals: proposals::{Module, Call, Storage, Event<T>},
-		Governance: governance::{Module, Call, Storage, Event<T>},
 		Governance: root::{Module, Call, Storage, Event<T>},
 		CouncilElection: election::{Module, Call, Storage, Event<T>},
 		Council: council::{Module, Call, Storage, Event<T>},
