@@ -18,22 +18,22 @@ exit-future = "0.1"
 parking_lot = "0.4"
 hex-literal = "0.1"
 slog = "^2"
-parity-codec = { version = "2.1" }
-trie-root = { git = "https://github.com/paritytech/trie" }
-sr-io = { git = "https://github.com/paritytech/substrate" }
-sr-primitives = { git = "https://github.com/paritytech/substrate" }
-substrate-cli = { git = "https://github.com/paritytech/substrate" }
-substrate-primitives = { git = "https://github.com/paritytech/substrate" }
-substrate-executor = { git = "https://github.com/paritytech/substrate" }
-substrate-service = { git = "https://github.com/paritytech/substrate" }
-substrate-transaction-pool = { git = "https://github.com/paritytech/substrate" }
-substrate-network = { git = "https://github.com/paritytech/substrate" }
-substrate-consensus-aura = { git = "https://github.com/paritytech/substrate" }
-substrate-client = { git = "https://github.com/paritytech/substrate", default-features = false }
-substrate-finality-grandpa = { git = "https://github.com/paritytech/substrate" }
-substrate-basic-authorship = { git = "https://github.com/paritytech/substrate" }
+parity-codec = { version = "2.2" }
+trie-root = { git = "https://github.com/paritytech/trie", rev = "2616db2a" }
+sr-io = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5" }
+substrate-cli = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5" }
+substrate-primitives = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5" }
+substrate-executor = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5" }
+substrate-service = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5" }
+substrate-inherents = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5" }
+substrate-transaction-pool = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5" }
+substrate-network = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5" }
+substrate-consensus-aura = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5" }
+substrate-client = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5", default-features = false }
+substrate-finality-grandpa = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5" }
+substrate-basic-authorship = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5" }
 joystream-node-runtime = { path = "runtime" }
-node-executor = { git = "https://github.com/paritytech/substrate" }
+node-executor = { git = "https://github.com/paritytech/substrate", rev = "53bf81e5" }
 structopt = "0.2.13"
 
 [build-dependencies]

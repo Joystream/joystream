@@ -15,7 +15,7 @@ use node_executor;
 use consensus::{import_queue, start_aura, AuraImportQueue, SlotDuration, NothingExtra};
 use client;
 use primitives::ed25519::Pair;
-use runtime_primitives::BasicInherentData as InherentData;
+use inherents::InherentDataProviders;
 
 pub use substrate_executor::NativeExecutor;
 // Our native executor instance.
@@ -25,6 +25,18 @@ native_executor_instance!(
 	joystream_node_runtime::native_version,
 	include_bytes!("../runtime/wasm/target/wasm32-unknown-unknown/release/joystream_node_runtime.compact.wasm")
 );
+
+pub struct NodeConfig {
+	inherent_data_providers: InherentDataProviders,
+}
+
+impl Default for NodeConfig {
+	fn default() -> Self {
+		NodeConfig {
+			inherent_data_providers: InherentDataProviders::new(),
+		}
+	}
+}
 
 construct_simple_protocol! {
 	/// Demo protocol attachment for substrate.
@@ -42,7 +54,7 @@ construct_service_factory! {
 		LightTransactionPoolApi = transaction_pool::ChainApi<client::Client<LightBackend<Self>, LightExecutor<Self>, Block, RuntimeApi>, Block>
 			{ |config, client| Ok(TransactionPool::new(config, transaction_pool::ChainApi::new(client))) },
 		Genesis = GenesisConfig,
-		Configuration = (),
+		Configuration = NodeConfig,
 		FullService = FullComponents<Self>
 			{ |config: FactoryFullConfiguration<Self>, executor: TaskExecutor|
 				FullComponents::<Factory>::new(config, executor)
@@ -64,7 +76,8 @@ construct_service_factory! {
 						proposer,
 						service.network(),
 						service.on_exit(),
-					));
+						service.config.custom.inherent_data_providers.clone(),
+					)?);
 				}
 
 				Ok(service)
@@ -76,29 +89,27 @@ construct_service_factory! {
 			Self::Block,
 			FullClient<Self>,
 			NothingExtra,
-			::consensus::InherentProducingFn<InherentData>,
 		>
 			{ |config: &mut FactoryFullConfiguration<Self> , client: Arc<FullClient<Self>>|
-				Ok(import_queue(
+				import_queue(
 					SlotDuration::get_or_compute(&*client)?,
 					client,
 					NothingExtra,
-					::consensus::make_basic_inherent as _,
-				))
+					config.custom.inherent_data_providers.clone(),
+				).map_err(Into::into)
 			},
 		LightImportQueue = AuraImportQueue<
 			Self::Block,
 			LightClient<Self>,
 			NothingExtra,
-			::consensus::InherentProducingFn<InherentData>,
 		>
-			{ |ref mut config, client: Arc<LightClient<Self>>|
-				Ok(import_queue(
+			{ |config: &mut FactoryFullConfiguration<Self>, client: Arc<LightClient<Self>>|
+				import_queue(
 					SlotDuration::get_or_compute(&*client)?,
 					client,
 					NothingExtra,
-					::consensus::make_basic_inherent as _,
-				))
+					config.custom.inherent_data_providers.clone(),
+				).map_err(Into::into)
 			},
 	}
 }

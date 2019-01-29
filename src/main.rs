@@ -24,7 +24,7 @@ extern crate substrate_service;
 extern crate joystream_node_runtime;
 extern crate structopt;
 extern crate node_executor;
-extern crate sr_primitives as runtime_primitives;
+extern crate substrate_inherents as inherents;
 
 mod chain_spec;
 mod service;
@@ -38,8 +38,8 @@ fn run() -> cli::error::Result<()> {
 		commit: env!("VERGEN_SHA_SHORT"),
 		version: env!("CARGO_PKG_VERSION"),
 		executable_name: "joystream-node",
-		author: "Jsgenesis",
-		description: "Joystream Node",
+		author: "Jsgenesis.com",
+		description: "Joystream node built on top of Substrate",
 	};
 	cli::run(::std::env::args(), cli::Exit, version)
 }
