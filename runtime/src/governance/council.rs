@@ -71,11 +71,7 @@ decl_event!(
 
 impl<T: Trait> Module<T> {
     pub fn set_council(council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>) {
-        let mut new_council = Vec::new();
-
-        for (_, seat) in council.iter() {
-            new_council.push(seat.clone());
-        }
+        let new_council: Vec<Seat<T::AccountId, T::Balance>> = council.into_iter().map(|(_, seat)| seat.clone()).collect();
 
         <ActiveCouncil<T>>::put(new_council);
 

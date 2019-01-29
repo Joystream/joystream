@@ -135,7 +135,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn on_announcing_ended() {
-        let applicants = Self::applicants();
+        let mut applicants = Self::applicants();
 
         if applicants.len() < COUNCIL_SIZE {
             // Not enough candidates announced candidacy
@@ -147,11 +147,9 @@ impl<T: Trait> Module<T> {
             // This is highly ineffieicent (cloning ApplicationId twice)
             // using functional style should help
             if applicants.len() > CANDIDACY_LIMIT {
-                let mut sorted_applicants = Vec::new();
-                for applicant in applicants.iter() {
-                    let stake = Self::applicant_stakes(applicant);
-                    sorted_applicants.push((applicant, stake));
-                }
+                let mut sorted_applicants: Vec<(&T::AccountId, Stake<T::Balance>)> = applicants.iter()
+                    .map(|applicant| (applicant, Self::applicant_stakes(applicant)))
+                    .collect();
 
                 sorted_applicants.sort_by_key(|&(_, stake)| stake); // ASC or DESC ?
 
@@ -160,19 +158,18 @@ impl<T: Trait> Module<T> {
 
                 for (applicant, stake) in bottom_applicants.iter() {
                     // refund applicants
-                    Self::return_stake_to(applicant, *stake);
+                    Self::return_stake_to(*applicant, *stake);
                     // remove applicant
                     <ApplicantStakes<T>>::remove(*applicant);
                     //applicants.remove_item(applicant); // unstable feature
 
                 }
 
-                let mut updated_candidates = Vec::new();
-                for (applicant,_) in candidates.iter() {
-                    updated_candidates.push((*applicant).clone());
-                }
-
-                <Applicants<T>>::put(updated_candidates);
+                let candidates: Vec<T::AccountId> = candidates.into_iter()
+                    .map(|(applicant,_)| (*applicant).clone())
+                    .collect();
+                
+                <Applicants<T>>::put(candidates);
             }
 
             Self::move_to_voting_stage();
@@ -215,18 +212,18 @@ impl<T: Trait> Module<T> {
         // Is a candidate with some votes but less total stake than another candidate with zero votes
         // more qualified to be on the council?
         // Consider implications - if a council can be formed purely by staking are we fine with that?
-        for candidate in Self::applicants() {
-           match new_council.get(&candidate) {
-                Some(_) => (),
-                None => {
-                    new_council.insert(candidate.clone(), council::Seat {
-                        member: candidate.clone(),
-                        stake: Self::applicant_stakes(candidate).total(),
-                        backers: Vec::new(),
-                    });
-                }
-           }
-        }
+        let applicants = Self::applicants();
+        let not_on_council: Vec<&T::AccountId> = applicants.iter()
+            .filter(|applicant| new_council.get(applicant).is_none()).collect();
+
+        let _: Vec<()> = not_on_council.into_iter().map(|applicant| {
+            new_council.insert(applicant.clone(), council::Seat {
+                member: applicant.clone(),
+                stake: Self::applicant_stakes(applicant).total(),
+                backers: Vec::new(),
+            });
+            ()
+        }).collect();
 
         if new_council.len() == COUNCIL_SIZE {
             // all candidates in the tally will form the new council
