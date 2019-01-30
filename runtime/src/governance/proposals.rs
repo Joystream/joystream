@@ -1,6 +1,6 @@
 use srml_support::{storage, StorageValue, StorageMap, dispatch::Result};
 use primitives::{storage::well_known_keys};
-use runtime_primitives::traits::{As, Hash, CheckedAdd};
+use runtime_primitives::traits::{As, Hash, Zero, CheckedAdd};
 use runtime_io::print;
 use {balances, system::{self, ensure_signed}};
 use rstd::prelude::*;
@@ -253,9 +253,6 @@ decl_module! {
             ensure!(<Proposals<T>>::exists(proposal_id), MSG_PROPOSAL_NOT_FOUND);
             let proposal = Self::proposal(proposal_id);
 
-            // TODO fix bug? or remove this check, such as councilors can create proposals
-            ensure!(voter != proposal.proposer, MSG_CANNOT_VOTE_ON_OWN_PROPOSAL);
-
             ensure!(proposal.status == Pending, MSG_PROPOSAL_FINALIZED);
 
             let not_expired = !Self::is_voting_period_expired(proposal.proposed_on);
@@ -327,9 +324,9 @@ impl<T: Trait> Module<T> {
         <system::Module<T>>::block_number()
     }
 
+    // TODO This method should be moved to Membership module once it's created.
     pub fn is_member(sender: T::AccountId) -> bool {
-        // TODO This method should be implemented in Membership module.
-        true
+        !<balances::Module<T>>::free_balance(sender).is_zero()
     }
 
     pub fn is_councilor(sender: T::AccountId) -> bool {
@@ -730,7 +727,10 @@ mod tests {
     #[test]
     fn not_member_cannot_create_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            // TODO write test
+            // In this test a proposer has an empty balance
+            // thus he is not considered as a member.
+            assert_eq!(self::_create_default_proposal(), 
+                Err(MSG_ONLY_MEMBERS_CAN_PROPOSE));
         });
     }
 
@@ -782,8 +782,6 @@ mod tests {
                 Err(MSG_EMPTY_WASM_CODE_PROVIDED));
         });
     }
-
-    // TODO test approve auto-vote when councilor creates a proposal
 
     #[test]
     fn autovote_with_approve_when_councilor_creates_proposal() {
@@ -842,12 +840,11 @@ mod tests {
     fn not_owner_cannot_cancel_proposal() {
         with_externalities(&mut new_test_ext(), || {
             Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
-            Balances::increase_total_stake_by(INITIAL_BALANCE);
-
-            // TODO check that account is member first:
-            // assert_eq!(self::_create_proposal(
-            //     Some(NOT_MEMBER), None, None, None, None), 
-            //     Err(MSG_ONLY_MEMBERS_CAN_PROPOSE));
+            Balances::set_free_balance(&PROPOSER2, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE * 2);
+            assert_ok!(self::_create_default_proposal());
+            assert_eq!(Proposals::cancel_proposal(Origin::signed(PROPOSER2), 1), 
+                Err(MSG_YOU_DONT_OWN_THIS_PROPOSAL));
         });
     }
 
@@ -893,18 +890,29 @@ mod tests {
             Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
             Balances::increase_total_stake_by(INITIAL_BALANCE);
             assert_ok!(self::_create_default_proposal());
-
-            // TODO mock is_councilor == false for this place:
-            // assert_eq!(Proposals::vote_on_proposal(
-            //     Origin::signed(NOT_COUNCILOR), 1, Approve), 
-            //     Err(MSG_ONLY_COUNCILORS_CAN_VOTE));
+            assert_eq!(Proposals::vote_on_proposal(
+                Origin::signed(NOT_COUNCILOR), 1, Approve), 
+                Err(MSG_ONLY_COUNCILORS_CAN_VOTE));
         });
     }
 
     #[test]
-    fn councilor_cannot_vote_on_proposal_if_its_not_pending() {
+    fn councilor_cannot_vote_on_proposal_if_it_has_been_cancelled() {
         with_externalities(&mut new_test_ext(), || {
-            // TODO write test
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
+            assert_ok!(self::_create_default_proposal());
+            assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
+            assert_eq!(Proposals::vote_on_proposal(
+                Origin::signed(COUNCILOR1), 1, Approve), 
+                Err(MSG_PROPOSAL_FINALIZED));
+        });
+    }
+
+    #[test]
+    fn councilor_cannot_vote_on_proposal_if_it_has_been_filalized() {
+        with_externalities(&mut new_test_ext(), || {
+            // TODO write test: Create proposal, Approve it, Try to vote.
         });
     }
 
