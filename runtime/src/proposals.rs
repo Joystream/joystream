@@ -4,8 +4,10 @@ use runtime_io::print;
 use {balances, system::{self, ensure_signed}};
 use rstd::prelude::*;
 
-const MIN_STAKE: u64 = 100;
 const APPROVAL_QUORUM: u32 = 60;
+const MIN_STAKE: u64 = 100;
+const CANCELLATION_FEE: u64 = 5;
+const REJECTION_FEE: u64 = 10;
 
 const VOTING_PERIOD_IN_DAYS: u64 = 10;
 const VOTING_PERIOD_IN_SECS: u64 = VOTING_PERIOD_IN_DAYS * 24 * 60 * 60;
@@ -137,25 +139,29 @@ decl_storage! {
 
         // Parameters (defaut values could be exported to config):
 
+        // TODO get this value from Council or Config mudule:
         CouncilMembersCount get(council_members_count) config(): u32 = 10;
 
+        // TODO rename? 'approval_quorum' -> 'approval_quorum_per'
         /// The percentage (up to 100) of the council participants
         /// which must vote affirmatively in order for it to pass.
         ApprovalQuorum get(approval_quorum) config(): u32 = APPROVAL_QUORUM;
 
         /// Minimum balance amount to be staked in order to make a proposal.
-        MinimumStake get(minimum_stake) config(): T::Balance = T::Balance::sa(MIN_STAKE);
+        MinimumStake get(minimum_stake) config(): T::Balance = 
+            T::Balance::sa(MIN_STAKE);
 
         /// A fee to be slashed (burn) in case a proposer decides to cancel a proposal.
-        CancellationFee get(cancellation_fee) config(): T::Balance = T::Balance::sa(5);
+        CancellationFee get(cancellation_fee) config(): T::Balance = 
+            T::Balance::sa(CANCELLATION_FEE);
 
         /// A fee to be slashed (burn) in case a proposal was rejected.
-        RejectionFee get(rejection_fee) config(): T::Balance = T::Balance::sa(10);
+        RejectionFee get(rejection_fee) config(): T::Balance = 
+            T::Balance::sa(REJECTION_FEE);
 
         /// Max duration of proposal in blocks until it will be expired if not enough votes.
-        VotingPeriod get(voting_period) config(): T::BlockNumber = T::BlockNumber::sa(
-            VOTING_PERIOD_IN_SECS / <timestamp::Module<T>>::block_period().as_()
-        );
+        VotingPeriod get(voting_period) config(): T::BlockNumber = 
+            T::BlockNumber::sa(VOTING_PERIOD_IN_SECS / <timestamp::Module<T>>::block_period().as_());
 
         // Persistent state (always relevant, changes constantly):
 
@@ -536,7 +542,6 @@ mod tests {
     }
 
     type System = system::Module<Test>;
-    type Consensus = consensus::Module<Test>;
     type Balances = balances::Module<Test>;
     type Proposals = Module<Test>;
 
@@ -560,6 +565,9 @@ mod tests {
         COUNCILOR5
     ];
 
+    // Initial balance of proposer 1.
+    const INITIAL_BALANCE: u64 = (MIN_STAKE as f64 * 2.5) as u64;
+
     // This function basically just builds a genesis storage key/value store according to
     // our desired mockup.
     fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
@@ -572,8 +580,8 @@ mod tests {
             council_members_count: ALL_COUNCILORS.len() as u32,
             approval_quorum: APPROVAL_QUORUM,
             minimum_stake: MIN_STAKE,
-            cancellation_fee: 5,
-            rejection_fee: 10,
+            cancellation_fee: CANCELLATION_FEE,
+            rejection_fee: REJECTION_FEE,
             voting_period: 10
         }.build_storage().unwrap().0);
 
@@ -617,8 +625,8 @@ mod tests {
         with_externalities(&mut new_test_ext(), || {
             assert_eq!(Proposals::approval_quorum(), APPROVAL_QUORUM);
             assert_eq!(Proposals::minimum_stake(), MIN_STAKE);
-            assert_eq!(Proposals::cancellation_fee(), 5);
-            assert_eq!(Proposals::rejection_fee(), 10);
+            assert_eq!(Proposals::cancellation_fee(), CANCELLATION_FEE);
+            assert_eq!(Proposals::rejection_fee(), REJECTION_FEE);
             assert_eq!(Proposals::proposal_count(), 0);
             assert_eq!(Proposals::pending_proposal_ids().len(), 0);
         });
@@ -627,8 +635,8 @@ mod tests {
     #[test]
     fn member_create_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, 250);
-            Balances::increase_total_stake_by(250);
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
 
             assert_ok!(self::_create_default_proposal());
             assert_eq!(Proposals::pending_proposal_ids().len(), 1);
@@ -646,6 +654,10 @@ mod tests {
             };
             assert_eq!(Proposals::proposal(1), expected_proposal);
 
+            // Check that stake amount has been locked on proposer's balance:
+            assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE - MIN_STAKE);
+            assert_eq!(Balances::reserved_balance(PROPOSER1), MIN_STAKE);
+
             // TODO test event ProposalCreated(AccountId, ProposalId)
         });
     }
@@ -661,12 +673,16 @@ mod tests {
     #[test]
     fn cannot_create_proposal_with_small_stake() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, 250);
-            Balances::increase_total_stake_by(250);
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
 
             assert_eq!(self::_create_proposal(
                 None, Some(MIN_STAKE - 1), None, None, None), 
                 Err(MSG_STAKE_IS_TOO_SMALL));
+
+            // Check that balances remain unchanged afer a failed attempt to create a proposal:
+            assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE);
+            assert_eq!(Balances::reserved_balance(PROPOSER1), 0);
         });
     }
 
@@ -699,16 +715,17 @@ mod tests {
     #[test]
     fn owner_cancel_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, 250);
-            Balances::increase_total_stake_by(250);
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
 
             assert_ok!(self::_create_default_proposal());
             assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
-
-            // TODO test that balance reduced by cancellation_fee
-
             assert_eq!(Proposals::proposal(1).status, Cancelled);
             assert_eq!(Proposals::pending_proposal_ids().len(), 0);
+
+            // Check that proposer's balance reduced by cancellation fee and other part of his stake returned to his balance:
+            assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE - CANCELLATION_FEE);
+            assert_eq!(Balances::reserved_balance(PROPOSER1), 0);
             
             // TODO write test
             // TODO test event ProposalCanceled(AccountId, ProposalId)
@@ -718,22 +735,31 @@ mod tests {
     #[test]
     fn owner_cannot_cancel_proposal_if_its_finalized() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, 250);
-            Balances::increase_total_stake_by(250);
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
 
             assert_ok!(self::_create_default_proposal());
             assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
             assert_eq!(Proposals::proposal(1).status, Cancelled);
+
+            // Get balances updated after cancelling a proposal:
+            let updated_free_balance = Balances::free_balance(PROPOSER1);
+            let updated_reserved_balance = Balances::reserved_balance(PROPOSER1);
+
             assert_eq!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1), 
                 Err(MSG_PROPOSAL_FINALIZED));
+
+            // Check that proposer's balance and locked stake haven't been changed:
+            assert_eq!(Balances::free_balance(PROPOSER1), updated_free_balance);
+            assert_eq!(Balances::reserved_balance(PROPOSER1), updated_reserved_balance);
         });
     }
 
     #[test]
     fn not_owner_cannot_cancel_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, 250);
-            Balances::increase_total_stake_by(250);
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
 
             // TODO check that account is member first:
             // assert_eq!(self::_create_proposal(
@@ -748,26 +774,26 @@ mod tests {
     #[test]
     fn councilor_vote_on_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, 250);
-            Balances::increase_total_stake_by(250);
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
             assert_ok!(self::_create_default_proposal());
 
             assert_ok!(Proposals::vote_on_proposal(
                 Origin::signed(COUNCILOR1), 1, Approve));
 
+            // Check that a vote has been saved:
             assert_eq!(Proposals::votes_by_proposal(1), vec![(COUNCILOR1, Approve)]);
             assert_eq!(Proposals::vote_by_account_and_proposal((COUNCILOR1, 1)), Approve);
 
             // expect event Voted(AccountId, ProposalId, VoteKind)
-            // expect event ProposalStatusUpdated(ProposalId, ProposalStatus)
         });
     }
 
     #[test]
     fn councilor_cannot_vote_on_proposal_twice() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, 250);
-            Balances::increase_total_stake_by(250);
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
             assert_ok!(self::_create_default_proposal());
 
             assert_ok!(Proposals::vote_on_proposal(
@@ -781,8 +807,8 @@ mod tests {
     #[test]
     fn not_councilor_cannot_vote_on_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, 250);
-            Balances::increase_total_stake_by(250);
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
             assert_ok!(self::_create_default_proposal());
 
             // TODO mock is_councilor == false for this place:
@@ -805,8 +831,8 @@ mod tests {
     #[test]
     fn approve_proposal_when_all_councilors_approved_it() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, 250);
-            Balances::increase_total_stake_by(250);
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
 
             assert_ok!(self::_create_default_proposal());
 
@@ -821,6 +847,8 @@ mod tests {
             System::set_block_number(2);
             Proposals::on_finalise(2);
 
+            assert_eq!(Proposals::pending_proposal_ids().len(), 0);
+            assert_eq!(Proposals::proposal(1).status, Approved);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
                 abstentions: 0,
@@ -831,21 +859,23 @@ mod tests {
                 finalized_on: 2
             });
 
+            // Check that proposer's stake has been added back to his balance:
+            assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE);
+            assert_eq!(Balances::reserved_balance(PROPOSER1), 0);
+
             // TODO finish test:
-            // proposer's stake has been unlocked
             // runtime updated
-            // proposal's status updated to Approved
-            // expect event ProposalStatusUpdated(ProposalId, ProposalStatus)
+            // expect event ProposalStatusUpdated(1, Approved)
         });
     }
 
     #[test]
-    fn quorum_approved_proposal() {
+    fn approved_proposal_when_quorum_reached() {
         with_externalities(&mut new_test_ext(), || {
             // TODO write test
             // runtime updated
             // proposal's status updated to Approved
-            // expect event ProposalStatusUpdated(ProposalId, ProposalStatus)
+            // expect event ProposalStatusUpdated(1, Approved)
         });
     }
 
@@ -855,35 +885,65 @@ mod tests {
             // TODO write test
             // proposer's balance reduced by rejection_fee
             // proposal's status updated to Rejected
-            // expect event ProposalStatusUpdated(ProposalId, ProposalStatus)
+            // expect event ProposalStatusUpdated(1, Rejected)
         });
     }
 
     #[test]
-    fn reject_proposal_when_not_all_councilors_voted_and_quorum_not_reached() {
+    fn reject_proposal_when_voting_period_expired_and_quorum_not_reached() {
         with_externalities(&mut new_test_ext(), || {
             // TODO write test
             // proposal's status updated to Rejected
-            // expect event ProposalStatusUpdated(ProposalId, ProposalStatus)
+            // expect event ProposalStatusUpdated(1, Rejected)
         });
     }
 
     #[test]
     fn reject_proposal_when_all_councilors_rejected_it() {
         with_externalities(&mut new_test_ext(), || {
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
+
+            assert_ok!(self::_create_default_proposal());
+
+            let mut expected_votes: Vec<(u64, VoteKind)> = vec![];
+            for &councilor in ALL_COUNCILORS.iter() {
+                expected_votes.push((councilor, Reject));
+                assert_ok!(Proposals::vote_on_proposal(Origin::signed(councilor), 1, Reject));
+                assert_eq!(Proposals::vote_by_account_and_proposal((councilor, 1)), Reject);
+            }
+            assert_eq!(Proposals::votes_by_proposal(1), expected_votes);
+            
+            System::set_block_number(2);
+            Proposals::on_finalise(2);
+
+            assert_eq!(Proposals::pending_proposal_ids().len(), 0);
+            assert_eq!(Proposals::proposal(1).status, Rejected);
+            assert_eq!(Proposals::tally_results(1), TallyResult {
+                proposal_id: 1,
+                abstentions: 0,
+                approvals: 0,
+                rejections: ALL_COUNCILORS.len() as u32,
+                slashes: 0,
+                status: Rejected,
+                finalized_on: 2
+            });
+
+            // Check that proposer's balance reduced by burnt stake:
+            assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE - REJECTION_FEE);
+            assert_eq!(Balances::reserved_balance(PROPOSER1), 0);
+
             // TODO write test
             // runtime not updated
-            // proposal's status updated to Rejected
-            // expect event ProposalStatusUpdated(ProposalId, ProposalStatus)
+            // expect event ProposalStatusUpdated(1, Rejected)
         });
     }
 
     #[test]
     fn slash_proposal_when_all_councilors_slashed_it() {
         with_externalities(&mut new_test_ext(), || {
-
-            Balances::set_free_balance(&PROPOSER1, 250);
-            Balances::increase_total_stake_by(250);
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
 
             assert_ok!(self::_create_default_proposal());
 
@@ -898,6 +958,8 @@ mod tests {
             System::set_block_number(2);
             Proposals::on_finalise(2);
 
+            assert_eq!(Proposals::pending_proposal_ids().len(), 0);
+            assert_eq!(Proposals::proposal(1).status, Slashed);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
                 abstentions: 0,
@@ -908,13 +970,13 @@ mod tests {
                 finalized_on: 2
             });
 
-            assert_eq!(Proposals::proposal(1).status, Slashed);
+            // Check that proposer's balance reduced by burnt stake:
+            assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE - MIN_STAKE);
+            assert_eq!(Balances::reserved_balance(PROPOSER1), 0);
 
-            // TODO write test
-            // proposer's balance reduced by stake amount
+            // TODO finsih test
             // runtime not updated
-            // proposal's status updated to Slashed
-            // expect event ProposalStatusUpdated(ProposalId, ProposalStatus)
+            // expect event ProposalStatusUpdated(1, Slashed)
         });
     }
 }
