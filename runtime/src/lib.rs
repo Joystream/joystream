@@ -212,6 +212,8 @@ impl governance::council::Trait for Runtime {
 
 impl governance::root::Trait for Runtime {
 	type Event = Event;
+
+	type TriggerElection = (CouncilElection,);
 }
 
 construct_runtime!(

@@ -75,6 +75,8 @@ pub mod tests {
     }
     impl root::Trait for Test {
         type Event = ();
+
+        type TriggerElection = (Election,);
     }
 
     // This function basically just builds a genesis storage key/value store according to

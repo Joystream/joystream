@@ -21,6 +21,7 @@ use rstd::collections::btree_map::BTreeMap;
 use super::transferable_stake::Stake;
 use super::council;
 use super::sealed_vote::SealedVote;
+use super::root;
 
 pub trait Trait: system::Trait + council::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -87,9 +88,8 @@ decl_event!(
 	}
 );
 
-
-impl<T: Trait> Module<T> {
-    pub fn start_election() -> Result {
+impl<T: Trait> root::TriggerElection for Module<T> {
+    fn trigger_election() -> Result {
         if Self::stage().is_some() {
             return Err("election in progress")
         }
@@ -104,7 +104,9 @@ impl<T: Trait> Module<T> {
 
         Ok(())
     }
+}
 
+impl<T: Trait> Module<T> {
     fn new_period(length: T::BlockNumber) -> Period<T::BlockNumber> {
         let current_block = <system::Module<T>>::block_number();
         Period {
@@ -656,7 +658,7 @@ mod tests {
             assert!(Election::stage().is_none());
             assert_eq!(Election::round(), 0);
 
-            assert!(Election::start_election().is_ok());
+            assert!(<Election as root::TriggerElection>::trigger_election().is_ok());
 
             // election round is bumped
             assert_eq!(Election::round(), 1);
@@ -681,7 +683,7 @@ mod tests {
             }
 
             // Should fail to start election if already ongoing
-            assert!(Election::start_election().is_err());
+            assert!(<Election as root::TriggerElection>::trigger_election().is_err());
         });
     }
 
