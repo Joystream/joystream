@@ -80,4 +80,14 @@ mod tests {
             assert!(Election::stage().is_some());
         });
     }
+
+    #[test]
+    fn start_election_if_election_running_should_fail() {
+        with_externalities(&mut initial_test_ext(), || {
+            assert!(<Test as root::Trait>::TriggerElection::trigger_election(None).is_ok());
+
+            // Should fail to start election if already ongoing
+            assert!(<Test as root::Trait>::TriggerElection::trigger_election(None).is_err());
+        });
+    }
 }

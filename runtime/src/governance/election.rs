@@ -664,24 +664,16 @@ mod tests {
     }
 
     #[test]
-    fn election_start_when_term_ends_should_work() {
-
-    }
-
-    #[test]
-    fn election_starts_only_if_not_started_should_work() {
+    fn start_election_should_work() {
         with_externalities(&mut initial_test_ext(), || {
             System::set_block_number(1);
+            
+            let prev_round = Election::round();
 
-            assert!(Council::term_ended(1));
-            assert!(Council::council().is_none());
-            assert!(Election::stage().is_none());
-            assert_eq!(Election::round(), 0);
-
-            assert!(<Test as root::Trait>::TriggerElection::trigger_election(None).is_ok());
+            Election::start_election(None);
 
             // election round is bumped
-            assert_eq!(Election::round(), 1);
+            assert_eq!(Election::round(), prev_round + 1);
 
             // we enter the announcing stage for a specified period
             let expected_period = election::Period {
@@ -702,8 +694,6 @@ mod tests {
                 assert!(false, "Election Stage was not set");
             }
 
-            // Should fail to start election if already ongoing
-            assert!(<Test as root::Trait>::TriggerElection::trigger_election(None).is_err());
         });
     }
 
