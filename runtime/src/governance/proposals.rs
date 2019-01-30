@@ -1,8 +1,11 @@
-use srml_support::{StorageValue, StorageMap, dispatch::Result};
+use srml_support::{storage, StorageValue, StorageMap, dispatch::Result};
+use primitives::{storage::well_known_keys};
 use runtime_primitives::traits::{As, Hash, CheckedAdd};
 use runtime_io::print;
 use {balances, system::{self, ensure_signed}};
 use rstd::prelude::*;
+
+use council;
 
 const APPROVAL_QUORUM: u32 = 60;
 const MIN_STAKE: u64 = 100;
@@ -22,6 +25,9 @@ const MSG_CANNOT_VOTE_ON_OWN_PROPOSAL: &str = "You cannot vote on your own propo
 const MSG_YOU_ALREADY_VOTED: &str = "You have already voted on this proposal";
 const MSG_YOU_DONT_OWN_THIS_PROPOSAL: &str = "You do not own this proposal";
 const MSG_PROPOSAL_STATUS_ALREADY_UPDATED: &str = "Proposal status has been updated already";
+const MSG_EMPTY_NAME_PROVIDED: &str = "Proposal cannot have an empty name";
+const MSG_EMPTY_DESCRIPTION_PROVIDED: &str = "Proposal cannot have an empty description";
+const MSG_EMPTY_WASM_CODE_PROVIDED: &str = "Proposal cannot have an empty WASM code";
 
 pub type ProposalId = u32;
 
@@ -100,7 +106,7 @@ pub struct TallyResult<BlockNumber> {
     finalized_on: BlockNumber, // TODO rename to 'finalized_at' (i.e. at block)
 }
 
-pub trait Trait: balances::Trait + timestamp::Trait {
+pub trait Trait: balances::Trait + timestamp::Trait + council::Trait {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
@@ -140,7 +146,7 @@ decl_storage! {
         // Parameters (defaut values could be exported to config):
 
         // TODO get this value from Council or Config mudule:
-        CouncilMembersCount get(council_members_count) config(): u32 = 10;
+        CouncilorsCount get(councilors_count_old) config(): u32 = 10;
 
         // TODO rename? 'approval_quorum' -> 'approval_quorum_per'
         /// The percentage (up to 100) of the council participants
@@ -202,10 +208,9 @@ decl_module! {
             let proposer = ensure_signed(origin)?;
             ensure!(Self::is_member(proposer.clone()), MSG_ONLY_MEMBERS_CAN_PROPOSE);
             ensure!(stake >= Self::minimum_stake(), MSG_STAKE_IS_TOO_SMALL);
-
-            // TODO ensure that name is not blank
-            // TODO ensure that description is not blank
-            // TODO ensure that wasm_code is valid
+            ensure!(name.len() > 0, MSG_EMPTY_NAME_PROVIDED);
+            ensure!(description.len() > 0, MSG_EMPTY_DESCRIPTION_PROVIDED);
+            ensure!(wasm_code.len() > 0, MSG_EMPTY_WASM_CODE_PROVIDED);
 
             // Lock proposer's stake:
             <balances::Module<T>>::reserve(&proposer, stake)
@@ -227,8 +232,12 @@ decl_module! {
 
             <Proposals<T>>::insert(proposal_id, new_proposal);
             <PendingProposalIds<T>>::mutate(|ids| ids.push(proposal_id));
-
             Self::deposit_event(RawEvent::ProposalCreated(proposer.clone(), proposal_id));
+
+            // TODO Make an auto-vote Approve if proposer is a councilor
+            // if Self::is_councilor(proposer) {
+            //     Self::vote_on_proposal();
+            // }
 
             Ok(())
         }
@@ -244,7 +253,7 @@ decl_module! {
             ensure!(<Proposals<T>>::exists(proposal_id), MSG_PROPOSAL_NOT_FOUND);
             let proposal = Self::proposal(proposal_id);
 
-            // TODO fix bug?
+            // TODO fix bug? or remove this check, such as councilors can create proposals
             ensure!(voter != proposal.proposer, MSG_CANNOT_VOTE_ON_OWN_PROPOSAL);
 
             ensure!(proposal.status == Pending, MSG_PROPOSAL_FINALIZED);
@@ -324,8 +333,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn is_councilor(sender: T::AccountId) -> bool {
-        // TODO This method should be implemented in Council module.
-        true
+        <council::Module<T>>::is_councilor(sender)
     }
 
     pub fn is_voting_period_expired(proposed_on: T::BlockNumber) -> bool {
@@ -343,11 +351,15 @@ impl<T: Trait> Module<T> {
 
         Ok(())
     }
+    
+    fn councilors_count() -> u32 {
+        <council::Module<T>>::council().unwrap_or(vec![]).len() as u32
+    }
 
     /// Get the voters for the current proposal.
     pub fn tally(/* proposal_id: ProposalId */) -> Result {
 
-        let councilors: u32 = Self::council_members_count();
+        let councilors: u32 = Self::councilors_count();
         let quorum: u32 = (Self::approval_quorum() * councilors) / 100;
 
         for &proposal_id in Self::pending_proposal_ids().iter() {
@@ -414,8 +426,7 @@ impl<T: Trait> Module<T> {
         let other_pendings: Vec<ProposalId> = all_pendings
             .into_iter()
             .filter(|&id| id != proposal_id)
-            .collect()
-            ;
+            .collect();
         
         let not_found_in_pendings = other_pendings.len() == all_len;
         if not_found_in_pendings {
@@ -465,15 +476,29 @@ impl<T: Trait> Module<T> {
     /// Approve a proposal. The staked deposit will be returned.
     fn _approve_proposal(proposal_id: ProposalId) -> Result {
         let proposal = Self::proposal(proposal_id);
+        let wasm_code = proposal.wasm_code;
         
         // Return staked deposit to proposer:
         let _ = <balances::Module<T>>::unreserve(&proposal.proposer, proposal.stake);
 
+
+
+        // TODO fix: this doesn't update storage in tests :(
+        // println!("> before storage::unhashed::get_raw\n{:?}", 
+        //     storage::unhashed::get_raw(well_known_keys::CODE));
+
+        // println!("wasm code: {:?}", wasm_code.clone());
+
         // Update wasm code of node's runtime:
-        <consensus::Module<T>>::set_code(proposal.wasm_code.clone())?;
+        storage::unhashed::put_raw(well_known_keys::CODE, &wasm_code.clone());
+
+        // println!("< AFTER storage::unhashed::get_raw\n{:?}", 
+        //     storage::unhashed::get_raw(well_known_keys::CODE));
+
+
 
         // See in substrate repo @ srml/contract/src/wasm/code_cache.rs:73
-        let wasm_hash = T::Hashing::hash(&proposal.wasm_code);
+        let wasm_hash = T::Hashing::hash(&wasm_code);
         Self::deposit_event(RawEvent::RuntimeUpdated(proposal_id, wasm_hash));
 
         Ok(())
@@ -493,6 +518,7 @@ mod tests {
         traits::{BlakeTwo256, OnFinalise, IdentityLookup},
         testing::{Digest, DigestItem, Header, UintAuthorityId}
     };
+    use system::{EventRecord, Phase};
 
     impl_outer_origin! {
         pub enum Origin for Test {}
@@ -537,13 +563,21 @@ mod tests {
         type OnTimestampSet = ();
     }
 
+    impl council::Trait for Test {
+        type Event = ();
+    }
+    
     impl Trait for Test {
         type Event = ();
     }
 
     type System = system::Module<Test>;
     type Balances = balances::Module<Test>;
+    type Consensus = consensus::Module<Test>;
     type Proposals = Module<Test>;
+
+    // Initial balance of proposer 1.
+    const INITIAL_BALANCE: u64 = (MIN_STAKE as f64 * 2.5) as u64;
 
     const COUNCILOR1: u64 = 1;
     const COUNCILOR2: u64 = 2;
@@ -565,8 +599,15 @@ mod tests {
         COUNCILOR5
     ];
 
-    // Initial balance of proposer 1.
-    const INITIAL_BALANCE: u64 = (MIN_STAKE as f64 * 2.5) as u64;
+    // TODO Figure out how to test Events in test... (low priority)
+    // mod proposals {
+    //     pub use ::Event;
+    // }
+    // impl_outer_event!{
+    //     pub enum TestEvent for Test {
+    //         balances<T>,system<T>,proposals<T>,
+    //     }
+    // }
 
     // This function basically just builds a genesis storage key/value store according to
     // our desired mockup.
@@ -575,9 +616,21 @@ mod tests {
         // We use default for brevity, but you can configure as desired if needed.
         t.extend(balances::GenesisConfig::<Test>::default().build_storage().unwrap().0);
 
+        let council_mock: council::Council<u64, u64> = 
+            ALL_COUNCILORS.iter().map(|&c| council::Seat {
+                member: c,
+                stake: 0u64,
+                backers: vec![],
+            }).collect();
+        
+        t.extend(council::GenesisConfig::<Test>{
+            council: council_mock,
+            term_ends: 0
+        }.build_storage().unwrap().0);
+
         // Here we can override defaults: 
         t.extend(GenesisConfig::<Test>{
-            council_members_count: ALL_COUNCILORS.len() as u32,
+            councilors_count_old: ALL_COUNCILORS.len() as u32,
             approval_quorum: APPROVAL_QUORUM,
             minimum_stake: MIN_STAKE,
             cancellation_fee: CANCELLATION_FEE,
@@ -618,6 +671,18 @@ mod tests {
             description.unwrap_or(self::description()),
             wasm_code.unwrap_or(self::wasm_code())
         )
+    }
+
+    fn get_runtime_code() -> Option<Vec<u8>> {
+        storage::unhashed::get_raw(well_known_keys::CODE)
+    }
+
+    macro_rules! assert_runtime_code_empty {
+        () => { assert_eq!(get_runtime_code(), Some(vec![])) }
+    }
+
+    macro_rules! assert_runtime_code {
+        ($code:expr) => { assert_eq!(get_runtime_code(), Some($code)) }
     }
 
     #[test]
@@ -666,7 +731,6 @@ mod tests {
     fn not_member_cannot_create_proposal() {
         with_externalities(&mut new_test_ext(), || {
             // TODO write test
-            
         });
     }
 
@@ -689,25 +753,44 @@ mod tests {
     #[test]
     fn cannot_create_proposal_with_empty_name() {
         with_externalities(&mut new_test_ext(), || {
-            // TODO write test
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
+            assert_eq!(self::_create_proposal(
+                None, None, Some(vec![]), None, None), 
+                Err(MSG_EMPTY_NAME_PROVIDED));
         });
     }
 
     #[test]
     fn cannot_create_proposal_with_empty_description() {
         with_externalities(&mut new_test_ext(), || {
-            // TODO write test
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
+            assert_eq!(self::_create_proposal(
+                None, None, None, Some(vec![]), None), 
+                Err(MSG_EMPTY_DESCRIPTION_PROVIDED));
         });
     }
 
     #[test]
     fn cannot_create_proposal_with_empty_wasm_code() {
         with_externalities(&mut new_test_ext(), || {
-            // TODO write test
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
+            assert_eq!(self::_create_proposal(
+                None, None, None, None, Some(vec![])), 
+                Err(MSG_EMPTY_WASM_CODE_PROVIDED));
         });
     }
 
-    // TODO test: councilor cannot create a proposal ?
+    // TODO test approve auto-vote when councilor creates a proposal
+
+    #[test]
+    fn autovote_with_approve_when_councilor_creates_proposal() {
+        with_externalities(&mut new_test_ext(), || {
+            // TODO write test
+        });
+    }
 
     // -------------------------------------------------------------------
     // Cancellation
@@ -836,6 +919,7 @@ mod tests {
 
             assert_ok!(self::_create_default_proposal());
 
+            // All councilors vote with 'Approve' on proposal:
             let mut expected_votes: Vec<(u64, VoteKind)> = vec![];
             for &councilor in ALL_COUNCILORS.iter() {
                 expected_votes.push((councilor, Approve));
@@ -844,8 +928,13 @@ mod tests {
             }
             assert_eq!(Proposals::votes_by_proposal(1), expected_votes);
             
+            assert_runtime_code_empty!();
+
             System::set_block_number(2);
             Proposals::on_finalise(2);
+
+            // Check that runtime code has been updated after proposal approved.
+            assert_runtime_code!(wasm_code());
 
             assert_eq!(Proposals::pending_proposal_ids().len(), 0);
             assert_eq!(Proposals::proposal(1).status, Approved);
@@ -906,6 +995,7 @@ mod tests {
 
             assert_ok!(self::_create_default_proposal());
 
+            // All councilors vote with 'Reject' on proposal:
             let mut expected_votes: Vec<(u64, VoteKind)> = vec![];
             for &councilor in ALL_COUNCILORS.iter() {
                 expected_votes.push((councilor, Reject));
@@ -914,8 +1004,13 @@ mod tests {
             }
             assert_eq!(Proposals::votes_by_proposal(1), expected_votes);
             
+            assert_runtime_code_empty!();
+            
             System::set_block_number(2);
             Proposals::on_finalise(2);
+
+            // Check that runtime code has NOT been updated after proposal rejected.
+            assert_runtime_code_empty!();
 
             assert_eq!(Proposals::pending_proposal_ids().len(), 0);
             assert_eq!(Proposals::proposal(1).status, Rejected);
@@ -947,6 +1042,7 @@ mod tests {
 
             assert_ok!(self::_create_default_proposal());
 
+            // All councilors vote with 'Slash' on proposal:
             let mut expected_votes: Vec<(u64, VoteKind)> = vec![];
             for &councilor in ALL_COUNCILORS.iter() {
                 expected_votes.push((councilor, Slash));
@@ -955,8 +1051,13 @@ mod tests {
             }
             assert_eq!(Proposals::votes_by_proposal(1), expected_votes);
             
+            assert_runtime_code_empty!();
+
             System::set_block_number(2);
             Proposals::on_finalise(2);
+
+            // Check that runtime code has NOT been updated after proposal slashed.
+            assert_runtime_code_empty!();
 
             assert_eq!(Proposals::pending_proposal_ids().len(), 0);
             assert_eq!(Proposals::proposal(1).status, Slashed);
@@ -973,6 +1074,14 @@ mod tests {
             // Check that proposer's balance reduced by burnt stake:
             assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE - MIN_STAKE);
             assert_eq!(Balances::reserved_balance(PROPOSER1), 0);
+
+            // TODO fix: event log assertion doesn't work and return empty event in every record
+            // assert_eq!(*System::events().last().unwrap(), 
+            //     EventRecord {
+            //         phase: Phase::ApplyExtrinsic(0),
+            //         event: RawEvent::ProposalStatusUpdated(1, Slashed),
+            //     }
+            // );
 
             // TODO finsih test
             // runtime not updated

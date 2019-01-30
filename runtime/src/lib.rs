@@ -33,8 +33,8 @@ extern crate srml_aura as aura;
 extern crate srml_indices as indices;
 extern crate substrate_consensus_aura_primitives as consensus_aura;
 
-mod governance;
-use governance::{election, council, root};
+pub mod governance;
+use governance::{election, council, root, proposals};
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -62,8 +62,6 @@ pub use balances::Call as BalancesCall;
 pub use runtime_primitives::{Permill, Perbill};
 pub use timestamp::BlockPeriod;
 pub use srml_support::{StorageValue, RuntimeMetadata};
-
-mod proposals;
 
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
 pub type AccountId = primitives::H256;
@@ -198,7 +196,7 @@ impl sudo::Trait for Runtime {
 	type Proposal = Call;
 }
 
-impl proposals::Trait for Runtime {
+impl governance::proposals::Trait for Runtime {
 	type Event = Event;
 }
 

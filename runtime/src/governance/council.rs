@@ -22,7 +22,8 @@ pub trait Trait: system::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
-#[derive(Clone, Encode, Decode)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Seat<Id, Stake> {
     pub member: Id,
     pub stake: Stake,
@@ -41,7 +42,8 @@ impl<Id, Stake> Seat<Id, Stake>
     }
 }
 
-#[derive(Copy, Clone, Encode, Decode)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Backer<Id, Stake> {
     pub member: Id,
     pub stake: Stake,
@@ -55,9 +57,9 @@ decl_storage! {
     trait Store for Module<T: Trait> as CouncilInSession {
         // Initial state - council is empty and resigned, which will trigger
         // and election in next block
-        ActiveCouncil get(council): Option<Council<T::AccountId, T::Balance>>;
+        ActiveCouncil get(council) config(): Option<Council<T::AccountId, T::Balance>>;
 
-        TermEnds get(term_ends): T::BlockNumber = T::BlockNumber::sa(0);
+        TermEnds get(term_ends) config(): T::BlockNumber = T::BlockNumber::sa(0);
     }
 }
 
@@ -81,6 +83,14 @@ impl<T: Trait> Module<T> {
 
     pub fn term_ended(n: T::BlockNumber) -> bool {
         n >= Self::term_ends()
+    }
+
+    pub fn is_councilor(sender: T::AccountId) -> bool {
+        if let Some(council) = Self::council() {
+            council.iter().any(|c| c.member == sender)
+        } else {
+            false
+        }
     }
 }
 

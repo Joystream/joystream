@@ -13,6 +13,7 @@ extern crate srml_system as system;
 pub mod election;
 pub mod council;
 pub mod root;
+pub mod proposals;
 
 mod transferable_stake;
 mod sealed_vote;
@@ -24,7 +25,8 @@ pub mod tests {
     pub use self::sr_io::with_externalities;
     pub use self::substrate_primitives::{H256, Blake2Hasher};
     pub use self::sr_primitives::{
-        BuildStorage, traits::BlakeTwo256, traits::IdentityLookup, testing::{Digest, DigestItem, Header}
+        BuildStorage, traits::BlakeTwo256, traits::IdentityLookup, 
+        testing::{Digest, DigestItem, Header, UintAuthorityId}
     };
 
     impl_outer_origin! {
@@ -49,10 +51,22 @@ pub mod tests {
         type Log = DigestItem;
         type Lookup = IdentityLookup<u64>;
     }
+    impl timestamp::Trait for Test {
+        type Moment = u64;
+        type OnTimestampSet = ();
+    }
+    impl consensus::Trait for Test {
+        type SessionKey = UintAuthorityId;
+        type InherentOfflineReport = ();
+        type Log = DigestItem;
+    }
     impl council::Trait for Test {
         type Event = ();
     }
     impl election::Trait for Test {
+        type Event = ();
+    }
+    impl proposals::Trait for Test {
         type Event = ();
     }
     impl balances::Trait for Test {
@@ -95,6 +109,7 @@ pub mod tests {
     pub type Governance = root::Module<Test>;
     pub type Election = election::Module<Test>;
     pub type Council = council::Module<Test>;
+    pub type Proposals = proposals::Module<Test>;
 	pub type System = system::Module<Test>;
 	pub type Balances = balances::Module<Test>;
 }
