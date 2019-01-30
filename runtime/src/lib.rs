@@ -33,6 +33,9 @@ extern crate srml_aura as aura;
 extern crate srml_indices as indices;
 extern crate substrate_consensus_aura_primitives as consensus_aura;
 
+mod governance;
+use governance::{election, council, root};
+
 use rstd::prelude::*;
 #[cfg(feature = "std")]
 use primitives::bytes;
@@ -199,6 +202,20 @@ impl proposals::Trait for Runtime {
 	type Event = Event;
 }
 
+impl governance::election::Trait for Runtime {
+	type Event = Event;
+}
+
+impl governance::council::Trait for Runtime {
+	type Event = Event;
+}
+
+impl governance::root::Trait for Runtime {
+	type Event = Event;
+
+	type TriggerElection = (CouncilElection,);
+}
+
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, Ed25519AuthorityId>) where
 		Block = Block,
@@ -213,6 +230,9 @@ construct_runtime!(
 		Balances: balances,
 		Sudo: sudo,
 		Proposals: proposals::{Module, Call, Storage, Event<T>},
+		Governance: root::{Module, Call, Storage, Event<T>},
+		CouncilElection: election::{Module, Call, Storage, Event<T>},
+		Council: council::{Module, Call, Storage, Event<T>},
 	}
 );
 
