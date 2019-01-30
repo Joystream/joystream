@@ -1,7 +1,7 @@
 [package]
 name = "joystream-node-runtime"
 version = "0.9.0"
-authors = ["Parity Technologies <admin@parity.io>"]
+authors = ["Jsgenesis <contact@jsgenesis.com>"]
 
 [dependencies]
 rustc-hex = "1.0"
