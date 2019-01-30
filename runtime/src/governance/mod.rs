@@ -65,6 +65,8 @@ pub mod tests {
     }
     impl election::Trait for Test {
         type Event = ();
+
+        type CouncilElected = (Council,);
     }
     impl proposals::Trait for Test {
         type Event = ();

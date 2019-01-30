@@ -1,14 +1,14 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate sr_std;
-#[cfg(test)]
-extern crate sr_io;
-#[cfg(test)]
-extern crate substrate_primitives;
-extern crate sr_primitives;
-#[cfg(feature = "std")]
-extern crate parity_codec as codec;
-extern crate srml_system as system;
+// extern crate sr_std;
+// #[cfg(test)]
+// extern crate sr_io;
+// #[cfg(test)]
+// extern crate substrate_primitives;
+// extern crate sr_primitives;
+// #[cfg(feature = "std")]
+// extern crate parity_codec as codec;
+// extern crate srml_system as system;
 
 use srml_support::{StorageValue, StorageMap, dispatch::Result};
 use runtime_primitives::traits::{Hash, As, Zero, SimpleArithmetic};
@@ -23,8 +23,10 @@ use super::council;
 use super::sealed_vote::SealedVote;
 use super::root;
 
-pub trait Trait: system::Trait + council::Trait + balances::Trait {
+pub trait Trait: system::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
+    type CouncilElected: CouncilElected<BTreeMap<Self::AccountId, council::Seat<Self::AccountId, Self::Balance>>>;
 }
 
 #[derive(Clone, Copy, Encode, Decode, PartialEq, Debug)]
@@ -39,6 +41,22 @@ pub enum Stage<T: PartialOrd + PartialEq + Copy> {
     Voting(Period<T>),
     Revealing(Period<T>),
 }
+
+// Hook for setting a new council when it is elected
+pub trait CouncilElected<Elected> {
+    fn council_elected(new_council: &Elected);
+}
+
+impl<Elected> CouncilElected<Elected> for () {
+    fn council_elected(_new_council: &Elected) {}
+}
+
+impl<Elected, X: CouncilElected<Elected>> CouncilElected<Elected> for (X,) {
+    fn council_elected(new_council: &Elected) {
+        X::council_elected(new_council);
+    }
+}
+
 
 pub const ANNOUNCING_PERIOD:u64 = 20;
 pub const VOTING_PERIOD:u64 = 20;
@@ -88,25 +106,28 @@ decl_event!(
 	}
 );
 
-impl<T: Trait> root::TriggerElection for Module<T> {
-    fn trigger_election() -> Result {
+impl<T: Trait> root::TriggerElection<council::Council<T::AccountId, T::Balance>> for Module<T> {
+    fn trigger_election(current_council: Option<council::Council<T::AccountId, T::Balance>>) -> Result {
         if Self::stage().is_some() {
             return Err("election in progress")
         }
         
-        let current_block = <system::Module<T>>::block_number();
-    
-        if <council::Module<T>>::term_ended(current_block) {
-            // take snapshot of council and backing stakes
-            Self::initialize_transferable_stakes();
-            Self::move_to_announcing_stage();
-        }
+        Self::start_election(current_council);
 
         Ok(())
     }
 }
 
 impl<T: Trait> Module<T> {
+    fn start_election(current_council: Option<council::Council<T::AccountId, T::Balance>>) {
+        //ensure!(Self::stage().is_none());
+
+        // take snapshot of council and backing stakes of an existing council
+        current_council.map(|c| Self::initialize_transferable_stakes(c));
+
+        Self::move_to_announcing_stage();
+    }
+
     fn new_period(length: T::BlockNumber) -> Period<T::BlockNumber> {
         let current_block = <system::Module<T>>::block_number();
         Period {
@@ -253,7 +274,7 @@ impl<T: Trait> Module<T> {
         Self::refund_unused_transferable_stakes();
         <ElectionStage<T>>::kill();
 
-        <council::Module<T>>::set_council(&new_council);
+        T::CouncilElected::council_elected(&new_council);
         
         Self::deposit_event(RawEvent::ElectionCompleted());
         print("Election Completed");
@@ -426,28 +447,26 @@ impl<T: Trait> Module<T> {
     }
 
     /// Takes a snapshot of the stakes from the current council
-    fn initialize_transferable_stakes() {
-        if let Some(council) = <council::Module<T>>::council() {
-            let mut accounts_council: Vec<T::AccountId> = Vec::new();
-            let mut accounts_backers: Vec<T::AccountId> = Vec::new();
-            for ref seat in council.iter() {
-                let id = seat.member.clone();
-                <AvailableCouncilStakesMap<T>>::insert(&id, seat.stake);
-                accounts_council.push(id);
-                for ref backer in seat.backers.iter() {
-                    let id = backer.member.clone();
-                    if !<AvailableBackingStakesMap<T>>::exists(&id) {
-                        <AvailableBackingStakesMap<T>>::insert(&id, backer.stake);
-                        accounts_backers.push(id);
-                    } else {
-                        <AvailableBackingStakesMap<T>>::mutate(&backer.member, |stake| *stake += backer.stake);
-                    }
+    fn initialize_transferable_stakes(current_council: council::Council<T::AccountId, T::Balance>) {
+        let mut accounts_council: Vec<T::AccountId> = Vec::new();
+        let mut accounts_backers: Vec<T::AccountId> = Vec::new();
+        for ref seat in current_council.iter() {
+            let id = seat.member.clone();
+            <AvailableCouncilStakesMap<T>>::insert(&id, seat.stake);
+            accounts_council.push(id);
+            for ref backer in seat.backers.iter() {
+                let id = backer.member.clone();
+                if !<AvailableBackingStakesMap<T>>::exists(&id) {
+                    <AvailableBackingStakesMap<T>>::insert(&id, backer.stake);
+                    accounts_backers.push(id);
+                } else {
+                    <AvailableBackingStakesMap<T>>::mutate(&backer.member, |stake| *stake += backer.stake);
                 }
             }
-
-            <CouncilStakeHolders<T>>::put(accounts_council);
-            <BackingStakeHolders<T>>::put(accounts_backers);
         }
+
+        <CouncilStakeHolders<T>>::put(accounts_council);
+        <BackingStakeHolders<T>>::put(accounts_backers);
     }
 
     fn try_add_applicant(applicant: T::AccountId, stake: T::Balance) -> Result {
@@ -637,6 +656,7 @@ decl_module! {
 mod tests {
 	use super::*;
 	use ::governance::tests::*;
+    use governance::root::TriggerElection;
 
     #[test]
     fn default_paramas_should_work () {
@@ -658,7 +678,7 @@ mod tests {
             assert!(Election::stage().is_none());
             assert_eq!(Election::round(), 0);
 
-            assert!(<Election as root::TriggerElection>::trigger_election().is_ok());
+            assert!(<Test as root::Trait>::TriggerElection::trigger_election(None).is_ok());
 
             // election round is bumped
             assert_eq!(Election::round(), 1);
@@ -683,7 +703,7 @@ mod tests {
             }
 
             // Should fail to start election if already ongoing
-            assert!(<Election as root::TriggerElection>::trigger_election().is_err());
+            assert!(<Test as root::Trait>::TriggerElection::trigger_election(None).is_err());
         });
     }
 

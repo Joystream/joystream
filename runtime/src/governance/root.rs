@@ -7,24 +7,24 @@ use governance::{council, election};
 use runtime_io::print;
 
 // Hook For starting election
-pub trait TriggerElection {
-    fn trigger_election() -> Result;
+pub trait TriggerElection<CurrentCouncil> {
+    fn trigger_election(current: Option<CurrentCouncil>) -> Result;
 }
 
-impl TriggerElection for () {
-    fn trigger_election() -> Result { Ok(())}
+impl<CurrentCouncil> TriggerElection<CurrentCouncil> for () {
+    fn trigger_election(_: Option<CurrentCouncil>) -> Result { Ok(())}
 }
 
-impl<X: TriggerElection> TriggerElection for (X,) {
-    fn trigger_election() -> Result{
-        X::trigger_election()
+impl<CurrentCouncil, X: TriggerElection<CurrentCouncil>> TriggerElection<CurrentCouncil> for (X,) {
+    fn trigger_election(current: Option<CurrentCouncil>) -> Result{
+        X::trigger_election(current)
     }
 }
 
 pub trait Trait: system::Trait + council::Trait + election::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type TriggerElection: TriggerElection;
+    type TriggerElection: TriggerElection<council::Council<Self::AccountId, Self::Balance>>;
 }
 
 decl_storage! {
@@ -41,8 +41,14 @@ decl_event!(
 );
 
 impl<T: Trait> Module<T> {
-    fn private_function() -> bool {
-        true
+    fn tick (n: T::BlockNumber) {
+        if <council::Module<T>>::term_ended(n) && <election::Module<T>>::stage().is_none() {
+            let current_council = <council::Module<T>>::council();
+            if T::TriggerElection::trigger_election(current_council).is_ok() {
+                print("Election Started");
+                Self::deposit_event(RawEvent::ElectionStarted(n));
+            }
+        }
     }
 }
 
@@ -51,14 +57,7 @@ decl_module! {
         fn deposit_event<T>() = default;
 
         fn on_finalise(n: T::BlockNumber) {
-            if T::TriggerElection::trigger_election().is_ok() {
-                print("Election Started");
-                Self::deposit_event(RawEvent::ElectionStarted(n));
-            }
-            // if <election::Module<T>>::start_election().is_ok() {
-            //     print("Election Started");
-            //     Self::deposit_event(RawEvent::ElectionStarted(n));
-            // }
+            Self::tick(n);
         }
     }
 }
@@ -69,9 +68,16 @@ mod tests {
 	use ::governance::tests::*;
 
     #[test]
-    fn can_test_private_function() {
+    fn auto_starting_election_should_work() {
         with_externalities(&mut initial_test_ext(), || {
-            assert!(Governance::private_function());
+            System::set_block_number(1);
+
+            assert!(Council::term_ended(1));
+            assert!(Election::stage().is_none());
+
+            Governance::tick(1);
+
+            assert!(Election::stage().is_some());
         });
     }
 }

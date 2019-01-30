@@ -18,6 +18,8 @@ use {balances, system::{ensure_signed}};
 
 use rstd::ops::Add;
 
+use super::election;
+
 pub trait Trait: system::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
@@ -53,6 +55,7 @@ pub type Council<AccountId, Balance> = Vec<Seat<AccountId, Balance>>;
 
 const COUNCIL_TERM: u64 = 1000;
 
+
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilInSession {
         // Initial state - council is empty and resigned, which will trigger
@@ -71,8 +74,8 @@ decl_event!(
 	}
 );
 
-impl<T: Trait> Module<T> {
-    pub fn set_council(council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>) {
+impl<T: Trait> election::CouncilElected<BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>> for Module<T> {
+    fn council_elected(council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>) {
         let new_council: Vec<Seat<T::AccountId, T::Balance>> = council.into_iter().map(|(_, seat)| seat.clone()).collect();
 
         <ActiveCouncil<T>>::put(new_council);
@@ -80,7 +83,9 @@ impl<T: Trait> Module<T> {
         let next_term_ends = <system::Module<T>>::block_number() + T::BlockNumber::sa(COUNCIL_TERM);
         <TermEnds<T>>::put(next_term_ends);
     }
+}
 
+impl<T: Trait> Module<T> {
     pub fn term_ended(n: T::BlockNumber) -> bool {
         n >= Self::term_ends()
     }
