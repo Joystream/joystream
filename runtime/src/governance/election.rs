@@ -656,11 +656,25 @@ decl_module! {
 mod tests {
 	use super::*;
 	use ::governance::tests::*;
-    use governance::root::TriggerElection;
 
     #[test]
     fn default_paramas_should_work () {
 
+    }
+
+    fn assert_announcing_period (expected_period: Period<<Test as system::Trait>::BlockNumber>) {
+        assert!(Election::stage().is_some(), "Election Stage was not set");
+
+        let election_stage = Election::stage().unwrap();
+
+        match election_stage {
+            election::Stage::Announcing(period) => {
+                assert_eq!(period, expected_period, "Election period not set correctly")
+            }
+            _ => {
+                assert!(false, "Election Stage was not correctly set to Announcing")
+            }
+        }
     }
 
     #[test]
@@ -676,24 +690,12 @@ mod tests {
             assert_eq!(Election::round(), prev_round + 1);
 
             // we enter the announcing stage for a specified period
-            let expected_period = election::Period {
+            assert_announcing_period(election::Period {
                 starts: 1,
                 ends: 1 + election::ANNOUNCING_PERIOD
-            };
+            });
 
-            if let Some(election_stage) = Election::stage() {
-                match election_stage {
-                    election::Stage::Announcing(period) => {
-                        assert_eq!(period, expected_period, "Election period not set correctly")
-                    }
-                    _ => {
-                        assert!(false, "Election Stage was not correctly set to Announcing")
-                    }
-                }
-            } else {
-                assert!(false, "Election Stage was not set");
-            }
-
+            // transferable stakes should have been initialized..(if council exists)
         });
     }
 
@@ -722,6 +724,15 @@ mod tests {
 
     }
 
+    fn create_and_add_applicant (
+        id: <Test as system::Trait>::AccountId,
+        balance: <Test as balances::Trait>::Balance,
+        stake: <Test as balances::Trait>::Balance
+    ) {
+        Balances::set_free_balance(&id, balance);
+        assert!(Election::try_add_applicant(id, stake).is_ok(), "failed to add mock account and applicant");
+    }
+
     #[test]
     fn moving_to_voting_without_enough_applicants_should_not_work() {
         with_externalities(&mut initial_test_ext(), || {
@@ -729,28 +740,32 @@ mod tests {
             let ann_period = Election::move_to_announcing_stage();
             let round = Election::round();
 
+            // add applicants
+            assert_eq!(Election::applicants().len(), 0);
+            create_and_add_applicant(20, (election::COUNCIL_MIN_STAKE * 10) as u32, election::COUNCIL_MIN_STAKE as u32);
+            create_and_add_applicant(21, (election::COUNCIL_MIN_STAKE * 10) as u32, election::COUNCIL_MIN_STAKE as u32);
+            
+            let applicants = Election::applicants();
+            assert_eq!(applicants.len(), 2);
+
+            // make sure we are testing the condition that we don't have enought applicants
+            assert!(election::COUNCIL_SIZE > applicants.len());
+
+            // try to move to voting stage
             System::set_block_number(ann_period.ends);
             Election::on_announcing_ended();
 
             // A new round should have been started
             assert_eq!(Election::round(), round + 1);
 
-            match Election::stage() {
-                Some(stage) => {
-                    match stage {
-                        // ensure a new announcing period was created
-                        election::Stage::Announcing(period) => {
-                            assert_eq!(period.ends, ann_period.ends + election::ANNOUNCING_PERIOD, "A new announcing period should have been created");
-                        },
-                        _ => {
-                            assert!(false, "Election should have returned to announcing stage")
-                        }
-                    }
-                },
-                _ => assert!(false, "Election should not have ended")
-            }
+            // A new announcing period started
+            assert_announcing_period(Period {
+                starts: ann_period.ends,
+                ends: ann_period.ends + election::ANNOUNCING_PERIOD,
+            });
 
-            // applicants list should be the same
+            // applicants list should be unchanged..
+            assert_eq!(Election::applicants(), applicants);
         });
     }
 
