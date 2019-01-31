@@ -528,7 +528,9 @@ impl<T: Trait> Module<T> {
         }
 
         if !<ApplicantStakes<T>>::exists(&applicant) {
-            <Applicants<T>>::mutate(|applicants| applicants.push(applicant.clone()));
+            // insert element at the begining, this gives priority to early applicants
+            // when its comes to selecting candidates if stakes are equal
+            <Applicants<T>>::mutate(|applicants| applicants.insert(0, applicant.clone()));
         }
 
         <ApplicantStakes<T>>::insert(applicant.clone(), total_stake);
