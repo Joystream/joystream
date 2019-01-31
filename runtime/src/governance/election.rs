@@ -418,21 +418,21 @@ impl<T: Trait> Module<T> {
     }
 
     fn filter_top_staked(tally: &mut BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>>, limit: usize) {
-        //
-        let mut seats = Vec::new();
 
-        // is iteration deterministic???
-        for (id, seat) in tally.iter() {
-            seats.push((id.clone(), seat.total_stake()));
-        }
+        // use ordering in the applicants vector (not ordering resulting from btreemap iteration)
+        let mut seats: Vec<T::AccountId> = Self::applicants().into_iter().filter(|id| tally.get(id).is_some()).collect();
 
-        seats.sort_by_key(|&(_, stake)| stake); // ASC
+        seats.sort_by_key(|applicant| {
+            tally.get(&applicant)
+              .unwrap() // we filtered on existing keys, so this should not panic!
+              .total_stake()
+        });
 
         // seats at bottom of list
         let filtered_out_seats = &seats[0 .. seats.len() - rstd::cmp::min(limit, seats.len())];
 
-        for (id, _) in filtered_out_seats.iter() {
-            tally.remove(&id);
+        for id in filtered_out_seats {
+            tally.remove(id);
         }
     }
 
@@ -867,11 +867,6 @@ mod tests {
     }
 
     #[test]
-    fn applicants_announcing_when_not_in_announcing_stage_should_not_work () {
-        // extrinsic test
-    }
-
-    #[test]
     fn moving_to_voting_without_enough_applicants_should_not_work() {
         with_externalities(&mut initial_test_ext(), || {
             System::set_block_number(1);
@@ -984,5 +979,21 @@ mod tests {
     #[test]
     fn council_is_set_after_revealing_should_work() {
 
+    }
+
+    // Tests Extrinsics - (Transactions)
+    #[test]
+    fn extrinsic_can_announce_at_correct_stage () {
+        // extrinsic test
+    }
+
+    #[test]
+    fn extrinsic_can_vote_at_correct_stage () {
+        // extrinsic test
+    }
+
+    #[test]
+    fn extrinsic_can_reveal_at_correct_stage () {
+        // extrinsic test
     }
 }
