@@ -993,13 +993,88 @@ mod tests {
     }
 
     #[test]
-    fn votes_can_be_submitted_in_voting_stage () {
+    fn voting_should_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            Balances::set_free_balance(&20, 1000);
+            let payload = vec![10u8];
+            let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
 
+            assert!(Election::try_add_vote(20, 100, commitment).is_ok());
+
+            assert_eq!(Election::commitments(), vec![commitment]);
+            assert_eq!(Election::votes(commitment).voter, 20);
+            assert_eq!(Election::votes(commitment).commitment, commitment);
+            assert_eq!(Election::votes(commitment).stake, Stake {
+                refundable: 100,
+                transferred: 0,
+            });
+            assert_eq!(Balances::free_balance(&20), 900);
+        });
     }
 
     #[test]
     fn votes_can_be_covered_by_transferable_stake () {
+        with_externalities(&mut initial_test_ext(), || {
+            Balances::set_free_balance(&20, 1000);
 
+            <AvailableBackingStakesMap<Test>>::insert(20, 500);
+
+            let payload = vec![10u8];
+            let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
+
+            assert!(Election::try_add_vote(20, 100, commitment).is_ok());
+
+            assert_eq!(Election::commitments(), vec![commitment]);
+            assert_eq!(Election::votes(commitment).voter, 20);
+            assert_eq!(Election::votes(commitment).commitment, commitment);
+            assert_eq!(Election::votes(commitment).stake, Stake {
+                refundable: 0,
+                transferred: 100,
+            });
+            assert_eq!(Balances::free_balance(&20), 1000);
+        });
+    }
+
+    #[test]
+    fn voting_without_enough_balance_should_not_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            Balances::set_free_balance(&20, 100);
+
+            <AvailableBackingStakesMap<Test>>::insert(20, 500);
+
+            let payload = vec![10u8];
+            let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
+
+            assert!(Election::try_add_vote(20, 1000, commitment).is_err());
+            assert_eq!(Election::commitments(), vec![]);
+            assert!(!<Votes<Test>>::exists(commitment));
+            assert_eq!(Balances::free_balance(&20), 100);
+        });
+    }
+
+    #[test]
+    fn voting_with_existing_commitment_should_not_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            Balances::set_free_balance(&20, 1000);
+
+            <AvailableBackingStakesMap<Test>>::insert(20, 500);
+
+            let payload = vec![10u8];
+            let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
+
+            assert!(Election::try_add_vote(20, 100, commitment).is_ok());
+
+            assert_eq!(Election::commitments(), vec![commitment]);
+            assert_eq!(Election::votes(commitment).voter, 20);
+            assert_eq!(Election::votes(commitment).commitment, commitment);
+            assert_eq!(Election::votes(commitment).stake, Stake {
+                refundable: 0,
+                transferred: 100,
+            });
+            assert_eq!(Balances::free_balance(&20), 1000);
+
+            assert!(Election::try_add_vote(30, 100, commitment).is_err());
+        });
     }
 
     #[test]
