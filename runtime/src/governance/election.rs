@@ -701,7 +701,70 @@ mod tests {
 
     #[test]
     fn init_transferable_stake_should_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            let council_stakes = vec![10,11,12];
+            let council_stakeholders = vec![1,2,3];
+            let backing_stakeholders = vec![10,20,30,50];
 
+            let existing_council = vec![
+                council::Seat {
+                    member: council_stakeholders[0],
+                    stake: council_stakes[0],
+                    backers: vec![
+                        council::Backer {
+                            member: backing_stakeholders[0],
+                            stake: 2,
+                        },
+                        council::Backer {
+                            member: backing_stakeholders[3],
+                            stake: 5,
+                        }]
+                },
+
+                council::Seat {
+                    member: council_stakeholders[1],
+                    stake: council_stakes[1],
+                    backers: vec![
+                        council::Backer {
+                            member: backing_stakeholders[1],
+                            stake: 4,
+                        },
+                        council::Backer {
+                            member: backing_stakeholders[3],
+                            stake: 5,
+                        }]
+                },
+
+                council::Seat {
+                    member: council_stakeholders[2],
+                    stake: council_stakes[2],
+                    backers: vec![council::Backer {
+                        member: backing_stakeholders[2],
+                        stake: 6,
+                    }]
+                }
+            ];
+
+            Election::initialize_transferable_stakes(existing_council);
+
+            assert_eq!(Election::council_stakeholders(), council_stakeholders);
+
+            for (i, id) in council_stakeholders.iter().enumerate() {
+                assert_eq!(Election::council_stakes(id), council_stakes[i]);
+            }
+
+            let computed_backers = Election::backing_stakeholders();
+            assert_eq!(computed_backers.len(), backing_stakeholders.len());
+            for id in backing_stakeholders {
+                assert!(computed_backers.iter().any(|&x| x == id));
+            }
+
+            assert_eq!(Election::backing_stakes(10), 2);
+            assert_eq!(Election::backing_stakes(20), 4);
+            assert_eq!(Election::backing_stakes(30), 6);
+            assert_eq!(Election::backing_stakes(50), 10);
+
+        });
     }
 
     #[test]
