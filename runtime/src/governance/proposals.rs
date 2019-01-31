@@ -21,7 +21,6 @@ const MSG_ONLY_COUNCILORS_CAN_VOTE: &str = "Only councilors can vote on proposal
 const MSG_PROPOSAL_NOT_FOUND: &str = "This proposal does not exist";
 const MSG_PROPOSAL_EXPIRED: &str = "Voting period is expired for this proposal";
 const MSG_PROPOSAL_FINALIZED: &str = "Proposal is finalized already";
-const MSG_CANNOT_VOTE_ON_OWN_PROPOSAL: &str = "You cannot vote on your own proposals";
 const MSG_YOU_ALREADY_VOTED: &str = "You have already voted on this proposal";
 const MSG_YOU_DONT_OWN_THIS_PROPOSAL: &str = "You do not own this proposal";
 const MSG_PROPOSAL_STATUS_ALREADY_UPDATED: &str = "Proposal status has been updated already";
@@ -90,7 +89,7 @@ pub struct Proposal<AccountId, Balance, BlockNumber> {
     description: Vec<u8>,
     wasm_code: Vec<u8>,
     // wasm_hash: Hash,
-    proposed_on: BlockNumber, // TODO rename to 'proposed_at' (i.e. at block)
+    proposed_at: BlockNumber,
     status: ProposalStatus,
 }
 
@@ -103,7 +102,7 @@ pub struct TallyResult<BlockNumber> {
     rejections: u32,
     slashes: u32,
     status: ProposalStatus,
-    finalized_on: BlockNumber, // TODO rename to 'finalized_at' (i.e. at block)
+    finalized_at: BlockNumber,
 }
 
 pub trait Trait: balances::Trait + timestamp::Trait + council::Trait {
@@ -223,7 +222,7 @@ decl_module! {
                 name,
                 description,
                 wasm_code,
-                proposed_on: Self::current_block(),
+                proposed_at: Self::current_block(),
                 status: Pending
             };
 
@@ -252,7 +251,7 @@ decl_module! {
 
             ensure!(proposal.status == Pending, MSG_PROPOSAL_FINALIZED);
 
-            let not_expired = !Self::is_voting_period_expired(proposal.proposed_on);
+            let not_expired = !Self::is_voting_period_expired(proposal.proposed_at);
             ensure!(not_expired, MSG_PROPOSAL_EXPIRED);
 
             let did_not_vote_before = !<VoteByAccountAndProposal<T>>::exists((voter.clone(), proposal_id));
@@ -319,8 +318,8 @@ impl<T: Trait> Module<T> {
         (Self::approval_quorum() * Self::councilors_count()) / 100
     }
 
-    fn is_voting_period_expired(proposed_on: T::BlockNumber) -> bool {
-        Self::current_block() >= proposed_on + Self::voting_period()
+    fn is_voting_period_expired(proposed_at: T::BlockNumber) -> bool {
+        Self::current_block() >= proposed_at + Self::voting_period()
     }
 
     fn _process_vote(voter: T::AccountId, proposal_id: ProposalId, vote: VoteKind) -> Result {
@@ -357,7 +356,7 @@ impl<T: Trait> Module<T> {
 
         for &proposal_id in Self::pending_proposal_ids().iter() {
             let proposal = Self::proposal(proposal_id);
-            let is_expired = Self::is_voting_period_expired(proposal.proposed_on);
+            let is_expired = Self::is_voting_period_expired(proposal.proposed_at);
             let votes = Self::votes_by_proposal(proposal_id);
             let all_councilors_voted = votes.len() as u32 == councilors;
 
@@ -402,7 +401,7 @@ impl<T: Trait> Module<T> {
                     rejections,
                     slashes,
                     status,
-                    finalized_on: Self::current_block(),
+                    finalized_at: Self::current_block(),
                 };
                 <TallyResults<T>>::insert(proposal_id, &tally_result);
                 Self::deposit_event(RawEvent::TallyFinalized(tally_result));
@@ -566,7 +565,6 @@ mod tests {
 
     type System = system::Module<Test>;
     type Balances = balances::Module<Test>;
-    type Consensus = consensus::Module<Test>;
     type Proposals = Module<Test>;
 
     const VOTING_PERIOD_MOCK: u64 = 10;
@@ -707,7 +705,7 @@ mod tests {
                 name: name(),
                 description: description(),
                 wasm_code: wasm_code(),
-                proposed_on: 1,
+                proposed_at: 1,
                 status: Pending
             };
             assert_eq!(Proposals::proposal(1), expected_proposal);
@@ -981,7 +979,7 @@ mod tests {
                 rejections: 0,
                 slashes: 0,
                 status: Approved,
-                finalized_on: 2
+                finalized_at: 2
             });
 
             // Check that proposer's stake has been added back to his balance:
@@ -1028,7 +1026,7 @@ mod tests {
                 rejections: rejections,
                 slashes: 0,
                 status: Approved,
-                finalized_on: 2
+                finalized_at: 2
             });
 
             // Check that proposer's stake has been added back to his balance:
@@ -1075,7 +1073,7 @@ mod tests {
                 rejections: 0,
                 slashes: 0,
                 status: Rejected,
-                finalized_on: 2
+                finalized_at: 2
             });
 
             // Check that proposer's balance reduced by burnt stake:
@@ -1120,7 +1118,7 @@ mod tests {
                 rejections: ALL_COUNCILORS.len() as u32,
                 slashes: 0,
                 status: Rejected,
-                finalized_on: 2
+                finalized_at: 2
             });
 
             // Check that proposer's balance reduced by burnt stake:
@@ -1165,7 +1163,7 @@ mod tests {
                 rejections: 0,
                 slashes: ALL_COUNCILORS.len() as u32,
                 status: Slashed,
-                finalized_on: 2
+                finalized_at: 2
             });
 
             // Check that proposer's balance reduced by burnt stake:
@@ -1220,7 +1218,7 @@ mod tests {
                 rejections: 0,
                 slashes: 0,
                 status: Expired,
-                finalized_on: expiration_block
+                finalized_at: expiration_block
             });
 
             // Check that proposer's balance reduced by burnt stake:
@@ -1268,7 +1266,7 @@ mod tests {
                 rejections: 0,
                 slashes: 0,
                 status: Expired,
-                finalized_on: expiration_block
+                finalized_at: expiration_block
             });
 
             // Check that proposer's balance reduced by burnt stake:
