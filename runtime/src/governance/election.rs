@@ -871,11 +871,15 @@ mod tests {
 
             // add applicants
             assert_eq!(Election::applicants().len(), 0);
-            create_and_add_applicant(20, (election::COUNCIL_MIN_STAKE * 10) as u32, election::COUNCIL_MIN_STAKE as u32);
-            create_and_add_applicant(21, (election::COUNCIL_MIN_STAKE * 10) as u32, election::COUNCIL_MIN_STAKE as u32);
-            
-            let applicants = Election::applicants();
-            assert_eq!(applicants.len(), 2);
+
+            <Applicants<Test>>::put(vec![10,20,30]);
+            let stake = Stake {
+                refundable: 10,
+                transferred: 0,
+            };
+            for applicant in Election::applicants() {
+                <ApplicantStakes<Test>>::insert(applicant, stake);
+            }
 
             // make sure we are testing the condition that we don't have enought applicants
             assert!(election::COUNCIL_SIZE > applicants.len());
