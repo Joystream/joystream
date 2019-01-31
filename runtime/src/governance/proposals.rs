@@ -231,10 +231,10 @@ decl_module! {
             <PendingProposalIds<T>>::mutate(|ids| ids.push(proposal_id));
             Self::deposit_event(RawEvent::ProposalCreated(proposer.clone(), proposal_id));
 
-            // TODO Make an auto-vote Approve if proposer is a councilor
-            // if Self::is_councilor(proposer) {
-            //     Self::vote_on_proposal();
-            // }
+            // Auto-vote with Approve if proposer is a councilor:
+            if Self::is_councilor(proposer.clone()) {
+                Self::_process_vote(proposer, proposal_id, Approve)?;
+            }
 
             Ok(())
         }
@@ -258,17 +258,7 @@ decl_module! {
             let did_not_vote_before = !<VoteByAccountAndProposal<T>>::exists((voter.clone(), proposal_id));
             ensure!(did_not_vote_before, MSG_YOU_ALREADY_VOTED);
 
-            // Append a new vote to other votes on this proposal:
-            let new_vote = (voter.clone(), vote.clone());
-            if <VotesByProposal<T>>::exists(proposal_id) {
-                <VotesByProposal<T>>::mutate(proposal_id, |votes| votes.push(new_vote));
-            } else {
-                <VotesByProposal<T>>::insert(proposal_id, vec![new_vote]);
-            }
-            <VoteByAccountAndProposal<T>>::insert((voter.clone(), proposal_id), &vote);
-
-            Self::deposit_event(RawEvent::Voted(voter, proposal_id, vote));
-
+            Self::_process_vote(voter, proposal_id, vote)?;
             Ok(())
         }
 
@@ -308,16 +298,16 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
 
-    pub fn current_block() -> T::BlockNumber {
+    fn current_block() -> T::BlockNumber {
         <system::Module<T>>::block_number()
     }
 
     // TODO This method should be moved to Membership module once it's created.
-    pub fn is_member(sender: T::AccountId) -> bool {
+    fn is_member(sender: T::AccountId) -> bool {
         !<balances::Module<T>>::free_balance(sender).is_zero()
     }
 
-    pub fn is_councilor(sender: T::AccountId) -> bool {
+    fn is_councilor(sender: T::AccountId) -> bool {
         <council::Module<T>>::is_councilor(sender)
     }
 
@@ -325,8 +315,26 @@ impl<T: Trait> Module<T> {
         <council::Module<T>>::council().unwrap_or(vec![]).len() as u32
     }
 
-    pub fn is_voting_period_expired(proposed_on: T::BlockNumber) -> bool {
-        Self::current_block() > proposed_on + Self::voting_period()
+    fn approval_quorum_seats() -> u32 {
+        (Self::approval_quorum() * Self::councilors_count()) / 100
+    }
+
+    fn is_voting_period_expired(proposed_on: T::BlockNumber) -> bool {
+        Self::current_block() >= proposed_on + Self::voting_period()
+    }
+
+    fn _process_vote(voter: T::AccountId, proposal_id: ProposalId, vote: VoteKind) -> Result {
+        let new_vote = (voter.clone(), vote.clone());
+        if <VotesByProposal<T>>::exists(proposal_id) {
+            // Append a new vote to other votes on this proposal:
+            <VotesByProposal<T>>::mutate(proposal_id, |votes| votes.push(new_vote));
+        } else {
+            // This is the first vote on this proposal:
+            <VotesByProposal<T>>::insert(proposal_id, vec![new_vote]);
+        }
+        <VoteByAccountAndProposal<T>>::insert((voter.clone(), proposal_id), &vote);
+        Self::deposit_event(RawEvent::Voted(voter, proposal_id, vote));
+        Ok(())
     }
 
     fn end_block(now: T::BlockNumber) -> Result {
@@ -339,10 +347,6 @@ impl<T: Trait> Module<T> {
         // TODO finish
 
         Ok(())
-    }
-
-    pub fn approval_quorum_seats() -> u32 {
-        (Self::approval_quorum() * Self::councilors_count()) / 100
     }
 
     /// Get the voters for the current proposal.
@@ -565,6 +569,8 @@ mod tests {
     type Consensus = consensus::Module<Test>;
     type Proposals = Module<Test>;
 
+    const VOTING_PERIOD_MOCK: u64 = 10;
+
     // Initial balance of proposer 1.
     const INITIAL_BALANCE: u64 = (MIN_STAKE as f64 * 2.5) as u64;
 
@@ -622,7 +628,7 @@ mod tests {
             minimum_stake: MIN_STAKE,
             cancellation_fee: CANCELLATION_FEE,
             rejection_fee: REJECTION_FEE,
-            voting_period: 10
+            voting_period: VOTING_PERIOD_MOCK
         }.build_storage().unwrap().0);
 
         t.into()
@@ -680,7 +686,7 @@ mod tests {
             assert_eq!(Proposals::cancellation_fee(), CANCELLATION_FEE);
             assert_eq!(Proposals::rejection_fee(), REJECTION_FEE);
             assert_eq!(Proposals::proposal_count(), 0);
-            assert_eq!(Proposals::pending_proposal_ids().len(), 0);
+            assert!(Proposals::pending_proposal_ids().is_empty());
         });
     }
 
@@ -785,7 +791,7 @@ mod tests {
             assert_ok!(self::_create_default_proposal());
             assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
             assert_eq!(Proposals::proposal(1).status, Cancelled);
-            assert_eq!(Proposals::pending_proposal_ids().len(), 0);
+            assert!(Proposals::pending_proposal_ids().is_empty());
 
             // Check that proposer's balance reduced by cancellation fee and other part of his stake returned to his balance:
             assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE - CANCELLATION_FEE);
@@ -927,7 +933,7 @@ mod tests {
             System::set_block_number(2);
             Proposals::on_finalise(2);
 
-            assert_eq!(Proposals::pending_proposal_ids().len(), 0);
+            assert!(Proposals::pending_proposal_ids().is_empty());
             assert_eq!(Proposals::proposal(1).status, Approved);
 
             // Try to vote on finalized proposal:
@@ -948,7 +954,7 @@ mod tests {
 
             assert_ok!(self::_create_default_proposal());
 
-            // All councilors vote with 'Approve' on proposal:
+            // All councilors approved:
             let mut expected_votes: Vec<(u64, VoteKind)> = vec![];
             for &councilor in ALL_COUNCILORS.iter() {
                 expected_votes.push((councilor, Approve));
@@ -966,7 +972,7 @@ mod tests {
             // TODO Uncomment next line when Gavin help w/ storate updates in test:
             // assert_runtime_code!(wasm_code());
 
-            assert_eq!(Proposals::pending_proposal_ids().len(), 0);
+            assert!(Proposals::pending_proposal_ids().is_empty());
             assert_eq!(Proposals::proposal(1).status, Approved);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
@@ -994,7 +1000,7 @@ mod tests {
 
             assert_ok!(self::_create_default_proposal());
 
-            // Quorum of councilors vote with 'Approve' on proposal:
+            // Quorum of councilors approved:
             let approvals = Proposals::approval_quorum_seats();
             for i in 0..approvals as usize {
                 assert_ok!(Proposals::vote_on_proposal(
@@ -1011,7 +1017,7 @@ mod tests {
             // TODO Uncomment next line when Gavin help w/ storate updates in test:
             // assert_runtime_code!(wasm_code());
 
-            assert_eq!(Proposals::pending_proposal_ids().len(), 0);
+            assert!(Proposals::pending_proposal_ids().is_empty());
             assert_eq!(Proposals::proposal(1).status, Approved);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
@@ -1039,14 +1045,14 @@ mod tests {
 
             assert_ok!(self::_create_default_proposal());
 
-            // Less than a quorum of councilors vote with 'Approve' on proposal:
+            // Less than a quorum of councilors approved:
             let approvals = Proposals::approval_quorum_seats() - 1;
             for i in 0..approvals as usize {
                 assert_ok!(Proposals::vote_on_proposal(
                     Origin::signed(ALL_COUNCILORS[i]), 1, Approve));
             }
             assert_eq!(Proposals::votes_by_proposal(1).len() as u32, approvals);
-            
+
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
@@ -1057,8 +1063,9 @@ mod tests {
 
             assert_eq!(Proposals::pending_proposal_ids().len(), 1);
             assert_eq!(Proposals::proposal(1).status, Pending);
-            
-            // TODO assert that <TallyResults<T>>::exists(1) == false
+
+            // There should be NO tally results for this proposal:
+            assert!(!<TallyResults<Test>>::exists(1));
 
             // Proposer's stake is still reserved:
             assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE - MIN_STAKE);
@@ -1067,21 +1074,97 @@ mod tests {
     }
 
     #[test]
-    fn reject_proposal_when_all_councilors_voted_but_quorum_not_reached() {
+    fn reject_proposal_when_all_councilors_voted_and_quorum_not_reached() {
         with_externalities(&mut new_test_ext(), || {
-            // TODO write test
-            // proposer's balance reduced by rejection_fee
-            // proposal's status updated to Rejected
-            // expect event ProposalStatusUpdated(1, Rejected)
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
+
+            assert_ok!(self::_create_default_proposal());
+
+            // Less than a quorum of councilors approved, while others slashed:
+            let councilors = Proposals::councilors_count();
+            let approvals = Proposals::approval_quorum_seats() - 1;
+            let slashes = councilors - approvals;
+            for i in 0..councilors as usize {
+                let vote = if (i as u32) < approvals { Approve } else { Slash };
+                assert_ok!(Proposals::vote_on_proposal(
+                    Origin::signed(ALL_COUNCILORS[i]), 1, vote));
+            }
+            assert_eq!(Proposals::votes_by_proposal(1).len() as u32, councilors);
+            
+            assert_runtime_code_empty!();
+            
+            System::set_block_number(2);
+            Proposals::on_finalise(2);
+
+            // Check that runtime code has NOT been updated after proposal slashed.
+            assert_runtime_code_empty!();
+
+            assert!(Proposals::pending_proposal_ids().is_empty());
+            assert_eq!(Proposals::proposal(1).status, Rejected);
+            assert_eq!(Proposals::tally_results(1), TallyResult {
+                proposal_id: 1,
+                abstentions: 0,
+                approvals: approvals,
+                rejections: 0,
+                slashes: slashes,
+                status: Rejected,
+                finalized_on: 2
+            });
+
+            // Check that proposer's balance reduced by burnt stake:
+            assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE - REJECTION_FEE);
+            assert_eq!(Balances::reserved_balance(PROPOSER1), 0);
+
+            // TODO expect event ProposalStatusUpdated(1, Rejected)
         });
     }
 
+    // In this case 'reject' means that proposal will be marked as 'Expired'
+    // and it will be processed in the same way as if it would be rejected.
     #[test]
-    fn reject_proposal_when_voting_period_expired_and_quorum_not_reached() {
+    fn reject_expired_proposal_when_not_all_councilors_voted_and_quorum_not_reached() {
         with_externalities(&mut new_test_ext(), || {
-            // TODO write test
-            // proposal's status updated to Rejected
-            // expect event ProposalStatusUpdated(1, Rejected)
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
+
+            assert_ok!(self::_create_default_proposal());
+
+            // Less than a quorum of councilors approved:
+            let approvals = Proposals::approval_quorum_seats() - 1;
+            for i in 0..approvals as usize {
+                let vote = if (i as u32) < approvals { Approve } else { Slash };
+                assert_ok!(Proposals::vote_on_proposal(
+                    Origin::signed(ALL_COUNCILORS[i]), 1, vote));
+            }
+            assert_eq!(Proposals::votes_by_proposal(1).len() as u32, approvals);
+            
+            assert_runtime_code_empty!();
+            
+            let expiration_block = System::block_number() + Proposals::voting_period();
+            System::set_block_number(expiration_block);
+            Proposals::on_finalise(expiration_block);
+
+            // Check that runtime code has NOT been updated after proposal slashed.
+            assert_runtime_code_empty!();
+
+            assert!(Proposals::pending_proposal_ids().is_empty());
+            assert_eq!(Proposals::proposal(1).status, Expired);
+            assert_eq!(Proposals::tally_results(1), TallyResult {
+                proposal_id: 1,
+                abstentions: 0,
+                approvals: approvals,
+                rejections: 0,
+                slashes: 0,
+                status: Expired,
+                finalized_on: expiration_block
+            });
+
+            // Check that proposer's balance reduced by burnt stake:
+            assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE - REJECTION_FEE);
+            assert_eq!(Balances::reserved_balance(PROPOSER1), 0);
+
+            // TODO expect event ProposalStatusUpdated(1, Rejected)
         });
     }
 
@@ -1093,7 +1176,7 @@ mod tests {
 
             assert_ok!(self::_create_default_proposal());
 
-            // All councilors vote with 'Reject' on proposal:
+            // All councilors rejected:
             let mut expected_votes: Vec<(u64, VoteKind)> = vec![];
             for &councilor in ALL_COUNCILORS.iter() {
                 expected_votes.push((councilor, Reject));
@@ -1110,7 +1193,7 @@ mod tests {
             // Check that runtime code has NOT been updated after proposal rejected.
             assert_runtime_code_empty!();
 
-            assert_eq!(Proposals::pending_proposal_ids().len(), 0);
+            assert!(Proposals::pending_proposal_ids().is_empty());
             assert_eq!(Proposals::proposal(1).status, Rejected);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
@@ -1138,7 +1221,7 @@ mod tests {
 
             assert_ok!(self::_create_default_proposal());
 
-            // All councilors vote with 'Slash' on proposal:
+            // All councilors slashed:
             let mut expected_votes: Vec<(u64, VoteKind)> = vec![];
             for &councilor in ALL_COUNCILORS.iter() {
                 expected_votes.push((councilor, Slash));
@@ -1155,7 +1238,7 @@ mod tests {
             // Check that runtime code has NOT been updated after proposal slashed.
             assert_runtime_code_empty!();
 
-            assert_eq!(Proposals::pending_proposal_ids().len(), 0);
+            assert!(Proposals::pending_proposal_ids().is_empty());
             assert_eq!(Proposals::proposal(1).status, Slashed);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
