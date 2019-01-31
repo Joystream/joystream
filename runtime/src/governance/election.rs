@@ -498,13 +498,8 @@ impl<T: Trait> Module<T> {
         }
         
         let total_stake = applicant_stake.add(&new_stake);
-        
-        let min_stake = Stake {
-            refundable: T::Balance::sa(COUNCIL_MIN_STAKE),
-            transferred: T::Balance::zero()
-        };
 
-        if min_stake > total_stake {
+        if T::Balance::sa(COUNCIL_MIN_STAKE) > total_stake.total() {
             return Err("minimum stake not met");
         }   
 
@@ -769,16 +764,57 @@ mod tests {
 
     #[test]
     fn announcing_should_work() {
+        with_externalities(&mut initial_test_ext(), || {
+            
+            assert!(Election::applicants().len() == 0);
 
-    }
+            let applicant = 20 as u64;
 
-    #[test]
-    fn announcing_with_transferable_council_stake_should_work() {
+            // must provide stake
+            assert!(Election::try_add_applicant(applicant, 0).is_err());
+            
+            // Get some balance
+            let starting_balance = (election::COUNCIL_MIN_STAKE * 10) as u32;
+            Balances::set_free_balance(&applicant, starting_balance);
 
+            // must provide min stake
+            let stake = election::COUNCIL_MIN_STAKE as u32;
+            assert!(Election::try_add_applicant(applicant, stake - 1).is_err());
+
+            // with enough balance and stake, announcing should work
+            assert!(Election::try_add_applicant(applicant, stake).is_ok());
+            assert_eq!(Election::applicants(), vec![applicant]);
+
+            assert_eq!(Election::applicant_stakes(applicant).refundable, stake);
+            assert_eq!(Election::applicant_stakes(applicant).transferred, 0);   
+
+            assert_eq!(Balances::free_balance(&applicant), starting_balance - stake);
+        });
     }
 
     #[test]
     fn increasing_stake_when_announcing_should_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            let applicant = 20 as u64;
+            let starting_stake = election::COUNCIL_MIN_STAKE as u32;
+    
+            <Applicants<Test>>::put(vec![applicant]);
+            <ApplicantStakes<Test>>::insert(applicant, Stake {
+                refundable: starting_stake,
+                transferred: 0,
+            });
+
+            let additional_stake = 100 as u32;
+            Balances::set_free_balance(&applicant, additional_stake);
+            assert!(Election::try_add_applicant(applicant, additional_stake).is_ok());
+            
+            assert_eq!(Election::applicant_stakes(applicant).refundable, starting_stake + additional_stake);
+            assert_eq!(Election::applicant_stakes(applicant).transferred, 0)
+        });
+    }
+
+    #[test]
+    fn announcing_with_transferable_council_stake_should_work() {
 
     }
 
