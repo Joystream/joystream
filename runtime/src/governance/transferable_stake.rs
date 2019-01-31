@@ -113,7 +113,7 @@ mod tests {
             refundable: a2,
             transferred: b2,
         };
-        
+
         assert_eq!(s1, s3);
 
         let s4 = Stake {

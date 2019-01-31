@@ -422,6 +422,8 @@ impl<T: Trait> Module<T> {
         // use ordering in the applicants vector (not ordering resulting from btreemap iteration)
         let mut seats: Vec<T::AccountId> = Self::applicants().into_iter().filter(|id| tally.get(id).is_some()).collect();
 
+        // TODO: order by number of votes, then number of backers
+
         seats.sort_by_key(|applicant| {
             tally.get(&applicant)
               .unwrap() // we filtered on existing keys, so this should not panic!
@@ -943,7 +945,51 @@ mod tests {
 
     #[test]
     fn refunding_applicant_stakes_should_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            Balances::set_free_balance(&1, 1000);
+            Balances::set_free_balance(&2, 2000);
+            Balances::set_free_balance(&3, 3000);
 
+            <Applicants<Test>>::put(vec![1,2,3]);
+
+            <AvailableCouncilStakesMap<Test>>::insert(1, 50);
+            <AvailableCouncilStakesMap<Test>>::insert(2, 0);
+            <AvailableCouncilStakesMap<Test>>::insert(3, 0);
+
+            <ApplicantStakes<Test>>::insert(1, Stake {
+                refundable: 100,
+                transferred: 200,
+            });
+
+            <ApplicantStakes<Test>>::insert(2, Stake {
+                refundable: 300,
+                transferred: 400,
+            });
+
+            <ApplicantStakes<Test>>::insert(3, Stake {
+                refundable: 500,
+                transferred: 600,
+            });
+
+            Election::drop_applicants(&vec![2,3][..]);
+
+            assert_eq!(Election::applicants(), vec![1]);
+
+            assert_eq!(Election::applicant_stakes(1).refundable, 100);
+            assert_eq!(Election::applicant_stakes(1).transferred, 200);
+            assert_eq!(Election::council_stakes(1), 50);
+            assert_eq!(Balances::free_balance(&1), 1000);
+
+            //assert_eq!(Election::applicant_stakes(2), Default::default());
+            assert!(!<ApplicantStakes<Test>>::exists(2));
+            assert_eq!(Election::council_stakes(2), 400);
+            assert_eq!(Balances::free_balance(&2), 2300);
+
+            //assert_eq!(Election::applicant_stakes(3), Default::default());
+            assert!(!<ApplicantStakes<Test>>::exists(3));
+            assert_eq!(Election::council_stakes(3), 600);
+            assert_eq!(Balances::free_balance(&3), 3500);
+        });
     }
 
     #[test]
