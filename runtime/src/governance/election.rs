@@ -671,6 +671,7 @@ decl_module! {
 mod tests {
 	use super::*;
 	use ::governance::tests::*;
+    use parity_codec::Encode;
 
     #[test]
     fn default_paramas_should_work () {
@@ -1077,14 +1078,103 @@ mod tests {
         });
     }
 
-    #[test]
-    fn votes_can_be_revealed_in_revealing_stage () {
-
+    fn make_commitment_for_candidate(candidate: <Test as system::Trait>::AccountId, salt: &mut Vec<u8>) -> <Test as system::Trait>::Hash {
+        let mut payload = candidate.encode();
+        payload.append(salt);
+        <Test as system::Trait>::Hashing::hash(&payload[..])
     }
 
     #[test]
-    fn invalid_votes_should_not_work () {
+    fn revealing_vote_works () {
+        with_externalities(&mut initial_test_ext(), || {
+            let candidate = 20 as u64;
+            let salt = vec![128u8];
+            let commitment = make_commitment_for_candidate(candidate, &mut salt.clone());
+            let voter = 10 as u64;
 
+            <ApplicantStakes<Test>>::insert(&candidate, Stake {refundable: 0, transferred: 0});
+
+            <Votes<Test>>::insert(&commitment, SealedVote::new(voter, Stake {
+                refundable: 100, transferred: 0
+            }, commitment));
+
+            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+            assert!(Election::try_reveal_vote(voter, commitment, candidate, salt).is_ok());
+            assert_eq!(<Votes<Test>>::get(commitment).get_vote().unwrap(), candidate);
+        });
+    }
+
+    #[test]
+    fn revealing_with_bad_salt_should_not_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            let candidate = 20 as u64;
+            let salt = vec![128u8];
+            let commitment = make_commitment_for_candidate(candidate, &mut salt.clone());
+            let voter = 10 as u64;
+
+            <ApplicantStakes<Test>>::insert(&candidate, Stake {refundable: 0, transferred: 0});
+
+            <Votes<Test>>::insert(&commitment, SealedVote::new(voter, Stake {
+                refundable: 100, transferred: 0
+            }, commitment));
+
+            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+            assert!(Election::try_reveal_vote(voter, commitment, candidate, vec![]).is_err());
+            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+        });
+    }
+
+    #[test]
+    fn revealing_non_matching_commitment_should_not_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            let candidate = 20 as u64;
+            let salt = vec![128u8];
+            let commitment = make_commitment_for_candidate(100, &mut salt.clone());
+            let voter = 10 as u64;
+
+            <ApplicantStakes<Test>>::insert(&candidate, Stake {refundable: 0, transferred: 0});
+
+            assert!(Election::try_reveal_vote(voter, commitment, candidate, vec![]).is_err());
+        });
+    }
+
+    #[test]
+    fn revealing_for_non_candidate_should_not_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            let candidate = 20 as u64;
+            let salt = vec![128u8];
+            let commitment = make_commitment_for_candidate(candidate, &mut salt.clone());
+            let voter = 10 as u64;
+
+            <Votes<Test>>::insert(&commitment, SealedVote::new(voter, Stake {
+                refundable: 100, transferred: 0
+            }, commitment));
+
+            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+            assert!(Election::try_reveal_vote(voter, commitment, candidate, vec![]).is_err());
+            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+        });
+    }
+
+    #[test]
+    fn revealing_by_non_committer_should_not_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            let candidate = 20 as u64;
+            let salt = vec![128u8];
+            let commitment = make_commitment_for_candidate(candidate, &mut salt.clone());
+            let voter = 10 as u64;
+            let not_voter = 100 as u64;
+
+            <ApplicantStakes<Test>>::insert(&candidate, Stake {refundable: 0, transferred: 0});
+
+            <Votes<Test>>::insert(&commitment, SealedVote::new(voter, Stake {
+                refundable: 100, transferred: 0
+            }, commitment));
+
+            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+            assert!(Election::try_reveal_vote(not_voter, commitment, candidate, salt).is_err());
+            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+        });
     }
 
     #[test]
