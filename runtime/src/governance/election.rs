@@ -73,7 +73,7 @@ decl_storage! {
         // The election round
         ElectionRound get(round): u32;
 
-        // map doesn't have a clear() method so need to keep track of keys to know 
+        // map doesn't have a clear() method so need to keep track of keys to know
         // what keys to delete later < if council is not modified during election
         // we could always re-computer the vectors
         BackingStakeHolders get(backing_stakeholders): Vec<T::AccountId>;
@@ -86,7 +86,7 @@ decl_storage! {
 
         Commitments get(commitments): Vec<T::Hash>;
         // simply a Yes vote for a candidate. Consider changing the vote payload to support
-        // For and Against. 
+        // For and Against.
         Votes get(votes): map T::Hash => SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>;
     }
 }
@@ -111,7 +111,7 @@ impl<T: Trait> root::TriggerElection<council::Council<T::AccountId, T::Balance>>
         if Self::stage().is_some() {
             return Err("election in progress")
         }
-        
+
         Self::start_election(current_council);
 
         Ok(())
@@ -149,12 +149,28 @@ impl<T: Trait> Module<T> {
         let period = Self::new_period(T::BlockNumber::sa(ANNOUNCING_PERIOD));
 
         <ElectionStage<T>>::put(Stage::Announcing(period));
-        
+
         let next_round = Self::bump_round();
 
         Self::deposit_event(RawEvent::AnnouncingStarted(next_round));
         print("Announcing Started");
         period
+    }
+
+    fn get_top_applicants_by_stake (
+        applicants: &mut Vec<T::AccountId>,
+        limit: usize) -> (&[T::AccountId], &[T::AccountId])
+    {
+        if limit >= applicants.len() {
+            return (&applicants[..], &[]);
+        }
+
+        applicants.sort_by_key(|applicant| Self::applicant_stakes(applicant));
+
+        let rejected = &applicants[0 .. applicants.len() - limit];
+        let top = &applicants[applicants.len() - limit..];
+
+        (top, rejected)
     }
 
     fn on_announcing_ended() {
@@ -164,36 +180,9 @@ impl<T: Trait> Module<T> {
             // Not enough candidates announced candidacy
             Self::move_to_announcing_stage();
         } else {
-            // Sort Applicants by stake decending, and filter top CANDIDACY_LIMIT
-            // Howto ensure deterministic sorting (stable sort -> sort_by_key) - also howto deal with
-            // equal stake for bottom slot - order in applicants vector.
-            // This is highly ineffieicent (cloning ApplicationId twice)
-            // using functional style should help
-            if applicants.len() > CANDIDACY_LIMIT {
-                let mut sorted_applicants: Vec<(&T::AccountId, Stake<T::Balance>)> = applicants.iter()
-                    .map(|applicant| (applicant, Self::applicant_stakes(applicant)))
-                    .collect();
+            let (_, rejected) = Self::get_top_applicants_by_stake(&mut applicants, CANDIDACY_LIMIT);
 
-                sorted_applicants.sort_by_key(|&(_, stake)| stake); // ASC or DESC ?
-
-                let bottom_applicants = &sorted_applicants[0 .. sorted_applicants.len() - CANDIDACY_LIMIT];
-                let candidates = &sorted_applicants[sorted_applicants.len() - CANDIDACY_LIMIT..];
-
-                for (applicant, stake) in bottom_applicants.iter() {
-                    // refund applicants
-                    Self::return_stake_to(*applicant, *stake);
-                    // remove applicant
-                    <ApplicantStakes<T>>::remove(*applicant);
-                    //applicants.remove_item(applicant); // unstable feature
-
-                }
-
-                let candidates: Vec<T::AccountId> = candidates.into_iter()
-                    .map(|(applicant,_)| (*applicant).clone())
-                    .collect();
-                
-                <Applicants<T>>::put(candidates);
-            }
+            Self::drop_applicants(rejected);
 
             Self::move_to_voting_stage();
         }
@@ -203,7 +192,7 @@ impl<T: Trait> Module<T> {
         let period = Self::new_period(T::BlockNumber::sa(VOTING_PERIOD));
 
         <ElectionStage<T>>::put(Stage::Voting(period));
-        
+
         Self::deposit_event(RawEvent::VotingStarted());
         print("Voting Started");
     }
@@ -216,7 +205,7 @@ impl<T: Trait> Module<T> {
         let period = Self::new_period(T::BlockNumber::sa(REVEALING_PERIOD));
 
         <ElectionStage<T>>::put(Stage::Revealing(period));
-        
+
         Self::deposit_event(RawEvent::RevealingStarted());
         print("Revealing Started");
     }
@@ -260,7 +249,7 @@ impl<T: Trait> Module<T> {
             // or in future if we allow candidates to withdraw candidacy during voting or revealing stages.
             // Solution 1. Restart election.
             // Solution 2. Add to the tally candidates with zero votes.
-            //      selection criteria: 
+            //      selection criteria:
             //          -> priority by largest stake?
             //          -> priority given to candidates who announced first?
             //          -> deterministic random selection?
@@ -268,14 +257,17 @@ impl<T: Trait> Module<T> {
 
         // unless we want to add more filtering criteria to what is considered a successful election
         // other than just the minimum stake for candidacy, we have a new council!
-  
+
         Self::refund_voting_stakes(&votes, &new_council);
-        Self::refund_applicant_stakes(&new_council);
+        Self::drop_unelected_candidates(&new_council);
+        // clear applicants
+        Self::clear_applicants();
         Self::refund_unused_transferable_stakes();
+
         <ElectionStage<T>>::kill();
 
         T::CouncilElected::council_elected(&new_council);
-        
+
         Self::deposit_event(RawEvent::ElectionCompleted());
         print("Election Completed");
     }
@@ -303,34 +295,49 @@ impl<T: Trait> Module<T> {
         <CouncilStakeHolders<T>>::kill();
     }
 
-    fn refund_applicant_stakes(new_council: &BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>>) {
-        for applicant in Self::applicants().iter() {
-            let do_refund = match new_council.get(&applicant) {
-                Some(_) => false,
-                None => true
-            };
-
-            if do_refund {
-                Self::return_stake_to(&applicant, <ApplicantStakes<T>>::get(applicant));
-            }
-
+    fn clear_applicants() {
+        for applicant in Self::applicants() {
             <ApplicantStakes<T>>::remove(applicant);
         }
-
-        <Applicants<T>>::kill();
+        <Applicants<T>>::put(vec![]);
     }
 
-    fn return_stake_to(who: &T::AccountId, stake_to_return: Stake<T::Balance>) {
+    fn refund_applicant(applicant: &T::AccountId) {
+        let stake = <ApplicantStakes<T>>::get(applicant);
+
         // return refundable stake to account's free balance
-        if stake_to_return.refundable > T::Balance::zero() {
-            let balance = <balances::Module<T>>::free_balance(who);
-            <balances::Module<T>>::set_free_balance(who, balance + stake_to_return.refundable);
+        if stake.refundable > T::Balance::zero() {
+            let balance = <balances::Module<T>>::free_balance(applicant);
+            <balances::Module<T>>::set_free_balance(applicant, balance + stake.refundable);
         }
 
         // return unused transferable stake
-        if stake_to_return.transferred > T::Balance::zero() {
-            <AvailableBackingStakesMap<T>>::mutate(who, |stake| *stake += stake_to_return.transferred);
+        if stake.transferred > T::Balance::zero() {
+            <AvailableCouncilStakesMap<T>>::mutate(applicant, |transferred_stake| *transferred_stake += stake.transferred);
         }
+    }
+
+    fn drop_applicants (drop: &[T::AccountId]) {
+        let not_dropped: Vec<T::AccountId> = Self::applicants().into_iter().filter(|id| !drop.iter().any(|x| *x == *id)).collect();
+
+        for applicant in drop {
+            Self::refund_applicant(applicant);
+            <ApplicantStakes<T>>::remove(applicant);
+        }
+
+        <Applicants<T>>::put(not_dropped.to_vec());
+    }
+
+    fn drop_unelected_candidates(new_council: &BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>>) {
+        let applicants_to_drop: Vec<T::AccountId> = Self::applicants().into_iter()
+            .filter(|applicant| {
+                match new_council.get(&applicant) {
+                    Some(_) => false,
+                    None => true
+                }
+            }).collect();
+
+        Self::drop_applicants(&applicants_to_drop[..]);
     }
 
     fn refund_voting_stakes(
@@ -351,9 +358,18 @@ impl<T: Trait> Module<T> {
             };
 
             if do_refund {
-                Self::return_stake_to(&sealed_vote.voter, sealed_vote.stake);
+                // return refundable stake to account's free balance
+                if sealed_vote.stake.refundable > T::Balance::zero() {
+                    let balance = <balances::Module<T>>::free_balance(&sealed_vote.voter);
+                    <balances::Module<T>>::set_free_balance(&sealed_vote.voter, balance + sealed_vote.stake.refundable);
+                }
+
+                // return unused transferable stake
+                if sealed_vote.stake.transferred > T::Balance::zero() {
+                    <AvailableBackingStakesMap<T>>::mutate(&sealed_vote.voter, |stake| *stake += sealed_vote.stake.transferred);
+                }
             }
-    
+
             // remove vote
             <Votes<T>>::remove(sealed_vote.commitment);
         }
@@ -402,7 +418,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn filter_top_staked(tally: &mut BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>>, limit: usize) {
-        // 
+        //
         let mut seats = Vec::new();
 
         // is iteration deterministic???
@@ -490,18 +506,18 @@ impl<T: Trait> Module<T> {
         };
 
         new_stake.refundable = stake - new_stake.transferred;
- 
+
         let balance = <balances::Module<T>>::free_balance(&applicant);
 
         if new_stake.refundable > balance {
             return Err("not enough balance to cover stake");
         }
-        
+
         let total_stake = applicant_stake.add(&new_stake);
 
         if T::Balance::sa(COUNCIL_MIN_STAKE) > total_stake.total() {
             return Err("minimum stake not met");
-        }   
+        }
 
         if <balances::Module<T>>::decrease_free_balance(&applicant, new_stake.refundable).is_err() {
             return Err("failed to update balance");
@@ -510,7 +526,7 @@ impl<T: Trait> Module<T> {
         if applicant_has_council_stake {
             <AvailableCouncilStakesMap<T>>::insert(&applicant, transferable_stake - new_stake.transferred);
         }
-       
+
         if !<ApplicantStakes<T>>::exists(&applicant) {
             <Applicants<T>>::mutate(|applicants| applicants.push(applicant.clone()));
         }
@@ -541,13 +557,13 @@ impl<T: Trait> Module<T> {
         };
 
         vote_stake.refundable = stake - vote_stake.transferred;
-        
+
         let balance = <balances::Module<T>>::free_balance(&voter);
 
         if vote_stake.refundable > balance {
             return Err("not enough balance to cover voting stake");
         }
-        
+
         if <balances::Module<T>>::decrease_free_balance(&voter, vote_stake.refundable).is_err() {
             return Err("failed to update balance");
         }
@@ -555,7 +571,7 @@ impl<T: Trait> Module<T> {
         <Commitments<T>>::mutate(|commitments| commitments.push(commitment));
 
         <Votes<T>>::insert(commitment, SealedVote::new(voter.clone(), vote_stake, commitment));
-        
+
         if voter_has_backing_stake {
             <AvailableBackingStakesMap<T>>::insert(voter.clone(), transferable_stake - vote_stake.transferred);
         }
@@ -571,7 +587,7 @@ impl<T: Trait> Module<T> {
         if !<Votes<T>>::exists(&commitment) {
             return Err("commitment not found");
         }
-        
+
         let mut sealed_vote = <Votes<T>>::get(&commitment);
 
         // only voter can reveal their own votes
@@ -630,7 +646,7 @@ decl_module! {
 
         fn reveal_vote(origin, commitment: T::Hash, vote: T::AccountId, salt: Vec<u8>) -> Result {
             let sender = ensure_signed(origin)?;
-            
+
             // Can only reveal vote during election revealing stage
             if let Some(stage) = Self::stage() {
                 match stage {
@@ -676,7 +692,7 @@ mod tests {
     fn start_election_should_work() {
         with_externalities(&mut initial_test_ext(), || {
             System::set_block_number(1);
-            
+
             let prev_round = Election::round();
 
             Election::start_election(None);
@@ -765,14 +781,14 @@ mod tests {
     #[test]
     fn announcing_should_work() {
         with_externalities(&mut initial_test_ext(), || {
-            
+
             assert!(Election::applicants().len() == 0);
 
             let applicant = 20 as u64;
 
             // must provide stake
             assert!(Election::try_add_applicant(applicant, 0).is_err());
-            
+
             // Get some balance
             let starting_balance = (election::COUNCIL_MIN_STAKE * 10) as u32;
             Balances::set_free_balance(&applicant, starting_balance);
@@ -786,7 +802,7 @@ mod tests {
             assert_eq!(Election::applicants(), vec![applicant]);
 
             assert_eq!(Election::applicant_stakes(applicant).refundable, stake);
-            assert_eq!(Election::applicant_stakes(applicant).transferred, 0);   
+            assert_eq!(Election::applicant_stakes(applicant).transferred, 0);
 
             assert_eq!(Balances::free_balance(&applicant), starting_balance - stake);
         });
@@ -797,7 +813,7 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             let applicant = 20 as u64;
             let starting_stake = election::COUNCIL_MIN_STAKE as u32;
-    
+
             <Applicants<Test>>::put(vec![applicant]);
             <ApplicantStakes<Test>>::insert(applicant, Stake {
                 refundable: starting_stake,
@@ -807,7 +823,7 @@ mod tests {
             let additional_stake = 100 as u32;
             Balances::set_free_balance(&applicant, additional_stake);
             assert!(Election::try_add_applicant(applicant, additional_stake).is_ok());
-            
+
             assert_eq!(Election::applicant_stakes(applicant).refundable, starting_stake + additional_stake);
             assert_eq!(Election::applicant_stakes(applicant).transferred, 0)
         });
@@ -820,7 +836,7 @@ mod tests {
             let applicant = 20 as u64;
 
             Balances::set_free_balance(&applicant, 5000);
-    
+
             <CouncilStakeHolders<Test>>::put(vec![applicant]);
             <AvailableCouncilStakesMap<Test>>::insert(applicant, 1000);
 
@@ -830,7 +846,7 @@ mod tests {
                 transferred: 0,
             };
             <ApplicantStakes<Test>>::insert(applicant, starting_stake);
-            
+
             // transferable stake covers new stake
             assert!(Election::try_add_applicant(applicant, 600).is_ok());
             assert_eq!(Election::applicant_stakes(applicant).refundable, starting_stake.refundable, "refundable");
@@ -853,15 +869,6 @@ mod tests {
         // extrinsic test
     }
 
-    fn create_and_add_applicant (
-        id: <Test as system::Trait>::AccountId,
-        balance: <Test as balances::Trait>::Balance,
-        stake: <Test as balances::Trait>::Balance
-    ) {
-        Balances::set_free_balance(&id, balance);
-        assert!(Election::try_add_applicant(id, stake).is_ok(), "failed to add mock account and applicant");
-    }
-
     #[test]
     fn moving_to_voting_without_enough_applicants_should_not_work() {
         with_externalities(&mut initial_test_ext(), || {
@@ -870,18 +877,19 @@ mod tests {
             let round = Election::round();
 
             // add applicants
-            assert_eq!(Election::applicants().len(), 0);
-
             <Applicants<Test>>::put(vec![10,20,30]);
             let stake = Stake {
                 refundable: 10,
                 transferred: 0,
             };
-            for applicant in Election::applicants() {
+
+            let applicants = Election::applicants();
+
+            for applicant in applicants.iter() {
                 <ApplicantStakes<Test>>::insert(applicant, stake);
             }
 
-            // make sure we are testing the condition that we don't have enought applicants
+            // make sure we are testing the condition that we don't have enough applicants
             assert!(election::COUNCIL_SIZE > applicants.len());
 
             // try to move to voting stage
@@ -904,7 +912,36 @@ mod tests {
 
     #[test]
     fn top_applicants_become_candidates_should_work() {
+        with_externalities(&mut initial_test_ext(), || {
+            <Applicants<Test>>::put(vec![10, 20, 30, 40]);
+            let mut applicants = Election::applicants();
 
+            for (i, applicant) in applicants.iter().enumerate() {
+                <ApplicantStakes<Test>>::insert(applicant, Stake {
+                    refundable: (i * 10) as u32,
+                    transferred: 0,
+                });
+            }
+
+            let (candidates, rejected) = Election::get_top_applicants_by_stake(&mut applicants, 3);
+            assert_eq!(candidates.to_vec(), vec![20, 30, 40], "vec");
+            assert_eq!(rejected.to_vec(), vec![10]);
+
+            <Applicants<Test>>::put(vec![40, 30, 20, 10]);
+            let mut applicants = Election::applicants();
+
+            for applicant in applicants.iter() {
+                <ApplicantStakes<Test>>::insert(applicant, Stake {
+                    refundable: 20 as u32,
+                    transferred: 0,
+                });
+            }
+
+            // stable sort is preserving order when two elements are equivalent
+            let (candidates, rejected) = Election::get_top_applicants_by_stake(&mut applicants, 3);
+            assert_eq!(candidates.to_vec(), vec![30, 20, 10]);
+            assert_eq!(rejected.to_vec(), vec![40]);
+        });
     }
 
     #[test]
