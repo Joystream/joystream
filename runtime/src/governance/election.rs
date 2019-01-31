@@ -815,12 +815,42 @@ mod tests {
 
     #[test]
     fn announcing_with_transferable_council_stake_should_work() {
+        with_externalities(&mut initial_test_ext(), || {
 
+            let applicant = 20 as u64;
+
+            Balances::set_free_balance(&applicant, 5000);
+    
+            <CouncilStakeHolders<Test>>::put(vec![applicant]);
+            <AvailableCouncilStakesMap<Test>>::insert(applicant, 1000);
+
+            <Applicants<Test>>::put(vec![applicant]);
+            let starting_stake = Stake {
+                refundable: election::COUNCIL_MIN_STAKE as u32,
+                transferred: 0,
+            };
+            <ApplicantStakes<Test>>::insert(applicant, starting_stake);
+            
+            // transferable stake covers new stake
+            assert!(Election::try_add_applicant(applicant, 600).is_ok());
+            assert_eq!(Election::applicant_stakes(applicant).refundable, starting_stake.refundable, "refundable");
+            assert_eq!(Election::applicant_stakes(applicant).transferred, 600, "trasferred");
+            assert_eq!(Election::council_stakes(applicant), 400,  "transferrable");
+            assert_eq!(Balances::free_balance(applicant), 5000, "balance");
+
+            // all remaining transferable stake is consumed and free balance covers remaining stake
+            assert!(Election::try_add_applicant(applicant, 1000).is_ok());
+            assert_eq!(Election::applicant_stakes(applicant).refundable, starting_stake.refundable + 600, "refundable");
+            assert_eq!(Election::applicant_stakes(applicant).transferred, 1000, "trasferred");
+            assert_eq!(Election::council_stakes(applicant), 0,  "transferrable");
+            assert_eq!(Balances::free_balance(applicant), 4400, "balance");
+
+        });
     }
 
     #[test]
     fn applicants_announcing_when_not_in_announcing_stage_should_not_work () {
-
+        // extrinsic test
     }
 
     fn create_and_add_applicant (
@@ -880,6 +910,11 @@ mod tests {
 
     #[test]
     fn votes_can_be_submitted_in_voting_stage () {
+
+    }
+
+    #[test]
+    fn votes_can_be_covered_by_transferable_stake () {
 
     }
 
