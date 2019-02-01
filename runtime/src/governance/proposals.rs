@@ -15,7 +15,8 @@ const REJECTION_FEE: u64 = 10;
 const VOTING_PERIOD_IN_DAYS: u64 = 10;
 const VOTING_PERIOD_IN_SECS: u64 = VOTING_PERIOD_IN_DAYS * 24 * 60 * 60;
 
-const MSG_STAKE_IS_TOO_SMALL: &str = "Stake is too small";
+const MSG_STAKE_IS_TOO_LOW: &str = "Stake is too low";
+const MSG_STAKE_IS_GREATER_THAN_BALANCE: &str = "Balance is too low to be staked";
 const MSG_ONLY_MEMBERS_CAN_PROPOSE: &str = "Only members can make a proposal";
 const MSG_ONLY_COUNCILORS_CAN_VOTE: &str = "Only councilors can vote on proposals";
 const MSG_PROPOSAL_NOT_FOUND: &str = "This proposal does not exist";
@@ -203,14 +204,14 @@ decl_module! {
 
             let proposer = ensure_signed(origin)?;
             ensure!(Self::is_member(proposer.clone()), MSG_ONLY_MEMBERS_CAN_PROPOSE);
-            ensure!(stake >= Self::minimum_stake(), MSG_STAKE_IS_TOO_SMALL);
+            ensure!(stake >= Self::minimum_stake(), MSG_STAKE_IS_TOO_LOW);
             ensure!(name.len() > 0, MSG_EMPTY_NAME_PROVIDED);
             ensure!(description.len() > 0, MSG_EMPTY_DESCRIPTION_PROVIDED);
             ensure!(wasm_code.len() > 0, MSG_EMPTY_WASM_CODE_PROVIDED);
 
             // Lock proposer's stake:
             <balances::Module<T>>::reserve(&proposer, stake)
-                .map_err(|_| "Proposer's balance is too low to be staked")?;
+                .map_err(|_| MSG_STAKE_IS_GREATER_THAN_BALANCE)?;
 
             let proposal_id = Self::proposal_count() + 1;
             <ProposalCount<T>>::put(proposal_id);
@@ -374,9 +375,10 @@ impl<T: Trait> Module<T> {
                 }
             }
 
+            let quorum_reached = approvals >= quorum;
             let new_status: Option<ProposalStatus> = 
                 if all_councilors_voted { 
-                    if approvals >= quorum {
+                    if quorum_reached {
                         Some(Approved)
                     } else if slashes == councilors {
                         Some(Slashed)
@@ -384,8 +386,12 @@ impl<T: Trait> Module<T> {
                         Some(Rejected)
                     }  
                 } else if is_expired { 
-                    // Proposal has been expired and quorum not reached.
-                    Some(Expired)
+                    if quorum_reached {
+                        Some(Approved)
+                    } else {
+                        // Proposal has been expired and quorum not reached.
+                        Some(Expired)
+                    }
                 } else {
                     // Councilors still have time to vote on this proposal.
                     None
@@ -736,7 +742,23 @@ mod tests {
 
             assert_eq!(self::_create_proposal(
                 None, Some(MIN_STAKE - 1), None, None, None), 
-                Err(MSG_STAKE_IS_TOO_SMALL));
+                Err(MSG_STAKE_IS_TOO_LOW));
+
+            // Check that balances remain unchanged afer a failed attempt to create a proposal:
+            assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE);
+            assert_eq!(Balances::reserved_balance(PROPOSER1), 0);
+        });
+    }
+
+    #[test]
+    fn cannot_create_proposal_when_stake_is_greater_than_balance() {
+        with_externalities(&mut new_test_ext(), || {
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
+
+            assert_eq!(self::_create_proposal(
+                None, Some(INITIAL_BALANCE + 1), None, None, None), 
+                Err(MSG_STAKE_IS_GREATER_THAN_BALANCE));
 
             // Check that balances remain unchanged afer a failed attempt to create a proposal:
             assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE);
@@ -967,7 +989,8 @@ mod tests {
             Proposals::on_finalise(2);
 
             // Check that runtime code has been updated after proposal approved.
-            // TODO Uncomment next line when Gavin help w/ storate updates in test:
+            // TODO Uncomment next line when issue with storage updates fixed:
+            // https://github.com/paritytech/substrate/issues/1638
             // assert_runtime_code!(wasm_code());
 
             assert!(Proposals::pending_proposal_ids().is_empty());
@@ -1014,8 +1037,10 @@ mod tests {
             System::set_block_number(2);
             Proposals::on_finalise(2);
 
-            // Check that runtime code has NOT been updated after proposal slashed.
-            assert_runtime_code_empty!();
+            // Check that runtime code has been updated after proposal approved.
+            // TODO Uncomment next line when issue with storage updates fixed:
+            // https://github.com/paritytech/substrate/issues/1638
+            // assert_runtime_code!(wasm_code());
 
             assert!(Proposals::pending_proposal_ids().is_empty());
             assert_eq!(Proposals::proposal(1).status, Approved);
@@ -1027,6 +1052,61 @@ mod tests {
                 slashes: 0,
                 status: Approved,
                 finalized_at: 2
+            });
+
+            // Check that proposer's stake has been added back to his balance:
+            assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE);
+            assert_eq!(Balances::reserved_balance(PROPOSER1), 0);
+
+            // TODO expect event ProposalStatusUpdated(1, Approved)
+        });
+    }
+
+    #[test]
+    fn approve_proposal_when_voting_period_expired_if_only_quorum_voted() {
+        with_externalities(&mut new_test_ext(), || {
+            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
+            Balances::increase_total_stake_by(INITIAL_BALANCE);
+
+            assert_ok!(self::_create_default_proposal());
+
+            // Only quorum of councilors approved, other councilors didn't vote:
+            let approvals = Proposals::approval_quorum_seats();
+            for i in 0..approvals as usize {
+                let vote = if (i as u32) < approvals { Approve } else { Slash };
+                assert_ok!(Proposals::vote_on_proposal(
+                    Origin::signed(ALL_COUNCILORS[i]), 1, vote));
+            }
+            assert_eq!(Proposals::votes_by_proposal(1).len() as u32, approvals);
+            
+            assert_runtime_code_empty!();
+
+            let expiration_block = System::block_number() + Proposals::voting_period();
+            System::set_block_number(2);
+            Proposals::on_finalise(2);
+
+            // Check that runtime code has NOT been updated yet, 
+            // because not all councilors voted and voting period is not expired yet. 
+            assert_runtime_code_empty!();
+            
+            System::set_block_number(expiration_block);
+            Proposals::on_finalise(expiration_block);
+
+            // Check that runtime code has been updated after proposal approved.
+            // TODO Uncomment next line when issue with storage updates fixed:
+            // https://github.com/paritytech/substrate/issues/1638
+            // assert_runtime_code!(wasm_code());
+
+            assert!(Proposals::pending_proposal_ids().is_empty());
+            assert_eq!(Proposals::proposal(1).status, Approved);
+            assert_eq!(Proposals::tally_results(1), TallyResult {
+                proposal_id: 1,
+                abstentions: 0,
+                approvals: approvals,
+                rejections: 0,
+                slashes: 0,
+                status: Approved,
+                finalized_at: expiration_block
             });
 
             // Check that proposer's stake has been added back to his balance:
@@ -1178,54 +1258,6 @@ mod tests {
             //         event: RawEvent::ProposalStatusUpdated(1, Slashed),
             //     }
             // );
-        });
-    }
-
-    // In this case a proposal will be marked as 'Expired'
-    // and it will be processed in the same way as if it has been rejected.
-    #[test]
-    fn expire_proposal_when_not_all_councilors_voted_even_if_quorum_reached() {
-        with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
-            Balances::increase_total_stake_by(INITIAL_BALANCE);
-
-            assert_ok!(self::_create_default_proposal());
-
-            // Only quorum of councilors approved, other councilors didn't vote:
-            let approvals = Proposals::approval_quorum_seats();
-            for i in 0..approvals as usize {
-                let vote = if (i as u32) < approvals { Approve } else { Slash };
-                assert_ok!(Proposals::vote_on_proposal(
-                    Origin::signed(ALL_COUNCILORS[i]), 1, vote));
-            }
-            assert_eq!(Proposals::votes_by_proposal(1).len() as u32, approvals);
-            
-            assert_runtime_code_empty!();
-            
-            let expiration_block = System::block_number() + Proposals::voting_period();
-            System::set_block_number(expiration_block);
-            Proposals::on_finalise(expiration_block);
-
-            // Check that runtime code has NOT been updated after proposal slashed.
-            assert_runtime_code_empty!();
-
-            assert!(Proposals::pending_proposal_ids().is_empty());
-            assert_eq!(Proposals::proposal(1).status, Expired);
-            assert_eq!(Proposals::tally_results(1), TallyResult {
-                proposal_id: 1,
-                abstentions: 0,
-                approvals: approvals,
-                rejections: 0,
-                slashes: 0,
-                status: Expired,
-                finalized_at: expiration_block
-            });
-
-            // Check that proposer's balance reduced by burnt stake:
-            assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE - REJECTION_FEE);
-            assert_eq!(Balances::reserved_balance(PROPOSER1), 0);
-
-            // TODO expect event ProposalStatusUpdated(1, Rejected)
         });
     }
 
