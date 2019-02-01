@@ -1305,7 +1305,40 @@ mod tests {
 
     #[test]
     fn drop_unelected_candidates_should_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            <Applicants<Test>>::put(vec![100, 200, 300]);
 
+            Balances::set_free_balance(&100, 1000);
+
+            <ApplicantStakes<Test>>::insert(100, Stake {
+                refundable: 20 as u32,
+                transferred: 50 as u32,
+            });
+
+            <AvailableCouncilStakesMap<Test>>::insert(100, 100);
+
+            let votes = mock_votes(vec![
+            //  (voter, stake[refundable], candidate)
+                (10, 100, 100),
+                (20, 200, 200),
+                (30, 300, 300),
+            ]);
+
+            let mut tally = Election::tally_votes(&votes);
+            assert_eq!(tally.len(), 3);
+            Election::filter_top_staked(&mut tally, 2);
+            assert_eq!(tally.len(), 2);
+
+            Election::drop_unelected_candidates(&tally);
+
+            // applicant dropped
+            assert_eq!(Election::applicants(), vec![200, 300]);
+            assert!(!<ApplicantStakes<Test>>::exists(100));
+
+            // and refunded
+            assert_eq!(Election::council_stakes(100), 150);
+            assert_eq!(Balances::free_balance(&100), 1020);
+        });
     }
 
 
