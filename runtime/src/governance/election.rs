@@ -1479,6 +1479,9 @@ mod tests {
 
             assert!(Council::council().is_some());
             assert_eq!(Council::council().unwrap().len(), COUNCIL_SIZE);
+            for (i, seat) in Council::council().unwrap().iter().enumerate() {
+                assert_eq!(seat.member, (i + 1) as u64);
+            }
             assert!(Election::stage().is_none());
         });
     }
