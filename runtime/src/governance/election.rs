@@ -1,15 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-// extern crate sr_std;
-// #[cfg(test)]
-// extern crate sr_io;
-// #[cfg(test)]
-// extern crate substrate_primitives;
-// extern crate sr_primitives;
-// #[cfg(feature = "std")]
-// extern crate parity_codec as codec;
-// extern crate srml_system as system;
-
 use srml_support::{StorageValue, StorageMap, dispatch::Result};
 use runtime_primitives::traits::{Hash, As, Zero, SimpleArithmetic};
 use {balances, system::{ensure_signed}};
@@ -57,25 +47,38 @@ impl<Elected, X: CouncilElected<Elected>> CouncilElected<Elected> for (X,) {
     }
 }
 
+pub struct ElectionParameters<BlockNumber, Balance> {
+    pub announcing_period: BlockNumber,
+    pub voting_period: BlockNumber,
+    pub revealing_period: BlockNumber,
+    pub council_size: usize,
+    pub candidacy_limit: usize,
+    pub min_council_stake: Balance,
+}
 
-pub const ANNOUNCING_PERIOD:u64 = 20;
-pub const VOTING_PERIOD:u64 = 20;
-pub const REVEALING_PERIOD:u64 = 20;
-pub const COUNCIL_SIZE: usize = 10;
-pub const CANDIDACY_LIMIT: usize = 20; // should be greater than COUNCIL_SIZE
-pub const COUNCIL_MIN_STAKE: u64 = 100;
+impl<BlockNumber, Balance> Default for ElectionParameters<BlockNumber, Balance>
+    where BlockNumber: SimpleArithmetic, Balance: SimpleArithmetic
+{
+    fn default() -> Self {
+        Self {
+            announcing_period: BlockNumber::sa(100),
+            voting_period: BlockNumber::sa(100),
+            revealing_period: BlockNumber::sa(100),
+            council_size: 10,
+            candidacy_limit: 20,
+            min_council_stake: Balance::sa(100),
+        }
+    }
+}
 
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilElection {
-        //Current stage if there is an election ongoing
+        // Current stage if there is an election ongoing
         ElectionStage get(stage): Option<Stage<T::BlockNumber>>;
 
         // The election round
         ElectionRound get(round): u32;
 
-        // map doesn't have a clear() method so need to keep track of keys to know
-        // what keys to delete later < if council is not modified during election
-        // we could always re-computer the vectors
         BackingStakeHolders get(backing_stakeholders): Vec<T::AccountId>;
         CouncilStakeHolders get(council_stakeholders): Vec<T::AccountId>;
         AvailableBackingStakesMap get(backing_stakes): map T::AccountId => T::Balance;
@@ -88,6 +91,15 @@ decl_storage! {
         // simply a Yes vote for a candidate. Consider changing the vote payload to support
         // For and Against.
         Votes get(votes): map T::Hash => SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>;
+
+        // Parameters for current election round
+        AnnouncingPeriod get(announcing_period) : T::BlockNumber = T::BlockNumber::sa(20);
+        VotingPeriod get(voting_period): T::BlockNumber = T::BlockNumber::sa(20);
+        RevealingPeriod get(revealing_period) : T::BlockNumber = T::BlockNumber::sa(20);
+        CouncilSize get(council_size) : usize = 10;
+        // should be greater than council_size, better to derive it as a multiple of council_size?
+        CandidacyLimit get(candidacy_limit): usize = 20;
+        MinCouncilStake get(min_council_stake): T::Balance = T::Balance::sa(100);
     }
 }
 
@@ -106,12 +118,16 @@ decl_event!(
 	}
 );
 
-impl<T: Trait> root::TriggerElection<council::Council<T::AccountId, T::Balance>> for Module<T> {
-    fn trigger_election(current_council: Option<council::Council<T::AccountId, T::Balance>>) -> Result {
+impl<T: Trait> root::TriggerElection<council::Council<T::AccountId, T::Balance>, ElectionParameters<T::BlockNumber, T::Balance>> for Module<T> {
+    fn trigger_election(
+        current_council: Option<council::Council<T::AccountId, T::Balance>>,
+        params: ElectionParameters<T::BlockNumber, T::Balance>) -> Result
+    {
         if Self::stage().is_some() {
             return Err("election in progress")
         }
 
+        Self::set_election_parameters(params);
         Self::start_election(current_council);
 
         Ok(())
@@ -119,6 +135,15 @@ impl<T: Trait> root::TriggerElection<council::Council<T::AccountId, T::Balance>>
 }
 
 impl<T: Trait> Module<T> {
+    fn set_election_parameters(params: ElectionParameters<T::BlockNumber, T::Balance>) {
+        <AnnouncingPeriod<T>>::put(params.announcing_period);
+        <VotingPeriod<T>>::put(params.voting_period);
+        <RevealingPeriod<T>>::put(params.revealing_period);
+        <CouncilSize<T>>::put(params.council_size);
+        <MinCouncilStake<T>>::put(params.min_council_stake);
+        <CandidacyLimit<T>>::put(params.candidacy_limit);
+    }
+
     fn start_election(current_council: Option<council::Council<T::AccountId, T::Balance>>) {
         //ensure!(Self::stage().is_none());
 
@@ -146,7 +171,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn move_to_announcing_stage() -> Period<T::BlockNumber> {
-        let period = Self::new_period(T::BlockNumber::sa(ANNOUNCING_PERIOD));
+        let period = Self::new_period(Self::announcing_period());
 
         <ElectionStage<T>>::put(Stage::Announcing(period));
 
@@ -176,11 +201,11 @@ impl<T: Trait> Module<T> {
     fn on_announcing_ended() {
         let mut applicants = Self::applicants();
 
-        if applicants.len() < COUNCIL_SIZE {
+        if applicants.len() < Self::council_size() {
             // Not enough candidates announced candidacy
             Self::move_to_announcing_stage();
         } else {
-            let (_, rejected) = Self::get_top_applicants_by_stake(&mut applicants, CANDIDACY_LIMIT);
+            let (_, rejected) = Self::get_top_applicants_by_stake(&mut applicants, Self::candidacy_limit());
 
             Self::drop_applicants(rejected);
 
@@ -189,7 +214,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn move_to_voting_stage() {
-        let period = Self::new_period(T::BlockNumber::sa(VOTING_PERIOD));
+        let period = Self::new_period(Self::voting_period());
 
         <ElectionStage<T>>::put(Stage::Voting(period));
 
@@ -202,7 +227,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn move_to_revealing_stage() {
-        let period = Self::new_period(T::BlockNumber::sa(REVEALING_PERIOD));
+        let period = Self::new_period(Self::revealing_period());
 
         <ElectionStage<T>>::put(Stage::Revealing(period));
 
@@ -237,12 +262,12 @@ impl<T: Trait> Module<T> {
             ()
         }).collect();
 
-        if new_council.len() == COUNCIL_SIZE {
+        if new_council.len() == Self::council_size() {
             // all candidates in the tally will form the new council
-        } else if new_council.len() > COUNCIL_SIZE {
+        } else if new_council.len() > Self::council_size() {
             // we have more than enough elected candidates to form the new council
-            // select top COUNCIL_SIZE prioritised by stake
-            Self::filter_top_staked(&mut new_council, COUNCIL_SIZE);
+            // select top staked prioritised by stake
+            Self::filter_top_staked(&mut new_council, Self::council_size());
         } else {
             // Not enough candidates with votes to form a council.
             // This may happen if we didn't add candidates with zero votes to the tally,
@@ -540,7 +565,7 @@ impl<T: Trait> Module<T> {
 
         let total_stake = applicant_stake.add(&new_stake);
 
-        if T::Balance::sa(COUNCIL_MIN_STAKE) > total_stake.total() {
+        if Self::min_council_stake() > total_stake.total() {
             return Err("minimum stake not met");
         }
 
@@ -720,7 +745,7 @@ mod tests {
     fn start_election_should_work() {
         with_externalities(&mut initial_test_ext(), || {
             System::set_block_number(1);
-
+            <AnnouncingPeriod<Test>>::put(20);
             let prev_round = Election::round();
 
             Election::start_election(None);
@@ -731,7 +756,7 @@ mod tests {
             // we enter the announcing stage for a specified period
             assert_announcing_period(election::Period {
                 starts: 1,
-                ends: 1 + election::ANNOUNCING_PERIOD
+                ends: 1 + Election::announcing_period()
             });
 
             // transferable stakes should have been initialized..(if council exists)
@@ -814,15 +839,18 @@ mod tests {
 
             let applicant = 20 as u64;
 
+            let min_stake = 100 as u32;
+            <MinCouncilStake<Test>>::put(min_stake);
+
             // must provide stake
             assert!(Election::try_add_applicant(applicant, 0).is_err());
 
             // Get some balance
-            let starting_balance = (election::COUNCIL_MIN_STAKE * 10) as u32;
+            let starting_balance = (min_stake * 10) as u32;
             Balances::set_free_balance(&applicant, starting_balance);
 
             // must provide min stake
-            let stake = election::COUNCIL_MIN_STAKE as u32;
+            let stake = min_stake as u32;
             assert!(Election::try_add_applicant(applicant, stake - 1).is_err());
 
             // with enough balance and stake, announcing should work
@@ -840,7 +868,8 @@ mod tests {
     fn increasing_stake_when_announcing_should_work () {
         with_externalities(&mut initial_test_ext(), || {
             let applicant = 20 as u64;
-            let starting_stake = election::COUNCIL_MIN_STAKE as u32;
+            <MinCouncilStake<Test>>::put(100);
+            let starting_stake = Election::min_council_stake();
 
             <Applicants<Test>>::put(vec![applicant]);
             <ApplicantStakes<Test>>::insert(applicant, Stake {
@@ -862,7 +891,7 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
 
             let applicant = 20 as u64;
-
+            <MinCouncilStake<Test>>::put(100);
             Balances::set_free_balance(&applicant, 5000);
 
             <CouncilStakeHolders<Test>>::put(vec![applicant]);
@@ -870,7 +899,7 @@ mod tests {
 
             <Applicants<Test>>::put(vec![applicant]);
             let starting_stake = Stake {
-                refundable: election::COUNCIL_MIN_STAKE as u32,
+                refundable: Election::min_council_stake(),
                 transferred: 0,
             };
             <ApplicantStakes<Test>>::insert(applicant, starting_stake);
@@ -896,6 +925,8 @@ mod tests {
     fn moving_to_voting_without_enough_applicants_should_not_work() {
         with_externalities(&mut initial_test_ext(), || {
             System::set_block_number(1);
+            <AnnouncingPeriod<Test>>::put(20);
+            <CouncilSize<Test>>::put(10);
             let ann_period = Election::move_to_announcing_stage();
             let round = Election::round();
 
@@ -913,7 +944,7 @@ mod tests {
             }
 
             // make sure we are testing the condition that we don't have enough applicants
-            assert!(election::COUNCIL_SIZE > applicants.len());
+            assert!(Election::council_size() > applicants.len());
 
             // try to move to voting stage
             System::set_block_number(ann_period.ends);
@@ -925,7 +956,7 @@ mod tests {
             // A new announcing period started
             assert_announcing_period(Period {
                 starts: ann_period.ends,
-                ends: ann_period.ends + election::ANNOUNCING_PERIOD,
+                ends: ann_period.ends + Election::announcing_period(),
             });
 
             // applicants list should be unchanged..
@@ -1437,6 +1468,13 @@ mod tests {
             assert!(Council::council().is_none());
             assert!(Election::stage().is_none());
 
+            <CouncilSize<Test>>::put(10);
+            <MinCouncilStake<Test>>::put(50);
+            <AnnouncingPeriod<Test>>::put(10);
+            <VotingPeriod<Test>>::put(10);
+            <RevealingPeriod<Test>>::put(10);
+            <CandidacyLimit<Test>>::put(20);
+
             for i in 1..20 {
                 Balances::set_free_balance(&(i as u64), 50000);
             }
@@ -1449,7 +1487,7 @@ mod tests {
                 assert!(Election::announce_candidacy(Origin::signed(i + 1000), 150).is_err());
             }
 
-            let n = 1 + ANNOUNCING_PERIOD;
+            let n = 1 + Election::announcing_period();
             System::set_block_number(n);
             Election::tick(n);
 
@@ -1461,7 +1499,7 @@ mod tests {
                 assert!(Election::vote_for_candidate(Origin::signed(i), make_commitment_for_candidate(i + 1000, &mut vec![42u8]), 100).is_ok());
             }
 
-            let n = n + VOTING_PERIOD;
+            let n = n + Election::voting_period();
             System::set_block_number(n);
             Election::tick(n);
 
@@ -1473,12 +1511,12 @@ mod tests {
                 assert!(Election::reveal_vote(Origin::signed(i), make_commitment_for_candidate(i + 1000, &mut vec![42u8]), i + 1000, vec![42u8]).is_err());
             }
 
-            let n = n + REVEALING_PERIOD;
+            let n = n + Election::revealing_period();
             System::set_block_number(n);
             Election::tick(n);
 
             assert!(Council::council().is_some());
-            assert_eq!(Council::council().unwrap().len(), COUNCIL_SIZE);
+            assert_eq!(Council::council().unwrap().len(), Election::council_size());
             for (i, seat) in Council::council().unwrap().iter().enumerate() {
                 assert_eq!(seat.member, (i + 1) as u64);
             }

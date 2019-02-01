@@ -1,19 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate sr_std;
-#[cfg(test)]
-extern crate sr_io;
-#[cfg(test)]
-extern crate substrate_primitives;
-extern crate sr_primitives;
-#[cfg(feature = "std")]
-extern crate parity_codec as codec;
-extern crate srml_system as system;
 use srml_support::dispatch::Vec;
 use rstd::collections::btree_map::BTreeMap;
 
 use srml_support::{StorageValue, dispatch::Result};
-use runtime_primitives::traits::{Hash, As};
+use runtime_primitives::traits::{As};
 use {balances, system::{ensure_signed}};
 
 use rstd::ops::Add;

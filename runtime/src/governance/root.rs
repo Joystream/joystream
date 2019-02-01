@@ -7,24 +7,24 @@ use governance::{council, election};
 use runtime_io::print;
 
 // Hook For starting election
-pub trait TriggerElection<CurrentCouncil> {
-    fn trigger_election(current: Option<CurrentCouncil>) -> Result;
+pub trait TriggerElection<CurrentCouncil, Params> {
+    fn trigger_election(current: Option<CurrentCouncil>, params: Params) -> Result;
 }
 
-impl<CurrentCouncil> TriggerElection<CurrentCouncil> for () {
-    fn trigger_election(_: Option<CurrentCouncil>) -> Result { Ok(())}
+impl<CurrentCouncil, Params> TriggerElection<CurrentCouncil, Params> for () {
+    fn trigger_election(_: Option<CurrentCouncil>, _: Params) -> Result { Ok(())}
 }
 
-impl<CurrentCouncil, X: TriggerElection<CurrentCouncil>> TriggerElection<CurrentCouncil> for (X,) {
-    fn trigger_election(current: Option<CurrentCouncil>) -> Result{
-        X::trigger_election(current)
+impl<CurrentCouncil, Params, X: TriggerElection<CurrentCouncil, Params>> TriggerElection<CurrentCouncil, Params> for (X,) {
+    fn trigger_election(current: Option<CurrentCouncil>, params: Params) -> Result{
+        X::trigger_election(current, params)
     }
 }
 
 pub trait Trait: system::Trait + council::Trait + election::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type TriggerElection: TriggerElection<council::Council<Self::AccountId, Self::Balance>>;
+    type TriggerElection: TriggerElection<council::Council<Self::AccountId, Self::Balance>, election::ElectionParameters<Self::BlockNumber, Self::Balance>>;
 }
 
 decl_storage! {
@@ -44,7 +44,11 @@ impl<T: Trait> Module<T> {
     fn tick (n: T::BlockNumber) {
         if <council::Module<T>>::term_ended(n) && <election::Module<T>>::stage().is_none() {
             let current_council = <council::Module<T>>::council();
-            if T::TriggerElection::trigger_election(current_council).is_ok() {
+
+            // TODO: get params from governance parameters module
+            let params = Default::default();
+
+            if T::TriggerElection::trigger_election(current_council, params).is_ok() {
                 print("Election Started");
                 Self::deposit_event(RawEvent::ElectionStarted(n));
             }
@@ -84,10 +88,10 @@ mod tests {
     #[test]
     fn start_election_if_election_running_should_fail() {
         with_externalities(&mut initial_test_ext(), || {
-            assert!(<Test as root::Trait>::TriggerElection::trigger_election(None).is_ok());
+            assert!(<Test as root::Trait>::TriggerElection::trigger_election(None, Default::default()).is_ok());
 
             // Should fail to start election if already ongoing
-            assert!(<Test as root::Trait>::TriggerElection::trigger_election(None).is_err());
+            assert!(<Test as root::Trait>::TriggerElection::trigger_election(None, Default::default()).is_err());
         });
     }
 }
