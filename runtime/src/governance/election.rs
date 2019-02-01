@@ -1431,25 +1431,55 @@ mod tests {
         });
     }
 
-    // Tests Extrinsics - (Transactions)
     #[test]
-    #[ignore]
-    fn extrinsic_can_announce_at_correct_stage () {
-        // extrinsic test
-        assert!(false, "not implemented");
-    }
+    fn simulation() {
+        with_externalities(&mut initial_test_ext(), || {
+            assert!(Council::council().is_none());
+            assert!(Election::stage().is_none());
 
-    #[test]
-    #[ignore]
-    fn extrinsic_can_vote_at_correct_stage () {
-        // extrinsic test
-        assert!(false, "not implemented");
-    }
+            for i in 1..20 {
+                Balances::set_free_balance(&(i as u64), 50000);
+            }
 
-    #[test]
-    #[ignore]
-    fn extrinsic_can_reveal_at_correct_stage () {
-        // extrinsic test
-        assert!(false, "not implemented");
+            System::set_block_number(1);
+            Election::start_election(None);
+
+            for i in 1..20 {
+                assert!(Election::announce_candidacy(Origin::signed(i), 150).is_ok());
+                assert!(Election::announce_candidacy(Origin::signed(i + 1000), 150).is_err());
+            }
+
+            let n = 1 + ANNOUNCING_PERIOD;
+            System::set_block_number(n);
+            Election::tick(n);
+
+            for i in 1..20 {
+                assert!(Election::vote_for_candidate(Origin::signed(i), make_commitment_for_candidate(i, &mut vec![40u8]), 100).is_ok());
+
+                assert!(Election::vote_for_candidate(Origin::signed(i), make_commitment_for_candidate(i, &mut vec![41u8]), 100).is_ok());
+
+                assert!(Election::vote_for_candidate(Origin::signed(i), make_commitment_for_candidate(i + 1000, &mut vec![42u8]), 100).is_ok());
+            }
+
+            let n = n + VOTING_PERIOD;
+            System::set_block_number(n);
+            Election::tick(n);
+
+            for i in 1..20 {
+                assert!(Election::reveal_vote(Origin::signed(i), make_commitment_for_candidate(i, &mut vec![40u8]), i, vec![40u8]).is_ok());
+                //wrong salt
+                assert!(Election::reveal_vote(Origin::signed(i), make_commitment_for_candidate(i, &mut vec![41u8]), i, vec![]).is_err());
+                //vote not for valid candidate
+                assert!(Election::reveal_vote(Origin::signed(i), make_commitment_for_candidate(i + 1000, &mut vec![42u8]), i + 1000, vec![42u8]).is_err());
+            }
+
+            let n = n + REVEALING_PERIOD;
+            System::set_block_number(n);
+            Election::tick(n);
+
+            assert!(Council::council().is_some());
+            assert_eq!(Council::council().unwrap().len(), COUNCIL_SIZE);
+            assert!(Election::stage().is_none());
+        });
     }
 }
