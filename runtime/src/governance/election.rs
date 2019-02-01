@@ -19,17 +19,11 @@ pub trait Trait: system::Trait + balances::Trait {
     type CouncilElected: CouncilElected<BTreeMap<Self::AccountId, council::Seat<Self::AccountId, Self::Balance>>>;
 }
 
-#[derive(Clone, Copy, Encode, Decode, PartialEq, Debug)]
-pub struct Period<T: PartialOrd + PartialEq + Copy> {
-    pub starts: T,
-    pub ends: T
-}
-
 #[derive(Clone, Copy, Encode, Decode)]
 pub enum Stage<T: PartialOrd + PartialEq + Copy> {
-    Announcing(Period<T>),
-    Voting(Period<T>),
-    Revealing(Period<T>),
+    Announcing(T),
+    Voting(T),
+    Revealing(T),
 }
 
 // Hook for setting a new council when it is elected
@@ -153,12 +147,8 @@ impl<T: Trait> Module<T> {
         Self::move_to_announcing_stage();
     }
 
-    fn new_period(length: T::BlockNumber) -> Period<T::BlockNumber> {
-        let current_block = <system::Module<T>>::block_number();
-        Period {
-            starts: current_block,
-            ends: current_block + length
-        }
+    fn new_period(length: T::BlockNumber) -> T::BlockNumber {
+        <system::Module<T>>::block_number() + length
     }
 
     fn bump_round() -> u32 {
@@ -170,7 +160,7 @@ impl<T: Trait> Module<T> {
         })
     }
 
-    fn move_to_announcing_stage() -> Period<T::BlockNumber> {
+    fn move_to_announcing_stage() -> T::BlockNumber {
         let period = Self::new_period(Self::announcing_period());
 
         <ElectionStage<T>>::put(Stage::Announcing(period));
@@ -490,20 +480,20 @@ impl<T: Trait> Module<T> {
         print("Election: tick");
         if let Some(stage) = Self::stage() {
             match stage {
-                Stage::Announcing(period) => {
-                    if period.ends == now {
+                Stage::Announcing(ends) => {
+                    if ends == now {
                         Self::deposit_event(RawEvent::AnnouncingEnded());
                         Self::on_announcing_ended();
                     }
                 },
-                Stage::Voting(period) => {
-                    if period.ends == now {
+                Stage::Voting(ends) => {
+                    if ends == now {
                         Self::deposit_event(RawEvent::VotingEnded());
                         Self::on_voting_ended();
                     }
                 },
-                Stage::Revealing(period) => {
-                    if period.ends == now {
+                Stage::Revealing(ends) => {
+                    if ends == now {
                         Self::deposit_event(RawEvent::RevealingEnded());
                         Self::on_revealing_ended();
                     }
@@ -726,7 +716,7 @@ mod tests {
 
     }
 
-    fn assert_announcing_period (expected_period: Period<<Test as system::Trait>::BlockNumber>) {
+    fn assert_announcing_period (expected_period: <Test as system::Trait>::BlockNumber) {
         assert!(Election::stage().is_some(), "Election Stage was not set");
 
         let election_stage = Election::stage().unwrap();
@@ -754,10 +744,7 @@ mod tests {
             assert_eq!(Election::round(), prev_round + 1);
 
             // we enter the announcing stage for a specified period
-            assert_announcing_period(election::Period {
-                starts: 1,
-                ends: 1 + Election::announcing_period()
-            });
+            assert_announcing_period(1 + Election::announcing_period());
 
             // transferable stakes should have been initialized..(if council exists)
         });
@@ -927,7 +914,7 @@ mod tests {
             System::set_block_number(1);
             <AnnouncingPeriod<Test>>::put(20);
             <CouncilSize<Test>>::put(10);
-            let ann_period = Election::move_to_announcing_stage();
+            let ann_ends = Election::move_to_announcing_stage();
             let round = Election::round();
 
             // add applicants
@@ -947,17 +934,14 @@ mod tests {
             assert!(Election::council_size() > applicants.len());
 
             // try to move to voting stage
-            System::set_block_number(ann_period.ends);
+            System::set_block_number(ann_ends);
             Election::on_announcing_ended();
 
             // A new round should have been started
             assert_eq!(Election::round(), round + 1);
 
             // A new announcing period started
-            assert_announcing_period(Period {
-                starts: ann_period.ends,
-                ends: ann_period.ends + Election::announcing_period(),
-            });
+            assert_announcing_period(ann_ends + Election::announcing_period());
 
             // applicants list should be unchanged..
             assert_eq!(Election::applicants(), applicants);
