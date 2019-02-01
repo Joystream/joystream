@@ -1416,9 +1416,19 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
-    fn council_is_set_after_revealing_should_work() {
-        assert!(false, "not implemented");
+    fn council_elected_hook_should_work() {
+        with_externalities(&mut initial_test_ext(), || {
+
+            let mut new_council: BTreeMap<u64, council::Seat<u64, u32>> = BTreeMap::new();
+            new_council.insert(200 as u64, council::Seat{ member: 200 as u64, stake: 10 as u32, backers: vec![]});
+            new_council.insert(300 as u64, council::Seat{ member: 300 as u64, stake: 20 as u32, backers: vec![]});
+
+            assert!(Council::council().is_none());
+
+            <Test as election::Trait>::CouncilElected::council_elected(&new_council);
+
+            assert!(Council::council().is_some());
+        });
     }
 
     // Tests Extrinsics - (Transactions)
