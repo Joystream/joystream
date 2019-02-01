@@ -32,7 +32,7 @@ pub struct Seat<Id, Stake> {
     pub backers: Vec<Backer<Id, Stake>>,
 }
 
-impl<Id, Stake> Seat<Id, Stake> 
+impl<Id, Stake> Seat<Id, Stake>
     where Stake: Add<Output=Stake> + Copy,
 {
     pub fn total_stake(&self) -> Stake {

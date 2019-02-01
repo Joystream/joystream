@@ -4,7 +4,7 @@ use parity_codec::Encode;
 use srml_support::dispatch::Vec;
 
 #[derive(Clone, Copy, Encode, Decode, Default)]
-pub struct SealedVote<AccountId, Stake, Hash, Vote> 
+pub struct SealedVote<AccountId, Stake, Hash, Vote>
     where Vote: Encode, Hash: PartialEq, AccountId: PartialEq
 {
   pub voter: AccountId,
@@ -13,7 +13,7 @@ pub struct SealedVote<AccountId, Stake, Hash, Vote>
   vote: Option<Vote>, // will be set when unsealing
 }
 
-impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>    
+impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
     where Vote: Encode, Hash: PartialEq, AccountId: PartialEq
 {
     pub fn new(voter: AccountId, stake: Stake, commitment: Hash) -> SealedVote<AccountId, Stake, Hash, Vote> {
@@ -22,6 +22,15 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
             commitment,
             stake,
             vote: None,
+        }
+    }
+
+    pub fn new_unsealed(voter: AccountId, stake: Stake, commitment: Hash, vote: Vote) -> SealedVote<AccountId, Stake, Hash, Vote> {
+        SealedVote {
+            voter,
+            commitment,
+            stake,
+            vote: Some(vote),
         }
     }
 

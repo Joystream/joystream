@@ -419,8 +419,19 @@ impl<T: Trait> Module<T> {
 
     fn filter_top_staked(tally: &mut BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>>, limit: usize) {
 
+        if limit >= tally.len() {
+            return;
+        }
+
         // use ordering in the applicants vector (not ordering resulting from btreemap iteration)
         let mut seats: Vec<T::AccountId> = Self::applicants().into_iter().filter(|id| tally.get(id).is_some()).collect();
+
+        // ensure_eq!(seats.len(), tally.len());
+
+        if limit >= seats.len() {
+            // Tally is inconsistent with list of candidates!
+            return;
+        }
 
         // TODO: order by number of votes, then number of backers
 
@@ -431,7 +442,7 @@ impl<T: Trait> Module<T> {
         });
 
         // seats at bottom of list
-        let filtered_out_seats = &seats[0 .. seats.len() - rstd::cmp::min(limit, seats.len())];
+        let filtered_out_seats = &seats[0 .. seats.len() - limit];
 
         for id in filtered_out_seats {
             tally.remove(id);
@@ -1177,13 +1188,134 @@ mod tests {
         });
     }
 
+    pub fn mock_votes (mock: Vec<(u64, u32, u64)>) -> Vec<SealedVote<u64, Stake<u32>, primitives::H256, u64>> {
+        let commitment = make_commitment_for_candidate(1, &mut vec![0u8]);
+
+        mock.into_iter().map(|(voter, stake, candidate)| SealedVote::new_unsealed(voter as u64, Stake {
+            refundable: stake as u32, transferred: 0 as u32
+        }, commitment, candidate as u64)).collect()
+    }
+
+
     #[test]
     fn vote_tallying_should_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            let votes = mock_votes(vec![
+            //  (voter, stake[refundable], candidate)
+                (10, 100, 100),
+                (10, 150, 100),
+
+                (10, 500, 200),
+                (20, 200, 200),
+
+                (30, 300, 300),
+                (30, 400, 300),
+            ]);
+
+            let tally = Election::tally_votes(&votes);
+
+            assert_eq!(tally.len(), 3);
+
+            assert_eq!(tally.get(&100).unwrap().member, 100);
+            assert_eq!(tally.get(&100).unwrap().backers, vec![
+                council::Backer {
+                    member: 10 as u64,
+                    stake: 100 as u32,
+                },
+                council::Backer {
+                    member: 10 as u64,
+                    stake: 150 as u32,
+                },
+            ]);
+
+            assert_eq!(tally.get(&200).unwrap().member, 200);
+            assert_eq!(tally.get(&200).unwrap().backers, vec![
+                council::Backer {
+                    member: 10 as u64,
+                    stake: 500 as u32,
+                },
+                council::Backer {
+                    member: 20 as u64,
+                    stake: 200 as u32,
+                }
+            ]);
+
+            assert_eq!(tally.get(&300).unwrap().member, 300);
+            assert_eq!(tally.get(&300).unwrap().backers, vec![
+                council::Backer {
+                    member: 30 as u64,
+                    stake: 300 as u32,
+                },
+                council::Backer {
+                    member: 30 as u64,
+                    stake: 400 as u32,
+                }
+            ]);
+        });
+    }
+
+   #[test]
+    fn filter_top_staked_candidates_should_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            // filter_top_staked depends on order of candidates
+            // and would panic if tally size was larger than applicants
+            <Applicants<Test>>::put(vec![100, 200, 300]);
+
+            {
+                let votes = mock_votes(vec![
+                //  (voter, stake[refundable], candidate)
+                    (10, 100, 100),
+                    (10, 150, 100),
+
+                    (10, 500, 200),
+                    (20, 200, 200),
+
+                    (30, 300, 300),
+                    (30, 400, 300),
+                ]);
+
+                let mut tally = Election::tally_votes(&votes);
+                assert_eq!(tally.len(), 3);
+                Election::filter_top_staked(&mut tally, 3);
+                assert_eq!(tally.len(), 3);
+            }
+
+            {
+                let votes = mock_votes(vec![
+                //  (voter, stake[refundable], candidate)
+                    (10, 100, 100),
+                    (10, 150, 100),
+
+                    (10, 500, 200),
+                    (20, 200, 200),
+
+                    (30, 300, 300),
+                    (30, 400, 300),
+                ]);
+
+                let mut tally = Election::tally_votes(&votes);
+                assert_eq!(tally.len(), 3);
+                Election::filter_top_staked(&mut tally, 2);
+                assert_eq!(tally.len(), 2);
+                assert!(tally.get(&200).is_some());
+                assert!(tally.get(&300).is_some());
+            }
+        });
+    }
+
+    #[test]
+    fn drop_unelected_candidates_should_work () {
+
+    }
+
+
+    #[test]
+    fn refunding_voting_stakes_should_work () {
 
     }
 
     #[test]
-    fn refunding_voting_stakes_should_work () {
+    fn refund_unused_transferable_stakes_should_work () {
 
     }
 
