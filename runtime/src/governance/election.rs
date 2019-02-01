@@ -259,10 +259,13 @@ impl<T: Trait> Module<T> {
         // other than just the minimum stake for candidacy, we have a new council!
 
         Self::refund_voting_stakes(&votes, &new_council);
+        Self::clear_votes();
+
         Self::drop_unelected_candidates(&new_council);
-        // clear applicants
         Self::clear_applicants();
-        Self::refund_unused_transferable_stakes();
+
+        Self::refund_transferable_stakes();
+        Self::clear_transferable_stakes();
 
         <ElectionStage<T>>::kill();
 
@@ -272,7 +275,7 @@ impl<T: Trait> Module<T> {
         print("Election Completed");
     }
 
-    fn refund_unused_transferable_stakes() {
+    fn refund_transferable_stakes() {
         // move stakes back to account holder's free balance
         for stakeholder in Self::backing_stakeholders().iter() {
             let stake = Self::backing_stakes(stakeholder);
@@ -280,9 +283,7 @@ impl<T: Trait> Module<T> {
                 let balance = <balances::Module<T>>::free_balance(stakeholder);
                 <balances::Module<T>>::set_free_balance(stakeholder, balance + stake);
             }
-            <AvailableBackingStakesMap<T>>::remove(stakeholder);
         }
-        <BackingStakeHolders<T>>::kill();
 
         for stakeholder in Self::council_stakeholders().iter() {
             let stake = Self::council_stakes(stakeholder);
@@ -290,8 +291,19 @@ impl<T: Trait> Module<T> {
                 let balance = <balances::Module<T>>::free_balance(stakeholder);
                 <balances::Module<T>>::set_free_balance(stakeholder, balance + stake);
             }
+        }
+    }
+
+    fn clear_transferable_stakes() {
+        for stakeholder in Self::backing_stakeholders() {
+            <AvailableBackingStakesMap<T>>::remove(stakeholder);
+        }
+
+        for stakeholder in Self::council_stakeholders() {
             <AvailableCouncilStakesMap<T>>::remove(stakeholder);
         }
+
+        <BackingStakeHolders<T>>::kill();
         <CouncilStakeHolders<T>>::kill();
     }
 
@@ -369,13 +381,13 @@ impl<T: Trait> Module<T> {
                     <AvailableBackingStakesMap<T>>::mutate(&sealed_vote.voter, |stake| *stake += sealed_vote.stake.transferred);
                 }
             }
-
-            // remove vote
-            <Votes<T>>::remove(sealed_vote.commitment);
         }
+    }
 
-        // clear commitments
-        //<Commitments<T>>::put(Vec::new());
+    fn clear_votes() {
+        for commitment in Self::commitments() {
+            <Votes<T>>::remove(commitment);
+        }
         <Commitments<T>>::kill();
     }
 
@@ -1344,32 +1356,35 @@ mod tests {
 
     #[test]
     fn refunding_voting_stakes_should_work () {
-
+        assert!(false, "not implemented");
     }
 
     #[test]
     fn refund_unused_transferable_stakes_should_work () {
-
+        assert!(false, "not implemented");
     }
 
     #[test]
     fn council_is_set_after_revealing_should_work() {
-
+        assert!(false, "not implemented");
     }
 
     // Tests Extrinsics - (Transactions)
     #[test]
     fn extrinsic_can_announce_at_correct_stage () {
         // extrinsic test
+        assert!(false, "not implemented");
     }
 
     #[test]
     fn extrinsic_can_vote_at_correct_stage () {
         // extrinsic test
+        assert!(false, "not implemented");
     }
 
     #[test]
     fn extrinsic_can_reveal_at_correct_stage () {
         // extrinsic test
+        assert!(false, "not implemented");
     }
 }
