@@ -44,9 +44,6 @@ pub struct Backer<Id, Stake> {
 
 pub type Council<AccountId, Balance> = Vec<Seat<AccountId, Balance>>;
 
-const COUNCIL_TERM: u64 = 1000;
-
-
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilInSession {
         // Initial state - council is empty and resigned, which will trigger
@@ -54,6 +51,8 @@ decl_storage! {
         ActiveCouncil get(council) config(): Option<Council<T::AccountId, T::Balance>>;
 
         TermEnds get(term_ends) config(): T::BlockNumber = T::BlockNumber::sa(0);
+
+        CouncilTerm get(council_term): T::BlockNumber = T::BlockNumber::sa(1000);
     }
 }
 
@@ -71,7 +70,7 @@ impl<T: Trait> election::CouncilElected<BTreeMap<T::AccountId, Seat<T::AccountId
 
         <ActiveCouncil<T>>::put(new_council);
 
-        let next_term_ends = <system::Module<T>>::block_number() + T::BlockNumber::sa(COUNCIL_TERM);
+        let next_term_ends = <system::Module<T>>::block_number() + Self::council_term();
         <TermEnds<T>>::put(next_term_ends);
     }
 }
