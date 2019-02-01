@@ -1200,11 +1200,11 @@ mod tests {
         });
     }
 
-    pub fn mock_votes (mock: Vec<(u64, u32, u64)>) -> Vec<SealedVote<u64, Stake<u32>, primitives::H256, u64>> {
+    pub fn mock_votes (mock: Vec<(u64, u32, u32, u64)>) -> Vec<SealedVote<u64, Stake<u32>, primitives::H256, u64>> {
         let commitment = make_commitment_for_candidate(1, &mut vec![0u8]);
 
-        mock.into_iter().map(|(voter, stake, candidate)| SealedVote::new_unsealed(voter as u64, Stake {
-            refundable: stake as u32, transferred: 0 as u32
+        mock.into_iter().map(|(voter, stake_ref, stake_tran, candidate)| SealedVote::new_unsealed(voter as u64, Stake {
+            refundable: stake_ref as u32, transferred: stake_tran as u32
         }, commitment, candidate as u64)).collect()
     }
 
@@ -1213,15 +1213,15 @@ mod tests {
     fn vote_tallying_should_work () {
         with_externalities(&mut initial_test_ext(), || {
             let votes = mock_votes(vec![
-            //  (voter, stake[refundable], candidate)
-                (10, 100, 100),
-                (10, 150, 100),
+            //  (voter, stake[refundable], stake[transferred], candidate)
+                (10, 100, 0, 100),
+                (10, 150, 0, 100),
 
-                (10, 500, 200),
-                (20, 200, 200),
+                (10, 500, 0, 200),
+                (20, 200, 0, 200),
 
-                (30, 300, 300),
-                (30, 400, 300),
+                (30, 300, 0, 300),
+                (30, 400, 0, 300),
             ]);
 
             let tally = Election::tally_votes(&votes);
@@ -1276,14 +1276,14 @@ mod tests {
             {
                 let votes = mock_votes(vec![
                 //  (voter, stake[refundable], candidate)
-                    (10, 100, 100),
-                    (10, 150, 100),
+                    (10, 100, 0, 100),
+                    (10, 150, 0, 100),
 
-                    (10, 500, 200),
-                    (20, 200, 200),
+                    (10, 500, 0, 200),
+                    (20, 200, 0, 200),
 
-                    (30, 300, 300),
-                    (30, 400, 300),
+                    (30, 300, 0, 300),
+                    (30, 400, 0, 300),
                 ]);
 
                 let mut tally = Election::tally_votes(&votes);
@@ -1295,14 +1295,14 @@ mod tests {
             {
                 let votes = mock_votes(vec![
                 //  (voter, stake[refundable], candidate)
-                    (10, 100, 100),
-                    (10, 150, 100),
+                    (10, 100, 0, 100),
+                    (10, 150, 0, 100),
 
-                    (10, 500, 200),
-                    (20, 200, 200),
+                    (10, 500, 0, 200),
+                    (20, 200, 0, 200),
 
-                    (30, 300, 300),
-                    (30, 400, 300),
+                    (30, 300, 0, 300),
+                    (30, 400, 0, 300),
                 ]);
 
                 let mut tally = Election::tally_votes(&votes);
@@ -1329,19 +1329,11 @@ mod tests {
 
             <AvailableCouncilStakesMap<Test>>::insert(100, 100);
 
-            let votes = mock_votes(vec![
-            //  (voter, stake[refundable], candidate)
-                (10, 100, 100),
-                (20, 200, 200),
-                (30, 300, 300),
-            ]);
+            let mut new_council: BTreeMap<u64, council::Seat<u64, u32>> = BTreeMap::new();
+            new_council.insert(200 as u64, council::Seat{ member: 200 as u64, stake: 0 as u32, backers: vec![]});
+            new_council.insert(300 as u64, council::Seat{ member: 300 as u64, stake: 0 as u32, backers: vec![]});
 
-            let mut tally = Election::tally_votes(&votes);
-            assert_eq!(tally.len(), 3);
-            Election::filter_top_staked(&mut tally, 2);
-            assert_eq!(tally.len(), 2);
-
-            Election::drop_unelected_candidates(&tally);
+            Election::drop_unelected_candidates(&new_council);
 
             // applicant dropped
             assert_eq!(Election::applicants(), vec![200, 300]);
@@ -1356,33 +1348,76 @@ mod tests {
 
     #[test]
     fn refunding_voting_stakes_should_work () {
+        with_externalities(&mut initial_test_ext(), || {
+            // voters' balances
+            Balances::set_free_balance(&10, 1000);
+            Balances::set_free_balance(&20, 2000);
+            Balances::set_free_balance(&30, 3000);
+
+            <AvailableBackingStakesMap<Test>>::insert(10, 100);
+            <AvailableBackingStakesMap<Test>>::insert(20, 200);
+            <AvailableBackingStakesMap<Test>>::insert(30, 300);
+
+            let votes = mock_votes(vec![
+            //  (voter, stake[refundable], stake[transferred], candidate)
+                (10, 100, 20, 100),
+                (20, 200, 40, 100),
+                (30, 300, 60, 100),
+
+                (10, 500, 70, 200),
+                (20, 600, 80, 200),
+                (30, 700, 90, 200),
+
+                (10,  800, 100, 300),
+                (20,  900, 120, 300),
+                (30, 1000, 140, 300),
+            ]);
+
+            let mut new_council: BTreeMap<u64, council::Seat<u64, u32>> = BTreeMap::new();
+            new_council.insert(200 as u64, council::Seat{ member: 200 as u64, stake: 0 as u32, backers: vec![]});
+            new_council.insert(300 as u64, council::Seat{ member: 300 as u64, stake: 0 as u32, backers: vec![]});
+
+            Election::refund_voting_stakes(&votes, &new_council);
+
+            assert_eq!(Balances::free_balance(&10), 1100);
+            assert_eq!(Balances::free_balance(&20), 2200);
+            assert_eq!(Balances::free_balance(&30), 3300);
+
+            assert_eq!(Election::backing_stakes(10), 120);
+            assert_eq!(Election::backing_stakes(20), 240);
+            assert_eq!(Election::backing_stakes(30), 360);
+        });
+    }
+
+    #[test]
+    #[ignore]
+    fn refund_transferable_stakes_should_work () {
         assert!(false, "not implemented");
     }
 
     #[test]
-    fn refund_unused_transferable_stakes_should_work () {
-        assert!(false, "not implemented");
-    }
-
-    #[test]
+    #[ignore]
     fn council_is_set_after_revealing_should_work() {
         assert!(false, "not implemented");
     }
 
     // Tests Extrinsics - (Transactions)
     #[test]
+    #[ignore]
     fn extrinsic_can_announce_at_correct_stage () {
         // extrinsic test
         assert!(false, "not implemented");
     }
 
     #[test]
+    #[ignore]
     fn extrinsic_can_vote_at_correct_stage () {
         // extrinsic test
         assert!(false, "not implemented");
     }
 
     #[test]
+    #[ignore]
     fn extrinsic_can_reveal_at_correct_stage () {
         // extrinsic test
         assert!(false, "not implemented");
