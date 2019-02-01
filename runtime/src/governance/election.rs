@@ -1390,9 +1390,29 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn refund_transferable_stakes_should_work () {
-        assert!(false, "not implemented");
+       with_externalities(&mut initial_test_ext(), || {
+            <BackingStakeHolders<Test>>::put(vec![10,20,30]);
+            <CouncilStakeHolders<Test>>::put(vec![10,20,30]);
+
+            Balances::set_free_balance(&10, 1000);
+            <AvailableBackingStakesMap<Test>>::insert(10, 100);
+            <AvailableCouncilStakesMap<Test>>::insert(10, 50);
+
+            Balances::set_free_balance(&20, 2000);
+            <AvailableBackingStakesMap<Test>>::insert(20, 200);
+            <AvailableCouncilStakesMap<Test>>::insert(20, 60);
+
+            Balances::set_free_balance(&30, 3000);
+            <AvailableBackingStakesMap<Test>>::insert(30, 300);
+            <AvailableCouncilStakesMap<Test>>::insert(30, 70);
+
+            Election::refund_transferable_stakes();
+
+            assert_eq!(Balances::free_balance(&10), 1150);
+            assert_eq!(Balances::free_balance(&20), 2260);
+            assert_eq!(Balances::free_balance(&30), 3370);
+       });
     }
 
     #[test]
