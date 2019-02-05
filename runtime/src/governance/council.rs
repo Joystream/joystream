@@ -7,10 +7,7 @@ use srml_support::{StorageValue, dispatch::Result};
 use runtime_primitives::traits::{As};
 use {balances, system::{ensure_signed}};
 
-use rstd::ops::Add;
-
-use super::election;
-
+pub use election::{Seats as Council, Seat, CouncilElected};
 
 // Hook For announcing that council term has ended
 pub trait CouncilTermEnded {
@@ -33,35 +30,6 @@ pub trait Trait: system::Trait + balances::Trait {
     type CouncilTermEnded: CouncilTermEnded;
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Seat<Id, Stake> {
-    pub member: Id,
-    pub stake: Stake,
-    pub backers: Vec<Backer<Id, Stake>>,
-}
-
-impl<Id, Stake> Seat<Id, Stake>
-    where Stake: Add<Output=Stake> + Copy,
-{
-    pub fn total_stake(&self) -> Stake {
-        let mut stake = self.stake;
-        for backer in self.backers.iter() {
-            stake = stake + backer.stake;
-        }
-        stake
-    }
-}
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Backer<Id, Stake> {
-    pub member: Id,
-    pub stake: Stake,
-}
-
-pub type Council<AccountId, Balance> = Vec<Seat<AccountId, Balance>>;
-
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilInSession {
         // Initial state - council is empty and resigned, which will trigger
@@ -82,11 +50,9 @@ decl_event!(
 	}
 );
 
-impl<T: Trait> election::CouncilElected<BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>> for Module<T> {
-    fn council_elected(council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>) {
-        let new_council: Vec<Seat<T::AccountId, T::Balance>> = council.into_iter().map(|(_, seat)| seat.clone()).collect();
-
-        <ActiveCouncil<T>>::put(new_council);
+impl<T: Trait> CouncilElected<Council<T::AccountId, T::Balance>> for Module<T> {
+    fn council_elected(council: Council<T::AccountId, T::Balance>) {
+        <ActiveCouncil<T>>::put(council);
 
         let next_term_ends = <system::Module<T>>::block_number() + Self::council_term();
         <TermEnds<T>>::put(next_term_ends);

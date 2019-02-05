@@ -7,16 +7,16 @@ use runtime_io::print;
 use srml_support::dispatch::Vec;
 
 use rstd::collections::btree_map::BTreeMap;
+use rstd::ops::Add;
 
 use super::transferable_stake::Stake;
-use super::council;
 use super::sealed_vote::SealedVote;
 use super::root;
 
 pub trait Trait: system::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type CouncilElected: CouncilElected<BTreeMap<Self::AccountId, council::Seat<Self::AccountId, Self::Balance>>>;
+    type CouncilElected: CouncilElected<Seats<Self::AccountId, Self::Balance>>;
 }
 
 #[derive(Clone, Copy, Encode, Decode)]
@@ -26,17 +26,46 @@ pub enum Stage<T: PartialOrd + PartialEq + Copy> {
     Revealing(T),
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Seat<Id, Stake> {
+    pub member: Id,
+    pub stake: Stake,
+    pub backers: Vec<Backer<Id, Stake>>,
+}
+
+impl<Id, Stake> Seat<Id, Stake>
+    where Stake: Add<Output=Stake> + Copy,
+{
+    pub fn total_stake(&self) -> Stake {
+        let mut stake = self.stake;
+        for backer in self.backers.iter() {
+            stake = stake + backer.stake;
+        }
+        stake
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Backer<Id, Stake> {
+    pub member: Id,
+    pub stake: Stake,
+}
+
+pub type Seats<AccountId, Balance> = Vec<Seat<AccountId, Balance>>;
+
 // Hook for setting a new council when it is elected
 pub trait CouncilElected<Elected> {
-    fn council_elected(new_council: &Elected);
+    fn council_elected(new_council: Elected);
 }
 
 impl<Elected> CouncilElected<Elected> for () {
-    fn council_elected(_new_council: &Elected) {}
+    fn council_elected(_new_council: Elected) {}
 }
 
 impl<Elected, X: CouncilElected<Elected>> CouncilElected<Elected> for (X,) {
-    fn council_elected(new_council: &Elected) {
+    fn council_elected(new_council: Elected) {
         X::council_elected(new_council);
     }
 }
@@ -112,9 +141,9 @@ decl_event!(
 	}
 );
 
-impl<T: Trait> root::TriggerElection<council::Council<T::AccountId, T::Balance>, ElectionParameters<T::BlockNumber, T::Balance>> for Module<T> {
+impl<T: Trait> root::TriggerElection<Seats<T::AccountId, T::Balance>, ElectionParameters<T::BlockNumber, T::Balance>> for Module<T> {
     fn trigger_election(
-        current_council: Option<council::Council<T::AccountId, T::Balance>>,
+        current_council: Option<Seats<T::AccountId, T::Balance>>,
         params: ElectionParameters<T::BlockNumber, T::Balance>) -> Result
     {
         if Self::stage().is_none() {
@@ -134,7 +163,7 @@ impl<T: Trait> Module<T> {
         <CandidacyLimit<T>>::put(params.candidacy_limit);
     }
 
-    fn start_election(current_council: Option<council::Council<T::AccountId, T::Balance>>) -> Result {
+    fn start_election(current_council: Option<Seats<T::AccountId, T::Balance>>) -> Result {
         ensure!(Self::stage().is_none(), "election already in progress");
 
         // take snapshot of council and backing stakes of an existing council
@@ -241,7 +270,7 @@ impl<T: Trait> Module<T> {
             .filter(|applicant| new_council.get(applicant).is_none()).collect();
 
         let _: Vec<()> = not_on_council.into_iter().map(|applicant| {
-            new_council.insert(applicant.clone(), council::Seat {
+            new_council.insert(applicant.clone(), Seat {
                 member: applicant.clone(),
                 stake: Self::applicant_stakes(applicant).total(),
                 backers: Vec::new(),
@@ -281,7 +310,8 @@ impl<T: Trait> Module<T> {
 
         <ElectionStage<T>>::kill();
 
-        T::CouncilElected::council_elected(&new_council);
+        let new_council = new_council.into_iter().map(|(_, seat)| seat.clone()).collect();
+        T::CouncilElected::council_elected(new_council);
 
         Self::deposit_event(RawEvent::CouncilElected());
         print("Election Completed");
@@ -352,7 +382,7 @@ impl<T: Trait> Module<T> {
         <Applicants<T>>::put(not_dropped.to_vec());
     }
 
-    fn drop_unelected_candidates(new_council: &BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>>) {
+    fn drop_unelected_candidates(new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>) {
         let applicants_to_drop: Vec<T::AccountId> = Self::applicants().into_iter()
             .filter(|applicant| {
                 match new_council.get(&applicant) {
@@ -366,7 +396,7 @@ impl<T: Trait> Module<T> {
 
     fn refund_voting_stakes(
         sealed_votes: &Vec<SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>>,
-        new_council: &BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>>)
+        new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>)
     {
         for sealed_vote in sealed_votes.iter() {
             // Do a refund if commitment was not revealed or vote was for candidate that did
@@ -403,20 +433,20 @@ impl<T: Trait> Module<T> {
         <Commitments<T>>::kill();
     }
 
-    fn tally_votes(sealed_votes: &Vec<SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>>) -> BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>> {
-        let mut tally: BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>> = BTreeMap::new();
+    fn tally_votes(sealed_votes: &Vec<SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>>) -> BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>> {
+        let mut tally: BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>> = BTreeMap::new();
 
         for sealed_vote in sealed_votes.iter() {
             if let Some(candidate) = sealed_vote.get_vote() {
                 match tally.get(&candidate) {
                     // Add new seat and first backer
                     None => {
-                        let backers = [council::Backer {
+                        let backers = [Backer {
                             member: sealed_vote.voter.clone(),
                             stake: sealed_vote.stake.total()
                         }].to_vec();
 
-                        let seat = council::Seat {
+                        let seat = Seat {
                             member: candidate.clone(),
                             stake: Self::applicant_stakes(candidate).total(),
                             backers: backers,
@@ -428,7 +458,7 @@ impl<T: Trait> Module<T> {
                     // Add backer to existing seat
                     Some(_) => {
                         if let Some(seat) = tally.get_mut(&candidate) {
-                            seat.backers.push(council::Backer {
+                            seat.backers.push(Backer {
                                 member: sealed_vote.voter.clone(),
                                 stake: sealed_vote.stake.total()
                             });
@@ -441,7 +471,7 @@ impl<T: Trait> Module<T> {
         tally
     }
 
-    fn filter_top_staked(tally: &mut BTreeMap<T::AccountId, council::Seat<T::AccountId, T::Balance>>, limit: usize) {
+    fn filter_top_staked(tally: &mut BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>, limit: usize) {
 
         if limit >= tally.len() {
             return;
@@ -500,7 +530,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Takes a snapshot of the stakes from the current council
-    fn initialize_transferable_stakes(current_council: council::Council<T::AccountId, T::Balance>) {
+    fn initialize_transferable_stakes(current_council: Seats<T::AccountId, T::Balance>) {
         let mut accounts_council: Vec<T::AccountId> = Vec::new();
         let mut accounts_backers: Vec<T::AccountId> = Vec::new();
         for ref seat in current_council.iter() {
@@ -763,38 +793,38 @@ mod tests {
             let backing_stakeholders = vec![10,20,30,50];
 
             let existing_council = vec![
-                council::Seat {
+                Seat {
                     member: council_stakeholders[0],
                     stake: council_stakes[0],
                     backers: vec![
-                        council::Backer {
+                        Backer {
                             member: backing_stakeholders[0],
                             stake: 2,
                         },
-                        council::Backer {
+                        Backer {
                             member: backing_stakeholders[3],
                             stake: 5,
                         }]
                 },
 
-                council::Seat {
+                Seat {
                     member: council_stakeholders[1],
                     stake: council_stakes[1],
                     backers: vec![
-                        council::Backer {
+                        Backer {
                             member: backing_stakeholders[1],
                             stake: 4,
                         },
-                        council::Backer {
+                        Backer {
                             member: backing_stakeholders[3],
                             stake: 5,
                         }]
                 },
 
-                council::Seat {
+                Seat {
                     member: council_stakeholders[2],
                     stake: council_stakes[2],
-                    backers: vec![council::Backer {
+                    backers: vec![Backer {
                         member: backing_stakeholders[2],
                         stake: 6,
                     }]
@@ -1250,11 +1280,11 @@ mod tests {
 
             assert_eq!(tally.get(&100).unwrap().member, 100);
             assert_eq!(tally.get(&100).unwrap().backers, vec![
-                council::Backer {
+                Backer {
                     member: 10 as u64,
                     stake: 100 as u32,
                 },
-                council::Backer {
+                Backer {
                     member: 10 as u64,
                     stake: 150 as u32,
                 },
@@ -1262,11 +1292,11 @@ mod tests {
 
             assert_eq!(tally.get(&200).unwrap().member, 200);
             assert_eq!(tally.get(&200).unwrap().backers, vec![
-                council::Backer {
+                Backer {
                     member: 10 as u64,
                     stake: 500 as u32,
                 },
-                council::Backer {
+                Backer {
                     member: 20 as u64,
                     stake: 200 as u32,
                 }
@@ -1274,11 +1304,11 @@ mod tests {
 
             assert_eq!(tally.get(&300).unwrap().member, 300);
             assert_eq!(tally.get(&300).unwrap().backers, vec![
-                council::Backer {
+                Backer {
                     member: 30 as u64,
                     stake: 300 as u32,
                 },
-                council::Backer {
+                Backer {
                     member: 30 as u64,
                     stake: 400 as u32,
                 }
@@ -1349,9 +1379,9 @@ mod tests {
 
             <AvailableCouncilStakesMap<Test>>::insert(100, 100);
 
-            let mut new_council: BTreeMap<u64, council::Seat<u64, u32>> = BTreeMap::new();
-            new_council.insert(200 as u64, council::Seat{ member: 200 as u64, stake: 0 as u32, backers: vec![]});
-            new_council.insert(300 as u64, council::Seat{ member: 300 as u64, stake: 0 as u32, backers: vec![]});
+            let mut new_council: BTreeMap<u64, Seat<u64, u32>> = BTreeMap::new();
+            new_council.insert(200 as u64, Seat{ member: 200 as u64, stake: 0 as u32, backers: vec![]});
+            new_council.insert(300 as u64, Seat{ member: 300 as u64, stake: 0 as u32, backers: vec![]});
 
             Election::drop_unelected_candidates(&new_council);
 
@@ -1393,9 +1423,9 @@ mod tests {
                 (30, 1000, 140, 300),
             ]);
 
-            let mut new_council: BTreeMap<u64, council::Seat<u64, u32>> = BTreeMap::new();
-            new_council.insert(200 as u64, council::Seat{ member: 200 as u64, stake: 0 as u32, backers: vec![]});
-            new_council.insert(300 as u64, council::Seat{ member: 300 as u64, stake: 0 as u32, backers: vec![]});
+            let mut new_council: BTreeMap<u64, Seat<u64, u32>> = BTreeMap::new();
+            new_council.insert(200 as u64, Seat{ member: 200 as u64, stake: 0 as u32, backers: vec![]});
+            new_council.insert(300 as u64, Seat{ member: 300 as u64, stake: 0 as u32, backers: vec![]});
 
             Election::refund_voting_stakes(&votes, &new_council);
 
@@ -1439,13 +1469,14 @@ mod tests {
     fn council_elected_hook_should_work() {
         with_externalities(&mut initial_test_ext(), || {
 
-            let mut new_council: BTreeMap<u64, council::Seat<u64, u32>> = BTreeMap::new();
-            new_council.insert(200 as u64, council::Seat{ member: 200 as u64, stake: 10 as u32, backers: vec![]});
-            new_council.insert(300 as u64, council::Seat{ member: 300 as u64, stake: 20 as u32, backers: vec![]});
+            let mut new_council: BTreeMap<u64, Seat<u64, u32>> = BTreeMap::new();
+            new_council.insert(200 as u64, Seat{ member: 200 as u64, stake: 10 as u32, backers: vec![]});
+            new_council.insert(300 as u64, Seat{ member: 300 as u64, stake: 20 as u32, backers: vec![]});
 
             assert!(Council::council().is_none());
 
-            <Test as election::Trait>::CouncilElected::council_elected(&new_council);
+            let new_council = new_council.into_iter().map(|(_, seat)| seat.clone()).collect();
+            <Test as election::Trait>::CouncilElected::council_elected(new_council);
 
             assert!(Council::council().is_some());
         });
