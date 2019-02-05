@@ -36,9 +36,7 @@ decl_storage! {
         // and election in next block
         ActiveCouncil get(council) config(): Option<Council<T::AccountId, T::Balance>>;
 
-        TermEnds get(term_ends) config(): T::BlockNumber = T::BlockNumber::sa(0);
-
-        CouncilTerm get(council_term): T::BlockNumber = T::BlockNumber::sa(1000);
+        TermEndsOn get(term_ends) config(): T::BlockNumber = T::BlockNumber::sa(0);
     }
 }
 
@@ -50,12 +48,12 @@ decl_event!(
 	}
 );
 
-impl<T: Trait> CouncilElected<Council<T::AccountId, T::Balance>> for Module<T> {
-    fn council_elected(council: Council<T::AccountId, T::Balance>) {
+impl<T: Trait> CouncilElected<Council<T::AccountId, T::Balance>, T::BlockNumber> for Module<T> {
+    fn council_elected(council: Council<T::AccountId, T::Balance>, term: T::BlockNumber) {
         <ActiveCouncil<T>>::put(council);
 
-        let next_term_ends = <system::Module<T>>::block_number() + Self::council_term();
-        <TermEnds<T>>::put(next_term_ends);
+        let next_term_ends = <system::Module<T>>::block_number() + term;
+        <TermEndsOn<T>>::put(next_term_ends);
         Self::deposit_event(RawEvent::NewCouncilInSession());
     }
 }

@@ -16,7 +16,7 @@ use super::root;
 pub trait Trait: system::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type CouncilElected: CouncilElected<Seats<Self::AccountId, Self::Balance>>;
+    type CouncilElected: CouncilElected<Seats<Self::AccountId, Self::Balance>, Self::BlockNumber>;
 }
 
 #[derive(Clone, Copy, Encode, Decode)]
@@ -56,17 +56,17 @@ pub struct Backer<Id, Stake> {
 pub type Seats<AccountId, Balance> = Vec<Seat<AccountId, Balance>>;
 
 // Hook for setting a new council when it is elected
-pub trait CouncilElected<Elected> {
-    fn council_elected(new_council: Elected);
+pub trait CouncilElected<Elected, Term> {
+    fn council_elected(new_council: Elected, term: Term);
 }
 
-impl<Elected> CouncilElected<Elected> for () {
-    fn council_elected(_new_council: Elected) {}
+impl<Elected, Term> CouncilElected<Elected, Term> for () {
+    fn council_elected(_new_council: Elected, term: Term) {}
 }
 
-impl<Elected, X: CouncilElected<Elected>> CouncilElected<Elected> for (X,) {
-    fn council_elected(new_council: Elected) {
-        X::council_elected(new_council);
+impl<Elected, Term, X: CouncilElected<Elected, Term>> CouncilElected<Elected, Term> for (X,) {
+    fn council_elected(new_council: Elected, term: Term) {
+        X::council_elected(new_council, term);
     }
 }
 
@@ -77,6 +77,7 @@ pub struct ElectionParameters<BlockNumber, Balance> {
     pub council_size: usize,
     pub candidacy_limit: usize,
     pub min_council_stake: Balance,
+    pub new_term_duration: BlockNumber,
 }
 
 impl<BlockNumber, Balance> Default for ElectionParameters<BlockNumber, Balance>
@@ -90,6 +91,7 @@ impl<BlockNumber, Balance> Default for ElectionParameters<BlockNumber, Balance>
             council_size: 10,
             candidacy_limit: 20,
             min_council_stake: Balance::sa(100),
+            new_term_duration: BlockNumber::sa(1000),
         }
     }
 }
@@ -123,6 +125,7 @@ decl_storage! {
         // should be greater than council_size, better to derive it as a multiple of council_size?
         CandidacyLimit get(candidacy_limit): usize = 20;
         MinCouncilStake get(min_council_stake): T::Balance = T::Balance::sa(100);
+        NewTermDuration get(new_term_duration): T::BlockNumber = T::BlockNumber::sa(1000);
     }
 }
 
@@ -311,7 +314,7 @@ impl<T: Trait> Module<T> {
         <ElectionStage<T>>::kill();
 
         let new_council = new_council.into_iter().map(|(_, seat)| seat.clone()).collect();
-        T::CouncilElected::council_elected(new_council);
+        T::CouncilElected::council_elected(new_council, Self::new_term_duration());
 
         Self::deposit_event(RawEvent::CouncilElected());
         print("Election Completed");
@@ -1476,7 +1479,7 @@ mod tests {
             assert!(Council::council().is_none());
 
             let new_council = new_council.into_iter().map(|(_, seat)| seat.clone()).collect();
-            <Test as election::Trait>::CouncilElected::council_elected(new_council);
+            <Test as election::Trait>::CouncilElected::council_elected(new_council, 10);
 
             assert!(Council::council().is_some());
         });
