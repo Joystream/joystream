@@ -166,6 +166,7 @@ impl<T: Trait> Module<T> {
         <CouncilSize<T>>::put(params.council_size);
         <MinCouncilStake<T>>::put(params.min_council_stake);
         <CandidacyLimit<T>>::put(params.candidacy_limit);
+        <NewTermDuration<T>>::put(params.new_term_duration);
     }
 
     fn start_election(current_council: Option<Seats<T::AccountId, T::Balance>>) -> Result {
