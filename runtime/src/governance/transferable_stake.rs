@@ -95,7 +95,7 @@ mod tests {
     }
 
     #[test]
-    fn equality(){
+    fn equality() {
         let a1: u128 = 3; let b1: u128 = 2;
         let a2: u128 = 2; let b2: u128 = 3;
         let a3: u128 = 10; let b3: u128 = 10;

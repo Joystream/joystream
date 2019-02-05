@@ -35,26 +35,21 @@ decl_storage! {
 
 /// Event for this module.
 decl_event!(
-	pub enum Event<T> where <T as system::Trait>::BlockNumber {
+    pub enum Event<T> where <T as system::Trait>::BlockNumber {
+        // TODO add more useful info to events?
         ElectionStarted(),
         CouncilTermEnded(),
         Dummy(BlockNumber),
-	}
+    }
 );
 
 impl<T: Trait> Module<T> {
-    fn tick (n: T::BlockNumber) {
-
-    }
+    // Nothing yet
 }
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
-
-        fn on_finalise(n: T::BlockNumber) {
-            Self::tick(n);
-        }
     }
 }
 
@@ -68,7 +63,7 @@ impl<T: Trait> council::CouncilTermEnded for Module<T> {
             let params = Self::election_parameters();
 
             if T::TriggerElection::trigger_election(current_council, params).is_ok() {
-                print("Election Started");
+                // print("Election Started");
                 Self::deposit_event(RawEvent::ElectionStarted());
             }
         }
@@ -77,15 +72,15 @@ impl<T: Trait> council::CouncilTermEnded for Module<T> {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use ::governance::tests::*;
+    use super::*;
+    use ::governance::tests::*;
 
     #[test]
     fn election_is_triggerred_when_council_term_ends() {
         with_externalities(&mut initial_test_ext(), || {
             System::set_block_number(1);
 
-            assert!(Council::term_ended(1));
+            assert!(Council::is_term_ended(1));
             assert!(Election::stage().is_none());
 
             <Governance as council::CouncilTermEnded>::council_term_ended();

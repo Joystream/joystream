@@ -1,11 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::dispatch::Vec;
-use rstd::collections::btree_map::BTreeMap;
-
-use srml_support::{StorageValue, dispatch::Result};
+use srml_support::{StorageValue};
 use runtime_primitives::traits::{As};
-use {balances, system::{ensure_signed}};
+use {balances};
 
 pub use election::{Seats as Council, Seat, CouncilElected};
 
@@ -32,20 +29,26 @@ pub trait Trait: system::Trait + balances::Trait {
 
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilInSession {
-        // Initial state - council is empty and resigned, which will trigger
-        // and election in next block
-        ActiveCouncil get(council) config(): Option<Council<T::AccountId, T::Balance>>;
 
+        // TODO A good practice to keep similar names for both storage and its getter, example:
+        // ActiveCouncil get(active_council) ...
+        // TermEndsAt get(term_ends_at)
+
+        // Initial state - council is empty and resigned, which will trigger
+        // an election in the next block
+        ActiveCouncil get(council) config(): Option<Council<T::AccountId, T::Balance>> = None;
+
+        // TODO rename to 'TermEndsAt' because 'at block', not 'on block'
         TermEndsOn get(term_ends) config(): T::BlockNumber = T::BlockNumber::sa(0);
     }
 }
 
 /// Event for this module.
 decl_event!(
-	pub enum Event<T> where <T as system::Trait>::BlockNumber {
+    pub enum Event<T> where <T as system::Trait>::BlockNumber {
         NewCouncilInSession(),
         Dummy(BlockNumber),
-	}
+    }
 );
 
 impl<T: Trait> CouncilElected<Council<T::AccountId, T::Balance>, T::BlockNumber> for Module<T> {
@@ -59,8 +62,9 @@ impl<T: Trait> CouncilElected<Council<T::AccountId, T::Balance>, T::BlockNumber>
 }
 
 impl<T: Trait> Module<T> {
-    pub fn term_ended(n: T::BlockNumber) -> bool {
-        n >= Self::term_ends()
+
+    pub fn is_term_ended(block: T::BlockNumber) -> bool {
+        block >= Self::term_ends()
     }
 
     pub fn is_councilor(sender: T::AccountId) -> bool {
@@ -70,33 +74,16 @@ impl<T: Trait> Module<T> {
             false
         }
     }
-
-    fn tick (now: T::BlockNumber) {
-        if Self::term_ended(now) {
-            T::CouncilTermEnded::council_term_ended();
-        }
-    }
 }
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        fn on_finalise(n: T::BlockNumber) {
-            Self::tick(n);
+        fn on_finalise(now: T::BlockNumber) {
+            if Self::is_term_ended(now) {
+                T::CouncilTermEnded::council_term_ended();
+            }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use ::governance::tests::*;
-
-    #[test]
-    fn dummy() {
-        with_externalities(&mut initial_test_ext(), || {
-            assert!(true);
-        });
     }
 }
