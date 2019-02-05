@@ -36,23 +36,15 @@ decl_storage! {
 /// Event for this module.
 decl_event!(
 	pub enum Event<T> where <T as system::Trait>::BlockNumber {
-        ElectionStarted(BlockNumber),
+        ElectionStarted(),
+        CouncilTermEnded(),
+        Dummy(BlockNumber),
 	}
 );
 
 impl<T: Trait> Module<T> {
     fn tick (n: T::BlockNumber) {
-        if <council::Module<T>>::term_ended(n) && <election::Module<T>>::stage().is_none() {
-            let current_council = <council::Module<T>>::council();
 
-            // TODO: get params from governance parameters module
-            let params = Default::default();
-
-            if T::TriggerElection::trigger_election(current_council, params).is_ok() {
-                print("Election Started");
-                Self::deposit_event(RawEvent::ElectionStarted(n));
-            }
-        }
     }
 }
 
@@ -66,32 +58,40 @@ decl_module! {
     }
 }
 
+impl<T: Trait> council::CouncilTermEnded for Module<T> {
+    fn council_term_ended() {
+        Self::deposit_event(RawEvent::CouncilTermEnded());
+
+        if <election::Module<T>>::stage().is_none() {
+            let current_council = <council::Module<T>>::council();
+
+            // TODO: get params from governance parameters module
+            let params = Default::default();
+
+            if T::TriggerElection::trigger_election(current_council, params).is_ok() {
+                print("Election Started");
+                Self::deposit_event(RawEvent::ElectionStarted());
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
 	use ::governance::tests::*;
 
     #[test]
-    fn auto_starting_election_should_work() {
+    fn election_is_triggerred_when_council_term_ends() {
         with_externalities(&mut initial_test_ext(), || {
             System::set_block_number(1);
 
             assert!(Council::term_ended(1));
             assert!(Election::stage().is_none());
 
-            Governance::tick(1);
+            <Governance as council::CouncilTermEnded>::council_term_ended();
 
             assert!(Election::stage().is_some());
-        });
-    }
-
-    #[test]
-    fn start_election_if_election_running_should_fail() {
-        with_externalities(&mut initial_test_ext(), || {
-            assert!(<Test as root::Trait>::TriggerElection::trigger_election(None, Default::default()).is_ok());
-
-            // Should fail to start election if already ongoing
-            assert!(<Test as root::Trait>::TriggerElection::trigger_election(None, Default::default()).is_err());
         });
     }
 }

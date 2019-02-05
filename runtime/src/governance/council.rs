@@ -11,8 +11,26 @@ use rstd::ops::Add;
 
 use super::election;
 
+
+// Hook For announcing that council term has ended
+pub trait CouncilTermEnded {
+    fn council_term_ended();
+}
+
+impl CouncilTermEnded for () {
+    fn council_term_ended() {}
+}
+
+impl<X: CouncilTermEnded> CouncilTermEnded for (X,) {
+    fn council_term_ended() {
+        X::council_term_ended();
+    }
+}
+
 pub trait Trait: system::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
+    type CouncilTermEnded: CouncilTermEnded;
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -59,8 +77,8 @@ decl_storage! {
 /// Event for this module.
 decl_event!(
 	pub enum Event<T> where <T as system::Trait>::BlockNumber {
-        CouncilResigned(BlockNumber),
-        CouncilTermEnded(BlockNumber),
+        NewCouncilInSession(),
+        Dummy(BlockNumber),
 	}
 );
 
@@ -72,6 +90,7 @@ impl<T: Trait> election::CouncilElected<BTreeMap<T::AccountId, Seat<T::AccountId
 
         let next_term_ends = <system::Module<T>>::block_number() + Self::council_term();
         <TermEnds<T>>::put(next_term_ends);
+        Self::deposit_event(RawEvent::NewCouncilInSession());
     }
 }
 
@@ -87,11 +106,21 @@ impl<T: Trait> Module<T> {
             false
         }
     }
+
+    fn tick (now: T::BlockNumber) {
+        if Self::term_ended(now) {
+            T::CouncilTermEnded::council_term_ended();
+        }
+    }
 }
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
+
+        fn on_finalise(n: T::BlockNumber) {
+            Self::tick(n);
+        }
     }
 }
 

@@ -563,8 +563,9 @@ mod tests {
 
     impl council::Trait for Test {
         type Event = ();
+        type CouncilTermEnded = ();
     }
-    
+
     impl Trait for Test {
         type Event = ();
     }

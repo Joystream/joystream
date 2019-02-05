@@ -86,7 +86,7 @@ decl_storage! {
         // For and Against.
         Votes get(votes): map T::Hash => SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>;
 
-        // Parameters for current election round
+        // Parameters election. Set when a new election is started
         AnnouncingPeriod get(announcing_period) : T::BlockNumber = T::BlockNumber::sa(20);
         VotingPeriod get(voting_period): T::BlockNumber = T::BlockNumber::sa(20);
         RevealingPeriod get(revealing_period) : T::BlockNumber = T::BlockNumber::sa(20);
@@ -107,7 +107,7 @@ decl_event!(
         VotingEnded(),
         RevealingStarted(),
         RevealingEnded(),
-        ElectionCompleted(),
+        CouncilElected(),
         Dummy(BlockNumber),
 	}
 );
@@ -117,14 +117,10 @@ impl<T: Trait> root::TriggerElection<council::Council<T::AccountId, T::Balance>,
         current_council: Option<council::Council<T::AccountId, T::Balance>>,
         params: ElectionParameters<T::BlockNumber, T::Balance>) -> Result
     {
-        if Self::stage().is_some() {
-            return Err("election in progress")
+        if Self::stage().is_none() {
+            Self::set_election_parameters(params);
         }
-
-        Self::set_election_parameters(params);
-        Self::start_election(current_council);
-
-        Ok(())
+        Self::start_election(current_council)
     }
 }
 
@@ -138,13 +134,14 @@ impl<T: Trait> Module<T> {
         <CandidacyLimit<T>>::put(params.candidacy_limit);
     }
 
-    fn start_election(current_council: Option<council::Council<T::AccountId, T::Balance>>) {
-        //ensure!(Self::stage().is_none());
+    fn start_election(current_council: Option<council::Council<T::AccountId, T::Balance>>) -> Result {
+        ensure!(Self::stage().is_none(), "election already in progress");
 
         // take snapshot of council and backing stakes of an existing council
         current_council.map(|c| Self::initialize_transferable_stakes(c));
 
         Self::move_to_announcing_stage();
+        Ok(())
     }
 
     fn new_period(length: T::BlockNumber) -> T::BlockNumber {
@@ -286,7 +283,7 @@ impl<T: Trait> Module<T> {
 
         T::CouncilElected::council_elected(&new_council);
 
-        Self::deposit_event(RawEvent::ElectionCompleted());
+        Self::deposit_event(RawEvent::CouncilElected());
         print("Election Completed");
     }
 
@@ -714,6 +711,14 @@ mod tests {
     #[test]
     fn default_paramas_should_work () {
 
+    }
+
+    #[test]
+    fn start_election_if_election_running_should_fail() {
+        with_externalities(&mut initial_test_ext(), || {
+            assert!(Election::start_election(None).is_ok());
+            assert!(Election::start_election(None).is_err());
+        });
     }
 
     fn assert_announcing_period (expected_period: <Test as system::Trait>::BlockNumber) {

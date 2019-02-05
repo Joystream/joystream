@@ -62,6 +62,8 @@ pub mod tests {
     }
     impl council::Trait for Test {
         type Event = ();
+
+        type CouncilTermEnded = (Governance,);
     }
     impl election::Trait for Test {
         type Event = ();
