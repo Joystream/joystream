@@ -70,6 +70,8 @@ impl<Elected, Term, X: CouncilElected<Elected, Term>> CouncilElected<Elected, Te
     }
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Clone, Copy, Encode, Decode)]
 pub struct ElectionParameters<BlockNumber, Balance> {
     pub announcing_period: BlockNumber,
     pub voting_period: BlockNumber,

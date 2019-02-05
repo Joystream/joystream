@@ -105,8 +105,7 @@ pub mod tests {
         let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
 
         t.extend(root::GenesisConfig::<Test> {
-            dummy: 0,
-            _genesis_phantom_data: Default::default(),
+            election_parameters: Default::default(),
         }.build_storage().unwrap().0);
 
         runtime_io::TestExternalities::new(t)

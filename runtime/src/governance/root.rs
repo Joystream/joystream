@@ -29,7 +29,7 @@ pub trait Trait: system::Trait + council::Trait + election::Trait {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Root {
-        Dummy get(dummy) config(): u32;
+        ElectionParameters get(election_parameters) config(): election::ElectionParameters<T::BlockNumber, T::Balance>;
     }
 }
 
@@ -65,8 +65,7 @@ impl<T: Trait> council::CouncilTermEnded for Module<T> {
         if <election::Module<T>>::stage().is_none() {
             let current_council = <council::Module<T>>::council();
 
-            // TODO: get params from governance parameters module
-            let params = Default::default();
+            let params = Self::election_parameters();
 
             if T::TriggerElection::trigger_election(current_council, params).is_ok() {
                 print("Election Started");
