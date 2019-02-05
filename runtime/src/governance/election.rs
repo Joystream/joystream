@@ -70,6 +70,21 @@ impl<Elected, Term, X: CouncilElected<Elected, Term>> CouncilElected<Elected, Te
     }
 }
 
+// Hook For starting election
+pub trait TriggerElection<CurrentCouncil, Params> {
+    fn trigger_election(current: Option<CurrentCouncil>, params: Params) -> Result;
+}
+
+impl<CurrentCouncil, Params> TriggerElection<CurrentCouncil, Params> for () {
+    fn trigger_election(_: Option<CurrentCouncil>, _: Params) -> Result { Ok(())}
+}
+
+impl<CurrentCouncil, Params, X: TriggerElection<CurrentCouncil, Params>> TriggerElection<CurrentCouncil, Params> for (X,) {
+    fn trigger_election(current: Option<CurrentCouncil>, params: Params) -> Result{
+        X::trigger_election(current, params)
+    }
+}
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Clone, Copy, Encode, Decode)]
 pub struct ElectionParameters<BlockNumber, Balance> {
@@ -146,7 +161,7 @@ decl_event!(
 	}
 );
 
-impl<T: Trait> root::TriggerElection<Seats<T::AccountId, T::Balance>, ElectionParameters<T::BlockNumber, T::Balance>> for Module<T> {
+impl<T: Trait> TriggerElection<Seats<T::AccountId, T::Balance>, ElectionParameters<T::BlockNumber, T::Balance>> for Module<T> {
     fn trigger_election(
         current_council: Option<Seats<T::AccountId, T::Balance>>,
         params: ElectionParameters<T::BlockNumber, T::Balance>) -> Result
