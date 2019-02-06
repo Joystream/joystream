@@ -85,8 +85,8 @@ pub struct ElectionParameters<BlockNumber, Balance> {
     pub announcing_period: BlockNumber,
     pub voting_period: BlockNumber,
     pub revealing_period: BlockNumber,
-    pub council_size: usize,    // TODO consider usize -> u32 (in Substrate code they use u32 for counts)
-    pub candidacy_limit: usize, // TODO consider usize -> u32 (in Substrate code they use u32 for counts)
+    pub council_size: u32,
+    pub candidacy_limit: u32,
     pub min_council_stake: Balance,
     pub new_term_duration: BlockNumber,
 }
@@ -145,11 +145,11 @@ decl_storage! {
         RevealingPeriod get(revealing_period): T::BlockNumber = T::BlockNumber::sa(20);
 
         // TODO consider usize -> u32 (in Substrate code they use u32 for counts)
-        CouncilSize get(council_size): usize = 10;
+        CouncilSize get(council_size): u32 = 10;
 
         // should be greater than council_size, better to derive it as a multiple of council_size?
         // TODO consider usize -> u32 (in Substrate code they use u32 for counts)
-        CandidacyLimit get(candidacy_limit): usize = 20;
+        CandidacyLimit get(candidacy_limit): u32 = 20;
 
         MinCouncilStake get(min_council_stake): T::Balance = T::Balance::sa(100);
         NewTermDuration get(new_term_duration): T::BlockNumber = T::BlockNumber::sa(1000);
@@ -184,6 +184,14 @@ impl<T: Trait> TriggerElection<Seats<T::AccountId, T::Balance>, ElectionParamete
 }
 
 impl<T: Trait> Module<T> {
+    fn council_size_usize() -> usize {
+        Self::council_size() as usize
+    }
+
+    fn candidacy_limit_usize() -> usize {
+        Self::candidacy_limit() as usize
+    }
+
     fn set_election_parameters(params: ElectionParameters<T::BlockNumber, T::Balance>) {
         <AnnouncingPeriod<T>>::put(params.announcing_period);
         <VotingPeriod<T>>::put(params.voting_period);
@@ -248,11 +256,11 @@ impl<T: Trait> Module<T> {
     fn on_announcing_ended() {
         let mut applicants = Self::applicants();
 
-        if applicants.len() < Self::council_size() {
+        if applicants.len() < Self::council_size_usize() {
             // Not enough candidates announced candidacy
             Self::move_to_announcing_stage();
         } else {
-            let (_, rejected) = Self::get_top_applicants_by_stake(&mut applicants, Self::candidacy_limit());
+            let (_, rejected) = Self::get_top_applicants_by_stake(&mut applicants, Self::candidacy_limit_usize());
 
             Self::drop_applicants(rejected);
 
@@ -307,12 +315,12 @@ impl<T: Trait> Module<T> {
             }
         }
 
-        if new_council.len() == Self::council_size() {
+        if new_council.len() == Self::council_size_usize() {
             // all candidates in the tally will form the new council
-        } else if new_council.len() > Self::council_size() {
+        } else if new_council.len() > Self::council_size_usize() {
             // we have more than enough elected candidates to form the new council
             // select top staked prioritised by stake
-            Self::filter_top_staked(&mut new_council, Self::council_size());
+            Self::filter_top_staked(&mut new_council, Self::council_size_usize());
         } else {
             // Not enough candidates with votes to form a council.
             // This may happen if we didn't add candidates with zero votes to the tally,
@@ -998,7 +1006,7 @@ mod tests {
             }
 
             // make sure we are testing the condition that we don't have enough applicants
-            assert!(Election::council_size() > applicants.len());
+            assert!(Election::council_size_usize() > applicants.len());
 
             // try to move to voting stage
             System::set_block_number(ann_ends);
@@ -1576,7 +1584,7 @@ mod tests {
             Election::on_finalise(n);
 
             assert!(Council::council().is_some());
-            assert_eq!(Council::council().unwrap().len(), Election::council_size());
+            assert_eq!(Council::council().unwrap().len(), Election::council_size_usize());
             for (i, seat) in Council::council().unwrap().iter().enumerate() {
                 assert_eq!(seat.member, (i + 1) as u64);
             }
