@@ -43,7 +43,7 @@ impl<T: Trait> council::CouncilTermEnded for Module<T> {
         Self::deposit_event(RawEvent::CouncilTermEnded());
 
         if <election::Module<T>>::stage().is_none() {
-            let current_council = <council::Module<T>>::council();
+            let current_council = <council::Module<T>>::active_council();
 
             let params = Self::election_parameters();
 

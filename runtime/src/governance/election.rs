@@ -1521,19 +1521,19 @@ mod tests {
             new_council.insert(200 as u64, Seat{ member: 200 as u64, stake: 10 as u32, backers: vec![]});
             new_council.insert(300 as u64, Seat{ member: 300 as u64, stake: 20 as u32, backers: vec![]});
 
-            assert!(Council::council().is_none());
+            assert!(Council::active_council().is_none());
 
             let new_council = new_council.into_iter().map(|(_, seat)| seat.clone()).collect();
             <Test as election::Trait>::CouncilElected::council_elected(new_council, 10);
 
-            assert!(Council::council().is_some());
+            assert!(Council::active_council().is_some());
         });
     }
 
     #[test]
     fn simulation() {
         with_externalities(&mut initial_test_ext(), || {
-            assert!(Council::council().is_none());
+            assert!(Council::active_council().is_none());
             assert!(Election::stage().is_none());
 
             <CouncilSize<Test>>::put(10);
@@ -1583,9 +1583,9 @@ mod tests {
             System::set_block_number(n);
             Election::on_finalise(n);
 
-            assert!(Council::council().is_some());
-            assert_eq!(Council::council().unwrap().len(), Election::council_size_usize());
-            for (i, seat) in Council::council().unwrap().iter().enumerate() {
+            assert!(Council::active_council().is_some());
+            assert_eq!(Council::active_council().unwrap().len(), Election::council_size_usize());
+            for (i, seat) in Council::active_council().unwrap().iter().enumerate() {
                 assert_eq!(seat.member, (i + 1) as u64);
             }
             assert!(Election::stage().is_none());
