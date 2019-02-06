@@ -86,7 +86,7 @@ pub struct ElectionParameters<BlockNumber, Balance> {
     pub voting_period: BlockNumber,
     pub revealing_period: BlockNumber,
     pub council_size: u32,
-    pub candidacy_limit: u32,
+    pub candidacy_limit_multiple: u32,
     pub min_council_stake: Balance,
     pub new_term_duration: BlockNumber,
 }
@@ -100,7 +100,7 @@ impl<BlockNumber, Balance> Default for ElectionParameters<BlockNumber, Balance>
             voting_period: BlockNumber::sa(100),
             revealing_period: BlockNumber::sa(100),
             council_size: 10,
-            candidacy_limit: 20,
+            candidacy_limit_multiple: 2,
             min_council_stake: Balance::sa(100),
             new_term_duration: BlockNumber::sa(1000),
         }
@@ -140,17 +140,12 @@ decl_storage! {
         Votes get(votes): map T::Hash => SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>;
 
         // Parameters election. Set when a new election is started
-        AnnouncingPeriod get(announcing_period): T::BlockNumber = T::BlockNumber::sa(20);
-        VotingPeriod get(voting_period): T::BlockNumber = T::BlockNumber::sa(20);
-        RevealingPeriod get(revealing_period): T::BlockNumber = T::BlockNumber::sa(20);
+        AnnouncingPeriod get(announcing_period): T::BlockNumber;
+        VotingPeriod get(voting_period): T::BlockNumber;
+        RevealingPeriod get(revealing_period): T::BlockNumber;
 
-        // TODO consider usize -> u32 (in Substrate code they use u32 for counts)
-        CouncilSize get(council_size): u32 = 10;
-
-        // should be greater than council_size, better to derive it as a multiple of council_size?
-        // TODO consider usize -> u32 (in Substrate code they use u32 for counts)
-        CandidacyLimit get(candidacy_limit): u32 = 20;
-
+        CouncilSize get(council_size): u32;
+        CandidacyLimitMultiple get (candidacy_limit_multiple): u32;
         MinCouncilStake get(min_council_stake): T::Balance = T::Balance::sa(100);
         NewTermDuration get(new_term_duration): T::BlockNumber = T::BlockNumber::sa(1000);
     }
@@ -188,8 +183,8 @@ impl<T: Trait> Module<T> {
         Self::council_size() as usize
     }
 
-    fn candidacy_limit_usize() -> usize {
-        Self::candidacy_limit() as usize
+    fn candidacy_limit_multiple_usize() -> usize {
+        Self::candidacy_limit_multiple() as usize
     }
 
     fn set_election_parameters(params: ElectionParameters<T::BlockNumber, T::Balance>) {
@@ -198,8 +193,8 @@ impl<T: Trait> Module<T> {
         <RevealingPeriod<T>>::put(params.revealing_period);
         <CouncilSize<T>>::put(params.council_size);
         <MinCouncilStake<T>>::put(params.min_council_stake);
-        <CandidacyLimit<T>>::put(params.candidacy_limit);
         <NewTermDuration<T>>::put(params.new_term_duration);
+        <CandidacyLimitMultiple<T>>::put(params.candidacy_limit_multiple);
     }
 
     fn start_election(current_council: Option<Seats<T::AccountId, T::Balance>>) -> Result {
@@ -260,7 +255,10 @@ impl<T: Trait> Module<T> {
             // Not enough candidates announced candidacy
             Self::move_to_announcing_stage();
         } else {
-            let (_, rejected) = Self::get_top_applicants_by_stake(&mut applicants, Self::candidacy_limit_usize());
+            // upper limit on applicants that will move to voting stage
+            let multiple = rstd::cmp::max(1, Self::candidacy_limit_multiple_usize());
+            let max_applicants = Self::council_size_usize() * multiple;
+            let (_, rejected) = Self::get_top_applicants_by_stake(&mut applicants, max_applicants);
 
             Self::drop_applicants(rejected);
 
@@ -1541,7 +1539,7 @@ mod tests {
             <AnnouncingPeriod<Test>>::put(10);
             <VotingPeriod<Test>>::put(10);
             <RevealingPeriod<Test>>::put(10);
-            <CandidacyLimit<Test>>::put(20);
+            <CandidacyLimitMultiple<Test>>::put(2);
 
             for i in 1..20 {
                 Balances::set_free_balance(&(i as u64), 50000);
