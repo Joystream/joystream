@@ -4,8 +4,6 @@ use srml_support::{StorageValue, StorageMap, dispatch::Result};
 
 use governance::{council, election::{self, TriggerElection}};
 
-use runtime_io::print;
-
 pub trait Trait: system::Trait + council::Trait + election::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -48,7 +46,6 @@ impl<T: Trait> council::CouncilTermEnded for Module<T> {
             let params = Self::election_parameters();
 
             if T::TriggerElection::trigger_election(current_council, params).is_ok() {
-                // print("Election Started");
                 Self::deposit_event(RawEvent::ElectionStarted());
             }
         }

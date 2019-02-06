@@ -1,12 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use srml_support::{StorageValue, StorageMap, dispatch::Result};
-use srml_support::dispatch::Vec;
 use runtime_primitives::traits::{Hash, As, Zero, SimpleArithmetic};
 use {balances, system::{ensure_signed}};
 
 use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
+use rstd::vec::Vec;
 
 use super::transferable_stake::Stake;
 use super::sealed_vote::SealedVote;
@@ -230,22 +230,18 @@ impl<T: Trait> Module<T> {
         period
     }
 
-    // TODO Consider returning only `rejected` such as `top` applicants are used only in tests, but not in the main code.
-    // TODO rename to 'find_applicants_with_lower_stake'?
-    fn get_top_applicants_by_stake(
+    /// Sorts applicants by stake, and returns slice of applicants with least stake. Applicants not
+    /// returned in the slice are the top `len` highest staked.
+    fn find_least_staked_applicants (
         applicants: &mut Vec<T::AccountId>,
-        limit: usize) -> (&[T::AccountId], &[T::AccountId])
+        len: usize) -> &[T::AccountId]
     {
-        if limit >= applicants.len() {
-            return (&applicants[..], &[]);
+        if len >= applicants.len() {
+            &[]
+        } else {
+            applicants.sort_by_key(|applicant| Self::applicant_stakes(applicant));
+            &applicants[0 .. applicants.len() - len]
         }
-
-        applicants.sort_by_key(|applicant| Self::applicant_stakes(applicant));
-
-        let rejected = &applicants[0 .. applicants.len() - limit];
-        let top = &applicants[applicants.len() - limit..];
-
-        (top, rejected)
     }
 
     fn on_announcing_ended() {
@@ -257,10 +253,10 @@ impl<T: Trait> Module<T> {
         } else {
             // upper limit on applicants that will move to voting stage
             let multiple = rstd::cmp::max(1, Self::candidacy_limit_multiple_usize());
-            let max_applicants = Self::council_size_usize() * multiple;
-            let (_, rejected) = Self::get_top_applicants_by_stake(&mut applicants, max_applicants);
+            let candidacy_limit = Self::council_size_usize() * multiple;
+            let applicants_to_drop = Self::find_least_staked_applicants(&mut applicants, candidacy_limit);
 
-            Self::drop_applicants(rejected);
+            Self::drop_applicants(applicants_to_drop);
 
             Self::move_to_voting_stage();
         }
@@ -1034,8 +1030,7 @@ mod tests {
                 });
             }
 
-            let (candidates, rejected) = Election::get_top_applicants_by_stake(&mut applicants, 3);
-            assert_eq!(candidates.to_vec(), vec![20, 30, 40], "vec");
+            let rejected = Election::find_least_staked_applicants(&mut applicants, 3);
             assert_eq!(rejected.to_vec(), vec![10]);
 
             <Applicants<Test>>::put(vec![40, 30, 20, 10]);
@@ -1049,8 +1044,7 @@ mod tests {
             }
 
             // stable sort is preserving order when two elements are equivalent
-            let (candidates, rejected) = Election::get_top_applicants_by_stake(&mut applicants, 3);
-            assert_eq!(candidates.to_vec(), vec![30, 20, 10]);
+            let rejected = Election::find_least_staked_applicants(&mut applicants, 3);
             assert_eq!(rejected.to_vec(), vec![40]);
         });
     }
