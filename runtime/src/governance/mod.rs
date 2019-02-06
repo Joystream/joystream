@@ -25,7 +25,8 @@ pub mod tests {
     pub use self::sr_io::with_externalities;
     pub use self::substrate_primitives::{H256, Blake2Hasher};
     pub use self::sr_primitives::{
-        BuildStorage, traits::BlakeTwo256, traits::IdentityLookup,
+        BuildStorage,
+        traits::{BlakeTwo256, OnFinalise, IdentityLookup},
         testing::{Digest, DigestItem, Header, UintAuthorityId}
     };
 
@@ -115,6 +116,6 @@ pub mod tests {
     pub type Election = election::Module<Test>;
     pub type Council = council::Module<Test>;
     pub type Proposals = proposals::Module<Test>;
-	pub type System = system::Module<Test>;
-	pub type Balances = balances::Module<Test>;
+    pub type System = system::Module<Test>;
+    pub type Balances = balances::Module<Test>;
 }

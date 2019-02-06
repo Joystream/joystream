@@ -1,10 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use srml_support::{StorageValue, StorageMap, dispatch::Result};
+use srml_support::dispatch::Vec;
 use runtime_primitives::traits::{Hash, As, Zero, SimpleArithmetic};
 use {balances, system::{ensure_signed}};
 use runtime_io::print;
-use srml_support::dispatch::Vec;
 
 use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
@@ -20,10 +20,10 @@ pub trait Trait: system::Trait + balances::Trait {
 }
 
 #[derive(Clone, Copy, Encode, Decode)]
-pub enum Stage<T: PartialOrd + PartialEq + Copy> {
-    Announcing(T),
-    Voting(T),
-    Revealing(T),
+pub enum Stage<BlockNumber> {
+    Announcing(BlockNumber),
+    Voting(BlockNumber),
+    Revealing(BlockNumber),
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -37,12 +37,9 @@ pub struct Seat<Id, Stake> {
 impl<Id, Stake> Seat<Id, Stake>
     where Stake: Add<Output=Stake> + Copy,
 {
+    // TODO rename to 'calc_total_stake' to emphasize iteration
     pub fn total_stake(&self) -> Stake {
-        let mut stake = self.stake;
-        for backer in self.backers.iter() {
-            stake = stake + backer.stake;
-        }
-        stake
+        self.backers.iter().fold(self.stake, |acc, backer| acc + backer.stake)
     }
 }
 
@@ -91,8 +88,8 @@ pub struct ElectionParameters<BlockNumber, Balance> {
     pub announcing_period: BlockNumber,
     pub voting_period: BlockNumber,
     pub revealing_period: BlockNumber,
-    pub council_size: usize,
-    pub candidacy_limit: usize,
+    pub council_size: usize,    // TODO consider usize -> u32 (in Substrate code they use u32 for counts)
+    pub candidacy_limit: usize, // TODO consider usize -> u32 (in Substrate code they use u32 for counts)
     pub min_council_stake: Balance,
     pub new_term_duration: BlockNumber,
 }
@@ -115,6 +112,13 @@ impl<BlockNumber, Balance> Default for ElectionParameters<BlockNumber, Balance>
 
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilElection {
+
+        // TODO a good practice to keep similar names for both storage and its getter, examples:
+        // Stage get(stage)
+        // ElectionStage get(election_stage)
+        // BackingStakeHolders get(backing_stake_holders) ...
+        // AvailableBackingStakes get(available_backing_stakes) ...
+
         // Current stage if there is an election ongoing
         ElectionStage get(stage): Option<Stage<T::BlockNumber>>;
 
@@ -123,6 +127,9 @@ decl_storage! {
 
         BackingStakeHolders get(backing_stakeholders): Vec<T::AccountId>;
         CouncilStakeHolders get(council_stakeholders): Vec<T::AccountId>;
+
+        // TODO Could these two maps can be merged into one? 
+        // If yes, then it will simplify/generalize other code where they are used.
         AvailableBackingStakesMap get(backing_stakes): map T::AccountId => T::Balance;
         AvailableCouncilStakesMap get(council_stakes): map T::AccountId => T::Balance;
 
@@ -132,15 +139,21 @@ decl_storage! {
         Commitments get(commitments): Vec<T::Hash>;
         // simply a Yes vote for a candidate. Consider changing the vote payload to support
         // For and Against.
+        // TODO value type of this map looks scary, is there any way to simplify the notation?
         Votes get(votes): map T::Hash => SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>;
 
         // Parameters election. Set when a new election is started
-        AnnouncingPeriod get(announcing_period) : T::BlockNumber = T::BlockNumber::sa(20);
+        AnnouncingPeriod get(announcing_period): T::BlockNumber = T::BlockNumber::sa(20);
         VotingPeriod get(voting_period): T::BlockNumber = T::BlockNumber::sa(20);
-        RevealingPeriod get(revealing_period) : T::BlockNumber = T::BlockNumber::sa(20);
-        CouncilSize get(council_size) : usize = 10;
+        RevealingPeriod get(revealing_period): T::BlockNumber = T::BlockNumber::sa(20);
+
+        // TODO consider usize -> u32 (in Substrate code they use u32 for counts)
+        CouncilSize get(council_size): usize = 10;
+        
         // should be greater than council_size, better to derive it as a multiple of council_size?
+        // TODO consider usize -> u32 (in Substrate code they use u32 for counts)
         CandidacyLimit get(candidacy_limit): usize = 20;
+
         MinCouncilStake get(min_council_stake): T::Balance = T::Balance::sa(100);
         NewTermDuration get(new_term_duration): T::BlockNumber = T::BlockNumber::sa(1000);
     }
@@ -148,8 +161,8 @@ decl_storage! {
 
 /// Event for this module.
 decl_event!(
-	pub enum Event<T> where <T as system::Trait>::BlockNumber {
-		/// A new election started
+    pub enum Event<T> where <T as system::Trait>::BlockNumber {
+        /// A new election started
         AnnouncingStarted(u32),
         AnnouncingEnded(),
         VotingStarted(),
@@ -158,7 +171,7 @@ decl_event!(
         RevealingEnded(),
         CouncilElected(),
         Dummy(BlockNumber),
-	}
+    }
 );
 
 impl<T: Trait> TriggerElection<Seats<T::AccountId, T::Balance>, ElectionParameters<T::BlockNumber, T::Balance>> for Module<T> {
@@ -199,8 +212,8 @@ impl<T: Trait> Module<T> {
     }
 
     fn bump_round() -> u32 {
-        // bump the round number
-        print("Bumping Election Round");
+        // bump the round number - comment is redundant because the method's name is self explanatory ;)
+        // print("Bumping Election Round");
         <ElectionRound<T>>::mutate(|n| {
             *n += 1;
             *n
@@ -215,11 +228,13 @@ impl<T: Trait> Module<T> {
         let next_round = Self::bump_round();
 
         Self::deposit_event(RawEvent::AnnouncingStarted(next_round));
-        print("Announcing Started");
+        // print("Announcing Started");
         period
     }
 
-    fn get_top_applicants_by_stake (
+    // TODO Consider returning only `rejected` such as `top` applicants are used only in tests, but not in the main code.
+    // TODO rename to 'find_applicants_with_lower_stake'?
+    fn get_top_applicants_by_stake(
         applicants: &mut Vec<T::AccountId>,
         limit: usize) -> (&[T::AccountId], &[T::AccountId])
     {
@@ -251,12 +266,13 @@ impl<T: Trait> Module<T> {
     }
 
     fn move_to_voting_stage() {
+        // TODO check that current stage is Announcing
         let period = Self::new_period(Self::voting_period());
 
         <ElectionStage<T>>::put(Stage::Voting(period));
 
         Self::deposit_event(RawEvent::VotingStarted());
-        print("Voting Started");
+        // print("Voting Started");
     }
 
     fn on_voting_ended() {
@@ -264,12 +280,13 @@ impl<T: Trait> Module<T> {
     }
 
     fn move_to_revealing_stage() {
+        // TODO check that current stage is Voting
         let period = Self::new_period(Self::revealing_period());
 
         <ElectionStage<T>>::put(Stage::Revealing(period));
 
         Self::deposit_event(RawEvent::RevealingStarted());
-        print("Revealing Started");
+        // print("Revealing Started");
     }
 
     fn on_revealing_ended() {
@@ -286,18 +303,16 @@ impl<T: Trait> Module<T> {
         // Is a candidate with some votes but less total stake than another candidate with zero votes
         // more qualified to be on the council?
         // Consider implications - if a council can be formed purely by staking are we fine with that?
-        let applicants = Self::applicants();
-        let not_on_council: Vec<&T::AccountId> = applicants.iter()
-            .filter(|applicant| new_council.get(applicant).is_none()).collect();
 
-        let _: Vec<()> = not_on_council.into_iter().map(|applicant| {
-            new_council.insert(applicant.clone(), Seat {
-                member: applicant.clone(),
-                stake: Self::applicant_stakes(applicant).total(),
-                backers: Vec::new(),
-            });
-            ()
-        }).collect();
+        for applicant in Self::applicants().iter() {
+            if !new_council.contains_key(applicant) {
+                new_council.insert(applicant.clone(), Seat {
+                    member: applicant.clone(),
+                    stake: Self::applicant_stakes(applicant).total(),
+                    backers: Vec::new(),
+                });
+            }
+        }
 
         if new_council.len() == Self::council_size() {
             // all candidates in the tally will form the new council
@@ -323,6 +338,7 @@ impl<T: Trait> Module<T> {
         Self::refund_voting_stakes(&votes, &new_council);
         Self::clear_votes();
 
+        // TODO consider consistent naming: candidates vs applicants. Different names for the same things?
         Self::drop_unelected_candidates(&new_council);
         Self::clear_applicants();
 
@@ -335,14 +351,14 @@ impl<T: Trait> Module<T> {
         T::CouncilElected::council_elected(new_council, Self::new_term_duration());
 
         Self::deposit_event(RawEvent::CouncilElected());
-        print("Election Completed");
+        // print("Election Completed");
     }
 
     fn refund_transferable_stakes() {
         // move stakes back to account holder's free balance
         for stakeholder in Self::backing_stakeholders().iter() {
             let stake = Self::backing_stakes(stakeholder);
-            if stake > T::Balance::zero() {
+            if !stake.is_zero() {
                 let balance = <balances::Module<T>>::free_balance(stakeholder);
                 <balances::Module<T>>::set_free_balance(stakeholder, balance + stake);
             }
@@ -350,7 +366,7 @@ impl<T: Trait> Module<T> {
 
         for stakeholder in Self::council_stakeholders().iter() {
             let stake = Self::council_stakes(stakeholder);
-            if stake > T::Balance::zero() {
+            if !stake.is_zero() {
                 let balance = <balances::Module<T>>::free_balance(stakeholder);
                 <balances::Module<T>>::set_free_balance(stakeholder, balance + stake);
             }
@@ -381,36 +397,35 @@ impl<T: Trait> Module<T> {
         let stake = <ApplicantStakes<T>>::get(applicant);
 
         // return refundable stake to account's free balance
-        if stake.refundable > T::Balance::zero() {
+        if !stake.refundable.is_zero() {
             let balance = <balances::Module<T>>::free_balance(applicant);
             <balances::Module<T>>::set_free_balance(applicant, balance + stake.refundable);
         }
 
         // return unused transferable stake
-        if stake.transferred > T::Balance::zero() {
+        if !stake.transferred.is_zero() {
             <AvailableCouncilStakesMap<T>>::mutate(applicant, |transferred_stake| *transferred_stake += stake.transferred);
         }
     }
 
-    fn drop_applicants (drop: &[T::AccountId]) {
-        let not_dropped: Vec<T::AccountId> = Self::applicants().into_iter().filter(|id| !drop.iter().any(|x| *x == *id)).collect();
+    fn drop_applicants(drop: &[T::AccountId]) {
+        let not_dropped: Vec<T::AccountId> = Self::applicants().into_iter()
+            .filter(|id| !drop.iter().any(|x| *x == *id))
+            .collect();
 
         for applicant in drop {
             Self::refund_applicant(applicant);
             <ApplicantStakes<T>>::remove(applicant);
         }
 
-        <Applicants<T>>::put(not_dropped.to_vec());
+        <Applicants<T>>::put(not_dropped);
     }
 
+    // TODO consider consistent naming: candidates vs applicants. Different names for the same things?
     fn drop_unelected_candidates(new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>) {
         let applicants_to_drop: Vec<T::AccountId> = Self::applicants().into_iter()
-            .filter(|applicant| {
-                match new_council.get(&applicant) {
-                    Some(_) => false,
-                    None => true
-                }
-            }).collect();
+            .filter(|applicant| !new_council.contains_key(&applicant))
+            .collect();
 
         Self::drop_applicants(&applicants_to_drop[..]);
     }
@@ -422,26 +437,24 @@ impl<T: Trait> Module<T> {
         for sealed_vote in sealed_votes.iter() {
             // Do a refund if commitment was not revealed or vote was for candidate that did
             // not get elected to the council
+            // TODO critical: shouldn't we slash the stake in such a case? This is the whole idea behid staking on something: people need to decide carefully and be responsible for their bahavior because they can loose their stake
+            // See https://github.com/Joystream/substrate-node-joystream/issues/4
             let do_refund = match sealed_vote.get_vote() {
-                Some(candidate) => {
-                    match new_council.get(&candidate) {
-                        None => true,
-                        Some(_) => false
-                    }
-                },
+                Some(candidate) => !new_council.contains_key(&candidate),
                 None => true
             };
 
             if do_refund {
                 // return refundable stake to account's free balance
-                if sealed_vote.stake.refundable > T::Balance::zero() {
-                    let balance = <balances::Module<T>>::free_balance(&sealed_vote.voter);
-                    <balances::Module<T>>::set_free_balance(&sealed_vote.voter, balance + sealed_vote.stake.refundable);
+                let SealedVote { voter, stake, .. } = sealed_vote;
+                if !stake.refundable.is_zero() {
+                    let balance = <balances::Module<T>>::free_balance(voter);
+                    <balances::Module<T>>::set_free_balance(voter, balance + stake.refundable);
                 }
 
                 // return unused transferable stake
-                if sealed_vote.stake.transferred > T::Balance::zero() {
-                    <AvailableBackingStakesMap<T>>::mutate(&sealed_vote.voter, |stake| *stake += sealed_vote.stake.transferred);
+                if !stake.transferred.is_zero() {
+                    <AvailableBackingStakesMap<T>>::mutate(voter, |transferred_stake| *transferred_stake += stake.transferred);
                 }
             }
         }
@@ -459,32 +472,20 @@ impl<T: Trait> Module<T> {
 
         for sealed_vote in sealed_votes.iter() {
             if let Some(candidate) = sealed_vote.get_vote() {
-                match tally.get(&candidate) {
-                    // Add new seat and first backer
-                    None => {
-                        let backers = [Backer {
-                            member: sealed_vote.voter.clone(),
-                            stake: sealed_vote.stake.total()
-                        }].to_vec();
-
-                        let seat = Seat {
-                            member: candidate.clone(),
-                            stake: Self::applicant_stakes(candidate).total(),
-                            backers: backers,
-                        };
-
-                        tally.insert(candidate.clone(), seat);
-                    },
-
+                if !tally.contains_key(&candidate) {
+                    // Add new seat
+                    tally.insert(candidate.clone(), Seat {
+                        member: candidate.clone(),
+                        stake: Self::applicant_stakes(candidate).total(),
+                        backers: vec![],
+                    });
+                }
+                if let Some(seat) = tally.get_mut(&candidate) {
                     // Add backer to existing seat
-                    Some(_) => {
-                        if let Some(seat) = tally.get_mut(&candidate) {
-                            seat.backers.push(Backer {
-                                member: sealed_vote.voter.clone(),
-                                stake: sealed_vote.stake.total()
-                            });
-                        }
-                    }
+                    seat.backers.push(Backer {
+                        member: sealed_vote.voter.clone(),
+                        stake: sealed_vote.stake.total()
+                    });
                 }
             }
         }
@@ -499,7 +500,8 @@ impl<T: Trait> Module<T> {
         }
 
         // use ordering in the applicants vector (not ordering resulting from btreemap iteration)
-        let mut seats: Vec<T::AccountId> = Self::applicants().into_iter().filter(|id| tally.get(id).is_some()).collect();
+        let mut seats: Vec<T::AccountId> = Self::applicants().into_iter()
+            .filter(|id| tally.contains_key(id)).collect();
 
         // ensure_eq!(seats.len(), tally.len());
 
@@ -511,9 +513,7 @@ impl<T: Trait> Module<T> {
         // TODO: order by number of votes, then number of backers
 
         seats.sort_by_key(|applicant| {
-            tally.get(&applicant)
-              .unwrap() // we filtered on existing keys, so this should not panic!
-              .total_stake()
+            tally.get(&applicant).map_or(Zero::zero(), |seat| seat.total_stake())
         });
 
         // seats at bottom of list
@@ -524,27 +524,21 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn tick(now: T::BlockNumber) {
-        print("Election: tick");
+    fn check_if_stage_is_ending(now: T::BlockNumber) {
+        // print("Election: check_if_stage_is_ending");
         if let Some(stage) = Self::stage() {
             match stage {
-                Stage::Announcing(ends) => {
-                    if ends == now {
-                        Self::deposit_event(RawEvent::AnnouncingEnded());
-                        Self::on_announcing_ended();
-                    }
+                Stage::Announcing(ends) => if ends == now {
+                    Self::deposit_event(RawEvent::AnnouncingEnded());
+                    Self::on_announcing_ended();
                 },
-                Stage::Voting(ends) => {
-                    if ends == now {
-                        Self::deposit_event(RawEvent::VotingEnded());
-                        Self::on_voting_ended();
-                    }
+                Stage::Voting(ends) => if ends == now {
+                    Self::deposit_event(RawEvent::VotingEnded());
+                    Self::on_voting_ended();
                 },
-                Stage::Revealing(ends) => {
-                    if ends == now {
-                        Self::deposit_event(RawEvent::RevealingEnded());
-                        Self::on_revealing_ended();
-                    }
+                Stage::Revealing(ends) => if ends == now {
+                    Self::deposit_event(RawEvent::RevealingEnded());
+                    Self::on_revealing_ended();
                 },
             }
         }
@@ -552,25 +546,25 @@ impl<T: Trait> Module<T> {
 
     /// Takes a snapshot of the stakes from the current council
     fn initialize_transferable_stakes(current_council: Seats<T::AccountId, T::Balance>) {
-        let mut accounts_council: Vec<T::AccountId> = Vec::new();
-        let mut accounts_backers: Vec<T::AccountId> = Vec::new();
+        let mut council_accounts: Vec<T::AccountId> = Vec::new();
+        let mut backer_accounts: Vec<T::AccountId> = Vec::new();
         for ref seat in current_council.iter() {
             let id = seat.member.clone();
             <AvailableCouncilStakesMap<T>>::insert(&id, seat.stake);
-            accounts_council.push(id);
+            council_accounts.push(id);
             for ref backer in seat.backers.iter() {
                 let id = backer.member.clone();
                 if !<AvailableBackingStakesMap<T>>::exists(&id) {
                     <AvailableBackingStakesMap<T>>::insert(&id, backer.stake);
-                    accounts_backers.push(id);
+                    backer_accounts.push(id);
                 } else {
                     <AvailableBackingStakesMap<T>>::mutate(&backer.member, |stake| *stake += backer.stake);
                 }
             }
         }
 
-        <CouncilStakeHolders<T>>::put(accounts_council);
-        <BackingStakeHolders<T>>::put(accounts_backers);
+        <CouncilStakeHolders<T>>::put(council_accounts);
+        <BackingStakeHolders<T>>::put(backer_accounts);
     }
 
     fn try_add_applicant(applicant: T::AccountId, stake: T::Balance) -> Result {
@@ -585,28 +579,33 @@ impl<T: Trait> Module<T> {
             true => <AvailableCouncilStakesMap<T>>::get(&applicant)
         };
 
+        // TODO: notice: next ~20 lines look similar to what we have in `try_add_vote`. Consider refactoring
         let mut new_stake: Stake<T::Balance> = Default::default();
 
-        new_stake.transferred = if transferable_stake >= stake {
-            stake
-        } else {
-            transferable_stake
-        };
+        new_stake.transferred = 
+            if transferable_stake >= stake {
+                stake
+            } else {
+                transferable_stake
+            };
 
         new_stake.refundable = stake - new_stake.transferred;
 
         let balance = <balances::Module<T>>::free_balance(&applicant);
 
+        // TODO use `ensure!()` instead
         if new_stake.refundable > balance {
             return Err("not enough balance to cover stake");
         }
 
         let total_stake = applicant_stake.add(&new_stake);
 
+        // TODO use `ensure!()` instead
         if Self::min_council_stake() > total_stake.total() {
             return Err("minimum stake not met");
         }
 
+        // TODO use `ensure!()` instead
         if <balances::Module<T>>::decrease_free_balance(&applicant, new_stake.refundable).is_err() {
             return Err("failed to update balance");
         }
@@ -627,6 +626,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn try_add_vote(voter: T::AccountId, stake: T::Balance, commitment: T::Hash) -> Result {
+        // TODO use `ensure!()` instead
         if <Votes<T>>::exists(commitment) {
             return Err("duplicate commitment");
         }
@@ -638,22 +638,26 @@ impl<T: Trait> Module<T> {
             true => <AvailableBackingStakesMap<T>>::get(&voter)
         };
 
+        // TODO: notice: next ~20 lines look similar to what we have in `try_add_aaplicant`. Consider refactoring
         let mut vote_stake: Stake<T::Balance> = Default::default();
 
-        vote_stake.transferred = if transferable_stake >= stake {
-            stake
-        } else {
-            transferable_stake
-        };
+        vote_stake.transferred = 
+            if transferable_stake >= stake {
+                stake
+            } else {
+                transferable_stake
+            };
 
         vote_stake.refundable = stake - vote_stake.transferred;
 
         let balance = <balances::Module<T>>::free_balance(&voter);
 
+        // TODO use `ensure!()` instead
         if vote_stake.refundable > balance {
             return Err("not enough balance to cover voting stake");
         }
 
+        // TODO use `ensure!()` instead
         if <balances::Module<T>>::decrease_free_balance(&voter, vote_stake.refundable).is_err() {
             return Err("failed to update balance");
         }
@@ -670,10 +674,12 @@ impl<T: Trait> Module<T> {
     }
 
     fn try_reveal_vote(voter: T::AccountId, commitment: T::Hash, candidate: T::AccountId, salt: Vec<u8>) -> Result {
+        // TODO use `ensure!()` instead
         if !<ApplicantStakes<T>>::exists(&candidate) {
             return Err("vote for non-candidate not allowed");
         }
 
+        // TODO use `ensure!()` instead
         if !<Votes<T>>::exists(&commitment) {
             return Err("commitment not found");
         }
@@ -681,21 +687,25 @@ impl<T: Trait> Module<T> {
         let mut sealed_vote = <Votes<T>>::get(&commitment);
 
         // only voter can reveal their own votes
+        // TODO use `ensure!()` instead
         if !sealed_vote.owned_by(voter) {
             return Err("only voter can reveal vote");
         }
 
         let mut salt = salt.clone();
-        let valid = sealed_vote.unseal(candidate, &mut salt, <T as system::Trait>::Hashing::hash)?;
-        match valid {
-            true => {
-                // update the sealed vote
-                <Votes<T>>::insert(commitment, sealed_vote);
-                Ok(())
-            },
-
-            false => Err("invalid salt")
+        let is_salt_valid = sealed_vote.unseal(candidate, &mut salt, <T as system::Trait>::Hashing::hash)?;
+        if is_salt_valid {
+            // update the sealed vote
+            <Votes<T>>::insert(commitment, sealed_vote);
+            Ok(())
+        } else {
+            Err("invalid salt")
         }
+    }
+
+    // TODO This method should be moved to Membership module once it's created.
+    fn is_member(sender: T::AccountId) -> bool {
+        !<balances::Module<T>>::free_balance(sender).is_zero()
     }
 }
 
@@ -704,16 +714,21 @@ decl_module! {
         fn deposit_event<T>() = default;
 
         // No origin so this is a priviledged call
-        fn on_finalise(now: T::BlockNumber){
-            let _ = Self::tick(now);
+        fn on_finalise(now: T::BlockNumber) {
+            Self::check_if_stage_is_ending(now);
         }
 
         fn announce_candidacy(origin, stake: T::Balance) -> Result {
             let sender = ensure_signed(origin)?;
+            ensure!(Self::is_member(sender.clone()), "Only members can announce their candidacy");
+            
             // Can only announce candidacy during election announcing stage
             if let Some(stage) = Self::stage() {
                 match stage {
-                    Stage::Announcing(_) => Self::try_add_applicant(sender, stake),
+                    Stage::Announcing(_) => {
+                        // TODO fail fast: ensure that stake >= min_stake
+                        Self::try_add_applicant(sender, stake)
+                    },
                     _ => Err("election not in announcing stage")
                 }
             } else {
@@ -723,10 +738,15 @@ decl_module! {
 
         fn vote_for_candidate(origin, commitment: T::Hash, stake: T::Balance) -> Result {
             let sender = ensure_signed(origin)?;
+            ensure!(Self::is_member(sender.clone()), "Only members can vote for a candidate");
+
             // Can only vote during election voting stage
             if let Some(stage) = Self::stage() {
                 match stage {
-                    Stage::Voting(_) => Self::try_add_vote(sender, stake, commitment),
+                    Stage::Voting(_) => {
+                        // TODO fail fast: ensure that stake >= min_stake
+                        Self::try_add_vote(sender, stake, commitment)
+                    },
                     _ => Err("election not in voting stage")
                 }
             } else {
@@ -755,24 +775,24 @@ decl_module! {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use ::governance::tests::*;
+    use super::*;
+    use ::governance::tests::*;
     use parity_codec::Encode;
 
     #[test]
-    fn default_paramas_should_work () {
-
+    fn check_default_params() {
+        // TODO missing test implementation?
     }
 
     #[test]
-    fn start_election_if_election_running_should_fail() {
+    fn should_not_start_new_election_if_already_started() {
         with_externalities(&mut initial_test_ext(), || {
-            assert!(Election::start_election(None).is_ok());
-            assert!(Election::start_election(None).is_err());
+            assert_ok!(Election::start_election(None));
+            assert_err!(Election::start_election(None), "election already in progress");
         });
     }
 
-    fn assert_announcing_period (expected_period: <Test as system::Trait>::BlockNumber) {
+    fn assert_announcing_period(expected_period: <Test as system::Trait>::BlockNumber) {
         assert!(Election::stage().is_some(), "Election Stage was not set");
 
         let election_stage = Election::stage().unwrap();
@@ -794,7 +814,7 @@ mod tests {
             <AnnouncingPeriod<Test>>::put(20);
             let prev_round = Election::round();
 
-            Election::start_election(None);
+            assert_ok!(Election::start_election(None));
 
             // election round is bumped
             assert_eq!(Election::round(), prev_round + 1);
@@ -938,7 +958,7 @@ mod tests {
             Balances::set_free_balance(&applicant, 5000);
 
             <CouncilStakeHolders<Test>>::put(vec![applicant]);
-            <AvailableCouncilStakesMap<Test>>::insert(applicant, 1000);
+            save_council_stake(applicant, 1000);
 
             <Applicants<Test>>::put(vec![applicant]);
             let starting_stake = Stake {
@@ -1047,9 +1067,9 @@ mod tests {
 
             <Applicants<Test>>::put(vec![1,2,3]);
 
-            <AvailableCouncilStakesMap<Test>>::insert(1, 50);
-            <AvailableCouncilStakesMap<Test>>::insert(2, 0);
-            <AvailableCouncilStakesMap<Test>>::insert(3, 0);
+            save_council_stake(1, 50);
+            save_council_stake(2, 0);
+            save_council_stake(3, 0);
 
             <ApplicantStakes<Test>>::insert(1, Stake {
                 refundable: 100,
@@ -1107,12 +1127,20 @@ mod tests {
         });
     }
 
+    fn save_council_stake(id: u64, stake: u32) {
+        <AvailableCouncilStakesMap<Test>>::insert(id, stake);
+    }
+
+    fn save_backing_stake(id: u64, stake: u32) {
+        <AvailableBackingStakesMap<Test>>::insert(id, stake);
+    }
+
     #[test]
     fn votes_can_be_covered_by_transferable_stake () {
         with_externalities(&mut initial_test_ext(), || {
             Balances::set_free_balance(&20, 1000);
 
-            <AvailableBackingStakesMap<Test>>::insert(20, 500);
+            save_backing_stake(20, 500);
 
             let payload = vec![10u8];
             let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
@@ -1135,7 +1163,7 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             Balances::set_free_balance(&20, 100);
 
-            <AvailableBackingStakesMap<Test>>::insert(20, 500);
+            save_backing_stake(20, 500);
 
             let payload = vec![10u8];
             let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
@@ -1152,7 +1180,7 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             Balances::set_free_balance(&20, 1000);
 
-            <AvailableBackingStakesMap<Test>>::insert(20, 500);
+            save_backing_stake(20, 500);
 
             let payload = vec![10u8];
             let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
@@ -1192,7 +1220,7 @@ mod tests {
                 refundable: 100, transferred: 0
             }, commitment));
 
-            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+            assert!(<Votes<Test>>::get(commitment).is_not_revealed());
             assert!(Election::try_reveal_vote(voter, commitment, candidate, salt).is_ok());
             assert_eq!(<Votes<Test>>::get(commitment).get_vote().unwrap(), candidate);
         });
@@ -1212,9 +1240,9 @@ mod tests {
                 refundable: 100, transferred: 0
             }, commitment));
 
-            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+            assert!(<Votes<Test>>::get(commitment).is_not_revealed());
             assert!(Election::try_reveal_vote(voter, commitment, candidate, vec![]).is_err());
-            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+            assert!(<Votes<Test>>::get(commitment).is_not_revealed());
         });
     }
 
@@ -1244,9 +1272,9 @@ mod tests {
                 refundable: 100, transferred: 0
             }, commitment));
 
-            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+            assert!(<Votes<Test>>::get(commitment).is_not_revealed());
             assert!(Election::try_reveal_vote(voter, commitment, candidate, vec![]).is_err());
-            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+            assert!(<Votes<Test>>::get(commitment).is_not_revealed());
         });
     }
 
@@ -1265,9 +1293,9 @@ mod tests {
                 refundable: 100, transferred: 0
             }, commitment));
 
-            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+            assert!(<Votes<Test>>::get(commitment).is_not_revealed());
             assert!(Election::try_reveal_vote(not_voter, commitment, candidate, salt).is_err());
-            assert!(<Votes<Test>>::get(commitment).get_vote().is_none());
+            assert!(<Votes<Test>>::get(commitment).is_not_revealed());
         });
     }
 
@@ -1398,7 +1426,7 @@ mod tests {
                 transferred: 50 as u32,
             });
 
-            <AvailableCouncilStakesMap<Test>>::insert(100, 100);
+            save_council_stake(100, 100);
 
             let mut new_council: BTreeMap<u64, Seat<u64, u32>> = BTreeMap::new();
             new_council.insert(200 as u64, Seat{ member: 200 as u64, stake: 0 as u32, backers: vec![]});
@@ -1425,9 +1453,9 @@ mod tests {
             Balances::set_free_balance(&20, 2000);
             Balances::set_free_balance(&30, 3000);
 
-            <AvailableBackingStakesMap<Test>>::insert(10, 100);
-            <AvailableBackingStakesMap<Test>>::insert(20, 200);
-            <AvailableBackingStakesMap<Test>>::insert(30, 300);
+            save_backing_stake(10, 100);
+            save_backing_stake(20, 200);
+            save_backing_stake(30, 300);
 
             let votes = mock_votes(vec![
             //  (voter, stake[refundable], stake[transferred], candidate)
@@ -1467,16 +1495,16 @@ mod tests {
             <CouncilStakeHolders<Test>>::put(vec![10,20,30]);
 
             Balances::set_free_balance(&10, 1000);
-            <AvailableBackingStakesMap<Test>>::insert(10, 100);
-            <AvailableCouncilStakesMap<Test>>::insert(10, 50);
+            save_backing_stake(10, 100);
+            save_council_stake(10, 50);
 
             Balances::set_free_balance(&20, 2000);
-            <AvailableBackingStakesMap<Test>>::insert(20, 200);
-            <AvailableCouncilStakesMap<Test>>::insert(20, 60);
+            save_backing_stake(20, 200);
+            save_council_stake(20, 60);
 
             Balances::set_free_balance(&30, 3000);
-            <AvailableBackingStakesMap<Test>>::insert(30, 300);
-            <AvailableCouncilStakesMap<Test>>::insert(30, 70);
+            save_backing_stake(30, 300);
+            save_council_stake(30, 70);
 
             Election::refund_transferable_stakes();
 
@@ -1521,7 +1549,7 @@ mod tests {
             }
 
             System::set_block_number(1);
-            Election::start_election(None);
+            assert_ok!(Election::start_election(None));
 
             for i in 1..20 {
                 assert!(Election::announce_candidacy(Origin::signed(i), 150).is_ok());
@@ -1530,7 +1558,7 @@ mod tests {
 
             let n = 1 + Election::announcing_period();
             System::set_block_number(n);
-            Election::tick(n);
+            Election::on_finalise(n);
 
             for i in 1..20 {
                 assert!(Election::vote_for_candidate(Origin::signed(i), make_commitment_for_candidate(i, &mut vec![40u8]), 100).is_ok());
@@ -1542,7 +1570,7 @@ mod tests {
 
             let n = n + Election::voting_period();
             System::set_block_number(n);
-            Election::tick(n);
+            Election::on_finalise(n);
 
             for i in 1..20 {
                 assert!(Election::reveal_vote(Origin::signed(i), make_commitment_for_candidate(i, &mut vec![40u8]), i, vec![40u8]).is_ok());
@@ -1554,7 +1582,7 @@ mod tests {
 
             let n = n + Election::revealing_period();
             System::set_block_number(n);
-            Election::tick(n);
+            Election::on_finalise(n);
 
             assert!(Council::council().is_some());
             assert_eq!(Council::council().unwrap().len(), Election::council_size());
