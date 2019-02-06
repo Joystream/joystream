@@ -25,7 +25,8 @@ pub mod tests {
     pub use self::sr_io::with_externalities;
     pub use self::substrate_primitives::{H256, Blake2Hasher};
     pub use self::sr_primitives::{
-        BuildStorage, traits::BlakeTwo256, traits::IdentityLookup, 
+        BuildStorage,
+        traits::{BlakeTwo256, OnFinalise, IdentityLookup},
         testing::{Digest, DigestItem, Header, UintAuthorityId}
     };
 
@@ -62,9 +63,13 @@ pub mod tests {
     }
     impl council::Trait for Test {
         type Event = ();
+
+        type CouncilTermEnded = (Governance,);
     }
     impl election::Trait for Test {
         type Event = ();
+
+        type CouncilElected = (Council,);
     }
     impl proposals::Trait for Test {
         type Event = ();
@@ -93,14 +98,15 @@ pub mod tests {
         type TriggerElection = (Election,);
     }
 
+    // TODO add a Hook type to capture TriggerElection and CouncilElected hooks
+
     // This function basically just builds a genesis storage key/value store according to
     // our desired mockup.
     pub fn  initial_test_ext() -> sr_io::TestExternalities<Blake2Hasher> {
         let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
 
         t.extend(root::GenesisConfig::<Test> {
-            dummy: 0,
-            _genesis_phantom_data: Default::default(),
+            election_parameters: Default::default(),
         }.build_storage().unwrap().0);
 
         runtime_io::TestExternalities::new(t)
@@ -110,6 +116,6 @@ pub mod tests {
     pub type Election = election::Module<Test>;
     pub type Council = council::Module<Test>;
     pub type Proposals = proposals::Module<Test>;
-	pub type System = system::Module<Test>;
-	pub type Balances = balances::Module<Test>;
+    pub type System = system::Module<Test>;
+    pub type Balances = balances::Module<Test>;
 }

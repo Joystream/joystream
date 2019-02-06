@@ -1,6 +1,6 @@
 use srml_support::{storage, StorageValue, StorageMap, dispatch::Result};
 use primitives::{storage::well_known_keys};
-use runtime_primitives::traits::{As, Hash, Zero, CheckedAdd};
+use runtime_primitives::traits::{As, Hash, Zero};
 use runtime_io::print;
 use {balances, system::{self, ensure_signed}};
 use rstd::prelude::*;
@@ -563,8 +563,9 @@ mod tests {
 
     impl council::Trait for Test {
         type Event = ();
+        type CouncilTermEnded = ();
     }
-    
+
     impl Trait for Test {
         type Event = ();
     }

@@ -202,10 +202,12 @@ impl governance::proposals::Trait for Runtime {
 
 impl governance::election::Trait for Runtime {
 	type Event = Event;
+	type CouncilElected = (Council,);
 }
 
 impl governance::council::Trait for Runtime {
 	type Event = Event;
+	type CouncilTermEnded = (Governance,);
 }
 
 impl governance::root::Trait for Runtime {

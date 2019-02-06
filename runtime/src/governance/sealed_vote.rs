@@ -4,7 +4,7 @@ use parity_codec::Encode;
 use srml_support::dispatch::Vec;
 
 #[derive(Clone, Copy, Encode, Decode, Default)]
-pub struct SealedVote<AccountId, Stake, Hash, Vote> 
+pub struct SealedVote<AccountId, Stake, Hash, Vote>
     where Vote: Encode, Hash: PartialEq, AccountId: PartialEq
 {
   pub voter: AccountId,
@@ -13,7 +13,7 @@ pub struct SealedVote<AccountId, Stake, Hash, Vote>
   vote: Option<Vote>, // will be set when unsealing
 }
 
-impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>    
+impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
     where Vote: Encode, Hash: PartialEq, AccountId: PartialEq
 {
     pub fn new(voter: AccountId, stake: Stake, commitment: Hash) -> SealedVote<AccountId, Stake, Hash, Vote> {
@@ -22,6 +22,15 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
             commitment,
             stake,
             vote: None,
+        }
+    }
+
+    pub fn new_unsealed(voter: AccountId, stake: Stake, commitment: Hash, vote: Vote) -> SealedVote<AccountId, Stake, Hash, Vote> {
+        SealedVote {
+            voter,
+            commitment,
+            stake,
+            vote: Some(vote),
         }
     }
 
@@ -36,10 +45,9 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
         payload.append(salt);
 
         // hash the payload, if it matches the commitment it is a valid revealing of the vote
-        self.vote = match self.commitment ==  hasher(&payload) {
-            true => Some(vote),
-            false => None,
-        };
+        if self.commitment == hasher(&payload) {
+            self.vote = Some(vote);
+        }
 
         Ok(self.was_revealed())
     }
@@ -48,11 +56,17 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
         &self.vote
     }
 
+    // TODO rename to 'is_owned_by'?
     pub fn owned_by(&self, someone: AccountId) -> bool {
         someone == self.voter
     }
 
+    // TODO rename to 'is_revealed'?
     pub fn was_revealed(&self) -> bool {
         self.vote.is_some()
+    }
+
+    pub fn is_not_revealed(&self) -> bool {
+        self.vote.is_none()
     }
 }
