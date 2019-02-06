@@ -1,9 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use srml_support::{StorageValue, StorageMap, dispatch::Result};
-
 use governance::{council, election};
-
 use runtime_io::print;
 
 // Hook For starting election

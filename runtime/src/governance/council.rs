@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use srml_support::{StorageValue};
+use srml_support::dispatch::Vec;
 use runtime_primitives::traits::{As};
 use {balances};
 

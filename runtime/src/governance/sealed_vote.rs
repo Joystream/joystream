@@ -52,7 +52,6 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
         Ok(self.was_revealed())
     }
 
-    // TODO do we really need this method? just .vote
     pub fn get_vote(&self) -> &Option<Vote> {
         &self.vote
     }

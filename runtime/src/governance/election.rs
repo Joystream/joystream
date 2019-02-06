@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use srml_support::{StorageValue, StorageMap, dispatch::Result};
+use srml_support::dispatch::Vec;
 use runtime_primitives::traits::{Hash, As, Zero, SimpleArithmetic};
 use {balances, system::{ensure_signed}};
 use runtime_io::print;
@@ -421,6 +422,7 @@ impl<T: Trait> Module<T> {
             // Do a refund if commitment was not revealed or vote was for candidate that did
             // not get elected to the council
             // TODO critical: shouldn't we slash the stake in such a case? This is the whole idea behid staking on something: people need to decide carefully and be responsible for their bahavior because they can loose their stake
+            // See https://github.com/Joystream/substrate-node-joystream/issues/4
             let do_refund = match sealed_vote.get_vote() {
                 Some(candidate) => !new_council.contains_key(&candidate),
                 None => true
