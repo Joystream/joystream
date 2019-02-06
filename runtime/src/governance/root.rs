@@ -1,28 +1,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use srml_support::{StorageValue, StorageMap, dispatch::Result};
-use governance::{council, election};
+
+use governance::{council, election::{self, TriggerElection}};
+
 use runtime_io::print;
-
-// Hook For starting election
-pub trait TriggerElection<CurrentCouncil, Params> {
-    fn trigger_election(current: Option<CurrentCouncil>, params: Params) -> Result;
-}
-
-impl<CurrentCouncil, Params> TriggerElection<CurrentCouncil, Params> for () {
-    fn trigger_election(_: Option<CurrentCouncil>, _: Params) -> Result { Ok(())}
-}
-
-impl<CurrentCouncil, Params, X: TriggerElection<CurrentCouncil, Params>> TriggerElection<CurrentCouncil, Params> for (X,) {
-    fn trigger_election(current: Option<CurrentCouncil>, params: Params) -> Result{
-        X::trigger_election(current, params)
-    }
-}
 
 pub trait Trait: system::Trait + council::Trait + election::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type TriggerElection: TriggerElection<council::Council<Self::AccountId, Self::Balance>, election::ElectionParameters<Self::BlockNumber, Self::Balance>>;
+    type TriggerElection: election::TriggerElection<election::Seats<Self::AccountId, Self::Balance>, election::ElectionParameters<Self::BlockNumber, Self::Balance>>;
 }
 
 decl_storage! {
