@@ -35,8 +35,7 @@ pub struct Seat<Id, Stake> {
 impl<Id, Stake> Seat<Id, Stake>
     where Stake: Add<Output=Stake> + Copy,
 {
-    // TODO rename to 'calc_total_stake' to emphasize iteration
-    pub fn total_stake(&self) -> Stake {
+    pub fn calc_total_stake(&self) -> Stake {
         self.backers.iter().fold(self.stake, |acc, backer| acc + backer.stake)
     }
 }
@@ -506,7 +505,7 @@ impl<T: Trait> Module<T> {
         // TODO: order by number of votes, then number of backers
 
         seats.sort_by_key(|applicant| {
-            tally.get(&applicant).map_or(Zero::zero(), |seat| seat.total_stake())
+            tally.get(&applicant).map_or(Zero::zero(), |seat| seat.calc_total_stake())
         });
 
         // seats at bottom of list
