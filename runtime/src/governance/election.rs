@@ -4,14 +4,12 @@ use srml_support::{StorageValue, StorageMap, dispatch::Result};
 use srml_support::dispatch::Vec;
 use runtime_primitives::traits::{Hash, As, Zero, SimpleArithmetic};
 use {balances, system::{ensure_signed}};
-use runtime_io::print;
 
 use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
 
 use super::transferable_stake::Stake;
 use super::sealed_vote::SealedVote;
-use super::root;
 
 pub trait Trait: system::Trait + balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -128,7 +126,7 @@ decl_storage! {
         BackingStakeHolders get(backing_stakeholders): Vec<T::AccountId>;
         CouncilStakeHolders get(council_stakeholders): Vec<T::AccountId>;
 
-        // TODO Could these two maps can be merged into one? 
+        // TODO Could these two maps can be merged into one?
         // If yes, then it will simplify/generalize other code where they are used.
         AvailableBackingStakesMap get(backing_stakes): map T::AccountId => T::Balance;
         AvailableCouncilStakesMap get(council_stakes): map T::AccountId => T::Balance;
@@ -149,7 +147,7 @@ decl_storage! {
 
         // TODO consider usize -> u32 (in Substrate code they use u32 for counts)
         CouncilSize get(council_size): usize = 10;
-        
+
         // should be greater than council_size, better to derive it as a multiple of council_size?
         // TODO consider usize -> u32 (in Substrate code they use u32 for counts)
         CandidacyLimit get(candidacy_limit): usize = 20;
@@ -212,8 +210,6 @@ impl<T: Trait> Module<T> {
     }
 
     fn bump_round() -> u32 {
-        // bump the round number - comment is redundant because the method's name is self explanatory ;)
-        // print("Bumping Election Round");
         <ElectionRound<T>>::mutate(|n| {
             *n += 1;
             *n
@@ -228,7 +224,7 @@ impl<T: Trait> Module<T> {
         let next_round = Self::bump_round();
 
         Self::deposit_event(RawEvent::AnnouncingStarted(next_round));
-        // print("Announcing Started");
+
         period
     }
 
@@ -272,7 +268,6 @@ impl<T: Trait> Module<T> {
         <ElectionStage<T>>::put(Stage::Voting(period));
 
         Self::deposit_event(RawEvent::VotingStarted());
-        // print("Voting Started");
     }
 
     fn on_voting_ended() {
@@ -286,7 +281,6 @@ impl<T: Trait> Module<T> {
         <ElectionStage<T>>::put(Stage::Revealing(period));
 
         Self::deposit_event(RawEvent::RevealingStarted());
-        // print("Revealing Started");
     }
 
     fn on_revealing_ended() {
@@ -351,7 +345,6 @@ impl<T: Trait> Module<T> {
         T::CouncilElected::council_elected(new_council, Self::new_term_duration());
 
         Self::deposit_event(RawEvent::CouncilElected());
-        // print("Election Completed");
     }
 
     fn refund_transferable_stakes() {
@@ -525,7 +518,6 @@ impl<T: Trait> Module<T> {
     }
 
     fn check_if_stage_is_ending(now: T::BlockNumber) {
-        // print("Election: check_if_stage_is_ending");
         if let Some(stage) = Self::stage() {
             match stage {
                 Stage::Announcing(ends) => if ends == now {
@@ -582,7 +574,7 @@ impl<T: Trait> Module<T> {
         // TODO: notice: next ~20 lines look similar to what we have in `try_add_vote`. Consider refactoring
         let mut new_stake: Stake<T::Balance> = Default::default();
 
-        new_stake.transferred = 
+        new_stake.transferred =
             if transferable_stake >= stake {
                 stake
             } else {
@@ -641,7 +633,7 @@ impl<T: Trait> Module<T> {
         // TODO: notice: next ~20 lines look similar to what we have in `try_add_aaplicant`. Consider refactoring
         let mut vote_stake: Stake<T::Balance> = Default::default();
 
-        vote_stake.transferred = 
+        vote_stake.transferred =
             if transferable_stake >= stake {
                 stake
             } else {
@@ -721,7 +713,7 @@ decl_module! {
         fn announce_candidacy(origin, stake: T::Balance) -> Result {
             let sender = ensure_signed(origin)?;
             ensure!(Self::is_member(sender.clone()), "Only members can announce their candidacy");
-            
+
             // Can only announce candidacy during election announcing stage
             if let Some(stage) = Self::stage() {
                 match stage {
