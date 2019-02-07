@@ -116,7 +116,7 @@ pub struct TransferableStake<Balance> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilElection {
-        // Current stage if there is an election ongoing
+        // Current stage if there is an election running
         Stage get(stage): Option<ElectionStage<T::BlockNumber>>;
 
         // The election round
@@ -129,12 +129,12 @@ decl_storage! {
         ApplicantStakes get(applicant_stakes): map T::AccountId => Stake<T::Balance>;
 
         Commitments get(commitments): Vec<T::Hash>;
-        // simply a Yes vote for a candidate. Consider changing the vote payload to support
-        // For and Against.
+
         // TODO value type of this map looks scary, is there any way to simplify the notation?
         Votes get(votes): map T::Hash => SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>;
 
-        // Parameters election. Set when a new election is started
+        // Election Parameters - default "zero" values are not meaningful. Running an election without
+        // settings reasonable values is a bad idea. Parameters can be set in the TriggerElection hook.
         AnnouncingPeriod get(announcing_period): T::BlockNumber;
         VotingPeriod get(voting_period): T::BlockNumber;
         RevealingPeriod get(revealing_period): T::BlockNumber;
@@ -173,6 +173,8 @@ impl<T: Trait> TriggerElection<Seats<T::AccountId, T::Balance>, ElectionParamete
 }
 
 impl<T: Trait> Module<T> {
+    // HELPERS - IMMUTABLES
+
     fn council_size_usize() -> usize {
         Self::council_size() as usize
     }
@@ -181,51 +183,93 @@ impl<T: Trait> Module<T> {
         Self::candidacy_limit_multiple() as usize
     }
 
-    fn set_election_parameters(params: ElectionParameters<T::BlockNumber, T::Balance>) {
-        <AnnouncingPeriod<T>>::put(params.announcing_period);
-        <VotingPeriod<T>>::put(params.voting_period);
-        <RevealingPeriod<T>>::put(params.revealing_period);
-        <CouncilSize<T>>::put(params.council_size);
-        <MinCouncilStake<T>>::put(params.min_council_stake);
-        <NewTermDuration<T>>::put(params.new_term_duration);
-        <CandidacyLimitMultiple<T>>::put(params.candidacy_limit_multiple);
+    fn current_block_number_plus(length: T::BlockNumber) -> T::BlockNumber {
+        <system::Module<T>>::block_number() + length
     }
 
+    // PUBLIC IMMUTABLES
+
+    /// Returns true if an election is running
     pub fn is_election_running() -> bool {
         Self::stage().is_some()
     }
 
+    /// Returns block number at which current stage will end if an election is running.
+    pub fn stage_ends_at() -> Option<T::BlockNumber> {
+        if let Some(stage) = Self::stage() {
+            match stage {
+                ElectionStage::Announcing(ends) => Some(ends),
+                ElectionStage::Voting(ends) => Some(ends),
+                ElectionStage::Revealing(ends) => Some(ends),
+            }
+        } else {
+            None
+        }
+    }
+
+    // PRIVATE MUTABLES
+
+    /// Sets the election parameters. Must be called before starting an election otherwise
+    /// last set values will be used.
+    fn set_election_parameters(params: ElectionParameters<T::BlockNumber, T::Balance>) {
+        // TODO: consider at what stage it is safe to allow these parameters to change.
+        <AnnouncingPeriod<T>>::put(params.announcing_period);
+        <VotingPeriod<T>>::put(params.voting_period);
+        <RevealingPeriod<T>>::put(params.revealing_period);
+        <MinCouncilStake<T>>::put(params.min_council_stake);
+        <NewTermDuration<T>>::put(params.new_term_duration);
+        <CouncilSize<T>>::put(params.council_size);
+        <CandidacyLimitMultiple<T>>::put(params.candidacy_limit_multiple);
+    }
+
+    /// Starts an election. Will fail if an election is already running
+    /// Initializes transferable stakes. Assumes election parameters have already been set.
     fn start_election(current_council: Option<Seats<T::AccountId, T::Balance>>) -> Result {
         ensure!(!Self::is_election_running(), "election already in progress");
+        ensure!(Self::existing_stake_holders().len() == 0, "stake holders must be empty");
+        ensure!(Self::applicants().len() == 0, "applicants must be empty");
+        ensure!(Self::commitments().len() == 0, "commitments must be empty");
 
-        // take snapshot of council and backing stakes of an existing council
+        // Take snapshot of seat and backing stakes of an existing council
+        // Its important to ensure the election system takes ownership of these stakes, and is responsible
+        // to return any unused stake to origin owners.
         current_council.map(|c| Self::initialize_transferable_stakes(c));
 
         Self::move_to_announcing_stage();
         Ok(())
     }
 
-    fn new_period(length: T::BlockNumber) -> T::BlockNumber {
-        <system::Module<T>>::block_number() + length
-    }
+    /// Sets announcing stage. Can be called from any stage and assumes all preparatory work
+    /// for entering the stage has been performed.
+    /// Bumps the election round.
+    fn move_to_announcing_stage() {
+        let next_round = <Round<T>>::mutate(|n| { *n += 1; *n });
 
-    fn bump_round() -> u32 {
-        <Round<T>>::mutate(|n| {
-            *n += 1;
-            *n
-        })
-    }
+        let new_stage_ends_at = Self::current_block_number_plus(Self::announcing_period());
 
-    fn move_to_announcing_stage() -> T::BlockNumber {
-        let period = Self::new_period(Self::announcing_period());
-
-        <Stage<T>>::put(ElectionStage::Announcing(period));
-
-        let next_round = Self::bump_round();
+        <Stage<T>>::put(ElectionStage::Announcing(new_stage_ends_at));
 
         Self::deposit_event(RawEvent::AnnouncingStarted(next_round));
+    }
 
-        period
+    /// Sets announcing stage. Can be called from any stage and assumes all preparatory work
+    /// for entering the stage has been performed.
+    fn move_to_voting_stage() {
+        let new_stage_ends_at = Self::current_block_number_plus(Self::voting_period());
+
+        <Stage<T>>::put(ElectionStage::Voting(new_stage_ends_at));
+
+        Self::deposit_event(RawEvent::VotingStarted());
+    }
+
+    /// Sets announcing stage. Can be called from any stage and assumes all preparatory work
+    /// for entering the stage has been performed.
+    fn move_to_revealing_stage() {
+        let new_stage_ends_at = Self::current_block_number_plus(Self::revealing_period());
+
+        <Stage<T>>::put(ElectionStage::Revealing(new_stage_ends_at));
+
+        Self::deposit_event(RawEvent::RevealingStarted());
     }
 
     /// Sorts applicants by stake, and returns slice of applicants with least stake. Applicants not
@@ -260,26 +304,8 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn move_to_voting_stage() {
-        // TODO check that current stage is Announcing
-        let period = Self::new_period(Self::voting_period());
-
-        <Stage<T>>::put(ElectionStage::Voting(period));
-
-        Self::deposit_event(RawEvent::VotingStarted());
-    }
-
     fn on_voting_ended() {
         Self::move_to_revealing_stage();
-    }
-
-    fn move_to_revealing_stage() {
-        // TODO check that current stage is Voting
-        let period = Self::new_period(Self::revealing_period());
-
-        <Stage<T>>::put(ElectionStage::Revealing(period));
-
-        Self::deposit_event(RawEvent::RevealingStarted());
     }
 
     fn on_revealing_ended() {
@@ -369,7 +395,7 @@ impl<T: Trait> Module<T> {
         for applicant in Self::applicants() {
             <ApplicantStakes<T>>::remove(applicant);
         }
-        <Applicants<T>>::put(vec![]);
+        <Applicants<T>>::kill();
     }
 
     fn refund_applicant(applicant: &T::AccountId) {
@@ -503,6 +529,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    /// Checks if the current election stage has ended and calls the stage ended handler
     fn check_if_stage_is_ending(now: T::BlockNumber) {
         if let Some(stage) = Self::stage() {
             match stage {
@@ -993,7 +1020,7 @@ mod tests {
             System::set_block_number(1);
             <AnnouncingPeriod<Test>>::put(20);
             <CouncilSize<Test>>::put(10);
-            let ann_ends = Election::move_to_announcing_stage();
+            Election::move_to_announcing_stage();
             let round = Election::round();
 
             // add applicants
@@ -1013,6 +1040,7 @@ mod tests {
             assert!(Election::council_size_usize() > applicants.len());
 
             // try to move to voting stage
+            let ann_ends = Election::stage_ends_at().unwrap();
             System::set_block_number(ann_ends);
             Election::on_announcing_ended();
 
@@ -1536,6 +1564,7 @@ mod tests {
             <VotingPeriod<Test>>::put(10);
             <RevealingPeriod<Test>>::put(10);
             <CandidacyLimitMultiple<Test>>::put(2);
+            <NewTermDuration<Test>>::put(100);
 
             for i in 1..20 {
                 Balances::set_free_balance(&(i as u64), 50000);
@@ -1583,6 +1612,9 @@ mod tests {
                 assert_eq!(seat.member, (i + 1) as u64);
             }
             assert!(Election::stage().is_none());
+
+            // When council term ends.. start a new election.
+            assert_ok!(Election::start_election(None));
         });
     }
 }
