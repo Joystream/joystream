@@ -43,7 +43,7 @@ impl<Id, Stake> Seat<Id, Stake>
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Backer<Id, Stake> {
-    pub member: Id,
+    pub id: Id,
     pub stake: Stake,
 }
 
@@ -107,28 +107,23 @@ impl<BlockNumber, Balance> Default for ElectionParameters<BlockNumber, Balance>
     }
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Clone, Copy, Encode, Decode, Default)]
+pub struct TransferableStake<Balance> {
+    seat: Balance,
+    backing: Balance,
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilElection {
-
-        // TODO a good practice to keep similar names for both storage and its getter, examples:
-        // Stage get(stage)
-        // ElectionStage get(election_stage)
-        // BackingStakeHolders get(backing_stake_holders) ...
-        // AvailableBackingStakes get(available_backing_stakes) ...
-
         // Current stage if there is an election ongoing
         Stage get(stage): Option<ElectionStage<T::BlockNumber>>;
 
         // The election round
         Round get(round): u32;
 
-        BackingStakeHolders get(backing_stakeholders): Vec<T::AccountId>;
-        CouncilStakeHolders get(council_stakeholders): Vec<T::AccountId>;
-
-        // TODO Could these two maps can be merged into one?
-        // If yes, then it will simplify/generalize other code where they are used.
-        AvailableBackingStakesMap get(backing_stakes): map T::AccountId => T::Balance;
-        AvailableCouncilStakesMap get(council_stakes): map T::AccountId => T::Balance;
+        ExistingStakeHolders get(existing_stake_holders): Vec<T::AccountId>;
+        TransferableStakes get(transferable_stakes): map T::AccountId => TransferableStake<T::Balance>;
 
         Applicants get(applicants): Vec<T::AccountId>;
         ApplicantStakes get(applicant_stakes): map T::AccountId => Stake<T::Balance>;
@@ -542,72 +537,88 @@ impl<T: Trait> Module<T> {
 
     /// Takes a snapshot of the stakes from the current council
     fn initialize_transferable_stakes(current_council: Seats<T::AccountId, T::Balance>) {
-        let mut council_accounts: Vec<T::AccountId> = Vec::new();
-        let mut backer_accounts: Vec<T::AccountId> = Vec::new();
+        let mut stakeholder_accounts: Vec<T::AccountId> = Vec::new();
+
         for ref seat in current_council.iter() {
-            let id = seat.member.clone();
-            <AvailableCouncilStakesMap<T>>::insert(&id, seat.stake);
-            council_accounts.push(id);
+            let id = seat.member;
+
+            if <TransferableStakes<T>>::exists(&id) {
+                <TransferableStakes<T>>::mutate(&id, |transferbale_stake| *transferbale_stake = TransferableStake {
+                    seat: transferbale_stake.seat + seat.stake,
+                    backing: transferbale_stake.backing,
+                });
+            } else {
+                <TransferableStakes<T>>::insert(&id, TransferableStake {
+                    seat: seat.stake,
+                    backing: T::Balance::zero(),
+                });
+
+                stakeholder_accounts.push(id.clone());
+            }
+
             for ref backer in seat.backers.iter() {
-                let id = backer.member.clone();
-                if !<AvailableBackingStakesMap<T>>::exists(&id) {
-                    <AvailableBackingStakesMap<T>>::insert(&id, backer.stake);
-                    backer_accounts.push(id);
+                let id = backer.id.clone();
+
+                if <TransferableStakes<T>>::exists(id) {
+                    <TransferableStakes<T>>::mutate(&id, |transferbale_stake| *transferbale_stake = TransferableStake {
+                        seat: transferbale_stake.seat,
+                        backing: transferbale_stake.backing + backer.stake,
+                    });
                 } else {
-                    <AvailableBackingStakesMap<T>>::mutate(&backer.member, |stake| *stake += backer.stake);
+                    <TransferableStakes<T>>::insert(&id, TransferableStake {
+                        seat: T::Balance::zero(),
+                        backing: backer.stake,
+                    });
+
+                    stakeholder_accounts.push(id.clone());
                 }
             }
         }
 
-        <CouncilStakeHolders<T>>::put(council_accounts);
-        <BackingStakeHolders<T>>::put(backer_accounts);
+        <ExistingStakeHolders<T>>::put(stakeholder_accounts);
+    }
+
+    fn consume_transferable_seat_stake() -> Stake<T::Balance> {
+
     }
 
     fn try_add_applicant(applicant: T::AccountId, stake: T::Balance) -> Result {
-        let applicant_stake = match <ApplicantStakes<T>>::exists(&applicant) {
-            false => Default::default(), //zero
-            true => <ApplicantStakes<T>>::get(&applicant)
-        };
+        let applicant_stake =
+            if <ApplicantStakes<T>>::exists(&applicant) {
+                <ApplicantStakes<T>>::get(&applicant)
+            } else {
+                Default::default() //zero
+            };
 
-        let applicant_has_council_stake = <AvailableCouncilStakesMap<T>>::exists(&applicant);
-        let transferable_stake = match applicant_has_council_stake {
-            false => Default::default(), //zero
-            true => <AvailableCouncilStakesMap<T>>::get(&applicant)
-        };
+        let is_existing_stakeholder = <TransferableStakes<T>>::exists(&applicant);
+
+        let mut transferable_stake = <TransferableStakes<T>>::get(&applicant);
 
         // TODO: notice: next ~20 lines look similar to what we have in `try_add_vote`. Consider refactoring
         let mut new_stake: Stake<T::Balance> = Default::default();
 
         new_stake.transferred =
-            if transferable_stake >= stake {
+            if transferable_stake.seat >= stake {
                 stake
             } else {
-                transferable_stake
+                transferable_stake.seat
             };
 
         new_stake.new = stake - new_stake.transferred;
+        transferable_stake.seat = transferable_stake.seat - new_stake.transferred;
 
         let balance = <balances::Module<T>>::free_balance(&applicant);
 
-        // TODO use `ensure!()` instead
-        if new_stake.new > balance {
-            return Err("not enough balance to cover stake");
-        }
+        ensure!(new_stake.new > balance, "not enough balance to cover stake");
 
         let total_stake = applicant_stake.add(&new_stake);
 
-        // TODO use `ensure!()` instead
-        if Self::min_council_stake() > total_stake.total() {
-            return Err("minimum stake not met");
-        }
+        ensure!(Self::min_council_stake() > total_stake.total(), "minimum stake not met");
 
-        // TODO use `ensure!()` instead
-        if <balances::Module<T>>::decrease_free_balance(&applicant, new_stake.new).is_err() {
-            return Err("failed to update balance");
-        }
+        ensure!(balances::Module<T>>::decrease_free_balance(&applicant, new_stake.new).is_ok(), "failed to update balance");
 
-        if applicant_has_council_stake {
-            <AvailableCouncilStakesMap<T>>::insert(&applicant, transferable_stake - new_stake.transferred);
+        if is_existing_stakeholder {
+            <TransferableStakes<T>>::insert(&applicant, transferable_stake);
         }
 
         if !<ApplicantStakes<T>>::exists(&applicant) {
