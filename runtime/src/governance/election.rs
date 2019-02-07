@@ -8,7 +8,7 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
 use rstd::vec::Vec;
 
-use super::transferable_stake::Stake;
+use super::stake::Stake;
 use super::sealed_vote::SealedVote;
 
 pub trait Trait: system::Trait + balances::Trait {
@@ -394,9 +394,9 @@ impl<T: Trait> Module<T> {
         let stake = <ApplicantStakes<T>>::get(applicant);
 
         // return refundable stake to account's free balance
-        if !stake.refundable.is_zero() {
+        if !stake.new.is_zero() {
             let balance = <balances::Module<T>>::free_balance(applicant);
-            <balances::Module<T>>::set_free_balance(applicant, balance + stake.refundable);
+            <balances::Module<T>>::set_free_balance(applicant, balance + stake.new);
         }
 
         // return unused transferable stake
@@ -444,9 +444,9 @@ impl<T: Trait> Module<T> {
             if do_refund {
                 // return refundable stake to account's free balance
                 let SealedVote { voter, stake, .. } = sealed_vote;
-                if !stake.refundable.is_zero() {
+                if !stake.new.is_zero() {
                     let balance = <balances::Module<T>>::free_balance(voter);
-                    <balances::Module<T>>::set_free_balance(voter, balance + stake.refundable);
+                    <balances::Module<T>>::set_free_balance(voter, balance + stake.new);
                 }
 
                 // return unused transferable stake
@@ -585,12 +585,12 @@ impl<T: Trait> Module<T> {
                 transferable_stake
             };
 
-        new_stake.refundable = stake - new_stake.transferred;
+        new_stake.new = stake - new_stake.transferred;
 
         let balance = <balances::Module<T>>::free_balance(&applicant);
 
         // TODO use `ensure!()` instead
-        if new_stake.refundable > balance {
+        if new_stake.new > balance {
             return Err("not enough balance to cover stake");
         }
 
@@ -602,7 +602,7 @@ impl<T: Trait> Module<T> {
         }
 
         // TODO use `ensure!()` instead
-        if <balances::Module<T>>::decrease_free_balance(&applicant, new_stake.refundable).is_err() {
+        if <balances::Module<T>>::decrease_free_balance(&applicant, new_stake.new).is_err() {
             return Err("failed to update balance");
         }
 
@@ -644,17 +644,17 @@ impl<T: Trait> Module<T> {
                 transferable_stake
             };
 
-        vote_stake.refundable = stake - vote_stake.transferred;
+        vote_stake.new = stake - vote_stake.transferred;
 
         let balance = <balances::Module<T>>::free_balance(&voter);
 
         // TODO use `ensure!()` instead
-        if vote_stake.refundable > balance {
+        if vote_stake.new > balance {
             return Err("not enough balance to cover voting stake");
         }
 
         // TODO use `ensure!()` instead
-        if <balances::Module<T>>::decrease_free_balance(&voter, vote_stake.refundable).is_err() {
+        if <balances::Module<T>>::decrease_free_balance(&voter, vote_stake.new).is_err() {
             return Err("failed to update balance");
         }
 
@@ -916,7 +916,7 @@ mod tests {
             assert!(Election::try_add_applicant(applicant, stake).is_ok());
             assert_eq!(Election::applicants(), vec![applicant]);
 
-            assert_eq!(Election::applicant_stakes(applicant).refundable, stake);
+            assert_eq!(Election::applicant_stakes(applicant).new, stake);
             assert_eq!(Election::applicant_stakes(applicant).transferred, 0);
 
             assert_eq!(Balances::free_balance(&applicant), starting_balance - stake);
@@ -932,7 +932,7 @@ mod tests {
 
             <Applicants<Test>>::put(vec![applicant]);
             <ApplicantStakes<Test>>::insert(applicant, Stake {
-                refundable: starting_stake,
+                new: starting_stake,
                 transferred: 0,
             });
 
@@ -940,7 +940,7 @@ mod tests {
             Balances::set_free_balance(&applicant, additional_stake);
             assert!(Election::try_add_applicant(applicant, additional_stake).is_ok());
 
-            assert_eq!(Election::applicant_stakes(applicant).refundable, starting_stake + additional_stake);
+            assert_eq!(Election::applicant_stakes(applicant).new, starting_stake + additional_stake);
             assert_eq!(Election::applicant_stakes(applicant).transferred, 0)
         });
     }
@@ -958,21 +958,21 @@ mod tests {
 
             <Applicants<Test>>::put(vec![applicant]);
             let starting_stake = Stake {
-                refundable: Election::min_council_stake(),
+                new: Election::min_council_stake(),
                 transferred: 0,
             };
             <ApplicantStakes<Test>>::insert(applicant, starting_stake);
 
             // transferable stake covers new stake
             assert!(Election::try_add_applicant(applicant, 600).is_ok());
-            assert_eq!(Election::applicant_stakes(applicant).refundable, starting_stake.refundable, "refundable");
+            assert_eq!(Election::applicant_stakes(applicant).new, starting_stake.new, "refundable");
             assert_eq!(Election::applicant_stakes(applicant).transferred, 600, "trasferred");
             assert_eq!(Election::council_stakes(applicant), 400,  "transferrable");
             assert_eq!(Balances::free_balance(applicant), 5000, "balance");
 
             // all remaining transferable stake is consumed and free balance covers remaining stake
             assert!(Election::try_add_applicant(applicant, 1000).is_ok());
-            assert_eq!(Election::applicant_stakes(applicant).refundable, starting_stake.refundable + 600, "refundable");
+            assert_eq!(Election::applicant_stakes(applicant).new, starting_stake.new + 600, "refundable");
             assert_eq!(Election::applicant_stakes(applicant).transferred, 1000, "trasferred");
             assert_eq!(Election::council_stakes(applicant), 0,  "transferrable");
             assert_eq!(Balances::free_balance(applicant), 4400, "balance");
@@ -992,7 +992,7 @@ mod tests {
             // add applicants
             <Applicants<Test>>::put(vec![10,20,30]);
             let stake = Stake {
-                refundable: 10,
+                new: 10,
                 transferred: 0,
             };
 
@@ -1028,7 +1028,7 @@ mod tests {
 
             for (i, applicant) in applicants.iter().enumerate() {
                 <ApplicantStakes<Test>>::insert(applicant, Stake {
-                    refundable: (i * 10) as u32,
+                    new: (i * 10) as u32,
                     transferred: 0,
                 });
             }
@@ -1041,7 +1041,7 @@ mod tests {
 
             for applicant in applicants.iter() {
                 <ApplicantStakes<Test>>::insert(applicant, Stake {
-                    refundable: 20 as u32,
+                    new: 20 as u32,
                     transferred: 0,
                 });
             }
@@ -1066,17 +1066,17 @@ mod tests {
             save_council_stake(3, 0);
 
             <ApplicantStakes<Test>>::insert(1, Stake {
-                refundable: 100,
+                new: 100,
                 transferred: 200,
             });
 
             <ApplicantStakes<Test>>::insert(2, Stake {
-                refundable: 300,
+                new: 300,
                 transferred: 400,
             });
 
             <ApplicantStakes<Test>>::insert(3, Stake {
-                refundable: 500,
+                new: 500,
                 transferred: 600,
             });
 
@@ -1084,7 +1084,7 @@ mod tests {
 
             assert_eq!(Election::applicants(), vec![1]);
 
-            assert_eq!(Election::applicant_stakes(1).refundable, 100);
+            assert_eq!(Election::applicant_stakes(1).new, 100);
             assert_eq!(Election::applicant_stakes(1).transferred, 200);
             assert_eq!(Election::council_stakes(1), 50);
             assert_eq!(Balances::free_balance(&1), 1000);
@@ -1114,7 +1114,7 @@ mod tests {
             assert_eq!(Election::votes(commitment).voter, 20);
             assert_eq!(Election::votes(commitment).commitment, commitment);
             assert_eq!(Election::votes(commitment).stake, Stake {
-                refundable: 100,
+                new: 100,
                 transferred: 0,
             });
             assert_eq!(Balances::free_balance(&20), 900);
@@ -1145,7 +1145,7 @@ mod tests {
             assert_eq!(Election::votes(commitment).voter, 20);
             assert_eq!(Election::votes(commitment).commitment, commitment);
             assert_eq!(Election::votes(commitment).stake, Stake {
-                refundable: 0,
+                new: 0,
                 transferred: 100,
             });
             assert_eq!(Balances::free_balance(&20), 1000);
@@ -1185,7 +1185,7 @@ mod tests {
             assert_eq!(Election::votes(commitment).voter, 20);
             assert_eq!(Election::votes(commitment).commitment, commitment);
             assert_eq!(Election::votes(commitment).stake, Stake {
-                refundable: 0,
+                new: 0,
                 transferred: 100,
             });
             assert_eq!(Balances::free_balance(&20), 1000);
@@ -1208,10 +1208,10 @@ mod tests {
             let commitment = make_commitment_for_candidate(candidate, &mut salt.clone());
             let voter = 10 as u64;
 
-            <ApplicantStakes<Test>>::insert(&candidate, Stake {refundable: 0, transferred: 0});
+            <ApplicantStakes<Test>>::insert(&candidate, Stake {new: 0, transferred: 0});
 
             <Votes<Test>>::insert(&commitment, SealedVote::new(voter, Stake {
-                refundable: 100, transferred: 0
+                new: 100, transferred: 0
             }, commitment));
 
             assert!(<Votes<Test>>::get(commitment).is_not_revealed());
@@ -1228,10 +1228,10 @@ mod tests {
             let commitment = make_commitment_for_candidate(candidate, &mut salt.clone());
             let voter = 10 as u64;
 
-            <ApplicantStakes<Test>>::insert(&candidate, Stake {refundable: 0, transferred: 0});
+            <ApplicantStakes<Test>>::insert(&candidate, Stake {new: 0, transferred: 0});
 
             <Votes<Test>>::insert(&commitment, SealedVote::new(voter, Stake {
-                refundable: 100, transferred: 0
+                new: 100, transferred: 0
             }, commitment));
 
             assert!(<Votes<Test>>::get(commitment).is_not_revealed());
@@ -1248,7 +1248,7 @@ mod tests {
             let commitment = make_commitment_for_candidate(100, &mut salt.clone());
             let voter = 10 as u64;
 
-            <ApplicantStakes<Test>>::insert(&candidate, Stake {refundable: 0, transferred: 0});
+            <ApplicantStakes<Test>>::insert(&candidate, Stake {new: 0, transferred: 0});
 
             assert!(Election::try_reveal_vote(voter, commitment, candidate, vec![]).is_err());
         });
@@ -1263,7 +1263,7 @@ mod tests {
             let voter = 10 as u64;
 
             <Votes<Test>>::insert(&commitment, SealedVote::new(voter, Stake {
-                refundable: 100, transferred: 0
+                new: 100, transferred: 0
             }, commitment));
 
             assert!(<Votes<Test>>::get(commitment).is_not_revealed());
@@ -1281,10 +1281,10 @@ mod tests {
             let voter = 10 as u64;
             let not_voter = 100 as u64;
 
-            <ApplicantStakes<Test>>::insert(&candidate, Stake {refundable: 0, transferred: 0});
+            <ApplicantStakes<Test>>::insert(&candidate, Stake {new: 0, transferred: 0});
 
             <Votes<Test>>::insert(&commitment, SealedVote::new(voter, Stake {
-                refundable: 100, transferred: 0
+                new: 100, transferred: 0
             }, commitment));
 
             assert!(<Votes<Test>>::get(commitment).is_not_revealed());
@@ -1297,7 +1297,7 @@ mod tests {
         let commitment = make_commitment_for_candidate(1, &mut vec![0u8]);
 
         mock.into_iter().map(|(voter, stake_ref, stake_tran, candidate)| SealedVote::new_unsealed(voter as u64, Stake {
-            refundable: stake_ref as u32, transferred: stake_tran as u32
+            new: stake_ref as u32, transferred: stake_tran as u32
         }, commitment, candidate as u64)).collect()
     }
 
@@ -1416,7 +1416,7 @@ mod tests {
             Balances::set_free_balance(&100, 1000);
 
             <ApplicantStakes<Test>>::insert(100, Stake {
-                refundable: 20 as u32,
+                new: 20 as u32,
                 transferred: 50 as u32,
             });
 
