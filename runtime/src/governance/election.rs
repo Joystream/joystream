@@ -43,7 +43,7 @@ impl<Id, Stake> Seat<Id, Stake>
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Backer<Id, Stake> {
-    pub id: Id,
+    pub member: Id,
     pub stake: Stake,
 }
 
@@ -348,34 +348,21 @@ impl<T: Trait> Module<T> {
 
     fn refund_transferable_stakes() {
         // move stakes back to account holder's free balance
-        for stakeholder in Self::backing_stakeholders().iter() {
-            let stake = Self::backing_stakes(stakeholder);
-            if !stake.is_zero() {
+        for stakeholder in Self::existing_stake_holders().iter() {
+            let stake = Self::transferable_stakes(stakeholder);
+            if !stake.seat.is_zero() || !stake.backing.is_zero() {
                 let balance = <balances::Module<T>>::free_balance(stakeholder);
-                <balances::Module<T>>::set_free_balance(stakeholder, balance + stake);
-            }
-        }
-
-        for stakeholder in Self::council_stakeholders().iter() {
-            let stake = Self::council_stakes(stakeholder);
-            if !stake.is_zero() {
-                let balance = <balances::Module<T>>::free_balance(stakeholder);
-                <balances::Module<T>>::set_free_balance(stakeholder, balance + stake);
+                <balances::Module<T>>::set_free_balance(stakeholder, balance + stake.seat + stake.backing);
             }
         }
     }
 
     fn clear_transferable_stakes() {
-        for stakeholder in Self::backing_stakeholders() {
-            <AvailableBackingStakesMap<T>>::remove(stakeholder);
+        for stakeholder in Self::existing_stake_holders() {
+            <TransferableStakes<T>>::remove(stakeholder);
         }
 
-        for stakeholder in Self::council_stakeholders() {
-            <AvailableCouncilStakesMap<T>>::remove(stakeholder);
-        }
-
-        <BackingStakeHolders<T>>::kill();
-        <CouncilStakeHolders<T>>::kill();
+        <ExistingStakeHolders<T>>::kill();
     }
 
     fn clear_applicants() {
@@ -396,7 +383,7 @@ impl<T: Trait> Module<T> {
 
         // return unused transferable stake
         if !stake.transferred.is_zero() {
-            <AvailableCouncilStakesMap<T>>::mutate(applicant, |transferred_stake| *transferred_stake += stake.transferred);
+            <TransferableStakes<T>>::mutate(applicant, |transferable| (*transferable).seat += stake.transferred);
         }
     }
 
@@ -446,7 +433,7 @@ impl<T: Trait> Module<T> {
 
                 // return unused transferable stake
                 if !stake.transferred.is_zero() {
-                    <AvailableBackingStakesMap<T>>::mutate(voter, |transferred_stake| *transferred_stake += stake.transferred);
+                    <TransferableStakes<T>>::mutate(voter, |transferable| (*transferable).backing += stake.transferred);
                 }
             }
         }
@@ -539,38 +526,38 @@ impl<T: Trait> Module<T> {
     fn initialize_transferable_stakes(current_council: Seats<T::AccountId, T::Balance>) {
         let mut stakeholder_accounts: Vec<T::AccountId> = Vec::new();
 
-        for ref seat in current_council.iter() {
-            let id = seat.member;
+        for seat in current_council.into_iter() {
+            let Seat { member, stake, .. } = seat;
 
-            if <TransferableStakes<T>>::exists(&id) {
-                <TransferableStakes<T>>::mutate(&id, |transferbale_stake| *transferbale_stake = TransferableStake {
-                    seat: transferbale_stake.seat + seat.stake,
+            if <TransferableStakes<T>>::exists(&member) {
+                <TransferableStakes<T>>::mutate(&member, |transferbale_stake| *transferbale_stake = TransferableStake {
+                    seat: transferbale_stake.seat + stake,
                     backing: transferbale_stake.backing,
                 });
             } else {
-                <TransferableStakes<T>>::insert(&id, TransferableStake {
-                    seat: seat.stake,
+                <TransferableStakes<T>>::insert(&member, TransferableStake {
+                    seat: stake,
                     backing: T::Balance::zero(),
                 });
 
-                stakeholder_accounts.push(id.clone());
+                stakeholder_accounts.push(member);
             }
 
-            for ref backer in seat.backers.iter() {
-                let id = backer.id.clone();
+            for backer in seat.backers.into_iter() {
+                let Backer { member, stake, ..} = backer;
 
-                if <TransferableStakes<T>>::exists(id) {
-                    <TransferableStakes<T>>::mutate(&id, |transferbale_stake| *transferbale_stake = TransferableStake {
+                if <TransferableStakes<T>>::exists(&member) {
+                    <TransferableStakes<T>>::mutate(&member, |transferbale_stake| *transferbale_stake = TransferableStake {
                         seat: transferbale_stake.seat,
-                        backing: transferbale_stake.backing + backer.stake,
+                        backing: transferbale_stake.backing + stake,
                     });
                 } else {
-                    <TransferableStakes<T>>::insert(&id, TransferableStake {
+                    <TransferableStakes<T>>::insert(&member, TransferableStake {
                         seat: T::Balance::zero(),
-                        backing: backer.stake,
+                        backing: stake,
                     });
 
-                    stakeholder_accounts.push(id.clone());
+                    stakeholder_accounts.push(member);
                 }
             }
         }
@@ -578,46 +565,39 @@ impl<T: Trait> Module<T> {
         <ExistingStakeHolders<T>>::put(stakeholder_accounts);
     }
 
-    fn consume_transferable_seat_stake() -> Stake<T::Balance> {
+    fn new_stake_reusing_transferable(transferable: &mut T::Balance, new_stake: T::Balance) -> Stake<T::Balance> {
+        let transferred =
+            if *transferable >= new_stake {
+                new_stake
+            } else {
+                *transferable
+            };
 
+        *transferable = *transferable - transferred;
+
+        Stake {
+            new: new_stake - transferred,
+            transferred,
+        }
     }
 
     fn try_add_applicant(applicant: T::AccountId, stake: T::Balance) -> Result {
-        let applicant_stake =
-            if <ApplicantStakes<T>>::exists(&applicant) {
-                <ApplicantStakes<T>>::get(&applicant)
-            } else {
-                Default::default() //zero
-            };
-
-        let is_existing_stakeholder = <TransferableStakes<T>>::exists(&applicant);
-
         let mut transferable_stake = <TransferableStakes<T>>::get(&applicant);
 
-        // TODO: notice: next ~20 lines look similar to what we have in `try_add_vote`. Consider refactoring
-        let mut new_stake: Stake<T::Balance> = Default::default();
-
-        new_stake.transferred =
-            if transferable_stake.seat >= stake {
-                stake
-            } else {
-                transferable_stake.seat
-            };
-
-        new_stake.new = stake - new_stake.transferred;
-        transferable_stake.seat = transferable_stake.seat - new_stake.transferred;
+        let new_stake = Self::new_stake_reusing_transferable(&mut transferable_stake.seat, stake);
 
         let balance = <balances::Module<T>>::free_balance(&applicant);
 
-        ensure!(new_stake.new > balance, "not enough balance to cover stake");
+        ensure!(balance >= new_stake.new, "not enough balance to cover stake");
 
+        let applicant_stake = <ApplicantStakes<T>>::get(&applicant);
         let total_stake = applicant_stake.add(&new_stake);
 
-        ensure!(Self::min_council_stake() > total_stake.total(), "minimum stake not met");
+        ensure!(total_stake.total() >= Self::min_council_stake(), "minimum stake not met");
 
-        ensure!(balances::Module<T>>::decrease_free_balance(&applicant, new_stake.new).is_ok(), "failed to update balance");
+        ensure!(<balances::Module<T>>::decrease_free_balance(&applicant, new_stake.new).is_ok(), "failed to update balance");
 
-        if is_existing_stakeholder {
+        if <TransferableStakes<T>>::exists(&applicant) {
             <TransferableStakes<T>>::insert(&applicant, transferable_stake);
         }
 
@@ -633,48 +613,24 @@ impl<T: Trait> Module<T> {
     }
 
     fn try_add_vote(voter: T::AccountId, stake: T::Balance, commitment: T::Hash) -> Result {
-        // TODO use `ensure!()` instead
-        if <Votes<T>>::exists(commitment) {
-            return Err("duplicate commitment");
-        }
+        ensure!(!<Votes<T>>::exists(commitment), "duplicate commitment");
 
-        let voter_has_backing_stake = <AvailableBackingStakesMap<T>>::exists(&voter);
+        let mut transferable_stake = <TransferableStakes<T>>::get(&voter);
 
-        let transferable_stake: T::Balance = match voter_has_backing_stake {
-            false => Default::default(), //zero
-            true => <AvailableBackingStakesMap<T>>::get(&voter)
-        };
-
-        // TODO: notice: next ~20 lines look similar to what we have in `try_add_aaplicant`. Consider refactoring
-        let mut vote_stake: Stake<T::Balance> = Default::default();
-
-        vote_stake.transferred =
-            if transferable_stake >= stake {
-                stake
-            } else {
-                transferable_stake
-            };
-
-        vote_stake.new = stake - vote_stake.transferred;
+        let vote_stake = Self::new_stake_reusing_transferable(&mut transferable_stake.backing, stake);
 
         let balance = <balances::Module<T>>::free_balance(&voter);
 
-        // TODO use `ensure!()` instead
-        if vote_stake.new > balance {
-            return Err("not enough balance to cover voting stake");
-        }
+        ensure!(balance >= vote_stake.new, "not enough balance to cover voting stake");
 
-        // TODO use `ensure!()` instead
-        if <balances::Module<T>>::decrease_free_balance(&voter, vote_stake.new).is_err() {
-            return Err("failed to update balance");
-        }
+        ensure!(<balances::Module<T>>::decrease_free_balance(&voter, vote_stake.new).is_ok(), "failed to update balance");
 
         <Commitments<T>>::mutate(|commitments| commitments.push(commitment));
 
         <Votes<T>>::insert(commitment, SealedVote::new(voter.clone(), vote_stake, commitment));
 
-        if voter_has_backing_stake {
-            <AvailableBackingStakesMap<T>>::insert(voter.clone(), transferable_stake - vote_stake.transferred);
+        if <TransferableStakes<T>>::exists(&voter) {
+            <TransferableStakes<T>>::insert(&voter, transferable_stake);
         }
 
         Ok(())
@@ -787,6 +743,35 @@ mod tests {
     use parity_codec::Encode;
 
     #[test]
+    fn new_stake_reusing_transferable_works() {
+        {
+            let mut transferable = 0;
+            let additional = 100;
+            let new_stake = Election::new_stake_reusing_transferable(&mut transferable, additional);
+            assert_eq!(new_stake.new, 100);
+            assert_eq!(new_stake.transferred, 0);
+        }
+
+        {
+            let mut transferable = 40;
+            let additional = 60;
+            let new_stake = Election::new_stake_reusing_transferable(&mut transferable, additional);
+            assert_eq!(new_stake.new, 20);
+            assert_eq!(new_stake.transferred, 40);
+            assert_eq!(transferable, 0);
+        }
+
+        {
+            let mut transferable = 1000;
+            let additional = 100;
+            let new_stake = Election::new_stake_reusing_transferable(&mut transferable, additional);
+            assert_eq!(new_stake.new, 0);
+            assert_eq!(new_stake.transferred, 100);
+            assert_eq!(transferable, 900);
+        }
+    }
+
+    #[test]
     fn check_default_params() {
         // TODO missing test implementation?
     }
@@ -836,67 +821,78 @@ mod tests {
     #[test]
     fn init_transferable_stake_should_work () {
         with_externalities(&mut initial_test_ext(), || {
-            let council_stakes = vec![10,11,12];
-            let council_stakeholders = vec![1,2,3];
-            let backing_stakeholders = vec![10,20,30,50];
 
             let existing_council = vec![
                 Seat {
-                    member: council_stakeholders[0],
-                    stake: council_stakes[0],
+                    member: 1,
+                    stake: 100,
                     backers: vec![
                         Backer {
-                            member: backing_stakeholders[0],
-                            stake: 2,
+                            member: 2,
+                            stake: 50,
                         },
                         Backer {
-                            member: backing_stakeholders[3],
-                            stake: 5,
+                            member: 3,
+                            stake: 40,
+                        },
+                        Backer {
+                            member: 10,
+                            stake: 10,
                         }]
                 },
 
                 Seat {
-                    member: council_stakeholders[1],
-                    stake: council_stakes[1],
+                    member: 2,
+                    stake: 200,
                     backers: vec![
                         Backer {
-                            member: backing_stakeholders[1],
-                            stake: 4,
+                            member: 1,
+                            stake: 10,
                         },
                         Backer {
-                            member: backing_stakeholders[3],
-                            stake: 5,
+                            member: 3,
+                            stake: 60,
+                        },
+                        Backer {
+                            member: 20,
+                            stake: 20,
                         }]
                 },
 
                 Seat {
-                    member: council_stakeholders[2],
-                    stake: council_stakes[2],
-                    backers: vec![Backer {
-                        member: backing_stakeholders[2],
-                        stake: 6,
-                    }]
+                    member: 3,
+                    stake: 300,
+                    backers: vec![
+                        Backer {
+                            member: 1,
+                            stake: 20,
+                        },
+                        Backer {
+                            member: 2,
+                            stake: 40,
+                        }]
                 }
             ];
 
             Election::initialize_transferable_stakes(existing_council);
+            let mut existing_stake_holders = Election::existing_stake_holders();
+            existing_stake_holders.sort();
+            assert_eq!(existing_stake_holders, vec![1,2,3,10,20]);
 
-            assert_eq!(Election::council_stakeholders(), council_stakeholders);
+            assert_eq!(Election::transferable_stakes(&1).seat, 100);
+            assert_eq!(Election::transferable_stakes(&1).backing, 30);
 
-            for (i, id) in council_stakeholders.iter().enumerate() {
-                assert_eq!(Election::council_stakes(id), council_stakes[i]);
-            }
+            assert_eq!(Election::transferable_stakes(&2).seat, 200);
+            assert_eq!(Election::transferable_stakes(&2).backing, 90);
 
-            let computed_backers = Election::backing_stakeholders();
-            assert_eq!(computed_backers.len(), backing_stakeholders.len());
-            for id in backing_stakeholders {
-                assert!(computed_backers.iter().any(|&x| x == id));
-            }
+            assert_eq!(Election::transferable_stakes(&3).seat, 300);
+            assert_eq!(Election::transferable_stakes(&3).backing, 100);
 
-            assert_eq!(Election::backing_stakes(10), 2);
-            assert_eq!(Election::backing_stakes(20), 4);
-            assert_eq!(Election::backing_stakes(30), 6);
-            assert_eq!(Election::backing_stakes(50), 10);
+            assert_eq!(Election::transferable_stakes(&10).seat, 0);
+            assert_eq!(Election::transferable_stakes(&10).backing, 10);
+
+            assert_eq!(Election::transferable_stakes(&20).seat, 0);
+            assert_eq!(Election::transferable_stakes(&20).backing, 20);
 
         });
     }
@@ -964,8 +960,8 @@ mod tests {
             <MinCouncilStake<Test>>::put(100);
             Balances::set_free_balance(&applicant, 5000);
 
-            <CouncilStakeHolders<Test>>::put(vec![applicant]);
-            save_council_stake(applicant, 1000);
+            <ExistingStakeHolders<Test>>::put(vec![applicant]);
+            save_transferable_stake(applicant, TransferableStake {seat: 1000, backing: 0});
 
             <Applicants<Test>>::put(vec![applicant]);
             let starting_stake = Stake {
@@ -978,14 +974,14 @@ mod tests {
             assert!(Election::try_add_applicant(applicant, 600).is_ok());
             assert_eq!(Election::applicant_stakes(applicant).new, starting_stake.new, "refundable");
             assert_eq!(Election::applicant_stakes(applicant).transferred, 600, "trasferred");
-            assert_eq!(Election::council_stakes(applicant), 400,  "transferrable");
+            assert_eq!(Election::transferable_stakes(applicant).seat, 400,  "transferable");
             assert_eq!(Balances::free_balance(applicant), 5000, "balance");
 
             // all remaining transferable stake is consumed and free balance covers remaining stake
             assert!(Election::try_add_applicant(applicant, 1000).is_ok());
             assert_eq!(Election::applicant_stakes(applicant).new, starting_stake.new + 600, "refundable");
             assert_eq!(Election::applicant_stakes(applicant).transferred, 1000, "trasferred");
-            assert_eq!(Election::council_stakes(applicant), 0,  "transferrable");
+            assert_eq!(Election::transferable_stakes(applicant).seat, 0,  "transferable");
             assert_eq!(Balances::free_balance(applicant), 4400, "balance");
 
         });
@@ -1072,9 +1068,9 @@ mod tests {
 
             <Applicants<Test>>::put(vec![1,2,3]);
 
-            save_council_stake(1, 50);
-            save_council_stake(2, 0);
-            save_council_stake(3, 0);
+            save_transferable_stake(1, TransferableStake {seat: 50, backing: 0});
+            save_transferable_stake(2, TransferableStake {seat: 0, backing: 0});
+            save_transferable_stake(3, TransferableStake {seat: 0, backing: 0});
 
             <ApplicantStakes<Test>>::insert(1, Stake {
                 new: 100,
@@ -1097,17 +1093,17 @@ mod tests {
 
             assert_eq!(Election::applicant_stakes(1).new, 100);
             assert_eq!(Election::applicant_stakes(1).transferred, 200);
-            assert_eq!(Election::council_stakes(1), 50);
+            assert_eq!(Election::transferable_stakes(1).seat, 50);
             assert_eq!(Balances::free_balance(&1), 1000);
 
             //assert_eq!(Election::applicant_stakes(2), Default::default());
             assert!(!<ApplicantStakes<Test>>::exists(2));
-            assert_eq!(Election::council_stakes(2), 400);
+            assert_eq!(Election::transferable_stakes(2).seat, 400);
             assert_eq!(Balances::free_balance(&2), 2300);
 
             //assert_eq!(Election::applicant_stakes(3), Default::default());
             assert!(!<ApplicantStakes<Test>>::exists(3));
-            assert_eq!(Election::council_stakes(3), 600);
+            assert_eq!(Election::transferable_stakes(3).seat, 600);
             assert_eq!(Balances::free_balance(&3), 3500);
         });
     }
@@ -1132,12 +1128,8 @@ mod tests {
         });
     }
 
-    fn save_council_stake(id: u64, stake: u32) {
-        <AvailableCouncilStakesMap<Test>>::insert(id, stake);
-    }
-
-    fn save_backing_stake(id: u64, stake: u32) {
-        <AvailableBackingStakesMap<Test>>::insert(id, stake);
+    fn save_transferable_stake(id: u64, stake: TransferableStake<u32>) {
+        <TransferableStakes<Test>>::insert(id, stake);
     }
 
     #[test]
@@ -1145,7 +1137,7 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             Balances::set_free_balance(&20, 1000);
 
-            save_backing_stake(20, 500);
+            save_transferable_stake(20, TransferableStake {seat: 0, backing: 500});
 
             let payload = vec![10u8];
             let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
@@ -1168,7 +1160,7 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             Balances::set_free_balance(&20, 100);
 
-            save_backing_stake(20, 500);
+            save_transferable_stake(20, TransferableStake { seat: 0, backing: 500 });
 
             let payload = vec![10u8];
             let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
@@ -1185,7 +1177,7 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             Balances::set_free_balance(&20, 1000);
 
-            save_backing_stake(20, 500);
+            save_transferable_stake(20, TransferableStake { seat: 0, backing: 500});
 
             let payload = vec![10u8];
             let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
@@ -1431,7 +1423,7 @@ mod tests {
                 transferred: 50 as u32,
             });
 
-            save_council_stake(100, 100);
+            save_transferable_stake(100, TransferableStake {seat:100, backing: 0});
 
             let mut new_council: BTreeMap<u64, Seat<u64, u32>> = BTreeMap::new();
             new_council.insert(200 as u64, Seat{ member: 200 as u64, stake: 0 as u32, backers: vec![]});
@@ -1444,7 +1436,7 @@ mod tests {
             assert!(!<ApplicantStakes<Test>>::exists(100));
 
             // and refunded
-            assert_eq!(Election::council_stakes(100), 150);
+            assert_eq!(Election::transferable_stakes(100).seat, 150);
             assert_eq!(Balances::free_balance(&100), 1020);
         });
     }
@@ -1458,9 +1450,9 @@ mod tests {
             Balances::set_free_balance(&20, 2000);
             Balances::set_free_balance(&30, 3000);
 
-            save_backing_stake(10, 100);
-            save_backing_stake(20, 200);
-            save_backing_stake(30, 300);
+            save_transferable_stake(10, TransferableStake {seat: 0, backing: 100});
+            save_transferable_stake(20, TransferableStake {seat: 0, backing: 200});
+            save_transferable_stake(30, TransferableStake {seat: 0, backing: 300});
 
             let votes = mock_votes(vec![
             //  (voter, stake[refundable], stake[transferred], candidate)
@@ -1487,29 +1479,25 @@ mod tests {
             assert_eq!(Balances::free_balance(&20), 2200);
             assert_eq!(Balances::free_balance(&30), 3300);
 
-            assert_eq!(Election::backing_stakes(10), 120);
-            assert_eq!(Election::backing_stakes(20), 240);
-            assert_eq!(Election::backing_stakes(30), 360);
+            assert_eq!(Election::transferable_stakes(10).backing, 120);
+            assert_eq!(Election::transferable_stakes(20).backing, 240);
+            assert_eq!(Election::transferable_stakes(30).backing, 360);
         });
     }
 
     #[test]
     fn refund_transferable_stakes_should_work () {
        with_externalities(&mut initial_test_ext(), || {
-            <BackingStakeHolders<Test>>::put(vec![10,20,30]);
-            <CouncilStakeHolders<Test>>::put(vec![10,20,30]);
+            <ExistingStakeHolders<Test>>::put(vec![10,20,30]);
 
             Balances::set_free_balance(&10, 1000);
-            save_backing_stake(10, 100);
-            save_council_stake(10, 50);
+            save_transferable_stake(10, TransferableStake {seat: 50, backing: 100});
 
             Balances::set_free_balance(&20, 2000);
-            save_backing_stake(20, 200);
-            save_council_stake(20, 60);
+            save_transferable_stake(20, TransferableStake {seat: 60, backing: 200});
 
             Balances::set_free_balance(&30, 3000);
-            save_backing_stake(30, 300);
-            save_council_stake(30, 70);
+            save_transferable_stake(30, TransferableStake {seat: 70, backing: 300});
 
             Election::refund_transferable_stakes();
 
