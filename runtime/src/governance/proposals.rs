@@ -40,17 +40,17 @@ pub enum ProposalStatus {
     Cancelled,
     /// Not enough votes and voting period expired.
     Expired,
-    /// To clear the quorum requirement, the percentage of council members with revealed votes 
+    /// To clear the quorum requirement, the percentage of council members with revealed votes
     /// must be no less than the quorum value for the given proposal type.
     Approved,
     Rejected,
-    /// If all revealed votes are slashes, then the proposal is rejected, 
+    /// If all revealed votes are slashes, then the proposal is rejected,
     /// and the proposal stake is slashed.
     Slashed,
 }
 
 impl Default for ProposalStatus {
-    fn default() -> Self { 
+    fn default() -> Self {
         ProposalStatus::Pending
     }
 }
@@ -62,7 +62,7 @@ use self::ProposalStatus::*;
 pub enum VoteKind {
     /// Signals presence, but unwillingness to cast judgment on substance of vote.
     Abstention,
-    /// Pass, an alternative or a ranking, for binary, multiple choice 
+    /// Pass, an alternative or a ranking, for binary, multiple choice
     /// and ranked choice propositions, respectively.
     Approve,
     /// Against proposal.
@@ -72,7 +72,7 @@ pub enum VoteKind {
 }
 
 impl Default for VoteKind {
-    fn default() -> Self { 
+    fn default() -> Self {
         VoteKind::Abstention
     }
 }
@@ -151,19 +151,19 @@ decl_storage! {
         ApprovalQuorum get(approval_quorum) config(): u32 = APPROVAL_QUORUM;
 
         /// Minimum balance amount to be staked in order to make a proposal.
-        MinimumStake get(minimum_stake) config(): T::Balance = 
+        MinimumStake get(minimum_stake) config(): T::Balance =
             T::Balance::sa(MIN_STAKE);
 
         /// A fee to be slashed (burn) in case a proposer decides to cancel a proposal.
-        CancellationFee get(cancellation_fee) config(): T::Balance = 
+        CancellationFee get(cancellation_fee) config(): T::Balance =
             T::Balance::sa(CANCELLATION_FEE);
 
         /// A fee to be slashed (burn) in case a proposal was rejected.
-        RejectionFee get(rejection_fee) config(): T::Balance = 
+        RejectionFee get(rejection_fee) config(): T::Balance =
             T::Balance::sa(REJECTION_FEE);
 
         /// Max duration of proposal in blocks until it will be expired if not enough votes.
-        VotingPeriod get(voting_period) config(): T::BlockNumber = 
+        VotingPeriod get(voting_period) config(): T::BlockNumber =
             T::BlockNumber::sa(VOTING_PERIOD_IN_SECS / <timestamp::Module<T>>::block_period().as_());
 
         // Persistent state (always relevant, changes constantly):
@@ -312,7 +312,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn councilors_count() -> u32 {
-        <council::Module<T>>::council().unwrap_or(vec![]).len() as u32
+        <council::Module<T>>::active_council().unwrap_or(vec![]).len() as u32
     }
 
     fn approval_quorum_seats() -> u32 {
@@ -376,16 +376,16 @@ impl<T: Trait> Module<T> {
             }
 
             let quorum_reached = approvals >= quorum;
-            let new_status: Option<ProposalStatus> = 
-                if all_councilors_voted { 
+            let new_status: Option<ProposalStatus> =
+                if all_councilors_voted {
                     if quorum_reached {
                         Some(Approved)
                     } else if slashes == councilors {
                         Some(Slashed)
                     } else {
                         Some(Rejected)
-                    }  
-                } else if is_expired { 
+                    }
+                } else if is_expired {
                     if quorum_reached {
                         Some(Approved)
                     } else {
@@ -417,7 +417,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Updates proposal status and removes proposal from pending ids. 
+    /// Updates proposal status and removes proposal from pending ids.
     fn _update_proposal_status(proposal_id: ProposalId, new_status: ProposalStatus) -> Result {
         let all_pendings = Self::pending_proposal_ids();
         let all_len = all_pendings.len();
@@ -425,7 +425,7 @@ impl<T: Trait> Module<T> {
             .into_iter()
             .filter(|&id| id != proposal_id)
             .collect();
-        
+
         let not_found_in_pendings = other_pendings.len() == all_len;
         if not_found_in_pendings {
             // Seems like this proposal's status has been updated and removed from pendings.
@@ -475,14 +475,14 @@ impl<T: Trait> Module<T> {
     fn _approve_proposal(proposal_id: ProposalId) -> Result {
         let proposal = Self::proposal(proposal_id);
         let wasm_code = proposal.wasm_code;
-        
+
         // Return staked deposit to proposer:
         let _ = <balances::Module<T>>::unreserve(&proposal.proposer, proposal.stake);
 
 
 
         // TODO fix: this doesn't update storage in tests :(
-        // println!("> before storage::unhashed::get_raw\n{:?}", 
+        // println!("> before storage::unhashed::get_raw\n{:?}",
         //     storage::unhashed::get_raw(well_known_keys::CODE));
 
         // println!("wasm code: {:?}", wasm_code.clone());
@@ -490,7 +490,7 @@ impl<T: Trait> Module<T> {
         // Update wasm code of node's runtime:
         storage::unhashed::put_raw(well_known_keys::CODE, &wasm_code.clone());
 
-        // println!("< AFTER storage::unhashed::get_raw\n{:?}", 
+        // println!("< AFTER storage::unhashed::get_raw\n{:?}",
         //     storage::unhashed::get_raw(well_known_keys::CODE));
 
 
@@ -587,7 +587,7 @@ mod tests {
 
     const PROPOSER1: u64 = 11;
     const PROPOSER2: u64 = 12;
-    
+
     const NOT_COUNCILOR: u64 = 22;
 
     const ALL_COUNCILORS: [u64; 5] = [
@@ -615,19 +615,19 @@ mod tests {
         // We use default for brevity, but you can configure as desired if needed.
         t.extend(balances::GenesisConfig::<Test>::default().build_storage().unwrap().0);
 
-        let council_mock: council::Council<u64, u64> = 
+        let council_mock: council::Seats<u64, u64> =
             ALL_COUNCILORS.iter().map(|&c| council::Seat {
                 member: c,
                 stake: 0u64,
                 backers: vec![],
             }).collect();
-        
+
         t.extend(council::GenesisConfig::<Test>{
-            council: council_mock,
-            term_ends: 0
+            active_council: council_mock,
+            term_ends_at: 0
         }.build_storage().unwrap().0);
 
-        // Here we can override defaults: 
+        // Here we can override defaults:
         t.extend(GenesisConfig::<Test>{
             approval_quorum: APPROVAL_QUORUM,
             minimum_stake: MIN_STAKE,
@@ -730,7 +730,7 @@ mod tests {
         with_externalities(&mut new_test_ext(), || {
             // In this test a proposer has an empty balance
             // thus he is not considered as a member.
-            assert_eq!(self::_create_default_proposal(), 
+            assert_eq!(self::_create_default_proposal(),
                 Err(MSG_ONLY_MEMBERS_CAN_PROPOSE));
         });
     }
@@ -742,7 +742,7 @@ mod tests {
             Balances::increase_total_stake_by(INITIAL_BALANCE);
 
             assert_eq!(self::_create_proposal(
-                None, Some(MIN_STAKE - 1), None, None, None), 
+                None, Some(MIN_STAKE - 1), None, None, None),
                 Err(MSG_STAKE_IS_TOO_LOW));
 
             // Check that balances remain unchanged afer a failed attempt to create a proposal:
@@ -758,7 +758,7 @@ mod tests {
             Balances::increase_total_stake_by(INITIAL_BALANCE);
 
             assert_eq!(self::_create_proposal(
-                None, Some(INITIAL_BALANCE + 1), None, None, None), 
+                None, Some(INITIAL_BALANCE + 1), None, None, None),
                 Err(MSG_STAKE_IS_GREATER_THAN_BALANCE));
 
             // Check that balances remain unchanged afer a failed attempt to create a proposal:
@@ -773,7 +773,7 @@ mod tests {
             Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
             Balances::increase_total_stake_by(INITIAL_BALANCE);
             assert_eq!(self::_create_proposal(
-                None, None, Some(vec![]), None, None), 
+                None, None, Some(vec![]), None, None),
                 Err(MSG_EMPTY_NAME_PROVIDED));
         });
     }
@@ -784,7 +784,7 @@ mod tests {
             Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
             Balances::increase_total_stake_by(INITIAL_BALANCE);
             assert_eq!(self::_create_proposal(
-                None, None, None, Some(vec![]), None), 
+                None, None, None, Some(vec![]), None),
                 Err(MSG_EMPTY_DESCRIPTION_PROVIDED));
         });
     }
@@ -795,7 +795,7 @@ mod tests {
             Balances::set_free_balance(&PROPOSER1, INITIAL_BALANCE);
             Balances::increase_total_stake_by(INITIAL_BALANCE);
             assert_eq!(self::_create_proposal(
-                None, None, None, None, Some(vec![])), 
+                None, None, None, None, Some(vec![])),
                 Err(MSG_EMPTY_WASM_CODE_PROVIDED));
         });
     }
@@ -817,7 +817,7 @@ mod tests {
             // Check that proposer's balance reduced by cancellation fee and other part of his stake returned to his balance:
             assert_eq!(Balances::free_balance(PROPOSER1), INITIAL_BALANCE - CANCELLATION_FEE);
             assert_eq!(Balances::reserved_balance(PROPOSER1), 0);
-            
+
             // TODO expect event ProposalCancelled(AccountId, ProposalId)
         });
     }
@@ -836,7 +836,7 @@ mod tests {
             let updated_free_balance = Balances::free_balance(PROPOSER1);
             let updated_reserved_balance = Balances::reserved_balance(PROPOSER1);
 
-            assert_eq!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1), 
+            assert_eq!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1),
                 Err(MSG_PROPOSAL_FINALIZED));
 
             // Check that proposer's balance and locked stake haven't been changed:
@@ -852,7 +852,7 @@ mod tests {
             Balances::set_free_balance(&PROPOSER2, INITIAL_BALANCE);
             Balances::increase_total_stake_by(INITIAL_BALANCE * 2);
             assert_ok!(self::_create_default_proposal());
-            assert_eq!(Proposals::cancel_proposal(Origin::signed(PROPOSER2), 1), 
+            assert_eq!(Proposals::cancel_proposal(Origin::signed(PROPOSER2), 1),
                 Err(MSG_YOU_DONT_OWN_THIS_PROPOSAL));
         });
     }
@@ -888,7 +888,7 @@ mod tests {
             assert_ok!(Proposals::vote_on_proposal(
                 Origin::signed(COUNCILOR1), 1, Approve));
             assert_eq!(Proposals::vote_on_proposal(
-                Origin::signed(COUNCILOR1), 1, Approve), 
+                Origin::signed(COUNCILOR1), 1, Approve),
                 Err(MSG_YOU_ALREADY_VOTED));
         });
     }
@@ -902,7 +902,7 @@ mod tests {
                 Some(COUNCILOR1), None, None, None, None
             ));
 
-            // Check that a vote has been sent automatically, 
+            // Check that a vote has been sent automatically,
             // such as the proposer is a councilor:
             assert_eq!(Proposals::votes_by_proposal(1), vec![(COUNCILOR1, Approve)]);
             assert_eq!(Proposals::vote_by_account_and_proposal((COUNCILOR1, 1)), Approve);
@@ -916,7 +916,7 @@ mod tests {
             Balances::increase_total_stake_by(INITIAL_BALANCE);
             assert_ok!(self::_create_default_proposal());
             assert_eq!(Proposals::vote_on_proposal(
-                Origin::signed(NOT_COUNCILOR), 1, Approve), 
+                Origin::signed(NOT_COUNCILOR), 1, Approve),
                 Err(MSG_ONLY_COUNCILORS_CAN_VOTE));
         });
     }
@@ -929,7 +929,7 @@ mod tests {
             assert_ok!(self::_create_default_proposal());
             assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
             assert_eq!(Proposals::vote_on_proposal(
-                Origin::signed(COUNCILOR1), 1, Approve), 
+                Origin::signed(COUNCILOR1), 1, Approve),
                 Err(MSG_PROPOSAL_FINALIZED));
         });
     }
@@ -950,7 +950,7 @@ mod tests {
                 assert_eq!(Proposals::vote_by_account_and_proposal((councilor, 1)), Approve);
             }
             assert_eq!(Proposals::votes_by_proposal(1), expected_votes);
-            
+
             System::set_block_number(2);
             Proposals::on_finalise(2);
 
@@ -959,7 +959,7 @@ mod tests {
 
             // Try to vote on finalized proposal:
             assert_eq!(Proposals::vote_on_proposal(
-                Origin::signed(COUNCILOR1), 1, Reject), 
+                Origin::signed(COUNCILOR1), 1, Reject),
                 Err(MSG_PROPOSAL_FINALIZED));
         });
     }
@@ -983,7 +983,7 @@ mod tests {
                 assert_eq!(Proposals::vote_by_account_and_proposal((councilor, 1)), Approve);
             }
             assert_eq!(Proposals::votes_by_proposal(1), expected_votes);
-            
+
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
@@ -1032,9 +1032,9 @@ mod tests {
                     Origin::signed(ALL_COUNCILORS[i]), 1, vote));
             }
             assert_eq!(Proposals::votes_by_proposal(1).len() as u32, councilors);
-            
+
             assert_runtime_code_empty!();
-            
+
             System::set_block_number(2);
             Proposals::on_finalise(2);
 
@@ -1079,17 +1079,17 @@ mod tests {
                     Origin::signed(ALL_COUNCILORS[i]), 1, vote));
             }
             assert_eq!(Proposals::votes_by_proposal(1).len() as u32, approvals);
-            
+
             assert_runtime_code_empty!();
 
             let expiration_block = System::block_number() + Proposals::voting_period();
             System::set_block_number(2);
             Proposals::on_finalise(2);
 
-            // Check that runtime code has NOT been updated yet, 
-            // because not all councilors voted and voting period is not expired yet. 
+            // Check that runtime code has NOT been updated yet,
+            // because not all councilors voted and voting period is not expired yet.
             assert_runtime_code_empty!();
-            
+
             System::set_block_number(expiration_block);
             Proposals::on_finalise(expiration_block);
 
@@ -1136,9 +1136,9 @@ mod tests {
                     Origin::signed(ALL_COUNCILORS[i]), 1, vote));
             }
             assert_eq!(Proposals::votes_by_proposal(1).len() as u32, councilors);
-            
+
             assert_runtime_code_empty!();
-            
+
             System::set_block_number(2);
             Proposals::on_finalise(2);
 
@@ -1181,9 +1181,9 @@ mod tests {
                 assert_eq!(Proposals::vote_by_account_and_proposal((councilor, 1)), Reject);
             }
             assert_eq!(Proposals::votes_by_proposal(1), expected_votes);
-            
+
             assert_runtime_code_empty!();
-            
+
             System::set_block_number(2);
             Proposals::on_finalise(2);
 
@@ -1226,7 +1226,7 @@ mod tests {
                 assert_eq!(Proposals::vote_by_account_and_proposal((councilor, 1)), Slash);
             }
             assert_eq!(Proposals::votes_by_proposal(1), expected_votes);
-            
+
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
@@ -1253,7 +1253,7 @@ mod tests {
 
             // TODO expect event ProposalStatusUpdated(1, Slashed)
             // TODO fix: event log assertion doesn't work and return empty event in every record
-            // assert_eq!(*System::events().last().unwrap(), 
+            // assert_eq!(*System::events().last().unwrap(),
             //     EventRecord {
             //         phase: Phase::ApplyExtrinsic(0),
             //         event: RawEvent::ProposalStatusUpdated(1, Slashed),
@@ -1280,9 +1280,9 @@ mod tests {
                     Origin::signed(ALL_COUNCILORS[i]), 1, vote));
             }
             assert_eq!(Proposals::votes_by_proposal(1).len() as u32, approvals);
-            
+
             assert_runtime_code_empty!();
-            
+
             let expiration_block = System::block_number() + Proposals::voting_period();
             System::set_block_number(expiration_block);
             Proposals::on_finalise(expiration_block);

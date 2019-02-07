@@ -15,7 +15,7 @@ pub mod council;
 pub mod root;
 pub mod proposals;
 
-mod transferable_stake;
+mod stake;
 mod sealed_vote;
 
 #[cfg(test)]
