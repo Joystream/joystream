@@ -18,7 +18,7 @@ pub trait Trait: system::Trait + balances::Trait {
 }
 
 #[derive(Clone, Copy, Encode, Decode)]
-pub enum Stage<BlockNumber> {
+pub enum ElectionStage<BlockNumber> {
     Announcing(BlockNumber),
     Voting(BlockNumber),
     Revealing(BlockNumber),
@@ -117,10 +117,10 @@ decl_storage! {
         // AvailableBackingStakes get(available_backing_stakes) ...
 
         // Current stage if there is an election ongoing
-        ElectionStage get(stage): Option<Stage<T::BlockNumber>>;
+        Stage get(stage): Option<ElectionStage<T::BlockNumber>>;
 
         // The election round
-        ElectionRound get(round): u32;
+        Round get(round): u32;
 
         BackingStakeHolders get(backing_stakeholders): Vec<T::AccountId>;
         CouncilStakeHolders get(council_stakeholders): Vec<T::AccountId>;
@@ -143,11 +143,10 @@ decl_storage! {
         AnnouncingPeriod get(announcing_period): T::BlockNumber;
         VotingPeriod get(voting_period): T::BlockNumber;
         RevealingPeriod get(revealing_period): T::BlockNumber;
-
         CouncilSize get(council_size): u32;
         CandidacyLimitMultiple get (candidacy_limit_multiple): u32;
-        MinCouncilStake get(min_council_stake): T::Balance = T::Balance::sa(100);
-        NewTermDuration get(new_term_duration): T::BlockNumber = T::BlockNumber::sa(1000);
+        MinCouncilStake get(min_council_stake): T::Balance;
+        NewTermDuration get(new_term_duration): T::BlockNumber;
     }
 }
 
@@ -171,9 +170,9 @@ impl<T: Trait> TriggerElection<Seats<T::AccountId, T::Balance>, ElectionParamete
         current_council: Option<Seats<T::AccountId, T::Balance>>,
         params: ElectionParameters<T::BlockNumber, T::Balance>) -> Result
     {
-        if Self::stage().is_none() {
-            Self::set_election_parameters(params);
-        }
+        ensure!(!Self::is_election_running(), "Election already running");
+
+        Self::set_election_parameters(params);
         Self::start_election(current_council)
     }
 }
@@ -197,8 +196,12 @@ impl<T: Trait> Module<T> {
         <CandidacyLimitMultiple<T>>::put(params.candidacy_limit_multiple);
     }
 
+    pub fn is_election_running() -> bool {
+        Self::stage().is_some()
+    }
+
     fn start_election(current_council: Option<Seats<T::AccountId, T::Balance>>) -> Result {
-        ensure!(Self::stage().is_none(), "election already in progress");
+        ensure!(!Self::is_election_running(), "election already in progress");
 
         // take snapshot of council and backing stakes of an existing council
         current_council.map(|c| Self::initialize_transferable_stakes(c));
@@ -212,7 +215,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn bump_round() -> u32 {
-        <ElectionRound<T>>::mutate(|n| {
+        <Round<T>>::mutate(|n| {
             *n += 1;
             *n
         })
@@ -221,7 +224,7 @@ impl<T: Trait> Module<T> {
     fn move_to_announcing_stage() -> T::BlockNumber {
         let period = Self::new_period(Self::announcing_period());
 
-        <ElectionStage<T>>::put(Stage::Announcing(period));
+        <Stage<T>>::put(ElectionStage::Announcing(period));
 
         let next_round = Self::bump_round();
 
@@ -266,7 +269,7 @@ impl<T: Trait> Module<T> {
         // TODO check that current stage is Announcing
         let period = Self::new_period(Self::voting_period());
 
-        <ElectionStage<T>>::put(Stage::Voting(period));
+        <Stage<T>>::put(ElectionStage::Voting(period));
 
         Self::deposit_event(RawEvent::VotingStarted());
     }
@@ -279,7 +282,7 @@ impl<T: Trait> Module<T> {
         // TODO check that current stage is Voting
         let period = Self::new_period(Self::revealing_period());
 
-        <ElectionStage<T>>::put(Stage::Revealing(period));
+        <Stage<T>>::put(ElectionStage::Revealing(period));
 
         Self::deposit_event(RawEvent::RevealingStarted());
     }
@@ -340,7 +343,7 @@ impl<T: Trait> Module<T> {
         Self::refund_transferable_stakes();
         Self::clear_transferable_stakes();
 
-        <ElectionStage<T>>::kill();
+        <Stage<T>>::kill();
 
         let new_council = new_council.into_iter().map(|(_, seat)| seat.clone()).collect();
         T::CouncilElected::council_elected(new_council, Self::new_term_duration());
@@ -521,15 +524,15 @@ impl<T: Trait> Module<T> {
     fn check_if_stage_is_ending(now: T::BlockNumber) {
         if let Some(stage) = Self::stage() {
             match stage {
-                Stage::Announcing(ends) => if ends == now {
+                ElectionStage::Announcing(ends) => if ends == now {
                     Self::deposit_event(RawEvent::AnnouncingEnded());
                     Self::on_announcing_ended();
                 },
-                Stage::Voting(ends) => if ends == now {
+                ElectionStage::Voting(ends) => if ends == now {
                     Self::deposit_event(RawEvent::VotingEnded());
                     Self::on_voting_ended();
                 },
-                Stage::Revealing(ends) => if ends == now {
+                ElectionStage::Revealing(ends) => if ends == now {
                     Self::deposit_event(RawEvent::RevealingEnded());
                     Self::on_revealing_ended();
                 },
@@ -718,7 +721,7 @@ decl_module! {
             // Can only announce candidacy during election announcing stage
             if let Some(stage) = Self::stage() {
                 match stage {
-                    Stage::Announcing(_) => {
+                    ElectionStage::Announcing(_) => {
                         // TODO fail fast: ensure that stake >= min_stake
                         Self::try_add_applicant(sender, stake)
                     },
@@ -736,7 +739,7 @@ decl_module! {
             // Can only vote during election voting stage
             if let Some(stage) = Self::stage() {
                 match stage {
-                    Stage::Voting(_) => {
+                    ElectionStage::Voting(_) => {
                         // TODO fail fast: ensure that stake >= min_stake
                         Self::try_add_vote(sender, stake, commitment)
                     },
@@ -753,7 +756,7 @@ decl_module! {
             // Can only reveal vote during election revealing stage
             if let Some(stage) = Self::stage() {
                 match stage {
-                    Stage::Revealing(_) => Self::try_reveal_vote(sender, commitment, vote, salt),
+                    ElectionStage::Revealing(_) => Self::try_reveal_vote(sender, commitment, vote, salt),
                     _ => Err("election not in revealing stage")
                 }
             } else {
@@ -786,12 +789,12 @@ mod tests {
     }
 
     fn assert_announcing_period(expected_period: <Test as system::Trait>::BlockNumber) {
-        assert!(Election::stage().is_some(), "Election Stage was not set");
+        assert!(Election::is_election_running(), "Election Stage was not set");
 
         let election_stage = Election::stage().unwrap();
 
         match election_stage {
-            election::Stage::Announcing(period) => {
+            election::ElectionStage::Announcing(period) => {
                 assert_eq!(period, expected_period, "Election period not set correctly")
             }
             _ => {
