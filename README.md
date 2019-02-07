@@ -11,12 +11,18 @@ It will take some time (tens of minutes), so be patient.
 ./init.sh
 ```
 
-## Build runtime
+## Build
 
-Call this script every time you updated a runtime, before restarting a node.
+### Build runtime (WASM)
 
 ```bash
-./build.sh
+./build-runtime.sh
+```
+
+### Build node (native)
+
+```bash
+./build-node.sh
 ```
 
 ## Start node
@@ -27,7 +33,7 @@ Call this script every time you updated a runtime, before restarting a node.
 
 ## Clean chain data
 
-It's a good practice to clean chain data after a runtime updated and you are about to restart a node.
+It's a good practice to clean chain data after you rebuilt a node and about to restart a it.
 
 ```bash
 ./clean-chain.sh
@@ -35,6 +41,12 @@ It's a good practice to clean chain data after a runtime updated and you are abo
 
 ## Test
 
+### Run all tests
+
 ```bash
 ./test-all.sh
 ```
+
+### Test a specific module
+
+Check out `./test-proposals.sh` on how to run tests for a specific module.

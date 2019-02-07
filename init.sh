@@ -3,7 +3,6 @@
 echo "Initialising webassembly build environment..."
 ./init-wasm.sh 2>/dev/null >/dev/null
 
-./build.sh
+./build-runtime.sh
 
-echo "Building node..."
-cargo build --release
+./build-node.sh
