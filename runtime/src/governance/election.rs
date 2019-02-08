@@ -736,6 +736,8 @@ decl_module! {
         fn reveal(origin, commitment: T::Hash, vote: T::AccountId, salt: Vec<u8>) -> Result {
             let sender = ensure_signed(origin)?;
 
+            ensure!(salt.len() <= 32, "salt too large"); // at most 256 bits salt
+
             // Can only reveal vote during election revealing stage
             if let Some(stage) = Self::stage() {
                 match stage {
