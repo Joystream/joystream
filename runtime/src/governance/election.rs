@@ -290,7 +290,7 @@ impl<T: Trait> Module<T> {
         let mut applicants = Self::applicants();
 
         if applicants.len() < Self::council_size_usize() {
-            // Not enough candidates announced candidacy
+            // Not enough applicants announced candidacy
             Self::move_to_announcing_stage();
         } else {
             // upper limit on applicants that will move to voting stage
@@ -318,7 +318,7 @@ impl<T: Trait> Module<T> {
 
         let mut new_council = Self::tally_votes(&votes);
 
-        // Note here that candidates with zero votes have been excluded from the tally.
+        // Note here that applicants with zero votes have been excluded from the tally.
         // Is a candidate with some votes but less total stake than another candidate with zero votes
         // more qualified to be on the council?
         // Consider implications - if a council can be formed purely by staking are we fine with that?
@@ -334,20 +334,20 @@ impl<T: Trait> Module<T> {
         }
 
         if new_council.len() == Self::council_size_usize() {
-            // all candidates in the tally will form the new council
+            // all applicants in the tally will form the new council
         } else if new_council.len() > Self::council_size_usize() {
-            // we have more than enough elected candidates to form the new council
-            // select top staked prioritised by stake
+            // we have more than enough applicants to form the new council.
+            // select top staked
             Self::filter_top_staked(&mut new_council, Self::council_size_usize());
         } else {
-            // Not enough candidates with votes to form a council.
-            // This may happen if we didn't add candidates with zero votes to the tally,
-            // or in future if we allow candidates to withdraw candidacy during voting or revealing stages.
+            // Not enough applicants with votes to form a council.
+            // This may happen if we didn't add applicants with zero votes to the tally,
+            // or in future if we allow applicants to withdraw candidacy during voting or revealing stages.
             // Solution 1. Restart election.
-            // Solution 2. Add to the tally candidates with zero votes.
+            // Solution 2. Add to the tally applicants with zero votes.
             //      selection criteria:
             //          -> priority by largest stake?
-            //          -> priority given to candidates who announced first?
+            //          -> priority given to applicants who announced first?
             //          -> deterministic random selection?
         }
 
@@ -357,8 +357,7 @@ impl<T: Trait> Module<T> {
         Self::refund_voting_stakes(&votes, &new_council);
         Self::clear_votes();
 
-        // TODO consider consistent naming: candidates vs applicants. Different names for the same things?
-        Self::drop_unelected_candidates(&new_council);
+        Self::drop_unelected_applicants(&new_council);
         Self::clear_applicants();
 
         Self::refund_transferable_stakes();
@@ -426,8 +425,7 @@ impl<T: Trait> Module<T> {
         <Applicants<T>>::put(not_dropped);
     }
 
-    // TODO consider consistent naming: candidates vs applicants. Different names for the same things?
-    fn drop_unelected_candidates(new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>) {
+    fn drop_unelected_applicants(new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>) {
         let applicants_to_drop: Vec<T::AccountId> = Self::applicants().into_iter()
             .filter(|applicant| !new_council.contains_key(&applicant))
             .collect();
@@ -511,7 +509,7 @@ impl<T: Trait> Module<T> {
         // ensure_eq!(seats.len(), tally.len());
 
         if limit >= seats.len() {
-            // Tally is inconsistent with list of candidates!
+            // Tally is inconsistent with list of applicants!
             return;
         }
 
@@ -630,7 +628,7 @@ impl<T: Trait> Module<T> {
 
         if !<ApplicantStakes<T>>::exists(&applicant) {
             // insert element at the begining, this gives priority to early applicants
-            // when its comes to selecting candidates if stakes are equal
+            // when ordering applicants by stake if stakes are equal
             <Applicants<T>>::mutate(|applicants| applicants.insert(0, applicant.clone()));
         }
 
@@ -1056,7 +1054,7 @@ mod tests {
     }
 
     #[test]
-    fn top_applicants_become_candidates_should_work() {
+    fn top_applicants_move_to_voting_stage() {
         with_externalities(&mut initial_test_ext(), || {
             <Applicants<Test>>::put(vec![10, 20, 30, 40]);
             let mut applicants = Election::applicants();
@@ -1391,10 +1389,9 @@ mod tests {
     }
 
    #[test]
-    fn filter_top_staked_candidates_should_work () {
+    fn filter_top_staked_applicants_should_work () {
         with_externalities(&mut initial_test_ext(), || {
-            // filter_top_staked depends on order of candidates
-            // and would panic if tally size was larger than applicants
+            // filter_top_staked depends on order of applicants
             <Applicants<Test>>::put(vec![100, 200, 300]);
 
             {
@@ -1440,7 +1437,7 @@ mod tests {
     }
 
     #[test]
-    fn drop_unelected_candidates_should_work () {
+    fn drop_unelected_applicants_should_work () {
         with_externalities(&mut initial_test_ext(), || {
             <Applicants<Test>>::put(vec![100, 200, 300]);
 
@@ -1457,7 +1454,7 @@ mod tests {
             new_council.insert(200 as u64, Seat{ member: 200 as u64, stake: 0 as u32, backers: vec![]});
             new_council.insert(300 as u64, Seat{ member: 300 as u64, stake: 0 as u32, backers: vec![]});
 
-            Election::drop_unelected_candidates(&new_council);
+            Election::drop_unelected_applicants(&new_council);
 
             // applicant dropped
             assert_eq!(Election::applicants(), vec![200, 300]);
