@@ -187,6 +187,11 @@ impl<T: Trait> Module<T> {
         <system::Module<T>>::block_number() + length
     }
 
+    // TODO This method should be moved to Membership module once it's created.
+    fn is_member(sender: T::AccountId) -> bool {
+        !<balances::Module<T>>::free_balance(sender).is_zero()
+    }
+
     // PUBLIC IMMUTABLES
 
     /// Returns true if an election is running
@@ -231,8 +236,8 @@ impl<T: Trait> Module<T> {
         ensure!(Self::commitments().len() == 0, "commitments must be empty");
 
         // Take snapshot of seat and backing stakes of an existing council
-        // Its important to ensure the election system takes ownership of these stakes, and is responsible
-        // to return any unused stake to origin owners.
+        // Its important to note that the election system takes ownership of these stakes, and is responsible
+        // to return any unused stake to original owners and the end of the election.
         current_council.map(|c| Self::initialize_transferable_stakes(c));
 
         Self::move_to_announcing_stage();
@@ -318,7 +323,7 @@ impl<T: Trait> Module<T> {
 
         let mut new_council = Self::tally_votes(&votes);
 
-        // Note here that applicants with zero votes have been excluded from the tally.
+        // Note here that applicants with zero votes dont appear in the tally.
         // Is a candidate with some votes but less total stake than another candidate with zero votes
         // more qualified to be on the council?
         // Consider implications - if a council can be formed purely by staking are we fine with that?
@@ -438,7 +443,7 @@ impl<T: Trait> Module<T> {
         new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>)
     {
         for sealed_vote in sealed_votes.iter() {
-            // Do a refund if commitment was not revealed or vote was for candidate that did
+            // Do a refund if commitment was not revealed, or the vote was for applicant that did
             // not get elected to the council
             // TODO critical: shouldn't we slash the stake in such a case? This is the whole idea behid staking on something: people need to decide carefully and be responsible for their bahavior because they can loose their stake
             // See https://github.com/Joystream/substrate-node-joystream/issues/4
@@ -661,39 +666,25 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn try_reveal_vote(voter: T::AccountId, commitment: T::Hash, candidate: T::AccountId, salt: Vec<u8>) -> Result {
-        // TODO use `ensure!()` instead
-        if !<ApplicantStakes<T>>::exists(&candidate) {
-            return Err("vote for non-candidate not allowed");
-        }
-
-        // TODO use `ensure!()` instead
-        if !<Votes<T>>::exists(&commitment) {
-            return Err("commitment not found");
-        }
+    fn try_reveal_vote(voter: T::AccountId, commitment: T::Hash, vote_for: T::AccountId, salt: Vec<u8>) -> Result {
+        ensure!(<Votes<T>>::exists(&commitment), "commitment not found");
 
         let mut sealed_vote = <Votes<T>>::get(&commitment);
 
+        ensure!(sealed_vote.is_not_revealed(), "vote already revealed");
         // only voter can reveal their own votes
-        // TODO use `ensure!()` instead
-        if !sealed_vote.owned_by(voter) {
-            return Err("only voter can reveal vote");
-        }
+        ensure!(sealed_vote.is_owned_by(voter), "only voter can reveal vote");
+        ensure!(<ApplicantStakes<T>>::exists(&vote_for), "vote for non-candidate not allowed");
 
         let mut salt = salt.clone();
-        let is_salt_valid = sealed_vote.unseal(candidate, &mut salt, <T as system::Trait>::Hashing::hash)?;
-        if is_salt_valid {
-            // update the sealed vote
-            <Votes<T>>::insert(commitment, sealed_vote);
-            Ok(())
-        } else {
-            Err("invalid salt")
-        }
-    }
 
-    // TODO This method should be moved to Membership module once it's created.
-    fn is_member(sender: T::AccountId) -> bool {
-        !<balances::Module<T>>::free_balance(sender).is_zero()
+        // Tries to unseal, if salt is invalid will return error
+        sealed_vote.unseal(vote_for, &mut salt, <T as system::Trait>::Hashing::hash)?;
+
+        // Update the revealed vote
+        <Votes<T>>::insert(commitment, sealed_vote);
+
+        Ok(())
     }
 }
 
@@ -997,17 +988,17 @@ mod tests {
 
             // transferable stake covers new stake
             assert!(Election::try_add_applicant(applicant, 600).is_ok());
-            assert_eq!(Election::applicant_stakes(applicant).new, starting_stake.new, "refundable");
-            assert_eq!(Election::applicant_stakes(applicant).transferred, 600, "trasferred");
-            assert_eq!(Election::transferable_stakes(applicant).seat, 400,  "transferable");
-            assert_eq!(Balances::free_balance(applicant), 5000, "balance");
+            assert_eq!(Election::applicant_stakes(applicant).new, starting_stake.new);
+            assert_eq!(Election::applicant_stakes(applicant).transferred, 600);
+            assert_eq!(Election::transferable_stakes(applicant).seat, 400);
+            assert_eq!(Balances::free_balance(applicant), 5000);
 
             // all remaining transferable stake is consumed and free balance covers remaining stake
             assert!(Election::try_add_applicant(applicant, 1000).is_ok());
-            assert_eq!(Election::applicant_stakes(applicant).new, starting_stake.new + 600, "refundable");
-            assert_eq!(Election::applicant_stakes(applicant).transferred, 1000, "trasferred");
-            assert_eq!(Election::transferable_stakes(applicant).seat, 0,  "transferable");
-            assert_eq!(Balances::free_balance(applicant), 4400, "balance");
+            assert_eq!(Election::applicant_stakes(applicant).new, starting_stake.new + 600);
+            assert_eq!(Election::applicant_stakes(applicant).transferred, 1000);
+            assert_eq!(Election::transferable_stakes(applicant).seat, 0);
+            assert_eq!(Balances::free_balance(applicant), 4400);
 
         });
     }
