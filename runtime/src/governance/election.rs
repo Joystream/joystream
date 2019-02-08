@@ -89,6 +89,7 @@ pub struct ElectionParameters<BlockNumber, Balance> {
     pub candidacy_limit_multiple: u32,
     pub min_council_stake: Balance,
     pub new_term_duration: BlockNumber,
+    pub min_voting_stake: Balance
 }
 
 impl<BlockNumber, Balance> Default for ElectionParameters<BlockNumber, Balance>
@@ -103,6 +104,7 @@ impl<BlockNumber, Balance> Default for ElectionParameters<BlockNumber, Balance>
             candidacy_limit_multiple: 2,
             min_council_stake: Balance::sa(100),
             new_term_duration: BlockNumber::sa(1000),
+            min_voting_stake: Balance::sa(10),
         }
     }
 }
@@ -142,6 +144,7 @@ decl_storage! {
         CandidacyLimitMultiple get (candidacy_limit_multiple): u32;
         MinCouncilStake get(min_council_stake): T::Balance;
         NewTermDuration get(new_term_duration): T::BlockNumber;
+        MinVotingStake get(min_voting_stake): T::Balance;
     }
 }
 
@@ -225,6 +228,7 @@ impl<T: Trait> Module<T> {
         <NewTermDuration<T>>::put(params.new_term_duration);
         <CouncilSize<T>>::put(params.council_size);
         <CandidacyLimitMultiple<T>>::put(params.candidacy_limit_multiple);
+        <MinVotingStake<T>>::put(params.min_voting_stake);
     }
 
     /// Starts an election. Will fail if an election is already running
@@ -727,7 +731,7 @@ decl_module! {
             if let Some(stage) = Self::stage() {
                 match stage {
                     ElectionStage::Voting(_) => {
-                        // TODO fail fast: ensure that stake >= min_stake
+                        ensure!(stake >= Self::min_voting_stake(), "voting stake too low");
                         Self::try_add_vote(sender, stake, commitment)
                     },
                     _ => Err("election not in voting stage")
@@ -753,8 +757,6 @@ decl_module! {
             }
         }
 
-        // fn withdraw_candidacy()
-        // fn withdraw_vote()
     }
 }
 
@@ -1547,6 +1549,7 @@ mod tests {
             <RevealingPeriod<Test>>::put(10);
             <CandidacyLimitMultiple<Test>>::put(2);
             <NewTermDuration<Test>>::put(100);
+            <MinVotingStake<Test>>::put(10);
 
             for i in 1..30 {
                 Balances::set_free_balance(&(i as u64), 50000);
