@@ -618,12 +618,10 @@ impl<T: Trait> Module<T> {
 
         let balance = <balances::Module<T>>::free_balance(&applicant);
 
-        ensure!(balance >= new_stake.new, "not enough balance to cover stake");
+        ensure!(balance >= new_stake.new, "not enough free balance to cover stake");
 
         let applicant_stake = <ApplicantStakes<T>>::get(&applicant);
         let total_stake = applicant_stake.add(&new_stake);
-
-        ensure!(total_stake.total() >= Self::min_council_stake(), "minimum stake not met");
 
         ensure!(<balances::Module<T>>::decrease_free_balance(&applicant, new_stake.new).is_ok(), "failed to update balance");
 
@@ -697,15 +695,21 @@ decl_module! {
             Self::check_if_stage_is_ending(now);
         }
 
+        // Member can apply during announcing stage only. On first call a minimum stake will need to be provided.
+        // Member can make subsequent calls during announcing stage to increase their stake.
         fn apply(origin, stake: T::Balance) -> Result {
             let sender = ensure_signed(origin)?;
-            ensure!(Self::is_member(sender.clone()), "Only members can announce their candidacy");
+            ensure!(Self::is_member(sender.clone()), "Only members can apply to be on council");
 
-            // Can only announce candidacy during election announcing stage
+            // Can only apply during announcing stage
             if let Some(stage) = Self::stage() {
                 match stage {
                     ElectionStage::Announcing(_) => {
-                        // TODO fail fast: ensure that stake >= min_stake
+                        // minimum stake on first attempt to apply
+                        if !<ApplicantStakes<T>>::exists(&sender) {
+                            ensure!(stake >= Self::min_council_stake(), "minimum stake must be provided");
+                        }
+
                         Self::try_add_applicant(sender, stake)
                     },
                     _ => Err("election not in announcing stage")
@@ -916,28 +920,18 @@ mod tests {
     }
 
     #[test]
-    fn announcing_should_work() {
+    fn try_add_applicant_should_work() {
         with_externalities(&mut initial_test_ext(), || {
 
             assert!(Election::applicants().len() == 0);
 
             let applicant = 20 as u64;
 
-            let min_stake = 100 as u32;
-            <MinCouncilStake<Test>>::put(min_stake);
-
-            // must provide stake
-            assert!(Election::try_add_applicant(applicant, 0).is_err());
-
-            // Get some balance
-            let starting_balance = (min_stake * 10) as u32;
+            let starting_balance = 1000 as u32;
             Balances::set_free_balance(&applicant, starting_balance);
 
-            // must provide min stake
-            let stake = min_stake as u32;
-            assert!(Election::try_add_applicant(applicant, stake - 1).is_err());
+            let stake = 100 as u32;
 
-            // with enough balance and stake, announcing should work
             assert!(Election::try_add_applicant(applicant, stake).is_ok());
             assert_eq!(Election::applicants(), vec![applicant]);
 
@@ -949,11 +943,10 @@ mod tests {
     }
 
     #[test]
-    fn increasing_stake_when_announcing_should_work () {
+    fn increasing_stake_applicant_stake_should_work () {
         with_externalities(&mut initial_test_ext(), || {
             let applicant = 20 as u64;
-            <MinCouncilStake<Test>>::put(100);
-            let starting_stake = Election::min_council_stake();
+            let starting_stake = 100 as u32;
 
             <Applicants<Test>>::put(vec![applicant]);
             <ApplicantStakes<Test>>::insert(applicant, Stake {
@@ -971,11 +964,10 @@ mod tests {
     }
 
     #[test]
-    fn announcing_with_transferable_council_stake_should_work() {
+    fn using_transferable_seat_stake_should_work() {
         with_externalities(&mut initial_test_ext(), || {
 
             let applicant = 20 as u64;
-            <MinCouncilStake<Test>>::put(100);
             Balances::set_free_balance(&applicant, 5000);
 
             <ExistingStakeHolders<Test>>::put(vec![applicant]);
@@ -983,7 +975,7 @@ mod tests {
 
             <Applicants<Test>>::put(vec![applicant]);
             let starting_stake = Stake {
-                new: Election::min_council_stake(),
+                new: 100,
                 transferred: 0,
             };
             <ApplicantStakes<Test>>::insert(applicant, starting_stake);
@@ -1556,7 +1548,7 @@ mod tests {
             <CandidacyLimitMultiple<Test>>::put(2);
             <NewTermDuration<Test>>::put(100);
 
-            for i in 1..20 {
+            for i in 1..30 {
                 Balances::set_free_balance(&(i as u64), 50000);
             }
 
@@ -1564,8 +1556,12 @@ mod tests {
             assert_ok!(Election::start_election(None));
 
             for i in 1..20 {
-                assert!(Election::apply(Origin::signed(i), 150).is_ok());
-                assert!(Election::apply(Origin::signed(i + 1000), 150).is_err());
+                if i < 21 {
+                    assert!(Election::apply(Origin::signed(i), 150).is_ok());
+                } else {
+                    assert!(Election::apply(Origin::signed(i + 1000), 150).is_err()); // not enough free balance
+                    assert!(Election::apply(Origin::signed(i), 20).is_err()); // not enough minimum stake
+                }
             }
 
             let n = 1 + Election::announcing_period();
