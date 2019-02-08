@@ -324,7 +324,7 @@ impl<T: Trait> Module<T> {
         let mut new_council = Self::tally_votes(&votes);
 
         // Note here that applicants with zero votes dont appear in the tally.
-        // Is a candidate with some votes but less total stake than another candidate with zero votes
+        // Is an applicant with some votes but less total stake than another applicant with zero votes
         // more qualified to be on the council?
         // Consider implications - if a council can be formed purely by staking are we fine with that?
 
@@ -448,7 +448,7 @@ impl<T: Trait> Module<T> {
             // TODO critical: shouldn't we slash the stake in such a case? This is the whole idea behid staking on something: people need to decide carefully and be responsible for their bahavior because they can loose their stake
             // See https://github.com/Joystream/substrate-node-joystream/issues/4
             let do_refund = match sealed_vote.get_vote() {
-                Some(candidate) => !new_council.contains_key(&candidate),
+                Some(applicant) => !new_council.contains_key(&applicant),
                 None => true
             };
 
@@ -479,16 +479,16 @@ impl<T: Trait> Module<T> {
         let mut tally: BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>> = BTreeMap::new();
 
         for sealed_vote in sealed_votes.iter() {
-            if let Some(candidate) = sealed_vote.get_vote() {
-                if !tally.contains_key(&candidate) {
+            if let Some(applicant) = sealed_vote.get_vote() {
+                if !tally.contains_key(&applicant) {
                     // Add new seat
-                    tally.insert(candidate.clone(), Seat {
-                        member: candidate.clone(),
-                        stake: Self::applicant_stakes(candidate).total(),
+                    tally.insert(applicant.clone(), Seat {
+                        member: applicant.clone(),
+                        stake: Self::applicant_stakes(applicant).total(),
                         backers: vec![],
                     });
                 }
-                if let Some(seat) = tally.get_mut(&candidate) {
+                if let Some(seat) = tally.get_mut(&applicant) {
                     // Add backer to existing seat
                     seat.backers.push(Backer {
                         member: sealed_vote.voter.clone(),
@@ -674,7 +674,7 @@ impl<T: Trait> Module<T> {
         ensure!(sealed_vote.is_not_revealed(), "vote already revealed");
         // only voter can reveal their own votes
         ensure!(sealed_vote.is_owned_by(voter), "only voter can reveal vote");
-        ensure!(<ApplicantStakes<T>>::exists(&vote_for), "vote for non-candidate not allowed");
+        ensure!(<ApplicantStakes<T>>::exists(&vote_for), "vote for non-applicant not allowed");
 
         let mut salt = salt.clone();
 
@@ -697,7 +697,7 @@ decl_module! {
             Self::check_if_stage_is_ending(now);
         }
 
-        fn announce_candidacy(origin, stake: T::Balance) -> Result {
+        fn apply(origin, stake: T::Balance) -> Result {
             let sender = ensure_signed(origin)?;
             ensure!(Self::is_member(sender.clone()), "Only members can announce their candidacy");
 
@@ -715,9 +715,9 @@ decl_module! {
             }
         }
 
-        fn vote_for_candidate(origin, commitment: T::Hash, stake: T::Balance) -> Result {
+        fn vote(origin, commitment: T::Hash, stake: T::Balance) -> Result {
             let sender = ensure_signed(origin)?;
-            ensure!(Self::is_member(sender.clone()), "Only members can vote for a candidate");
+            ensure!(Self::is_member(sender.clone()), "Only members can vote for an applicant");
 
             // Can only vote during election voting stage
             if let Some(stage) = Self::stage() {
@@ -733,7 +733,7 @@ decl_module! {
             }
         }
 
-        fn reveal_vote(origin, commitment: T::Hash, vote: T::AccountId, salt: Vec<u8>) -> Result {
+        fn reveal(origin, commitment: T::Hash, vote: T::AccountId, salt: Vec<u8>) -> Result {
             let sender = ensure_signed(origin)?;
 
             // Can only reveal vote during election revealing stage
@@ -1214,8 +1214,8 @@ mod tests {
         });
     }
 
-    fn make_commitment_for_candidate(candidate: <Test as system::Trait>::AccountId, salt: &mut Vec<u8>) -> <Test as system::Trait>::Hash {
-        let mut payload = candidate.encode();
+    fn make_commitment_for_applicant(applicant: <Test as system::Trait>::AccountId, salt: &mut Vec<u8>) -> <Test as system::Trait>::Hash {
+        let mut payload = applicant.encode();
         payload.append(salt);
         <Test as system::Trait>::Hashing::hash(&payload[..])
     }
@@ -1223,39 +1223,39 @@ mod tests {
     #[test]
     fn revealing_vote_works () {
         with_externalities(&mut initial_test_ext(), || {
-            let candidate = 20 as u64;
+            let applicant = 20 as u64;
             let salt = vec![128u8];
-            let commitment = make_commitment_for_candidate(candidate, &mut salt.clone());
+            let commitment = make_commitment_for_applicant(applicant, &mut salt.clone());
             let voter = 10 as u64;
 
-            <ApplicantStakes<Test>>::insert(&candidate, Stake {new: 0, transferred: 0});
+            <ApplicantStakes<Test>>::insert(&applicant, Stake {new: 0, transferred: 0});
 
             <Votes<Test>>::insert(&commitment, SealedVote::new(voter, Stake {
                 new: 100, transferred: 0
             }, commitment));
 
             assert!(<Votes<Test>>::get(commitment).is_not_revealed());
-            assert!(Election::try_reveal_vote(voter, commitment, candidate, salt).is_ok());
-            assert_eq!(<Votes<Test>>::get(commitment).get_vote().unwrap(), candidate);
+            assert!(Election::try_reveal_vote(voter, commitment, applicant, salt).is_ok());
+            assert_eq!(<Votes<Test>>::get(commitment).get_vote().unwrap(), applicant);
         });
     }
 
     #[test]
     fn revealing_with_bad_salt_should_not_work () {
         with_externalities(&mut initial_test_ext(), || {
-            let candidate = 20 as u64;
+            let applicant = 20 as u64;
             let salt = vec![128u8];
-            let commitment = make_commitment_for_candidate(candidate, &mut salt.clone());
+            let commitment = make_commitment_for_applicant(applicant, &mut salt.clone());
             let voter = 10 as u64;
 
-            <ApplicantStakes<Test>>::insert(&candidate, Stake {new: 0, transferred: 0});
+            <ApplicantStakes<Test>>::insert(&applicant, Stake {new: 0, transferred: 0});
 
             <Votes<Test>>::insert(&commitment, SealedVote::new(voter, Stake {
                 new: 100, transferred: 0
             }, commitment));
 
             assert!(<Votes<Test>>::get(commitment).is_not_revealed());
-            assert!(Election::try_reveal_vote(voter, commitment, candidate, vec![]).is_err());
+            assert!(Election::try_reveal_vote(voter, commitment, applicant, vec![]).is_err());
             assert!(<Votes<Test>>::get(commitment).is_not_revealed());
         });
     }
@@ -1263,23 +1263,23 @@ mod tests {
     #[test]
     fn revealing_non_matching_commitment_should_not_work () {
         with_externalities(&mut initial_test_ext(), || {
-            let candidate = 20 as u64;
+            let applicant = 20 as u64;
             let salt = vec![128u8];
-            let commitment = make_commitment_for_candidate(100, &mut salt.clone());
+            let commitment = make_commitment_for_applicant(100, &mut salt.clone());
             let voter = 10 as u64;
 
-            <ApplicantStakes<Test>>::insert(&candidate, Stake {new: 0, transferred: 0});
+            <ApplicantStakes<Test>>::insert(&applicant, Stake {new: 0, transferred: 0});
 
-            assert!(Election::try_reveal_vote(voter, commitment, candidate, vec![]).is_err());
+            assert!(Election::try_reveal_vote(voter, commitment, applicant, vec![]).is_err());
         });
     }
 
     #[test]
-    fn revealing_for_non_candidate_should_not_work () {
+    fn revealing_for_non_applicant_should_not_work () {
         with_externalities(&mut initial_test_ext(), || {
-            let candidate = 20 as u64;
+            let applicant = 20 as u64;
             let salt = vec![128u8];
-            let commitment = make_commitment_for_candidate(candidate, &mut salt.clone());
+            let commitment = make_commitment_for_applicant(applicant, &mut salt.clone());
             let voter = 10 as u64;
 
             <Votes<Test>>::insert(&commitment, SealedVote::new(voter, Stake {
@@ -1287,7 +1287,7 @@ mod tests {
             }, commitment));
 
             assert!(<Votes<Test>>::get(commitment).is_not_revealed());
-            assert!(Election::try_reveal_vote(voter, commitment, candidate, vec![]).is_err());
+            assert!(Election::try_reveal_vote(voter, commitment, applicant, vec![]).is_err());
             assert!(<Votes<Test>>::get(commitment).is_not_revealed());
         });
     }
@@ -1295,30 +1295,30 @@ mod tests {
     #[test]
     fn revealing_by_non_committer_should_not_work () {
         with_externalities(&mut initial_test_ext(), || {
-            let candidate = 20 as u64;
+            let applicant = 20 as u64;
             let salt = vec![128u8];
-            let commitment = make_commitment_for_candidate(candidate, &mut salt.clone());
+            let commitment = make_commitment_for_applicant(applicant, &mut salt.clone());
             let voter = 10 as u64;
             let not_voter = 100 as u64;
 
-            <ApplicantStakes<Test>>::insert(&candidate, Stake {new: 0, transferred: 0});
+            <ApplicantStakes<Test>>::insert(&applicant, Stake {new: 0, transferred: 0});
 
             <Votes<Test>>::insert(&commitment, SealedVote::new(voter, Stake {
                 new: 100, transferred: 0
             }, commitment));
 
             assert!(<Votes<Test>>::get(commitment).is_not_revealed());
-            assert!(Election::try_reveal_vote(not_voter, commitment, candidate, salt).is_err());
+            assert!(Election::try_reveal_vote(not_voter, commitment, applicant, salt).is_err());
             assert!(<Votes<Test>>::get(commitment).is_not_revealed());
         });
     }
 
     pub fn mock_votes (mock: Vec<(u64, u32, u32, u64)>) -> Vec<SealedVote<u64, Stake<u32>, primitives::H256, u64>> {
-        let commitment = make_commitment_for_candidate(1, &mut vec![0u8]);
+        let commitment = make_commitment_for_applicant(1, &mut vec![0u8]);
 
-        mock.into_iter().map(|(voter, stake_ref, stake_tran, candidate)| SealedVote::new_unsealed(voter as u64, Stake {
+        mock.into_iter().map(|(voter, stake_ref, stake_tran, applicant)| SealedVote::new_unsealed(voter as u64, Stake {
             new: stake_ref as u32, transferred: stake_tran as u32
-        }, commitment, candidate as u64)).collect()
+        }, commitment, applicant as u64)).collect()
     }
 
 
@@ -1326,7 +1326,7 @@ mod tests {
     fn vote_tallying_should_work () {
         with_externalities(&mut initial_test_ext(), || {
             let votes = mock_votes(vec![
-            //  (voter, stake[refundable], stake[transferred], candidate)
+            //  (voter, stake[refundable], stake[transferred], applicant)
                 (10, 100, 0, 100),
                 (10, 150, 0, 100),
 
@@ -1387,7 +1387,7 @@ mod tests {
 
             {
                 let votes = mock_votes(vec![
-                //  (voter, stake[refundable], candidate)
+                //  (voter, stake[refundable], applicant)
                     (10, 100, 0, 100),
                     (10, 150, 0, 100),
 
@@ -1406,7 +1406,7 @@ mod tests {
 
             {
                 let votes = mock_votes(vec![
-                //  (voter, stake[refundable], candidate)
+                //  (voter, stake[refundable], applicant)
                     (10, 100, 0, 100),
                     (10, 150, 0, 100),
 
@@ -1471,7 +1471,7 @@ mod tests {
             save_transferable_stake(30, TransferableStake {seat: 0, backing: 300});
 
             let votes = mock_votes(vec![
-            //  (voter, stake[refundable], stake[transferred], candidate)
+            //  (voter, stake[refundable], stake[transferred], applicant)
                 (10, 100, 20, 100),
                 (20, 200, 40, 100),
                 (30, 300, 60, 100),
@@ -1562,8 +1562,8 @@ mod tests {
             assert_ok!(Election::start_election(None));
 
             for i in 1..20 {
-                assert!(Election::announce_candidacy(Origin::signed(i), 150).is_ok());
-                assert!(Election::announce_candidacy(Origin::signed(i + 1000), 150).is_err());
+                assert!(Election::apply(Origin::signed(i), 150).is_ok());
+                assert!(Election::apply(Origin::signed(i + 1000), 150).is_err());
             }
 
             let n = 1 + Election::announcing_period();
@@ -1571,11 +1571,11 @@ mod tests {
             Election::on_finalise(n);
 
             for i in 1..20 {
-                assert!(Election::vote_for_candidate(Origin::signed(i), make_commitment_for_candidate(i, &mut vec![40u8]), 100).is_ok());
+                assert!(Election::vote(Origin::signed(i), make_commitment_for_applicant(i, &mut vec![40u8]), 100).is_ok());
 
-                assert!(Election::vote_for_candidate(Origin::signed(i), make_commitment_for_candidate(i, &mut vec![41u8]), 100).is_ok());
+                assert!(Election::vote(Origin::signed(i), make_commitment_for_applicant(i, &mut vec![41u8]), 100).is_ok());
 
-                assert!(Election::vote_for_candidate(Origin::signed(i), make_commitment_for_candidate(i + 1000, &mut vec![42u8]), 100).is_ok());
+                assert!(Election::vote(Origin::signed(i), make_commitment_for_applicant(i + 1000, &mut vec![42u8]), 100).is_ok());
             }
 
             let n = n + Election::voting_period();
@@ -1583,11 +1583,11 @@ mod tests {
             Election::on_finalise(n);
 
             for i in 1..20 {
-                assert!(Election::reveal_vote(Origin::signed(i), make_commitment_for_candidate(i, &mut vec![40u8]), i, vec![40u8]).is_ok());
+                assert!(Election::reveal(Origin::signed(i), make_commitment_for_applicant(i, &mut vec![40u8]), i, vec![40u8]).is_ok());
                 //wrong salt
-                assert!(Election::reveal_vote(Origin::signed(i), make_commitment_for_candidate(i, &mut vec![41u8]), i, vec![]).is_err());
-                //vote not for valid candidate
-                assert!(Election::reveal_vote(Origin::signed(i), make_commitment_for_candidate(i + 1000, &mut vec![42u8]), i + 1000, vec![42u8]).is_err());
+                assert!(Election::reveal(Origin::signed(i), make_commitment_for_applicant(i, &mut vec![41u8]), i, vec![]).is_err());
+                //vote not for valid applicant
+                assert!(Election::reveal(Origin::signed(i), make_commitment_for_applicant(i + 1000, &mut vec![42u8]), i + 1000, vec![42u8]).is_err());
             }
 
             let n = n + Election::revealing_period();
