@@ -34,11 +34,9 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
         }
     }
 
-    pub fn unseal(&mut self, vote: Vote, salt: &mut Vec<u8>, hasher: fn(&[u8]) -> Hash) -> Result<bool, &'static str> {
+    pub fn unseal(&mut self, vote: Vote, salt: &mut Vec<u8>, hasher: fn(&[u8]) -> Hash) -> Result<(), &'static str> {
         // only unseal once
-        if self.was_revealed() {
-            return Err("vote already unsealed");
-        }
+        ensure!(self.is_not_revealed(), "vote already unsealed");
 
         // seralize the vote and append the salt
         let mut payload = vote.encode();
@@ -47,22 +45,21 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
         // hash the payload, if it matches the commitment it is a valid revealing of the vote
         if self.commitment == hasher(&payload) {
             self.vote = Some(vote);
+            Ok(())
+        } else {
+            Err("invalid salt")
         }
-
-        Ok(self.was_revealed())
     }
 
     pub fn get_vote(&self) -> &Option<Vote> {
         &self.vote
     }
 
-    // TODO rename to 'is_owned_by'?
-    pub fn owned_by(&self, someone: AccountId) -> bool {
+    pub fn is_owned_by(&self, someone: AccountId) -> bool {
         someone == self.voter
     }
 
-    // TODO rename to 'is_revealed'?
-    pub fn was_revealed(&self) -> bool {
+    pub fn is_revealed(&self) -> bool {
         self.vote.is_some()
     }
 
