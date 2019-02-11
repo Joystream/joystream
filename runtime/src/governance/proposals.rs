@@ -7,6 +7,7 @@ use {balances, system::{self, ensure_signed}};
 use rstd::prelude::*;
 
 use super::council;
+pub use super::{ GovernanceCurrency, BalanceOf };
 
 const DEFAULT_APPROVAL_QUORUM: u32 = 60;
 const DEFAULT_MIN_STAKE: u64 = 100;
@@ -114,13 +115,9 @@ pub struct TallyResult<BlockNumber> {
     finalized_at: BlockNumber,
 }
 
-type BalanceOf<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-
-pub trait Trait: balances::Trait + timestamp::Trait + council::Trait {
+pub trait Trait: balances::Trait + timestamp::Trait + council::Trait + GovernanceCurrency {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-
-    type Currency: Currency<<Self as system::Trait>::AccountId>;
 }
 
 decl_event!(

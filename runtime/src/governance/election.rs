@@ -15,14 +15,12 @@ use rstd::vec::Vec;
 use super::stake::Stake;
 use super::sealed_vote::SealedVote;
 
-type BalanceOf<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+pub use super::{ GovernanceCurrency, BalanceOf };
 
-pub trait Trait: system::Trait + balances::Trait {
+pub trait Trait: system::Trait + balances::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type CouncilElected: CouncilElected<Seats<Self::AccountId, Self::Balance>, Self::BlockNumber>;
-
-    type Currency: Currency<<Self as system::Trait>::AccountId>;
+    type CouncilElected: CouncilElected<Seats<Self::AccountId, BalanceOf<Self>>, Self::BlockNumber>;
 }
 
 #[derive(Clone, Copy, Encode, Decode)]

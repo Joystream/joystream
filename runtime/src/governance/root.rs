@@ -2,18 +2,19 @@
 
 use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
 use system::{self, ensure_signed};
+pub use super::{ GovernanceCurrency, BalanceOf };
 
 use super::{council, election::{self, TriggerElection}};
 
-pub trait Trait: system::Trait + council::Trait + election::Trait {
+pub trait Trait: system::Trait + council::Trait + election::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type TriggerElection: election::TriggerElection<election::Seats<Self::AccountId, Self::Balance>, election::ElectionParameters<Self::BlockNumber, Self::Balance>>;
+    type TriggerElection: election::TriggerElection<election::Seats<Self::AccountId, BalanceOf<Self>>, election::ElectionParameters<Self::BlockNumber, BalanceOf<Self>>>;
 }
 
 decl_storage! {
     trait Store for Module<T: Trait> as Root {
-        ElectionParameters get(election_parameters) config(): election::ElectionParameters<T::BlockNumber, T::Balance>;
+        ElectionParameters get(election_parameters) config(): election::ElectionParameters<T::BlockNumber, BalanceOf<T>>;
     }
 }
 
