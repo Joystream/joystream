@@ -18,7 +18,8 @@ app.use(bodyParser.json());
 openapi.initialize({
   apiDoc: yaml.safeLoad(fs.readFileSync('./api-base.yml')),
   app: app,
-  paths: path.resolve(__dirname, 'paths')
+  paths: path.resolve(__dirname, 'paths'),
+  docsPath: '/swagger.json'
 });
 
 app.use(function(err, req, res, next) {
@@ -30,4 +31,4 @@ module.exports = app;
 // Start app
 const port = process.env.PORT || 3000;
 app.listen(port);
-console.log('API server started; API docs at http://localhost:' + port + '/apiDocs?type=apiDoc');
+console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
