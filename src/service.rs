@@ -13,7 +13,7 @@ use substrate_service::{
 use basic_authorship::ProposerFactory;
 use node_executor;
 use consensus::{import_queue, start_aura, AuraImportQueue, SlotDuration, NothingExtra};
-use client;
+use substrate_client as client;
 use primitives::ed25519::Pair;
 use inherents::InherentDataProviders;
 
@@ -23,19 +23,12 @@ native_executor_instance!(
 	pub Executor,
 	joystream_node_runtime::api::dispatch,
 	joystream_node_runtime::native_version,
-	include_bytes!("../runtime/wasm/target/wasm32-unknown-unknown/release/joystream_node_runtime.compact.wasm")
+	include_bytes!("../runtime/wasm/target/wasm32-unknown-unknown/release/joystream_node_runtime_wasm.compact.wasm")
 );
 
+#[derive(Default)]
 pub struct NodeConfig {
 	inherent_data_providers: InherentDataProviders,
-}
-
-impl Default for NodeConfig {
-	fn default() -> Self {
-		NodeConfig {
-			inherent_data_providers: InherentDataProviders::new(),
-		}
-	}
 }
 
 construct_simple_protocol! {
@@ -93,6 +86,8 @@ construct_service_factory! {
 			{ |config: &mut FactoryFullConfiguration<Self> , client: Arc<FullClient<Self>>|
 				import_queue(
 					SlotDuration::get_or_compute(&*client)?,
+					client.clone(),
+					None,
 					client,
 					NothingExtra,
 					config.custom.inherent_data_providers.clone(),
@@ -106,6 +101,8 @@ construct_service_factory! {
 			{ |config: &mut FactoryFullConfiguration<Self>, client: Arc<LightClient<Self>>|
 				import_queue(
 					SlotDuration::get_or_compute(&*client)?,
+					client.clone(),
+					None,
 					client,
 					NothingExtra,
 					config.custom.inherent_data_providers.clone(),

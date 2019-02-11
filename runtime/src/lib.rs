@@ -5,34 +5,14 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit="256"]
 
-#[cfg_attr(not(feature = "std"), macro_use)]
-extern crate sr_std as rstd;
-extern crate sr_io as runtime_io;
-#[macro_use]
-extern crate substrate_client as client;
-#[macro_use]
-extern crate srml_support;
-#[macro_use]
-extern crate sr_primitives as runtime_primitives;
 #[cfg(feature = "std")]
 #[macro_use]
 extern crate serde_derive;
-extern crate substrate_primitives as primitives;
-extern crate parity_codec;
+
+use substrate_client as client;
+
 #[macro_use]
 extern crate parity_codec_derive;
-#[macro_use]
-extern crate sr_version as version;
-extern crate srml_system as system;
-extern crate srml_executive as executive;
-extern crate srml_consensus as consensus;
-extern crate srml_timestamp as timestamp;
-extern crate srml_balances as balances;
-extern crate srml_sudo as sudo;
-extern crate srml_aura as aura;
-extern crate srml_indices as indices;
-extern crate substrate_consensus_aura_primitives as consensus_aura;
-
 pub mod governance;
 use governance::{election, council, root, proposals};
 
@@ -42,16 +22,15 @@ use primitives::bytes;
 use primitives::{Ed25519AuthorityId, OpaqueMetadata};
 use runtime_primitives::{
 	ApplyResult, transaction_validity::TransactionValidity, Ed25519Signature, generic,
-	traits::{self, BlakeTwo256, Block as BlockT, StaticLookup, Extrinsic},
+	traits::{self, BlakeTwo256, Block as BlockT, StaticLookup}, create_runtime_str
 };
 use client::{
 	block_builder::api::{CheckInherentsResult, InherentData, self as block_builder_api},
-	runtime_api
+	runtime_api, impl_runtime_apis
 };
 use version::RuntimeVersion;
 #[cfg(feature = "std")]
 use version::NativeVersion;
-use consensus_aura::api as aura_api;
 
 // A few exports that help ease life for downstream crates.
 #[cfg(any(feature = "std", test))]
@@ -61,7 +40,7 @@ pub use timestamp::Call as TimestampCall;
 pub use balances::Call as BalancesCall;
 pub use runtime_primitives::{Permill, Perbill};
 pub use timestamp::BlockPeriod;
-pub use srml_support::{StorageValue, RuntimeMetadata};
+pub use srml_support::{StorageValue, construct_runtime};
 
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
 pub type AccountId = primitives::H256;
@@ -307,7 +286,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl aura_api::AuraApi<Block> for Runtime {
+	impl consensus_aura::AuraApi<Block> for Runtime {
 		fn slot_duration() -> u64 {
 			Aura::slot_duration()
 		}
