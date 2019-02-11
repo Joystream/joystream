@@ -1,6 +1,6 @@
 swagger: '2.0'
 info:
-  title: 'FIXME A getting started API.'
+  title: 'Joystream Storage Node API.'
   version: '1.0.0'
 definitions: {}
 paths: {}
