@@ -30,4 +30,4 @@ module.exports = app;
 // Start app
 const port = process.env.PORT || 3000;
 app.listen(port);
-console.log('API server started on http://localhost:' + port);
+console.log('API server started; API docs at http://localhost:' + port + '/apiDocs?type=apiDoc');
