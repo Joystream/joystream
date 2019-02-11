@@ -6,7 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "npm-run-all --parallel server",
     "build": "npm-run-all --parallel server",
-    "server": "nodemon --watch api.yaml --watch api/ --verbose --exec node server.js --ext jsx,js"
+    "server": "nodemon --watch api.yaml --watch server.js --watch api/ --watch lib/ --verbose --exec node server.js --ext jsx,js"
   },
   "keywords": [
     "joystream",
