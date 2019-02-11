@@ -1,0 +1,7 @@
+swagger: '2.0'
+basePath: '/v1'
+info:
+  title: 'FIXME A getting started API.'
+  version: '1.0.0'
+definitions: {}
+paths: {}
