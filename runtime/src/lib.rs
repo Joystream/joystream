@@ -177,11 +177,13 @@ impl sudo::Trait for Runtime {
 
 impl governance::proposals::Trait for Runtime {
 	type Event = Event;
+	type Currency = balances::Module<Self>;
 }
 
 impl governance::election::Trait for Runtime {
 	type Event = Event;
 	type CouncilElected = (Council,);
+	type Currency = balances::Module<Self>;
 }
 
 impl governance::council::Trait for Runtime {

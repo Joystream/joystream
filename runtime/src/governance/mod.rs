@@ -1,14 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate sr_std;
-#[cfg(test)]
-extern crate sr_io;
-#[cfg(test)]
-extern crate substrate_primitives;
-extern crate sr_primitives;
-#[cfg(feature = "std")]
-extern crate parity_codec as codec;
-extern crate srml_system as system;
+use rstd::prelude::*;
+// use rstd::result;
+// use srml_support::dispatch::{Dispatchable, Parameter};
+// use srml_support::{StorageValue, StorageMap, decl_module, decl_event, decl_storage, ensure};
+// use system::{self, ensure_signed};
 
 pub mod election;
 pub mod council;

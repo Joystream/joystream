@@ -33,7 +33,7 @@ rev = 'e8b558c05ba13a0ee63c7c90e8e4156be38237fd'
 git = 'https://github.com/paritytech/substrate.git'
 rev = 'e8b558c05ba13a0ee63c7c90e8e4156be38237fd'
 
-[dependencies.node-template-runtime]
+[dependencies.joystream-node-runtime]
 path = 'runtime'
 
 [dependencies.primitives]

@@ -1,8 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::{StorageValue, StorageMap, dispatch::Result};
+use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
+use system::{self, ensure_signed};
 
-use governance::{council, election::{self, TriggerElection}};
+use super::{council, election::{self, TriggerElection}};
 
 pub trait Trait: system::Trait + council::Trait + election::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;

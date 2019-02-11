@@ -1,10 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::{StorageValue};
+use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
+use system::{self, ensure_signed};
 use runtime_primitives::traits::{As};
 use {balances};
 
-pub use election::{Seats, Seat, CouncilElected};
+pub use super::election::{Seats, Seat, CouncilElected};
 
 // Hook For announcing that council term has ended
 pub trait CouncilTermEnded {

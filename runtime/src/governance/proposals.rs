@@ -1,11 +1,12 @@
-use srml_support::{storage, StorageValue, StorageMap, dispatch::Result};
+use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
+use srml_support::traits::{Currency};
 use primitives::{storage::well_known_keys};
 use runtime_primitives::traits::{As, Hash, Zero};
 use runtime_io::print;
 use {balances, system::{self, ensure_signed}};
 use rstd::prelude::*;
 
-use council;
+use super::council;
 
 const DEFAULT_APPROVAL_QUORUM: u32 = 60;
 const DEFAULT_MIN_STAKE: u64 = 100;
@@ -113,9 +114,13 @@ pub struct TallyResult<BlockNumber> {
     finalized_at: BlockNumber,
 }
 
+type BalanceOf<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+
 pub trait Trait: balances::Trait + timestamp::Trait + council::Trait {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
+    type Currency: Currency<<Self as system::Trait>::AccountId>;
 }
 
 decl_event!(
@@ -158,20 +163,20 @@ decl_storage! {
         ApprovalQuorum get(approval_quorum) config(): u32 = DEFAULT_APPROVAL_QUORUM;
 
         /// Minimum balance amount to be staked in order to make a proposal.
-        MinimumStake get(minimum_stake) config(): T::Balance = 
-            T::Balance::sa(DEFAULT_MIN_STAKE);
+        MinimumStake get(minimum_stake) config(): BalanceOf<T> =
+            BalanceOf::<T>::sa(DEFAULT_MIN_STAKE);
 
         /// A fee to be slashed (burn) in case a proposer decides to cancel a proposal.
-        CancellationFee get(cancellation_fee) config(): T::Balance = 
-            T::Balance::sa(DEFAULT_CANCELLATION_FEE);
+        CancellationFee get(cancellation_fee) config(): BalanceOf<T> =
+            BalanceOf::<T>::sa(DEFAULT_CANCELLATION_FEE);
 
         /// A fee to be slashed (burn) in case a proposal was rejected.
-        RejectionFee get(rejection_fee) config(): T::Balance = 
-            T::Balance::sa(DEFAULT_REJECTION_FEE);
+        RejectionFee get(rejection_fee) config(): BalanceOf<T> =
+            BalanceOf::<T>::sa(DEFAULT_REJECTION_FEE);
 
         /// Max duration of proposal in blocks until it will be expired if not enough votes.
-        VotingPeriod get(voting_period) config(): T::BlockNumber = 
-            T::BlockNumber::sa(DEFAULT_VOTING_PERIOD_IN_SECS / 
+        VotingPeriod get(voting_period) config(): T::BlockNumber =
+            T::BlockNumber::sa(DEFAULT_VOTING_PERIOD_IN_SECS /
             <timestamp::Module<T>>::block_period().as_());
 
         NameMaxLen get(name_max_len) config(): u32 = DEFAULT_NAME_MAX_LEN;
@@ -183,7 +188,7 @@ decl_storage! {
         ProposalCount get(proposal_count): ProposalId;
 
         // TODO rename 'proposal' -> 'proposals'
-        Proposals get(proposal): map ProposalId => Proposal<T::AccountId, T::Balance, T::BlockNumber>;
+        Proposals get(proposal): map ProposalId => Proposal<T::AccountId, BalanceOf<T>, T::BlockNumber>;
 
         // TODO rename to `ActiveProposalIds`
         PendingProposalIds get(pending_proposal_ids): Vec<ProposalId> = vec![];
@@ -208,7 +213,7 @@ decl_module! {
         /// ```
         fn create_proposal(
             origin,
-            stake: T::Balance,
+            stake: BalanceOf<T>,
             name: Vec<u8>,
             description: Vec<u8>,
             // wasm_hash: T::Hash,
@@ -229,7 +234,7 @@ decl_module! {
             ensure!(wasm_code.len() as u32 <= Self::wasm_code_max_len(), MSG_TOO_LONG_WASM_CODE);
 
             // Lock proposer's stake:
-            <balances::Module<T>>::reserve(&proposer, stake)
+            T::Currency::reserve(&proposer, stake)
                 .map_err(|_| MSG_STAKE_IS_GREATER_THAN_BALANCE)?;
 
             let proposal_id = Self::proposal_count() + 1;
@@ -294,11 +299,11 @@ decl_module! {
 
             // Spend some minimum fee on proposer's balance for canceling a proposal
             let fee = Self::cancellation_fee();
-            let _ = <balances::Module<T>>::slash_reserved(&proposer, fee);
+            let _ = T::Currency::slash_reserved(&proposer, fee);
 
             // Return unspent part of remaining staked deposit (after taking some fee)
             let left_stake = proposal.stake - fee;
-            let _ = <balances::Module<T>>::unreserve(&proposer, left_stake);
+            let _ = T::Currency::unreserve(&proposer, left_stake);
 
             Self::_update_proposal_status(proposal_id, Cancelled)?;
             Self::deposit_event(RawEvent::ProposalCanceled(proposer, proposal_id));
@@ -323,7 +328,7 @@ impl<T: Trait> Module<T> {
 
     // TODO This method should be moved to Membership module once it's created.
     fn is_member(sender: T::AccountId) -> bool {
-        !<balances::Module<T>>::free_balance(sender).is_zero()
+        !T::Currency::free_balance(&sender).is_zero()
     }
 
     fn is_councilor(sender: T::AccountId) -> bool {
@@ -469,7 +474,7 @@ impl<T: Trait> Module<T> {
         let proposal = Self::proposal(proposal_id);
 
         // Slash proposer's stake:
-        let _ = <balances::Module<T>>::slash_reserved(&proposal.proposer, proposal.stake);
+        let _ = T::Currency::slash_reserved(&proposal.proposer, proposal.stake);
 
         Ok(())
     }
@@ -481,11 +486,11 @@ impl<T: Trait> Module<T> {
 
         // Spend some minimum fee on proposer's balance to prevent spamming attacks:
         let fee = Self::rejection_fee();
-        let _ = <balances::Module<T>>::slash_reserved(&proposer, fee);
+        let _ = T::Currency::slash_reserved(&proposer, fee);
 
         // Return unspent part of remaining staked deposit (after taking some fee):
         let left_stake = proposal.stake - fee;
-        let _ = <balances::Module<T>>::unreserve(&proposer, left_stake);
+        let _ = T::Currency::unreserve(&proposer, left_stake);
 
         Ok(())
     }
@@ -496,7 +501,7 @@ impl<T: Trait> Module<T> {
         let wasm_code = proposal.wasm_code;
 
         // Return staked deposit to proposer:
-        let _ = <balances::Module<T>>::unreserve(&proposal.proposer, proposal.stake);
+        let _ = T::Currency::unreserve(&proposal.proposer, proposal.stake);
 
 
 
@@ -762,7 +767,7 @@ mod tests {
         with_externalities(&mut new_test_ext(), || {
             // In this test a proposer has an empty balance
             // thus he is not considered as a member.
-            assert_eq!(_create_default_proposal(), 
+            assert_eq!(_create_default_proposal(),
                 Err(MSG_ONLY_MEMBERS_CAN_PROPOSE));
         });
     }
@@ -774,7 +779,7 @@ mod tests {
             Balances::increase_total_stake_by(initial_balance());
 
             assert_eq!(_create_proposal(
-                None, Some(minimum_stake() - 1), None, None, None), 
+                None, Some(minimum_stake() - 1), None, None, None),
                 Err(MSG_STAKE_IS_TOO_LOW));
 
             // Check that balances remain unchanged afer a failed attempt to create a proposal:
@@ -790,7 +795,7 @@ mod tests {
             Balances::increase_total_stake_by(initial_balance());
 
             assert_eq!(_create_proposal(
-                None, Some(initial_balance() + 1), None, None, None), 
+                None, Some(initial_balance() + 1), None, None, None),
                 Err(MSG_STAKE_IS_GREATER_THAN_BALANCE));
 
             // Check that balances remain unchanged afer a failed attempt to create a proposal:
@@ -804,20 +809,20 @@ mod tests {
         with_externalities(&mut new_test_ext(), || {
             Balances::set_free_balance(&PROPOSER1, initial_balance());
             Balances::increase_total_stake_by(initial_balance());
-            
+
             // Empty name:
             assert_eq!(_create_proposal(
-                None, None, Some(vec![]), None, None), 
+                None, None, Some(vec![]), None, None),
                 Err(MSG_EMPTY_NAME_PROVIDED));
 
             // Empty description:
             assert_eq!(_create_proposal(
-                None, None, None, Some(vec![]), None), 
+                None, None, None, Some(vec![]), None),
                 Err(MSG_EMPTY_DESCRIPTION_PROVIDED));
 
             // Empty WASM code:
             assert_eq!(_create_proposal(
-                None, None, None, None, Some(vec![])), 
+                None, None, None, None, Some(vec![])),
                 Err(MSG_EMPTY_WASM_CODE_PROVIDED));
         });
     }
@@ -827,20 +832,20 @@ mod tests {
         with_externalities(&mut new_test_ext(), || {
             Balances::set_free_balance(&PROPOSER1, initial_balance());
             Balances::increase_total_stake_by(initial_balance());
-            
+
             // Too long name:
             assert_eq!(_create_proposal(
-                None, None, Some(too_long_name()), None, None), 
+                None, None, Some(too_long_name()), None, None),
                 Err(MSG_TOO_LONG_NAME));
 
             // Too long description:
             assert_eq!(_create_proposal(
-                None, None, None, Some(too_long_description()), None), 
+                None, None, None, Some(too_long_description()), None),
                 Err(MSG_TOO_LONG_DESCRIPTION));
 
             // Too long WASM code:
             assert_eq!(_create_proposal(
-                None, None, None, None, Some(too_long_wasm_code())), 
+                None, None, None, None, Some(too_long_wasm_code())),
                 Err(MSG_TOO_LONG_WASM_CODE));
         });
     }
@@ -909,7 +914,7 @@ mod tests {
             Balances::set_free_balance(&PROPOSER2, initial_balance());
             Balances::increase_total_stake_by(initial_balance() * 2);
             assert_ok!(_create_default_proposal());
-            assert_eq!(Proposals::cancel_proposal(Origin::signed(PROPOSER2), 1), 
+            assert_eq!(Proposals::cancel_proposal(Origin::signed(PROPOSER2), 1),
                 Err(MSG_YOU_DONT_OWN_THIS_PROPOSAL));
         });
     }
