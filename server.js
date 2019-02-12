@@ -17,21 +17,19 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 // FIXME app.use(bodyParser.urlencoded({ extended: true }));
+//
+var api = yaml.safeLoad(fs.readFileSync('./api-base.yml'));
+api['x-express-openapi-additional-middleware'] = [validateResponses];
+api['x-express-openapi-validation-strict'] = true;
 
 openapi.initialize({
-  apiDoc: yaml.safeLoad(fs.readFileSync('./api-base.yml')),
+  apiDoc: api,
   app: app,
   paths: path.resolve(__dirname, 'paths'),
   docsPath: '/swagger.json',
-  'x-express-openapi-additional-middleware': [validateResponses],
-  'x-express-openapi-validation-strict': true,
   consumesMiddleware: {
     'multipart/form-data': fileUploads
   },
-});
-
-app.use(function(err, req, res, next) {
-  res.status(err.status).json(err);
 });
 
 module.exports = app;
