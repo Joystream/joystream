@@ -2,5 +2,31 @@ swagger: '2.0'
 info:
   title: 'Joystream Storage Node API.'
   version: '1.0.0'
-definitions: {}
-paths: {}
+paths: {}  # Will be populated by express-openapi
+
+# Re-usable parameter definitions
+parameters: {}
+
+# Re-usable (response) object definitions
+definitions:
+  Error:
+    required:
+      - message
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+
+  ContentDirectoryEntry: # TODO implement
+    required:
+      - name
+    properties:
+      name:
+        type: string
+
+  ContentDirectoryEntries:
+    type: array
+    items:
+      $ref: '#/definitions/ContentDirectoryEntry'
