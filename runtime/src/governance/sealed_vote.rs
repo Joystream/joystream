@@ -1,7 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use srml_support::{ensure};
 use parity_codec::Encode;
-use srml_support::dispatch::Vec;
+use rstd::vec::Vec;
 
 #[derive(Clone, Copy, Encode, Decode, Default)]
 pub struct SealedVote<AccountId, Stake, Hash, Vote>

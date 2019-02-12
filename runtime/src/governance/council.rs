@@ -1,10 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::{StorageValue};
+use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
+use srml_support::traits::{Currency};
+use system::{self, ensure_signed};
 use runtime_primitives::traits::{As};
 use {balances};
 
-pub use election::{Seats, Seat, CouncilElected};
+pub use super::election::{self, Seats, Seat, CouncilElected};
+pub use super::{ GovernanceCurrency, BalanceOf };
 
 // Hook For announcing that council term has ended
 pub trait CouncilTermEnded {
@@ -21,7 +24,7 @@ impl<X: CouncilTermEnded> CouncilTermEnded for (X,) {
     }
 }
 
-pub trait Trait: system::Trait + balances::Trait {
+pub trait Trait: system::Trait + balances::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type CouncilTermEnded: CouncilTermEnded;
@@ -29,7 +32,7 @@ pub trait Trait: system::Trait + balances::Trait {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Council {
-        ActiveCouncil get(active_council) config(): Option<Seats<T::AccountId, T::Balance>> = None;
+        ActiveCouncil get(active_council) config(): Option<Seats<T::AccountId, BalanceOf<T>>> = None;
         TermEndsAt get(term_ends_at) config(): T::BlockNumber = T::BlockNumber::sa(0);
     }
 }
@@ -42,8 +45,8 @@ decl_event!(
     }
 );
 
-impl<T: Trait> CouncilElected<Seats<T::AccountId, T::Balance>, T::BlockNumber> for Module<T> {
-    fn council_elected(seats: Seats<T::AccountId, T::Balance>, term: T::BlockNumber) {
+impl<T: Trait> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber> for Module<T> {
+    fn council_elected(seats: Seats<T::AccountId, BalanceOf<T>>, term: T::BlockNumber) {
         <ActiveCouncil<T>>::put(seats);
 
         let next_term_ends_at = <system::Module<T>>::block_number() + term;

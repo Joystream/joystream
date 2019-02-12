@@ -1,20 +1,25 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::{StorageValue, StorageMap, dispatch::Result};
+use rstd::prelude::*;
+use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
+use srml_support::traits::{Currency};
+use system::{self, ensure_signed};
+
 use runtime_primitives::traits::{Hash, As, Zero, SimpleArithmetic};
-use {balances, system::{ensure_signed}};
+use {balances};
 
 use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
-use rstd::vec::Vec;
 
 use super::stake::Stake;
 use super::sealed_vote::SealedVote;
 
-pub trait Trait: system::Trait + balances::Trait {
+pub use super::{ GovernanceCurrency, BalanceOf };
+
+pub trait Trait: system::Trait + balances::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type CouncilElected: CouncilElected<Seats<Self::AccountId, Self::Balance>, Self::BlockNumber>;
+    type CouncilElected: CouncilElected<Seats<Self::AccountId, BalanceOf<Self>>, Self::BlockNumber>;
 }
 
 #[derive(Clone, Copy, Encode, Decode)]
@@ -125,15 +130,15 @@ decl_storage! {
         Round get(round): u32;
 
         ExistingStakeHolders get(existing_stake_holders): Vec<T::AccountId>;
-        TransferableStakes get(transferable_stakes): map T::AccountId => TransferableStake<T::Balance>;
+        TransferableStakes get(transferable_stakes): map T::AccountId => TransferableStake<BalanceOf<T>>;
 
         Applicants get(applicants): Vec<T::AccountId>;
-        ApplicantStakes get(applicant_stakes): map T::AccountId => Stake<T::Balance>;
+        ApplicantStakes get(applicant_stakes): map T::AccountId => Stake<BalanceOf<T>>;
 
         Commitments get(commitments): Vec<T::Hash>;
 
         // TODO value type of this map looks scary, is there any way to simplify the notation?
-        Votes get(votes): map T::Hash => SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>;
+        Votes get(votes): map T::Hash => SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>;
 
         // Election Parameters - default "zero" values are not meaningful. Running an election without
         // settings reasonable values is a bad idea. Parameters can be set in the TriggerElection hook.
@@ -142,9 +147,9 @@ decl_storage! {
         RevealingPeriod get(revealing_period): T::BlockNumber;
         CouncilSize get(council_size): u32;
         CandidacyLimitMultiple get (candidacy_limit_multiple): u32;
-        MinCouncilStake get(min_council_stake): T::Balance;
+        MinCouncilStake get(min_council_stake): BalanceOf<T>;
         NewTermDuration get(new_term_duration): T::BlockNumber;
-        MinVotingStake get(min_voting_stake): T::Balance;
+        MinVotingStake get(min_voting_stake): BalanceOf<T>;
     }
 }
 
@@ -163,10 +168,10 @@ decl_event!(
     }
 );
 
-impl<T: Trait> TriggerElection<Seats<T::AccountId, T::Balance>, ElectionParameters<T::BlockNumber, T::Balance>> for Module<T> {
+impl<T: Trait> TriggerElection<Seats<T::AccountId, BalanceOf<T>>, ElectionParameters<T::BlockNumber, BalanceOf<T>>> for Module<T> {
     fn trigger_election(
-        current_council: Option<Seats<T::AccountId, T::Balance>>,
-        params: ElectionParameters<T::BlockNumber, T::Balance>) -> Result
+        current_council: Option<Seats<T::AccountId, BalanceOf<T>>>,
+        params: ElectionParameters<T::BlockNumber, BalanceOf<T>>) -> Result
     {
         ensure!(!Self::is_election_running(), "Election already running");
 
@@ -192,7 +197,7 @@ impl<T: Trait> Module<T> {
 
     // TODO This method should be moved to Membership module once it's created.
     fn is_member(sender: T::AccountId) -> bool {
-        !<balances::Module<T>>::free_balance(sender).is_zero()
+        !T::Currency::free_balance(&sender).is_zero()
     }
 
     // PUBLIC IMMUTABLES
@@ -219,7 +224,7 @@ impl<T: Trait> Module<T> {
 
     /// Sets the election parameters. Must be called before starting an election otherwise
     /// last set values will be used.
-    fn set_election_parameters(params: ElectionParameters<T::BlockNumber, T::Balance>) {
+    fn set_election_parameters(params: ElectionParameters<T::BlockNumber, BalanceOf<T>>) {
         // TODO: consider at what stage it is safe to allow these parameters to change.
         <AnnouncingPeriod<T>>::put(params.announcing_period);
         <VotingPeriod<T>>::put(params.voting_period);
@@ -233,7 +238,7 @@ impl<T: Trait> Module<T> {
 
     /// Starts an election. Will fail if an election is already running
     /// Initializes transferable stakes. Assumes election parameters have already been set.
-    fn start_election(current_council: Option<Seats<T::AccountId, T::Balance>>) -> Result {
+    fn start_election(current_council: Option<Seats<T::AccountId, BalanceOf<T>>>) -> Result {
         ensure!(!Self::is_election_running(), "election already in progress");
         ensure!(Self::existing_stake_holders().len() == 0, "stake holders must be empty");
         ensure!(Self::applicants().len() == 0, "applicants must be empty");
@@ -385,7 +390,7 @@ impl<T: Trait> Module<T> {
         for stakeholder in Self::existing_stake_holders().iter() {
             let stake = Self::transferable_stakes(stakeholder);
             if !stake.seat.is_zero() || !stake.backing.is_zero() {
-                <balances::Module<T>>::unreserve(stakeholder, stake.seat + stake.backing);
+                T::Currency::unreserve(stakeholder, stake.seat + stake.backing);
             }
         }
     }
@@ -410,7 +415,7 @@ impl<T: Trait> Module<T> {
 
         // return new stake to account's free balance
         if !stake.new.is_zero() {
-            <balances::Module<T>>::unreserve(applicant, stake.new);
+            T::Currency::unreserve(applicant, stake.new);
         }
 
         // return unused transferable stake
@@ -432,7 +437,7 @@ impl<T: Trait> Module<T> {
         <Applicants<T>>::put(not_dropped);
     }
 
-    fn drop_unelected_applicants(new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>) {
+    fn drop_unelected_applicants(new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>>) {
         let applicants_to_drop: Vec<T::AccountId> = Self::applicants().into_iter()
             .filter(|applicant| !new_council.contains_key(&applicant))
             .collect();
@@ -441,8 +446,8 @@ impl<T: Trait> Module<T> {
     }
 
     fn refund_voting_stakes(
-        sealed_votes: &Vec<SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>>,
-        new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>)
+        sealed_votes: &Vec<SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>>,
+        new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>>)
     {
         for sealed_vote in sealed_votes.iter() {
             // Do a refund if commitment was not revealed, or the vote was for applicant that did
@@ -458,7 +463,7 @@ impl<T: Trait> Module<T> {
                 // return new stake to account's free balance
                 let SealedVote { voter, stake, .. } = sealed_vote;
                 if !stake.new.is_zero() {
-                    <balances::Module<T>>::unreserve(voter, stake.new);
+                    T::Currency::unreserve(voter, stake.new);
                 }
 
                 // return unused transferable stake
@@ -476,8 +481,8 @@ impl<T: Trait> Module<T> {
         <Commitments<T>>::kill();
     }
 
-    fn tally_votes(sealed_votes: &Vec<SealedVote<T::AccountId, Stake<T::Balance>, T::Hash, T::AccountId>>) -> BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>> {
-        let mut tally: BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>> = BTreeMap::new();
+    fn tally_votes(sealed_votes: &Vec<SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>>) -> BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>> {
+        let mut tally: BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>> = BTreeMap::new();
 
         for sealed_vote in sealed_votes.iter() {
             if let Some(applicant) = sealed_vote.get_vote() {
@@ -502,7 +507,7 @@ impl<T: Trait> Module<T> {
         tally
     }
 
-    fn filter_top_staked(tally: &mut BTreeMap<T::AccountId, Seat<T::AccountId, T::Balance>>, limit: usize) {
+    fn filter_top_staked(tally: &mut BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>>, limit: usize) {
 
         if limit >= tally.len() {
             return;
@@ -554,7 +559,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Takes a snapshot of the stakes from the current council
-    fn initialize_transferable_stakes(current_council: Seats<T::AccountId, T::Balance>) {
+    fn initialize_transferable_stakes(current_council: Seats<T::AccountId, BalanceOf<T>>) {
         let mut stakeholder_accounts: Vec<T::AccountId> = Vec::new();
 
         for seat in current_council.into_iter() {
@@ -568,7 +573,7 @@ impl<T: Trait> Module<T> {
             } else {
                 <TransferableStakes<T>>::insert(&member, TransferableStake {
                     seat: stake,
-                    backing: T::Balance::zero(),
+                    backing: BalanceOf::<T>::zero(),
                 });
 
                 stakeholder_accounts.push(member);
@@ -584,7 +589,7 @@ impl<T: Trait> Module<T> {
                     });
                 } else {
                     <TransferableStakes<T>>::insert(&member, TransferableStake {
-                        seat: T::Balance::zero(),
+                        seat: BalanceOf::<T>::zero(),
                         backing: stake,
                     });
 
@@ -596,7 +601,7 @@ impl<T: Trait> Module<T> {
         <ExistingStakeHolders<T>>::put(stakeholder_accounts);
     }
 
-    fn new_stake_reusing_transferable(transferable: &mut T::Balance, new_stake: T::Balance) -> Stake<T::Balance> {
+    fn new_stake_reusing_transferable(transferable: &mut BalanceOf<T>, new_stake: BalanceOf<T>) -> Stake<BalanceOf<T>> {
         let transferred =
             if *transferable >= new_stake {
                 new_stake
@@ -612,14 +617,14 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn try_add_applicant(applicant: T::AccountId, stake: T::Balance) -> Result {
+    fn try_add_applicant(applicant: T::AccountId, stake: BalanceOf<T>) -> Result {
         let mut transferable_stake = <TransferableStakes<T>>::get(&applicant);
 
         let new_stake = Self::new_stake_reusing_transferable(&mut transferable_stake.seat, stake);
 
-        ensure!(<balances::Module<T>>::can_reserve(&applicant, new_stake.new), "not enough free balance to reserve");
+        ensure!(T::Currency::can_reserve(&applicant, new_stake.new), "not enough free balance to reserve");
 
-        ensure!(<balances::Module<T>>::reserve(&applicant, new_stake.new).is_ok(), "failed to reserve applicant stake!");
+        ensure!(T::Currency::reserve(&applicant, new_stake.new).is_ok(), "failed to reserve applicant stake!");
 
         let applicant_stake = <ApplicantStakes<T>>::get(&applicant);
         let total_stake = applicant_stake.add(&new_stake);
@@ -639,16 +644,16 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn try_add_vote(voter: T::AccountId, stake: T::Balance, commitment: T::Hash) -> Result {
+    fn try_add_vote(voter: T::AccountId, stake: BalanceOf<T>, commitment: T::Hash) -> Result {
         ensure!(!<Votes<T>>::exists(commitment), "duplicate commitment");
 
         let mut transferable_stake = <TransferableStakes<T>>::get(&voter);
 
         let vote_stake = Self::new_stake_reusing_transferable(&mut transferable_stake.backing, stake);
 
-        ensure!(<balances::Module<T>>::can_reserve(&voter, vote_stake.new), "not enough free balance to reserve");
+        ensure!(T::Currency::can_reserve(&voter, vote_stake.new), "not enough free balance to reserve");
 
-        ensure!(<balances::Module<T>>::reserve(&voter, vote_stake.new).is_ok(), "failed to reserve voting stake!");
+        ensure!(T::Currency::reserve(&voter, vote_stake.new).is_ok(), "failed to reserve voting stake!");
 
         <Commitments<T>>::mutate(|commitments| commitments.push(commitment));
 
@@ -694,7 +699,7 @@ decl_module! {
 
         // Member can apply during announcing stage only. On first call a minimum stake will need to be provided.
         // Member can make subsequent calls during announcing stage to increase their stake.
-        fn apply(origin, stake: T::Balance) -> Result {
+        fn apply(origin, stake: BalanceOf<T>) -> Result {
             let sender = ensure_signed(origin)?;
             ensure!(Self::is_member(sender.clone()), "Only members can apply to be on council");
 
@@ -716,7 +721,7 @@ decl_module! {
             }
         }
 
-        fn vote(origin, commitment: T::Hash, stake: T::Balance) -> Result {
+        fn vote(origin, commitment: T::Hash, stake: BalanceOf<T>) -> Result {
             let sender = ensure_signed(origin)?;
             ensure!(Self::is_member(sender.clone()), "Only members can vote for an applicant");
 
@@ -756,8 +761,10 @@ decl_module! {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::governance::tests::*;
+    use crate::governance::mock::*;
     use parity_codec::Encode;
+    use runtime_io::with_externalities;
+    use srml_support::*;
 
     #[test]
     fn new_stake_reusing_transferable_works() {
