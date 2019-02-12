@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const validateResponses = require('./lib/middleware/validate_responses');
+const fileUploads = require('./lib/middleware/file_uploads');
 
 // Configure app
 const app = express();
@@ -23,7 +24,10 @@ openapi.initialize({
   paths: path.resolve(__dirname, 'paths'),
   docsPath: '/swagger.json',
   'x-express-openapi-additional-middleware': [validateResponses],
-  'x-express-openapi-validation-strict': true
+  'x-express-openapi-validation-strict': true,
+  consumesMiddleware: {
+    'multipart/form-data': fileUploads
+  },
 });
 
 app.use(function(err, req, res, next) {
