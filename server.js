@@ -9,6 +9,8 @@ const yaml = require('js-yaml');
 const fs = require('fs');
 const path = require('path');
 
+const validateResponses = require('./lib/middleware/validate_responses');
+
 // Configure app
 const app = express();
 app.use(cors());
@@ -19,7 +21,9 @@ openapi.initialize({
   apiDoc: yaml.safeLoad(fs.readFileSync('./api-base.yml')),
   app: app,
   paths: path.resolve(__dirname, 'paths'),
-  docsPath: '/swagger.json'
+  docsPath: '/swagger.json',
+  'x-express-openapi-additional-middleware': [validateResponses],
+  'x-express-openapi-validation-strict': true
 });
 
 app.use(function(err, req, res, next) {
