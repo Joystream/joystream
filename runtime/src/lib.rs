@@ -13,6 +13,7 @@ use substrate_client as client;
 
 #[macro_use]
 extern crate parity_codec_derive;
+
 pub mod governance;
 use governance::{election, council, root, proposals};
 

@@ -500,7 +500,8 @@ impl<T: Trait> Module<T> {
         // Return staked deposit to proposer:
         let _ = T::Currency::unreserve(&proposal.proposer, proposal.stake);
 
-
+        // See in substrate repo @ srml/contract/src/wasm/code_cache.rs:73
+        let wasm_hash = T::Hashing::hash(&wasm_code);
 
         // TODO fix: this doesn't update storage in tests :(
         // println!("> before storage::unhashed::get_raw\n{:?}",
@@ -509,15 +510,12 @@ impl<T: Trait> Module<T> {
         // println!("wasm code: {:?}", wasm_code.clone());
 
         // Update wasm code of node's runtime:
-        storage::unhashed::put_raw(well_known_keys::CODE, &wasm_code.clone());
+        //storage::unhashed::put_raw(well_known_keys::CODE, &wasm_code.clone());
+        <consensus::Module<T>>::set_code(wasm_code)?;
 
         // println!("< AFTER storage::unhashed::get_raw\n{:?}",
         //     storage::unhashed::get_raw(well_known_keys::CODE));
 
-
-
-        // See in substrate repo @ srml/contract/src/wasm/code_cache.rs:73
-        let wasm_hash = T::Hashing::hash(&wasm_code);
         Self::deposit_event(RawEvent::RuntimeUpdated(proposal_id, wasm_hash));
 
         Ok(())

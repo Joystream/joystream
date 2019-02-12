@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-//use rstd::prelude::*;
+use rstd::prelude::*;
 use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
 use srml_support::traits::{Currency};
 use system::{self, ensure_signed};
@@ -10,7 +10,6 @@ use {balances};
 
 use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
-use rstd::vec::Vec;
 
 use super::stake::Stake;
 use super::sealed_vote::SealedVote;
