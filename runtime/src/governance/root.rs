@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-
+use rstd::prelude::*;
 use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
 use system::{self, ensure_signed};
 pub use super::{ GovernanceCurrency, BalanceOf };
@@ -57,7 +57,9 @@ impl<T: Trait> council::CouncilTermEnded for Module<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::governance::tests::*;
+    use crate::governance::mock::*;
+    use runtime_io::with_externalities;
+    use srml_support::*;
 
     #[test]
     fn election_is_triggerred_when_council_term_ends() {

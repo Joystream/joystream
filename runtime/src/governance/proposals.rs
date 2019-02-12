@@ -536,6 +536,7 @@ mod tests {
         testing::{Digest, DigestItem, Header, UintAuthorityId}
     };
     use system::{EventRecord, Phase};
+    use srml_support::*;
 
     impl_outer_origin! {
         pub enum Origin for Test {}
@@ -583,6 +584,10 @@ mod tests {
     impl council::Trait for Test {
         type Event = ();
         type CouncilTermEnded = ();
+    }
+
+    impl GovernanceCurrency for Test {
+        type Currency = balances::Module<Self>;
     }
 
     impl Trait for Test {
@@ -705,7 +710,7 @@ mod tests {
     }
 
     macro_rules! assert_runtime_code_empty {
-        () => { assert_eq!(get_runtime_code(), Some(vec![])) }
+        () => { assert_eq!(get_runtime_code(), None) }
     }
 
     macro_rules! assert_runtime_code {

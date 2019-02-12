@@ -761,8 +761,10 @@ decl_module! {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::governance::tests::*;
+    use crate::governance::mock::*;
     use parity_codec::Encode;
+    use runtime_io::with_externalities;
+    use srml_support::*;
 
     #[test]
     fn new_stake_reusing_transferable_works() {
