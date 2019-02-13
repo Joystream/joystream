@@ -7,7 +7,10 @@
     "lint": "eslint paths/**/*.js lib/**/*.js",
     "dev": "npm-run-all --parallel server",
     "build": "npm-run-all --parallel server",
-    "server": "nodemon --watch api-base.yml --watch server.js --watch paths/ --watch lib/ --verbose --exec node server.js --ext jsx,js"
+    "server": "nodemon --watch api-base.yml --watch bin/ --watch paths/ --watch lib/ --verbose --exec node bin/cli.js --ext jsx,js"
+  },
+  "bin": {
+    "js_storage": "bin/cli.js"
   },
   "keywords": [
     "joystream",
@@ -27,10 +30,12 @@
   },
   "dependencies": {
     "body-parser": "^1.18.3",
+    "configstore": "^4.0.0",
     "cors": "^2.8.5",
     "express-openapi": "^4.3.3",
     "hyperdrive": "^9.14.2",
     "js-yaml": "^3.12.1",
+    "meow": "^5.0.0",
     "multer": "^1.4.1"
   }
 }

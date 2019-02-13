@@ -10,6 +10,15 @@ This project uses **yarn** as Node package manager.
 $ yarn install
 ```
 
+To make the `js_storage` script available globally, run:
+
+```bash
+$ npm install -g
+```
+
+This might be best if used within e.g. an [nvm](https://github.com/creationix/nvm)
+environment.
+
 Development
 -----------
 
