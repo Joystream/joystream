@@ -17,7 +17,7 @@ require.main.paths.push(path.join(__dirname, 'lib'))
 // Project requires
 const validateResponses = require('middleware/validate_responses');
 const fileUploads = require('middleware/file_uploads');
-const pagination = require('middleware/pagination');
+const pagination = require('util/pagination');
 
 // Configure app
 const app = express();

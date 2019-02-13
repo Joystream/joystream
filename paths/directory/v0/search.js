@@ -1,6 +1,6 @@
 'use strict';
 
-const pagination = require.main.require('middleware/pagination');
+const pagination = require.main.require('util/pagination');
 
 module.exports = {
   get: function(req, res, next)
