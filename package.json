@@ -4,6 +4,7 @@
   "description": "Joystream Storage Node",
   "scripts": {
     "test": "mocha tests/**/*.js",
+    "lint": "eslint paths/**/*.js lib/**/*.js",
     "dev": "npm-run-all --parallel server",
     "build": "npm-run-all --parallel server",
     "server": "nodemon --watch api-base.yml --watch server.js --watch paths/ --watch lib/ --verbose --exec node server.js --ext jsx,js"
@@ -21,7 +22,8 @@
     "nodemon": "^1.18.10",
     "npm-run-all": "^4.1.5",
     "node-mocks-http": "^1.7.3",
-    "supertest": "^3.4.2"
+    "supertest": "^3.4.2",
+    "eslint": "^5.13.0"
   },
   "dependencies": {
     "body-parser": "^1.18.3",

@@ -24,6 +24,11 @@ Run tests:
 $ yarn run test
 ```
 
+Run linter:
+```bash
+$ yarn run lint
+```
+
 API Packages
 ------------
 
