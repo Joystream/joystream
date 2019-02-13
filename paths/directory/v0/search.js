@@ -3,7 +3,7 @@
 const pagination = require.main.require('util/pagination');
 
 module.exports = {
-  get: function(req, res, next)
+  get: function(req, res, _next)
   {
     // TODO implement
     res.status(200).send(
