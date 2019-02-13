@@ -7,6 +7,8 @@ const path = require('path');
 // npm requires
 const meow = require('meow');
 const configstore = require('configstore');
+const chalk = require('chalk');
+const figlet = require('figlet');
 const debug = require('debug')('joystream:cli');
 
 // Project root
@@ -52,6 +54,7 @@ const config = new configstore(pkg.name, filtered, { configPath: cli.flags.confi
 debug(config);
 
 // Start app
+console.log(chalk.blue(figlet.textSync('joystream', 'Speed')));
 const app = require(path.resolve(project_root, 'lib/app'));
 const port = cli.flags.port || config.get('port') || 3000;
 app.listen(port);

@@ -30,9 +30,11 @@
   },
   "dependencies": {
     "body-parser": "^1.18.3",
+    "chalk": "^2.4.2",
     "configstore": "^4.0.0",
     "cors": "^2.8.5",
     "express-openapi": "^4.3.3",
+    "figlet": "^1.2.1",
     "hyperdrive": "^9.14.2",
     "js-yaml": "^3.12.1",
     "meow": "^5.0.0",
