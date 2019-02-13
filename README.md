@@ -13,8 +13,15 @@ $ yarn install
 Development
 -----------
 
+Run a development server:
+
 ```bash
 $ yarn run dev
+```
+
+Run tests:
+```bash
+$ yarn run test
 ```
 
 API Packages
@@ -27,6 +34,9 @@ API package's path.
 
 For example, for a `foo` API in its version `v1`, its definitions should live
 in `./paths/foo/v1.js` and `./paths/foo/v1/*.js` respectively.
+
+*Note:* until a reasonably stable API is reached, this project uses a `v0`
+version prefix.
 
 Interface/implementation
 ------------------------
