@@ -61,3 +61,15 @@ configuration value of `express-openapi`.
 
 These implementations line to the `./lib` subfolder. Adjust `server.js` as
 needed to make them available to API packages.
+
+Streaming Notes
+---------------
+
+For streaming content, it is required that stream metadata is located at the
+start of the stream. Most software writes metadata at the end of the stream,
+because it is when the stream is committed to disk that the entirety of the
+metadata is known.
+
+To move metadata to the start of the stream, a CLI tool such as
+[qtfaststart](https://github.com/danielgtaylor/qtfaststart) for MP4 files might
+be used.
