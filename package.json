@@ -38,6 +38,9 @@
     "hyperdrive": "^9.14.2",
     "js-yaml": "^3.12.1",
     "meow": "^5.0.0",
-    "multer": "^1.4.1"
+    "mime": "^2.4.0",
+    "multer": "^1.4.1",
+    "stream-buffers": "^3.0.2",
+    "uuid": "^3.3.2"
   }
 }
