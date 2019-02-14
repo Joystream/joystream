@@ -315,5 +315,77 @@ describe('ranges', function()
       in_stream.put('Hello, world!');
       in_stream.stop();
     });
+
+    it('should deal with ranges without end', function(done)
+    {
+      var res = mock_http.createResponse({});
+      var in_stream = new stream_buffers.ReadableStreamBuffer({});
+
+      // End-of-stream callback
+      var opts = {
+        name: 'test.file',
+        type: 'application/test',
+        ranges: {
+          ranges: [[5, undefined]], // Skip the first part, but read until end
+        }
+      };
+      ranges.send(res, in_stream, opts, function(err) {
+        expect(err).to.not.exist;
+
+        // HTTP handling
+        expect(res.statusCode).to.equal(206);
+        expect(res.getHeader('content-type')).to.equal('application/test');
+        expect(res.getHeader('content-disposition')).to.equal('inline');
+        expect(res.getHeader('content-range')).to.equal('bytes 5-/*');
+
+        // Data/stream handling
+        expect(res._isEndCalled()).to.be.true;
+        expect(res._getBuffer().toString()).to.equal(', world!');
+
+        // Notify mocha that we're done.
+        done();
+      });
+
+      // Simulate file stream
+      in_stream.emit('open');
+      in_stream.put('Hello, world!');
+      in_stream.stop();
+    });
+
+    it('should ignore ranges without start', function(done)
+    {
+      var res = mock_http.createResponse({});
+      var in_stream = new stream_buffers.ReadableStreamBuffer({});
+
+      // End-of-stream callback
+      var opts = {
+        name: 'test.file',
+        type: 'application/test',
+        ranges: {
+          ranges: [[undefined, 5]], // Only last five
+        }
+      };
+      ranges.send(res, in_stream, opts, function(err) {
+        expect(err).to.not.exist;
+
+        // HTTP handling
+        expect(res.statusCode).to.equal(200);
+        expect(res.getHeader('content-type')).to.equal('application/test');
+        expect(res.getHeader('content-disposition')).to.equal('inline');
+
+        // Data/stream handling
+        expect(res._isEndCalled()).to.be.true;
+        expect(res._getBuffer().toString()).to.equal('Hello, world!');
+
+        // Notify mocha that we're done.
+        done();
+      });
+
+      // Simulate file stream
+      in_stream.emit('open');
+      in_stream.put('Hello, world!');
+      in_stream.stop();
+
+    });
   });
 });
