@@ -107,5 +107,17 @@ describe('ranges', function()
       expect(range.ranges[0][0]).to.equal(0);
       expect(range.ranges[0][1]).to.equal(20);
     });
+
+    it('should sort ranges', function()
+    {
+      var range = ranges.parse('10-30,0-5');
+      expect(range.unit).to.equal('bytes');
+      expect(range.range_str).to.equal('10-30,0-5');
+      expect(range.ranges).to.have.lengthOf(2);
+      expect(range.ranges[0][0]).to.equal(0);
+      expect(range.ranges[0][1]).to.equal(5);
+      expect(range.ranges[1][0]).to.equal(10);
+      expect(range.ranges[1][1]).to.equal(30);
+    });
   });
 });
