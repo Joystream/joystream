@@ -2,6 +2,8 @@
 
 const mocha = require('mocha');
 const expect = require('chai').expect;
+const mock_http = require('node-mocks-http');
+const stream_buffers = require('stream-buffers');
 
 const ranges = require.main.require('lib/util/ranges');
 
@@ -118,6 +120,200 @@ describe('ranges', function()
       expect(range.ranges[0][1]).to.equal(5);
       expect(range.ranges[1][0]).to.equal(10);
       expect(range.ranges[1][1]).to.equal(30);
+    });
+  });
+
+  describe('send()', function()
+  {
+    it('should send full files on request', function(done)
+    {
+      var res = mock_http.createResponse({});
+      var in_stream = new stream_buffers.ReadableStreamBuffer({});
+
+      // End-of-stream callback
+      var opts = {
+        name: 'test.file',
+        type: 'application/test',
+      };
+      ranges.send(res, in_stream, opts, function(err) {
+        expect(err).to.not.exist;
+
+        // HTTP handling
+        expect(res.statusCode).to.equal(200);
+        expect(res.getHeader('content-type')).to.equal('application/test');
+        expect(res.getHeader('content-disposition')).to.equal('inline');
+
+        // Data/stream handling
+        expect(res._isEndCalled()).to.be.true;
+        expect(res._getBuffer().toString()).to.equal('Hello, world!');
+
+        // Notify mocha that we're done.
+        done();
+      });
+
+      // Simulate file stream
+      in_stream.emit('open');
+      in_stream.put('Hello, world!');
+      in_stream.stop();
+    });
+
+    it('should send a range spanning the entire file on request', function(done)
+    {
+      var res = mock_http.createResponse({});
+      var in_stream = new stream_buffers.ReadableStreamBuffer({});
+
+      // End-of-stream callback
+      var opts = {
+        name: 'test.file',
+        type: 'application/test',
+        ranges: {
+          ranges: [[0, 12]],
+        }
+      };
+      ranges.send(res, in_stream, opts, function(err) {
+        expect(err).to.not.exist;
+
+        // HTTP handling
+        expect(res.statusCode).to.equal(206);
+        expect(res.getHeader('content-type')).to.equal('application/test');
+        expect(res.getHeader('content-disposition')).to.equal('inline');
+        expect(res.getHeader('content-range')).to.equal('bytes 0-12/*');
+        expect(res.getHeader('content-length')).to.equal('13');
+
+        // Data/stream handling
+        expect(res._isEndCalled()).to.be.true;
+        expect(res._getBuffer().toString()).to.equal('Hello, world!');
+
+        // Notify mocha that we're done.
+        done();
+      });
+
+      // Simulate file stream
+      in_stream.emit('open');
+      in_stream.put('Hello, world!');
+      in_stream.stop();
+
+    });
+
+    it('should send a small range on request', function(done)
+    {
+      var res = mock_http.createResponse({});
+      var in_stream = new stream_buffers.ReadableStreamBuffer({});
+
+      // End-of-stream callback
+      var opts = {
+        name: 'test.file',
+        type: 'application/test',
+        ranges: {
+          ranges: [[1, 11]], // Cut off first and last letter
+        }
+      };
+      ranges.send(res, in_stream, opts, function(err) {
+        expect(err).to.not.exist;
+
+        // HTTP handling
+        expect(res.statusCode).to.equal(206);
+        expect(res.getHeader('content-type')).to.equal('application/test');
+        expect(res.getHeader('content-disposition')).to.equal('inline');
+        expect(res.getHeader('content-range')).to.equal('bytes 1-11/*');
+        expect(res.getHeader('content-length')).to.equal('11');
+
+        // Data/stream handling
+        expect(res._isEndCalled()).to.be.true;
+        expect(res._getBuffer().toString()).to.equal('ello, world');
+
+        // Notify mocha that we're done.
+        done();
+      });
+
+      // Simulate file stream
+      in_stream.emit('open');
+      in_stream.put('Hello, world!');
+      in_stream.stop();
+    });
+
+    it('should send ranges crossing buffer boundaries', function(done)
+    {
+      var res = mock_http.createResponse({});
+      var in_stream = new stream_buffers.ReadableStreamBuffer({
+        chunkSize: 3, // Setting a chunk size smaller than the range should
+                      // not impact the test.
+      });
+
+      // End-of-stream callback
+      var opts = {
+        name: 'test.file',
+        type: 'application/test',
+        ranges: {
+          ranges: [[1, 11]], // Cut off first and last letter
+        }
+      };
+      ranges.send(res, in_stream, opts, function(err) {
+        expect(err).to.not.exist;
+
+        // HTTP handling
+        expect(res.statusCode).to.equal(206);
+        expect(res.getHeader('content-type')).to.equal('application/test');
+        expect(res.getHeader('content-disposition')).to.equal('inline');
+        expect(res.getHeader('content-range')).to.equal('bytes 1-11/*');
+        expect(res.getHeader('content-length')).to.equal('11');
+
+        // Data/stream handling
+        expect(res._isEndCalled()).to.be.true;
+        expect(res._getBuffer().toString()).to.equal('ello, world');
+
+        // Notify mocha that we're done.
+        done();
+      });
+
+      // Simulate file stream
+      in_stream.emit('open');
+      in_stream.put('Hello, world!');
+      in_stream.stop();
+    });
+
+    it('should send multiple ranges', function(done)
+    {
+      var res = mock_http.createResponse({});
+      var in_stream = new stream_buffers.ReadableStreamBuffer({});
+
+      // End-of-stream callback
+      var opts = {
+        name: 'test.file',
+        type: 'application/test',
+        ranges: {
+          ranges: [[1, 3], [5, 7]], // Slice two ranges out
+        }
+      };
+      ranges.send(res, in_stream, opts, function(err) {
+        expect(err).to.not.exist;
+
+        // HTTP handling
+        expect(res.statusCode).to.equal(206);
+        expect(res.getHeader('content-type')).to.satisfy((str) => str.startsWith('multipart/byteranges'));
+        expect(res.getHeader('content-disposition')).to.equal('inline');
+
+        // Data/stream handling
+        expect(res._isEndCalled()).to.be.true;
+
+        // The buffer should contain both ranges, but with all the That would be
+        // "ell" and ", w".
+        // It's pretty elaborate having to parse the entire multipart response
+        // body, so we'll restrict ourselves to finding lines within it.
+        var body = res._getBuffer().toString();
+        expect(body).to.contain('\r\nContent-Range: bytes 1-3/*\r\n');
+        expect(body).to.contain('\r\nell\r\n');
+        expect(body).to.contain('\r\nContent-Range: bytes 5-7/*\r\n');
+        expect(body).to.contain('\r\n, w');
+
+        // Notify mocha that we're done.
+        done();
+      });
+
+      // Simulate file stream
+      in_stream.emit('open');
+      in_stream.put('Hello, world!');
+      in_stream.stop();
     });
   });
 });
