@@ -119,7 +119,8 @@ module.exports.get.apiDoc =
   }
 };
 
-module.exports.head.apiDoc = 
+
+module.exports.head.apiDoc =
 {
   description: 'Asset download information.',
   operationId: 'assetInfo',
