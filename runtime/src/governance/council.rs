@@ -3,8 +3,9 @@
 use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
 use srml_support::traits::{Currency};
 use system::{self, ensure_signed};
-use runtime_primitives::traits::{As};
+use runtime_primitives::traits::{As, Zero};
 use {balances};
+use rstd::prelude::*;
 
 pub use super::election::{self, Seats, Seat, CouncilElected};
 pub use super::{ GovernanceCurrency, BalanceOf };
@@ -33,7 +34,7 @@ pub trait Trait: system::Trait + balances::Trait + GovernanceCurrency {
 decl_storage! {
     trait Store for Module<T: Trait> as Council {
         ActiveCouncil get(active_council) config(): Option<Seats<T::AccountId, BalanceOf<T>>> = None;
-        TermEndsAt get(term_ends_at) config(): T::BlockNumber = T::BlockNumber::sa(0);
+        TermEndsAt get(term_ends_at) : T::BlockNumber = T::BlockNumber::sa(0);
     }
 }
 
@@ -78,6 +79,45 @@ decl_module! {
             if Self::is_term_ended(now) {
                 T::CouncilTermEnded::council_term_ended();
             }
+        }
+
+        // Sudo methods...
+
+        /// Force set a zero staked council. Stakes in existing council will vanish into thin air!
+        fn set_council(accounts: Vec<T::AccountId>) {
+            let new_council: Seats<T::AccountId, BalanceOf<T>> = accounts.iter().map(|account| {
+                Seat {
+                    member: account.clone(),
+                    stake: BalanceOf::<T>::zero(),
+                    backers: vec![]
+                }
+            }).collect();
+            <ActiveCouncil<T>>::put(new_council);
+        }
+
+        /// Adds a zero staked council member
+        fn add_council_seat(account: T::AccountId) {
+            let seat = Seat {
+                member: account.clone(),
+                stake: BalanceOf::<T>::zero(),
+                backers: vec![]
+            };
+
+            // add seat to existing council
+            if let Some(mut active) = Self::active_council() {
+                active.push(seat);
+                <ActiveCouncil<T>>::put(active);
+            } else {
+                // add as first seat into a new council
+                <ActiveCouncil<T>>::put(vec![seat]);
+            }
+        }
+
+        /// Set blocknumber when council term will end
+        fn set_term_ends_at(ends_at: T::BlockNumber) -> Result {
+            ensure!(ends_at > <system::Module<T>>::block_number(), "must set future block number");
+            <TermEndsAt<T>>::put(ends_at);
+            Ok(())
         }
     }
 }
