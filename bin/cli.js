@@ -27,6 +27,8 @@ const cli = meow(`
     --config=PATH, -c PATH  Configuration file path. Defaults to
                             "${default_config.path}".
     --port=PORT, -p PORT    Port number to listen on, defaults to 3000.
+    --storage=PATH, -s PATH Storage path to use.
+    --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "fs".
   `, {
     flags: {
       port: {
@@ -37,6 +39,15 @@ const cli = meow(`
       config: {
         type: 'string',
         alias: 'c',
+        default: undefined,
+      },
+      storage: {
+        type: 'string',
+        alias: 's',
+        default: undefined,
+      },
+      'storage-type': {
+        type: 'string',
         default: undefined,
       },
     },
@@ -55,7 +66,7 @@ debug(config);
 
 // Start app
 console.log(chalk.blue(figlet.textSync('joystream', 'Speed')));
-const app = require(path.resolve(project_root, 'lib/app'));
+const app = require(path.resolve(project_root, 'lib/app'))(cli.flags, config);
 const port = cli.flags.port || config.get('port') || 3000;
 app.listen(port);
 console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
