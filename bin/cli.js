@@ -28,7 +28,7 @@ const cli = meow(`
                             "${default_config.path}".
     --port=PORT, -p PORT    Port number to listen on, defaults to 3000.
     --storage=PATH, -s PATH Storage path to use.
-    --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "fs".
+    --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "hyperdrive".
   `, {
     flags: {
       port: {
