@@ -222,20 +222,6 @@ impl<T: Trait> Module<T> {
 
     // PRIVATE MUTABLES
 
-    /// Sets the election parameters. Must be called before starting an election otherwise
-    /// last set values will be used.
-    fn set_election_parameters(params: ElectionParameters<T::BlockNumber, BalanceOf<T>>) {
-        // TODO: consider at what stage it is safe to allow these parameters to change.
-        <AnnouncingPeriod<T>>::put(params.announcing_period);
-        <VotingPeriod<T>>::put(params.voting_period);
-        <RevealingPeriod<T>>::put(params.revealing_period);
-        <MinCouncilStake<T>>::put(params.min_council_stake);
-        <NewTermDuration<T>>::put(params.new_term_duration);
-        <CouncilSize<T>>::put(params.council_size);
-        <CandidacyLimitMultiple<T>>::put(params.candidacy_limit_multiple);
-        <MinVotingStake<T>>::put(params.min_voting_stake);
-    }
-
     /// Starts an election. Will fail if an election is already running
     /// Initializes transferable stakes. Assumes election parameters have already been set.
     fn start_election(current_council: Option<Seats<T::AccountId, BalanceOf<T>>>) -> Result {
@@ -753,6 +739,22 @@ decl_module! {
             } else {
                 Err("election not running")
             }
+        }
+
+        /// Change elections parameters inflight
+        fn set_election_parameters(params: ElectionParameters<T::BlockNumber, BalanceOf<T>>) -> Result {
+            // No point changing parameters if no election is running. Change the NextElectionParameters in root
+            // instead.
+            ensure!(Self::is_election_running(), "ineffective to change params if no election is running");
+            <AnnouncingPeriod<T>>::put(params.announcing_period);
+            <VotingPeriod<T>>::put(params.voting_period);
+            <RevealingPeriod<T>>::put(params.revealing_period);
+            <MinCouncilStake<T>>::put(params.min_council_stake);
+            <NewTermDuration<T>>::put(params.new_term_duration);
+            <CouncilSize<T>>::put(params.council_size);
+            <CandidacyLimitMultiple<T>>::put(params.candidacy_limit_multiple);
+            <MinVotingStake<T>>::put(params.min_voting_stake);
+            Ok(())
         }
 
     }
