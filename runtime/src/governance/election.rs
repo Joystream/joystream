@@ -757,6 +757,10 @@ decl_module! {
             Ok(())
         }
 
+        fn force_stop_election() {
+
+        }
+
     }
 }
 

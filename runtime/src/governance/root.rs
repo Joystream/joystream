@@ -47,6 +47,16 @@ decl_module! {
         fn set_auto_start_elections (flag: bool) {
             <AutoStartElections<T>>::put(flag);
         }
+
+        fn start_election() {
+            let current_council = <council::Module<T>>::active_council();
+
+            let params = Self::next_election_parameters();
+
+            if T::TriggerElection::trigger_election(current_council, params).is_ok() {
+                Self::deposit_event(RawEvent::ElectionStarted());
+            }
+        }
     }
 }
 
@@ -55,13 +65,7 @@ impl<T: Trait> council::CouncilTermEnded for Module<T> {
         Self::deposit_event(RawEvent::CouncilTermEnded());
 
         if Self::auto_start_elections() && !<election::Module<T>>::is_election_running() {
-            let current_council = <council::Module<T>>::active_council();
-
-            let params = Self::next_election_parameters();
-
-            if T::TriggerElection::trigger_election(current_council, params).is_ok() {
-                Self::deposit_event(RawEvent::ElectionStarted());
-            }
+            Self::start_election();
         }
     }
 }
