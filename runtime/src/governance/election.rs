@@ -354,21 +354,36 @@ impl<T: Trait> Module<T> {
         // unless we want to add more filtering criteria to what is considered a successful election
         // other than just the minimum stake for candidacy, we have a new council!
 
+        Self::teardown_election (
+            &votes,
+            &new_council,
+            true /* unlock transferable stakes */
+        );
+
+        let new_council = new_council.into_iter().map(|(_, seat)| seat.clone()).collect();
+        T::CouncilElected::council_elected(new_council, Self::new_term_duration());
+
+        Self::deposit_event(RawEvent::CouncilElected());
+    }
+
+    fn teardown_election (
+        votes: &Vec<SealedVote<T::AccountId, Stake<BalanceOf<T>>,
+        T::Hash, T::AccountId>>, new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>>,
+        unlock_ts: bool)
+    {
         Self::refund_voting_stakes(&votes, &new_council);
         Self::clear_votes();
 
         Self::drop_unelected_applicants(&new_council);
         Self::clear_applicants();
 
-        Self::unlock_transferable_stakes();
+        if unlock_ts {
+            Self::unlock_transferable_stakes();
+        }
+
         Self::clear_transferable_stakes();
 
         <Stage<T>>::kill();
-
-        let new_council = new_council.into_iter().map(|(_, seat)| seat.clone()).collect();
-        T::CouncilElected::council_elected(new_council, Self::new_term_duration());
-
-        Self::deposit_event(RawEvent::CouncilElected());
     }
 
     fn unlock_transferable_stakes() {
@@ -757,8 +772,24 @@ decl_module! {
             Ok(())
         }
 
-        fn force_stop_election() {
+        fn abort_election() -> Result {
+            ensure!(Self::is_election_running(), "only running election can be stopped");
 
+            let mut votes = Vec::new();
+            for commitment in Self::commitments() {
+                votes.push(Self::votes(commitment));
+            }
+
+            // no council gets elected
+            let empty_council = BTreeMap::new();
+
+            Self::teardown_election (
+                &votes,
+                &empty_council,
+                false /* do not unlock transferable stakes */
+            );
+
+            Ok(())
         }
 
     }
