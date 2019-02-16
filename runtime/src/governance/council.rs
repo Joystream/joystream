@@ -34,7 +34,7 @@ pub trait Trait: system::Trait + balances::Trait + GovernanceCurrency {
 decl_storage! {
     trait Store for Module<T: Trait> as Council {
         ActiveCouncil get(active_council) config(): Option<Seats<T::AccountId, BalanceOf<T>>> = None;
-        TermEndsAt get(term_ends_at) : T::BlockNumber = T::BlockNumber::sa(0);
+        TermEndsAt get(term_ends_at) config() : T::BlockNumber = T::BlockNumber::sa(0);
     }
 }
 

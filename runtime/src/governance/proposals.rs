@@ -643,6 +643,7 @@ mod tests {
 
         t.extend(council::GenesisConfig::<Test>{
             active_council: council_mock,
+            term_ends_at: 0,
         }.build_storage().unwrap().0);
 
         // t.extend(GenesisConfig::<Test>{
