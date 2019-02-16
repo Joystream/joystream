@@ -62,9 +62,9 @@ impl<T: Trait> Module<T> {
         block >= Self::term_ends_at()
     }
 
-    pub fn is_councilor(sender: T::AccountId) -> bool {
+    pub fn is_councilor(sender: &T::AccountId) -> bool {
         if let Some(council) = Self::active_council() {
-            council.iter().any(|c| c.member == sender)
+            council.iter().any(|c| c.member == *sender)
         } else {
             false
         }
@@ -85,9 +85,9 @@ decl_module! {
 
         /// Force set a zero staked council. Stakes in existing council will vanish into thin air!
         fn set_council(accounts: Vec<T::AccountId>) {
-            let new_council: Seats<T::AccountId, BalanceOf<T>> = accounts.iter().map(|account| {
+            let new_council: Seats<T::AccountId, BalanceOf<T>> = accounts.into_iter().map(|account| {
                 Seat {
-                    member: account.clone(),
+                    member: account,
                     stake: BalanceOf::<T>::zero(),
                     backers: vec![]
                 }
@@ -96,14 +96,15 @@ decl_module! {
         }
 
         /// Adds a zero staked council member
-        fn add_council_seat(account: T::AccountId) {
+        fn add_council_member(account: T::AccountId) -> Result {
+            ensure!(!Self::is_councilor(&account), "cannot add same account multiple times");
             let seat = Seat {
-                member: account.clone(),
+                member: account,
                 stake: BalanceOf::<T>::zero(),
                 backers: vec![]
             };
 
-            // add seat to existing council
+            // add member to existing council
             if let Some(mut active) = Self::active_council() {
                 active.push(seat);
                 <ActiveCouncil<T>>::put(active);
@@ -111,6 +112,7 @@ decl_module! {
                 // add as first seat into a new council
                 <ActiveCouncil<T>>::put(vec![seat]);
             }
+            Ok(())
         }
 
         /// Set blocknumber when council term will end
