@@ -140,7 +140,7 @@ decl_storage! {
         // TODO value type of this map looks scary, is there any way to simplify the notation?
         Votes get(votes): map T::Hash => SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>;
 
-        // Election Parameters - default "zero" values are not meaningful. Running an election without
+        // Current Election Parameters - default "zero" values are not meaningful. Running an election without
         // settings reasonable values is a bad idea. Parameters can be set in the TriggerElection hook.
         AnnouncingPeriod get(announcing_period): T::BlockNumber;
         VotingPeriod get(voting_period): T::BlockNumber;

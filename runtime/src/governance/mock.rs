@@ -92,7 +92,7 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
     let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
 
     t.extend(root::GenesisConfig::<Test> {
-        election_parameters: Default::default(),
+        next_election_parameters: Default::default(),
     }.build_storage().unwrap().0);
 
     runtime_io::TestExternalities::new(t)

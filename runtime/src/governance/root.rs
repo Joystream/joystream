@@ -14,7 +14,8 @@ pub trait Trait: system::Trait + council::Trait + election::Trait + GovernanceCu
 
 decl_storage! {
     trait Store for Module<T: Trait> as Root {
-        ElectionParameters get(election_parameters) config(): election::ElectionParameters<T::BlockNumber, BalanceOf<T>>;
+        // Electin Parameters to be used on the next election
+        NextElectionParameters get(next_election_parameters) config(): election::ElectionParameters<T::BlockNumber, BalanceOf<T>>;
     }
 }
 
@@ -35,6 +36,10 @@ impl<T: Trait> Module<T> {
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
+
+        fn set_next_election_parameters (params: election::ElectionParameters<T::BlockNumber, BalanceOf<T>>) {
+            <NextElectionParameters<T>>::put(params);
+        }
     }
 }
 
@@ -45,7 +50,7 @@ impl<T: Trait> council::CouncilTermEnded for Module<T> {
         if !<election::Module<T>>::is_election_running() {
             let current_council = <council::Module<T>>::active_council();
 
-            let params = Self::election_parameters();
+            let params = Self::next_election_parameters();
 
             if T::TriggerElection::trigger_election(current_council, params).is_ok() {
                 Self::deposit_event(RawEvent::ElectionStarted());
