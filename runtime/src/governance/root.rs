@@ -16,6 +16,9 @@ decl_storage! {
     trait Store for Module<T: Trait> as Root {
         // Electin Parameters to be used on the next election
         NextElectionParameters get(next_election_parameters) config(): election::ElectionParameters<T::BlockNumber, BalanceOf<T>>;
+
+        // Flag for wether to automatically start an election after a council term ends
+        AutoStartElections get(auto_start_elections) : bool = true;
     }
 }
 
@@ -40,6 +43,10 @@ decl_module! {
         fn set_next_election_parameters (params: election::ElectionParameters<T::BlockNumber, BalanceOf<T>>) {
             <NextElectionParameters<T>>::put(params);
         }
+
+        fn set_auto_start_elections (flag: bool) {
+            <AutoStartElections<T>>::put(flag);
+        }
     }
 }
 
@@ -47,7 +54,7 @@ impl<T: Trait> council::CouncilTermEnded for Module<T> {
     fn council_term_ended() {
         Self::deposit_event(RawEvent::CouncilTermEnded());
 
-        if !<election::Module<T>>::is_election_running() {
+        if Self::auto_start_elections() && !<election::Module<T>>::is_election_running() {
             let current_council = <council::Module<T>>::active_council();
 
             let params = Self::next_election_parameters();

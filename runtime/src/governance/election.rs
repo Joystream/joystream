@@ -85,7 +85,7 @@ impl<CurrentCouncil, Params, X: TriggerElection<CurrentCouncil, Params>> Trigger
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Clone, Copy, Encode, Decode)]
+#[derive(Clone, Copy, Encode, Decode, PartialEq)]
 pub struct ElectionParameters<BlockNumber, Balance> {
     pub announcing_period: BlockNumber,
     pub voting_period: BlockNumber,
