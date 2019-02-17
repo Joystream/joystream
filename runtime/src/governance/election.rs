@@ -112,14 +112,14 @@ decl_storage! {
 
         // Current Election Parameters - default "zero" values are not meaningful. Running an election without
         // settings reasonable values is a bad idea. Parameters can be set in the TriggerElection hook.
-        AnnouncingPeriod get(announcing_period): T::BlockNumber = T::BlockNumber::sa(100);
-        VotingPeriod get(voting_period): T::BlockNumber = T::BlockNumber::sa(100);
-        RevealingPeriod get(revealing_period): T::BlockNumber = T::BlockNumber::sa(100);
-        CouncilSize get(council_size): u32 = 10;
-        CandidacyLimitMultiple get (candidacy_limit_multiple): u32 = 2;
-        MinCouncilStake get(min_council_stake): BalanceOf<T> = BalanceOf::<T>::sa(100);
-        NewTermDuration get(new_term_duration): T::BlockNumber = T::BlockNumber::sa(1000);
-        MinVotingStake get(min_voting_stake): BalanceOf<T> = BalanceOf::<T>::sa(10);
+        AnnouncingPeriod get(announcing_period) config(): T::BlockNumber = T::BlockNumber::sa(100);
+        VotingPeriod get(voting_period) config(): T::BlockNumber = T::BlockNumber::sa(100);
+        RevealingPeriod get(revealing_period) config(): T::BlockNumber = T::BlockNumber::sa(100);
+        CouncilSize get(council_size) config(): u32 = 10;
+        CandidacyLimitMultiple get (candidacy_limit_multiple) config(): u32 = 2;
+        MinCouncilStake get(min_council_stake) config(): BalanceOf<T> = BalanceOf::<T>::sa(100);
+        NewTermDuration get(new_term_duration) config(): T::BlockNumber = T::BlockNumber::sa(1000);
+        MinVotingStake get(min_voting_stake) config(): BalanceOf<T> = BalanceOf::<T>::sa(10);
     }
 }
 
