@@ -70,47 +70,17 @@ impl<Elected, Term, X: CouncilElected<Elected, Term>> CouncilElected<Elected, Te
 }
 
 // Hook For starting election
-pub trait TriggerElection<CurrentCouncil, Params> {
-    fn trigger_election(current: Option<CurrentCouncil>, params: Params) -> Result;
+pub trait TriggerElection<CurrentCouncil> {
+    fn trigger_election(current: Option<CurrentCouncil>) -> Result;
 }
 
-impl<CurrentCouncil, Params> TriggerElection<CurrentCouncil, Params> for () {
-    fn trigger_election(_: Option<CurrentCouncil>, _: Params) -> Result { Ok(())}
+impl<CurrentCouncil> TriggerElection<CurrentCouncil> for () {
+    fn trigger_election(_: Option<CurrentCouncil>) -> Result { Ok(())}
 }
 
-impl<CurrentCouncil, Params, X: TriggerElection<CurrentCouncil, Params>> TriggerElection<CurrentCouncil, Params> for (X,) {
-    fn trigger_election(current: Option<CurrentCouncil>, params: Params) -> Result{
-        X::trigger_election(current, params)
-    }
-}
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Clone, Copy, Encode, Decode, PartialEq)]
-pub struct ElectionParameters<BlockNumber, Balance> {
-    pub announcing_period: BlockNumber,
-    pub voting_period: BlockNumber,
-    pub revealing_period: BlockNumber,
-    pub council_size: u32,
-    pub candidacy_limit_multiple: u32,
-    pub min_council_stake: Balance,
-    pub new_term_duration: BlockNumber,
-    pub min_voting_stake: Balance
-}
-
-impl<BlockNumber, Balance> Default for ElectionParameters<BlockNumber, Balance>
-    where BlockNumber: SimpleArithmetic, Balance: SimpleArithmetic
-{
-    fn default() -> Self {
-        Self {
-            announcing_period: BlockNumber::sa(100),
-            voting_period: BlockNumber::sa(100),
-            revealing_period: BlockNumber::sa(100),
-            council_size: 10,
-            candidacy_limit_multiple: 2,
-            min_council_stake: Balance::sa(100),
-            new_term_duration: BlockNumber::sa(1000),
-            min_voting_stake: Balance::sa(10),
-        }
+impl<CurrentCouncil, X: TriggerElection<CurrentCouncil>> TriggerElection<CurrentCouncil> for (X,) {
+    fn trigger_election(current: Option<CurrentCouncil>) -> Result{
+        X::trigger_election(current)
     }
 }
 
@@ -142,14 +112,14 @@ decl_storage! {
 
         // Current Election Parameters - default "zero" values are not meaningful. Running an election without
         // settings reasonable values is a bad idea. Parameters can be set in the TriggerElection hook.
-        AnnouncingPeriod get(announcing_period): T::BlockNumber;
-        VotingPeriod get(voting_period): T::BlockNumber;
-        RevealingPeriod get(revealing_period): T::BlockNumber;
-        CouncilSize get(council_size): u32;
-        CandidacyLimitMultiple get (candidacy_limit_multiple): u32;
-        MinCouncilStake get(min_council_stake): BalanceOf<T>;
-        NewTermDuration get(new_term_duration): T::BlockNumber;
-        MinVotingStake get(min_voting_stake): BalanceOf<T>;
+        AnnouncingPeriod get(announcing_period): T::BlockNumber = T::BlockNumber::sa(100);
+        VotingPeriod get(voting_period): T::BlockNumber = T::BlockNumber::sa(100);
+        RevealingPeriod get(revealing_period): T::BlockNumber = T::BlockNumber::sa(100);
+        CouncilSize get(council_size): u32 = 10;
+        CandidacyLimitMultiple get (candidacy_limit_multiple): u32 = 2;
+        MinCouncilStake get(min_council_stake): BalanceOf<T> = BalanceOf::<T>::sa(100);
+        NewTermDuration get(new_term_duration): T::BlockNumber = T::BlockNumber::sa(1000);
+        MinVotingStake get(min_voting_stake): BalanceOf<T> = BalanceOf::<T>::sa(10);
     }
 }
 
@@ -168,14 +138,12 @@ decl_event!(
     }
 );
 
-impl<T: Trait> TriggerElection<Seats<T::AccountId, BalanceOf<T>>, ElectionParameters<T::BlockNumber, BalanceOf<T>>> for Module<T> {
+impl<T: Trait> TriggerElection<Seats<T::AccountId, BalanceOf<T>>> for Module<T> {
     fn trigger_election(
-        current_council: Option<Seats<T::AccountId, BalanceOf<T>>>,
-        params: ElectionParameters<T::BlockNumber, BalanceOf<T>>) -> Result
+        current_council: Option<Seats<T::AccountId, BalanceOf<T>>>) -> Result
     {
         ensure!(!Self::is_election_running(), "Election already running");
 
-        Self::set_election_parameters(params);
         Self::start_election(current_council)
     }
 }
@@ -757,19 +725,29 @@ decl_module! {
         }
 
         /// Change elections parameters inflight
-        fn set_election_parameters(params: ElectionParameters<T::BlockNumber, BalanceOf<T>>) -> Result {
-            // No point changing parameters if no election is running. Change the NextElectionParameters in root
-            // instead.
-            ensure!(Self::is_election_running(), "ineffective to change params if no election is running");
-            <AnnouncingPeriod<T>>::put(params.announcing_period);
-            <VotingPeriod<T>>::put(params.voting_period);
-            <RevealingPeriod<T>>::put(params.revealing_period);
-            <MinCouncilStake<T>>::put(params.min_council_stake);
-            <NewTermDuration<T>>::put(params.new_term_duration);
-            <CouncilSize<T>>::put(params.council_size);
-            <CandidacyLimitMultiple<T>>::put(params.candidacy_limit_multiple);
-            <MinVotingStake<T>>::put(params.min_voting_stake);
-            Ok(())
+        fn set_param_announcing_period(period: T::BlockNumber) {
+            <AnnouncingPeriod<T>>::put(period)
+        }
+        fn set_param_voting_period(period: T::BlockNumber) {
+            <VotingPeriod<T>>::put(period);
+        }
+        fn set_param_revealing_period(period: T::BlockNumber) {
+            <RevealingPeriod<T>>::put(period);
+        }
+        fn set_param_min_council_stake(amount: BalanceOf<T>) {
+            <MinCouncilStake<T>>::put(amount);
+        }
+        fn set_param_new_term_duration(duration: T::BlockNumber) {
+            <NewTermDuration<T>>::put(duration);
+        }
+        fn set_param_council_size(council_size: u32) {
+            <CouncilSize<T>>::put(council_size);
+        }
+        fn set_param_candidacy_limit(multiple: u32) {
+            <CandidacyLimitMultiple<T>>::put(multiple);
+        }
+        fn set_param_min_voting_stake(amount: BalanceOf<T>) {
+            <MinVotingStake<T>>::put(amount);
         }
 
         fn abort_election() -> Result {

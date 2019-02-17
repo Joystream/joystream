@@ -9,14 +9,11 @@ use super::{council, election::{self, TriggerElection}};
 pub trait Trait: system::Trait + council::Trait + election::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type TriggerElection: election::TriggerElection<election::Seats<Self::AccountId, BalanceOf<Self>>, election::ElectionParameters<Self::BlockNumber, BalanceOf<Self>>>;
+    type TriggerElection: election::TriggerElection<election::Seats<Self::AccountId, BalanceOf<Self>>>;
 }
 
 decl_storage! {
     trait Store for Module<T: Trait> as Root {
-        // Electin Parameters to be used on the next election
-        NextElectionParameters get(next_election_parameters) config(): election::ElectionParameters<T::BlockNumber, BalanceOf<T>>;
-
         // Flag for wether to automatically start an election after a council term ends
         AutoStartElections get(auto_start_elections) : bool = true;
     }
@@ -40,30 +37,18 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        fn set_next_election_parameters (params: election::ElectionParameters<T::BlockNumber, BalanceOf<T>>) {
-            <NextElectionParameters<T>>::put(params);
-        }
-
         fn set_auto_start_elections (flag: bool) {
             <AutoStartElections<T>>::put(flag);
         }
 
-        fn start_election() {
-            let current_council = <council::Module<T>>::active_council();
-
-            let params = Self::next_election_parameters();
-
-            if T::TriggerElection::trigger_election(current_council, params).is_ok() {
-                Self::deposit_event(RawEvent::ElectionStarted());
-            }
+        fn start_election() -> Result {
+            T::TriggerElection::trigger_election(<council::Module<T>>::active_council())
         }
     }
 }
 
 impl<T: Trait> council::CouncilTermEnded for Module<T> {
     fn council_term_ended() {
-        Self::deposit_event(RawEvent::CouncilTermEnded());
-
         if Self::auto_start_elections() && !<election::Module<T>>::is_election_running() {
             Self::start_election();
         }
