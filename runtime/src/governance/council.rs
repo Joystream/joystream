@@ -41,7 +41,7 @@ decl_storage! {
 /// Event for this module.
 decl_event!(
     pub enum Event<T> where <T as system::Trait>::BlockNumber {
-        NewCouncilInSession(),
+        CouncilTermEnded(),
         Dummy(BlockNumber),
     }
 );
@@ -52,7 +52,6 @@ impl<T: Trait> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber>
 
         let next_term_ends_at = <system::Module<T>>::block_number() + term;
         <TermEndsAt<T>>::put(next_term_ends_at);
-        Self::deposit_event(RawEvent::NewCouncilInSession());
     }
 }
 
@@ -77,6 +76,7 @@ decl_module! {
 
         fn on_finalise(now: T::BlockNumber) {
             if Self::is_term_ended(now) {
+                Self::deposit_event(RawEvent::CouncilTermEnded());
                 T::CouncilTermEnded::council_term_ended();
             }
         }

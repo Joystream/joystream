@@ -127,6 +127,7 @@ decl_storage! {
 decl_event!(
     pub enum Event<T> where <T as system::Trait>::BlockNumber {
         /// A new election started
+        ElectionStarted(),
         AnnouncingStarted(u32),
         AnnouncingEnded(),
         VotingStarted(),
@@ -202,6 +203,8 @@ impl<T: Trait> Module<T> {
         // Its important to note that the election system takes ownership of these stakes, and is responsible
         // to return any unused stake to original owners and the end of the election.
         current_council.map(|c| Self::initialize_transferable_stakes(c));
+
+        Self::deposit_event(RawEvent::ElectionStarted());
 
         Self::move_to_announcing_stage();
         Ok(())

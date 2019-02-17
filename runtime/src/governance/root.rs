@@ -24,7 +24,6 @@ decl_event!(
     pub enum Event<T> where <T as system::Trait>::BlockNumber {
         // TODO add more useful info to events?
         ElectionStarted(),
-        CouncilTermEnded(),
         Dummy(BlockNumber),
     }
 );
