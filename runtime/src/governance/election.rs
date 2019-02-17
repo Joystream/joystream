@@ -116,7 +116,7 @@ decl_storage! {
         VotingPeriod get(voting_period) config(): T::BlockNumber = T::BlockNumber::sa(100);
         RevealingPeriod get(revealing_period) config(): T::BlockNumber = T::BlockNumber::sa(100);
         CouncilSize get(council_size) config(): u32 = 10;
-        CandidacyLimitMultiple get (candidacy_limit_multiple) config(): u32 = 2;
+        CandidacyLimit get (candidacy_limit) config(): u32 = 20;
         MinCouncilStake get(min_council_stake) config(): BalanceOf<T> = BalanceOf::<T>::sa(100);
         NewTermDuration get(new_term_duration) config(): T::BlockNumber = T::BlockNumber::sa(1000);
         MinVotingStake get(min_voting_stake) config(): BalanceOf<T> = BalanceOf::<T>::sa(10);
@@ -156,8 +156,8 @@ impl<T: Trait> Module<T> {
         Self::council_size() as usize
     }
 
-    fn candidacy_limit_multiple_usize() -> usize {
-        Self::candidacy_limit_multiple() as usize
+    fn candidacy_limit_usize() -> usize {
+        Self::candidacy_limit() as usize
     }
 
     fn current_block_number_plus(length: T::BlockNumber) -> T::BlockNumber {
@@ -265,9 +265,8 @@ impl<T: Trait> Module<T> {
             Self::move_to_announcing_stage();
         } else {
             // upper limit on applicants that will move to voting stage
-            let multiple = rstd::cmp::max(1, Self::candidacy_limit_multiple_usize());
-            let candidacy_limit = Self::council_size_usize() * multiple;
-            let applicants_to_drop = Self::find_least_staked_applicants(&mut applicants, candidacy_limit);
+            let limit = rstd::cmp::max(Self::council_size_usize(), Self::candidacy_limit_usize());
+            let applicants_to_drop = Self::find_least_staked_applicants(&mut applicants, limit);
 
             Self::drop_applicants(applicants_to_drop);
 
@@ -314,12 +313,7 @@ impl<T: Trait> Module<T> {
             // Not enough applicants with votes to form a council.
             // This may happen if we didn't add applicants with zero votes to the tally,
             // or in future if we allow applicants to withdraw candidacy during voting or revealing stages.
-            // Solution 1. Restart election.
-            // Solution 2. Add to the tally applicants with zero votes.
-            //      selection criteria:
-            //          -> priority by largest stake?
-            //          -> priority given to applicants who announced first?
-            //          -> deterministic random selection?
+            // or council size was increased during voting, revealing stages.
         }
 
         // unless we want to add more filtering criteria to what is considered a successful election
@@ -727,30 +721,52 @@ decl_module! {
             }
         }
 
-        /// Change elections parameters inflight
-        fn set_param_announcing_period(period: T::BlockNumber) {
-            <AnnouncingPeriod<T>>::put(period)
+        fn set_param_announcing_period(period: T::BlockNumber) -> Result {
+            ensure!(!Self::is_election_running(), "cannot change params during election");
+            ensure!(!period.is_zero(), "period cannot be zero");
+            <AnnouncingPeriod<T>>::put(period);
+            Ok(())
         }
-        fn set_param_voting_period(period: T::BlockNumber) {
+        fn set_param_voting_period(period: T::BlockNumber) -> Result {
+            ensure!(!Self::is_election_running(), "cannot change params during election");
+            ensure!(!period.is_zero(), "period cannot be zero");
             <VotingPeriod<T>>::put(period);
+            Ok(())
         }
-        fn set_param_revealing_period(period: T::BlockNumber) {
+        fn set_param_revealing_period(period: T::BlockNumber) -> Result {
+            ensure!(!Self::is_election_running(), "cannot change params during election");
+            ensure!(!period.is_zero(), "period cannot be zero");
             <RevealingPeriod<T>>::put(period);
+            Ok(())
         }
-        fn set_param_min_council_stake(amount: BalanceOf<T>) {
+        fn set_param_min_council_stake(amount: BalanceOf<T>) -> Result {
+            ensure!(!Self::is_election_running(), "cannot change params during election");
             <MinCouncilStake<T>>::put(amount);
+            Ok(())
         }
-        fn set_param_new_term_duration(duration: T::BlockNumber) {
+        fn set_param_new_term_duration(duration: T::BlockNumber) -> Result {
+            ensure!(!Self::is_election_running(), "cannot change params during election");
+            ensure!(!duration.is_zero(), "new term duration cannot be zero");
             <NewTermDuration<T>>::put(duration);
+            Ok(())
         }
-        fn set_param_council_size(council_size: u32) {
+        fn set_param_council_size(council_size: u32) -> Result {
+            ensure!(!Self::is_election_running(), "cannot change params during election");
+            ensure!(council_size > 0, "council size cannot be zero");
+            ensure!(council_size <= Self::candidacy_limit(), "council size cannot greater than candidacy limit");
             <CouncilSize<T>>::put(council_size);
+            Ok(())
         }
-        fn set_param_candidacy_limit(multiple: u32) {
-            <CandidacyLimitMultiple<T>>::put(multiple);
+        fn set_param_candidacy_limit(limit: u32) -> Result {
+            ensure!(!Self::is_election_running(), "cannot change params during election");
+            ensure!(limit >= Self::council_size(), "candidacy limit cannot be less than council size");
+            <CandidacyLimit<T>>::put(limit);
+            Ok(())
         }
-        fn set_param_min_voting_stake(amount: BalanceOf<T>) {
+        fn set_param_min_voting_stake(amount: BalanceOf<T>) -> Result {
+            ensure!(!Self::is_election_running(), "cannot change params during election");
             <MinVotingStake<T>>::put(amount);
+            Ok(())
         }
 
         fn abort_election() -> Result {
@@ -1564,7 +1580,7 @@ mod tests {
             <AnnouncingPeriod<Test>>::put(10);
             <VotingPeriod<Test>>::put(10);
             <RevealingPeriod<Test>>::put(10);
-            <CandidacyLimitMultiple<Test>>::put(2);
+            <CandidacyLimit<Test>>::put(20);
             <NewTermDuration<Test>>::put(100);
             <MinVotingStake<Test>>::put(10);
 
