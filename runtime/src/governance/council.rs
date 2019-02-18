@@ -115,6 +115,18 @@ decl_module! {
             Ok(())
         }
 
+        fn remove_council_member(account_to_remove: T::AccountId) -> Result {
+            if let Some(council) = Self::active_council() {
+                ensure!(Self::is_councilor(&account_to_remove), "account is not a councilor");
+                let filtered_council: Seats<T::AccountId, BalanceOf<T>> = council
+                    .into_iter()
+                    .filter(|c| c.member != account_to_remove)
+                    .collect();
+                <ActiveCouncil<T>>::put(filtered_council);
+            }
+            Ok(())
+        }
+
         /// Set blocknumber when council term will end
         fn set_term_ends_at(ends_at: T::BlockNumber) -> Result {
             ensure!(ends_at > <system::Module<T>>::block_number(), "must set future block number");
