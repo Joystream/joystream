@@ -91,7 +91,7 @@ use self::VoteKind::*;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 /// Proposal for node runtime update.
-pub struct Proposal<AccountId, Balance, BlockNumber> {
+pub struct RuntimeUpgradeProposal<AccountId, Balance, BlockNumber> {
     id: ProposalId,
     proposer: AccountId,
     stake: Balance,
@@ -185,7 +185,7 @@ decl_storage! {
         ProposalCount get(proposal_count): ProposalId;
 
         // TODO rename 'proposal' -> 'proposals'
-        Proposals get(proposal): map ProposalId => Proposal<T::AccountId, BalanceOf<T>, T::BlockNumber>;
+        Proposals get(proposal): map ProposalId => RuntimeUpgradeProposal<T::AccountId, BalanceOf<T>, T::BlockNumber>;
 
         // TODO rename to `ActiveProposalIds`
         PendingProposalIds get(pending_proposal_ids): Vec<ProposalId> = vec![];
@@ -237,7 +237,7 @@ decl_module! {
             let proposal_id = Self::proposal_count() + 1;
             <ProposalCount<T>>::put(proposal_id);
 
-            let new_proposal = Proposal {
+            let new_proposal = RuntimeUpgradeProposal {
                 id: proposal_id,
                 proposer: proposer.clone(),
                 stake,
@@ -742,7 +742,7 @@ mod tests {
             assert_eq!(Proposals::pending_proposal_ids().len(), 1);
             assert_eq!(Proposals::pending_proposal_ids()[0], 1);
 
-            let expected_proposal = Proposal {
+            let expected_proposal = RuntimeUpgradeProposal {
                 id: 1,
                 proposer: PROPOSER1,
                 stake: minimum_stake(),
