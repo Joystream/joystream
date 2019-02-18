@@ -115,7 +115,7 @@ pub struct TallyResult<BlockNumber> {
     finalized_at: BlockNumber,
 }
 
-pub trait Trait: balances::Trait + timestamp::Trait + council::Trait + GovernanceCurrency {
+pub trait Trait: timestamp::Trait + council::Trait + GovernanceCurrency {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }

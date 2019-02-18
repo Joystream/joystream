@@ -16,7 +16,7 @@ use super::sealed_vote::SealedVote;
 
 pub use super::{ GovernanceCurrency, BalanceOf };
 
-pub trait Trait: system::Trait + balances::Trait + GovernanceCurrency {
+pub trait Trait: system::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type CouncilElected: CouncilElected<Seats<Self::AccountId, BalanceOf<Self>>, Self::BlockNumber>;

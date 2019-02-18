@@ -25,7 +25,7 @@ impl<X: CouncilTermEnded> CouncilTermEnded for (X,) {
     }
 }
 
-pub trait Trait: system::Trait + balances::Trait + GovernanceCurrency {
+pub trait Trait: system::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type CouncilTermEnded: CouncilTermEnded;
