@@ -325,7 +325,7 @@ impl<T: Trait> Module<T> {
             true /* unlock transferable stakes */
         );
 
-        let new_council = new_council.into_iter().map(|(_, seat)| seat.clone()).collect();
+        let new_council = new_council.into_iter().map(|(_, seat)| seat).collect();
         T::CouncilElected::council_elected(new_council, Self::new_term_duration());
 
         Self::deposit_event(RawEvent::CouncilElected());
