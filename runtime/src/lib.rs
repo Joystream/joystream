@@ -215,8 +215,6 @@ impl governance::council::Trait for Runtime {
 }
 
 impl governance::root::Trait for Runtime {
-	type Event = Event;
-
 	type TriggerElection = (CouncilElection,);
 }
 
@@ -236,7 +234,7 @@ construct_runtime!(
 		Staking: staking::{default, OfflineWorker, Config<T>},
 		Sudo: sudo,
 		Proposals: proposals::{Module, Call, Storage, Event<T>},
-		Governance: root::{Module, Call, Storage, Event<T>},
+		Governance: root::{Module, Call, Storage},
 		CouncilElection: election::{Module, Call, Storage, Event<T>},
 		Council: council::{Module, Call, Storage, Event<T>},
 	}

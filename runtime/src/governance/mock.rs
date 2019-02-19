@@ -76,8 +76,6 @@ impl balances::Trait for Test {
     type EnsureAccountLiquid = ();
 }
 impl root::Trait for Test {
-    type Event = ();
-
     type TriggerElection = (Election,);
 }
 impl GovernanceCurrency for Test {

@@ -34,15 +34,14 @@ pub trait Trait: system::Trait + GovernanceCurrency {
 decl_storage! {
     trait Store for Module<T: Trait> as Council {
         ActiveCouncil get(active_council) config(): Option<Seats<T::AccountId, BalanceOf<T>>> = None;
-        TermEndsAt get(term_ends_at) config() : T::BlockNumber = T::BlockNumber::sa(0);
+        TermEndsAt get(term_ends_at) config() : T::BlockNumber = T::BlockNumber::sa(1);
     }
 }
 
 /// Event for this module.
 decl_event!(
     pub enum Event<T> where <T as system::Trait>::BlockNumber {
-        CouncilTermEnded(),
-        Dummy(BlockNumber),
+        CouncilTermEnded(BlockNumber),
     }
 );
 
@@ -57,8 +56,8 @@ impl<T: Trait> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber>
 
 impl<T: Trait> Module<T> {
 
-    pub fn is_term_ended(block: T::BlockNumber) -> bool {
-        block >= Self::term_ends_at()
+    pub fn is_term_ended() -> bool {
+        <system::Module<T>>::block_number() >= Self::term_ends_at()
     }
 
     pub fn is_councilor(sender: &T::AccountId) -> bool {
@@ -75,8 +74,8 @@ decl_module! {
         fn deposit_event<T>() = default;
 
         fn on_finalise(now: T::BlockNumber) {
-            if Self::is_term_ended(now) {
-                Self::deposit_event(RawEvent::CouncilTermEnded());
+            if now == Self::term_ends_at() {
+                Self::deposit_event(RawEvent::CouncilTermEnded(now));
                 T::CouncilTermEnded::council_term_ended();
             }
         }

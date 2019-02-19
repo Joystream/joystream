@@ -1,14 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 use rstd::prelude::*;
-use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
-use system::{self, ensure_signed};
+use srml_support::{StorageValue, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
+use system;
 pub use super::{ GovernanceCurrency, BalanceOf };
 
 use super::{council, election::{self, TriggerElection}};
 
 pub trait Trait: system::Trait + council::Trait + election::Trait + GovernanceCurrency {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-
     type TriggerElection: election::TriggerElection<election::Seats<Self::AccountId, BalanceOf<Self>>>;
 }
 
@@ -19,23 +17,12 @@ decl_storage! {
     }
 }
 
-/// Event for this module.
-decl_event!(
-    pub enum Event<T> where <T as system::Trait>::BlockNumber {
-        // TODO add more useful info to events?
-        ElectionStarted(),
-        Dummy(BlockNumber),
-    }
-);
-
 impl<T: Trait> Module<T> {
     // Nothing yet
 }
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
-
         fn set_auto_start_elections (flag: bool) {
             <AutoStartElections<T>>::put(flag);
         }
@@ -66,7 +53,7 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             System::set_block_number(1);
 
-            assert!(Council::is_term_ended(1));
+            assert!(Council::is_term_ended());
             assert!(Election::stage().is_none());
 
             <Governance as council::CouncilTermEnded>::council_term_ended();

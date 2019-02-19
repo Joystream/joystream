@@ -134,8 +134,7 @@ decl_event!(
         VotingEnded(),
         RevealingStarted(),
         RevealingEnded(),
-        CouncilElected(),
-        Dummy(BlockNumber),
+        CouncilElected(BlockNumber),
     }
 );
 
@@ -328,7 +327,7 @@ impl<T: Trait> Module<T> {
         let new_council = new_council.into_iter().map(|(_, seat)| seat).collect();
         T::CouncilElected::council_elected(new_council, Self::new_term_duration());
 
-        Self::deposit_event(RawEvent::CouncilElected());
+        Self::deposit_event(RawEvent::CouncilElected(<system::Module<T>>::block_number()));
     }
 
     fn teardown_election (
