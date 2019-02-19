@@ -53,7 +53,7 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             System::set_block_number(1);
 
-            assert!(Council::is_term_ended(1));
+            assert!(Council::is_term_ended());
             assert!(Election::stage().is_none());
 
             <Governance as council::CouncilTermEnded>::council_term_ended();

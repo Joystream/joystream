@@ -56,8 +56,8 @@ impl<T: Trait> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber>
 
 impl<T: Trait> Module<T> {
 
-    pub fn is_term_ended(block: T::BlockNumber) -> bool {
-        block >= Self::term_ends_at()
+    pub fn is_term_ended() -> bool {
+        <system::Module<T>>::block_number() >= Self::term_ends_at()
     }
 
     pub fn is_councilor(sender: &T::AccountId) -> bool {
@@ -74,7 +74,7 @@ decl_module! {
         fn deposit_event<T>() = default;
 
         fn on_finalise(now: T::BlockNumber) {
-            if Self::is_term_ended(now) {
+            if now == Self::term_ends_at() {
                 Self::deposit_event(RawEvent::CouncilTermEnded(now));
                 T::CouncilTermEnded::council_term_ended();
             }
