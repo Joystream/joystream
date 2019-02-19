@@ -70,7 +70,7 @@ use self::ProposalStatus::*;
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub enum VoteKind {
     /// Signals presence, but unwillingness to cast judgment on substance of vote.
-    Abstention,
+    Abstain,
     /// Pass, an alternative or a ranking, for binary, multiple choice
     /// and ranked choice propositions, respectively.
     Approve,
@@ -82,7 +82,7 @@ pub enum VoteKind {
 
 impl Default for VoteKind {
     fn default() -> Self {
-        VoteKind::Abstention
+        VoteKind::Abstain
     }
 }
 
@@ -389,7 +389,7 @@ impl<T: Trait> Module<T> {
 
             for (_, vote) in votes.iter() {
                 match vote {
-                    Abstention => abstentions += 1,
+                    Abstain => abstentions += 1,
                     Approve => approvals += 1,
                     Reject => rejections += 1,
                     Slash => slashes += 1,
@@ -1052,9 +1052,7 @@ mod tests {
             Proposals::on_finalise(2);
 
             // Check that runtime code has been updated after proposal approved.
-            // TODO Uncomment next line when issue with storage updates fixed:
-            // https://github.com/paritytech/substrate/issues/1638
-            // assert_runtime_code!(wasm_code());
+            assert_runtime_code!(wasm_code());
 
             assert!(Proposals::pending_proposal_ids().is_empty());
             assert_eq!(Proposals::proposal(1).status, Approved);
@@ -1101,9 +1099,7 @@ mod tests {
             Proposals::on_finalise(2);
 
             // Check that runtime code has been updated after proposal approved.
-            // TODO Uncomment next line when issue with storage updates fixed:
-            // https://github.com/paritytech/substrate/issues/1638
-            // assert_runtime_code!(wasm_code());
+            assert_runtime_code!(wasm_code());
 
             assert!(Proposals::pending_proposal_ids().is_empty());
             assert_eq!(Proposals::proposal(1).status, Approved);
@@ -1156,9 +1152,7 @@ mod tests {
             Proposals::on_finalise(expiration_block);
 
             // Check that runtime code has been updated after proposal approved.
-            // TODO Uncomment next line when issue with storage updates fixed:
-            // https://github.com/paritytech/substrate/issues/1638
-            // assert_runtime_code!(wasm_code());
+            assert_runtime_code!(wasm_code());
 
             assert!(Proposals::pending_proposal_ids().is_empty());
             assert_eq!(Proposals::proposal(1).status, Approved);
@@ -1188,12 +1182,12 @@ mod tests {
 
             assert_ok!(_create_default_proposal());
 
-            // Less than a quorum of councilors approved, while others abstentioned:
+            // Less than a quorum of councilors approved, while others abstained:
             let councilors = Proposals::councilors_count();
             let approvals = Proposals::approval_quorum_seats() - 1;
             let abstentions = councilors - approvals;
             for i in 0..councilors as usize {
-                let vote = if (i as u32) < approvals { Approve } else { Abstention };
+                let vote = if (i as u32) < approvals { Approve } else { Abstain };
                 assert_ok!(Proposals::vote_on_proposal(
                     Origin::signed(ALL_COUNCILORS[i]), 1, vote));
             }
