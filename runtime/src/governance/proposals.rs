@@ -1052,9 +1052,7 @@ mod tests {
             Proposals::on_finalise(2);
 
             // Check that runtime code has been updated after proposal approved.
-            // TODO Uncomment next line when issue with storage updates fixed:
-            // https://github.com/paritytech/substrate/issues/1638
-            // assert_runtime_code!(wasm_code());
+            assert_runtime_code!(wasm_code());
 
             assert!(Proposals::pending_proposal_ids().is_empty());
             assert_eq!(Proposals::proposal(1).status, Approved);
@@ -1101,9 +1099,7 @@ mod tests {
             Proposals::on_finalise(2);
 
             // Check that runtime code has been updated after proposal approved.
-            // TODO Uncomment next line when issue with storage updates fixed:
-            // https://github.com/paritytech/substrate/issues/1638
-            // assert_runtime_code!(wasm_code());
+            assert_runtime_code!(wasm_code());
 
             assert!(Proposals::pending_proposal_ids().is_empty());
             assert_eq!(Proposals::proposal(1).status, Approved);
@@ -1156,9 +1152,7 @@ mod tests {
             Proposals::on_finalise(expiration_block);
 
             // Check that runtime code has been updated after proposal approved.
-            // TODO Uncomment next line when issue with storage updates fixed:
-            // https://github.com/paritytech/substrate/issues/1638
-            // assert_runtime_code!(wasm_code());
+            assert_runtime_code!(wasm_code());
 
             assert!(Proposals::pending_proposal_ids().is_empty());
             assert_eq!(Proposals::proposal(1).status, Approved);
