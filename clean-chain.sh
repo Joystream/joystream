@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-cargo run -- --dev purge-chain
+cargo run -- purge-chain --dev
