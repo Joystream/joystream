@@ -115,7 +115,7 @@ pub struct TallyResult<BlockNumber> {
     finalized_at: BlockNumber,
 }
 
-pub trait Trait: balances::Trait + timestamp::Trait + council::Trait + GovernanceCurrency {
+pub trait Trait: timestamp::Trait + council::Trait + GovernanceCurrency {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
@@ -253,7 +253,7 @@ decl_module! {
             Self::deposit_event(RawEvent::ProposalCreated(proposer.clone(), proposal_id));
 
             // Auto-vote with Approve if proposer is a councilor:
-            if Self::is_councilor(proposer.clone()) {
+            if Self::is_councilor(&proposer) {
                 Self::_process_vote(proposer, proposal_id, Approve)?;
             }
 
@@ -266,7 +266,7 @@ decl_module! {
         /// ```
         fn vote_on_proposal(origin, proposal_id: ProposalId, vote: VoteKind) -> Result {
             let voter = ensure_signed(origin)?;
-            ensure!(Self::is_councilor(voter.clone()), MSG_ONLY_COUNCILORS_CAN_VOTE);
+            ensure!(Self::is_councilor(&voter), MSG_ONLY_COUNCILORS_CAN_VOTE);
 
             ensure!(<Proposals<T>>::exists(proposal_id), MSG_PROPOSAL_NOT_FOUND);
             let proposal = Self::proposal(proposal_id);
@@ -328,7 +328,7 @@ impl<T: Trait> Module<T> {
         !T::Currency::free_balance(&sender).is_zero()
     }
 
-    fn is_councilor(sender: T::AccountId) -> bool {
+    fn is_councilor(sender: &T::AccountId) -> bool {
         <council::Module<T>>::is_councilor(sender)
     }
 
@@ -643,7 +643,7 @@ mod tests {
 
         t.extend(council::GenesisConfig::<Test>{
             active_council: council_mock,
-            term_ends_at: 0
+            term_ends_at: 0,
         }.build_storage().unwrap().0);
 
         // t.extend(GenesisConfig::<Test>{
