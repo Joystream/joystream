@@ -41,8 +41,7 @@ decl_storage! {
 /// Event for this module.
 decl_event!(
     pub enum Event<T> where <T as system::Trait>::BlockNumber {
-        CouncilTermEnded(),
-        Dummy(BlockNumber),
+        CouncilTermEnded(BlockNumber),
     }
 );
 
@@ -76,7 +75,7 @@ decl_module! {
 
         fn on_finalise(now: T::BlockNumber) {
             if Self::is_term_ended(now) {
-                Self::deposit_event(RawEvent::CouncilTermEnded());
+                Self::deposit_event(RawEvent::CouncilTermEnded(now));
                 T::CouncilTermEnded::council_term_ended();
             }
         }
