@@ -1,7 +1,7 @@
 use primitives::{Ed25519AuthorityId, ed25519};
 use joystream_node_runtime::{
 	AccountId, GenesisConfig, ConsensusConfig, TimestampConfig, BalancesConfig,
-	SudoConfig, IndicesConfig
+	SudoConfig, IndicesConfig, SessionConfig, StakingConfig, Permill, Perbill,
 };
 use substrate_service;
 
@@ -84,7 +84,7 @@ fn testnet_genesis(initial_authorities: Vec<Ed25519AuthorityId>, endowed_account
 		}),
 		system: None,
 		timestamp: Some(TimestampConfig {
-			period: 5,					// 5 second block time.
+			period: 3,                    // 3*2=6 second block time.
 		}),
 		indices: Some(IndicesConfig {
 			ids: endowed_accounts.clone(),
@@ -100,6 +100,24 @@ fn testnet_genesis(initial_authorities: Vec<Ed25519AuthorityId>, endowed_account
 		}),
 		sudo: Some(SudoConfig {
 			key: root_key,
+		}),
+		session: Some(SessionConfig {
+			validators: initial_authorities.iter().cloned().map(Into::into).collect(),
+			session_length: 10,
+		}),
+		staking: Some(StakingConfig {
+			current_era: 0,
+			intentions: initial_authorities.iter().cloned().map(Into::into).collect(),
+			minimum_validator_count: 1,
+			validator_count: 2,
+			sessions_per_era: 5,
+			bonding_duration: 2 * 60 * 12,
+			offline_slash: Perbill::zero(),
+			session_reward: Perbill::zero(),
+			current_offline_slash: 0,
+			current_session_reward: 0,
+			offline_slash_grace: 0,
+			invulnerables: initial_authorities.iter().cloned().map(Into::into).collect(),
 		}),
 	}
 }

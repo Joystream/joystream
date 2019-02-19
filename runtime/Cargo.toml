@@ -27,6 +27,8 @@ std = [
     'serde/std',
     'safe-mix/std',
     'consensus-aura/std',
+    'staking/std',
+    'session/std',
 ]
 [dependencies.aura]
 default_features = false
@@ -140,4 +142,16 @@ rev = 'e8b558c05ba13a0ee63c7c90e8e4156be38237fd'
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-version'
+rev = 'e8b558c05ba13a0ee63c7c90e8e4156be38237fd'
+
+[dependencies.staking]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-staking'
+rev = 'e8b558c05ba13a0ee63c7c90e8e4156be38237fd'
+
+[dependencies.session]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-session'
 rev = 'e8b558c05ba13a0ee63c7c90e8e4156be38237fd'
