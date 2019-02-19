@@ -23,7 +23,7 @@ use primitives::bytes;
 use primitives::{Ed25519AuthorityId, OpaqueMetadata};
 use runtime_primitives::{
 	ApplyResult, transaction_validity::TransactionValidity, Ed25519Signature, generic,
-	traits::{self, BlakeTwo256, Block as BlockT, StaticLookup}, create_runtime_str
+	traits::{self, Convert, BlakeTwo256, Block as BlockT, StaticLookup}, create_runtime_str
 };
 use client::{
 	block_builder::api::{CheckInherentsResult, InherentData, self as block_builder_api},
@@ -126,7 +126,7 @@ impl system::Trait for Runtime {
 }
 
 impl aura::Trait for Runtime {
-	type HandleReport = ();
+	type HandleReport = aura::StakingSlasher<Runtime>;
 }
 
 impl consensus::Trait for Runtime {
@@ -137,6 +137,20 @@ impl consensus::Trait for Runtime {
 	type InherentOfflineReport = ();
 	/// The ubiquitous log type.
 	type Log = Log;
+}
+
+/// Session key conversion.
+pub struct SessionKeyConversion;
+impl Convert<AccountId, Ed25519AuthorityId> for SessionKeyConversion {
+	fn convert(a: AccountId) -> Ed25519AuthorityId {
+		a.to_fixed_bytes().into()
+	}
+}
+
+impl session::Trait for Runtime {
+	type ConvertAccountIdToSessionKey = SessionKeyConversion;
+	type OnSessionChange = (Staking, );
+	type Event = Event;
 }
 
 impl indices::Trait for Runtime {
@@ -161,11 +175,11 @@ impl balances::Trait for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = u128;
 	/// What to do if an account's free balance gets zeroed.
-	type OnFreeBalanceZero = ();
+	type OnFreeBalanceZero = Staking;
 	/// What to do if a new account is created.
 	type OnNewAccount = Indices;
 	/// Restrict whether an account can transfer funds. We don't place any further restrictions.
-	type EnsureAccountLiquid = ();
+	type EnsureAccountLiquid = Staking;
 	/// The uniquitous event type.
 	type Event = Event;
 }
@@ -174,6 +188,12 @@ impl sudo::Trait for Runtime {
 	/// The uniquitous event type.
 	type Event = Event;
 	type Proposal = Call;
+}
+
+impl staking::Trait for Runtime {
+	type Currency = balances::Module<Self>;
+	type OnRewardMinted = ();
+	type Event = Event;
 }
 
 impl governance::GovernanceCurrency for Runtime {
@@ -212,6 +232,8 @@ construct_runtime!(
 		Aura: aura::{Module},
 		Indices: indices,
 		Balances: balances,
+		Session: session::{Config<T>, Event<T>},
+		Staking: staking::{default, OfflineWorker, Config<T>},
 		Sudo: sudo,
 		Proposals: proposals::{Module, Call, Storage, Event<T>},
 		Governance: root::{Module, Call, Storage, Event<T>},
