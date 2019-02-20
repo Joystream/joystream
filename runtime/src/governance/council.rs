@@ -32,7 +32,7 @@ pub trait Trait: system::Trait + GovernanceCurrency {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Council {
-        ActiveCouncil get(active_council) config(): Option<Seats<T::AccountId, BalanceOf<T>>> = None;
+        ActiveCouncil get(active_council) config(): Seats<T::AccountId, BalanceOf<T>>;
         TermEndsAt get(term_ends_at) config() : T::BlockNumber = T::BlockNumber::sa(1);
     }
 }
@@ -60,11 +60,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn is_councilor(sender: &T::AccountId) -> bool {
-        if let Some(council) = Self::active_council() {
-            council.iter().any(|c| c.member == *sender)
-        } else {
-            false
-        }
+        Self::active_council().iter().any(|c| c.member == *sender)
     }
 }
 
@@ -103,25 +99,17 @@ decl_module! {
             };
 
             // add member to existing council
-            if let Some(mut active) = Self::active_council() {
-                active.push(seat);
-                <ActiveCouncil<T>>::put(active);
-            } else {
-                // add as first seat into a new council
-                <ActiveCouncil<T>>::put(vec![seat]);
-            }
+            <ActiveCouncil<T>>::mutate(|council| council.push(seat));
             Ok(())
         }
 
         fn remove_council_member(account_to_remove: T::AccountId) -> Result {
-            if let Some(council) = Self::active_council() {
-                ensure!(Self::is_councilor(&account_to_remove), "account is not a councilor");
-                let filtered_council: Seats<T::AccountId, BalanceOf<T>> = council
-                    .into_iter()
-                    .filter(|c| c.member != account_to_remove)
-                    .collect();
-                <ActiveCouncil<T>>::put(filtered_council);
-            }
+            ensure!(Self::is_councilor(&account_to_remove), "account is not a councilor");
+            let filtered_council: Seats<T::AccountId, BalanceOf<T>> = Self::active_council()
+                .into_iter()
+                .filter(|c| c.member != account_to_remove)
+                .collect();
+            <ActiveCouncil<T>>::put(filtered_council);
             Ok(())
         }
 
@@ -131,5 +119,53 @@ decl_module! {
             <TermEndsAt<T>>::put(ends_at);
             Ok(())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::governance::mock::*;
+    use parity_codec::Encode;
+    use runtime_io::with_externalities;
+    use srml_support::*;
+
+    #[test]
+    fn add_council_member_test() {
+        with_externalities(&mut initial_test_ext(), || {
+            assert!(!Council::is_councilor(&1));
+
+            assert_ok!(Council::add_council_member(1));
+            assert!(Council::is_councilor(&1));
+
+            assert_ok!(Council::add_council_member(2));
+            assert!(Council::is_councilor(&1));
+            assert!(Council::is_councilor(&2));
+        });
+    }
+
+    #[test]
+    fn remove_council_member_test() {
+        with_externalities(&mut initial_test_ext(), || {
+            assert_ok!(Council::add_council_member(1));
+            assert_ok!(Council::add_council_member(2));
+            assert_ok!(Council::add_council_member(3));
+
+            assert_ok!(Council::remove_council_member(2));
+
+            assert!(!Council::is_councilor(&2));
+            assert!(Council::is_councilor(&1));
+            assert!(Council::is_councilor(&3));
+        });
+    }
+
+    #[test]
+    fn set_council_test() {
+        with_externalities(&mut initial_test_ext(), || {
+            assert_ok!(Council::set_council(vec![4,5,6]));
+            assert!(Council::is_councilor(&4));
+            assert!(Council::is_councilor(&5));
+            assert!(Council::is_councilor(&6));
+        });
     }
 }

@@ -171,7 +171,7 @@ impl<T: Trait> Module<T> {
 
     /// Starts an election. Will fail if an election is already running
     /// Initializes transferable stakes. Assumes election parameters have already been set.
-    fn start_election(current_council: Option<Seats<T::AccountId, BalanceOf<T>>>) -> Result {
+    fn start_election(current_council: Seats<T::AccountId, BalanceOf<T>>) -> Result {
         ensure!(!Self::is_election_running(), "election already in progress");
         ensure!(Self::existing_stake_holders().len() == 0, "stake holders must be empty");
         ensure!(Self::applicants().len() == 0, "applicants must be empty");
@@ -180,7 +180,7 @@ impl<T: Trait> Module<T> {
         // Take snapshot of seat and backing stakes of an existing council
         // Its important to note that the election system takes ownership of these stakes, and is responsible
         // to return any unused stake to original owners and the end of the election.
-        current_council.map(|c| Self::initialize_transferable_stakes(c));
+        Self::initialize_transferable_stakes(current_council);
 
         Self::deposit_event(RawEvent::ElectionStarted());
 
@@ -863,8 +863,8 @@ mod tests {
     #[test]
     fn should_not_start_new_election_if_already_started() {
         with_externalities(&mut initial_test_ext(), || {
-            assert_ok!(Election::start_election(None));
-            assert_err!(Election::start_election(None), "election already in progress");
+            assert_ok!(Election::start_election(vec![]));
+            assert_err!(Election::start_election(vec![]), "election already in progress");
         });
     }
 
@@ -890,7 +890,7 @@ mod tests {
             <AnnouncingPeriod<Test>>::put(20);
             let prev_round = Election::round();
 
-            assert_ok!(Election::start_election(None));
+            assert_ok!(Election::start_election(vec![]));
 
             // election round is bumped
             assert_eq!(Election::round(), prev_round + 1);
@@ -1586,19 +1586,19 @@ mod tests {
             new_council.insert(200 as u64, Seat{ member: 200 as u64, stake: 10 as u32, backers: vec![]});
             new_council.insert(300 as u64, Seat{ member: 300 as u64, stake: 20 as u32, backers: vec![]});
 
-            assert!(Council::active_council().is_none());
+            assert_eq!(Council::active_council().len(), 0);
 
             let new_council = new_council.into_iter().map(|(_, seat)| seat.clone()).collect();
             <Test as election::Trait>::CouncilElected::council_elected(new_council, 10);
 
-            assert!(Council::active_council().is_some());
+            assert_eq!(Council::active_council().len(), 2);
         });
     }
 
     #[test]
     fn simulation() {
         with_externalities(&mut initial_test_ext(), || {
-            assert!(Council::active_council().is_none());
+            assert_eq!(Council::active_council().len(), 0);
             assert!(Election::stage().is_none());
 
             <CouncilSize<Test>>::put(10);
@@ -1615,7 +1615,7 @@ mod tests {
             }
 
             System::set_block_number(1);
-            assert_ok!(Election::start_election(None));
+            assert_ok!(Election::start_election(vec![]));
 
             for i in 1..20 {
                 if i < 21 {
@@ -1654,15 +1654,14 @@ mod tests {
             System::set_block_number(n);
             Election::on_finalise(n);
 
-            assert!(Council::active_council().is_some());
-            assert_eq!(Council::active_council().unwrap().len(), Election::council_size_usize());
-            for (i, seat) in Council::active_council().unwrap().iter().enumerate() {
+            assert_eq!(Council::active_council().len(), Election::council_size_usize());
+            for (i, seat) in Council::active_council().iter().enumerate() {
                 assert_eq!(seat.member, (i + 1) as u64);
             }
             assert!(Election::stage().is_none());
 
             // When council term ends.. start a new election.
-            assert_ok!(Election::start_election(None));
+            assert_ok!(Election::start_election(vec![]));
         });
     }
 }
