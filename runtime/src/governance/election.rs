@@ -720,6 +720,24 @@ decl_module! {
             }
         }
 
+        fn set_stage_announcing(ends_at: T::BlockNumber) -> Result {
+            ensure!(ends_at > <system::Module<T>>::block_number(), "must end at future block number");
+            <Stage<T>>::put(ElectionStage::Announcing(ends_at));
+            Ok(())
+        }
+
+        fn set_stage_revealing(ends_at: T::BlockNumber) -> Result {
+            ensure!(ends_at > <system::Module<T>>::block_number(), "must end at future block number");
+            <Stage<T>>::put(ElectionStage::Revealing(ends_at));
+            Ok(())
+        }
+
+        fn set_stage_voting(ends_at: T::BlockNumber) -> Result {
+            ensure!(ends_at > <system::Module<T>>::block_number(), "must end at future block number");
+            <Stage<T>>::put(ElectionStage::Voting(ends_at));
+            Ok(())
+        }
+
         fn set_param_announcing_period(period: T::BlockNumber) -> Result {
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(!period.is_zero(), "period cannot be zero");
