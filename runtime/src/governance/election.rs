@@ -747,7 +747,7 @@ decl_module! {
             Ok(())
         }
 
-        fn stop_election() -> Result {
+        fn force_stop_election() -> Result {
             ensure!(Self::is_election_running(), "only running election can be stopped");
 
             let mut votes = Vec::new();
@@ -767,6 +767,10 @@ decl_module! {
             Ok(())
         }
 
+        fn force_start_election() -> Result {
+            Self::start_election(<council::Module<T>>::active_council())
+        }
+
         fn set_auto_start (flag: bool) {
             <AutoStart<T>>::put(flag);
         }
@@ -776,7 +780,7 @@ decl_module! {
 
 impl<T: Trait> council::CouncilTermEnded for Module<T> {
     fn council_term_ended() {
-        if Self::auto_start() && !Self::is_election_running() {
+        if Self::auto_start() {
             Self::start_election(<council::Module<T>>::active_council());
         }
     }
