@@ -4,7 +4,6 @@ use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl
 use srml_support::traits::{Currency};
 use system::{self, ensure_signed};
 use runtime_primitives::traits::{As, Zero};
-use {balances};
 use rstd::prelude::*;
 
 pub use super::election::{self, Seats, Seat, CouncilElected};

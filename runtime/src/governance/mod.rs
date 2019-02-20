@@ -1,12 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::prelude::*;
 use srml_support::traits::{Currency};
 use system;
 
 pub mod election;
 pub mod council;
-pub mod root;
 pub mod proposals;
 
 mod stake;

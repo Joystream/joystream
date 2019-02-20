@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use rstd::prelude::*;
-pub use super::{election, council, root, proposals, GovernanceCurrency};
+pub use super::{election, council, proposals, GovernanceCurrency};
 pub use system;
 
 pub use primitives::{H256, Blake2Hasher};
@@ -47,7 +47,7 @@ impl consensus::Trait for Test {
 impl council::Trait for Test {
     type Event = ();
 
-    type CouncilTermEnded = (Governance,);
+    type CouncilTermEnded = (Election,);
 }
 impl election::Trait for Test {
     type Event = ();
@@ -75,9 +75,7 @@ impl balances::Trait for Test {
     /// A function that returns true iff a given account can transfer its funds to another account.
     type EnsureAccountLiquid = ();
 }
-impl root::Trait for Test {
-    type TriggerElection = (Election,);
-}
+
 impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
@@ -92,7 +90,6 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
     runtime_io::TestExternalities::new(t)
 }
 
-pub type Governance = root::Module<Test>;
 pub type Election = election::Module<Test>;
 pub type Council = council::Module<Test>;
 pub type Proposals = proposals::Module<Test>;

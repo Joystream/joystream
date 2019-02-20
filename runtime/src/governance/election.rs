@@ -5,8 +5,8 @@ use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl
 use srml_support::traits::{Currency};
 use system::{self, ensure_signed};
 
-use runtime_primitives::traits::{Hash, As, Zero, SimpleArithmetic};
-use {balances};
+use runtime_primitives::traits::{Hash, As, Zero, /*SimpleArithmetic*/};
+//use {balances};
 
 use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
@@ -15,8 +15,9 @@ use super::stake::Stake;
 use super::sealed_vote::SealedVote;
 
 pub use super::{ GovernanceCurrency, BalanceOf };
+use super::council;
 
-pub trait Trait: system::Trait + GovernanceCurrency {
+pub trait Trait: system::Trait + council::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type CouncilElected: CouncilElected<Seats<Self::AccountId, BalanceOf<Self>>, Self::BlockNumber>;
@@ -69,21 +70,6 @@ impl<Elected, Term, X: CouncilElected<Elected, Term>> CouncilElected<Elected, Te
     }
 }
 
-// Hook For starting election
-pub trait TriggerElection<CurrentCouncil> {
-    fn trigger_election(current: Option<CurrentCouncil>) -> Result;
-}
-
-impl<CurrentCouncil> TriggerElection<CurrentCouncil> for () {
-    fn trigger_election(_: Option<CurrentCouncil>) -> Result { Ok(())}
-}
-
-impl<CurrentCouncil, X: TriggerElection<CurrentCouncil>> TriggerElection<CurrentCouncil> for (X,) {
-    fn trigger_election(current: Option<CurrentCouncil>) -> Result{
-        X::trigger_election(current)
-    }
-}
-
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Clone, Copy, Encode, Decode, Default)]
 pub struct TransferableStake<Balance> {
@@ -93,6 +79,9 @@ pub struct TransferableStake<Balance> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilElection {
+        // Flag for wether to automatically start an election after a council term ends
+        AutoStart get(auto_start) : bool = true;
+
         // Current stage if there is an election running
         Stage get(stage): Option<ElectionStage<T::BlockNumber>>;
 
@@ -137,16 +126,6 @@ decl_event!(
         CouncilElected(BlockNumber),
     }
 );
-
-impl<T: Trait> TriggerElection<Seats<T::AccountId, BalanceOf<T>>> for Module<T> {
-    fn trigger_election(
-        current_council: Option<Seats<T::AccountId, BalanceOf<T>>>) -> Result
-    {
-        ensure!(!Self::is_election_running(), "Election already running");
-
-        Self::start_election(current_council)
-    }
-}
 
 impl<T: Trait> Module<T> {
     // HELPERS - IMMUTABLES
@@ -768,7 +747,7 @@ decl_module! {
             Ok(())
         }
 
-        fn abort_election() -> Result {
+        fn force_stop_election() -> Result {
             ensure!(Self::is_election_running(), "only running election can be stopped");
 
             let mut votes = Vec::new();
@@ -788,6 +767,22 @@ decl_module! {
             Ok(())
         }
 
+        fn force_start_election() -> Result {
+            Self::start_election(<council::Module<T>>::active_council())
+        }
+
+        fn set_auto_start (flag: bool) {
+            <AutoStart<T>>::put(flag);
+        }
+
+    }
+}
+
+impl<T: Trait> council::CouncilTermEnded for Module<T> {
+    fn council_term_ended() {
+        if Self::auto_start() {
+            Self::start_election(<council::Module<T>>::active_council());
+        }
     }
 }
 
@@ -798,6 +793,20 @@ mod tests {
     use parity_codec::Encode;
     use runtime_io::with_externalities;
     use srml_support::*;
+
+    #[test]
+    fn election_starts_when_council_term_ends() {
+        with_externalities(&mut initial_test_ext(), || {
+            System::set_block_number(1);
+
+            assert!(Council::is_term_ended());
+            assert!(Election::stage().is_none());
+
+            <Election as council::CouncilTermEnded>::council_term_ended();
+
+            assert!(Election::stage().is_some());
+        });
+    }
 
     #[test]
     fn new_stake_reusing_transferable_works() {

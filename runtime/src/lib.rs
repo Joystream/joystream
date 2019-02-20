@@ -15,7 +15,7 @@ use substrate_client as client;
 extern crate parity_codec_derive;
 
 pub mod governance;
-use governance::{election, council, root, proposals};
+use governance::{election, council, proposals};
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -211,11 +211,7 @@ impl governance::election::Trait for Runtime {
 
 impl governance::council::Trait for Runtime {
 	type Event = Event;
-	type CouncilTermEnded = (Governance,);
-}
-
-impl governance::root::Trait for Runtime {
-	type TriggerElection = (CouncilElection,);
+	type CouncilTermEnded = (CouncilElection,);
 }
 
 construct_runtime!(
@@ -234,7 +230,6 @@ construct_runtime!(
 		Staking: staking::{default, OfflineWorker},
 		Sudo: sudo,
 		Proposals: proposals::{Module, Call, Storage, Event<T>},
-		Governance: root::{Module, Call, Storage},
 		CouncilElection: election::{Module, Call, Storage, Event<T>},
 		Council: council::{Module, Call, Storage, Event<T>},
 	}
