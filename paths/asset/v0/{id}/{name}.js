@@ -14,7 +14,14 @@ module.exports = function(config, storage)
         in: 'path',
         type: 'string',
         required: true,
-        description: 'Asset ID'
+        description: 'Repository ID'
+      },
+      {
+        name: 'name',
+        in: 'path',
+        type: 'string',
+        required: true,
+        description: 'Asset name',
       },
     ],
 
@@ -22,7 +29,14 @@ module.exports = function(config, storage)
     head: function(req, res, _next)
     {
       const id = req.params.id;
-      storage.stat(id, true, (stats, type, err) => {
+      const repo = storage.get(id);
+      if (!repo) {
+        res.status(404).send({ message: `Repository with id "${id}" not found.` });
+        return;
+      }
+
+      const name = req.params.name;
+      repo.stat(name, true, (stats, type, err) => {
         if (err) {
           res.status(err.code).send({ message: err.message });
           return;
@@ -44,7 +58,14 @@ module.exports = function(config, storage)
     get: function(req, res, _next)
     {
       const id = req.params.id;
+      const name = req.params.name;
       var download = req.query.download;
+
+      const repo = storage.get(id);
+      if (!repo) {
+        res.status(404).send({ message: `Repository with id "${id}" not found.` });
+        return;
+      }
 
       // Parse range header
       var ranges;
@@ -64,14 +85,14 @@ module.exports = function(config, storage)
       debug('Requested range(s) is/are', ranges);
 
       // Open file
-      storage.open(id, 'r', (type, stream, err) => {
+      repo.open(name, 'r', (type, stream, err) => {
         if (err) {
           res.status(err.code).send({ message: err.message });
           return;
         }
 
         var opts = {
-          name: id,
+          name: name,
           type: type,
           ranges: ranges,
           download: download,
