@@ -107,7 +107,7 @@ fn staging_testnet_config_genesis () -> GenesisConfig {
 		//hex!["80c696c19b597e7cfba9135600a15735f789ae81f251826ecd6799d06164c15b"].into(),
 	];
 	let endowed_accounts = vec![
-		hex!["2102ee83045058ba0f5e18bbc906437776c05771a2fc5915ff21c6ab76f41c31"].into(),
+		hex!["6b7f25c05e367cbb8224681f9f8652f13e7de2953b4706f32e6daf42219ad31f"].into(),
 	];
 	const MILLICENTS: u128 = 1_000_000_000;
 	const CENTS: u128 = 1_000 * MILLICENTS;    // assume this is worth about a cent.
