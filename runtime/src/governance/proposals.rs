@@ -182,8 +182,7 @@ decl_storage! {
 
         ProposalCount get(proposal_count): u32;
 
-        // TODO rename 'proposal' -> 'proposals'
-        Proposals get(proposal): map u32 => RuntimeUpgradeProposal<T::AccountId, BalanceOf<T>, T::BlockNumber>;
+        Proposals get(proposals): map u32 => RuntimeUpgradeProposal<T::AccountId, BalanceOf<T>, T::BlockNumber>;
 
         ActiveProposalIds get(active_proposal_ids): Vec<u32> = vec![];
 
@@ -266,7 +265,7 @@ decl_module! {
             ensure!(Self::is_councilor(&voter), MSG_ONLY_COUNCILORS_CAN_VOTE);
 
             ensure!(<Proposals<T>>::exists(proposal_id), MSG_PROPOSAL_NOT_FOUND);
-            let proposal = Self::proposal(proposal_id);
+            let proposal = Self::proposals(proposal_id);
 
             ensure!(proposal.status == Active, MSG_PROPOSAL_FINALIZED);
 
@@ -286,7 +285,7 @@ decl_module! {
             let proposer = ensure_signed(origin)?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), MSG_PROPOSAL_NOT_FOUND);
-            let proposal = Self::proposal(proposal_id);
+            let proposal = Self::proposals(proposal_id);
 
             ensure!(proposer == proposal.proposer, MSG_YOU_DONT_OWN_THIS_PROPOSAL);
             ensure!(proposal.status == Active, MSG_PROPOSAL_FINALIZED);
@@ -374,7 +373,7 @@ impl<T: Trait> Module<T> {
         let quorum: u32 = Self::approval_quorum_seats();
 
         for &proposal_id in Self::active_proposal_ids().iter() {
-            let proposal = Self::proposal(proposal_id);
+            let proposal = Self::proposals(proposal_id);
             let is_expired = Self::is_voting_period_expired(proposal.proposed_at);
             let votes = Self::votes_by_proposal(proposal_id);
             let all_councilors_voted = votes.len() as u32 == councilors;
@@ -465,7 +464,7 @@ impl<T: Trait> Module<T> {
 
     /// Slash a proposal. The staked deposit will be slashed.
     fn _slash_proposal(proposal_id: u32) -> Result {
-        let proposal = Self::proposal(proposal_id);
+        let proposal = Self::proposals(proposal_id);
 
         // Slash proposer's stake:
         let _ = T::Currency::slash_reserved(&proposal.proposer, proposal.stake);
@@ -475,7 +474,7 @@ impl<T: Trait> Module<T> {
 
     /// Reject a proposal. The staked deposit will be returned to a proposer.
     fn _reject_proposal(proposal_id: u32) -> Result {
-        let proposal = Self::proposal(proposal_id);
+        let proposal = Self::proposals(proposal_id);
         let proposer = proposal.proposer;
 
         // Spend some minimum fee on proposer's balance to prevent spamming attacks:
@@ -491,7 +490,7 @@ impl<T: Trait> Module<T> {
 
     /// Approve a proposal. The staked deposit will be returned.
     fn _approve_proposal(proposal_id: u32) -> Result {
-        let proposal = Self::proposal(proposal_id);
+        let proposal = Self::proposals(proposal_id);
         let wasm_code = proposal.wasm_code;
 
         // Return staked deposit to proposer:
@@ -739,7 +738,7 @@ mod tests {
                 proposed_at: 1,
                 status: Active
             };
-            assert_eq!(Proposals::proposal(1), expected_proposal);
+            assert_eq!(Proposals::proposals(1), expected_proposal);
 
             // Check that stake amount has been locked on proposer's balance:
             assert_eq!(Balances::free_balance(PROPOSER1), initial_balance() - min_stake());
@@ -860,7 +859,7 @@ mod tests {
 
             assert_ok!(_create_default_proposal());
             assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
-            assert_eq!(Proposals::proposal(1).status, Cancelled);
+            assert_eq!(Proposals::proposals(1).status, Cancelled);
             assert!(Proposals::active_proposal_ids().is_empty());
 
             // Check that proposer's balance reduced by cancellation fee and other part of his stake returned to his balance:
@@ -879,7 +878,7 @@ mod tests {
 
             assert_ok!(_create_default_proposal());
             assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
-            assert_eq!(Proposals::proposal(1).status, Cancelled);
+            assert_eq!(Proposals::proposals(1).status, Cancelled);
 
             // Get balances updated after cancelling a proposal:
             let updated_free_balance = Balances::free_balance(PROPOSER1);
@@ -1004,7 +1003,7 @@ mod tests {
             Proposals::on_finalise(2);
 
             assert!(Proposals::active_proposal_ids().is_empty());
-            assert_eq!(Proposals::proposal(1).status, Approved);
+            assert_eq!(Proposals::proposals(1).status, Approved);
 
             // Try to vote on finalized proposal:
             assert_eq!(Proposals::vote_on_proposal(
@@ -1042,7 +1041,7 @@ mod tests {
             assert_runtime_code!(wasm_code());
 
             assert!(Proposals::active_proposal_ids().is_empty());
-            assert_eq!(Proposals::proposal(1).status, Approved);
+            assert_eq!(Proposals::proposals(1).status, Approved);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
                 abstentions: 0,
@@ -1089,7 +1088,7 @@ mod tests {
             assert_runtime_code!(wasm_code());
 
             assert!(Proposals::active_proposal_ids().is_empty());
-            assert_eq!(Proposals::proposal(1).status, Approved);
+            assert_eq!(Proposals::proposals(1).status, Approved);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
                 abstentions: 0,
@@ -1142,7 +1141,7 @@ mod tests {
             assert_runtime_code!(wasm_code());
 
             assert!(Proposals::active_proposal_ids().is_empty());
-            assert_eq!(Proposals::proposal(1).status, Approved);
+            assert_eq!(Proposals::proposals(1).status, Approved);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
                 abstentions: 0,
@@ -1189,7 +1188,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             assert!(Proposals::active_proposal_ids().is_empty());
-            assert_eq!(Proposals::proposal(1).status, Rejected);
+            assert_eq!(Proposals::proposals(1).status, Rejected);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
                 abstentions: abstentions,
@@ -1234,7 +1233,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             assert!(Proposals::active_proposal_ids().is_empty());
-            assert_eq!(Proposals::proposal(1).status, Rejected);
+            assert_eq!(Proposals::proposals(1).status, Rejected);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
                 abstentions: 0,
@@ -1279,7 +1278,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             assert!(Proposals::active_proposal_ids().is_empty());
-            assert_eq!(Proposals::proposal(1).status, Slashed);
+            assert_eq!(Proposals::proposals(1).status, Slashed);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
                 abstentions: 0,
@@ -1334,7 +1333,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             assert!(Proposals::active_proposal_ids().is_empty());
-            assert_eq!(Proposals::proposal(1).status, Expired);
+            assert_eq!(Proposals::proposals(1).status, Expired);
             assert_eq!(Proposals::tally_results(1), TallyResult {
                 proposal_id: 1,
                 abstentions: 0,
