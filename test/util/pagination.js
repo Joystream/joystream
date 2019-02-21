@@ -4,7 +4,7 @@ const mocha = require('mocha');
 const expect = require('chai').expect;
 const mock_http = require('node-mocks-http');
 
-const pagination = require.main.require('lib/util/pagination');
+const pagination = require.main.require('util/pagination');
 
 describe('pagination', function()
 {

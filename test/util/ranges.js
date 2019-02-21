@@ -5,7 +5,7 @@ const expect = require('chai').expect;
 const mock_http = require('node-mocks-http');
 const stream_buffers = require('stream-buffers');
 
-const ranges = require.main.require('lib/util/ranges');
+const ranges = require.main.require('util/ranges');
 
 describe('ranges', function()
 {

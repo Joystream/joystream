@@ -4,7 +4,7 @@ const mocha = require('mocha');
 const expect = require('chai').expect;
 const temp = require('temp').track();
 
-const repository = require.main.require('lib/joystream/repository');
+const repository = require.main.require('joystream/repository');
 
 function write_mode(store, filename, mode, content, cb)
 {

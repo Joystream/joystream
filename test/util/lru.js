@@ -3,7 +3,7 @@
 const mocha = require('mocha');
 const expect = require('chai').expect;
 
-const lru = require.main.require('lib/util/lru');
+const lru = require.main.require('util/lru');
 
 const DEFAULT_SLEEP = 1;
 function sleep(ms = DEFAULT_SLEEP)
