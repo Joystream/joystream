@@ -2,8 +2,7 @@
 
 const mocha = require('mocha');
 const expect = require('chai').expect;
-// FIXME const temp = require('temp').track();
-const temp = require('temp');
+const temp = require('temp').track();
 
 const repository = require.main.require('lib/joystream/repository');
 
