@@ -32,25 +32,25 @@ pub enum ElectionStage<BlockNumber> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Seat<Id, Stake> {
-    pub member: Id,
-    pub stake: Stake,
-    pub backers: Vec<Backer<Id, Stake>>,
+pub struct Seat<AccountId, Balance> {
+    pub member: AccountId,
+    pub stake: Balance,
+    pub backers: Vec<Backer<AccountId, Balance>>,
 }
 
-impl<Id, Stake> Seat<Id, Stake>
-    where Stake: Add<Output=Stake> + Copy,
+impl<AccountId, Balance> Seat<AccountId, Balance>
+    where Balance: Add<Output=Balance> + Copy,
 {
-    pub fn calc_total_stake(&self) -> Stake {
+    pub fn calc_total_stake(&self) -> Balance {
         self.backers.iter().fold(self.stake, |acc, backer| acc + backer.stake)
     }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Backer<Id, Stake> {
-    pub member: Id,
-    pub stake: Stake,
+pub struct Backer<AccountId, Balance> {
+    pub member: AccountId,
+    pub stake: Balance,
 }
 
 pub type Seats<AccountId, Balance> = Vec<Seat<AccountId, Balance>>;
