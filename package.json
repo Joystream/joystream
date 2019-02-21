@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Joystream Storage Node",
   "scripts": {
-    "test": "mocha tests/**/*.js",
+    "test": "mocha test/**/*.js",
     "lint": "eslint paths/**/*.js lib/**/*.js",
     "dev": "npm-run-all --parallel server",
     "build": "npm-run-all --parallel server",
