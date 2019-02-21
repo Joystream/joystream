@@ -333,7 +333,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn councilors_count() -> u32 {
-        <council::Module<T>>::active_council().unwrap_or(vec![]).len() as u32
+        <council::Module<T>>::active_council().len() as u32
     }
 
     fn approval_quorum_seats() -> u32 {
