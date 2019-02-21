@@ -87,7 +87,7 @@ impl Alternative {
 /// Staging testnet config.
 pub fn staging_testnet_config() -> ChainSpec {
 	let boot_nodes = vec![
-		String::from("/ip4/testnet-boot.joystream.org/tcp/30333/p2p/QmRMZZQDsDDg2bsYRBFT9FiWsFXpWfgGHqJFYcRfz9Pfyi")
+		String::from("/dns4/testnet-boot.joystream.org/tcp/30333/p2p/QmRMZZQDsDDg2bsYRBFT9FiWsFXpWfgGHqJFYcRfz9Pfyi")
 	];
 	ChainSpec::from_genesis(
 		"Joystream staging testnet",
@@ -104,13 +104,12 @@ pub fn staging_testnet_config() -> ChainSpec {
 fn staging_testnet_config_genesis () -> GenesisConfig {
 	let initial_authorities = vec![
 		hex!["313ef1233684209e8b9740be3da31ac588874efae4b59771863afd44c2b620c4"].into(),
-		//hex!["80c696c19b597e7cfba9135600a15735f789ae81f251826ecd6799d06164c15b"].into(),
 	];
 	let endowed_accounts = vec![
 		hex!["6b7f25c05e367cbb8224681f9f8652f13e7de2953b4706f32e6daf42219ad31f"].into(),
 	];
-	const MILLICENTS: u128 = 1_000_000_000;
-	const CENTS: u128 = 1_000 * MILLICENTS;    // assume this is worth about a cent.
+
+	const CENTS: u128 = 1;
 	const DOLLARS: u128 = 100 * CENTS;
 
 	const SECS_PER_BLOCK: u64 = 6;
@@ -132,11 +131,11 @@ fn staging_testnet_config_genesis () -> GenesisConfig {
 		}),
 		balances: Some(BalancesConfig {
 			balances: endowed_accounts.iter().map(|&k| (k, 10_000_000 * DOLLARS)).collect(),
-			transaction_base_fee: 1 * CENTS,
-			transaction_byte_fee: 10 * MILLICENTS,
-			existential_deposit: 1 * MILLICENTS,
-			transfer_fee: 1 * MILLICENTS,
-			creation_fee: 1 * MILLICENTS,
+			transaction_base_fee: 0,
+			transaction_byte_fee: 0,
+			existential_deposit: 0,
+			transfer_fee: 0,
+			creation_fee: 0,
 			vesting: vec![],
 		}),
 		sudo: Some(SudoConfig {
@@ -149,7 +148,7 @@ fn staging_testnet_config_genesis () -> GenesisConfig {
 		staking: Some(StakingConfig {
 			current_era: 0,
 			intentions: initial_authorities.iter().cloned().map(Into::into).collect(),
-			offline_slash: Perbill::from_millionths(1000),
+			offline_slash: Perbill::from_billionths(1_000_000),
 			session_reward: Perbill::from_billionths(2_065),
 			current_offline_slash: 0,
 			current_session_reward: 0,
@@ -171,15 +170,15 @@ fn staging_testnet_config_genesis () -> GenesisConfig {
 			revealing_period: 1 * DAYS,
 			council_size: 6,
 			candidacy_limit: 25,
-			min_council_stake: 1000,
+			min_council_stake: 10 * DOLLARS,
 			new_term_duration: 14 * DAYS,
-			min_voting_stake: 10,
+			min_voting_stake: 1 * DOLLARS,
 		}),
 		proposals: Some(ProposalsConfig {
 			approval_quorum: 60,
-			minimum_stake: 100,
-			cancellation_fee: 5,
-			rejection_fee: 10,
+			minimum_stake: 2 * DOLLARS,
+			cancellation_fee: 50 * CENTS,
+			rejection_fee: 1 * DOLLARS,
 			voting_period: 2 * DAYS,
 			name_max_len: 32,
 			description_max_len: 10_000,
