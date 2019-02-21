@@ -55,6 +55,16 @@ describe('LRUCache', function()
       expect(val).to.be.undefined;
       expect(cache.has('something')).to.be.false;
     });
+
+    it('can be cleared', function()
+    {
+      var cache = new lru.LRUCache();
+      cache.put('something', 'yay!');
+      expect(cache.size()).to.equal(1);
+
+      cache.clear();
+      expect(cache.size()).to.equal(0);
+    });
   });
 
   describe('capacity management', function()
