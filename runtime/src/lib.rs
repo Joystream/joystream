@@ -229,9 +229,9 @@ construct_runtime!(
 		Session: session,
 		Staking: staking::{default, OfflineWorker},
 		Sudo: sudo,
-		Proposals: proposals::{Module, Call, Storage, Event<T>},
-		CouncilElection: election::{Module, Call, Storage, Event<T>},
-		Council: council::{Module, Call, Storage, Event<T>},
+		Proposals: proposals::{Module, Call, Storage, Event<T>, Config<T>},
+		CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
+		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 
