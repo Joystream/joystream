@@ -87,7 +87,7 @@ impl Alternative {
 /// Staging testnet config.
 pub fn staging_testnet_config() -> ChainSpec {
 	let boot_nodes = vec![
-		String::from("/ip4/testnet-boot.joystream.org/tcp/30333/p2p/QmeuMS9ifbSbV3Sd9tEWyaVVDe85mPfcPWcTpp3LEcEQ53")
+		String::from("/ip4/testnet-boot.joystream.org/tcp/30333/p2p/QmRMZZQDsDDg2bsYRBFT9FiWsFXpWfgGHqJFYcRfz9Pfyi")
 	];
 	ChainSpec::from_genesis(
 		"Joystream staging testnet",
