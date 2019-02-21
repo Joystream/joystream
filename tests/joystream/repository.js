@@ -5,7 +5,7 @@ const expect = require('chai').expect;
 // FIXME const temp = require('temp').track();
 const temp = require('temp');
 
-const storage = require.main.require('lib/joystream/storage');
+const repository = require.main.require('lib/joystream/repository');
 
 function write_mode(store, filename, mode, content, cb)
 {
@@ -56,19 +56,19 @@ function tests(backend)
     var prefix;
 
     beforeEach(() => {
-      prefix = temp.mkdirSync('joystream-storage-test');
+      prefix = temp.mkdirSync('joystream-repository-test');
     });
 
     function new_store()
     {
-      var s = new storage.Storage(prefix, backend == 'fs');
-      expect(s).to.be.an.instanceof(storage.Storage);
+      var s = new repository.Repository(prefix, backend == 'fs');
+      expect(s).to.be.an.instanceof(repository.Repository);
       return s;
     }
 
     describe('creation', function()
     {
-      it('can create a storage instance', function()
+      it('can create a repository instance', function()
       {
         new_store();
       });
@@ -160,7 +160,7 @@ function tests(backend)
   };
 }
 
-describe('storage', function()
+describe('repository', function()
 {
   describe('filesystem backend', tests('fs'));
   describe('hyperdrive backend', tests('hyperdrive'));
