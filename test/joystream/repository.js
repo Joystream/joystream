@@ -58,7 +58,7 @@ function tests(backend)
       prefix = temp.mkdirSync('joystream-repository-test');
     });
 
-    function new_store()
+    function new_repo()
     {
       var s = new repository.Repository(prefix, backend == 'fs');
       expect(s).to.be.an.instanceof(repository.Repository);
@@ -69,12 +69,19 @@ function tests(backend)
     {
       it('can create a repository instance', function()
       {
-        new_store();
+        new_repo();
+      });
+
+      it('can re-use an existing storage instrance', function()
+      {
+        var s1 = new_repo();
+        var s2 = new_repo();
+        expect(s1.storage_path).to.equal(s2.storage_path);
       });
 
       it('can provide stats for the root directory when newly created', function(done)
       {
-        var s = new_store();
+        var s = new_repo();
         s.stat('/', false, function(stats, type, err)
         {
           // No errors, no mime type
@@ -91,7 +98,7 @@ function tests(backend)
 
       it('cannot provide a mime type for the root directory', function(done)
       {
-        var s = new_store();
+        var s = new_repo();
         s.stat('/', true, function(stats, type, err)
         {
           // No errors, no mime type - even though it was requested.
@@ -109,13 +116,13 @@ function tests(backend)
     {
       it('can write a file', function(done)
       {
-        var s = new_store();
+        var s = new_repo();
         write(s, 'test-1', 'Hello, world!', done);
       });
 
       it('can read a written file', function(done)
       {
-        var s = new_store();
+        var s = new_repo();
         write(s, 'test-2', 'Hello, world!', (err) => {
           expect(err).to.be.undefined;
           read(s, 'test-2', (data) => {
@@ -130,7 +137,7 @@ function tests(backend)
       TODO appending does not seem to work with hyperdrive.
       it('can append to a file', function(done)
       {
-        var s = new_store();
+        var s = new_repo();
         write(s, 'test-2', 'Hello', (err) => {
           expect(err).to.be.undefined;
           append(s, 'test-2', ', world!', (err) => {
@@ -146,7 +153,7 @@ function tests(backend)
 
       it('can get the size of a written file', function(done)
       {
-        var s = new_store();
+        var s = new_repo();
         write(s, 'test-3', 'Hello, world!', (err) => {
           expect(err).to.be.undefined;
           s.size('test-3', (size, err) => {
