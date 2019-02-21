@@ -263,7 +263,7 @@ decl_module! {
         /// ```
         fn vote_on_proposal(origin, proposal_id: u32, vote: VoteKind) -> Result {
             let voter = ensure_signed(origin)?;
-            // ensure!(Self::is_councilor(&voter), MSG_ONLY_COUNCILORS_CAN_VOTE);
+            ensure!(Self::is_councilor(&voter), MSG_ONLY_COUNCILORS_CAN_VOTE);
 
             ensure!(<Proposals<T>>::exists(proposal_id), MSG_PROPOSAL_NOT_FOUND);
             let proposal = Self::proposal(proposal_id);
