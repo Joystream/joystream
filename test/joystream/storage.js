@@ -17,16 +17,6 @@ function matchDirent(name, matcher)
 }
 
 
-function pathExists(name)
-{
-  return new Promise(resolve => {
-    setTimeout(() => {
-      if (fs.existsSync(name)) resolve();
-    }, 10); // Increments for checking
-  });
-}
-
-
 describe('storage', function()
 {
   // Unique prefix per test
@@ -90,32 +80,78 @@ describe('storage', function()
       expect(res.id).to.have.lengthOf(36);
     });
 
-    it('returns created repositories', function()
+    it('returns created repositories', function(done)
     {
       var s = new_storage();
       var res = s.create();
       expect(res.repo).to.be.an.instanceof(repository.Repository);
       expect(res.id).to.have.lengthOf(36);
 
-      var repo = s.get(res.id);
-      expect(repo).to.equal(res.repo); // Strict equal, yay!
+      res.repo.on('ready', () => {
+        var repo = s.get(res.id);
+        expect(repo).to.equal(res.repo); // Strict equal, yay!
+
+        done();
+      });
     });
 
-    it('re-initialized created repositories', async function()
+    it('re-initialized created repositories', function(done)
     {
       var s = new_storage();
       var res = s.create();
       expect(res.repo).to.be.an.instanceof(repository.Repository);
       expect(res.id).to.have.lengthOf(36);
 
-      // Wait for the FS to catch up
-      await pathExists(res.repo.storage_path);
+      res.repo.on('ready', () => {
+        // Force flushing of the LRU pool
+        s.pool.clear();
 
-      // Force flushing of the LRU pool
-      s.pool.clear();
+        var repo = s.get(res.id);
+        expect(repo).to.be.an.instanceof(repository.Repository);
 
-      var repo = s.get(res.id);
-      expect(repo).to.be.an.instanceof(repository.Repository);
+        done();
+      });
+    });
+  });
+
+  describe('templating', function()
+  {
+    it('can create a repository from a function template', function(done)
+    {
+      var s = new_storage();
+      var res = s.create(undefined, (repo, commit) => {
+        repo.open('/foo', 'w', (err, mime, stream) => {
+          stream.write('Hello, world!');
+          stream.end(undefined, undefined, commit);
+        });
+      }, (err, id, repo) => {
+        // At this point, we can check the repo for a file list.
+        repo.list('/', (err, files) => {
+          expect(files).to.have.lengthOf(1);
+          expect(files[0]).to.equal('foo');
+          done();
+        });
+      });
+    });
+
+    it('can create a repository from a path template', function(done)
+    {
+      var s = new_storage();
+      var res = s.create(undefined, './testdata/template', (err, id, repo) => {
+        // At this point, we can check the repo for a file list.
+        repo.list('/', (err, files) => {
+          expect(files).to.have.lengthOf(2);
+          expect(files).to.include('foo');
+          expect(files).to.include('bar');
+          // ignore symlink: expect(files).to.include('quux');
+
+          repo.list('/foo', (err, files) => {
+            expect(files).to.have.lengthOf(1);
+            expect(files).to.include('baz');
+            done();
+          });
+        });
+      });
     });
   });
 });
