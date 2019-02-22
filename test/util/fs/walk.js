@@ -5,7 +5,7 @@ const expect = require('chai').expect;
 
 const fswalk = require.main.require('util/fs/walk');
 
-describe('fswalk', function()
+describe('fs/walk', function()
 {
   it('reports all files in a file system hierarchy', function(done)
   {
