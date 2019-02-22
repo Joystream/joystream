@@ -89,14 +89,13 @@ use self::VoteKind::*;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 /// Proposal for node runtime update.
-pub struct RuntimeUpgradeProposal<AccountId, Balance, BlockNumber> {
+pub struct RuntimeUpgradeProposal<AccountId, Balance, BlockNumber, Hash> {
     id: u32,
     proposer: AccountId,
     stake: Balance,
     name: Vec<u8>,
     description: Vec<u8>,
-    wasm_code: Vec<u8>,
-    // wasm_hash: Hash,
+    wasm_hash: Hash,
     proposed_at: BlockNumber,
     status: ProposalStatus,
 }
@@ -180,11 +179,17 @@ decl_storage! {
 
         // Persistent state (always relevant, changes constantly):
 
+        /// Count of all proposals that have been created.
         ProposalCount get(proposal_count): u32;
 
-        Proposals get(proposals): map u32 => RuntimeUpgradeProposal<T::AccountId, BalanceOf<T>, T::BlockNumber>;
+        /// Get proposal details by its id.
+        Proposals get(proposals): map u32 => RuntimeUpgradeProposal<T::AccountId, BalanceOf<T>, T::BlockNumber, T::Hash>;
 
+        /// Ids of proposals that are open for voting (have not been finalized yet).
         ActiveProposalIds get(active_proposal_ids): Vec<u32> = vec![];
+
+        /// Get WASM code of runtime upgrade by hash of its content.
+        WasmCodeByHash get(wasm_code_by_hash): map T::Hash => Vec<u8>;
 
         VotesByProposal get(votes_by_proposal): map u32 => Vec<(T::AccountId, VoteKind)>;
 
@@ -209,7 +214,6 @@ decl_module! {
             stake: BalanceOf<T>,
             name: Vec<u8>,
             description: Vec<u8>,
-            // wasm_hash: T::Hash,
             wasm_code: Vec<u8>
         ) -> Result {
 
@@ -233,17 +237,23 @@ decl_module! {
             let proposal_id = Self::proposal_count() + 1;
             <ProposalCount<T>>::put(proposal_id);
 
+            // See in substrate repo @ srml/contract/src/wasm/code_cache.rs:73
+            let wasm_hash = T::Hashing::hash(&wasm_code);
+
             let new_proposal = RuntimeUpgradeProposal {
                 id: proposal_id,
                 proposer: proposer.clone(),
                 stake,
                 name,
                 description,
-                wasm_code,
+                wasm_hash,
                 proposed_at: Self::current_block(),
                 status: Active
             };
 
+            if !<WasmCodeByHash<T>>::exists(wasm_hash) {
+              <WasmCodeByHash<T>>::insert(wasm_hash, wasm_code);
+            }
             <Proposals<T>>::insert(proposal_id, new_proposal);
             <ActiveProposalIds<T>>::mutate(|ids| ids.push(proposal_id));
             Self::deposit_event(RawEvent::ProposalCreated(proposer.clone(), proposal_id));
@@ -491,18 +501,15 @@ impl<T: Trait> Module<T> {
     /// Approve a proposal. The staked deposit will be returned.
     fn _approve_proposal(proposal_id: u32) -> Result {
         let proposal = Self::proposals(proposal_id);
-        let wasm_code = proposal.wasm_code;
+        let wasm_code = Self::wasm_code_by_hash(proposal.wasm_hash);
 
         // Return staked deposit to proposer:
         let _ = T::Currency::unreserve(&proposal.proposer, proposal.stake);
 
-        // See in substrate repo @ srml/contract/src/wasm/code_cache.rs:73
-        let wasm_hash = T::Hashing::hash(&wasm_code);
-
         // Update wasm code of node's runtime:
         <consensus::Module<T>>::set_code(wasm_code)?;
 
-        Self::deposit_event(RawEvent::RuntimeUpdated(proposal_id, wasm_hash));
+        Self::deposit_event(RawEvent::RuntimeUpdated(proposal_id, proposal.wasm_hash));
 
         Ok(())
     }
@@ -728,13 +735,14 @@ mod tests {
             assert_eq!(Proposals::active_proposal_ids().len(), 1);
             assert_eq!(Proposals::active_proposal_ids()[0], 1);
 
+            let wasm_hash = BlakeTwo256::hash(&wasm_code());
             let expected_proposal = RuntimeUpgradeProposal {
                 id: 1,
                 proposer: PROPOSER1,
                 stake: min_stake(),
                 name: name(),
                 description: description(),
-                wasm_code: wasm_code(),
+                wasm_hash,
                 proposed_at: 1,
                 status: Active
             };
