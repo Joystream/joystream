@@ -167,7 +167,7 @@ function tests(backend)
 
     describe('filesystem semantics', function()
     {
-      it('can create a directory listing', function(done)
+      it('can generate a directory listing', function(done)
       {
         // First write something
         var s = new_repo();
@@ -180,6 +180,21 @@ function tests(backend)
               .that.has.lengthOf(1);
             expect(files[0]).to.equal('test-3');
 
+            done();
+          });
+        });
+      });
+
+      it('can create direcotires', function(done)
+      {
+        // First create a directory
+        var s = new_repo();
+        s.mkdir('test-4', (err) => {
+          expect(err).to.be.null;
+          s.stat('/test-4', false, (err, stats, type) => {
+            expect(err).to.be.null;
+
+            expect(stats.isDirectory()).to.be.true;
             done();
           });
         });
