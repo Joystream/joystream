@@ -370,8 +370,8 @@ impl<T: Trait> Module<T> {
 
         // TODO iterate over not expired proposals and tally
 
-           Self::tally()?;
-            // TODO approve or reject a proposal
+          Self::tally()?;
+          // TODO approve or reject a proposal
 
         Ok(())
     }
@@ -383,11 +383,7 @@ impl<T: Trait> Module<T> {
         let quorum: u32 = Self::approval_quorum_seats();
 
         for &proposal_id in Self::active_proposal_ids().iter() {
-            let proposal = Self::proposals(proposal_id);
-            let is_expired = Self::is_voting_period_expired(proposal.proposed_at);
             let votes = Self::votes_by_proposal(proposal_id);
-            let all_councilors_voted = votes.len() as u32 == councilors;
-
             let mut abstentions: u32 = 0;
             let mut approvals: u32 = 0;
             let mut rejections: u32 = 0;
@@ -402,13 +398,29 @@ impl<T: Trait> Module<T> {
                 }
             }
 
-            let quorum_reached = approvals >= quorum;
+            let proposal = Self::proposals(proposal_id);
+            let is_expired = Self::is_voting_period_expired(proposal.proposed_at);
+
+            // We need to check that the council is not empty because otherwise,
+            // if there is no votes on a proposal it will be counted as if
+            // all 100% (zero) councilors voted on the proposal and should be approved.
+
+            let non_empty_council = councilors > 0;
+            let all_councilors_voted = non_empty_council && votes.len() as u32 == councilors;
+            let all_councilors_slashed = non_empty_council && slashes == councilors;
+            let quorum_reached = quorum > 0 && approvals >= quorum;
+
+            // Don't approve a proposal right after quorum reached
+            // if not all councilors casted their votes.
+            // Instead let other councilors cast their vote
+            // up until the proposal's expired.
+
             let new_status: Option<ProposalStatus> =
-                if all_councilors_voted {
+                if all_councilors_slashed {
+                    Some(Slashed)
+                } else if all_councilors_voted {
                     if quorum_reached {
                         Some(Approved)
-                    } else if slashes == councilors {
-                        Some(Slashed)
                     } else {
                         Some(Rejected)
                     }
