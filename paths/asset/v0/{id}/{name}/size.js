@@ -32,7 +32,7 @@ module.exports = function(config, storage)
       }
 
       const name = req.params.name;
-      repo.size(name, function(size, err) {
+      repo.size(name, function(err, size) {
         if (err) {
           res.status(err.code).send({ message: err.message });
           return;

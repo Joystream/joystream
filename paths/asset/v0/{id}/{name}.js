@@ -36,7 +36,7 @@ module.exports = function(config, storage)
       }
 
       const name = req.params.name;
-      repo.stat(name, true, (stats, type, err) => {
+      repo.stat(name, true, (err, stats, type) => {
         if (err) {
           res.status(err.code).send({ message: err.message });
           return;
@@ -85,7 +85,7 @@ module.exports = function(config, storage)
       debug('Requested range(s) is/are', ranges);
 
       // Open file
-      repo.open(name, 'r', (type, stream, err) => {
+      repo.open(name, 'r', (err, type, stream) => {
         if (err) {
           res.status(err.code).send({ message: err.message });
           return;
