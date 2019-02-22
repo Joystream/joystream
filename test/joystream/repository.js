@@ -8,9 +8,9 @@ const repository = require.main.require('joystream/repository');
 
 function write_mode(store, filename, mode, content, cb)
 {
-  store.open(filename, mode, (mime, stream, err) =>
+  store.open(filename, mode, (err, mime, stream) =>
   {
-    expect(err).to.be.undefined;
+    expect(err).to.be.null;
     stream.write(content, 'utf8', (err) =>
     {
       stream.on('finish', () => {
@@ -33,10 +33,10 @@ function append(store, filename, content, cb)
 
 function read(store, filename, cb)
 {
-  store.open(filename, 'r', (mime, stream, err) =>
+  store.open(filename, 'r', (err, mime, stream) =>
   {
     stream.on('readable', () => {
-      expect(err).to.be.undefined;
+      expect(err).to.be.null;
       var content = stream.read();
       if (content instanceof Buffer) {
         content = content.toString('utf8');
@@ -82,10 +82,10 @@ function tests(backend)
       it('can provide stats for the root directory when newly created', function(done)
       {
         var s = new_repo();
-        s.stat('/', false, function(stats, type, err)
+        s.stat('/', false, function(err, stats, type)
         {
           // No errors, no mime type
-          expect(err).to.be.undefined;
+          expect(err).to.be.null;
           expect(type).to.be.null;
 
           // Stats must contain a mode, at least.
@@ -99,10 +99,10 @@ function tests(backend)
       it('cannot provide a mime type for the root directory', function(done)
       {
         var s = new_repo();
-        s.stat('/', true, function(stats, type, err)
+        s.stat('/', true, function(err, stats, type)
         {
           // No errors, no mime type - even though it was requested.
-          expect(err).to.be.undefined;
+          expect(err).to.be.null;
           expect(type).to.be.null;
 
           done();
@@ -156,8 +156,30 @@ function tests(backend)
         var s = new_repo();
         write(s, 'test-3', 'Hello, world!', (err) => {
           expect(err).to.be.undefined;
-          s.size('test-3', (size, err) => {
+          s.size('test-3', (err, size) => {
             expect(size).to.equal(13);
+            done();
+          });
+        });
+      });
+    });
+
+
+    describe('filesystem semantics', function()
+    {
+      it('can create a directory listing', function(done)
+      {
+        // First write something
+        var s = new_repo();
+        write(s, 'test-3', 'Hello, world!', (err) => {
+          expect(err).to.be.undefined;
+          s.list('/', (err, files) => {
+            expect(err).to.be.null;
+
+            expect(files).to.be.an.instanceof(Array)
+              .that.has.lengthOf(1);
+            expect(files[0]).to.equal('test-3');
+
             done();
           });
         });
