@@ -88,8 +88,8 @@ pub fn staging_testnet_config() -> ChainSpec {
 		String::from("/dns4/testnet-boot.joystream.org/tcp/30333/p2p/QmRMZZQDsDDg2bsYRBFT9FiWsFXpWfgGHqJFYcRfz9Pfyi")
 	];
 	ChainSpec::from_genesis(
-		"Joystream staging testnet",
-		"joystream_staging_testnet",
+		"Joystream Testnet",
+		"joystream_testnet_2",
 		staging_testnet_config_genesis,
 		boot_nodes,
 		Some(STAGING_TELEMETRY_URL.into()),
