@@ -20,18 +20,18 @@ describe('fswalk', function()
 
       // End of data, do testing
       const entries = Array.from(results.keys());
-      expect(entries).to.include('/foo');
-      expect(results.get('/foo')[0].isDirectory()).to.be.true;
+      expect(entries).to.include('foo');
+      expect(results.get('foo')[0].isDirectory()).to.be.true;
 
-      expect(entries).to.include('/bar');
-      expect(results.get('/bar')[0].isFile()).to.be.true;
+      expect(entries).to.include('bar');
+      expect(results.get('bar')[0].isFile()).to.be.true;
 
-      expect(entries).to.include('/quux');
-      expect(results.get('/quux')[0].isSymbolicLink()).to.be.true;
-      expect(results.get('/quux')[1]).to.equal('foo/baz');
+      expect(entries).to.include('quux');
+      expect(results.get('quux')[0].isSymbolicLink()).to.be.true;
+      expect(results.get('quux')[1]).to.equal('foo/baz');
 
-      expect(entries).to.include('/foo/baz');
-      expect(results.get('/foo/baz')[0].isFile()).to.be.true;
+      expect(entries).to.include('foo/baz');
+      expect(results.get('foo/baz')[0].isFile()).to.be.true;
 
       done();
     });
