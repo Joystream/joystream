@@ -21,7 +21,7 @@ const default_config = new configstore(pkg.name);
 // Parse CLI
 const cli = meow(`
   Usage:
-    $ js_storage [options]
+    $ js_storage command [options]
 
   Options:
     --config=PATH, -c PATH  Configuration file path. Defaults to
@@ -54,19 +54,49 @@ const cli = meow(`
 });
 
 // Create configuration
-var filtered = {}
-for (var key in cli.flags) {
-  if (key.length == 1 || key == 'config') continue;
-  if (cli.flags[key] === undefined) continue;
-  filtered[key] = cli.flags[key];
+function create_config(pkgname, flags)
+{
+  var filtered = {}
+  for (var key in flags) {
+    if (key.length == 1 || key == 'config') continue;
+    if (flags[key] === undefined) continue;
+    filtered[key] = flags[key];
+  }
+  debug('argv', filtered);
+  var config = new configstore(pkgname, filtered, { configPath: flags.config });
+  debug(config);
+  return config;
 }
-debug('argv', filtered);
-const config = new configstore(pkg.name, filtered, { configPath: cli.flags.config });
-debug(config);
 
 // Start app
-console.log(chalk.blue(figlet.textSync('joystream', 'Speed')));
-const app = require(path.resolve(project_root, 'lib/app'))(cli.flags, config);
-const port = cli.flags.port || config.get('port') || 3000;
-app.listen(port);
-console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
+function start_app(project_root, config, flags)
+{
+  console.log(chalk.blue(figlet.textSync('joystream', 'Speed')));
+  const app = require(path.resolve(project_root, 'lib/app'))(flags, config);
+  const port = flags.port || config.get('port') || 3000;
+  app.listen(port);
+  console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
+}
+
+// Simple CLI commands
+var command = cli.input[0];
+if (!command) {
+  command = 'server';
+}
+
+const commands = {
+  'server': () => {
+    const cfg = create_config(pkg.name, cli.flags);
+    start_app(project_root, cfg, cli.flags);
+  },
+};
+
+if (commands.hasOwnProperty(command)) {
+  // Command recognized
+  commands[command]();
+}
+else {
+  // An error!
+  console.log(chalk.red(`Command "${command}" not recognized, aborting!`));
+  process.exit(1);
+}
