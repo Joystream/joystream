@@ -4,6 +4,7 @@
 
 use std::sync::Arc;
 use transaction_pool::{self, txpool::{Pool as TransactionPool}};
+use log::info;
 use joystream_node_runtime::{self, GenesisConfig, opaque::Block, RuntimeApi};
 use substrate_service::{
 	FactoryFullConfiguration, LightComponents, FullComponents, FullBackend,
@@ -16,6 +17,9 @@ use consensus::{import_queue, start_aura, AuraImportQueue, SlotDuration, Nothing
 use substrate_client as client;
 use primitives::ed25519::Pair;
 use inherents::InherentDataProviders;
+use network::construct_simple_protocol;
+use substrate_executor::native_executor_instance;
+use substrate_service::construct_service_factory;
 
 pub use substrate_executor::NativeExecutor;
 // Our native executor instance.
@@ -80,8 +84,6 @@ construct_service_factory! {
 			{ |config, executor| <LightComponents<Factory>>::new(config, executor) },
 		FullImportQueue = AuraImportQueue<
 			Self::Block,
-			FullClient<Self>,
-			NothingExtra,
 		>
 			{ |config: &mut FactoryFullConfiguration<Self> , client: Arc<FullClient<Self>>|
 				import_queue(
@@ -95,8 +97,6 @@ construct_service_factory! {
 			},
 		LightImportQueue = AuraImportQueue<
 			Self::Block,
-			LightClient<Self>,
-			NothingExtra,
 		>
 			{ |config: &mut FactoryFullConfiguration<Self>, client: Arc<LightClient<Self>>|
 				import_queue(
