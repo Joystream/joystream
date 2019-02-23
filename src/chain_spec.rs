@@ -176,7 +176,7 @@ fn staging_testnet_config_genesis () -> GenesisConfig {
 		}),
 		proposals: Some(ProposalsConfig {
 			approval_quorum: 60,
-			minimum_stake: 2 * DOLLARS,
+			min_stake: 2 * DOLLARS,
 			cancellation_fee: 50 * CENTS,
 			rejection_fee: 1 * DOLLARS,
 			voting_period: 2 * DAYS,
@@ -250,7 +250,7 @@ fn testnet_genesis(initial_authorities: Vec<Ed25519AuthorityId>, endowed_account
 		}),
 		proposals: Some(ProposalsConfig {
 			approval_quorum: 60,
-			minimum_stake: 100,
+			min_stake: 100,
 			cancellation_fee: 5,
 			rejection_fee: 10,
 			voting_period: 100,
