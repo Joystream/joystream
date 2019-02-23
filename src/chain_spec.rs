@@ -23,7 +23,9 @@ pub enum Alternative {
 	/// Whatever the current runtime is, with simple Alice/Bob auths.
 	LocalTestnet,
 	/// Staging testnet
-	StagingTestnet
+	StagingTestnet,
+	/// Sparta testnet
+	Sparta,
 }
 
 impl Alternative {
@@ -69,17 +71,24 @@ impl Alternative {
 				None
 			),
 			Alternative::StagingTestnet => staging_testnet_config(),
+			Alternative::Sparta => sparta_config()?,
 		})
 	}
 
 	pub(crate) fn from(s: &str) -> Option<Self> {
 		match s {
 			"dev" => Some(Alternative::Development),
-			"" | "local" => Some(Alternative::LocalTestnet),
+			"local" => Some(Alternative::LocalTestnet),
 			"staging" => Some(Alternative::StagingTestnet),
+			"" | "sparta" => Some(Alternative::Sparta),
 			_ => None,
 		}
 	}
+}
+
+/// Sparta testnet generator
+pub fn sparta_config() -> Result<ChainSpec, String> {
+	ChainSpec::from_embedded(include_bytes!("../res/sparta.json"))
 }
 
 /// Staging testnet config.
