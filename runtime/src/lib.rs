@@ -16,6 +16,7 @@ extern crate parity_codec_derive;
 
 pub mod governance;
 use governance::{election, council, proposals};
+mod memo;
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -219,6 +220,8 @@ impl governance::council::Trait for Runtime {
 	type CouncilTermEnded = (CouncilElection,);
 }
 
+impl memo::Trait for Runtime {}
+
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, Ed25519AuthorityId>) where
 		Block = Block,
@@ -238,6 +241,7 @@ construct_runtime!(
 		Proposals: proposals::{Module, Call, Storage, Event<T>, Config<T>},
 		CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
 		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
+		Memo: memo::{Module, Call, Storage},
 	}
 );
 
