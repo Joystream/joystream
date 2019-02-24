@@ -41,6 +41,7 @@ decl_storage! {
 decl_event!(
     pub enum Event<T> where <T as system::Trait>::BlockNumber {
         CouncilTermEnded(BlockNumber),
+        NewCouncilTermStarted(BlockNumber),
     }
 );
 
@@ -50,6 +51,7 @@ impl<T: Trait> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber>
 
         let next_term_ends_at = <system::Module<T>>::block_number() + term;
         <TermEndsAt<T>>::put(next_term_ends_at);
+        Self::deposit_event(RawEvent::NewCouncilTermStarted(next_term_ends_at));
     }
 }
 

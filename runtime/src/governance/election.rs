@@ -114,7 +114,10 @@ decl_storage! {
 
 /// Event for this module.
 decl_event!(
-    pub enum Event<T> where <T as system::Trait>::BlockNumber {
+    pub enum Event<T> where
+    <T as system::Trait>::BlockNumber,
+    <T as system::Trait>::AccountId,
+    <T as system::Trait>::Hash  {
         /// A new election started
         ElectionStarted(),
         AnnouncingStarted(u32),
@@ -124,6 +127,9 @@ decl_event!(
         RevealingStarted(),
         RevealingEnded(),
         CouncilElected(BlockNumber),
+        Applied(AccountId),
+        Voted(AccountId, Hash),
+        Revealed(AccountId, Hash, AccountId),
     }
 );
 
@@ -643,60 +649,63 @@ decl_module! {
 
         // Member can apply during announcing stage only. On first call a minimum stake will need to be provided.
         // Member can make subsequent calls during announcing stage to increase their stake.
-        fn apply(origin, stake: BalanceOf<T>) -> Result {
+        fn apply(origin, stake: BalanceOf<T>) {
             let sender = ensure_signed(origin)?;
             ensure!(Self::is_member(sender.clone()), "Only members can apply to be on council");
 
-            // Can only apply during announcing stage
-            if let Some(stage) = Self::stage() {
-                match stage {
-                    ElectionStage::Announcing(_) => {
-                        // minimum stake on first attempt to apply
-                        if !<ApplicantStakes<T>>::exists(&sender) {
-                            ensure!(stake >= Self::min_council_stake(), "minimum stake must be provided");
-                        }
+            let stage = Self::stage();
+            ensure!(Self::stage().is_some(), "election not running");
 
-                        Self::try_add_applicant(sender, stake)
-                    },
-                    _ => Err("election not in announcing stage")
-                }
-            } else {
-                Err("election not running")
+            let is_announcing = match stage.unwrap() {
+                ElectionStage::Announcing(_) => true,
+                _ => false
+            };
+            ensure!(is_announcing, "election not in announcing stage");
+
+            // minimum stake on first attempt to apply
+            if !<ApplicantStakes<T>>::exists(&sender) {
+                ensure!(stake >= Self::min_council_stake(), "minimum stake must be provided");
             }
+
+            Self::try_add_applicant(sender.clone(), stake)?;
+
+            Self::deposit_event(RawEvent::Applied(sender));
         }
 
-        fn vote(origin, commitment: T::Hash, stake: BalanceOf<T>) -> Result {
+        fn vote(origin, commitment: T::Hash, stake: BalanceOf<T>) {
             let sender = ensure_signed(origin)?;
             ensure!(Self::is_member(sender.clone()), "Only members can vote for an applicant");
 
-            // Can only vote during election voting stage
-            if let Some(stage) = Self::stage() {
-                match stage {
-                    ElectionStage::Voting(_) => {
-                        ensure!(stake >= Self::min_voting_stake(), "voting stake too low");
-                        Self::try_add_vote(sender, stake, commitment)
-                    },
-                    _ => Err("election not in voting stage")
-                }
-            } else {
-                Err("election not running")
-            }
+            let stage = Self::stage();
+            ensure!(Self::stage().is_some(), "election not running");
+
+            let is_voting = match stage.unwrap() {
+                ElectionStage::Voting(_) => true,
+                _ => false
+            };
+            ensure!(is_voting, "election not in voting stage");
+
+            ensure!(stake >= Self::min_voting_stake(), "voting stake too low");
+            Self::try_add_vote(sender.clone(), stake, commitment)?;
+            Self::deposit_event(RawEvent::Voted(sender, commitment));
         }
 
-        fn reveal(origin, commitment: T::Hash, vote: T::AccountId, salt: Vec<u8>) -> Result {
+        fn reveal(origin, commitment: T::Hash, vote: T::AccountId, salt: Vec<u8>) {
             let sender = ensure_signed(origin)?;
 
             ensure!(salt.len() <= 32, "salt too large"); // at most 256 bits salt
 
-            // Can only reveal vote during election revealing stage
-            if let Some(stage) = Self::stage() {
-                match stage {
-                    ElectionStage::Revealing(_) => Self::try_reveal_vote(sender, commitment, vote, salt),
-                    _ => Err("election not in revealing stage")
-                }
-            } else {
-                Err("election not running")
-            }
+            let stage = Self::stage();
+            ensure!(Self::stage().is_some(), "election not running");
+
+            let is_revealing = match stage.unwrap() {
+                ElectionStage::Revealing(_) => true,
+                _ => false
+            };
+            ensure!(is_revealing, "election not in revealing stage");
+
+            Self::try_reveal_vote(sender.clone(), commitment, vote.clone(), salt)?;
+            Self::deposit_event(RawEvent::Revealed(sender, commitment, vote));
         }
 
         fn set_stage_announcing(ends_at: T::BlockNumber) -> Result {
@@ -799,7 +808,11 @@ decl_module! {
 impl<T: Trait> council::CouncilTermEnded for Module<T> {
     fn council_term_ended() {
         if Self::auto_start() {
-            Self::start_election(<council::Module<T>>::active_council());
+            if Self::start_election(<council::Module<T>>::active_council()).is_ok() {
+                // emit ElectionStarted
+            } else {
+                // emit ElectionFailedStart
+            }
         }
     }
 }
