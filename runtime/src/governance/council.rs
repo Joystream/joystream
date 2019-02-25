@@ -92,7 +92,7 @@ decl_module! {
         }
 
         /// Adds a zero staked council member
-        fn add_council_member(account: T::AccountId) -> Result {
+        fn add_council_member(account: T::AccountId) {
             ensure!(!Self::is_councilor(&account), "cannot add same account multiple times");
             let seat = Seat {
                 member: account,
@@ -102,24 +102,21 @@ decl_module! {
 
             // add member to existing council
             <ActiveCouncil<T>>::mutate(|council| council.push(seat));
-            Ok(())
         }
 
-        fn remove_council_member(account_to_remove: T::AccountId) -> Result {
+        fn remove_council_member(account_to_remove: T::AccountId) {
             ensure!(Self::is_councilor(&account_to_remove), "account is not a councilor");
             let filtered_council: Seats<T::AccountId, BalanceOf<T>> = Self::active_council()
                 .into_iter()
                 .filter(|c| c.member != account_to_remove)
                 .collect();
             <ActiveCouncil<T>>::put(filtered_council);
-            Ok(())
         }
 
         /// Set blocknumber when council term will end
-        fn set_term_ends_at(ends_at: T::BlockNumber) -> Result {
+        fn set_term_ends_at(ends_at: T::BlockNumber) {
             ensure!(ends_at > <system::Module<T>>::block_number(), "must set future block number");
             <TermEndsAt<T>>::put(ends_at);
-            Ok(())
         }
     }
 }
