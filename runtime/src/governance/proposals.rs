@@ -320,7 +320,7 @@ decl_module! {
         }
 
         /// Cancel a proposal and return stake without slashing
-        fn veto_proposal(proposal_id: u32) -> Result {
+        fn veto_proposal(proposal_id: u32) {
             ensure!(<Proposals<T>>::exists(proposal_id), MSG_PROPOSAL_NOT_FOUND);
             let proposal = Self::proposals(proposal_id);
             ensure!(proposal.status == Active, MSG_PROPOSAL_FINALIZED);
@@ -330,7 +330,6 @@ decl_module! {
             Self::_update_proposal_status(proposal_id, Cancelled)?;
 
             Self::deposit_event(RawEvent::ProposalVetoed(proposal_id));
-            Ok(())
         }
     }
 }
