@@ -80,7 +80,7 @@ pub struct TransferableStake<Balance> {
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilElection {
         // Flag for wether to automatically start an election after a council term ends
-        AutoStart get(auto_start) : bool = true;
+        AutoStart get(auto_start) config() : bool = true;
 
         // Current stage if there is an election running
         Stage get(stage): Option<ElectionStage<T::BlockNumber>>;

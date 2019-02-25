@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::traits::{Currency};
+use srml_support::traits::{Currency, ArithmeticType};
 use system;
 
 pub mod election;
@@ -10,10 +10,10 @@ pub mod proposals;
 mod stake;
 mod sealed_vote;
 
-pub trait GovernanceCurrency: system::Trait {
-    type Currency: Currency<<Self as system::Trait>::AccountId>;
+pub trait GovernanceCurrency: system::Trait + Sized {
+    type Currency: ArithmeticType + Currency<<Self as system::Trait>::AccountId, Balance=BalanceOf<Self>>;
 }
 
-pub type BalanceOf<T> = <<T as GovernanceCurrency>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+pub type BalanceOf<T> = <<T as GovernanceCurrency>::Currency as ArithmeticType>::Type;
 
 mod mock;
