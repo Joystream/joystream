@@ -145,7 +145,7 @@ decl_event!(
         RuntimeUpdated(u32, Hash),
 
         /// Root cancelled proposal
-        ProposalVeto(u32),
+        ProposalVetoed(u32),
     }
 );
 
@@ -320,7 +320,7 @@ decl_module! {
         }
 
         /// Cancel a proposal and return stake without slashing
-        fn veto(proposal_id: u32) -> Result {
+        fn veto_proposal(proposal_id: u32) -> Result {
             ensure!(<Proposals<T>>::exists(proposal_id), MSG_PROPOSAL_NOT_FOUND);
             let proposal = Self::proposals(proposal_id);
             ensure!(proposal.status == Active, MSG_PROPOSAL_FINALIZED);
@@ -329,7 +329,7 @@ decl_module! {
 
             Self::_update_proposal_status(proposal_id, Cancelled)?;
 
-            Self::deposit_event(RawEvent::ProposalVeto(proposal_id));
+            Self::deposit_event(RawEvent::ProposalVetoed(proposal_id));
             Ok(())
         }
     }
