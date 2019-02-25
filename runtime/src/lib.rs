@@ -220,7 +220,9 @@ impl governance::council::Trait for Runtime {
 	type CouncilTermEnded = (CouncilElection,);
 }
 
-impl memo::Trait for Runtime {}
+impl memo::Trait for Runtime {
+	type Event = Event;
+}
 
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, Ed25519AuthorityId>) where
@@ -241,7 +243,7 @@ construct_runtime!(
 		Proposals: proposals::{Module, Call, Storage, Event<T>, Config<T>},
 		CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
 		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
-		Memo: memo::{Module, Call, Storage},
+		Memo: memo::{Module, Call, Storage, Event<T>},
 	}
 );
 
