@@ -215,7 +215,7 @@ decl_module! {
             name: Vec<u8>,
             description: Vec<u8>,
             wasm_code: Vec<u8>
-        ) -> Result {
+        ) {
 
             let proposer = ensure_signed(origin)?;
             ensure!(Self::is_member(proposer.clone()), MSG_ONLY_MEMBERS_CAN_PROPOSE);
@@ -262,15 +262,13 @@ decl_module! {
             if Self::is_councilor(&proposer) {
                 Self::_process_vote(proposer, proposal_id, Approve)?;
             }
-
-            Ok(())
         }
 
         /// Use next code to create a proposal from Substrate UI's web console:
         /// ```js
         /// post({ sender: runtime.indices.ss58Decode('F7Gh'), call: calls.proposals.voteOnProposal(1, { option: "Approve", _type: "VoteKind" }) }).tie(console.log)
         /// ```
-        fn vote_on_proposal(origin, proposal_id: u32, vote: VoteKind) -> Result {
+        fn vote_on_proposal(origin, proposal_id: u32, vote: VoteKind) {
             let voter = ensure_signed(origin)?;
             ensure!(Self::is_councilor(&voter), MSG_ONLY_COUNCILORS_CAN_VOTE);
 
@@ -286,12 +284,11 @@ decl_module! {
             ensure!(did_not_vote_before, MSG_YOU_ALREADY_VOTED);
 
             Self::_process_vote(voter, proposal_id, vote)?;
-            Ok(())
         }
 
         // TODO add 'reason' why a proposer wants to cancel (UX + feedback)?
         /// Cancel a proposal by its original proposer. Some fee will be withdrawn from his balance.
-        fn cancel_proposal(origin, proposal_id: u32) -> Result {
+        fn cancel_proposal(origin, proposal_id: u32) {
             let proposer = ensure_signed(origin)?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), MSG_PROPOSAL_NOT_FOUND);
@@ -310,8 +307,6 @@ decl_module! {
 
             Self::_update_proposal_status(proposal_id, Cancelled)?;
             Self::deposit_event(RawEvent::ProposalCanceled(proposer, proposal_id));
-
-            Ok(())
         }
 
         // Called on every block
