@@ -3121,6 +3121,11 @@ shell-quote@^1.6.1:
     array-reduce "~0.0.0"
     jsonify "~0.0.0"
 
+si-prefix@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/si-prefix/-/si-prefix-0.2.0.tgz#b99b4a1d5d3e986da250ee946e2073b6fef46fbc"
+  integrity sha512-GpIuMuJyg2GKjboWH5hyR/VRlVi3UoDQGrlQPKCeNmKkDQJ6o8HZbLSGTZyJcHym1ZEnkQHuqNd+cELxV+U11g==
+
 signal-exit@^3.0.0, signal-exit@^3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/signal-exit/-/signal-exit-3.0.2.tgz#b5fdc08f1287ea1178628e415e25132b73646c6d"
