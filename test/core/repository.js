@@ -125,6 +125,12 @@ function tests(backend)
         write(s, 'test-1', 'Hello, world!', done);
       });
 
+      it('can write a file in a subdirectory that did not exist before', function(done)
+      {
+        var s = new_repo();
+        write(s, 'testdir/test-1', 'Hello, world!', done);
+      });
+
       it('can read a written file', function(done)
       {
         var s = new_repo();
