@@ -708,73 +708,62 @@ decl_module! {
             Self::deposit_event(RawEvent::Revealed(sender, commitment, vote));
         }
 
-        fn set_stage_announcing(ends_at: T::BlockNumber) -> Result {
+        fn set_stage_announcing(ends_at: T::BlockNumber) {
             ensure!(ends_at > <system::Module<T>>::block_number(), "must end at future block number");
             <Stage<T>>::put(ElectionStage::Announcing(ends_at));
-            Ok(())
         }
 
-        fn set_stage_revealing(ends_at: T::BlockNumber) -> Result {
+        fn set_stage_revealing(ends_at: T::BlockNumber) {
             ensure!(ends_at > <system::Module<T>>::block_number(), "must end at future block number");
             <Stage<T>>::put(ElectionStage::Revealing(ends_at));
-            Ok(())
         }
 
-        fn set_stage_voting(ends_at: T::BlockNumber) -> Result {
+        fn set_stage_voting(ends_at: T::BlockNumber) {
             ensure!(ends_at > <system::Module<T>>::block_number(), "must end at future block number");
             <Stage<T>>::put(ElectionStage::Voting(ends_at));
-            Ok(())
         }
 
-        fn set_param_announcing_period(period: T::BlockNumber) -> Result {
+        fn set_param_announcing_period(period: T::BlockNumber) {
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(!period.is_zero(), "period cannot be zero");
             <AnnouncingPeriod<T>>::put(period);
-            Ok(())
         }
-        fn set_param_voting_period(period: T::BlockNumber) -> Result {
+        fn set_param_voting_period(period: T::BlockNumber) {
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(!period.is_zero(), "period cannot be zero");
             <VotingPeriod<T>>::put(period);
-            Ok(())
         }
-        fn set_param_revealing_period(period: T::BlockNumber) -> Result {
+        fn set_param_revealing_period(period: T::BlockNumber) {
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(!period.is_zero(), "period cannot be zero");
             <RevealingPeriod<T>>::put(period);
-            Ok(())
         }
-        fn set_param_min_council_stake(amount: BalanceOf<T>) -> Result {
+        fn set_param_min_council_stake(amount: BalanceOf<T>) {
             ensure!(!Self::is_election_running(), "cannot change params during election");
             <MinCouncilStake<T>>::put(amount);
-            Ok(())
         }
-        fn set_param_new_term_duration(duration: T::BlockNumber) -> Result {
+        fn set_param_new_term_duration(duration: T::BlockNumber) {
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(!duration.is_zero(), "new term duration cannot be zero");
             <NewTermDuration<T>>::put(duration);
-            Ok(())
         }
-        fn set_param_council_size(council_size: u32) -> Result {
+        fn set_param_council_size(council_size: u32) {
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(council_size > 0, "council size cannot be zero");
             ensure!(council_size <= Self::candidacy_limit(), "council size cannot greater than candidacy limit");
             <CouncilSize<T>>::put(council_size);
-            Ok(())
         }
-        fn set_param_candidacy_limit(limit: u32) -> Result {
+        fn set_param_candidacy_limit(limit: u32) {
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(limit >= Self::council_size(), "candidacy limit cannot be less than council size");
             <CandidacyLimit<T>>::put(limit);
-            Ok(())
         }
-        fn set_param_min_voting_stake(amount: BalanceOf<T>) -> Result {
+        fn set_param_min_voting_stake(amount: BalanceOf<T>) {
             ensure!(!Self::is_election_running(), "cannot change params during election");
             <MinVotingStake<T>>::put(amount);
-            Ok(())
         }
 
-        fn force_stop_election() -> Result {
+        fn force_stop_election() {
             ensure!(Self::is_election_running(), "only running election can be stopped");
 
             let mut votes = Vec::new();
@@ -790,12 +779,10 @@ decl_module! {
                 &empty_council,
                 false /* do not unlock transferable stakes */
             );
-
-            Ok(())
         }
 
-        fn force_start_election() -> Result {
-            Self::start_election(<council::Module<T>>::active_council())
+        fn force_start_election() {
+            Self::start_election(<council::Module<T>>::active_council())?;
         }
 
         fn set_auto_start (flag: bool) {

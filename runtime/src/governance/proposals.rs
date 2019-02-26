@@ -143,6 +143,9 @@ decl_event!(
 
         /// * Hash - hash of wasm code of runtime update.
         RuntimeUpdated(u32, Hash),
+
+        /// Root cancelled proposal
+        ProposalVetoed(u32),
     }
 );
 
@@ -314,6 +317,19 @@ decl_module! {
             if let Err(e) = Self::end_block(n) {
                 print(e);
             }
+        }
+
+        /// Cancel a proposal and return stake without slashing
+        fn veto_proposal(proposal_id: u32) {
+            ensure!(<Proposals<T>>::exists(proposal_id), MSG_PROPOSAL_NOT_FOUND);
+            let proposal = Self::proposals(proposal_id);
+            ensure!(proposal.status == Active, MSG_PROPOSAL_FINALIZED);
+
+            let _ = T::Currency::unreserve(&proposal.proposer, proposal.stake);
+
+            Self::_update_proposal_status(proposal_id, Cancelled)?;
+
+            Self::deposit_event(RawEvent::ProposalVetoed(proposal_id));
         }
     }
 }
