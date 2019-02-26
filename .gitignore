@@ -1,7 +1,6 @@
 build/
 coverage/
 dist
-node_modules/
 tmp/
 .DS_Store
 
@@ -20,3 +19,7 @@ yarn-error.log*
 .idea
 .vscode
 .*.sw*
+
+# Node modules except our own
+node_modules/*
+!node_modules/joystream

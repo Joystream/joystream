@@ -3,7 +3,7 @@
 const mocha = require('mocha');
 const expect = require('chai').expect;
 
-const fswalk = require.main.require('util/fs/walk');
+const fswalk = require('joystream/util/fs/walk');
 
 describe('fs/walk', function()
 {

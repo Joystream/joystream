@@ -6,8 +6,8 @@ const fs = require('fs');
 // FIXME const temp = require('temp').track();
 const temp = require('temp');
 
-const storage = require.main.require('joystream/storage');
-const repository = require.main.require('joystream/repository');
+const storage = require('joystream/core/storage');
+const repository = require('joystream/core/repository');
 
 function matchDirent(name, matcher)
 {

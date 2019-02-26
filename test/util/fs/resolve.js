@@ -4,7 +4,7 @@ const mocha = require('mocha');
 const expect = require('chai').expect;
 const path = require('path');
 
-const resolve = require.main.require('util/fs/resolve');
+const resolve = require('joystream/util/fs/resolve');
 
 function tests(base)
 {
