@@ -58,9 +58,14 @@ function tests(backend)
       prefix = temp.mkdirSync('joystream-repository-test');
     });
 
-    function new_repo()
+    function new_repo(cb)
     {
       var s = new repository.Repository(prefix, backend == 'fs');
+      if (cb) {
+        s.on('ready', () => {
+          cb(s);
+        });
+      }
       expect(s).to.be.an.instanceof(repository.Repository);
       return s;
     }
@@ -200,6 +205,57 @@ function tests(backend)
         });
       });
     });
+
+    describe('templating', function()
+    {
+      it('can create a repository from a function template', function(done)
+      {
+        new_repo((repo) => {
+          repo.populate((r, commit) => {
+            r.open('/foo', 'w', (err, mime, stream) => {
+              expect(err).to.be.null;
+
+              stream.write('Hello, world!');
+              stream.end(undefined, undefined, commit);
+            });
+          }, (err) => {
+            expect(err).to.be.undefined;
+
+            // At this point, we can check the repo for a file list.
+            repo.list('/', (err, files) => {
+              expect(files).to.have.lengthOf(1);
+              expect(files[0]).to.equal('foo');
+              done();
+            });
+          });
+        });
+      });
+
+      it('can create a repository from a path template', function(done)
+      {
+        new_repo((repo) => {
+          repo.populate('./testdata/template', (err) =>
+          {
+            expect(err).to.be.undefined;
+
+            // At this point, we can check the repo for a file list.
+            repo.list('/', (err, files) => {
+              expect(files).to.have.lengthOf(2);
+              expect(files).to.include('foo');
+              expect(files).to.include('bar');
+              // ignore symlink: expect(files).to.include('quux');
+
+              repo.list('/foo', (err, files) => {
+                expect(files).to.have.lengthOf(1);
+                expect(files).to.include('baz');
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+
   };
 }
 
