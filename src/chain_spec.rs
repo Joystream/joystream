@@ -24,8 +24,8 @@ pub enum Alternative {
 	LocalTestnet,
 	/// Staging testnet
 	StagingTestnet,
-	/// Sparta testnet
-	Sparta,
+	/// Testnet - the current live testnet
+	LiveTestnet,
 }
 
 impl Alternative {
@@ -71,7 +71,7 @@ impl Alternative {
 				None
 			),
 			Alternative::StagingTestnet => staging_testnet_config(),
-			Alternative::Sparta => sparta_config()?,
+			Alternative::LiveTestnet => live_testnet_config()?,
 		})
 	}
 
@@ -80,25 +80,25 @@ impl Alternative {
 			"dev" => Some(Alternative::Development),
 			"local" => Some(Alternative::LocalTestnet),
 			"staging" => Some(Alternative::StagingTestnet),
-			"" | "sparta" => Some(Alternative::Sparta),
+			"" | "testnet" => Some(Alternative::LiveTestnet),
 			_ => None,
 		}
 	}
 }
 
-/// Sparta testnet generator
-pub fn sparta_config() -> Result<ChainSpec, String> {
-	ChainSpec::from_embedded(include_bytes!("../res/sparta.json"))
+/// LiveTestnet generator
+pub fn live_testnet_config() -> Result<ChainSpec, String> {
+	ChainSpec::from_embedded(include_bytes!("../res/joy_testnet_1.json"))
 }
 
-/// Staging testnet config.
+/// Staging testnet config
 pub fn staging_testnet_config() -> ChainSpec {
 	let boot_nodes = vec![
 		String::from("/dns4/testnet-boot.joystream.org/tcp/30333/p2p/QmRMZZQDsDDg2bsYRBFT9FiWsFXpWfgGHqJFYcRfz9Pfyi")
 	];
 	ChainSpec::from_genesis(
-		"Joystream Testnet",
-		"joystream_testnet_2",
+		"Joystream Staging Testnet",
+		"joystream_staging_3",
 		staging_testnet_config_genesis,
 		boot_nodes,
 		Some(STAGING_TELEMETRY_URL.into()),
@@ -137,7 +137,7 @@ fn staging_testnet_config_genesis () -> GenesisConfig {
 			ids: endowed_accounts.clone(),
 		}),
 		balances: Some(BalancesConfig {
-			balances: endowed_accounts.iter().map(|&k| (k, 10_000_000 * DOLLARS)).collect(),
+			balances: endowed_accounts.iter().map(|&k| (k, 100_000_000 * DOLLARS)).collect(),
 			existential_deposit: 0,
 			transfer_fee: 0,
 			creation_fee: 0,
@@ -152,17 +152,17 @@ fn staging_testnet_config_genesis () -> GenesisConfig {
 		}),
 		session: Some(SessionConfig {
 			validators: initial_authorities.iter().cloned().map(Into::into).collect(),
-			session_length: 5 * MINUTES,
+			session_length: 10 * MINUTES,
 		}),
 		staking: Some(StakingConfig {
 			current_era: 0,
 			intentions: initial_authorities.iter().cloned().map(Into::into).collect(),
-			offline_slash: Perbill::from_billionths(1_000_000),
-			session_reward: Perbill::from_billionths(2_065),
+			offline_slash: Perbill::from_millionths(10_000),  // 1/ 100 => 1%
+			session_reward: Perbill::from_millionths(1_000),  // 1/1000 => 0.1% (min stake -> 1000 units for reward to be GT 0)
 			current_offline_slash: 0,
 			current_session_reward: 0,
 			validator_count: 10,
-			sessions_per_era: 12,
+			sessions_per_era: 6,
 			bonding_duration: 60 * MINUTES,
 			offline_slash_grace: 4,
 			minimum_validator_count: 1,
@@ -184,12 +184,12 @@ fn staging_testnet_config_genesis () -> GenesisConfig {
 			min_voting_stake: 1 * DOLLARS,
 		}),
 		proposals: Some(ProposalsConfig {
-			approval_quorum: 60,
+			approval_quorum: 80,
 			min_stake: 2 * DOLLARS,
-			cancellation_fee: 50 * CENTS,
+			cancellation_fee: 10 * CENTS,
 			rejection_fee: 1 * DOLLARS,
 			voting_period: 2 * DAYS,
-			name_max_len: 32,
+			name_max_len: 512,
 			description_max_len: 10_000,
 			wasm_code_max_len: 2_000_000,
 		}),

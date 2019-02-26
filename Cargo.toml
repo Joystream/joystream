@@ -75,7 +75,7 @@ authors = ['Joystream']
 build = 'build.rs'
 edition = '2018'
 name = 'joystream-node'
-version = '0.10.0'
+version = '0.10.1'
 
 [[bin]]
 name = 'joystream-node'

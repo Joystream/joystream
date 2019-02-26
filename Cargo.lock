@@ -1013,14 +1013,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "joystream-node"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "ctrlc 3.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "error-chain 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "exit-future 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex-literal 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "joystream-node-runtime 0.9.1",
+ "joystream-node-runtime 1.0.0",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "node-executor 0.1.0 (git+https://github.com/paritytech/substrate.git?rev=1ca4cc0a16a357782bb1028bb57376594ca232a0)",
  "parity-codec 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1044,7 +1044,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "0.9.1"
+version = "1.0.0"
 dependencies = [
  "parity-codec 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-codec-derive 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
