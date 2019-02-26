@@ -21,7 +21,13 @@ const default_config = new configstore(pkg.name);
 // Parse CLI
 const cli = meow(`
   Usage:
-    $ js_storage command [options]
+    $ js_storage [command] [options]
+
+  Commands:
+    server [default]  Run a server instance with the given configuration.
+    create            Create a repository in the configured storage location.
+                      If a second argument is given, it is a directory from which
+                      the repository will be populated.
 
   Options:
     --config=PATH, -c PATH  Configuration file path. Defaults to
@@ -72,7 +78,7 @@ function create_config(pkgname, flags)
 function start_app(project_root, config, flags)
 {
   console.log(chalk.blue(figlet.textSync('joystream', 'Speed')));
-  const app = require(path.resolve(project_root, 'lib/app'))(flags, config);
+  const app = require('joystream/app')(flags, config);
   const port = flags.port || config.get('port') || 3000;
   app.listen(port);
   console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
@@ -88,6 +94,23 @@ const commands = {
   'server': () => {
     const cfg = create_config(pkg.name, cli.flags);
     start_app(project_root, cfg, cli.flags);
+  },
+  'create': () => {
+    const cfg = create_config(pkg.name, cli.flags);
+
+    const store_path = cli.flags.storage || cfg.get('storage') || './storage';
+    const store_type = cli.flags['storage-type'] || cfg.get('storage-type') || 'hyperdrive';
+
+    const storage = require('joystream/core/storage');
+
+    const store = new storage.Storage(store_path, storage.DEFAULT_POOL_SIZE,
+        store_type == "fs");
+    if (store.new) {
+      console.log('Storage created.');
+    }
+    else {
+      console.log('Storage already existed, not created.');
+    }
   },
 };
 
