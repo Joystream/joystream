@@ -143,13 +143,13 @@ function list_repo(store, repo_id)
       var info = siprefix.byte.convert(stat.size);
       size = `${Math.ceil(info[0])} ${info[1]}`;
     }
-    while (info.length < 8) {
-      info = ' ' + info;
+    while (size.length < 8) {
+      size = ' ' + size;
     }
 
     line += size + '  ' + relname;
 
-    console.log(line);
+    console.log('  ' + line);
   });
 }
 
@@ -174,6 +174,22 @@ const commands = {
     else {
       console.log('Storage already existed, not created.');
     }
+
+    // Create the repo
+    const template_path = cli.input[1];
+    if (template_path) {
+      console.log('Creating repository...');
+    }
+    else {
+      console.log(`Creating repository from template "${template_path}"...`);
+    }
+    store.create(undefined, template_path, (err, id, repo) => {
+      if (err) {
+        throw err;
+      }
+
+      console.log('Repository created with id:', id);
+    });
   },
   'list': () => {
     const cfg = create_config(pkg.name, cli.flags);
