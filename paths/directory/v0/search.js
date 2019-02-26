@@ -27,28 +27,38 @@ module.exports.get.apiDoc =
       name: 'q',
       in: 'query',
       description: 'The search query.',
-      type: 'string',
+      schema: {
+        type: 'string',
+      },
     },
   ].concat(pagination.parameters),
   responses: {
     200: {
       description: 'Search results.',
-      schema: {
-        type: 'object',
-        required: ['results'],
-        properties: {
-          results: {
-            '$ref': '#/definitions/ContentDirectoryEntries',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['results'],
+            properties: {
+              results: {
+                '$ref': '#/definitions/ContentDirectoryEntries',
+              },
+              pagination: pagination.response,
+            },
           },
-          pagination: pagination.response,
         },
       },
     },
     default: {
       description: 'Unexpected error',
-      schema: {
-        '$ref': '#/definitions/Error'
-      }
-    }
-  }
+      content: {
+        'application/json': {
+          schema: {
+            '$ref': '#/definitions/Error'
+          },
+        },
+      },
+    },
+  },
 };

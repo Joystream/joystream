@@ -12,16 +12,20 @@ module.exports = function(config, storage)
       {
         name: 'id',
         in: 'path',
-        type: 'string',
         required: true,
-        description: 'Repository ID'
+        description: 'Repository ID',
+        schema: {
+          type: 'string',
+        },
       },
       {
         name: 'name',
         in: 'path',
-        type: 'string',
         required: true,
         description: 'Asset name',
+        schema: {
+          type: 'string',
+        },
       },
     ],
 
@@ -114,26 +118,36 @@ module.exports = function(config, storage)
         in: 'query',
         description: 'Download instead of streaming inline.',
         required: false,
-        type: 'boolean',
         allowEmptyValue: true,
-        default: false,
+        schema: {
+          type: 'boolean',
+          default: false,
+        },
       },
     ],
     responses: {
       200: {
         description: 'Asset download.',
-        schema: {
-          type: 'string',
-          format: 'binary',
+        content: {
+          default: {
+            schema: {
+              type: 'string',
+              format: 'binary',
+            },
+          },
         },
       },
       default: {
         description: 'Unexpected error',
-        schema: {
-          '$ref': '#/definitions/Error'
-        }
-      }
-    }
+        content: {
+          'application/json': {
+            schema: {
+              '$ref': '#/components/schemas/Error'
+            },
+          },
+        },
+      },
+    },
   };
 
 
@@ -148,11 +162,15 @@ module.exports = function(config, storage)
       },
       default: {
         description: 'Unexpected error',
-        schema: {
-          '$ref': '#/definitions/Error'
-        }
-      }
-    }
+        content: {
+          'application/json': {
+            schema: {
+              '$ref': '#/components/schemas/Error'
+            },
+          },
+        },
+      },
+    },
   };
 
   return doc;

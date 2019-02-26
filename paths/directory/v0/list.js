@@ -26,22 +26,30 @@ module.exports.get.apiDoc =
   responses: {
     200: {
       description: 'Content directory entries.',
-      schema: {
-        type: 'object',
-        required: ['results'],
-        properties: {
-          results: {
-            '$ref': '#/definitions/ContentDirectoryEntries',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['results'],
+            properties: {
+              results: {
+                '$ref': '#/definitions/ContentDirectoryEntries',
+              },
+              pagination: pagination.response,
+            },
           },
-          pagination: pagination.response,
         },
       },
     },
     default: {
       description: 'Unexpected error',
-      schema: {
-        '$ref': '#/definitions/Error'
-      }
-    }
-  }
+      content: {
+        'application/json': {
+          schema: {
+            '$ref': '#/definitions/Error'
+          },
+        },
+      },
+    },
+  },
 };

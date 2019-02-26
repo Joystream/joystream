@@ -8,16 +8,20 @@ module.exports = function(config, storage)
       {
         name: 'id',
         in: 'path',
-        type: 'string',
         required: true,
         description: 'Repository ID',
+        schema: {
+          type: 'string',
+        },
       },
       {
         name: 'name',
         in: 'path',
-        type: 'string',
         required: true,
         description: 'Asset name',
+        schema: {
+          type: 'string',
+        },
       },
     ],
 
@@ -50,23 +54,31 @@ module.exports = function(config, storage)
     responses: {
       200: {
         description: 'Asset size.',
-        schema: {
-          type: 'object',
-          required: ['size'],
-          properties: {
-            size: {
-              type: 'integer',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['size'],
+              properties: {
+                size: {
+                  type: 'integer',
+                },
+              },
             },
           },
         },
       },
       default: {
         description: 'Unexpected error',
-        schema: {
-          '$ref': '#/definitions/Error'
-        }
-      }
-    }
+        content: {
+          'application/json': {
+            schema: {
+              '$ref': '#/components/schemas/Error'
+            },
+          },
+        },
+      },
+    },
   };
 
   return doc;
