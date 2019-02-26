@@ -1,6 +1,6 @@
 'use strict';
 
-const pagination = require.main.require('util/pagination');
+const pagination = require('joystream/util/pagination');
 
 module.exports = {
   get: function(req, res, _next)

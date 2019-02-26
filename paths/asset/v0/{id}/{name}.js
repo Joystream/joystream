@@ -1,6 +1,6 @@
 'use strict';
 
-const util_ranges = require.main.require('util/ranges');
+const util_ranges = require('joystream/util/ranges');
 
 const debug = require('debug')('joystream:api:asset');
 
