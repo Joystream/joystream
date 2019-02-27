@@ -58,6 +58,41 @@ module.exports = function(config, storage)
       });
     },
 
+    // Put for uploads
+    put: function(req, res, _next)
+    {
+      console.log('GOT REQUEST', req);
+      const id = req.params.id;
+      const name = req.params.name;
+
+      const repo = storage.get(id);
+      if (!repo) {
+        res.status(404).send({ message: `Repository with id "${id}" not found.` });
+        return;
+      }
+
+      // Open file
+      repo.open(name, 'w', (err, type, stream) => {
+        if (err) {
+          res.status(err.code).send({ message: err.message });
+          return;
+        }
+
+        // XXX Can we do ranges?
+//        var opts = {
+//          name: name,
+//          type: type,
+//          ranges: ranges,
+//          download: download,
+//        };
+//        util_ranges.send(res, stream, opts);
+        req.on('end', () => {
+          res.status(200).send({ message: 'Asset uploaded.' });
+        });
+        req.pipe(stream);
+      });
+    },
+
     // Get content
     get: function(req, res, _next)
     {
@@ -133,6 +168,51 @@ module.exports = function(config, storage)
             schema: {
               type: 'string',
               format: 'binary',
+            },
+          },
+        },
+      },
+      default: {
+        description: 'Unexpected error',
+        content: {
+          'application/json': {
+            schema: {
+              '$ref': '#/components/schemas/Error'
+            },
+          },
+        },
+      },
+    },
+  };
+
+  doc.put.apiDoc =
+  {
+    description: 'Asset upload.',
+    operationId: 'assetUpload',
+    tags: ['asset', 'data'],
+    requestBody: {
+      content: {
+        default: {
+          schema: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Asset upload.',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['message'],
+              properties: {
+                message: {
+                  type: 'string',
+                }
+              },
             },
           },
         },
