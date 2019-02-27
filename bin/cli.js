@@ -36,6 +36,7 @@ const cli = meow(`
     --config=PATH, -c PATH  Configuration file path. Defaults to
                             "${default_config.path}".
     --port=PORT, -p PORT    Port number to listen on, defaults to 3000.
+    --sync-port
     --storage=PATH, -s PATH Storage path to use.
     --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "hyperdrive".
   `, {
@@ -43,6 +44,11 @@ const cli = meow(`
       port: {
         type: 'integer',
         alias: 'p',
+        default: undefined,
+      },
+      'sync-port': {
+        type: 'integer',
+        alias: 'q',
         default: undefined,
       },
       config: {
@@ -77,14 +83,28 @@ function create_config(pkgname, flags)
   return config;
 }
 
+// All-important banner!
+function banner()
+{
+  console.log(chalk.blue(figlet.textSync('joystream', 'Speed')));
+}
+
 // Start app
 function start_app(project_root, config, flags)
 {
-  console.log(chalk.blue(figlet.textSync('joystream', 'Speed')));
   const app = require('joystream/app')(flags, config);
   const port = flags.port || config.get('port') || 3000;
   app.listen(port);
   console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
+}
+
+// Start sync server
+function start_sync_server(config, flags)
+{
+  const syncserver = require('joystream/sync')(flags, config);
+  const port = flags['sync-port'] || config.get('sync-port') || 3030;
+  syncserver.listen(port);
+  console.log('Sync server started.');
 }
 
 // Get an initialized storage instance
@@ -162,7 +182,9 @@ if (!command) {
 const commands = {
   'server': () => {
     const cfg = create_config(pkg.name, cli.flags);
+    banner();
     start_app(project_root, cfg, cli.flags);
+    start_sync_server(cfg, cli.flags);
   },
   'create': () => {
     const cfg = create_config(pkg.name, cli.flags);
