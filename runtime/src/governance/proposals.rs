@@ -331,6 +331,11 @@ decl_module! {
 
             Self::deposit_event(RawEvent::ProposalVetoed(proposal_id));
         }
+
+        fn set_approval_quorum(new_value: u32) {
+            ensure!(new_value > 0, "approval quorom must be greater than zero");
+            <ApprovalQuorum<T>>::put(new_value);
+        }
     }
 }
 
