@@ -39,8 +39,14 @@ cargo run
 ```
 
 ### Installing a release build
+This will install node to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
+
 ```bash
 cargo install --path ./
+```
+Now you can run
+```bash
+joystream-node
 ```
 
 ## Development
