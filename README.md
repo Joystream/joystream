@@ -2,44 +2,63 @@
 
 Joystream node built on top of Substrate.
 
-## Initial setup
+Follow the instructions below to download the software or build it from source. Further instructions for windows and mac can be found [here.](https://blog.joystream.org/sparta/)
+Linux should be similar to mac.
 
-Call this script once. It will init WASM environment and build a node.
-It will take some time (tens of minutes), so be patient.
+##  Binary releases
+Downloads are available in [releases](https://github.com/Joystream/substrate-node-joystream/releases).
+
+## Building from source
+
+### Initial setup
+If you want to build from source you will need the Rust [toolchain](https://rustup.rs/), openssl and llvm/libclang.
+
+Initialise the WASM build environment:
 
 ```bash
-./init.sh
+./init-wasm.sh
 ```
 
-## Build
+### Building
+Checkout the correct release branch if you are planning to connect to one of the public testnets.
 
-### Build runtime (WASM)
-
+Build the WASM runtime library:
 ```bash
 ./build-runtime.sh
 ```
 
-### Build node (native)
-
+Build the node (native code):
 ```bash
-./build-node.sh
+cargo build
 ```
 
-## Start node
-
+### Running a public node
+Run the node and connect to the public testnet
 ```bash
-./start-node.sh
+cargo run
 ```
 
-## Clean chain data
-
-It's a good practice to clean chain data after you rebuilt a node and about to restart a it.
-
+### Installing a release build
 ```bash
-./clean-chain.sh
+cargo install --path ./
 ```
 
-## Test
+## Development
+
+### Running a local development node
+
+```bash
+cargo run -- --dev
+```
+
+### Cleaning development chain data
+When making changes to the runtime library remember to purge the chain after rebuilding the node to test the new runtime.
+
+```bash
+cargo run -- purge-chain --dev
+```
+
+## Tests
 
 ### Run all tests
 
