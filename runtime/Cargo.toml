@@ -2,7 +2,7 @@
 authors = ['Joystream']
 edition = '2018'
 name = 'joystream-node-runtime'
-version = '1.0.0'
+version = '1.0.1'
 
 [features]
 default = ['std']
@@ -33,45 +33,45 @@ std = [
 ]
 [dependencies.aura]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'srml-aura'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.balances]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'srml-balances'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.consensus]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'srml-consensus'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.consensus-aura]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-consensus-aura-primitives'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.executive]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'srml-executive'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.fees]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'srml-fees'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.indices]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'srml-indices'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.parity-codec]
 default-features = false
@@ -83,27 +83,27 @@ version = '3.0'
 
 [dependencies.primitives]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-primitives'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.rstd]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'sr-std'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.runtime-io]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'sr-io'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.runtime-primitives]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'sr-primitives'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.safe-mix]
 default-features = false
@@ -119,46 +119,46 @@ version = '1.0'
 
 [dependencies.srml-support]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+git = 'https://github.com/joystream/substrate.git'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.substrate-client]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+git = 'https://github.com/joystream/substrate.git'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.sudo]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'srml-sudo'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.system]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'srml-system'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.timestamp]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'srml-timestamp'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.version]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'sr-version'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.staking]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'srml-staking'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.session]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'srml-session'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'

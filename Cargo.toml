@@ -11,64 +11,64 @@ tokio = '0.1'
 trie-root = '0.11.0'
 
 [dependencies.basic-authorship]
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-basic-authorship'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.consensus]
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-consensus-aura'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.ctrlc]
 features = ['termination']
 version = '3.0'
 
 [dependencies.inherents]
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-inherents'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.node-executor]
-git = 'https://github.com/paritytech/substrate.git'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+git = 'https://github.com/joystream/substrate.git'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.joystream-node-runtime]
 path = 'runtime'
 
 [dependencies.primitives]
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-primitives'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.sr-io]
-git = 'https://github.com/paritytech/substrate.git'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+git = 'https://github.com/joystream/substrate.git'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.substrate-cli]
-git = 'https://github.com/paritytech/substrate.git'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+git = 'https://github.com/joystream/substrate.git'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.substrate-client]
-git = 'https://github.com/paritytech/substrate.git'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+git = 'https://github.com/joystream/substrate.git'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.substrate-executor]
-git = 'https://github.com/paritytech/substrate.git'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+git = 'https://github.com/joystream/substrate.git'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.substrate-network]
-git = 'https://github.com/paritytech/substrate.git'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+git = 'https://github.com/joystream/substrate.git'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.substrate-service]
-git = 'https://github.com/paritytech/substrate.git'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+git = 'https://github.com/joystream/substrate.git'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.transaction-pool]
-git = 'https://github.com/paritytech/substrate.git'
+git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-transaction-pool'
-rev = '1ca4cc0a16a357782bb1028bb57376594ca232a0'
+rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [package]
 authors = ['Joystream']

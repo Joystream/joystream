@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
 ./build-runtime.sh
-./build-node.sh
-./clean-chain.sh
-./start-node.sh
+cargo build
+cargo run -- purge-chain --dev
+cargo run -- --dev
