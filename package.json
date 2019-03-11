@@ -1,6 +1,6 @@
 {
   "name": "storage-node",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Joystream Storage Node",
   "scripts": {
     "test": "mocha test/**/*.js",
