@@ -29,13 +29,13 @@ Build the WASM runtime library:
 
 Build the node (native code):
 ```bash
-cargo build
+cargo build --release
 ```
 
 ### Running a public node
 Run the node and connect to the public testnet
 ```bash
-cargo run
+cargo run --release
 ```
 
 ### Installing a release build
@@ -64,14 +64,21 @@ When making changes to the runtime library remember to purge the chain after reb
 cargo run -- purge-chain --dev
 ```
 
-## Tests
+### Developing a runtime upgrade
 
-### Run all tests
+The runtime library is in a seprate github [repo](https://github.com/joystream/substrate-runtime-joystream)
 
-```bash
-./test-all.sh
-```
+The recommended way to test a new rutime is to build it seprately and upgrade a chain. You can easily do this by calling `consensus::setCode()` with an extrinsic, either with the webui or with the subcli set-code.js script. No need to recompile the node (but use a release that matches the version of the network you are planning to upgrade and preferably with the runtime of the live chain as well), just make sure to bump the runtime spec version to be different from the native node runtime spec version.
 
-### Test a specific module
+### Developing runtime for a new chain
+If the plan is to write a runtime for a new chain, and not upgrading you can take a different approach.
+Then modify `Cargo.toml` in the root of this repo, edit the section: "[dependencies.joystream-node-runtime]" with the path to where you cloned the runtime repo.
 
-Check out `./test-proposals.sh` on how to run tests for a specific module.
+Update `src/chain_spec.rs` find lines where the wasm blob is included `code: include_bytes!('../runtime/..` and modify it to point to the location where the wasm output file is compiled to.
+You may need to make further changes in chain_spec to match modules added and/or removed that require chain configuration.
+
+Build the runtime in the cloned runtime repo. Then rebuild the node. You can now run the node in development mode or use it to build a new chain spec file.
+
+### Why can't I just just modify the code in runtime/
+
+Mainly so you can understand how things work to avoid mistakes when preparing a new runtime upgrade for a live chain, and to separate the release process of the node software from the runtime.
