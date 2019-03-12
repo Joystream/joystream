@@ -15,31 +15,35 @@ describe('pagination', function()
       var api = pagination.openapi({});
 
       // Parameters
-      expect(api).to.have.property('parameters');
-      expect(api.parameters).to.have.property('paginationLimit');
+      expect(api).to.have.property('components');
 
-      expect(api.parameters.paginationLimit).to.have.property('name');
-      expect(api.parameters.paginationLimit.name).to.equal('limit');
+      expect(api.components).to.have.property('parameters');
+      expect(api.components.parameters).to.have.property('paginationLimit');
 
-      expect(api.parameters.paginationLimit).to.have.property('type');
-      expect(api.parameters.paginationLimit.type).to.equal('integer');
+      expect(api.components.parameters.paginationLimit).to.have.property('name');
+      expect(api.components.parameters.paginationLimit.name).to.equal('limit');
 
-      expect(api.parameters.paginationOffset).to.have.property('name');
-      expect(api.parameters.paginationOffset.name).to.equal('offset');
+      expect(api.components.parameters.paginationLimit).to.have.property('schema');
+      expect(api.components.parameters.paginationLimit.schema).to.have.property('type');
+      expect(api.components.parameters.paginationLimit.schema.type).to.equal('integer');
 
-      expect(api.parameters.paginationOffset).to.have.property('type');
-      expect(api.parameters.paginationOffset.type).to.equal('integer');
+      expect(api.components.parameters.paginationOffset).to.have.property('name');
+      expect(api.components.parameters.paginationOffset.name).to.equal('offset');
+
+      expect(api.components.parameters.paginationOffset).to.have.property('schema');
+      expect(api.components.parameters.paginationOffset.schema).to.have.property('type');
+      expect(api.components.parameters.paginationOffset.schema.type).to.equal('integer');
 
 
       // Defintiions
-      expect(api).to.have.property('definitions');
-      expect(api.definitions).to.have.property('PaginationInfo');
+      expect(api.components).to.have.property('schemas');
+      expect(api.components.schemas).to.have.property('PaginationInfo');
 
-      expect(api.definitions.PaginationInfo).to.have.property('type');
-      expect(api.definitions.PaginationInfo.type).to.equal('object');
+      expect(api.components.schemas.PaginationInfo).to.have.property('type');
+      expect(api.components.schemas.PaginationInfo.type).to.equal('object');
 
-      expect(api.definitions.PaginationInfo).to.have.property('properties');
-      expect(api.definitions.PaginationInfo.properties)
+      expect(api.components.schemas.PaginationInfo).to.have.property('properties');
+      expect(api.components.schemas.PaginationInfo.properties)
         .to.be.an('object')
         .that.has.all.keys('self', 'next', 'prev', 'first', 'last');
     });
