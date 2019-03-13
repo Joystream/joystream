@@ -6,6 +6,36 @@ const expect = require('chai').expect;
 const mutual = require('joystream/protocols/mutual');
 const keys = require('joystream/crypto/keys');
 
+function run_protocol(auth1, auth2, done)
+{
+  // Auth1/key1 initiates.
+  auth1.initiate((err, challenge) => {
+    expect(err).to.be.null;
+    expect(auth1.peer_authenticated).to.be.false;
+
+    // Consume message on auth2
+    auth2.consume(challenge, (err, response) => {
+      expect(err).to.be.null;
+      expect(auth2.peer_authenticated).to.be.false;
+
+      // Consume response on auth1
+      auth1.consume(response, (err, finalize) => {
+        expect(err).to.be.null;
+        expect(auth1.peer_authenticated).to.be.true;
+
+        // Consume finalize on auth2
+        auth2.consume(finalize, (err) => {
+          expect(err).to.be.null;
+          expect(auth2.peer_authenticated).to.be.true;
+
+          // Both authenticated, awesome.
+          done();
+        });
+      });
+    });
+  });
+}
+
 describe('protocols/mutual', function()
 {
   it('mutually authenticates two peers', function(done)
@@ -16,32 +46,47 @@ describe('protocols/mutual', function()
     var auth1 = new mutual.MutualAuthenticator(key1, key2.pubKey, 8);
     var auth2 = new mutual.MutualAuthenticator(key2, key1.pubKey, 8);
 
-    // Auth1/key1 initiates.
+    run_protocol(auth1, auth2, done);
+  });
+
+  it('mutually authenticates with the same message offset', function(done)
+  {
+    const key1 = keys.key_pair();
+    const key2 = keys.key_pair();
+
+    var auth1 = new mutual.MutualAuthenticator(key1, key2.pubKey, 8, 42);
+    var auth2 = new mutual.MutualAuthenticator(key2, key1.pubKey, 8, 42);
+
+    run_protocol(auth1, auth2, done);
+  });
+
+  it('fails to authenticate if the message offsets differe', function(done)
+  {
+    const key1 = keys.key_pair();
+    const key2 = keys.key_pair();
+
+    // Create offsets differing by one, so that there's overlap - that's harder
+    // to detect than completely disjoint sets of message types.
+    var auth1 = new mutual.MutualAuthenticator(key1, key2.pubKey, 8, 42);
+    var auth2 = new mutual.MutualAuthenticator(key2, key1.pubKey, 8, 41);
+
     auth1.initiate((err, challenge) => {
       expect(err).to.be.null;
       expect(auth1.peer_authenticated).to.be.false;
 
       // Consume message on auth2
       auth2.consume(challenge, (err, response) => {
-        expect(err).to.be.null;
-        expect(auth2.peer_authenticated).to.be.false;
-
-        // Consume response on auth1
-        auth1.consume(response, (err, finalize) => {
-          expect(err).to.be.null;
-          expect(auth1.peer_authenticated).to.be.true;
-
-          // Consume finalize on auth2
-          auth2.consume(finalize, (err) => {
-            expect(err).to.be.null;
-            expect(auth2.peer_authenticated).to.be.true;
-
-            // Both authenticated, awesome.
-            done();
-          });
-        });
+        // The receiving end shouldn't like the message
+        expect(err).not.to.be.null;
+        done();
       });
     });
+  });
+
+  it('publishes reserved message slots', function()
+  {
+    var auth = new mutual.MutualAuthenticator({ pubKey: 'foo' }, 'bar', 8, 42);
+    expect(auth.RESERVED_MESSAGE_SLOTS).to.be.gt(3);
   });
 
   describe('failures with a bad key pair', function()
