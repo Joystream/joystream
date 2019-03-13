@@ -9,22 +9,25 @@ const keys = require('joystream/crypto/keys');
 function run_protocol(auth1, auth2, done)
 {
   // Auth1/key1 initiates.
-  auth1.initiate((err, challenge) => {
+  auth1.initiate((err, type, challenge) => {
     expect(err).to.be.null;
+    expect(type).to.equal(mutual.MSG_CHALLENGE);
     expect(auth1.peer_authenticated).to.be.false;
 
     // Consume message on auth2
-    auth2.consume(challenge, (err, response) => {
+    auth2.consume(type, challenge, (err, type, response) => {
       expect(err).to.be.null;
+      expect(type).to.equal(mutual.MSG_RESPONSE);
       expect(auth2.peer_authenticated).to.be.false;
 
       // Consume response on auth1
-      auth1.consume(response, (err, finalize) => {
+      auth1.consume(type, response, (err, type, finalize) => {
         expect(err).to.be.null;
+        expect(type).to.equal(mutual.MSG_FINALIZE);
         expect(auth1.peer_authenticated).to.be.true;
 
         // Consume finalize on auth2
-        auth2.consume(finalize, (err) => {
+        auth2.consume(type, finalize, (err) => {
           expect(err).to.be.null;
           expect(auth2.peer_authenticated).to.be.true;
 
@@ -49,44 +52,10 @@ describe('protocols/mutual', function()
     run_protocol(auth1, auth2, done);
   });
 
-  it('mutually authenticates with the same message offset', function(done)
+  it('describes a message range', function()
   {
-    const key1 = keys.key_pair();
-    const key2 = keys.key_pair();
-
-    var auth1 = new mutual.MutualAuthenticator(key1, key2.pubKey, 8, 42);
-    var auth2 = new mutual.MutualAuthenticator(key2, key1.pubKey, 8, 42);
-
-    run_protocol(auth1, auth2, done);
-  });
-
-  it('fails to authenticate if the message offsets differe', function(done)
-  {
-    const key1 = keys.key_pair();
-    const key2 = keys.key_pair();
-
-    // Create offsets differing by one, so that there's overlap - that's harder
-    // to detect than completely disjoint sets of message types.
-    var auth1 = new mutual.MutualAuthenticator(key1, key2.pubKey, 8, 42);
-    var auth2 = new mutual.MutualAuthenticator(key2, key1.pubKey, 8, 41);
-
-    auth1.initiate((err, challenge) => {
-      expect(err).to.be.null;
-      expect(auth1.peer_authenticated).to.be.false;
-
-      // Consume message on auth2
-      auth2.consume(challenge, (err, response) => {
-        // The receiving end shouldn't like the message
-        expect(err).not.to.be.null;
-        done();
-      });
-    });
-  });
-
-  it('publishes reserved message slots', function()
-  {
-    var auth = new mutual.MutualAuthenticator({ pubKey: 'foo' }, 'bar', 8, 42);
-    expect(auth.RESERVED_MESSAGE_SLOTS).to.be.gt(3);
+    expect(mutual.MutualAuthenticator).to.have.property('MESSAGE_RANGE');
+    expect(mutual.MutualAuthenticator.MESSAGE_RANGE).to.be.have.lengthOf(2);
   });
 
   describe('failures with a bad key pair', function()
@@ -103,17 +72,19 @@ describe('protocols/mutual', function()
       var auth2 = new mutual.MutualAuthenticator(key2, key1.pubKey, 8);
 
       // Auth1/key1 initiates.
-      auth1.initiate((err, challenge) => {
+      auth1.initiate((err, type, challenge) => {
         expect(err).to.be.null;
+        expect(type).to.equal(mutual.MSG_CHALLENGE);
         expect(auth1.peer_authenticated).to.be.false;
 
         // Consume message on auth2
-        auth2.consume(challenge, (err, response) => {
+        auth2.consume(type, challenge, (err, type, response) => {
           expect(err).to.be.null;
+          expect(type).to.equal(mutual.MSG_RESPONSE);
           expect(auth2.peer_authenticated).to.be.false;
 
           // Consume response on auth1
-          auth1.consume(response, (err, finalize) => {
+          auth1.consume(type, response, (err, type, finalize) => {
             // Since the private key of peer1 does not match their public
             // key, they experience the failure in authentication - the
             // response challenge can't be descrypted.
@@ -135,17 +106,17 @@ describe('protocols/mutual', function()
       var auth2 = new mutual.MutualAuthenticator(key2, key1.pubKey, 8);
 
       // Auth1/key1 initiates.
-      auth1.initiate((err, challenge) => {
+      auth1.initiate((err, type, challenge) => {
         expect(err).to.be.null;
         expect(auth1.peer_authenticated).to.be.false;
 
         // Consume message on auth2
-        auth2.consume(challenge, (err, response) => {
+        auth2.consume(type, challenge, (err, type, response) => {
           expect(err).to.be.null;
           expect(auth2.peer_authenticated).to.be.false;
 
           // Consume response on auth1
-          auth1.consume(response, (err, finalize) => {
+          auth1.consume(type, response, (err, type, finalize) => {
             // Again, it's the initiating peer that experiences the
             // authentication failure. In this case, though, it's because
             // the other peer sent a bad response.
