@@ -7,7 +7,7 @@ const stream_buffers = require('stream-buffers');
 
 const ranges = require('joystream/util/ranges');
 
-describe('ranges', function()
+describe('util/ranges', function()
 {
   describe('parse()', function()
   {

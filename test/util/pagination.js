@@ -6,7 +6,7 @@ const mock_http = require('node-mocks-http');
 
 const pagination = require('joystream/util/pagination');
 
-describe('pagination', function()
+describe('util/pagination', function()
 {
   describe('openapi()', function()
   {

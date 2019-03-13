@@ -265,7 +265,7 @@ function tests(backend)
   };
 }
 
-describe('repository', function()
+describe('core/repository', function()
 {
   describe('filesystem backend', tests('fs'));
   describe('hyperdrive backend', tests('hyperdrive'));

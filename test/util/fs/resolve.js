@@ -38,7 +38,7 @@ function tests(base)
   });
 }
 
-describe('fs/resolve', function()
+describe('util/fs/resolve', function()
 {
   describe('slash base', function()
   {

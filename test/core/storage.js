@@ -3,8 +3,7 @@
 const mocha = require('mocha');
 const expect = require('chai').expect;
 const fs = require('fs');
-// FIXME const temp = require('temp').track();
-const temp = require('temp');
+const temp = require('temp').track();
 
 const storage = require('joystream/core/storage');
 const repository = require('joystream/core/repository');
@@ -17,7 +16,7 @@ function matchDirent(name, matcher)
 }
 
 
-describe('storage', function()
+describe('core/storage', function()
 {
   // Unique prefix per test
   var prefix;

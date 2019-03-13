@@ -13,7 +13,7 @@ function sleep(ms = DEFAULT_SLEEP)
   })
 }
 
-describe('LRUCache', function()
+describe('util/lru', function()
 {
   describe('simple usage', function()
   {

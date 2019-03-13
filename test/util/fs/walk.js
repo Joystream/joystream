@@ -43,7 +43,7 @@ function walktest(archive, base, done)
   });
 }
 
-describe('fs/walk', function()
+describe('util/fs/walk', function()
 {
   it('reports all files in a file system hierarchy', function(done)
   {

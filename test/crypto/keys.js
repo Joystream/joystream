@@ -5,7 +5,7 @@ const expect = require('chai').expect;
 
 const keys = require('joystream/crypto/keys');
 
-describe('keys', function()
+describe('crypto/keys', function()
 {
   describe('parsing', function()
   {
