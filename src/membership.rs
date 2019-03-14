@@ -206,6 +206,15 @@ decl_module! {
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, who.clone()));
         }
+
+        /// Buy the default membership (if it is active) and only provide handle - for testing
+        fn buy_default_membership_testing(origin, handle: Vec<u8>) {
+            Self::buy_membership(origin, T::PaidTermId::sa(0), UserInfo {
+                handle: Some(handle.clone()),
+                avatar_uri: None,
+                about: None
+            })?;
+        }
     }
 }
 
