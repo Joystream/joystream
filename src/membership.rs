@@ -8,8 +8,9 @@ use srml_support::traits::{Currency};
 use runtime_primitives::traits::{Zero, SimpleArithmetic, As, Member, MaybeSerializeDebug};
 use system::{self, ensure_signed};
 use crate::governance::{GovernanceCurrency, BalanceOf };
-//use runtime_io::print;
+use runtime_io::print;
 use {timestamp};
+use crate::{VERSION};
 
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -97,6 +98,10 @@ impl<T: Trait> Default for PaidMembershipTerms<T> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Membership {
+        /// Records at what runtime spec version the store was initialized. This allows the runtime
+        /// to know when to run initialize code if it was installed as an update.
+        StoreSpecVersion get(store_spec_version) build(|_| Some(VERSION.spec_version)) : Option<u32>;
+
         /// MemberId's start at this value
         FirstMemberId get(first_member_id) config(first_member_id): T::MemberId = T::MemberId::sa(DEFAULT_FIRST_MEMBER_ID);
 
@@ -138,11 +143,6 @@ decl_storage! {
         /// Is the platform is accepting new members or not
         NewMembershipsAllowed get(new_memberships_allowed) : bool = true;
 
-        /// If we should run a migration and initialize new storage values introduced in new runtime
-        // This will initialize to false if starting at genesis (because the build() method will run),
-        // for a runtime upgrade it will return the default value when reading the first time.
-        ShouldRunMigration get(should_run_migration) build(|_| false) : bool = true;
-
         // User Input Validation parameters - do these really need to be state variables
         // I don't see a need to adjust these in future?
         MinHandleLength get(min_handle_length) : u32 = DEFAULT_MIN_HANDLE_LENGTH;
@@ -166,11 +166,14 @@ decl_event! {
 }
 
 impl<T: Trait> Module<T> {
-    fn run_migration() {
-        if Self::should_run_migration() {
+    /// Initialization step that runs when the runtime is installed as a runtime upgrade
+    /// Remember to remove this code in next release, or guard the code with the spec version
+    // Given it is easy to forget to do this, we need a better arrangement.
+    fn runtime_initialization(spec_version: u32) {
+        if 5 == spec_version {
+            print("Running New Runtime Init Code");
             let default_terms: PaidMembershipTerms<T> = Default::default();
             <PaidMembershipTermsById<T>>::insert(T::PaidTermId::sa(0), default_terms);
-            <ShouldRunMigration<T>>::put(false);
         }
     }
 }
@@ -180,7 +183,11 @@ decl_module! {
         fn deposit_event<T>() = default;
 
         fn on_initialise(_now: T::BlockNumber) {
-            Self::run_migration();
+            if Self::store_spec_version().map_or(true, |spec_version| VERSION.spec_version > spec_version) {
+                // Mark store version with latest so we don't run initialization code again
+                <StoreSpecVersion<T>>::put(VERSION.spec_version);
+                Self::runtime_initialization(VERSION.spec_version);
+            }
         }
 
         fn on_finalise(_now: T::BlockNumber) {
