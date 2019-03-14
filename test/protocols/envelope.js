@@ -5,134 +5,82 @@ const expect = require('chai').expect;
 
 const envelope = require('joystream/protocols/envelope');
 
-class MockProto1
+
+describe('protocols/envelope', function()
 {
-  constructor(cb)
+  it('(de-)serializes messages', function()
   {
-    this.PROTO_NAME = 'MockProto1';
-    this.MESSAGE_RANGE = [0, 2];
-    this.cb = cb;
-  }
-
-  consume(message_type, message, cb)
-  {
-    if (this.cb) {
-      this.cb(message_type);
-    }
-
-    const next = message_type + 1;
-    if (next >= this.MESSAGE_RANGE[1]) {
-      cb(null);
-    }
-    else {
-      cb(null, next, 'mock1');
-    }
-  }
-}
-
-
-class MockProto2
-{
-  constructor(cb)
-  {
-    this.PROTO_NAME = 'MockProto2';
-    this.MESSAGE_RANGE = [0, 3];
-    this.cb = cb;
-  }
-
-  consume(message_type, message, cb)
-  {
-    if (this.cb) {
-      this.cb(message_type);
-    }
-
-    const next = message_type + 1;
-    if (next >= this.MESSAGE_RANGE[1]) {
-      cb(null);
-    }
-    else {
-      cb(null, next, 'mock2');
-    }
-  }
-}
-
-
-describe('protocols/envelope', function(done)
-{
-  it('wraps a single protocol without modifying message types', function(done)
-  {
-    var mock1 = new MockProto1((type) => {
-      // Callback for the converted message type
-      expect(type).to.equal(0);
-    });
-
-    var env = new envelope.Envelope(mock1);
-
-    env.consume(0, 'foo', (err, type, msg) => {
-      // First test should simply increment the message type
-      expect(err).to.be.null;
-      expect(type).to.equal(1);
-
-      // Second test should be out of range and throw errors.
-      env.consume(3, 'bar', (err) => {
-        expect(err).not.to.be.null;
-        done();
-      });
-    });
-  });
-
-  it('wraps multiple protocols with modifying message types', function(done)
-  {
-    var mock1 = new MockProto1((type) => {
-      // Callback for the converted message type
-      expect(type).to.equal(0);
-    });
-    var mock2 = new MockProto2((type) => {
-      // Callback for the converted message type
-      expect(type).to.equal(0);
-    });
-    var env = new envelope.Envelope(mock1, mock2);
-
-    env.consume(0, 'foo', (err, type, msg) => {
-      // First test should simply increment the message type. The message should
-      // come from mock1
-      expect(err).to.be.null;
-      expect(type).to.equal(1);
-      expect(msg).to.equal('mock1');
-
-      // Second test should come from the second mock.
-      env.consume(3, 'bar', (err, type, msg) => {
-        expect(err).to.be.null;
-        expect(type).to.equal(4);
-        expect(msg).to.equal('mock2');
-        done();
-      });
-    });
-  });
-
-  it('handles message envelopes', function(done)
-  {
-    var mock1 = new MockProto1();
-    var mock2 = new MockProto2();
-    var env = new envelope.Envelope(mock1, mock2);
-
     // Create some initial message
-    const msg = env.envelope(0, Buffer.from('hello!'));
+    const msg = envelope.serialize(42, Buffer.from('hello!'));
 
     // Run minimal checks
-    expect(msg[0]).to.equal(0); // type
+    expect(msg[0]).to.equal(42); // type
     expect(msg[1]).to.equal(0); // too small to use this byte
     expect(msg[2]).to.equal(6); // length of 'hello!'
     expect(msg.length).to.equal(35 + 6);
 
-    env.consume_raw(msg, (err, response) => {
-      expect(err).to.be.null;
+    // Deserialize
+    const res = envelope.parse(msg);
+    expect(res[0]).to.equal(42);
+    expect(res[1].toString()).to.equal('hello!');
+  });
 
-      const parsed = env.verify(response);
-      expect(parsed[0]).to.equal(1);
-      expect(parsed[1].toString()).to.equal('mock1');
+  describe('parse failures', function()
+  {
+    it('fails on short messages', function()
+    {
+      expect(() => envelope.parse(Buffer.from('short'))).to.throw;
+    });
 
-      done();
+    it('fails on wrong payload size', function()
+    {
+      const buf = Buffer.alloc(37);
+      buf[2] = 99; // Too large for a 37 length message.
+      expect(() => envelope.parse(buf)).to.throw;
+    });
+
+    it('fails on bad digests', function()
+    {
+      // Create some initial message
+      const msg = envelope.serialize(42, Buffer.from('hello!'));
+
+      expect(() => envelope.parse(msg)).not.to.throw;
+
+      // Modify checksum to fail the parsing
+      msg[msg.length - 1] += 1;
+      expect(() => envelope.parse(msg)).to.throw;
+    });
+  });
+
+  describe('Serializer/Deserializer', function()
+  {
+    it('can pipe messages from the serializer to the deserializer', function(done)
+    {
+      const ser = new envelope.Serializer();
+      const des = new envelope.Deserializer();
+
+      ser.pipe(des);
+
+      ser.on('data', (data) => {
+        expect(data).to.be.an.instanceOf(Buffer);
+        expect(data).to.have.lengthOf(38);
+        expect(data[0]).to.equal(42);
+        expect(data[1]).to.equal(0);
+        expect(data[2]).to.equal(3);
+        expect(data[3]).to.equal('f'.charCodeAt(0));
+        expect(data[4]).to.equal('o'.charCodeAt(0));
+        expect(data[5]).to.equal('o'.charCodeAt(0));
+      });
+
+      des.on('data', (data) => {
+        expect(data).to.have.lengthOf(2);
+        expect(data[0]).to.equal(42);
+        expect(data[1].toString()).to.equal('foo');
+      });
+
+      ser.write([42, Buffer.from('foo')]);
+      ser.end();
+      des.on('finish', () => done());
     });
   });
 });
