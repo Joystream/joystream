@@ -44,7 +44,7 @@ const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 1024;
 pub struct Profile<T: Trait> {
     id: T::MemberId,
     handle: Vec<u8>,
-    avatar_uri: Option<Vec<u8>>,
+    avatar_uri: Vec<u8>,
     about: Vec<u8>,
     registered_at_block: T::BlockNumber,
     registered_at_time: T::Moment,
@@ -63,7 +63,7 @@ pub struct UserInfo {
 
 struct CheckedUserInfo {
     handle: Vec<u8>,
-    avatar_uri: Option<Vec<u8>>,
+    avatar_uri: Vec<u8>,
     about: Vec<u8>,
 }
 
@@ -107,11 +107,11 @@ decl_storage! {
         AccountIdByMemberId get(account_id_by_member_id) : map T::MemberId => T::AccountId;
 
         /// Mapping of members' accountid to their member id
-        MemberIdByAccountId get(member_id_by_account_id) : map T::AccountId => T::MemberId;
+        MemberIdByAccountId get(member_id_by_account_id) : map T::AccountId => Option<T::MemberId>;
 
         /// Mapping of member's id to their membership profile
         // Value is Option<Profile> because it is not meaningful to have a Default value for Profile
-        MemberProfile get(member_profile_preview) : map T::MemberId => Option<Profile<T>>;
+        MemberProfile get(member_profile) : map T::MemberId => Option<Profile<T>>;
 
         /// Registered unique handles and their mapping to their owner
         Handles get(handles) : map Vec<u8> => Option<T::MemberId>;
@@ -160,6 +160,8 @@ decl_event! {
       <T as system::Trait>::AccountId,
       <T as Trait>::MemberId {
         MemberRegistered(MemberId, AccountId),
+        MemberUpdatedAboutText(MemberId),
+        MemberUpdatedAvatar(MemberId),
     }
 }
 
@@ -193,13 +195,12 @@ decl_module! {
             Self::ensure_not_member(&who)?;
 
             // ensure paid_terms_id is active
-            Self::ensure_terms_id_is_active(paid_terms_id)?;
+            let terms = Self::ensure_active_terms_id(paid_terms_id)?;
 
             // ensure enough free balance to cover terms fees
-            let terms = Self::paid_membership_terms_by_id(paid_terms_id).ok_or("paid membership term id does not exist")?;
             ensure!(T::Currency::can_slash(&who, terms.fee), "not enough balance to buy membership");
 
-            let user_info = Self::check_user_info(user_info)?;
+            let user_info = Self::check_user_registration_info(user_info)?;
 
             // ensure handle is not already registered
             Self::ensure_unique_handle(&user_info.handle)?;
@@ -208,6 +209,46 @@ decl_module! {
             let member_id = Self::insert_new_paid_member(&who, paid_terms_id, &user_info);
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, who.clone()));
+        }
+
+        fn change_member_about_text(origin, text: Vec<u8>) {
+            let who = ensure_signed(origin)?;
+
+            let mut profile = Self::ensure_has_profile(&who)?;
+
+            let text = Self::validate_text(&text);
+
+            profile.about = text;
+
+            Self::deposit_event(RawEvent::MemberUpdatedAboutText(profile.id));
+            <MemberProfile<T>>::insert(profile.id, profile);
+        }
+
+        fn change_member_avatar(origin, uri: Vec<u8>) {
+            let who = ensure_signed(origin)?;
+
+            let mut profile = Self::ensure_has_profile(&who)?;
+
+            let uri = Self::validate_avatar(&uri);
+
+            profile.avatar_uri = uri;
+
+            Self::deposit_event(RawEvent::MemberUpdatedAvatar(profile.id));
+            <MemberProfile<T>>::insert(profile.id, profile);
+        }
+
+        /// Change member's handle.
+        fn change_member_handle(origin, handle: Vec<u8>) {
+            let who = ensure_signed(origin)?;
+            let mut profile = Self::ensure_has_profile(&who)?;
+
+            Self::validate_handle(&handle)?;
+            Self::ensure_unique_handle(&handle)?;
+
+            <Handles<T>>::remove(&profile.handle);
+            <Handles<T>>::insert(handle.clone(), profile.id);
+            profile.handle = handle;
+            <MemberProfile<T>>::insert(profile.id, profile);
         }
 
         /// Buy the default membership (if it is active) and only provide handle - for testing
@@ -227,10 +268,22 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_terms_id_is_active(terms_id: T::PaidTermId) -> dispatch::Result {
+    fn ensure_is_member(who: &T::AccountId) -> Result<T::MemberId, &'static str> {
+        let member_id = Self::member_id_by_account_id(who).ok_or("no member id found for accountid")?;
+        Ok(member_id)
+    }
+
+    fn ensure_has_profile(who: &T::AccountId) -> Result<Profile<T>, &'static str> {
+        let member_id = Self::ensure_is_member(who)?;
+        let profile = Self::member_profile(&member_id).ok_or("member profile not found")?;
+        Ok(profile)
+    }
+
+    fn ensure_active_terms_id(terms_id: T::PaidTermId) -> Result<PaidMembershipTerms<T>, &'static str> {
         let active_terms = Self::active_paid_membership_terms();
         ensure!(active_terms.iter().any(|&id| id == terms_id), "paid terms id not active");
-        Ok(())
+        let terms = Self::paid_membership_terms_by_id(terms_id).ok_or("paid membership term id does not exist")?;
+        Ok(terms)
     }
 
     fn ensure_unique_handle(handle: &Vec<u8> ) -> dispatch::Result {
@@ -238,21 +291,32 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Basic user input validation
-    fn check_user_info(user_info: UserInfo) -> Result<CheckedUserInfo, &'static str> {
-        // Handle is required during registration
-        let handle = user_info.handle.ok_or("handle must be provided during registration")?;
+    fn validate_handle(handle: &Vec<u8>) -> dispatch::Result {
         ensure!(handle.len() >= Self::min_handle_length() as usize, "handle too short");
         ensure!(handle.len() <= Self::max_handle_length() as usize, "handle too long");
+        Ok(())
+    }
 
-        let mut about = user_info.about.unwrap_or_default();
-        about.truncate(Self::max_about_text_length() as usize);
+    fn validate_text(text: &Vec<u8>) -> Vec<u8> {
+        let mut text = text.clone();
+        text.truncate(Self::max_about_text_length() as usize);
+        text
+    }
 
-        let avatar_uri = user_info.avatar_uri.and_then(|uri: Vec<u8>| {
-            let mut uri = uri.clone();
-            uri.truncate(Self::max_avatar_uri_length() as usize);
-            Some(uri)
-        });
+    fn validate_avatar(uri: &Vec<u8>) -> Vec<u8> {
+        let mut uri = uri.clone();
+        uri.truncate(Self::max_avatar_uri_length() as usize);
+        uri
+    }
+
+    /// Basic user input validation
+    fn check_user_registration_info(user_info: UserInfo) -> Result<CheckedUserInfo, &'static str> {
+        // Handle is required during registration
+        let handle = user_info.handle.ok_or("handle must be provided during registration")?;
+        Self::validate_handle(&handle)?;
+
+        let about = Self::validate_text(&user_info.about.unwrap_or_default());
+        let avatar_uri = Self::validate_avatar(&user_info.avatar_uri.unwrap_or_default());
 
         Ok(CheckedUserInfo {
             handle,
