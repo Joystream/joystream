@@ -239,14 +239,20 @@ decl_module! {
 
         fn batch_change_member_profile(origin, user_info: UserInfo) {
             let who = ensure_signed(origin)?;
-            user_info.avatar_uri.map(|uri| Self::_change_member_avatar(&who, &uri)).ok_or("uri not changed");
-            user_info.about.map(|about| Self::_change_member_about_text(&who, &about)).ok_or("about text not changed");
-            user_info.handle.map(|handle| Self::_change_member_handle(&who, handle)).ok_or("handle not changed");
+            if let Some(uri) = user_info.avatar_uri {
+                Self::_change_member_avatar(&who, &uri)?;
+            }
+            if let Some(about) = user_info.about {
+                Self::_change_member_about_text(&who, &about)?;
+            }
+            if let Some(handle) = user_info.handle {
+                Self::_change_member_handle(&who, handle)?;
+            }
         }
 
-        /// Buy the default membership (if it is active) and only provide handle - for testing
+        /// Buy the default membership (if it is active) and only provide handle
         fn buy_default_membership_testing(origin, handle: Vec<u8>) {
-            Self::buy_membership(origin, T::PaidTermId::sa(0), UserInfo {
+            Self::buy_membership(origin, T::PaidTermId::sa(DEFAULT_PAID_TERM_ID), UserInfo {
                 handle: Some(handle.clone()),
                 avatar_uri: None,
                 about: None
