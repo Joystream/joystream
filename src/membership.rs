@@ -195,9 +195,17 @@ decl_module! {
             // ensure paid_terms_id is active
             Self::ensure_terms_id_is_active(paid_terms_id)?;
 
+            // ensure enough free balance to cover terms fees
+            let terms = Self::paid_membership_terms_by_id(paid_terms_id).ok_or("paid membership term id does not exist")?;
+            ensure!(T::Currency::can_slash(&who, terms.fee), "not enough balance to buy membership");
+
             let user_info = Self::check_user_info(user_info)?;
 
-            let member_id = Self::insert_new_paid_member(&who, paid_terms_id, &user_info)?;
+            // ensure handle is not already registered
+            Self::ensure_unique_handle(&user_info.handle)?;
+
+            let _ = T::Currency::slash(&who, terms.fee);
+            let member_id = Self::insert_new_paid_member(&who, paid_terms_id, &user_info);
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, who.clone()));
         }
@@ -255,15 +263,7 @@ impl<T: Trait> Module<T> {
 
     // Mutating methods
 
-    fn insert_new_paid_member(who: &T::AccountId, paid_terms_id: T::PaidTermId, user_info: &CheckedUserInfo) -> Result<T::MemberId, &'static str> {
-        let terms = Self::paid_membership_terms_by_id(paid_terms_id).ok_or("paid membership term id does not exist")?;
-        // ensure enough free balance to cover terms fees
-        ensure!(T::Currency::can_slash(&who, terms.fee), "not enough balance to buy membership");
-        let _ = T::Currency::slash(&who, terms.fee);
-
-        // ensure handle is not already registered
-        Self::ensure_unique_handle(&user_info.handle)?;
-
+    fn insert_new_paid_member(who: &T::AccountId, paid_terms_id: T::PaidTermId, user_info: &CheckedUserInfo) -> T::MemberId {
         let new_member_id = Self::next_member_id();
 
         let profile: Profile<T> = Profile {
@@ -284,6 +284,6 @@ impl<T: Trait> Module<T> {
         <Handles<T>>::insert(user_info.handle.clone(), new_member_id);
         <NextMemberId<T>>::mutate(|n| { *n += T::MemberId::sa(1); });
 
-        Ok(new_member_id)
+        new_member_id
     }
 }
