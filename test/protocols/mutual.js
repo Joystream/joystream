@@ -52,10 +52,23 @@ describe('protocols/mutual', function()
     run_protocol(auth1, auth2, done);
   });
 
+  it('mutually authenticates two peers when the initiating peer needs to share its public key', function(done)
+  {
+    const key1 = keys.key_pair();
+    const key2 = keys.key_pair();
+
+    // Auth1 initiates, and auth2 does not know their public key.
+    var auth1 = new mutual.MutualAuthenticator(key1, key2.pubKey, 8);
+    var auth2 = new mutual.MutualAuthenticator(key2, undefined, 8);
+
+    run_protocol(auth1, auth2, done);
+  });
+
   it('describes a message range', function()
   {
-    expect(mutual.MutualAuthenticator).to.have.property('MESSAGE_RANGE');
-    expect(mutual.MutualAuthenticator.MESSAGE_RANGE).to.be.have.lengthOf(2);
+    const auth = new mutual.MutualAuthenticator(keys.key_pair());
+    expect(auth).to.have.property('MESSAGE_RANGE');
+    expect(auth.MESSAGE_RANGE).to.be.have.lengthOf(2);
   });
 
   describe('failures with a bad key pair', function()
