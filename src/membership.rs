@@ -195,11 +195,6 @@ decl_module! {
             // ensure paid_terms_id is active
             Self::ensure_terms_id_is_active(paid_terms_id)?;
 
-            let terms = Self::paid_membership_terms_by_id(paid_terms_id).ok_or("paid membership term id does not exist")?;
-
-            // ensure enough free balance to cover terms fees
-            ensure!(T::Currency::free_balance(&who) >= terms.fee, "not enough balance to buy membership");
-
             let user_info = Self::check_user_info(user_info)?;
 
             let member_id = Self::insert_new_paid_member(&who, paid_terms_id, &user_info)?;
@@ -260,7 +255,12 @@ impl<T: Trait> Module<T> {
 
     // Mutating methods
 
-    fn insert_new_paid_member(who: &T::AccountId, paid_terms_id: T::PaidTermId, user_info: &CheckedUserInfo) -> Result<T::MemberId, &'static str>  {
+    fn insert_new_paid_member(who: &T::AccountId, paid_terms_id: T::PaidTermId, user_info: &CheckedUserInfo) -> Result<T::MemberId, &'static str> {
+        let terms = Self::paid_membership_terms_by_id(paid_terms_id).ok_or("paid membership term id does not exist")?;
+        // ensure enough free balance to cover terms fees
+        ensure!(T::Currency::can_slash(&who, terms.fee), "not enough balance to buy membership");
+        let _ = T::Currency::slash(&who, terms.fee);
+
         // ensure handle is not already registered
         Self::ensure_unique_handle(&user_info.handle)?;
 
