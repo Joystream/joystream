@@ -213,42 +213,25 @@ decl_module! {
 
         fn change_member_about_text(origin, text: Vec<u8>) {
             let who = ensure_signed(origin)?;
-
-            let mut profile = Self::ensure_has_profile(&who)?;
-
-            let text = Self::validate_text(&text);
-
-            profile.about = text;
-
-            Self::deposit_event(RawEvent::MemberUpdatedAboutText(profile.id));
-            <MemberProfile<T>>::insert(profile.id, profile);
+            Self::_change_member_about_text(&who, &text)?;
         }
 
         fn change_member_avatar(origin, uri: Vec<u8>) {
             let who = ensure_signed(origin)?;
-
-            let mut profile = Self::ensure_has_profile(&who)?;
-
-            let uri = Self::validate_avatar(&uri);
-
-            profile.avatar_uri = uri;
-
-            Self::deposit_event(RawEvent::MemberUpdatedAvatar(profile.id));
-            <MemberProfile<T>>::insert(profile.id, profile);
+            Self::_change_member_avatar(&who, &uri)?;
         }
 
         /// Change member's handle.
         fn change_member_handle(origin, handle: Vec<u8>) {
             let who = ensure_signed(origin)?;
-            let mut profile = Self::ensure_has_profile(&who)?;
+            Self::_change_member_handle(&who, handle)?;
+        }
 
-            Self::validate_handle(&handle)?;
-            Self::ensure_unique_handle(&handle)?;
-
-            <Handles<T>>::remove(&profile.handle);
-            <Handles<T>>::insert(handle.clone(), profile.id);
-            profile.handle = handle;
-            <MemberProfile<T>>::insert(profile.id, profile);
+        fn batch_change_member_profile(origin, user_info: UserInfo) {
+            let who = ensure_signed(origin)?;
+            user_info.avatar_uri.map(|uri| Self::_change_member_avatar(&who, &uri)).ok_or("uri not changed");
+            user_info.about.map(|about| Self::_change_member_about_text(&who, &about)).ok_or("about text not changed");
+            user_info.handle.map(|handle| Self::_change_member_handle(&who, handle)).ok_or("handle not changed");
         }
 
         /// Buy the default membership (if it is active) and only provide handle - for testing
@@ -349,5 +332,34 @@ impl<T: Trait> Module<T> {
         <NextMemberId<T>>::mutate(|n| { *n += T::MemberId::sa(1); });
 
         new_member_id
+    }
+
+    fn _change_member_about_text (who: &T::AccountId, text: &Vec<u8>) -> dispatch::Result {
+        let mut profile = Self::ensure_has_profile(&who)?;
+        let text = Self::validate_text(text);
+        profile.about = text;
+        Self::deposit_event(RawEvent::MemberUpdatedAboutText(profile.id));
+        <MemberProfile<T>>::insert(profile.id, profile);
+        Ok(())
+    }
+
+    fn _change_member_avatar(who: &T::AccountId, uri: &Vec<u8>) -> dispatch::Result {
+        let mut profile = Self::ensure_has_profile(who)?;
+        let uri = Self::validate_avatar(uri);
+        profile.avatar_uri = uri;
+        Self::deposit_event(RawEvent::MemberUpdatedAvatar(profile.id));
+        <MemberProfile<T>>::insert(profile.id, profile);
+        Ok(())
+    }
+
+    fn _change_member_handle(who: &T::AccountId, handle: Vec<u8>) -> dispatch::Result {
+        let mut profile = Self::ensure_has_profile(who)?;
+        Self::validate_handle(&handle)?;
+        Self::ensure_unique_handle(&handle)?;
+        <Handles<T>>::remove(&profile.handle);
+        <Handles<T>>::insert(handle.clone(), profile.id);
+        profile.handle = handle;
+        <MemberProfile<T>>::insert(profile.id, profile);
+        Ok(())
     }
 }
