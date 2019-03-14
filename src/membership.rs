@@ -44,7 +44,7 @@ const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 1024;
 pub struct Profile<T: Trait> {
     id: T::MemberId,
     handle: Vec<u8>,
-    avatar_uri: Vec<u8>,
+    avatar_uri: Option<Vec<u8>>,
     about: Vec<u8>,
     registered_at_block: T::BlockNumber,
     registered_at_time: T::Moment,
@@ -63,7 +63,7 @@ pub struct UserInfo {
 
 struct CheckedUserInfo {
     handle: Vec<u8>,
-    avatar_uri: Vec<u8>,
+    avatar_uri: Option<Vec<u8>>,
     about: Vec<u8>,
 }
 
@@ -236,8 +236,11 @@ impl<T: Trait> Module<T> {
         let mut about = user_info.about.unwrap_or_default();
         about.truncate(Self::max_about_text_length() as usize);
 
-        let mut avatar_uri = user_info.avatar_uri.unwrap_or_default();
-        avatar_uri.truncate(Self::max_avatar_uri_length() as usize);
+        let avatar_uri = user_info.avatar_uri.and_then(|uri: Vec<u8>| {
+            let mut uri = uri.clone();
+            uri.truncate(Self::max_avatar_uri_length() as usize);
+            Some(uri)
+        });
 
         Ok(CheckedUserInfo {
             handle,
