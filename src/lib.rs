@@ -228,8 +228,8 @@ impl memo::Trait for Runtime {
 impl membership::Trait for Runtime {
 	type Event = Event;
 	type MemberId = u64;
-	type PaidTermId = u32;
-	type SubscriptionId = u32;
+	type PaidTermId = u64;
+	type SubscriptionId = u64;
 }
 
 construct_runtime!(

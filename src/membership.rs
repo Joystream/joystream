@@ -3,7 +3,7 @@
 use rstd::prelude::*;
 use parity_codec::Codec;
 use parity_codec_derive::{Encode, Decode};
-use srml_support::{StorageMap, StorageValue, dispatch::Result, decl_module, decl_storage, decl_event, ensure, Parameter};
+use srml_support::{StorageMap, StorageValue, dispatch, decl_module, decl_storage, decl_event, ensure, Parameter};
 use srml_support::traits::{Currency};
 use runtime_primitives::traits::{Zero, SimpleArithmetic, As, Member, MaybeSerializeDebug};
 use system::{self, ensure_signed};
@@ -14,11 +14,14 @@ use {timestamp};
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type MemberId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy + As<usize> + As<u64> + MaybeSerializeDebug;
+    type MemberId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
+        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
 
-    type PaidTermId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy + As<usize> + As<u32> + MaybeSerializeDebug;
+    type PaidTermId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
+        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
 
-    type SubscriptionId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy + As<usize> + As<u32> + MaybeSerializeDebug;
+    type SubscriptionId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
+        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
 }
 
 const DEFAULT_FIRST_MEMBER_ID: u64 = 1;
@@ -29,8 +32,15 @@ const DEFAULT_PAID_TERM_ID: u64 = 0;
 const DEFAULT_PAID_TERM_FEE: u64 = 100; // Can be overidden in genesis config
 const DEFAULT_PAID_TERM_TEXT: &str = "Default Paid Term TOS...";
 
+// Default user info constraints
+const DEFAULT_MIN_HANDLE_LENGTH: u32 = 4;
+const DEFAULT_MAX_HANDLE_LENGTH: u32 = 20;
+const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 512;
+const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 1024;
+
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode)]
+/// Stored information about a registered user
 pub struct Profile<T: Trait> {
     id: T::MemberId,
     handle: Vec<u8>,
@@ -41,6 +51,20 @@ pub struct Profile<T: Trait> {
     entry: EntryMethod<T>,
     suspended: bool,
     subscription: Option<T::SubscriptionId>
+}
+
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+/// Structure used to batch user configurable profile information when registering or updating info
+pub struct UserInfo {
+    handle: Option<Vec<u8>>,
+    avatar_uri: Option<Vec<u8>>,
+    about: Option<Vec<u8>>,
+}
+
+struct CheckedUserInfo {
+    handle: Vec<u8>,
+    avatar_uri: Vec<u8>,
+    about: Vec<u8>,
 }
 
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -118,6 +142,13 @@ decl_storage! {
         // This will initialize to false if starting at genesis (because the build() method will run),
         // for a runtime upgrade it will return the default value when reading the first time.
         ShouldRunMigration get(should_run_migration) build(|_| false) : bool = true;
+
+        // User Input Validation parameters - do these really need to be state variables
+        // I don't see a need to adjust these in future?
+        MinHandleLength get(min_handle_length) : u32 = DEFAULT_MIN_HANDLE_LENGTH;
+        MaxHandleLength get(max_handle_length) : u32 = DEFAULT_MAX_HANDLE_LENGTH;
+        MaxAvatarUriLength get(max_avatar_uri_length) : u32 = DEFAULT_MAX_AVATAR_URI_LENGTH;
+        MaxAboutTextLength get(max_about_text_length) : u32 = DEFAULT_MAX_ABOUT_TEXT_LENGTH;
     }
     add_extra_genesis {
         config(default_paid_membership_fee): u64;
@@ -154,5 +185,93 @@ decl_module! {
 
         }
 
+        /// Non-members can buy membership
+        fn buy_membership(origin, paid_terms_id: T::PaidTermId, user_info: UserInfo) {
+            let who = ensure_signed(origin)?;
+
+            // ensure key not associated with an existing membership
+            Self::ensure_not_member(&who)?;
+
+            // ensure paid_terms_id is active
+            Self::ensure_terms_id_is_active(paid_terms_id)?;
+
+            let terms = Self::paid_membership_terms_by_id(paid_terms_id).ok_or("paid membership term id does not exist")?;
+
+            // ensure enough free balance to cover terms fees
+            ensure!(T::Currency::free_balance(&who) >= terms.fee, "not enough balance to buy membership");
+
+            let user_info = Self::check_user_info(user_info)?;
+
+            let member_id = Self::insert_new_paid_member(&who, paid_terms_id, &user_info)?;
+
+            Self::deposit_event(RawEvent::MemberRegistered(member_id, who.clone()));
+        }
+    }
+}
+
+impl<T: Trait> Module<T> {
+    fn ensure_not_member(who: &T::AccountId) -> dispatch::Result {
+        ensure!(!<MemberIdByAccountId<T>>::exists(who), "Account already associated with a membership");
+        Ok(())
+    }
+
+    fn ensure_terms_id_is_active(terms_id: T::PaidTermId) -> dispatch::Result {
+        let active_terms = Self::active_paid_membership_terms();
+        ensure!(active_terms.iter().any(|&id| id == terms_id), "paid terms id not active");
+        Ok(())
+    }
+
+    fn ensure_unique_handle(handle: &Vec<u8> ) -> dispatch::Result {
+        ensure!(!<Handles<T>>::exists(handle), "handle already registered");
+        Ok(())
+    }
+
+    /// Basic user input validation
+    fn check_user_info(user_info: UserInfo) -> Result<CheckedUserInfo, &'static str> {
+        // Handle is required during registration
+        let handle = user_info.handle.ok_or("handle must be provided during registration")?;
+        ensure!(handle.len() >= Self::min_handle_length() as usize, "handle too short");
+        ensure!(handle.len() <= Self::max_handle_length() as usize, "handle too long");
+
+        let mut about = user_info.about.unwrap_or_default();
+        about.truncate(Self::max_about_text_length() as usize);
+
+        let mut avatar_uri = user_info.avatar_uri.unwrap_or_default();
+        avatar_uri.truncate(Self::max_avatar_uri_length() as usize);
+
+        Ok(CheckedUserInfo {
+            handle,
+            avatar_uri,
+            about,
+        })
+    }
+
+    // Mutating methods
+
+    fn insert_new_paid_member(who: &T::AccountId, paid_terms_id: T::PaidTermId, user_info: &CheckedUserInfo) -> Result<T::MemberId, &'static str>  {
+        // ensure handle is not already registered
+        Self::ensure_unique_handle(&user_info.handle)?;
+
+        let new_member_id = Self::next_member_id();
+
+        let profile: Profile<T> = Profile {
+            id: new_member_id,
+            handle: user_info.handle.clone(),
+            avatar_uri: user_info.avatar_uri.clone(),
+            about: user_info.about.clone(),
+            registered_at_block: <system::Module<T>>::block_number(),
+            registered_at_time: <timestamp::Module<T>>::now(),
+            entry: EntryMethod::Paid(paid_terms_id),
+            suspended: false,
+            subscription: None,
+        };
+
+        <MemberIdByAccountId<T>>::insert(who.clone(), new_member_id);
+        <AccountIdByMemberId<T>>::insert(new_member_id, who.clone());
+        <MemberProfile<T>>::insert(new_member_id, profile);
+        <Handles<T>>::insert(user_info.handle.clone(), new_member_id);
+        <NextMemberId<T>>::mutate(|n| { *n += T::MemberId::sa(1); });
+
+        Ok(new_member_id)
     }
 }
