@@ -8,9 +8,10 @@ use srml_support::traits::{Currency};
 use runtime_primitives::traits::{Zero, SimpleArithmetic, As, Member, MaybeSerializeDebug};
 use system::{self, ensure_signed};
 use crate::governance::{GovernanceCurrency, BalanceOf };
-use runtime_io::print;
+//use runtime_io::print;
+use {timestamp};
 
-pub trait Trait: system::Trait + GovernanceCurrency {
+pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type MemberId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy + As<usize> + As<u64> + MaybeSerializeDebug;
@@ -32,10 +33,11 @@ const DEFAULT_PAID_TERM_TEXT: &str = "Default Paid Term TOS...";
 #[derive(Encode, Decode)]
 pub struct Profile<T: Trait> {
     id: T::MemberId,
-    handle: u32,
+    handle: Vec<u8>,
     avatar_uri: Vec<u8>,
-    description: Vec<u8>,
-    added: T::BlockNumber,
+    about: Vec<u8>,
+    registered_at_block: T::BlockNumber,
+    registered_at_time: T::Moment,
     entry: EntryMethod<T>,
     suspended: bool,
     subscription: Option<T::SubscriptionId>
@@ -71,20 +73,24 @@ impl<T: Trait> Default for PaidMembershipTerms<T> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Membership {
+        /// MemberId's start at this value
         FirstMemberId get(first_member_id) config(first_member_id): T::MemberId = T::MemberId::sa(DEFAULT_FIRST_MEMBER_ID);
 
-        /// Id to assign to next member that is added to the registry
+        /// MemberId to assign to next member that is added to the registry
         NextMemberId get(next_member_id) build(|config: &GenesisConfig<T>| config.first_member_id): T::MemberId = T::MemberId::sa(DEFAULT_FIRST_MEMBER_ID);
 
         /// Mapping of member ids to their corresponding accountid
-        MembersById get(members_by_id) : map T::MemberId => T::AccountId;
+        AccountIdByMemberId get(account_id_by_member_id) : map T::MemberId => T::AccountId;
 
         /// Mapping of members' accountid to their member id
-        MemberByAccount get(members_by_account) : map T::AccountId => T::MemberId;
+        MemberIdByAccountId get(member_id_by_account_id) : map T::AccountId => T::MemberId;
 
         /// Mapping of member's id to their membership profile
         // Value is Option<Profile> because it is not meaningful to have a Default value for Profile
         MemberProfile get(member_profile_preview) : map T::MemberId => Option<Profile<T>>;
+
+        /// Registered unique handles and their mapping to their owner
+        Handles get(handles) : map Vec<u8> => Option<T::MemberId>;
 
         /// Next paid membership terms id
         NextPaidMembershipTermsId get(next_paid_membership_terms_id) : T::PaidTermId = T::PaidTermId::sa(FIRST_PAID_TERMS_ID);
@@ -106,7 +112,7 @@ decl_storage! {
         ActivePaidMembershipTerms get(active_paid_membership_terms) : Vec<T::PaidTermId> = vec![T::PaidTermId::sa(DEFAULT_PAID_TERM_ID)];
 
         /// Is the platform is accepting new members or not
-        PlatformAcceptingNewMemberships get(platform_accepting_new_memberships) : bool = true;
+        NewMembershipsAllowed get(new_memberships_allowed) : bool = true;
 
         /// If we should run a migration and initialize new storage values introduced in new runtime
         // This will initialize to false if starting at genesis (because the build() method will run),
@@ -122,7 +128,7 @@ decl_event! {
     pub enum Event<T> where
       <T as system::Trait>::AccountId,
       <T as Trait>::MemberId {
-        MemberAdded(MemberId, AccountId),
+        MemberRegistered(MemberId, AccountId),
     }
 }
 
@@ -147,5 +153,6 @@ decl_module! {
         fn on_finalise(_now: T::BlockNumber) {
 
         }
+
     }
 }
