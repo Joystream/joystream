@@ -252,7 +252,7 @@ construct_runtime!(
 		CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
 		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
 		Memo: memo::{Module, Call, Storage, Event<T>},
-		Membership: membership::{Module, Call, Storage, Event<T>},
+		Membership: membership::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 

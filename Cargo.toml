@@ -75,11 +75,11 @@ rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.parity-codec]
 default-features = false
-version = '3.0'
+version = '3.1'
 
 [dependencies.parity-codec-derive]
 default-features = false
-version = '3.0'
+version = '3.1'
 
 [dependencies.primitives]
 default_features = false
