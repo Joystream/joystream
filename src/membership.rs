@@ -191,6 +191,9 @@ decl_module! {
         fn buy_membership(origin, paid_terms_id: T::PaidTermId, user_info: UserInfo) {
             let who = ensure_signed(origin)?;
 
+            // make sure we are accepting new memberships
+            ensure!(Self::new_memberships_allowed(), "new members not allowed");
+
             // ensure key not associated with an existing membership
             Self::ensure_not_member(&who)?;
 
