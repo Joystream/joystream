@@ -36,7 +36,11 @@ const cli = meow(`
     --config=PATH, -c PATH  Configuration file path. Defaults to
                             "${default_config.path}".
     --port=PORT, -p PORT    Port number to listen on, defaults to 3000.
-    --sync-port
+    --sync-port, -q PORT    The port number to listen of for the synchronization
+                            protocol. Defaults to 3030.
+    --sync-period           Number of milliseconds to wait between synchronization
+                            runs. Defaults to 30,000 (30s).
+    --key                   Private key to run the storage node under.
     --storage=PATH, -s PATH Storage path to use.
     --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "hyperdrive".
   `, {
@@ -46,9 +50,17 @@ const cli = meow(`
         alias: 'p',
         default: undefined,
       },
-      'sync-port': {
+      'syncPort': {
         type: 'integer',
         alias: 'q',
+        default: undefined,
+      },
+      'syncPeriod': {
+        type: 'integer',
+        default: undefined,
+      },
+      key: {
+        type: 'string',
         default: undefined,
       },
       config: {
@@ -61,7 +73,7 @@ const cli = meow(`
         alias: 's',
         default: undefined,
       },
-      'storage-type': {
+      'storageType': {
         type: 'string',
         default: undefined,
       },
@@ -90,28 +102,120 @@ function banner()
 }
 
 // Start app
-function start_app(project_root, config, flags)
+function start_app(project_root, store, config, flags)
 {
-  const app = require('joystream/app')(flags, config);
+  const app = require('joystream/app')(store, flags, config);
   const port = flags.port || config.get('port') || 3000;
   app.listen(port);
   console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
 }
 
-// Start sync server
-function start_sync_server(config, flags)
+// Mini class handling storage callback state
+// TODO this should be part of the store's own interface.
+class StorageCallbacks
 {
-  const syncserver = require('joystream/sync')(flags, config);
-  const port = flags['sync-port'] || config.get('sync-port') || 3030;
+  constructor(store)
+  {
+    this.store = store;
+
+    // Keep a set of repo keys that we can iterate over.
+    this.repos = new Set();
+    this._update();
+
+    // Generator - set here because of function* syntax
+    this.generator = function*()
+    {
+      for (let entry of this.repos.entries()) {
+        yield entry[0];
+      }
+      return this.repos.size;
+    }
+  }
+
+  _update()
+  {
+    this.repos.clear();
+    this.store.repos((err, id) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      this.repos.add(id);
+    });
+
+    // FIXME all of this timeout and refresh logic should probably go away
+    // with a callback based mechanism instead of a generator based one, but
+    // for now this is what we have.
+    setTimeout(this._update.bind(this), 30000);
+  }
+
+  read_open(id)
+  {
+    return this.store.sync_stream(id);
+  }
+
+  write_open(id)
+  {
+    return this.store.sync_stream(id);
+  }
+}
+
+// FIXME dump again
+function get_storage_mapping(config)
+{
+  const old = config.get('storageNodes') || {};  // TODO one of the way in which this is cheatingis that we've actually got
+
+  const keys = require('joystream/crypto/keys');
+
+  // FIXME in the config we're configuring private keys, but we really need
+  // pubkeys here.
+  const privkeys = Object.keys(old);
+  const res = [];
+  for (var i = 0 ; i < privkeys.length ; ++i) {
+    const val = old[privkeys[i]];
+
+    const kp = keys.key_pair(privkeys[i]);
+    res.push([kp.pubKey, val]);
+  }
+  console.log(old, res);
+
+  return res;
+}
+
+// Start sync server
+function start_sync_server(store, config, flags)
+{
+  // Storage callbacks map the storage interface the sync server and
+  // client are expecting.
+  const storage_callbacks = new StorageCallbacks(store)
+
+  const { create_server, synchronize } = require('joystream/sync');
+  const chain_storage = require('joystream/core/chain/storage');
+  const core_dht = require('joystream/core/dht');
+
+  // Sync server
+  const syncserver = create_server(flags, config, storage_callbacks);
+  const port = flags['syncPort'] || config.get('syncPort') || 3030;
   syncserver.listen(port);
-  console.log('Sync server started.');
+  console.log('Sync server started at', syncserver.address());
+
+  // Mock storage node mapping from configuration. Note that this must
+  // change in future. TODO implement properly.
+  const mapping = get_storage_mapping(config);
+  const mapping_keys = mapping.map((x) => x[0]);
+  console.log(mapping_keys);
+  const nodes = new chain_storage.StorageNodes(mapping_keys);
+  const dht = new core_dht.DHT(mapping);
+
+  // Periodically synchronize
+  synchronize(flags, config, nodes, dht, storage_callbacks);
 }
 
 // Get an initialized storage instance
 function get_storage(config, flags)
 {
   const store_path = flags.storage || config.get('storage') || './storage';
-  const store_type = flags['storage-type'] || config.get('storage-type') || 'hyperdrive';
+  const store_type = flags['storageType'] || config.get('storageType') || 'hyperdrive';
 
   const storage = require('joystream/core/storage');
 
@@ -182,9 +286,10 @@ if (!command) {
 const commands = {
   'server': () => {
     const cfg = create_config(pkg.name, cli.flags);
+    const store = get_storage(cfg, cli.flags);
     banner();
-    start_app(project_root, cfg, cli.flags);
-    start_sync_server(cfg, cli.flags);
+    start_app(project_root, store, cfg, cli.flags);
+    start_sync_server(store, cfg, cli.flags);
   },
   'create': () => {
     const cfg = create_config(pkg.name, cli.flags);
