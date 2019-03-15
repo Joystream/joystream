@@ -41,7 +41,6 @@ describe('protocols/stacks', function()
     const foo_result = new stream_buf.WritableStreamBuffer();
     const bar_result = new stream_buf.WritableStreamBuffer();
     const write_open = (id) => {
-      console.log('........ WRITE opening for', id);
       id = id.toString();
       if (id == 'foo') {
         return foo_result;
