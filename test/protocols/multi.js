@@ -28,6 +28,11 @@ class MockProto1
       cb(null, next, 'mock1');
     }
   }
+
+  initiate(cb)
+  {
+    cb(null, 0, 'init1');
+  }
 }
 
 
@@ -53,6 +58,11 @@ class MockProto2
     else {
       cb(null, next, 'mock2');
     }
+  }
+
+  initiate(cb)
+  {
+    cb(null, 0, 'init2');
   }
 }
 
@@ -107,6 +117,60 @@ describe('protocols/multi', function(done)
         expect(msg).to.equal('mock2');
         done();
       });
+    });
+  });
+
+  it('knowns how to map and unmap message types', function()
+  {
+    var mock1 = new MockProto1();
+    var mock2 = new MockProto2();
+    var m = new multi.MultiProtocol(mock1, mock2);
+
+    var mapped = m.map_type(mock1, 0);
+    expect(mapped).to.equal(0);
+    var unmapped = m.lookup_type(mapped);
+    expect(unmapped[0]).to.equal(mock1);
+    expect(unmapped[1]).to.equal(0);
+
+    mapped = m.map_type(mock2, 1);
+    expect(mapped).to.equal(4);
+    unmapped = m.lookup_type(mapped);
+    expect(unmapped[0]).to.equal(mock2);
+    expect(unmapped[1]).to.equal(1);
+  });
+
+  it('can handle protocol transitions with handlers', function(done)
+  {
+    var mock1 = new MockProto1();
+    var mock2 = new MockProto2();
+    var m = new multi.MultiProtocol(mock1, mock2);
+
+    // Handler gets called after m.initiate()
+    m.register(m.map_type(mock1, 0), 'outgoing', (proto, type, message) => {
+      expect(proto).to.equal(mock1);
+      expect(type).to.equal(0);
+
+      // Initiate mock2 now.
+      mock2.initiate((err, type, msg) => {
+        expect(err).to.be.null;
+        const mapped = m.map_type(mock2, type);
+        m.consume(mapped, msg, () => {});
+      });
+    });
+
+    // Handler gets called after mock2.initiate()
+    m.register(m.map_type(mock2, 0), 'incoming', (proto, type, message) => {
+      expect(proto).to.equal(mock2);
+      expect(type).to.equal(0);
+
+      done();
+    });
+
+    // Initiate
+    m.initiate((err, type, msg) => {
+      expect(err).to.be.null;
+      const mapped = m.map_type(mock1, type);
+      m.consume(mapped, msg, () => {});
     });
   });
 });
