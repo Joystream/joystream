@@ -34,7 +34,7 @@ const DEFAULT_PAID_TERM_FEE: u64 = 100; // Can be overidden in genesis config
 const DEFAULT_PAID_TERM_TEXT: &str = "Default Paid Term TOS...";
 
 // Default user info constraints
-const DEFAULT_MIN_HANDLE_LENGTH: u32 = 4;
+const DEFAULT_MIN_HANDLE_LENGTH: u32 = 5;
 const DEFAULT_MAX_HANDLE_LENGTH: u32 = 20;
 const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 512;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 1024;
