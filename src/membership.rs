@@ -51,7 +51,8 @@ pub struct Profile<T: Trait> {
     registered_at_time: T::Moment,
     entry: EntryMethod<T>,
     suspended: bool,
-    subscription: Option<T::SubscriptionId>
+    subscription: Option<T::SubscriptionId>,
+    sub_accounts: Vec<T::AccountId>
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
@@ -108,10 +109,11 @@ decl_storage! {
         /// MemberId to assign to next member that is added to the registry
         NextMemberId get(next_member_id) build(|config: &GenesisConfig<T>| config.first_member_id): T::MemberId = T::MemberId::sa(DEFAULT_FIRST_MEMBER_ID);
 
-        /// Mapping of member ids to their corresponding accountid
+        /// Mapping of member ids to their corresponding primary accountid
         AccountIdByMemberId get(account_id_by_member_id) : map T::MemberId => T::AccountId;
 
-        /// Mapping of members' accountid to their member id
+        /// Mapping of members' accountid ids to their member id.
+        /// A member can have one primary account and multiple sub accounts associated with their profile
         MemberIdByAccountId get(member_id_by_account_id) : map T::AccountId => Option<T::MemberId>;
 
         /// Mapping of member's id to their membership profile
@@ -163,6 +165,9 @@ decl_event! {
         MemberUpdatedAboutText(MemberId),
         MemberUpdatedAvatar(MemberId),
         MemberUpdatedHandle(MemberId),
+        MemberChangedPrimaryAccount(MemberId, AccountId),
+        MemberAddedSubAccount(MemberId, AccountId),
+        MemberRemovedSubAccount(MemberId, AccountId),
     }
 }
 
@@ -224,30 +229,35 @@ decl_module! {
 
         fn change_member_about_text(origin, text: Vec<u8>) {
             let who = ensure_signed(origin)?;
-            Self::_change_member_about_text(&who, &text)?;
+            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
+            Self::_change_member_about_text(member_id, &text)?;
         }
 
         fn change_member_avatar(origin, uri: Vec<u8>) {
             let who = ensure_signed(origin)?;
-            Self::_change_member_avatar(&who, &uri)?;
+            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
+            Self::_change_member_avatar(member_id, &uri)?;
         }
 
         /// Change member's handle.
         fn change_member_handle(origin, handle: Vec<u8>) {
             let who = ensure_signed(origin)?;
-            Self::_change_member_handle(&who, handle)?;
+            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
+            Self::_change_member_handle(member_id, handle)?;
         }
 
         fn update_profile(origin, user_info: UserInfo) {
             let who = ensure_signed(origin)?;
+            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
+
             if let Some(uri) = user_info.avatar_uri {
-                Self::_change_member_avatar(&who, &uri)?;
+                Self::_change_member_avatar(member_id, &uri)?;
             }
             if let Some(about) = user_info.about {
-                Self::_change_member_about_text(&who, &about)?;
+                Self::_change_member_about_text(member_id, &about)?;
             }
             if let Some(handle) = user_info.handle {
-                Self::_change_member_handle(&who, handle)?;
+                Self::_change_member_handle(member_id, handle)?;
             }
         }
 
@@ -259,12 +269,64 @@ decl_module! {
                 about: None
             })?;
         }
+
+        fn change_member_primary_account(origin, new_primary_account: T::AccountId) {
+            let who = ensure_signed(origin)?;
+
+            // only primary account can assign new primary account
+            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
+
+            // ensure new_primary_account isn't already associated with any existing member
+            Self::ensure_not_member(&new_primary_account)?;
+
+            // update associated accounts
+            <MemberIdByAccountId<T>>::remove(&who);
+            <MemberIdByAccountId<T>>::insert(&new_primary_account, member_id);
+
+            // update primary account
+            <AccountIdByMemberId<T>>::insert(member_id, new_primary_account.clone());
+            Self::deposit_event(RawEvent::MemberChangedPrimaryAccount(member_id, new_primary_account));
+        }
+
+        fn add_member_sub_account(origin, sub_account: T::AccountId) {
+            let who = ensure_signed(origin)?;
+            // only primary account can manage sub accounts
+            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
+            // ensure sub_account isn't already associated with any existing member
+            Self::ensure_not_member(&sub_account)?;
+
+            let mut profile = Self::ensure_profile(member_id)?;
+            profile.sub_accounts.push(sub_account.clone());
+            <MemberProfile<T>>::insert(member_id, profile);
+            Self::deposit_event(RawEvent::MemberAddedSubAccount(member_id, sub_account));
+        }
+
+        fn remove_member_sub_account(origin, sub_account: T::AccountId) {
+            let who = ensure_signed(origin)?;
+            // only primary account can manage sub accounts
+            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
+
+            // ensure account is a sub account
+            // primary account cannot be added as a subaccount in add_member_sub_account()
+            ensure!(who != sub_account, "not sub account");
+
+            // ensure sub_account is associated with member
+            let sub_account_member_id = Self::ensure_is_member(&sub_account)?;
+            ensure!(member_id == sub_account_member_id, "not member sub account");
+
+            let mut profile = Self::ensure_profile(member_id)?;
+
+            profile.sub_accounts = profile.sub_accounts.into_iter().filter(|account| !(*account == sub_account)).collect();
+
+            <MemberProfile<T>>::insert(member_id, profile);
+            Self::deposit_event(RawEvent::MemberRemovedSubAccount(member_id, sub_account));
+        }
     }
 }
 
 impl<T: Trait> Module<T> {
     fn ensure_not_member(who: &T::AccountId) -> dispatch::Result {
-        ensure!(!<MemberIdByAccountId<T>>::exists(who), "Account already associated with a membership");
+        ensure!(!<MemberIdByAccountId<T>>::exists(who), "account already associated with a membership");
         Ok(())
     }
 
@@ -273,9 +335,14 @@ impl<T: Trait> Module<T> {
         Ok(member_id)
     }
 
-    fn ensure_has_profile(who: &T::AccountId) -> Result<Profile<T>, &'static str> {
-        let member_id = Self::ensure_is_member(who)?;
-        let profile = Self::member_profile(&member_id).ok_or("member profile not found")?;
+    fn ensure_is_member_primary_account(who: T::AccountId) -> Result<T::MemberId, &'static str> {
+        let member_id = Self::ensure_is_member(&who)?;
+        ensure!(Self::account_id_by_member_id(member_id) == who, "not primary account");
+        Ok(member_id)
+    }
+
+    fn ensure_profile(id: T::MemberId) -> Result<Profile<T>, &'static str> {
+        let profile = Self::member_profile(&id).ok_or("member profile not found")?;
         Ok(profile)
     }
 
@@ -340,6 +407,7 @@ impl<T: Trait> Module<T> {
             entry: EntryMethod::Paid(paid_terms_id),
             suspended: false,
             subscription: None,
+            sub_accounts: vec![],
         };
 
         <MemberIdByAccountId<T>>::insert(who.clone(), new_member_id);
@@ -351,33 +419,33 @@ impl<T: Trait> Module<T> {
         new_member_id
     }
 
-    fn _change_member_about_text (who: &T::AccountId, text: &Vec<u8>) -> dispatch::Result {
-        let mut profile = Self::ensure_has_profile(&who)?;
+    fn _change_member_about_text (id: T::MemberId, text: &Vec<u8>) -> dispatch::Result {
+        let mut profile = Self::ensure_profile(id)?;
         let text = Self::validate_text(text);
         profile.about = text;
-        Self::deposit_event(RawEvent::MemberUpdatedAboutText(profile.id));
-        <MemberProfile<T>>::insert(profile.id, profile);
+        Self::deposit_event(RawEvent::MemberUpdatedAboutText(id));
+        <MemberProfile<T>>::insert(id, profile);
         Ok(())
     }
 
-    fn _change_member_avatar(who: &T::AccountId, uri: &Vec<u8>) -> dispatch::Result {
-        let mut profile = Self::ensure_has_profile(who)?;
+    fn _change_member_avatar(id: T::MemberId, uri: &Vec<u8>) -> dispatch::Result {
+        let mut profile = Self::ensure_profile(id)?;
         Self::validate_avatar(uri)?;
         profile.avatar_uri = uri.clone();
-        Self::deposit_event(RawEvent::MemberUpdatedAvatar(profile.id));
-        <MemberProfile<T>>::insert(profile.id, profile);
+        Self::deposit_event(RawEvent::MemberUpdatedAvatar(id));
+        <MemberProfile<T>>::insert(id, profile);
         Ok(())
     }
 
-    fn _change_member_handle(who: &T::AccountId, handle: Vec<u8>) -> dispatch::Result {
-        let mut profile = Self::ensure_has_profile(who)?;
+    fn _change_member_handle(id: T::MemberId, handle: Vec<u8>) -> dispatch::Result {
+        let mut profile = Self::ensure_profile(id)?;
         Self::validate_handle(&handle)?;
         Self::ensure_unique_handle(&handle)?;
         <Handles<T>>::remove(&profile.handle);
-        <Handles<T>>::insert(handle.clone(), profile.id);
+        <Handles<T>>::insert(handle.clone(), id);
         profile.handle = handle;
-        Self::deposit_event(RawEvent::MemberUpdatedHandle(profile.id));
-        <MemberProfile<T>>::insert(profile.id, profile);
+        Self::deposit_event(RawEvent::MemberUpdatedHandle(id));
+        <MemberProfile<T>>::insert(id, profile);
         Ok(())
     }
 }
