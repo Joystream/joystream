@@ -270,6 +270,14 @@ decl_module! {
             })?;
         }
 
+        // Notes:
+        // Ability to change primary account and add/remove sub accounts should be restricted
+        // to accounts that are not actively being used in other roles in the platform?
+        // Other roles in the platform should be associated directly with member_id instead of an account_id,
+        // but can still use a seprate account/key to sign extrinsics, have a seprate balance from primary account,
+        // and a way to limit damage from a compromised sub account.
+        // Maybe should also not be allowed if member is suspended?
+        // Main usecase for changing primary account is for identity recoverability
         fn change_member_primary_account(origin, new_primary_account: T::AccountId) {
             let who = ensure_signed(origin)?;
 
