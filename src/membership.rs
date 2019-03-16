@@ -35,9 +35,9 @@ const DEFAULT_PAID_TERM_TEXT: &str = "Default Paid Term TOS...";
 
 // Default user info constraints
 const DEFAULT_MIN_HANDLE_LENGTH: u32 = 5;
-const DEFAULT_MAX_HANDLE_LENGTH: u32 = 20;
-const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 512;
-const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 1024;
+const DEFAULT_MAX_HANDLE_LENGTH: u32 = 40;
+const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
+const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode)]
