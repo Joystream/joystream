@@ -162,6 +162,7 @@ decl_event! {
         MemberRegistered(MemberId, AccountId),
         MemberUpdatedAboutText(MemberId),
         MemberUpdatedAvatar(MemberId),
+        MemberUpdatedHandle(MemberId),
     }
 }
 
@@ -237,7 +238,7 @@ decl_module! {
             Self::_change_member_handle(&who, handle)?;
         }
 
-        fn batch_change_member_profile(origin, user_info: UserInfo) {
+        fn update_profile(origin, user_info: UserInfo) {
             let who = ensure_signed(origin)?;
             if let Some(uri) = user_info.avatar_uri {
                 Self::_change_member_avatar(&who, &uri)?;
@@ -302,10 +303,9 @@ impl<T: Trait> Module<T> {
         text
     }
 
-    fn validate_avatar(uri: &Vec<u8>) -> Vec<u8> {
-        let mut uri = uri.clone();
-        uri.truncate(Self::max_avatar_uri_length() as usize);
-        uri
+    fn validate_avatar(uri: &Vec<u8>) -> dispatch::Result {
+        ensure!(uri.len() <= Self::max_avatar_uri_length() as usize, "avatar uri too long");
+        Ok(())
     }
 
     /// Basic user input validation
@@ -315,7 +315,8 @@ impl<T: Trait> Module<T> {
         Self::validate_handle(&handle)?;
 
         let about = Self::validate_text(&user_info.about.unwrap_or_default());
-        let avatar_uri = Self::validate_avatar(&user_info.avatar_uri.unwrap_or_default());
+        let avatar_uri = user_info.avatar_uri.unwrap_or_default();
+        Self::validate_avatar(&avatar_uri)?;
 
         Ok(CheckedUserInfo {
             handle,
@@ -361,8 +362,8 @@ impl<T: Trait> Module<T> {
 
     fn _change_member_avatar(who: &T::AccountId, uri: &Vec<u8>) -> dispatch::Result {
         let mut profile = Self::ensure_has_profile(who)?;
-        let uri = Self::validate_avatar(uri);
-        profile.avatar_uri = uri;
+        Self::validate_avatar(uri)?;
+        profile.avatar_uri = uri.clone();
         Self::deposit_event(RawEvent::MemberUpdatedAvatar(profile.id));
         <MemberProfile<T>>::insert(profile.id, profile);
         Ok(())
@@ -375,6 +376,7 @@ impl<T: Trait> Module<T> {
         <Handles<T>>::remove(&profile.handle);
         <Handles<T>>::insert(handle.clone(), profile.id);
         profile.handle = handle;
+        Self::deposit_event(RawEvent::MemberUpdatedHandle(profile.id));
         <MemberProfile<T>>::insert(profile.id, profile);
         Ok(())
     }
