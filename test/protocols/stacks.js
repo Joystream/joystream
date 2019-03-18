@@ -10,12 +10,14 @@ const { Transform } = require('stream');
 const stacks = require('joystream/protocols/stacks');
 const keys = require('joystream/crypto/keys');
 
-function* id_generator(ids)
+function id_generator(ids)
 {
-  for (var i = 0 ; i < ids.length ; ++i) {
-    yield ids[i];
+  return (callback) => {
+    for (var i = 0 ; i < ids.length ; ++i) {
+      callback(null, ids[i]);
+    }
+    callback(null, undefined);
   }
-  return 2;
 }
 
 
@@ -56,16 +58,20 @@ describe('protocols/stacks', function()
 
     const server_options = {
       keyPair: server_key,
-      generator: id_generator(['foo']),
-      read_open: read_opener,
-      write_open: write_open,
+      store: {
+        repos: id_generator(['foo']),
+        read_open: read_opener,
+        write_open: write_open,
+      }
     };
     const client_options = {
       keyPair: client_key,
       serverKey: server_key.pubKey,
-      generator: id_generator(['bar']),
-      read_open: read_opener,
-      write_open: write_open,
+      store: {
+        repos: id_generator(['bar']),
+        read_open: read_opener,
+        write_open: write_open,
+      }
     };
 
     // Client/server test
