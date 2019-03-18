@@ -34,7 +34,12 @@ git = 'https://github.com/joystream/substrate.git'
 rev = 'df5e65927780b323482e2e8b5031822f423a032d'
 
 [dependencies.joystream-node-runtime]
-path = 'runtime'
+git = 'https://github.com/joystream/substrate-runtime-joystream.git'
+tag = 'v3.4.0'
+# When developing locally change the location of the dependency to a local directory
+# comment out the "git" and "tag" lines above and replace with a "path"
+# path = 'runtime'
+# path = '../my-local-joystream-runtime-repo/'
 
 [dependencies.primitives]
 git = 'https://github.com/joystream/substrate.git'
