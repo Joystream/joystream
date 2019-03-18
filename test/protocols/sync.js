@@ -6,24 +6,30 @@ const stream_buf = require('stream-buffers');
 
 const sync = require('joystream/protocols/sync');
 
-function* id_generator(ids)
+function id_generator(ids)
 {
-  for (var i = 0 ; i < ids.length ; ++i) {
-    yield ids[i];
+  return (callback) => {
+    for (var i = 0 ; i < ids.length ; ++i) {
+      callback(null, ids[i]);
+    }
+    callback(null, undefined);
   }
-  return 2;
 }
 
-function* error_id_generator()
+function error_id_generator()
 {
-  yield 'error';
-  return 1;
+  return (callback) => {
+    callback(null, 'error');
+    callback(null, undefined);
+  }
 }
 
-function* missing_id_generator()
+function missing_id_generator()
 {
-  yield 'missing';
-  return 1;
+  return (callback) => {
+    callback(null, 'missing');
+    callback(null, undefined);
+  }
 }
 
 function read_opener(id)
@@ -56,19 +62,24 @@ describe('protocols/sync', function()
     const bar_result = new stream_buf.WritableStreamBuffer();
 
     const proto1 = new sync.SyncProtocol({
-      generator: id_generator(['foo', 'bar']),
-      read_open: read_opener,
+      store: {
+        repos: id_generator(['foo', 'bar']),
+        read_open: read_opener,
+      }
     });
     const proto2 = new sync.SyncProtocol({
-      write_open: (id) => {
-        id = id.toString();
-        if (id == 'foo') {
-          return foo_result;
+      store: {
+        repos: id_generator([]),
+        write_open: (id) => {
+          id = id.toString();
+          if (id == 'foo') {
+            return foo_result;
+          }
+          if (id == 'bar') {
+            return bar_result;
+          }
+          throw new Error(`Invalid ID "${id}"`);
         }
-        if (id == 'bar') {
-          return bar_result;
-        }
-        throw new Error(`Invalid ID "${id}"`);
       }
     });
 
@@ -121,14 +132,18 @@ describe('protocols/sync', function()
     };
 
     const proto1 = new sync.SyncProtocol({
-      generator: id_generator(['foo']),
-      read_open: read_opener,
-      write_open: write_open,
+      store: {
+        repos: id_generator(['foo']),
+        read_open: read_opener,
+        write_open: write_open,
+      }
     });
     const proto2 = new sync.SyncProtocol({
-      generator: id_generator(['bar']),
-      read_open: read_opener,
-      write_open: write_open,
+      store: {
+        repos: id_generator(['bar']),
+        read_open: read_opener,
+        write_open: write_open,
+      }
     });
 
     proto1.initiate((err, type, data) => {
@@ -156,8 +171,10 @@ describe('protocols/sync', function()
   it('handles errors during opening', function(done)
   {
     const proto = new sync.SyncProtocol({
-      generator: missing_id_generator(),
-      read_open: read_opener,
+      store: {
+        repos: missing_id_generator(),
+        read_open: read_opener,
+      }
     });
 
     proto.initiate((err, type, data) => {
@@ -169,8 +186,10 @@ describe('protocols/sync', function()
   it('handles errors during streaming', function(done)
   {
     const proto = new sync.SyncProtocol({
-      generator: error_id_generator(),
-      read_open: read_opener,
+      store: {
+        repos: error_id_generator(),
+        read_open: read_opener,
+      }
     });
 
     proto.initiate((err, type, data) => {
