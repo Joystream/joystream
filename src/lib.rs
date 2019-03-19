@@ -18,6 +18,7 @@ pub mod governance;
 use governance::{election, council, proposals};
 mod memo;
 mod membership;
+use membership::registry;
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -225,7 +226,7 @@ impl memo::Trait for Runtime {
 	type Event = Event;
 }
 
-impl membership::Trait for Runtime {
+impl membership::registry::Trait for Runtime {
 	type Event = Event;
 	type MemberId = u64;
 	type PaidTermId = u64;
@@ -252,7 +253,7 @@ construct_runtime!(
 		CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
 		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
 		Memo: memo::{Module, Call, Storage, Event<T>},
-		Membership: membership::{Module, Call, Storage, Event<T>, Config<T>},
+		Membership: registry::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 
