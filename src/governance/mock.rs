@@ -3,6 +3,7 @@
 use rstd::prelude::*;
 pub use super::{election, council, proposals, GovernanceCurrency};
 pub use system;
+use crate::traits;
 
 pub use primitives::{H256, Blake2Hasher};
 pub use runtime_primitives::{
@@ -16,6 +17,16 @@ use srml_support::impl_outer_origin;
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
+
+pub struct AnyAccountIsMember {}
+impl<T: system::Trait> traits::IsActiveMember<T> for AnyAccountIsMember {
+    fn is_active_member(who: &T::AccountId) -> bool {
+        true
+    }
+}
+
+// default trait implementation - any account is not a member
+// impl<T: system::Trait> traits::IsActiveMember<T> for () {}
 
 // For testing the module, we construct most of a mock runtime. This means
 // first constructing a configuration type (`Test`) which `impl`s each of the
@@ -53,10 +64,10 @@ impl election::Trait for Test {
     type Event = ();
 
     type CouncilElected = (Council,);
+
+    type IsActiveMember = AnyAccountIsMember;
 }
-impl proposals::Trait for Test {
-    type Event = ();
-}
+
 impl balances::Trait for Test {
     type Event = ();
 
@@ -92,6 +103,5 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
 
 pub type Election = election::Module<Test>;
 pub type Council = council::Module<Test>;
-pub type Proposals = proposals::Module<Test>;
 pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;

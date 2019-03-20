@@ -186,8 +186,8 @@ impl<T: Trait> Module<T> {
 }
 
 impl<T: Trait> traits::IsActiveMember<T> for Module<T> {
-    fn is_active_member(who: T::AccountId) -> bool {
-        match Self::ensure_is_member(&who)
+    fn is_active_member(who: &T::AccountId) -> bool {
+        match Self::ensure_is_member(who)
             .and_then(|member_id| Self::ensure_profile(member_id))
         {
             Ok(profile) => !profile.suspended,
