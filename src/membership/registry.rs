@@ -218,25 +218,29 @@ decl_module! {
             Self::deposit_event(RawEvent::MemberRegistered(member_id, who.clone()));
         }
 
+        /// Change member's about text
         pub fn change_member_about_text(origin, text: Vec<u8>) {
             let who = ensure_signed(origin)?;
             let member_id = Self::ensure_is_member_primary_account(who.clone())?;
             Self::_change_member_about_text(member_id, &text)?;
         }
 
+        /// Change member's avatar
         pub fn change_member_avatar(origin, uri: Vec<u8>) {
             let who = ensure_signed(origin)?;
             let member_id = Self::ensure_is_member_primary_account(who.clone())?;
             Self::_change_member_avatar(member_id, &uri)?;
         }
 
-        /// Change member's handle.
+        /// Change member's handle. Will ensure new handle is unique and old one will be available
+        /// for other members to use.
         pub fn change_member_handle(origin, handle: Vec<u8>) {
             let who = ensure_signed(origin)?;
             let member_id = Self::ensure_is_member_primary_account(who.clone())?;
             Self::_change_member_handle(member_id, handle)?;
         }
 
+        /// Update member's all or some of handle, avatar and about text.
         pub fn update_profile(origin, user_info: UserInfo) {
             let who = ensure_signed(origin)?;
             let member_id = Self::ensure_is_member_primary_account(who.clone())?;
