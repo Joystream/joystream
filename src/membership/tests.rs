@@ -196,9 +196,13 @@ fn member_sub_accounts() {
 
         const NEW_PRIMARY_ACCOUNT: u64 = 2;
 
+        // only primary account can change
+        assert!(Membership::change_member_primary_account(Origin::signed(NEW_PRIMARY_ACCOUNT), NEW_PRIMARY_ACCOUNT).is_err());
+
+        // primary account should successfully change account
         assert_ok!(Membership::change_member_primary_account(Origin::signed(ALICE_ACCOUNT_ID), NEW_PRIMARY_ACCOUNT));
 
-        // new account id should be associated with the member
+        // new account id should be associated with the same member
         assert_eq!(assert_ok_unwrap(Membership::member_id_by_account_id(&NEW_PRIMARY_ACCOUNT), "member id not found"), member_id);
 
         const NEW_SUB_ACCOUNT_1: u64 = 3;
