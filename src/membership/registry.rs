@@ -11,6 +11,7 @@ use crate::governance::{GovernanceCurrency, BalanceOf };
 use runtime_io::print;
 use {timestamp};
 use crate::{VERSION};
+use crate::traits;
 
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -180,6 +181,17 @@ impl<T: Trait> Module<T> {
             print("Running New Runtime Init Code");
             let default_terms: PaidMembershipTerms<T> = Default::default();
             <PaidMembershipTermsById<T>>::insert(T::PaidTermId::sa(0), default_terms);
+        }
+    }
+}
+
+impl<T: Trait> traits::IsActiveMember<T> for Module<T> {
+    fn is_active_member(who: T::AccountId) -> bool {
+        match Self::ensure_is_member(&who)
+            .and_then(|member_id| Self::ensure_profile(member_id))
+        {
+            Ok(profile) => !profile.suspended,
+            Err(err) => false
         }
     }
 }
