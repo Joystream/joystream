@@ -22,6 +22,14 @@ fn get_alice_info() -> registry::UserInfo {
     }
 }
 
+fn get_bob_info() -> registry::UserInfo {
+    registry::UserInfo {
+        handle: Some(String::from("bobby").as_bytes().to_vec()),
+        avatar_uri: Some(String::from("http://avatar-url.com/bob").as_bytes().to_vec()),
+        about: Some(String::from("my name is bob").as_bytes().to_vec()),
+    }
+}
+
 const ALICE_ACCOUNT_ID: u64 = 1;
 const DEFAULT_TERMS_ID: u32 = 0;
 
@@ -69,9 +77,11 @@ fn buy_membership() {
 
         let member_id = assert_ok_unwrap(Membership::member_id_by_account_id(&ALICE_ACCOUNT_ID), "member id not assigned");
 
-        let profile = assert_ok_unwrap(Membership::member_profile(&member_id), "member profile created");
+        let profile = assert_ok_unwrap(Membership::member_profile(&member_id), "member profile not created");
 
         assert_eq!(Some(profile.handle), get_alice_info().handle);
+        assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
+        assert_eq!(Some(profile.about), get_alice_info().about);
 
         assert_eq!(Balances::free_balance(&ALICE_ACCOUNT_ID), SURPLUS_BALANCE);
 
@@ -147,3 +157,63 @@ fn unique_handles() {
 
     });
 }
+
+#[test]
+fn update_profile() {
+    const DEFAULT_FEE: u32 = 500;
+    const SURPLUS_BALANCE: u32 = 500;
+
+    with_externalities(&mut ExtBuilder::default()
+        .default_paid_membership_fee(DEFAULT_FEE).build(), ||
+    {
+        let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
+        set_alice_free_balance(initial_balance);
+
+        assert_ok!(buy_default_membership_as_alice());
+
+        assert_ok!(Membership::update_profile(Origin::signed(ALICE_ACCOUNT_ID), get_bob_info()));
+
+        let member_id = assert_ok_unwrap(Membership::member_id_by_account_id(&ALICE_ACCOUNT_ID), "member id not assigned");
+
+        let profile = assert_ok_unwrap(Membership::member_profile(&member_id), "member profile created");
+
+        assert_eq!(Some(profile.handle), get_bob_info().handle);
+        assert_eq!(Some(profile.avatar_uri), get_bob_info().avatar_uri);
+        assert_eq!(Some(profile.about), get_bob_info().about);
+
+    });
+}
+
+#[test]
+fn member_sub_accounts() {
+    with_externalities(&mut ExtBuilder::default().build(), ||
+    {
+        let initial_balance = 20000;
+        set_alice_free_balance(initial_balance);
+        assert_ok!(buy_default_membership_as_alice());
+
+        let member_id = assert_ok_unwrap(Membership::member_id_by_account_id(&ALICE_ACCOUNT_ID), "member id not assigned");
+
+        const NEW_PRIMARY_ACCOUNT: u64 = 2;
+
+        assert_ok!(Membership::change_member_primary_account(Origin::signed(ALICE_ACCOUNT_ID), NEW_PRIMARY_ACCOUNT));
+
+        // new account id should be associated with the member
+        assert_eq!(assert_ok_unwrap(Membership::member_id_by_account_id(&NEW_PRIMARY_ACCOUNT), "member id not found"), member_id);
+
+        const NEW_SUB_ACCOUNT_1: u64 = 3;
+        const NEW_SUB_ACCOUNT_2: u64 = 4;
+        assert_ok!(Membership::add_member_sub_account(Origin::signed(NEW_PRIMARY_ACCOUNT), NEW_SUB_ACCOUNT_1));
+        assert_ok!(Membership::add_member_sub_account(Origin::signed(NEW_PRIMARY_ACCOUNT), NEW_SUB_ACCOUNT_2));
+
+        let profile = assert_ok_unwrap(Membership::member_profile(&member_id), "member profile not found");
+        assert_eq!(profile.sub_accounts, vec![NEW_SUB_ACCOUNT_1, NEW_SUB_ACCOUNT_2]);
+
+        assert_ok!(Membership::remove_member_sub_account(Origin::signed(NEW_PRIMARY_ACCOUNT), NEW_SUB_ACCOUNT_1));
+
+        let profile = assert_ok_unwrap(Membership::member_profile(&member_id), "member profile not found");
+        assert_eq!(profile.sub_accounts, vec![NEW_SUB_ACCOUNT_2]);
+
+    });
+}
+
