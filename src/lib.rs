@@ -20,6 +20,7 @@ mod memo;
 mod membership;
 use membership::registry;
 mod traits;
+mod migration;
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -236,6 +237,10 @@ impl membership::registry::Trait for Runtime {
 	type SubscriptionId = u64;
 }
 
+impl migration::Trait for Runtime {
+	type Event = Event;
+}
+
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, Ed25519AuthorityId>) where
 		Block = Block,
@@ -257,6 +262,7 @@ construct_runtime!(
 		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
 		Memo: memo::{Module, Call, Storage, Event<T>},
 		Membership: registry::{Module, Call, Storage, Event<T>, Config<T>},
+		Migration: migration::{Module, Call, Storage, Event<T>},
 	}
 );
 

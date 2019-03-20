@@ -8,9 +8,7 @@ use srml_support::traits::{Currency};
 use runtime_primitives::traits::{Zero, SimpleArithmetic, As, Member, MaybeSerializeDebug};
 use system::{self, ensure_signed};
 use crate::governance::{GovernanceCurrency, BalanceOf };
-use runtime_io::print;
 use {timestamp};
-use crate::{VERSION};
 use crate::traits;
 
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
@@ -100,10 +98,6 @@ impl<T: Trait> Default for PaidMembershipTerms<T> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Membership {
-        /// Records at what runtime spec version the store was initialized. This allows the runtime
-        /// to know when to run initialize code if it was installed as an update.
-        pub StoreSpecVersion get(store_spec_version) build(|_| Some(VERSION.spec_version)) : Option<u32>;
-
         /// MemberId's start at this value
         pub FirstMemberId get(first_member_id) config(first_member_id): T::MemberId = T::MemberId::sa(DEFAULT_FIRST_MEMBER_ID);
 
@@ -172,16 +166,13 @@ decl_event! {
     }
 }
 
+/// Initialization step that runs when the runtime is installed as a runtime upgrade
+/// This will and should ONLY be called from the migration module that keeps track of
+/// the store version!
 impl<T: Trait> Module<T> {
-    /// Initialization step that runs when the runtime is installed as a runtime upgrade
-    /// Remember to remove this code in next release, or guard the code with the spec version
-    // Given it is easy to forget to do this, we need a better arrangement.
-    fn runtime_initialization(spec_version: u32) {
-        if 5 == spec_version {
-            print("Running New Runtime Init Code");
-            let default_terms: PaidMembershipTerms<T> = Default::default();
-            <PaidMembershipTermsById<T>>::insert(T::PaidTermId::sa(0), default_terms);
-        }
+    pub fn initialize_storage() {
+        let default_terms: PaidMembershipTerms<T> = Default::default();
+        <PaidMembershipTermsById<T>>::insert(default_terms.id, default_terms);
     }
 }
 
@@ -199,18 +190,6 @@ impl<T: Trait> traits::IsActiveMember<T> for Module<T> {
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
-
-        fn on_initialise(_now: T::BlockNumber) {
-            if Self::store_spec_version().map_or(true, |spec_version| VERSION.spec_version > spec_version) {
-                // Mark store version with latest so we don't run initialization code again
-                <StoreSpecVersion<T>>::put(VERSION.spec_version);
-                Self::runtime_initialization(VERSION.spec_version);
-            }
-        }
-
-        fn on_finalise(_now: T::BlockNumber) {
-
-        }
 
         /// Non-members can buy membership
         pub fn buy_membership(origin, paid_terms_id: T::PaidTermId, user_info: UserInfo) {
