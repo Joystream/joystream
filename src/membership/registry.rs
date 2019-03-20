@@ -297,6 +297,7 @@ decl_module! {
             let mut profile = Self::ensure_profile(member_id)?;
             profile.sub_accounts.push(sub_account.clone());
             <MemberProfile<T>>::insert(member_id, profile);
+            <MemberIdByAccountId<T>>::insert(&sub_account, member_id);
             Self::deposit_event(RawEvent::MemberAddedSubAccount(member_id, sub_account));
         }
 
@@ -318,6 +319,7 @@ decl_module! {
             profile.sub_accounts = profile.sub_accounts.into_iter().filter(|account| !(*account == sub_account)).collect();
 
             <MemberProfile<T>>::insert(member_id, profile);
+            <MemberIdByAccountId<T>>::remove(&sub_account);
             Self::deposit_event(RawEvent::MemberRemovedSubAccount(member_id, sub_account));
         }
     }
