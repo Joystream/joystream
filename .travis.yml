@@ -7,8 +7,8 @@ deploy:
   - provider: script
     script: bash setup.sh
     on:
-      branch: development
+      branch: master
   - provider: script
     script: bash build.sh
     on:
-      branch: development
+      branch: master
