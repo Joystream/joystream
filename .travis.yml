@@ -1,0 +1,8 @@
+language: rust
+rust:
+  - stable
+deploy:
+  - provider: script
+    script: bash setup.sh
+  - provider: script
+    script: bash build.sh
