@@ -51,7 +51,6 @@ pub struct Profile<T: Trait> {
     pub entry: EntryMethod<T>,
     pub suspended: bool,
     pub subscription: Option<T::SubscriptionId>,
-    pub sub_accounts: Vec<T::AccountId>
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
@@ -107,8 +106,7 @@ decl_storage! {
         /// Mapping of member ids to their corresponding primary accountid
         pub AccountIdByMemberId get(account_id_by_member_id) : map T::MemberId => T::AccountId;
 
-        /// Mapping of members' accountid ids to their member id.
-        /// A member can have one primary account and multiple sub accounts associated with their profile
+        /// Mapping of members' account ids to their member id.
         pub MemberIdByAccountId get(member_id_by_account_id) : map T::AccountId => Option<T::MemberId>;
 
         /// Mapping of member's id to their membership profile
@@ -160,9 +158,6 @@ decl_event! {
         MemberUpdatedAboutText(MemberId),
         MemberUpdatedAvatar(MemberId),
         MemberUpdatedHandle(MemberId),
-        MemberChangedPrimaryAccount(MemberId, AccountId),
-        MemberAddedSubAccount(MemberId, AccountId),
-        MemberRemovedSubAccount(MemberId, AccountId),
     }
 }
 
@@ -255,68 +250,6 @@ decl_module! {
                 Self::_change_member_handle(member_id, handle)?;
             }
         }
-
-        // Notes:
-        // Ability to change primary account and add/remove sub accounts should be restricted
-        // to accounts that are not actively being used in other roles in the platform?
-        // Other roles in the platform should be associated directly with member_id instead of an account_id,
-        // but can still use a seprate account/key to sign extrinsics, have a seprate balance from primary account,
-        // and a way to limit damage from a compromised sub account.
-        // Maybe should also not be allowed if member is suspended?
-        // Main usecase for changing primary account is for identity recoverability
-        pub fn change_member_primary_account(origin, new_primary_account: T::AccountId) {
-            let who = ensure_signed(origin)?;
-
-            // only primary account can assign new primary account
-            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
-
-            // ensure new_primary_account isn't already associated with any existing member
-            Self::ensure_not_member(&new_primary_account)?;
-
-            // update associated accounts
-            <MemberIdByAccountId<T>>::remove(&who);
-            <MemberIdByAccountId<T>>::insert(&new_primary_account, member_id);
-
-            // update primary account
-            <AccountIdByMemberId<T>>::insert(member_id, new_primary_account.clone());
-            Self::deposit_event(RawEvent::MemberChangedPrimaryAccount(member_id, new_primary_account));
-        }
-
-        pub fn add_member_sub_account(origin, sub_account: T::AccountId) {
-            let who = ensure_signed(origin)?;
-            // only primary account can manage sub accounts
-            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
-            // ensure sub_account isn't already associated with any existing member
-            Self::ensure_not_member(&sub_account)?;
-
-            let mut profile = Self::ensure_profile(member_id)?;
-            profile.sub_accounts.push(sub_account.clone());
-            <MemberProfile<T>>::insert(member_id, profile);
-            <MemberIdByAccountId<T>>::insert(&sub_account, member_id);
-            Self::deposit_event(RawEvent::MemberAddedSubAccount(member_id, sub_account));
-        }
-
-        pub fn remove_member_sub_account(origin, sub_account: T::AccountId) {
-            let who = ensure_signed(origin)?;
-            // only primary account can manage sub accounts
-            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
-
-            // ensure account is a sub account
-            // primary account cannot be added as a subaccount in add_member_sub_account()
-            ensure!(who != sub_account, "not sub account");
-
-            // ensure sub_account is associated with member
-            let sub_account_member_id = Self::ensure_is_member(&sub_account)?;
-            ensure!(member_id == sub_account_member_id, "not member sub account");
-
-            let mut profile = Self::ensure_profile(member_id)?;
-
-            profile.sub_accounts = profile.sub_accounts.into_iter().filter(|account| !(*account == sub_account)).collect();
-
-            <MemberProfile<T>>::insert(member_id, profile);
-            <MemberIdByAccountId<T>>::remove(&sub_account);
-            Self::deposit_event(RawEvent::MemberRemovedSubAccount(member_id, sub_account));
-        }
     }
 }
 
@@ -403,7 +336,6 @@ impl<T: Trait> Module<T> {
             entry: EntryMethod::Paid(paid_terms_id),
             suspended: false,
             subscription: None,
-            sub_accounts: vec![],
         };
 
         <MemberIdByAccountId<T>>::insert(who.clone(), new_member_id);
