@@ -1,14 +1,8 @@
 language: rust
 rust:
   - stable
-  - beta
-  - nightly
 deploy:
   - provider: script
     script: bash setup.sh
-    on:
-      branch: master
   - provider: script
     script: bash build.sh
-    on:
-      branch: master
