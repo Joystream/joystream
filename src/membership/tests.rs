@@ -184,3 +184,23 @@ fn update_profile() {
     });
 }
 
+#[test]
+fn add_screened_member() {
+    with_externalities(&mut ExtBuilder::default().build(), ||
+    {
+        let screening_authority = 5;
+        <registry::ScreeningAuthority<Test>>::put(&screening_authority);
+
+        assert_ok!(Membership::add_screened_member(Origin::signed(screening_authority), ALICE_ACCOUNT_ID, get_alice_info()));
+
+        let member_id = assert_ok_unwrap(Membership::member_id_by_account_id(&ALICE_ACCOUNT_ID), "member id not assigned");
+
+        let profile = assert_ok_unwrap(Membership::member_profile(&member_id), "member profile created");
+
+        assert_eq!(Some(profile.handle), get_alice_info().handle);
+        assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
+        assert_eq!(Some(profile.about), get_alice_info().about);
+        assert_eq!(registry::EntryMethod::Screening(screening_authority), profile.entry);
+
+    });
+}

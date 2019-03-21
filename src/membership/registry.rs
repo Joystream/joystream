@@ -68,7 +68,7 @@ struct CheckedUserInfo {
 }
 
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Debug, PartialEq)]
 pub enum EntryMethod<T: Trait> {
     Paid(T::PaidTermId),
     Screening(T::AccountId),
@@ -137,6 +137,8 @@ decl_storage! {
 
         /// Is the platform is accepting new members or not
         pub NewMembershipsAllowed get(new_memberships_allowed) : bool = true;
+
+        pub ScreeningAuthority get(screening_authority) : Option<T::AccountId>;
 
         // User Input Validation parameters - do these really need to be state variables
         // I don't see a need to adjust these in future?
@@ -250,6 +252,37 @@ decl_module! {
                 Self::_change_member_handle(member_id, handle)?;
             }
         }
+
+        pub fn add_screened_member(origin, new_member: T::AccountId, user_info: UserInfo) {
+            // ensure sender is screening authority
+            let sender = ensure_signed(origin)?;
+
+            if let Some(screening_authority) = Self::screening_authority() {
+                ensure!(sender == screening_authority, "not screener");
+            } else {
+                // no screening authority defined. Cannot accept this request
+                return Err("no screening authority defined");
+            }
+
+            // make sure we are accepting new memberships
+            ensure!(Self::new_memberships_allowed(), "new members not allowed");
+
+            // ensure key not associated with an existing membership
+            Self::ensure_not_member(&new_member)?;
+
+            let user_info = Self::check_user_registration_info(user_info)?;
+
+            // ensure handle is not already registered
+            Self::ensure_unique_handle(&user_info.handle)?;
+
+            let member_id = Self::insert_new_screened_member(sender, &new_member, &user_info);
+
+            Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member.clone()));
+        }
+
+        pub fn set_screening_authority(authority: T::AccountId) {
+            <ScreeningAuthority<T>>::put(authority);
+        }
     }
 }
 
@@ -334,6 +367,30 @@ impl<T: Trait> Module<T> {
             registered_at_block: <system::Module<T>>::block_number(),
             registered_at_time: <timestamp::Module<T>>::now(),
             entry: EntryMethod::Paid(paid_terms_id),
+            suspended: false,
+            subscription: None,
+        };
+
+        <MemberIdByAccountId<T>>::insert(who.clone(), new_member_id);
+        <AccountIdByMemberId<T>>::insert(new_member_id, who.clone());
+        <MemberProfile<T>>::insert(new_member_id, profile);
+        <Handles<T>>::insert(user_info.handle.clone(), new_member_id);
+        <NextMemberId<T>>::mutate(|n| { *n += T::MemberId::sa(1); });
+
+        new_member_id
+    }
+
+    fn insert_new_screened_member(authority: T::AccountId, who: &T::AccountId, user_info: &CheckedUserInfo) -> T::MemberId {
+        let new_member_id = Self::next_member_id();
+
+        let profile: Profile<T> = Profile {
+            id: new_member_id,
+            handle: user_info.handle.clone(),
+            avatar_uri: user_info.avatar_uri.clone(),
+            about: user_info.about.clone(),
+            registered_at_block: <system::Module<T>>::block_number(),
+            registered_at_time: <timestamp::Module<T>>::now(),
+            entry: EntryMethod::Screening(authority),
             suspended: false,
             subscription: None,
         };
