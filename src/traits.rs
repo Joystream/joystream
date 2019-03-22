@@ -2,8 +2,8 @@
 
 use system;
 
-pub trait IsActiveMember<T: system::Trait> {
+pub trait Members<T: system::Trait> {
     fn is_active_member(account_id: &T::AccountId) -> bool {
-        false
+        true
     }
 }

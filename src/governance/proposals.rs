@@ -8,7 +8,7 @@ use rstd::prelude::*;
 
 use super::council;
 pub use super::{ GovernanceCurrency, BalanceOf };
-use crate::traits::{IsActiveMember};
+use crate::traits::{Members};
 
 const DEFAULT_APPROVAL_QUORUM: u32 = 60;
 const DEFAULT_MIN_STAKE: u64 = 100;
@@ -117,7 +117,7 @@ pub trait Trait: timestamp::Trait + council::Trait + GovernanceCurrency {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type IsActiveMember: IsActiveMember<Self>;
+    type Members: Members<Self>;
 }
 
 decl_event!(
@@ -349,7 +349,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn can_participate(sender: T::AccountId) -> bool {
-        !T::Currency::free_balance(&sender).is_zero() && T::IsActiveMember::is_active_member(&sender)
+        !T::Currency::free_balance(&sender).is_zero() && T::Members::is_active_member(&sender)
     }
 
     fn is_councilor(sender: &T::AccountId) -> bool {
@@ -615,15 +615,11 @@ mod tests {
 
     impl Trait for Test {
         type Event = ();
-        type IsActiveMember = AnyAccountIsMember;
+        type Members = MockMembership;
     }
 
-    pub struct AnyAccountIsMember {}
-    impl<T: system::Trait> IsActiveMember<T> for AnyAccountIsMember {
-        fn is_active_member(who: &T::AccountId) -> bool {
-            true
-        }
-    }
+    pub struct MockMembership {}
+    impl<T: system::Trait> Members<T> for MockMembership {} // default implementation
 
     type System = system::Module<Test>;
     type Balances = balances::Module<Test>;

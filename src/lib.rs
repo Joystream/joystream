@@ -212,13 +212,13 @@ impl governance::GovernanceCurrency for Runtime {
 
 impl governance::proposals::Trait for Runtime {
 	type Event = Event;
-	type IsActiveMember = Membership;
+	type Members = Membership;
 }
 
 impl governance::election::Trait for Runtime {
 	type Event = Event;
 	type CouncilElected = (Council,);
-	type IsActiveMember = Membership;
+	type Members = Membership;
 }
 
 impl governance::council::Trait for Runtime {
