@@ -1,4 +1,4 @@
-use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
+use srml_support::{StorageValue, StorageMap, dispatch, decl_module, decl_event, decl_storage, ensure};
 use srml_support::traits::{Currency};
 use primitives::{storage::well_known_keys};
 use runtime_primitives::traits::{As, Hash, Zero};
@@ -368,7 +368,7 @@ impl<T: Trait> Module<T> {
         Self::current_block() >= proposed_at + Self::voting_period()
     }
 
-    fn _process_vote(voter: T::AccountId, proposal_id: u32, vote: VoteKind) -> Result {
+    fn _process_vote(voter: T::AccountId, proposal_id: u32, vote: VoteKind) -> dispatch::Result {
         let new_vote = (voter.clone(), vote.clone());
         if <VotesByProposal<T>>::exists(proposal_id) {
             // Append a new vote to other votes on this proposal:
@@ -382,7 +382,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn end_block(now: T::BlockNumber) -> Result {
+    fn end_block(now: T::BlockNumber) -> dispatch::Result {
 
         // TODO refactor this method
 
@@ -395,7 +395,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Get the voters for the current proposal.
-    pub fn tally(/* proposal_id: u32 */) -> Result {
+    pub fn tally(/* proposal_id: u32 */) -> dispatch::Result {
 
         let councilors: u32 = Self::councilors_count();
         let quorum: u32 = Self::approval_quorum_seats();
@@ -475,7 +475,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Updates proposal status and removes proposal from active ids.
-    fn _update_proposal_status(proposal_id: u32, new_status: ProposalStatus) -> Result {
+    fn _update_proposal_status(proposal_id: u32, new_status: ProposalStatus) -> dispatch::Result {
         let all_active_ids = Self::active_proposal_ids();
         let all_len = all_active_ids.len();
         let other_active_ids: Vec<u32> = all_active_ids
@@ -503,7 +503,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Slash a proposal. The staked deposit will be slashed.
-    fn _slash_proposal(proposal_id: u32) -> Result {
+    fn _slash_proposal(proposal_id: u32) -> dispatch::Result {
         let proposal = Self::proposals(proposal_id);
 
         // Slash proposer's stake:
@@ -513,7 +513,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Reject a proposal. The staked deposit will be returned to a proposer.
-    fn _reject_proposal(proposal_id: u32) -> Result {
+    fn _reject_proposal(proposal_id: u32) -> dispatch::Result {
         let proposal = Self::proposals(proposal_id);
         let proposer = proposal.proposer;
 
@@ -529,7 +529,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Approve a proposal. The staked deposit will be returned.
-    fn _approve_proposal(proposal_id: u32) -> Result {
+    fn _approve_proposal(proposal_id: u32) -> dispatch::Result {
         let proposal = Self::proposals(proposal_id);
         let wasm_code = Self::wasm_code_by_hash(proposal.wasm_hash);
 
@@ -621,6 +621,15 @@ mod tests {
     pub struct MockMembership {}
     impl<T: system::Trait> Members<T> for MockMembership {
         type Id = u32;
+        fn is_active_member(who: &T::AccountId) -> bool {
+            // all accounts are considered members.
+            // There is currently no test coverage for non-members.
+            // Should add some coverage, and update this method to reflect which accounts are or are not members
+            true
+        }
+        fn lookup_member_id(account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
+            Err("not implemented!")
+        }
     }
 
     type System = system::Module<Test>;
@@ -714,7 +723,7 @@ mod tests {
         b"Proposal Wasm Code".to_vec()
     }
 
-    fn _create_default_proposal() -> Result {
+    fn _create_default_proposal() -> dispatch::Result {
         _create_proposal(None, None, None, None, None)
     }
 
@@ -724,7 +733,7 @@ mod tests {
         name: Option<Vec<u8>>,
         description: Option<Vec<u8>>,
         wasm_code: Option<Vec<u8>>
-    ) -> Result {
+    ) -> dispatch::Result {
         Proposals::create_proposal(
             Origin::signed(origin.unwrap_or(PROPOSER1)),
             stake.unwrap_or(min_stake()),

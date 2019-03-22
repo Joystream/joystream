@@ -10,7 +10,7 @@ use system::{self, ensure_signed};
 use crate::governance::{GovernanceCurrency, BalanceOf };
 use crate::membership::registry;
 
-use crate::traits::{Members};
+use crate::traits::{Members, Roles};
 
 #[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Role {
@@ -82,6 +82,12 @@ decl_event! {
 impl<T: Trait> Module<T> {
     fn role_is_available(role: Role) -> bool {
         Self::available_roles().into_iter().any(|r| role == r)
+    }
+}
+
+impl<T: Trait> Roles<T> for Module<T> {
+    fn is_role_key(account_id: &T::AccountId) -> bool {
+        Self::actors(account_id).is_some()
     }
 }
 

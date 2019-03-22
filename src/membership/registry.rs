@@ -9,7 +9,7 @@ use runtime_primitives::traits::{Zero, SimpleArithmetic, As, Member, MaybeSerial
 use system::{self, ensure_signed};
 use crate::governance::{GovernanceCurrency, BalanceOf };
 use {timestamp};
-use crate::traits;
+use crate::traits::{Members, Roles};
 
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -22,6 +22,8 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
 
     type SubscriptionId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
         + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+
+    type Roles: Roles<Self>;
 }
 
 const DEFAULT_FIRST_MEMBER_ID: u64 = 1;
@@ -173,7 +175,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> traits::Members<T> for Module<T> {
+impl<T: Trait> Members<T> for Module<T> {
     type Id = T::MemberId;
 
     fn is_active_member(who: &T::AccountId) -> bool {
@@ -206,6 +208,7 @@ decl_module! {
             Self::ensure_not_member(&who)?;
 
             // ensure account is not in a bonded role
+            ensure!(!T::Roles::is_role_key(&who), "role key cannot be used for membership");
 
             // ensure paid_terms_id is active
             let terms = Self::ensure_active_terms_id(paid_terms_id)?;
@@ -280,6 +283,7 @@ decl_module! {
             Self::ensure_not_member(&new_member)?;
 
             // ensure account is not in a bonded role
+            ensure!(!T::Roles::is_role_key(&new_member), "role key cannot be used for membership");
 
             let user_info = Self::check_user_registration_info(user_info)?;
 

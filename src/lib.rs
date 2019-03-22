@@ -237,6 +237,7 @@ impl membership::registry::Trait for Runtime {
 	type MemberId = u64;
 	type PaidTermId = u64;
 	type SubscriptionId = u64;
+	type Roles = Actors;
 }
 
 impl migration::Trait for Runtime {

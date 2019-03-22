@@ -74,6 +74,7 @@ impl registry::Trait for Test {
     type MemberId = u32;
     type PaidTermId = u32;
     type SubscriptionId = u32;
+    type Roles = ();
 }
 
 pub struct ExtBuilder {

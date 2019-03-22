@@ -3,7 +3,7 @@
 use rstd::prelude::*;
 pub use super::{election, council, proposals, GovernanceCurrency};
 pub use system;
-use crate::traits;
+use crate::traits::{Members};
 
 pub use primitives::{H256, Blake2Hasher};
 pub use runtime_primitives::{
@@ -19,12 +19,18 @@ impl_outer_origin! {
 }
 
 pub struct MockMembership {}
-impl<T: system::Trait> traits::Members<T> for MockMembership {
+impl<T: system::Trait> Members<T> for MockMembership {
     type Id = u32;
+    fn is_active_member(who: &T::AccountId) -> bool {
+        // all accounts are considered members.
+        // There is currently no test coverage for non-members.
+        // Should add some coverage, and update this method to reflect which accounts are or are not members
+        true
+    }
+    fn lookup_member_id(account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
+        Err("not implemented!")
+    }
 }
-
-// default trait implementation - any account is not a member
-// impl<T: system::Trait> traits::IsActiveMember<T> for () {}
 
 // For testing the module, we construct most of a mock runtime. This means
 // first constructing a configuration type (`Test`) which `impl`s each of the
