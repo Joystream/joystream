@@ -173,7 +173,9 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> traits::IsActiveMember<T> for Module<T> {
+impl<T: Trait> traits::Members<T> for Module<T> {
+    type Id = T::MemberId;
+
     fn is_active_member(who: &T::AccountId) -> bool {
         match Self::ensure_is_member(who)
             .and_then(|member_id| Self::ensure_profile(member_id))
@@ -181,6 +183,11 @@ impl<T: Trait> traits::IsActiveMember<T> for Module<T> {
             Ok(profile) => !profile.suspended,
             Err(err) => false
         }
+    }
+
+    fn lookup_member_id(who: &T::AccountId) -> Result<Self::Id, &'static str> {
+        let id = Self::ensure_is_member(who)?;
+        Ok(id)
     }
 }
 
@@ -197,6 +204,8 @@ decl_module! {
 
             // ensure key not associated with an existing membership
             Self::ensure_not_member(&who)?;
+
+            // ensure account is not in a bonded role
 
             // ensure paid_terms_id is active
             let terms = Self::ensure_active_terms_id(paid_terms_id)?;
@@ -270,6 +279,8 @@ decl_module! {
             // ensure key not associated with an existing membership
             Self::ensure_not_member(&new_member)?;
 
+            // ensure account is not in a bonded role
+
             let user_info = Self::check_user_registration_info(user_info)?;
 
             // ensure handle is not already registered
@@ -292,7 +303,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_is_member(who: &T::AccountId) -> Result<T::MemberId, &'static str> {
+    pub fn ensure_is_member(who: &T::AccountId) -> Result<T::MemberId, &'static str> {
         let member_id = Self::member_id_by_account_id(who).ok_or("no member id found for accountid")?;
         Ok(member_id)
     }

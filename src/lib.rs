@@ -21,6 +21,8 @@ mod membership;
 use membership::registry;
 mod traits;
 mod migration;
+mod roles;
+use roles::actors;
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -180,11 +182,11 @@ impl balances::Trait for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = u128;
 	/// What to do if an account's free balance gets zeroed.
-	type OnFreeBalanceZero = Staking;
+	type OnFreeBalanceZero = Staking; // + roles
 	/// What to do if a new account is created.
 	type OnNewAccount = Indices;
 	/// Restrict whether an account can transfer funds. We don't place any further restrictions.
-	type EnsureAccountLiquid = Staking;
+	type EnsureAccountLiquid = Staking; // Change this to look at both staking and roles::actors
 	/// The uniquitous event type.
 	type Event = Event;
 }
@@ -241,6 +243,11 @@ impl migration::Trait for Runtime {
 	type Event = Event;
 }
 
+impl actors::Trait for Runtime {
+	type Event = Event;
+	type Members = Membership;
+}
+
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, Ed25519AuthorityId>) where
 		Block = Block,
@@ -263,6 +270,7 @@ construct_runtime!(
 		Memo: memo::{Module, Call, Storage, Event<T>},
 		Membership: registry::{Module, Call, Storage, Event<T>, Config<T>},
 		Migration: migration::{Module, Call, Storage, Event<T>},
+		Actors: actors::{Module, Call, Storage, Event<T>},
 	}
 );
 

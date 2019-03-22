@@ -619,7 +619,9 @@ mod tests {
     }
 
     pub struct MockMembership {}
-    impl<T: system::Trait> Members<T> for MockMembership {} // default implementation
+    impl<T: system::Trait> Members<T> for MockMembership {
+        type Id = u32;
+    }
 
     type System = system::Module<Test>;
     type Balances = balances::Module<Test>;

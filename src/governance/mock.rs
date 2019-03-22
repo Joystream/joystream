@@ -18,8 +18,10 @@ impl_outer_origin! {
     pub enum Origin for Test {}
 }
 
-pub struct MockMembers {}
-impl<T: system::Trait> traits::Members<T> for MockMembers {} // default implementation
+pub struct MockMembership {}
+impl<T: system::Trait> traits::Members<T> for MockMembership {
+    type Id = u32;
+}
 
 // default trait implementation - any account is not a member
 // impl<T: system::Trait> traits::IsActiveMember<T> for () {}
@@ -61,7 +63,7 @@ impl election::Trait for Test {
 
     type CouncilElected = (Council,);
 
-    type Members = MockMembers;
+    type Members = MockMembership;
 }
 
 impl balances::Trait for Test {
