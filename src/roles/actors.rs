@@ -4,7 +4,7 @@ use rstd::prelude::*;
 use parity_codec::Codec;
 use parity_codec_derive::{Encode, Decode};
 use srml_support::{StorageMap, StorageValue, dispatch, decl_module, decl_storage, decl_event, ensure, Parameter};
-use srml_support::traits::{Currency};
+use srml_support::traits::{Currency, EnsureAccountLiquid};
 use runtime_primitives::traits::{Zero, Bounded, SimpleArithmetic, As, Member, MaybeSerializeDebug};
 use system::{self, ensure_signed};
 use crate::governance::{GovernanceCurrency, BalanceOf };
@@ -131,4 +131,14 @@ decl_module! {
         // pub fn set_role_parameters(role: Role, params: RoleParameters) {}
         // pub fn set_available_roles(Vec<Role>) {}
     }
+}
+
+impl<T: Trait> EnsureAccountLiquid<T::AccountId> for Module<T> {
+	fn ensure_account_liquid(who: &T::AccountId) -> dispatch::Result {
+		if Self::bondage(who) <= <system::Module<T>>::block_number() {
+			Ok(())
+		} else {
+			Err("cannot transfer illiquid funds")
+		}
+	}
 }
