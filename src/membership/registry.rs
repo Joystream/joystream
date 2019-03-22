@@ -208,7 +208,7 @@ decl_module! {
             Self::ensure_not_member(&who)?;
 
             // ensure account is not in a bonded role
-            ensure!(!T::Roles::is_role_key(&who), "role key cannot be used for membership");
+            ensure!(!T::Roles::is_role_account(&who), "role key cannot be used for membership");
 
             // ensure paid_terms_id is active
             let terms = Self::ensure_active_terms_id(paid_terms_id)?;
@@ -283,7 +283,7 @@ decl_module! {
             Self::ensure_not_member(&new_member)?;
 
             // ensure account is not in a bonded role
-            ensure!(!T::Roles::is_role_key(&new_member), "role key cannot be used for membership");
+            ensure!(!T::Roles::is_role_account(&new_member), "role key cannot be used for membership");
 
             let user_info = Self::check_user_registration_info(user_info)?;
 

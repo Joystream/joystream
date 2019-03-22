@@ -27,9 +27,9 @@ impl<T: system::Trait> Members<T> for () {
 
 // Roles
 pub trait Roles<T: system::Trait> {
-    fn is_role_key(account_id: &T::AccountId) -> bool;
+    fn is_role_account(account_id: &T::AccountId) -> bool;
 }
 
 impl<T: system::Trait> Roles<T> for () {
-	fn is_role_key(_who: &T::AccountId) -> bool { false }
+	fn is_role_account(_who: &T::AccountId) -> bool { false }
 }
