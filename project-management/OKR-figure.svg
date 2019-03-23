@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1009px" height="826px" viewBox="0 0 1009 826" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 53.2 (72643) - https://sketchapp.com -->
+    <title>Group</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group">
+            <rect id="Rectangle" fill="#F8F8F8" x="798" y="0" width="210" height="826" rx="4"></rect>
+            <g id="OKR" transform="translate(136.000000, 515.000000)">
+                <rect id="Rectangle" stroke="#B0B0B0" stroke-width="1" fill="#D8D8D8" x="0.5" y="0.5" width="234" height="67" rx="3"></rect>
+                <text id="Personal-OKR" fill="#000000" font-family="HelveticaNeue, Helvetica Neue" font-size="26" font-weight="normal">
+                    <tspan x="36.139" y="44">Personal OKR</tspan>
+                </text>
+            </g>
+            <g id="OKR" transform="translate(421.000000, 515.000000)">
+                <rect id="Rectangle" stroke="#B0B0B0" stroke-width="1" fill="#D8D8D8" x="0.5" y="0.5" width="234" height="67" rx="3"></rect>
+                <text id="Personal-OKR" fill="#000000" font-family="HelveticaNeue, Helvetica Neue" font-size="26" font-weight="normal">
+                    <tspan x="50.569" y="44">Group OKR</tspan>
+                </text>
+            </g>
+            <g id="OKR" transform="translate(33.000000, 297.000000)">
+                <rect id="Rectangle" stroke="#B0B0B0" stroke-width="1" fill="#D8D8D8" x="0.5" y="0.5" width="234" height="67" rx="3"></rect>
+                <text id="Personal-OKR" fill="#000000" font-family="HelveticaNeue, Helvetica Neue" font-size="26" font-weight="normal">
+                    <tspan x="40.715" y="44">Release OKR</tspan>
+                </text>
+            </g>
+            <g id="OKR" transform="translate(289.000000, 133.000000)">
+                <rect id="Rectangle" stroke="#B0B0B0" stroke-width="1" fill="#D8D8D8" x="0.5" y="0.5" width="234" height="67" rx="3"></rect>
+                <text id="Personal-OKR" fill="#000000" font-family="HelveticaNeue, Helvetica Neue" font-size="26" font-weight="normal">
+                    <tspan x="46.006" y="44">Project OKR</tspan>
+                </text>
+            </g>
+            <path id="Line" d="M269.907226,333.602323 L274.102412,342.625411 L274.524011,343.532193 L272.710446,344.37539 L272.288847,343.468608 L266.484206,330.983872 L265.734697,329.371814 L267.501572,329.568406 L281.185299,331.090935 L282.179166,331.201518 L281.958,333.189252 L280.964133,333.078669 L271.074499,331.978292 L277.645094,336.700908 L524.583636,514.187985 L525.395651,514.771621 L524.228379,516.395651 L523.416364,515.812015 L276.477822,338.324939 L269.907226,333.602323 Z" fill="#000000" fill-rule="nonzero"></path>
+            <path id="Line" d="M633.367456,366.865291 L624.278316,370.915381 L623.364896,371.322398 L622.550861,369.495557 L623.464282,369.08854 L636.040411,363.484659 L637.664269,362.761073 L637.439395,364.524571 L635.697838,378.18215 L635.571347,379.174118 L633.587411,378.921135 L633.713903,377.929167 L634.972578,368.058431 L630.147786,374.549182 L525.302561,515.59657 L524.705991,516.399131 L523.100869,515.205991 L523.697439,514.40343 L628.542664,373.356042 L633.367456,366.865291 Z" fill="#000000" fill-rule="nonzero"></path>
+            <path id="Line-Copy" d="M417.932493,548 L409.259739,543.121576 L408.388163,542.631314 L409.368686,540.888163 L410.240261,541.378424 L422.240261,548.128424 L423.789729,549 L422.240261,549.871576 L410.240261,556.621576 L409.368686,557.111837 L408.388163,555.368686 L409.259739,554.878424 L417.932493,550 L409.75,550 L371,550 L370,550 L370,548 L371,548 L409.75,548 L417.932493,548 Z" fill="#000000" fill-rule="nonzero"></path>
+            <path id="Line-Copy-2" d="M434.8744,204.223945 L432.545904,213.898334 L432.311899,214.87057 L430.367428,214.402561 L430.601432,213.430326 L433.823242,200.044421 L434.239249,198.316002 L435.500327,199.569069 L445.266867,209.273562 L445.976223,209.978412 L444.566524,211.397125 L443.857167,210.692275 L436.7986,203.678551 L439.024456,211.531571 L524.9621,514.727303 L525.234797,515.689403 L523.310597,516.234797 L523.0379,515.272697 L437.100256,212.076965 L434.8744,204.223945 Z" fill="#000000" fill-rule="nonzero"></path>
+            <path id="Line-Copy-3" d="M286.047584,174.301091 L276.332061,176.451511 L275.355691,176.667619 L274.923475,174.71488 L275.899844,174.498772 L289.342665,171.523358 L291.078432,171.139165 L290.5054,172.822058 L286.067494,185.85538 L285.745163,186.802007 L283.851909,186.157346 L284.17424,185.210719 L287.381645,175.791151 L281.333268,181.206305 L151.167031,297.74503 L150.422,298.412061 L149.087939,296.922 L149.832969,296.25497 L279.999207,179.716245 L286.047584,174.301091 Z" fill="#000000" fill-rule="nonzero"></path>
+            <path id="Line-Copy-3" d="M378.919416,203.465921 L371.136552,209.666141 L370.354407,210.289237 L369.108214,208.724947 L369.89036,208.101851 L380.659068,199.522957 L382.049548,198.41523 L382.274151,200.178763 L384.01361,213.83661 L384.139949,214.828597 L382.155975,215.081275 L382.029635,214.089288 L380.772477,204.218358 L377.730177,211.710769 L254.426531,515.376219 L254.050312,516.30275 L252.19725,515.550312 L252.573469,514.623781 L375.877115,210.958332 L378.919416,203.465921 Z" fill="#000000" fill-rule="nonzero"></path>
+            <path id="Line-Copy-3" d="M520.901224,331.898433 L510.986434,332.742615 L509.990039,332.827452 L509.820366,330.834662 L510.81676,330.749826 L524.535294,329.581779 L526.306663,329.430958 L525.515704,331.023088 L519.390049,343.353491 L518.945134,344.249064 L517.153988,343.359236 L517.598902,342.463662 L522.026095,333.552116 L515.324959,338.110374 L254.062435,515.826841 L253.235594,516.389277 L252.110723,514.735594 L252.937565,514.173159 L514.200089,336.456691 L520.901224,331.898433 Z" fill="#000000" fill-rule="nonzero"></path>
+            <path id="Line-Copy-3" d="M144.014238,368.062829 L145.23038,377.938895 L145.352598,378.931399 L143.367591,379.175833 L143.245374,378.18333 L141.562666,364.518375 L141.345391,362.753924 L142.966118,363.484499 L155.51799,369.142503 L156.429648,369.553451 L155.607752,371.376768 L154.696093,370.96582 L145.624484,366.876614 L150.421768,373.388763 L254.305123,514.406893 L254.898231,515.212016 L253.287984,516.398231 L252.694877,515.593107 L148.811521,374.574978 L144.014238,368.062829 Z" fill="#000000" fill-rule="nonzero"></path>
+            <g id="OKR" transform="translate(524.000000, 297.000000)">
+                <rect id="Rectangle" stroke="#B0B0B0" stroke-width="1" fill="#D8D8D8" x="0.5" y="0.5" width="234" height="67" rx="3"></rect>
+                <text id="Personal-OKR" fill="#000000" font-family="HelveticaNeue, Helvetica Neue" font-size="26" font-weight="normal">
+                    <tspan x="33.721" y="44">Quarterly OKR</tspan>
+                </text>
+            </g>
+            <path id="Line-Copy-3" d="M525.244581,169.976679 L527.209429,179.731425 L527.406888,180.711736 L525.446266,181.106654 L525.248807,180.126343 L522.530157,166.629253 L522.179119,164.886477 L523.850783,165.491482 L536.79715,170.177 L537.737462,170.517316 L537.056831,172.397939 L536.11652,172.057623 L526.759798,168.671261 L532.049465,174.811053 L636.757609,296.347291 L637.410318,297.1049 L635.8951,298.410318 L635.242391,297.652709 L530.534248,176.116471 L525.244581,169.976679 Z" fill="#000000" fill-rule="nonzero"></path>
+            <path id="Line-Copy-3" d="M108.932493,672 L100.259739,667.121576 L99.3881632,666.631314 L100.368686,664.888163 L101.240261,665.378424 L113.240261,672.128424 L114.789729,673 L113.240261,673.871576 L101.240261,680.621576 L100.368686,681.111837 L99.3881632,679.368686 L100.259739,678.878424 L108.932493,674 L100.75,674 L32.5,674 L31.5,674 L31.5,672 L32.5,672 L100.75,672 L108.932493,672 Z" fill="#000000" fill-rule="nonzero"></path>
+            <text id="Derived-from-Key-Res" fill="#000000" font-family="HelveticaNeue, Helvetica Neue" font-size="18" font-weight="normal">
+                <tspan x="129.647" y="679">Derived from Key Result </tspan>
+            </text>
+            <path d="M0.5,234.5 L1007.69141,234.5" id="Line-2" stroke="#979797" opacity="0.401692708" stroke-linecap="square"></path>
+            <path d="M0.5,434.5 L1007.69141,434.5" id="Line-2-Copy" stroke="#979797" opacity="0.401692708" stroke-linecap="square"></path>
+            <path d="M0.5,634.5 L1007.69141,642.5" id="Line-2-Copy-2" stroke="#979797" opacity="0.401692708" stroke-linecap="square"></path>
+            <rect id="Rectangle" stroke="#979797" fill="#FFFFFF" x="289.5" y="706.5" width="228" height="58" rx="29"></rect>
+            <text id="1-3-Years" font-family="Arial-Black, Arial Black" font-size="24" font-weight="700" fill="#000000">
+                <tspan x="842.828125" y="162">1-3 Years</tspan>
+            </text>
+            <text id="8-12-Weeks" font-family="Arial-Black, Arial Black" font-size="24" font-weight="700" fill="#000000">
+                <tspan x="829.458984" y="344">8-12 Weeks</tspan>
+            </text>
+            <text id="Flexible" font-family="Arial-Black, Arial Black" font-size="24" font-weight="700" fill="#000000">
+                <tspan x="852.708984" y="562">Flexible</tspan>
+            </text>
+            <text id="Days" font-family="Arial-Black, Arial Black" font-size="24" font-weight="700" fill="#000000">
+                <tspan x="872.001953" y="740">Days</tspan>
+            </text>
+            <text id="Task" fill="#000000" font-family="HelveticaNeue, Helvetica Neue" font-size="26" font-weight="normal">
+                <tspan x="375.253" y="744">Task</tspan>
+            </text>
+            <text id="OKR-Types" font-family="HelveticaNeue-Light, Helvetica Neue" font-size="52" font-weight="300" fill="#000000">
+                <tspan x="281.284" y="76">OKR Types</tspan>
+            </text>
+            <text id="Time-scales" font-family="HelveticaNeue, Helvetica Neue" font-size="26" font-weight="normal" fill="#000000">
+                <tspan x="834.639" y="56">Time scales</tspan>
+            </text>
+            <rect id="Rectangle" stroke="#979797" x="0.5" y="0.5" width="1007" height="825" rx="4"></rect>
+        </g>
+    </g>
+</svg>
