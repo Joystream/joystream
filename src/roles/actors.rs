@@ -17,10 +17,10 @@ pub enum Role {
     Storage,
 }
 
-#[derive(Encode, Decode, Clone)]
-pub struct RoleParameters<T: Trait> {
+#[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
+pub struct RoleParameters<Balance, BlockNumber> {
     // minium balance required to stake to enter a role
-    min_stake: BalanceOf<T>,
+    min_stake: Balance,
 
     // the maximum number of spots available to fill for a role
     max_actors: u32,
@@ -30,24 +30,24 @@ pub struct RoleParameters<T: Trait> {
     min_actors: u32,
 
     // fixed amount of tokens paid to actors' primary account
-    reward_per_block: BalanceOf<T>,
+    reward_per_block: Balance,
 
     // payouts are made at this block interval
-    reward_period: T::BlockNumber,
+    reward_period: BlockNumber,
 
     // how long tokens remain locked for after unstaking
-    unbonding_period: T::BlockNumber,
+    unbonding_period: BlockNumber,
 
     // minimum amount of time before being able to unstake
-    bonding_time: T::BlockNumber,
+    bonding_time: BlockNumber,
 
     // minimum period required to be in service. unbonding before this time is highly penalized
-    min_service_period: T::BlockNumber,
+    min_service_period: BlockNumber,
 
     // "startup" time allowed for roles that need to sync their infrastructure
     // with other providers before they are considered in service and punishable for
     // not delivering required level of service.
-    startup_grace_period: T::BlockNumber,
+    startup_grace_period: BlockNumber,
 
     // entry_request_fee: BalanceOf<T>,
 }
@@ -70,7 +70,7 @@ pub trait Trait: system::Trait + GovernanceCurrency {
 decl_storage! {
     trait Store for Module<T: Trait> as Actors {
         /// requirements to enter and maintain status in roles
-        Parameters get(parameters) : map Role => Option<RoleParameters<T>>;
+        Parameters get(parameters) : map Role => Option<RoleParameters<BalanceOf<T>, T::BlockNumber>>;
 
         /// the roles members can enter into
         AvailableRoles get(available_roles) : Vec<Role>; // = vec![Role::Storage];
@@ -124,7 +124,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_role_parameters(role: Role) -> Result<RoleParameters<T>, &'static str> {
+    fn ensure_role_parameters(role: Role) -> Result<RoleParameters<BalanceOf<T>, T::BlockNumber>, &'static str> {
         Self::parameters(role).ok_or("no parameters for role")
     }
 }
@@ -223,8 +223,24 @@ decl_module! {
             <Actors<T>>::remove(&actor_account);
         }
 
-        // pub fn set_role_parameters(role: Role, params: RoleParameters) {}
-        // pub fn set_available_roles(Vec<Role>) {}
+        pub fn set_role_parameters(role: Role, params: RoleParameters<BalanceOf<T>, T::BlockNumber>) {
+            <Parameters<T>>::insert(role, params);
+        }
+
+        pub fn set_available_roles(roles: Vec<Role>) {
+            <AvailableRoles<T>>::put(roles);
+        }
+
+        pub fn add_to_available_roles(role: Role) {
+            if !Self::available_roles().into_iter().any(|r| r == role) {
+                <AvailableRoles<T>>::mutate(|roles| roles.push(role));
+            }
+        }
+
+        pub fn remove_from_available_roles(role: Role) {
+            let roles: Vec<Role> = Self::available_roles().into_iter().filter(|r| role != *r).collect();
+            <AvailableRoles<T>>::put(roles);
+        }
     }
 }
 
