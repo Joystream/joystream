@@ -4,9 +4,7 @@ rust:
 rust:
   - stable
 cache: 
-  - rust
   - cargo
-  - rustup
 deploy:
   - provider: script
     script: bash setup.sh
