@@ -10,15 +10,15 @@ use srml_support::*;
 #[test]
 fn initial_state()
 {
-    const DEFAULT_FIRST_ID: u32 = 1000;
+    const DEFAULT_FIRST_ID: u64 = 1000;
 
     with_externalities(&mut ExtBuilder::default()
-        .first_data_object_id(DEFAULT_FIRST_ID).build(), ||
+        .first_data_object_type_id(DEFAULT_FIRST_ID).build(), ||
     {
-        assert_eq!(DataObjectType::first_data_object_id(), DEFAULT_FIRST_ID);
+        assert_eq!(Types::first_data_object_type_id(), DEFAULT_FIRST_ID);
 
         // TODO
 
-        assert_ok!(false);
+        assert_ok!(Err(123));
     });
 }

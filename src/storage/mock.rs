@@ -42,12 +42,39 @@ impl types::Trait for Test
     type DataObjectTypeID = u64;
 }
 
-// This function basically just builds a genesis storage key/value store according to
-// our desired mockup.
-pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-    let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
-
-    runtime_io::TestExternalities::new(t)
+pub struct ExtBuilder
+{
+    first_data_object_type_id: u64,
 }
+
+impl Default for ExtBuilder
+{
+    fn default() -> Self
+    {
+        Self {
+            first_data_object_type_id: 1,
+        }
+    }
+}
+
+impl ExtBuilder
+{
+    pub fn first_data_object_type_id(mut self, first_data_object_type_id: u64) -> Self
+    {
+        self.first_data_object_type_id = first_data_object_type_id;
+        self
+    }
+    pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher>
+    {
+        let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
+
+        t.extend(types::GenesisConfig::<Test>{
+            first_data_object_type_id: self.first_data_object_type_id,
+        }.build_storage().unwrap().0);
+
+        t.into()
+    }
+}
+
 
 pub type Types = types::Module<Test>;

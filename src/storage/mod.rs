@@ -3,3 +3,4 @@
 pub mod types;
 
 mod mock;
+mod tests;
