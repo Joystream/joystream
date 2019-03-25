@@ -110,56 +110,6 @@ function start_app(project_root, store, config, flags)
   console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
 }
 
-// Mini class handling storage callback state
-// TODO this should be part of the store's own interface.
-class StorageCallbacks
-{
-  constructor(store)
-  {
-    this.store = store;
-
-    // Keep a set of repo keys that we can iterate over.
-    this.repos = new Set();
-    this._update();
-
-    // Generator - set here because of function* syntax
-    this.generator = function*()
-    {
-      for (let entry of this.repos.entries()) {
-        yield entry[0];
-      }
-      return this.repos.size;
-    }
-  }
-
-  _update()
-  {
-    this.repos.clear();
-    this.store.repos((err, id) => {
-      if (err) {
-        console.log(err);
-        return;
-      }
-      this.repos.add(id);
-    });
-
-    // FIXME all of this timeout and refresh logic should probably go away
-    // with a callback based mechanism instead of a generator based one, but
-    // for now this is what we have.
-    setTimeout(this._update.bind(this), 30000);
-  }
-
-  read_open(id)
-  {
-    return this.store.sync_stream(id);
-  }
-
-  write_open(id)
-  {
-    return this.store.sync_stream(id);
-  }
-}
-
 // FIXME dump again
 function get_storage_mapping(config)
 {
@@ -185,16 +135,12 @@ function get_storage_mapping(config)
 // Start sync server
 function start_sync_server(store, config, flags)
 {
-  // Storage callbacks map the storage interface the sync server and
-  // client are expecting.
-  const storage_callbacks = new StorageCallbacks(store)
-
   const { create_server, synchronize } = require('joystream/sync');
   const chain_storage = require('joystream/core/chain/storage');
   const core_dht = require('joystream/core/dht');
 
   // Sync server
-  const syncserver = create_server(flags, config, storage_callbacks);
+  const syncserver = create_server(flags, config, store);
   const port = flags['syncPort'] || config.get('syncPort') || 3030;
   syncserver.listen(port);
   console.log('Sync server started at', syncserver.address());
@@ -208,7 +154,7 @@ function start_sync_server(store, config, flags)
   const dht = new core_dht.DHT(mapping);
 
   // Periodically synchronize
-  synchronize(flags, config, nodes, dht, storage_callbacks);
+  synchronize(flags, config, nodes, dht, store);
 }
 
 // Get an initialized storage instance
@@ -232,6 +178,9 @@ function list_repos(store)
   store.repos((err, id) => {
     if (err) {
       console.log(err);
+      return;
+    }
+    if (!id) {
       return;
     }
     console.log(`  ${id}`);
