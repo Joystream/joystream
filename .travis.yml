@@ -1,12 +1,12 @@
 language: rust
-rust:
-  - 1.32.0
-rust:
-  - stable
 cache: 
   - rust
   - cargo
   - rustup
+rust:
+  - 1.32.0
+rust:
+  - stable
 deploy:
   - provider: script
     script: bash setup.sh
