@@ -210,7 +210,7 @@ decl_module! {
             Self::ensure_unique_handle(&user_info.handle)?;
 
             let _ = T::Currency::slash(&who, terms.fee);
-            let member_id = Self::insert_new_paid_member(&who, paid_terms_id, &user_info);
+            let member_id = Self::insert_member(&who, &user_info, EntryMethod::Paid(paid_terms_id));
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, who.clone()));
         }
@@ -275,7 +275,7 @@ decl_module! {
             // ensure handle is not already registered
             Self::ensure_unique_handle(&user_info.handle)?;
 
-            let member_id = Self::insert_new_screened_member(sender, &new_member, &user_info);
+            let member_id = Self::insert_member(&new_member, &user_info, EntryMethod::Screening(sender));
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member.clone()));
         }
@@ -355,8 +355,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Mutating methods
-
-    fn insert_new_paid_member(who: &T::AccountId, paid_terms_id: T::PaidTermId, user_info: &CheckedUserInfo) -> T::MemberId {
+    fn insert_member(who: &T::AccountId, user_info: &CheckedUserInfo, entry_method: EntryMethod<T>) -> T::MemberId {
         let new_member_id = Self::next_member_id();
 
         let profile: Profile<T> = Profile {
@@ -366,31 +365,7 @@ impl<T: Trait> Module<T> {
             about: user_info.about.clone(),
             registered_at_block: <system::Module<T>>::block_number(),
             registered_at_time: <timestamp::Module<T>>::now(),
-            entry: EntryMethod::Paid(paid_terms_id),
-            suspended: false,
-            subscription: None,
-        };
-
-        <MemberIdByAccountId<T>>::insert(who.clone(), new_member_id);
-        <AccountIdByMemberId<T>>::insert(new_member_id, who.clone());
-        <MemberProfile<T>>::insert(new_member_id, profile);
-        <Handles<T>>::insert(user_info.handle.clone(), new_member_id);
-        <NextMemberId<T>>::mutate(|n| { *n += T::MemberId::sa(1); });
-
-        new_member_id
-    }
-
-    fn insert_new_screened_member(authority: T::AccountId, who: &T::AccountId, user_info: &CheckedUserInfo) -> T::MemberId {
-        let new_member_id = Self::next_member_id();
-
-        let profile: Profile<T> = Profile {
-            id: new_member_id,
-            handle: user_info.handle.clone(),
-            avatar_uri: user_info.avatar_uri.clone(),
-            about: user_info.about.clone(),
-            registered_at_block: <system::Module<T>>::block_number(),
-            registered_at_time: <timestamp::Module<T>>::now(),
-            entry: EntryMethod::Screening(authority),
+            entry: entry_method,
             suspended: false,
             subscription: None,
         };
