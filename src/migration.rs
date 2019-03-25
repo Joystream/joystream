@@ -5,9 +5,9 @@ use system;
 use rstd::prelude::*;
 use runtime_io::print;
 use crate::{VERSION};
-use crate::membership::registry;
+use crate::membership::members;
 
-pub trait Trait: system::Trait + registry::Trait {
+pub trait Trait: system::Trait + members::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
@@ -38,7 +38,7 @@ impl<T: Trait> Module<T> {
 
         print("running runtime initializers");
 
-        <registry::Module<T>>::initialize_storage();
+        <members::Module<T>>::initialize_storage();
 
         // ...
         // add initialization of other modules introduced in this runtime

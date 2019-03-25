@@ -18,7 +18,7 @@ pub mod governance;
 use governance::{election, council, proposals};
 mod memo;
 mod membership;
-use membership::registry;
+use membership::members;
 mod traits;
 mod migration;
 mod roles;
@@ -214,13 +214,13 @@ impl governance::GovernanceCurrency for Runtime {
 
 impl governance::proposals::Trait for Runtime {
 	type Event = Event;
-	type Members = Membership;
+	type Members = Members;
 }
 
 impl governance::election::Trait for Runtime {
 	type Event = Event;
 	type CouncilElected = (Council,);
-	type Members = Membership;
+	type Members = Members;
 }
 
 impl governance::council::Trait for Runtime {
@@ -232,7 +232,7 @@ impl memo::Trait for Runtime {
 	type Event = Event;
 }
 
-impl membership::registry::Trait for Runtime {
+impl members::Trait for Runtime {
 	type Event = Event;
 	type MemberId = u64;
 	type PaidTermId = u64;
@@ -246,7 +246,7 @@ impl migration::Trait for Runtime {
 
 impl actors::Trait for Runtime {
 	type Event = Event;
-	type Members = Membership;
+	type Members = Members;
 }
 
 construct_runtime!(
@@ -269,7 +269,7 @@ construct_runtime!(
 		CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
 		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
 		Memo: memo::{Module, Call, Storage, Event<T>},
-		Membership: registry::{Module, Call, Storage, Event<T>, Config<T>},
+		Members: members::{Module, Call, Storage, Event<T>, Config<T>},
 		Migration: migration::{Module, Call, Storage, Event<T>},
 		Actors: actors::{Module, Call, Storage, Event<T>},
 	}

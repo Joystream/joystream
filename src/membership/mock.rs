@@ -2,7 +2,7 @@
 
 use rstd::prelude::*;
 pub use crate::governance::{GovernanceCurrency};
-pub use super::{registry};
+pub use super::{members};
 pub use system;
 
 pub use primitives::{H256, Blake2Hasher};
@@ -69,7 +69,7 @@ impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-impl registry::Trait for Test {
+impl members::Trait for Test {
     type Event = ();
     type MemberId = u32;
     type PaidTermId = u32;
@@ -102,7 +102,7 @@ impl ExtBuilder {
     pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher> {
         let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
 
-        t.extend(registry::GenesisConfig::<Test>{
+        t.extend(members::GenesisConfig::<Test>{
             first_member_id: self.first_member_id,
             default_paid_membership_fee: self.default_paid_membership_fee,
         }.build_storage().unwrap().0);
@@ -113,4 +113,4 @@ impl ExtBuilder {
 
 pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
-pub type Membership = registry::Module<Test>;
+pub type Members = members::Module<Test>;
