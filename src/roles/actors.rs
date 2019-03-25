@@ -67,8 +67,11 @@ pub trait Trait: system::Trait + GovernanceCurrency {
     type Members: Members<Self>;
 }
 
-pub type Request<T: Trait> = (T::AccountId, <T::Members as Members<T>>::Id, Role);
+pub type Request<T: Trait> = (T::AccountId, <T::Members as Members<T>>::Id, Role, T::BlockNumber); // actor account, memberid, role, expires
 pub type Requests<T: Trait> = Vec<Request<T>>;
+
+const REQUEST_LIFETIME: u64 = 300;
+const DEFAULT_REQUEST_CLEARING_INTERVAL: u64 = 100;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Actors {
@@ -93,9 +96,10 @@ decl_storage! {
         /// First step before enter a role is registering intent with a new account/key.
         /// This is done by sending a role_entry_request() from the new account.
         /// The member must then send a stake() transaction to approve the request and enter the desired role.
-        /// This list is cleared every N blocks.. the account making the request will be bonded and must have
+        /// The account making the request will be bonded and must have
         /// sufficient balance to cover the minimum stake for the role.
         /// Bonding only occurs after successful entry into a role.
+        /// The request expires after REQUEST_LIFETIME blocks
         RoleEntryRequests get(role_entry_requests) : Requests<T>;
     }
 }
@@ -143,9 +147,14 @@ decl_module! {
         fn deposit_event<T>() = default;
 
         fn on_initialize(now: T::BlockNumber) {
-            // clear requests
-            if now % T::BlockNumber::sa(300) == T::BlockNumber::zero() {
-                <RoleEntryRequests<T>>::put(vec![]);
+            // clear expired requests
+            if now % T::BlockNumber::sa(DEFAULT_REQUEST_CLEARING_INTERVAL) == T::BlockNumber::zero() {
+                let requests: Requests<T> = Self::role_entry_requests()
+                    .into_iter()
+                    .filter(|request| request.3 < now)
+                    .collect();
+
+                <RoleEntryRequests<T>>::put(requests);
             }
         }
 
@@ -167,7 +176,10 @@ decl_module! {
 
             let role_parameters = Self::ensure_role_parameters(role)?;
 
-            <RoleEntryRequests<T>>::mutate(|requests| requests.push((sender, member_id, role)));
+            <RoleEntryRequests<T>>::mutate(|requests| {
+                let expires = <system::Module<T>>::block_number()+ T::BlockNumber::sa(REQUEST_LIFETIME);
+                requests.push((sender, member_id, role, expires));
+            });
         }
 
         /// Member activating entry request
