@@ -54,7 +54,7 @@ pub struct RoleParameters<Balance, BlockNumber> {
 
 #[derive(Encode, Decode, Clone)]
 pub struct Actor<T: Trait> {
-    member_id: <T::Members as Members<T>>::Id,
+    member_id: MemberId<T>,
     role: Role,
     account: T::AccountId,
     joined_at: T::BlockNumber,
@@ -67,7 +67,8 @@ pub trait Trait: system::Trait + GovernanceCurrency {
     type Members: Members<Self>;
 }
 
-pub type Request<T: Trait> = (T::AccountId, <T::Members as Members<T>>::Id, Role, T::BlockNumber); // actor account, memberid, role, expires
+pub type MemberId<T: Trait> = <T::Members as Members<T>>::Id;
+pub type Request<T: Trait> = (T::AccountId, MemberId<T>, Role, T::BlockNumber); // actor account, memberid, role, expires
 pub type Requests<T: Trait> = Vec<Request<T>>;
 
 const REQUEST_LIFETIME: u64 = 300;
@@ -88,7 +89,7 @@ decl_storage! {
         AccountsByRole get(accounts_by_role) : map Role => Vec<T::AccountId>;
 
         /// actor accounts associated with a member id
-        AccountsByMember get(accounts_by_member) : map <T::Members as Members<T>>::Id => Vec<T::AccountId>;
+        AccountsByMember get(accounts_by_member) : map MemberId<T> => Vec<T::AccountId>;
 
         /// tokens locked until given block number
         Bondage get(bondage) : map T::AccountId => T::BlockNumber;
@@ -120,7 +121,7 @@ impl<T: Trait> Module<T> {
         Self::actors(role_key).ok_or("not role key")
     }
 
-    fn ensure_actor_is_member(role_key: &T::AccountId, member_id: <T::Members as Members<T>>::Id)
+    fn ensure_actor_is_member(role_key: &T::AccountId, member_id: MemberId<T>)
         -> Result<Actor<T>, &'static str>
     {
         let actor = Self::ensure_actor(role_key)?;
@@ -166,7 +167,7 @@ decl_module! {
             // eject actors not staking the minimum
         }
 
-        pub fn role_entry_request(origin, role: Role, member_id: <T::Members as Members<T>>::Id) {
+        pub fn role_entry_request(origin, role: Role, member_id: MemberId<T>) {
             let sender = ensure_signed(origin)?;
 
             ensure!(T::Members::lookup_member_id(&sender).is_err(), "account is a member");
@@ -235,20 +236,24 @@ decl_module! {
 
             let role_parameters = Self::ensure_role_parameters(actor.role)?;
 
+            Self::apply_unstake(actor.account, actor.role, actor.member_id, role_parameters.unbonding_period);
+        }
+
+        fn apply_unstake(actor_account: T::AccountId, role: Role, member_id: MemberId<T>, unbonding_period: T::BlockNumber) {
             // simple unstaking ...only applying unbonding period
-            let accounts: Vec<T::AccountId> = Self::accounts_by_role(actor.role)
+            let accounts: Vec<T::AccountId> = Self::accounts_by_role(role)
                 .into_iter()
-                .filter(|account| !(*account == actor.account))
+                .filter(|account| !(*account == actor_account))
                 .collect();
-            <AccountsByRole<T>>::insert(actor.role, accounts);
+            <AccountsByRole<T>>::insert(role, accounts);
 
             let accounts: Vec<T::AccountId> = Self::accounts_by_member(&member_id)
                 .into_iter()
-                .filter(|account| !(*account == actor.account))
+                .filter(|account| !(*account == actor_account))
                 .collect();
             <AccountsByMember<T>>::insert(&member_id, accounts);
 
-            <Bondage<T>>::insert(&actor_account, <system::Module<T>>::block_number() + role_parameters.unbonding_period);
+            <Bondage<T>>::insert(&actor_account, <system::Module<T>>::block_number() + unbonding_period);
 
             <Actors<T>>::remove(&actor_account);
         }
@@ -270,6 +275,13 @@ decl_module! {
         pub fn remove_from_available_roles(role: Role) {
             let roles: Vec<Role> = Self::available_roles().into_iter().filter(|r| role != *r).collect();
             <AvailableRoles<T>>::put(roles);
+        }
+
+        pub fn remove_actor(actor_account: T::AccountId) {
+            let member_id = T::Members::lookup_member_id(&actor_account)?;
+            let actor = Self::ensure_actor_is_member(&actor_account, member_id)?;
+            let role_parameters = Self::ensure_role_parameters(actor.role)?;
+            Self::apply_unstake(actor.account, actor.role, actor.member_id, role_parameters.unbonding_period);
         }
     }
 }
