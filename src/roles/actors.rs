@@ -8,7 +8,6 @@ use srml_support::traits::{Currency, EnsureAccountLiquid};
 use runtime_primitives::traits::{Zero, Bounded, SimpleArithmetic, As, Member, MaybeSerializeDebug};
 use system::{self, ensure_signed};
 use crate::governance::{GovernanceCurrency, BalanceOf };
-use crate::membership::registry;
 
 use crate::traits::{Members, Roles};
 
