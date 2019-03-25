@@ -5,7 +5,7 @@ use parity_codec::Codec;
 use parity_codec_derive::{Encode, Decode};
 use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, ensure, Parameter};
 use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug};
-use system::{self};
+use system::{self, ensure_root};
 use crate::governance::GovernanceCurrency;
 use crate::traits;
 
@@ -80,8 +80,9 @@ decl_module! {
     {
         fn deposit_event<T>() = default;
 
-        pub fn register_data_object_type(data_object_type: ObjectType<T>)
+        pub fn register_data_object_type(origin, data_object_type: ObjectType<T>)
         {
+            ensure_root(origin);
             ensure!(data_object_type.id.is_none(), MSG_REQUIRE_NEW_DOT);
 
             let new_dot_id = Self::next_data_object_type_id();
@@ -97,8 +98,9 @@ decl_module! {
             Self::deposit_event(RawEvent::DataObjectTypeAdded(new_dot_id));
         }
 
-        pub fn update_data_object_type(data_object_type: ObjectType<T>)
+        pub fn update_data_object_type(origin, data_object_type: ObjectType<T>)
         {
+            ensure_root(origin);
             ensure!(data_object_type.id.is_some(), MSG_REQUIRE_DOT_ID);
 
             let id = data_object_type.id.unwrap();
@@ -112,8 +114,9 @@ decl_module! {
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
 
-        pub fn activate_data_object_type(id: T::DataObjectTypeID, active: bool)
+        pub fn activate_data_object_type(origin, id: T::DataObjectTypeID, active: bool)
         {
+            ensure_root(origin);
             let mut dot = Self::ensure_data_object_type(id)?;
 
             dot.active = active;
