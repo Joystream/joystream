@@ -6,10 +6,10 @@ use parity_codec_derive::{Encode, Decode};
 use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, ensure, Parameter};
 use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug};
 use system::{self, ensure_root};
-use crate::governance::GovernanceCurrency;
+use std::fmt;
 use crate::traits;
 
-pub trait Trait: system::Trait + GovernanceCurrency
+pub trait Trait: system::Trait + fmt::Debug
 {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -17,14 +17,14 @@ pub trait Trait: system::Trait + GovernanceCurrency
         + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
 }
 
+
 static MSG_REQUIRE_NEW_DOT: &str = "New Data Object Type required; the provided one seems to be in use already!";
 static MSG_DOT_NOT_FOUND: &str = "Data Object Type with the given ID not found!";
 static MSG_REQUIRE_DOT_ID: &str = "Can only update Data Object Types that are already registered (with an ID)!";
-static MSG_REQUIRE_EXISTING_DOT: &str = "Can only update Data Object Types that are already registered!";
 
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1;
 
-#[derive(Encode, Decode, Clone, PartialEq)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct ObjectType<T: Trait>
 {
     // If the OT is registered, an ID must exist, otherwise it's a new OT.
