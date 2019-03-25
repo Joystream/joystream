@@ -5,6 +5,8 @@ rust:
   - stable
 cache: 
   - cargo
+  - substrate
+  - parity
 deploy:
   - provider: script
     script: bash setup.sh
