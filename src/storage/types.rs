@@ -82,7 +82,7 @@ decl_module! {
 
         pub fn register_data_object_type(origin, data_object_type: ObjectType<T>)
         {
-            ensure_root(origin);
+            ensure_root(origin)?;
             ensure!(data_object_type.id.is_none(), MSG_REQUIRE_NEW_DOT);
 
             let new_dot_id = Self::next_data_object_type_id();
@@ -100,7 +100,7 @@ decl_module! {
 
         pub fn update_data_object_type(origin, data_object_type: ObjectType<T>)
         {
-            ensure_root(origin);
+            ensure_root(origin)?;
             ensure!(data_object_type.id.is_some(), MSG_REQUIRE_DOT_ID);
 
             let id = data_object_type.id.unwrap();
@@ -116,7 +116,7 @@ decl_module! {
 
         pub fn activate_data_object_type(origin, id: T::DataObjectTypeID, active: bool)
         {
-            ensure_root(origin);
+            ensure_root(origin)?;
             let mut dot = Self::ensure_data_object_type(id)?;
 
             dot.active = active;

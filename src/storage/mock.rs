@@ -11,10 +11,17 @@ pub use runtime_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId}
 };
 
-use srml_support::impl_outer_origin;
+use srml_support::{impl_outer_origin, impl_outer_event};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
+}
+
+impl_outer_event! {
+    pub enum MetaEvent for Test
+    {
+        types<T>,
+    }
 }
 
 // For testing the module, we construct most of a mock runtime. This means
@@ -32,13 +39,13 @@ impl system::Trait for Test
     type Digest = Digest;
     type AccountId = u64;
     type Header = Header;
-    type Event = ();
+    type Event = MetaEvent;
     type Log = DigestItem;
     type Lookup = IdentityLookup<u64>;
 }
 impl types::Trait for Test
 {
-    type Event = ();
+    type Event = MetaEvent;
     type DataObjectTypeID = u64;
 }
 
@@ -77,4 +84,6 @@ impl ExtBuilder
 }
 
 
+pub type System = system::Module<Test>;
 pub type Types = types::Module<Test>;
+pub type TestDataObjectType = types::ObjectType<Test>;
