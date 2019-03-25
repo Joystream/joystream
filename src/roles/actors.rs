@@ -29,7 +29,7 @@ pub struct RoleParameters<Balance, BlockNumber> {
     min_actors: u32,
 
     // fixed amount of tokens paid to actors' primary account
-    reward_per_block: Balance,
+    reward: Balance,
 
     // payouts are made at this block interval
     reward_period: BlockNumber,
@@ -187,10 +187,24 @@ decl_module! {
         }
 
         fn on_finalize(now: T::BlockNumber) {
-            // payout rewards to actors
 
-            // clear unbonded accounts
+            // payout rewards to actors
+            for role in Self::available_roles().iter() {
+                if let Some(params) = Self::parameters(role) {
+                    if !(now % params.reward_period == T::BlockNumber::zero()) { continue }
+                    let accounts = Self::accounts_by_role(role);
+                    for actor in accounts.into_iter().map(|account| Self::actors_by_account_id(account)) {
+                        if let Some(actor) = actor {
+                            if now > actor.joined_at + params.reward_period {
+                                T::Currency::reward(&actor.account, params.reward);
+                            }
+                        }
+                    }
+                }
+            }
+
             if now % T::BlockNumber::sa(100) == T::BlockNumber::zero() {
+                // clear unbonded accounts
                 let actors: Vec<T::AccountId> = Self::actors()
                     .into_iter()
                     .filter(|account| {
@@ -210,6 +224,13 @@ decl_module! {
             }
 
             // eject actors not staking the minimum
+            // iterating over available roles, so if a role has been removed at some point
+            // and an actor hasn't unstaked .. this will not apply to them.. which doesn't really matter
+            // because they are no longer incentivised to stay in the role anyway
+            // TODO: this needs a bit more preparation. The right time to check for each actor is different, as they enter
+            // role at different times.
+            // for role in Self::available_roles().iter() {
+            // }
 
         }
 
@@ -302,6 +323,7 @@ decl_module! {
         }
 
         pub fn remove_from_available_roles(role: Role) {
+            // Should we eject actors in the role being removed?
             let roles: Vec<Role> = Self::available_roles().into_iter().filter(|r| role != *r).collect();
             <AvailableRoles<T>>::put(roles);
         }
