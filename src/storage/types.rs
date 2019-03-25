@@ -25,7 +25,7 @@ const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1;
 
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct ObjectType<T: Trait>
+pub struct DataObjectType<T: Trait>
 {
     // If the OT is registered, an ID must exist, otherwise it's a new OT.
     pub id: Option<T::DataObjectTypeID>,
@@ -47,7 +47,7 @@ decl_storage! {
         pub NextDataObjectTypeID get(next_data_object_type_id) build(|config: &GenesisConfig<T>| config.first_data_object_type_id): T::DataObjectTypeID = T::DataObjectTypeID::sa(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
         // Mapping of Data object types
-        pub DataObjectType get(data_object_type): map T::DataObjectTypeID => Option<ObjectType<T>>;
+        pub DataObjectTypeMap get(data_object_type): map T::DataObjectTypeID => Option<DataObjectType<T>>;
     }
 }
 
@@ -80,25 +80,25 @@ decl_module! {
     {
         fn deposit_event<T>() = default;
 
-        pub fn register_data_object_type(origin, data_object_type: ObjectType<T>)
+        pub fn register_data_object_type(origin, data_object_type: DataObjectType<T>)
         {
             ensure_root(origin)?;
             ensure!(data_object_type.id.is_none(), MSG_REQUIRE_NEW_DOT);
 
             let new_dot_id = Self::next_data_object_type_id();
-            let dot: ObjectType<T> = ObjectType {
+            let dot: DataObjectType<T> = DataObjectType {
                 id: Some(new_dot_id),
                 description: data_object_type.description.clone(),
                 active: data_object_type.active,
             };
 
-            <DataObjectType<T>>::insert(new_dot_id, dot);
+            <DataObjectTypeMap<T>>::insert(new_dot_id, dot);
             <NextDataObjectTypeID<T>>::mutate(|n| { *n += T::DataObjectTypeID::sa(1); });
 
             Self::deposit_event(RawEvent::DataObjectTypeAdded(new_dot_id));
         }
 
-        pub fn update_data_object_type(origin, data_object_type: ObjectType<T>)
+        pub fn update_data_object_type(origin, data_object_type: DataObjectType<T>)
         {
             ensure_root(origin)?;
             ensure!(data_object_type.id.is_some(), MSG_REQUIRE_DOT_ID);
@@ -109,7 +109,7 @@ decl_module! {
             dot.description = data_object_type.description.clone();
             dot.active = data_object_type.active;
 
-            <DataObjectType<T>>::insert(id, dot);
+            <DataObjectTypeMap<T>>::insert(id, dot);
 
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
@@ -121,7 +121,7 @@ decl_module! {
 
             dot.active = active;
 
-            <DataObjectType<T>>::insert(id, dot);
+            <DataObjectTypeMap<T>>::insert(id, dot);
 
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
@@ -130,7 +130,7 @@ decl_module! {
 
 impl <T: Trait> Module<T>
 {
-    fn ensure_data_object_type(id: T::DataObjectTypeID) -> Result<ObjectType<T>, &'static str>
+    fn ensure_data_object_type(id: T::DataObjectTypeID) -> Result<DataObjectType<T>, &'static str>
     {
         let dot = Self::data_object_type(&id).ok_or(MSG_DOT_NOT_FOUND)?;
         Ok(dot)

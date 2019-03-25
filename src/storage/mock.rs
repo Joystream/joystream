@@ -86,4 +86,4 @@ impl ExtBuilder
 
 pub type System = system::Module<Test>;
 pub type Types = types::Module<Test>;
-pub type TestDataObjectType = types::ObjectType<Test>;
+pub type TestDataObjectType = types::DataObjectType<Test>;
