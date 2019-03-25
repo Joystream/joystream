@@ -34,7 +34,7 @@ pub struct ObjectType<T: Trait>
 
     // TODO in future releases
     // - replication factor
-    // - storage trances (empty is ok)
+    // - storage tranches (empty is ok)
 }
 
 decl_storage! {
