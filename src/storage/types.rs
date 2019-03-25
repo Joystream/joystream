@@ -4,12 +4,11 @@ use rstd::prelude::*;
 use parity_codec::Codec;
 use parity_codec_derive::{Encode, Decode};
 use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, ensure, Parameter};
-use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug};
+use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
 use system::{self, ensure_root};
-use std::fmt;
 use crate::traits;
 
-pub trait Trait: system::Trait + fmt::Debug
+pub trait Trait: system::Trait + MaybeDebug
 {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -24,7 +23,8 @@ static MSG_REQUIRE_DOT_ID: &str = "Can only update Data Object Types that are al
 
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1;
 
-#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+#[derive(Clone, Encode, Decode, PartialEq)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct ObjectType<T: Trait>
 {
     // If the OT is registered, an ID must exist, otherwise it's a new OT.
