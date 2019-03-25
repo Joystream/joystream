@@ -82,8 +82,11 @@ decl_storage! {
         /// the roles members can enter into
         AvailableRoles get(available_roles) : Vec<Role>; // = vec![Role::Storage];
 
+        /// All active actors
+        Actors get(actors) : Vec<T::AccountId>;
+
         /// actor accounts mapped to their actor
-        Actors get(actors) : map T::AccountId => Option<Actor<T>>;
+        ActorsByAccountId get(actors_by_account_id) : map T::AccountId => Option<Actor<T>>;
 
         /// actor accounts associated with a role
         AccountsByRole get(accounts_by_role) : map Role => Vec<T::AccountId>;
@@ -118,7 +121,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_actor(role_key: &T::AccountId) -> Result<Actor<T>, &'static str> {
-        Self::actors(role_key).ok_or("not role key")
+        Self::actors_by_account_id(role_key).ok_or("not role key")
     }
 
     fn ensure_actor_is_member(role_key: &T::AccountId, member_id: MemberId<T>)
@@ -135,11 +138,33 @@ impl<T: Trait> Module<T> {
     fn ensure_role_parameters(role: Role) -> Result<RoleParameters<BalanceOf<T>, T::BlockNumber>, &'static str> {
         Self::parameters(role).ok_or("no parameters for role")
     }
+
+    fn delete_actor(actor_account: T::AccountId, role: Role, member_id: MemberId<T>) {
+        let accounts: Vec<T::AccountId> = Self::accounts_by_role(role)
+            .into_iter()
+            .filter(|account| !(*account == actor_account))
+            .collect();
+        <AccountsByRole<T>>::insert(role, accounts);
+
+        let accounts: Vec<T::AccountId> = Self::accounts_by_member(&member_id)
+            .into_iter()
+            .filter(|account| !(*account == actor_account))
+            .collect();
+        <AccountsByMember<T>>::insert(&member_id, accounts);
+
+        let actors: Vec<T::AccountId> = Self::actors()
+            .into_iter()
+            .filter(|account| !(*account == actor_account))
+            .collect();
+        <Actors<T>>::put(actors);
+
+        <ActorsByAccountId<T>>::remove(&actor_account);
+    }
 }
 
 impl<T: Trait> Roles<T> for Module<T> {
     fn is_role_account(account_id: &T::AccountId) -> bool {
-        <Actors<T>>::exists(account_id) || <Bondage<T>>::exists(account_id)
+        <ActorsByAccountId<T>>::exists(account_id) || <Bondage<T>>::exists(account_id)
     }
 }
 
@@ -213,12 +238,14 @@ decl_module! {
             <AccountsByRole<T>>::mutate(role, |accounts| accounts.push(actor_account.clone()));
             <AccountsByMember<T>>::mutate(&member_id, |accounts| accounts.push(actor_account.clone()));
             <Bondage<T>>::insert(&actor_account, T::BlockNumber::max_value());
-            <Actors<T>>::insert(&actor_account, Actor {
+            <ActorsByAccountId<T>>::insert(&actor_account, Actor {
                 member_id,
                 account: actor_account.clone(),
                 role,
                 joined_at: <system::Module<T>>::block_number()
             });
+            <Actors<T>>::mutate(|actors| actors.push(actor_account.clone()));
+
             let requests: Requests<T> = Self::role_entry_requests()
                 .into_iter()
                 .filter(|request| request.0 != actor_account)
@@ -241,21 +268,9 @@ decl_module! {
 
         fn apply_unstake(actor_account: T::AccountId, role: Role, member_id: MemberId<T>, unbonding_period: T::BlockNumber) {
             // simple unstaking ...only applying unbonding period
-            let accounts: Vec<T::AccountId> = Self::accounts_by_role(role)
-                .into_iter()
-                .filter(|account| !(*account == actor_account))
-                .collect();
-            <AccountsByRole<T>>::insert(role, accounts);
-
-            let accounts: Vec<T::AccountId> = Self::accounts_by_member(&member_id)
-                .into_iter()
-                .filter(|account| !(*account == actor_account))
-                .collect();
-            <AccountsByMember<T>>::insert(&member_id, accounts);
-
             <Bondage<T>>::insert(&actor_account, <system::Module<T>>::block_number() + unbonding_period);
 
-            <Actors<T>>::remove(&actor_account);
+            Self::delete_actor(actor_account, role, member_id);
         }
 
         pub fn set_role_parameters(role: Role, params: RoleParameters<BalanceOf<T>, T::BlockNumber>) {
