@@ -69,7 +69,7 @@ impl<T: Trait> traits::IsActiveDataObjectType<T> for Module<T>
         match Self::ensure_data_object_type(*which)
         {
             Ok(dot) => dot.active,
-            Err(err) => false
+            Err(_err) => false
         }
     }
 }
