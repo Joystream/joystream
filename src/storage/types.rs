@@ -80,7 +80,7 @@ decl_module! {
     {
         fn deposit_event<T>() = default;
 
-        fn register_data_object_type(data_object_type: ObjectType<T>)
+        pub fn register_data_object_type(data_object_type: ObjectType<T>)
         {
             ensure!(data_object_type.id.is_none(), MSG_REQUIRE_NEW_DOT);
 
@@ -97,7 +97,7 @@ decl_module! {
             Self::deposit_event(RawEvent::DataObjectTypeAdded(new_dot_id));
         }
 
-        fn update_data_object_type(data_object_type: ObjectType<T>)
+        pub fn update_data_object_type(data_object_type: ObjectType<T>)
         {
             ensure!(data_object_type.id.is_some(), MSG_REQUIRE_DOT_ID);
 
@@ -112,7 +112,7 @@ decl_module! {
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
 
-        fn activate_data_object_type(id: T::DataObjectTypeID, active: bool)
+        pub fn activate_data_object_type(id: T::DataObjectTypeID, active: bool)
         {
             let mut dot = Self::ensure_data_object_type(id)?;
 
