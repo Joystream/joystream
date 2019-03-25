@@ -1,14 +1,13 @@
 language: rust
 rust:
   - 1.32.0
-deploy:
-  - provider: script
-    script: bash setup.sh
-  - provider: script
-    script: bash build.sh
-    
 cache: 
   - rust
   - cargo
   - substrate
   - parity
+deploy:
+  - provider: script
+    script: bash setup.sh
+  - provider: script
+    script: bash build.sh
