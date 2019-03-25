@@ -16,7 +16,10 @@ extern crate parity_codec_derive;
 
 pub mod governance;
 use governance::{election, council, proposals};
+pub mod storage;
+use storage::{types};
 mod memo;
+mod traits;
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -24,7 +27,7 @@ use primitives::bytes;
 use primitives::{Ed25519AuthorityId, OpaqueMetadata};
 use runtime_primitives::{
 	ApplyResult, transaction_validity::TransactionValidity, Ed25519Signature, generic,
-	traits::{self, Convert, BlakeTwo256, Block as BlockT, StaticLookup}, create_runtime_str
+	traits::{self as runtime_traits, Convert, BlakeTwo256, Block as BlockT, StaticLookup}, create_runtime_str
 };
 use client::{
 	block_builder::api::{CheckInherentsResult, InherentData, self as block_builder_api},
@@ -67,7 +70,7 @@ pub mod opaque {
 	#[derive(PartialEq, Eq, Clone, Default, Encode, Decode)]
 	#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 	pub struct UncheckedExtrinsic(#[cfg_attr(feature = "std", serde(with="bytes"))] pub Vec<u8>);
-	impl traits::Extrinsic for UncheckedExtrinsic {
+	impl runtime_traits::Extrinsic for UncheckedExtrinsic {
 		fn is_signed(&self) -> Option<bool> {
 			None
 		}
@@ -224,6 +227,11 @@ impl memo::Trait for Runtime {
 	type Event = Event;
 }
 
+impl storage::types::Trait for Runtime {
+	type Event = Event;
+	type DataObjectTypeID = u64;
+}
+
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, Ed25519AuthorityId>) where
 		Block = Block,
@@ -244,6 +252,7 @@ construct_runtime!(
 		CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
 		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
 		Memo: memo::{Module, Call, Storage, Event<T>},
+		DataObjectType: types::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 
