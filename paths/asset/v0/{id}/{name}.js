@@ -47,7 +47,7 @@ module.exports = function(config, storage)
         }
 
         res.status(200);
-        res.contentType(type);
+        res.contentType(type || 'application/octet-stream');
         res.header('Content-Disposition', 'inline');
         res.header('Content-Transfer-Encoding', 'binary');
         res.header('Accept-Ranges', 'bytes');
