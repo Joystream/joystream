@@ -17,6 +17,10 @@ extern crate parity_codec_derive;
 pub mod governance;
 use governance::{election, council, proposals};
 mod memo;
+mod membership;
+use membership::members;
+mod traits;
+mod migration;
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -24,7 +28,7 @@ use primitives::bytes;
 use primitives::{Ed25519AuthorityId, OpaqueMetadata};
 use runtime_primitives::{
 	ApplyResult, transaction_validity::TransactionValidity, Ed25519Signature, generic,
-	traits::{self, Convert, BlakeTwo256, Block as BlockT, StaticLookup}, create_runtime_str
+	traits::{self as runtime_traits, Convert, BlakeTwo256, Block as BlockT, StaticLookup}, create_runtime_str
 };
 use client::{
 	block_builder::api::{CheckInherentsResult, InherentData, self as block_builder_api},
@@ -67,7 +71,7 @@ pub mod opaque {
 	#[derive(PartialEq, Eq, Clone, Default, Encode, Decode)]
 	#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 	pub struct UncheckedExtrinsic(#[cfg_attr(feature = "std", serde(with="bytes"))] pub Vec<u8>);
-	impl traits::Extrinsic for UncheckedExtrinsic {
+	impl runtime_traits::Extrinsic for UncheckedExtrinsic {
 		fn is_signed(&self) -> Option<bool> {
 			None
 		}
@@ -87,7 +91,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("joystream-node"),
 	impl_name: create_runtime_str!("joystream-node"),
 	authoring_version: 3,
-	spec_version: 4,
+	spec_version: 5,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 };
@@ -208,11 +212,13 @@ impl governance::GovernanceCurrency for Runtime {
 
 impl governance::proposals::Trait for Runtime {
 	type Event = Event;
+	type IsActiveMember = Members;
 }
 
 impl governance::election::Trait for Runtime {
 	type Event = Event;
 	type CouncilElected = (Council,);
+	type IsActiveMember = Members;
 }
 
 impl governance::council::Trait for Runtime {
@@ -221,6 +227,17 @@ impl governance::council::Trait for Runtime {
 }
 
 impl memo::Trait for Runtime {
+	type Event = Event;
+}
+
+impl members::Trait for Runtime {
+	type Event = Event;
+	type MemberId = u64;
+	type PaidTermId = u64;
+	type SubscriptionId = u64;
+}
+
+impl migration::Trait for Runtime {
 	type Event = Event;
 }
 
@@ -244,6 +261,8 @@ construct_runtime!(
 		CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
 		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
 		Memo: memo::{Module, Call, Storage, Event<T>},
+		Members: members::{Module, Call, Storage, Event<T>, Config<T>},
+		Migration: migration::{Module, Call, Storage, Event<T>},
 	}
 );
 
