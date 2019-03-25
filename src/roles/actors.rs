@@ -67,6 +67,9 @@ pub trait Trait: system::Trait + GovernanceCurrency {
     type Members: Members<Self>;
 }
 
+pub type Request<T: Trait> = (T::AccountId, <T::Members as Members<T>>::Id, Role);
+pub type Requests<T: Trait> = Vec<Request<T>>;
+
 decl_storage! {
     trait Store for Module<T: Trait> as Actors {
         /// requirements to enter and maintain status in roles
@@ -93,7 +96,7 @@ decl_storage! {
         /// This list is cleared every N blocks.. the account making the request will be bonded and must have
         /// sufficient balance to cover the minimum stake for the role.
         /// Bonding only occurs after successful entry into a role.
-        RoleEntryRequests get(role_entry_requests) : map T::AccountId => Option<(<T::Members as Members<T>>::Id, Role)>;
+        RoleEntryRequests get(role_entry_requests) : Requests<T>;
     }
 }
 
@@ -131,7 +134,7 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> Roles<T> for Module<T> {
     fn is_role_account(account_id: &T::AccountId) -> bool {
-        <Actors<T>>::exists(account_id) || <Bondage<T>>::exists(account_id) || <RoleEntryRequests<T>>::exists(account_id)
+        <Actors<T>>::exists(account_id) || <Bondage<T>>::exists(account_id)
     }
 }
 
@@ -139,12 +142,19 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        fn on_finalize(now: T::BlockNumber) {
-            // clear <RoleEntryRequests<T>>::kill() every N blocks
+        fn on_initialize(now: T::BlockNumber) {
+            // clear requests
+            if now % T::BlockNumber::sa(300) == T::BlockNumber::zero() {
+                <RoleEntryRequests<T>>::put(vec![]);
+            }
+        }
 
+        fn on_finalize(now: T::BlockNumber) {
             // payout rewards to actors
 
             // clear unbonded accounts
+
+            // eject actors not staking the minimum
         }
 
         pub fn role_entry_request(origin, role: Role, member_id: <T::Members as Members<T>>::Id) {
@@ -157,7 +167,7 @@ decl_module! {
 
             let role_parameters = Self::ensure_role_parameters(role)?;
 
-            <RoleEntryRequests<T>>::insert(&sender, (member_id, role));
+            <RoleEntryRequests<T>>::mutate(|requests| requests.push((sender, member_id, role)));
         }
 
         /// Member activating entry request
@@ -165,11 +175,15 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             let member_id = T::Members::lookup_member_id(&sender)?;
 
-            ensure!(<RoleEntryRequests<T>>::exists(&actor_account), "no role entry request matches");
-            if let Some(entry_request) = Self::role_entry_requests(&actor_account) {
-                ensure!(entry_request.0 == member_id, "role entry mismatch - member id");
-                ensure!(entry_request.1 == role, "role entry mismatch - role");
+            if !Self::role_entry_requests()
+                .iter()
+                .any(|request| request.0 == actor_account && request.1 == member_id && request.2 == role)
+            {
+                return Err("no role entry request matches");
             }
+
+            ensure!(T::Members::lookup_member_id(&actor_account).is_err(), "account is a member");
+            ensure!(!Self::is_role_account(&actor_account), "account already used");
 
             // make sure role is still available
             ensure!(Self::role_is_available(role), "");
@@ -192,7 +206,11 @@ decl_module! {
                 role,
                 joined_at: <system::Module<T>>::block_number()
             });
-            <RoleEntryRequests<T>>::remove(&actor_account);
+            let requests: Requests<T> = Self::role_entry_requests()
+                .into_iter()
+                .filter(|request| request.0 != actor_account)
+                .collect();
+            <RoleEntryRequests<T>>::put(requests);
 
             Self::deposit_event(RawEvent::Staked(actor_account, role));
         }
