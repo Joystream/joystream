@@ -82,7 +82,7 @@ decl_storage! {
         /// the roles members can enter into
         AvailableRoles get(available_roles) : Vec<Role>; // = vec![Role::Storage];
 
-        /// All active actors
+        /// Actors list
         Actors get(actors) : Vec<T::AccountId>;
 
         /// actor accounts mapped to their actor
@@ -139,7 +139,9 @@ impl<T: Trait> Module<T> {
         Self::parameters(role).ok_or("no parameters for role")
     }
 
-    fn delete_actor(actor_account: T::AccountId, role: Role, member_id: MemberId<T>) {
+    // Mutating
+
+    fn remove_actor_from_service(actor_account: T::AccountId, role: Role, member_id: MemberId<T>) {
         let accounts: Vec<T::AccountId> = Self::accounts_by_role(role)
             .into_iter()
             .filter(|account| !(*account == actor_account))
@@ -152,13 +154,14 @@ impl<T: Trait> Module<T> {
             .collect();
         <AccountsByMember<T>>::insert(&member_id, accounts);
 
-        let actors: Vec<T::AccountId> = Self::actors()
-            .into_iter()
-            .filter(|account| !(*account == actor_account))
-            .collect();
-        <Actors<T>>::put(actors);
-
         <ActorsByAccountId<T>>::remove(&actor_account);
+    }
+
+    fn apply_unstake(actor_account: T::AccountId, role: Role, member_id: MemberId<T>, unbonding_period: T::BlockNumber) {
+        // simple unstaking ...only applying unbonding period
+        <Bondage<T>>::insert(&actor_account, <system::Module<T>>::block_number() + unbonding_period);
+
+        Self::remove_actor_from_service(actor_account, role, member_id);
     }
 }
 
@@ -188,8 +191,27 @@ decl_module! {
             // payout rewards to actors
 
             // clear unbonded accounts
+            if now % T::BlockNumber::sa(100) == T::BlockNumber::zero() {
+                let actors: Vec<T::AccountId> = Self::actors()
+                    .into_iter()
+                    .filter(|account| {
+                        if <Bondage<T>>::exists(account) {
+                            if Self::bondage(account) > now {
+                                true
+                            } else {
+                                <Bondage<T>>::remove(account);
+                                false
+                            }
+                        } else {
+                            true
+                        }
+                    })
+                    .collect();
+                <Actors<T>>::put(actors);
+            }
 
             // eject actors not staking the minimum
+
         }
 
         pub fn role_entry_request(origin, role: Role, member_id: MemberId<T>) {
@@ -264,13 +286,6 @@ decl_module! {
             let role_parameters = Self::ensure_role_parameters(actor.role)?;
 
             Self::apply_unstake(actor.account, actor.role, actor.member_id, role_parameters.unbonding_period);
-        }
-
-        fn apply_unstake(actor_account: T::AccountId, role: Role, member_id: MemberId<T>, unbonding_period: T::BlockNumber) {
-            // simple unstaking ...only applying unbonding period
-            <Bondage<T>>::insert(&actor_account, <system::Module<T>>::block_number() + unbonding_period);
-
-            Self::delete_actor(actor_account, role, member_id);
         }
 
         pub fn set_role_parameters(role: Role, params: RoleParameters<BalanceOf<T>, T::BlockNumber>) {
