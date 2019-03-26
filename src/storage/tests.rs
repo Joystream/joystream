@@ -15,7 +15,7 @@ fn initial_state()
     with_externalities(&mut ExtBuilder::default()
         .first_data_object_type_id(DEFAULT_FIRST_ID).build(), ||
     {
-        assert_eq!(Types::first_data_object_type_id(), DEFAULT_FIRST_ID);
+        assert_eq!(DataObjectTypeRegistry::first_data_object_type_id(), DEFAULT_FIRST_ID);
     });
 }
 
@@ -32,7 +32,7 @@ fn fail_register_without_root()
             description: "foo".as_bytes().to_vec(),
             active: false,
         };
-        let res = Types::register_data_object_type(Origin::signed(1), data);
+        let res = DataObjectTypeRegistry::register_data_object_type(Origin::signed(1), data);
         assert!(res.is_err());
     });
 }
@@ -50,7 +50,7 @@ fn succeed_register_as_root()
             description: "foo".as_bytes().to_vec(),
             active: false,
         };
-        let res = Types::register_data_object_type(Origin::ROOT, data);
+        let res = DataObjectTypeRegistry::register_data_object_type(Origin::ROOT, data);
         assert!(res.is_ok());
     });
 }
@@ -69,12 +69,12 @@ fn update_existing()
             description: "foo".as_bytes().to_vec(),
             active: false,
         };
-        let id_res = Types::register_data_object_type(Origin::ROOT, data);
+        let id_res = DataObjectTypeRegistry::register_data_object_type(Origin::ROOT, data);
         assert!(id_res.is_ok());
         assert_eq!(*System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::ApplyExtrinsic(0),
-                event: MetaEvent::types(types::RawEvent::DataObjectTypeAdded(DEFAULT_FIRST_ID)),
+                event: MetaEvent::types(DataObjectTypeRegistry::RawEvent::DataObjectTypeAdded(DEFAULT_FIRST_ID)),
             }
         );
 
@@ -86,7 +86,7 @@ fn update_existing()
             description: "bar".as_bytes().to_vec(),
             active: false,
         };
-        let res = Types::update_data_object_type(Origin::ROOT, updated1);
+        let res = DataObjectTypeRegistry::update_data_object_type(Origin::ROOT, updated1);
         assert!(res.is_err());
 
         // Now try with a bad ID
@@ -95,7 +95,7 @@ fn update_existing()
             description: "bar".as_bytes().to_vec(),
             active: false,
         };
-        let res = Types::update_data_object_type(Origin::ROOT, updated2);
+        let res = DataObjectTypeRegistry::update_data_object_type(Origin::ROOT, updated2);
         assert!(res.is_err());
 
         // Finally with an existing ID, it should work.
@@ -104,12 +104,12 @@ fn update_existing()
             description: "bar".as_bytes().to_vec(),
             active: false,
         };
-        let res = Types::update_data_object_type(Origin::ROOT, updated3);
+        let res = DataObjectTypeRegistry::update_data_object_type(Origin::ROOT, updated3);
         assert!(res.is_ok());
         assert_eq!(*System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::ApplyExtrinsic(0),
-                event: MetaEvent::types(types::RawEvent::DataObjectTypeUpdated(DEFAULT_FIRST_ID)),
+                event: MetaEvent::types(DataObjectTypeRegistry::RawEvent::DataObjectTypeUpdated(DEFAULT_FIRST_ID)),
             }
         );
     });
@@ -130,32 +130,32 @@ fn activate_existing()
             description: "foo".as_bytes().to_vec(),
             active: false,
         };
-        let id_res = Types::register_data_object_type(Origin::ROOT, data);
+        let id_res = DataObjectTypeRegistry::register_data_object_type(Origin::ROOT, data);
         assert!(id_res.is_ok());
         assert_eq!(*System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::ApplyExtrinsic(0),
-                event: MetaEvent::types(types::RawEvent::DataObjectTypeAdded(DEFAULT_FIRST_ID)),
+                event: MetaEvent::types(DataObjectTypeRegistry::RawEvent::DataObjectTypeAdded(DEFAULT_FIRST_ID)),
             }
         );
 
         // Retrieve, and ensure it's not active.
-        let data = Types::data_object_type(DEFAULT_FIRST_ID);
+        let data = DataObjectTypeRegistry::data_object_type(DEFAULT_FIRST_ID);
         assert!(data.is_some());
         assert!(!data.unwrap().active);
 
         // Now activate the data object type
-        let res = Types::activate_data_object_type(Origin::ROOT, DEFAULT_FIRST_ID, true);
+        let res = DataObjectTypeRegistry::activate_data_object_type(Origin::ROOT, DEFAULT_FIRST_ID, true);
         assert!(res.is_ok());
         assert_eq!(*System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::ApplyExtrinsic(0),
-                event: MetaEvent::types(types::RawEvent::DataObjectTypeUpdated(DEFAULT_FIRST_ID)),
+                event: MetaEvent::types(DataObjectTypeRegistry::RawEvent::DataObjectTypeUpdated(DEFAULT_FIRST_ID)),
             }
         );
 
         // Ensure that the item is actually activated.
-        let data = Types::data_object_type(DEFAULT_FIRST_ID);
+        let data = DataObjectTypeRegistry::data_object_type(DEFAULT_FIRST_ID);
         assert!(data.is_some());
         assert!(data.unwrap().active);
     });
