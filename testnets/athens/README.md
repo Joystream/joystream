@@ -1,10 +1,30 @@
 <p align="center"><img width=200px src="logo.png"></p>
-<p align="center" style="font-size:100px;font-weight:100;">Athens Testnet</p>
+<p align="center"><img src="athens-testnet-headline.svg"></p>
+
+<div align="center">
+  <h3>
+    <a href="https://choo.io">
+      Specification
+    </a>
+    <span> | </span>
+    <a href="https://github.com/choojs/choo-handbook">
+      OKRs
+    </a>
+    <span> | </span>
+    <a href="https://github.com/YerkoPalma/awesome-choo">
+      Products
+    </a>
+    <span> | </span>
+    <a href="https://github.com/YerkoPalma/awesome-choo">
+      Milestones
+    </a>
+  </h3>
+</div>
 
 # Table of contents
 
 - [Overview](#overview)
-- [Release Meetings](#release-meetings)
+- [Finished Release Meetings](#finished-release-meetings)
 - [Specification](#specification)
 - [GitHub Projects](#github-projects)
 - [OKR results](#okr-results)
@@ -43,11 +63,11 @@ Athens is the third Joystream testnet, and it is scheduled for release
 
 ### 04. April 2019, 12:00 (GMT+1)
 
-# Release Meetings
+# Finished Release Meetings
 
 | Date            | Link          |
 | -------------   | ------------- |
-| NA              | x              |
+| NA              | x             |
 
 #  Specification
 
@@ -61,9 +81,7 @@ The current set of relevant GitHub projects are
 
 # OKR results
 
-Will be available on measurement deadline, will be done by
-
-- <span style="color:blue">Martin</span>
+NA.
 
 # Release Plan
 
@@ -71,7 +89,7 @@ Read more about how a release plan is used, and how it is generated, [here](....
 
 ## Manager
 
-<span style="color:blue">Martin</span>
+`Martin`
 
 ## Release Date
 

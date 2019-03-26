@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="424px" height="171px" viewBox="0 0 424 171" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 53.2 (72643) - https://sketchapp.com -->
+    <title>Group</title>
+    <desc>Created with Sketch.</desc>
+    <g id="logoes" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group">
+            <rect id="Rectangle" fill="#D8D8D8" x="0" y="0" width="424" height="171" rx="8"></rect>
+            <text id="Testnet-Logo" font-family="HelveticaNeue-UltraLight, Helvetica Neue" font-size="60" font-weight="200" fill="#000000">
+                <tspan x="59.43" y="107">Testnet Logo</tspan>
+            </text>
+        </g>
+    </g>
+</svg>

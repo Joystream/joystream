@@ -30,18 +30,21 @@ The reason this is placed in public view on Github is that two fold
 
 # Meetings
 
-We use [the following template](meeting-itinerary-template) for managing meetings, of which there are three regular varieties
+## Itinerary
 
-## Daily standup
+Meeting itineraryies are prepared on a case by case basis, depending on the context, anda template for this, as well as an index of archived itineraries, can be found [here](/meetings).
+
+## Meeting Types
+
+### Daily standup
 
 - **Description:** Everyone states, within 1 minute, what they accomplished the prior day, and what the goals are for the day. After this, people can start separate calls which need not be conducted in plenum.
 - **When:** Every day at 10am (GMT)
 - **Where:** Zoom
 - **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
-- **Broadcast:** <span style="color:red">Livestreamed to Youtube also</span>
-- **Notes:** NO
+- **Record&Publish:** YES, if no participant objects.
 
-## Monday all-hands
+### Monday all-hands
 
 - **Description:** Everyone states individual:
   1. **OKR Tracking**: Track your OKRs and OKR assignments
@@ -51,17 +54,15 @@ We use [the following template](meeting-itinerary-template) for managing meeting
 - **When:** Every working monday at 10am (GMT)
 - **Where:** Zoom
 - **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
-- **Broadcast:** <span style="color:red">Livestreamed to Youtube also</span>
-- **Notes:** NO
+- **Record&Publish:** YES, if no participant objects.
 
-## Release meeting
+### Release meeting
 
 - **Description:** Discussion about impending testnet release.
 - **When:** Weekly
 - **Where:** Zoom
 - **Participant:** Core release team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
-- **Broadcast:** <span style="color:red">Livestreamed to Youtube also</span>
-- **Notes:** YES, archived in  `meetings` directory of release directory.
+- **Record&Publish:** YES, if no participant objects.
 
 # OKR system
 
