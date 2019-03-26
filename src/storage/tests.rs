@@ -145,7 +145,7 @@ fn activate_existing()
         assert!(!data.unwrap().active);
 
         // Now activate the data object type
-        let res = TestDataObjectTypeRegistry::activate_data_object_type(Origin::ROOT, DEFAULT_FIRST_ID, true);
+        let res = TestDataObjectTypeRegistry::activate_data_object_type(Origin::ROOT, DEFAULT_FIRST_ID);
         assert!(res.is_ok());
         assert_eq!(*System::events().last().unwrap(),
             EventRecord {
@@ -158,5 +158,12 @@ fn activate_existing()
         let data = TestDataObjectTypeRegistry::data_object_type(DEFAULT_FIRST_ID);
         assert!(data.is_some());
         assert!(data.unwrap().active);
+
+        // Deactivate again.
+        let res = TestDataObjectTypeRegistry::deactivate_data_object_type(Origin::ROOT, DEFAULT_FIRST_ID);
+        assert!(res.is_ok());
+        let data = TestDataObjectTypeRegistry::data_object_type(DEFAULT_FIRST_ID);
+        assert!(data.is_some());
+        assert!(!data.unwrap().active);
     });
 }

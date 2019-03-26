@@ -114,17 +114,33 @@ decl_module! {
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
 
-        pub fn activate_data_object_type(origin, id: T::DataObjectTypeID, active: bool)
+        // Activate and deactivate functions as separate functions, because
+        // toggling DO types is likely a more common operation than updating
+        // other aspects.
+        pub fn activate_data_object_type(origin, id: T::DataObjectTypeID)
         {
             ensure_root(origin)?;
             let mut do_type = Self::ensure_data_object_type(id)?;
 
-            do_type.active = active;
+            do_type.active = true;
 
             <DataObjectTypeMap<T>>::insert(id, do_type);
 
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
+
+        pub fn deactivate_data_object_type(origin, id: T::DataObjectTypeID)
+        {
+            ensure_root(origin)?;
+            let mut do_type = Self::ensure_data_object_type(id)?;
+
+            do_type.active = false;
+
+            <DataObjectTypeMap<T>>::insert(id, do_type);
+
+            Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
+        }
+
     }
 }
 
