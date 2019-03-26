@@ -17,7 +17,7 @@ extern crate parity_codec_derive;
 pub mod governance;
 use governance::{election, council, proposals};
 pub mod storage;
-use storage::{type_registry};
+use storage::{data_object_type_registry};
 mod memo;
 mod traits;
 
@@ -227,7 +227,7 @@ impl memo::Trait for Runtime {
 	type Event = Event;
 }
 
-impl storage::type_registry::Trait for Runtime {
+impl storage::data_object_type_registry::Trait for Runtime {
 	type Event = Event;
 	type DataObjectTypeID = u64;
 }
@@ -252,7 +252,7 @@ construct_runtime!(
 		CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
 		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
 		Memo: memo::{Module, Call, Storage, Event<T>},
-		DataObjectTypeRegistry: type_registry::{Module, Call, Storage, Event<T>, Config<T>},
+		DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 
