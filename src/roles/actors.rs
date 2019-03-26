@@ -21,34 +21,34 @@ pub enum Role {
 #[derive(Encode, Decode, Copy, Clone, Eq, PartialEq)]
 pub struct RoleParameters<T: Trait> {
     // minium balance required to stake to enter a role
-    min_stake: BalanceOf<T>,
+    pub min_stake: BalanceOf<T>,
 
     // the maximum number of spots available to fill for a role
-    max_actors: u32,
+    pub max_actors: u32,
 
     // minimum actors to maintain - if role is unstaking
     // and remaining actors would be less that this value - prevent or punish for unstaking
-    min_actors: u32,
+    pub min_actors: u32,
 
     // fixed amount of tokens paid to actors' primary account
-    reward: BalanceOf<T>,
+    pub reward: BalanceOf<T>,
 
     // payouts are made at this block interval
-    reward_period: T::BlockNumber,
+    pub reward_period: T::BlockNumber,
 
     // how long tokens remain locked for after unstaking
-    unbonding_period: T::BlockNumber,
+    pub unbonding_period: T::BlockNumber,
 
     // minimum amount of time before being able to unstake
-    bonding_time: T::BlockNumber,
+    pub bonding_time: T::BlockNumber,
 
     // minimum period required to be in service. unbonding before this time is highly penalized
-    min_service_period: T::BlockNumber,
+    pub min_service_period: T::BlockNumber,
 
     // "startup" time allowed for roles that need to sync their infrastructure
     // with other providers before they are considered in service and punishable for
     // not delivering required level of service.
-    startup_grace_period: T::BlockNumber,
+    pub startup_grace_period: T::BlockNumber,
 
     // entry_request_fee: BalanceOf<T>,
 }
