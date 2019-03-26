@@ -5,7 +5,7 @@ use parity_codec::Codec;
 use parity_codec_derive::{Encode, Decode};
 use srml_support::{StorageMap, StorageValue, dispatch, decl_module, decl_storage, decl_event, ensure, Parameter};
 use srml_support::traits::{Currency, EnsureAccountLiquid};
-use runtime_primitives::traits::{Zero, Bounded, SimpleArithmetic, As, Member, MaybeSerializeDebug};
+use runtime_primitives::traits::{Zero, Bounded, SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
 use system::{self, ensure_signed};
 use crate::governance::{GovernanceCurrency, BalanceOf };
 
@@ -16,10 +16,12 @@ pub enum Role {
     Storage,
 }
 
-#[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
-pub struct RoleParameters<Balance, BlockNumber> {
+
+#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Copy, Clone, Eq, PartialEq)]
+pub struct RoleParameters<T: Trait> {
     // minium balance required to stake to enter a role
-    min_stake: Balance,
+    min_stake: BalanceOf<T>,
 
     // the maximum number of spots available to fill for a role
     max_actors: u32,
@@ -29,24 +31,24 @@ pub struct RoleParameters<Balance, BlockNumber> {
     min_actors: u32,
 
     // fixed amount of tokens paid to actors' primary account
-    reward: Balance,
+    reward: BalanceOf<T>,
 
     // payouts are made at this block interval
-    reward_period: BlockNumber,
+    reward_period: T::BlockNumber,
 
     // how long tokens remain locked for after unstaking
-    unbonding_period: BlockNumber,
+    unbonding_period: T::BlockNumber,
 
     // minimum amount of time before being able to unstake
-    bonding_time: BlockNumber,
+    bonding_time: T::BlockNumber,
 
     // minimum period required to be in service. unbonding before this time is highly penalized
-    min_service_period: BlockNumber,
+    min_service_period: T::BlockNumber,
 
     // "startup" time allowed for roles that need to sync their infrastructure
     // with other providers before they are considered in service and punishable for
     // not delivering required level of service.
-    startup_grace_period: BlockNumber,
+    startup_grace_period: T::BlockNumber,
 
     // entry_request_fee: BalanceOf<T>,
 }
@@ -60,7 +62,7 @@ pub struct Actor<T: Trait> {
     // startup_grace_period_ends_at: T::BlockNumber,
 }
 
-pub trait Trait: system::Trait + GovernanceCurrency {
+pub trait Trait: system::Trait + GovernanceCurrency + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type Members: Members<Self>;
@@ -76,7 +78,7 @@ const DEFAULT_REQUEST_CLEARING_INTERVAL: u64 = 100;
 decl_storage! {
     trait Store for Module<T: Trait> as Actors {
         /// requirements to enter and maintain status in roles
-        Parameters get(parameters) : map Role => Option<RoleParameters<BalanceOf<T>, T::BlockNumber>>;
+        Parameters get(parameters) : map Role => Option<RoleParameters<T>>;
 
         /// the roles members can enter into
         AvailableRoles get(available_roles) : Vec<Role>; // = vec![Role::Storage];
@@ -134,7 +136,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_role_parameters(role: Role) -> Result<RoleParameters<BalanceOf<T>, T::BlockNumber>, &'static str> {
+    fn ensure_role_parameters(role: Role) -> Result<RoleParameters<T>, &'static str> {
         Self::parameters(role).ok_or("no parameters for role")
     }
 
@@ -308,7 +310,7 @@ decl_module! {
             Self::apply_unstake(actor.account, actor.role, actor.member_id, role_parameters.unbonding_period);
         }
 
-        pub fn set_role_parameters(role: Role, params: RoleParameters<BalanceOf<T>, T::BlockNumber>) {
+        pub fn set_role_parameters(role: Role, params: RoleParameters<T>) {
             <Parameters<T>>::insert(role, params);
         }
 
