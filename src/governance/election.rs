@@ -17,10 +17,14 @@ use super::sealed_vote::SealedVote;
 pub use super::{ GovernanceCurrency, BalanceOf };
 use super::council;
 
+use crate::traits::{IsActiveMember};
+
 pub trait Trait: system::Trait + council::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type CouncilElected: CouncilElected<Seats<Self::AccountId, BalanceOf<Self>>, Self::BlockNumber>;
+
+    type IsActiveMember: IsActiveMember<Self>;
 }
 
 #[derive(Clone, Copy, Encode, Decode)]
@@ -148,9 +152,9 @@ impl<T: Trait> Module<T> {
         <system::Module<T>>::block_number() + length
     }
 
-    // TODO This method should be moved to Membership module once it's created.
-    fn is_member(sender: T::AccountId) -> bool {
-        !T::Currency::free_balance(&sender).is_zero()
+
+    fn can_participate(sender: &T::AccountId) -> bool {
+        !T::Currency::free_balance(sender).is_zero() && T::IsActiveMember::is_active_member(sender)
     }
 
     // PUBLIC IMMUTABLES
@@ -651,7 +655,7 @@ decl_module! {
         // Member can make subsequent calls during announcing stage to increase their stake.
         fn apply(origin, stake: BalanceOf<T>) {
             let sender = ensure_signed(origin)?;
-            ensure!(Self::is_member(sender.clone()), "Only members can apply to be on council");
+            ensure!(Self::can_participate(&sender), "Only members can apply to be on council");
 
             let stage = Self::stage();
             ensure!(Self::stage().is_some(), "election not running");
@@ -674,7 +678,7 @@ decl_module! {
 
         fn vote(origin, commitment: T::Hash, stake: BalanceOf<T>) {
             let sender = ensure_signed(origin)?;
-            ensure!(Self::is_member(sender.clone()), "Only members can vote for an applicant");
+            ensure!(Self::can_participate(&sender), "Only members can vote for an applicant");
 
             let stage = Self::stage();
             ensure!(Self::stage().is_some(), "election not running");

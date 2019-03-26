@@ -20,6 +20,9 @@ pub mod storage;
 use storage::{data_object_type_registry};
 mod memo;
 mod traits;
+mod membership;
+use membership::members;
+mod migration;
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -90,7 +93,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("joystream-node"),
 	impl_name: create_runtime_str!("joystream-node"),
 	authoring_version: 3,
-	spec_version: 4,
+	spec_version: 5,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 };
@@ -211,11 +214,13 @@ impl governance::GovernanceCurrency for Runtime {
 
 impl governance::proposals::Trait for Runtime {
 	type Event = Event;
+	type IsActiveMember = Members;
 }
 
 impl governance::election::Trait for Runtime {
 	type Event = Event;
 	type CouncilElected = (Council,);
+	type IsActiveMember = Members;
 }
 
 impl governance::council::Trait for Runtime {
@@ -230,6 +235,17 @@ impl memo::Trait for Runtime {
 impl storage::data_object_type_registry::Trait for Runtime {
 	type Event = Event;
 	type DataObjectTypeID = u64;
+}
+
+impl members::Trait for Runtime {
+	type Event = Event;
+	type MemberId = u64;
+	type PaidTermId = u64;
+	type SubscriptionId = u64;
+}
+
+impl migration::Trait for Runtime {
+	type Event = Event;
 }
 
 construct_runtime!(
@@ -252,6 +268,8 @@ construct_runtime!(
 		CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
 		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
 		Memo: memo::{Module, Call, Storage, Event<T>},
+		Members: members::{Module, Call, Storage, Event<T>, Config<T>},
+		Migration: migration::{Module, Call, Storage, Event<T>},
 		DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );

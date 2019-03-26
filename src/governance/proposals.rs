@@ -8,6 +8,7 @@ use rstd::prelude::*;
 
 use super::council;
 pub use super::{ GovernanceCurrency, BalanceOf };
+use crate::traits::{IsActiveMember};
 
 const DEFAULT_APPROVAL_QUORUM: u32 = 60;
 const DEFAULT_MIN_STAKE: u64 = 100;
@@ -115,6 +116,8 @@ pub struct TallyResult<BlockNumber> {
 pub trait Trait: timestamp::Trait + council::Trait + GovernanceCurrency {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
+    type IsActiveMember: IsActiveMember<Self>;
 }
 
 decl_event!(
@@ -221,7 +224,7 @@ decl_module! {
         ) {
 
             let proposer = ensure_signed(origin)?;
-            ensure!(Self::is_member(proposer.clone()), MSG_ONLY_MEMBERS_CAN_PROPOSE);
+            ensure!(Self::can_participate(proposer.clone()), MSG_ONLY_MEMBERS_CAN_PROPOSE);
             ensure!(stake >= Self::min_stake(), MSG_STAKE_IS_TOO_LOW);
 
             ensure!(!name.is_empty(), MSG_EMPTY_NAME_PROVIDED);
@@ -345,9 +348,8 @@ impl<T: Trait> Module<T> {
         <system::Module<T>>::block_number()
     }
 
-    // TODO This method should be moved to Membership module once it's created.
-    fn is_member(sender: T::AccountId) -> bool {
-        !T::Currency::free_balance(&sender).is_zero()
+    fn can_participate(sender: T::AccountId) -> bool {
+        !T::Currency::free_balance(&sender).is_zero() && T::IsActiveMember::is_active_member(&sender)
     }
 
     fn is_councilor(sender: &T::AccountId) -> bool {
@@ -613,6 +615,14 @@ mod tests {
 
     impl Trait for Test {
         type Event = ();
+        type IsActiveMember = AnyAccountIsMember;
+    }
+
+    pub struct AnyAccountIsMember {}
+    impl<T: system::Trait> IsActiveMember<T> for AnyAccountIsMember {
+        fn is_active_member(who: &T::AccountId) -> bool {
+            true
+        }
     }
 
     type System = system::Module<Test>;
