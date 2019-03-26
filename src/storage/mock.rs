@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use rstd::prelude::*;
-pub use super::{type_registry};
+pub use super::{data_object_type_registry};
 pub use system;
 
 pub use primitives::{H256, Blake2Hasher};
@@ -20,7 +20,7 @@ impl_outer_origin! {
 impl_outer_event! {
     pub enum MetaEvent for Test
     {
-        type_registry<T>,
+        data_object_type_registry<T>,
     }
 }
 
@@ -43,7 +43,7 @@ impl system::Trait for Test
     type Log = DigestItem;
     type Lookup = IdentityLookup<u64>;
 }
-impl type_registry::Trait for Test
+impl data_object_type_registry::Trait for Test
 {
     type Event = MetaEvent;
     type DataObjectTypeID = u64;
@@ -75,7 +75,7 @@ impl ExtBuilder
     {
         let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
 
-        t.extend(type_registry::GenesisConfig::<Test>{
+        t.extend(data_object_type_registry::GenesisConfig::<Test>{
             first_data_object_type_id: self.first_data_object_type_id,
         }.build_storage().unwrap().0);
 
@@ -85,5 +85,5 @@ impl ExtBuilder
 
 
 pub type System = system::Module<Test>;
-pub type TestDataObjectTypeRegistry = type_registry::Module<Test>;
-pub type TestDataObjectType = type_registry::DataObjectType<Test>;
+pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
+pub type TestDataObjectType = data_object_type_registry::DataObjectType<Test>;
