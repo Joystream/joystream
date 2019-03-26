@@ -132,7 +132,6 @@ impl <T: Trait> Module<T>
 {
     fn ensure_data_object_type(id: T::DataObjectTypeID) -> Result<DataObjectType<T>, &'static str>
     {
-        let do_type = Self::data_object_type(&id).ok_or(MSG_DO_TYPE_NOT_FOUND)?;
-        Ok(do_type)
+        return Self::data_object_type(&id).ok_or(MSG_DO_TYPE_NOT_FOUND);
     }
 }
