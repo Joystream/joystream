@@ -33,6 +33,7 @@ pub struct DataObjectType<T: Trait>
     pub active: bool,
 
     // TODO in future releases
+    // - maximum size
     // - replication factor
     // - storage tranches (empty is ok)
 }
