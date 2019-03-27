@@ -18,8 +18,7 @@ impl_outer_origin! {
 }
 
 impl_outer_event! {
-    pub enum MetaEvent for Test
-    {
+    pub enum MetaEvent for Test {
         data_object_type_registry<T>,
     }
 }
@@ -29,8 +28,7 @@ impl_outer_event! {
 // configuration traits of modules we want to use.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Test;
-impl system::Trait for Test
-{
+impl system::Trait for Test {
     type Origin = Origin;
     type Index = u64;
     type BlockNumber = u64;
@@ -43,36 +41,29 @@ impl system::Trait for Test
     type Log = DigestItem;
     type Lookup = IdentityLookup<u64>;
 }
-impl data_object_type_registry::Trait for Test
-{
+impl data_object_type_registry::Trait for Test {
     type Event = MetaEvent;
     type DataObjectTypeID = u64;
 }
 
-pub struct ExtBuilder
-{
+pub struct ExtBuilder {
     first_data_object_type_id: u64,
 }
 
-impl Default for ExtBuilder
-{
-    fn default() -> Self
-    {
+impl Default for ExtBuilder {
+    fn default() -> Self {
         Self {
             first_data_object_type_id: 1,
         }
     }
 }
 
-impl ExtBuilder
-{
-    pub fn first_data_object_type_id(mut self, first_data_object_type_id: u64) -> Self
-    {
+impl ExtBuilder {
+    pub fn first_data_object_type_id(mut self, first_data_object_type_id: u64) -> Self {
         self.first_data_object_type_id = first_data_object_type_id;
         self
     }
-    pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher>
-    {
+    pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher> {
         let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
 
         t.extend(data_object_type_registry::GenesisConfig::<Test>{
