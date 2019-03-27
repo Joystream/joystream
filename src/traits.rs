@@ -4,7 +4,7 @@ use crate::storage::data_object_type_registry;
 use system;
 
 pub trait IsActiveDataObjectType<T: data_object_type_registry::Trait> {
-    fn is_active_data_object_type(which: &T::DataObjectTypeID) -> bool {
+    fn is_active_data_object_type(which: &T::DataObjectTypeId) -> bool {
         false
     }
 }

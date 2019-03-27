@@ -43,7 +43,7 @@ impl system::Trait for Test {
 }
 impl data_object_type_registry::Trait for Test {
     type Event = MetaEvent;
-    type DataObjectTypeID = u64;
+    type DataObjectTypeId = u64;
 }
 
 pub struct ExtBuilder {
