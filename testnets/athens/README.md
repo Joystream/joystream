@@ -1,22 +1,10 @@
 <p align="center"><img width=200px src="logo.png"></p>
-<p align="center"><img src="athens-testnet-headline.svg"></p>
+<p align="center"><img src="athens-testnet-headline.png"></p>
 
 <div align="center">
   <h3>
-    <a href="https://choo.io">
+    <a href="#">
       Specification
-    </a>
-    <span> | </span>
-    <a href="https://github.com/choojs/choo-handbook">
-      OKRs
-    </a>
-    <span> | </span>
-    <a href="https://github.com/YerkoPalma/awesome-choo">
-      Products
-    </a>
-    <span> | </span>
-    <a href="https://github.com/YerkoPalma/awesome-choo">
-      Milestones
     </a>
   </h3>
 </div>
@@ -85,8 +73,6 @@ NA.
 
 # Release Plan
 
-Read more about how a release plan is used, and how it is generated, [here](....).
-
 ## Manager
 
 `Martin`
@@ -114,9 +100,9 @@ Read more about how a release plan is used, and how it is generated, [here](....
 
 ## Risks
 
-- <span style="color:blue">Jens</span> may not be able to reliably participate, and its not clear when new TT dev will be found and onboarded.
+- **Jens** may not be able to reliably participate, and its not clear when new TT dev will be found and onboarded.
 
-- <span style="color:blue">Bedeho</span> will try to contribute on Runtime work, but he also has to get familiar with Rust & Substrate, as well as other unreliable priorities.
+- **Bedeho** will try to contribute on Runtime work, but he also has to get familiar with Rust & Substrate, as well as other unreliable priorities.
 
 ## Specification Plans
 
@@ -133,14 +119,14 @@ The following public products will be part of this release.
 ### Runtime
 ---
 - **Description:** Runtime for Validator node
-- **Manager:** <span style="color:blue">Mokhtar</span>
+- **Manager:** Mokhtar
 - **Core Team:**
-  - <span style="color:blue">Mokhtar</span>: Developer
-  - <span style="color:blue">Alex</span>: Developer
-  - <span style="color:blue">Jens</span>: Developer
-  - <span style="color:blue">Martin</span>: Testing
-  - <span style="color:blue">Bedeho</span>: Developer
-  - <span style="color:blue">Jaydip</span>: Devops
+  - **Mokhtar:** Developer
+  - **Alex:** Developer
+  - **Jens:** Developer
+  - **Martin:** Testing
+  - **Bedeho:** Developer
+  - **Jaydip:** Devops
 - **Main repo:** [substrate-runtime-joystream](https://github.com/Joystream/substrate-runtime-joystream)
 - **Current version:** 4
 - **New version:** 5
@@ -148,10 +134,10 @@ The following public products will be part of this release.
 - **Documentation:** NO CHANGE
 - **Legal Review/ToS update:** NO CHANGE
 - **Build/CI system:**
-  - <span style="color:blue">Jaydip</span>: Get CI builds for runtime
+  - **Jaydip:** Get CI builds for runtime
 - **Target Platforms:** NO CHANGE
 - **New/Altered Functionality:**
-  - <span style="color:blue">Mokhtar</span>: Basic membership system:
+  - **Mokhtar:** Basic membership system:
     - Pay for membership signup
     - No working groups for screening or policing
     - Reusing storage for avatar persistence.
@@ -159,7 +145,7 @@ The following public products will be part of this release.
     - Do Validators also have to be members. (will require changing staking
 module)
     - Replace/Update Indices module (account indexing)
-  - <span style="color:blue">Jens</span>, <span style="color:blue">Mokhtar</span>: Basic storage and distribution:
+  - **Jens**, **Mokhtar:** Basic storage and distribution:
     - Roles combined into single staked actor that fully replicates full data
 directory
     - No working group, anyone can enter so long as they pass requirements.
@@ -168,7 +154,7 @@ directory
       - no tranches -(all storage nodes do full replication?)
       - only the object types required in this release
       - very few data object types (which?)
-  - <span style="color:blue">Jens</span>: Basic content directory
+  - **Jens:** Basic content directory
     - controlled by through root, no working group
     - policed through sudo
     - basic publisher profile.
@@ -176,7 +162,7 @@ directory
       - a standalone video clip (podcasts are published)
       - an audio podcast series and episodes
     - All static assets live in storage system
-  - <span style="color:blue">Mokhtar</span>: do something about spam risk, e.g. falt tx fee
+  - **Mokhtar:** do something about spam risk, e.g. falt tx fee
 - **Refactor/Reorganization:**
   - Split the runtime into its own repo, and include a docker script for doing
 reproducible builds. Will be needed for testing/verifying runtime upgrade
@@ -189,18 +175,18 @@ proposals, and first use will be for this next release
 ---
 
 - **Description:** Validator node.
-- **Manager:** <span style="color:blue">Mokhtar</span>
+- **Manager:** **Mokhtar**
 - **Team:**
-  - <span style="color:blue">Mokhtar</span>: Developer
-  - <span style="color:blue">Martin</span>: Testing
-  - <span style="color:blue">Jaydip</span>: Devops
+  - **Mokhtar:** Developer
+  - **Martin:** Testing
+  - **Jaydip:** Devops
 - **Main repo:** [substrate-node-joystream](https://github.com/Joystream/substrate-node-joystream)
 - **Current version:** v0.10.
 - **New version:** v0.10.2 (backward compatible with old nodes/chain (network/p2p/codec
 etc..))
 - **Audit:** NO
 - **Documentation:** NO CHANGE
-- **Legal Review/ToS update:** Yes (<span style="color:blue">Martin</span>)
+- **Legal Review/ToS update:** Yes (**Martin**)
 - **Build/CI system:** NO CHANGE
 - **Target Platforms:**
   - Mac
@@ -216,7 +202,7 @@ etc..))
 - **Deployment/Distribution:**
   - Will be have to be downloaded from GitHub release page, with links being
 distributed relevant tutorials and communications.
-  - <span style="color:blue">Jaydip</span>:
+  - **Jaydip:**
     - Get docker image based builds working
     - Docker image hosted on docker.com public repo + instructions?
     - OSX brew/Ubuntu snap?
@@ -224,20 +210,20 @@ distributed relevant tutorials and communications.
 ### Colossus
 ---
 - **Description:** Combined storage and distribution node.
-- **Manager:** <span style="color:blue">Jens</span>
+- **Manager:** **>Jens**
 - **Team:**
-  - <span style="color:blue">Jens</span>: Developer
-  - <span style="color:blue">Martin</span>: Testing
+  - **Jens:** Developer
+  - **Martin:** Testing
 - **Main repo:** [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)
 - **Current version:** 0.1.
 - **New version:** 0.2.
 - **Audit:** NO
 - **Documentation:** API YES (needed for other devs to understand how to interface with
 it).
-- **Legal Review/ToS update:** Yes (<span style="color:blue">Martin</span>)
+- **Legal Review/ToS update:** Yes (**Martin**)
 - **Build/CI system:** NO CHANGE
 - **Target Platforms:** Linux. Testing required for others.
-- **New/Altered Functionality:** <span style="color:blue">Jens</span>
+- **New/Altered Functionality:** **Jens**
   - This first version is based on the following:
   - for now, hyperdrive for storage & synchronizing (tech underlying Dat)
   - nodejs + expressjs + express-openapi for application facing API.
@@ -255,21 +241,21 @@ distributed relevant tutorials and communications.
 ### Pioneer
 ---
  - **Description:** The user interface for interacting with the platform.
- - **Manager:** <span style="color:blue">Alex</span>
+ - **Manager:** **Alex**
  - **Team:**
-  - <span style="color:blue">Alex</span>: Developer
-  - <span style="color:blue">Mokhtar</span>: Developer
-  - <span style="color:blue">Tomasz</span>: Designer
-  - <span style="color:blue">Martin</span>: Testing
+  - **Alex:** Developer
+  - **Mokhtar:** Developer
+  - **Tomasz:** Designer
+  - **Martin:** Testing
  - **Main repo:** [apps](https://github.com/Joystream/apps)
  - **Current version:** 0.23.29 (inherited from Polkadot Apps)
  - **New version:** 0.2.
  - **Audit:** NO
  - **Documentation:** NO CHANGE
- - **Legal Review/ToS update:** Yes (<span style="color:blue">Martin</span>)
+ - **Legal Review/ToS update:** Yes (**Martin**)
  - **Build/CI system:** NO CHANGE
  - **Target Platforms:** Web
- - **New/Altered Functionality**: <span style="color:blue">Alex</span>
+ - **New/Altered Functionality**: **Alex**
   - Update name of application:
     - GitHub repo name
     - Browser title bar
@@ -328,24 +314,24 @@ Substrate events where a current user was an origin of tx.
 - **Description:** We conduct an actual testnet with ourselves and key community members as
 participants.
 - **Deadline:** 29. March
-- **Manager:** <span style="color:blue">Martin</span>
+- **Manager:** **Martin**
 - **Team:**
-  - <span style="color:blue">Mokhtar</span>: Developer
-  - <span style="color:blue">Jaydip</span>: DevOps
+  - **Mokhtar:** Developer
+  - **Jaydip:** DevOps
 - **Test specification:**
-  - <span style="color:red">Please rewrite more clearly</span>
+  - _Please rewrite more clearly_
 
 ### Runtime Upgrade
 
 - **Description:** Submit proposal to change to new image, and have council pass that proposal.
 - **Deadline:** 02. April
-- **Manager:** <span style="color:blue">Martin</span>
+- **Manager:** **Martin**
 - **Team:**
-  - <span style="color:blue">Martin</span>: Writing
-  - <span style="color:blue">Mokhtar</span>: Developer
-  - <span style="color:blue">Tomasz</span>: Designer
+  - **Martin:** Writing
+  - **Mokhtar:** Developer
+  - **Tomasz:** Designer
 - **Time line:**
-  - <span style="color:red">Please rewrite more clearly</span>
+  - _Please rewrite more clearly_
 
 ## Go-To-Market
 
@@ -355,35 +341,35 @@ participants.
 announcement, the following incentive campaign is in place to achieve key results for service
 providers. Policy would be
   - Validator: 30$ per week -> 0.03C per block
-  - Council Member: 5$ for seat, 5$ for vote
-  - Storage: $0.1/GB per day (depends on whether anyone can upload)
-- **Manager:** <span style="color:blue">Martin</span>
+  - Council Member: **8$** for seat, **5$** for vote on runtime upgrade(s)
+  - Storage: **$10** per week, with **$0.025/GB** per week
+- **Manager:** **Martin**
 - **Team:**
-  - <span style="color:blue">Martin</span>: Manager
-  - <span style="color:blue">Bedeho</span>: ElPassion Manager
-  - <span style="color:blue">Mokhtar</span>: Developer
-  - <span style="color:blue">Tomasz</span>: Designer
-  - <span style="color:blue">Jaydip</span>: Community manager/Devops
+  - **Martin:** Manager
+  - **Bedeho:** ElPassion Manager
+  - **Mokhtar:** Developer
+  - **Tomasz:** Designer
+  - **Jaydip:** Community manager/Devops
 - **Tasks:**
-  - <span style="color:blue">Bedeho</span>, <span style="color:blue">Tomasz</span>: Update Joystream.org with new testnet summary information
+  - **Bedeho**, **Tomasz:** Update Joystream.org with new testnet summary information
    - New fields about new state
      - Number of members (perhaps even actual names?)
      - Number of storage providers
      - Total amount of storage used
      - Total amount of content items published
    - Better representation about election cycle system, more clearly need to represent the multistaged nature, with a countdown to act, and perhaps why, and also a CTA to actually act.
-   - New list of roles, with active ones emphasied
+   - New list of roles, with active ones emphasised
    - New section for next testnet, with state there <== needs name
-  - <span style="color:blue">Mokhtar</span>: Update backend infrastructure to support new life Athens web based summary
-  - <span style="color:blue">Martin</span>: Update or write tutorials for how to participate in roles on Github
+  - **Mokhtar:** Update backend infrastructure to support new life Athens web based summary
+  - **Martin:** Update or write tutorials for how to participate in roles on Github
     - Validator (systemd setup, fine tuning linux, inspiration: https://kb.certus.one/)
     - Storage Provider
-  - <span style="color:blue">Martin</span>: Write & publish blog posts
+  - **Martin:** Write & publish blog posts
     - [Runtime upgrades vs forks](runtime-upgrades-vs-forks)
     - [Announcing Athens Testnet](announcing-athens-testnet)
     - [Athens Incentive Structure](athens-incentive-structure)
     - [Athens Released](athens-released)
-  - <span style="color:blue">Jaydip</span>: Tech support/online presence
+  - **Jaydip:** Tech support/online presence
     - Monitor tlgrm, RC, (after trust established, twtr and reddit?)
 
 ### Tutorials
@@ -392,7 +378,7 @@ providers. Policy would be
 
 - **Description:** Step by step guide for how to setup and run a validator node, and claim reward
 - **CTA:** Go and setup your node
-- **Author:** <span style="color:blue">Martin</span>
+- **Author:** **Martin**
 - **Distribution:** Github?
 - **Assets:** NONE
 
@@ -400,7 +386,7 @@ providers. Policy would be
 
 - **Description:** Step by step guide for how to setup and run a storage provider node, and claim reward
 - **CTA:** Go and setup your node
-- **Author:** <span style="color:blue">Jens</span>,<span style="color:blue">Martin</span>
+- **Author:** **Jens**,**Martin**
 - **Distribution:** Github?
 - **Assets:** NONE
 
@@ -411,7 +397,7 @@ providers. Policy would be
 - **Description:** Somewhat technical blog about what these are, what they enable, and how we
 are doing them.
 - **CTA:** Educational+hiring credibility
-- **Author:** <span style="color:blue">Mokhtar</span>,<span style="color:blue">Martin</span>
+- **Author:** **Mokhtar**,**Martin**
 - **Distribution:** Twtr, Tlgrm, Reddit, RC + polkadot forum(s)
 - **Assets:** Cover + some new pagebreakers - <Spartan w/sword defeating enemy w/fork>
 
@@ -422,7 +408,7 @@ showings its logo, and a scheduled date (we are not in full control), once featu
 Telling people what the next sequence of events are, including future messages, future points in
 time they must act.
 - **CTA:** What action can people do, and how
-- **Author:** <span style="color:blue">Martin</span>
+- **Author:** **Martin**
 - **Distribution:** TTRR
 - **Assets:** Cover + some new pagebreakers - <athenian owlcould be featured unless we want
 to use this as “main” athens logo. >
@@ -431,7 +417,7 @@ to use this as “main” athens logo. >
 
 - **Description:** Incentive structure and changes made for Athens + lessons learned
 - **CTA:** Roles to take, and why
-- **Author:** <span style="color:blue">Martin</span>
+- **Author:** **Martin**
 - **Distribution:** TTRR
 - **Assets:** Cover + some new pagebreakers - <something similar to the Spartan one, but with
 new logo and storage provider role>
@@ -441,7 +427,7 @@ new logo and storage provider role>
 - **Description:** TL;DR of previous posts with links + Full update on howto, with an emphasis on
 new roles
 - **CTA:** Sign up now
-- **Author:** <span style="color:blue">Martin</span>
+- **Author:** **Martin**
 - **Distribution:** TTRR+newsletter
 - **Assets:** Cover + some new pagebreakers - < Athens logo>
 
@@ -450,43 +436,43 @@ new roles
 ### Hosted Joystream Pioneer
 
 - **Description:** Host a version of Joystream Pioneer on joystream.org + others?
-- **Manager:** <span style="color:blue">Jaydip</span>
-- **DevOps:** <span style="color:blue">Jaydip</span>
+- **Manager:** **Jaydip**
+- **DevOps:** **Jaydip**
 - **Repo:** Aim for static build of pioneer repo (similar to polkadot-js apps deploymnet)
 - **Team:**
-  - <span style="color:blue">Jaydip</span>
+  - **Jaydip**
 - **Tasks:**
   - Reuse existing linode server or deploy to heroku for example (autodeploy o master branch merge)?
 
 ### Hosted Joystream Storage Node
 
 - **Description:** A storage node controlled by us, serving as fallback
-- **Manager:** <span style="color:blue">Jens</span>
-- **DevOps:** <span style="color:blue">Jens</span>
+- **Manager:** **Jens**
+- **DevOps:** **Jens**
 - **Repo:** [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)
 - **Team:**
-  - <span style="color:blue">Jens</span>
+  - **Jens**
 
 ### Storage & distribution error endpoint
 
 - **Description:** Reporting endpoint where any user of the data storage and distribution protocol can signal peer failures, will be deployed on error.joystream.org.
-- **Manager:** <span style="color:blue">Alex</span>
-- **DevsOps:** <span style="color:blue">Mokhtar</span>
-- **Repo:** TBD by <span style="color:blue">Alex</span>
+- **Manager:** **Alex**
+- **DevsOps:** **Mokhtar**
+- **Repo:** TBD by **Alex**
 - **Team:**
-  - <span style="color:blue">Alex</span>.
-  - <span style="color:blue">Mokhtar</span>.
+  - **Alex**.
+  - **Mokhtar**.
 - **Note:**
   - Check out Logstash/Kibana/Mixpanel/Splunk
 
 ### Faucet service backend
 
 - **Description:** Free token dispenser
-- **Manager:** <span style="color:blue">Mokhtar</span>
-- **DevOps:** <span style="color:blue">Mokhtar</span>
+- **Manager:** **Mokhtar**
+- **DevOps:** **Mokhtar**
 - **Repo (private):** [substrate-faucet](https://github.com/Joystream/substrate-faucet)
 - **Team:**
-  - <span style="color:blue">Mokhtar</span>
+  - **Mokhtar**
 - **Tasks:**
   - Shouldn’t need much changes on backend, if using google captcha in pioneer.
   - Update README with instructions on how to deploy backend.
@@ -497,10 +483,10 @@ new roles
 ### Payout Tool
 
 - **Description:** Tool to compute payouts to relevant parties on testnet
-- **Manager:** <span style="color:blue">Martin</span>
+- **Manager:** **Martin**
 - **Repo (private):** [testnet-payout-scripts](https://github.com/Joystream/testnet-payout-scripts)
 - **Team:**
-  - <span style="color:blue">Martin</span>
+  - **Martin**
 - **Tasks:**
   - Update to cover storage providers
 
@@ -509,20 +495,20 @@ new roles
 ### Payouts
 
 - **Description:** Conduct regular payouts
-- **Manager:** <span style="color:blue">Martin</span>
+- **Manager:** **Martin**
 - **Team:**
-  - <span style="color:blue">Martin</span>
+  - **Martin**
 - **Schedule:**
-  - Storage and Validator get payouts every fifth day
-  - Counil gets one time payout after council upgrade
+  - Storage and Validator get payouts mondays at ~1100GMT
+  - Counil gets payouts ~10:00GMT day after election and, if applicable, vote.
 
 ### Support
 
 - **Description:** Provide support to users enaging with testnet functionality and campaigns
-- **Manager:** <span style="color:blue">Jaydip</span>
+- **Manager:** **Jaydip**
 - **Team:**
-  - <span style="color:blue">Jaydip</span>
-  - <span style="color:blue">Martin</span>
+  - **Jaydip**
+  - **Martin**
 - **Duration:**
   - Very high availability in the week following releases
   - No more than 24 hour lag in response to queries after that
@@ -532,8 +518,6 @@ new roles
   - RocketChat
 
 ## Milestones
-
-<span style="color:blue">Martin</span> puts on Github.
 
 1. 29 March: Athens Runtime Testnet
 2. 02 April: Runtime Upgrade

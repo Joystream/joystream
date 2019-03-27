@@ -1,5 +1,11 @@
-<p align="center"><img width=300px src="okr-logo.png"></p>
-<p align="center" style="font-size:100px;font-weight:100;">Meetings</p>
+<p align="center"><img src="meetings-headline.png"></p>
+
+<div align="center">
+  <h4>Take a look at what we :loudspeaker: talk :loudspeaker: about, our :pencil: meeting notes :pencil:, and join if you want! </h4>
+</div>
+<div align="center">
+  <h5>The line between bureaucracy and rigour is 1px thin, but what are we to do? :pray:</h5>
+</div>
 
 # Table of contents
 
@@ -19,7 +25,6 @@ This is the index of past meetings with itineraries, they should all be stored i
 | :-------------  | :-------------   |:-------------:            | :-----:                                                                                         | :-----:   |
 | x               | x                | x                         | x                                                                                               | x         |
 
-
 # Itinerary Template
 
 - **Nr:** `meeting identifier`
@@ -30,7 +35,7 @@ This is the index of past meetings with itineraries, they should all be stored i
 - **Lead**: `person is responsible for time keeping, note taking and post-meeting`
 - **Participants**: `persons known to be participating in advance`
   - `Name of person`
-  - `...``
+  - `...`
 - **Agenda:**
 
 | Time Required         | Item            | Decision  |
