@@ -66,7 +66,7 @@ fn update_existing() {
         assert_eq!(*System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::ApplyExtrinsic(0),
-                event: MetaEvent::data_object_type_registry(data_object_type_registry::RawEvent::DataObjectTypeAdded(DEFAULT_FIRST_ID)),
+                event: MetaEvent::data_object_type_registry(data_object_type_registry::RawEvent::DataObjectTypeRegistered(DEFAULT_FIRST_ID)),
             }
         );
 
@@ -125,7 +125,7 @@ fn activate_existing() {
         assert_eq!(*System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::ApplyExtrinsic(0),
-                event: MetaEvent::data_object_type_registry(data_object_type_registry::RawEvent::DataObjectTypeAdded(DEFAULT_FIRST_ID)),
+                event: MetaEvent::data_object_type_registry(data_object_type_registry::RawEvent::DataObjectTypeRegistered(DEFAULT_FIRST_ID)),
             }
         );
 

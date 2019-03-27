@@ -25,7 +25,6 @@ const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1;
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct DataObjectType<T: Trait> {
-    // If the OT is registered, an ID must exist, otherwise it's a new OT.
     pub id: Option<T::DataObjectTypeId>,
     pub description: Vec<u8>,
     pub active: bool,
@@ -52,7 +51,7 @@ decl_storage! {
 decl_event! {
     pub enum Event<T> where
         <T as Trait>::DataObjectTypeId {
-        DataObjectTypeAdded(DataObjectTypeId),
+        DataObjectTypeRegistered(DataObjectTypeId),
         DataObjectTypeUpdated(DataObjectTypeId),
     }
 }
@@ -87,7 +86,7 @@ decl_module! {
             <DataObjectTypeMap<T>>::insert(new_do_type_id, do_type);
             <NextDataObjectTypeId<T>>::mutate(|n| { *n += T::DataObjectTypeId::sa(1); });
 
-            Self::deposit_event(RawEvent::DataObjectTypeAdded(new_do_type_id));
+            Self::deposit_event(RawEvent::DataObjectTypeRegistered(new_do_type_id));
         }
 
         pub fn update_data_object_type(origin, data_object_type: DataObjectType<T>) {
