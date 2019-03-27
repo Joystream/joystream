@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use crate::storage::data_object_type_registry;
 use system;
 use parity_codec::Codec;
 use srml_support::{Parameter};
@@ -32,4 +33,17 @@ pub trait Roles<T: system::Trait> {
 
 impl<T: system::Trait> Roles<T> for () {
 	fn is_role_account(_who: &T::AccountId) -> bool { false }
+}
+
+// Data Object Types
+pub trait IsActiveDataObjectType<T: data_object_type_registry::Trait> {
+    fn is_active_data_object_type(which: &T::DataObjectTypeId) -> bool {
+        false
+    }
+}
+
+pub trait IsActiveMember<T: system::Trait> {
+    fn is_active_member(account_id: &T::AccountId) -> bool {
+        false
+    }
 }

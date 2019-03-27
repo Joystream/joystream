@@ -16,10 +16,12 @@ extern crate parity_codec_derive;
 
 pub mod governance;
 use governance::{election, council, proposals};
+pub mod storage;
+use storage::{data_object_type_registry};
 mod memo;
+mod traits;
 mod membership;
 use membership::members;
-mod traits;
 mod migration;
 mod roles;
 use roles::actors;
@@ -232,6 +234,11 @@ impl memo::Trait for Runtime {
 	type Event = Event;
 }
 
+impl storage::data_object_type_registry::Trait for Runtime {
+	type Event = Event;
+	type DataObjectTypeId = u64;
+}
+
 impl members::Trait for Runtime {
 	type Event = Event;
 	type MemberId = u64;
@@ -272,6 +279,7 @@ construct_runtime!(
 		Members: members::{Module, Call, Storage, Event<T>, Config<T>},
 		Migration: migration::{Module, Call, Storage, Event<T>},
 		Actors: actors::{Module, Call, Storage, Event<T>},
+		DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 
