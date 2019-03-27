@@ -176,7 +176,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        fn on_initialize(now: T::BlockNumber) {
+        fn on_initialise(now: T::BlockNumber) {
             // clear expired requests
             if now % T::BlockNumber::sa(DEFAULT_REQUEST_CLEARING_INTERVAL) == T::BlockNumber::zero() {
                 let requests: Requests<T> = Self::role_entry_requests()
@@ -188,7 +188,7 @@ decl_module! {
             }
         }
 
-        fn on_finalize(now: T::BlockNumber) {
+        fn on_finalise(now: T::BlockNumber) {
 
             // payout rewards to actors
             for role in Self::available_roles().iter() {
