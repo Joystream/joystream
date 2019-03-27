@@ -234,7 +234,7 @@ impl memo::Trait for Runtime {
 
 impl storage::data_object_type_registry::Trait for Runtime {
 	type Event = Event;
-	type DataObjectTypeID = u64;
+	type DataObjectTypeId = u64;
 }
 
 impl members::Trait for Runtime {

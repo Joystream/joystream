@@ -8,25 +8,21 @@ use srml_support::*;
 use system::{self, Phase, EventRecord};
 
 #[test]
-fn initial_state()
-{
+fn initial_state() {
     const DEFAULT_FIRST_ID: u64 = 1000;
 
     with_externalities(&mut ExtBuilder::default()
-        .first_data_object_type_id(DEFAULT_FIRST_ID).build(), ||
-    {
+        .first_data_object_type_id(DEFAULT_FIRST_ID).build(), || {
         assert_eq!(TestDataObjectTypeRegistry::first_data_object_type_id(), DEFAULT_FIRST_ID);
     });
 }
 
 #[test]
-fn fail_register_without_root()
-{
+fn fail_register_without_root() {
     const DEFAULT_FIRST_ID: u64 = 1000;
 
     with_externalities(&mut ExtBuilder::default()
-        .first_data_object_type_id(DEFAULT_FIRST_ID).build(), ||
-    {
+        .first_data_object_type_id(DEFAULT_FIRST_ID).build(), || {
         let data: TestDataObjectType = TestDataObjectType {
             id: None,
             description: "foo".as_bytes().to_vec(),
@@ -38,13 +34,11 @@ fn fail_register_without_root()
 }
 
 #[test]
-fn succeed_register_as_root()
-{
+fn succeed_register_as_root() {
     const DEFAULT_FIRST_ID: u64 = 1000;
 
     with_externalities(&mut ExtBuilder::default()
-        .first_data_object_type_id(DEFAULT_FIRST_ID).build(), ||
-    {
+        .first_data_object_type_id(DEFAULT_FIRST_ID).build(), || {
         let data: TestDataObjectType = TestDataObjectType {
             id: None,
             description: "foo".as_bytes().to_vec(),
@@ -56,13 +50,11 @@ fn succeed_register_as_root()
 }
 
 #[test]
-fn update_existing()
-{
+fn update_existing() {
     const DEFAULT_FIRST_ID: u64 = 1000;
 
     with_externalities(&mut ExtBuilder::default()
-        .first_data_object_type_id(DEFAULT_FIRST_ID).build(), ||
-    {
+        .first_data_object_type_id(DEFAULT_FIRST_ID).build(), || {
         // First register a type
         let data: TestDataObjectType = TestDataObjectType {
             id: None,
@@ -74,7 +66,7 @@ fn update_existing()
         assert_eq!(*System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::ApplyExtrinsic(0),
-                event: MetaEvent::data_object_type_registry(data_object_type_registry::RawEvent::DataObjectTypeAdded(DEFAULT_FIRST_ID)),
+                event: MetaEvent::data_object_type_registry(data_object_type_registry::RawEvent::DataObjectTypeRegistered(DEFAULT_FIRST_ID)),
             }
         );
 
@@ -117,13 +109,11 @@ fn update_existing()
 
 
 #[test]
-fn activate_existing()
-{
+fn activate_existing() {
     const DEFAULT_FIRST_ID: u64 = 1000;
 
     with_externalities(&mut ExtBuilder::default()
-        .first_data_object_type_id(DEFAULT_FIRST_ID).build(), ||
-    {
+        .first_data_object_type_id(DEFAULT_FIRST_ID).build(), || {
         // First register a type
         let data: TestDataObjectType = TestDataObjectType {
             id: None,
@@ -135,7 +125,7 @@ fn activate_existing()
         assert_eq!(*System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::ApplyExtrinsic(0),
-                event: MetaEvent::data_object_type_registry(data_object_type_registry::RawEvent::DataObjectTypeAdded(DEFAULT_FIRST_ID)),
+                event: MetaEvent::data_object_type_registry(data_object_type_registry::RawEvent::DataObjectTypeRegistered(DEFAULT_FIRST_ID)),
             }
         );
 

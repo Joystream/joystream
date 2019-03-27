@@ -8,11 +8,10 @@ use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDeb
 use system::{self, ensure_root};
 use crate::traits;
 
-pub trait Trait: system::Trait + MaybeDebug
-{
+pub trait Trait: system::Trait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type DataObjectTypeID: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
+    type DataObjectTypeId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
         + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
 }
 
@@ -25,10 +24,8 @@ const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1;
 
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct DataObjectType<T: Trait>
-{
-    // If the OT is registered, an ID must exist, otherwise it's a new OT.
-    pub id: Option<T::DataObjectTypeID>,
+pub struct DataObjectType<T: Trait> {
+    pub id: Option<T::DataObjectTypeId>,
     pub description: Vec<u8>,
     pub active: bool,
 
@@ -39,36 +36,31 @@ pub struct DataObjectType<T: Trait>
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as DataObjectTypeRegistry
-    {
+    trait Store for Module<T: Trait> as DataObjectTypeRegistry {
         // Start at this value
-        pub FirstDataObjectTypeID get(first_data_object_type_id) config(first_data_object_type_id): T::DataObjectTypeID = T::DataObjectTypeID::sa(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
+        pub FirstDataObjectTypeId get(first_data_object_type_id) config(first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::sa(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
         // Increment
-        pub NextDataObjectTypeID get(next_data_object_type_id) build(|config: &GenesisConfig<T>| config.first_data_object_type_id): T::DataObjectTypeID = T::DataObjectTypeID::sa(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
+        pub NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>| config.first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::sa(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
         // Mapping of Data object types
-        pub DataObjectTypeMap get(data_object_type): map T::DataObjectTypeID => Option<DataObjectType<T>>;
+        pub DataObjectTypeMap get(data_object_type): map T::DataObjectTypeId => Option<DataObjectType<T>>;
     }
 }
 
 decl_event! {
     pub enum Event<T> where
-        <T as Trait>::DataObjectTypeID
-    {
-        DataObjectTypeAdded(DataObjectTypeID),
-        DataObjectTypeUpdated(DataObjectTypeID),
+        <T as Trait>::DataObjectTypeId {
+        DataObjectTypeRegistered(DataObjectTypeId),
+        DataObjectTypeUpdated(DataObjectTypeId),
     }
 }
 
 
 
-impl<T: Trait> traits::IsActiveDataObjectType<T> for Module<T>
-{
-    fn is_active_data_object_type(which: &T::DataObjectTypeID) -> bool
-    {
-        match Self::ensure_data_object_type(*which)
-        {
+impl<T: Trait> traits::IsActiveDataObjectType<T> for Module<T> {
+    fn is_active_data_object_type(which: &T::DataObjectTypeId) -> bool {
+        match Self::ensure_data_object_type(*which) {
             Ok(do_type) => do_type.active,
             Err(_err) => false
         }
@@ -77,12 +69,10 @@ impl<T: Trait> traits::IsActiveDataObjectType<T> for Module<T>
 
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin
-    {
+    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        pub fn register_data_object_type(origin, data_object_type: DataObjectType<T>)
-        {
+        pub fn register_data_object_type(origin, data_object_type: DataObjectType<T>) {
             ensure_root(origin)?;
             ensure!(data_object_type.id.is_none(), MSG_REQUIRE_NEW_DO_TYPE);
 
@@ -94,13 +84,12 @@ decl_module! {
             };
 
             <DataObjectTypeMap<T>>::insert(new_do_type_id, do_type);
-            <NextDataObjectTypeID<T>>::mutate(|n| { *n += T::DataObjectTypeID::sa(1); });
+            <NextDataObjectTypeId<T>>::mutate(|n| { *n += T::DataObjectTypeId::sa(1); });
 
-            Self::deposit_event(RawEvent::DataObjectTypeAdded(new_do_type_id));
+            Self::deposit_event(RawEvent::DataObjectTypeRegistered(new_do_type_id));
         }
 
-        pub fn update_data_object_type(origin, data_object_type: DataObjectType<T>)
-        {
+        pub fn update_data_object_type(origin, data_object_type: DataObjectType<T>) {
             ensure_root(origin)?;
             ensure!(data_object_type.id.is_some(), MSG_REQUIRE_DO_TYPE_ID);
 
@@ -118,8 +107,7 @@ decl_module! {
         // Activate and deactivate functions as separate functions, because
         // toggling DO types is likely a more common operation than updating
         // other aspects.
-        pub fn activate_data_object_type(origin, id: T::DataObjectTypeID)
-        {
+        pub fn activate_data_object_type(origin, id: T::DataObjectTypeId) {
             ensure_root(origin)?;
             let mut do_type = Self::ensure_data_object_type(id)?;
 
@@ -130,8 +118,7 @@ decl_module! {
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
 
-        pub fn deactivate_data_object_type(origin, id: T::DataObjectTypeID)
-        {
+        pub fn deactivate_data_object_type(origin, id: T::DataObjectTypeId) {
             ensure_root(origin)?;
             let mut do_type = Self::ensure_data_object_type(id)?;
 
@@ -145,10 +132,8 @@ decl_module! {
     }
 }
 
-impl <T: Trait> Module<T>
-{
-    fn ensure_data_object_type(id: T::DataObjectTypeID) -> Result<DataObjectType<T>, &'static str>
-    {
+impl <T: Trait> Module<T> {
+    fn ensure_data_object_type(id: T::DataObjectTypeId) -> Result<DataObjectType<T>, &'static str> {
         return Self::data_object_type(&id).ok_or(MSG_DO_TYPE_NOT_FOUND);
     }
 }
