@@ -24,7 +24,6 @@ fn fail_register_without_root() {
     with_externalities(&mut ExtBuilder::default()
         .first_data_object_type_id(DEFAULT_FIRST_ID).build(), || {
         let data: TestDataObjectType = TestDataObjectType {
-            id: None,
             description: "foo".as_bytes().to_vec(),
             active: false,
         };
@@ -40,7 +39,6 @@ fn succeed_register_as_root() {
     with_externalities(&mut ExtBuilder::default()
         .first_data_object_type_id(DEFAULT_FIRST_ID).build(), || {
         let data: TestDataObjectType = TestDataObjectType {
-            id: None,
             description: "foo".as_bytes().to_vec(),
             active: false,
         };
@@ -57,7 +55,6 @@ fn update_existing() {
         .first_data_object_type_id(DEFAULT_FIRST_ID).build(), || {
         // First register a type
         let data: TestDataObjectType = TestDataObjectType {
-            id: None,
             description: "foo".as_bytes().to_vec(),
             active: false,
         };
@@ -70,33 +67,17 @@ fn update_existing() {
             }
         );
 
-
-        // Now update it with new data - we need the ID to be the same as in
-        // returned by the previous call. First, though, try and fail without
-        let updated1: TestDataObjectType = TestDataObjectType {
-            id: None,
+        // Try updating with a bad ID
+        let updated: TestDataObjectType = TestDataObjectType {
             description: "bar".as_bytes().to_vec(),
             active: false,
         };
-        let res = TestDataObjectTypeRegistry::update_data_object_type(Origin::ROOT, updated1);
-        assert!(res.is_err());
-
-        // Now try with a bad ID
-        let updated2: TestDataObjectType = TestDataObjectType {
-            id: Some(DEFAULT_FIRST_ID + 1),
-            description: "bar".as_bytes().to_vec(),
-            active: false,
-        };
-        let res = TestDataObjectTypeRegistry::update_data_object_type(Origin::ROOT, updated2);
+        let updated2 = updated.clone();
+        let res = TestDataObjectTypeRegistry::update_data_object_type(Origin::ROOT, DEFAULT_FIRST_ID + 1, updated);
         assert!(res.is_err());
 
         // Finally with an existing ID, it should work.
-        let updated3: TestDataObjectType = TestDataObjectType {
-            id: Some(DEFAULT_FIRST_ID),
-            description: "bar".as_bytes().to_vec(),
-            active: false,
-        };
-        let res = TestDataObjectTypeRegistry::update_data_object_type(Origin::ROOT, updated3);
+        let res = TestDataObjectTypeRegistry::update_data_object_type(Origin::ROOT, DEFAULT_FIRST_ID, updated2);
         assert!(res.is_ok());
         assert_eq!(*System::events().last().unwrap(),
             EventRecord {
@@ -116,7 +97,6 @@ fn activate_existing() {
         .first_data_object_type_id(DEFAULT_FIRST_ID).build(), || {
         // First register a type
         let data: TestDataObjectType = TestDataObjectType {
-            id: None,
             description: "foo".as_bytes().to_vec(),
             active: false,
         };

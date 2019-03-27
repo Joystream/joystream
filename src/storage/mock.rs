@@ -77,4 +77,4 @@ impl ExtBuilder {
 
 pub type System = system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
-pub type TestDataObjectType = data_object_type_registry::DataObjectType<Test>;
+pub type TestDataObjectType = data_object_type_registry::DataObjectType;
