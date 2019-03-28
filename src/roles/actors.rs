@@ -277,7 +277,7 @@ decl_module! {
             ensure!(accounts_in_role.len() < role_parameters.max_actors as usize, "role slots full");
 
             // ensure the actor account has enough balance
-            ensure!(T::Currency::free_balance(&actor_account) >= role_parameters.min_stake, "");
+            ensure!(T::Currency::free_balance(&actor_account) >= role_parameters.min_stake, "not enough balance to stake");
 
             <AccountsByRole<T>>::mutate(role, |accounts| accounts.push(actor_account.clone()));
             <AccountsByMember<T>>::mutate(&member_id, |accounts| accounts.push(actor_account.clone()));
