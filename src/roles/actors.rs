@@ -40,7 +40,7 @@ pub struct RoleParameters<T: Trait> {
     pub unbonding_period: T::BlockNumber,
 
     // minimum amount of time before being able to unstake
-    pub bonding_time: T::BlockNumber,
+    pub bonding_period: T::BlockNumber,
 
     // minimum period required to be in service. unbonding before this time is highly penalized
     pub min_service_period: T::BlockNumber,
