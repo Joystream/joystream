@@ -50,7 +50,8 @@ pub struct RoleParameters<T: Trait> {
     // not delivering required level of service.
     pub startup_grace_period: T::BlockNumber,
 
-    // entry_request_fee: BalanceOf<T>,
+    // small fee burned to make a request to enter role
+    pub entry_request_fee: BalanceOf<T>,
 }
 
 #[derive(Encode, Decode, Clone)]
@@ -245,6 +246,11 @@ decl_module! {
             ensure!(Self::role_is_available(role), "inactive role");
 
             let role_parameters = Self::ensure_role_parameters(role)?;
+
+            // pay (burn) entry fee - spam filter
+            let fee = role_parameters.entry_request_fee;
+            ensure!(T::Currency::can_slash(&sender, fee), "cannot pay role entry request fee");
+            let _ = T::Currency::slash(&sender, fee);
 
             <RoleEntryRequests<T>>::mutate(|requests| {
                 let expires = <system::Module<T>>::block_number()+ T::BlockNumber::sa(REQUEST_LIFETIME);

@@ -38,6 +38,7 @@ impl<T: Trait> Module<T> {
             bonding_time: T::BlockNumber::sa(600),
             min_service_period: T::BlockNumber::sa(600),
             startup_grace_period: T::BlockNumber::sa(600),
+            entry_request_fee: BalanceOf::<T>::sa(50),
         });
         <actors::Module<T>>::set_available_roles(vec![actors::Role::Storage]);
 
