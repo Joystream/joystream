@@ -182,9 +182,9 @@ impl balances::Trait for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = u128;
 	/// What to do if an account's free balance gets zeroed.
-	type OnFreeBalanceZero = Staking;
+	type OnFreeBalanceZero = ();
 	/// What to do if a new account is created.
-	type OnNewAccount = Indices;
+	type OnNewAccount = ();
 	/// Restrict whether an account can transfer funds. We don't place any further restrictions.
 	type EnsureAccountLiquid = Staking;
 	/// The uniquitous event type.

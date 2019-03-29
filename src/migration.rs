@@ -1,13 +1,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::{StorageValue, dispatch::Result, decl_module, decl_storage, decl_event, ensure};
+use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_storage, decl_event, ensure};
+use runtime_primitives::traits::{As};
 use system;
 use rstd::prelude::*;
 use runtime_io::print;
 use crate::{VERSION};
 use crate::membership::members;
+use {indices};
 
-pub trait Trait: system::Trait + members::Trait {
+pub trait Trait: system::Trait + members::Trait + indices::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
@@ -39,6 +41,12 @@ impl<T: Trait> Module<T> {
         print("running runtime initializers");
 
         <members::Module<T>>::initialize_storage();
+
+
+        // Clear account indices
+        for i in 0..65535 {
+            <indices::EnumSet<T>>::remove(&<T as indices::Trait>::AccountIndex::sa(i));
+        }
 
         // ...
         // add initialization of other modules introduced in this runtime
