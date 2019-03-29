@@ -7,7 +7,7 @@ use srml_support::{StorageMap, decl_module, decl_storage, decl_event, ensure, Pa
 use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
 use system::{self, ensure_signed};
 use primitives::{Ed25519AuthorityId};
-use crate::traits::{IsActiveMember, IsActiveDataObjectType};
+use crate::traits::{IsActiveMember, IsActiveDataObjectType, ContentIdExists};
 use crate::membership::{members};
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
 
@@ -72,6 +72,14 @@ decl_event! {
     }
 }
 
+impl<T: Trait> ContentIdExists<T> for Module<T> {
+    fn has_content(which: &T::ContentId) -> bool {
+        match Self::content(*which) {
+            Some(_content) => true,
+            None => false,
+        }
+    }
+}
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
