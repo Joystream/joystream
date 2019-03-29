@@ -243,6 +243,7 @@ impl storage::data_directory::Trait for Runtime
 	type Event = Event;
 	type ContentId = ContentId;
 	type IsActiveMember = Members;
+	type IsActiveDataObjectType = DataObjectTypeRegistry;
 }
 
 impl members::Trait for Runtime {

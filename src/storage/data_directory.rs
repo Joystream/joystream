@@ -7,7 +7,7 @@ use srml_support::{StorageMap, decl_module, decl_storage, decl_event, ensure, Pa
 use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
 use system::{self, ensure_signed};
 use primitives::{Ed25519AuthorityId};
-use crate::traits::{IsActiveMember};
+use crate::traits::{IsActiveMember, IsActiveDataObjectType};
 use crate::membership::{members};
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
 
@@ -18,11 +18,14 @@ pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
         + MaybeSerializeDebug + PartialEq;
 
     type IsActiveMember: IsActiveMember<Self>;
+    type IsActiveDataObjectType: IsActiveDataObjectType<Self>;
 }
 
 static MSG_DUPLICATE_CID: &str = "Content with this ID already exists!";
 static MSG_CID_NOT_FOUND: &str = "Content with this ID not found!";
 static MSG_LIAISON_REQUIRED: &str = "Only the liaison for the content may modify its status!";
+static MSG_CREATOR_MUST_BE_MEMBER: &str = "Only active members may create content!";
+static MSG_DO_TYPE_MUST_BE_ACTIVE: &str = "Cannot create content for inactive of missing data object type!";
 
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
@@ -78,11 +81,14 @@ decl_module! {
                            id: T::ContentId, size: u64) {
             // Origin has to be a member
             let who = ensure_signed(origin).clone().unwrap();
-            T::IsActiveMember::is_active_member(&who);
-            // TODO Self::is_active_member(&who);
+            if !T::IsActiveMember::is_active_member(&who) {
+                return Err(MSG_CREATOR_MUST_BE_MEMBER);
+            }
 
             // Data object type has to be active
-            // TODO
+            if !T::IsActiveDataObjectType::is_active_data_object_type(&data_object_type_id) {
+                return Err(MSG_DO_TYPE_MUST_BE_ACTIVE);
+            }
 
             // We essentially accept the content ID and size at face value. All we
             // need to know is that it doesn't yet exist.
