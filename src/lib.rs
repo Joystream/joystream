@@ -17,7 +17,7 @@ extern crate parity_codec_derive;
 pub mod governance;
 use governance::{election, council, proposals};
 pub mod storage;
-use storage::{data_object_type_registry, data_directory, data_object_storage_registry};
+use storage::{data_object_type_registry, data_directory, data_object_storage_registry, downloads};
 mod memo;
 mod traits;
 mod membership;
@@ -246,6 +246,13 @@ impl storage::data_directory::Trait for Runtime
 	type IsActiveDataObjectType = DataObjectTypeRegistry;
 }
 
+impl storage::downloads::Trait for Runtime
+{
+	type Event = Event;
+	type DownloadSessionId = u64;
+	type ContentHasStorage = DataObjectStorageRegistry;
+}
+
 impl storage::data_object_storage_registry::Trait for Runtime
 {
 	type Event = Event;
@@ -291,6 +298,7 @@ construct_runtime!(
 		DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
 		DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
 		DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
+		DownloadSessions: downloads::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 
