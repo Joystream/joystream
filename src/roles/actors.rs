@@ -23,12 +23,12 @@ pub struct RoleParameters<T: Trait> {
     // minium balance required to stake to enter a role
     pub min_stake: BalanceOf<T>,
 
-    // the maximum number of spots available to fill for a role
-    pub max_actors: u32,
-
     // minimum actors to maintain - if role is unstaking
     // and remaining actors would be less that this value - prevent or punish for unstaking
     pub min_actors: u32,
+
+    // the maximum number of spots available to fill for a role
+    pub max_actors: u32,
 
     // fixed amount of tokens paid to actors' primary account
     pub reward: BalanceOf<T>,
@@ -36,11 +36,11 @@ pub struct RoleParameters<T: Trait> {
     // payouts are made at this block interval
     pub reward_period: T::BlockNumber,
 
-    // how long tokens remain locked for after unstaking
-    pub unbonding_period: T::BlockNumber,
-
     // minimum amount of time before being able to unstake
     pub bonding_period: T::BlockNumber,
+
+    // how long tokens remain locked for after unstaking
+    pub unbonding_period: T::BlockNumber,
 
     // minimum period required to be in service. unbonding before this time is highly penalized
     pub min_service_period: T::BlockNumber,
@@ -82,19 +82,19 @@ decl_storage! {
         Parameters get(parameters) : map Role => Option<RoleParameters<T>>;
 
         /// the roles members can enter into
-        AvailableRoles get(available_roles) : Vec<Role>; // = vec![Role::Storage];
+        AvailableRoles get(available_roles) : Vec<Role>;
 
         /// Actors list
-        Actors get(actors) : Vec<T::AccountId>;
+        ActorAccountIds get(actor_account_ids) : Vec<T::AccountId>;
 
         /// actor accounts mapped to their actor
-        ActorsByAccountId get(actors_by_account_id) : map T::AccountId => Option<Actor<T>>;
+        ActorByAccountId get(actor_by_account_id) : map T::AccountId => Option<Actor<T>>;
 
         /// actor accounts associated with a role
-        AccountsByRole get(accounts_by_role) : map Role => Vec<T::AccountId>;
+        AccountIdsByRole get(account_ids_by_role) : map Role => Vec<T::AccountId>;
 
         /// actor accounts associated with a member id
-        AccountsByMember get(accounts_by_member) : map MemberId<T> => Vec<T::AccountId>;
+        AccountIdsByMemberId get(account_ids_by_member_id) : map MemberId<T> => Vec<T::AccountId>;
 
         /// tokens locked until given block number
         Bondage get(bondage) : map T::AccountId => T::BlockNumber;
@@ -123,7 +123,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_actor(role_key: &T::AccountId) -> Result<Actor<T>, &'static str> {
-        Self::actors_by_account_id(role_key).ok_or("not role key")
+        Self::actor_by_account_id(role_key).ok_or("not role key")
     }
 
     fn ensure_actor_is_member(role_key: &T::AccountId, member_id: MemberId<T>)
@@ -144,19 +144,19 @@ impl<T: Trait> Module<T> {
     // Mutating
 
     fn remove_actor_from_service(actor_account: T::AccountId, role: Role, member_id: MemberId<T>) {
-        let accounts: Vec<T::AccountId> = Self::accounts_by_role(role)
+        let accounts: Vec<T::AccountId> = Self::account_ids_by_role(role)
             .into_iter()
             .filter(|account| !(*account == actor_account))
             .collect();
-        <AccountsByRole<T>>::insert(role, accounts);
+        <AccountIdsByRole<T>>::insert(role, accounts);
 
-        let accounts: Vec<T::AccountId> = Self::accounts_by_member(&member_id)
+        let accounts: Vec<T::AccountId> = Self::account_ids_by_member_id(&member_id)
             .into_iter()
             .filter(|account| !(*account == actor_account))
             .collect();
-        <AccountsByMember<T>>::insert(&member_id, accounts);
+        <AccountIdsByMemberId<T>>::insert(&member_id, accounts);
 
-        <ActorsByAccountId<T>>::remove(&actor_account);
+        <ActorByAccountId<T>>::remove(&actor_account);
     }
 
     fn apply_unstake(actor_account: T::AccountId, role: Role, member_id: MemberId<T>, unbonding_period: T::BlockNumber) {
@@ -169,7 +169,7 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> Roles<T> for Module<T> {
     fn is_role_account(account_id: &T::AccountId) -> bool {
-        <ActorsByAccountId<T>>::exists(account_id) || <Bondage<T>>::exists(account_id)
+        <ActorByAccountId<T>>::exists(account_id) || <Bondage<T>>::exists(account_id)
     }
 }
 
@@ -195,8 +195,8 @@ decl_module! {
             for role in Self::available_roles().iter() {
                 if let Some(params) = Self::parameters(role) {
                     if !(now % params.reward_period == T::BlockNumber::zero()) { continue }
-                    let accounts = Self::accounts_by_role(role);
-                    for actor in accounts.into_iter().map(|account| Self::actors_by_account_id(account)) {
+                    let accounts = Self::account_ids_by_role(role);
+                    for actor in accounts.into_iter().map(|account| Self::actor_by_account_id(account)) {
                         if let Some(actor) = actor {
                             if now > actor.joined_at + params.reward_period {
                                 T::Currency::reward(&actor.account, params.reward);
@@ -208,7 +208,7 @@ decl_module! {
 
             if now % T::BlockNumber::sa(100) == T::BlockNumber::zero() {
                 // clear unbonded accounts
-                let actors: Vec<T::AccountId> = Self::actors()
+                let actor_accounts: Vec<T::AccountId> = Self::actor_account_ids()
                     .into_iter()
                     .filter(|account| {
                         if <Bondage<T>>::exists(account) {
@@ -223,7 +223,7 @@ decl_module! {
                         }
                     })
                     .collect();
-                <Actors<T>>::put(actors);
+                <ActorAccountIds<T>>::put(actor_accounts);
             }
 
             // eject actors not staking the minimum
@@ -277,7 +277,7 @@ decl_module! {
             ensure!(Self::role_is_available(role), "");
             let role_parameters = Self::ensure_role_parameters(role)?;
 
-            let accounts_in_role = Self::accounts_by_role(role);
+            let accounts_in_role = Self::account_ids_by_role(role);
 
             // ensure there is an empty slot for the role
             ensure!(accounts_in_role.len() < role_parameters.max_actors as usize, "role slots full");
@@ -285,16 +285,16 @@ decl_module! {
             // ensure the actor account has enough balance
             ensure!(T::Currency::free_balance(&actor_account) >= role_parameters.min_stake, "not enough balance to stake");
 
-            <AccountsByRole<T>>::mutate(role, |accounts| accounts.push(actor_account.clone()));
-            <AccountsByMember<T>>::mutate(&member_id, |accounts| accounts.push(actor_account.clone()));
+            <AccountIdsByRole<T>>::mutate(role, |accounts| accounts.push(actor_account.clone()));
+            <AccountIdsByMemberId<T>>::mutate(&member_id, |accounts| accounts.push(actor_account.clone()));
             <Bondage<T>>::insert(&actor_account, T::BlockNumber::max_value());
-            <ActorsByAccountId<T>>::insert(&actor_account, Actor {
+            <ActorByAccountId<T>>::insert(&actor_account, Actor {
                 member_id,
                 account: actor_account.clone(),
                 role,
                 joined_at: <system::Module<T>>::block_number()
             });
-            <Actors<T>>::mutate(|actors| actors.push(actor_account.clone()));
+            <ActorAccountIds<T>>::mutate(|accounts| accounts.push(actor_account.clone()));
 
             let requests: Requests<T> = Self::role_entry_requests()
                 .into_iter()
