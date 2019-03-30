@@ -6,7 +6,7 @@ use parity_codec_derive::{Encode, Decode};
 use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, Parameter, dispatch};
 use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
 use system::{self, ensure_signed};
-use crate::traits::{IsActiveMember, ContentIdExists};
+use crate::traits::{IsActiveMember, ContentIdExists, ContentHasStorage};
 use crate::storage::data_directory::Trait as DDTrait;
 
 pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
@@ -43,6 +43,9 @@ decl_storage! {
 
         // Mapping of Data object types
         pub DataObjectStorageRelationshipMap get(data_object_storage_relationship): map T::DataObjectStorageRelationshipId => Option<DataObjectStorageRelationship<T>>;
+
+        // Keep a list of storage relationships per CID
+        pub DataObjectStorageRelationships get(data_object_storage_relationships): map T::ContentId => Vec<T::DataObjectStorageRelationshipId>;
     }
 }
 
@@ -56,6 +59,22 @@ decl_event! {
         DataObjectStorageRelationshipReadyUpdated(DataObjectStorageRelationshipId, bool),
     }
 }
+
+impl<T: Trait> ContentHasStorage<T> for Module<T> {
+    fn has_storage_provider(which: &T::ContentId) -> bool {
+        let dosr_list = Self::data_object_storage_relationships(which);
+        return dosr_list.iter().any(|&dosr_id| Self::data_object_storage_relationship(dosr_id).unwrap().ready);
+    }
+
+    fn is_ready_at_storage_provider(which: &T::ContentId, provider: &T::AccountId) -> bool {
+        let dosr_list = Self::data_object_storage_relationships(which);
+        return dosr_list.iter().any(|&dosr_id| {
+            let dosr = Self::data_object_storage_relationship(dosr_id).unwrap();
+            dosr.storage_provider == *provider && dosr.ready
+        });
+    }
+}
+
 
 
 decl_module! {
@@ -85,6 +104,11 @@ decl_module! {
 
             <DataObjectStorageRelationshipMap<T>>::insert(new_id, dosr);
             <NextDataObjectStorageRelationshipId<T>>::mutate(|n| { *n += T::DataObjectStorageRelationshipId::sa(1); });
+
+            // Also add the DOSR to the list of DOSRs for the CID. Uniqueness is guaranteed
+            // by the map, so we can just append the new_id to the list.
+            let mut dosr_list = Self::data_object_storage_relationships(cid);
+            dosr_list.push(new_id);
 
             // Emit event
             Self::deposit_event(RawEvent::DataObjectStorageRelationshipAdded(new_id, cid, who));
