@@ -4,6 +4,7 @@ use rstd::prelude::*;
 pub use super::{data_object_type_registry, data_directory};
 pub use system;
 use crate::traits;
+use runtime_io::with_externalities;
 
 pub use primitives::{H256, Blake2Hasher};
 pub use runtime_primitives::{
@@ -115,3 +116,12 @@ impl ExtBuilder {
 pub type System = system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
 pub type TestDataObjectType = data_object_type_registry::DataObjectType<Test>;
+pub type TestDataDirectory = data_directory::Module<Test>;
+pub type TestDataObject = data_directory::DataObject<Test>;
+
+
+pub const TEST_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1000;
+pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
+    with_externalities(&mut ExtBuilder::default()
+        .first_data_object_type_id(TEST_FIRST_DATA_OBJECT_TYPE_ID).build(), || f())
+}
