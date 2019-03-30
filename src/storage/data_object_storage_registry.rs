@@ -22,6 +22,8 @@ pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
 }
 
 static MSG_CID_NOT_FOUND: &str = "Content with this ID not found!";
+static MSG_DOSR_NOT_FOUND: &str = "No data object storage relationship found for this ID.";
+static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str = "Only the storage provider in a DOSR can decide whether they're ready.";
 
 const DEFAULT_FIRST_DATA_OBJECT_STORAGE_RELATIONSHIP_ID: u64 = 1;
 
@@ -65,7 +67,7 @@ decl_module! {
         pub fn add_data_object_storage_relationship(origin, cid: T::ContentId) {
             // Origin has to be a storage provider
             let who = ensure_signed(origin).clone().unwrap();
-            // TODO
+            // TODO check for being staked as a storage provider
             // if !T::IsActiveMember::is_active_member(&who) {
             //     return Err(MSG_CREATOR_MUST_BE_MEMBER);
             // }
@@ -89,10 +91,38 @@ decl_module! {
             // Emit event
             Self::deposit_event(RawEvent::DataObjectStorageRelationshipAdded(new_id, cid, who));
         }
-    }
 
-    // TODO storage provider may flip their own ready state
+        // A storage provider may flip their own ready state, but nobody else.
+        pub fn set_data_object_storage_relationship_ready(origin, id: T::DataObjectStorageRelationshipId) {
+            Self::toggle_dosr_ready(origin, id, true);
+        }
+
+        pub fn unset_data_object_storage_relationship_ready(origin, id: T::DataObjectStorageRelationshipId) {
+            Self::toggle_dosr_ready(origin, id, false);
+        }
+    }
 }
 
 impl <T: Trait> Module<T> {
+    fn toggle_dosr_ready(origin: T::Origin, id: T::DataObjectStorageRelationshipId, ready: bool) -> dispatch::Result
+    {
+        // Origin has to be the storage provider mentioned in the DOSR
+        let who = ensure_signed(origin).clone().unwrap();
+
+        // For that, we need to fetch the identified DOSR
+        let found = Self::data_object_storage_relationship(id).ok_or(MSG_DOSR_NOT_FOUND);
+        let mut dosr = found.unwrap();
+        if dosr.storage_provider != who {
+            return Err(MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY);
+        }
+
+        // Flip to ready
+        dosr.ready = ready;
+
+        // Update DOSR and fire event.
+        <DataObjectStorageRelationshipMap<T>>::insert(id, dosr);
+        Self::deposit_event(RawEvent::DataObjectStorageRelationshipReadyUpdated(id, true));
+
+        Ok(())
+    }
 }
