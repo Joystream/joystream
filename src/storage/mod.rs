@@ -6,4 +6,3 @@ pub mod data_object_storage_registry;
 pub mod downloads;
 
 mod mock;
-mod tests;
