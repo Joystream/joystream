@@ -3,8 +3,8 @@
 use rstd::prelude::*;
 use parity_codec::Codec;
 use parity_codec_derive::{Encode, Decode};
-use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, ensure, Parameter, dispatch};
-use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
+use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, Parameter};
+use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug};
 use system::{self, ensure_signed};
 use crate::traits::{ContentIdExists, ContentHasStorage};
 use crate::storage::data_object_storage_registry::Trait as DOSRTrait;
