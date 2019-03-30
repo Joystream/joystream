@@ -94,11 +94,11 @@ decl_module! {
 
         // A storage provider may flip their own ready state, but nobody else.
         pub fn set_data_object_storage_relationship_ready(origin, id: T::DataObjectStorageRelationshipId) {
-            Self::toggle_dosr_ready(origin, id, true);
+            Self::toggle_dosr_ready(origin, id, true)?;
         }
 
         pub fn unset_data_object_storage_relationship_ready(origin, id: T::DataObjectStorageRelationshipId) {
-            Self::toggle_dosr_ready(origin, id, false);
+            Self::toggle_dosr_ready(origin, id, false)?;
         }
     }
 }
