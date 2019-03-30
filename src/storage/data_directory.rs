@@ -72,9 +72,13 @@ decl_event! {
 
 impl<T: Trait> ContentIdExists<T> for Module<T> {
     fn has_content(which: &T::ContentId) -> bool {
+        Self::content(*which).is_some()
+    }
+
+    fn get_data_object(which: &T::ContentId) -> Result<DataObject<T>, &'static str> {
         match Self::content(*which) {
-            Some(_content) => true,
-            None => false,
+            None => Err(MSG_CID_NOT_FOUND),
+            Some(data) => Ok(data),
         }
     }
 }
