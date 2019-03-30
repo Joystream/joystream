@@ -64,6 +64,7 @@ decl_event! {
         <T as Trait>::ContentId,
         <T as system::Trait>::AccountId
     {
+        // The account is the Liaison that was selected
         ContentAdded(ContentId, AccountId),
         ContentAccepted(ContentId),
         ContentRejected(ContentId),
@@ -174,5 +175,109 @@ mod tests {
     use runtime_io::with_externalities;
     use srml_support::*;
     use system::{self, Phase, EventRecord};
+
+    #[test]
+    fn succeed_adding_content() {
+        with_default_mock_builder(|| {
+            // Register a content name "foo" with 1234 bytes of type 1, which should be recognized.
+            let res = TestDataDirectory::add_content(Origin::signed(1),
+                                                     1,
+                                                     "foo".as_bytes().to_vec(),
+                                                     1234);
+            assert!(res.is_ok());
+
+            // Register the same under a different name
+            let res = TestDataDirectory::add_content(Origin::signed(1),
+                                                     1,
+                                                     "bar".as_bytes().to_vec(),
+                                                     1234);
+            assert!(res.is_ok());
+        });
+    }
+
+    #[test]
+    fn fail_adding_content_twice() {
+        with_default_mock_builder(|| {
+            // Register a content name "foo" with 1234 bytes of type 1, which should be recognized.
+            let res = TestDataDirectory::add_content(Origin::signed(1),
+                                                     1,
+                                                     "foo".as_bytes().to_vec(),
+                                                     1234);
+            assert!(res.is_ok());
+
+            // The second time must fail
+            let res = TestDataDirectory::add_content(Origin::signed(1),
+                                                     1,
+                                                     "foo".as_bytes().to_vec(),
+                                                     1234);
+            assert!(res.is_err());
+
+            // Also from a different origin must fail
+            let res = TestDataDirectory::add_content(Origin::signed(2),
+                                                     1,
+                                                     "foo".as_bytes().to_vec(),
+                                                     1234);
+            assert!(res.is_err());
+
+            // Also with a different size must fail
+            let res = TestDataDirectory::add_content(Origin::signed(2),
+                                                     1,
+                                                     "foo".as_bytes().to_vec(),
+                                                     4321);
+            assert!(res.is_err());
+        });
+    }
+
+    #[test]
+    fn accept_content_as_liaison() {
+        with_default_mock_builder(|| {
+            let res = TestDataDirectory::add_content(Origin::signed(1),
+                                                     1,
+                                                     "foo".as_bytes().to_vec(),
+                                                     1234);
+            assert!(res.is_ok());
+
+            // An appropriate event should have been fired.
+            let liaison = *match &System::events().last().unwrap().event {
+                MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(content_id, liaison)) => liaison,
+                _ => &0xdeadbeefu64, // invalid value, unlikely to match
+            };
+            assert_ne!(liaison, 0xdeadbeefu64);
+
+            // Accepting content should not work with some random origin
+            let res = TestDataDirectory::accept_content(Origin::signed(42), "foo".as_bytes().to_vec());
+            assert!(res.is_err());
+
+            // However, with the liaison as origin it should.
+            let res = TestDataDirectory::accept_content(Origin::signed(liaison), "foo".as_bytes().to_vec());
+            assert!(res.is_ok());
+        });
+    }
+
+    #[test]
+    fn reject_content_as_liaison() {
+        with_default_mock_builder(|| {
+            let res = TestDataDirectory::add_content(Origin::signed(1),
+                                                     1,
+                                                     "foo".as_bytes().to_vec(),
+                                                     1234);
+            assert!(res.is_ok());
+
+            // An appropriate event should have been fired.
+            let liaison = *match &System::events().last().unwrap().event {
+                MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(content_id, liaison)) => liaison,
+                _ => &0xdeadbeefu64, // invalid value, unlikely to match
+            };
+            assert_ne!(liaison, 0xdeadbeefu64);
+
+            // Rejecting content should not work with some random origin
+            let res = TestDataDirectory::reject_content(Origin::signed(42), "foo".as_bytes().to_vec());
+            assert!(res.is_err());
+
+            // However, with the liaison as origin it should.
+            let res = TestDataDirectory::reject_content(Origin::signed(liaison), "foo".as_bytes().to_vec());
+            assert!(res.is_ok());
+        });
+    }
 
 }
