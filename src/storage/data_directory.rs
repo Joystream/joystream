@@ -4,11 +4,9 @@ use rstd::prelude::*;
 use parity_codec::Codec;
 use parity_codec_derive::{Encode, Decode};
 use srml_support::{StorageMap, decl_module, decl_storage, decl_event, ensure, Parameter, dispatch};
-use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
+use runtime_primitives::traits::{Member, MaybeSerializeDebug, MaybeDebug};
 use system::{self, ensure_signed};
-use primitives::{Ed25519AuthorityId};
 use crate::traits::{IsActiveMember, IsActiveDataObjectType, ContentIdExists};
-use crate::membership::{members};
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
 
 pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {

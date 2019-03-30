@@ -3,12 +3,10 @@
 use rstd::prelude::*;
 use parity_codec::Codec;
 use parity_codec_derive::{Encode, Decode};
-use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, ensure, Parameter, dispatch};
+use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, Parameter, dispatch};
 use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
 use system::{self, ensure_signed};
-use primitives::{Ed25519AuthorityId};
 use crate::traits::{IsActiveMember, ContentIdExists};
-use crate::membership::{members};
 use crate::storage::data_directory::Trait as DDTrait;
 
 pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
