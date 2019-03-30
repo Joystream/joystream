@@ -4,7 +4,6 @@ use super::*;
 use super::mock::*;
 
 use runtime_io::with_externalities;
-use srml_support::*;
 use system::{self, Phase, EventRecord};
 
 #[test]

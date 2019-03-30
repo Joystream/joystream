@@ -1,8 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
-use srml_support::traits::{Currency};
-use system::{self, ensure_signed};
+use srml_support::{StorageValue, decl_module, decl_event, decl_storage, ensure};
+use system::{self};
 use runtime_primitives::traits::{As, Zero};
 use rstd::prelude::*;
 
@@ -37,7 +36,7 @@ decl_storage! {
     }
 }
 
-/// Event for this module.
+// Event for this module.
 decl_event!(
     pub enum Event<T> where <T as system::Trait>::BlockNumber {
         CouncilTermEnded(BlockNumber),
@@ -123,9 +122,7 @@ decl_module! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::governance::mock::*;
-    use parity_codec::Encode;
     use runtime_io::with_externalities;
     use srml_support::*;
 

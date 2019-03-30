@@ -1,6 +1,5 @@
 #![cfg(test)]
 
-use rstd::prelude::*;
 pub use crate::governance::{GovernanceCurrency};
 pub use super::{members};
 pub use system;
@@ -110,6 +109,5 @@ impl ExtBuilder {
     }
 }
 
-pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Members = members::Module<Test>;

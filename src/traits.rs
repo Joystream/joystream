@@ -34,7 +34,7 @@ pub trait ContentHasStorage<T: data_object_storage_registry::Trait> {
 // Membership
 
 pub trait IsActiveMember<T: system::Trait> {
-    fn is_active_member(account_id: &T::AccountId) -> bool {
+    fn is_active_member(_account_id: &T::AccountId) -> bool {
         false
     }
 }

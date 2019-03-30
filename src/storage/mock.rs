@@ -1,6 +1,5 @@
 #![cfg(test)]
 
-use rstd::prelude::*;
 pub use super::{data_object_type_registry};
 pub use system;
 

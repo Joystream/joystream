@@ -1,10 +1,13 @@
 use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
 use srml_support::traits::{Currency};
-use primitives::{storage::well_known_keys};
 use runtime_primitives::traits::{As, Hash, Zero};
 use runtime_io::print;
-use {balances, system::{self, ensure_signed}};
+use system::{self, ensure_signed};
 use rstd::prelude::*;
+
+#[cfg(test)]
+use primitives::{storage::well_known_keys};
+
 
 use super::council;
 pub use super::{ GovernanceCurrency, BalanceOf };
@@ -382,7 +385,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn end_block(now: T::BlockNumber) -> Result {
+    fn end_block(_now: T::BlockNumber) -> Result {
 
         // TODO refactor this method
 
@@ -558,7 +561,6 @@ mod tests {
         traits::{BlakeTwo256, OnFinalise, IdentityLookup},
         testing::{Digest, DigestItem, Header, UintAuthorityId}
     };
-    use system::{EventRecord, Phase};
     use srml_support::*;
 
     impl_outer_origin! {
@@ -620,7 +622,7 @@ mod tests {
 
     pub struct AnyAccountIsMember {}
     impl<T: system::Trait> IsActiveMember<T> for AnyAccountIsMember {
-        fn is_active_member(who: &T::AccountId) -> bool {
+        fn is_active_member(_who: &T::AccountId) -> bool {
             true
         }
     }

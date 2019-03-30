@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::{StorageValue, dispatch::Result, decl_module, decl_storage, decl_event, ensure};
+use srml_support::{StorageValue, decl_module, decl_storage, decl_event};
 use system;
 use rstd::prelude::*;
 use runtime_io::print;

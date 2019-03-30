@@ -1,6 +1,5 @@
 #![cfg(test)]
 
-use rstd::prelude::*;
 pub use super::{election, council, proposals, GovernanceCurrency};
 pub use system;
 use crate::traits;
@@ -20,7 +19,7 @@ impl_outer_origin! {
 
 pub struct AnyAccountIsMember {}
 impl<T: system::Trait> traits::IsActiveMember<T> for AnyAccountIsMember {
-    fn is_active_member(who: &T::AccountId) -> bool {
+    fn is_active_member(_who: &T::AccountId) -> bool {
         true
     }
 }
@@ -96,7 +95,7 @@ impl GovernanceCurrency for Test {
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-    let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
+    let t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
 
     runtime_io::TestExternalities::new(t)
 }
