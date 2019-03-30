@@ -12,7 +12,7 @@ use crate::storage::data_object_type_registry::Trait as DOTRTrait;
 pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type ContentId: Parameter + Member + Codec + Default + Copy
+    type ContentId: Parameter + Member + Codec + Default + Clone
         + MaybeSerializeDebug + PartialEq;
 
     type IsActiveMember: IsActiveMember<Self>;
@@ -72,11 +72,11 @@ decl_event! {
 
 impl<T: Trait> ContentIdExists<T> for Module<T> {
     fn has_content(which: &T::ContentId) -> bool {
-        Self::content(*which).is_some()
+        Self::content(which.clone()).is_some()
     }
 
     fn get_data_object(which: &T::ContentId) -> Result<DataObject<T>, &'static str> {
-        match Self::content(*which) {
+        match Self::content(which.clone()) {
             None => Err(MSG_CID_NOT_FOUND),
             Some(data) => Ok(data),
         }
@@ -123,20 +123,20 @@ decl_module! {
             };
 
             // If we've constructed the data, we can store it and send an event.
-            <ContentMap<T>>::insert(id, data);
+            <ContentMap<T>>::insert(id.clone(), data);
             Self::deposit_event(RawEvent::ContentAdded(id, liaison));
         }
 
         // The LiaisonJudgement can be updated, but only by the liaison.
         fn accept_content(origin, id: T::ContentId)
         {
-            Self::update_content_judgement(origin, id, LiaisonJudgement::Accepted)?;
+            Self::update_content_judgement(origin, id.clone(), LiaisonJudgement::Accepted)?;
             Self::deposit_event(RawEvent::ContentAccepted(id));
         }
 
         fn reject_content(origin, id: T::ContentId)
         {
-            Self::update_content_judgement(origin, id, LiaisonJudgement::Rejected)?;
+            Self::update_content_judgement(origin, id.clone(), LiaisonJudgement::Rejected)?;
             Self::deposit_event(RawEvent::ContentAccepted(id));
         }
     }
@@ -164,4 +164,15 @@ impl <T: Trait> Module<T> {
 
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::storage::mock::*;
+
+    use runtime_io::with_externalities;
+    use srml_support::*;
+    use system::{self, Phase, EventRecord};
+
 }

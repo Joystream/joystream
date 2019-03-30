@@ -98,7 +98,7 @@ decl_module! {
             // Let's create the entry then
             let new_id = Self::next_download_session_id();
             let session: DownloadSession<T> = DownloadSession {
-                cid: cid,
+                cid: cid.clone(),
                 consumer: who,
                 distributor: from.clone(),
                 initiated_at_block: <system::Module<T>>::block_number(),

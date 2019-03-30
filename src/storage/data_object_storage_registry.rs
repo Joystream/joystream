@@ -107,7 +107,7 @@ decl_module! {
 
             // Also add the DOSR to the list of DOSRs for the CID. Uniqueness is guaranteed
             // by the map, so we can just append the new_id to the list.
-            let mut dosr_list = Self::data_object_storage_relationships(cid);
+            let mut dosr_list = Self::data_object_storage_relationships(cid.clone());
             dosr_list.push(new_id);
 
             // Emit event

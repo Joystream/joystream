@@ -1,8 +1,9 @@
 #![cfg(test)]
 
 use rstd::prelude::*;
-pub use super::{data_object_type_registry};
+pub use super::{data_object_type_registry, data_directory};
 pub use system;
+use crate::traits;
 
 pub use primitives::{H256, Blake2Hasher};
 pub use runtime_primitives::{
@@ -20,8 +21,25 @@ impl_outer_origin! {
 impl_outer_event! {
     pub enum MetaEvent for Test {
         data_object_type_registry<T>,
+        data_directory<T>,
     }
 }
+
+
+pub struct AnyAccountIsMember {}
+impl<T: system::Trait> traits::IsActiveMember<T> for AnyAccountIsMember {
+    fn is_active_member(_who: &T::AccountId) -> bool {
+        true
+    }
+}
+
+pub struct AnyDataObjectTypeIsActive {}
+impl<T: data_object_type_registry::Trait> traits::IsActiveDataObjectType<T> for AnyDataObjectTypeIsActive {
+    fn is_active_data_object_type(_which: &T::DataObjectTypeId) -> bool {
+        true
+    }
+}
+
 
 // For testing the module, we construct most of a mock runtime. This means
 // first constructing a configuration type (`Test`) which `impl`s each of the
@@ -41,9 +59,28 @@ impl system::Trait for Test {
     type Log = DigestItem;
     type Lookup = IdentityLookup<u64>;
 }
+
 impl data_object_type_registry::Trait for Test {
     type Event = MetaEvent;
     type DataObjectTypeId = u64;
+}
+
+impl data_directory::Trait for Test {
+    type Event = MetaEvent;
+    type ContentId = Vec<u8>;
+    type IsActiveMember = AnyAccountIsMember;
+    type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
+}
+
+impl timestamp::Trait for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+}
+
+impl consensus::Trait for Test {
+    type SessionKey = UintAuthorityId;
+    type InherentOfflineReport = ();
+    type Log = DigestItem;
 }
 
 pub struct ExtBuilder {
