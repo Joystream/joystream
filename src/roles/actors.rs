@@ -73,8 +73,8 @@ pub type MemberId<T: Trait> = <T::Members as Members<T>>::Id;
 pub type Request<T: Trait> = (T::AccountId, MemberId<T>, Role, T::BlockNumber); // actor account, memberid, role, expires
 pub type Requests<T: Trait> = Vec<Request<T>>;
 
-const REQUEST_LIFETIME: u64 = 300;
-const DEFAULT_REQUEST_CLEARING_INTERVAL: u64 = 100;
+pub const REQUEST_LIFETIME: u64 = 300;
+pub const DEFAULT_REQUEST_CLEARING_INTERVAL: u64 = 100;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Actors {
@@ -118,7 +118,7 @@ decl_event! {
 }
 
 impl<T: Trait> Module<T> {
-    fn role_is_available(role: Role) -> bool {
+    fn is_role_available(role: Role) -> bool {
         Self::available_roles().into_iter().any(|r| role == r)
     }
 
@@ -243,7 +243,7 @@ decl_module! {
             ensure!(T::Members::lookup_member_id(&sender).is_err(), "account is a member");
             ensure!(!Self::is_role_account(&sender), "account already used");
 
-            ensure!(Self::role_is_available(role), "inactive role");
+            ensure!(Self::is_role_available(role), "inactive role");
 
             let role_parameters = Self::ensure_role_parameters(role)?;
 
@@ -274,7 +274,7 @@ decl_module! {
             ensure!(!Self::is_role_account(&actor_account), "account already used");
 
             // make sure role is still available
-            ensure!(Self::role_is_available(role), "");
+            ensure!(Self::is_role_available(role), "inactive role");
             let role_parameters = Self::ensure_role_parameters(role)?;
 
             let accounts_in_role = Self::account_ids_by_role(role);

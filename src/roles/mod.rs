@@ -2,5 +2,5 @@
 
 pub mod actors;
 
-//mod mock;
-//mod tests;
+mod mock;
+mod tests;
