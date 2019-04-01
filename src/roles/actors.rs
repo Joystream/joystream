@@ -56,11 +56,10 @@ pub struct RoleParameters<T: Trait> {
 
 #[derive(Encode, Decode, Clone)]
 pub struct Actor<T: Trait> {
-    member_id: MemberId<T>,
-    role: Role,
-    account: T::AccountId,
-    joined_at: T::BlockNumber,
-    // startup_grace_period_ends_at: T::BlockNumber,
+    pub member_id: MemberId<T>,
+    pub role: Role,
+    pub account: T::AccountId,
+    pub joined_at: T::BlockNumber,
 }
 
 pub trait Trait: system::Trait + GovernanceCurrency + MaybeDebug {
@@ -79,25 +78,25 @@ pub const DEFAULT_REQUEST_CLEARING_INTERVAL: u64 = 100;
 decl_storage! {
     trait Store for Module<T: Trait> as Actors {
         /// requirements to enter and maintain status in roles
-        Parameters get(parameters) : map Role => Option<RoleParameters<T>>;
+        pub Parameters get(parameters) : map Role => Option<RoleParameters<T>>;
 
         /// the roles members can enter into
-        AvailableRoles get(available_roles) : Vec<Role>;
+        pub AvailableRoles get(available_roles) : Vec<Role>;
 
         /// Actors list
-        ActorAccountIds get(actor_account_ids) : Vec<T::AccountId>;
+        pub ActorAccountIds get(actor_account_ids) : Vec<T::AccountId>;
 
         /// actor accounts mapped to their actor
-        ActorByAccountId get(actor_by_account_id) : map T::AccountId => Option<Actor<T>>;
+        pub ActorByAccountId get(actor_by_account_id) : map T::AccountId => Option<Actor<T>>;
 
         /// actor accounts associated with a role
-        AccountIdsByRole get(account_ids_by_role) : map Role => Vec<T::AccountId>;
+        pub AccountIdsByRole get(account_ids_by_role) : map Role => Vec<T::AccountId>;
 
         /// actor accounts associated with a member id
-        AccountIdsByMemberId get(account_ids_by_member_id) : map MemberId<T> => Vec<T::AccountId>;
+        pub AccountIdsByMemberId get(account_ids_by_member_id) : map MemberId<T> => Vec<T::AccountId>;
 
         /// tokens locked until given block number
-        Bondage get(bondage) : map T::AccountId => T::BlockNumber;
+        pub Bondage get(bondage) : map T::AccountId => T::BlockNumber;
 
         /// First step before enter a role is registering intent with a new account/key.
         /// This is done by sending a role_entry_request() from the new account.
@@ -106,7 +105,7 @@ decl_storage! {
         /// sufficient balance to cover the minimum stake for the role.
         /// Bonding only occurs after successful entry into a role.
         /// The request expires after REQUEST_LIFETIME blocks
-        RoleEntryRequests get(role_entry_requests) : Requests<T>;
+        pub RoleEntryRequests get(role_entry_requests) : Requests<T>;
     }
 }
 
@@ -155,6 +154,12 @@ impl<T: Trait> Module<T> {
             .filter(|account| !(*account == actor_account))
             .collect();
         <AccountIdsByMemberId<T>>::insert(&member_id, accounts);
+
+        let accounts: Vec<T::AccountId> = Self::actor_account_ids()
+            .into_iter()
+            .filter(|account| !(*account == actor_account))
+            .collect();
+        <ActorAccountIds<T>>::put(accounts);
 
         <ActorByAccountId<T>>::remove(&actor_account);
     }
