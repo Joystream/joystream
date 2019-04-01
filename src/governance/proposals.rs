@@ -630,6 +630,9 @@ mod tests {
         fn lookup_member_id(account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
             Err("not implemented!")
         }
+        fn lookup_account_by_member_id(id: Self::Id) -> Result<T::AccountId, &'static str> {
+            Err("not implemented!")
+        }
     }
 
     type System = system::Module<Test>;

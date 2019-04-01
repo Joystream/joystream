@@ -92,6 +92,11 @@ impl Members<Test> for MockMembers {
         if *who == Self::bob_account() { return Ok(Self::bob_id()); }
         Err("member not found")
     }
+    fn lookup_account_by_member_id(id: Self::Id) -> Result<u64, &'static str> {
+        if id == Self::alice_id() { return Ok(Self::alice_account()); }
+        if id == Self::bob_id() { return Ok(Self::bob_account()); }
+        Err("account not found")
+    }
 }
 
 impl actors::Trait for Test {

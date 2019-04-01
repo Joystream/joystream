@@ -188,8 +188,15 @@ impl<T: Trait> Members<T> for Module<T> {
     }
 
     fn lookup_member_id(who: &T::AccountId) -> Result<Self::Id, &'static str> {
-        let id = Self::ensure_is_member(who)?;
-        Ok(id)
+        Self::ensure_is_member(who)
+    }
+
+    fn lookup_account_by_member_id(id: Self::Id) -> Result<T::AccountId, &'static str> {
+        if <AccountIdByMemberId<T>>::exists(&id) {
+            Ok(Self::account_id_by_member_id(&id))
+        } else {
+            Err("member id doesn't exist")
+        }
     }
 }
 

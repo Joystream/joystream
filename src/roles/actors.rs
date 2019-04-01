@@ -199,7 +199,10 @@ decl_module! {
                     for actor in accounts.into_iter().map(|account| Self::actor_by_account_id(account)) {
                         if let Some(actor) = actor {
                             if now > actor.joined_at + params.reward_period {
-                                T::Currency::reward(&actor.account, params.reward);
+                                // send reward to member account - not the actor account
+                                if let Ok(member_account) = T::Members::lookup_account_by_member_id(actor.member_id) {
+                                    T::Currency::reward(&member_account, params.reward);
+                                }
                             }
                         }
                     }

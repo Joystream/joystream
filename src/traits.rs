@@ -14,6 +14,8 @@ pub trait Members<T: system::Trait> {
     fn is_active_member(account_id: &T::AccountId) -> bool;
 
     fn lookup_member_id(account_id: &T::AccountId) -> Result<Self::Id, &'static str>;
+
+    fn lookup_account_by_member_id(member_id: Self::Id) -> Result<T::AccountId, &'static str>;
 }
 
 impl<T: system::Trait> Members<T> for () {
@@ -23,6 +25,9 @@ impl<T: system::Trait> Members<T> for () {
     }
     fn lookup_member_id(account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
         Err("member not found")
+    }
+    fn lookup_account_by_member_id(member_id: Self::Id) -> Result<T::AccountId, &'static str> {
+        Err("account not found")
     }
 }
 

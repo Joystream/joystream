@@ -30,6 +30,9 @@ impl<T: system::Trait> Members<T> for MockMembership {
     fn lookup_member_id(account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
         Err("not implemented!")
     }
+    fn lookup_account_by_member_id(id: Self::Id) -> Result<T::AccountId, &'static str> {
+        Err("not implemented!")
+    }
 }
 
 // For testing the module, we construct most of a mock runtime. This means
