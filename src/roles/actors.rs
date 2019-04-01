@@ -112,7 +112,9 @@ decl_storage! {
 decl_event! {
     pub enum Event<T> where
       <T as system::Trait>::AccountId {
+        EntryRequested(AccountId, Role),
         Staked(AccountId, Role),
+        Unstaked(AccountId, Role),
     }
 }
 
@@ -262,8 +264,9 @@ decl_module! {
 
             <RoleEntryRequests<T>>::mutate(|requests| {
                 let expires = <system::Module<T>>::block_number()+ T::BlockNumber::sa(REQUEST_LIFETIME);
-                requests.push((sender, member_id, role, expires));
+                requests.push((sender.clone(), member_id, role, expires));
             });
+            Self::deposit_event(RawEvent::EntryRequested(sender, role));
         }
 
         /// Member activating entry request
@@ -321,7 +324,9 @@ decl_module! {
 
             let role_parameters = Self::ensure_role_parameters(actor.role)?;
 
-            Self::apply_unstake(actor.account, actor.role, actor.member_id, role_parameters.unbonding_period);
+            Self::apply_unstake(actor.account.clone(), actor.role, actor.member_id, role_parameters.unbonding_period);
+
+            Self::deposit_event(RawEvent::Unstaked(actor.account, actor.role));
         }
 
         pub fn set_role_parameters(role: Role, params: RoleParameters<T>) {
