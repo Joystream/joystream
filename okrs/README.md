@@ -125,7 +125,7 @@ Fill in if needed.
 ## `Bedeho` (@bedeho)
 
 ### Objective: `Make Joystream easier to understand for prospective community members and Jsgenesis hires`
-- **KR Measurement Deadline**: xxxx
+- **KR Measurement Deadline**: End of Q1
 - **Tracked**: Weekly
 - **Key Results**:
   1. `Publish first whitepaper draft`
@@ -135,9 +135,10 @@ Fill in if needed.
 | Date     | KR #1 | KR #2 |  Total |
 |:--------:|:-----:|:-----:|:------:|
 | 18.03.19 |   0.98  | 0.7  | **0.85**   |
+| 01.04.19 |  1  | 0.7  | **0.85**   |
 
 ### Objective: `Establish critical routines for future productivity`
-- **KR Measurement Deadline**: xxxx
+- **KR Measurement Deadline**: End of Q1
 - **Tracked**: Weekly
 - **Key Results**:
   1. `Draft planning framework for releases, quarters and longer term`
@@ -148,4 +149,5 @@ Fill in if needed.
 
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 |  Total |
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|
-| 18.03.19 |  0.6 |  0.1 | 0.1  | 0  | **0**  |
+| 18.03.19 |  0.6 |  0.1 | 0.1  | 0  | **0.2**  |
+| 01.04.19 |  1 |  0.1 | 0.1  | 1  | **0.55**  |
