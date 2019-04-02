@@ -41,7 +41,7 @@ pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
 }
 
 static MSG_CREATOR_MUST_BE_MEMBER: &str = "Only active members may create content!";
-static MSG_INVALID_SCHEMA_ID: &str = "The metadata schema is not known or invalid!";
+// TODO for future: static MSG_INVALID_SCHEMA_ID: &str = "The metadata schema is not known or invalid!";
 static MSG_METADATA_NOT_FOUND: &str = "Metadata with the given ID cannot be found!";
 static MSG_ONLY_OWNER_MAY_PUBLISH: &str = "Only metadata owners may publish their metadata!";
 
@@ -101,10 +101,8 @@ decl_module! {
         pub fn add_metadata(origin, schema: T::SchemaId, metadata: Vec<u8>)
         {
             // Origin has to be a member
-            let who = ensure_signed(origin).clone().unwrap();
-            if !T::Members::is_active_member(&who) {
-                return Err(MSG_CREATOR_MUST_BE_MEMBER);
-            }
+            let who = ensure_signed(origin)?;
+            ensure!(T::Members::is_active_member(&who), MSG_CREATOR_MUST_BE_MEMBER);
 
             // TODO in future, we want the schema IDs to correspond to a schema
             // registry, and validate the data. For now, we just allow the
@@ -136,17 +134,13 @@ decl_module! {
         pub fn publish_metadata(origin, id: T::MetadataId)
         {
             // Ensure signed account
-            let who = ensure_signed(origin).clone().unwrap();
+            let who = ensure_signed(origin)?;
 
             // Try t find metadata
-            let found = Self::metadata(id);
-            ensure!(!found.is_some(), MSG_METADATA_NOT_FOUND);
+            let mut data = Self::metadata(id).ok_or(MSG_METADATA_NOT_FOUND)?;
 
             // Ensure it's the metadata creator who publishes
-            let mut data = found.unwrap();
-            if data.origin != who {
-                return Err(MSG_ONLY_OWNER_MAY_PUBLISH);
-            }
+            ensure!(data.origin == who, MSG_ONLY_OWNER_MAY_PUBLISH);
 
             // Modify
             data.state = MetadataState::Published;
@@ -157,5 +151,49 @@ decl_module! {
             // Publish event
             Self::deposit_event(RawEvent::MetadataPublished(id));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::storage::mock::*;
+
+    #[test]
+    fn add_metadata() {
+        with_default_mock_builder(|| {
+            let res =
+                TestContentDirectory::add_metadata(Origin::signed(1), 1, "foo".as_bytes().to_vec());
+            assert!(res.is_ok());
+        });
+    }
+
+    #[test]
+    fn publish_metadata() {
+        with_default_mock_builder(|| {
+            let res =
+                TestContentDirectory::add_metadata(Origin::signed(1), 1, "foo".as_bytes().to_vec());
+            assert!(res.is_ok());
+
+            // Grab ID from event
+            let metadata_id = match System::events().last().unwrap().event {
+                MetaEvent::content_directory(
+                    content_directory::RawEvent::MetadataDraftCreated(metadata_id),
+                ) => metadata_id,
+                _ => 0xdeadbeefu64, // invalid value, unlikely to match
+            };
+            assert_ne!(metadata_id, 0xdeadbeefu64);
+
+            // Publishing a bad ID should fail
+            let res = TestContentDirectory::publish_metadata(Origin::signed(1), metadata_id + 1);
+            assert!(res.is_err());
+
+            // Publishing should not work for non-owners
+            let res = TestContentDirectory::publish_metadata(Origin::signed(2), metadata_id);
+            assert!(res.is_err());
+
+            // For the owner, it should work however
+            let res = TestContentDirectory::publish_metadata(Origin::signed(1), metadata_id);
+            assert!(res.is_ok());
+        });
     }
 }
