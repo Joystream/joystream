@@ -220,7 +220,7 @@ decl_module! {
                             if now > actor.joined_at + params.reward_period {
                                 // send reward to member account - not the actor account
                                 if let Ok(member_account) = T::Members::lookup_account_by_member_id(actor.member_id) {
-                                    let _ = T::Currency::reward(&member_account, params.reward);
+                                    let _ = T::Currency::deposit_into_existing(&member_account, params.reward);
                                 }
                             }
                         }

@@ -3,7 +3,6 @@
 use super::*;
 use super::mock::*;
 
-//use parity_codec::Encode;
 use runtime_io::with_externalities;
 use srml_support::*;
 
