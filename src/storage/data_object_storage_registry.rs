@@ -74,15 +74,24 @@ decl_event! {
 impl<T: Trait> ContentHasStorage<T> for Module<T> {
     fn has_storage_provider(which: &T::ContentId) -> bool {
         let dosr_list = Self::relationships_by_content_id(which);
-        return dosr_list
-            .iter()
-            .any(|&dosr_id| Self::relationships(dosr_id).unwrap().ready);
+        return dosr_list.iter().any(|&dosr_id| {
+            let res = Self::relationships(dosr_id);
+            if res.is_none() {
+                return false;
+            }
+            let dosr = res.unwrap();
+            dosr.ready
+        });
     }
 
     fn is_ready_at_storage_provider(which: &T::ContentId, provider: &T::AccountId) -> bool {
         let dosr_list = Self::relationships_by_content_id(which);
         return dosr_list.iter().any(|&dosr_id| {
-            let dosr = Self::relationships(dosr_id).unwrap();
+            let res = Self::relationships(dosr_id);
+            if res.is_none() {
+                return false;
+            }
+            let dosr = res.unwrap();
             dosr.storage_provider == *provider && dosr.ready
         });
     }
@@ -166,10 +175,7 @@ impl<T: Trait> Module<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::storage::mock::*;
-
-    use system::{self, EventRecord, Phase};
 
     #[test]
     fn initial_state() {
@@ -210,8 +216,8 @@ mod tests {
                 MetaEvent::data_object_storage_registry(
                     data_object_storage_registry::RawEvent::DataObjectStorageRelationshipAdded(
                         dosr_id,
-                        content_id,
-                        account_id,
+                        _content_id,
+                        _account_id,
                     ),
                 ) => dosr_id,
                 _ => 0xdeadbeefu64, // invalid value, unlikely to match

@@ -137,8 +137,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Get session
-            let found = Self::download_sessions(session_id).ok_or(MSG_SESSION_NOT_FOUND);
-            let mut session = found.unwrap();
+            let mut session = Self::download_sessions(session_id).ok_or(MSG_SESSION_NOT_FOUND)?;
 
             // Ensure that the session hasn't ended yet.
             ensure!(session.state == DownloadState::Started, MSG_SESSION_HAS_ENDED);

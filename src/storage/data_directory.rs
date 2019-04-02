@@ -166,10 +166,9 @@ impl<T: Trait> Module<T> {
         judgement: LiaisonJudgement,
     ) -> dispatch::Result {
         // Find the data
-        let found = Self::contents(&id).ok_or(MSG_CID_NOT_FOUND);
+        let mut data = Self::contents(&id).ok_or(MSG_CID_NOT_FOUND)?;
 
         // Make sure the liaison matches
-        let mut data = found.unwrap();
         ensure!(data.liaison == *who, MSG_LIAISON_REQUIRED);
 
         // At this point we can update the data.
@@ -184,10 +183,7 @@ impl<T: Trait> Module<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::storage::mock::*;
-
-    use system::{self, EventRecord, Phase};
 
     #[test]
     fn succeed_adding_content() {

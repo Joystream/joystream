@@ -5,9 +5,7 @@ use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
-use srml_support::{
-    decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
-};
+use srml_support::{decl_event, decl_module, decl_storage, Parameter, StorageMap, StorageValue};
 use system::{self, ensure_root};
 
 pub trait Trait: system::Trait + MaybeDebug {
