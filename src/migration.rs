@@ -7,8 +7,8 @@ use runtime_io::print;
 use crate::{VERSION};
 use crate::membership::members;
 use crate::roles::actors;
-use crate::governance::{GovernanceCurrency, BalanceOf };
-use runtime_primitives::traits::{Zero, Bounded, SimpleArithmetic, As};
+use crate::governance::{BalanceOf};
+use runtime_primitives::traits::{As};
 
 // When preparing a new major runtime release version bump this value to match it and update
 // the initialization code in runtime_initialization(). Because of the way substrate runs runtime code

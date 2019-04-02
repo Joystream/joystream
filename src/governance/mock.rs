@@ -20,16 +20,16 @@ impl_outer_origin! {
 pub struct MockMembership {}
 impl<T: system::Trait> Members<T> for MockMembership {
     type Id = u32;
-    fn is_active_member(who: &T::AccountId) -> bool {
+    fn is_active_member(_who: &T::AccountId) -> bool {
         // all accounts are considered members.
         // There is currently no test coverage for non-members.
         // Should add some coverage, and update this method to reflect which accounts are or are not members
         true
     }
-    fn lookup_member_id(account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
+    fn lookup_member_id(_account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
         Err("not implemented!")
     }
-    fn lookup_account_by_member_id(id: Self::Id) -> Result<T::AccountId, &'static str> {
+    fn lookup_account_by_member_id(_id: Self::Id) -> Result<T::AccountId, &'static str> {
         Err("not implemented!")
     }
 }
