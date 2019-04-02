@@ -113,6 +113,8 @@ decl_module! {
             // if schema not in (1, 2) {
             //     return Err(MSG_INVALID_SCHEMA_ID);
             // }
+            //
+            // See https://github.com/Joystream/substrate-runtime-joystream/issues/20
 
             // New and data
             let new_id = Self::next_metadata_id();
