@@ -27,8 +27,8 @@ impl_outer_event! {
     }
 }
 
-pub struct AnyAccountIsMember {}
-impl<T: system::Trait> traits::Members<T> for AnyAccountIsMember {
+pub struct MockMembers {}
+impl<T: system::Trait> traits::Members<T> for MockMembers {
     type Id = u64;
 
     fn is_active_member(_who: &T::AccountId) -> bool {
@@ -53,16 +53,28 @@ impl<T: data_object_type_registry::Trait> traits::IsActiveDataObjectType<T>
     }
 }
 
-pub struct AnyContentIdExists {}
-impl<T: data_object_storage_registry::Trait> traits::ContentIdExists<T> for AnyContentIdExists {
-    fn has_content(which: &T::ContentId) -> bool {
-        true
+pub struct MockContent {}
+impl traits::ContentIdExists<Test> for MockContent {
+    fn has_content(which: &<Test as data_directory::Trait>::ContentId) -> bool {
+        return *which == 42
     }
 
     fn get_data_object(
-        which: &T::ContentId,
-    ) -> Result<data_directory::DataObject<T>, &'static str> {
-        Err("not implemented!")
+        which: &<Test as data_directory::Trait>::ContentId,
+    ) -> Result<data_directory::DataObject<Test>, &'static str> {
+        match *which {
+            42 => Ok(data_directory::DataObject {
+                data_object_type: 1,
+                signing_key: None,
+                size: 1234,
+                added_at_block: 10,
+                added_at_time: 1024,
+                owner: 1,
+                liaison: 1, // TODO change to another later
+                liaison_judgement: data_directory::LiaisonJudgement::Pending,
+            }),
+            _ => Err("nope, missing"),
+        }
     }
 }
 
@@ -93,15 +105,15 @@ impl data_object_type_registry::Trait for Test {
 impl data_directory::Trait for Test {
     type Event = MetaEvent;
     type ContentId = u64;
-    type Members = AnyAccountIsMember;
+    type Members = MockMembers;
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
 }
 
 impl data_object_storage_registry::Trait for Test {
     type Event = MetaEvent;
     type DataObjectStorageRelationshipId = u64;
-    type Members = AnyAccountIsMember;
-    type ContentIdExists = AnyContentIdExists;
+    type Members = MockMembers;
+    type ContentIdExists = MockContent;
 }
 
 impl timestamp::Trait for Test {
