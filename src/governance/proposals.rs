@@ -595,8 +595,10 @@ mod tests {
         type Balance = u64;
         type OnFreeBalanceZero = ();
         type OnNewAccount = ();
-        type EnsureAccountLiquid = ();
         type Event = ();
+        type TransactionPayment = ();
+	    type DustRemoval = ();
+	    type TransferPayment = ();
     }
 
     impl timestamp::Trait for Test {

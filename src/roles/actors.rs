@@ -6,7 +6,7 @@ use rstd::prelude::*;
 use runtime_primitives::traits::{
     As, Bounded, MaybeDebug, Zero,
 };
-use srml_support::traits::{Currency, EnsureAccountLiquid};
+use srml_support::traits::{Currency};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
 };
@@ -370,12 +370,13 @@ decl_module! {
     }
 }
 
-impl<T: Trait> EnsureAccountLiquid<T::AccountId> for Module<T> {
-    fn ensure_account_liquid(who: &T::AccountId) -> dispatch::Result {
-        if Self::bondage(who) <= <system::Module<T>>::block_number() {
-            Ok(())
-        } else {
-            Err("cannot transfer illiquid funds")
-        }
-    }
-}
+// TODO: Find how balances module checks account liquidity state
+// impl<T: Trait> EnsureAccountLiquid<T::AccountId> for Module<T> {
+//     fn ensure_account_liquid(who: &T::AccountId) -> dispatch::Result {
+//         if Self::bondage(who) <= <system::Module<T>>::block_number() {
+//             Ok(())
+//         } else {
+//             Err("cannot transfer illiquid funds")
+//         }
+//     }
+// }
