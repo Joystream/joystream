@@ -55,7 +55,7 @@ pub struct DataObject<T: Trait> {
 decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
         // Mapping of Content ID to Data Object
-        pub ContentMap get(content): map T::ContentId => Option<DataObject<T>>;
+        pub Contents get(contents): map T::ContentId => Option<DataObject<T>>;
     }
 }
 
