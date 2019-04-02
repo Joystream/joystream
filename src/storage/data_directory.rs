@@ -66,8 +66,10 @@ decl_event! {
     {
         // The account is the Liaison that was selected
         ContentAdded(ContentId, AccountId),
-        ContentAccepted(ContentId),
-        ContentRejected(ContentId),
+
+        // The account is the liaison again - only they can reject or accept
+        ContentAccepted(ContentId, AccountId),
+        ContentRejected(ContentId, AccountId),
     }
 }
 
@@ -126,27 +128,27 @@ decl_module! {
 
         // The LiaisonJudgement can be updated, but only by the liaison.
         fn accept_content(origin, id: T::ContentId) {
-            Self::update_content_judgement(origin, id.clone(), LiaisonJudgement::Accepted)?;
-            Self::deposit_event(RawEvent::ContentAccepted(id));
+            let who = ensure_signed(origin)?;
+            Self::update_content_judgement(&who, id.clone(), LiaisonJudgement::Accepted)?;
+            Self::deposit_event(RawEvent::ContentAccepted(id, who));
         }
 
         fn reject_content(origin, id: T::ContentId) {
-            Self::update_content_judgement(origin, id.clone(), LiaisonJudgement::Rejected)?;
-            Self::deposit_event(RawEvent::ContentRejected(id));
+            let who = ensure_signed(origin)?;
+            Self::update_content_judgement(&who, id.clone(), LiaisonJudgement::Rejected)?;
+            Self::deposit_event(RawEvent::ContentRejected(id, who));
         }
     }
 }
 
 impl <T: Trait> Module<T> {
-    fn update_content_judgement(origin: T::Origin, id: T::ContentId, judgement: LiaisonJudgement) -> dispatch::Result {
-        let who = ensure_signed(origin)?;
-
+    fn update_content_judgement(who: &T::AccountId, id: T::ContentId, judgement: LiaisonJudgement) -> dispatch::Result {
         // Find the data
         let found = Self::contents(&id).ok_or(MSG_CID_NOT_FOUND);
 
         // Make sure the liaison matches
         let mut data = found.unwrap();
-        ensure!(data.liaison == who, MSG_LIAISON_REQUIRED);
+        ensure!(data.liaison == *who, MSG_LIAISON_REQUIRED);
 
         // At this point we can update the data.
         data.liaison_judgement = judgement;
