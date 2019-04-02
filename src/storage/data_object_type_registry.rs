@@ -5,9 +5,7 @@ use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
-use srml_support::{
-    decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
-};
+use srml_support::{decl_event, decl_module, decl_storage, Parameter, StorageMap, StorageValue};
 use system::{self, ensure_root};
 
 pub trait Trait: system::Trait + MaybeDebug {
@@ -25,7 +23,7 @@ pub trait Trait: system::Trait + MaybeDebug {
         + PartialEq;
 }
 
-static MSG_DO_TYPE_NOT_FOUND: &str = "Data Object Type with the given ID not found!";
+static MSG_DO_TYPE_NOT_FOUND: &str = "Data Object Type with the given ID not found.";
 
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1;
 
