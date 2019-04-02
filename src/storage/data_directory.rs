@@ -73,11 +73,11 @@ decl_event! {
 
 impl<T: Trait> ContentIdExists<T> for Module<T> {
     fn has_content(which: &T::ContentId) -> bool {
-        Self::content(which.clone()).is_some()
+        Self::contents(which.clone()).is_some()
     }
 
     fn get_data_object(which: &T::ContentId) -> Result<DataObject<T>, &'static str> {
-        match Self::content(which.clone()) {
+        match Self::contents(which.clone()) {
             None => Err(MSG_CID_NOT_FOUND),
             Some(data) => Ok(data),
         }
@@ -103,7 +103,7 @@ decl_module! {
 
             // We essentially accept the content ID and size at face value. All we
             // need to know is that it doesn't yet exist.
-            let found = Self::content(&id);
+            let found = Self::contents(&id);
             ensure!(found.is_none(), MSG_DUPLICATE_CID);
 
             // The liaison is something we need to take from staked roles. The idea
@@ -118,13 +118,13 @@ decl_module! {
                 size: size,
                 added_at_block: <system::Module<T>>::block_number(),
                 added_at_time: <timestamp::Module<T>>::now(),
-                origin: who,
+                owner: who,
                 liaison: liaison.clone(),
                 liaison_judgement: LiaisonJudgement::Pending,
             };
 
             // If we've constructed the data, we can store it and send an event.
-            <ContentMap<T>>::insert(id.clone(), data);
+            <Contents<T>>::insert(id.clone(), data);
             Self::deposit_event(RawEvent::ContentAdded(id, liaison));
         }
 
@@ -149,7 +149,7 @@ impl <T: Trait> Module<T> {
         let who = ensure_signed(origin);
 
         // Find the data
-        let found = Self::content(&id).ok_or(MSG_CID_NOT_FOUND);
+        let found = Self::contents(&id).ok_or(MSG_CID_NOT_FOUND);
 
         // Make sure the liaison matches
         let mut data = found.unwrap();
@@ -161,7 +161,7 @@ impl <T: Trait> Module<T> {
         data.liaison_judgement = judgement;
 
         // Update and send event.
-        <ContentMap<T>>::insert(id, data);
+        <Contents<T>>::insert(id, data);
 
         Ok(())
     }

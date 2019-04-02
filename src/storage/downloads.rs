@@ -3,7 +3,7 @@
 use rstd::prelude::*;
 use parity_codec::Codec;
 use parity_codec_derive::{Encode, Decode};
-use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, Parameter};
+use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, Parameter, ensure};
 use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug};
 use system::{self, ensure_signed};
 use crate::traits::{ContentIdExists, ContentHasStorage};
@@ -86,81 +86,74 @@ decl_module! {
 
         // Origin starts a download from distributor. It's the origin's responsibility to
         // start this, and hand the session ID to the distributor as proof they did.
-        pub fn start_download(origin, cid: <T as DDTrait>::ContentId, from: T::AccountId) {
+        pub fn start_download(origin, content_id: <T as DDTrait>::ContentId, from: T::AccountId) {
             // Origin can be anyone, it doesn't have to be a member.
             let who = ensure_signed(origin).clone().unwrap();
 
             // There has to be a storage relationship for the content ID and storage provider.
-            if !T::ContentHasStorage::is_ready_at_storage_provider(&cid, &from) {
+            if !T::ContentHasStorage::is_ready_at_storage_provider(&content_id, &from) {
                 return Err("NOPETYNOPE");
             }
 
             // Let's create the entry then
             let new_id = Self::next_download_session_id();
             let session: DownloadSession<T> = DownloadSession {
-                cid: cid.clone(),
+                content_id: content_id.clone(),
                 consumer: who,
                 distributor: from.clone(),
                 initiated_at_block: <system::Module<T>>::block_number(),
                 initiated_at_time: <timestamp::Module<T>>::now(),
                 state: DownloadState::Started,
-                transmitted: 0u64,
+                transmitted_bytes: 0u64,
             };
 
-            <DownloadSessionMap<T>>::insert(new_id, session);
+            <DownloadSessions<T>>::insert(new_id, session);
             <NextDownloadSessionId<T>>::mutate(|n| { *n += T::DownloadSessionId::sa(1); });
 
             // Fire off event
-            Self::deposit_event(RawEvent::DownloadStarted(cid));
+            Self::deposit_event(RawEvent::DownloadStarted(content_id));
         }
 
         // The downloader can also update the transmitted size, as long as it's
         // strictly larger.
-        pub fn update_transmitted(origin, session_id: T::DownloadSessionId, transmitted: u64)
+        pub fn update_transmitted(origin, session_id: T::DownloadSessionId, transmitted_bytes: u64)
         {
             // Origin can be anyone, it doesn't have to be a member.
             let who = ensure_signed(origin).clone().unwrap();
 
             // Get session
-            let found = Self::download_session(session_id).ok_or(MSG_SESSION_NOT_FOUND);
+            let found = Self::download_sessions(session_id).ok_or(MSG_SESSION_NOT_FOUND);
             let mut session = found.unwrap();
 
             // Ensure that the session hasn't ended yet.
             ensure!(session.state == DownloadState::Started, MSG_SESSION_HAS_ENDED);
-                return Err(MSG_SESSION_HAS_ENDED);
-            }
 
             // Ensure that the origin is the consumer
             ensure!(session.consumer == who, MSG_CONSUMER_REQUIRED);
-                return Err(MSG_CONSUMER_REQUIRED);
-            }
 
             // Ensure that the new transmitted size is larger than the old one
-            ensure!(transmitted > session.transmitted, MSG_INVALID_TRANSMITTED_VALUE);
-                return Err(MSG_INVALID_TRANSMITTED_VALUE);
-            }
+            ensure!(transmitted_bytes > session.transmitted_bytes, MSG_INVALID_TRANSMITTED_VALUE);
 
             // By fetching the content information, we can ensure that the transmitted
             // field also does not exceed the content size. Furthermore, we can
             // automatically detect when the download ended.
-            let data_object = T::ContentIdExists::get_data_object(&session.cid)?;
-            if transmitted > data_object.size {
-                return Err(MSG_INVALID_TRANSMITTED_VALUE);
-            }
-            let finished = transmitted == data_object.size;
+            let data_object = T::ContentIdExists::get_data_object(&session.content_id)?;
+            ensure!(transmitted_bytes <= data_object.size, MSG_INVALID_TRANSMITTED_VALUE);
+
+            let finished = transmitted_bytes == data_object.size;
 
             // Ok we can update the data.
-            session.transmitted = transmitted;
+            session.transmitted_bytes = transmitted_bytes;
             session.state = match finished {
                 true => DownloadState::Ended,
                 false => DownloadState::Started,
             };
-            let cid = session.cid.clone();
-            <DownloadSessionMap<T>>::insert(session_id, session);
+            let content_id = session.content_id.clone();
+            <DownloadSessions<T>>::insert(session_id, session);
 
             // Also announce if the download finished
             if finished {
-                Self::deposit_event(RawEvent::DownloadEnded(cid, transmitted));
+                Self::deposit_event(RawEvent::DownloadEnded(content_id, transmitted_bytes));
             }
         }
     }
