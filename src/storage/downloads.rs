@@ -136,7 +136,7 @@ decl_module! {
             }
 
             // Ensure that the new transmitted size is larger than the old one
-            if transmitted <= session.transmitted {
+            ensure!(transmitted > session.transmitted, MSG_INVALID_TRANSMITTED_VALUE);
                 return Err(MSG_INVALID_TRANSMITTED_VALUE);
             }
 
