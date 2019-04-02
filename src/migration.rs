@@ -6,24 +6,9 @@ use rstd::prelude::*;
 use runtime_io::print;
 use crate::{VERSION};
 use crate::membership::members;
-
-pub trait Trait: system::Trait + members::Trait {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-}
-
-decl_storage! {
-    trait Store for Module<T: Trait> as Migration {
-        /// Records at what runtime spec version the store was initialized. This allows the runtime
-        /// to know when to run initialize code if it was installed as an update.
-        pub SpecVersion get(spec_version) build(|_| Some(VERSION.spec_version)) : Option<u32>;
-    }
-}
-
-decl_event! {
-    pub enum Event<T> where <T as system::Trait>::BlockNumber {
-        Migrated(BlockNumber, u32),
-    }
-}
+use crate::roles::actors;
+use crate::governance::{BalanceOf};
+use runtime_primitives::traits::{As};
 
 // When preparing a new major runtime release version bump this value to match it and update
 // the initialization code in runtime_initialization(). Because of the way substrate runs runtime code
@@ -40,11 +25,46 @@ impl<T: Trait> Module<T> {
 
         <members::Module<T>>::initialize_storage();
 
+        // Initialize Storage provider role parameters
+        <actors::Module<T>>::set_role_parameters(actors::Role::Storage, actors::RoleParameters {
+            min_stake: BalanceOf::<T>::sa(3000),
+            max_actors: 10,
+            reward: BalanceOf::<T>::sa(10),
+            reward_period: T::BlockNumber::sa(600),
+            unbonding_period: T::BlockNumber::sa(600),
+            entry_request_fee: BalanceOf::<T>::sa(50),
+
+            // not currently used
+            min_actors: 5,
+            bonding_period: T::BlockNumber::sa(600),
+            min_service_period: T::BlockNumber::sa(600),
+            startup_grace_period: T::BlockNumber::sa(600),
+        });
+        <actors::Module<T>>::set_available_roles(vec![actors::Role::Storage]);
+
         // ...
         // add initialization of other modules introduced in this runtime
         // ...
 
         Self::deposit_event(RawEvent::Migrated(<system::Module<T>>::block_number(), VERSION.spec_version));
+    }
+}
+
+pub trait Trait: system::Trait + members::Trait + actors::Trait {
+    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+}
+
+decl_storage! {
+    trait Store for Module<T: Trait> as Migration {
+        /// Records at what runtime spec version the store was initialized. This allows the runtime
+        /// to know when to run initialize code if it was installed as an update.
+        pub SpecVersion get(spec_version) build(|_| Some(VERSION.spec_version)) : Option<u32>;
+    }
+}
+
+decl_event! {
+    pub enum Event<T> where <T as system::Trait>::BlockNumber {
+        Migrated(BlockNumber, u32),
     }
 }
 
