@@ -78,7 +78,7 @@ impl data_object_type_registry::Trait for Test {
 
 impl data_directory::Trait for Test {
     type Event = MetaEvent;
-    type ContentId = Vec<u8>;
+    type ContentId = u64;
     type Members = AnyAccountIsMember;
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
 }

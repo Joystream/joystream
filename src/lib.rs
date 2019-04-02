@@ -54,7 +54,9 @@ pub use srml_support::{StorageValue, construct_runtime};
 
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
 pub type AccountId = primitives::H256;
-pub type ContentId = primitives::H256;
+
+/// Alias for ContentId, used in various places
+pub type ContentId = u64;
 
 /// A hash of some data used by the chain.
 pub type Hash = primitives::H256;
