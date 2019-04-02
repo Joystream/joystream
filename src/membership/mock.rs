@@ -1,6 +1,7 @@
 #![cfg(test)]
 
-use rstd::prelude::*;
+//use rstd::prelude::*;
+use srml_support::traits::{Currency};
 pub use crate::governance::{GovernanceCurrency};
 pub use super::{members};
 pub use system;

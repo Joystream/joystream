@@ -74,7 +74,7 @@ fn make_entry_request() {
         );
 
         let surplus_balance = 100;
-        Balances::set_free_balance(
+        Balances::deposit_creating(
             &actor_account,
             storage_params.entry_request_fee + surplus_balance,
         );
@@ -117,7 +117,7 @@ fn staking() {
 
         <actors::RoleEntryRequests<Test>>::put(vec![request]);
 
-        Balances::set_free_balance(&actor_account, storage_params.min_stake);
+        Balances::deposit_creating(&actor_account, storage_params.min_stake);
 
         assert!(Actors::stake(
             Origin::signed(MockMembers::alice_account()),

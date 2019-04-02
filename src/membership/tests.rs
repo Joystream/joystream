@@ -3,7 +3,7 @@
 use super::*;
 use super::mock::*;
 
-use parity_codec::Encode;
+//use parity_codec::Encode;
 use runtime_io::with_externalities;
 use srml_support::*;
 
@@ -38,7 +38,7 @@ fn buy_default_membership_as_alice() -> dispatch::Result {
 }
 
 fn set_alice_free_balance(balance: u32) {
-    Balances::set_free_balance(&ALICE_ACCOUNT_ID, balance);
+    Balances::deposit_creating(&ALICE_ACCOUNT_ID, balance);
 }
 
 #[test]

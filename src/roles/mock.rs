@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 pub use super::actors;
+pub use srml_support::traits::{Currency};
 pub use crate::governance::GovernanceCurrency;
 use crate::traits::Members;
 pub use system;

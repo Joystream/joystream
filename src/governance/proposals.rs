@@ -778,8 +778,7 @@ mod tests {
     #[test]
     fn member_create_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
             assert_eq!(Proposals::active_proposal_ids().len(), 1);
@@ -819,8 +818,7 @@ mod tests {
     #[test]
     fn cannot_create_proposal_with_small_stake() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_eq!(_create_proposal(
                 None, Some(min_stake() - 1), None, None, None),
@@ -835,8 +833,7 @@ mod tests {
     #[test]
     fn cannot_create_proposal_when_stake_is_greater_than_balance() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_eq!(_create_proposal(
                 None, Some(initial_balance() + 1), None, None, None),
@@ -851,8 +848,7 @@ mod tests {
     #[test]
     fn cannot_create_proposal_with_empty_values() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             // Empty name:
             assert_eq!(_create_proposal(
@@ -874,8 +870,7 @@ mod tests {
     #[test]
     fn cannot_create_proposal_with_too_long_values() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             // Too long name:
             assert_eq!(_create_proposal(
@@ -912,8 +907,7 @@ mod tests {
     #[test]
     fn owner_cancel_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
             assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
@@ -931,8 +925,7 @@ mod tests {
     #[test]
     fn owner_cannot_cancel_proposal_if_its_finalized() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
             assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
@@ -954,9 +947,8 @@ mod tests {
     #[test]
     fn not_owner_cannot_cancel_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::set_free_balance(&PROPOSER2, initial_balance());
-            Balances::increase_total_stake_by(initial_balance() * 2);
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
+            Balances::deposit_creating(&PROPOSER2, initial_balance());
             assert_ok!(_create_default_proposal());
             assert_eq!(Proposals::cancel_proposal(Origin::signed(PROPOSER2), 1),
                 Err(MSG_YOU_DONT_OWN_THIS_PROPOSAL));
@@ -969,8 +961,8 @@ mod tests {
     #[test]
     fn councilor_vote_on_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
+
             assert_ok!(_create_default_proposal());
 
             assert_ok!(Proposals::vote_on_proposal(
@@ -987,8 +979,8 @@ mod tests {
     #[test]
     fn councilor_cannot_vote_on_proposal_twice() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
+
             assert_ok!(_create_default_proposal());
 
             assert_ok!(Proposals::vote_on_proposal(
@@ -1002,8 +994,8 @@ mod tests {
     #[test]
     fn autovote_with_approve_when_councilor_creates_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&COUNCILOR1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&COUNCILOR1, initial_balance());
+
             assert_ok!(_create_proposal(
                 Some(COUNCILOR1), None, None, None, None
             ));
@@ -1018,8 +1010,8 @@ mod tests {
     #[test]
     fn not_councilor_cannot_vote_on_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
+
             assert_ok!(_create_default_proposal());
             assert_eq!(Proposals::vote_on_proposal(
                 Origin::signed(NOT_COUNCILOR), 1, Approve),
@@ -1030,8 +1022,8 @@ mod tests {
     #[test]
     fn councilor_cannot_vote_on_proposal_if_it_has_been_cancelled() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
+
             assert_ok!(_create_default_proposal());
             assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
             assert_eq!(Proposals::vote_on_proposal(
@@ -1043,8 +1035,7 @@ mod tests {
     #[test]
     fn councilor_cannot_vote_on_proposal_if_tally_has_been_finalized() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1076,8 +1067,7 @@ mod tests {
     #[test]
     fn approve_proposal_when_all_councilors_approved_it() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1121,8 +1111,7 @@ mod tests {
     #[test]
     fn approve_proposal_when_all_councilors_voted_and_only_quorum_approved() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1168,8 +1157,7 @@ mod tests {
     #[test]
     fn approve_proposal_when_voting_period_expired_if_only_quorum_voted() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1221,8 +1209,7 @@ mod tests {
     #[test]
     fn reject_proposal_when_all_councilors_voted_and_quorum_not_reached() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1268,8 +1255,7 @@ mod tests {
     #[test]
     fn reject_proposal_when_all_councilors_rejected_it() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1313,8 +1299,7 @@ mod tests {
     #[test]
     fn slash_proposal_when_all_councilors_slashed_it() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1367,8 +1352,7 @@ mod tests {
     #[test]
     fn expire_proposal_when_not_all_councilors_voted_and_quorum_not_reached() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
