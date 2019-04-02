@@ -126,7 +126,7 @@ decl_module! {
             let mut session = found.unwrap();
 
             // Ensure that the session hasn't ended yet.
-            if session.state != DownloadState::Started {
+            ensure!(session.state == DownloadState::Started, MSG_SESSION_HAS_ENDED);
                 return Err(MSG_SESSION_HAS_ENDED);
             }
 
