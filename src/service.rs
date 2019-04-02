@@ -15,7 +15,7 @@ use basic_authorship::ProposerFactory;
 use node_executor;
 use consensus::{import_queue, start_aura, AuraImportQueue, SlotDuration, NothingExtra};
 use substrate_client as client;
-use primitives::ed25519::Pair;
+use primitives::{ed25519::Pair, Pair as PairT};
 use inherents::InherentDataProviders;
 use substrate_network::construct_simple_protocol;
 use substrate_executor::native_executor_instance;
@@ -74,6 +74,7 @@ construct_service_factory! {
 						service.network(),
 						service.on_exit(),
 						service.config.custom.inherent_data_providers.clone(),
+						service.config.force_authoring,
 					)?);
 				}
 

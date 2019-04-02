@@ -1,24 +1,34 @@
+[[bin]]
+name = 'joystream-node'
+path = 'src/main.rs'
+
+[package]
+authors = ['Joystream']
+build = 'build.rs'
+edition = '2018'
+name = 'joystream-node'
+version = '1.0.0'
+
 [dependencies]
 error-chain = '0.12'
 exit-future = '0.1'
 futures = '0.1'
 hex-literal = '0.1'
 log = '0.4'
-parity-codec = '3.0'
+parity-codec = '3.2'
 parking_lot = '0.7.1'
-slog = '^2'
 tokio = '0.1'
 trie-root = '0.11.0'
 
 [dependencies.basic-authorship]
 git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-basic-authorship'
-rev = 'df5e65927780b323482e2e8b5031822f423a032d'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
 
 [dependencies.consensus]
 git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-consensus-aura'
-rev = 'df5e65927780b323482e2e8b5031822f423a032d'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
 
 [dependencies.ctrlc]
 features = ['termination']
@@ -27,11 +37,12 @@ version = '3.0'
 [dependencies.inherents]
 git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-inherents'
-rev = 'df5e65927780b323482e2e8b5031822f423a032d'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
 
-[dependencies.node-executor]
+[dependencies.network]
 git = 'https://github.com/joystream/substrate.git'
-rev = 'df5e65927780b323482e2e8b5031822f423a032d'
+package = 'substrate-network'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
 
 [dependencies.joystream-node-runtime]
 git = 'https://github.com/joystream/substrate-runtime-joystream.git'
@@ -44,49 +55,34 @@ tag = 'v3.4.0'
 [dependencies.primitives]
 git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-primitives'
-rev = 'df5e65927780b323482e2e8b5031822f423a032d'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
 
 [dependencies.sr-io]
 git = 'https://github.com/joystream/substrate.git'
-rev = 'df5e65927780b323482e2e8b5031822f423a032d'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
 
 [dependencies.substrate-cli]
 git = 'https://github.com/joystream/substrate.git'
-rev = 'df5e65927780b323482e2e8b5031822f423a032d'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
 
 [dependencies.substrate-client]
 git = 'https://github.com/joystream/substrate.git'
-rev = 'df5e65927780b323482e2e8b5031822f423a032d'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
 
 [dependencies.substrate-executor]
 git = 'https://github.com/joystream/substrate.git'
-rev = 'df5e65927780b323482e2e8b5031822f423a032d'
-
-[dependencies.substrate-network]
-git = 'https://github.com/joystream/substrate.git'
-rev = 'df5e65927780b323482e2e8b5031822f423a032d'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
 
 [dependencies.substrate-service]
 git = 'https://github.com/joystream/substrate.git'
-rev = 'df5e65927780b323482e2e8b5031822f423a032d'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
 
 [dependencies.transaction-pool]
 git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-transaction-pool'
-rev = 'df5e65927780b323482e2e8b5031822f423a032d'
-
-[package]
-authors = ['Joystream']
-build = 'build.rs'
-edition = '2018'
-name = 'joystream-node'
-version = '0.10.1'
-
-[[bin]]
-name = 'joystream-node'
-path = 'src/main.rs'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+[profile.release]
+panic = 'unwind'
 
 [build-dependencies]
 vergen = '3'
-[profile.release]
-panic = 'unwind'
