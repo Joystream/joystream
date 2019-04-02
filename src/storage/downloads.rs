@@ -44,7 +44,7 @@ impl Default for DownloadState {
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct DownloadSession<T: Trait> {
-    pub cid: <T as DDTrait>::ContentId,
+    pub content_id: <T as DDTrait>::ContentId,
     pub consumer: T::AccountId,
     pub distributor: T::AccountId,
     pub initiated_at_block: T::BlockNumber,
