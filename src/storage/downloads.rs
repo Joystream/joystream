@@ -131,7 +131,7 @@ decl_module! {
             }
 
             // Ensure that the origin is the consumer
-            if session.consumer != who {
+            ensure!(session.consumer == who, MSG_CONSUMER_REQUIRED);
                 return Err(MSG_CONSUMER_REQUIRED);
             }
 
