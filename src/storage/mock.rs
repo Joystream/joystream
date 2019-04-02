@@ -56,7 +56,7 @@ impl<T: data_object_type_registry::Trait> traits::IsActiveDataObjectType<T>
 pub struct MockContent {}
 impl traits::ContentIdExists<Test> for MockContent {
     fn has_content(which: &<Test as data_directory::Trait>::ContentId) -> bool {
-        return *which == 42
+        *which == 42
     }
 
     fn get_data_object(
