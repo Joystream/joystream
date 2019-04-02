@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::mock::*;
-use super::*;
+//use super::*;
 
 use runtime_io::with_externalities;
 use srml_support::*;

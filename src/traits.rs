@@ -20,13 +20,13 @@ pub trait Members<T: system::Trait> {
 
 impl<T: system::Trait> Members<T> for () {
     type Id = u32;
-    fn is_active_member(account_id: &T::AccountId) -> bool {
+    fn is_active_member(_account_id: &T::AccountId) -> bool {
         false
     }
-    fn lookup_member_id(account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
+    fn lookup_member_id(_account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
         Err("member not found")
     }
-    fn lookup_account_by_member_id(member_id: Self::Id) -> Result<T::AccountId, &'static str> {
+    fn lookup_account_by_member_id(_member_id: Self::Id) -> Result<T::AccountId, &'static str> {
         Err("account not found")
     }
 }

@@ -1,15 +1,14 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use crate::governance::{BalanceOf, GovernanceCurrency};
-use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{
-    As, Bounded, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic, Zero,
+    As, Bounded, MaybeDebug, Zero,
 };
 use srml_support::traits::{Currency, EnsureAccountLiquid};
 use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
+    decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
 };
 use system::{self, ensure_signed};
 
@@ -71,9 +70,10 @@ pub trait Trait: system::Trait + GovernanceCurrency + MaybeDebug {
     type Members: Members<Self>;
 }
 
-pub type MemberId<T: Trait> = <T::Members as Members<T>>::Id;
-pub type Request<T: Trait> = (T::AccountId, MemberId<T>, Role, T::BlockNumber); // actor account, memberid, role, expires
-pub type Requests<T: Trait> = Vec<Request<T>>;
+pub type MemberId<T> = <<T as Trait>::Members as Members<T>>::Id;
+// actor account, memberid, role, expires
+pub type Request<T> = (<T as system::Trait>::AccountId, MemberId<T>, Role, <T as system::Trait>::BlockNumber);
+pub type Requests<T> = Vec<Request<T>>;
 
 pub const REQUEST_LIFETIME: u64 = 300;
 pub const DEFAULT_REQUEST_CLEARING_INTERVAL: u64 = 100;
@@ -220,7 +220,7 @@ decl_module! {
                             if now > actor.joined_at + params.reward_period {
                                 // send reward to member account - not the actor account
                                 if let Ok(member_account) = T::Members::lookup_account_by_member_id(actor.member_id) {
-                                    T::Currency::reward(&member_account, params.reward);
+                                    let _ = T::Currency::reward(&member_account, params.reward);
                                 }
                             }
                         }
