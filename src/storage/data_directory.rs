@@ -4,13 +4,13 @@ use crate::storage::data_object_type_registry::Trait as DOTRTrait;
 use crate::traits::{ContentIdExists, IsActiveDataObjectType, Members};
 use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};
+use primitives::Ed25519AuthorityId;
 use rstd::prelude::*;
-use runtime_primitives::traits::{As, MaybeSerializeDebug, Member, SimpleArithmetic, MaybeDebug};
+use runtime_primitives::traits::{As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
 };
 use system::{self, ensure_signed};
-use primitives::{Ed25519AuthorityId};
 
 pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -193,12 +193,7 @@ mod tests {
     fn succeed_adding_content() {
         with_default_mock_builder(|| {
             // Register a content with 1234 bytes of type 1, which should be recognized.
-            let res = TestDataDirectory::add_content(
-                Origin::signed(1),
-                1,
-                1234,
-                None,
-            );
+            let res = TestDataDirectory::add_content(Origin::signed(1), 1, 1234, None);
             assert!(res.is_ok());
         });
     }
@@ -206,12 +201,7 @@ mod tests {
     #[test]
     fn accept_content_as_liaison() {
         with_default_mock_builder(|| {
-            let res = TestDataDirectory::add_content(
-                Origin::signed(1),
-                1,
-                1234,
-                None,
-            );
+            let res = TestDataDirectory::add_content(Origin::signed(1), 1, 1234, None);
             assert!(res.is_ok());
 
             // An appropriate event should have been fired.
@@ -225,15 +215,11 @@ mod tests {
             assert_ne!(liaison, 0xdeadbeefu64);
 
             // Accepting content should not work with some random origin
-            let res =
-                TestDataDirectory::accept_content(Origin::signed(42), content_id);
+            let res = TestDataDirectory::accept_content(Origin::signed(42), content_id);
             assert!(res.is_err());
 
             // However, with the liaison as origin it should.
-            let res = TestDataDirectory::accept_content(
-                Origin::signed(liaison),
-                content_id,
-            );
+            let res = TestDataDirectory::accept_content(Origin::signed(liaison), content_id);
             assert!(res.is_ok());
         });
     }
@@ -241,12 +227,7 @@ mod tests {
     #[test]
     fn reject_content_as_liaison() {
         with_default_mock_builder(|| {
-            let res = TestDataDirectory::add_content(
-                Origin::signed(1),
-                1,
-                1234,
-                None,
-            );
+            let res = TestDataDirectory::add_content(Origin::signed(1), 1, 1234, None);
             assert!(res.is_ok());
 
             // An appropriate event should have been fired.
@@ -260,15 +241,11 @@ mod tests {
             assert_ne!(liaison, 0xdeadbeefu64);
 
             // Rejecting content should not work with some random origin
-            let res =
-                TestDataDirectory::reject_content(Origin::signed(42), content_id);
+            let res = TestDataDirectory::reject_content(Origin::signed(42), content_id);
             assert!(res.is_err());
 
             // However, with the liaison as origin it should.
-            let res = TestDataDirectory::reject_content(
-                Origin::signed(liaison),
-                content_id,
-            );
+            let res = TestDataDirectory::reject_content(Origin::signed(liaison), content_id);
             assert!(res.is_ok());
         });
     }
