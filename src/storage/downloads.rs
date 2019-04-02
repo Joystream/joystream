@@ -1,5 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+/*
+ * XXX This module is not really supposed to be used this way, and therefore also lacks tests.
+ *
+ *     This is a straightforward implementation of the whitepaper's specs, and is intended to
+ *     be iterated over. Please don't use it as-is.
+ */
+
 use crate::storage::data_directory::Trait as DDTrait;
 use crate::storage::data_object_storage_registry::Trait as DOSRTrait;
 use crate::traits::{ContentHasStorage, ContentIdExists};
