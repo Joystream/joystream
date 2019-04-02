@@ -1,23 +1,41 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::prelude::*;
-use parity_codec::Codec;
-use parity_codec_derive::{Encode, Decode};
-use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, ensure, Parameter};
-use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
-use system::{self, ensure_signed};
-use crate::traits::{Members};
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
+use crate::traits::Members;
+use parity_codec::Codec;
+use parity_codec_derive::{Decode, Encode};
+use rstd::prelude::*;
+use runtime_primitives::traits::{As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
+use srml_support::{
+    decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
+};
+use system::{self, ensure_signed};
 
 pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type MetadataId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
-        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+    type MetadataId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + As<usize>
+        + As<u64>
+        + MaybeSerializeDebug
+        + PartialEq;
 
     // Schema ID should be defined in a different Trait in future
-    type SchemaId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
-        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+    type SchemaId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + As<usize>
+        + As<u64>
+        + MaybeSerializeDebug
+        + PartialEq;
 
     type Members: Members<Self>;
 }
@@ -31,8 +49,7 @@ const DEFAULT_FIRST_METADATA_ID: u64 = 1;
 
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub enum MetadataState
-{
+pub enum MetadataState {
     Draft,
     Published,
 }
@@ -48,7 +65,7 @@ impl Default for MetadataState {
 // The other is the serialized metadata.
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct Metadata<T: Trait> {
+pub struct ContentMetadata<T: Trait> {
     pub schema: T::SchemaId,
     pub metadata: Vec<u8>,
     pub origin: T::AccountId,
@@ -73,7 +90,7 @@ decl_storage! {
         pub NextMetadataId get(next_metadata_id) build(|config: &GenesisConfig<T>| config.first_metadata_id): T::MetadataId = T::MetadataId::sa(DEFAULT_FIRST_METADATA_ID);
 
         // Mapping of Data object types
-        pub MetadataMap get(metadata): map T::MetadataId => Option<Metadata<T>>;
+        pub MetadataMap get(metadata): map T::MetadataId => Option<ContentMetadata<T>>;
     }
 }
 
@@ -101,7 +118,7 @@ decl_module! {
 
             // New and data
             let new_id = Self::next_metadata_id();
-            let data: Metadata<T> = Metadata {
+            let data: ContentMetadata<T> = ContentMetadata {
                 origin: who.clone(),
                 schema: schema,
                 metadata: metadata.clone(),
