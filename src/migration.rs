@@ -58,7 +58,7 @@ decl_storage! {
     trait Store for Module<T: Trait> as Migration {
         /// Records at what runtime spec version the store was initialized. This allows the runtime
         /// to know when to run initialize code if it was installed as an update.
-        pub SpecVersion get(spec_version) build(|_| Some(VERSION.spec_version)) : Option<u32>;
+        pub SpecVersion get(spec_version) build(|_| VERSION.spec_version) : Option<u32>;
     }
 }
 
