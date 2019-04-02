@@ -62,7 +62,7 @@ decl_storage! {
         pub NextDownloadSessionId get(next_download_session_id) build(|config: &GenesisConfig<T>| config.first_download_session_id): T::DownloadSessionId = T::DownloadSessionId::sa(DEFAULT_FIRST_DOWNLOAD_SESSION_ID);
 
         // Mapping of Data object types
-        pub DownloadSessionMap get(download_session): map T::DownloadSessionId => Option<DownloadSession<T>>;
+        pub DownloadSessions get(download_sessions): map T::DownloadSessionId => Option<DownloadSession<T>>;
     }
 }
 
