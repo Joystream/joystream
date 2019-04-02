@@ -2,7 +2,6 @@
 
 pub use super::{data_directory, data_object_storage_registry, data_object_type_registry};
 use crate::traits;
-use rstd::prelude::*;
 use runtime_io::with_externalities;
 pub use system;
 
@@ -197,7 +196,7 @@ pub type System = system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
 pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 pub type TestDataDirectory = data_directory::Module<Test>;
-pub type TestDataObject = data_directory::DataObject<Test>;
+// pub type TestDataObject = data_directory::DataObject<Test>;
 pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Test>;
 
 pub const TEST_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1000;

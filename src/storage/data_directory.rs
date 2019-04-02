@@ -30,11 +30,11 @@ pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
     type IsActiveDataObjectType: IsActiveDataObjectType<Self>;
 }
 
-static MSG_CID_NOT_FOUND: &str = "Content with this ID not found!";
-static MSG_LIAISON_REQUIRED: &str = "Only the liaison for the content may modify its status!";
-static MSG_CREATOR_MUST_BE_MEMBER: &str = "Only active members may create content!";
+static MSG_CID_NOT_FOUND: &str = "Content with this ID not found.";
+static MSG_LIAISON_REQUIRED: &str = "Only the liaison for the content may modify its status.";
+static MSG_CREATOR_MUST_BE_MEMBER: &str = "Only active members may create content.";
 static MSG_DO_TYPE_MUST_BE_ACTIVE: &str =
-    "Cannot create content for inactive or missing data object type!";
+    "Cannot create content for inactive or missing data object type.";
 
 const DEFAULT_FIRST_CONTENT_ID: u64 = 1;
 
@@ -166,10 +166,9 @@ impl<T: Trait> Module<T> {
         judgement: LiaisonJudgement,
     ) -> dispatch::Result {
         // Find the data
-        let found = Self::contents(&id).ok_or(MSG_CID_NOT_FOUND);
+        let mut data = Self::contents(&id).ok_or(MSG_CID_NOT_FOUND)?;
 
         // Make sure the liaison matches
-        let mut data = found.unwrap();
         ensure!(data.liaison == *who, MSG_LIAISON_REQUIRED);
 
         // At this point we can update the data.
@@ -184,10 +183,7 @@ impl<T: Trait> Module<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::storage::mock::*;
-
-    use system::{self, EventRecord, Phase};
 
     #[test]
     fn succeed_adding_content() {

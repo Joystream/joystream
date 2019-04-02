@@ -38,10 +38,10 @@ pub trait Trait: timestamp::Trait + system::Trait + DOSRTrait + DDTrait {
 
 static MSG_SESSION_NOT_FOUND: &str = "Download session with the given ID not found.";
 static MSG_SESSION_HAS_ENDED: &str = "Download session with the given ID has already ended.";
-static MSG_CONSUMER_REQUIRED: &str = "Download session can only be modified by the downloader";
-static MSG_INVALID_TRANSMITTED_VALUE: &str = "Invalid update to transmitted bytes value";
+static MSG_CONSUMER_REQUIRED: &str = "Download session can only be modified by the downloader.";
+static MSG_INVALID_TRANSMITTED_VALUE: &str = "Invalid update to transmitted bytes value.";
 static MSG_NEED_STORAGE_PROVIDER: &str =
-    "Cannnot download without at least one active storage relationship!";
+    "Cannnot download without at least one active storage relationship.";
 
 const DEFAULT_FIRST_DOWNLOAD_SESSION_ID: u64 = 1;
 
@@ -137,8 +137,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Get session
-            let found = Self::download_sessions(session_id).ok_or(MSG_SESSION_NOT_FOUND);
-            let mut session = found.unwrap();
+            let mut session = Self::download_sessions(session_id).ok_or(MSG_SESSION_NOT_FOUND)?;
 
             // Ensure that the session hasn't ended yet.
             ensure!(session.state == DownloadState::Started, MSG_SESSION_HAS_ENDED);
