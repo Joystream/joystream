@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use super::{data_directory, data_object_type_registry};
+pub use super::{data_directory, data_object_storage_registry, data_object_type_registry};
 use crate::traits;
 use rstd::prelude::*;
 use runtime_io::with_externalities;
@@ -23,6 +23,7 @@ impl_outer_event! {
     pub enum MetaEvent for Test {
         data_object_type_registry<T>,
         data_directory<T>,
+        data_object_storage_registry<T>,
     }
 }
 
@@ -49,6 +50,19 @@ impl<T: data_object_type_registry::Trait> traits::IsActiveDataObjectType<T>
 {
     fn is_active_data_object_type(_which: &T::DataObjectTypeId) -> bool {
         true
+    }
+}
+
+pub struct AnyContentIdExists {}
+impl<T: data_object_storage_registry::Trait> traits::ContentIdExists<T> for AnyContentIdExists {
+    fn has_content(which: &T::ContentId) -> bool {
+        true
+    }
+
+    fn get_data_object(
+        which: &T::ContentId,
+    ) -> Result<data_directory::DataObject<T>, &'static str> {
+        Err("not implemented!")
     }
 }
 
@@ -83,6 +97,13 @@ impl data_directory::Trait for Test {
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
 }
 
+impl data_object_storage_registry::Trait for Test {
+    type Event = MetaEvent;
+    type DataObjectStorageRelationshipId = u64;
+    type Members = AnyAccountIsMember;
+    type ContentIdExists = AnyContentIdExists;
+}
+
 impl timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
@@ -96,12 +117,16 @@ impl consensus::Trait for Test {
 
 pub struct ExtBuilder {
     first_data_object_type_id: u64,
+    first_content_id: u64,
+    first_relationship_id: u64,
 }
 
 impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
             first_data_object_type_id: 1,
+            first_content_id: 2,
+            first_relationship_id: 3,
         }
     }
 }
@@ -109,6 +134,14 @@ impl Default for ExtBuilder {
 impl ExtBuilder {
     pub fn first_data_object_type_id(mut self, first_data_object_type_id: u64) -> Self {
         self.first_data_object_type_id = first_data_object_type_id;
+        self
+    }
+    pub fn first_content_id(mut self, first_content_id: u64) -> Self {
+        self.first_content_id = first_content_id;
+        self
+    }
+    pub fn first_relationship_id(mut self, first_relationship_id: u64) -> Self {
+        self.first_relationship_id = first_relationship_id;
         self
     }
     pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher> {
@@ -126,6 +159,24 @@ impl ExtBuilder {
             .0,
         );
 
+        t.extend(
+            data_directory::GenesisConfig::<Test> {
+                first_content_id: self.first_content_id,
+            }
+            .build_storage()
+            .unwrap()
+            .0,
+        );
+
+        t.extend(
+            data_object_storage_registry::GenesisConfig::<Test> {
+                first_relationship_id: self.first_relationship_id,
+            }
+            .build_storage()
+            .unwrap()
+            .0,
+        );
+
         t.into()
     }
 }
@@ -137,10 +188,14 @@ pub type TestDataDirectory = data_directory::Module<Test>;
 pub type TestDataObject = data_directory::DataObject<Test>;
 
 pub const TEST_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1000;
+pub const TEST_FIRST_CONTENT_ID: u64 = 2000;
+pub const TEST_FIRST_RELATIONSHIP_ID: u64 = 3000;
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
     with_externalities(
         &mut ExtBuilder::default()
             .first_data_object_type_id(TEST_FIRST_DATA_OBJECT_TYPE_ID)
+            .first_content_id(TEST_FIRST_CONTENT_ID)
+            .first_relationship_id(TEST_FIRST_RELATIONSHIP_ID)
             .build(),
         || f(),
     )
