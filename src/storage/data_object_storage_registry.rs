@@ -125,13 +125,12 @@ decl_module! {
 }
 
 impl <T: Trait> Module<T> {
-    fn toggle_dosr_ready(origin: T::Origin, id: T::DataObjectStorageRelationshipId, ready: bool) -> dispatch::Result {
+    fn toggle_dosr_ready(origin: T::Origin, id: T::DataObjectStorageRelationshipId, ready: bool) -> Result<(), &'static str> {
         // Origin has to be the storage provider mentioned in the DOSR
         let who = ensure_signed(origin)?;
 
         // For that, we need to fetch the identified DOSR
-        let found = Self::relationships(id).ok_or(MSG_DOSR_NOT_FOUND);
-        let mut dosr = found.unwrap();
+        let mut dosr = Self::relationships(id).ok_or(MSG_DOSR_NOT_FOUND)?;
         ensure!(dosr.storage_provider == who, MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY);
 
         // Flip to ready
