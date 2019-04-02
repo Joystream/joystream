@@ -15,17 +15,13 @@ pub trait Trait: system::Trait + MaybeDebug {
         + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
 }
 
-
-static MSG_REQUIRE_NEW_DO_TYPE: &str = "New Data Object Type required; the provided one seems to be in use already!";
 static MSG_DO_TYPE_NOT_FOUND: &str = "Data Object Type with the given ID not found!";
-static MSG_REQUIRE_DO_TYPE_ID: &str = "Can only update Data Object Types that are already registered (with an ID)!";
 
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1;
 
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct DataObjectType<T: Trait> {
-    pub id: Option<T::DataObjectTypeId>,
+pub struct DataObjectType {
     pub description: Vec<u8>,
     pub active: bool,
 
@@ -44,7 +40,7 @@ decl_storage! {
         pub NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>| config.first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::sa(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
         // Mapping of Data object types
-        pub DataObjectTypeMap get(data_object_type): map T::DataObjectTypeId => Option<DataObjectType<T>>;
+        pub DataObjectTypeMap get(data_object_type): map T::DataObjectTypeId => Option<DataObjectType>;
     }
 }
 
@@ -72,13 +68,11 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        pub fn register_data_object_type(origin, data_object_type: DataObjectType<T>) {
+        pub fn register_data_object_type(origin, data_object_type: DataObjectType) {
             ensure_root(origin)?;
-            ensure!(data_object_type.id.is_none(), MSG_REQUIRE_NEW_DO_TYPE);
 
             let new_do_type_id = Self::next_data_object_type_id();
-            let do_type: DataObjectType<T> = DataObjectType {
-                id: Some(new_do_type_id),
+            let do_type: DataObjectType = DataObjectType {
                 description: data_object_type.description.clone(),
                 active: data_object_type.active,
             };
@@ -89,11 +83,8 @@ decl_module! {
             Self::deposit_event(RawEvent::DataObjectTypeRegistered(new_do_type_id));
         }
 
-        pub fn update_data_object_type(origin, data_object_type: DataObjectType<T>) {
+        pub fn update_data_object_type(origin, id: T::DataObjectTypeId, data_object_type: DataObjectType) {
             ensure_root(origin)?;
-            ensure!(data_object_type.id.is_some(), MSG_REQUIRE_DO_TYPE_ID);
-
-            let id = data_object_type.id.unwrap();
             let mut do_type = Self::ensure_data_object_type(id)?;
 
             do_type.description = data_object_type.description.clone();
@@ -133,7 +124,7 @@ decl_module! {
 }
 
 impl <T: Trait> Module<T> {
-    fn ensure_data_object_type(id: T::DataObjectTypeId) -> Result<DataObjectType<T>, &'static str> {
+    fn ensure_data_object_type(id: T::DataObjectTypeId) -> Result<DataObjectType, &'static str> {
         return Self::data_object_type(&id).ok_or(MSG_DO_TYPE_NOT_FOUND);
     }
 }
