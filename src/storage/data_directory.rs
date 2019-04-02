@@ -30,11 +30,11 @@ pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
     type IsActiveDataObjectType: IsActiveDataObjectType<Self>;
 }
 
-static MSG_CID_NOT_FOUND: &str = "Content with this ID not found!";
-static MSG_LIAISON_REQUIRED: &str = "Only the liaison for the content may modify its status!";
-static MSG_CREATOR_MUST_BE_MEMBER: &str = "Only active members may create content!";
+static MSG_CID_NOT_FOUND: &str = "Content with this ID not found.";
+static MSG_LIAISON_REQUIRED: &str = "Only the liaison for the content may modify its status.";
+static MSG_CREATOR_MUST_BE_MEMBER: &str = "Only active members may create content.";
 static MSG_DO_TYPE_MUST_BE_ACTIVE: &str =
-    "Cannot create content for inactive or missing data object type!";
+    "Cannot create content for inactive or missing data object type.";
 
 const DEFAULT_FIRST_CONTENT_ID: u64 = 1;
 

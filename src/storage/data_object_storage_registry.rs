@@ -29,7 +29,7 @@ pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
     type ContentIdExists: ContentIdExists<Self>;
 }
 
-static MSG_CID_NOT_FOUND: &str = "Content with this ID not found!";
+static MSG_CID_NOT_FOUND: &str = "Content with this ID not found.";
 static MSG_DOSR_NOT_FOUND: &str = "No data object storage relationship found for this ID.";
 static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str =
     "Only the storage provider in a DOSR can decide whether they're ready.";
