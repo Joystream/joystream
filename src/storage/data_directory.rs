@@ -125,31 +125,28 @@ decl_module! {
         }
 
         // The LiaisonJudgement can be updated, but only by the liaison.
-        fn accept_content(origin, id: T::ContentId)
-        {
+        fn accept_content(origin, id: T::ContentId) {
             Self::update_content_judgement(origin, id.clone(), LiaisonJudgement::Accepted)?;
             Self::deposit_event(RawEvent::ContentAccepted(id));
         }
 
-        fn reject_content(origin, id: T::ContentId)
-        {
+        fn reject_content(origin, id: T::ContentId) {
             Self::update_content_judgement(origin, id.clone(), LiaisonJudgement::Rejected)?;
-            Self::deposit_event(RawEvent::ContentAccepted(id));
+            Self::deposit_event(RawEvent::ContentRejected(id));
         }
     }
 }
 
 impl <T: Trait> Module<T> {
-    fn update_content_judgement(origin: T::Origin, id: T::ContentId, judgement: LiaisonJudgement) -> dispatch::Result
-    {
-        let who = ensure_signed(origin);
+    fn update_content_judgement(origin: T::Origin, id: T::ContentId, judgement: LiaisonJudgement) -> dispatch::Result {
+        let who = ensure_signed(origin)?;
 
         // Find the data
         let found = Self::contents(&id).ok_or(MSG_CID_NOT_FOUND);
 
         // Make sure the liaison matches
         let mut data = found.unwrap();
-        ensure!(data.liaison == who.unwrap(), MSG_LIAISON_REQUIRED);
+        ensure!(data.liaison == who, MSG_LIAISON_REQUIRED);
 
         // At this point we can update the data.
         data.liaison_judgement = judgement;
@@ -271,5 +268,4 @@ mod tests {
             assert!(res.is_ok());
         });
     }
-
 }
