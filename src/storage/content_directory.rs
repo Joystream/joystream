@@ -6,7 +6,7 @@ use parity_codec_derive::{Encode, Decode};
 use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, ensure, Parameter};
 use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
 use system::{self, ensure_signed};
-use crate::traits::{IsActiveMember};
+use crate::traits::{Members};
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
 
 pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
@@ -19,8 +19,7 @@ pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
     type SchemaId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
         + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
 
-
-    type IsActiveMember: IsActiveMember<Self>;
+    type Members: Members<Self>;
 }
 
 static MSG_CREATOR_MUST_BE_MEMBER: &str = "Only active members may create content!";
@@ -86,7 +85,7 @@ decl_module! {
         {
             // Origin has to be a member
             let who = ensure_signed(origin).clone().unwrap();
-            if !T::IsActiveMember::is_active_member(&who) {
+            if !T::Members::is_active_member(&who) {
                 return Err(MSG_CREATOR_MUST_BE_MEMBER);
             }
 

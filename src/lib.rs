@@ -268,7 +268,7 @@ impl storage::content_directory::Trait for Runtime
 	type Event = Event;
 	type MetadataId = u64;
 	type SchemaId = u64;
-	type IsActiveMember = Members;
+	type Members = Members;
 }
 
 impl members::Trait for Runtime {
