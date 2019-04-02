@@ -1,17 +1,16 @@
 #![cfg(test)]
 
-use rstd::prelude::*;
-pub use crate::governance::{GovernanceCurrency};
 pub use super::actors;
-use crate::traits::{Members};
-//pub use crate::membership::members;
+pub use crate::governance::GovernanceCurrency;
+use crate::traits::Members;
+use rstd::prelude::*;
 pub use system;
 
-pub use primitives::{H256, Blake2Hasher};
+pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
+    testing::{Digest, DigestItem, Header, UintAuthorityId},
+    traits::{BlakeTwo256, IdentityLookup, OnFinalise},
     BuildStorage,
-    traits::{BlakeTwo256, OnFinalise, IdentityLookup},
-    testing::{Digest, DigestItem, Header, UintAuthorityId}
 };
 
 use srml_support::impl_outer_origin;
@@ -74,27 +73,47 @@ impl GovernanceCurrency for Test {
 pub struct MockMembers {}
 
 impl MockMembers {
-    pub fn alice_id() -> u32 {1}
-    pub fn alice_account() -> u64 {1}
-    pub fn bob_id() -> u32 {2}
-    pub fn bob_account() -> u64 {2}
+    pub fn alice_id() -> u32 {
+        1
+    }
+    pub fn alice_account() -> u64 {
+        1
+    }
+    pub fn bob_id() -> u32 {
+        2
+    }
+    pub fn bob_account() -> u64 {
+        2
+    }
 }
 
 impl Members<Test> for MockMembers {
     type Id = u32;
     fn is_active_member(who: &u64) -> bool {
-        if *who == Self::alice_account() { return true; }
-        if *who == Self::bob_account() { return true; }
+        if *who == Self::alice_account() {
+            return true;
+        }
+        if *who == Self::bob_account() {
+            return true;
+        }
         false
     }
     fn lookup_member_id(who: &u64) -> Result<u32, &'static str> {
-        if *who == Self::alice_account() { return Ok(Self::alice_id()); }
-        if *who == Self::bob_account() { return Ok(Self::bob_id()); }
+        if *who == Self::alice_account() {
+            return Ok(Self::alice_id());
+        }
+        if *who == Self::bob_account() {
+            return Ok(Self::bob_id());
+        }
         Err("member not found")
     }
     fn lookup_account_by_member_id(id: Self::Id) -> Result<u64, &'static str> {
-        if id == Self::alice_id() { return Ok(Self::alice_account()); }
-        if id == Self::bob_id() { return Ok(Self::bob_account()); }
+        if id == Self::alice_id() {
+            return Ok(Self::alice_account());
+        }
+        if id == Self::bob_id() {
+            return Ok(Self::bob_account());
+        }
         Err("account not found")
     }
 }
@@ -105,7 +124,10 @@ impl actors::Trait for Test {
 }
 
 pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-    let t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
+    let t = system::GenesisConfig::<Test>::default()
+        .build_storage()
+        .unwrap()
+        .0;
 
     runtime_io::TestExternalities::new(t)
 }
@@ -113,4 +135,3 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
 pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Actors = actors::Module<Test>;
-

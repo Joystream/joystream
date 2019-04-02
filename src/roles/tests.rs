@@ -1,7 +1,7 @@
 #![cfg(test)]
 
-use super::*;
 use super::mock::*;
+use super::*;
 
 use runtime_io::with_externalities;
 use srml_support::*;
@@ -14,18 +14,21 @@ fn init_storage_role() {
 fn init_storage_parmeters() -> actors::RoleParameters<Test> {
     let params = actors::RoleParameters {
         // minium balance required to stake to enter a role
-         min_stake: 100 as u32,
-         min_actors: 1 as u32,
-         max_actors: 2 as u32,
-         reward: 100 as u32,
-         reward_period: 100 as u64,
-         bonding_period: 100 as u64,
-         unbonding_period: 100 as u64,
-         min_service_period: 100 as u64,
-         startup_grace_period: 100 as u64,
-         entry_request_fee: 10 as u32,
+        min_stake: 100 as u32,
+        min_actors: 1 as u32,
+        max_actors: 2 as u32,
+        reward: 100 as u32,
+        reward_period: 100 as u64,
+        bonding_period: 100 as u64,
+        unbonding_period: 100 as u64,
+        min_service_period: 100 as u64,
+        startup_grace_period: 100 as u64,
+        entry_request_fee: 10 as u32,
     };
-    assert!(Actors::set_role_parameters(actors::Role::Storage, params.clone()).is_ok(), "");
+    assert!(
+        Actors::set_role_parameters(actors::Role::Storage, params.clone()).is_ok(),
+        ""
+    );
     params
 }
 
@@ -60,14 +63,31 @@ fn make_entry_request() {
         let requests = Actors::role_entry_requests();
         assert_eq!(requests.len(), 0);
 
-        assert!(Actors::role_entry_request(
-            Origin::signed(actor_account), actors::Role::Storage, MockMembers::alice_id()).is_err(), "");
+        assert!(
+            Actors::role_entry_request(
+                Origin::signed(actor_account),
+                actors::Role::Storage,
+                MockMembers::alice_id()
+            )
+            .is_err(),
+            ""
+        );
 
         let surplus_balance = 100;
-        Balances::set_free_balance(&actor_account, storage_params.entry_request_fee + surplus_balance);
+        Balances::set_free_balance(
+            &actor_account,
+            storage_params.entry_request_fee + surplus_balance,
+        );
 
-        assert!(Actors::role_entry_request(
-            Origin::signed(actor_account), actors::Role::Storage, MockMembers::alice_id()).is_ok(), "");
+        assert!(
+            Actors::role_entry_request(
+                Origin::signed(actor_account),
+                actors::Role::Storage,
+                MockMembers::alice_id()
+            )
+            .is_ok(),
+            ""
+        );
 
         assert_eq!(Balances::free_balance(&actor_account), surplus_balance);
 
@@ -88,7 +108,12 @@ fn staking() {
         let storage_params = init_storage_parmeters();
         let actor_account = 5;
 
-        let request: actors::Request<Test> = (actor_account, MockMembers::alice_id(), actors::Role::Storage, 1000);
+        let request: actors::Request<Test> = (
+            actor_account,
+            MockMembers::alice_id(),
+            actors::Role::Storage,
+            1000,
+        );
 
         <actors::RoleEntryRequests<Test>>::put(vec![request]);
 
@@ -97,7 +122,9 @@ fn staking() {
         assert!(Actors::stake(
             Origin::signed(MockMembers::alice_account()),
             actors::Role::Storage,
-            actor_account).is_ok());
+            actor_account
+        )
+        .is_ok());
 
         let ids = Actors::actor_account_ids();
         assert_eq!(ids, vec![actor_account]);
@@ -122,7 +149,9 @@ fn unstaking() {
         let storage_params = init_storage_parmeters();
         let actor_account = 5;
 
-        assert!(Actors::unstake(Origin::signed(MockMembers::alice_account()), actor_account).is_err());
+        assert!(
+            Actors::unstake(Origin::signed(MockMembers::alice_account()), actor_account).is_err()
+        );
 
         let actor: actors::Actor<Test> = actors::Actor {
             role: actors::Role::Storage,
@@ -138,7 +167,9 @@ fn unstaking() {
         let current_block = 500;
 
         System::set_block_number(current_block);
-        assert!(Actors::unstake(Origin::signed(MockMembers::alice_account()), actor_account).is_ok());
+        assert!(
+            Actors::unstake(Origin::signed(MockMembers::alice_account()), actor_account).is_ok()
+        );
 
         assert_eq!(Actors::actor_account_ids().len(), 0);
 
@@ -152,6 +183,9 @@ fn unstaking() {
         assert_eq!(account_ids_for_member.len(), 0);
 
         assert!(<actors::Bondage<Test>>::exists(actor_account));
-        assert_eq!(Actors::bondage(actor_account), current_block + storage_params.unbonding_period);
+        assert_eq!(
+            Actors::bondage(actor_account),
+            current_block + storage_params.unbonding_period
+        );
     });
 }

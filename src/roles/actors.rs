@@ -1,13 +1,17 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::prelude::*;
+use crate::governance::{BalanceOf, GovernanceCurrency};
 use parity_codec::Codec;
-use parity_codec_derive::{Encode, Decode};
-use srml_support::{StorageMap, StorageValue, dispatch, decl_module, decl_storage, decl_event, ensure, Parameter};
+use parity_codec_derive::{Decode, Encode};
+use rstd::prelude::*;
+use runtime_primitives::traits::{
+    As, Bounded, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic, Zero,
+};
 use srml_support::traits::{Currency, EnsureAccountLiquid};
-use runtime_primitives::traits::{Zero, Bounded, SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
+use srml_support::{
+    decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
+};
 use system::{self, ensure_signed};
-use crate::governance::{GovernanceCurrency, BalanceOf };
 
 use crate::traits::{Members, Roles};
 
@@ -15,7 +19,6 @@ use crate::traits::{Members, Roles};
 pub enum Role {
     Storage,
 }
-
 
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, Copy, Clone, Eq, PartialEq)]
@@ -127,9 +130,10 @@ impl<T: Trait> Module<T> {
         Self::actor_by_account_id(role_key).ok_or("not role key")
     }
 
-    fn ensure_actor_is_member(role_key: &T::AccountId, member_id: MemberId<T>)
-        -> Result<Actor<T>, &'static str>
-    {
+    fn ensure_actor_is_member(
+        role_key: &T::AccountId,
+        member_id: MemberId<T>,
+    ) -> Result<Actor<T>, &'static str> {
         let actor = Self::ensure_actor(role_key)?;
         if actor.member_id == member_id {
             Ok(actor)
@@ -166,9 +170,17 @@ impl<T: Trait> Module<T> {
         <ActorByAccountId<T>>::remove(&actor_account);
     }
 
-    fn apply_unstake(actor_account: T::AccountId, role: Role, member_id: MemberId<T>, unbonding_period: T::BlockNumber) {
+    fn apply_unstake(
+        actor_account: T::AccountId,
+        role: Role,
+        member_id: MemberId<T>,
+        unbonding_period: T::BlockNumber,
+    ) {
         // simple unstaking ...only applying unbonding period
-        <Bondage<T>>::insert(&actor_account, <system::Module<T>>::block_number() + unbonding_period);
+        <Bondage<T>>::insert(
+            &actor_account,
+            <system::Module<T>>::block_number() + unbonding_period,
+        );
 
         Self::remove_actor_from_service(actor_account, role, member_id);
     }
@@ -359,11 +371,11 @@ decl_module! {
 }
 
 impl<T: Trait> EnsureAccountLiquid<T::AccountId> for Module<T> {
-	fn ensure_account_liquid(who: &T::AccountId) -> dispatch::Result {
-		if Self::bondage(who) <= <system::Module<T>>::block_number() {
-			Ok(())
-		} else {
-			Err("cannot transfer illiquid funds")
-		}
-	}
+    fn ensure_account_liquid(who: &T::AccountId) -> dispatch::Result {
+        if Self::bondage(who) <= <system::Module<T>>::block_number() {
+            Ok(())
+        } else {
+            Err("cannot transfer illiquid funds")
+        }
+    }
 }
