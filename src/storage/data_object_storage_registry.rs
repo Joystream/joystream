@@ -1,19 +1,29 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::prelude::*;
-use parity_codec::Codec;
-use parity_codec_derive::{Encode, Decode};
-use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, Parameter, dispatch, ensure};
-use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
-use system::{self, ensure_signed};
-use crate::traits::{IsActiveMember, ContentIdExists, ContentHasStorage};
 use crate::storage::data_directory::Trait as DDTrait;
+use crate::traits::{ContentHasStorage, ContentIdExists, IsActiveMember};
+use parity_codec::Codec;
+use parity_codec_derive::{Decode, Encode};
+use rstd::prelude::*;
+use runtime_primitives::traits::{As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
+use srml_support::{
+    decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
+};
+use system::{self, ensure_signed};
 
 pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type DataObjectStorageRelationshipId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
-        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+    type DataObjectStorageRelationshipId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + As<usize>
+        + As<u64>
+        + MaybeSerializeDebug
+        + PartialEq;
 
     type IsActiveMember: IsActiveMember<Self>;
     type ContentIdExists: ContentIdExists<Self>;
@@ -21,7 +31,8 @@ pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
 
 static MSG_CID_NOT_FOUND: &str = "Content with this ID not found!";
 static MSG_DOSR_NOT_FOUND: &str = "No data object storage relationship found for this ID.";
-static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str = "Only the storage provider in a DOSR can decide whether they're ready.";
+static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str =
+    "Only the storage provider in a DOSR can decide whether they're ready.";
 
 const DEFAULT_FIRST_RELATIONSHIP_ID: u64 = 1;
 
@@ -63,7 +74,9 @@ decl_event! {
 impl<T: Trait> ContentHasStorage<T> for Module<T> {
     fn has_storage_provider(which: &T::ContentId) -> bool {
         let dosr_list = Self::relationships_by_content_id(which);
-        return dosr_list.iter().any(|&dosr_id| Self::relationships(dosr_id).unwrap().ready);
+        return dosr_list
+            .iter()
+            .any(|&dosr_id| Self::relationships(dosr_id).unwrap().ready);
     }
 
     fn is_ready_at_storage_provider(which: &T::ContentId, provider: &T::AccountId) -> bool {
@@ -74,8 +87,6 @@ impl<T: Trait> ContentHasStorage<T> for Module<T> {
         });
     }
 }
-
-
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -124,21 +135,30 @@ decl_module! {
     }
 }
 
-impl <T: Trait> Module<T> {
-    fn toggle_dosr_ready(origin: T::Origin, id: T::DataObjectStorageRelationshipId, ready: bool) -> Result<(), &'static str> {
+impl<T: Trait> Module<T> {
+    fn toggle_dosr_ready(
+        origin: T::Origin,
+        id: T::DataObjectStorageRelationshipId,
+        ready: bool,
+    ) -> Result<(), &'static str> {
         // Origin has to be the storage provider mentioned in the DOSR
         let who = ensure_signed(origin)?;
 
         // For that, we need to fetch the identified DOSR
         let mut dosr = Self::relationships(id).ok_or(MSG_DOSR_NOT_FOUND)?;
-        ensure!(dosr.storage_provider == who, MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY);
+        ensure!(
+            dosr.storage_provider == who,
+            MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY
+        );
 
         // Flip to ready
         dosr.ready = ready;
 
         // Update DOSR and fire event.
         <Relationships<T>>::insert(id, dosr);
-        Self::deposit_event(RawEvent::DataObjectStorageRelationshipReadyUpdated(id, true));
+        Self::deposit_event(RawEvent::DataObjectStorageRelationshipReadyUpdated(
+            id, true,
+        ));
 
         Ok(())
     }

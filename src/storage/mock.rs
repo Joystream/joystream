@@ -1,19 +1,19 @@
 #![cfg(test)]
 
-use rstd::prelude::*;
-pub use super::{data_object_type_registry, data_directory};
-pub use system;
+pub use super::{data_directory, data_object_type_registry};
 use crate::traits;
+use rstd::prelude::*;
 use runtime_io::with_externalities;
+pub use system;
 
-pub use primitives::{H256, Blake2Hasher};
+pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
+    testing::{Digest, DigestItem, Header, UintAuthorityId},
+    traits::{BlakeTwo256, IdentityLookup, OnFinalise},
     BuildStorage,
-    traits::{BlakeTwo256, OnFinalise, IdentityLookup},
-    testing::{Digest, DigestItem, Header, UintAuthorityId}
 };
 
-use srml_support::{impl_outer_origin, impl_outer_event};
+use srml_support::{impl_outer_event, impl_outer_origin};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -26,7 +26,6 @@ impl_outer_event! {
     }
 }
 
-
 pub struct AnyAccountIsMember {}
 impl<T: system::Trait> traits::IsActiveMember<T> for AnyAccountIsMember {
     fn is_active_member(_who: &T::AccountId) -> bool {
@@ -35,12 +34,13 @@ impl<T: system::Trait> traits::IsActiveMember<T> for AnyAccountIsMember {
 }
 
 pub struct AnyDataObjectTypeIsActive {}
-impl<T: data_object_type_registry::Trait> traits::IsActiveDataObjectType<T> for AnyDataObjectTypeIsActive {
+impl<T: data_object_type_registry::Trait> traits::IsActiveDataObjectType<T>
+    for AnyDataObjectTypeIsActive
+{
     fn is_active_data_object_type(_which: &T::DataObjectTypeId) -> bool {
         true
     }
 }
-
 
 // For testing the module, we construct most of a mock runtime. This means
 // first constructing a configuration type (`Test`) which `impl`s each of the
@@ -102,16 +102,23 @@ impl ExtBuilder {
         self
     }
     pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher> {
-        let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
+        let mut t = system::GenesisConfig::<Test>::default()
+            .build_storage()
+            .unwrap()
+            .0;
 
-        t.extend(data_object_type_registry::GenesisConfig::<Test>{
-            first_data_object_type_id: self.first_data_object_type_id,
-        }.build_storage().unwrap().0);
+        t.extend(
+            data_object_type_registry::GenesisConfig::<Test> {
+                first_data_object_type_id: self.first_data_object_type_id,
+            }
+            .build_storage()
+            .unwrap()
+            .0,
+        );
 
         t.into()
     }
 }
-
 
 pub type System = system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
@@ -119,9 +126,12 @@ pub type TestDataObjectType = data_object_type_registry::DataObjectType<Test>;
 pub type TestDataDirectory = data_directory::Module<Test>;
 pub type TestDataObject = data_directory::DataObject<Test>;
 
-
 pub const TEST_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1000;
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
-    with_externalities(&mut ExtBuilder::default()
-        .first_data_object_type_id(TEST_FIRST_DATA_OBJECT_TYPE_ID).build(), || f())
+    with_externalities(
+        &mut ExtBuilder::default()
+            .first_data_object_type_id(TEST_FIRST_DATA_OBJECT_TYPE_ID)
+            .build(),
+        || f(),
+    )
 }

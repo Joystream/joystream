@@ -1,20 +1,30 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::prelude::*;
-use parity_codec::Codec;
-use parity_codec_derive::{Encode, Decode};
-use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, Parameter, ensure};
-use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug};
-use system::{self, ensure_signed};
-use crate::traits::{ContentIdExists, ContentHasStorage};
-use crate::storage::data_object_storage_registry::Trait as DOSRTrait;
 use crate::storage::data_directory::Trait as DDTrait;
+use crate::storage::data_object_storage_registry::Trait as DOSRTrait;
+use crate::traits::{ContentHasStorage, ContentIdExists};
+use parity_codec::Codec;
+use parity_codec_derive::{Decode, Encode};
+use rstd::prelude::*;
+use runtime_primitives::traits::{As, MaybeSerializeDebug, Member, SimpleArithmetic};
+use srml_support::{
+    decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
+};
+use system::{self, ensure_signed};
 
 pub trait Trait: timestamp::Trait + system::Trait + DOSRTrait + DDTrait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type DownloadSessionId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
-        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+    type DownloadSessionId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + As<usize>
+        + As<u64>
+        + MaybeSerializeDebug
+        + PartialEq;
 
     type ContentHasStorage: ContentHasStorage<Self>;
 }
@@ -23,14 +33,14 @@ static MSG_SESSION_NOT_FOUND: &str = "Download session with the given ID not fou
 static MSG_SESSION_HAS_ENDED: &str = "Download session with the given ID has already ended.";
 static MSG_CONSUMER_REQUIRED: &str = "Download session can only be modified by the downloader";
 static MSG_INVALID_TRANSMITTED_VALUE: &str = "Invalid update to transmitted bytes value";
-static MSG_NEED_STORAGE_PROVIDER: &str = "Cannnot download without at least one active storage relationship!";
+static MSG_NEED_STORAGE_PROVIDER: &str =
+    "Cannnot download without at least one active storage relationship!";
 
 const DEFAULT_FIRST_DOWNLOAD_SESSION_ID: u64 = 1;
 
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub enum DownloadState
-{
+pub enum DownloadState {
     Started,
     Ended,
 }
@@ -40,7 +50,6 @@ impl Default for DownloadState {
         DownloadState::Started
     }
 }
-
 
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]

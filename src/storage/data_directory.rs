@@ -1,19 +1,20 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::prelude::*;
-use parity_codec::Codec;
-use parity_codec_derive::{Encode, Decode};
-use srml_support::{StorageMap, decl_module, decl_storage, decl_event, ensure, Parameter, dispatch};
-use runtime_primitives::traits::{Member, MaybeSerializeDebug, MaybeDebug};
-use system::{self, ensure_signed};
-use crate::traits::{IsActiveMember, IsActiveDataObjectType, ContentIdExists};
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
+use crate::traits::{ContentIdExists, IsActiveDataObjectType, IsActiveMember};
+use parity_codec::Codec;
+use parity_codec_derive::{Decode, Encode};
+use rstd::prelude::*;
+use runtime_primitives::traits::{MaybeDebug, MaybeSerializeDebug, Member};
+use srml_support::{
+    decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap,
+};
+use system::{self, ensure_signed};
 
 pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type ContentId: Parameter + Member + Codec + Default + Clone
-        + MaybeSerializeDebug + PartialEq;
+    type ContentId: Parameter + Member + Codec + Default + Clone + MaybeSerializeDebug + PartialEq;
 
     type IsActiveMember: IsActiveMember<Self>;
     type IsActiveDataObjectType: IsActiveDataObjectType<Self>;
@@ -23,12 +24,12 @@ static MSG_DUPLICATE_CID: &str = "Content with this ID already exists!";
 static MSG_CID_NOT_FOUND: &str = "Content with this ID not found!";
 static MSG_LIAISON_REQUIRED: &str = "Only the liaison for the content may modify its status!";
 static MSG_CREATOR_MUST_BE_MEMBER: &str = "Only active members may create content!";
-static MSG_DO_TYPE_MUST_BE_ACTIVE: &str = "Cannot create content for inactive or missing data object type!";
+static MSG_DO_TYPE_MUST_BE_ACTIVE: &str =
+    "Cannot create content for inactive or missing data object type!";
 
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub enum LiaisonJudgement
-{
+pub enum LiaisonJudgement {
     Pending,
     Rejected,
     Accepted,
@@ -141,8 +142,12 @@ decl_module! {
     }
 }
 
-impl <T: Trait> Module<T> {
-    fn update_content_judgement(who: &T::AccountId, id: T::ContentId, judgement: LiaisonJudgement) -> dispatch::Result {
+impl<T: Trait> Module<T> {
+    fn update_content_judgement(
+        who: &T::AccountId,
+        id: T::ContentId,
+        judgement: LiaisonJudgement,
+    ) -> dispatch::Result {
         // Find the data
         let found = Self::contents(&id).ok_or(MSG_CID_NOT_FOUND);
 
@@ -165,23 +170,27 @@ mod tests {
     use super::*;
     use crate::storage::mock::*;
 
-    use system::{self, Phase, EventRecord};
+    use system::{self, EventRecord, Phase};
 
     #[test]
     fn succeed_adding_content() {
         with_default_mock_builder(|| {
             // Register a content name "foo" with 1234 bytes of type 1, which should be recognized.
-            let res = TestDataDirectory::add_content(Origin::signed(1),
-                                                     1,
-                                                     "foo".as_bytes().to_vec(),
-                                                     1234);
+            let res = TestDataDirectory::add_content(
+                Origin::signed(1),
+                1,
+                "foo".as_bytes().to_vec(),
+                1234,
+            );
             assert!(res.is_ok());
 
             // Register the same under a different name
-            let res = TestDataDirectory::add_content(Origin::signed(1),
-                                                     1,
-                                                     "bar".as_bytes().to_vec(),
-                                                     1234);
+            let res = TestDataDirectory::add_content(
+                Origin::signed(1),
+                1,
+                "bar".as_bytes().to_vec(),
+                1234,
+            );
             assert!(res.is_ok());
         });
     }
@@ -190,31 +199,39 @@ mod tests {
     fn fail_adding_content_twice() {
         with_default_mock_builder(|| {
             // Register a content name "foo" with 1234 bytes of type 1, which should be recognized.
-            let res = TestDataDirectory::add_content(Origin::signed(1),
-                                                     1,
-                                                     "foo".as_bytes().to_vec(),
-                                                     1234);
+            let res = TestDataDirectory::add_content(
+                Origin::signed(1),
+                1,
+                "foo".as_bytes().to_vec(),
+                1234,
+            );
             assert!(res.is_ok());
 
             // The second time must fail
-            let res = TestDataDirectory::add_content(Origin::signed(1),
-                                                     1,
-                                                     "foo".as_bytes().to_vec(),
-                                                     1234);
+            let res = TestDataDirectory::add_content(
+                Origin::signed(1),
+                1,
+                "foo".as_bytes().to_vec(),
+                1234,
+            );
             assert!(res.is_err());
 
             // Also from a different origin must fail
-            let res = TestDataDirectory::add_content(Origin::signed(2),
-                                                     1,
-                                                     "foo".as_bytes().to_vec(),
-                                                     1234);
+            let res = TestDataDirectory::add_content(
+                Origin::signed(2),
+                1,
+                "foo".as_bytes().to_vec(),
+                1234,
+            );
             assert!(res.is_err());
 
             // Also with a different size must fail
-            let res = TestDataDirectory::add_content(Origin::signed(2),
-                                                     1,
-                                                     "foo".as_bytes().to_vec(),
-                                                     4321);
+            let res = TestDataDirectory::add_content(
+                Origin::signed(2),
+                1,
+                "foo".as_bytes().to_vec(),
+                4321,
+            );
             assert!(res.is_err());
         });
     }
@@ -222,25 +239,34 @@ mod tests {
     #[test]
     fn accept_content_as_liaison() {
         with_default_mock_builder(|| {
-            let res = TestDataDirectory::add_content(Origin::signed(1),
-                                                     1,
-                                                     "foo".as_bytes().to_vec(),
-                                                     1234);
+            let res = TestDataDirectory::add_content(
+                Origin::signed(1),
+                1,
+                "foo".as_bytes().to_vec(),
+                1234,
+            );
             assert!(res.is_ok());
 
             // An appropriate event should have been fired.
             let liaison = *match &System::events().last().unwrap().event {
-                MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(_content_id, liaison)) => liaison,
+                MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
+                    _content_id,
+                    liaison,
+                )) => liaison,
                 _ => &0xdeadbeefu64, // invalid value, unlikely to match
             };
             assert_ne!(liaison, 0xdeadbeefu64);
 
             // Accepting content should not work with some random origin
-            let res = TestDataDirectory::accept_content(Origin::signed(42), "foo".as_bytes().to_vec());
+            let res =
+                TestDataDirectory::accept_content(Origin::signed(42), "foo".as_bytes().to_vec());
             assert!(res.is_err());
 
             // However, with the liaison as origin it should.
-            let res = TestDataDirectory::accept_content(Origin::signed(liaison), "foo".as_bytes().to_vec());
+            let res = TestDataDirectory::accept_content(
+                Origin::signed(liaison),
+                "foo".as_bytes().to_vec(),
+            );
             assert!(res.is_ok());
         });
     }
@@ -248,25 +274,34 @@ mod tests {
     #[test]
     fn reject_content_as_liaison() {
         with_default_mock_builder(|| {
-            let res = TestDataDirectory::add_content(Origin::signed(1),
-                                                     1,
-                                                     "foo".as_bytes().to_vec(),
-                                                     1234);
+            let res = TestDataDirectory::add_content(
+                Origin::signed(1),
+                1,
+                "foo".as_bytes().to_vec(),
+                1234,
+            );
             assert!(res.is_ok());
 
             // An appropriate event should have been fired.
             let liaison = *match &System::events().last().unwrap().event {
-                MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(_content_id, liaison)) => liaison,
+                MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
+                    _content_id,
+                    liaison,
+                )) => liaison,
                 _ => &0xdeadbeefu64, // invalid value, unlikely to match
             };
             assert_ne!(liaison, 0xdeadbeefu64);
 
             // Rejecting content should not work with some random origin
-            let res = TestDataDirectory::reject_content(Origin::signed(42), "foo".as_bytes().to_vec());
+            let res =
+                TestDataDirectory::reject_content(Origin::signed(42), "foo".as_bytes().to_vec());
             assert!(res.is_err());
 
             // However, with the liaison as origin it should.
-            let res = TestDataDirectory::reject_content(Origin::signed(liaison), "foo".as_bytes().to_vec());
+            let res = TestDataDirectory::reject_content(
+                Origin::signed(liaison),
+                "foo".as_bytes().to_vec(),
+            );
             assert!(res.is_ok());
         });
     }

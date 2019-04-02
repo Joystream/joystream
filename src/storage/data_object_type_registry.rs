@@ -1,24 +1,35 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::prelude::*;
-use parity_codec::Codec;
-use parity_codec_derive::{Encode, Decode};
-use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, ensure, Parameter};
-use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
-use system::{self, ensure_root};
 use crate::traits;
+use parity_codec::Codec;
+use parity_codec_derive::{Decode, Encode};
+use rstd::prelude::*;
+use runtime_primitives::traits::{As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
+use srml_support::{
+    decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
+};
+use system::{self, ensure_root};
 
 pub trait Trait: system::Trait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type DataObjectTypeId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
-        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+    type DataObjectTypeId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + As<usize>
+        + As<u64>
+        + MaybeSerializeDebug
+        + PartialEq;
 }
 
-
-static MSG_REQUIRE_NEW_DO_TYPE: &str = "New Data Object Type required; the provided one seems to be in use already!";
+static MSG_REQUIRE_NEW_DO_TYPE: &str =
+    "New Data Object Type required; the provided one seems to be in use already!";
 static MSG_DO_TYPE_NOT_FOUND: &str = "Data Object Type with the given ID not found!";
-static MSG_REQUIRE_DO_TYPE_ID: &str = "Can only update Data Object Types that are already registered (with an ID)!";
+static MSG_REQUIRE_DO_TYPE_ID: &str =
+    "Can only update Data Object Types that are already registered (with an ID)!";
 
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1;
 
@@ -28,7 +39,6 @@ pub struct DataObjectType<T: Trait> {
     pub id: Option<T::DataObjectTypeId>,
     pub description: Vec<u8>,
     pub active: bool,
-
     // TODO in future releases
     // - maximum size
     // - replication factor
@@ -56,17 +66,14 @@ decl_event! {
     }
 }
 
-
-
 impl<T: Trait> traits::IsActiveDataObjectType<T> for Module<T> {
     fn is_active_data_object_type(which: &T::DataObjectTypeId) -> bool {
         match Self::ensure_data_object_type(*which) {
             Ok(do_type) => do_type.active,
-            Err(_err) => false
+            Err(_err) => false,
         }
     }
 }
-
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -132,7 +139,7 @@ decl_module! {
     }
 }
 
-impl <T: Trait> Module<T> {
+impl<T: Trait> Module<T> {
     fn ensure_data_object_type(id: T::DataObjectTypeId) -> Result<DataObjectType<T>, &'static str> {
         return Self::data_object_type(&id).ok_or(MSG_DO_TYPE_NOT_FOUND);
     }
@@ -143,12 +150,15 @@ mod tests {
     use super::*;
     use crate::storage::mock::*;
 
-    use system::{self, Phase, EventRecord};
+    use system::{self, EventRecord, Phase};
 
     #[test]
     fn initial_state() {
         with_default_mock_builder(|| {
-            assert_eq!(TestDataObjectTypeRegistry::first_data_object_type_id(), TEST_FIRST_DATA_OBJECT_TYPE_ID);
+            assert_eq!(
+                TestDataObjectTypeRegistry::first_data_object_type_id(),
+                TEST_FIRST_DATA_OBJECT_TYPE_ID
+            );
         });
     }
 
@@ -160,7 +170,8 @@ mod tests {
                 description: "foo".as_bytes().to_vec(),
                 active: false,
             };
-            let res = TestDataObjectTypeRegistry::register_data_object_type(Origin::signed(1), data);
+            let res =
+                TestDataObjectTypeRegistry::register_data_object_type(Origin::signed(1), data);
             assert!(res.is_err());
         });
     }
@@ -189,13 +200,17 @@ mod tests {
             };
             let id_res = TestDataObjectTypeRegistry::register_data_object_type(Origin::ROOT, data);
             assert!(id_res.is_ok());
-            assert_eq!(*System::events().last().unwrap(),
+            assert_eq!(
+                *System::events().last().unwrap(),
                 EventRecord {
                     phase: Phase::ApplyExtrinsic(0),
-                    event: MetaEvent::data_object_type_registry(data_object_type_registry::RawEvent::DataObjectTypeRegistered(TEST_FIRST_DATA_OBJECT_TYPE_ID)),
+                    event: MetaEvent::data_object_type_registry(
+                        data_object_type_registry::RawEvent::DataObjectTypeRegistered(
+                            TEST_FIRST_DATA_OBJECT_TYPE_ID
+                        )
+                    ),
                 }
             );
-
 
             // Now update it with new data - we need the ID to be the same as in
             // returned by the previous call. First, though, try and fail without
@@ -224,15 +239,19 @@ mod tests {
             };
             let res = TestDataObjectTypeRegistry::update_data_object_type(Origin::ROOT, updated3);
             assert!(res.is_ok());
-            assert_eq!(*System::events().last().unwrap(),
+            assert_eq!(
+                *System::events().last().unwrap(),
                 EventRecord {
                     phase: Phase::ApplyExtrinsic(0),
-                    event: MetaEvent::data_object_type_registry(data_object_type_registry::RawEvent::DataObjectTypeUpdated(TEST_FIRST_DATA_OBJECT_TYPE_ID)),
+                    event: MetaEvent::data_object_type_registry(
+                        data_object_type_registry::RawEvent::DataObjectTypeUpdated(
+                            TEST_FIRST_DATA_OBJECT_TYPE_ID
+                        )
+                    ),
                 }
             );
         });
     }
-
 
     #[test]
     fn activate_existing() {
@@ -245,10 +264,15 @@ mod tests {
             };
             let id_res = TestDataObjectTypeRegistry::register_data_object_type(Origin::ROOT, data);
             assert!(id_res.is_ok());
-            assert_eq!(*System::events().last().unwrap(),
+            assert_eq!(
+                *System::events().last().unwrap(),
                 EventRecord {
                     phase: Phase::ApplyExtrinsic(0),
-                    event: MetaEvent::data_object_type_registry(data_object_type_registry::RawEvent::DataObjectTypeRegistered(TEST_FIRST_DATA_OBJECT_TYPE_ID)),
+                    event: MetaEvent::data_object_type_registry(
+                        data_object_type_registry::RawEvent::DataObjectTypeRegistered(
+                            TEST_FIRST_DATA_OBJECT_TYPE_ID
+                        )
+                    ),
                 }
             );
 
@@ -258,12 +282,20 @@ mod tests {
             assert!(!data.unwrap().active);
 
             // Now activate the data object type
-            let res = TestDataObjectTypeRegistry::activate_data_object_type(Origin::ROOT, TEST_FIRST_DATA_OBJECT_TYPE_ID);
+            let res = TestDataObjectTypeRegistry::activate_data_object_type(
+                Origin::ROOT,
+                TEST_FIRST_DATA_OBJECT_TYPE_ID,
+            );
             assert!(res.is_ok());
-            assert_eq!(*System::events().last().unwrap(),
+            assert_eq!(
+                *System::events().last().unwrap(),
                 EventRecord {
                     phase: Phase::ApplyExtrinsic(0),
-                    event: MetaEvent::data_object_type_registry(data_object_type_registry::RawEvent::DataObjectTypeUpdated(TEST_FIRST_DATA_OBJECT_TYPE_ID)),
+                    event: MetaEvent::data_object_type_registry(
+                        data_object_type_registry::RawEvent::DataObjectTypeUpdated(
+                            TEST_FIRST_DATA_OBJECT_TYPE_ID
+                        )
+                    ),
                 }
             );
 
@@ -273,7 +305,10 @@ mod tests {
             assert!(data.unwrap().active);
 
             // Deactivate again.
-            let res = TestDataObjectTypeRegistry::deactivate_data_object_type(Origin::ROOT, TEST_FIRST_DATA_OBJECT_TYPE_ID);
+            let res = TestDataObjectTypeRegistry::deactivate_data_object_type(
+                Origin::ROOT,
+                TEST_FIRST_DATA_OBJECT_TYPE_ID,
+            );
             assert!(res.is_ok());
             let data = TestDataObjectTypeRegistry::data_object_type(TEST_FIRST_DATA_OBJECT_TYPE_ID);
             assert!(data.is_some());
