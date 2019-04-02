@@ -110,7 +110,7 @@ decl_module! {
             // 1 - Video (schema TBD, i.e. handled in UI only)
             // 2 - Podcast (schema TBD, i.e. handled in UI only)
             // Pseudocode
-            // if schema in (1, 2) {
+            // if schema not in (1, 2) {
             //     return Err(MSG_INVALID_SCHEMA_ID);
             // }
 
