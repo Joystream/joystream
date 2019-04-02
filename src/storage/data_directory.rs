@@ -47,7 +47,7 @@ pub struct DataObject<T: Trait> {
     pub size: u64,
     pub added_at_block: T::BlockNumber,
     pub added_at_time: T::Moment,
-    pub origin: T::AccountId,
+    pub owner: T::AccountId,
     pub liaison: T::AccountId,
     pub liaison_judgement: LiaisonJudgement,
 }
