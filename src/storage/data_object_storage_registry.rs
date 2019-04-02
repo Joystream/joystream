@@ -3,7 +3,7 @@
 use rstd::prelude::*;
 use parity_codec::Codec;
 use parity_codec_derive::{Encode, Decode};
-use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, Parameter, dispatch};
+use srml_support::{StorageMap, StorageValue, decl_module, decl_storage, decl_event, Parameter, dispatch, ensure};
 use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug, MaybeDebug};
 use system::{self, ensure_signed};
 use crate::traits::{IsActiveMember, ContentIdExists, ContentHasStorage};
@@ -83,16 +83,14 @@ decl_module! {
 
         pub fn add_data_object_storage_relationship(origin, cid: T::ContentId) {
             // Origin has to be a storage provider
-            let who = ensure_signed(origin).clone().unwrap();
+            let who = ensure_signed(origin)?;
             // TODO check for being staked as a storage provider
             // if !T::IsActiveMember::is_active_member(&who) {
             //     return Err(MSG_CREATOR_MUST_BE_MEMBER);
             // }
 
             // Content ID must exist
-            if !T::ContentIdExists::has_content(&cid) {
-                return Err(MSG_CID_NOT_FOUND);
-            }
+            ensure!(T::ContentIdExists::has_content(&cid), MSG_CID_NOT_FOUND);
 
             // Create new ID, data.
             let new_id = Self::next_data_object_storage_relationship_id();
@@ -129,14 +127,12 @@ impl <T: Trait> Module<T> {
     fn toggle_dosr_ready(origin: T::Origin, id: T::DataObjectStorageRelationshipId, ready: bool) -> dispatch::Result
     {
         // Origin has to be the storage provider mentioned in the DOSR
-        let who = ensure_signed(origin).clone().unwrap();
+        let who = ensure_signed(origin)?;
 
         // For that, we need to fetch the identified DOSR
         let found = Self::data_object_storage_relationship(id).ok_or(MSG_DOSR_NOT_FOUND);
         let mut dosr = found.unwrap();
-        if dosr.storage_provider != who {
-            return Err(MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY);
-        }
+        ensure!(dosr.storage_provider == who, MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY);
 
         // Flip to ready
         dosr.ready = ready;

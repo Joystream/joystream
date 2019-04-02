@@ -23,6 +23,7 @@ static MSG_SESSION_NOT_FOUND: &str = "Download session with the given ID not fou
 static MSG_SESSION_HAS_ENDED: &str = "Download session with the given ID has already ended.";
 static MSG_CONSUMER_REQUIRED: &str = "Download session can only be modified by the downloader";
 static MSG_INVALID_TRANSMITTED_VALUE: &str = "Invalid update to transmitted bytes value";
+static MSG_NEED_STORAGE_PROVIDER: &str = "Cannnot download without at least one active storage relationship!";
 
 const DEFAULT_FIRST_DOWNLOAD_SESSION_ID: u64 = 1;
 
@@ -88,12 +89,10 @@ decl_module! {
         // start this, and hand the session ID to the distributor as proof they did.
         pub fn start_download(origin, content_id: <T as DDTrait>::ContentId, from: T::AccountId) {
             // Origin can be anyone, it doesn't have to be a member.
-            let who = ensure_signed(origin).clone().unwrap();
+            let who = ensure_signed(origin)?;
 
             // There has to be a storage relationship for the content ID and storage provider.
-            if !T::ContentHasStorage::is_ready_at_storage_provider(&content_id, &from) {
-                return Err("NOPETYNOPE");
-            }
+            ensure!(T::ContentHasStorage::is_ready_at_storage_provider(&content_id, &from), MSG_NEED_STORAGE_PROVIDER);
 
             // Let's create the entry then
             let new_id = Self::next_download_session_id();
@@ -119,7 +118,7 @@ decl_module! {
         pub fn update_transmitted(origin, session_id: T::DownloadSessionId, transmitted_bytes: u64)
         {
             // Origin can be anyone, it doesn't have to be a member.
-            let who = ensure_signed(origin).clone().unwrap();
+            let who = ensure_signed(origin)?;
 
             // Get session
             let found = Self::download_sessions(session_id).ok_or(MSG_SESSION_NOT_FOUND);

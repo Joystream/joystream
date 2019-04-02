@@ -91,15 +91,11 @@ decl_module! {
         pub fn add_content(origin, data_object_type_id: <T as DOTRTrait>::DataObjectTypeId,
                            id: T::ContentId, size: u64) {
             // Origin has to be a member
-            let who = ensure_signed(origin).clone().unwrap();
-            if !T::IsActiveMember::is_active_member(&who) {
-                return Err(MSG_CREATOR_MUST_BE_MEMBER);
-            }
+            let who = ensure_signed(origin)?;
+            ensure!(T::IsActiveMember::is_active_member(&who), MSG_CREATOR_MUST_BE_MEMBER);
 
             // Data object type has to be active
-            if !T::IsActiveDataObjectType::is_active_data_object_type(&data_object_type_id) {
-                return Err(MSG_DO_TYPE_MUST_BE_ACTIVE);
-            }
+            ensure!(T::IsActiveDataObjectType::is_active_data_object_type(&data_object_type_id), MSG_DO_TYPE_MUST_BE_ACTIVE);
 
             // We essentially accept the content ID and size at face value. All we
             // need to know is that it doesn't yet exist.
@@ -153,9 +149,7 @@ impl <T: Trait> Module<T> {
 
         // Make sure the liaison matches
         let mut data = found.unwrap();
-        if data.liaison != who.unwrap() {
-            return Err(MSG_LIAISON_REQUIRED);
-        }
+        ensure!(data.liaison == who.unwrap(), MSG_LIAISON_REQUIRED);
 
         // At this point we can update the data.
         data.liaison_judgement = judgement;
@@ -172,8 +166,6 @@ mod tests {
     use super::*;
     use crate::storage::mock::*;
 
-    use runtime_io::with_externalities;
-    use srml_support::*;
     use system::{self, Phase, EventRecord};
 
     #[test]
@@ -239,7 +231,7 @@ mod tests {
 
             // An appropriate event should have been fired.
             let liaison = *match &System::events().last().unwrap().event {
-                MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(content_id, liaison)) => liaison,
+                MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(_content_id, liaison)) => liaison,
                 _ => &0xdeadbeefu64, // invalid value, unlikely to match
             };
             assert_ne!(liaison, 0xdeadbeefu64);
@@ -265,7 +257,7 @@ mod tests {
 
             // An appropriate event should have been fired.
             let liaison = *match &System::events().last().unwrap().event {
-                MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(content_id, liaison)) => liaison,
+                MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(_content_id, liaison)) => liaison,
                 _ => &0xdeadbeefu64, // invalid value, unlikely to match
             };
             assert_ne!(liaison, 0xdeadbeefu64);
