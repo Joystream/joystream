@@ -17,14 +17,14 @@ use super::sealed_vote::SealedVote;
 pub use super::{ GovernanceCurrency, BalanceOf };
 use super::council;
 
-use crate::traits::{IsActiveMember};
+use crate::traits::{Members};
 
 pub trait Trait: system::Trait + council::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type CouncilElected: CouncilElected<Seats<Self::AccountId, BalanceOf<Self>>, Self::BlockNumber>;
 
-    type IsActiveMember: IsActiveMember<Self>;
+    type Members: Members<Self>;
 }
 
 #[derive(Clone, Copy, Encode, Decode)]
@@ -154,7 +154,7 @@ impl<T: Trait> Module<T> {
 
 
     fn can_participate(sender: &T::AccountId) -> bool {
-        !T::Currency::free_balance(sender).is_zero() && T::IsActiveMember::is_active_member(sender)
+        !T::Currency::free_balance(sender).is_zero() && T::Members::is_active_member(sender)
     }
 
     // PUBLIC IMMUTABLES

@@ -23,6 +23,8 @@ mod traits;
 mod membership;
 use membership::members;
 mod migration;
+mod roles;
+use roles::actors;
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -186,7 +188,7 @@ impl balances::Trait for Runtime {
 	/// What to do if a new account is created.
 	type OnNewAccount = Indices;
 	/// Restrict whether an account can transfer funds. We don't place any further restrictions.
-	type EnsureAccountLiquid = Staking;
+	type EnsureAccountLiquid = (Staking, Actors);
 	/// The uniquitous event type.
 	type Event = Event;
 }
@@ -214,13 +216,13 @@ impl governance::GovernanceCurrency for Runtime {
 
 impl governance::proposals::Trait for Runtime {
 	type Event = Event;
-	type IsActiveMember = Members;
+	type Members = Members;
 }
 
 impl governance::election::Trait for Runtime {
 	type Event = Event;
 	type CouncilElected = (Council,);
-	type IsActiveMember = Members;
+	type Members = Members;
 }
 
 impl governance::council::Trait for Runtime {
@@ -242,10 +244,16 @@ impl members::Trait for Runtime {
 	type MemberId = u64;
 	type PaidTermId = u64;
 	type SubscriptionId = u64;
+	type Roles = Actors;
 }
 
 impl migration::Trait for Runtime {
 	type Event = Event;
+}
+
+impl actors::Trait for Runtime {
+	type Event = Event;
+	type Members = Members;
 }
 
 construct_runtime!(
@@ -270,6 +278,7 @@ construct_runtime!(
 		Memo: memo::{Module, Call, Storage, Event<T>},
 		Members: members::{Module, Call, Storage, Event<T>, Config<T>},
 		Migration: migration::{Module, Call, Storage, Event<T>},
+		Actors: actors::{Module, Call, Storage, Event<T>},
 		DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
