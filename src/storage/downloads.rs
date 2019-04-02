@@ -50,7 +50,7 @@ pub struct DownloadSession<T: Trait> {
     pub initiated_at_block: T::BlockNumber,
     pub initiated_at_time: T::Moment,
     pub state: DownloadState,
-    pub transmitted: u64,
+    pub transmitted_bytes: u64,
 }
 
 decl_storage! {
