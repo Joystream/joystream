@@ -3,7 +3,7 @@ use srml_support::traits::{Currency};
 use primitives::{storage::well_known_keys};
 use runtime_primitives::traits::{As, Hash, Zero};
 use runtime_io::print;
-use {balances, system::{self, ensure_signed}};
+use {balances, consensus, system::{self, ensure_signed}};
 use rstd::prelude::*;
 
 use super::council;
@@ -113,7 +113,7 @@ pub struct TallyResult<BlockNumber> {
     finalized_at: BlockNumber,
 }
 
-pub trait Trait: timestamp::Trait + council::Trait + GovernanceCurrency {
+pub trait Trait: timestamp::Trait + council::Trait + consensus::Trait + GovernanceCurrency {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
