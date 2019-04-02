@@ -107,6 +107,7 @@ decl_module! {
             // by the map, so we can just append the new_id to the list.
             let mut dosr_list = Self::relationships_by_content_id(cid.clone());
             dosr_list.push(new_id);
+            <RelationshipsByContentId<T>>::insert(cid.clone(), dosr_list);
 
             // Emit event
             Self::deposit_event(RawEvent::DataObjectStorageRelationshipAdded(new_id, cid, who));
