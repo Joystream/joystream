@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
-use crate::traits::{ContentIdExists, IsActiveDataObjectType, IsActiveMember};
+use crate::traits::{ContentIdExists, IsActiveDataObjectType, Members};
 use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
@@ -16,7 +16,7 @@ pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
 
     type ContentId: Parameter + Member + Codec + Default + Clone + MaybeSerializeDebug + PartialEq;
 
-    type IsActiveMember: IsActiveMember<Self>;
+    type Members: Members<Self>;
     type IsActiveDataObjectType: IsActiveDataObjectType<Self>;
 }
 
@@ -95,7 +95,7 @@ decl_module! {
                            id: T::ContentId, size: u64) {
             // Origin has to be a member
             let who = ensure_signed(origin)?;
-            ensure!(T::IsActiveMember::is_active_member(&who), MSG_CREATOR_MUST_BE_MEMBER);
+            ensure!(T::Members::is_active_member(&who), MSG_CREATOR_MUST_BE_MEMBER);
 
             // Data object type has to be active
             ensure!(T::IsActiveDataObjectType::is_active_data_object_type(&data_object_type_id), MSG_DO_TYPE_MUST_BE_ACTIVE);

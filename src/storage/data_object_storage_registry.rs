@@ -1,13 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use crate::storage::data_directory::Trait as DDTrait;
-use crate::traits::{ContentHasStorage, ContentIdExists, IsActiveMember};
+use crate::traits::{ContentHasStorage, ContentIdExists, Members};
 use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
+    decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
 };
 use system::{self, ensure_signed};
 
@@ -25,7 +25,7 @@ pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
         + MaybeSerializeDebug
         + PartialEq;
 
-    type IsActiveMember: IsActiveMember<Self>;
+    type Members: Members<Self>;
     type ContentIdExists: ContentIdExists<Self>;
 }
 
@@ -96,7 +96,7 @@ decl_module! {
             // Origin has to be a storage provider
             let who = ensure_signed(origin)?;
             // TODO check for being staked as a storage provider
-            // if !T::IsActiveMember::is_active_member(&who) {
+            // if !T::Members::is_active_member(&who) {
             //     return Err(MSG_CREATOR_MUST_BE_MEMBER);
             // }
 

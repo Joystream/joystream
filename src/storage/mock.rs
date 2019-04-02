@@ -27,9 +27,19 @@ impl_outer_event! {
 }
 
 pub struct AnyAccountIsMember {}
-impl<T: system::Trait> traits::IsActiveMember<T> for AnyAccountIsMember {
+impl<T: system::Trait> traits::Members<T> for AnyAccountIsMember {
+    type Id = u64;
+
     fn is_active_member(_who: &T::AccountId) -> bool {
         true
+    }
+
+    fn lookup_member_id(_account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
+        Err("not implemented for tests")
+    }
+
+    fn lookup_account_by_member_id(_member_id: Self::Id) -> Result<T::AccountId, &'static str> {
+        Err("not implemented for tests")
     }
 }
 
@@ -69,7 +79,7 @@ impl data_object_type_registry::Trait for Test {
 impl data_directory::Trait for Test {
     type Event = MetaEvent;
     type ContentId = Vec<u8>;
-    type IsActiveMember = AnyAccountIsMember;
+    type Members = AnyAccountIsMember;
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
 }
 
