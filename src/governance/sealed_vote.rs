@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use parity_codec::Encode;
 use rstd::vec::Vec;
 use srml_support::ensure;

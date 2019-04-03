@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use rstd::cmp::Ordering;
 use runtime_primitives::traits::SimpleArithmetic;
 

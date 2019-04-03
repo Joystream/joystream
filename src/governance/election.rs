@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use rstd::prelude::*;
 use srml_support::traits::Currency;
 use srml_support::{

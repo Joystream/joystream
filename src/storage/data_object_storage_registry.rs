@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::storage::data_directory::Trait as DDTrait;
 use crate::traits::{ContentHasStorage, ContentIdExists, Members};
 use parity_codec::Codec;

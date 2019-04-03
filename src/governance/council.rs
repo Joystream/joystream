@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, Zero};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};

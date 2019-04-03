@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::governance::GovernanceCurrency;
 use rstd::prelude::*;
 use runtime_primitives::traits::Zero;

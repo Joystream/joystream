@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use srml_support::traits::{Currency, LockableCurrency};
 use system;
 

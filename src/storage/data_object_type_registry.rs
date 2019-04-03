@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::traits;
 use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};

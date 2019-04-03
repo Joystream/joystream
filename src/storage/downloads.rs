@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 /*
  * XXX This module is not really supposed to be used this way, and therefore also lacks tests.
  *

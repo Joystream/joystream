@@ -1,12 +1,10 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::governance::{BalanceOf, GovernanceCurrency};
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, Bounded, MaybeDebug, Zero};
 use srml_support::traits::Currency;
 use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
+    decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue,
 };
 use system::{self, ensure_signed};
 

@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::governance::BalanceOf;
 use crate::membership::members;
 use crate::roles::actors;
