@@ -8,7 +8,7 @@ pub use system;
 pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
-    traits::{BlakeTwo256, IdentityLookup, OnFinalise},
+    traits::{BlakeTwo256, IdentityLookup, OnFinalize},
     BuildStorage,
 };
 

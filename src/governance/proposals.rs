@@ -558,7 +558,7 @@ mod tests {
     // or public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
     use runtime_primitives::{
         testing::{Digest, DigestItem, Header, UintAuthorityId},
-        traits::{BlakeTwo256, IdentityLookup, OnFinalise},
+        traits::{BlakeTwo256, IdentityLookup, OnFinalize},
         BuildStorage,
     };
     use srml_support::*;
