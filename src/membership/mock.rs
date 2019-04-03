@@ -1,15 +1,15 @@
 #![cfg(test)]
 
-pub use srml_support::traits::{Currency};
-pub use crate::governance::{GovernanceCurrency};
-pub use super::{members};
+pub use srml_support::traits::Currency;
+pub use super::members;
+pub use crate::governance::GovernanceCurrency;
 pub use system;
 
-pub use primitives::{H256, Blake2Hasher};
+pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
+    testing::{Digest, DigestItem, Header, UintAuthorityId},
+    traits::{BlakeTwo256, IdentityLookup, OnFinalise},
     BuildStorage,
-    traits::{BlakeTwo256, OnFinalise, IdentityLookup},
-    testing::{Digest, DigestItem, Header, UintAuthorityId}
 };
 
 use srml_support::impl_outer_origin;
@@ -79,39 +79,46 @@ impl members::Trait for Test {
 }
 
 pub struct ExtBuilder {
-	first_member_id: u32,
-	default_paid_membership_fee: u32,
+    first_member_id: u32,
+    default_paid_membership_fee: u32,
 }
 impl Default for ExtBuilder {
-	fn default() -> Self {
-		Self {
-			first_member_id: 1,
-			default_paid_membership_fee: 100,
-		}
-	}
+    fn default() -> Self {
+        Self {
+            first_member_id: 1,
+            default_paid_membership_fee: 100,
+        }
+    }
 }
 
 impl ExtBuilder {
-	pub fn first_member_id(mut self, first_member_id: u32) -> Self {
-		self.first_member_id = first_member_id;
-		self
-	}
-	pub fn default_paid_membership_fee(mut self, default_paid_membership_fee: u32) -> Self {
-		self.default_paid_membership_fee = default_paid_membership_fee;
-		self
-	}
+    pub fn first_member_id(mut self, first_member_id: u32) -> Self {
+        self.first_member_id = first_member_id;
+        self
+    }
+    pub fn default_paid_membership_fee(mut self, default_paid_membership_fee: u32) -> Self {
+        self.default_paid_membership_fee = default_paid_membership_fee;
+        self
+    }
     pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher> {
-        let mut t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
+        let mut t = system::GenesisConfig::<Test>::default()
+            .build_storage()
+            .unwrap()
+            .0;
 
-        t.extend(members::GenesisConfig::<Test>{
-            first_member_id: self.first_member_id,
-            default_paid_membership_fee: self.default_paid_membership_fee,
-        }.build_storage().unwrap().0);
+        t.extend(
+            members::GenesisConfig::<Test> {
+                first_member_id: self.first_member_id,
+                default_paid_membership_fee: self.default_paid_membership_fee,
+            }
+            .build_storage()
+            .unwrap()
+            .0,
+        );
 
         t.into()
     }
 }
 
-pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Members = members::Module<Test>;

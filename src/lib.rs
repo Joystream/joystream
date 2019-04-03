@@ -3,7 +3,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), feature(alloc))]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
-#![recursion_limit="256"]
+#![recursion_limit = "256"]
 
 #[cfg(feature = "std")]
 #[macro_use]
@@ -15,43 +15,46 @@ use substrate_client as client;
 extern crate parity_codec_derive;
 
 pub mod governance;
-use governance::{election, council, proposals};
+use governance::{council, election, proposals};
 pub mod storage;
-use storage::{data_object_type_registry};
+use storage::{
+    content_directory, data_directory, data_object_storage_registry, data_object_type_registry,
+    downloads,
+};
+mod membership;
 mod memo;
 mod traits;
-mod membership;
 use membership::members;
 mod migration;
 mod roles;
 use roles::actors;
-
-use rstd::prelude::*;
+use rstd::prelude::*; // needed for Vec
+use client::{
+    block_builder::api::{self as block_builder_api, CheckInherentsResult, InherentData},
+    impl_runtime_apis, runtime_api,
+};
 #[cfg(feature = "std")]
 use primitives::bytes;
 use primitives::{ed25519, OpaqueMetadata};
 use runtime_primitives::{
 	ApplyResult, transaction_validity::TransactionValidity, generic, create_runtime_str,
-	traits::{self as runtime_traits, Convert, BlakeTwo256, Block as BlockT, StaticLookup, Verify},
+	traits::{self as runtime_traits, BlakeTwo256, Block as BlockT, StaticLookup, Verify},
 };
-use client::{
-	block_builder::api::{CheckInherentsResult, InherentData, self as block_builder_api},
-	runtime_api, impl_runtime_apis
-};
-use version::RuntimeVersion;
+
 #[cfg(feature = "std")]
 use version::NativeVersion;
+use version::RuntimeVersion;
 
 // A few exports that help ease life for downstream crates.
+pub use balances::Call as BalancesCall;
+pub use consensus::Call as ConsensusCall;
 #[cfg(any(feature = "std", test))]
 pub use runtime_primitives::BuildStorage;
-pub use consensus::Call as ConsensusCall;
-pub use timestamp::Call as TimestampCall;
-pub use balances::Call as BalancesCall;
-pub use runtime_primitives::{Permill, Perbill};
+pub use runtime_primitives::{Perbill, Permill};
+pub use srml_support::{construct_runtime, StorageValue};
 pub use timestamp::BlockPeriod;
-pub use srml_support::{StorageValue, construct_runtime};
 pub use staking::StakerStatus;
+pub use timestamp::Call as TimestampCall;
 
 /// The type that is used for identifying authorities.
 pub type AuthorityId = <AuthoritySignature as Verify>::Signer;
@@ -64,6 +67,9 @@ pub type AccountId = <AccountSignature as Verify>::Signer;
 
 /// The type used by accounts to prove their ID.
 pub type AccountSignature = ed25519::Signature;
+
+/// Alias for ContentId, used in various places
+pub type ContentId = u64;
 
 /// A hash of some data used by the chain.
 pub type Hash = primitives::H256;
@@ -102,50 +108,50 @@ pub mod opaque {
 
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("joystream-node"),
-	impl_name: create_runtime_str!("joystream-node"),
-	authoring_version: 3,
-	spec_version: 5,
-	impl_version: 0,
-	apis: RUNTIME_API_VERSIONS,
+    spec_name: create_runtime_str!("joystream-node"),
+    impl_name: create_runtime_str!("joystream-node"),
+    authoring_version: 3,
+    spec_version: 5,
+    impl_version: 0,
+    apis: RUNTIME_API_VERSIONS,
 };
 
 /// The version infromation used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
-	NativeVersion {
-		runtime_version: VERSION,
-		can_author_with: Default::default(),
-	}
+    NativeVersion {
+        runtime_version: VERSION,
+        can_author_with: Default::default(),
+    }
 }
 
 impl system::Trait for Runtime {
-	/// The identifier used to distinguish between accounts.
-	type AccountId = AccountId;
-	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
-	type Lookup = Indices;
-	/// The index type for storing how many extrinsics an account has signed.
-	type Index = Nonce;
-	/// The index type for blocks.
-	type BlockNumber = BlockNumber;
-	/// The type for hashing blocks and tries.
-	type Hash = Hash;
-	/// The hashing algorithm used.
-	type Hashing = BlakeTwo256;
-	/// The header digest type.
-	type Digest = generic::Digest<Log>;
-	/// The header type.
-	type Header = generic::Header<BlockNumber, BlakeTwo256, Log>;
-	/// The ubiquitous event type.
-	type Event = Event;
-	/// The ubiquitous log type.
-	type Log = Log;
-	/// The ubiquitous origin type.
-	type Origin = Origin;
+    /// The identifier used to distinguish between accounts.
+    type AccountId = AccountId;
+    /// The lookup mechanism to get account ID from whatever is passed in dispatchers.
+    type Lookup = Indices;
+    /// The index type for storing how many extrinsics an account has signed.
+    type Index = Nonce;
+    /// The index type for blocks.
+    type BlockNumber = BlockNumber;
+    /// The type for hashing blocks and tries.
+    type Hash = Hash;
+    /// The hashing algorithm used.
+    type Hashing = BlakeTwo256;
+    /// The header digest type.
+    type Digest = generic::Digest<Log>;
+    /// The header type.
+    type Header = generic::Header<BlockNumber, BlakeTwo256, Log>;
+    /// The ubiquitous event type.
+    type Event = Event;
+    /// The ubiquitous log type.
+    type Log = Log;
+    /// The ubiquitous origin type.
+    type Origin = Origin;
 }
 
 impl aura::Trait for Runtime {
-	type HandleReport = aura::StakingSlasher<Runtime>;
+    type HandleReport = aura::StakingSlasher<Runtime>;
 }
 
 impl consensus::Trait for Runtime {
@@ -165,21 +171,21 @@ impl session::Trait for Runtime {
 }
 
 impl indices::Trait for Runtime {
-	/// The type for recording indexing into the account enumeration. If this ever overflows, there
-	/// will be problems!
-	type AccountIndex = u32;
-	/// Use the standard means of resolving an index hint from an id.
-	type ResolveHint = indices::SimpleResolveHint<Self::AccountId, Self::AccountIndex>;
-	/// Determine whether an account is dead.
-	type IsDeadAccount = Balances;
-	/// The uniquitous event type.
-	type Event = Event;
+    /// The type for recording indexing into the account enumeration. If this ever overflows, there
+    /// will be problems!
+    type AccountIndex = u32;
+    /// Use the standard means of resolving an index hint from an id.
+    type ResolveHint = indices::SimpleResolveHint<Self::AccountId, Self::AccountIndex>;
+    /// Determine whether an account is dead.
+    type IsDeadAccount = Balances;
+    /// The uniquitous event type.
+    type Event = Event;
 }
 
 impl timestamp::Trait for Runtime {
-	/// A timestamp: seconds since the unix epoch.
-	type Moment = u64;
-	type OnTimestampSet = Aura;
+    /// A timestamp: seconds since the unix epoch.
+    type Moment = u64;
+    type OnTimestampSet = Aura;
 }
 
 impl balances::Trait for Runtime {
@@ -198,9 +204,9 @@ impl balances::Trait for Runtime {
 }
 
 impl sudo::Trait for Runtime {
-	/// The uniquitous event type.
-	type Event = Event;
-	type Proposal = Call;
+    /// The uniquitous event type.
+    type Event = Event;
+    type Proposal = Call;
 }
 
 impl staking::Trait for Runtime {
@@ -213,49 +219,76 @@ impl staking::Trait for Runtime {
 }
 
 impl governance::GovernanceCurrency for Runtime {
-	type Currency = balances::Module<Self>;
+    type Currency = balances::Module<Self>;
 }
 
 impl governance::proposals::Trait for Runtime {
-	type Event = Event;
-	type Members = Members;
+    type Event = Event;
+    type Members = Members;
 }
 
 impl governance::election::Trait for Runtime {
-	type Event = Event;
-	type CouncilElected = (Council,);
-	type Members = Members;
+    type Event = Event;
+    type CouncilElected = (Council,);
+    type Members = Members;
 }
 
 impl governance::council::Trait for Runtime {
-	type Event = Event;
-	type CouncilTermEnded = (CouncilElection,);
+    type Event = Event;
+    type CouncilTermEnded = (CouncilElection,);
 }
 
 impl memo::Trait for Runtime {
-	type Event = Event;
+    type Event = Event;
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
-	type Event = Event;
-	type DataObjectTypeId = u64;
+    type Event = Event;
+    type DataObjectTypeId = u64;
+}
+
+impl storage::data_directory::Trait for Runtime {
+    type Event = Event;
+    type ContentId = ContentId;
+    type Members = Members;
+    type IsActiveDataObjectType = DataObjectTypeRegistry;
+}
+
+impl storage::downloads::Trait for Runtime {
+    type Event = Event;
+    type DownloadSessionId = u64;
+    type ContentHasStorage = DataObjectStorageRegistry;
+}
+
+impl storage::data_object_storage_registry::Trait for Runtime {
+    type Event = Event;
+    type DataObjectStorageRelationshipId = u64;
+    type Members = Members;
+    type ContentIdExists = DataDirectory;
+}
+
+impl storage::content_directory::Trait for Runtime {
+    type Event = Event;
+    type MetadataId = u64;
+    type SchemaId = u64;
+    type Members = Members;
 }
 
 impl members::Trait for Runtime {
-	type Event = Event;
-	type MemberId = u64;
-	type PaidTermId = u64;
-	type SubscriptionId = u64;
-	type Roles = Actors;
+    type Event = Event;
+    type MemberId = u64;
+    type PaidTermId = u64;
+    type SubscriptionId = u64;
+    type Roles = Actors;
 }
 
 impl migration::Trait for Runtime {
-	type Event = Event;
+    type Event = Event;
 }
 
 impl actors::Trait for Runtime {
-	type Event = Event;
-	type Members = Members;
+    type Event = Event;
+    type Members = Members;
 }
 
 construct_runtime!(
@@ -281,6 +314,10 @@ construct_runtime!(
 		Migration: migration::{Module, Call, Storage, Event<T>},
 		Actors: actors::{Module, Call, Storage, Event<T>},
 		DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
+		DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
+		DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
+		DownloadSessions: downloads::{Module, Call, Storage, Event<T>, Config<T>},
+		ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 

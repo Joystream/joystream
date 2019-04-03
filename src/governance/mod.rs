@@ -3,12 +3,12 @@
 use srml_support::traits::{Currency, LockableCurrency};
 use system;
 
-pub mod election;
 pub mod council;
+pub mod election;
 pub mod proposals;
 
-mod stake;
 mod sealed_vote;
+mod stake;
 
 pub trait GovernanceCurrency: system::Trait + Sized {
     type Currency: Currency<Self::AccountId> +

@@ -1,14 +1,14 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::{StorageValue, dispatch::Result, decl_module, decl_storage, decl_event, ensure};
-use system;
-use rstd::prelude::*;
-use runtime_io::print;
-use crate::{VERSION};
+use crate::governance::BalanceOf;
 use crate::membership::members;
 use crate::roles::actors;
-use crate::governance::{GovernanceCurrency, BalanceOf };
-use runtime_primitives::traits::{Zero, Bounded, SimpleArithmetic, As};
+use crate::VERSION;
+use rstd::prelude::*;
+use runtime_io::print;
+use runtime_primitives::traits::As;
+use srml_support::{decl_event, decl_module, decl_storage, StorageValue};
+use system;
 
 // When preparing a new major runtime release version bump this value to match it and update
 // the initialization code in runtime_initialization(). Because of the way substrate runs runtime code
@@ -19,34 +19,42 @@ const MIGRATION_FOR_SPEC_VERSION: u32 = 5;
 
 impl<T: Trait> Module<T> {
     fn runtime_initialization() {
-        if VERSION.spec_version != MIGRATION_FOR_SPEC_VERSION { return }
+        if VERSION.spec_version != MIGRATION_FOR_SPEC_VERSION {
+            return;
+        }
 
         print("running runtime initializers");
 
         <members::Module<T>>::initialize_storage();
 
         // Initialize Storage provider role parameters
-        <actors::Module<T>>::set_role_parameters(actors::Role::Storage, actors::RoleParameters {
-            min_stake: BalanceOf::<T>::sa(3000),
-            max_actors: 10,
-            reward: BalanceOf::<T>::sa(10),
-            reward_period: T::BlockNumber::sa(600),
-            unbonding_period: T::BlockNumber::sa(600),
-            entry_request_fee: BalanceOf::<T>::sa(50),
+        <actors::Module<T>>::set_role_parameters(
+            actors::Role::Storage,
+            actors::RoleParameters {
+                min_stake: BalanceOf::<T>::sa(3000),
+                max_actors: 10,
+                reward: BalanceOf::<T>::sa(10),
+                reward_period: T::BlockNumber::sa(600),
+                unbonding_period: T::BlockNumber::sa(600),
+                entry_request_fee: BalanceOf::<T>::sa(50),
 
-            // not currently used
-            min_actors: 5,
-            bonding_period: T::BlockNumber::sa(600),
-            min_service_period: T::BlockNumber::sa(600),
-            startup_grace_period: T::BlockNumber::sa(600),
-        });
+                // not currently used
+                min_actors: 5,
+                bonding_period: T::BlockNumber::sa(600),
+                min_service_period: T::BlockNumber::sa(600),
+                startup_grace_period: T::BlockNumber::sa(600),
+            },
+        );
         <actors::Module<T>>::set_available_roles(vec![actors::Role::Storage]);
 
         // ...
         // add initialization of other modules introduced in this runtime
         // ...
 
-        Self::deposit_event(RawEvent::Migrated(<system::Module<T>>::block_number(), VERSION.spec_version));
+        Self::deposit_event(RawEvent::Migrated(
+            <system::Module<T>>::block_number(),
+            VERSION.spec_version,
+        ));
     }
 }
 

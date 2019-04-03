@@ -1,13 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::{StorageValue, StorageMap, dispatch::Result, decl_module, decl_event, decl_storage, ensure};
-use srml_support::traits::{Currency};
-use system::{self, ensure_signed};
-use runtime_primitives::traits::{As, Zero};
 use rstd::prelude::*;
+use runtime_primitives::traits::{As, Zero};
+use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
+use system;
 
-pub use super::election::{self, Seats, Seat, CouncilElected};
-pub use super::{ GovernanceCurrency, BalanceOf };
+pub use super::election::{self, CouncilElected, Seat, Seats};
+pub use super::{BalanceOf, GovernanceCurrency};
 
 // Hook For announcing that council term has ended
 pub trait CouncilTermEnded {
@@ -37,7 +36,7 @@ decl_storage! {
     }
 }
 
-/// Event for this module.
+// Event for this module.
 decl_event!(
     pub enum Event<T> where <T as system::Trait>::BlockNumber {
         CouncilTermEnded(BlockNumber),
@@ -56,7 +55,6 @@ impl<T: Trait> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber>
 }
 
 impl<T: Trait> Module<T> {
-
     pub fn is_term_ended() -> bool {
         <system::Module<T>>::block_number() >= Self::term_ends_at()
     }
@@ -123,9 +121,7 @@ decl_module! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::governance::mock::*;
-    use parity_codec::Encode;
     use runtime_io::with_externalities;
     use srml_support::*;
 
@@ -161,7 +157,7 @@ mod tests {
     #[test]
     fn set_council_test() {
         with_externalities(&mut initial_test_ext(), || {
-            assert_ok!(Council::set_council(vec![4,5,6]));
+            assert_ok!(Council::set_council(vec![4, 5, 6]));
             assert!(Council::is_councilor(&4));
             assert!(Council::is_councilor(&5));
             assert!(Council::is_councilor(&6));
