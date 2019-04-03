@@ -17,7 +17,7 @@ extern crate parity_codec_derive;
 pub mod governance;
 use governance::{election, council, proposals};
 pub mod storage;
-use storage::{data_object_type_registry};
+use storage::{data_object_type_registry, data_directory, data_object_storage_registry, downloads};
 mod memo;
 mod traits;
 mod membership;
@@ -54,6 +54,9 @@ pub use srml_support::{StorageValue, construct_runtime};
 
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
 pub type AccountId = primitives::H256;
+
+/// Alias for ContentId, used in various places
+pub type ContentId = u64;
 
 /// A hash of some data used by the chain.
 pub type Hash = primitives::H256;
@@ -239,6 +242,30 @@ impl storage::data_object_type_registry::Trait for Runtime {
 	type DataObjectTypeId = u64;
 }
 
+impl storage::data_directory::Trait for Runtime
+{
+	type Event = Event;
+	type ContentId = ContentId;
+	type Members = Members;
+	type IsActiveDataObjectType = DataObjectTypeRegistry;
+}
+
+impl storage::downloads::Trait for Runtime
+{
+	type Event = Event;
+	type DownloadSessionId = u64;
+	type ContentHasStorage = DataObjectStorageRegistry;
+}
+
+impl storage::data_object_storage_registry::Trait for Runtime
+{
+	type Event = Event;
+	type DataObjectStorageRelationshipId = u64;
+	type Members = Members;
+	type ContentIdExists = DataDirectory;
+}
+
+
 impl members::Trait for Runtime {
 	type Event = Event;
 	type MemberId = u64;
@@ -280,6 +307,9 @@ construct_runtime!(
 		Migration: migration::{Module, Call, Storage, Event<T>},
 		Actors: actors::{Module, Call, Storage, Event<T>},
 		DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
+		DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
+		DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
+		DownloadSessions: downloads::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 

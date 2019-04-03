@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use crate::storage::data_object_type_registry;
+use crate::storage::{data_directory, data_object_storage_registry, data_object_type_registry};
 use system;
 use parity_codec::Codec;
 use srml_support::{Parameter};
@@ -40,15 +40,21 @@ impl<T: system::Trait> Roles<T> for () {
 	fn is_role_account(_who: &T::AccountId) -> bool { false }
 }
 
-// Data Object Types
+// Storage
 pub trait IsActiveDataObjectType<T: data_object_type_registry::Trait> {
-    fn is_active_data_object_type(which: &T::DataObjectTypeId) -> bool {
-        false
-    }
+    fn is_active_data_object_type(_which: &T::DataObjectTypeId) -> bool;
 }
 
-pub trait IsActiveMember<T: system::Trait> {
-    fn is_active_member(account_id: &T::AccountId) -> bool {
-        false
-    }
+pub trait ContentIdExists<T: data_directory::Trait> {
+    fn has_content(_which: &T::ContentId) -> bool;
+
+    fn get_data_object(
+        _which: &T::ContentId,
+    ) -> Result<data_directory::DataObject<T>, &'static str>;
+}
+
+pub trait ContentHasStorage<T: data_object_storage_registry::Trait> {
+    fn has_storage_provider(_which: &T::ContentId) -> bool;
+
+    fn is_ready_at_storage_provider(_which: &T::ContentId, _provider: &T::AccountId) -> bool;
 }
