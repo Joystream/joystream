@@ -184,7 +184,7 @@ decl_storage! {
         /// Max duration of proposal in blocks until it will be expired if not enough votes.
         VotingPeriod get(voting_period) config(): T::BlockNumber =
             T::BlockNumber::sa(DEFAULT_VOTING_PERIOD_IN_SECS /
-            <timestamp::Module<T>>::block_period().as_());
+            (<timestamp::Module<T>>::minimum_period().as_() * 2));
 
         NameMaxLen get(name_max_len) config(): u32 = DEFAULT_NAME_MAX_LEN;
         DescriptionMaxLen get(description_max_len) config(): u32 = DEFAULT_DESCRIPTION_MAX_LEN;
