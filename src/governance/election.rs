@@ -1849,9 +1849,9 @@ mod tests {
     }
 
     #[test]
-    fn unlock_transferable_stakes_should_work () {
-       with_externalities(&mut initial_test_ext(), || {
-            <ExistingStakeHolders<Test>>::put(vec![10,20,30]);
+    fn unlock_transferable_stakes_should_work() {
+        with_externalities(&mut initial_test_ext(), || {
+            <ExistingStakeHolders<Test>>::put(vec![10, 20, 30]);
 
             Balances::deposit_creating(&10, 6000);
             Balances::reserve(&10, 5000);

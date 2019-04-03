@@ -1,9 +1,9 @@
 #![cfg(test)]
 
 pub use super::actors;
-pub use srml_support::traits::{Currency};
 pub use crate::governance::GovernanceCurrency;
 use crate::traits::Members;
+pub use srml_support::traits::Currency;
 pub use system;
 
 pub use primitives::{Blake2Hasher, H256};
@@ -63,8 +63,8 @@ impl balances::Trait for Test {
     type OnNewAccount = ();
 
     type TransactionPayment = ();
-	type DustRemoval = ();
-	type TransferPayment = ();
+    type DustRemoval = ();
+    type TransferPayment = ();
 }
 
 impl GovernanceCurrency for Test {

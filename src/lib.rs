@@ -27,8 +27,6 @@ mod traits;
 use membership::members;
 mod migration;
 mod roles;
-use roles::actors;
-use rstd::prelude::*; // needed for Vec
 use client::{
     block_builder::api::{self as block_builder_api, CheckInherentsResult, InherentData},
     impl_runtime_apis, runtime_api,
@@ -36,9 +34,13 @@ use client::{
 #[cfg(feature = "std")]
 use primitives::bytes;
 use primitives::{ed25519, OpaqueMetadata};
+use roles::actors;
+use rstd::prelude::*; // needed for Vec
 use runtime_primitives::{
-	ApplyResult, transaction_validity::TransactionValidity, generic, create_runtime_str,
-	traits::{self as runtime_traits, BlakeTwo256, Block as BlockT, StaticLookup, Verify},
+    create_runtime_str, generic,
+    traits::{self as runtime_traits, BlakeTwo256, Block as BlockT, StaticLookup, Verify},
+    transaction_validity::TransactionValidity,
+    ApplyResult,
 };
 
 #[cfg(feature = "std")]
@@ -52,8 +54,8 @@ pub use consensus::Call as ConsensusCall;
 pub use runtime_primitives::BuildStorage;
 pub use runtime_primitives::{Perbill, Permill};
 pub use srml_support::{construct_runtime, StorageValue};
-pub use timestamp::BlockPeriod;
 pub use staking::StakerStatus;
+pub use timestamp::BlockPeriod;
 pub use timestamp::Call as TimestampCall;
 
 /// The type that is used for identifying authorities.
@@ -85,25 +87,29 @@ pub type Nonce = u64;
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
 /// to even the core datastructures.
 pub mod opaque {
-	use super::*;
+    use super::*;
 
-	/// Opaque, encoded, unchecked extrinsic.
-	#[derive(PartialEq, Eq, Clone, Default, Encode, Decode)]
-	#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-	pub struct UncheckedExtrinsic(#[cfg_attr(feature = "std", serde(with="bytes"))] pub Vec<u8>);
-	impl runtime_traits::Extrinsic for UncheckedExtrinsic {
-		fn is_signed(&self) -> Option<bool> {
-			None
-		}
-	}
-	/// Opaque block header type.
-	pub type Header = generic::Header<BlockNumber, BlakeTwo256, generic::DigestItem<Hash, AuthorityId, AuthoritySignature>>;
-	/// Opaque block type.
-	pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-	/// Opaque block identifier type.
-	pub type BlockId = generic::BlockId<Block>;
-	/// Opaque session key type.
-	pub type SessionKey = AuthorityId;
+    /// Opaque, encoded, unchecked extrinsic.
+    #[derive(PartialEq, Eq, Clone, Default, Encode, Decode)]
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+    pub struct UncheckedExtrinsic(#[cfg_attr(feature = "std", serde(with = "bytes"))] pub Vec<u8>);
+    impl runtime_traits::Extrinsic for UncheckedExtrinsic {
+        fn is_signed(&self) -> Option<bool> {
+            None
+        }
+    }
+    /// Opaque block header type.
+    pub type Header = generic::Header<
+        BlockNumber,
+        BlakeTwo256,
+        generic::DigestItem<Hash, AuthorityId, AuthoritySignature>,
+    >;
+    /// Opaque block type.
+    pub type Block = generic::Block<Header, UncheckedExtrinsic>;
+    /// Opaque block identifier type.
+    pub type BlockId = generic::BlockId<Block>;
+    /// Opaque session key type.
+    pub type SessionKey = AuthorityId;
 }
 
 /// This runtime version.
@@ -155,19 +161,19 @@ impl aura::Trait for Runtime {
 }
 
 impl consensus::Trait for Runtime {
-	/// The identifier we use to refer to authorities.
-	type SessionKey = AuthorityId;
-	// The aura module handles offline-reports internally
-	// rather than using an explicit report system.
-	type InherentOfflineReport = ();
-	/// The ubiquitous log type.
-	type Log = Log;
+    /// The identifier we use to refer to authorities.
+    type SessionKey = AuthorityId;
+    // The aura module handles offline-reports internally
+    // rather than using an explicit report system.
+    type InherentOfflineReport = ();
+    /// The ubiquitous log type.
+    type Log = Log;
 }
 
 impl session::Trait for Runtime {
-	type ConvertAccountIdToSessionKey = ();
-	type OnSessionChange = (Staking, );
-	type Event = Event;
+    type ConvertAccountIdToSessionKey = ();
+    type OnSessionChange = (Staking,);
+    type Event = Event;
 }
 
 impl indices::Trait for Runtime {
@@ -189,18 +195,18 @@ impl timestamp::Trait for Runtime {
 }
 
 impl balances::Trait for Runtime {
-	/// The type for recording an account's balance.
-	type Balance = u128;
-	/// What to do if an account's free balance gets zeroed.
-	type OnFreeBalanceZero = (Staking, Session);
-	/// What to do if a new account is created.
-	type OnNewAccount = Indices;
-	/// The uniquitous event type.
-	type Event = Event;
+    /// The type for recording an account's balance.
+    type Balance = u128;
+    /// What to do if an account's free balance gets zeroed.
+    type OnFreeBalanceZero = (Staking, Session);
+    /// What to do if a new account is created.
+    type OnNewAccount = Indices;
+    /// The uniquitous event type.
+    type Event = Event;
 
-	type TransactionPayment = ();
-	type DustRemoval = ();
-	type TransferPayment = ();
+    type TransactionPayment = ();
+    type DustRemoval = ();
+    type TransferPayment = ();
 }
 
 impl sudo::Trait for Runtime {
@@ -210,12 +216,12 @@ impl sudo::Trait for Runtime {
 }
 
 impl staking::Trait for Runtime {
-	type Currency = balances::Module<Self>;
-	//type CurrencyToVote = CurrencyToVoteHandler;
-	type OnRewardMinted = ();
-	type Event = Event;
-	type Slash = ();
-	type Reward = ();
+    type Currency = balances::Module<Self>;
+    //type CurrencyToVote = CurrencyToVoteHandler;
+    type OnRewardMinted = ();
+    type Event = Event;
+    type Slash = ();
+    type Reward = ();
 }
 
 impl governance::GovernanceCurrency for Runtime {
@@ -332,7 +338,8 @@ pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedMortalCompactExtrinsic<Address, Nonce, Call, AccountSignature>;
+pub type UncheckedExtrinsic =
+    generic::UncheckedMortalCompactExtrinsic<Address, Nonce, Call, AccountSignature>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Nonce, Call>;
 /// Executive: handles dispatch to the various modules.
@@ -340,61 +347,61 @@ pub type Executive = executive::Executive<Runtime, Block, Context, Balances, All
 
 // Implement our runtime API endpoints. This is just a bunch of proxying.
 impl_runtime_apis! {
-	impl runtime_api::Core<Block> for Runtime {
-		fn version() -> RuntimeVersion {
-			VERSION
-		}
+    impl runtime_api::Core<Block> for Runtime {
+        fn version() -> RuntimeVersion {
+            VERSION
+        }
 
-		fn authorities() -> Vec<AuthorityId> {
-			Consensus::authorities()
-		}
+        fn authorities() -> Vec<AuthorityId> {
+            Consensus::authorities()
+        }
 
-		fn execute_block(block: Block) {
-			Executive::execute_block(block)
-		}
+        fn execute_block(block: Block) {
+            Executive::execute_block(block)
+        }
 
-		fn initialise_block(header: &<Block as BlockT>::Header) {
-			Executive::initialise_block(header)
-		}
-	}
+        fn initialise_block(header: &<Block as BlockT>::Header) {
+            Executive::initialise_block(header)
+        }
+    }
 
-	impl runtime_api::Metadata<Block> for Runtime {
-		fn metadata() -> OpaqueMetadata {
-			Runtime::metadata().into()
-		}
-	}
+    impl runtime_api::Metadata<Block> for Runtime {
+        fn metadata() -> OpaqueMetadata {
+            Runtime::metadata().into()
+        }
+    }
 
-	impl block_builder_api::BlockBuilder<Block> for Runtime {
-		fn apply_extrinsic(extrinsic: <Block as BlockT>::Extrinsic) -> ApplyResult {
-			Executive::apply_extrinsic(extrinsic)
-		}
+    impl block_builder_api::BlockBuilder<Block> for Runtime {
+        fn apply_extrinsic(extrinsic: <Block as BlockT>::Extrinsic) -> ApplyResult {
+            Executive::apply_extrinsic(extrinsic)
+        }
 
-		fn finalise_block() -> <Block as BlockT>::Header {
-			Executive::finalise_block()
-		}
+        fn finalise_block() -> <Block as BlockT>::Header {
+            Executive::finalise_block()
+        }
 
-		fn inherent_extrinsics(data: InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
-			data.create_extrinsics()
-		}
+        fn inherent_extrinsics(data: InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
+            data.create_extrinsics()
+        }
 
-		fn check_inherents(block: Block, data: InherentData) -> CheckInherentsResult {
-			data.check_extrinsics(&block)
-		}
+        fn check_inherents(block: Block, data: InherentData) -> CheckInherentsResult {
+            data.check_extrinsics(&block)
+        }
 
-		fn random_seed() -> <Block as BlockT>::Hash {
-			System::random_seed()
-		}
-	}
+        fn random_seed() -> <Block as BlockT>::Hash {
+            System::random_seed()
+        }
+    }
 
-	impl runtime_api::TaggedTransactionQueue<Block> for Runtime {
-		fn validate_transaction(tx: <Block as BlockT>::Extrinsic) -> TransactionValidity {
-			Executive::validate_transaction(tx)
-		}
-	}
+    impl runtime_api::TaggedTransactionQueue<Block> for Runtime {
+        fn validate_transaction(tx: <Block as BlockT>::Extrinsic) -> TransactionValidity {
+            Executive::validate_transaction(tx)
+        }
+    }
 
-	impl consensus_aura::AuraApi<Block> for Runtime {
-		fn slot_duration() -> u64 {
-			Aura::slot_duration()
-		}
-	}
+    impl consensus_aura::AuraApi<Block> for Runtime {
+        fn slot_duration() -> u64 {
+            Aura::slot_duration()
+        }
+    }
 }

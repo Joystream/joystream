@@ -11,10 +11,11 @@ mod sealed_vote;
 mod stake;
 
 pub trait GovernanceCurrency: system::Trait + Sized {
-    type Currency: Currency<Self::AccountId> +
-		LockableCurrency<Self::AccountId, Moment=Self::BlockNumber>;
+    type Currency: Currency<Self::AccountId>
+        + LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
 }
 
-pub type BalanceOf<T> = <<T as GovernanceCurrency>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+pub type BalanceOf<T> =
+    <<T as GovernanceCurrency>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 mod mock;

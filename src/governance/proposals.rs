@@ -5,7 +5,10 @@ use srml_support::traits::Currency;
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
 };
-use {consensus, system::{self, ensure_signed}};
+use {
+    consensus,
+    system::{self, ensure_signed},
+};
 
 #[cfg(test)]
 use primitives::storage::well_known_keys;
@@ -596,8 +599,8 @@ mod tests {
         type OnNewAccount = ();
         type Event = ();
         type TransactionPayment = ();
-	    type DustRemoval = ();
-	    type TransferPayment = ();
+        type DustRemoval = ();
+        type TransferPayment = ();
     }
 
     impl timestamp::Trait for Test {
@@ -1044,9 +1047,7 @@ mod tests {
         with_externalities(&mut new_test_ext(), || {
             Balances::deposit_creating(&COUNCILOR1, initial_balance());
 
-            assert_ok!(_create_proposal(
-                Some(COUNCILOR1), None, None, None, None
-            ));
+            assert_ok!(_create_proposal(Some(COUNCILOR1), None, None, None, None));
 
             // Check that a vote has been sent automatically,
             // such as the proposer is a councilor:

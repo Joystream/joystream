@@ -90,8 +90,8 @@ impl balances::Trait for Test {
     type OnNewAccount = ();
 
     type TransactionPayment = ();
-	type DustRemoval = ();
-	type TransferPayment = ();
+    type DustRemoval = ();
+    type TransferPayment = ();
 }
 
 impl GovernanceCurrency for Test {

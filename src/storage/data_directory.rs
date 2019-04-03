@@ -6,7 +6,9 @@ use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};
 use primitives::ed25519::Signature as Ed25519Signature;
 use rstd::prelude::*;
-use runtime_primitives::traits::{As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic, Verify};
+use runtime_primitives::traits::{
+    As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic, Verify,
+};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
 };
