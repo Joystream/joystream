@@ -186,7 +186,7 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
 		}),
 		system: None,
 		timestamp: Some(TimestampConfig {
-			period: SECS_PER_BLOCK / 2, // due to the nature of aura the slots are 2*period
+			minimum_period: SECS_PER_BLOCK / 2, // due to the nature of aura the slots are 2*period
 		}),
 		indices: Some(IndicesConfig {
 			ids: vec![],
@@ -283,7 +283,7 @@ fn testnet_genesis(
 		}),
 		system: None,
 		timestamp: Some(TimestampConfig {
-			period: 3,                    // 3*2=6 second block time.
+			minimum_period: 3,                    // 3*2=6 second block time.
 		}),
 		indices: Some(IndicesConfig {
 			ids: vec![]

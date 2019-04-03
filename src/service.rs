@@ -61,6 +61,7 @@ construct_service_factory! {
                     let proposer = Arc::new(ProposerFactory {
                         client: service.client(),
                         transaction_pool: service.transaction_pool(),
+                        inherents_pool: service.inherents_pool(),
                     });
                     let client = service.client();
                     executor.spawn(start_aura(
@@ -92,6 +93,7 @@ construct_service_factory! {
                     client,
                     NothingExtra,
                     config.custom.inherent_data_providers.clone(),
+                    true,
                 ).map_err(Into::into)
             },
         LightImportQueue = AuraImportQueue<
@@ -105,6 +107,7 @@ construct_service_factory! {
                     client,
                     NothingExtra,
                     config.custom.inherent_data_providers.clone(),
+                    true,
                 ).map_err(Into::into)
             },
     }
