@@ -1955,7 +1955,7 @@ mod tests {
 
             let n = 1 + Election::announcing_period();
             System::set_block_number(n);
-            Election::on_finalise(n);
+            let _ = Election::on_finalise(n);
 
             for i in 1..20 {
                 assert!(Election::vote(
@@ -1982,7 +1982,7 @@ mod tests {
 
             let n = n + Election::voting_period();
             System::set_block_number(n);
-            Election::on_finalise(n);
+            let _ = Election::on_finalise(n);
 
             for i in 1..20 {
                 assert!(Election::reveal(
@@ -2012,7 +2012,7 @@ mod tests {
 
             let n = n + Election::revealing_period();
             System::set_block_number(n);
-            Election::on_finalise(n);
+            let _ = Election::on_finalise(n);
 
             assert_eq!(
                 Council::active_council().len(),
