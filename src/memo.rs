@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::{StorageMap, dispatch::Result, decl_module, decl_storage, decl_event, ensure};
+use srml_support::{StorageMap, decl_module, decl_storage, decl_event, ensure};
 use srml_support::traits::{Currency};
 use runtime_primitives::traits::{Zero};
 use system::{self, ensure_signed};

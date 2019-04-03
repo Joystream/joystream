@@ -1,10 +1,13 @@
 use srml_support::{StorageValue, StorageMap, dispatch, decl_module, decl_event, decl_storage, ensure};
 use srml_support::traits::{Currency};
-use primitives::{storage::well_known_keys};
 use runtime_primitives::traits::{As, Hash, Zero};
 use runtime_io::print;
-use {balances, system::{self, ensure_signed}};
+use system::{self, ensure_signed};
 use rstd::prelude::*;
+
+#[cfg(test)]
+use primitives::{storage::well_known_keys};
+
 
 use super::council;
 pub use super::{ GovernanceCurrency, BalanceOf };
@@ -382,7 +385,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn end_block(now: T::BlockNumber) -> dispatch::Result {
+    fn end_block(_now: T::BlockNumber) -> dispatch::Result {
 
         // TODO refactor this method
 
@@ -558,7 +561,6 @@ mod tests {
         traits::{BlakeTwo256, OnFinalise, IdentityLookup},
         testing::{Digest, DigestItem, Header, UintAuthorityId}
     };
-    use system::{EventRecord, Phase};
     use srml_support::*;
 
     impl_outer_origin! {
@@ -621,16 +623,16 @@ mod tests {
     pub struct MockMembership {}
     impl<T: system::Trait> Members<T> for MockMembership {
         type Id = u32;
-        fn is_active_member(who: &T::AccountId) -> bool {
+        fn is_active_member(_who: &T::AccountId) -> bool {
             // all accounts are considered members.
             // There is currently no test coverage for non-members.
             // Should add some coverage, and update this method to reflect which accounts are or are not members
             true
         }
-        fn lookup_member_id(account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
+        fn lookup_member_id(_account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
             Err("not implemented!")
         }
-        fn lookup_account_by_member_id(id: Self::Id) -> Result<T::AccountId, &'static str> {
+        fn lookup_account_by_member_id(_id: Self::Id) -> Result<T::AccountId, &'static str> {
             Err("not implemented!")
         }
     }

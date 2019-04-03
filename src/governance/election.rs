@@ -65,7 +65,7 @@ pub trait CouncilElected<Elected, Term> {
 }
 
 impl<Elected, Term> CouncilElected<Elected, Term> for () {
-    fn council_elected(_new_council: Elected, term: Term) {}
+    fn council_elected(_new_council: Elected, _term: Term) {}
 }
 
 impl<Elected, Term, X: CouncilElected<Elected, Term>> CouncilElected<Elected, Term> for (X,) {
@@ -116,7 +116,7 @@ decl_storage! {
     }
 }
 
-/// Event for this module.
+// Event for this module.
 decl_event!(
     pub enum Event<T> where
     <T as system::Trait>::BlockNumber,

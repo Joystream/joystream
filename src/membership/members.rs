@@ -5,7 +5,7 @@ use parity_codec::Codec;
 use parity_codec_derive::{Encode, Decode};
 use srml_support::{StorageMap, StorageValue, dispatch, decl_module, decl_storage, decl_event, ensure, Parameter};
 use srml_support::traits::{Currency};
-use runtime_primitives::traits::{Zero, SimpleArithmetic, As, Member, MaybeSerializeDebug};
+use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug};
 use system::{self, ensure_signed};
 use crate::governance::{GovernanceCurrency, BalanceOf };
 use {timestamp};
@@ -183,7 +183,7 @@ impl<T: Trait> Members<T> for Module<T> {
             .and_then(|member_id| Self::ensure_profile(member_id))
         {
             Ok(profile) => !profile.suspended,
-            Err(err) => false
+            Err(_err) => false
         }
     }
 
