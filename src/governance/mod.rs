@@ -1,4 +1,4 @@
-use srml_support::traits::{Currency, LockableCurrency};
+use srml_support::traits::{Currency, LockableCurrency, ReservableCurrency};
 use system;
 
 pub mod council;
@@ -10,6 +10,7 @@ mod stake;
 
 pub trait GovernanceCurrency: system::Trait + Sized {
     type Currency: Currency<Self::AccountId>
+        + ReservableCurrency<Self::AccountId>
         + LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
 }
 

@@ -1,5 +1,5 @@
 use rstd::prelude::*;
-use srml_support::traits::Currency;
+use srml_support::traits::{Currency, ReservableCurrency};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch::Result, ensure, StorageMap, StorageValue,
 };

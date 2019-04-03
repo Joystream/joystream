@@ -38,7 +38,10 @@ use roles::actors;
 use rstd::prelude::*; // needed for Vec
 use runtime_primitives::{
     create_runtime_str, generic,
-    traits::{self as runtime_traits, BlakeTwo256, Block as BlockT, StaticLookup, Verify, CurrencyToVoteHandler},
+    traits::{
+        self as runtime_traits, BlakeTwo256, Block as BlockT, CurrencyToVoteHandler, StaticLookup,
+        Verify,
+    },
     transaction_validity::TransactionValidity,
     ApplyResult,
 };

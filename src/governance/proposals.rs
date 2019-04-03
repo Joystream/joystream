@@ -1,7 +1,7 @@
 use rstd::prelude::*;
 use runtime_io::print;
 use runtime_primitives::traits::{As, Hash, Zero};
-use srml_support::traits::Currency;
+use srml_support::traits::{Currency, ReservableCurrency};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
 };
