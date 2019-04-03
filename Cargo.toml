@@ -34,37 +34,37 @@ std = [
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'srml-aura'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.balances]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'srml-balances'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.consensus]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'srml-consensus'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.consensus-aura]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-consensus-aura-primitives'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.executive]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'srml-executive'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.indices]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'srml-indices'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.parity-codec]
 default-features = false
@@ -78,25 +78,25 @@ version = '3.1'
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-primitives'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.rstd]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'sr-std'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.runtime-io]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'sr-io'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.runtime-primitives]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'sr-primitives'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.safe-mix]
 default-features = false
@@ -113,45 +113,45 @@ version = '1.0'
 [dependencies.srml-support]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.substrate-client]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.sudo]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'srml-sudo'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.system]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'srml-system'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.timestamp]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'srml-timestamp'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.version]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'sr-version'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.staking]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'srml-staking'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
 [dependencies.session]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'srml-session'
-rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
