@@ -26,7 +26,7 @@ impl<T: Trait> Module<T> {
         <members::Module<T>>::initialize_storage();
 
         // Initialize Storage provider role parameters
-        <actors::Module<T>>::set_role_parameters(
+        let _ = <actors::Module<T>>::set_role_parameters(
             actors::Role::Storage,
             actors::RoleParameters {
                 min_stake: BalanceOf::<T>::sa(3000),
@@ -43,7 +43,7 @@ impl<T: Trait> Module<T> {
                 startup_grace_period: T::BlockNumber::sa(600),
             },
         );
-        <actors::Module<T>>::set_available_roles(vec![actors::Role::Storage]);
+        let _ = <actors::Module<T>>::set_available_roles(vec![actors::Role::Storage]);
 
         // ...
         // add initialization of other modules introduced in this runtime
