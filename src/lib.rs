@@ -38,7 +38,7 @@ use roles::actors;
 use rstd::prelude::*; // needed for Vec
 use runtime_primitives::{
     create_runtime_str, generic,
-    traits::{self as runtime_traits, BlakeTwo256, Block as BlockT, StaticLookup, Verify},
+    traits::{self as runtime_traits, BlakeTwo256, Block as BlockT, StaticLookup, Verify, CurrencyToVoteHandler},
     transaction_validity::TransactionValidity,
     ApplyResult,
 };
@@ -217,7 +217,7 @@ impl sudo::Trait for Runtime {
 
 impl staking::Trait for Runtime {
     type Currency = balances::Module<Self>;
-    //type CurrencyToVote = CurrencyToVoteHandler;
+    type CurrencyToVote = CurrencyToVoteHandler;
     type OnRewardMinted = ();
     type Event = Event;
     type Slash = ();
@@ -360,8 +360,8 @@ impl_runtime_apis! {
             Executive::execute_block(block)
         }
 
-        fn initialise_block(header: &<Block as BlockT>::Header) {
-            Executive::initialise_block(header)
+        fn initialize_block(header: &<Block as BlockT>::Header) {
+            Executive::initialize_block(header)
         }
     }
 
@@ -376,8 +376,8 @@ impl_runtime_apis! {
             Executive::apply_extrinsic(extrinsic)
         }
 
-        fn finalise_block() -> <Block as BlockT>::Header {
-            Executive::finalise_block()
+        fn finalize_block() -> <Block as BlockT>::Header {
+            Executive::finalize_block()
         }
 
         fn inherent_extrinsics(data: InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
