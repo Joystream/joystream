@@ -780,6 +780,8 @@ dependencies = [
  "srml-timestamp 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
  "substrate-client 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
  "substrate-consensus-aura-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "substrate-consensus-authorities 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "substrate-offchain-primitives 0.1.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
  "substrate-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
 ]
 
@@ -2463,6 +2465,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-consensus-authorities"
+version = "1.0.0"
+source = "git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7#59d5ec144704cec017a01f3e4dbb6b73c5542bf7"
+dependencies = [
+ "parity-codec 3.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sr-io 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "sr-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "sr-std 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "sr-version 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "srml-support 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "substrate-client 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "substrate-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+]
+
+[[package]]
 name = "substrate-consensus-common"
 version = "1.0.0"
 source = "git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7#59d5ec144704cec017a01f3e4dbb6b73c5542bf7"
@@ -2527,6 +2544,15 @@ dependencies = [
  "strum 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "strum_macros 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "substrate-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+]
+
+[[package]]
+name = "substrate-offchain-primitives"
+version = "0.1.0"
+source = "git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7#59d5ec144704cec017a01f3e4dbb6b73c5542bf7"
+dependencies = [
+ "sr-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "substrate-client 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
 ]
 
 [[package]]
@@ -3381,10 +3407,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum substrate-bip39 0.2.1 (git+https://github.com/paritytech/substrate-bip39)" = "<none>"
 "checksum substrate-client 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-consensus-aura-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
+"checksum substrate-consensus-authorities 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-consensus-common 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-executor 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-inherents 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-keyring 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
+"checksum substrate-offchain-primitives 0.1.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-panic-handler 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-serializer 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
