@@ -771,6 +771,8 @@ dependencies = [
  "srml-balances 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
  "srml-consensus 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
  "srml-executive 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "srml-finality-tracker 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "srml-grandpa 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
  "srml-indices 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
  "srml-session 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
  "srml-staking 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
@@ -2163,6 +2165,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "srml-finality-tracker"
+version = "1.0.0"
+source = "git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7#59d5ec144704cec017a01f3e4dbb6b73c5542bf7"
+dependencies = [
+ "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parity-codec 3.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sr-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "sr-std 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "srml-support 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "srml-system 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "substrate-inherents 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+]
+
+[[package]]
+name = "srml-grandpa"
+version = "1.0.0"
+source = "git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7#59d5ec144704cec017a01f3e4dbb6b73c5542bf7"
+dependencies = [
+ "parity-codec 3.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sr-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "sr-std 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "srml-consensus 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "srml-finality-tracker 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "srml-session 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "srml-support 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "srml-system 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "substrate-finality-grandpa-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "substrate-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+]
+
+[[package]]
 name = "srml-indices"
 version = "1.0.0"
 source = "git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7#59d5ec144704cec017a01f3e4dbb6b73c5542bf7"
@@ -2521,6 +2558,18 @@ dependencies = [
  "substrate-trie 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
  "tiny-keccak 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasmi 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "substrate-finality-grandpa-primitives"
+version = "1.0.0"
+source = "git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7#59d5ec144704cec017a01f3e4dbb6b73c5542bf7"
+dependencies = [
+ "parity-codec 3.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sr-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "sr-std 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "substrate-client 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
+ "substrate-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)",
 ]
 
 [[package]]
@@ -3383,6 +3432,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum srml-balances 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum srml-consensus 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum srml-executive 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
+"checksum srml-finality-tracker 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
+"checksum srml-grandpa 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum srml-indices 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum srml-metadata 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum srml-session 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
@@ -3410,6 +3461,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum substrate-consensus-authorities 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-consensus-common 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-executor 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
+"checksum substrate-finality-grandpa-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-inherents 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-keyring 1.0.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"
 "checksum substrate-offchain-primitives 0.1.0 (git+https://github.com/joystream/substrate.git?rev=59d5ec144704cec017a01f3e4dbb6b73c5542bf7)" = "<none>"

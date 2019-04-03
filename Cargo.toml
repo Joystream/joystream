@@ -31,6 +31,8 @@ std = [
     'session/std',
     'offchain-primitives/std',
     'consensus-authorities/std',
+    'grandpa/std',
+    'finality-tracker/std',
 ]
 [dependencies.aura]
 default_features = false
@@ -170,4 +172,14 @@ git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-consensus-authorities'
 rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
+[dependencies.grandpa]
+default_features = false
+git = 'https://github.com/joystream/substrate.git'
+package = 'srml-grandpa'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
+[dependencies.finality-tracker]
+default_features = false
+git = 'https://github.com/joystream/substrate.git'
+package = 'srml-finality-tracker'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'

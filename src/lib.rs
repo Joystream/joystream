@@ -29,8 +29,9 @@ mod migration;
 mod roles;
 use client::{
     block_builder::api::{self as block_builder_api, CheckInherentsResult, InherentData},
-    impl_runtime_apis, runtime_api as client_api
+    impl_runtime_apis, runtime_api as client_api,
 };
+use grandpa::fg_primitives::{self, ScheduledChange};
 #[cfg(feature = "std")]
 use primitives::bytes;
 use primitives::{ed25519, OpaqueMetadata};
@@ -39,8 +40,8 @@ use rstd::prelude::*; // needed for Vec
 use runtime_primitives::{
     create_runtime_str, generic,
     traits::{
-        self as runtime_traits, BlakeTwo256, Block as BlockT, CurrencyToVoteHandler, StaticLookup,
-        Verify, NumberFor, AuthorityIdFor
+        self as runtime_traits, AuthorityIdFor, BlakeTwo256, Block as BlockT,
+        CurrencyToVoteHandler, DigestFor, NumberFor, StaticLookup, Verify,
     },
     transaction_validity::TransactionValidity,
     ApplyResult,
@@ -300,6 +301,16 @@ impl actors::Trait for Runtime {
     type Members = Members;
 }
 
+impl grandpa::Trait for Runtime {
+    type SessionKey = AuthorityId;
+    type Log = Log;
+    type Event = Event;
+}
+
+impl finality_tracker::Trait for Runtime {
+    type OnFinalizationStalled = grandpa::SyncedAuthorities<Runtime>;
+}
+
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, AuthorityId, AuthoritySignature>) where
 		Block = Block,
@@ -315,6 +326,8 @@ construct_runtime!(
 		Session: session,
 		Staking: staking::{default, OfflineWorker},
 		Sudo: sudo,
+        FinalityTracker: finality_tracker::{Module, Call, Inherent},
+		Grandpa: grandpa::{Module, Call, Storage, Config<T>, Log(), Event<T>},
 		Proposals: proposals::{Module, Call, Storage, Event<T>, Config<T>},
 		CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
 		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
@@ -350,73 +363,107 @@ pub type Executive = executive::Executive<Runtime, Block, Context, Balances, All
 
 // Implement our runtime API endpoints. This is just a bunch of proxying.
 impl_runtime_apis! {
-	impl client_api::Core<Block> for Runtime {
-		fn version() -> RuntimeVersion {
-			VERSION
-		}
+    impl client_api::Core<Block> for Runtime {
+        fn version() -> RuntimeVersion {
+            VERSION
+        }
 
-		fn execute_block(block: Block) {
-			Executive::execute_block(block)
-		}
+        fn execute_block(block: Block) {
+            Executive::execute_block(block)
+        }
 
-		fn initialize_block(header: &<Block as BlockT>::Header) {
-			Executive::initialize_block(header)
-		}
+        fn initialize_block(header: &<Block as BlockT>::Header) {
+            Executive::initialize_block(header)
+        }
 
-		fn authorities() -> Vec<AuthorityIdFor<Block>> {
-			panic!("Deprecated, please use `AuthoritiesApi`.")
-		}
-	}
+        fn authorities() -> Vec<AuthorityIdFor<Block>> {
+            panic!("Deprecated, please use `AuthoritiesApi`.")
+        }
+    }
 
-	impl client_api::Metadata<Block> for Runtime {
-		fn metadata() -> OpaqueMetadata {
-			Runtime::metadata().into()
-		}
-	}
+    impl client_api::Metadata<Block> for Runtime {
+        fn metadata() -> OpaqueMetadata {
+            Runtime::metadata().into()
+        }
+    }
 
-	impl block_builder_api::BlockBuilder<Block> for Runtime {
-		fn apply_extrinsic(extrinsic: <Block as BlockT>::Extrinsic) -> ApplyResult {
-			Executive::apply_extrinsic(extrinsic)
-		}
+    impl block_builder_api::BlockBuilder<Block> for Runtime {
+        fn apply_extrinsic(extrinsic: <Block as BlockT>::Extrinsic) -> ApplyResult {
+            Executive::apply_extrinsic(extrinsic)
+        }
 
-		fn finalize_block() -> <Block as BlockT>::Header {
-			Executive::finalize_block()
-		}
+        fn finalize_block() -> <Block as BlockT>::Header {
+            Executive::finalize_block()
+        }
 
-		fn inherent_extrinsics(data: InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
-			data.create_extrinsics()
-		}
+        fn inherent_extrinsics(data: InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
+            data.create_extrinsics()
+        }
 
-		fn check_inherents(block: Block, data: InherentData) -> CheckInherentsResult {
-			data.check_extrinsics(&block)
-		}
+        fn check_inherents(block: Block, data: InherentData) -> CheckInherentsResult {
+            data.check_extrinsics(&block)
+        }
 
-		fn random_seed() -> <Block as BlockT>::Hash {
-			System::random_seed()
-		}
-	}
+        fn random_seed() -> <Block as BlockT>::Hash {
+            System::random_seed()
+        }
+    }
 
-	impl client_api::TaggedTransactionQueue<Block> for Runtime {
-		fn validate_transaction(tx: <Block as BlockT>::Extrinsic) -> TransactionValidity {
-			Executive::validate_transaction(tx)
-		}
-	}
+    impl client_api::TaggedTransactionQueue<Block> for Runtime {
+        fn validate_transaction(tx: <Block as BlockT>::Extrinsic) -> TransactionValidity {
+            Executive::validate_transaction(tx)
+        }
+    }
 
-	impl offchain_primitives::OffchainWorkerApi<Block> for Runtime {
-		fn offchain_worker(number: NumberFor<Block>) {
-			Executive::offchain_worker(number)
-		}
-	}
+    impl offchain_primitives::OffchainWorkerApi<Block> for Runtime {
+        fn offchain_worker(number: NumberFor<Block>) {
+            Executive::offchain_worker(number)
+        }
+    }
 
-	impl consensus_aura::AuraApi<Block> for Runtime {
-		fn slot_duration() -> u64 {
-			Aura::slot_duration()
-		}
-	}
+    impl fg_primitives::GrandpaApi<Block> for Runtime {
+        fn grandpa_pending_change(digest: &DigestFor<Block>)
+            -> Option<ScheduledChange<NumberFor<Block>>>
+        {
+            for log in digest.logs.iter().filter_map(|l| match l {
+                Log(InternalLog::grandpa(grandpa_signal)) => Some(grandpa_signal),
+                _ => None
+            }) {
+                if let Some(change) = Grandpa::scrape_digest_change(log) {
+                    return Some(change);
+                }
+            }
+            None
+        }
 
-	impl consensus_authorities::AuthoritiesApi<Block> for Runtime {
-		fn authorities() -> Vec<AuthorityIdFor<Block>> {
-			Consensus::authorities()
-		}
-	}
+        fn grandpa_forced_change(digest: &DigestFor<Block>)
+            -> Option<(NumberFor<Block>, ScheduledChange<NumberFor<Block>>)>
+        {
+            for log in digest.logs.iter().filter_map(|l| match l {
+                Log(InternalLog::grandpa(grandpa_signal)) => Some(grandpa_signal),
+                _ => None
+            }) {
+                if let Some(change) = Grandpa::scrape_digest_forced_change(log) {
+                    return Some(change);
+                }
+            }
+            None
+        }
+
+        fn grandpa_authorities() -> Vec<(AuthorityId, u64)> {
+            Grandpa::grandpa_authorities()
+        }
+    }
+
+    impl consensus_aura::AuraApi<Block> for Runtime {
+        fn slot_duration() -> u64 {
+            Aura::slot_duration()
+        }
+    }
+
+    impl consensus_authorities::AuthoritiesApi<Block> for Runtime {
+        fn authorities() -> Vec<AuthorityIdFor<Block>> {
+            Consensus::authorities()
+        }
+    }
 }
