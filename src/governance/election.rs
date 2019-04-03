@@ -1234,9 +1234,9 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             let _ = Balances::deposit_creating(&1, 1000);
             let _ = Balances::deposit_creating(&2, 7000);
-            Balances::reserve(&2, 5000);
+            let _ = Balances::reserve(&2, 5000);
             let _ = Balances::deposit_creating(&3, 8000);
-            Balances::reserve(&3, 5000);
+            let _ = Balances::reserve(&3, 5000);
 
             <Applicants<Test>>::put(vec![1, 2, 3]);
 
@@ -1718,7 +1718,7 @@ mod tests {
             <Applicants<Test>>::put(vec![100, 200, 300]);
 
             let _ = Balances::deposit_creating(&100, 2000);
-            Balances::reserve(&100, 1000);
+            let _ = Balances::reserve(&100, 1000);
 
             <ApplicantStakes<Test>>::insert(
                 100,
@@ -1772,11 +1772,11 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             // voters' balances
             let _ = Balances::deposit_creating(&10, 6000);
-            Balances::reserve(&10, 5000);
+            let _ = Balances::reserve(&10, 5000);
             let _ = Balances::deposit_creating(&20, 7000);
-            Balances::reserve(&20, 5000);
+            let _ = Balances::reserve(&20, 5000);
             let _ = Balances::deposit_creating(&30, 8000);
-            Balances::reserve(&30, 5000);
+            let _ = Balances::reserve(&30, 5000);
 
             save_transferable_stake(
                 10,
@@ -1852,7 +1852,7 @@ mod tests {
             <ExistingStakeHolders<Test>>::put(vec![10, 20, 30]);
 
             let _ = Balances::deposit_creating(&10, 6000);
-            Balances::reserve(&10, 5000);
+            let _ = Balances::reserve(&10, 5000);
             save_transferable_stake(
                 10,
                 TransferableStake {
@@ -1862,7 +1862,7 @@ mod tests {
             );
 
             let _ = Balances::deposit_creating(&20, 7000);
-            Balances::reserve(&20, 5000);
+            let _ = Balances::reserve(&20, 5000);
             save_transferable_stake(
                 20,
                 TransferableStake {
@@ -1872,7 +1872,7 @@ mod tests {
             );
 
             let _ = Balances::deposit_creating(&30, 8000);
-            Balances::reserve(&30, 5000);
+            let _ = Balances::reserve(&30, 5000);
             save_transferable_stake(
                 30,
                 TransferableStake {
