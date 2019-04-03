@@ -51,7 +51,7 @@ fn buy_default_membership_as_alice() -> dispatch::Result {
 }
 
 fn set_alice_free_balance(balance: u32) {
-    Balances::deposit_creating(&ALICE_ACCOUNT_ID, balance);
+    let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, balance);
 }
 
 #[test]

@@ -3,9 +3,7 @@ use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, Bounded, MaybeDebug, Zero};
 use srml_support::traits::Currency;
-use srml_support::{
-    decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue,
-};
+use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
 
 use crate::traits::{Members, Roles};
