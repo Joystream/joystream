@@ -18,7 +18,7 @@ log = '0.4'
 parity-codec = '3.2'
 parking_lot = '0.7.1'
 tokio = '0.1'
-trie-root = '0.11.0'
+trie-root = '0.12.0'
 
 [dependencies.basic-authorship]
 git = 'https://github.com/joystream/substrate.git'
@@ -45,12 +45,8 @@ package = 'substrate-network'
 rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
 
 [dependencies.joystream-node-runtime]
-git = 'https://github.com/joystream/substrate-runtime-joystream.git'
-tag = 'v3.4.0'
-# When developing locally change the location of the dependency to a local directory
-# comment out the "git" and "tag" lines above and replace with a "path"
-# path = 'runtime'
-# path = '../my-local-joystream-runtime-repo/'
+# clone https://github.com/joystream/substrate-runtime-joystream to this path:
+path = './substrate-runtime-joystream/'
 
 [dependencies.primitives]
 git = 'https://github.com/joystream/substrate.git'
@@ -81,6 +77,12 @@ rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
 git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-transaction-pool'
 rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.substrate-telemetry]
+git = 'https://github.com/joystream/substrate.git'
+package = 'substrate-telemetry'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
 [profile.release]
 panic = 'unwind'
 
