@@ -13,7 +13,7 @@ use system;
 // the runtime doesn't need to maintain any logic for old migrations. All knowledge about state of the chain and runtime
 // prior to the new runtime taking over is implicit in the migration code implementation. If assumptions are incorrect
 // behaviour is undefined.
-const MIGRATION_FOR_SPEC_VERSION: u32 = 5;
+const MIGRATION_FOR_SPEC_VERSION: u32 = 2;
 
 impl<T: Trait> Module<T> {
     fn runtime_initialization() {
@@ -22,28 +22,6 @@ impl<T: Trait> Module<T> {
         }
 
         print("running runtime initializers");
-
-        <members::Module<T>>::initialize_storage();
-
-        // Initialize Storage provider role parameters
-        let _ = <actors::Module<T>>::set_role_parameters(
-            actors::Role::Storage,
-            actors::RoleParameters {
-                min_stake: BalanceOf::<T>::sa(3000),
-                max_actors: 10,
-                reward: BalanceOf::<T>::sa(10),
-                reward_period: T::BlockNumber::sa(600),
-                unbonding_period: T::BlockNumber::sa(600),
-                entry_request_fee: BalanceOf::<T>::sa(50),
-
-                // not currently used
-                min_actors: 5,
-                bonding_period: T::BlockNumber::sa(600),
-                min_service_period: T::BlockNumber::sa(600),
-                startup_grace_period: T::BlockNumber::sa(600),
-            },
-        );
-        let _ = <actors::Module<T>>::set_available_roles(vec![actors::Role::Storage]);
 
         // ...
         // add initialization of other modules introduced in this runtime
