@@ -1,9 +1,9 @@
 use hex_literal::{hex, hex_impl};
 use joystream_node_runtime::{
-    AccountId, BalancesConfig, ConsensusConfig, CouncilConfig, CouncilElectionConfig,
-    DataObjectTypeRegistryConfig, GenesisConfig, IndicesConfig, MembersConfig, Perbill,
+    AccountId, BalancesConfig, ConsensusConfig, ContentDirectoryConfig, CouncilConfig,
+    CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
+    DownloadSessionsConfig, GenesisConfig, GrandpaConfig, IndicesConfig, MembersConfig, Perbill,
     ProposalsConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig, TimestampConfig,
-	ContentDirectoryConfig, DataObjectStorageRegistryConfig, DownloadSessionsConfig
 };
 use primitives::{crypto::UncheckedInto, ed25519, Pair};
 use substrate_service;
@@ -224,6 +224,9 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
 			stakers: initial_authorities.iter().map(|x| (x.0.clone(), x.1.clone(), STASH, StakerStatus::Validator)).collect(),
 			invulnerables: initial_authorities.iter().map(|x| x.1.clone()).collect(),
 		}),
+		grandpa: Some(GrandpaConfig {
+			authorities: initial_authorities.iter().map(|x| (x.2.clone(), 1)).collect(),
+		}),
 		council: Some(CouncilConfig {
 			active_council: vec![],
 			term_ends_at: 1,
@@ -320,6 +323,9 @@ fn testnet_genesis(
 			offline_slash_grace: 0,
 			stakers: initial_authorities.iter().map(|x| (x.0.clone(), x.1.clone(), STASH, StakerStatus::Validator)).collect(),
 			invulnerables: initial_authorities.iter().map(|x| x.1.clone()).collect(),
+		}),
+		grandpa: Some(GrandpaConfig {
+			authorities: initial_authorities.iter().map(|x| (x.2.clone(), 1)).collect(),
 		}),
 		council: Some(CouncilConfig {
 			active_council: vec![],

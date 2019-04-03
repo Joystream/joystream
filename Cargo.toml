@@ -83,6 +83,11 @@ git = 'https://github.com/joystream/substrate.git'
 package = 'substrate-telemetry'
 rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
 
+[dependencies.grandpa]
+git = 'https://github.com/joystream/substrate.git'
+package = 'substrate-finality-grandpa'
+rev = '59d5ec144704cec017a01f3e4dbb6b73c5542bf7'
+
 [profile.release]
 panic = 'unwind'
 
