@@ -1,27 +1,53 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::prelude::*;
-use parity_codec::Codec;
-use parity_codec_derive::{Encode, Decode};
-use srml_support::{StorageMap, StorageValue, dispatch, decl_module, decl_storage, decl_event, ensure, Parameter};
-use srml_support::traits::{Currency};
-use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug};
-use system::{self, ensure_signed};
-use crate::governance::{GovernanceCurrency, BalanceOf };
-use {timestamp};
+use crate::governance::{BalanceOf, GovernanceCurrency};
 use crate::traits::{Members, Roles};
+use parity_codec::Codec;
+use parity_codec_derive::{Decode, Encode};
+use rstd::prelude::*;
+use runtime_primitives::traits::{As, MaybeSerializeDebug, Member, SimpleArithmetic};
+use srml_support::traits::Currency;
+use srml_support::{
+    decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
+};
+use system::{self, ensure_signed};
+use timestamp;
 
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type MemberId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
-        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+    type MemberId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + As<usize>
+        + As<u64>
+        + MaybeSerializeDebug
+        + PartialEq;
 
-    type PaidTermId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
-        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+    type PaidTermId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + As<usize>
+        + As<u64>
+        + MaybeSerializeDebug
+        + PartialEq;
 
-    type SubscriptionId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
-        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+    type SubscriptionId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + As<usize>
+        + As<u64>
+        + MaybeSerializeDebug
+        + PartialEq;
 
     type Roles: Roles<Self>;
 }
@@ -84,7 +110,7 @@ pub struct PaidMembershipTerms<T: Trait> {
     /// Quantity of native tokens which must be provably burned
     pub fee: BalanceOf<T>,
     /// String of capped length describing human readable conditions which are being agreed upon
-    pub text: Vec<u8>
+    pub text: Vec<u8>,
 }
 
 impl<T: Trait> Default for PaidMembershipTerms<T> {
@@ -92,7 +118,7 @@ impl<T: Trait> Default for PaidMembershipTerms<T> {
         PaidMembershipTerms {
             id: T::PaidTermId::sa(DEFAULT_PAID_TERM_ID),
             fee: BalanceOf::<T>::sa(DEFAULT_PAID_TERM_FEE),
-            text: DEFAULT_PAID_TERM_TEXT.as_bytes().to_vec()
+            text: DEFAULT_PAID_TERM_TEXT.as_bytes().to_vec(),
         }
     }
 }
@@ -179,11 +205,9 @@ impl<T: Trait> Members<T> for Module<T> {
     type Id = T::MemberId;
 
     fn is_active_member(who: &T::AccountId) -> bool {
-        match Self::ensure_is_member(who)
-            .and_then(|member_id| Self::ensure_profile(member_id))
-        {
+        match Self::ensure_is_member(who).and_then(|member_id| Self::ensure_profile(member_id)) {
             Ok(profile) => !profile.suspended,
-            Err(_err) => false
+            Err(_err) => false,
         }
     }
 
@@ -310,18 +334,25 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     fn ensure_not_member(who: &T::AccountId) -> dispatch::Result {
-        ensure!(!<MemberIdByAccountId<T>>::exists(who), "account already associated with a membership");
+        ensure!(
+            !<MemberIdByAccountId<T>>::exists(who),
+            "account already associated with a membership"
+        );
         Ok(())
     }
 
     pub fn ensure_is_member(who: &T::AccountId) -> Result<T::MemberId, &'static str> {
-        let member_id = Self::member_id_by_account_id(who).ok_or("no member id found for accountid")?;
+        let member_id =
+            Self::member_id_by_account_id(who).ok_or("no member id found for accountid")?;
         Ok(member_id)
     }
 
     fn ensure_is_member_primary_account(who: T::AccountId) -> Result<T::MemberId, &'static str> {
         let member_id = Self::ensure_is_member(&who)?;
-        ensure!(Self::account_id_by_member_id(member_id) == who, "not primary account");
+        ensure!(
+            Self::account_id_by_member_id(member_id) == who,
+            "not primary account"
+        );
         Ok(member_id)
     }
 
@@ -330,21 +361,33 @@ impl<T: Trait> Module<T> {
         Ok(profile)
     }
 
-    fn ensure_active_terms_id(terms_id: T::PaidTermId) -> Result<PaidMembershipTerms<T>, &'static str> {
+    fn ensure_active_terms_id(
+        terms_id: T::PaidTermId,
+    ) -> Result<PaidMembershipTerms<T>, &'static str> {
         let active_terms = Self::active_paid_membership_terms();
-        ensure!(active_terms.iter().any(|&id| id == terms_id), "paid terms id not active");
-        let terms = Self::paid_membership_terms_by_id(terms_id).ok_or("paid membership term id does not exist")?;
+        ensure!(
+            active_terms.iter().any(|&id| id == terms_id),
+            "paid terms id not active"
+        );
+        let terms = Self::paid_membership_terms_by_id(terms_id)
+            .ok_or("paid membership term id does not exist")?;
         Ok(terms)
     }
 
-    fn ensure_unique_handle(handle: &Vec<u8> ) -> dispatch::Result {
+    fn ensure_unique_handle(handle: &Vec<u8>) -> dispatch::Result {
         ensure!(!<Handles<T>>::exists(handle), "handle already registered");
         Ok(())
     }
 
     fn validate_handle(handle: &Vec<u8>) -> dispatch::Result {
-        ensure!(handle.len() >= Self::min_handle_length() as usize, "handle too short");
-        ensure!(handle.len() <= Self::max_handle_length() as usize, "handle too long");
+        ensure!(
+            handle.len() >= Self::min_handle_length() as usize,
+            "handle too short"
+        );
+        ensure!(
+            handle.len() <= Self::max_handle_length() as usize,
+            "handle too long"
+        );
         Ok(())
     }
 
@@ -355,14 +398,19 @@ impl<T: Trait> Module<T> {
     }
 
     fn validate_avatar(uri: &Vec<u8>) -> dispatch::Result {
-        ensure!(uri.len() <= Self::max_avatar_uri_length() as usize, "avatar uri too long");
+        ensure!(
+            uri.len() <= Self::max_avatar_uri_length() as usize,
+            "avatar uri too long"
+        );
         Ok(())
     }
 
     /// Basic user input validation
     fn check_user_registration_info(user_info: UserInfo) -> Result<CheckedUserInfo, &'static str> {
         // Handle is required during registration
-        let handle = user_info.handle.ok_or("handle must be provided during registration")?;
+        let handle = user_info
+            .handle
+            .ok_or("handle must be provided during registration")?;
         Self::validate_handle(&handle)?;
 
         let about = Self::validate_text(&user_info.about.unwrap_or_default());
@@ -377,7 +425,11 @@ impl<T: Trait> Module<T> {
     }
 
     // Mutating methods
-    fn insert_member(who: &T::AccountId, user_info: &CheckedUserInfo, entry_method: EntryMethod<T>) -> T::MemberId {
+    fn insert_member(
+        who: &T::AccountId,
+        user_info: &CheckedUserInfo,
+        entry_method: EntryMethod<T>,
+    ) -> T::MemberId {
         let new_member_id = Self::next_member_id();
 
         let profile: Profile<T> = Profile {
@@ -396,12 +448,14 @@ impl<T: Trait> Module<T> {
         <AccountIdByMemberId<T>>::insert(new_member_id, who.clone());
         <MemberProfile<T>>::insert(new_member_id, profile);
         <Handles<T>>::insert(user_info.handle.clone(), new_member_id);
-        <NextMemberId<T>>::mutate(|n| { *n += T::MemberId::sa(1); });
+        <NextMemberId<T>>::mutate(|n| {
+            *n += T::MemberId::sa(1);
+        });
 
         new_member_id
     }
 
-    fn _change_member_about_text (id: T::MemberId, text: &Vec<u8>) -> dispatch::Result {
+    fn _change_member_about_text(id: T::MemberId, text: &Vec<u8>) -> dispatch::Result {
         let mut profile = Self::ensure_profile(id)?;
         let text = Self::validate_text(text);
         profile.about = text;

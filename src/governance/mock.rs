@@ -1,14 +1,14 @@
 #![cfg(test)]
 
-pub use super::{election, council, proposals, GovernanceCurrency};
+pub use super::{council, election, proposals, GovernanceCurrency};
+use crate::traits::Members;
 pub use system;
-use crate::traits::{Members};
 
-pub use primitives::{H256, Blake2Hasher};
+pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
+    testing::{Digest, DigestItem, Header, UintAuthorityId},
+    traits::{BlakeTwo256, IdentityLookup, OnFinalise},
     BuildStorage,
-    traits::{BlakeTwo256, OnFinalise, IdentityLookup},
-    testing::{Digest, DigestItem, Header, UintAuthorityId}
 };
 
 use srml_support::impl_outer_origin;
@@ -102,7 +102,10 @@ impl GovernanceCurrency for Test {
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-    let t = system::GenesisConfig::<Test>::default().build_storage().unwrap().0;
+    let t = system::GenesisConfig::<Test>::default()
+        .build_storage()
+        .unwrap()
+        .0;
 
     runtime_io::TestExternalities::new(t)
 }

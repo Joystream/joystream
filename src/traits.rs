@@ -1,15 +1,23 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use crate::storage::{data_directory, data_object_storage_registry, data_object_type_registry};
-use system;
 use parity_codec::Codec;
-use srml_support::{Parameter};
-use runtime_primitives::traits::{SimpleArithmetic, As, Member, MaybeSerializeDebug};
+use runtime_primitives::traits::{As, MaybeSerializeDebug, Member, SimpleArithmetic};
+use srml_support::Parameter;
+use system;
 
 // Members
 pub trait Members<T: system::Trait> {
-    type Id : Parameter + Member + SimpleArithmetic + Codec + Default + Copy
-        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+    type Id: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + As<usize>
+        + As<u64>
+        + MaybeSerializeDebug
+        + PartialEq;
 
     fn is_active_member(account_id: &T::AccountId) -> bool;
 
@@ -37,7 +45,9 @@ pub trait Roles<T: system::Trait> {
 }
 
 impl<T: system::Trait> Roles<T> for () {
-	fn is_role_account(_who: &T::AccountId) -> bool { false }
+    fn is_role_account(_who: &T::AccountId) -> bool {
+        false
+    }
 }
 
 // Storage
