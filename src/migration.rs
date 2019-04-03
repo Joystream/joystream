@@ -1,10 +1,10 @@
-use crate::governance::BalanceOf;
+//use crate::governance::BalanceOf;
 use crate::membership::members;
 use crate::roles::actors;
 use crate::VERSION;
 use rstd::prelude::*;
 use runtime_io::print;
-use runtime_primitives::traits::As;
+//use runtime_primitives::traits::As;
 use srml_support::{decl_event, decl_module, decl_storage, StorageValue};
 use system;
 
