@@ -1,23 +1,33 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use srml_support::{ensure};
 use parity_codec::Encode;
 use rstd::vec::Vec;
+use srml_support::ensure;
 
 #[derive(Clone, Copy, Encode, Decode, Default)]
 pub struct SealedVote<AccountId, Stake, Hash, Vote>
-    where Vote: Encode, Hash: PartialEq, AccountId: PartialEq
+where
+    Vote: Encode,
+    Hash: PartialEq,
+    AccountId: PartialEq,
 {
-  pub voter: AccountId,
-  pub commitment: Hash, // 32 bytes - salted hash of serialized Vote
-  pub stake: Stake,
-  vote: Option<Vote>, // will be set when unsealing
+    pub voter: AccountId,
+    pub commitment: Hash, // 32 bytes - salted hash of serialized Vote
+    pub stake: Stake,
+    vote: Option<Vote>, // will be set when unsealing
 }
 
 impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
-    where Vote: Encode, Hash: PartialEq, AccountId: PartialEq
+where
+    Vote: Encode,
+    Hash: PartialEq,
+    AccountId: PartialEq,
 {
-    pub fn new(voter: AccountId, stake: Stake, commitment: Hash) -> SealedVote<AccountId, Stake, Hash, Vote> {
+    pub fn new(
+        voter: AccountId,
+        stake: Stake,
+        commitment: Hash,
+    ) -> SealedVote<AccountId, Stake, Hash, Vote> {
         SealedVote {
             voter,
             commitment,
@@ -26,7 +36,12 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
         }
     }
 
-    pub fn new_unsealed(voter: AccountId, stake: Stake, commitment: Hash, vote: Vote) -> SealedVote<AccountId, Stake, Hash, Vote> {
+    pub fn new_unsealed(
+        voter: AccountId,
+        stake: Stake,
+        commitment: Hash,
+        vote: Vote,
+    ) -> SealedVote<AccountId, Stake, Hash, Vote> {
         SealedVote {
             voter,
             commitment,
@@ -35,7 +50,12 @@ impl<AccountId, Stake, Hash, Vote> SealedVote<AccountId, Stake, Hash, Vote>
         }
     }
 
-    pub fn unseal(&mut self, vote: Vote, salt: &mut Vec<u8>, hasher: fn(&[u8]) -> Hash) -> Result<(), &'static str> {
+    pub fn unseal(
+        &mut self,
+        vote: Vote,
+        salt: &mut Vec<u8>,
+        hasher: fn(&[u8]) -> Hash,
+    ) -> Result<(), &'static str> {
         // only unseal once
         ensure!(self.is_not_revealed(), "vote already unsealed");
 
