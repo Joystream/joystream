@@ -5,7 +5,7 @@ use joystream_node_runtime::{
     DownloadSessionsConfig, GenesisConfig, GrandpaConfig, IndicesConfig, MembersConfig, Perbill,
     ProposalsConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig, TimestampConfig,
 };
-use primitives::{crypto::UncheckedInto, ed25519, Pair};
+use primitives::{crypto::UncheckedInto, ed25519, sr25519, Pair};
 use substrate_service;
 use substrate_telemetry::TelemetryEndpoints;
 
@@ -38,18 +38,12 @@ fn authority_key(s: &str) -> AuthorityId {
         .public()
 }
 
-// New sr25519 for account keys
-// fn account_key(s: &str) -> AccountId {
-// 	sr25519::Pair::from_string(&format!("//{}", s), None)
-// 		.expect("static values are valid; qed")
-// 		.public()
-// }
-
-// Continue to use ed25519 for account keys for now
+// from_string for both signature schemes is identical.
+// So we can use this method to create account keys for use with both schemes.
 fn account_key(s: &str) -> AccountId {
-    ed25519::Pair::from_string(&format!("//{}", s), None)
-        .expect("static values are valid; qed")
-        .public()
+	sr25519::Pair::from_string(&format!("//{}", s), None)
+		.expect("static values are valid; qed")
+		.public()
 }
 
 impl Alternative {
