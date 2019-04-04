@@ -65,10 +65,10 @@ impl traits::Roles<Test> for MockRoles {
     }
 
     fn account_has_role(
-        _account_id: &<Test as system::Trait>::AccountId,
+        account_id: &<Test as system::Trait>::AccountId,
         _role: actors::Role,
     ) -> bool {
-        false
+        *account_id == TEST_MOCK_LIAISON
     }
 
     fn random_account_for_role(
