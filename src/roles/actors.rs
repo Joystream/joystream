@@ -202,14 +202,11 @@ impl<T: Trait> Roles<T> for Module<T> {
             return false;
         }
         let actor = res.unwrap();
-        actor.role == role && <Bondage<T>>::exists(account_id)
+        actor.role == role
     }
 
     fn random_account_for_role(role: Role) -> Result<T::AccountId, &'static str> {
-        let ids: Vec<T::AccountId> = Self::actor_account_ids()
-            .into_iter()
-            .filter(|actor_id| Self::account_has_role(actor_id, role))
-            .collect();
+        let ids = Self::account_ids_by_role(role);
         if 0 == ids.len() {
             return Err(MSG_NO_ACTOR_FOR_ROLE);
         }
