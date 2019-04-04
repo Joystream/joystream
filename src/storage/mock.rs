@@ -3,6 +3,8 @@
 pub use super::{
     content_directory, data_directory, data_object_storage_registry, data_object_type_registry,
 };
+use crate::governance::GovernanceCurrency;
+use crate::roles::actors;
 use crate::traits;
 use runtime_io::with_externalities;
 pub use system;
@@ -26,8 +28,18 @@ impl_outer_event! {
         data_directory<T>,
         data_object_storage_registry<T>,
         content_directory<T>,
+        actors<T>,
+        balances<T>,
     }
 }
+
+pub const TEST_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1000;
+pub const TEST_FIRST_CONTENT_ID: u64 = 2000;
+pub const TEST_FIRST_RELATIONSHIP_ID: u64 = 3000;
+pub const TEST_FIRST_METADATA_ID: u64 = 4000;
+
+pub const TEST_MOCK_LIAISON: u64 = 0xd00du64;
+pub const TEST_MOCK_EXISTING_CID: u64 = 42;
 
 pub struct MockMembers {}
 impl<T: system::Trait> traits::Members<T> for MockMembers {
@@ -46,6 +58,27 @@ impl<T: system::Trait> traits::Members<T> for MockMembers {
     }
 }
 
+pub struct MockRoles {}
+impl traits::Roles<Test> for MockRoles {
+    fn is_role_account(_account_id: &<Test as system::Trait>::AccountId) -> bool {
+        false
+    }
+
+    fn account_has_role(
+        _account_id: &<Test as system::Trait>::AccountId,
+        _role: actors::Role,
+    ) -> bool {
+        false
+    }
+
+    fn random_account_for_role(
+        _role: actors::Role,
+    ) -> Result<<Test as system::Trait>::AccountId, &'static str> {
+        // We "randomly" select an account Id.
+        Ok(TEST_MOCK_LIAISON)
+    }
+}
+
 pub struct AnyDataObjectTypeIsActive {}
 impl<T: data_object_type_registry::Trait> traits::IsActiveDataObjectType<T>
     for AnyDataObjectTypeIsActive
@@ -58,21 +91,21 @@ impl<T: data_object_type_registry::Trait> traits::IsActiveDataObjectType<T>
 pub struct MockContent {}
 impl traits::ContentIdExists<Test> for MockContent {
     fn has_content(which: &<Test as data_directory::Trait>::ContentId) -> bool {
-        *which == 42
+        *which == TEST_MOCK_EXISTING_CID
     }
 
     fn get_data_object(
         which: &<Test as data_directory::Trait>::ContentId,
     ) -> Result<data_directory::DataObject<Test>, &'static str> {
         match *which {
-            42 => Ok(data_directory::DataObject {
+            TEST_MOCK_EXISTING_CID => Ok(data_directory::DataObject {
                 data_object_type: 1,
                 signing_key: None,
                 size: 1234,
                 added_at_block: 10,
                 added_at_time: 1024,
                 owner: 1,
-                liaison: 1, // TODO change to another later
+                liaison: TEST_MOCK_LIAISON,
                 liaison_judgement: data_directory::LiaisonJudgement::Pending,
             }),
             _ => Err("nope, missing"),
@@ -108,6 +141,7 @@ impl data_directory::Trait for Test {
     type Event = MetaEvent;
     type ContentId = u64;
     type Members = MockMembers;
+    type Roles = MockRoles;
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
 }
 
@@ -115,6 +149,7 @@ impl data_object_storage_registry::Trait for Test {
     type Event = MetaEvent;
     type DataObjectStorageRelationshipId = u64;
     type Members = MockMembers;
+    type Roles = MockRoles;
     type ContentIdExists = MockContent;
 }
 
@@ -122,6 +157,11 @@ impl content_directory::Trait for Test {
     type Event = MetaEvent;
     type MetadataId = u64;
     type SchemaId = u64;
+    type Members = MockMembers;
+}
+
+impl actors::Trait for Test {
+    type Event = MetaEvent;
     type Members = MockMembers;
 }
 
@@ -134,6 +174,29 @@ impl consensus::Trait for Test {
     type SessionKey = UintAuthorityId;
     type InherentOfflineReport = ();
     type Log = DigestItem;
+}
+
+impl balances::Trait for Test {
+    type Event = MetaEvent;
+
+    /// The balance of an account.
+    type Balance = u32;
+
+    /// A function which is invoked when the free-balance has fallen below the existential deposit and
+    /// has been reduced to zero.
+    ///
+    /// Gives a chance to clean up resources associated with the given account.
+    type OnFreeBalanceZero = ();
+
+    /// Handler for when a new account is created.
+    type OnNewAccount = ();
+
+    /// A function that returns true iff a given account can transfer its funds to another account.
+    type EnsureAccountLiquid = ();
+}
+
+impl GovernanceCurrency for Test {
+    type Currency = balances::Module<Self>;
 }
 
 pub struct ExtBuilder {
@@ -224,11 +287,8 @@ pub type TestDataDirectory = data_directory::Module<Test>;
 // pub type TestDataObject = data_directory::DataObject<Test>;
 pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Test>;
 pub type TestContentDirectory = content_directory::Module<Test>;
+pub type TestActors = actors::Module<Test>;
 
-pub const TEST_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1000;
-pub const TEST_FIRST_CONTENT_ID: u64 = 2000;
-pub const TEST_FIRST_RELATIONSHIP_ID: u64 = 3000;
-pub const TEST_FIRST_METADATA_ID: u64 = 4000;
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
     with_externalities(
         &mut ExtBuilder::default()
@@ -237,6 +297,11 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
             .first_relationship_id(TEST_FIRST_RELATIONSHIP_ID)
             .first_metadata_id(TEST_FIRST_METADATA_ID)
             .build(),
-        || f(),
+        || {
+            let roles: Vec<actors::Role> = vec![actors::Role::Storage];
+            assert!(TestActors::set_available_roles(roles).is_ok(), "");
+
+            f()
+        },
     )
 }

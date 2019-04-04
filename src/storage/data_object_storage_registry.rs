@@ -1,7 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use crate::roles::actors;
 use crate::storage::data_directory::Trait as DDTrait;
-use crate::traits::{ContentHasStorage, ContentIdExists, Members};
+use crate::traits::{ContentHasStorage, ContentIdExists, Members, Roles};
 use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
@@ -26,11 +27,14 @@ pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
         + PartialEq;
 
     type Members: Members<Self>;
+    type Roles: Roles<Self>;
     type ContentIdExists: ContentIdExists<Self>;
 }
 
 static MSG_CID_NOT_FOUND: &str = "Content with this ID not found.";
 static MSG_DOSR_NOT_FOUND: &str = "No data object storage relationship found for this ID.";
+static MSG_ONLY_STORAGE_PROVIDER_MAY_CREATE_DOSR: &str =
+    "Only storage providers can create data object storage relationships.";
 static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str =
     "Only the storage provider in a DOSR can decide whether they're ready.";
 
@@ -104,10 +108,9 @@ decl_module! {
         pub fn add_relationship(origin, cid: T::ContentId) {
             // Origin has to be a storage provider
             let who = ensure_signed(origin)?;
-            // TODO check for being staked as a storage provider
-            // if !T::Members::is_active_member(&who) {
-            //     return Err(MSG_CREATOR_MUST_BE_MEMBER);
-            // }
+
+            // Check that the origin is a storage provider
+            ensure!(<T as Trait>::Roles::account_has_role(&who, actors::Role::Storage), MSG_ONLY_STORAGE_PROVIDER_MAY_CREATE_DOSR);
 
             // Content ID must exist
             ensure!(T::ContentIdExists::has_content(&cid), MSG_CID_NOT_FOUND);
@@ -190,8 +193,11 @@ mod tests {
     #[test]
     fn test_add_relationship() {
         with_default_mock_builder(|| {
-            // The content needs to exist - in our mock, that's with the content ID 42
-            let res = TestDataObjectStorageRegistry::add_relationship(Origin::signed(1), 42);
+            // The content needs to exist - in our mock, that's with the content ID TEST_MOCK_EXISTING_CID
+            let res = TestDataObjectStorageRegistry::add_relationship(
+                Origin::signed(1),
+                TEST_MOCK_EXISTING_CID,
+            );
             assert!(res.is_ok());
         });
     }
@@ -208,7 +214,10 @@ mod tests {
     fn test_toggle_ready() {
         with_default_mock_builder(|| {
             // Create a DOSR
-            let res = TestDataObjectStorageRegistry::add_relationship(Origin::signed(1), 42);
+            let res = TestDataObjectStorageRegistry::add_relationship(
+                Origin::signed(1),
+                TEST_MOCK_EXISTING_CID,
+            );
             assert!(res.is_ok());
 
             // Grab DOSR ID from event
