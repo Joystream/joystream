@@ -38,8 +38,6 @@ fn authority_key(s: &str) -> AuthorityId {
         .public()
 }
 
-// from_string for both signature schemes is identical.
-// So we can use this method to create account keys for use with both schemes.
 fn account_key(s: &str) -> AccountId {
 	sr25519::Pair::from_string(&format!("//{}", s), None)
 		.expect("static values are valid; qed")
