@@ -85,8 +85,7 @@ This is the set of key repos that
 
 ---
 
-<img src="release-section.svg" id="testnet-releases"/>
-
+<a name="testnet-releases"><img src="release-section.svg"></a>
 
 Until the Joystream mainnet goes live, a sequence of test networks will be rolled out and deployed, and this section covers this activity.
 
@@ -105,9 +104,9 @@ Sparta
 | Sparta          | x                 |   NA          |       NA        |
 | Mesopotamia     | x                 |   x           |       NA        |
 
----
+# Project Management
 
-<img src="pm-section.svg" id="project-management"/>
+<p align="center"><img width="400px" src="project-management-headline.jpg"></p>
 
 ## Why is this on Github?
 
@@ -117,9 +116,7 @@ The reason this is placed in public view on Github is two fold
 
 - **Best Practices**: Establish best practices which can be replicated by the platform, when it is fully live, in how to collaboratively build and manage the platform using open tools. In particular, the current plan is that the platform has a built in Github equivalent, which thus would allow the use of these conventions.
 
----
-
-<img src="meetings-cover.svg" id="meetings"/>
+## Meetings
 
 ### Itinerary
 
@@ -155,9 +152,9 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
 - **Participant:** Core release team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
 - **Record&Publish:** YES, if no participant objects.
 
----
+## OKR system
 
-<img src="okr-section.svg" id="okr-system"/>
+<p align="center"><img width=300px src="okr-logo.png"></p>
 
 Project management is primarily centred around planning and tracking OKRs. OKRs is a planning and project management system, which can be reviewed in further detail [here](https://en.wikipedia.org/wiki/OKR).
 

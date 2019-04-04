@@ -1,4 +1,4 @@
-<p align="center"><img src="meetings-headline.png"></p>
+<img src="meetings-cover.svg"/>
 
 <div align="center">
   <h4>Take a look at what we :loudspeaker: talk :loudspeaker: about, our :pencil: meeting notes :pencil:, and join if you want! </h4>
