@@ -204,7 +204,7 @@ impl balances::Trait for Runtime {
     /// What to do if an account's free balance gets zeroed.
     type OnFreeBalanceZero = (Staking, Session);
     /// What to do if a new account is created.
-    type OnNewAccount = Indices;
+    type OnNewAccount = ();
     /// The uniquitous event type.
     type Event = Event;
 
