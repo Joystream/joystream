@@ -44,7 +44,7 @@ use runtime_primitives::{
         CurrencyToVoteHandler, DigestFor, NumberFor, StaticLookup, Verify,
     },
     transaction_validity::TransactionValidity,
-    ApplyResult,
+    AnySignature, ApplyResult,
 };
 
 #[cfg(feature = "std")]
@@ -72,7 +72,7 @@ pub type AuthoritySignature = ed25519::Signature;
 pub type AccountId = <AccountSignature as Verify>::Signer;
 
 /// The type used by accounts to prove their ID.
-pub type AccountSignature = ed25519::Signature;
+pub type AccountSignature = AnySignature;
 
 /// Alias for ContentId, used in various places
 pub type ContentId = u64;
