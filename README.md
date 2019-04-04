@@ -227,7 +227,7 @@ The schema used for recording and tracking OKRs has the following form:
 |:--------:|:-----:|:-----:|:--------------:|
 | `<date&time>` | (`<... assignment set scores>`)  **Total KR score**  | ... |  **Tracked objective score** |
 
-## Testnet Planning
+<img src="release-section.svg" id="testnet-planning"/>
 
 ### Branding
 
