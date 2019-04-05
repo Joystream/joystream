@@ -137,6 +137,7 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
   * `This was a result of inexperience constructing good OKRs`
   * `KRs was tracked from 04.03.19, but`
 <br />
+
 - **Tracking:**
 
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Comments |
