@@ -261,6 +261,7 @@ impl storage::data_directory::Trait for Runtime {
     type Event = Event;
     type ContentId = ContentId;
     type Members = Members;
+    type Roles = Actors;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
 }
 
@@ -274,6 +275,7 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectStorageRelationshipId = u64;
     type Members = Members;
+    type Roles = Actors;
     type ContentIdExists = DataDirectory;
 }
 

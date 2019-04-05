@@ -1,5 +1,6 @@
+use crate::roles::actors;
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
-use crate::traits::{ContentIdExists, IsActiveDataObjectType, Members};
+use crate::traits::{ContentIdExists, IsActiveDataObjectType, Members, Roles};
 use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};
 use primitives::ed25519::Signature as Ed25519Signature;
@@ -29,6 +30,7 @@ pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
         + PartialEq;
 
     type Members: Members<Self>;
+    type Roles: Roles<Self>;
     type IsActiveDataObjectType: IsActiveDataObjectType<Self>;
 }
 
@@ -122,9 +124,7 @@ decl_module! {
 
             // The liaison is something we need to take from staked roles. The idea
             // is to select the liaison, for now randomly.
-            // FIXME without that module, we're currently hardcoding it, to the
-            // origin, which is wrong on many levels.
-            let liaison = who.clone();
+            let liaison = T::Roles::random_account_for_role(actors::Role::Storage)?;
 
             // Let's create the entry then
             let new_id = Self::next_content_id();
@@ -211,9 +211,10 @@ mod tests {
                 _ => (0u64, 0xdeadbeefu64), // invalid value, unlikely to match
             };
             assert_ne!(liaison, 0xdeadbeefu64);
+            assert_eq!(liaison, TEST_MOCK_LIAISON);
 
             // Accepting content should not work with some random origin
-            let res = TestDataDirectory::accept_content(Origin::signed(42), content_id);
+            let res = TestDataDirectory::accept_content(Origin::signed(1), content_id);
             assert!(res.is_err());
 
             // However, with the liaison as origin it should.
@@ -237,9 +238,10 @@ mod tests {
                 _ => (0u64, 0xdeadbeefu64), // invalid value, unlikely to match
             };
             assert_ne!(liaison, 0xdeadbeefu64);
+            assert_eq!(liaison, TEST_MOCK_LIAISON);
 
             // Rejecting content should not work with some random origin
-            let res = TestDataDirectory::reject_content(Origin::signed(42), content_id);
+            let res = TestDataDirectory::reject_content(Origin::signed(1), content_id);
             assert!(res.is_err());
 
             // However, with the liaison as origin it should.
