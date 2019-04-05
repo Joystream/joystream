@@ -42,7 +42,7 @@
     - [Next Testnet](#next-testnet)
     - [Past Testnets](#past-testnets)
 - [Project Management](#project-management)
-    - [Why is this on Github?](#why-is-this-on-github?)
+    - [Why is this on Github?](#why-is-this-on-github)
     - [Meetings](#meetings)
       - [Daily standup](#daily-standup)
       - [Monday all-hands](#monday-all-hands)
@@ -81,10 +81,9 @@ This is the set of key repos that
 | [apps](https://github.com/Joystream/apps)                                                 | The Pioneer application.                              | @siman          |
 | [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)             | The storage node application.                         | @jfinkhaeuser   |
 | [whitepaper](https://github.com/Joystream/whitepaper)                                     | The Joystream whitepaper.                             | @bedeho         |
-| [communications](https://github.com/Joystream/communications)                             | The Joystream communications workspace and archive.   | @@bwhm          |
+| [communications](https://github.com/Joystream/communications)                             | The Joystream communications workspace and archive.   | @bwhm           |
 
----
-
+<br />
 <img src="release-section.svg" id="testnet-releases"/>
 
 
@@ -105,8 +104,8 @@ Sparta
 | Sparta          | x                 |   NA          |       NA        |
 | Mesopotamia     | x                 |   x           |       NA        |
 
----
 
+<br />
 <img src="pm-section.svg" id="project-management"/>
 
 ## Why is this on Github?
@@ -117,9 +116,8 @@ The reason this is placed in public view on Github is two fold
 
 - **Best Practices**: Establish best practices which can be replicated by the platform, when it is fully live, in how to collaboratively build and manage the platform using open tools. In particular, the current plan is that the platform has a built in Github equivalent, which thus would allow the use of these conventions.
 
----
 
-<img src="meetings-cover.svg" id="meetings"/>
+## Meetings
 
 ### Itinerary
 
@@ -155,8 +153,7 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
 - **Participant:** Core release team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
 - **Record&Publish:** YES, if no participant objects.
 
----
-
+<br />
 <img src="okr-section.svg" id="okr-system"/>
 
 Project management is primarily centred around planning and tracking OKRs. OKRs is a planning and project management system, which can be reviewed in further detail [here](https://en.wikipedia.org/wiki/OKR).
@@ -227,9 +224,8 @@ The schema used for recording and tracking OKRs has the following form:
 |:--------:|:-----:|:-----:|:--------------:|
 | `<date&time>` | (`<... assignment set scores>`)  **Total KR score**  | ... |  **Tracked objective score** |
 
----
 
-<img src="release-section.svg" id="testnet-planning"/>
+## Testnet Planning
 
 ### Branding
 
