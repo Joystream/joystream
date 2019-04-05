@@ -12,6 +12,8 @@ use system::{self, ensure_signed};
 
 use crate::traits::{Members, Roles};
 
+static MSG_NO_ACTOR_FOR_ROLE: &str = "For the specified role, no actor is currently staked.";
+
 #[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Role {
     Storage,
@@ -192,6 +194,24 @@ impl<T: Trait> Module<T> {
 impl<T: Trait> Roles<T> for Module<T> {
     fn is_role_account(account_id: &T::AccountId) -> bool {
         <ActorByAccountId<T>>::exists(account_id) || <Bondage<T>>::exists(account_id)
+    }
+
+    fn account_has_role(account_id: &T::AccountId, role: Role) -> bool {
+        Self::actor_by_account_id(account_id).map_or(false, |actor| actor.role == role)
+    }
+
+    fn random_account_for_role(role: Role) -> Result<T::AccountId, &'static str> {
+        let ids = Self::account_ids_by_role(role);
+        if 0 == ids.len() {
+            return Err(MSG_NO_ACTOR_FOR_ROLE);
+        }
+        let seed = <system::Module<T>>::random_seed();
+        let mut rand: u64 = 0;
+        for offset in 0..8 {
+            rand += (seed.as_ref()[offset] as u64) << offset;
+        }
+        let idx = (rand as usize) % ids.len();
+        return Ok(ids[idx].clone());
     }
 }
 
