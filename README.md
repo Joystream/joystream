@@ -40,6 +40,53 @@ Run linter:
 $ yarn run lint
 ```
 
+
+Command-Line
+------------
+
+Running a storage server is as easy as running the bundled `js_storage`
+executable:
+
+```bash
+$ js_storage --storage=/path/to/storage/directory
+```
+
+Run with `--help` to see a list of available CLI options.
+
+Configuration
+-------------
+
+Most common configuration options are available as command-line options
+for the CLI.
+
+However, some advanced configuration options are only possible to set
+via the configuration file.
+
+* `filter` is a hash of upload filtering options.
+  * `max_size` sets the maximum permissible file upload size. If unset,
+    this defaults to 100 MiB.
+  * `mime` is a hash of...
+    * `accept` is an Array of mime types that are acceptable for uploads,
+      such as `text/plain`, etc. Mime types can also be specified for
+      wildcard matching, such as `video/*`.
+    * `reject` is an Array of mime types that are unacceptable for uploads.
+
+Upload Filtering
+----------------
+
+The upload filtering logic first tests whether any of the `accept` mime types
+are matched. If none are matched, the upload is rejected. If any is matched,
+then the upload is still rejected if any of the `reject` mime types are
+matched.
+
+This allows inclusive and exclusive filtering.
+
+* `{ accept: ['text/plain', 'text/html'] }` accepts *only* the two given mime types.
+* `{ accept: ['text/*'], reject: ['text/plain'] }` accepts any `text/*` that is not
+  `text/plain`.
+
+More advanced filtering is currently not available.
+
 API Packages
 ------------
 

@@ -5,6 +5,8 @@ const file_type = require('file-type');
 
 const debug = require('debug')('joystream:api:asset');
 
+const filter = require('joystream/core/filter');
+
 module.exports = function(config, storage)
 {
   var doc = {
@@ -73,9 +75,15 @@ module.exports = function(config, storage)
 
       // Check for file type.
       const ft_stream = await file_type.stream(req);
+      const fileType = ft_stream.fileType || { mime: 'application/octet-stream' };
+      debug('Detectet Content-Type is', fileType.mime);
 
-      // TODO filter
-      debug(ft_stream.fileType);
+      // Filter
+      const filter_result = filter(config, req.headers, fileType.mime);
+      if (200 != filter_result.code) {
+        res.status(filter_result.code).send({ message: filter_result.message });
+        return;
+      }
 
       // Open file
       repo.open(name, 'w', (err, type, stream) => {
