@@ -29,6 +29,10 @@
     <a href="https://github.com/Joystream/helpdesk/blob/master/README.md">
       Helpdesk
     </a>
+    <span> | </span>
+    <a href="/reports">
+      Reports
+    </a>
   </h3>
 </div>
 

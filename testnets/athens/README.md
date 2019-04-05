@@ -10,8 +10,8 @@
 
 # Table of contents
 
-- [Overview](#overview)
-- [Finished Release Meetings](#finished-release-meetings)
+- [Live Milestones](#live-milestones)
+- [Past Release Meetings](#past-release-meetings)
 - [Specification](#specification)
 - [GitHub Projects](#github-projects)
 - [OKR results](#okr-results)
@@ -44,13 +44,17 @@
   - [Internal Operations](#internal-operations)
   - [Milestones](#milestones)
 
-# Overview
+# Live Milestones
 
-Athens is the third Joystream testnet, and it is scheduled for release
+Live milestones, continuously adjusted:
 
-### 04. April 2019, 12:00 (GMT+1)
+- **Update website & hosted Pioneer, publish blog & newsletter & social media:** `04. April 2019, 12:00 (GMT+1)`
+- **Release:** `10. April 2019, 12:00 (GMT+1)`
+- **Final Test run:** `08. April 2019, 12:00 (GMT+1)`
+- **Intermediate Test run:** `03. April 2019, 12:00 (GMT+1)`
 
-# Finished Release Meetings
+
+# Past Release Meetings
 
 | Date            | Link          |
 | -------------   | ------------- |
@@ -71,6 +75,8 @@ The current set of relevant GitHub projects are
 NA.
 
 # Release Plan
+
+**This plan was made once, but is not kept in synch with ongoing efforts and adjustments.**
 
 ## Manager
 
