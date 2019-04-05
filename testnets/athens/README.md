@@ -1,5 +1,4 @@
-<p align="center"><img width=200px src="logo.png"></p>
-<p align="center"><img src="athens-testnet-headline.png"></p>
+<img src="athens-cover.svg"/>
 
 <div align="center">
   <h3>
