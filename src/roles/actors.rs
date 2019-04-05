@@ -141,7 +141,7 @@ decl_storage! {
         pub RoleEntryRequests get(role_entry_requests) : Requests<T>;
 
         /// Entry request expires after this number of blocks
-        pub RequestLifeTime get(request_life_time) config() : u64 = DEFAULT_REQUEST_LIFETIME;
+        pub RequestLifeTime get(request_life_time) config(request_life_time) : u64 = DEFAULT_REQUEST_LIFETIME;
     }
     add_extra_genesis {
         config(enable_storage_role): bool;
