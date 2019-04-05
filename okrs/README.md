@@ -11,8 +11,12 @@
 
 - [Archive](#archive)
 - [Project OKRs](#project-okrs)
+  - [Launch Joystream on mainnet](#wip-construction_worker-objective-launch-a-functional-upgradable-video-platform-governed-and-operated-by-a-vibrant-community)
 - [Quarterly OKRs](#quarterly-okrs)
+  - [Increase the Joystream building power](#objective-increase-the-joystream-building-power)
+  - [Expand Joystream brand awareness](#objective-expand-joystream-brand-awareness)
 - [Release OKRs](#release-okrs)
+  - [Launch Athens network](#objective-launch-athens-network)
 - [Personal OKRs](#personal-okrs)
 
 # Archive
@@ -22,8 +26,9 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 # Project OKRs
 
 ## !WIP! :construction_worker: Objective: `Launch a functional, upgradable video platform, governed and operated by a vibrant community`
+- **Active from:** N/A
 - **KR Measurement Deadline:** Joystream autonomous network live
-- **Tracked:** Every 6 months
+- **Tracked:** Every quarter
 - **Tracking Manager:** Martin
 - **Key Results:**
   1. `All (IT) infrastructure roles are contested, and at least one professional for profit operation is taking part`
@@ -31,74 +36,118 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
   3. `There are at least 100 active governance or operations focused daily active members`
   4. `There are at least 10000 daily active members, as measured by any kind of use of the platform`
   5. `There are at least 200 active publishers, where active is defined as publishing at least once per month`
+<br />
+
+- **Notes**
+  * `None`
+<br />
+
 - **Tracking:**
 
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Total |
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Comments |
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------:|
-| 01.06.19 |    NA  |   NA    |  NA     |  NA     |    NA    |     **NA**  |
+| 01.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 
 # Quarterly OKRs
 
-## Objective: `Expand the Jsgenesis team`
-- **KR Measurement Deadline:** End of Q1
-- **Tracked:** Weekly
+## Objective: `Increase the Joystream building power`
+- **Active from:** 09.04.19
+- **KR Measurement Deadline:** 04.06.19
+- **Tracked:** Every other Tuesday
 - **Tracking Manager:** Martin
-- **Key Results:** Martin and Bedeho equally
-  1. `Add 3 full time blockchain developers`
-  2. `Add 1 full time UI/UX designer/team`
-  3. `Add full 1 full stack developer`
-  4. `Source 25 candidates outside of angel/jsg/dribble/hh`
-  5. `Interview at least 25 candidates once, and 15 candidates twice`
+- **Key Results:** Martin, Bedeho and Mokhtar
+  1. `Add 1 full time rust developer`
+  2. `Add 1 full time blockchain developer`
+  3. `Add 1 full stack developer`
+  4. `Dev to start work on platform chat`
+  5. `Dev to start work on platform forum`
+  <br />
+
+- **Notes**
+    * `Outside dev (4. and 5.) refers to dev not currently tied to Jsgenesis`
+  <br />
+
 - **Tracking:**
 
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Total |
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Comments |
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------:|
-| 26.03.19 | 0.33  |   1    |  1   |  0.36 |  0.3  | **x**  |
+| 09.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 23.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 07.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 21.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 04.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 
-## Objective: `Launch and grow Staked podcast`
-- **KR Measurement Deadline:** End of Q1
-- **Tracked:** Every 2 weeks
+## Objective: `Expand Joystream brand awareness`
+- **Active from:** 09.04.19
+- **KR Measurement Deadline:** 04.06.19
+- **Tracked:** Every other Tuesday
 - **Tracking Manager:** Martin
-- **Key Results:** Martin and Bedeho equally
-  1. `Launch a new branded podcast available in all major podcast channels`
-  2. `Record and publish 5 first episodes`
-  3. `Get 100 subscribers`
-  4. `Get 500 listens`
+- **Key Results:** Martin and Bedeho
+  1. `Get 500 sign ups for our Joystream jobs and roles mailing list`
+  2. `Get "2000/5000" "Users/Session" on our blog`
+  3. `Get 5000 downloads for "Staked"`
+  4. `Get 10 PRs from outside collaborators on GitHub`
+
+  <br />
+
+- **Notes**
+    * `Current numbers: 0 - 802/1400 - 184 - 0`
+  <br />
+
 - **Tracking:**
 
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 |  Total |
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 | Comments |
 |:--------:|:-----:|:-----:|:-----:|:-----:|:------:|
-| 18.03.19 |   1    |   0.4    |   x   |  x      |  **x**     |
+| 09.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 23.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 07.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 21.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 04.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 
 # Release OKRs
 
 ## Objective: `Launch Athens network`
+- **Active from:** 04.02.19
 - **KR Measurement Deadline**: 1 week after Athens launch
-- **Tracked**: Every monday
+- **Tracked**: Every Monday
 - **Tracking Manager**: Martin
 - **Key Results**:
   1. `Get 10 claims per $ for tokens on our faucet`
-    - Mokhtar: 0.5
-    - Martin: 0.5
+      - Mokhtar: 0.5
+      - Martin: 0.5
   2. `Have all episodes of the Staked (4) and Make_World (n) podcast in the content directory`
-    - Jens: 0.5
-    - Martin+Bedeho: 0.5
+      - Jens: 0.5
+      - Martin+Bedeho: 0.5
   3. `Have second council upgrade consensus after reaching quorum`
-    - Alex: 1/3
-    - Mokhtar: 1/3
-    - Martin: 1/3
+      - Alex: 1/3
+      - Mokhtar: 1/3
+      - Martin: 1/3
   4. `20 Uploads (100min) and 100 Downloads not including Jsgenesis`
-    - Jens: 1/3
-    - Alex: 1/3
-    - Mokhtar: 1/3
+      - Jens: 1/3
+      - Alex: 1/3
+      - Mokhtar: 1/3
   5. `75 Memberships created (not including Jsgenesis) at a min 1/2 membership/unique view ratio`
-    - Mokhtar: 0.5
-    - Alex: 0.5
+      - Mokhtar: 0.5
+      - Alex: 0.5
+
+<br />
+
+- **Notes**
+  * `KRs 3, 4 and 5 were changed mid flight. KR tracking from before the 18.03 is disregarded `
+  * `This was a result of inexperience constructing good OKRs`
+  * `KRs was tracked from 04.03.19, but`
+<br />
 - **Tracking:**
 
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Total |
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Comments |
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:--------------:|
-| 18.03.19 | (1.0 , 0.75)  **0.873**  | (0.66 , 0.9) **0.78**  | (1.0 , 0.8 , 0.8) **0.933**  |  (0.66 , 0, 0) **0.33** |  (0.8 , 0.65) **0.725** |  **0,7282** |
+| 04.03.19 | -  | -  | -  |  - |  - | In flight changes |
+| 18.03.19 |(1.0 , 0.75) **0.87**  | (0.66 , 0.9) **0.78**  | (1.0 , 0.8 , 0.8) **0.87**  |  (0.66 , 0, 0) **0.33** |  (0.8 , 0.65) **0.73** |  First Athens grading |
+| 25.03.19 |(1.0 , 0.86) **0.92** | (0.75 , 0.92) **0.84*  | (1.0 , 0.9 , 0.8) **0.9**  |  (0.66 , 0.1, 0.7) **0.49** |  (0.85 , 0.85) **0.85** | - |
+| 01.04.19 |(0.5 , 0.9) **0.7** | (0.8 , 0.95) **0.88*  |  **0.5**  |  (0.66 , 0.65, 0.9) **0.74** |  (1.0 , 0.85) **0.93** | Sparta crash made #3 unobtainable |
+| 08.04.19 | NA  | NA  | NA  |  NA |  NA | NA |
+| 15.04.19 | NA  | NA  | NA  |  NA |  NA | NA |
+| 22.04.19 | NA  | NA  | NA  |  NA |  NA | NA |
 
 # Group OKRs
 
@@ -124,28 +173,4 @@ Fill in if needed.
 
 ## `Bedeho` (@bedeho)
 
-### Objective: `Make Joystream easier to understand for prospective community members and Jsgenesis hires`
-- **KR Measurement Deadline**: xxxx
-- **Tracked**: Weekly
-- **Key Results**:
-  1. `Publish first whitepaper draft`
-  2. `Add role list to joystream.org`
-- **Tracking:**
-
-| Date     | KR #1 | KR #2 |  Total |
-|:--------:|:-----:|:-----:|:------:|
-| 18.03.19 |   0.98  | 0.7  | **0.85**   |
-
-### Objective: `Establish critical routines for future productivity`
-- **KR Measurement Deadline**: xxxx
-- **Tracked**: Weekly
-- **Key Results**:
-  1. `Draft planning framework for releases, quarters and longer term`
-  2. `Come up with specification framework`
-  3. `Learn Rust and Substrate`
-  4. `Draft framework for how to plan on Github`
-- **Tracking:**
-
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 |  Total |
-|:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|
-| 18.03.19 |  0.6 |  0.1 | 0.1  | 0  | **0**  |
+Fill in if needed.
