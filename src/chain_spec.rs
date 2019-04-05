@@ -4,6 +4,7 @@ use joystream_node_runtime::{
     CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
     DownloadSessionsConfig, GenesisConfig, GrandpaConfig, IndicesConfig, MembersConfig, Perbill,
     ProposalsConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig, TimestampConfig,
+	ActorsConfig,
 };
 use primitives::{crypto::UncheckedInto, ed25519, sr25519, Pair};
 use substrate_service;
@@ -260,6 +261,11 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
 		downloads: Some(DownloadSessionsConfig{
 			first_download_session_id: 1,
 		}),
+		actors: Some(ActorsConfig{
+			enable_storage_role: true,
+			request_life_time: 300,
+			_genesis_phantom_data: Default::default(),
+		})
 	}
 }
 
@@ -360,5 +366,10 @@ fn testnet_genesis(
 		downloads: Some(DownloadSessionsConfig{
 			first_download_session_id: 1,
 		}),
+		actors: Some(ActorsConfig{
+			enable_storage_role: true,
+			request_life_time: 300,
+			_genesis_phantom_data: Default::default(),
+		})
 	}
 }
