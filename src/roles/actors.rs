@@ -197,12 +197,7 @@ impl<T: Trait> Roles<T> for Module<T> {
     }
 
     fn account_has_role(account_id: &T::AccountId, role: Role) -> bool {
-        let res = Self::actor_by_account_id(account_id);
-        if res.is_none() {
-            return false;
-        }
-        let actor = res.unwrap();
-        actor.role == role
+        Self::actor_by_account_id(account_id).map_or(false, |actor| actor.role == role)
     }
 
     fn random_account_for_role(role: Role) -> Result<T::AccountId, &'static str> {
