@@ -4,11 +4,13 @@ Storage Nodes for Joystream
 Installation
 ------------
 
-This project uses **yarn** as Node package manager.
+This project uses [yarn](https://yarnpkg.com/) as Node package manager.
 
 ```bash
-$ yarn install
+$ yarn run build
 ```
+
+The command will run `yarn install` and perform post-install fixes.
 
 To make the `js_storage` script available globally, run:
 

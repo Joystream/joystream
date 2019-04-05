@@ -6,7 +6,7 @@
     "test": "mocha test/**/*.js",
     "lint": "eslint paths/**/*.js lib/**/*.js",
     "dev": "npm-run-all --parallel server",
-    "build": "npm-run-all --parallel server",
+    "build": "yarn install && git checkout node_modules/joystream",
     "server": "nodemon --watch api-base.yml --watch bin/ --watch paths/ --watch lib/ --verbose --exec node bin/cli.js --ext jsx,js"
   },
   "bin": {
@@ -37,6 +37,7 @@
     "cors": "^2.8.5",
     "express-openapi": "^4.3.3",
     "figlet": "^1.2.1",
+    "file-type": "^10.10.0",
     "hyperdrive": "^9.14.2",
     "js-yaml": "^3.12.1",
     "meow": "^5.0.0",
