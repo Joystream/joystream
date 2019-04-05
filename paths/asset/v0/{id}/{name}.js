@@ -1,6 +1,7 @@
 'use strict';
 
 const util_ranges = require('joystream/util/ranges');
+const file_type = require('file-type');
 
 const debug = require('debug')('joystream:api:asset');
 
@@ -59,9 +60,8 @@ module.exports = function(config, storage)
     },
 
     // Put for uploads
-    put: function(req, res, _next)
+    put: async function(req, res, _next)
     {
-      console.log('GOT REQUEST', req);
       const id = req.params.id;
       const name = req.params.name;
 
@@ -70,6 +70,12 @@ module.exports = function(config, storage)
         res.status(404).send({ message: `Repository with id "${id}" not found.` });
         return;
       }
+
+      // Check for file type.
+      const ft_stream = await file_type.stream(req);
+
+      // TODO filter
+      debug(ft_stream.fileType);
 
       // Open file
       repo.open(name, 'w', (err, type, stream) => {
@@ -86,10 +92,10 @@ module.exports = function(config, storage)
 //          download: download,
 //        };
 //        util_ranges.send(res, stream, opts);
-        req.on('end', () => {
+        ft_stream.on('end', () => {
           res.status(200).send({ message: 'Asset uploaded.' });
         });
-        req.pipe(stream);
+        ft_stream.pipe(stream);
       });
     },
 
