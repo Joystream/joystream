@@ -50,6 +50,25 @@ pub struct RoleParameters<T: Trait> {
     pub entry_request_fee: BalanceOf<T>,
 }
 
+impl<T: Trait> Default for RoleParameters<T> {
+    fn default() -> Self {
+        Self {
+            min_stake: BalanceOf::<T>::sa(3000),
+            max_actors: 10,
+            reward: BalanceOf::<T>::sa(10),
+            reward_period: T::BlockNumber::sa(600),
+            unbonding_period: T::BlockNumber::sa(600),
+            entry_request_fee: BalanceOf::<T>::sa(50),
+
+            // not currently used
+            min_actors: 5,
+            bonding_period: T::BlockNumber::sa(600),
+            min_service_period: T::BlockNumber::sa(600),
+            startup_grace_period: T::BlockNumber::sa(600),
+        }
+    }
+}
+
 #[derive(Encode, Decode, Clone)]
 pub struct Actor<T: Trait> {
     pub member_id: MemberId<T>,
@@ -74,16 +93,29 @@ pub type Request<T> = (
 );
 pub type Requests<T> = Vec<Request<T>>;
 
-pub const REQUEST_LIFETIME: u64 = 300;
-pub const DEFAULT_REQUEST_CLEARING_INTERVAL: u64 = 100;
+pub const DEFAULT_REQUEST_LIFETIME: u64 = 300;
+pub const REQUEST_CLEARING_INTERVAL: u64 = 100;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Actors {
         /// requirements to enter and maintain status in roles
-        pub Parameters get(parameters) : map Role => Option<RoleParameters<T>>;
+        pub Parameters get(parameters) build(|config: &GenesisConfig<T>| {
+            if config.enable_storage_role {
+                let storage_params: RoleParameters<T> = Default::default();
+                vec![(Role::Storage, storage_params)]
+            } else {
+                vec![]
+            }
+        }): map Role => Option<RoleParameters<T>>;
 
         /// the roles members can enter into
-        pub AvailableRoles get(available_roles) : Vec<Role>;
+        pub AvailableRoles get(available_roles) build(|config: &GenesisConfig<T>| {
+            if config.enable_storage_role {
+                vec![(Role::Storage)]
+            } else {
+                vec![]
+            }
+        }): Vec<Role>;
 
         /// Actors list
         pub ActorAccountIds get(actor_account_ids) : Vec<T::AccountId>;
@@ -106,8 +138,13 @@ decl_storage! {
         /// The account making the request will be bonded and must have
         /// sufficient balance to cover the minimum stake for the role.
         /// Bonding only occurs after successful entry into a role.
-        /// The request expires after REQUEST_LIFETIME blocks
         pub RoleEntryRequests get(role_entry_requests) : Requests<T>;
+
+        /// Entry request expires after this number of blocks
+        pub RequestLifeTime get(request_life_time) config() : u64 = DEFAULT_REQUEST_LIFETIME;
+    }
+    add_extra_genesis {
+        config(enable_storage_role): bool;
     }
 }
 
@@ -197,7 +234,7 @@ decl_module! {
 
         fn on_initialise(now: T::BlockNumber) {
             // clear expired requests
-            if now % T::BlockNumber::sa(DEFAULT_REQUEST_CLEARING_INTERVAL) == T::BlockNumber::zero() {
+            if now % T::BlockNumber::sa(REQUEST_CLEARING_INTERVAL) == T::BlockNumber::zero() {
                 let requests: Requests<T> = Self::role_entry_requests()
                     .into_iter()
                     .filter(|request| request.3 < now)
@@ -274,7 +311,7 @@ decl_module! {
             let _ = T::Currency::slash(&sender, fee);
 
             <RoleEntryRequests<T>>::mutate(|requests| {
-                let expires = <system::Module<T>>::block_number()+ T::BlockNumber::sa(REQUEST_LIFETIME);
+                let expires = <system::Module<T>>::block_number()+ T::BlockNumber::sa(Self::request_life_time());
                 requests.push((sender.clone(), member_id, role, expires));
             });
             Self::deposit_event(RawEvent::EntryRequested(sender, role));

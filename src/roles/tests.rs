@@ -97,7 +97,7 @@ fn make_entry_request() {
         assert_eq!(request.0, actor_account);
         assert_eq!(request.1, MockMembers::alice_id());
         assert_eq!(request.2, actors::Role::Storage);
-        assert_eq!(request.3, starting_block + actors::REQUEST_LIFETIME);
+        assert_eq!(request.3, starting_block + Actors::request_life_time());
     });
 }
 
