@@ -18,6 +18,7 @@
 - [Release OKRs](#release-okrs)
   - [Launch Athens network](#objective-launch-athens-network)
 - [Personal OKRs](#personal-okrs)
+    - [@bwhm - Improve value as Release Manager](#objective-improve-value-as-release-manager)
 
 # Archive
 
@@ -52,15 +53,15 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 
 ## Objective: `Increase the Joystream building power`
 - **Active from:** 09.04.19
-- **KR Measurement Deadline:** 04.06.19
+- **KR Measurement Deadline:** 02.07.19
 - **Tracked:** Every other Tuesday
 - **Tracking Manager:** Martin
 - **Key Results:** Martin, Bedeho and Mokhtar
-  1. `Add 1 full time rust developer`
-  2. `Add 1 full time blockchain developer`
-  3. `Add 1 full stack developer`
-  4. `Dev to start work on platform chat`
-  5. `Dev to start work on platform forum`
+  1. `Add 1 full time rust developer (n)`
+  2. `Add 1 full time blockchain developer (n)`
+  3. `Add 1 full stack developer (n)`
+  4. `Dev to start work on platform chat (n)`
+  5. `Dev to start work on platform forum (n)`
   <br />
 
 - **Notes**
@@ -69,24 +70,26 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 
 - **Tracking:**
 
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Comments |
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |Comments|
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------:|
 | 09.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 23.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 07.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 21.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 04.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 18.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 02.07.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 
 ## Objective: `Expand Joystream brand awareness`
 - **Active from:** 09.04.19
-- **KR Measurement Deadline:** 04.06.19
+- **KR Measurement Deadline:** 02.07.19
 - **Tracked:** Every other Tuesday
 - **Tracking Manager:** Martin
 - **Key Results:** Martin and Bedeho
-  1. `Get 500 sign ups for our Joystream jobs and roles mailing list`
-  2. `Get "2000/5000" "Users/Session" on our blog`
-  3. `Get 5000 downloads for "Staked"`
-  4. `Get 10 PRs from outside collaborators on GitHub`
+  1. `Get 500 sign ups for our Joystream jobs and roles mailing list (ewd)`
+  2. `Get "2000/5000" "Users/Session" on our blog (ewd)`
+  3. `Get 5000 downloads for "Staked" (ewd)`
+  4. `Get 10 PRs from outside collaborators on GitHub (n)`
 
   <br />
 
@@ -96,13 +99,15 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 
 - **Tracking:**
 
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 | Comments |
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 |Comments|
 |:--------:|:-----:|:-----:|:-----:|:-----:|:------:|
 | 09.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 | 23.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 | 07.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 | 21.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 | 04.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 18.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 02.07.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 
 # Release OKRs
 
@@ -112,21 +117,21 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 - **Tracked**: Every Monday
 - **Tracking Manager**: Martin
 - **Key Results**:
-  1. `Get 10 claims per $ for tokens on our faucet`
+  1. `Get 10 claims per $ for tokens on our faucet (ewd)`
       - Mokhtar: 0.5
       - Martin: 0.5
-  2. `Have all episodes of the Staked (4) and Make_World (n) podcast in the content directory`
+  2. `Have all episodes of the Staked (4) and Make_World (#) podcast in the content directory (ewd)`
       - Jens: 0.5
       - Martin+Bedeho: 0.5
-  3. `Have second council upgrade consensus after reaching quorum`
+  3. `Have second council upgrade consensus after reaching quorum (ewd)`
       - Alex: 1/3
       - Mokhtar: 1/3
       - Martin: 1/3
-  4. `20 Uploads (100min) and 100 Downloads not including Jsgenesis`
+  4. `20 Uploads (100min) and 100 Downloads not including Jsgenesis (ewd)`
       - Jens: 1/3
       - Alex: 1/3
       - Mokhtar: 1/3
-  5. `75 Memberships created (not including Jsgenesis) at a min 1/2 membership/unique view ratio`
+  5. `75 Memberships created (not including Jsgenesis) at a min 1/2 membership/unique view ratio (ewd)`
       - Mokhtar: 0.5
       - Alex: 0.5
 
@@ -160,11 +165,7 @@ Fill in if needed.
 
 Fill in if needed.
 
-## `Mokhtar` (@mnaamani)
-
-Fill in if needed.
-
-## `Martin` (@bwhm)
+## `Bedeho` (@bedeho)
 
 Fill in if needed.
 
@@ -172,6 +173,37 @@ Fill in if needed.
 
 Fill in if needed.
 
-## `Bedeho` (@bedeho)
+## `Martin` (@bwhm)
+
+## Objective: `Improve value as Release Manager`
+- **Active from:** 09.04.19
+- **KR Measurement Deadline:** 02.07.19
+- **Tracked:** Every other Tuesday
+- **Tracking Manager:** Bedeho
+- **Key Results:** Martin
+  1. `Finish the Rust book (n)`
+  2. `Build, maintain, and document the semi-automated payout scripts for all active roles (ewd)`
+  3. `Submit minutes for all "Core" release meetings (n)`
+  4. `Have 2 (src) PRs merged to our technical Repos - "pioneer", "joyful", "runtime", "colossus" (n)`
+
+  <br />
+
+- **Notes**
+    * `-`
+  <br />
+
+- **Tracking:**
+
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 | Comments |
+|:--------:|:-----:|:-----:|:-----:|:-----:|:------:|
+| 09.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 23.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 07.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 21.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 04.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 18.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 02.07.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+
+## `Mokhtar` (@mnaamani)
 
 Fill in if needed.
