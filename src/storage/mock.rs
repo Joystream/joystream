@@ -191,8 +191,9 @@ impl balances::Trait for Test {
     /// Handler for when a new account is created.
     type OnNewAccount = ();
 
-    /// A function that returns true iff a given account can transfer its funds to another account.
-    type EnsureAccountLiquid = ();
+    type TransactionPayment = ();
+    type DustRemoval = ();
+    type TransferPayment = ();
 }
 
 impl GovernanceCurrency for Test {
