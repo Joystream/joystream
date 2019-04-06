@@ -2,13 +2,15 @@ use crate::governance::{BalanceOf, GovernanceCurrency};
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, Bounded, MaybeDebug, Zero};
-use srml_support::traits::Currency;
+use srml_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReasons};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
 
 use crate::traits::{Members, Roles};
 
 static MSG_NO_ACTOR_FOR_ROLE: &str = "For the specified role, no actor is currently staked.";
+
+const STAKING_ID: LockIdentifier = *b"role_stk";
 
 #[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Role {
@@ -131,9 +133,6 @@ decl_storage! {
         /// actor accounts associated with a member id
         pub AccountIdsByMemberId get(account_ids_by_member_id) : map MemberId<T> => Vec<T::AccountId>;
 
-        /// tokens locked until given block number
-        pub Bondage get(bondage) : map T::AccountId => T::BlockNumber;
-
         /// First step before enter a role is registering intent with a new account/key.
         /// This is done by sending a role_entry_request() from the new account.
         /// The member must then send a stake() transaction to approve the request and enter the desired role.
@@ -215,9 +214,13 @@ impl<T: Trait> Module<T> {
         unbonding_period: T::BlockNumber,
     ) {
         // simple unstaking ...only applying unbonding period
-        <Bondage<T>>::insert(
+        let value = T::Currency::free_balance(&actor_account);
+        T::Currency::set_lock(
+            STAKING_ID,
             &actor_account,
+            value,
             <system::Module<T>>::block_number() + unbonding_period,
+            WithdrawReasons::all(),
         );
 
         Self::remove_actor_from_service(actor_account, role, member_id);
@@ -226,7 +229,7 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> Roles<T> for Module<T> {
     fn is_role_account(account_id: &T::AccountId) -> bool {
-        <ActorByAccountId<T>>::exists(account_id) || <Bondage<T>>::exists(account_id)
+        <ActorByAccountId<T>>::exists(account_id)
     }
 
     fn account_has_role(account_id: &T::AccountId, role: Role) -> bool {
@@ -282,26 +285,6 @@ decl_module! {
                         }
                     }
                 }
-            }
-
-            if now % T::BlockNumber::sa(100) == T::BlockNumber::zero() {
-                // clear unbonded accounts
-                let actor_accounts: Vec<T::AccountId> = Self::actor_account_ids()
-                    .into_iter()
-                    .filter(|account| {
-                        if <Bondage<T>>::exists(account) {
-                            if Self::bondage(account) > now {
-                                true
-                            } else {
-                                <Bondage<T>>::remove(account);
-                                false
-                            }
-                        } else {
-                            true
-                        }
-                    })
-                    .collect();
-                <ActorAccountIds<T>>::put(actor_accounts);
             }
 
             // eject actors not staking the minimum
@@ -366,7 +349,8 @@ decl_module! {
 
             <AccountIdsByRole<T>>::mutate(role, |accounts| accounts.push(actor_account.clone()));
             <AccountIdsByMemberId<T>>::mutate(&member_id, |accounts| accounts.push(actor_account.clone()));
-            <Bondage<T>>::insert(&actor_account, T::BlockNumber::max_value());
+            let value = T::Currency::free_balance(&actor_account);
+            T::Currency::set_lock(STAKING_ID, &actor_account, value, T::BlockNumber::max_value(), WithdrawReasons::all());
             <ActorByAccountId<T>>::insert(&actor_account, Actor {
                 member_id,
                 account: actor_account.clone(),
@@ -425,14 +409,3 @@ decl_module! {
         }
     }
 }
-
-// TODO: Find how balances module checks account liquidity state
-// impl<T: Trait> EnsureAccountLiquid<T::AccountId> for Module<T> {
-//     fn ensure_account_liquid(who: &T::AccountId) -> dispatch::Result {
-//         if Self::bondage(who) <= <system::Module<T>>::block_number() {
-//             Ok(())
-//         } else {
-//             Err("cannot transfer illiquid funds")
-//         }
-//     }
-// }
