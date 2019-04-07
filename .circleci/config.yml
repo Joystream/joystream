@@ -6,7 +6,7 @@ jobs:
       # The image used to build our project, build
       # your own using the Dockerfile provided below
       # and replace here. The official circleci rust 
-	  # build was used but this may be replaced.
+      # build was used but this may be replaced.
       - image: circleci/rust:latest
 
     environment:
