@@ -1,1 +1,43 @@
+version: 2
 
+jobs:
+  build:
+    docker:
+      # The image used to build our project, build
+      # your own using the Dockerfile provided below
+      # and replace here. The official circleci rust 
+	  # build was used but this may be replaced.
+      - image: circleci/rust:latest
+
+    environment:
+      # Set your codecov token if your repository is private.
+      #CODECOV_TOKEN: <your-token>
+      #TZ: "/usr/share/zoneinfo/Europe/Paris"
+
+    steps:
+      - checkout
+      - restore_cache:
+          key: project-cache
+      - run:
+          name: versions
+          command: |
+            rust --version
+            cargo --version
+      - run:
+          name: Nightly Build
+          command: |
+            rustup run nightly rustc --version --verbose
+            rustup run nightly cargo --version --verbose
+            rustup run nightly cargo build
+
+      - run:
+          name: Test
+          command: ./build.sh
+      - run:
+          name: Setup
+          command: ./setup.sh
+      - save_cache:
+          key: project-cache
+          paths:
+            - "~/.cargo"
+            - "./target"
