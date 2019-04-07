@@ -16,6 +16,15 @@ do
 	wasm-gc target/wasm32-unknown-unknown/release/$i.wasm target/wasm32-unknown-unknown/release/$i.compact.wasm
 done
 
+set -e
+
+echo "*** Initialising WASM build environment"
+
+if [ -z $CI_PROJECT_NAME ] ; then
+   rustup update nightly
+   rustup update stable
+fi
+
 rustup target add wasm32-unknown-unknown --toolchain nightly
 
 # Install wasm-gc. It's useful for stripping slimming down wasm binaries.
