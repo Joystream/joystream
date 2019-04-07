@@ -4,10 +4,8 @@ rust:
 cache: 
   - rust
   - cargo
-jobs:
-  include:
-    - stage: build
-    - provider: script
+build:
+   - provider script
       script: bash setup.sh
       script: bash build.sh
 #    - stage: deploy
