@@ -10,5 +10,5 @@ jobs:
     - provider: script
       script: bash setup.sh
       script: bash build.sh
-   - stage: deploy
+#   - stage: deploy
       
