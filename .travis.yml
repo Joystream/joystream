@@ -6,9 +6,10 @@ cache:
   - cargo
 jobs:
   include:
-    - stage: build
+    - stage: setup
     - provider: script
       script: bash setup.sh
+    - stage: build
       script: bash build.sh
 #   - stage: deploy
       
