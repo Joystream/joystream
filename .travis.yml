@@ -7,6 +7,7 @@ cache:
 jobs:
   include:
     - stage: build
+    - provider: script
       script: bash setup.sh
       script: bash build.sh
 #    - stage: deploy
