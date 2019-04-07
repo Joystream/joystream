@@ -22,7 +22,7 @@ jobs:
           name: Version information
           command: rustc --version; cargo --version; rustup --version
       - run:
-          name: Nightly Build
+          name: Install Nightly Build
           command: |
             rustup toolchain install nightly
             rustup run nightly rustc --version --verbose
@@ -31,13 +31,15 @@ jobs:
             rustup target add wasm32-unknown-unknown --toolchain nightly
 
       - run:
-          name: Test
+          name: Setup
           command: ./setup.sh
       - run:
-          name: Setup
+          name: Build
           command: ./build.sh
       - save_cache:
           key: project-cache
           paths:
             - "~/.cargo"
             - "./target"
+            - "./wasm"
+            - "/home/circleci/project"
