@@ -5,7 +5,7 @@ cache:
   - rust
   - cargo
 build:
-   - provider script
+   - provider: script
       script: bash setup.sh
       script: bash build.sh
 #    - stage: deploy
