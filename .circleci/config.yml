@@ -25,6 +25,7 @@ jobs:
             rustup run nightly rustc --version --verbose
             rustup run nightly cargo --version --verbose
             rustup run nightly cargo build
+            rustup target add wasm32-unknown-unknown --toolchain nightly
 
       - run:
           name: Test
