@@ -10,9 +10,7 @@ jobs:
       - image: circleci/rust:latest
 
     environment:
-      # Set your codecov token if your repository is private.
-      #CODECOV_TOKEN: <your-token>
-      #TZ: "/usr/share/zoneinfo/Europe/Paris"
+      #TZ: "/usr/share/zoneinfo/Europe/Oslo"
 
     steps:
       - checkout
