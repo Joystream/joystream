@@ -22,15 +22,6 @@ jobs:
           name: Version information
           command: rustc --version; cargo --version; rustup --version
       - run:
-          name: Install Nightly Build
-          command: |
-            rustup toolchain install nightly
-            rustup run nightly rustc --version --verbose
-            rustup run nightly cargo --version --verbose
-            rustup run nightly cargo build
-            rustup target add wasm32-unknown-unknown --toolchain nightly
-
-      - run:
           name: Setup
           command: ./setup.sh
       - run:
