@@ -19,6 +19,9 @@ jobs:
       - restore_cache:
           key: project-cache
       - run:
+          name: Version information
+          command: rustc --version; cargo --version; rustup --version
+      - run:
           name: Nightly Build
           command: |
             rustup toolchain install nightly
@@ -29,10 +32,10 @@ jobs:
 
       - run:
           name: Test
-          command: ./build.sh
+          command: ./setup.sh
       - run:
           name: Setup
-          command: ./setup.sh
+          command: ./build.sh
       - save_cache:
           key: project-cache
           paths:
