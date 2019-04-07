@@ -21,6 +21,7 @@ jobs:
       - run:
           name: Nightly Build
           command: |
+            rustup toolchain install nightly
             rustup run nightly rustc --version --verbose
             rustup run nightly cargo --version --verbose
             rustup run nightly cargo build
