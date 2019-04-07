@@ -19,11 +19,6 @@ jobs:
       - restore_cache:
           key: project-cache
       - run:
-          name: versions
-          command: |
-            rust --version
-            cargo --version
-      - run:
           name: Nightly Build
           command: |
             rustup run nightly rustc --version --verbose
