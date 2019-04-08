@@ -23,3 +23,7 @@ yarn-error.log*
 # Node modules except our own
 node_modules/*
 !node_modules/joystream
+
+# Generated JS files
+lib/joystream/types/*.js
+!lib/joystream/types/index.js

@@ -10,7 +10,8 @@ This project uses [yarn](https://yarnpkg.com/) as Node package manager.
 $ yarn run build
 ```
 
-The command will run `yarn install` and perform post-install fixes.
+The command will run `yarn install`, perform post-install fixes and build
+TypeScript files.
 
 To make the `js_storage` script available globally, run:
 
@@ -40,6 +41,13 @@ Run linter:
 $ yarn run lint
 ```
 
+TypeScript files are used for type declarations for interaction with the chain.
+They are taken from [the app](https://github.com/Joystream/apps), and renamed
+to suit our use:
+
+`apps/packages/joy-members/src/types.ts` becomes `lib/joystream/types/members.ts`,
+etc. `lib/joystream/types/index.js` is manually maintained, but other JavaScript
+files in that folder are generated.
 
 Command-Line
 ------------
