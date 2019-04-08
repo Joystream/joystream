@@ -138,19 +138,27 @@ module.exports = function(config, storage)
       debug('Requested range(s) is/are', ranges);
 
       // Open file
-      repo.open(name, 'r', (err, type, stream) => {
+      repo.size(name, (err, size) => {
         if (err) {
           res.status(err.code).send({ message: err.message });
           return;
         }
 
-        var opts = {
-          name: name,
-          type: type,
-          ranges: ranges,
-          download: download,
-        };
-        util_ranges.send(res, stream, opts);
+        repo.open(name, 'r', (err, type, stream) => {
+          if (err) {
+            res.status(err.code).send({ message: err.message });
+            return;
+          }
+
+          var opts = {
+            name: name,
+            type: type,
+            size: size,
+            ranges: ranges,
+            download: download,
+          };
+          util_ranges.send(res, stream, opts);
+        });
       });
     }
   };
