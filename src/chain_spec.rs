@@ -134,11 +134,12 @@ pub fn live_testnet_config() -> Result<ChainSpec, String> {
 /// Staging testnet config
 pub fn staging_testnet_config() -> ChainSpec {
     let boot_nodes = vec![
-		String::from("/dns4/testnet-boot.joystream.org/tcp/30333/p2p/QmRMZZQDsDDg2bsYRBFT9FiWsFXpWfgGHqJFYcRfz9Pfyi")
+		String::from("/dns4/bootnode1.joystream.org/tcp/30333/p2p/QmeDa8jASqMRpTh4YCkeVEuHo6nbMcFDzD9pkUxTr3WxhM"),
+		String::from("/dns4/bootnode2.joystream.org/tcp/30333/p2p/QmbjzmNMjzQUMHpzqcPHW5DnFeUjM3x4hbiDSMkYv1McD3"),
 	];
     ChainSpec::from_genesis(
         "Joystream Staging Testnet",
-        "joystream_staging_3",
+        "joy_staging_4",
         staging_testnet_config_genesis,
         boot_nodes,
         Some(TelemetryEndpoints::new(vec![(
@@ -153,12 +154,12 @@ pub fn staging_testnet_config() -> ChainSpec {
 
 fn staging_testnet_config_genesis() -> GenesisConfig {
     let initial_authorities: Vec<(AccountId, AccountId, AuthorityId)> = vec![(
-        hex!["313ef1233684209e8b9740be3da31ac588874efae4b59771863afd44c2b620c4"].unchecked_into(), // stash
-        hex!["313ef1233684209e8b9740be3da31ac588874efae4b59771863afd44c2b620c4"].unchecked_into(), // controller (can it be same as stash?)
-        hex!["313ef1233684209e8b9740be3da31ac588874efae4b59771863afd44c2b620c4"].unchecked_into(), // session key
+        hex!["0610d1a2b1d704723e588c842a934737491688b18b052baae1286f12e96adb65"].unchecked_into(), // stash
+        hex!["609cee3edd9900e69be44bcbf7a1892cad10408840a2d72d563811d72d9bb339"].unchecked_into(), // controller
+        hex!["65179fd9c39ec301457d1ee47a13f3bb0fef65812a57b6c93212e609b10d35d2"].unchecked_into(), // session key
     )];
     let endowed_accounts = vec![hex![
-        "6b7f25c05e367cbb8224681f9f8652f13e7de2953b4706f32e6daf42219ad31f"
+        "0ae55282e669fc55cb9529c0b12b989f2c5bf636d0de7630b5a4850055ed9c30"
     ]
     .unchecked_into()];
 
@@ -290,7 +291,7 @@ fn testnet_genesis(
 			ids: vec![]
 		}),
 		balances: Some(BalancesConfig {
-			existential_deposit: 500,
+			existential_deposit: 0,
 			transfer_fee: 0,
 			creation_fee: 0,
 			balances: endowed_accounts.iter().cloned()
