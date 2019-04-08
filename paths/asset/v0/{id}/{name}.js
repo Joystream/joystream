@@ -1,8 +1,11 @@
 'use strict';
 
 const util_ranges = require('joystream/util/ranges');
+const file_type = require('file-type');
 
 const debug = require('debug')('joystream:api:asset');
+
+const filter = require('joystream/core/filter');
 
 module.exports = function(config, storage)
 {
@@ -59,15 +62,26 @@ module.exports = function(config, storage)
     },
 
     // Put for uploads
-    put: function(req, res, _next)
+    put: async function(req, res, _next)
     {
-      console.log('GOT REQUEST', req);
       const id = req.params.id;
       const name = req.params.name;
 
       const repo = storage.get(id);
       if (!repo) {
         res.status(404).send({ message: `Repository with id "${id}" not found.` });
+        return;
+      }
+
+      // Check for file type.
+      const ft_stream = await file_type.stream(req);
+      const fileType = ft_stream.fileType || { mime: 'application/octet-stream' };
+      debug('Detectet Content-Type is', fileType.mime);
+
+      // Filter
+      const filter_result = filter(config, req.headers, fileType.mime);
+      if (200 != filter_result.code) {
+        res.status(filter_result.code).send({ message: filter_result.message });
         return;
       }
 
@@ -86,10 +100,10 @@ module.exports = function(config, storage)
 //          download: download,
 //        };
 //        util_ranges.send(res, stream, opts);
-        req.on('end', () => {
+        ft_stream.on('end', () => {
           res.status(200).send({ message: 'Asset uploaded.' });
         });
-        req.pipe(stream);
+        ft_stream.pipe(stream);
       });
     },
 
