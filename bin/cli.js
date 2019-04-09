@@ -45,7 +45,7 @@ const cli = meow(`
                             protocol. Defaults to 3030.
     --sync-period           Number of milliseconds to wait between synchronization
                             runs. Defaults to 30,000 (30s).
-    --key                   Private key to run the storage node under. FIXME should become file
+    --key-file              JSON key export file to use as the storage provider.
     --storage=PATH, -s PATH Storage path to use.
     --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "hyperdrive".
   `, {
@@ -64,7 +64,7 @@ const cli = meow(`
         type: 'integer',
         default: undefined,
       },
-      key: {
+      keyFile: {
         type: 'string',
         default: undefined,
       },
@@ -246,7 +246,9 @@ async function run_signup(account_file)
   // Create a role key
   const role_key = await api.createRoleKey(member_address);
   const role_address = role_key.address();
-  console.log('Generated ', role_address);
+  console.log('Generated ', role_address, '- this is going to be exported to a',
+  'JSON file. You can provide an empty passphrase to make starting the server',
+  'easier, but you must keep the file very safe, then.');
   const filename = await api.writeKeyPairExport(role_address);
   console.log('Identity stored in', filename);
 
@@ -259,6 +261,19 @@ async function run_signup(account_file)
   console.log('Role application sent.');
 }
 
+async function wait_for_role(flags, config)
+{
+  // Load key information
+  const { RolesApi, ROLE_STORAGE } = require('joystream/substrate/roles');
+  const account_file = flags['keyFile'] || config.get('keyFile');
+  const api = await RolesApi.create(account_file);
+
+  // Wait for the account role to be finalized
+  console.log('Waiitng for the account to be staked as a storage provider role...');
+  const result = await api.waitForRole(api.key.address(), ROLE_STORAGE);
+  return [result, api];
+}
+
 // Simple CLI commands
 var command = cli.input[0];
 if (!command) {
@@ -268,10 +283,28 @@ if (!command) {
 const commands = {
   'server': () => {
     const cfg = create_config(pkg.name, cli.flags);
-    const store = get_storage(cfg, cli.flags);
-    banner();
-    start_app(project_root, store, cfg, cli.flags);
-    start_sync_server(store, cfg, cli.flags);
+
+    // Load key information
+    const errfunc = (err) => {
+      console.log(err);
+      process.exit(-1);
+    }
+
+    const promise = wait_for_role(cli.flags, cfg);
+    promise.catch(errfunc).then((values) => {
+      const result = values[0]
+      const roles_api = values[1];
+      if (!result) {
+        throw new Error(`Not staked as storage role.`);
+      }
+      console.log('Staked, proceeding.');
+
+      // Continue with server setup
+      const store = get_storage(cfg, cli.flags);
+      banner();
+      start_app(project_root, store, cfg, cli.flags);
+      start_sync_server(store, cfg, cli.flags);
+    }).catch(errfunc);
   },
   'create': () => {
     const cfg = create_config(pkg.name, cli.flags);
