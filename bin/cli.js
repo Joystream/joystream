@@ -266,6 +266,9 @@ async function wait_for_role(flags, config)
   // Load key information
   const { RolesApi, ROLE_STORAGE } = require('joystream/substrate/roles');
   const account_file = flags['keyFile'] || config.get('keyFile');
+  if (!account_file) {
+    throw new Error("Must specify a key file for running a storage node! Sign up for the role; see `js_storage --help' for details.");
+  }
   const api = await RolesApi.create(account_file);
 
   // Wait for the account role to be finalized
