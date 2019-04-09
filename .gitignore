@@ -25,5 +25,5 @@ node_modules/*
 !node_modules/joystream
 
 # Generated JS files
-lib/joystream/types/*.js
-!lib/joystream/types/index.js
+lib/joystream/substrate/types/*.js
+!lib/joystream/substrate/types/index.js
