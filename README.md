@@ -72,34 +72,36 @@ Storage Provider Staking
 Staking for the storage provider role happens in a few simple steps:
 
 1. Using [the app](https://github.com/Joystream/apps), create an account and make
-  it a member. Make sure to save the JSON file. Not only is this account your
-  identity, the file is also needed for the signup process. Make sure thea ccount
-  has some currency.
-  - You need some currency to become a member.
-  - You need to stake some currency to become a storage provider.
-  - There's a transaction fee for applying as a storage provider.
+   it a member. Make sure to save the JSON file. Not only is this account your
+   identity, the file is also needed for the signup process. Make sure thea ccount
+   has some currency. 
+   - You need some currency to become a member.
+   - You need to stake some currency to become a storage provider.
+   - There's a transaction fee for applying as a storage provider.
 1. Using the `js_storage` cli, run the signup process:
-  ```bash
-  $ js_storage signup MEMBER_ADDRESS.json
-  Enter passphrase for MEMBER_ADDRESS: asdf
-  Account is working for staking, proceeding.
-  Generated  ROLE_ADDRESS - this is going to be exported to a JSON file. You can provide an empty passphrase to make starting the server easier, but you must keep the file very safe, then.
-  Enter passphrase for ROLE_ADDRESS:
-  Identity stored in ROLE_ADDRESS.json
-  Funds transferred.
-  Role application sent.
-  ```
+   ```bash
+   $ js_storage signup MEMBER_ADDRESS.json
+   Enter passphrase for MEMBER_ADDRESS: asdf
+   Account is working for staking, proceeding.
+   Generated  ROLE_ADDRESS - this is going to be exported to a JSON file.
+     You can provide an empty passphrase to make starting the server easier,
+     but you must keep the file very safe, then.
+   Enter passphrase for ROLE_ADDRESS:
+   Identity stored in ROLE_ADDRESS.json
+   Funds transferred.
+   Role application sent.
+   ```
 1. The newly created account is also saved to a JSON file. This is the account
-  you use for running the storage node. Funds will be transferred from the member
-  account to the role account, and an application to stake for the role will be
-  created.
+   you use for running the storage node. Funds will be transferred from the member
+   account to the role account, and an application to stake for the role will be
+   created.
 1. Navigate to the `Roles` menu entry of the app. If you're currently the member
-  account, you should see the role application under the `MyRequests` tab.
+   account, you should see the role application under the `MyRequests` tab.
 1. Stake for the role.
 1. Back with the CLI, run the server:
-  ```bash
-  $ js_storage --key-file ROLE_ADDRESS.json
-  ```
+   ```bash
+   $ js_storage --key-file ROLE_ADDRESS.json
+   ```
 
 Note that the JSON files contain the full key pair of either account. It's best
 to protect them with a passphrase. If you want to run the `js_storage` server
