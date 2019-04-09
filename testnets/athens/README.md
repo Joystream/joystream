@@ -48,10 +48,10 @@
 
 Live milestones, continuously adjusted:
 
-- **Update website & hosted Pioneer, publish blog & newsletter & social media:** `04. April 2019, 12:00 (GMT+1)`
-- **Release:** `10. April 2019, 12:00 (GMT+1)`
-- **Final Test run:** `08. April 2019, 12:00 (GMT+1)`
-- **Intermediate Test run:** `03. April 2019, 12:00 (GMT+1)`
+- **Update website & hosted Pioneer, publish blog & newsletter & social media:** `12. April 2019, 12:00 (GMT+1)`
+- **Release:** `12. April 2019, 12:00 (GMT+1)`
+- **Final Test run:** `11. April 2019, 12:00 (GMT+1)`
+- **Intermediate Test run:** `09. April 2019, 12:00 (GMT+1)`
 
 
 # Past Release Meetings
