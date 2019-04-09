@@ -255,7 +255,7 @@ async function run_signup(account_file)
   console.log('Identity stored in', filename);
 
   // Ok, transfer for staking.
-  await api.transferForStaking(member_address, role_address);
+  await api.transferForStaking(member_address, role_address, ROLE_STORAGE);
   console.log('Funds transferred.');
 
   // Now apply for the role
