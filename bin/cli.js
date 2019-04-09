@@ -31,6 +31,11 @@ const cli = meow(`
     list              Output a list of storage entries. If an argument is given,
                       it is interpreted as a repo ID, and the contents of the
                       repo are listed instead.
+    signup            Sign up as a storage provider. Requires that you provide
+                      a JSON account file of an account that is a member, and has
+                      sufficient balance for staking as a storage provider.
+                      Writes a new account file that should be used to run the
+                      storage node.
 
   Options:
     --config=PATH, -c PATH  Configuration file path. Defaults to
@@ -40,7 +45,7 @@ const cli = meow(`
                             protocol. Defaults to 3030.
     --sync-period           Number of milliseconds to wait between synchronization
                             runs. Defaults to 30,000 (30s).
-    --key                   Private key to run the storage node under.
+    --key                   Private key to run the storage node under. FIXME should become file
     --storage=PATH, -s PATH Storage path to use.
     --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "hyperdrive".
   `, {
@@ -226,6 +231,34 @@ function list_repo(store, repo_id)
   });
 }
 
+async function run_signup(account_file)
+{
+  const { RolesApi, ROLE_STORAGE } = require('joystream/substrate/roles');
+  const api = await RolesApi.create(account_file);
+  const member_address = api.key.address();
+
+  // Check if account works
+  const check = await api.checkAccountForStaking(member_address);
+  if (check) {
+    console.log('Account is working for staking, proceeding.');
+  }
+
+  // Create a role key
+  const role_key = await api.createRoleKey(member_address);
+  const role_address = role_key.address();
+  console.log('Generated ', role_address);
+  const filename = await api.writeKeyPairExport(role_address);
+  console.log('Identity stored in', filename);
+
+  // Ok, transfer for staking.
+  await api.transferForStaking(member_address, role_address);
+  console.log('Funds transferred.');
+
+  // Now apply for the role
+  await api.applyForRole(role_address, ROLE_STORAGE, member_address);
+  console.log('Role application sent.');
+}
+
 // Simple CLI commands
 var command = cli.input[0];
 if (!command) {
@@ -278,6 +311,11 @@ const commands = {
     else {
       list_repos(store);
     }
+  },
+  'signup': () => {
+    const account_file = cli.input[1];
+    const ret = run_signup(account_file);
+    ret.catch(console.error).finally(_ => process.exit());
   },
 };
 
