@@ -46,7 +46,10 @@ They are taken from [the app](https://github.com/Joystream/apps), and renamed
 to suit our use:
 
 `apps/packages/joy-members/src/types.ts` becomes `lib/joystream/types/members.ts`,
-etc. `lib/joystream/types/index.js` is manually maintained, but other JavaScript
+etc. The only thing adjusted in the files are the imports of other joystream
+types.
+
+`lib/joystream/types/index.js` is manually maintained, but other JavaScript
 files in that folder are generated.
 
 Command-Line
