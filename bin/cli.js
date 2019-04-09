@@ -238,6 +238,8 @@ async function run_signup(account_file)
   const member_address = api.key.address();
 
   // Check if account works
+  const min = await api.requiredBalanceForRoleStaking(ROLE_STORAGE);
+  console.log(`Account needs to be a member and have a minimum balance of ${min.toString()}`);
   const check = await api.checkAccountForStaking(member_address);
   if (check) {
     console.log('Account is working for staking, proceeding.');
@@ -246,9 +248,9 @@ async function run_signup(account_file)
   // Create a role key
   const role_key = await api.createRoleKey(member_address);
   const role_address = role_key.address();
-  console.log('Generated ', role_address, '- this is going to be exported to a',
-  'JSON file. You can provide an empty passphrase to make starting the server',
-  'easier, but you must keep the file very safe, then.');
+  console.log('Generated', role_address, '- this is going to be exported to a JSON file.\n',
+    ' You can provide an empty passphrase to make starting the server easier,\n',
+    ' but you must keep the file very safe, then.');
   const filename = await api.writeKeyPairExport(role_address);
   console.log('Identity stored in', filename);
 
