@@ -220,7 +220,7 @@ The template used for recording and tracking OKRs has the following form:
  - **Tracked**: `<Time interval at which OKR is tracked>`
  - **Tracking Manager**: `<Name of person responsible for doing tracking, at given interval, and final grading>`
  - **Key Results**: `<If all key results have same assignment set, write here>`
-   1. `<Statement of Key result>``<n/ewd>`
+   1. `<Statement of Key result>` `<n/ewd>`
      - `<Name of assignee>`: `<assignment weight>`
      - ...
   <br />

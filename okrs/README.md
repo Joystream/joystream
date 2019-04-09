@@ -18,7 +18,8 @@
 - [Release OKRs](#release-okrs)
   - [Launch Athens network](#objective-launch-athens-network)
 - [Personal OKRs](#personal-okrs)
-    - [@bwhm - Improve value as Release Manager](#objective-improve-value-as-release-manager)
+    - [Bedeho - Improve Technical Productivity of Team](#objective-improve-technical-productivity-of-team)
+    - [Martin - Improve value as Release Manager](#objective-improve-value-as-release-manager)
 
 # Archive
 
@@ -80,34 +81,44 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 | 18.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 02.07.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 
-## Objective: `Expand Joystream brand awareness`
+## Objective: `Expand Joystream platform awareness`
 - **Active from:** 09.04.19
 - **KR Measurement Deadline:** 02.07.19
 - **Tracked:** Every other Tuesday
 - **Tracking Manager:** Martin
-- **Key Results:** Martin and Bedeho
+- **Key Results:** Martin and Bedeho u.n.o.
   1. `Get 500 sign ups for our Joystream jobs and roles mailing list (ewd)`
-  2. `Get "2000/5000" "Users/Session" on our blog (ewd)`
-  3. `Get 5000 downloads for "Staked" (ewd)`
-  4. `Get 10 PRs from outside collaborators on GitHub (n)`
+      * `Bedeho` : `0.75`
+      * `Martin` : `0.25`
+  2. `Get 2000 "Readers" and 5000" "Reads" on our blog in Q2 (n)`
+      * `Martin`
+  3. `Get 500 downloads per hour spent for "Staked" (n)`
+  4. `Complete "Opportunistic joystream.org Website Improvements" (ewd)`
+      * `Bedeho` : `0.75`
+      * `Martin` : `0.25`
+  5. `Get 75% marks on user website comprehension test (ewd)`
+      * `Bedeho` : `0.75`
+      * `Martin` : `0.25`
+
 
   <br />
 
 - **Notes**
-    * `Current numbers: 0 - 802/1400 - 184 - 0`
+    * `Calibration numbers: 0 - 802/1400 - 184 - 0/10 - NA`
+    * `KR#4 refers to tasks in https://github.com/orgs/Joystream/projects/3`
   <br />
 
 - **Tracking:**
 
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 |Comments|
-|:--------:|:-----:|:-----:|:-----:|:-----:|:------:|
-| 09.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 23.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 07.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 21.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 04.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 18.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 02.07.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |Comments|
+|:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------:|
+| 09.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 23.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 07.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 21.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 04.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 18.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 02.07.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 
 # Release OKRs
 
@@ -140,7 +151,7 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 - **Notes**
   * `KRs 3, 4 and 5 were changed mid flight. KR tracking from before the 18.03 is disregarded `
   * `This was a result of inexperience constructing good OKRs`
-  * `KRs was tracked from 04.03.19, but`
+  * `KRs was tracked from 04.03.19, but due to in flight changes, the numbers were scapped`
 <br />
 
 - **Tracking:**
@@ -151,7 +162,7 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 | 18.03.19 |(1.0 , 0.75) **0.87**  | (0.66 , 0.9) **0.78**  | (1.0 , 0.8 , 0.8) **0.87**  |  (0.66 , 0, 0) **0.33** |  (0.8 , 0.65) **0.73** |  First Athens grading |
 | 25.03.19 |(1.0 , 0.86) **0.92** | (0.75 , 0.92) **0.84*  | (1.0 , 0.9 , 0.8) **0.9**  |  (0.66 , 0.1, 0.7) **0.49** |  (0.85 , 0.85) **0.85** | - |
 | 01.04.19 |(0.5 , 0.9) **0.7** | (0.8 , 0.95) **0.88*  |  **0.5**  |  (0.66 , 0.65, 0.9) **0.74** |  (1.0 , 0.85) **0.93** | Sparta crash made #3 unobtainable |
-| 08.04.19 | NA  | NA  | NA  |  NA |  NA | NA |
+| 08.04.19 |(0.5 , 0.9) **0.7** | (0.85 , 0.95) **0.9*  |  **0.5**  |  (1.0 , 0.9, 0.9) **0.93** |  (1.0 , 0.85) **0.93** | Sparta crash made #3 unobtainable |
 | 15.04.19 | NA  | NA  | NA  |  NA |  NA | NA |
 | 22.04.19 | NA  | NA  | NA  |  NA |  NA | NA |
 
@@ -167,7 +178,34 @@ Fill in if needed.
 
 ## `Bedeho` (@bedeho)
 
-Fill in if needed.
+## Objective: `Improve Technical Productivity of Team`
+- **Active from:** 09.04.19
+- **KR Measurement Deadline:** 02.07.19
+- **Tracked:** Every other Tuesday
+- **Tracking Manager:** Martin
+- **Key Results:** Bedeho
+  1. `Write Rust|Substrate forum module which is ready for release (ewd)`
+  2. `Define first full technical specification framework, and apply to a release (ewd)`
+  3. `Finalize and use testnet planning process for releases in this quarter (n)`
+  4. `Define runtime architecture guidelines (stretch goal) (n)`
+
+  <br />
+
+- **Notes**
+    * `-`
+  <br />
+
+- **Tracking:**
+
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 |Comments|
+|:--------:|:-----:|:-----:|:-----:|:-----:|:------:|
+| 09.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 23.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 07.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 21.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 04.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 18.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| 02.07.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 
 ## `Jens` (@jfinkhaeuser)
 
@@ -182,9 +220,10 @@ Fill in if needed.
 - **Tracking Manager:** Bedeho
 - **Key Results:** Martin
   1. `Finish the Rust book (n)`
-  2. `Build, maintain, and document the semi-automated payout scripts for all active roles (ewd)`
-  3. `Submit minutes for all "Core" release meetings (n)`
-  4. `Have 2 (src) PRs merged to our technical Repos - "pioneer", "joyful", "runtime", "colossus" (n)`
+  2. `Plan, specify and conduct weekly feature testing for all new modules (ewd)`
+  3. `Note and track all deadlines and dates for accountability`
+  4. `Submit minutes for all "Core" release meetings (n)`
+  5. `Have 2 (/src) PRs merged to our technical repos (n)`
 
   <br />
 
@@ -194,15 +233,15 @@ Fill in if needed.
 
 - **Tracking:**
 
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 | Comments |
-|:--------:|:-----:|:-----:|:-----:|:-----:|:------:|
-| 09.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 23.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 07.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 21.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 04.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 18.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 02.07.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |Comments|
+|:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------:|
+| 09.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 23.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 07.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 21.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 04.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 18.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 02.07.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 
 ## `Mokhtar` (@mnaamani)
 
