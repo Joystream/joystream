@@ -1,6 +1,6 @@
 import { Enum, Struct } from '@polkadot/types/codec';
 import { getTypeRegistry, BlockNumber, AccountId, Balance, u32 } from '@polkadot/types';
-import { MemberId } from '@polkadot/joy-members/types';
+import { MemberId } from 'joystream/substrate/types/members';
 
 export class Role extends Enum {
   constructor (value?: any) {

@@ -1,6 +1,6 @@
 import { EnumType, Option, Struct } from '@polkadot/types/codec';
 import { getTypeRegistry, Bool, BlockNumber, Moment, AccountId, BalanceOf, u64, Text } from '@polkadot/types';
-import { OptionText } from '@polkadot/joy-utils/types';
+import { OptionText } from 'joystream/substrate/types/utils';
 
 export class MemberId extends u64 {}
 export class PaidTermId extends u64 {}
