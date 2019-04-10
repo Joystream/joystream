@@ -182,7 +182,7 @@ impl consensus::Trait for Runtime {
 
 impl session::Trait for Runtime {
     type ConvertAccountIdToSessionKey = ();
-    type OnSessionChange = (Staking,);
+    type OnSessionChange = (Staking, grandpa::SyncedAuthorities<Runtime>);
     type Event = Event;
 }
 
