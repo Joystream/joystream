@@ -1,6 +1,6 @@
 use hex_literal::{hex, hex_impl};
 use joystream_node_runtime::{
-    AccountId, BalancesConfig, ConsensusConfig, ContentDirectoryConfig, CouncilConfig,
+    AccountId, BalancesConfig, ConsensusConfig, CouncilConfig,
     CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
     DownloadSessionsConfig, GenesisConfig, GrandpaConfig, IndicesConfig, MembersConfig, Perbill,
     ProposalsConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig, TimestampConfig,
@@ -253,9 +253,6 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
 		data_object_type_registry: Some(DataObjectTypeRegistryConfig {
 			first_data_object_type_id: 1,
 		}),
-		content_directory: Some(ContentDirectoryConfig{
-			first_metadata_id: 1,
-		}),
 		data_object_storage_registry: Some(DataObjectStorageRegistryConfig{
 			first_relationship_id: 1,
 		}),
@@ -357,9 +354,6 @@ fn testnet_genesis(
 		}),
 		data_object_type_registry: Some(DataObjectTypeRegistryConfig {
 			first_data_object_type_id: 1,
-		}),
-		content_directory: Some(ContentDirectoryConfig{
-			first_metadata_id: 1,
 		}),
 		data_object_storage_registry: Some(DataObjectStorageRegistryConfig{
 			first_relationship_id: 1,
