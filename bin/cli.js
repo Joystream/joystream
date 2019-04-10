@@ -274,7 +274,7 @@ async function wait_for_role(flags, config)
   const api = await RolesApi.create(account_file);
 
   // Wait for the account role to be finalized
-  console.log('Waiitng for the account to be staked as a storage provider role...');
+  console.log('Waiting for the account to be staked as a storage provider role...');
   const result = await api.waitForRole(api.key.address(), ROLE_STORAGE);
   return [result, api];
 }
