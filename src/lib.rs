@@ -18,7 +18,7 @@ pub mod governance;
 use governance::{council, election, proposals};
 pub mod storage;
 use storage::{
-    content_directory, data_directory, data_object_storage_registry, data_object_type_registry,
+    data_directory, data_object_storage_registry, data_object_type_registry,
     downloads,
 };
 mod membership;
@@ -74,8 +74,8 @@ pub type AccountId = <AccountSignature as Verify>::Signer;
 /// The type used by accounts to prove their ID.
 pub type AccountSignature = AnySignature;
 
-/// Alias for ContentId, used in various places
-pub type ContentId = u64;
+/// Alias for ContentId, used in various places.
+pub type ContentId = primitives::H256;
 
 /// A hash of some data used by the chain.
 pub type Hash = primitives::H256;
@@ -266,6 +266,7 @@ impl storage::data_object_type_registry::Trait for Runtime {
 impl storage::data_directory::Trait for Runtime {
     type Event = Event;
     type ContentId = ContentId;
+    type SchemaId = u64;
     type Members = Members;
     type Roles = Actors;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
@@ -283,13 +284,6 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type Members = Members;
     type Roles = Actors;
     type ContentIdExists = DataDirectory;
-}
-
-impl storage::content_directory::Trait for Runtime {
-    type Event = Event;
-    type MetadataId = u64;
-    type SchemaId = u64;
-    type Members = Members;
 }
 
 impl members::Trait for Runtime {
@@ -347,7 +341,6 @@ construct_runtime!(
 		DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
 		DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
 		DownloadSessions: downloads::{Module, Call, Storage, Event<T>, Config<T>},
-		ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 

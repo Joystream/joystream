@@ -62,6 +62,7 @@ pub struct DownloadSession<T: Trait> {
     pub content_id: <T as DDTrait>::ContentId,
     pub consumer: T::AccountId,
     pub distributor: T::AccountId,
+    // TODO use BlockAndTime instead
     pub initiated_at_block: T::BlockNumber,
     pub initiated_at_time: T::Moment,
     pub state: DownloadState,
