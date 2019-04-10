@@ -718,7 +718,7 @@ decl_module! {
         fn deposit_event<T>() = default;
 
         // No origin so this is a priviledged call
-        fn on_finalise(now: T::BlockNumber) {
+        fn on_finalize(now: T::BlockNumber) {
             Self::check_if_stage_is_ending(now);
         }
 
@@ -1955,7 +1955,7 @@ mod tests {
 
             let n = 1 + Election::announcing_period();
             System::set_block_number(n);
-            let _ = Election::on_finalise(n);
+            let _ = Election::on_finalize(n);
 
             for i in 1..20 {
                 assert!(Election::vote(
@@ -1982,7 +1982,7 @@ mod tests {
 
             let n = n + Election::voting_period();
             System::set_block_number(n);
-            let _ = Election::on_finalise(n);
+            let _ = Election::on_finalize(n);
 
             for i in 1..20 {
                 assert!(Election::reveal(
@@ -2012,7 +2012,7 @@ mod tests {
 
             let n = n + Election::revealing_period();
             System::set_block_number(n);
-            let _ = Election::on_finalise(n);
+            let _ = Election::on_finalize(n);
 
             assert_eq!(
                 Council::active_council().len(),

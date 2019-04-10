@@ -56,7 +56,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        fn on_initialise(_now: T::BlockNumber) {
+        fn on_initialize(_now: T::BlockNumber) {
             if Self::spec_version().map_or(true, |spec_version| VERSION.spec_version > spec_version) {
                 // mark store version with current version of the runtime
                 <SpecVersion<T>>::put(VERSION.spec_version);

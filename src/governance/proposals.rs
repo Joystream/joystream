@@ -323,7 +323,7 @@ decl_module! {
         }
 
         // Called on every block
-        fn on_finalise(n: T::BlockNumber) {
+        fn on_finalize(n: T::BlockNumber) {
             if let Err(e) = Self::end_block(n) {
                 print(e);
             }
@@ -1110,7 +1110,7 @@ mod tests {
             assert_eq!(Proposals::votes_by_proposal(1), expected_votes);
 
             System::set_block_number(2);
-            let _ = Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             assert!(Proposals::active_proposal_ids().is_empty());
             assert_eq!(Proposals::proposals(1).status, Approved);
@@ -1152,7 +1152,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
-            let _ = Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             // Check that runtime code has been updated after proposal approved.
             assert_runtime_code!(wasm_code());
@@ -1208,7 +1208,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
-            let _ = Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             // Check that runtime code has been updated after proposal approved.
             assert_runtime_code!(wasm_code());
@@ -1263,14 +1263,14 @@ mod tests {
 
             let expiration_block = System::block_number() + Proposals::voting_period();
             System::set_block_number(2);
-            let _ = Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             // Check that runtime code has NOT been updated yet,
             // because not all councilors voted and voting period is not expired yet.
             assert_runtime_code_empty!();
 
             System::set_block_number(expiration_block);
-            let _ = Proposals::on_finalise(expiration_block);
+            let _ = Proposals::end_block(expiration_block);
 
             // Check that runtime code has been updated after proposal approved.
             assert_runtime_code!(wasm_code());
@@ -1326,7 +1326,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
-            let _ = Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             // Check that runtime code has NOT been updated after proposal slashed.
             assert_runtime_code_empty!();
@@ -1383,7 +1383,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
-            let _ = Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             // Check that runtime code has NOT been updated after proposal rejected.
             assert_runtime_code_empty!();
@@ -1440,7 +1440,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
-            let _ = Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             // Check that runtime code has NOT been updated after proposal slashed.
             assert_runtime_code_empty!();
@@ -1507,7 +1507,7 @@ mod tests {
 
             let expiration_block = System::block_number() + Proposals::voting_period();
             System::set_block_number(expiration_block);
-            let _ = Proposals::on_finalise(expiration_block);
+            let _ = Proposals::end_block(expiration_block);
 
             // Check that runtime code has NOT been updated after proposal slashed.
             assert_runtime_code_empty!();
