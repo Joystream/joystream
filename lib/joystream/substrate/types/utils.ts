@@ -1,10 +1,21 @@
 import { Enum, EnumType, Option } from '@polkadot/types/codec';
 import { getTypeRegistry, BlockNumber, AccountId, Balance, Hash, u32, Text } from '@polkadot/types';
-import { registerMediaTypes } from './media';
-import { registerMembershipTypes } from './members';
-import { registerRolesTypes } from './roles';
+import { registerMediaTypes } from 'joystream/substrate/types/media';
+import { registerMembershipTypes } from 'joystream/substrate/types/members';
+import { registerRolesTypes } from 'joystream/substrate/types/roles';
 
 class Amount extends Balance {}
+
+export class OptionText extends Option.with(Text) {
+
+  static none () {
+    return new Option(Text, null);
+  }
+
+  static some (text: string) {
+    return new Option(Text, text);
+  }
+}
 
 export type TransferableStake = {
   seat: Balance,

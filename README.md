@@ -50,7 +50,8 @@ etc. The only thing adjusted in the files are the imports of other joystream
 types.
 
 `lib/joystream/types/index.js` is manually maintained, but other JavaScript
-files in that folder are generated.
+files in that folder are generated. The `update_types.sh` script can help with
+keeping these in sync.
 
 Command-Line
 ------------
