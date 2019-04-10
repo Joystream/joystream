@@ -233,12 +233,12 @@ function list_repo(store, repo_id)
 
 async function run_signup(account_file)
 {
-  const { RolesApi, ROLE_STORAGE } = require('joystream/substrate/roles');
-  const api = await RolesApi.create(account_file);
+  const substrate_api = require('joystream/substrate');
+  const api = await substrate_api.create(account_file);
   const member_address = api.key.address();
 
   // Check if account works
-  const min = await api.requiredBalanceForRoleStaking(ROLE_STORAGE);
+  const min = await api.requiredBalanceForRoleStaking(api.ROLE_STORAGE);
   console.log(`Account needs to be a member and have a minimum balance of ${min.toString()}`);
   const check = await api.checkAccountForStaking(member_address);
   if (check) {
@@ -255,27 +255,27 @@ async function run_signup(account_file)
   console.log('Identity stored in', filename);
 
   // Ok, transfer for staking.
-  await api.transferForStaking(member_address, role_address, ROLE_STORAGE);
+  await api.transferForStaking(member_address, role_address, api.ROLE_STORAGE);
   console.log('Funds transferred.');
 
   // Now apply for the role
-  await api.applyForRole(role_address, ROLE_STORAGE, member_address);
+  await api.applyForRole(role_address, api.ROLE_STORAGE, member_address);
   console.log('Role application sent.');
 }
 
 async function wait_for_role(flags, config)
 {
   // Load key information
-  const { RolesApi, ROLE_STORAGE } = require('joystream/substrate/roles');
+  const substrate_api = require('joystream/substrate');
   const account_file = flags['keyFile'] || config.get('keyFile');
   if (!account_file) {
     throw new Error("Must specify a key file for running a storage node! Sign up for the role; see `js_storage --help' for details.");
   }
-  const api = await RolesApi.create(account_file);
+  const api = await substrate_api.create(account_file);
 
   // Wait for the account role to be finalized
   console.log('Waiting for the account to be staked as a storage provider role...');
-  const result = await api.waitForRole(api.key.address(), ROLE_STORAGE);
+  const result = await api.waitForRole(api.key.address(), api.ROLE_STORAGE);
   return [result, api];
 }
 
