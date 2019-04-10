@@ -260,7 +260,7 @@ async function run_signup(account_file)
 
   // Now apply for the role
   await api.applyForRole(role_address, api.ROLE_STORAGE, member_address);
-  console.log('Role application sent.');
+  console.log('Role application sent.\nNow visit Roles > My Requests in the app.');
 }
 
 async function wait_for_role(flags, config)
