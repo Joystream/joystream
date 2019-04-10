@@ -107,9 +107,9 @@ function banner()
 }
 
 // Start app
-function start_app(project_root, store, config, flags)
+function start_app(project_root, store, api, config, flags)
 {
-  const app = require('joystream/app')(store, flags, config);
+  const app = require('joystream/app')(store, api, flags, config);
   const port = flags.port || config.get('port') || 3000;
   app.listen(port);
   console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
@@ -138,14 +138,14 @@ function get_storage_mapping(config)
 }
 
 // Start sync server
-function start_sync_server(store, config, flags)
+function start_sync_server(store, api, config, flags)
 {
   const { create_server, synchronize } = require('joystream/sync');
   const chain_storage = require('joystream/core/chain/storage');
   const core_dht = require('joystream/core/dht');
 
   // Sync server
-  const syncserver = create_server(flags, config, store);
+  const syncserver = create_server(api, flags, config, store);
   const port = flags['syncPort'] || config.get('syncPort') || 3030;
   syncserver.listen(port);
   console.log('Sync server started at', syncserver.address());
@@ -298,7 +298,7 @@ const commands = {
     const promise = wait_for_role(cli.flags, cfg);
     promise.catch(errfunc).then((values) => {
       const result = values[0]
-      const roles_api = values[1];
+      const api = values[1];
       if (!result) {
         throw new Error(`Not staked as storage role.`);
       }
@@ -307,8 +307,8 @@ const commands = {
       // Continue with server setup
       const store = get_storage(cfg, cli.flags);
       banner();
-      start_app(project_root, store, cfg, cli.flags);
-      start_sync_server(store, cfg, cli.flags);
+      start_app(project_root, store, api, cfg, cli.flags);
+      start_sync_server(store, api, cfg, cli.flags);
     }).catch(errfunc);
   },
   'create': () => {
