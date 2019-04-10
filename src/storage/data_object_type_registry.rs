@@ -1,29 +1,22 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::traits;
 use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, Parameter, StorageMap, StorageValue};
-use system::{self, ensure_root};
 
 pub trait Trait: system::Trait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type DataObjectTypeId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + As<usize>
-        + As<u64>
-        + MaybeSerializeDebug
-        + PartialEq;
+    type DataObjectTypeId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
+        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
 }
 
 static MSG_DO_TYPE_NOT_FOUND: &str = "Data Object Type with the given ID not found.";
+
+const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and video content.";
+const DEFAULT_TYPE_ACTIVE: bool = true;
+const CREATE_DETAULT_TYPE: bool = true;
 
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1;
 
@@ -38,8 +31,20 @@ pub struct DataObjectType {
     // - storage tranches (empty is ok)
 }
 
+impl Default for DataObjectType {
+    fn default() -> Self {
+        DataObjectType {
+            description: DEFAULT_TYPE_DESCRIPTION.as_bytes().to_vec(),
+            active: DEFAULT_TYPE_ACTIVE,
+        }
+    }
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as DataObjectTypeRegistry {
+
+        // TODO hardcode data object type for ID 1
+
         // Start at this value
         pub FirstDataObjectTypeId get(first_data_object_type_id) config(first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::sa(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
@@ -47,7 +52,7 @@ decl_storage! {
         pub NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>| config.first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::sa(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
         // Mapping of Data object types
-        pub DataObjectTypeMap get(data_object_type): map T::DataObjectTypeId => Option<DataObjectType>;
+        pub DataObjectTypes get(data_object_types): map T::DataObjectTypeId => Option<DataObjectType>;
     }
 }
 
@@ -72,29 +77,38 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        pub fn register_data_object_type(origin, data_object_type: DataObjectType) {
-            ensure_root(origin)?;
+        fn on_initialise() {
+            // Create a default data object type if it was not created yet.
+            if CREATE_DETAULT_TYPE && !<DataObjectTypes<T>>::exists(Self::first_data_object_type_id()) {
+                let do_type: DataObjectType = DataObjectType::default();
+                let new_type_id = Self::next_data_object_type_id();
 
+                <DataObjectTypes<T>>::insert(new_type_id, do_type);
+                <NextDataObjectTypeId<T>>::mutate(|n| { *n += T::DataObjectTypeId::sa(1); });
+            }
+        }
+
+        pub fn register_data_object_type(data_object_type: DataObjectType) {
             let new_do_type_id = Self::next_data_object_type_id();
             let do_type: DataObjectType = DataObjectType {
                 description: data_object_type.description.clone(),
                 active: data_object_type.active,
             };
 
-            <DataObjectTypeMap<T>>::insert(new_do_type_id, do_type);
+            <DataObjectTypes<T>>::insert(new_do_type_id, do_type);
             <NextDataObjectTypeId<T>>::mutate(|n| { *n += T::DataObjectTypeId::sa(1); });
 
             Self::deposit_event(RawEvent::DataObjectTypeRegistered(new_do_type_id));
         }
 
-        pub fn update_data_object_type(origin, id: T::DataObjectTypeId, data_object_type: DataObjectType) {
-            ensure_root(origin)?;
+        // TODO use DataObjectTypeUpdate
+        pub fn update_data_object_type(id: T::DataObjectTypeId, data_object_type: DataObjectType) {
             let mut do_type = Self::ensure_data_object_type(id)?;
 
             do_type.description = data_object_type.description.clone();
             do_type.active = data_object_type.active;
 
-            <DataObjectTypeMap<T>>::insert(id, do_type);
+            <DataObjectTypes<T>>::insert(id, do_type);
 
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
@@ -102,34 +116,32 @@ decl_module! {
         // Activate and deactivate functions as separate functions, because
         // toggling DO types is likely a more common operation than updating
         // other aspects.
-        pub fn activate_data_object_type(origin, id: T::DataObjectTypeId) {
-            ensure_root(origin)?;
+        // TODO deprecate or express via update_data_type
+        pub fn activate_data_object_type(id: T::DataObjectTypeId) {
             let mut do_type = Self::ensure_data_object_type(id)?;
 
             do_type.active = true;
 
-            <DataObjectTypeMap<T>>::insert(id, do_type);
+            <DataObjectTypes<T>>::insert(id, do_type);
 
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
 
-        pub fn deactivate_data_object_type(origin, id: T::DataObjectTypeId) {
-            ensure_root(origin)?;
+        pub fn deactivate_data_object_type(id: T::DataObjectTypeId) {
             let mut do_type = Self::ensure_data_object_type(id)?;
 
             do_type.active = false;
 
-            <DataObjectTypeMap<T>>::insert(id, do_type);
+            <DataObjectTypes<T>>::insert(id, do_type);
 
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
-
     }
 }
 
 impl<T: Trait> Module<T> {
     fn ensure_data_object_type(id: T::DataObjectTypeId) -> Result<DataObjectType, &'static str> {
-        return Self::data_object_type(&id).ok_or(MSG_DO_TYPE_NOT_FOUND);
+        return Self::data_object_types(&id).ok_or(MSG_DO_TYPE_NOT_FOUND);
     }
 }
 
@@ -250,7 +262,7 @@ mod tests {
             );
 
             // Retrieve, and ensure it's not active.
-            let data = TestDataObjectTypeRegistry::data_object_type(TEST_FIRST_DATA_OBJECT_TYPE_ID);
+            let data = TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
             assert!(data.is_some());
             assert!(!data.unwrap().active);
 
@@ -273,7 +285,7 @@ mod tests {
             );
 
             // Ensure that the item is actually activated.
-            let data = TestDataObjectTypeRegistry::data_object_type(TEST_FIRST_DATA_OBJECT_TYPE_ID);
+            let data = TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
             assert!(data.is_some());
             assert!(data.unwrap().active);
 
@@ -283,7 +295,7 @@ mod tests {
                 TEST_FIRST_DATA_OBJECT_TYPE_ID,
             );
             assert!(res.is_ok());
-            let data = TestDataObjectTypeRegistry::data_object_type(TEST_FIRST_DATA_OBJECT_TYPE_ID);
+            let data = TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
             assert!(data.is_some());
             assert!(!data.unwrap().active);
         });

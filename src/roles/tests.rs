@@ -1,7 +1,6 @@
 #![cfg(test)]
 
 use super::mock::*;
-//use super::*;
 
 use runtime_io::with_externalities;
 use srml_support::*;
@@ -74,7 +73,7 @@ fn make_entry_request() {
         );
 
         let surplus_balance = 100;
-        Balances::set_free_balance(
+        let _ = Balances::deposit_creating(
             &actor_account,
             storage_params.entry_request_fee + surplus_balance,
         );
@@ -97,7 +96,7 @@ fn make_entry_request() {
         assert_eq!(request.0, actor_account);
         assert_eq!(request.1, MockMembers::alice_id());
         assert_eq!(request.2, actors::Role::Storage);
-        assert_eq!(request.3, starting_block + actors::REQUEST_LIFETIME);
+        assert_eq!(request.3, starting_block + Actors::request_life_time());
     });
 }
 
@@ -117,7 +116,7 @@ fn staking() {
 
         <actors::RoleEntryRequests<Test>>::put(vec![request]);
 
-        Balances::set_free_balance(&actor_account, storage_params.min_stake);
+        let _ = Balances::deposit_creating(&actor_account, storage_params.min_stake);
 
         assert!(Actors::stake(
             Origin::signed(MockMembers::alice_account()),
@@ -138,7 +137,8 @@ fn staking() {
         let account_ids_for_member = Actors::account_ids_by_member_id(MockMembers::alice_id());
         assert_eq!(account_ids_for_member, vec![actor_account]);
 
-        assert!(<actors::Bondage<Test>>::exists(actor_account));
+        let num_of_locks = Balances::locks(&actor_account).len();
+        assert_eq!(num_of_locks, 1);
     });
 }
 
@@ -163,7 +163,6 @@ fn unstaking() {
         <actors::ActorByAccountId<Test>>::insert(&actor_account, actor);
         <actors::AccountIdsByRole<Test>>::insert(actors::Role::Storage, vec![actor_account]);
         <actors::AccountIdsByMemberId<Test>>::insert(MockMembers::alice_id(), vec![actor_account]);
-        <actors::Bondage<Test>>::insert(&actor_account, 10000);
         let current_block = 500;
 
         System::set_block_number(current_block);
@@ -182,10 +181,8 @@ fn unstaking() {
         let account_ids_for_member = Actors::account_ids_by_member_id(MockMembers::alice_id());
         assert_eq!(account_ids_for_member.len(), 0);
 
-        assert!(<actors::Bondage<Test>>::exists(actor_account));
-        assert_eq!(
-            Actors::bondage(actor_account),
-            current_block + storage_params.unbonding_period
-        );
+        let lock = Balances::locks(&actor_account)[0].clone();
+        // assuming this is our lock
+        assert_eq!(lock.until, current_block + storage_params.unbonding_period);
     });
 }

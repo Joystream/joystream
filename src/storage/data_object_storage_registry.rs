@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::roles::actors;
 use crate::storage::data_directory::Trait as DDTrait;
 use crate::traits::{ContentHasStorage, ContentIdExists, Members, Roles};
@@ -15,16 +13,9 @@ use system::{self, ensure_signed};
 pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type DataObjectStorageRelationshipId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + As<usize>
-        + As<u64>
-        + MaybeSerializeDebug
-        + PartialEq;
+    // TODO deprecated
+    type DataObjectStorageRelationshipId: Parameter + Member + SimpleArithmetic + Codec 
+        + Default + Copy + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
 
     type Members: Members<Self>;
     type Roles: Roles<Self>;
@@ -38,8 +29,10 @@ static MSG_ONLY_STORAGE_PROVIDER_MAY_CREATE_DOSR: &str =
 static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str =
     "Only the storage provider in a DOSR can decide whether they're ready.";
 
+// TODO deprecated
 const DEFAULT_FIRST_RELATIONSHIP_ID: u64 = 1;
 
+// TODO deprecated
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct DataObjectStorageRelationship<T: Trait> {
@@ -50,17 +43,35 @@ pub struct DataObjectStorageRelationship<T: Trait> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as DataObjectStorageRegistry {
+        
+        // TODO deprecated
         // Start at this value
         pub FirstRelationshipId get(first_relationship_id) config(first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::sa(DEFAULT_FIRST_RELATIONSHIP_ID);
 
+        // TODO deprecated
         // Increment
         pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>| config.first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::sa(DEFAULT_FIRST_RELATIONSHIP_ID);
 
+        // TODO deprecated
         // Mapping of Data object types
         pub Relationships get(relationships): map T::DataObjectStorageRelationshipId => Option<DataObjectStorageRelationship<T>>;
 
+        // TODO deprecated
         // Keep a list of storage relationships per CID
         pub RelationshipsByContentId get(relationships_by_content_id): map T::ContentId => Vec<T::DataObjectStorageRelationshipId>;
+
+        // ------------------------------------------
+        // TODO use next storage items insteam:
+
+        // TODO save only if metadata exists and there is at least one relation w/ ready == true.
+        ReadyContentIds get(ready_content_ids): Vec<T::ContentId> = vec![];
+
+        // TODO need? it can be expressed via StorageProvidersByContentId
+        pub StorageProviderServesContent get(storage_provider_serves_content):
+            map (T::AccountId, T::ContentId) => bool;
+
+        pub StorageProvidersByContentId get(storage_providers_by_content_id):
+            map T::ContentId => Vec<T::AccountId>;
     }
 }
 
@@ -70,12 +81,19 @@ decl_event! {
         <T as Trait>::DataObjectStorageRelationshipId,
         <T as system::Trait>::AccountId
     {
+        // TODO deprecated
         DataObjectStorageRelationshipAdded(DataObjectStorageRelationshipId, ContentId, AccountId),
         DataObjectStorageRelationshipReadyUpdated(DataObjectStorageRelationshipId, bool),
+        
+        // NEW & COOL
+        StorageProviderAddedContent(AccountId, ContentId),
+        StorageProviderRemovedContent(AccountId, ContentId),
     }
 }
 
 impl<T: Trait> ContentHasStorage<T> for Module<T> {
+
+    // TODO deprecated
     fn has_storage_provider(which: &T::ContentId) -> bool {
         let dosr_list = Self::relationships_by_content_id(which);
         return dosr_list.iter().any(|&dosr_id| {
@@ -88,6 +106,7 @@ impl<T: Trait> ContentHasStorage<T> for Module<T> {
         });
     }
 
+    // TODO deprecated
     fn is_ready_at_storage_provider(which: &T::ContentId, provider: &T::AccountId) -> bool {
         let dosr_list = Self::relationships_by_content_id(which);
         return dosr_list.iter().any(|&dosr_id| {

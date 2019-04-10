@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, Zero};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
@@ -68,7 +66,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        fn on_finalise(now: T::BlockNumber) {
+        fn on_finalize(now: T::BlockNumber) {
             if now == Self::term_ends_at() {
                 Self::deposit_event(RawEvent::CouncilTermEnded(now));
                 T::CouncilTermEnded::council_term_ended();

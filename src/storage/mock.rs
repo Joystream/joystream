@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 pub use super::{
-    content_directory, data_directory, data_object_storage_registry, data_object_type_registry,
+    data_directory, data_object_storage_registry, data_object_type_registry,
 };
 use crate::governance::GovernanceCurrency;
 use crate::roles::actors;
@@ -12,7 +12,7 @@ pub use system;
 pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
-    traits::{BlakeTwo256, IdentityLookup, OnFinalise},
+    traits::{BlakeTwo256, IdentityLookup, OnFinalize},
     BuildStorage,
 };
 
@@ -27,7 +27,6 @@ impl_outer_event! {
         data_object_type_registry<T>,
         data_directory<T>,
         data_object_storage_registry<T>,
-        content_directory<T>,
         actors<T>,
         balances<T>,
     }
@@ -153,13 +152,6 @@ impl data_object_storage_registry::Trait for Test {
     type ContentIdExists = MockContent;
 }
 
-impl content_directory::Trait for Test {
-    type Event = MetaEvent;
-    type MetadataId = u64;
-    type SchemaId = u64;
-    type Members = MockMembers;
-}
-
 impl actors::Trait for Test {
     type Event = MetaEvent;
     type Members = MockMembers;
@@ -191,8 +183,9 @@ impl balances::Trait for Test {
     /// Handler for when a new account is created.
     type OnNewAccount = ();
 
-    /// A function that returns true iff a given account can transfer its funds to another account.
-    type EnsureAccountLiquid = ();
+    type TransactionPayment = ();
+    type DustRemoval = ();
+    type TransferPayment = ();
 }
 
 impl GovernanceCurrency for Test {
@@ -267,15 +260,6 @@ impl ExtBuilder {
             .0,
         );
 
-        t.extend(
-            content_directory::GenesisConfig::<Test> {
-                first_metadata_id: self.first_metadata_id,
-            }
-            .build_storage()
-            .unwrap()
-            .0,
-        );
-
         t.into()
     }
 }
@@ -286,7 +270,6 @@ pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 pub type TestDataDirectory = data_directory::Module<Test>;
 // pub type TestDataObject = data_directory::DataObject<Test>;
 pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Test>;
-pub type TestContentDirectory = content_directory::Module<Test>;
 pub type TestActors = actors::Module<Test>;
 
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {

@@ -1,18 +1,16 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::governance::{BalanceOf, GovernanceCurrency};
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, Bounded, MaybeDebug, Zero};
-use srml_support::traits::{Currency, EnsureAccountLiquid};
-use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
-};
+use srml_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReasons};
+use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
 
 use crate::traits::{Members, Roles};
 
 static MSG_NO_ACTOR_FOR_ROLE: &str = "For the specified role, no actor is currently staked.";
+
+const STAKING_ID: LockIdentifier = *b"role_stk";
 
 #[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Role {
@@ -56,6 +54,25 @@ pub struct RoleParameters<T: Trait> {
     pub entry_request_fee: BalanceOf<T>,
 }
 
+impl<T: Trait> Default for RoleParameters<T> {
+    fn default() -> Self {
+        Self {
+            min_stake: BalanceOf::<T>::sa(3000),
+            max_actors: 10,
+            reward: BalanceOf::<T>::sa(10),
+            reward_period: T::BlockNumber::sa(600),
+            unbonding_period: T::BlockNumber::sa(600),
+            entry_request_fee: BalanceOf::<T>::sa(50),
+
+            // not currently used
+            min_actors: 5,
+            bonding_period: T::BlockNumber::sa(600),
+            min_service_period: T::BlockNumber::sa(600),
+            startup_grace_period: T::BlockNumber::sa(600),
+        }
+    }
+}
+
 #[derive(Encode, Decode, Clone)]
 pub struct Actor<T: Trait> {
     pub member_id: MemberId<T>,
@@ -80,16 +97,29 @@ pub type Request<T> = (
 );
 pub type Requests<T> = Vec<Request<T>>;
 
-pub const REQUEST_LIFETIME: u64 = 300;
-pub const DEFAULT_REQUEST_CLEARING_INTERVAL: u64 = 100;
+pub const DEFAULT_REQUEST_LIFETIME: u64 = 300;
+pub const REQUEST_CLEARING_INTERVAL: u64 = 100;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Actors {
         /// requirements to enter and maintain status in roles
-        pub Parameters get(parameters) : map Role => Option<RoleParameters<T>>;
+        pub Parameters get(parameters) build(|config: &GenesisConfig<T>| {
+            if config.enable_storage_role {
+                let storage_params: RoleParameters<T> = Default::default();
+                vec![(Role::Storage, storage_params)]
+            } else {
+                vec![]
+            }
+        }): map Role => Option<RoleParameters<T>>;
 
         /// the roles members can enter into
-        pub AvailableRoles get(available_roles) : Vec<Role>;
+        pub AvailableRoles get(available_roles) build(|config: &GenesisConfig<T>| {
+            if config.enable_storage_role {
+                vec![(Role::Storage)]
+            } else {
+                vec![]
+            }
+        }): Vec<Role>;
 
         /// Actors list
         pub ActorAccountIds get(actor_account_ids) : Vec<T::AccountId>;
@@ -103,17 +133,19 @@ decl_storage! {
         /// actor accounts associated with a member id
         pub AccountIdsByMemberId get(account_ids_by_member_id) : map MemberId<T> => Vec<T::AccountId>;
 
-        /// tokens locked until given block number
-        pub Bondage get(bondage) : map T::AccountId => T::BlockNumber;
-
         /// First step before enter a role is registering intent with a new account/key.
         /// This is done by sending a role_entry_request() from the new account.
         /// The member must then send a stake() transaction to approve the request and enter the desired role.
         /// The account making the request will be bonded and must have
         /// sufficient balance to cover the minimum stake for the role.
         /// Bonding only occurs after successful entry into a role.
-        /// The request expires after REQUEST_LIFETIME blocks
         pub RoleEntryRequests get(role_entry_requests) : Requests<T>;
+
+        /// Entry request expires after this number of blocks
+        pub RequestLifeTime get(request_life_time) config(request_life_time) : u64 = DEFAULT_REQUEST_LIFETIME;
+    }
+    add_extra_genesis {
+        config(enable_storage_role): bool;
     }
 }
 
@@ -182,9 +214,13 @@ impl<T: Trait> Module<T> {
         unbonding_period: T::BlockNumber,
     ) {
         // simple unstaking ...only applying unbonding period
-        <Bondage<T>>::insert(
+        let value = T::Currency::free_balance(&actor_account);
+        T::Currency::set_lock(
+            STAKING_ID,
             &actor_account,
+            value,
             <system::Module<T>>::block_number() + unbonding_period,
+            WithdrawReasons::all(),
         );
 
         Self::remove_actor_from_service(actor_account, role, member_id);
@@ -193,7 +229,7 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> Roles<T> for Module<T> {
     fn is_role_account(account_id: &T::AccountId) -> bool {
-        <ActorByAccountId<T>>::exists(account_id) || <Bondage<T>>::exists(account_id)
+        <ActorByAccountId<T>>::exists(account_id)
     }
 
     fn account_has_role(account_id: &T::AccountId, role: Role) -> bool {
@@ -219,9 +255,9 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        fn on_initialise(now: T::BlockNumber) {
+        fn on_initialize(now: T::BlockNumber) {
             // clear expired requests
-            if now % T::BlockNumber::sa(DEFAULT_REQUEST_CLEARING_INTERVAL) == T::BlockNumber::zero() {
+            if now % T::BlockNumber::sa(REQUEST_CLEARING_INTERVAL) == T::BlockNumber::zero() {
                 let requests: Requests<T> = Self::role_entry_requests()
                     .into_iter()
                     .filter(|request| request.3 < now)
@@ -231,7 +267,7 @@ decl_module! {
             }
         }
 
-        fn on_finalise(now: T::BlockNumber) {
+        fn on_finalize(now: T::BlockNumber) {
 
             // payout rewards to actors
             for role in Self::available_roles().iter() {
@@ -243,32 +279,12 @@ decl_module! {
                             if now > actor.joined_at + params.reward_period {
                                 // send reward to member account - not the actor account
                                 if let Ok(member_account) = T::Members::lookup_account_by_member_id(actor.member_id) {
-                                    let _ = T::Currency::reward(&member_account, params.reward);
+                                    let _ = T::Currency::deposit_into_existing(&member_account, params.reward);
                                 }
                             }
                         }
                     }
                 }
-            }
-
-            if now % T::BlockNumber::sa(100) == T::BlockNumber::zero() {
-                // clear unbonded accounts
-                let actor_accounts: Vec<T::AccountId> = Self::actor_account_ids()
-                    .into_iter()
-                    .filter(|account| {
-                        if <Bondage<T>>::exists(account) {
-                            if Self::bondage(account) > now {
-                                true
-                            } else {
-                                <Bondage<T>>::remove(account);
-                                false
-                            }
-                        } else {
-                            true
-                        }
-                    })
-                    .collect();
-                <ActorAccountIds<T>>::put(actor_accounts);
             }
 
             // eject actors not staking the minimum
@@ -298,7 +314,7 @@ decl_module! {
             let _ = T::Currency::slash(&sender, fee);
 
             <RoleEntryRequests<T>>::mutate(|requests| {
-                let expires = <system::Module<T>>::block_number()+ T::BlockNumber::sa(REQUEST_LIFETIME);
+                let expires = <system::Module<T>>::block_number()+ T::BlockNumber::sa(Self::request_life_time());
                 requests.push((sender.clone(), member_id, role, expires));
             });
             Self::deposit_event(RawEvent::EntryRequested(sender, role));
@@ -333,7 +349,8 @@ decl_module! {
 
             <AccountIdsByRole<T>>::mutate(role, |accounts| accounts.push(actor_account.clone()));
             <AccountIdsByMemberId<T>>::mutate(&member_id, |accounts| accounts.push(actor_account.clone()));
-            <Bondage<T>>::insert(&actor_account, T::BlockNumber::max_value());
+            let value = T::Currency::free_balance(&actor_account);
+            T::Currency::set_lock(STAKING_ID, &actor_account, value, T::BlockNumber::max_value(), WithdrawReasons::all());
             <ActorByAccountId<T>>::insert(&actor_account, Actor {
                 member_id,
                 account: actor_account.clone(),
@@ -389,16 +406,6 @@ decl_module! {
             let actor = Self::ensure_actor_is_member(&actor_account, member_id)?;
             let role_parameters = Self::ensure_role_parameters(actor.role)?;
             Self::apply_unstake(actor.account, actor.role, actor.member_id, role_parameters.unbonding_period);
-        }
-    }
-}
-
-impl<T: Trait> EnsureAccountLiquid<T::AccountId> for Module<T> {
-    fn ensure_account_liquid(who: &T::AccountId) -> dispatch::Result {
-        if Self::bondage(who) <= <system::Module<T>>::block_number() {
-            Ok(())
-        } else {
-            Err("cannot transfer illiquid funds")
         }
     }
 }

@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
 use crate::traits::Members;
 use parity_codec::Codec;

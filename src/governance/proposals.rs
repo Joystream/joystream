@@ -1,11 +1,14 @@
 use rstd::prelude::*;
 use runtime_io::print;
 use runtime_primitives::traits::{As, Hash, Zero};
-use srml_support::traits::Currency;
+use srml_support::traits::{Currency, ReservableCurrency};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
 };
-use system::{self, ensure_signed};
+use {
+    consensus,
+    system::{self, ensure_signed},
+};
 
 #[cfg(test)]
 use primitives::storage::well_known_keys;
@@ -117,7 +120,7 @@ pub struct TallyResult<BlockNumber> {
     finalized_at: BlockNumber,
 }
 
-pub trait Trait: timestamp::Trait + council::Trait + GovernanceCurrency {
+pub trait Trait: timestamp::Trait + council::Trait + consensus::Trait + GovernanceCurrency {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -181,7 +184,7 @@ decl_storage! {
         /// Max duration of proposal in blocks until it will be expired if not enough votes.
         VotingPeriod get(voting_period) config(): T::BlockNumber =
             T::BlockNumber::sa(DEFAULT_VOTING_PERIOD_IN_SECS /
-            <timestamp::Module<T>>::block_period().as_());
+            (<timestamp::Module<T>>::minimum_period().as_() * 2));
 
         NameMaxLen get(name_max_len) config(): u32 = DEFAULT_NAME_MAX_LEN;
         DescriptionMaxLen get(description_max_len) config(): u32 = DEFAULT_DESCRIPTION_MAX_LEN;
@@ -320,7 +323,7 @@ decl_module! {
         }
 
         // Called on every block
-        fn on_finalise(n: T::BlockNumber) {
+        fn on_finalize(n: T::BlockNumber) {
             if let Err(e) = Self::end_block(n) {
                 print(e);
             }
@@ -555,7 +558,7 @@ mod tests {
     // or public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
     use runtime_primitives::{
         testing::{Digest, DigestItem, Header, UintAuthorityId},
-        traits::{BlakeTwo256, IdentityLookup, OnFinalise},
+        traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     };
     use srml_support::*;
@@ -594,8 +597,10 @@ mod tests {
         type Balance = u64;
         type OnFreeBalanceZero = ();
         type OnNewAccount = ();
-        type EnsureAccountLiquid = ();
         type Event = ();
+        type TransactionPayment = ();
+        type DustRemoval = ();
+        type TransferPayment = ();
     }
 
     impl timestamp::Trait for Test {
@@ -791,8 +796,7 @@ mod tests {
     #[test]
     fn member_create_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
             assert_eq!(Proposals::active_proposal_ids().len(), 1);
@@ -837,8 +841,7 @@ mod tests {
     #[test]
     fn cannot_create_proposal_with_small_stake() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_eq!(
                 _create_proposal(None, Some(min_stake() - 1), None, None, None),
@@ -854,8 +857,7 @@ mod tests {
     #[test]
     fn cannot_create_proposal_when_stake_is_greater_than_balance() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_eq!(
                 _create_proposal(None, Some(initial_balance() + 1), None, None, None),
@@ -871,8 +873,7 @@ mod tests {
     #[test]
     fn cannot_create_proposal_with_empty_values() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             // Empty name:
             assert_eq!(
@@ -897,8 +898,7 @@ mod tests {
     #[test]
     fn cannot_create_proposal_with_too_long_values() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             // Too long name:
             assert_eq!(
@@ -938,8 +938,7 @@ mod tests {
     #[test]
     fn owner_cancel_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
             assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
@@ -960,8 +959,7 @@ mod tests {
     #[test]
     fn owner_cannot_cancel_proposal_if_its_finalized() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
             assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
@@ -988,9 +986,8 @@ mod tests {
     #[test]
     fn not_owner_cannot_cancel_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::set_free_balance(&PROPOSER2, initial_balance());
-            Balances::increase_total_stake_by(initial_balance() * 2);
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER2, initial_balance());
             assert_ok!(_create_default_proposal());
             assert_eq!(
                 Proposals::cancel_proposal(Origin::signed(PROPOSER2), 1),
@@ -1005,8 +1002,8 @@ mod tests {
     #[test]
     fn councilor_vote_on_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
+
             assert_ok!(_create_default_proposal());
 
             assert_ok!(Proposals::vote_on_proposal(
@@ -1029,8 +1026,8 @@ mod tests {
     #[test]
     fn councilor_cannot_vote_on_proposal_twice() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
+
             assert_ok!(_create_default_proposal());
 
             assert_ok!(Proposals::vote_on_proposal(
@@ -1048,8 +1045,8 @@ mod tests {
     #[test]
     fn autovote_with_approve_when_councilor_creates_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&COUNCILOR1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&COUNCILOR1, initial_balance());
+
             assert_ok!(_create_proposal(Some(COUNCILOR1), None, None, None, None));
 
             // Check that a vote has been sent automatically,
@@ -1065,8 +1062,8 @@ mod tests {
     #[test]
     fn not_councilor_cannot_vote_on_proposal() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
+
             assert_ok!(_create_default_proposal());
             assert_eq!(
                 Proposals::vote_on_proposal(Origin::signed(NOT_COUNCILOR), 1, Approve),
@@ -1078,8 +1075,8 @@ mod tests {
     #[test]
     fn councilor_cannot_vote_on_proposal_if_it_has_been_cancelled() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
+
             assert_ok!(_create_default_proposal());
             assert_ok!(Proposals::cancel_proposal(Origin::signed(PROPOSER1), 1));
             assert_eq!(
@@ -1092,8 +1089,7 @@ mod tests {
     #[test]
     fn councilor_cannot_vote_on_proposal_if_tally_has_been_finalized() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1114,7 +1110,7 @@ mod tests {
             assert_eq!(Proposals::votes_by_proposal(1), expected_votes);
 
             System::set_block_number(2);
-            Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             assert!(Proposals::active_proposal_ids().is_empty());
             assert_eq!(Proposals::proposals(1).status, Approved);
@@ -1133,8 +1129,7 @@ mod tests {
     #[test]
     fn approve_proposal_when_all_councilors_approved_it() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1157,7 +1152,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
-            Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             // Check that runtime code has been updated after proposal approved.
             assert_runtime_code!(wasm_code());
@@ -1188,8 +1183,7 @@ mod tests {
     #[test]
     fn approve_proposal_when_all_councilors_voted_and_only_quorum_approved() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1214,7 +1208,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
-            Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             // Check that runtime code has been updated after proposal approved.
             assert_runtime_code!(wasm_code());
@@ -1245,8 +1239,7 @@ mod tests {
     #[test]
     fn approve_proposal_when_voting_period_expired_if_only_quorum_voted() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1270,14 +1263,14 @@ mod tests {
 
             let expiration_block = System::block_number() + Proposals::voting_period();
             System::set_block_number(2);
-            Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             // Check that runtime code has NOT been updated yet,
             // because not all councilors voted and voting period is not expired yet.
             assert_runtime_code_empty!();
 
             System::set_block_number(expiration_block);
-            Proposals::on_finalise(expiration_block);
+            let _ = Proposals::end_block(expiration_block);
 
             // Check that runtime code has been updated after proposal approved.
             assert_runtime_code!(wasm_code());
@@ -1308,8 +1301,7 @@ mod tests {
     #[test]
     fn reject_proposal_when_all_councilors_voted_and_quorum_not_reached() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1334,7 +1326,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
-            Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             // Check that runtime code has NOT been updated after proposal slashed.
             assert_runtime_code_empty!();
@@ -1368,8 +1360,7 @@ mod tests {
     #[test]
     fn reject_proposal_when_all_councilors_rejected_it() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1392,7 +1383,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
-            Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             // Check that runtime code has NOT been updated after proposal rejected.
             assert_runtime_code_empty!();
@@ -1426,8 +1417,7 @@ mod tests {
     #[test]
     fn slash_proposal_when_all_councilors_slashed_it() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1450,7 +1440,7 @@ mod tests {
             assert_runtime_code_empty!();
 
             System::set_block_number(2);
-            Proposals::on_finalise(2);
+            let _ = Proposals::end_block(2);
 
             // Check that runtime code has NOT been updated after proposal slashed.
             assert_runtime_code_empty!();
@@ -1493,8 +1483,7 @@ mod tests {
     #[test]
     fn expire_proposal_when_not_all_councilors_voted_and_quorum_not_reached() {
         with_externalities(&mut new_test_ext(), || {
-            Balances::set_free_balance(&PROPOSER1, initial_balance());
-            Balances::increase_total_stake_by(initial_balance());
+            let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
 
@@ -1518,7 +1507,7 @@ mod tests {
 
             let expiration_block = System::block_number() + Proposals::voting_period();
             System::set_block_number(expiration_block);
-            Proposals::on_finalise(expiration_block);
+            let _ = Proposals::end_block(expiration_block);
 
             // Check that runtime code has NOT been updated after proposal slashed.
             assert_runtime_code_empty!();

@@ -1,14 +1,11 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use rstd::prelude::*;
-use srml_support::traits::Currency;
+use srml_support::traits::{Currency, ReservableCurrency};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch::Result, ensure, StorageMap, StorageValue,
 };
 use system::{self, ensure_signed};
 
-use runtime_primitives::traits::{As, Hash, Zero /*SimpleArithmetic*/};
-//use {balances};
+use runtime_primitives::traits::{As, Hash, Zero};
 
 use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
@@ -721,7 +718,7 @@ decl_module! {
         fn deposit_event<T>() = default;
 
         // No origin so this is a priviledged call
-        fn on_finalise(now: T::BlockNumber) {
+        fn on_finalize(now: T::BlockNumber) {
             Self::check_if_stage_is_ending(now);
         }
 
@@ -1068,7 +1065,7 @@ mod tests {
             let applicant = 20 as u64;
 
             let starting_balance = 1000 as u32;
-            Balances::set_free_balance(&applicant, starting_balance);
+            let _ = Balances::deposit_creating(&applicant, starting_balance);
 
             let stake = 100 as u32;
 
@@ -1098,7 +1095,7 @@ mod tests {
             );
 
             let additional_stake = 100 as u32;
-            Balances::set_free_balance(&applicant, additional_stake);
+            let _ = Balances::deposit_creating(&applicant, additional_stake);
             assert!(Election::try_add_applicant(applicant, additional_stake).is_ok());
 
             assert_eq!(
@@ -1113,7 +1110,7 @@ mod tests {
     fn using_transferable_seat_stake_should_work() {
         with_externalities(&mut initial_test_ext(), || {
             let applicant = 20 as u64;
-            Balances::set_free_balance(&applicant, 5000);
+            let _ = Balances::deposit_creating(&applicant, 5000);
 
             <ExistingStakeHolders<Test>>::put(vec![applicant]);
             save_transferable_stake(
@@ -1235,11 +1232,11 @@ mod tests {
     #[test]
     fn refunding_applicant_stakes_should_work() {
         with_externalities(&mut initial_test_ext(), || {
-            Balances::set_free_balance(&1, 1000);
-            Balances::set_free_balance(&2, 2000);
-            Balances::set_reserved_balance(&2, 5000);
-            Balances::set_free_balance(&3, 3000);
-            Balances::set_reserved_balance(&3, 5000);
+            let _ = Balances::deposit_creating(&1, 1000);
+            let _ = Balances::deposit_creating(&2, 7000);
+            let _ = Balances::reserve(&2, 5000);
+            let _ = Balances::deposit_creating(&3, 8000);
+            let _ = Balances::reserve(&3, 5000);
 
             <Applicants<Test>>::put(vec![1, 2, 3]);
 
@@ -1313,7 +1310,7 @@ mod tests {
     #[test]
     fn voting_should_work() {
         with_externalities(&mut initial_test_ext(), || {
-            Balances::set_free_balance(&20, 1000);
+            let _ = Balances::deposit_creating(&20, 1000);
             let payload = vec![10u8];
             let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
 
@@ -1340,7 +1337,7 @@ mod tests {
     #[test]
     fn votes_can_be_covered_by_transferable_stake() {
         with_externalities(&mut initial_test_ext(), || {
-            Balances::set_free_balance(&20, 1000);
+            let _ = Balances::deposit_creating(&20, 1000);
 
             save_transferable_stake(
                 20,
@@ -1372,7 +1369,7 @@ mod tests {
     #[test]
     fn voting_without_enough_balance_should_not_work() {
         with_externalities(&mut initial_test_ext(), || {
-            Balances::set_free_balance(&20, 100);
+            let _ = Balances::deposit_creating(&20, 100);
 
             save_transferable_stake(
                 20,
@@ -1395,7 +1392,7 @@ mod tests {
     #[test]
     fn voting_with_existing_commitment_should_not_work() {
         with_externalities(&mut initial_test_ext(), || {
-            Balances::set_free_balance(&20, 1000);
+            let _ = Balances::deposit_creating(&20, 1000);
 
             save_transferable_stake(
                 20,
@@ -1720,8 +1717,8 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             <Applicants<Test>>::put(vec![100, 200, 300]);
 
-            Balances::set_free_balance(&100, 1000);
-            Balances::set_reserved_balance(&100, 1000);
+            let _ = Balances::deposit_creating(&100, 2000);
+            let _ = Balances::reserve(&100, 1000);
 
             <ApplicantStakes<Test>>::insert(
                 100,
@@ -1774,12 +1771,12 @@ mod tests {
     fn refunding_voting_stakes_should_work() {
         with_externalities(&mut initial_test_ext(), || {
             // voters' balances
-            Balances::set_free_balance(&10, 1000);
-            Balances::set_reserved_balance(&10, 5000);
-            Balances::set_free_balance(&20, 2000);
-            Balances::set_reserved_balance(&20, 5000);
-            Balances::set_free_balance(&30, 3000);
-            Balances::set_reserved_balance(&30, 5000);
+            let _ = Balances::deposit_creating(&10, 6000);
+            let _ = Balances::reserve(&10, 5000);
+            let _ = Balances::deposit_creating(&20, 7000);
+            let _ = Balances::reserve(&20, 5000);
+            let _ = Balances::deposit_creating(&30, 8000);
+            let _ = Balances::reserve(&30, 5000);
 
             save_transferable_stake(
                 10,
@@ -1854,8 +1851,8 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             <ExistingStakeHolders<Test>>::put(vec![10, 20, 30]);
 
-            Balances::set_free_balance(&10, 1000);
-            Balances::set_reserved_balance(&10, 5000);
+            let _ = Balances::deposit_creating(&10, 6000);
+            let _ = Balances::reserve(&10, 5000);
             save_transferable_stake(
                 10,
                 TransferableStake {
@@ -1864,8 +1861,8 @@ mod tests {
                 },
             );
 
-            Balances::set_free_balance(&20, 2000);
-            Balances::set_reserved_balance(&20, 5000);
+            let _ = Balances::deposit_creating(&20, 7000);
+            let _ = Balances::reserve(&20, 5000);
             save_transferable_stake(
                 20,
                 TransferableStake {
@@ -1874,8 +1871,8 @@ mod tests {
                 },
             );
 
-            Balances::set_free_balance(&30, 3000);
-            Balances::set_reserved_balance(&30, 5000);
+            let _ = Balances::deposit_creating(&30, 8000);
+            let _ = Balances::reserve(&30, 5000);
             save_transferable_stake(
                 30,
                 TransferableStake {
@@ -1941,7 +1938,7 @@ mod tests {
             <MinVotingStake<Test>>::put(10);
 
             for i in 1..30 {
-                Balances::set_free_balance(&(i as u64), 50000);
+                let _ = Balances::deposit_creating(&(i as u64), 50000);
             }
 
             System::set_block_number(1);
@@ -1958,7 +1955,7 @@ mod tests {
 
             let n = 1 + Election::announcing_period();
             System::set_block_number(n);
-            Election::on_finalise(n);
+            let _ = Election::on_finalize(n);
 
             for i in 1..20 {
                 assert!(Election::vote(
@@ -1985,7 +1982,7 @@ mod tests {
 
             let n = n + Election::voting_period();
             System::set_block_number(n);
-            Election::on_finalise(n);
+            let _ = Election::on_finalize(n);
 
             for i in 1..20 {
                 assert!(Election::reveal(
@@ -2015,7 +2012,7 @@ mod tests {
 
             let n = n + Election::revealing_period();
             System::set_block_number(n);
-            Election::on_finalise(n);
+            let _ = Election::on_finalize(n);
 
             assert_eq!(
                 Council::active_council().len(),

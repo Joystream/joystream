@@ -3,12 +3,13 @@
 pub use super::actors;
 pub use crate::governance::GovernanceCurrency;
 use crate::traits::Members;
+pub use srml_support::traits::Currency;
 pub use system;
 
 pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
-    traits::{BlakeTwo256, IdentityLookup, OnFinalise},
+    traits::{BlakeTwo256, IdentityLookup, OnFinalize},
     BuildStorage,
 };
 
@@ -61,8 +62,9 @@ impl balances::Trait for Test {
     /// Handler for when a new account is created.
     type OnNewAccount = ();
 
-    /// A function that returns true iff a given account can transfer its funds to another account.
-    type EnsureAccountLiquid = ();
+    type TransactionPayment = ();
+    type DustRemoval = ();
+    type TransferPayment = ();
 }
 
 impl GovernanceCurrency for Test {

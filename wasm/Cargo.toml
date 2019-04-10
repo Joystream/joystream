@@ -11,6 +11,7 @@ crate-type = ['cdylib']
 [features]
 default = []
 std = ['joystream-node-runtime/std']
+
 [dependencies.joystream-node-runtime]
 default-features = false
 path = '..'

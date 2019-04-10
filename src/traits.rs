@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::roles::actors;
 use crate::storage::{data_directory, data_object_storage_registry, data_object_type_registry};
 use parity_codec::Codec;
