@@ -1,4 +1,4 @@
-use crate::governance::GovernanceCurrency;
+use crate::currency::GovernanceCurrency;
 use rstd::prelude::*;
 use runtime_primitives::traits::Zero;
 use srml_support::traits::Currency;

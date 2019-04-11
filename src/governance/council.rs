@@ -4,7 +4,7 @@ use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
 use system;
 
 pub use super::election::{self, CouncilElected, Seat, Seats};
-pub use super::{BalanceOf, GovernanceCurrency};
+pub use crate::currency::{BalanceOf, GovernanceCurrency};
 
 // Hook For announcing that council term has ended
 pub trait CouncilTermEnded {

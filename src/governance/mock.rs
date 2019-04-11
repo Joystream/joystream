@@ -1,6 +1,7 @@
 #![cfg(test)]
 
-pub use super::{council, election, proposals, GovernanceCurrency};
+pub use super::{council, election, proposals};
+pub use crate::currency::GovernanceCurrency;
 use crate::traits::Members;
 pub use system;
 
