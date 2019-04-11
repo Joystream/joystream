@@ -7,7 +7,7 @@ const debug = require('debug')('joystream:api:asset');
 
 const filter = require('joystream/core/filter');
 
-module.exports = function(config, storage)
+module.exports = function(config, storage, substrate)
 {
   var doc = {
     // parameters for all operations in this path
@@ -67,23 +67,38 @@ module.exports = function(config, storage)
       const id = req.params.id;
       const name = req.params.name;
 
+      // Find repository
       const repo = storage.get(id);
       if (!repo) {
         res.status(404).send({ message: `Repository with id "${id}" not found.` });
         return;
       }
 
+      // First check if we're the liaison for the name, otherwise we can bail
+      // out already.
+      const role_addr = substrate.key.address();
+      try {
+        await substrate.checkLiaisonForDataObject(role_addr, name);
+      } catch (err) {
+        res.status(403).send({ message: err.toString() });
+        return;
+      }
+
       // Check for file type.
       const ft_stream = await file_type.stream(req);
       const fileType = ft_stream.fileType || { mime: 'application/octet-stream' };
-      debug('Detectet Content-Type is', fileType.mime);
+      debug('Detected Content-Type is', fileType.mime);
 
       // Filter
       const filter_result = filter(config, req.headers, fileType.mime);
       if (200 != filter_result.code) {
         res.status(filter_result.code).send({ message: filter_result.message });
+
+        // Reject the content
+        await substrate.rejectContent(role_addr, name);
         return;
       }
+      await substrate.acceptContent(role_addr, name);
 
       // Open file
       repo.open(name, 'w', (err, type, stream) => {
@@ -100,7 +115,11 @@ module.exports = function(config, storage)
 //          download: download,
 //        };
 //        util_ranges.send(res, stream, opts);
-        ft_stream.on('end', () => {
+        ft_stream.on('end', async () => {
+          // Create storage relationship and flip it to ready.
+          const dosr_id = await api.createAndReturnStorageRelationship(role_addr, name);
+          await api.toggleStorageRelationshipReady(role_addr, dosr_id, true);
+
           res.status(200).send({ message: 'Asset uploaded.' });
         });
         ft_stream.pipe(stream);
