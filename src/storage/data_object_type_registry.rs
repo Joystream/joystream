@@ -77,7 +77,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        fn on_initialise() {
+        fn on_initialize() {
             // Create a default data object type if it was not created yet.
             if CREATE_DETAULT_TYPE && !<DataObjectTypes<T>>::exists(Self::first_data_object_type_id()) {
                 let do_type: DataObjectType = DataObjectType::default();
