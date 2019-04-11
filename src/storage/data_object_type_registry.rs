@@ -163,26 +163,13 @@ mod tests {
     }
 
     #[test]
-    fn fail_register_without_root() {
+    fn succeed_register() {
         with_default_mock_builder(|| {
             let data: TestDataObjectType = TestDataObjectType {
                 description: "foo".as_bytes().to_vec(),
                 active: false,
             };
-            let res =
-                TestDataObjectTypeRegistry::register_data_object_type(Origin::signed(1), data);
-            assert!(res.is_err());
-        });
-    }
-
-    #[test]
-    fn succeed_register_as_root() {
-        with_default_mock_builder(|| {
-            let data: TestDataObjectType = TestDataObjectType {
-                description: "foo".as_bytes().to_vec(),
-                active: false,
-            };
-            let res = TestDataObjectTypeRegistry::register_data_object_type(Origin::ROOT, data);
+            let res = TestDataObjectTypeRegistry::register_data_object_type(data);
             assert!(res.is_ok());
         });
     }
@@ -195,7 +182,7 @@ mod tests {
                 description: "foo".as_bytes().to_vec(),
                 active: false,
             };
-            let id_res = TestDataObjectTypeRegistry::register_data_object_type(Origin::ROOT, data);
+            let id_res = TestDataObjectTypeRegistry::register_data_object_type(data);
             assert!(id_res.is_ok());
 
             let dot_id = match System::events().last().unwrap().event {
@@ -213,7 +200,6 @@ mod tests {
                 active: false,
             };
             let res = TestDataObjectTypeRegistry::update_data_object_type(
-                Origin::ROOT,
                 dot_id + 1,
                 updated1,
             );
@@ -225,7 +211,7 @@ mod tests {
                 active: false,
             };
             let res =
-                TestDataObjectTypeRegistry::update_data_object_type(Origin::ROOT, dot_id, updated3);
+                TestDataObjectTypeRegistry::update_data_object_type(dot_id, updated3);
             assert!(res.is_ok());
             assert_eq!(
                 *System::events().last().unwrap(),
@@ -247,7 +233,7 @@ mod tests {
                 description: "foo".as_bytes().to_vec(),
                 active: false,
             };
-            let id_res = TestDataObjectTypeRegistry::register_data_object_type(Origin::ROOT, data);
+            let id_res = TestDataObjectTypeRegistry::register_data_object_type(data);
             assert!(id_res.is_ok());
             assert_eq!(
                 *System::events().last().unwrap(),
@@ -268,7 +254,6 @@ mod tests {
 
             // Now activate the data object type
             let res = TestDataObjectTypeRegistry::activate_data_object_type(
-                Origin::ROOT,
                 TEST_FIRST_DATA_OBJECT_TYPE_ID,
             );
             assert!(res.is_ok());
@@ -291,7 +276,6 @@ mod tests {
 
             // Deactivate again.
             let res = TestDataObjectTypeRegistry::deactivate_data_object_type(
-                Origin::ROOT,
                 TEST_FIRST_DATA_OBJECT_TYPE_ID,
             );
             assert!(res.is_ok());

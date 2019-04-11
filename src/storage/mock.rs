@@ -98,11 +98,12 @@ impl traits::ContentIdExists<Test> for MockContent {
     ) -> Result<data_directory::DataObject<Test>, &'static str> {
         match *which {
             TEST_MOCK_EXISTING_CID => Ok(data_directory::DataObject {
-                data_object_type: 1,
-                signing_key: None,
+                type_id: 1,
                 size: 1234,
-                added_at_block: 10,
-                added_at_time: 1024,
+                added_at: data_directory::BlockAndTime {
+                    block: 10,
+                    time: 1024,
+                },
                 owner: 1,
                 liaison: TEST_MOCK_LIAISON,
                 liaison_judgement: data_directory::LiaisonJudgement::Pending,
@@ -142,6 +143,7 @@ impl data_directory::Trait for Test {
     type Members = MockMembers;
     type Roles = MockRoles;
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
+    type SchemaId = u64;
 }
 
 impl data_object_storage_registry::Trait for Test {
@@ -236,15 +238,6 @@ impl ExtBuilder {
         t.extend(
             data_object_type_registry::GenesisConfig::<Test> {
                 first_data_object_type_id: self.first_data_object_type_id,
-            }
-            .build_storage()
-            .unwrap()
-            .0,
-        );
-
-        t.extend(
-            data_directory::GenesisConfig::<Test> {
-                first_content_id: self.first_content_id,
             }
             .build_storage()
             .unwrap()

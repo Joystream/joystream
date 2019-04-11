@@ -319,7 +319,7 @@ mod tests {
     fn succeed_adding_content() {
         with_default_mock_builder(|| {
             // Register a content with 1234 bytes of type 1, which should be recognized.
-            let res = TestDataDirectory::add_content(Origin::signed(1), 1, 1234, None);
+            let res = TestDataDirectory::add_content(Origin::signed(1), 1, 1234, 0);
             assert!(res.is_ok());
         });
     }
@@ -327,7 +327,7 @@ mod tests {
     #[test]
     fn accept_content_as_liaison() {
         with_default_mock_builder(|| {
-            let res = TestDataDirectory::add_content(Origin::signed(1), 1, 1234, None);
+            let res = TestDataDirectory::add_content(Origin::signed(1), 1, 1234, 0);
             assert!(res.is_ok());
 
             // An appropriate event should have been fired.
@@ -339,6 +339,7 @@ mod tests {
                 _ => (0u64, 0xdeadbeefu64), // invalid value, unlikely to match
             };
             assert_ne!(liaison, 0xdeadbeefu64);
+            // FAIL: implementation is setting the origin not liason. What do we want?
             assert_eq!(liaison, TEST_MOCK_LIAISON);
 
             // Accepting content should not work with some random origin
@@ -354,7 +355,7 @@ mod tests {
     #[test]
     fn reject_content_as_liaison() {
         with_default_mock_builder(|| {
-            let res = TestDataDirectory::add_content(Origin::signed(1), 1, 1234, None);
+            let res = TestDataDirectory::add_content(Origin::signed(1), 1, 1234, 0);
             assert!(res.is_ok());
 
             // An appropriate event should have been fired.
@@ -366,6 +367,7 @@ mod tests {
                 _ => (0u64, 0xdeadbeefu64), // invalid value, unlikely to match
             };
             assert_ne!(liaison, 0xdeadbeefu64);
+            // FAIL: implementation is setting the origin not liason. What do we want?
             assert_eq!(liaison, TEST_MOCK_LIAISON);
 
             // Rejecting content should not work with some random origin
