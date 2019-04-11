@@ -214,7 +214,7 @@ module.exports = function(config, storage)
     tags: ['asset', 'data'],
     requestBody: {
       content: {
-        default: {
+        '*/*': {
           schema: {
             type: 'string',
             format: 'binary',
