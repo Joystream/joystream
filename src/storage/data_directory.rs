@@ -327,27 +327,27 @@ mod tests {
     #[test]
     fn accept_content_as_liaison() {
         with_default_mock_builder(|| {
-            let res = TestDataDirectory::add_content(Origin::signed(1), 1, 1234, 0);
+            let sender = 1 as u64;
+            let res = TestDataDirectory::add_content(Origin::signed(sender), 1, 1234, 0);
             assert!(res.is_ok());
 
             // An appropriate event should have been fired.
-            let (content_id, liaison) = match System::events().last().unwrap().event {
+            let (content_id, creator) = match System::events().last().unwrap().event {
                 MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
                     content_id,
-                    liaison,
-                )) => (content_id, liaison),
+                    creator,
+                )) => (content_id, creator),
                 _ => (0u64, 0xdeadbeefu64), // invalid value, unlikely to match
             };
-            assert_ne!(liaison, 0xdeadbeefu64);
-            // FAIL: implementation is setting the origin not liason. What do we want?
-            assert_eq!(liaison, TEST_MOCK_LIAISON);
+            assert_ne!(creator, 0xdeadbeefu64);
+            assert_eq!(creator, sender);
 
             // Accepting content should not work with some random origin
             let res = TestDataDirectory::accept_content(Origin::signed(1), content_id);
             assert!(res.is_err());
 
             // However, with the liaison as origin it should.
-            let res = TestDataDirectory::accept_content(Origin::signed(liaison), content_id);
+            let res = TestDataDirectory::accept_content(Origin::signed(TEST_MOCK_LIAISON), content_id);
             assert!(res.is_ok());
         });
     }
@@ -355,27 +355,27 @@ mod tests {
     #[test]
     fn reject_content_as_liaison() {
         with_default_mock_builder(|| {
-            let res = TestDataDirectory::add_content(Origin::signed(1), 1, 1234, 0);
+            let sender = 1 as u64;
+            let res = TestDataDirectory::add_content(Origin::signed(sender), 1, 1234, 0);
             assert!(res.is_ok());
 
             // An appropriate event should have been fired.
-            let (content_id, liaison) = match System::events().last().unwrap().event {
+            let (content_id, creator) = match System::events().last().unwrap().event {
                 MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
                     content_id,
-                    liaison,
-                )) => (content_id, liaison),
+                    creator,
+                )) => (content_id, creator),
                 _ => (0u64, 0xdeadbeefu64), // invalid value, unlikely to match
             };
-            assert_ne!(liaison, 0xdeadbeefu64);
-            // FAIL: implementation is setting the origin not liason. What do we want?
-            assert_eq!(liaison, TEST_MOCK_LIAISON);
+            assert_ne!(creator, 0xdeadbeefu64);
+            assert_eq!(creator, sender);
 
             // Rejecting content should not work with some random origin
             let res = TestDataDirectory::reject_content(Origin::signed(1), content_id);
             assert!(res.is_err());
 
             // However, with the liaison as origin it should.
-            let res = TestDataDirectory::reject_content(Origin::signed(liaison), content_id);
+            let res = TestDataDirectory::reject_content(Origin::signed(TEST_MOCK_LIAISON), content_id);
             assert!(res.is_ok());
         });
     }
