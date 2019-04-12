@@ -1,7 +1,31 @@
 {
-  "name": "storage-node",
+  "name": "joystream-storage",
   "version": "0.1.0",
   "description": "Joystream Storage Node",
+  "author": "Joystream",
+  "homepage": "https://github.com/Joystream/storage-node-joystream",
+  "bugs": {
+    "url": "https://github.com/Joystream/storage-node-joystream/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joystream/storage-node-joystream.git"
+  },
+  "license": "GPL-3.0",
+  "contributors": [
+    {
+      "name": "Jens Finkhaeuser",
+      "email": "jens@finkhaeuser.de",
+      "url": "https://finkhaeuser.de/"
+    }
+  ],
+  "keywords": [
+    "joystream",
+    "storage",
+    "node"
+  ],
+  "os": [ "darwin", "linux" ],
+
   "scripts": {
     "test": "mocha test/**/*.js",
     "lint": "eslint paths/**/*.js lib/**/*.js",
@@ -12,12 +36,7 @@
   "bin": {
     "js_storage": "bin/cli.js"
   },
-  "keywords": [
-    "joystream",
-    "storage",
-    "node"
-  ],
-  "author": "Joystream",
+
   "devDependencies": {
     "chai": "^4.2.0",
     "eslint": "^5.13.0",
