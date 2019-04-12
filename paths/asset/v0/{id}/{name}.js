@@ -1,10 +1,13 @@
 'use strict';
 
-const util_ranges = require('joystream/util/ranges');
+const path = require('path');
+
 const file_type = require('file-type');
+const mime_types = require('mime-types');
 
 const debug = require('debug')('joystream:api:asset');
 
+const util_ranges = require('joystream/util/ranges');
 const filter = require('joystream/core/filter');
 
 module.exports = function(config, storage)
@@ -150,8 +153,21 @@ module.exports = function(config, storage)
             return;
           }
 
+          // Add a file extension to download requests if necessary. If the file
+          // already contains an extension, don't add one.
+          var send_name = name;
+          if (download) {
+            var ext = path.extname(send_name);
+            if (!ext) {
+              ext = mime_types.extension(type);
+              if (ext) {
+                send_name = `${send_name}.${ext}`;
+              }
+            }
+          }
+
           var opts = {
-            name: name,
+            name: send_name,
             type: type,
             size: size,
             ranges: ranges,
