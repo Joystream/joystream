@@ -45,6 +45,9 @@ const cli = meow(`
                             protocol. Defaults to 3030.
     --sync-period           Number of milliseconds to wait between synchronization
                             runs. Defaults to 30,000 (30s).
+    --dht-port              UDP port for running the DHT on; defaults to 3060.
+    --dht-rpc-port          WebSocket port for running the DHT JSON-RPC interface on.
+                            Defaults to 3090.
     --key-file              JSON key export file to use as the storage provider.
     --storage=PATH, -s PATH Storage path to use.
     --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "hyperdrive".
@@ -61,6 +64,14 @@ const cli = meow(`
         default: undefined,
       },
       'syncPeriod': {
+        type: 'integer',
+        default: undefined,
+      },
+      'dhtPort': {
+        type: 'integer',
+        default: undefined,
+      },
+      'dhtRpcPort': {
         type: 'integer',
         default: undefined,
       },
@@ -100,6 +111,22 @@ function create_config(pkgname, flags)
   return config;
 }
 
+// Read nodes
+function read_nodes(config)
+{
+  const fname = config.dhtNodes || undefined;
+  if (!fname) {
+    return;
+  }
+
+  const data = fs.readFileSync(fname);
+  const nodes = JSON.parse(data);
+  return {
+    filename: fname,
+    nodes: nodes,
+  };
+}
+
 // All-important banner!
 function banner()
 {
@@ -115,34 +142,10 @@ function start_app(project_root, store, api, config, flags)
   console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
 }
 
-// FIXME dump again
-function get_storage_mapping(config)
-{
-  const old = config.get('storageNodes') || {};  // TODO one of the way in which this is cheatingis that we've actually got
-
-  const keys = require('joystream/crypto/keys');
-
-  // FIXME in the config we're configuring private keys, but we really need
-  // pubkeys here.
-  const privkeys = Object.keys(old);
-  const res = [];
-  for (var i = 0 ; i < privkeys.length ; ++i) {
-    const val = old[privkeys[i]];
-
-    const kp = keys.key_pair(privkeys[i]);
-    res.push([kp.pubKey, val]);
-  }
-  console.log(old, res);
-
-  return res;
-}
-
 // Start sync server
-function start_sync_server(store, api, config, flags)
+function start_sync_server(store, api, dht, config, flags)
 {
   const { create_server, synchronize } = require('joystream/sync');
-  const chain_storage = require('joystream/core/chain/storage');
-  const core_dht = require('joystream/core/dht');
 
   // Sync server
   const syncserver = create_server(api, flags, config, store);
@@ -150,16 +153,44 @@ function start_sync_server(store, api, config, flags)
   syncserver.listen(port);
   console.log('Sync server started at', syncserver.address());
 
-  // Mock storage node mapping from configuration. Note that this must
-  // change in future. TODO implement properly.
-  const mapping = get_storage_mapping(config);
-  const mapping_keys = mapping.map((x) => x[0]);
-  console.log(mapping_keys);
-  const nodes = new chain_storage.StorageNodes(mapping_keys);
-  const dht = new core_dht.DHT(mapping);
-
   // Periodically synchronize
-  synchronize(flags, config, nodes, dht, store);
+  synchronize(flags, config, api, dht, store);
+}
+
+// Start DHT
+function start_dht(address, config, flags)
+{
+  const { JoystreamDHT } = require('joystream-dht');
+
+  // Start DHT
+  var nodes = read_nodes(config);
+  if (!nodes) {
+    nodes = {
+      nodes: [],
+    }
+  }
+
+  const api_port = flags['port'] || config.get('port') || 3000;
+  const sync_port = flags['syncPort'] || config.get('syncPort') || 3030;
+  const dht_port = flags['dhtPort'] || config.get('dhtPort') || 3060;
+  const dht_rpc_port = flags['dhtRpcPort'] || config.get('dhtRpcPort') || 3090;
+
+  const announce_ports = {
+    api_port: api_port,
+    sync_port: sync_port,
+    rpc_port: dht_rpc_port,
+  };
+
+  const dht_config = {};
+  if (dht_config.debug) {
+    dht_config.add_localhost = true;
+  }
+  const dht = new JoystreamDHT(address, dht_port, announce_ports, dht_config);
+  console.log('DHT started on port', dht_port);
+  if (dht_rpc_port) {
+    console.log('DHT JSON-RPC service started on port', dht_rpc_port);
+  }
+  return dht;
 }
 
 // Get an initialized storage instance
@@ -308,7 +339,8 @@ const commands = {
       const store = get_storage(cfg, cli.flags);
       banner();
       start_app(project_root, store, api, cfg, cli.flags);
-      start_sync_server(store, api, cfg, cli.flags);
+      const dht = start_dht(api.key.address(), cfg, cli.flags);
+      start_sync_server(store, api, dht, cfg, cli.flags);
     }).catch(errfunc);
   },
   'create': () => {

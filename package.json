@@ -30,7 +30,7 @@
     "test": "mocha test/**/*.js",
     "lint": "eslint paths/**/*.js lib/**/*.js",
     "dev": "npm-run-all --parallel server",
-    "build": "yarn install && git checkout node_modules/joystream && yarn run tsc --build tsconfig.json",
+    "build": "./build.sh",
     "server": "nodemon --watch api-base.yml --watch bin/ --watch paths/ --watch lib/ --verbose --exec node bin/cli.js --ext jsx,js"
   },
   "bin": {
