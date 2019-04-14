@@ -10,3 +10,6 @@
 
 # JetBrains IDEs
 .idea
+
+# Vim
+.*.sw*

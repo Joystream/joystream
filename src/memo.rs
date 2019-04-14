@@ -1,11 +1,9 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
-use srml_support::{StorageMap, dispatch::Result, decl_module, decl_storage, decl_event, ensure};
-use srml_support::traits::{Currency};
-use runtime_primitives::traits::{Zero};
-use system::{self, ensure_signed};
+use crate::currency::GovernanceCurrency;
 use rstd::prelude::*;
-use crate::governance::GovernanceCurrency;
+use runtime_primitives::traits::Zero;
+use srml_support::traits::Currency;
+use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap};
+use system::{self, ensure_signed};
 
 pub trait Trait: system::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;

@@ -1,18 +1,18 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use rstd::cmp::Ordering;
-use runtime_primitives::traits::{SimpleArithmetic};
+use runtime_primitives::traits::SimpleArithmetic;
 
 #[derive(Encode, Decode, Clone, Copy, Default, Debug)]
 pub struct Stake<Balance>
-    where Balance: Copy + SimpleArithmetic,
+where
+    Balance: Copy + SimpleArithmetic,
 {
     pub new: Balance,
     pub transferred: Balance,
 }
 
 impl<Balance> Stake<Balance>
-    where Balance: Copy + SimpleArithmetic,
+where
+    Balance: Copy + SimpleArithmetic,
 {
     pub fn total(&self) -> Balance {
         self.new + self.transferred
@@ -21,7 +21,7 @@ impl<Balance> Stake<Balance>
     pub fn add(&self, v: &Self) -> Self {
         Self {
             new: self.new + v.new,
-            transferred: self.transferred + v.transferred
+            transferred: self.transferred + v.transferred,
         }
     }
 }
@@ -63,8 +63,10 @@ mod tests {
 
     #[test]
     fn adding() {
-        let a1: u128 = 3; let b1: u128 = 2;
-        let a2: u128 = 5; let b2: u128 = 7;
+        let a1: u128 = 3;
+        let b1: u128 = 2;
+        let a2: u128 = 5;
+        let b2: u128 = 7;
 
         let s1 = Stake {
             new: a1,
@@ -84,9 +86,12 @@ mod tests {
 
     #[test]
     fn equality() {
-        let a1: u128 = 3; let b1: u128 = 2;
-        let a2: u128 = 2; let b2: u128 = 3;
-        let a3: u128 = 10; let b3: u128 = 10;
+        let a1: u128 = 3;
+        let b1: u128 = 2;
+        let a2: u128 = 2;
+        let b2: u128 = 3;
+        let a3: u128 = 10;
+        let b3: u128 = 10;
 
         let s1 = Stake {
             new: a1,
