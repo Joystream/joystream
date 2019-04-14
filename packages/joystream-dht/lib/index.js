@@ -31,7 +31,7 @@ class JoystreamDHT
     // Store parameters
     this.own_address = own_address;
     this.dht_port = dht_port;
-    this.other_ports = other_ports;
+    this.other_ports = other_ports || {};
     this.options = options || {};
 
     // Create announcement hash
@@ -56,9 +56,61 @@ class JoystreamDHT
       this.update_hash(hex_hash, from, peer);
     });
 
+    // If we have an RPC port defined, let's start a server for that.
+    const rpc_port = this.other_ports.rpc_port;
+    if (rpc_port) {
+      this.create_rpc_server(rpc_port);
+    }
+
     // Add nodes we may already know.
     this._add_nodes();
 
+  }
+
+  /*
+   * Creates an RPC server at the given port.
+   */
+  create_rpc_server(rpc_port)
+  {
+    this.rpc_server = new RpcServer({ port: rpc_port });
+
+    // Lookup method
+    this.rpc_server.register('lookup', (params) => {
+      const key = params[0];
+      return new Promise((resolve, reject) => {
+        this.resolve(key, results => {
+          if (!results || !results.length) {
+            reject(new Error('No results.'));
+            return;
+          }
+          resolve(results);
+        });
+      });
+    });
+
+    // Info method - get all ports and their purposes
+    this.rpc_server.register('info', (params) => {
+      const address = params[0];
+      return new Promise((resolve, reject) => {
+        if (address != this.own_address) {
+          reject(new Error(`Asking the wrong host for address ${address}.`));
+          return;
+        }
+
+        const ports = params[1];
+        const result = {
+          dht_port: this.dht_port,
+        };
+        for (var property in this.other_ports) {
+          if (!this.other_ports.hasOwnProperty(property)) {
+            continue;
+          }
+
+          result[property] = this.other_ports[property];
+        }
+        resolve(result);
+      });
+    });
   }
 
   /*
@@ -190,7 +242,23 @@ class JoystreamDHT
       return first.timestamp < second.timestamp;
     });
 
-    return result.map(entry => entry.data);
+    const mapped = result.map(entry => entry.data);
+
+    // For testing
+    if (this.options.add_localhost) {
+      mapped.push({ host: 'localhost', port: this.dht_port });
+
+      for (var property in this.other_ports) {
+        if (!this.other_ports.hasOwnProperty(property)) {
+          continue;
+        }
+
+        const port = this.other_ports[property];
+        mapped.push({ host: 'localhost', port: port });
+      }
+    }
+
+    return mapped;
   }
 
   /*
