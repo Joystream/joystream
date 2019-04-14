@@ -1,5 +1,4 @@
-Storage Nodes for Joystream
-===========================
+![Storage Nodes for Joystream](./banner.svg)
 
 Installation
 ------------

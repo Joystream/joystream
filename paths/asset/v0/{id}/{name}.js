@@ -1,10 +1,31 @@
+/*
+ * This file is part of the storage node for the Joystream project.
+ * Copyright (C) 2019 Joystream Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 'use strict';
 
-const util_ranges = require('joystream/util/ranges');
+const path = require('path');
+
 const file_type = require('file-type');
+const mime_types = require('mime-types');
 
 const debug = require('debug')('joystream:api:asset');
 
+const util_ranges = require('joystream/util/ranges');
 const filter = require('joystream/core/filter');
 
 module.exports = function(config, storage, substrate)
@@ -169,8 +190,21 @@ module.exports = function(config, storage, substrate)
             return;
           }
 
+          // Add a file extension to download requests if necessary. If the file
+          // already contains an extension, don't add one.
+          var send_name = name;
+          if (download) {
+            var ext = path.extname(send_name);
+            if (!ext) {
+              ext = mime_types.extension(type);
+              if (ext) {
+                send_name = `${send_name}.${ext}`;
+              }
+            }
+          }
+
           var opts = {
-            name: name,
+            name: send_name,
             type: type,
             size: size,
             ranges: ranges,
