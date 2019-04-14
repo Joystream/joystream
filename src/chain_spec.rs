@@ -139,7 +139,7 @@ pub fn staging_testnet_config() -> ChainSpec {
 	];
     ChainSpec::from_genesis(
         "Joystream Staging Testnet",
-        "joy_staging_4",
+        "joy_staging_5",
         staging_testnet_config_genesis,
         boot_nodes,
         Some(TelemetryEndpoints::new(vec![(
@@ -170,7 +170,7 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
     const MINUTES: u64 = 60 / SECS_PER_BLOCK;
     const HOURS: u64 = MINUTES * 60;
     const DAYS: u64 = HOURS * 24;
-    const STASH: u128 = 100 * DOLLARS;
+    const STASH: u128 = 50 * DOLLARS;
     const ENDOWMENT: u128 = 100_000_000 * DOLLARS;
 
     GenesisConfig {
@@ -194,7 +194,7 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
 			transfer_fee: 0,
 			creation_fee: 0,
 			vesting: vec![],
-			transaction_base_fee: 0,
+			transaction_base_fee: 1,
 			transaction_byte_fee: 0,
 		}),
 		sudo: Some(SudoConfig {
@@ -210,7 +210,7 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
 			offline_slash: Perbill::from_millionths(10_000),  // 1/ 100 => 1%
 			session_reward: Perbill::from_millionths(1_000),  // 1/1000 => 0.1% (min stake -> 1000 units for reward to be GT 0)
 			current_session_reward: 0,
-			validator_count: 10,
+			validator_count: 20,
 			sessions_per_era: 6,
 			bonding_duration: 60 * MINUTES,
 			offline_slash_grace: 4,
@@ -226,7 +226,7 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
 			term_ends_at: 1,
 		}),
 		election: Some(CouncilElectionConfig {
-			auto_start: false,
+			auto_start: true,
 			announcing_period: 3 * DAYS,
 			voting_period: 1 * DAYS,
 			revealing_period: 1 * DAYS,
@@ -296,7 +296,7 @@ fn testnet_genesis(
 				.chain(initial_authorities.iter().map(|x| (x.0.clone(), STASH)))
 				.collect(),
 			vesting: vec![],
-			transaction_base_fee: 0,
+			transaction_base_fee: 1,
 			transaction_byte_fee: 0,
 		}),
 		sudo: Some(SudoConfig {
@@ -328,7 +328,7 @@ fn testnet_genesis(
 			term_ends_at: 1,
 		}),
 		election: Some(CouncilElectionConfig {
-			auto_start: false,
+			auto_start: true,
 			announcing_period: 50,
 			voting_period: 50,
 			revealing_period: 50,
@@ -339,7 +339,7 @@ fn testnet_genesis(
 			min_voting_stake: 10,
 		}),
 		proposals: Some(ProposalsConfig {
-			approval_quorum: 60,
+			approval_quorum: 66,
 			min_stake: 100,
 			cancellation_fee: 5,
 			rejection_fee: 10,
