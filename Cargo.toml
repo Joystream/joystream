@@ -2,7 +2,7 @@
 authors = ['Joystream']
 edition = '2018'
 name = 'joystream-node-runtime'
-version = '4.1.0'
+version = '5.1.0'
 
 [features]
 default = ['std']
