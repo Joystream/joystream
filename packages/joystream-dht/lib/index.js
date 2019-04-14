@@ -292,6 +292,17 @@ class JoystreamDHT
       callback(this.get(lookup));
     });
   }
+
+  /*
+   * Destroy DHT
+   **/
+  destroy()
+  {
+    if (this.rpc_server) {
+      this.rpc_server.close();
+    }
+    this.dht.destroy();
+  }
 };
 
 module.exports = {

@@ -177,6 +177,7 @@ class JoystreamDHTClient
       test_client.on('error', (err) => {
         debug(err);
         reject(err);
+        test_client.close();
       });
 
       test_client.on('open', () => {
@@ -196,7 +197,16 @@ class JoystreamDHTClient
   {
     // Errors from the inner promise bubble out.
     const test_client = await this.get_client_by_string(connect_str);
+    test_client.close();
     return true;
+  }
+
+  /*
+   * Destroy DHT client
+   */
+  destroy()
+  {
+    this.rpc_client.close();
   }
 }
 
