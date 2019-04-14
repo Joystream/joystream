@@ -128,7 +128,7 @@ impl Alternative {
 
 /// LiveTestnet generator
 pub fn live_testnet_config() -> Result<ChainSpec, String> {
-    ChainSpec::from_embedded(include_bytes!("../res/joy_testnet_1.json"))
+    ChainSpec::from_embedded(include_bytes!("../res/joy_testnet_2.json"))
 }
 
 /// Staging testnet config
