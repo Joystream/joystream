@@ -145,7 +145,7 @@ class JoystreamDHT
       }
 
       const port = this.other_ports[property];
-      debug(`Accounding port ${port} for ${property}`);
+      debug(`Announcing port ${port} for ${property}`);
       this.dht.announce(this.own_hash, port, (err) => {
         if (err) {
           debug(`Error announcing port ${port}:`, err);
