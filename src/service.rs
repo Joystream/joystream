@@ -9,7 +9,7 @@ use inherents::InherentDataProviders;
 use joystream_node_runtime::{self, opaque::Block, GenesisConfig, RuntimeApi};
 use log::info;
 use network::construct_simple_protocol;
-use primitives::{ed25519::Pair, Pair as PairT};
+use primitives::{ed25519::Pair, Pair as PairT, sr25519::Public as SrPublic, crypto::Ss58Codec};
 use std::sync::Arc;
 use std::time::Duration;
 use substrate_client as client;
@@ -20,6 +20,14 @@ use substrate_service::{
     LightClient, LightComponents, LightExecutor, TaskExecutor,
 };
 use transaction_pool::{self, txpool::Pool as TransactionPool};
+
+// Get new prefixed ss58 address encoding for ed25519 public keys
+fn ed_ss58check(public_key: &primitives::ed25519::Public) -> String {
+    let raw_bytes: &[u8; 32] = public_key.as_ref();
+    // Interpret bytes as sr25519 public key
+    let v : SrPublic = SrPublic::from_raw(raw_bytes.clone());
+    v.to_ss58check()
+}
 
 pub use substrate_executor::NativeExecutor;
 // Our native executor instance.
@@ -77,7 +85,7 @@ construct_service_factory! {
                     .expect("Link Half and Block Import are present for Full Services or setup failed before. qed");
 
                 if let Some(ref key) = key {
-                    info!("Using authority key {}", key.public());
+                    info!("Using authority key {}", ed_ss58check(&key.public()));
                     let proposer = Arc::new(ProposerFactory {
                         client: service.client(),
                         transaction_pool: service.transaction_pool(),
@@ -97,7 +105,7 @@ construct_service_factory! {
                         service.config.force_authoring,
                     )?);
 
-                    info!("Running Grandpa session as Authority {}", key.public());
+                    info!("Running Grandpa session as Authority {}", ed_ss58check(&key.public()));
                 }
 
                 let key = if service.config.disable_grandpa {
