@@ -25,5 +25,4 @@ node_modules/*
 !node_modules/joystream
 
 # Generated JS files
-lib/joystream/substrate/types/*.js
-!lib/joystream/substrate/types/index.js
+webtest/bundle.js

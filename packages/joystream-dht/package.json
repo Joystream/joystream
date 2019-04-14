@@ -4,7 +4,8 @@
   "description": "DHT for Joystream Storage Node",
   "scripts": {
     "test": "mocha test/**/*.js",
-    "lint": "eslint lib/**/*.js"
+    "lint": "eslint lib/**/*.js",
+    "browser": "yarn run browserify -r ./lib/client.js:joystream-dht/client -o webtest/bundle.js"
   },
   "main": "lib/index.js",
   "keywords": [
@@ -15,6 +16,7 @@
   ],
   "author": "Joystream",
   "devDependencies": {
+    "browserify": "^16.2.3",
     "chai": "^4.2.0",
     "eslint": "^5.13.0",
     "mocha": "^5.2.0",
