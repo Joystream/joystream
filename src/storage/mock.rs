@@ -3,7 +3,7 @@
 pub use super::{
     data_directory, data_object_storage_registry, data_object_type_registry,
 };
-use crate::governance::GovernanceCurrency;
+use crate::currency::GovernanceCurrency;
 use crate::roles::actors;
 use crate::traits;
 use runtime_io::with_externalities;

@@ -1,4 +1,4 @@
-use crate::governance::{BalanceOf, GovernanceCurrency};
+use crate::currency::{BalanceOf, GovernanceCurrency};
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, Bounded, MaybeDebug, Zero};

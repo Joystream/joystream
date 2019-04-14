@@ -14,6 +14,7 @@ use substrate_client as client;
 #[macro_use]
 extern crate parity_codec_derive;
 
+pub mod currency;
 pub mod governance;
 use governance::{council, election, proposals};
 pub mod storage;
@@ -41,7 +42,7 @@ use runtime_primitives::{
     create_runtime_str, generic,
     traits::{
         self as runtime_traits, AuthorityIdFor, BlakeTwo256, Block as BlockT,
-        CurrencyToVoteHandler, DigestFor, NumberFor, StaticLookup, Verify,
+        DigestFor, NumberFor, StaticLookup, Verify,
     },
     transaction_validity::TransactionValidity,
     AnySignature, ApplyResult,
@@ -182,7 +183,7 @@ impl consensus::Trait for Runtime {
 
 impl session::Trait for Runtime {
     type ConvertAccountIdToSessionKey = ();
-    type OnSessionChange = (Staking,);
+    type OnSessionChange = (Staking, grandpa::SyncedAuthorities<Runtime>);
     type Event = Event;
 }
 
@@ -227,14 +228,14 @@ impl sudo::Trait for Runtime {
 
 impl staking::Trait for Runtime {
     type Currency = balances::Module<Self>;
-    type CurrencyToVote = CurrencyToVoteHandler;
+    type CurrencyToVote = currency::CurrencyToVoteHandler;
     type OnRewardMinted = ();
     type Event = Event;
     type Slash = ();
     type Reward = ();
 }
 
-impl governance::GovernanceCurrency for Runtime {
+impl currency::GovernanceCurrency for Runtime {
     type Currency = balances::Module<Self>;
 }
 

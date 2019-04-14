@@ -14,7 +14,7 @@ use {
 use primitives::storage::well_known_keys;
 
 use super::council;
-pub use super::{BalanceOf, GovernanceCurrency};
+pub use crate::currency::{BalanceOf, GovernanceCurrency};
 use crate::traits::Members;
 
 const DEFAULT_APPROVAL_QUORUM: u32 = 60;

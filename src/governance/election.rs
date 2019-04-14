@@ -14,7 +14,7 @@ use super::sealed_vote::SealedVote;
 use super::stake::Stake;
 
 use super::council;
-pub use super::{BalanceOf, GovernanceCurrency};
+pub use crate::currency::{BalanceOf, GovernanceCurrency};
 
 use crate::traits::Members;
 

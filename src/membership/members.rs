@@ -1,4 +1,4 @@
-use crate::governance::{BalanceOf, GovernanceCurrency};
+use crate::currency::{BalanceOf, GovernanceCurrency};
 use crate::traits::{Members, Roles};
 use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};
