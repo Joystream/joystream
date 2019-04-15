@@ -295,7 +295,7 @@ class JoystreamDHT
 
   /*
    * Destroy DHT
-   **/
+   */
   destroy()
   {
     if (this.rpc_server) {
