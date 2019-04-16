@@ -138,8 +138,8 @@ module.exports = function(config, storage, substrate)
 //        util_ranges.send(res, stream, opts);
         ft_stream.on('end', async () => {
           // Create storage relationship and flip it to ready.
-          const dosr_id = await api.createAndReturnStorageRelationship(role_addr, name);
-          await api.toggleStorageRelationshipReady(role_addr, dosr_id, true);
+          const dosr_id = await substrate.createAndReturnStorageRelationship(role_addr, name);
+          await substrate.toggleStorageRelationshipReady(role_addr, dosr_id, true);
 
           res.status(200).send({ message: 'Asset uploaded.' });
         });
