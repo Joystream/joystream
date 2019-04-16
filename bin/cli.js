@@ -19,6 +19,46 @@ const pkg = require(path.resolve(project_root, 'package.json'));
 const default_config = new configstore(pkg.name);
 
 // Parse CLI
+const FLAG_DEFINITIONS = {
+  port: {
+    type: 'integer',
+    alias: 'p',
+    _default: 3000,
+  },
+  'syncPort': {
+    type: 'integer',
+    alias: 'q',
+    _default: 3030,
+  },
+  'syncPeriod': {
+    type: 'integer',
+    _default: 30000,
+  },
+  'dhtPort': {
+    type: 'integer',
+    _default: 3060,
+  },
+  'dhtRpcPort': {
+    type: 'integer',
+    _default: 3090,
+  },
+  keyFile: {
+    type: 'string',
+  },
+  config: {
+    type: 'string',
+    alias: 'c',
+  },
+  storage: {
+    type: 'string',
+    alias: 's',
+  },
+  'storageType': {
+    type: 'string',
+    _default: 'hyperdrive',
+  },
+};
+
 const cli = meow(`
   Usage:
     $ js_storage [command] [options]
@@ -51,63 +91,36 @@ const cli = meow(`
     --key-file              JSON key export file to use as the storage provider.
     --storage=PATH, -s PATH Storage path to use.
     --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "hyperdrive".
-  `, {
-    flags: {
-      port: {
-        type: 'integer',
-        alias: 'p',
-        default: undefined,
-      },
-      'syncPort': {
-        type: 'integer',
-        alias: 'q',
-        default: undefined,
-      },
-      'syncPeriod': {
-        type: 'integer',
-        default: undefined,
-      },
-      'dhtPort': {
-        type: 'integer',
-        default: undefined,
-      },
-      'dhtRpcPort': {
-        type: 'integer',
-        default: undefined,
-      },
-      keyFile: {
-        type: 'string',
-        default: undefined,
-      },
-      config: {
-        type: 'string',
-        alias: 'c',
-        default: undefined,
-      },
-      storage: {
-        type: 'string',
-        alias: 's',
-        default: undefined,
-      },
-      'storageType': {
-        type: 'string',
-        default: undefined,
-      },
-    },
-});
+  `,
+  { flags: FLAG_DEFINITIONS });
 
 // Create configuration
 function create_config(pkgname, flags)
 {
-  var filtered = {}
-  for (var key in flags) {
-    if (key.length == 1 || key == 'config') continue;
-    if (flags[key] === undefined) continue;
-    filtered[key] = flags[key];
+  // Create defaults from flag definitions
+  const defaults = {};
+  for (var key in FLAG_DEFINITIONS) {
+    const defs = FLAG_DEFINITIONS[key];
+    if (defs._default) {
+      defaults[key] = defs._default;
+    }
   }
-  debug('argv', filtered);
-  var config = new configstore(pkgname, filtered, { configPath: flags.config });
-  debug(config);
+
+  // Provide flags as defaults. Anything stored in the config overrides.
+  var config = new configstore(pkgname, defaults, { configPath: flags.config });
+
+  // But we want the flags to also override what's stored in the config, so
+  // set them all.
+  for (var key in flags) {
+    // Skip aliases and self-referential config flag
+    if (key.length == 1 || key === 'config') continue;
+    // Skip unset flags
+    if (!flags[key]) continue;
+    // Otherwise set.
+    config.set(key, flags[key]);
+  }
+
+  debug('Configuration at', config.path, config.all);
   return config;
 }
 
