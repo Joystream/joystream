@@ -1,8 +1,6 @@
 #![cfg(test)]
 
-pub use super::{
-    data_directory, data_object_storage_registry, data_object_type_registry,
-};
+pub use super::{data_directory, data_object_storage_registry, data_object_type_registry};
 use crate::currency::GovernanceCurrency;
 use crate::roles::actors;
 use crate::traits;

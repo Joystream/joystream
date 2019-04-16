@@ -8,8 +8,16 @@ use srml_support::{decl_event, decl_module, decl_storage, Parameter, StorageMap,
 pub trait Trait: system::Trait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type DataObjectTypeId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
-        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+    type DataObjectTypeId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + As<usize>
+        + As<u64>
+        + MaybeSerializeDebug
+        + PartialEq;
 }
 
 static MSG_DO_TYPE_NOT_FOUND: &str = "Data Object Type with the given ID not found.";
@@ -199,10 +207,7 @@ mod tests {
                 description: "bar".as_bytes().to_vec(),
                 active: false,
             };
-            let res = TestDataObjectTypeRegistry::update_data_object_type(
-                dot_id + 1,
-                updated1,
-            );
+            let res = TestDataObjectTypeRegistry::update_data_object_type(dot_id + 1, updated1);
             assert!(res.is_err());
 
             // Finally with an existing ID, it should work.
@@ -210,8 +215,7 @@ mod tests {
                 description: "bar".as_bytes().to_vec(),
                 active: false,
             };
-            let res =
-                TestDataObjectTypeRegistry::update_data_object_type(dot_id, updated3);
+            let res = TestDataObjectTypeRegistry::update_data_object_type(dot_id, updated3);
             assert!(res.is_ok());
             assert_eq!(
                 *System::events().last().unwrap(),
@@ -248,7 +252,8 @@ mod tests {
             );
 
             // Retrieve, and ensure it's not active.
-            let data = TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
+            let data =
+                TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
             assert!(data.is_some());
             assert!(!data.unwrap().active);
 
@@ -270,7 +275,8 @@ mod tests {
             );
 
             // Ensure that the item is actually activated.
-            let data = TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
+            let data =
+                TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
             assert!(data.is_some());
             assert!(data.unwrap().active);
 
@@ -279,7 +285,8 @@ mod tests {
                 TEST_FIRST_DATA_OBJECT_TYPE_ID,
             );
             assert!(res.is_ok());
-            let data = TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
+            let data =
+                TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
             assert!(data.is_some());
             assert!(!data.unwrap().active);
         });
