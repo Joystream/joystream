@@ -215,15 +215,25 @@ impl<T: Trait> Module<T> {
         stake: BalanceOf<T>,
     ) {
         // simple unstaking ...only applying unbonding period
-        T::Currency::set_lock(
-            STAKING_ID,
+        Self::update_lock(
             &actor_account,
             stake,
             <system::Module<T>>::block_number() + unbonding_period,
-            WithdrawReason::Transfer | WithdrawReason::Reserve,
         );
 
         Self::remove_actor_from_service(actor_account, role, member_id);
+    }
+
+    // Locks account and prevents transfers and reservation. Account still pay basic
+    // transaction fees and therefore send transactions that don't demand reserving balance
+    fn update_lock(account: &T::AccountId, stake: BalanceOf<T>, until: T::BlockNumber) {
+        T::Currency::set_lock(
+            STAKING_ID,
+            account,
+            stake,
+            until,
+            WithdrawReason::Transfer | WithdrawReason::Reserve,
+        );
     }
 }
 
@@ -294,16 +304,6 @@ decl_module! {
                     }
                 }
             }
-
-            // eject actors not staking the minimum
-            // iterating over available roles, so if a role has been removed at some point
-            // and an actor hasn't unstaked .. this will not apply to them.. which doesn't really matter
-            // because they are no longer incentivised to stay in the role anyway
-            // TODO: this needs a bit more preparation. The right time to check for each actor is different, as they enter
-            // role at different times.
-            // for role in Self::available_roles().iter() {
-            // }
-
         }
 
         pub fn role_entry_request(origin, role: Role, member_id: MemberId<T>) {
@@ -359,8 +359,7 @@ decl_module! {
             <AccountIdsByMemberId<T>>::mutate(&member_id, |accounts| accounts.push(actor_account.clone()));
 
             // Lock minimum stake, but allow spending for transaction fees
-            T::Currency::set_lock(STAKING_ID, &actor_account, role_parameters.min_stake, T::BlockNumber::max_value(),
-                WithdrawReason::Transfer | WithdrawReason::Reserve);
+            Self::update_lock(&actor_account, role_parameters.min_stake, T::BlockNumber::max_value());
             <ActorByAccountId<T>>::insert(&actor_account, Actor {
                 member_id,
                 account: actor_account.clone(),
@@ -392,7 +391,14 @@ decl_module! {
         }
 
         pub fn set_role_parameters(role: Role, params: RoleParameters<T>) {
+            let new_stake = params.min_stake.clone();
             <Parameters<T>>::insert(role, params);
+            // Update locks for all actors in the role. The lock for each account is already until max_value
+            // It doesn't affect actors which are unbonding, they should have already been removed from AccountIdsByRole
+            let accounts = Self::account_ids_by_role(role);
+            for account in accounts.into_iter() {
+                Self::update_lock(&account, new_stake, T::BlockNumber::max_value());
+            }
         }
 
         pub fn set_available_roles(roles: Vec<Role>) {
