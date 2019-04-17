@@ -22,8 +22,9 @@ const mocha = require('mocha');
 const expect = require('chai').expect;
 
 const { Keyring } = require('joystream/crypto/keyring');
-const mutual = require('joystream/protocols/mutual');
 const { ALICE_SEED, BOB_SEED } = require('../common');
+
+const mutual = require('joystream/protocols/mutual');
 
 function run_protocol(auth1, auth2, done)
 {
