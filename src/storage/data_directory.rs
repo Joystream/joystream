@@ -5,7 +5,7 @@ use parity_codec::Codec;
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{
-    As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic, MaybeDisplay
+    As, MaybeDebug, MaybeDisplay, MaybeSerializeDebug, Member, SimpleArithmetic,
 };
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
@@ -17,8 +17,16 @@ pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
 
     type ContentId: Parameter + Member + MaybeSerializeDebug + MaybeDisplay + Copy + Ord + Default;
 
-    type SchemaId: Parameter + Member + SimpleArithmetic + Codec + Default + Copy
-        + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+    type SchemaId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + As<usize>
+        + As<u64>
+        + MaybeSerializeDebug
+        + PartialEq;
 
     type Members: Members<Self>;
     type Roles: Roles<Self>;
@@ -61,7 +69,6 @@ pub struct DataObject<T: Trait> {
     pub size: u64,
     pub liaison: T::AccountId,
     pub liaison_judgement: LiaisonJudgement,
-
     // TODO signing_key: public key supplied by the uploader,
     // they sigh the content with this key
 
@@ -273,6 +280,18 @@ decl_module! {
         fn set_storage_provider_address(address: Vec<u8>) {
             <StorageProviderAddress<T>>::put(address);
         }
+
+        fn remove_known_content_id(content_id: T::ContentId) {
+            let upd_content_ids: Vec<T::ContentId> = Self::known_content_ids()
+                .into_iter()
+                .filter(|&id| id != content_id)
+                .collect();
+            <KnownContentIds<T>>::put(upd_content_ids);
+        }
+
+        fn set_known_content_id(content_ids: Vec<T::ContentId>) {
+            <KnownContentIds<T>>::put(content_ids);
+        }
     }
 }
 
@@ -290,7 +309,6 @@ impl<T: Trait> ContentIdExists<T> for Module<T> {
 }
 
 impl<T: Trait> Module<T> {
-
     fn current_block_and_time() -> BlockAndTime<T> {
         BlockAndTime {
             block: <system::Module<T>>::block_number(),
@@ -361,7 +379,8 @@ mod tests {
             assert!(res.is_err());
 
             // However, with the liaison as origin it should.
-            let res = TestDataDirectory::accept_content(Origin::signed(TEST_MOCK_LIAISON), content_id);
+            let res =
+                TestDataDirectory::accept_content(Origin::signed(TEST_MOCK_LIAISON), content_id);
             assert!(res.is_ok());
         });
     }
@@ -389,7 +408,8 @@ mod tests {
             assert!(res.is_err());
 
             // However, with the liaison as origin it should.
-            let res = TestDataDirectory::reject_content(Origin::signed(TEST_MOCK_LIAISON), content_id);
+            let res =
+                TestDataDirectory::reject_content(Origin::signed(TEST_MOCK_LIAISON), content_id);
             assert!(res.is_ok());
         });
     }

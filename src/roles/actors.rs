@@ -2,7 +2,7 @@ use crate::currency::{BalanceOf, GovernanceCurrency};
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, Bounded, MaybeDebug, Zero};
-use srml_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReasons};
+use srml_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReasons, WithdrawReason};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
 
@@ -212,18 +212,28 @@ impl<T: Trait> Module<T> {
         role: Role,
         member_id: MemberId<T>,
         unbonding_period: T::BlockNumber,
+        stake: BalanceOf<T>,
     ) {
         // simple unstaking ...only applying unbonding period
-        let value = T::Currency::free_balance(&actor_account);
-        T::Currency::set_lock(
-            STAKING_ID,
+        Self::update_lock(
             &actor_account,
-            value,
+            stake,
             <system::Module<T>>::block_number() + unbonding_period,
-            WithdrawReasons::all(),
         );
 
         Self::remove_actor_from_service(actor_account, role, member_id);
+    }
+
+    // Locks account and only allows paying for transaction fees. Account cannot
+    // transfer or reserve funds.
+    fn update_lock(account: &T::AccountId, stake: BalanceOf<T>, until: T::BlockNumber) {
+        T::Currency::set_lock(
+            STAKING_ID,
+            account,
+            stake,
+            until,
+            WithdrawReasons::all() & !(WithdrawReason::TransactionPayment | WithdrawReason::Fee),
+        );
     }
 }
 
@@ -277,25 +287,23 @@ decl_module! {
                     for actor in accounts.into_iter().map(|account| Self::actor_by_account_id(account)) {
                         if let Some(actor) = actor {
                             if now > actor.joined_at + params.reward_period {
-                                // send reward to member account - not the actor account
-                                if let Ok(member_account) = T::Members::lookup_account_by_member_id(actor.member_id) {
-                                    let _ = T::Currency::deposit_into_existing(&member_account, params.reward);
+                                // reward can top up balance if it is below minimum stake requirement
+                                // this guarantees overtime that actor always covers the minimum stake and
+                                // has enough balance to pay for tx fees
+                                let balance = T::Currency::free_balance(&actor.account);
+                                if balance < params.min_stake {
+                                    let _ = T::Currency::deposit_into_existing(&actor.account, params.reward);
+                                } else {
+                                    // otherwise it should go the the member account
+                                    if let Ok(member_account) = T::Members::lookup_account_by_member_id(actor.member_id) {
+                                        let _ = T::Currency::deposit_into_existing(&member_account, params.reward);
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-
-            // eject actors not staking the minimum
-            // iterating over available roles, so if a role has been removed at some point
-            // and an actor hasn't unstaked .. this will not apply to them.. which doesn't really matter
-            // because they are no longer incentivised to stay in the role anyway
-            // TODO: this needs a bit more preparation. The right time to check for each actor is different, as they enter
-            // role at different times.
-            // for role in Self::available_roles().iter() {
-            // }
-
         }
 
         pub fn role_entry_request(origin, role: Role, member_id: MemberId<T>) {
@@ -349,8 +357,9 @@ decl_module! {
 
             <AccountIdsByRole<T>>::mutate(role, |accounts| accounts.push(actor_account.clone()));
             <AccountIdsByMemberId<T>>::mutate(&member_id, |accounts| accounts.push(actor_account.clone()));
-            let value = T::Currency::free_balance(&actor_account);
-            T::Currency::set_lock(STAKING_ID, &actor_account, value, T::BlockNumber::max_value(), WithdrawReasons::all());
+
+            // Lock minimum stake, but allow spending for transaction fees
+            Self::update_lock(&actor_account, role_parameters.min_stake, T::BlockNumber::max_value());
             <ActorByAccountId<T>>::insert(&actor_account, Actor {
                 member_id,
                 account: actor_account.clone(),
@@ -376,13 +385,20 @@ decl_module! {
 
             let role_parameters = Self::ensure_role_parameters(actor.role)?;
 
-            Self::apply_unstake(actor.account.clone(), actor.role, actor.member_id, role_parameters.unbonding_period);
+            Self::apply_unstake(actor.account.clone(), actor.role, actor.member_id, role_parameters.unbonding_period, role_parameters.min_stake);
 
             Self::deposit_event(RawEvent::Unstaked(actor.account, actor.role));
         }
 
         pub fn set_role_parameters(role: Role, params: RoleParameters<T>) {
+            let new_stake = params.min_stake.clone();
             <Parameters<T>>::insert(role, params);
+            // Update locks for all actors in the role. The lock for each account is already until max_value
+            // It doesn't affect actors which are unbonding, they should have already been removed from AccountIdsByRole
+            let accounts = Self::account_ids_by_role(role);
+            for account in accounts.into_iter() {
+                Self::update_lock(&account, new_stake, T::BlockNumber::max_value());
+            }
         }
 
         pub fn set_available_roles(roles: Vec<Role>) {
@@ -405,7 +421,7 @@ decl_module! {
             let member_id = T::Members::lookup_member_id(&actor_account)?;
             let actor = Self::ensure_actor_is_member(&actor_account, member_id)?;
             let role_parameters = Self::ensure_role_parameters(actor.role)?;
-            Self::apply_unstake(actor.account, actor.role, actor.member_id, role_parameters.unbonding_period);
+            Self::apply_unstake(actor.account, actor.role, actor.member_id, role_parameters.unbonding_period, role_parameters.min_stake);
         }
     }
 }
