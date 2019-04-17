@@ -1,5 +1,6 @@
 import BN from 'bn.js';
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
@@ -128,7 +129,14 @@ const InnerForm = (props: FormProps) => {
       </LabelledField>
       {!profile && paidTerms &&
         <Message warning style={{ display: 'block', marginBottom: '0' }}>
-          Membership costs <b>{formatBalance(paidTerms.fee)}</b> tokens
+          <p>Membership costs <b>{formatBalance(paidTerms.fee)}</b> tokens.</p>
+          <p>
+            <span>By clicking the "Register" button you agree to our </span>
+            <Link to={`/pages/tos`}>Terms of Service</Link>
+            <span> and </span>
+            <Link to={`/pages/privacy`}>Privacy Policy</Link>
+            .
+          </p>
         </Message>
       }
       <LabelledField invisibleLabel {...props}>
