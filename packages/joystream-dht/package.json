@@ -19,7 +19,6 @@
       "url": "https://finkhaeuser.de/"
     }
   ],
-  "main": "lib/index.js",
   "keywords": [
     "joystream",
     "storage",
@@ -30,8 +29,8 @@
 
   "scripts": {
     "test": "mocha test/**/*.js",
-    "lint": "eslint lib/**/*.js",
-    "browser": "yarn run browserify -r ./lib/client.js:joystream-dht/client -o webtest/bundle.js"
+    "lint": "eslint *.js",
+    "browser": "yarn run browserify -r ./client.js:joystream-dht/client -o webtest/bundle.js"
   },
 
   "devDependencies": {

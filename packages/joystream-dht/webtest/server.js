@@ -18,7 +18,7 @@
 
 'use strict';
 
-const { JoystreamDHT } = require('../lib');
+const { JoystreamDHT } = require('..');
 
 // Should announce all three ports, and resolve them
 // via the RPC interface to the keys here (plus dht_port for

@@ -59,6 +59,7 @@ class JoystreamDHTClient
   async lookup(address)
   {
     const results = await this.rpc_client.call('lookup', [address]);
+    debug('Got', results.length, 'preliminary results for', address);
 
     // For each IP address and port, we want to know what the port is all about.
     // So let's collect results by IP address/host.
@@ -104,6 +105,7 @@ class JoystreamDHTClient
         filtered.set(key, val);
       }
     });
+    debug('Reduced to', hosts.length, 'after probing.');
 
     // Now we resolve each host's ports.
     const targets = [];

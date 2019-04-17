@@ -21,12 +21,12 @@
 const mocha = require('mocha');
 const expect = require('chai').expect;
 
-const { JoystreamDHT } = require('../lib');
-const { JoystreamDHTClient } = require('../lib/client');
+const { JoystreamDHT } = require('..');
+const { JoystreamDHTClient } = require('../client');
 
 describe('DHT RPC functionality', () => {
   it('will connect the DHT through RPC', function(done) {
-    this.timeout(30000);
+    this.timeout(60000);
 
     // DHT syncs on 1235, rpc port is 4321
     const dht = new JoystreamDHT('foobar2', 1235,
