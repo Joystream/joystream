@@ -122,4 +122,9 @@
   margin: 1rem auto !important;
   max-width: 500px !important;
   width: 100% !important;
+  text-align: center;
+
+  .button {
+    margin-right: 0;
+  }
 }

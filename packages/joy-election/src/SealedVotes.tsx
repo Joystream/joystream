@@ -17,11 +17,7 @@ type Props = ApiProps & I18nProps & MyAddressProps & {
   commitments?: Hash[]
 };
 
-type State = {};
-
-class Comp extends React.PureComponent<Props, State> {
-
-  state: State = {};
+class Comp extends React.PureComponent<Props> {
 
   private filterVotes = (myVotesOnly: boolean): Hash[] => {
     const { myVotes = [], commitments = [] } = this.props;
@@ -42,7 +38,7 @@ class Comp extends React.PureComponent<Props, State> {
     const otherVotes = this.filterVotes(false);
 
     return <>
-      <Section title={`My votes (${myVotes.length})`}>{
+      <Section title={`My previous votes (${myVotes.length})`}>{
         !myVotes.length
         ? <em>No votes by the current account found on the current browser.</em>
         : this.renderVotes(myVotes)
