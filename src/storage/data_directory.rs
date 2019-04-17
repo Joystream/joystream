@@ -273,6 +273,18 @@ decl_module! {
         fn set_storage_provider_address(address: Vec<u8>) {
             <StorageProviderAddress<T>>::put(address);
         }
+
+        fn remove_known_content_id(content_id: T::ContentId) {
+            let upd_content_ids: Vec<T::ContentId> = Self::known_content_ids()
+                .into_iter()
+                .filter(|&id| id != content_id)
+                .collect();
+            <KnownContentIds<T>>::put(upd_content_ids);
+        }
+
+        fn set_known_content_id(content_ids: Vec<T::ContentId>) {
+            <KnownContentIds<T>>::put(content_ids);
+        }
     }
 }
 
