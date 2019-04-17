@@ -157,18 +157,18 @@ function start_app(project_root, store, api, config)
 }
 
 // Start sync server
-function start_sync_server(store, api, dht, config)
+function start_sync_server(store, substrate_api, dht_client, config)
 {
   const { create_server, synchronize } = require('joystream/sync');
 
   // Sync server
-  const syncserver = create_server(api, config, store);
+  const syncserver = create_server(config, substrate_api, store);
   const port = config.get('syncPort');
   syncserver.listen(port);
   console.log('Sync server started at', syncserver.address());
 
   // Periodically synchronize
-  synchronize(config, api, dht, store);
+  synchronize(config, substrate_api, dht_client, store);
 }
 
 // Start DHT
@@ -196,7 +196,7 @@ function start_dht(address, config)
   };
 
   const dht_config = {};
-  if (dht_config.debug) {
+  if (config.get('development')) {
     dht_config.add_localhost = true;
   }
   const dht = new JoystreamDHT(address, dht_port, announce_ports, dht_config);
@@ -204,7 +204,12 @@ function start_dht(address, config)
   if (dht_rpc_port) {
     console.log('DHT JSON-RPC service started on port', dht_rpc_port);
   }
-  return dht;
+
+  // Create DHT client and return that.
+  const { JoystreamDHTClient } = require('joystream-dht/client');
+
+  const connect_str = `ws://localhost:${dht_rpc_port}`;
+  return JoystreamDHTClient.connect(connect_str);
 }
 
 // Get an initialized storage instance
@@ -341,21 +346,26 @@ const commands = {
     }
 
     const promise = wait_for_role(cfg);
-    promise.catch(errfunc).then((values) => {
-      const result = values[0]
-      const api = values[1];
-      if (!result) {
-        throw new Error(`Not staked as storage role.`);
-      }
-      console.log('Staked, proceeding.');
+    promise
+      .catch(errfunc)
+      .then((values) => {
+        const result = values[0]
+        const api = values[1];
+        if (!result) {
+          throw new Error(`Not staked as storage role.`);
+        }
+        console.log('Staked, proceeding.');
 
-      // Continue with server setup
-      const store = get_storage(cfg);
-      banner();
-      start_app(project_root, store, api, cfg);
-      const dht = start_dht(api.key.address(), cfg);
-      start_sync_server(store, api, dht, cfg);
-    }).catch(errfunc);
+        // Continue with server setup
+        const store = get_storage(cfg);
+        banner();
+        start_app(project_root, store, api, cfg);
+        start_dht(api.key.address(), cfg)
+          .catch(errfunc)
+          .then((dht_client) => {
+            start_sync_server(store, api, dht_client, cfg);
+          });
+    })
   },
   'create': () => {
     const cfg = create_config(pkg.name, cli.flags);
