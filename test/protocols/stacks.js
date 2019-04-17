@@ -25,8 +25,10 @@ const net = require('net');
 
 const { Transform } = require('stream');
 
+const { Keyring } = require('joystream/crypto/keyring');
+const { ALICE_SEED, BOB_SEED } = require('../common');
+
 const stacks = require('joystream/protocols/stacks');
-const keys = require('joystream/crypto/keys');
 
 function id_generator(ids)
 {
@@ -56,6 +58,24 @@ function read_opener(id)
 
 describe('protocols/stacks', function()
 {
+  var alice, bob, alice_pub, bob_pub;
+
+  before(async () => {
+    const kr = await Keyring.create();
+    const alice_p = kr.from_seed('ed25519', ALICE_SEED);
+    alice = kr.convert_keypair(alice_p);
+    const bob_p = kr.from_seed('ed25519', BOB_SEED);
+    bob = kr.convert_keypair(bob_p);
+
+    bob_pub = {};
+    Object.assign(bob_pub, bob);
+    bob_pub.secretKey = undefined;
+
+    alice_pub = {};
+    Object.assign(alice_pub, alice);
+    alice_pub.secretKey = undefined;
+  });
+
   it('synchronizes with mutual authentication', function(done)
   {
     const foo_result = new stream_buf.WritableStreamBuffer();
@@ -71,11 +91,8 @@ describe('protocols/stacks', function()
       throw new Error(`Invalid ID "${id}"`);
     };
 
-    const server_key = keys.key_pair();
-    const client_key = keys.key_pair();
-
     const server_options = {
-      keyPair: server_key,
+      keyPair: alice,
       store: {
         repos: id_generator(['foo']),
         read_open: read_opener,
@@ -83,8 +100,8 @@ describe('protocols/stacks', function()
       }
     };
     const client_options = {
-      keyPair: client_key,
-      serverKey: server_key.pubKey,
+      keyPair: bob,
+      serverKey: alice_pub,
       store: {
         repos: id_generator(['bar']),
         read_open: read_opener,
