@@ -277,9 +277,17 @@ decl_module! {
                     for actor in accounts.into_iter().map(|account| Self::actor_by_account_id(account)) {
                         if let Some(actor) = actor {
                             if now > actor.joined_at + params.reward_period {
-                                // send reward to member account - not the actor account
-                                if let Ok(member_account) = T::Members::lookup_account_by_member_id(actor.member_id) {
-                                    let _ = T::Currency::deposit_into_existing(&member_account, params.reward);
+                                // reward can top up balance if it is below minimum stake requirement
+                                // this guarantees overtime that actor always covers the minimum stake and
+                                // has enough balance to pay for tx fees
+                                let balance = T::Currency::free_balance(&actor.account);
+                                if balance < params.min_stake {
+                                    let _ = T::Currency::deposit_into_existing(&actor.account, params.reward);
+                                } else {
+                                    // otherwise it should go the the member account
+                                    if let Ok(member_account) = T::Members::lookup_account_by_member_id(actor.member_id) {
+                                        let _ = T::Currency::deposit_into_existing(&member_account, params.reward);
+                                    }
                                 }
                             }
                         }
