@@ -2,7 +2,7 @@ use crate::currency::{BalanceOf, GovernanceCurrency};
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, Bounded, MaybeDebug, Zero};
-use srml_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReason};
+use srml_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReasons, WithdrawReason};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
 
@@ -224,15 +224,15 @@ impl<T: Trait> Module<T> {
         Self::remove_actor_from_service(actor_account, role, member_id);
     }
 
-    // Locks account and prevents transfers and reservation. Account still pay basic
-    // transaction fees and therefore send transactions that don't demand reserving balance
+    // Locks account and only allows paying for transaction fees. Account cannot
+    // transfer or reserve funds.
     fn update_lock(account: &T::AccountId, stake: BalanceOf<T>, until: T::BlockNumber) {
         T::Currency::set_lock(
             STAKING_ID,
             account,
             stake,
             until,
-            WithdrawReason::Transfer | WithdrawReason::Reserve,
+            WithdrawReasons::all() & !(WithdrawReason::TransactionPayment | WithdrawReason::Fee),
         );
     }
 }
