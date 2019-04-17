@@ -21,8 +21,6 @@
 const mocha = require('mocha');
 const expect = require('chai').expect;
 
-const net = require('net');
-
 const { Keyring, KEY_TYPES } = require('joystream/crypto/keyring');
 
 const { ALICE_SEED, BOB_SEED } = require('../common');
