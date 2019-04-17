@@ -112,6 +112,8 @@ function OnlyMembers<P extends MyAccountProps> (Component: React.ComponentType<P
             <Message.Header>Only members can access this functionality.</Message.Header>
             <div style={{ marginTop: '1rem' }}>
               <Link to={`/members/edit`} className='ui button orange'>Register here</Link>
+              <span style={{ margin: '0 .5rem' }}> or </span>
+              <Link to={`/accounts`} className='ui button'>Change key</Link>
             </div>
           </Message>
         );
