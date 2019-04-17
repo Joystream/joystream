@@ -52,6 +52,7 @@ const FLAG_DEFINITIONS = {
   storage: {
     type: 'string',
     alias: 's',
+    _default: path.resolve(project_root, './storage'),
   },
   'storageType': {
     type: 'string',
@@ -147,31 +148,31 @@ function banner()
 }
 
 // Start app
-function start_app(project_root, store, api, config, flags)
+function start_app(project_root, store, api, config)
 {
-  const app = require('joystream/app')(store, api, flags, config);
-  const port = flags.port || config.get('port') || 3000;
+  const app = require('joystream/app')(store, api, config);
+  const port = config.get('port');
   app.listen(port);
   console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
 }
 
 // Start sync server
-function start_sync_server(store, api, dht, config, flags)
+function start_sync_server(store, api, dht, config)
 {
   const { create_server, synchronize } = require('joystream/sync');
 
   // Sync server
-  const syncserver = create_server(api, flags, config, store);
-  const port = flags['syncPort'] || config.get('syncPort') || 3030;
+  const syncserver = create_server(api, config, store);
+  const port = config.get('syncPort');
   syncserver.listen(port);
   console.log('Sync server started at', syncserver.address());
 
   // Periodically synchronize
-  synchronize(flags, config, api, dht, store);
+  synchronize(config, api, dht, store);
 }
 
 // Start DHT
-function start_dht(address, config, flags)
+function start_dht(address, config)
 {
   const { JoystreamDHT } = require('joystream-dht');
 
@@ -183,10 +184,10 @@ function start_dht(address, config, flags)
     }
   }
 
-  const api_port = flags['port'] || config.get('port') || 3000;
-  const sync_port = flags['syncPort'] || config.get('syncPort') || 3030;
-  const dht_port = flags['dhtPort'] || config.get('dhtPort') || 3060;
-  const dht_rpc_port = flags['dhtRpcPort'] || config.get('dhtRpcPort') || 3090;
+  const api_port = config.get('port');
+  const sync_port = config.get('syncPort');
+  const dht_port = config.get('dhtPort');
+  const dht_rpc_port = config.get('dhtRpcPort');
 
   const announce_ports = {
     api_port: api_port,
@@ -207,15 +208,15 @@ function start_dht(address, config, flags)
 }
 
 // Get an initialized storage instance
-function get_storage(config, flags)
+function get_storage(config)
 {
-  const store_path = flags.storage || config.get('storage') || './storage';
-  const store_type = flags['storageType'] || config.get('storageType') || 'hyperdrive';
+  const store_path = config.get('storage');
+  const store_type = config.get('storageType');
 
   const storage = require('joystream/core/storage');
 
   const store = new storage.Storage(store_path, storage.DEFAULT_POOL_SIZE,
-      store_type == "fs");
+      store_type);
 
   return store;
 }
@@ -307,15 +308,15 @@ async function run_signup(account_file)
   console.log('Role application sent.\nNow visit Roles > My Requests in the app.');
 }
 
-async function wait_for_role(flags, config)
+async function wait_for_role(config)
 {
   // Load key information
   const substrate_api = require('joystream/substrate');
-  const account_file = flags['keyFile'] || config.get('keyFile');
-  if (!account_file) {
+  const keyFile = config.get('keyFile');
+  if (!keyFile) {
     throw new Error("Must specify a key file for running a storage node! Sign up for the role; see `js_storage --help' for details.");
   }
-  const api = await substrate_api.create(account_file);
+  const api = await substrate_api.create(keyFile);
 
   // Wait for the account role to be finalized
   console.log('Waiting for the account to be staked as a storage provider role...');
@@ -339,7 +340,7 @@ const commands = {
       process.exit(-1);
     }
 
-    const promise = wait_for_role(cli.flags, cfg);
+    const promise = wait_for_role(cfg);
     promise.catch(errfunc).then((values) => {
       const result = values[0]
       const api = values[1];
@@ -349,16 +350,16 @@ const commands = {
       console.log('Staked, proceeding.');
 
       // Continue with server setup
-      const store = get_storage(cfg, cli.flags);
+      const store = get_storage(cfg);
       banner();
-      start_app(project_root, store, api, cfg, cli.flags);
-      const dht = start_dht(api.key.address(), cfg, cli.flags);
-      start_sync_server(store, api, dht, cfg, cli.flags);
+      start_app(project_root, store, api, cfg);
+      const dht = start_dht(api.key.address(), cfg);
+      start_sync_server(store, api, dht, cfg);
     }).catch(errfunc);
   },
   'create': () => {
     const cfg = create_config(pkg.name, cli.flags);
-    const store = get_storage(cfg, cli.flags);
+    const store = get_storage(cfg);
 
     if (store.new) {
       console.log('Storage created.');
@@ -385,7 +386,7 @@ const commands = {
   },
   'list': () => {
     const cfg = create_config(pkg.name, cli.flags);
-    const store = get_storage(cfg, cli.flags);
+    const store = get_storage(cfg);
 
     const repo_id = cli.input[1];
     if (repo_id) {
