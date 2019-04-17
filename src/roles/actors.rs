@@ -2,7 +2,7 @@ use crate::currency::{BalanceOf, GovernanceCurrency};
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, Bounded, MaybeDebug, Zero};
-use srml_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReasons};
+use srml_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReason};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
 
@@ -212,15 +212,15 @@ impl<T: Trait> Module<T> {
         role: Role,
         member_id: MemberId<T>,
         unbonding_period: T::BlockNumber,
+        stake: BalanceOf<T>,
     ) {
         // simple unstaking ...only applying unbonding period
-        let value = T::Currency::free_balance(&actor_account);
         T::Currency::set_lock(
             STAKING_ID,
             &actor_account,
-            value,
+            stake,
             <system::Module<T>>::block_number() + unbonding_period,
-            WithdrawReasons::all(),
+            WithdrawReason::Transfer | WithdrawReason::Reserve,
         );
 
         Self::remove_actor_from_service(actor_account, role, member_id);
@@ -349,8 +349,10 @@ decl_module! {
 
             <AccountIdsByRole<T>>::mutate(role, |accounts| accounts.push(actor_account.clone()));
             <AccountIdsByMemberId<T>>::mutate(&member_id, |accounts| accounts.push(actor_account.clone()));
-            let value = T::Currency::free_balance(&actor_account);
-            T::Currency::set_lock(STAKING_ID, &actor_account, value, T::BlockNumber::max_value(), WithdrawReasons::all());
+
+            // Lock minimum stake, but allow spending for transaction fees
+            T::Currency::set_lock(STAKING_ID, &actor_account, role_parameters.min_stake, T::BlockNumber::max_value(),
+                WithdrawReason::Transfer | WithdrawReason::Reserve);
             <ActorByAccountId<T>>::insert(&actor_account, Actor {
                 member_id,
                 account: actor_account.clone(),
@@ -376,7 +378,7 @@ decl_module! {
 
             let role_parameters = Self::ensure_role_parameters(actor.role)?;
 
-            Self::apply_unstake(actor.account.clone(), actor.role, actor.member_id, role_parameters.unbonding_period);
+            Self::apply_unstake(actor.account.clone(), actor.role, actor.member_id, role_parameters.unbonding_period, role_parameters.min_stake);
 
             Self::deposit_event(RawEvent::Unstaked(actor.account, actor.role));
         }
@@ -405,7 +407,7 @@ decl_module! {
             let member_id = T::Members::lookup_member_id(&actor_account)?;
             let actor = Self::ensure_actor_is_member(&actor_account, member_id)?;
             let role_parameters = Self::ensure_role_parameters(actor.role)?;
-            Self::apply_unstake(actor.account, actor.role, actor.member_id, role_parameters.unbonding_period);
+            Self::apply_unstake(actor.account, actor.role, actor.member_id, role_parameters.unbonding_period, role_parameters.min_stake);
         }
     }
 }
