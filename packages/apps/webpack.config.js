@@ -178,6 +178,7 @@ function createWebpack ({ alias = {}, context, name = 'index' }) {
       new HtmlWebpackPlugin({
         inject: true,
         template: path.join(context, `${hasPublic ? 'public/' : ''}${name}.html`),
+        IS_PROD: isProd,
         PAGE_TITLE: process.env.UI_THEME === 'substrate'
           ? 'Joystream Network Portal'
           : 'Joystream Network Portal'
