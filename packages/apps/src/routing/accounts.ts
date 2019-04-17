@@ -15,7 +15,7 @@ export default ([
     i18n: {
       defaultValue: 'My Keys'
     },
-    icon: 'user',
+    icon: 'key',
     name: 'accounts'
   }
 ] as Routes);
