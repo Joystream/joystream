@@ -347,7 +347,6 @@ const commands = {
 
     const promise = wait_for_role(cfg);
     promise
-      .catch(errfunc)
       .then((values) => {
         const result = values[0]
         const api = values[1];
@@ -361,11 +360,12 @@ const commands = {
         banner();
         start_app(project_root, store, api, cfg);
         start_dht(api.key.address(), cfg)
-          .catch(errfunc)
           .then((dht_client) => {
             start_sync_server(store, api, dht_client, cfg);
-          });
-    })
+          })
+          .catch(errfunc);
+      })
+      .catch(errfunc);
   },
   'create': () => {
     const cfg = create_config(pkg.name, cli.flags);
