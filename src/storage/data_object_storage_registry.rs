@@ -14,8 +14,16 @@ pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     // TODO deprecated
-    type DataObjectStorageRelationshipId: Parameter + Member + SimpleArithmetic + Codec 
-        + Default + Copy + As<usize> + As<u64> + MaybeSerializeDebug + PartialEq;
+    type DataObjectStorageRelationshipId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + As<usize>
+        + As<u64>
+        + MaybeSerializeDebug
+        + PartialEq;
 
     type Members: Members<Self>;
     type Roles: Roles<Self>;
@@ -43,7 +51,7 @@ pub struct DataObjectStorageRelationship<T: Trait> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as DataObjectStorageRegistry {
-        
+
         // TODO deprecated
         // Start at this value
         pub FirstRelationshipId get(first_relationship_id) config(first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::sa(DEFAULT_FIRST_RELATIONSHIP_ID);
@@ -84,7 +92,7 @@ decl_event! {
         // TODO deprecated
         DataObjectStorageRelationshipAdded(DataObjectStorageRelationshipId, ContentId, AccountId),
         DataObjectStorageRelationshipReadyUpdated(DataObjectStorageRelationshipId, bool),
-        
+
         // NEW & COOL
         StorageProviderAddedContent(AccountId, ContentId),
         StorageProviderRemovedContent(AccountId, ContentId),
@@ -92,7 +100,6 @@ decl_event! {
 }
 
 impl<T: Trait> ContentHasStorage<T> for Module<T> {
-
     // TODO deprecated
     fn has_storage_provider(which: &T::ContentId) -> bool {
         let dosr_list = Self::relationships_by_content_id(which);

@@ -18,10 +18,7 @@ pub mod currency;
 pub mod governance;
 use governance::{council, election, proposals};
 pub mod storage;
-use storage::{
-    data_directory, data_object_storage_registry, data_object_type_registry,
-    downloads,
-};
+use storage::{data_directory, data_object_storage_registry, data_object_type_registry, downloads};
 mod membership;
 mod memo;
 mod traits;
@@ -41,8 +38,8 @@ use rstd::prelude::*; // needed for Vec
 use runtime_primitives::{
     create_runtime_str, generic,
     traits::{
-        self as runtime_traits, AuthorityIdFor, BlakeTwo256, Block as BlockT,
-        DigestFor, NumberFor, StaticLookup, Verify,
+        self as runtime_traits, AuthorityIdFor, BlakeTwo256, Block as BlockT, DigestFor, NumberFor,
+        StaticLookup, Verify,
     },
     transaction_validity::TransactionValidity,
     AnySignature, ApplyResult,
@@ -99,11 +96,11 @@ pub mod opaque {
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     pub struct UncheckedExtrinsic(#[cfg_attr(feature = "std", serde(with = "bytes"))] pub Vec<u8>);
     #[cfg(feature = "std")]
-	impl std::fmt::Debug for UncheckedExtrinsic {
-		fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-			write!(fmt, "{}", primitives::hexdisplay::HexDisplay::from(&self.0))
-		}
-	}
+    impl std::fmt::Debug for UncheckedExtrinsic {
+        fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+            write!(fmt, "{}", primitives::hexdisplay::HexDisplay::from(&self.0))
+        }
+    }
     impl runtime_traits::Extrinsic for UncheckedExtrinsic {
         fn is_signed(&self) -> Option<bool> {
             None
@@ -128,7 +125,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 5,
-    spec_version: 1,
+    spec_version: 2,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
