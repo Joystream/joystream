@@ -18,33 +18,14 @@
 
 'use strict';
 
-/*
- * Currently a mock. TODO do something real with it.
- */
-class StorageNodes
-{
-  constructor(storage_pubkeys)
-  {
-    this._storage_pubkeys = storage_pubkeys;
+const { JoystreamDHT } = require('..');
 
-    // TODO periodically query chain to update storage pubkeys
-  }
-}
-
-/*
- * Generator for pubkeys
- */
-StorageNodes.prototype.storage_pubkeys = function*()
-{
-  // Keep copy, in case the member gets updated in flight.
-  const keys = this._storage_pubkeys;
-
-  for (var i = 0 ; i < keys.length ; ++i) {
-    yield keys[i];
-  }
-  return keys.length;
-}
-
-module.exports = {
-  StorageNodes: StorageNodes,
-}
+// Should announce all three ports, and resolve them
+// via the RPC interface to the keys here (plus dht_port for
+// the main DHT port).
+var dht = new JoystreamDHT('foobar', 4321, {
+  rpc_port: 1234,
+  other: 6544,
+}, {
+  add_localhost: true,
+});

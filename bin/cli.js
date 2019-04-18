@@ -19,6 +19,47 @@ const pkg = require(path.resolve(project_root, 'package.json'));
 const default_config = new configstore(pkg.name);
 
 // Parse CLI
+const FLAG_DEFINITIONS = {
+  port: {
+    type: 'integer',
+    alias: 'p',
+    _default: 3000,
+  },
+  'syncPort': {
+    type: 'integer',
+    alias: 'q',
+    _default: 3030,
+  },
+  'syncPeriod': {
+    type: 'integer',
+    _default: 30000,
+  },
+  'dhtPort': {
+    type: 'integer',
+    _default: 3060,
+  },
+  'dhtRpcPort': {
+    type: 'integer',
+    _default: 3090,
+  },
+  keyFile: {
+    type: 'string',
+  },
+  config: {
+    type: 'string',
+    alias: 'c',
+  },
+  storage: {
+    type: 'string',
+    alias: 's',
+    _default: path.resolve(project_root, './storage'),
+  },
+  'storageType': {
+    type: 'string',
+    _default: 'hyperdrive',
+  },
+};
+
 const cli = meow(`
   Usage:
     $ js_storage [command] [options]
@@ -45,59 +86,59 @@ const cli = meow(`
                             protocol. Defaults to 3030.
     --sync-period           Number of milliseconds to wait between synchronization
                             runs. Defaults to 30,000 (30s).
+    --dht-port              UDP port for running the DHT on; defaults to 3060.
+    --dht-rpc-port          WebSocket port for running the DHT JSON-RPC interface on.
+                            Defaults to 3090.
     --key-file              JSON key export file to use as the storage provider.
     --storage=PATH, -s PATH Storage path to use.
     --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "hyperdrive".
-  `, {
-    flags: {
-      port: {
-        type: 'integer',
-        alias: 'p',
-        default: undefined,
-      },
-      'syncPort': {
-        type: 'integer',
-        alias: 'q',
-        default: undefined,
-      },
-      'syncPeriod': {
-        type: 'integer',
-        default: undefined,
-      },
-      keyFile: {
-        type: 'string',
-        default: undefined,
-      },
-      config: {
-        type: 'string',
-        alias: 'c',
-        default: undefined,
-      },
-      storage: {
-        type: 'string',
-        alias: 's',
-        default: undefined,
-      },
-      'storageType': {
-        type: 'string',
-        default: undefined,
-      },
-    },
-});
+  `,
+  { flags: FLAG_DEFINITIONS });
 
 // Create configuration
 function create_config(pkgname, flags)
 {
-  var filtered = {}
-  for (var key in flags) {
-    if (key.length == 1 || key == 'config') continue;
-    if (flags[key] === undefined) continue;
-    filtered[key] = flags[key];
+  // Create defaults from flag definitions
+  const defaults = {};
+  for (var key in FLAG_DEFINITIONS) {
+    const defs = FLAG_DEFINITIONS[key];
+    if (defs._default) {
+      defaults[key] = defs._default;
+    }
   }
-  debug('argv', filtered);
-  var config = new configstore(pkgname, filtered, { configPath: flags.config });
-  debug(config);
+
+  // Provide flags as defaults. Anything stored in the config overrides.
+  var config = new configstore(pkgname, defaults, { configPath: flags.config });
+
+  // But we want the flags to also override what's stored in the config, so
+  // set them all.
+  for (var key in flags) {
+    // Skip aliases and self-referential config flag
+    if (key.length == 1 || key === 'config') continue;
+    // Skip unset flags
+    if (!flags[key]) continue;
+    // Otherwise set.
+    config.set(key, flags[key]);
+  }
+
+  debug('Configuration at', config.path, config.all);
   return config;
+}
+
+// Read nodes
+function read_nodes(config)
+{
+  const fname = config.dhtNodes || undefined;
+  if (!fname) {
+    return;
+  }
+
+  const data = fs.readFileSync(fname);
+  const nodes = JSON.parse(data);
+  return {
+    filename: fname,
+    nodes: nodes,
+  };
 }
 
 // All-important banner!
@@ -107,71 +148,80 @@ function banner()
 }
 
 // Start app
-function start_app(project_root, store, api, config, flags)
+function start_app(project_root, store, api, config)
 {
-  const app = require('joystream/app')(store, api, flags, config);
-  const port = flags.port || config.get('port') || 3000;
+  const app = require('joystream/app')(store, api, config);
+  const port = config.get('port');
   app.listen(port);
   console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
 }
 
-// FIXME dump again
-function get_storage_mapping(config)
-{
-  const old = config.get('storageNodes') || {};  // TODO one of the way in which this is cheatingis that we've actually got
-
-  const keys = require('joystream/crypto/keys');
-
-  // FIXME in the config we're configuring private keys, but we really need
-  // pubkeys here.
-  const privkeys = Object.keys(old);
-  const res = [];
-  for (var i = 0 ; i < privkeys.length ; ++i) {
-    const val = old[privkeys[i]];
-
-    const kp = keys.key_pair(privkeys[i]);
-    res.push([kp.pubKey, val]);
-  }
-  console.log(old, res);
-
-  return res;
-}
-
 // Start sync server
-function start_sync_server(store, api, config, flags)
+function start_sync_server(store, substrate_api, dht_client, config)
 {
   const { create_server, synchronize } = require('joystream/sync');
-  const chain_storage = require('joystream/core/chain/storage');
-  const core_dht = require('joystream/core/dht');
 
   // Sync server
-  const syncserver = create_server(api, flags, config, store);
-  const port = flags['syncPort'] || config.get('syncPort') || 3030;
+  const syncserver = create_server(config, substrate_api, store);
+  const port = config.get('syncPort');
   syncserver.listen(port);
   console.log('Sync server started at', syncserver.address());
 
-  // Mock storage node mapping from configuration. Note that this must
-  // change in future. TODO implement properly.
-  const mapping = get_storage_mapping(config);
-  const mapping_keys = mapping.map((x) => x[0]);
-  console.log(mapping_keys);
-  const nodes = new chain_storage.StorageNodes(mapping_keys);
-  const dht = new core_dht.DHT(mapping);
-
   // Periodically synchronize
-  synchronize(flags, config, nodes, dht, store);
+  synchronize(config, substrate_api, dht_client, store);
+}
+
+// Start DHT
+function start_dht(address, config)
+{
+  const { JoystreamDHT } = require('joystream-dht');
+
+  // Start DHT
+  var nodes = read_nodes(config);
+  if (!nodes) {
+    nodes = {
+      nodes: [],
+    }
+  }
+
+  const api_port = config.get('port');
+  const sync_port = config.get('syncPort');
+  const dht_port = config.get('dhtPort');
+  const dht_rpc_port = config.get('dhtRpcPort');
+
+  const announce_ports = {
+    api_port: api_port,
+    sync_port: sync_port,
+    rpc_port: dht_rpc_port,
+  };
+
+  const dht_config = {};
+  if (config.get('development')) {
+    dht_config.add_localhost = true;
+  }
+  const dht = new JoystreamDHT(address, dht_port, announce_ports, dht_config);
+  console.log('DHT started on port', dht_port);
+  if (dht_rpc_port) {
+    console.log('DHT JSON-RPC service started on port', dht_rpc_port);
+  }
+
+  // Create DHT client and return that.
+  const { JoystreamDHTClient } = require('joystream-dht/client');
+
+  const connect_str = `ws://localhost:${dht_rpc_port}`;
+  return JoystreamDHTClient.connect(connect_str);
 }
 
 // Get an initialized storage instance
-function get_storage(config, flags)
+function get_storage(config)
 {
-  const store_path = flags.storage || config.get('storage') || './storage';
-  const store_type = flags['storageType'] || config.get('storageType') || 'hyperdrive';
+  const store_path = config.get('storage');
+  const store_type = config.get('storageType');
 
   const storage = require('joystream/core/storage');
 
   const store = new storage.Storage(store_path, storage.DEFAULT_POOL_SIZE,
-      store_type == "fs");
+      store_type);
 
   return store;
 }
@@ -263,15 +313,15 @@ async function run_signup(account_file)
   console.log('Role application sent.\nNow visit Roles > My Requests in the app.');
 }
 
-async function wait_for_role(flags, config)
+async function wait_for_role(config)
 {
   // Load key information
   const substrate_api = require('joystream/substrate');
-  const account_file = flags['keyFile'] || config.get('keyFile');
-  if (!account_file) {
+  const keyFile = config.get('keyFile');
+  if (!keyFile) {
     throw new Error("Must specify a key file for running a storage node! Sign up for the role; see `js_storage --help' for details.");
   }
-  const api = await substrate_api.create(account_file);
+  const api = await substrate_api.create(keyFile);
 
   // Wait for the account role to be finalized
   console.log('Waiting for the account to be staked as a storage provider role...');
@@ -295,25 +345,31 @@ const commands = {
       process.exit(-1);
     }
 
-    const promise = wait_for_role(cli.flags, cfg);
-    promise.catch(errfunc).then((values) => {
-      const result = values[0]
-      const api = values[1];
-      if (!result) {
-        throw new Error(`Not staked as storage role.`);
-      }
-      console.log('Staked, proceeding.');
+    const promise = wait_for_role(cfg);
+    promise
+      .then((values) => {
+        const result = values[0]
+        const api = values[1];
+        if (!result) {
+          throw new Error(`Not staked as storage role.`);
+        }
+        console.log('Staked, proceeding.');
 
-      // Continue with server setup
-      const store = get_storage(cfg, cli.flags);
-      banner();
-      start_app(project_root, store, api, cfg, cli.flags);
-      start_sync_server(store, api, cfg, cli.flags);
-    }).catch(errfunc);
+        // Continue with server setup
+        const store = get_storage(cfg);
+        banner();
+        start_app(project_root, store, api, cfg);
+        start_dht(api.key.address(), cfg)
+          .then((dht_client) => {
+            start_sync_server(store, api, dht_client, cfg);
+          })
+          .catch(errfunc);
+      })
+      .catch(errfunc);
   },
   'create': () => {
     const cfg = create_config(pkg.name, cli.flags);
-    const store = get_storage(cfg, cli.flags);
+    const store = get_storage(cfg);
 
     if (store.new) {
       console.log('Storage created.');
@@ -340,7 +396,7 @@ const commands = {
   },
   'list': () => {
     const cfg = create_config(pkg.name, cli.flags);
-    const store = get_storage(cfg, cli.flags);
+    const store = get_storage(cfg);
 
     const repo_id = cli.input[1];
     if (repo_id) {

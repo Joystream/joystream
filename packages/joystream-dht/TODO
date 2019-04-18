@@ -1,0 +1,3 @@
+- test the webtest in the mocha tests
+- add global README with instructions
+- include DHT in storage node code
