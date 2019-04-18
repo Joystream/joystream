@@ -86,6 +86,7 @@ This is the set of key repos that
 | [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)             | The storage node application.                         | @jfinkhaeuser   |
 | [whitepaper](https://github.com/Joystream/whitepaper)                                     | The Joystream whitepaper.                             | @bedeho         |
 | [communications](https://github.com/Joystream/communications)                             | The Joystream communications workspace and archive.   | @bwhm           |
+| [helpdesk](https://github.com/Joystream/helpdesk)                             | Information and guides for users and contributors    | @bwhm           |
 
 <br />
 <img src="release-section.svg" id="testnet-releases"/>
@@ -95,19 +96,18 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 
 ## Live Testnet
 
-Sparta
+[Athens](/testnets/athens/README.md)
 
 ## Next Testnet
 
-[Athens](/testnets/athens/README.md)
+Rome
 
 ## Past Testnets
 
 | Network         | Started           | Ended         | Release Plan    |
 | -------------   | -------------     | -----         | -----           |
-| Sparta          | x                 |   NA          |       NA        |
-| Mesopotamia     | x                 |   x           |       NA        |
-
+| Sparta          | 28.02.19          |   29.03.19    |       NA        |
+| Mesopotamia     | 21.12.18          |   28.02.19    |       NA        |
 
 <br />
 <img src="pm-section.svg" id="project-management"/>
