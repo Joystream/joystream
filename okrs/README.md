@@ -160,10 +160,10 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:--------------:|
 | 04.03.19 | -  | -  | -  |  - |  - | In flight changes |
 | 18.03.19 |(1.0 , 0.75) **0.87**  | (0.66 , 0.9) **0.78**  | (1.0 , 0.8 , 0.8) **0.87**  |  (0.66 , 0, 0) **0.33** |  (0.8 , 0.65) **0.73** |  First Athens grading |
-| 25.03.19 |(1.0 , 0.86) **0.92** | (0.75 , 0.92) **0.84*  | (1.0 , 0.9 , 0.8) **0.9**  |  (0.66 , 0.1, 0.7) **0.49** |  (0.85 , 0.85) **0.85** | - |
-| 01.04.19 |(0.5 , 0.9) **0.7** | (0.8 , 0.95) **0.88*  |  **0.5**  |  (0.66 , 0.65, 0.9) **0.74** |  (1.0 , 0.85) **0.93** | Sparta crash made #3 unobtainable |
-| 08.04.19 |(0.5 , 0.9) **0.7** | (0.85 , 0.95) **0.9*  |  **0.5**  |  (1.0 , 0.9, 0.9) **0.93** |  (1.0 , 0.85) **0.93** | Sparta crash made #3 unobtainable |
-| 15.04.19 | NA  | NA  | NA  |  NA |  NA | NA |
+| 25.03.19 |(1.0 , 0.86) **0.92** | (0.75 , 0.92) **0.84**  | (1.0 , 0.9 , 0.8) **0.9**  |  (0.66 , 0.1, 0.7) **0.49** |  (0.85 , 0.85) **0.85** | - |
+| 01.04.19 |(0.5 , 0.9) **0.7** | (0.8 , 0.95) **0.88**  |  **0.5**  |  (0.66 , 0.65, 0.9) **0.74** |  (1.0 , 0.85) **0.93** | Sparta crash made #3 unobtainable |
+| 08.04.19 |(0.5 , 0.9) **0.7** | (0.85 , 0.95) **0.9**  |  **0.5**  |  (1.0 , 0.9, 0.9) **0.93** |  (1.0 , 0.85) **0.93** | - |
+| 15.04.19 | (1.0 , 0.9) **0.95**  | (0.9 , 0.98) **0.94**   |  **0.5**  |  (0.95 , 1.0, 1.0) **0.96** |  (1.0 , 0.98) **0.99** | Bedeho not present |
 | 22.04.19 | NA  | NA  | NA  |  NA |  NA | NA |
 
 # Group OKRs
@@ -179,6 +179,8 @@ Fill in if needed.
 ## `Bedeho` (@bedeho)
 
 ## Objective: `Improve Technical Productivity of Team`
+WIP
+<!---
 - **Active from:** 09.04.19
 - **KR Measurement Deadline:** 02.07.19
 - **Tracked:** Every other Tuesday
@@ -206,7 +208,7 @@ Fill in if needed.
 | 04.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 | 18.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 | 02.07.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-
+-->
 ## `Jens` (@jfinkhaeuser)
 
 Fill in if needed.
@@ -214,6 +216,8 @@ Fill in if needed.
 ## `Martin` (@bwhm)
 
 ## Objective: `Improve value as Release Manager`
+WIP
+<!---
 - **Active from:** 09.04.19
 - **KR Measurement Deadline:** 02.07.19
 - **Tracked:** Every other Tuesday
@@ -242,7 +246,7 @@ Fill in if needed.
 | 04.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 18.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 02.07.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
-
+-->
 ## `Mokhtar` (@mnaamani)
 
 Fill in if needed.
