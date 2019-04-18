@@ -67,6 +67,9 @@
     "si-prefix": "^0.2.0",
     "sodium": "^3.0.2",
     "stream-buffers": "^3.0.2",
-    "uuid": "^3.3.2"
+    "uuid": "^3.3.2",
+    "bittorrent-dht": "^9.0.0",
+    "rpc-websockets": "^4.3.5",
+    "sha3": "^2.0.1"
   }
 }
