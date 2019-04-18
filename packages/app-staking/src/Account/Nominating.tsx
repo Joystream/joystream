@@ -6,6 +6,7 @@ import { I18nProps } from '@polkadot/ui-app/types';
 import { KeyringSectionOption } from '@polkadot/ui-keyring/options/types';
 
 import React from 'react';
+import { AccountId } from '@polkadot/types';
 import { Button, InputAddress, Modal, TxButton } from '@polkadot/ui-app';
 
 import translate from '../translate';
@@ -14,9 +15,8 @@ type Props = I18nProps & {
   accountId: string,
   isOpen: boolean,
   onClose: () => void,
-  intentions: Array<string>,
-  stashId: string,
-  targets: Array<KeyringSectionOption>
+  stashId: AccountId,
+  stashOptions: Array<KeyringSectionOption>
 };
 
 type State = {
@@ -76,7 +76,7 @@ class Nominating extends React.PureComponent<Props, State> {
   }
 
   renderContent () {
-    const { accountId, stashId, t, targets } = this.props;
+    const { accountId, stashId, stashOptions, t } = this.props;
 
     return (
       <>
@@ -102,7 +102,7 @@ class Nominating extends React.PureComponent<Props, State> {
             help={t('Stash accounts that are to be nominated. Block rewards are split between validators and nominators')}
             label={t('nominate the following addresses')}
             onChangeMulti={this.onChangeNominees}
-            options={targets}
+            options={stashOptions}
             placeholder={t('select accounts(s) nominate')}
             type='account'
           />

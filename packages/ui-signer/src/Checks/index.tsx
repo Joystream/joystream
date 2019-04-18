@@ -46,7 +46,7 @@ const LENGTH_SIGNATURE = 64;
 const LENGTH_ERA = 1;
 const SIGNATURE_SIZE = LENGTH_PUBLICKEY + LENGTH_SIGNATURE + LENGTH_ERA;
 
-class FeeDisplay extends React.PureComponent<Props, State> {
+export class FeeDisplay extends React.PureComponent<Props, State> {
   state: State = {
     allFees: new BN(0),
     allTotal: new BN(0),
@@ -125,13 +125,13 @@ class FeeDisplay extends React.PureComponent<Props, State> {
       return null;
     }
 
-    const feeClass = !hasAvailable || overLimit
+    const feeClass = !hasAvailable || overLimit || isRemovable
       ? 'error'
       : (
         allWarn
           ? 'warning'
           : 'normal'
-        );
+      );
 
     // display all the errors, warning and information messages (in that order)
     return (
@@ -154,13 +154,14 @@ class FeeDisplay extends React.PureComponent<Props, State> {
             ? <div><Icon name='ban' />{t(`This transaction will be rejected by the node as it is greater than the maximum size of ${MAX_SIZE_MB}MB`)}></div>
             : undefined
         }
+        {
+          isRemovable && hasAvailable
+            ? <div><Icon name='ban' />{t('Submitting this transaction will drop the account balance to below the existential amount, which can result in the account being removed from the chain state associated funds burned.')}</div>
+            : undefined
+        }
         {this.renderTransfer()}
         {this.renderProposal()}
         {
-          isRemovable && hasAvailable
-            ? <div><Icon name='warning sign' />{t('Submitting this transaction will drop the account balance to below the existential amount, removing the account from the chain state and burning associated funds')}</div>
-            : undefined
-        }{
           isReserved
             ? <div><Icon name='arrow right' />{t('This account does have a reserved/locked balance, not taken into account')}</div>
             : undefined

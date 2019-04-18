@@ -1,16 +1,16 @@
 {
-  "name": "@polkadot/app-addresses",
-  "version": "0.31.0-beta.18",
+  "name": "@polkadot/app-contracts",
+  "version": "0.32.0-beta.6",
+  "description": "Deployment and management of substrate contracts",
   "main": "index.js",
-  "repository": "https://github.com/polkadot-js/apps.git",
+  "scripts": {},
   "author": "Jaco Greeff <jacogr@gmail.com>",
   "maintainers": [
     "Jaco Greeff <jacogr@gmail.com>"
   ],
-  "contributors": [],
   "license": "Apache-2.0",
   "dependencies": {
     "@babel/runtime": "^7.4.3",
-    "@polkadot/ui-app": "^0.31.0-beta.18"
+    "@polkadot/ui-app": "^0.32.0-beta.6"
   }
 }

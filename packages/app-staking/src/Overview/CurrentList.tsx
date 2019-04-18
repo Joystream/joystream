@@ -4,53 +4,23 @@
 
 import { DerivedBalancesMap } from '@polkadot/api-derive/types';
 import { I18nProps } from '@polkadot/ui-app/types';
-import { Nominators, RecentlyOffline, RecentlyOfflineMap } from '../types';
+import { RecentlyOfflineMap } from '../types';
 
 import React from 'react';
-import { AccountId, Balance, HeaderExtended } from '@polkadot/types';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
-import { formatNumber } from '@polkadot/util';
 
 import translate from '../translate';
 import Address from './Address';
 
 type Props = I18nProps & {
   balances: DerivedBalancesMap,
-  balanceArray: (_address: AccountId | string) => Array<Balance> | undefined,
-  chain_subscribeNewHead?: HeaderExtended,
   current: Array<string>,
+  lastAuthor?: string,
+  lastBlock: string,
   next: Array<string>,
-  nominators: Nominators,
-  staking_recentlyOffline?: RecentlyOffline
-};
-
-type State = {
   recentlyOffline: RecentlyOfflineMap
 };
 
-class CurrentList extends React.PureComponent<Props, State> {
-  state: State = { recentlyOffline: {} };
-
-  static getDerivedStateFromProps ({ staking_recentlyOffline = [] }: Props): State {
-    return {
-      recentlyOffline: staking_recentlyOffline.reduce(
-        (result, [accountId, blockNumber, count]) => {
-          const account = accountId.toString();
-
-          if (!result[account]) {
-            result[account] = [];
-          }
-
-          result[account].push({
-            blockNumber,
-            count
-          });
-
-          return result;
-        }, {} as RecentlyOfflineMap)
-    };
-  }
-
+class CurrentList extends React.PureComponent<Props> {
   render () {
     return (
       <div className='validator--ValidatorsList ui--flex-medium'>
@@ -93,21 +63,12 @@ class CurrentList extends React.PureComponent<Props, State> {
   }
 
   private renderColumn (addresses: Array<string>, defaultName: string) {
-    const { balances, balanceArray, chain_subscribeNewHead, nominators, t } = this.props;
-    const { recentlyOffline } = this.state;
+    const { balances, lastAuthor, lastBlock, recentlyOffline, t } = this.props;
 
     if (addresses.length === 0) {
       return (
         <div>{t('no addresses found')}</div>
       );
-    }
-
-    let lastBlock: string = '';
-    let lastAuthor: string;
-
-    if (chain_subscribeNewHead) {
-      lastBlock = `#${formatNumber(chain_subscribeNewHead.blockNumber)}`;
-      lastAuthor = (chain_subscribeNewHead.author || '').toString();
     }
 
     return (
@@ -116,12 +77,10 @@ class CurrentList extends React.PureComponent<Props, State> {
           <Address
             address={address}
             balances={balances}
-            balanceArray={balanceArray}
             defaultName={defaultName}
-            isAuthor={address === lastAuthor}
             key={address}
+            lastAuthor={lastAuthor}
             lastBlock={lastBlock}
-            nominators={nominators}
             recentlyOffline={recentlyOffline}
           />
         ))}
@@ -130,11 +89,4 @@ class CurrentList extends React.PureComponent<Props, State> {
   }
 }
 
-export default withMulti(
-  CurrentList,
-  translate,
-  withCalls<Props>(
-    'derive.chain.subscribeNewHead',
-    'query.staking.recentlyOffline'
-  )
-);
+export default translate(CurrentList);

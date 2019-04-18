@@ -4,18 +4,21 @@
 
 import { Routes } from '../types';
 
-import Addresses from '@polkadot/app-addresses';
+import Contracts from '@polkadot/app-contracts';
 
 export default ([
   {
-    Component: Addresses,
+    Component: Contracts,
     display: {
-      needsApi: []
+      needsAccounts: true,
+      needsApi: [
+        'tx.contract.call'
+      ]
     },
     i18n: {
-      defaultValue: 'Address Book'
+      defaultValue: 'Contracts'
     },
-    icon: 'address book',
-    name: 'addresses'
+    icon: 'compress',
+    name: 'contracts'
   }
 ] as Routes);

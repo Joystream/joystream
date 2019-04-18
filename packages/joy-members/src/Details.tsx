@@ -71,7 +71,7 @@ class Component extends React.PureComponent<Props> {
                 <i className='university icon'></i>
                 Council member
               </b>}
-            <BalanceDisplay label='Balance: ' value={accountId} />
+            <BalanceDisplay label='Balance: ' params={accountId} />
           </div>
         </div>
       </div>

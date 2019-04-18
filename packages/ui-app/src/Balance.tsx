@@ -6,34 +6,34 @@ import { BareProps } from './types';
 
 import BN from 'bn.js';
 import React from 'react';
-import { AccountId, AccountIndex, Address, Balance } from '@polkadot/types';
+import { AccountId, AccountIndex, Address } from '@polkadot/types';
 import { formatBalance } from '@polkadot/util';
-import RxBalance from '@polkadot/ui-reactive/Balance';
+import { Balance } from '@polkadot/ui-reactive';
 
 import { classes } from './util';
 
 export type Props = BareProps & {
-  balance?: Balance | Array<Balance> | BN,
+  balance?: BN | Array<BN>,
   label?: string,
-  value?: AccountId | AccountIndex | Address | string | Uint8Array | null,
+  params?: AccountId | AccountIndex | Address | string | Uint8Array | null,
   withLabel?: boolean
 };
 
 export default class BalanceDisplay extends React.PureComponent<Props> {
   render () {
-    const { balance, className, label, value, style } = this.props;
+    const { balance, className, label, params, style } = this.props;
 
-    if (!value) {
+    if (!params) {
       return null;
     }
 
     return balance
       ? this.renderProvided()
       : (
-        <RxBalance
+        <Balance
           className={classes('ui--Balance', className)}
           label={label}
-          params={value}
+          params={params}
           style={style}
         />
       );
@@ -41,11 +41,6 @@ export default class BalanceDisplay extends React.PureComponent<Props> {
 
   private renderProvided () {
     const { balance, className, label, style } = this.props;
-
-    if (!balance) {
-      return null;
-    }
-
     let value = `${formatBalance(Array.isArray(balance) ? balance[0] : balance)}`;
 
     if (Array.isArray(balance)) {

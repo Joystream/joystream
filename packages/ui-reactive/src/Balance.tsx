@@ -15,7 +15,7 @@ type Props = BareProps & CallProps & {
   balances_freeBalance?: Balance
 };
 
-class BalanceDisplay extends React.PureComponent<Props> {
+export class BalanceDisplay extends React.PureComponent<Props> {
   render () {
     const { children, className, label = '', style, balances_freeBalance } = this.props;
 
@@ -34,4 +34,4 @@ class BalanceDisplay extends React.PureComponent<Props> {
   }
 }
 
-export default withCall('query.balances.freeBalance')(BalanceDisplay);
+export default withCall('query.balances.freeBalance', { paramName: 'params' })(BalanceDisplay);

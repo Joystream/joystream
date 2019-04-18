@@ -8,6 +8,7 @@ import React from 'react';
 import styled from 'styled-components';
 
 import Icon from './Icon';
+import media from './media';
 import { classes } from './util';
 
 type Props = BareProps & {
@@ -24,10 +25,37 @@ const defaultLabel: any = (// node?
 );
 
 const Wrapper = styled.div`
-  align-items: center;
-  display: flex;
-  flex: 1 1;
-  text-align: left;
+  display: block;
+
+  > label {
+    margin: 0.25rem 0 0 0;
+    padding-right: 0.5rem;
+    position: relative;
+
+    .help-hover {
+      background: #222;
+      border-radius: 0.25rem;
+      color: #fff;
+      display: none;
+      padding: 0.5rem 1rem;
+      position: absolute;
+      text-align: left;
+      top: 0.5rem;
+      left: 2.5rem;
+      right: -5rem;
+      z-index: 10;
+      opacity: .9;
+    }
+
+    i.icon.help {
+      margin: 0 0 0 0.25rem;
+      line-height: 1rem;
+    }
+
+    &.with-help:hover .help-hover {
+      display: block;
+    }
+  }
 
   &.label-small {
     display: block;
@@ -45,36 +73,23 @@ const Wrapper = styled.div`
     min-width: 0;
   }
 
-  > label {
-    flex: 0 0 15rem;
-    min-width: 15rem;
-    padding-right: 0.5rem;
-    position: relative;
-    text-align: right;
-    z-index: 1;
+  ${media.DESKTOP`
+    align-items: flex-start;
+    display: flex;
+    flex: 1 1;
+    margin: 0;
+    text-align: left;
 
-    .help-hover {
-      background: #4e4e4e;
-      border-radius: 0.25rem;
-      color: #eee;
-      display: none;
-      padding: 0.5rem 1rem;
-      position: absolute;
-      text-align: left;
-      top: 0.5rem;
-      left: 2.5rem;
-      right: -5rem;
-      z-index: 10;
+    > label {
+      align-items: center;
+      display: flex;
+      flex: 0 0 15rem;
+      justify-content: flex-end;
+      min-height: 2.715rem; /* more-or-less 2 lines with adjustments, 38px as per input box */
+      min-width: 15rem;
+      text-align: right;
     }
-
-    .icon.help {
-      margin-right: 0;
-    }
-
-    &.with-help:hover .help-hover {
-      display: block;
-    }
-  }
+  `}
 `;
 
 export default class Labelled extends React.PureComponent<Props> {
@@ -90,7 +105,7 @@ export default class Labelled extends React.PureComponent<Props> {
     }
 
     const labelNode = help
-      ? <label className='with-help'>{label} <Icon name='help circle' /><div className='help-hover'>{help}</div></label>
+      ? <label className='with-help'>{label}<Icon name='help circle' /><div className='help-hover'>{help}</div></label>
       : <label>{label}</label>;
 
     return (
