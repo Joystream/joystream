@@ -4,32 +4,61 @@
 
 import { BareProps } from './types';
 
+import BN from 'bn.js';
 import React from 'react';
 import { AccountId, AccountIndex, Address } from '@polkadot/types';
-import RxBonded from '@polkadot/ui-reactive/Bonded';
+import { formatBalance } from '@polkadot/util';
+import { Bonded } from '@polkadot/ui-reactive';
 
 import { classes } from './util';
 
 export type Props = BareProps & {
+  bonded?: BN | Array<BN>,
   label?: string,
-  value?: AccountId | AccountIndex | Address | string | Uint8Array | null,
+  params?: AccountId | AccountIndex | Address | string | Uint8Array | null,
   withLabel?: boolean
 };
 
 export default class BondedDisplay extends React.PureComponent<Props> {
   render () {
-    const { value, className, label, style } = this.props;
-    if (!value) {
+    const { bonded, params, className, label, style } = this.props;
+
+    if (!params) {
       return null;
     }
 
+    return bonded
+      ? this.renderProvided()
+      : (
+        <Bonded
+          className={classes('ui--Bonded', className)}
+          label={label}
+          params={params}
+          style={style}
+        />
+      );
+  }
+
+  private renderProvided () {
+    const { bonded, className, label, style } = this.props;
+    let value = `${formatBalance(Array.isArray(bonded) ? bonded[0] : bonded)}`;
+
+    if (Array.isArray(bonded)) {
+      const totals = bonded.filter((value, index) => index !== 0);
+      const total = totals.reduce((total, value) => total.add(value), new BN(0)).gtn(0)
+        ? `(+${totals.map((bonded) => formatBalance(bonded)).join(', ')})`
+        : '';
+
+      value = `${value}  ${total}`;
+    }
+
     return (
-      <RxBonded
+      <div
         className={classes('ui--Bonded', className)}
-        label={label}
-        value={value}
         style={style}
-      />
+      >
+        {label}{value}
+      </div>
     );
   }
 }

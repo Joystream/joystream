@@ -21,9 +21,10 @@ type Props = BareProps & WithTranslation & {
   isDisabled?: boolean,
   isError?: boolean,
   label?: React.ReactNode,
-  withLabel?: boolean,
-  placeholder?: React.ReactNode,
-  onChange?: (contents: Uint8Array, file: File) => void
+  onChange?: (contents: Uint8Array, name: string) => void,
+  onFileSelected?: (contents: Uint8Array, file: File) => void,
+  placeholder?: React.ReactNode | null,
+  withLabel?: boolean
 };
 
 type State = {
@@ -74,7 +75,7 @@ class InputFile extends React.PureComponent<Props, State> {
   }
 
   private onDrop = (files: Array<File>) => {
-    const { onChange } = this.props;
+    const { onChange, onFileSelected } = this.props;
 
     files.forEach((file) => {
       const reader = new FileReader();
@@ -90,12 +91,14 @@ class InputFile extends React.PureComponent<Props, State> {
       // @ts-ignore ummm... events are not properly specified here?
       reader.onload = ({ target: { result } }: LoadEvent) => {
         const data = new Uint8Array(result);
+        const name = file.name;
 
-        onChange && onChange(data, file);
+        onChange && onChange(data, name);
+        onFileSelected && onFileSelected(data, file);
 
         this.setState({
           file: {
-            name: file.name,
+            name,
             size: data.length
           }
         });

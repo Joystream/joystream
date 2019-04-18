@@ -51,7 +51,7 @@
     display: flex;
     flex-flow: column;
     height: auto;
-    left: 0;
+    position: relative;
     transition: left 0.3s linear;
     width: 100%;
 
@@ -59,17 +59,19 @@
       display: flex;
       height: 100vh;
       margin: 0;
-      position: sticky;
-      top: 0px;
+      top: 0;
       width: 100%;
+      position: sticky;
     }
 
     .apps-SideBar-Scroll {
       align-items: center;
       display: flex;
       flex-direction: column;
-      overflow-y: scroll;
+      height: 100vh;
+      overflow-y: auto;
       width: 100%;
+      scrollbar-width: none;
 
       &::-webkit-scrollbar {
         display: none;
@@ -80,42 +82,36 @@
     .apps--SideBar-Item {
       align-self: flex-end;
       flex-grow: 0;
+      padding: 0 !important;
       width: inherit;
 
-      padding: 0 !important;
       .text {
         padding-left: 0.5rem;
       }
     }
 
     .apps--SideBar-logo {
-      margin: 0.5rem 1.5rem 1rem 0.75rem;
+      margin: 0.5rem 1.5rem 1.5rem 0.75rem;
       padding-top: 0.75em;
       width: 9rem;
     }
 
     .apps--SideBar-collapse {
-      align-items: flex-end;
       background: #3f3f3f;
-      bottom: 0px;
-      display: flex;
-      flex-direction: row wrap;
-      flex-grow: 1;
-      justify-content: flex-start;
-      padding: 3.5rem 0 1rem 0;
+      bottom: 0;
+      left: 0;
+      padding: 0.75rem 0 .75rem 0.65rem;
       position: sticky;
+      right: 0;
+      text-align: left;
       width: 100%;
 
-      .ui.basic.secondary.button {
-        bottom: 0.75rem;
+      .ui.circular.button {
+        background: white !important;
+        color: #3f3f3f !important;
         box-shadow: 0 0 0 1px #eee inset !important;
-        color: #eee !important;
-        position: absolute;
+        margin: 0;
         transition: transform 0.15s;
-
-        &.rotated {
-          transform: rotate(180deg);
-        }
       }
     }
 
@@ -136,7 +132,10 @@
 
   &.expanded .apps--SideBar {
     text-align: left;
-    padding-left: 0.7rem;
+
+    .apps-SideBar-Scroll {
+      padding-left: 0.75rem;
+    }
   }
 
   &.collapsed .apps--SideBar {
@@ -148,26 +147,16 @@
 
     .apps--SideBar-Item {
       margin-left: 5px;
-      .icon {
-        font-size: 1.28rem;
-      }
+
       .text {
         display: none;
       }
     }
 
     .apps--SideBar-logo {
-      margin: 0.125rem auto 0.625rem auto;
+      margin: 0.875rem auto;
+      padding: 0;
       width: 3rem;
-    }
-
-    a.apps--SideBar-Item-NavLink {
-      padding-bottom: 0.92em;
-      padding-top: 0.92em;
-
-      > i {
-        margin: 0;
-      }
     }
 
     .apps--SideBar-collapse .ui.basic.secondary.button {
@@ -192,8 +181,6 @@
     }
   }
 }
-
-
 
 a.apps--SideBar-Item-NavLink {
   color: #eee;

@@ -14,7 +14,7 @@ type Props = BareProps & CallProps & {
   accounts_idAndIndex?: [AccountId?, AccountIndex?]
 };
 
-class AccountIndexDisplay extends React.PureComponent<Props> {
+export class AccountIndexDisplay extends React.PureComponent<Props> {
   render () {
     const { children, className, label = '', style, accounts_idAndIndex = [] } = this.props;
     const [, accountIndex] = accounts_idAndIndex;
@@ -34,4 +34,4 @@ class AccountIndexDisplay extends React.PureComponent<Props> {
   }
 }
 
-export default withCall('derive.accounts.idAndIndex', { paramName: 'value' })(AccountIndexDisplay);
+export default withCall('derive.accounts.idAndIndex', { paramName: 'params' })(AccountIndexDisplay);

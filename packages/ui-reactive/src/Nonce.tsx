@@ -15,7 +15,7 @@ type Props = BareProps & CallProps & {
   system_accountNonce?: Index
 };
 
-class Nonce extends React.PureComponent<Props> {
+export class Nonce extends React.PureComponent<Props> {
   render () {
     const { children, className, label = '', style, system_accountNonce } = this.props;
 
@@ -34,4 +34,4 @@ class Nonce extends React.PureComponent<Props> {
   }
 }
 
-export default withCall('query.system.accountNonce')(Nonce);
+export default withCall('query.system.accountNonce', { paramName: 'params' })(Nonce);

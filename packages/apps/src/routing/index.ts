@@ -16,7 +16,7 @@ import pages from './joy-pages';
 
 import template from './123code';
 import accounts from './accounts';
-import addresses from './addresses';
+import addressbook from './addressbook';
 import explorer from './explorer';
 import extrinsics from './extrinsics';
 import js from './js';
@@ -37,7 +37,7 @@ const routes: Routes = appSettings.uiMode === 'light'
     media,
     members,
     accounts,
-    addresses,
+    addressbook,
     null,
     election,
     proposals,
@@ -57,7 +57,7 @@ const routes: Routes = appSettings.uiMode === 'light'
     media,
     members,
     accounts,
-    addresses,
+    addressbook,
     null,
     election,
     proposals,

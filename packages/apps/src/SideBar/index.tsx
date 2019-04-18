@@ -8,8 +8,11 @@ import { SIDEBAR_MENU_THRESHOLD } from '../constants';
 import './SideBar.css';
 
 import React from 'react';
-import { Button, Icon, Menu } from '@polkadot/ui-app';
+import styled from 'styled-components';
+import { Responsive } from 'semantic-ui-react';
+import { Button, Icon, Menu, media } from '@polkadot/ui-app';
 import { classes } from '@polkadot/ui-app/util';
+import { logoBackground, logoPadding } from '@polkadot/ui-app/styles/theme';
 
 import routing from '../routing';
 import translate from '../translate';
@@ -35,12 +38,6 @@ function OuterLink ({ url, title, icon = 'external alternate' }: OuterLinkProps)
   );
 }
 
-import styled from 'styled-components';
-import { media } from '@polkadot/ui-app/media';
-import { Responsive } from 'semantic-ui-react';
-import theme from 'styled-theming';
-import { primaryColor } from '@polkadot/ui-app/styles/theme';
-
 type Props = I18nProps & {
   collapse: () => void,
   handleResize: () => void,
@@ -50,14 +47,8 @@ type Props = I18nProps & {
 };
 
 const Toggle = styled.img`
-  background: ${theme('theme', {
-    substrate: primaryColor,
-    polkadot: 'none'
-  })};
-  padding: ${theme('theme', {
-    substrate: '4px',
-    polkadot: 'none'
-  })};
+  background: ${logoBackground};
+  padding: ${logoPadding};
   border-radius: 50%;
   cursor: pointer;
   left: 0.9rem;
@@ -65,7 +56,7 @@ const Toggle = styled.img`
   position: absolute;
   top: 0px;
   transition: opacity 0.2s ease-in, top 0.2s ease-in;
-  width: 2.6rem;
+  width: 2.8rem;
 
   &.delayed {
     transition-delay: 0.4s;
@@ -129,14 +120,13 @@ class SideBar extends React.PureComponent<Props> {
     return (
       <Responsive
         minWidth={SIDEBAR_MENU_THRESHOLD}
-        className='apps--SideBar-collapse'
+        className={`apps--SideBar-collapse ${isCollapsed ? 'collapsed' : 'expanded'}`}
       >
         <Button
-          icon='angle double right'
+          icon={`angle double ${isCollapsed ? 'right' : 'left'}`}
           isBasic
           isCircular
           onClick={this.props.collapse}
-          className={isCollapsed ? '' : 'rotated'}
         />
       </Responsive>
     );
@@ -195,20 +185,6 @@ class SideBar extends React.PureComponent<Props> {
     ));
   }
 
-  // @ts-ignore is declared but its value is never read
-  private renderGithub () {
-    return (
-      <Menu.Item className='apps--SideBar-Item'>
-        <a
-          className='apps--SideBar-Item-NavLink'
-          href='https://github.com/polkadot-js/apps'
-        >
-          <Icon name='github' /><span className='text'>GitHub</span>
-        </a>
-      </Menu.Item>
-    );
-  }
-
   private renderToggleBar () {
     return (
       <Responsive minWidth={SIDEBAR_MENU_THRESHOLD}>
@@ -232,20 +208,6 @@ class SideBar extends React.PureComponent<Props> {
         onClick={toggleMenu}
         src={logo}
       />
-    );
-  }
-
-  // @ts-ignore is declared but its value is never read
-  private renderWiki () {
-    return (
-      <Menu.Item className='apps--SideBar-Item'>
-        <a
-          className='apps--SideBar-Item-NavLink'
-          href='https://github.com/w3f/Web3-wiki/wiki/Polkadot'
-        >
-          <Icon name='book' /> Wiki
-        </a>
-      </Menu.Item>
     );
   }
 }

@@ -49,13 +49,24 @@ header .ui--Button-Group {
   padding: 0.25rem 0 0 0;
 }
 
+.ui--AddressMini.summary {
+  position: relative;
+  top: -0.2rem;
+}
+
 .ui--AddressMini-info div {
   display: inline-block;
   vertical-align: middle;
 }
 
 .ui--AddressMini-address {
-  font-family: monospace;
+  &.withAddr {
+    font-family: monospace;
+  }
+
+  &.withName {
+    text-transform: uppercase;
+  }
 }
 
 .ui--AddressMini .ui--IdentityIcon {
@@ -139,6 +150,10 @@ header .ui--Button-Group {
 .ui--AddressSummary-data {
   padding: 0;
   white-space: nowrap;
+
+  .ui--AddressSummary-name {
+    text-transform: uppercase;
+  }
 }
 
 .ui--AddressSummary-data * {
@@ -240,10 +255,10 @@ header .ui--Button-Group {
   border: 1px dashed rgba(34, 36, 38, 0.15);
   border-radius: $small-corner;
   display: flex;
-  font-size: 1.2em;
-  height: 5em;
+  font-size: 1rem;
+  height: 3.5rem;
   justify-content: center;
-  margin-bottom: 0.5rem;
+  margin: 0.25rem 0;
   width: 100% !important;
 
   &.error {
@@ -261,6 +276,58 @@ header .ui--Button-Group {
     color: rgba(0, 0, 0, .6);
   }
 }
+
+.ui--RecentlyOffline {
+  position: absolute;
+  top: 0.75rem;
+  font-size: 12px;
+  cursor: help;
+  display: flex;
+  justify-content: center;
+  left: 0.75rem;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: red;
+  color: #eee;
+  border-radius: 16px;
+  box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  transition: all ease .2s;
+
+  & > * {
+    line-height: 22px;
+    overflow: hidden;
+    transition: all ease 0.25;
+  }
+
+  .badge {
+    font-weight: bold;
+    width: auto;
+  }
+
+  .detail {
+    width: 0;
+  }
+
+  &.expand {
+    width: 300px;
+
+    .badge {
+      width: 0;
+    }
+
+    .detail {
+      width: auto;
+    }
+  }
+
+  &.inline {
+    position: static;
+    margin: .3rem 0 .3rem .5rem;
+  }
+}
+
 
 .ui--Static {
   overflow: hidden;

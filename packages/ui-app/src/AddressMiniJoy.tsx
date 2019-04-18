@@ -107,7 +107,7 @@ class AddressMini extends React.PureComponent<Props> {
         label='Balance: '
         balance={balance}
         className='ui--AddressSummary-balance'
-        value={value}
+        params={value}
       />
     );
   }

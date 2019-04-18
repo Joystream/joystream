@@ -127,7 +127,7 @@ class Component extends React.PureComponent<Props, State> {
             }
           </div>
         }
-        onChange={this.onFileSelected}
+        onFileSelected={this.onFileSelected}
       />
       {file && <div className='UploadButtonBox'>
         <TxButton
