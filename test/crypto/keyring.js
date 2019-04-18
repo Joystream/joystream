@@ -67,6 +67,17 @@ describe('crypto/keyring', () => {
     expect(converted).to.have.property('secretKey');
   });
 
+  it('can convert a polkadot ed25519 address to NaCl', async () => {
+    const kr = await Keyring.create();
+    const pair = kr.addFromAddress('5FvCDYpVNbQo1LHbwWUyvasEDZjpRs1n9ceUtvs9iYZqTwpb'); // ALICE
+
+    const converted = kr.convert_keypair(pair);
+    expect(converted.type).to.equal('ed25519');
+    expect(converted.compatibility).to.equal('nacl');
+    expect(converted).to.have.property('publicKey');
+    expect(converted).not.to.have.property('secretKey');
+  });
+
   it('cannot convert a sr25519 key to NaCl', async () => {
     const kr = await Keyring.create();
     const pair = kr.from_seed('sr25519', ALICE_SEED);
