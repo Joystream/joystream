@@ -3,7 +3,25 @@
 Installation
 ------------
 
-This project uses [yarn](https://yarnpkg.com/) as Node package manager.
+*Requirements*
+
+This project uses [yarn](https://yarnpkg.com/) as Node package manager. It also
+uses some node packages with native components, so make sure to install your
+system's basic build tools.
+
+On Debian-based systems:
+
+```bash
+$ apt install build-essential
+```
+
+On Mac OS (using [homebrew](https://brew.sh/)):
+
+```bash
+$ brew install libtool automake autoconf
+```
+
+*Building*
 
 ```bash
 $ yarn run build
@@ -19,7 +37,8 @@ $ npm install -g
 ```
 
 This might be best if used within e.g. an [nvm](https://github.com/creationix/nvm)
-environment.
+environment. *Note* that it's generally not advisable to mix `yarn` and `npm`, but
+this seems safe enough.
 
 Development
 -----------
