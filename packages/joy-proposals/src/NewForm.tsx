@@ -3,10 +3,9 @@ import React from 'react';
 
 import { I18nProps } from '@polkadot/ui-app/types';
 import { ApiProps } from '@polkadot/ui-api/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { u8aToHex } from '@polkadot/util';
+import { withCalls, withMulti } from '@polkadot/ui-api/with';
+import { u8aToHex, formatNumber } from '@polkadot/util';
 import { Input, InputFile, Labelled } from '@polkadot/ui-app/index';
-import { formatNumber } from '@polkadot/util';
 import { Balance } from '@polkadot/types';
 
 import translate from './translate';
@@ -14,8 +13,9 @@ import { nonEmptyStr } from '@polkadot/joy-utils/index';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import InputStake from '@polkadot/joy-utils/InputStake';
 import TextArea from '@polkadot/joy-utils/TextArea';
+import { MyAddressProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 
-type Props = ApiProps & I18nProps & {
+type Props = ApiProps & I18nProps & MyAddressProps & {
   minStake?: Balance
 };
 
@@ -129,9 +129,11 @@ class Component extends React.PureComponent<Props, State> {
   }
 }
 
-// inject the actual API calls automatically into props
-export default translate(
+export default withMulti(
+  Component,
+  translate,
+  withOnlyMembers,
   withCalls<Props>(
     ['query.proposals.minStake', { propName: 'minStake' }]
-  )(Component)
+  )
 );
