@@ -27,7 +27,7 @@ Development
 Run a development server:
 
 ```bash
-$ yarn run dev
+$ yarn run dev --config myconfig.json
 ```
 
 Run tests:
@@ -51,6 +51,19 @@ types.
 `lib/joystream/types/index.js` is manually maintained, but other JavaScript
 files in that folder are generated. The `update_types.sh` script can help with
 keeping these in sync.
+
+You can also switch on development mode with a configuration variable, see
+below.
+
+*Development Mode*
+
+Development mode modifies the storage node's behaviour a little bit, but only
+a little:
+
+1. In development mode, each host discovered with the DHT will *also* be
+   reported as localhost. This allows you to use the DHT resolution mechanism
+   between two locally running storage nodes. Port probing will find out more
+   about on what port they're running which service.
 
 Command-Line
 ------------
@@ -125,6 +138,7 @@ via the configuration file.
       such as `text/plain`, etc. Mime types can also be specified for
       wildcard matching, such as `video/*`.
     * `reject` is an Array of mime types that are unacceptable for uploads.
+* `development` is a boolean flag. See Development Mode above for details.
 
 Upload Filtering
 ----------------
