@@ -22,7 +22,7 @@ import TxButton from '@polkadot/joy-utils/TxButton';
 const MAX_FILE_SIZE_200_MB = 200 * 1024 * 1024;
 
 function generateContentId () {
-  const uuid = uuidv4().replace('-', '');
+  const uuid = uuidv4().replace(/-/g, '');
   return new ContentId(stringToU8a(uuid));
 }
 
