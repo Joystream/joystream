@@ -77,3 +77,6 @@ When making changes to the runtime library remember to purge the chain after reb
 cargo run --release -- purge-chain --dev
 ```
 
+### Substrate node template
+
+The full node is built based on the substrate node [template](https://github.com/shawntabrizi/substrate-package/tree/master/substrate-node-template)
