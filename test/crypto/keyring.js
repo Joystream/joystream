@@ -22,6 +22,7 @@ const mocha = require('mocha');
 const expect = require('chai').expect;
 
 const { Keyring, KEY_TYPES } = require('joystream/crypto/keyring');
+const putil = require('@polkadot/util');
 
 const { ALICE_SEED, BOB_SEED } = require('../common');
 
@@ -44,6 +45,18 @@ describe('crypto/keyring', () => {
   });
 
   it('can convert an ed25519 key to NaCl', async () => {
+    const kr = await Keyring.create();
+    const seed = putil.hexToU8a(ALICE_SEED);
+    const pair = kr.addFromSeed(seed, undefined, 'ed25519');
+
+    const converted = kr.convert_keypair(pair);
+    expect(converted.type).to.equal('ed25519');
+    expect(converted.compatibility).to.equal('nacl');
+    expect(converted).to.have.property('publicKey');
+    expect(converted).to.have.property('secretKey');
+  });
+
+  it('can convert a polkadot ed25519 key to NaCl', async () => {
     const kr = await Keyring.create();
     const pair = kr.from_seed('ed25519', ALICE_SEED);
 
