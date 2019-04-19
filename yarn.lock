@@ -2026,6 +2026,17 @@
     store "^2.0.12"
     styled-components "^4.2.0"
 
+"@polkadot/ui-keyring@^0.38.0-beta.3":
+  version "0.38.0-beta.3"
+  resolved "https://registry.yarnpkg.com/@polkadot/ui-keyring/-/ui-keyring-0.38.0-beta.3.tgz#2140441389397f2969be8c0aa239e4ca06dc8fb5"
+  integrity sha512-4Q9KhF2XqBMwrg9JqWPQ/EFqnDe+FcRZMbrDuxtIyqVEfDxrx73D9UQiNVWwcT0HlrbYP+qXeU5HkPR+rshYHw==
+  dependencies:
+    "@babel/runtime" "^7.4.3"
+    "@types/store" "^2.0.1"
+    rxjs "^6.4.0"
+    store "^2.0.12"
+    styled-components "^4.2.0"
+
 "@polkadot/ui-reactive@^0.31.0-beta.18", "@polkadot/ui-reactive@^0.31.1":
   version "0.31.1"
   resolved "https://registry.yarnpkg.com/@polkadot/ui-reactive/-/ui-reactive-0.31.1.tgz#a653a28cb51d6fe2b5754dd5b61073519256ab20"
