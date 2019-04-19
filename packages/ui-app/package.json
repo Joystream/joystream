@@ -13,7 +13,7 @@
     "@babel/runtime": "^7.4.3",
     "@polkadot/ui-api": "^0.32.0-beta.6",
     "@polkadot/ui-identicon": "^0.38.0-beta.2",
-    "@polkadot/ui-keyring": "^0.38.0-beta.3",
+    "@polkadot/ui-keyring": "^0.38.0-beta.2",
     "@polkadot/ui-reactive": "^0.32.0-beta.6",
     "@polkadot/joy-settings": "^1.0.0",
     "@types/chart.js": "^2.7.45",
