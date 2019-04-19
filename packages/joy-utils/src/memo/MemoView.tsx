@@ -53,7 +53,7 @@ class Component extends React.PureComponent<Props> {
         return (
           <span className='JoyMemo--preview'>
             {previewText}
-            <Link to={`/addresses/memo/${accountId}`}>{' view full memo'}</Link>
+            <Link to={`/addressbook/memo/${accountId}`}>{' view full memo'}</Link>
           </span>
         );
       } else {

@@ -57,6 +57,6 @@ export default class Component extends React.PureComponent<Props, State> {
   }
 
   private findMemo = () => {
-    this.props.history.push('/addresses/memo/' + this.state.accountInput);
+    this.props.history.push('/addressbook/memo/' + this.state.accountInput);
   }
 }
