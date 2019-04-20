@@ -3,15 +3,15 @@
 # Joystream Runtime
 
 The runtime is the code that defines the consensus rules of the Joystream protocol.
-It is compiled to WASM and lives on chain. Joystream [full nodes](https://github.com/Joystream/substrate-node-joystream) execute the logic of the runtime to validate transactions and blocks on the Joystream blockchain.
+It is compiled to WASM and lives on chain. [Full nodes](https://github.com/Joystream/substrate-node-joystream) execute the code's logic to validate transactions and blocks on the blockchain.
 
 The joystream runtime builds on the substrate runtime library (srml) and adds additional functionality:
 
-Council elections
-User membership system
-Runtime Upgrade proposal system
-Staked Roles
-   Storage Provider
+- Council elections
+- User membership system
+- Runtime Upgrade proposal system
+- Staked Roles
+   - Storage Provider
 
 ### Prerequisites
 
@@ -40,9 +40,9 @@ See deployment for notes on how to deploy this runtime on a live system.
 
 Deploying the compiled runtime on a live system can be done in one of two ways:
 
-1. Joystream runtime upgrade proposals which will be voted on by the council. When joystream platform is live, this will be the only way to upgrade the chain's runtime code.
+1. Joystream runtime upgrade proposals which will be voted on by the council. When the Joystream platform is live, this will be the only way to upgrade the chain's runtime code.
 
-2. During development and testnet phases, we can send an extrinsic (transaction signed with the sudo key) invoking `conesnsus::setCode()`. This can be done either from the UI/extrinsics app, or direc with a script.
+2. During development and testnet phases, we can send an extrinsic (transaction signed with the sudo key) invoking `conesnsus::setCode()`. This can be done either from the UI/extrinsics app, or directly with an admin script.
 
 ## Running the tests
 
@@ -90,5 +90,5 @@ This project is licensed under the GPLv3 License - see the [LICENSE](LICENSE) fi
 
 ## Acknowledgments
 
-* Thanks to the whole Parity Tech team for making substrate and helping on riot chat with tips, suggestions, tutorials and answering all our questions during development.
+Thanks to the whole [Parity Tech](https://www.parity.io/) team for making substrate and helping on riot chat with tips, suggestions, tutorials and answering all our questions during development.
 
