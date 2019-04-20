@@ -1,4 +1,4 @@
-![Joystream Runtime](https://raw.githubusercontent.com/Joystream/design/master/assets/github/substrate-runtime-joystream-repo.svg)
+![Joystream Runtime](./banner.svg)
 
 # Joystream Runtime
 
