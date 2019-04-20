@@ -5,13 +5,13 @@
 The runtime is the code that defines the consensus rules of the Joystream protocol.
 It is compiled to WASM and lives on chain. [Full nodes](https://github.com/Joystream/substrate-node-joystream) execute the code's logic to validate transactions and blocks on the blockchain.
 
-The joystream runtime builds on the substrate runtime library (srml) and adds additional functionality:
+The joystream runtime builds on [substrate v1.0](https://docs.substrate.dev/docs) and adds additional functionality:
 
-- Council elections
-- User membership system
-- Runtime Upgrade proposal system
-- Staked Roles
-   - Storage Provider
+- [Council elections](src/governance/election.rs)
+- [Runtime Upgrade proposal system](src/governance/proposals.rs)
+- [User membership system](src/membership/)
+- [Staked Roles](src/roles)
+   - [Storage Provider](src/storage/)
 
 ### Prerequisites
 
