@@ -46,13 +46,15 @@
 
 # Live Milestones
 
-Live milestones, continuously adjusted:
-
-- **Update website & hosted Pioneer, publish blog & newsletter & social media:** `15. April 2019, 12:00 (GMT+1)`
-- **Release:** `15. April 2019, 12:00 (GMT+1)`
-- **Final Test run:** `12. April 2019, 12:00 (GMT+1)`
+- **Newsletter, final social media** `24. April 2019`
+Actual dates:
+- **Update website:** `18. April 2019`
+- **Release, publish blog, twitter:** `17. April 2019 *`
+- **Soft Release, update Pioneer (telegram):** `15. April 2019`
+- **Final Test run:** `14. April 2019`
 - **Intermediate Test run:** `09. April 2019, 12:00 (GMT+1)`
 
+`*`Denotes syncing between storage providers is outstanding.
 
 # Past Release Meetings
 
