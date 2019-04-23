@@ -1,11 +1,11 @@
-Q1-19 OKR Archvive
+Q1-19 OKR Archive
 ===
 
 
 # Table of contents
 
 - [Overview](#overview)
-- [Quarterly OKRs](#quarterly-okrs)]
+- [Quarterly OKRs](#quarterly-okrs)
   - [Expand the Jsgenesis team](#objective-expand-the-jsgenesis-team)
   - [Launch and grow Staked podcast](objective-launch-and-grow-staked-podcast)
 - [Personal OKRs](#personal-okrs)

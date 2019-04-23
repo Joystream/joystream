@@ -47,7 +47,7 @@
 # Live Milestones
 
 - **Newsletter, final social media** `24. April 2019`
-Actual dates:
+#### Actual dates:
 - **Update website:** `18. April 2019`
 - **Release, publish blog, twitter:** `17. April 2019 *`
 - **Soft Release, update Pioneer (telegram):** `15. April 2019`
@@ -93,11 +93,19 @@ NA.
 ### Objective: `Launch Athens network`
 - **KR Measurement Deadline**: 1 week after Athens launch
 - **Key Results**:
-#### 1. `Get 10 claims per $ for tokens on our faucet`
-#### 2. `Have all episodes of the Staked (4) and Make_World (n) podcast in the content directory`
-#### 3. `Have second council upgrade consensus after reaching quorum`
-#### 4. `20 Uploads (100min) and 100 Downloads not including Jsgenesis`
-#### 5. `75 Memberships created (not including Jsgenesis) at a min 1/2 membership/unique view ratio`
+##### 1. `Get 10 claims per $ for tokens on our faucet`
+##### 2. `Have all episodes of the Staked (4) and Make_World (n) podcast in the content directory`
+##### 3. `Have second council upgrade consensus after reaching quorum`
+##### 4. `20 Uploads (100min) and 100 Downloads not including Jsgenesis`
+##### 5. `75 Memberships created (not including Jsgenesis) at a min 1/2 membership/unique view ratio`
+
+- **Final Score**
+
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Total  |
+|:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:-------:|
+| 23.04.19 | 0.05  | 0.83  |  0.5  |  0.67 | 0.66  |**0.642**|
+
+Full details of tracking of results can be found in the [archive](../okrs/OKR-archive/athens).
 
 ## Constraints
 

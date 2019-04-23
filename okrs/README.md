@@ -146,12 +146,20 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
       - Mokhtar: 0.5
       - Alex: 0.5
 
+
 <br />
+- **Final Score**
+
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Total  |
+|:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:-------:|
+| 23.04.19 | 0.05  | 0.83  |  0.5  |  0.67 | 0.66  |**0.642**|
+
 
 - **Notes**
   * `KRs 3, 4 and 5 were changed mid flight. KR tracking from before the 18.03 is disregarded `
   * `This was a result of inexperience constructing good OKRs`
-  * `KRs was tracked from 04.03.19, but due to in flight changes, the numbers were scapped`
+  * `KRs was tracked from 04.03.19, but due to in flight changes, the numbers were scrapped`
+  * `For the raw numbers in final grading below, * denotes conservative estimates/extrapolations.`
 <br />
 
 - **Tracking:**
@@ -164,7 +172,9 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 | 01.04.19 |(0.5 , 0.9) **0.7** | (0.8 , 0.95) **0.88**  |  **0.5**  |  (0.66 , 0.65, 0.9) **0.74** |  (1.0 , 0.85) **0.93** | Sparta crash made #3 unobtainable |
 | 08.04.19 |(0.5 , 0.9) **0.7** | (0.85 , 0.95) **0.9**  |  **0.5**  |  (1.0 , 0.9, 0.9) **0.93** |  (1.0 , 0.85) **0.93** | - |
 | 15.04.19 | (1.0 , 0.9) **0.95**  | (0.9 , 0.98) **0.94**   |  **0.5**  |  (0.95 , 1.0, 1.0) **0.96** |  (1.0 , 0.98) **0.99** | Bedeho not present |
-| 22.04.19 | NA  | NA  | NA  |  NA |  NA | NA |
+| 23.04.19 | (1.0 , 1.0) **1.0**  | (0.98 , 1.0) **0.99**   |  **0.5**  |  (1.0 , 1.0, 1.0) **1.0** |  (1.0 , 0.9) **0.95** | Bedeho not present |
+| 23.04.19 | (93 , $170) **0.05**  | (4/4 , 1/2) **0.83**   |  **0.5**  |  (4/20 , 46/100, 364*/200) **0.67** |  (32(40) , 72*(78)) **0.66** | Actual score |
+
 
 # Group OKRs
 
@@ -180,9 +190,9 @@ Fill in if needed.
 
 ## Objective: `Improve Technical Productivity of Team`
 WIP
-<!---
-- **Active from:** 09.04.19
-- **KR Measurement Deadline:** 02.07.19
+
+- **Active from:** 23.04.19
+- **KR Measurement Deadline:** 16.07.19
 - **Tracked:** Every other Tuesday
 - **Tracking Manager:** Martin
 - **Key Results:** Bedeho
@@ -201,14 +211,13 @@ WIP
 
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 |Comments|
 |:--------:|:-----:|:-----:|:-----:|:-----:|:------:|
-| 09.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 23.04.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 | 07.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 | 21.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 | 04.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 | 18.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
 | 02.07.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
--->
+| 16.07.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+
 ## `Jens` (@jfinkhaeuser)
 
 Fill in if needed.
@@ -217,16 +226,15 @@ Fill in if needed.
 
 ## Objective: `Improve value as Release Manager`
 WIP
-<!---
-- **Active from:** 09.04.19
-- **KR Measurement Deadline:** 02.07.19
+- **Active from:** 23.04.19
+- **KR Measurement Deadline:** 16.07.19
 - **Tracked:** Every other Tuesday
 - **Tracking Manager:** Bedeho
 - **Key Results:** Martin
-  1. `Finish the Rust book (n)`
-  2. `Plan, specify and conduct weekly feature testing for all new modules (ewd)`
-  3. `Note and track all deadlines and dates for accountability`
-  4. `Submit minutes for all "Core" release meetings (n)`
+  1. `Improve meeting tracking/reporting system as measured by no more than 1-off 7-day delay of release milestones (ewd)`
+  2. `Schedule, perform and report on weekly testing of new features in staging testnet(s) (n)`
+  3. `Submit minutes for all "Core" release meetings (n)`
+  4. `Finish the rust book. (n)`
   5. `Have 2 (/src) PRs merged to our technical repos (n)`
 
   <br />
@@ -239,14 +247,13 @@ WIP
 
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |Comments|
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------:|
-| 09.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
-| 23.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 07.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 21.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 04.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 18.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 02.07.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
--->
+| 16.07.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+
 ## `Mokhtar` (@mnaamani)
 
 Fill in if needed.
