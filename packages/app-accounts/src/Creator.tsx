@@ -188,7 +188,7 @@ class Creator extends React.PureComponent<Props, State> {
         </div>
         <details
           className='accounts--Creator-advanced'
-          open
+          open={uiSettings.isFullMode}
         >
           <summary>{t('Advanced creation options')}</summary>
           <div className='ui--Params'>

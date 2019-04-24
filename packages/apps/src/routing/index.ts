@@ -26,7 +26,7 @@ import storage from './storage';
 import toolbox from './toolbox';
 import transfer from './transfer';
 
-const routes: Routes = appSettings.uiMode === 'light'
+const routes: Routes = appSettings.isBasicMode
   ? ([] as Routes).concat(
     explorer,
     staking,

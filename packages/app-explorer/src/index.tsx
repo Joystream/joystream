@@ -2,6 +2,7 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
+import uiSettings from '@polkadot/joy-settings/';
 import { AppProps, BareProps, I18nProps } from '@polkadot/ui-app/types';
 
 import './index.css';
@@ -33,7 +34,7 @@ class ExplorerApp extends React.Component<Props, State> {
           name: 'chain',
           text: t('Chain info')
         },
-        {
+        uiSettings.isBasicMode ? null : {
           hasParams: true,
           name: 'query',
           text: t('Block details')
@@ -42,7 +43,7 @@ class ExplorerApp extends React.Component<Props, State> {
           name: 'node',
           text: t('Node info')
         }
-      ]
+      ].filter(x => x !== null) as TabItem[]
     };
   }
 
