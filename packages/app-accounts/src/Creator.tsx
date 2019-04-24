@@ -45,7 +45,7 @@ type State = {
   showWarning: boolean
 };
 
-const DEFAULT_TYPE = 'sr25519';
+const DEFAULT_TYPE: KeypairType = 'ed25519';
 
 function deriveValidate (derivePath: string, pairType: KeypairType): string | null {
   try {
