@@ -210,6 +210,12 @@ class Creator extends React.PureComponent<Props, State> {
               />
             </div>
             {
+              pairType === 'sr25519' &&
+                <Labelled label=''><article className='warning'>
+                  Choosing Schnorrkel (sr25519) will restrict your key from certain uses
+                </article></Labelled>
+            }
+            {
               deriveError
                 ? <Labelled label=''><article className='error'>{deriveError}</article></Labelled>
                 : null
