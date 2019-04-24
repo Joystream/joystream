@@ -36,7 +36,7 @@ const ENDPOINT_DEFAULT = WSS_JOYSTREAM;
 const UITHEME_DEFAULT = 'substrate';
 
 // tslint:disable-next-line
-const UIMODE_DEFAULT = typeof window !== 'undefined' && window.location.host.indexOf('ui-light') !== -1
+const UIMODE_DEFAULT = typeof window !== 'undefined'
   ? 'light'
   : 'full';
 

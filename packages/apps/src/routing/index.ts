@@ -31,7 +31,6 @@ const routes: Routes = appSettings.uiMode === 'light'
     explorer,
     staking,
     roles,
-    null,
     transfer,
     null,
     media,
