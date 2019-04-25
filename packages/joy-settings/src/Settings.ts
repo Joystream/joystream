@@ -34,6 +34,14 @@ export class Settings implements SettingsStruct {
     return this._uiMode;
   }
 
+  get isBasicMode (): boolean {
+    return this._uiMode === 'light';
+  }
+
+  get isFullMode (): boolean {
+    return this._uiMode === 'full';
+  }
+
   get uiTheme (): string {
     return this._uiTheme;
   }

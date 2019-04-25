@@ -45,7 +45,7 @@ type State = {
   showWarning: boolean
 };
 
-const DEFAULT_TYPE = 'sr25519';
+const DEFAULT_TYPE: KeypairType = 'ed25519';
 
 function deriveValidate (derivePath: string, pairType: KeypairType): string | null {
   try {
@@ -188,7 +188,7 @@ class Creator extends React.PureComponent<Props, State> {
         </div>
         <details
           className='accounts--Creator-advanced'
-          open
+          open={uiSettings.isFullMode}
         >
           <summary>{t('Advanced creation options')}</summary>
           <div className='ui--Params'>
@@ -213,6 +213,12 @@ class Creator extends React.PureComponent<Props, State> {
               deriveError
                 ? <Labelled label=''><article className='error'>{deriveError}</article></Labelled>
                 : null
+            }
+            {
+              pairType === 'sr25519' &&
+                <Labelled label=''><article className='warning'>
+                  Choosing Schnorrkel (sr25519) will restrict your key from certain uses
+                </article></Labelled>
             }
           </div>
         </details>

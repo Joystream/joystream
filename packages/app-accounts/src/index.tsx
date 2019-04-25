@@ -2,6 +2,7 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
+import uiSettings from '@polkadot/joy-settings/';
 import { AppProps, I18nProps } from '@polkadot/ui-app/types';
 import { TabItem } from '@polkadot/ui-app/Tabs';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
@@ -58,7 +59,7 @@ class AccountsApp extends React.PureComponent<Props, State> {
           name: 'restore',
           text: t('Restore key')
         },
-        {
+        uiSettings.isBasicMode ? null : {
           name: 'vanity',
           text: t('Vanity address')
         },
@@ -66,7 +67,7 @@ class AccountsApp extends React.PureComponent<Props, State> {
           name: 'memo',
           text: t('My memo')
         }
-      ]
+      ].filter(x => x !== null) as TabItem[]
     };
   }
 
