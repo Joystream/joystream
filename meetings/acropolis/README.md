@@ -1,5 +1,3 @@
-<img src="meetings-cover.svg"/>
-
 # Table of contents
 
 - [Conducted Meetings](#conducted-meetings)

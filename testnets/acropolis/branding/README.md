@@ -1,6 +1,3 @@
-<img src="acropolis-cover.svg"/>
-
-
 # Table of contents
 
 - [Name](#name)

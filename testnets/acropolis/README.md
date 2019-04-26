@@ -1,5 +1,6 @@
+<!---
 <img src="acropolis-cover.svg"/>
-
+-->
 <div align="center">
   <h3>
     <a href="#">
@@ -58,9 +59,9 @@ WIP
 
 # Past Release Meetings
 
-| Name/category   | Date            | Link                              |
-| :-------------: | :-------------: |:-------------------------------------:|
-| Launch Meeting  | 26.04.19        | ../meetings/acropolis/#launch-meeting
+| Name/category   | Date            | Itinerary and Minutes                           |
+| :-------------: | :-------------: |:-----------------------------------------------:|
+| Launch Meeting  | 26.04.19        | [link](../meetings/acropolis/#launch-meeting)   |
 
 #  Specification
 
