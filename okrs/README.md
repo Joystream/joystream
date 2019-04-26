@@ -1,4 +1,4 @@
-<p align="center"><img src="live-okrs-headline.png"></p>
+<p align="center"><img src="live-okr.svg"></p>
 
 <div align="center">
   <h4>These are our currently :microphone: live objectives :microphone: and tracked achievement :crown: </h4>
@@ -58,9 +58,9 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 - **Tracked:** Every other Tuesday
 - **Tracking Manager:** Martin
 - **Key Results:** Martin, Bedeho and Mokhtar
-  1. `Add 1 full time rust developer (n)`
-  2. `Add 1 full time blockchain developer (n)`
-  3. `Add 1 full stack developer (n)`
+  1. `Add 1 full time rust developer (ewd)`
+  2. `Add 1 full time blockchain developer (ewd)`
+  3. `Add 1 full stack developer (ewd)`
   4. `Dev to start work on platform chat (n)`
   5. `Dev to start work on platform forum (n)`
   <br />
@@ -73,8 +73,7 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |Comments|
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------:|
-| 09.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
-| 23.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 23.04.19 |   0   |  0.3  |  0    |  0.05 |   1   | #1-3 from `n` to `ewd` |
 | 07.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 21.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 04.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
@@ -87,9 +86,7 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 - **Tracked:** Every other Tuesday
 - **Tracking Manager:** Martin
 - **Key Results:** Martin and Bedeho u.n.o.
-  1. `Get 500 sign ups for our Joystream jobs and roles mailing list (ewd)`
-      * `Bedeho` : `0.75`
-      * `Martin` : `0.25`
+  1. `Get 500 sign ups for our Joystream jobs and roles mailing list (n)`
   2. `Get 2000 "Readers" and 5000" "Reads" on our blog in Q2 (n)`
       * `Martin`
   3. `Get 500 downloads per hour spent for "Staked" (n)`
@@ -112,8 +109,7 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |Comments|
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------:|
-| 09.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
-| 23.04.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 23.04.19 |(31) **0.06**  |  (182,318) **0.08**   |  (30,5) **0.01** | **0.14** |   0  | Changed #1 from `ewd` to `n`  |
 | 07.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 21.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 04.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
@@ -121,59 +117,51 @@ Archived OKRs are found in [archive](/archive), below only live OKRs are found.
 | 02.07.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 
 # Release OKRs
-
-## Objective: `Launch Athens network`
-- **Active from:** 04.02.19
-- **KR Measurement Deadline**: 1 week after Athens launch
+### Objective: `Launch Acropolis Network`
+- **Active from:** 29.04.19
+- **KR Measurement Deadline**: 7-9 days after Acropolis launch (first weekday)
 - **Tracked**: Every Monday
 - **Tracking Manager**: Martin
 - **Key Results**:
-  1. `Get 10 claims per $ for tokens on our faucet (ewd)`
-      - Mokhtar: 0.5
-      - Martin: 0.5
-  2. `Have all episodes of the Staked (4) and Make_World (#) podcast in the content directory (ewd)`
-      - Jens: 0.5
-      - Martin+Bedeho: 0.5
-  3. `Have second council upgrade consensus after reaching quorum (ewd)`
-      - Alex: 1/3
-      - Mokhtar: 1/3
-      - Martin: 1/3
-  4. `20 Uploads (100min) and 100 Downloads not including Jsgenesis (ewd)`
-      - Jens: 1/3
-      - Alex: 1/3
-      - Mokhtar: 1/3
-  5. `75 Memberships created (not including Jsgenesis) at a min 1/2 membership/unique view ratio (ewd)`
-      - Mokhtar: 0.5
-      - Alex: 0.5
+1. `Get 200 posts on forum (limits, not Jsg) (ewd)`
+    - Bedeho: 3/4
+    - Alex: 1/4
+2. `All n* modules fully specd (n)`
+    - Bedeho: 1/2
+    - Mokhtar: n_m/(n*2)
+    - Alex: n_a/(n*2)
+    - Jens: n_j/(n*2)
+    - Bedeho: n_b/(n*2)    
+3. `Add tranches to storage-node (ewd)`
+    - Jens (2/3)
+    - Mokhtar (1/3)
+4. `No PRs merged to master (excluding bugfixes and "pioneer") after "Module Test" (ewd)`
+    - Martin: 1/2
+    - Jens: 1/8
+    - Mokhtar: 1/8
+    - Bedeho: 1/8
+    - Alex: 1/8
 
+`* Bedeho to define n, n_m, n_a, n_j, n_b`
 
-<br />
-- **Final Score**
-
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Total  |
-|:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:-------:|
-| 23.04.19 | 0.05  | 0.83  |  0.5  |  0.67 | 0.66  |**0.642**|
 
 
 - **Notes**
-  * `KRs 3, 4 and 5 were changed mid flight. KR tracking from before the 18.03 is disregarded `
-  * `This was a result of inexperience constructing good OKRs`
-  * `KRs was tracked from 04.03.19, but due to in flight changes, the numbers were scrapped`
-  * `For the raw numbers in final grading below, * denotes conservative estimates/extrapolations.`
+  * `WIP`
 <br />
 
 - **Tracking:**
 
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Comments |
-|:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:--------------:|
-| 04.03.19 | -  | -  | -  |  - |  - | In flight changes |
-| 18.03.19 |(1.0 , 0.75) **0.87**  | (0.66 , 0.9) **0.78**  | (1.0 , 0.8 , 0.8) **0.87**  |  (0.66 , 0, 0) **0.33** |  (0.8 , 0.65) **0.73** |  First Athens grading |
-| 25.03.19 |(1.0 , 0.86) **0.92** | (0.75 , 0.92) **0.84**  | (1.0 , 0.9 , 0.8) **0.9**  |  (0.66 , 0.1, 0.7) **0.49** |  (0.85 , 0.85) **0.85** | - |
-| 01.04.19 |(0.5 , 0.9) **0.7** | (0.8 , 0.95) **0.88**  |  **0.5**  |  (0.66 , 0.65, 0.9) **0.74** |  (1.0 , 0.85) **0.93** | Sparta crash made #3 unobtainable |
-| 08.04.19 |(0.5 , 0.9) **0.7** | (0.85 , 0.95) **0.9**  |  **0.5**  |  (1.0 , 0.9, 0.9) **0.93** |  (1.0 , 0.85) **0.93** | - |
-| 15.04.19 | (1.0 , 0.9) **0.95**  | (0.9 , 0.98) **0.94**   |  **0.5**  |  (0.95 , 1.0, 1.0) **0.96** |  (1.0 , 0.98) **0.99** | Bedeho not present |
-| 23.04.19 | (1.0 , 1.0) **1.0**  | (0.98 , 1.0) **0.99**   |  **0.5**  |  (1.0 , 1.0, 1.0) **1.0** |  (1.0 , 0.9) **0.95** | Bedeho not present |
-| 23.04.19 | (93 , $170) **0.05**  | (4/4 , 1/2) **0.83**   |  **0.5**  |  (4/20 , 46/100, 364*/200) **0.67** |  (32(40) , 72*(78)) **0.66** | Actual score |
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |    Comments       |
+|:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----------------:|
+| 06.05.19 | -     |    -  |    -  |     - |  -    |       -           |
+| 13.05.19 | -     |    -  |    -  |     - |  -    |       -           |
+| 20.05.19 | -     |    -  |    -  |     - |  -    |       -           |
+| 27.05.19 | -     |    -  |    -  |     - |  -    |       -           |
+| 03.06.19 | -     |    -  |    -  |     - |  -    |       -           |
+| 10.06.19 | -     |    -  |    -  |     - |  -    |       -           |
+| 1x.06.19 | -     |    -  |    -  |     - |  -    |       -           |
+| 1x.06.19 | -     |    -  |    -  |     - |  -    | **Actual Score**  |
 
 
 # Group OKRs
@@ -225,7 +213,6 @@ Fill in if needed.
 ## `Martin` (@bwhm)
 
 ## Objective: `Improve value as Release Manager`
-WIP
 - **Active from:** 23.04.19
 - **KR Measurement Deadline:** 16.07.19
 - **Tracked:** Every other Tuesday
