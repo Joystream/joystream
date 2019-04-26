@@ -24,7 +24,7 @@ This is the index of past meetings with itineraries, they should all be stored i
 | Identifier                           | Invitation sent  | Scheduled   (held)    | Itinerary and Minutes                              |
 | :----------------------------------: | :---------------:|-----------------------| :------------------------------------------------: |
 | Acropolis Launch Meeting             | 24.04.19         | 26.04.19-12:15CET (x) | [link](../meetings/acropolis#launch-meeting)       |
-| Acropolis User Stories Meeting       | 26.04.19         | 29.04.19-12:15CET     | [link](../meetings/acropolis#user-stories-meeting) |
+| Acropolis User Stories Meeting       | 26.04.19         | 30.04.19-12:15CET     | [link](../meetings/acropolis#user-stories-meeting) |
 
 
 # Itinerary Template

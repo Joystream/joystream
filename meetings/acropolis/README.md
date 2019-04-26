@@ -90,7 +90,7 @@ As a consequence of `5.`, this seems more like a subrelease from a user POW. Thi
 
 
 ### Objective: `Launch Acropolis Network`
-- **Active from:** 29.04.19
+- **Active from:** 30.04.19
 - **KR Measurement Deadline**: 7-9 days after Acropolis launch (first weekday)
 - **Tracked**: Every Monday
 - **Tracking Manager**: Martin
