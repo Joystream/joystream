@@ -16,7 +16,7 @@
   - [Increase the Joystream building power](#objective-increase-the-joystream-building-power)
   - [Expand Joystream brand awareness](#objective-expand-joystream-brand-awareness)
 - [Release OKRs](#release-okrs)
-  - [Launch Athens network](#objective-launch-athens-network)
+  - [Launch Acropolis network](#objective-launch-acropolis-network)
 - [Personal OKRs](#personal-okrs)
     - [Bedeho - Improve Technical Productivity of Team](#objective-improve-technical-productivity-of-team)
     - [Martin - Improve value as Release Manager](#objective-improve-value-as-release-manager)
