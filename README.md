@@ -100,7 +100,7 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 
 ## Next Testnet
 
-Rome
+[Acropolis](/testnets/acropolis/README.md)
 
 ## Past Testnets
 
@@ -145,15 +145,15 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
   2. **Health Comments:** Any points you wish to discuss related to things like team health, code health, workflow/system health etc.
   3. **Weekly Priorities:** Your top 3-5 priorities this week. *Not* the same as your tasks today.
   4. **Announcements:** Anything you think should be brought to everyones attention.
-- **When:** Every working monday at 10am (GMT)
+- **When:** Every working Monday at 10am (GMT)
 - **Where:** Zoom
 - **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
 - **Record&Publish:** YES, if no participant objects.
 
 #### Release meeting
 
-- **Description:** Discussion about impending testnet release.
-- **When:** Weekly
+- **Description:** Discussion concerning testnet planning and release.
+- **When:** On-demand
 - **Where:** Zoom
 - **Participant:** Core release team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
 - **Record&Publish:** YES, if no participant objects.
@@ -276,7 +276,7 @@ Each release is directed by a _Release Manager_ (**RM**) who is responsible for
 
 #### Leads
 
-A [release plan](release-plan-template.md) will consist of a set of projects, each with a corresponding lead, these are referred to as the _leads_.
+A [release plan](/testnets/#release-plan-template) will consist of a set of projects, each with a corresponding lead, these are referred to as the _leads_.
 
 #### Specification Lead and Committee
 
@@ -302,7 +302,7 @@ First release meeting, should take no more than **45 minutes**, with agenda
 
 Second release meeting, should take no more than **90 minutes**, with agenda
 
-1. For experiences identified in the [launch meeting](launch-meeting), review proposed user stories suggestions prepared by each lead, and settle on final set of stories
+1. For experiences identified in the [launch meeting](#launch-meeting), review proposed user stories suggestions prepared by each lead, and settle on final set of stories
 2. Schedule the [Release Plan Finalisation Meeting](#release-plan-finalisation-meeting) to no later than **two working days after this meeting**.
 
 #### Release Plan Finalisation Meeting
@@ -322,7 +322,7 @@ Open ended technical meetings which are conducted iteratively with implementing 
 
 ### Step-by-step Process
 
-This whole process should take no more than **X** days from start to finish, and involves the following sequence of events and corresponding deadlines.
+This whole process should take no more than **7** working days from start to finish, and involves the following sequence of events and corresponding deadlines.
 
 1. The following must be determined no later than **the day before the prior testnet release.**
 
@@ -332,7 +332,7 @@ This whole process should take no more than **X** days from start to finish, and
 
 2. **RM** shall have done the following no later than at **the day after the prior testnet release.**
 
-    - created PR establishing a new [testnet directory](testnet-directory), where
+    - created PR establishing a new [testnet directory](/testnets), where
         - the release name is set to `TESTNET_NAME`
         - the naming rationale is left blank, unless it is ready
         - the goal is left blank, unless it is ready
