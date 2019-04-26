@@ -44,6 +44,7 @@ This is the index of past meetings with itineraries, they should all be stored i
 #### Agenda
 
 :one: Item 1.
+
 :two: ....
 
 #### Minutes
@@ -51,6 +52,7 @@ This is the index of past meetings with itineraries, they should all be stored i
 **Present:** `person1, ...`
 
 :one: Item 1.
+
 :two: ....
 
 **Other Topics raised:**

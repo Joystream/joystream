@@ -152,6 +152,7 @@ No
 
 #### Agenda
 :one: For experiences identified in the [launch meeting](#launch-meeting), review proposed user stories suggestions prepared by each lead, and settle on final set of stories.
+
 :two: Schedule the [Release Plan Finalisation Meeting](#release-plan-finalisation-meeting) to no later than **two working days after this meeting**.
 
 #### Minutes
@@ -159,6 +160,7 @@ No
 **Present:** `person1, ...`
 
 :one: Item 1.
+
 :two: ....
 
 **Other Topics raised:**
@@ -186,6 +188,7 @@ No
 #### Agenda
 
 :one: Item 1.
+
 :two: ....
 
 #### Minutes
@@ -193,6 +196,7 @@ No
 **Present:** `person1, ...`
 
 :one: Item 1.
+
 :two: ....
 
 **Other Topics raised:**
@@ -224,6 +228,7 @@ No
 #### Agenda
 
 :one: Item 1.
+
 :two: ....
 
 #### Minutes
@@ -231,6 +236,7 @@ No
 **Present:** `person1, ...`
 
 :one: Item 1.
+
 :two: ....
 
 **Other Topics raised:**
