@@ -21,23 +21,38 @@ Each meeting which will be archived has a _meeting identifier_, which is just a 
 
 This is the index of past meetings with itineraries, they should all be stored in this directory.
 
-| Identifier       | Scheduled        | Status (`pending`,`done`) | [Type](../project-management/README.md#meeting-types) (`daily`, `monday`,`release`, `misc`)     | Link      |
-| :-------------  | :-------------   |:-------------:            | :-----:                                                                                         | :-----:   |
-| x               | x                | x                         | x                                                                                               | x         |
+| Identifier                           | Invitation sent  | Scheduled   (held)    | Itenerary and Minutes                              |
+| :----------------------------------: | :---------------:|-----------------------| :------------------------------------------------: |
+| Acropolis Launch Meeting             | 24.04.19         | 26.04.19-12:15CET (x) | [link](../meetings/acropolis#launch-meeting)       |
+| Acropolis User Stories Meeting       | 26.04.19         | 29.04.19-12:15CET     | [link](../meetings/acropolis#user-stories-meeting) |
+
 
 # Itinerary Template
 
-- **Nr:** `meeting identifier`
+## Short Meeting Identifier
+
+- **ID:** `full meeting identifier (e.g. Sparta Launch Meeting)`
 - **Date:** `date of meeting`
 - **Starts:** `start time with time zone`
 - **Duration:** `how long the meeting lasts`
 - **Venue:** `e.g. Zoom link or physical location`
-- **Lead**: `person is responsible for time keeping, note taking and post-meeting`
+- **Lead:** `person responsible following agenda and time keeping`
+- **Minutes:** `person responsible for minutes and post-meeting work`
 - **Participants**: `persons known to be participating in advance`
-  - `Name of person`
+  - `person 1`
   - `...`
-- **Agenda:**
+#### Agenda
 
-| Time Required         | Item            | Decision  |
-| -------------         |:-------------:  | :-----:   |
-| x                     | x               | x         |
+:one: Item 1.
+:two: ....
+
+#### Minutes
+**Started at:** `time`
+**Present:** `person1, ...`
+
+:one: Item 1.
+:two: ....
+
+**Other Topics raised:**
+
+**Ended at:** `time`
