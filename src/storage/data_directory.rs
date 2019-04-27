@@ -129,6 +129,8 @@ decl_storage! {
         pub StorageProviderAddress get(storage_provider_address): Vec<u8>;
         // Default storage provider repository id
         pub StorageProviderRepoId get(storage_provider_repo_id): Vec<u8>;
+        // Default storage provider account id, overrides all active storage providers as liason if set
+        pub PrimaryLiaisonAccountId get(primary_liaison_account_id): Option<T::AccountId>;
     }
 }
 
@@ -170,9 +172,13 @@ decl_module! {
             ensure!(!<DataObjectByContentId<T>>::exists(content_id),
                 "Data object aready added under this content id");
 
-            // The liaison is something we need to take from staked roles. The idea
-            // is to select the liaison, for now randomly.
-            let liaison = T::Roles::random_account_for_role(actors::Role::Storage)?;
+            let liaison = match Self::primary_liaison_account_id() {
+                // Select primary liaison if set
+                Some(primary_liaison) => primary_liaison,
+
+                // Select liaison from staked roles if available
+                _ => T::Roles::random_account_for_role(actors::Role::Storage)?
+            };
 
             // Let's create the entry then
             let data: DataObject<T> = DataObject {
@@ -279,6 +285,14 @@ decl_module! {
 
         fn set_storage_provider_address(address: Vec<u8>) {
             <StorageProviderAddress<T>>::put(address);
+        }
+
+        fn set_primary_liaison_account_id(account: T::AccountId) {
+            <PrimaryLiaisonAccountId<T>>::put(account);
+        }
+
+        fn unset_primary_liaison_account_id() {
+            <PrimaryLiaisonAccountId<T>>::take();
         }
 
         fn remove_known_content_id(content_id: T::ContentId) {
