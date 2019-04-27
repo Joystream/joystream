@@ -109,7 +109,7 @@ Archived OKRs are found in [archive](/OKR-archive), below only live OKRs are fou
 
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |Comments|
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------:|
-| 23.04.19 |(31) **0.06**  |  (182,318) **0.08**   |  (30,5) **0.01** | **0.14** |   0  | Changed #1 from `ewd` to `n`  |
+| 23.04.19 |(31) **0.06**  |  (182,318) **0.08**   |  (30,5) **0.01** | **0.25** |   0  | Changed #1 from `ewd` to `n`  |
 | 07.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 21.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 04.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
@@ -117,7 +117,8 @@ Archived OKRs are found in [archive](/OKR-archive), below only live OKRs are fou
 | 02.07.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 
 # Release OKRs
-### Objective: `Launch Acropolis Network`
+WIP
+## Objective: `Launch Acropolis Network`
 - **Active from:** 29.04.19
 - **KR Measurement Deadline**: 7-9 days after Acropolis launch (first weekday)
 - **Tracked**: Every Monday
@@ -177,7 +178,6 @@ Fill in if needed.
 ## `Bedeho` (@bedeho)
 
 ## Objective: `Improve Technical Productivity of Team`
-WIP
 
 - **Active from:** 23.04.19
 - **KR Measurement Deadline:** 16.07.19

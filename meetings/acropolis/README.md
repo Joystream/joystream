@@ -127,7 +127,7 @@ We did not explicitly address this point on the agenda, but it follows from the 
 :three: User stories meeting
 The User Stories meeting is to be held on Tuesday at 12:15CET.
 
-**Other Topics raised:**
+**Other topics raised:**
 No
 
 **Ended at:** 13:15CET
@@ -151,19 +151,21 @@ No
  - `Mokhtar`
 
 #### Agenda
-:one: For experiences identified in the [launch meeting](#launch-meeting), review proposed user stories suggestions prepared by each lead, and settle on final set of stories.
+:one: After the [launch meeting](#launch-meeting), we agreed on the specific goals for `Acropolis`. Based on this, each lead shall prepare user stories for discussion, settle on final set of stories, and what consequences this may bring.
 
 :two: Schedule the [Release Plan Finalisation Meeting](#release-plan-finalisation-meeting) to no later than **two working days after this meeting**.
 
 #### Minutes
 **Started at:** `time`
-**Present:** `person1, ...`
+**Present:**
+* `person1`
+* `...`
 
 :one: Item 1.
 
 :two: ....
 
-**Other Topics raised:**
+**Other topics raised:**
 
 **Ended at:** `time`
 
@@ -193,13 +195,15 @@ No
 
 #### Minutes
 **Started at:** `time`
-**Present:** `person1, ...`
+**Present:**
+* `person1`
+* `...`
 
 :one: Item 1.
 
 :two: ....
 
-**Other Topics raised:**
+**Other topics raised:**
 
 **Ended at:** `time`
 
@@ -233,12 +237,14 @@ No
 
 #### Minutes
 **Started at:** `time`
-**Present:** `person1, ...`
+**Present:**
+* `person1`
+* `...`
 
 :one: Item 1.
 
 :two: ....
 
-**Other Topics raised:**
+**Other topics raised:**
 
 **Ended at:** `time`

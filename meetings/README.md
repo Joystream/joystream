@@ -49,12 +49,14 @@ This is the index of past meetings with itineraries, they should all be stored i
 
 #### Minutes
 **Started at:** `time`
-**Present:** `person1, ...`
+**Present:**
+* `person1`
+* `...`
 
 :one: Item 1.
 
 :two: ....
 
-**Other Topics raised:**
+**Other topics raised:**
 
 **Ended at:** `time`
