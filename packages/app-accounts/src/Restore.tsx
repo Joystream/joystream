@@ -14,6 +14,7 @@ import keyring from '@polkadot/ui-keyring';
 
 import translate from './translate';
 import { ActionStatus } from '@polkadot/ui-app/Status/types';
+import { isEmptyStr } from '@polkadot/joy-utils/';
 
 type Props = ComponentProps & I18nProps;
 
@@ -27,7 +28,7 @@ type State = {
 class Restore extends React.PureComponent<Props, State> {
   state: State = {
     isFileValid: false,
-    isPassValid: false,
+    isPassValid: true,
     json: null,
     password: ''
   };
@@ -116,7 +117,7 @@ class Restore extends React.PureComponent<Props, State> {
 
   private onChangePass = (password: string): void => {
     this.setState({
-      isPassValid: keyring.isPassValid(password),
+      isPassValid: isEmptyStr(password) || keyring.isPassValid(password),
       password
     });
   }
