@@ -12,7 +12,13 @@ normal=$(tput sgr0)
 # Save current directory.
 pushd . >/dev/null
 
-for SRC in substrate-runtime-joystream/
+RUNTIME_DIR="substrate-runtime-joystream"
+if [ ! -d "$RUNTIME_DIR" ]; then
+    echo "The '$RUNTIME_DIR' directory is missing. Did you git clone or symlink it yet?"
+    exit 1
+fi
+
+for SRC in "$RUNTIME_DIR/"
 do
   echo "${bold}Building webassembly binary in $SRC...${normal}"
   cd "$PROJECT_ROOT/$SRC"
