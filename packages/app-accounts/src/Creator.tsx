@@ -17,6 +17,7 @@ import { isHex, u8aToHex } from '@polkadot/util';
 import { keyExtractPath, mnemonicGenerate, mnemonicValidate, randomAsU8a } from '@polkadot/util-crypto';
 
 import translate from './translate';
+import { isEmptyStr } from '@polkadot/joy-utils/';
 
 type Props = ComponentProps & I18nProps & {
   match: {
@@ -186,6 +187,12 @@ class Creator extends React.PureComponent<Props, State> {
             value={password}
           />
         </div>
+        {
+          isEmptyStr(password) &&
+            <Labelled label=''><article className='warning'>
+              Although it is recommended to use a password to protect your key, you can still leave it empty.
+            </article></Labelled>
+        }
         <details
           className='accounts--Creator-advanced'
           open={uiSettings.isFullMode}
@@ -302,7 +309,7 @@ class Creator extends React.PureComponent<Props, State> {
     return {
       ...this.generateSeed(seed, derivePath, seedType, pairType),
       isNameValid: true,
-      isPassValid: false,
+      isPassValid: true,
       isSeedValid: true,
       isValid: false,
       name: 'new keypair',
@@ -323,7 +330,7 @@ class Creator extends React.PureComponent<Props, State> {
         const isSeedValid = seedType === 'bip'
           ? mnemonicValidate(seed)
           : rawValidate(seed);
-        const isPassValid = keyring.isPassValid(password);
+        const isPassValid = isEmptyStr(password) || keyring.isPassValid(password);
 
         if (!deriveError && isSeedValid && (seed !== prevState.seed || derivePath !== prevState.derivePath || pairType !== prevState.pairType)) {
           address = addressFromSeed(seed, derivePath, pairType);
