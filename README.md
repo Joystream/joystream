@@ -63,7 +63,7 @@
       - [Roles](#roles)
         - [Release Manager](#release-manager)
         - [Specification Lead and Committee](#specification-lead-and-committee)
-      - [Set-by-step Process](#step-by-step-process)
+      - [Step-by-step Process](#step-by-step-process)
 - [Github Policy](#github-policy)
 
 # Overview
@@ -89,7 +89,7 @@ This is the set of key repos that
 | [helpdesk](https://github.com/Joystream/helpdesk)                             | Information and guides for users and contributors    | @bwhm           |
 
 <br />
-<img src="release-section.svg" id="testnet-releases"/>
+<img src="testnet-releases.svg" id="testnet-releases"/>
 
 
 Until the Joystream mainnet goes live, a sequence of test networks will be rolled out and deployed, and this section covers this activity.
@@ -100,7 +100,7 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 
 ## Next Testnet
 
-Rome
+[Acropolis](/testnets/acropolis/README.md)
 
 ## Past Testnets
 
@@ -121,7 +121,8 @@ The reason this is placed in public view on Github is two fold
 - **Best Practices**: Establish best practices which can be replicated by the platform, when it is fully live, in how to collaboratively build and manage the platform using open tools. In particular, the current plan is that the platform has a built in Github equivalent, which thus would allow the use of these conventions.
 
 
-## Meetings
+<br />
+<img src="meetings.svg" id="meetings"/>
 
 ### Itinerary
 
@@ -144,15 +145,15 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
   2. **Health Comments:** Any points you wish to discuss related to things like team health, code health, workflow/system health etc.
   3. **Weekly Priorities:** Your top 3-5 priorities this week. *Not* the same as your tasks today.
   4. **Announcements:** Anything you think should be brought to everyones attention.
-- **When:** Every working monday at 10am (GMT)
+- **When:** Every working Monday at 10am (GMT)
 - **Where:** Zoom
 - **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
 - **Record&Publish:** YES, if no participant objects.
 
 #### Release meeting
 
-- **Description:** Discussion about impending testnet release.
-- **When:** Weekly
+- **Description:** Discussion concerning testnet planning and release.
+- **When:** On-demand
 - **Where:** Zoom
 - **Participant:** Core release team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
 - **Record&Publish:** YES, if no participant objects.
@@ -242,8 +243,8 @@ The template used for recording and tracking OKRs has the following form:
 | `<date1>` | (`<... assignment set scores>`)  **Total KR score**  | ... |  **Tracking comments** |
 | `<date2>` | (`<... assignment set scores>`)  **Total KR score**  | ... |  **Tracking comments** |
 
-
-## Testnet Planning
+<br />
+<img src="testnet-planning.svg" id="testnet-planning"/>
 
 ### Branding
 
@@ -261,8 +262,7 @@ All releases should have a corresponding _release directory_ in the `/testnets` 
 - `RELEASE_NAME`
   - `README.md`: Release document.
   - **WIP**`specification.md`: Testnet speficiation.
-  - `/branding`: A directory which includes a branding document and related assets, as described in the branding [section](branding)
-  - `/tutorials`: User facing tutorials for participating on the network.
+  - `/branding`: A directory which includes a branding document and related assets, as described in the branding [section](#branding).
 
 ### Roles
 
@@ -276,7 +276,7 @@ Each release is directed by a _Release Manager_ (**RM**) who is responsible for
 
 #### Leads
 
-A [release plan](release-plan-template.md) will consist of a set of projects, each with a corresponding lead, these are referred to as the _leads_.
+A [release plan](/testnets/#release-plan-template) will consist of a set of projects, each with a corresponding lead, these are referred to as the _leads_.
 
 #### Specification Lead and Committee
 
@@ -302,7 +302,7 @@ First release meeting, should take no more than **45 minutes**, with agenda
 
 Second release meeting, should take no more than **90 minutes**, with agenda
 
-1. For experiences identified in the [launch meeting](launch-meeting), review proposed user stories suggestions prepared by each lead, and settle on final set of stories
+1. For experiences identified in the [launch meeting](#launch-meeting), review proposed user stories suggestions prepared by each lead, and settle on final set of stories
 2. Schedule the [Release Plan Finalisation Meeting](#release-plan-finalisation-meeting) to no later than **two working days after this meeting**.
 
 #### Release Plan Finalisation Meeting
@@ -322,7 +322,7 @@ Open ended technical meetings which are conducted iteratively with implementing 
 
 ### Step-by-step Process
 
-This whole process should take no more than **X** days from start to finish, and involves the following sequence of events and corresponding deadlines.
+This whole process should take no more than **7** working days from start to finish, and involves the following sequence of events and corresponding deadlines.
 
 1. The following must be determined no later than **the day before the prior testnet release.**
 
@@ -332,7 +332,7 @@ This whole process should take no more than **X** days from start to finish, and
 
 2. **RM** shall have done the following no later than at **the day after the prior testnet release.**
 
-    - created PR establishing a new [testnet directory](testnet-directory), where
+    - created PR establishing a new [testnet directory](/testnets), where
         - the release name is set to `TESTNET_NAME`
         - the naming rationale is left blank, unless it is ready
         - the goal is left blank, unless it is ready
@@ -340,9 +340,9 @@ This whole process should take no more than **X** days from start to finish, and
 
     - initiated creation of possibly missing logomark
 
-    - scheduled a meeting time for the [launch meeting](launch-meeting) no later than the next available working day when all core contributors are available.
+    - scheduled a meeting time for the [launch meeting](#launch-meeting) no later than the next available working day when all core contributors are available.
 
-    - create a subdirectory of the [meeting](meetings) directory that has itinerary with appropriate agenda
+    - create a subdirectory of the [meeting](/meetings) directory that has itinerary with appropriate agenda
 
 3. Conduct launch meeting.
 
@@ -372,7 +372,9 @@ This whole process should take no more than **X** days from start to finish, and
 
 12. Release planning meetings are conducted on a per-need basis, typically more frequently as the release date approaches.
 
-# Github Policy
+
+<br />
+<img src="github-policy.svg" id="github-policy"/>
 
 WIP: describe how we use github, in particular
 
