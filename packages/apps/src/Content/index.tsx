@@ -12,12 +12,12 @@ import styled from 'styled-components';
 import { withCalls, withMulti } from '@polkadot/ui-api';
 import { QueueConsumer } from '@polkadot/ui-app/Status/Context';
 
-import { Provider } from 'unstated';
 import Status from './Status';
 import routing from '../routing';
 import translate from '../translate';
 import NotFound from './NotFound';
 import TopBar from '../TopBar';
+import { MyAccountProvider } from '@polkadot/joy-utils/MyAccountContext';
 
 type Props = I18nProps & ApiProps & {
   location: Location
@@ -69,7 +69,8 @@ class Content extends React.Component<Props> {
     }
 
     return (
-      <Wrapper><Provider>
+      <Wrapper>
+        <MyAccountProvider>
         <QueueConsumer>
           {({ queueAction, stqueue, txqueue }: QueueProps) => (
             <>
@@ -87,7 +88,8 @@ class Content extends React.Component<Props> {
             </>
           )}
         </QueueConsumer>
-        </Provider></Wrapper>
+        </MyAccountProvider>
+      </Wrapper>
     );
   }
 }
