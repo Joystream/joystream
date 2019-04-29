@@ -38,18 +38,21 @@ function reducer (state: MyAccountState, action: MyAccountAction): MyAccountStat
 
     case 'set':
       address = action.address;
-      if (address && address !== state.address) {
-        console.log('Set my new address:', address);
-        store.set(MY_ADDRESS, address);
-        return { ...state, address, inited: true };
+      if (address !== state.address) {
+        if (address) {
+          console.log('Set my new address:', address);
+          store.set(MY_ADDRESS, address);
+          return { ...state, address, inited: true };
+        } else {
+          return forget();
+        }
       }
       return state;
 
     case 'forget':
-      return forget();
-
-    case 'forgetExact':
-      if (readMyAddress() === address) {
+      address = action.address;
+      const isMyAddress = address && address === readMyAddress();
+      if (!address || isMyAddress) {
         return forget();
       }
       return state;
@@ -68,20 +71,18 @@ const initialState = {
   address: undefined
 };
 
-type MyAccountContextProps = {
+export type MyAccountContextProps = {
   state: MyAccountState,
   dispatch: React.Dispatch<MyAccountAction>,
-  reload: () => void,
-  forget: () => void,
-  set: (address: string) => void
+  set: (address: string) => void,
+  forget: (address: string) => void
 };
 
 const contextStub: MyAccountContextProps = {
   state: initialState,
   dispatch: functionStub,
-  reload: functionStub,
-  forget: functionStub,
-  set: functionStub
+  set: functionStub,
+  forget: functionStub
 };
 
 export const MyAccountContext = createContext<MyAccountContextProps>(contextStub);
@@ -93,14 +94,13 @@ export function MyAccountProvider (props: React.PropsWithChildren<{}>) {
     if (!state.inited) {
       dispatch({ type: 'reload' });
     }
-  }, [state.inited]);
+  }, [state.inited]); // Don't call this effect if `invited` is not changed
 
   const contextValue = {
     state,
     dispatch,
-    reload: () => dispatch({ type: 'reload' }),
-    forget: () => dispatch({ type: 'forget' }),
-    set: (address: string) => dispatch({ type: 'set', address })
+    set: (address: string) => dispatch({ type: 'set', address }),
+    forget: (address: string) => dispatch({ type: 'forget', address })
   };
   return (
     <MyAccountContext.Provider value={contextValue}>

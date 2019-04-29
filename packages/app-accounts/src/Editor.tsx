@@ -18,6 +18,7 @@ import ChangePass from './ChangePass';
 import Forgetting from './Forgetting';
 import translate from './translate';
 import MemoView from '@polkadot/joy-utils/memo/MemoView';
+import { MyAccountContext, MyAccountContextProps } from '@polkadot/joy-utils/MyAccountContext';
 
 type Props = ComponentProps & I18nProps & {
   allAccounts?: SubjectInfo
@@ -33,6 +34,9 @@ type State = {
 };
 
 class Editor extends React.PureComponent<Props, State> {
+
+  static contextType = MyAccountContext;
+
   state: State;
 
   constructor (props: Props) {
@@ -354,6 +358,11 @@ class Editor extends React.PureComponent<Props, State> {
           );
           status.status = 'success';
           status.message = t('key forgotten');
+
+          // Delete my current address (key) from the local sotorage:
+          const myAccountCtx = this.context as MyAccountContextProps;
+          myAccountCtx.forget(current.address());
+
         } catch (error) {
           status.status = 'error';
           status.message = error.message;
