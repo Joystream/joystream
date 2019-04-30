@@ -27,3 +27,6 @@ node_modules/*
 # Generated JS files
 lib/joystream/substrate/types/*.js
 !lib/joystream/substrate/types/index.js
+
+# Ignore nvm config file
+.nvmrc
