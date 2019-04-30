@@ -61,7 +61,7 @@ class InnerView extends React.PureComponent<ViewProps> {
     }
 
     const asset = {
-      contentId: u8aToString(this.props.contentId),
+      contentId: this.props.contentId.toAddress(),
       data: dataObjectOpt.unwrap(),
       meta: metadataOpt.unwrap()
     };
