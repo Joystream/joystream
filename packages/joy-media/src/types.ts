@@ -4,22 +4,7 @@ import { OptionText } from '@polkadot/joy-utils/types';
 
 import { randomAsU8a } from '@polkadot/util-crypto';
 import { encodeAddress, decodeAddress } from '@polkadot/keyring';
-import { u8aToHex, u8aToString, stringToU8a } from '@polkadot/util';
-
-/**
- * These ids were generated using UUID v4. Now we use randomBytes() + encodeAddress() for new ids.
- */
-// TODO Delete this backward-compatibility when a new version of blockchain launched.
-const uuidContentIds = [
-  '0x6665306361386561643838662d343533332d393161642d323539383030623561',
-  '0x3033373262333663353061622d343262332d626265342d323931656332313132',
-  '0x3165623638343133326234372d343237392d616632612d653838613161623239',
-  '0x3562353334356161343130302d343731662d393434352d623936353465663238',
-  '0x3632346330363039396534312d346666342d623437342d633338666263646165',
-  '0x3632313637326535336561302d346361622d616361342d643738306133646164',
-  '0x6361343331666135353436312d343533372d396463622d393165326635383732',
-  '0x6666363565326261343231632d343234632d626633322d666130323866626536'
-];
+import { u8aToString, stringToU8a } from '@polkadot/util';
 
 export class ContentId extends Hash {
 
@@ -29,13 +14,11 @@ export class ContentId extends Hash {
   }
 
   /** This function is for backward-compatibility with content ids that were generated as UUID. */
+  // TODO Delete this backward-compatibility when a new version of blockchain launched.
   static isUuidFormat (contentId: string | Uint8Array): boolean {
-    let hexU8: Uint8Array =
-      typeof contentId === 'string'
-        ? stringToU8a(contentId)
-        : contentId;
-    const hex = u8aToHex(hexU8);
-    return uuidContentIds.indexOf(hex) >= 0;
+    return typeof contentId === 'string'
+        ? contentId.indexOf('-') > 0
+        : contentId.indexOf('-'.charCodeAt(0)) > 0;
   }
 
   static fromAddress (contentId: string): ContentId {
