@@ -19,7 +19,7 @@ import { withStorageProvider, StorageProviderProps } from './StorageProvider';
 import EditMeta from './EditMeta';
 import TxButton from '@polkadot/joy-utils/TxButton';
 
-const MAX_FILE_SIZE_200_MB = 200 * 1024 * 1024;
+const MAX_FILE_SIZE_200_MB = 100 * 1024 * 1024;
 
 function generateContentId () {
   const uuid = uuidv4().replace(/-/g, '');
