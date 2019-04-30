@@ -15,6 +15,8 @@ import translate from './translate';
 import { withStorageProvider, StorageProviderProps } from './StorageProvider';
 import { DataObject, ContentMetadata, ContentId } from './types';
 import { MutedText } from '@polkadot/joy-utils/MutedText';
+import { DEFAULT_THUMBNAIL_URL } from './utils';
+import { isEmptyStr } from '@polkadot/joy-utils/';
 
 type Asset = {
   contentId: string,
@@ -58,7 +60,11 @@ class InnerView extends React.PureComponent<ViewProps> {
 
   private renderPreview ({ contentId, data, meta }: Asset) {
     const { added_at } = meta;
-    const { name, thumbnail } = meta.parseJson();
+    let { name, thumbnail } = meta.parseJson();
+
+    if (isEmptyStr(thumbnail)) {
+      thumbnail = DEFAULT_THUMBNAIL_URL;
+    }
 
     return (
       <Link className='MediaCell' to={`/media/play/${contentId}`}>
@@ -115,8 +121,10 @@ export const View = withMulti(
   translate,
   withStorageProvider,
   withCalls<ViewProps>(
-    ['query.dataDirectory.dataObjectByContentId', { paramName: 'contentId', propName: 'dataObjectOpt' } ],
-    ['query.dataDirectory.metadataByContentId', { paramName: 'contentId', propName: 'metadataOpt' } ]
+    ['query.dataDirectory.dataObjectByContentId',
+      { paramName: 'contentId', propName: 'dataObjectOpt' } ],
+    ['query.dataDirectory.metadataByContentId',
+      { paramName: 'contentId', propName: 'metadataOpt' } ]
   )
 );
 
