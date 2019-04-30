@@ -38,6 +38,19 @@ type ViewProps = ApiProps & I18nProps & StorageProviderProps & {
   preview?: boolean
 };
 
+// This is a hack to just satisfy TypeScript compiler.
+type ImageOnErrorEvent = EventTarget & {
+  src: string,
+  onerror?: (e: any) => void
+};
+
+function onImageError (event: React.SyntheticEvent<HTMLImageElement, Event>) {
+  const target = event.target as ImageOnErrorEvent;
+  // Set onerror callback to undefined to prevent infinite callbacks when image src path fails:
+  target.onerror = undefined;
+  target.src = DEFAULT_THUMBNAIL_URL;
+}
+
 class InnerView extends React.PureComponent<ViewProps> {
 
   render () {
@@ -70,7 +83,7 @@ class InnerView extends React.PureComponent<ViewProps> {
       <Link className='MediaCell' to={`/media/play/${contentId}`}>
         <div className='CellContent'>
           <div className='ThumbBox'>
-            <img className='ThumbImg' src={thumbnail} />
+            <img className='ThumbImg' src={thumbnail} onError={onImageError} />
           </div>
           <div><h3>{name}</h3></div>
           <MutedText smaller>{new Date(added_at.time).toLocaleString()}</MutedText>
