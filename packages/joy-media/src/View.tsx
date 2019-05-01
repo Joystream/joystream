@@ -9,7 +9,7 @@ import { ApiProps } from '@polkadot/ui-api/types';
 import { I18nProps } from '@polkadot/ui-app/types';
 import { withCalls, withMulti } from '@polkadot/ui-api/with';
 import { Option } from '@polkadot/types/codec';
-import { u8aToString, stringToU8a, formatNumber } from '@polkadot/util';
+import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
 import { withStorageProvider, StorageProviderProps } from './StorageProvider';
@@ -61,7 +61,7 @@ class InnerView extends React.PureComponent<ViewProps> {
     }
 
     const asset = {
-      contentId: u8aToString(this.props.contentId),
+      contentId: this.props.contentId.toAddress(),
       data: dataObjectOpt.unwrap(),
       meta: metadataOpt.unwrap()
     };
@@ -178,7 +178,7 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
   render () {
     const { match: { params: { assetName } } } = this.props;
     try {
-      const contentId = new ContentId(stringToU8a(assetName));
+      const contentId = ContentId.fromAddress(assetName);
       const { contentType, contentTypeRequested } = this.state;
       if (typeof contentType === 'string') {
         return <View contentId={contentId} contentType={contentType} />;
