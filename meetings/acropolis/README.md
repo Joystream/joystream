@@ -137,7 +137,7 @@ No
 ## User Stories Meeting
 
 **ID:** `Acropolis User Stories Meeting`
-- **Date:** `30.04.19`
+- **Date:** `30.04.19` -> `02.04.19`
 - **Starts:** `12:15 CET`
 - **Duration:** `90min`
 - **Venue:** `ZOOM`
@@ -154,31 +154,20 @@ No
 :one: After the [launch meeting](#launch-meeting), we agreed on the specific goals for `Acropolis`. Based on this, each lead shall prepare user stories for discussion, settle on final set of stories, and what consequences this may bring.
 
 
-<<<<<<< HEAD
 ##### Forum
 ```
 ## Forum
-=======
-#### Minutes
-**Started at:** `time`
-**Present:**
-* `person1`
-* `...`
->>>>>>> 95e116ce708222719c3606a04712c19b91eb9d94
 
 This covers the experience of users across Pioneer, the command line.
 
 ### All (members + non-members)
 
-<<<<<<< HEAD
+
 As a user I can view a list of top level topic categories.
 As a user I can open topic categories and view threads, by title and date of submission, and subtopic categories.
 As a user I can view the set of moderators for a topic category.
 As a user I can view a paginated list of posts in a thread.
 As a user I can view the author, date of submission, text and history of edits for a post.
-=======
-**Other topics raised:**
->>>>>>> 95e116ce708222719c3606a04712c19b91eb9d94
 
 ### Member
 
@@ -370,9 +359,9 @@ As a downloader, I don't want to know anything about storage tranches.
 
 ## Release Plan Finalisation Meeting
 
-**ID:** `Acropolis Release Plan Finalisation Meeting`
-- **Date:** `dd.mm.yy`
-- **Starts:** `hh:mm CET`
+**ID:** `Acropolis Release Plan Finalization Meeting`
+- **Date:** `08.05.19`
+- **Starts:** `12:15 CET`
 - **Duration:** `mm`
 - **Venue:** `ZOOM`
 - **Lead**: `Bedeho`
@@ -386,7 +375,9 @@ As a downloader, I don't want to know anything about storage tranches.
 
 #### Agenda
 
-:one: Item 1.
+DRAFT:
+
+:one: Finalize Release Plan
 
 :two: ....
 
