@@ -11,9 +11,6 @@
     "type": "git",
     "url": "https://github.com/Joystream/storage-node-joystream.git"
   },
-  "engines": {
-    "node": "^10.0.0"
-  },
   "license": "GPL-3.0",
   "contributors": [
     {
