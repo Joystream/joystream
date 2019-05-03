@@ -6,11 +6,7 @@ type Props = BareProps & {
   level?: number
 };
 
-type State = {};
-
-export default class Section extends React.PureComponent<Props, State> {
-
-  state: State = {};
+export default class Section extends React.PureComponent<Props> {
 
   render () {
     const { children } = this.props;
