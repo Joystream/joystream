@@ -17,8 +17,10 @@ import { DataObject, ContentMetadata, ContentId } from './types';
 import { MutedText } from '@polkadot/joy-utils/MutedText';
 import { DEFAULT_THUMBNAIL_URL } from './utils';
 import { isEmptyStr } from '@polkadot/joy-utils/';
+import { MyAccountContext, MyAccountContextProps } from '@polkadot/joy-utils/MyAccountContext';
 
 type Asset = {
+  iAmOwner: boolean,
   contentId: string,
   data: DataObject,
   meta: ContentMetadata
@@ -62,6 +64,8 @@ function onImageError (event: React.SyntheticEvent<HTMLImageElement, Event>) {
 
 class InnerView extends React.PureComponent<ViewProps> {
 
+  static contextType = MyAccountContext;
+
   render () {
     const { dataObjectOpt, metadataOpt, preview = false } = this.props;
     if (!dataObjectOpt || !metadataOpt
@@ -69,10 +73,17 @@ class InnerView extends React.PureComponent<ViewProps> {
       return null;
     }
 
+    const myAccountCtx = this.context as MyAccountContextProps;
+    const myAddress = myAccountCtx.state.address;
+
+    const meta = metadataOpt.unwrap();
+    const iAmOwner: boolean = myAddress !== undefined && myAddress === meta.owner.toString();
+
     const asset = {
+      iAmOwner,
       contentId: this.props.contentId.toAddress(),
       data: dataObjectOpt.unwrap(),
-      meta: metadataOpt.unwrap()
+      meta
     };
 
     return preview
@@ -80,7 +91,7 @@ class InnerView extends React.PureComponent<ViewProps> {
       : this.renderPlayer(asset);
   }
 
-  private renderPreview ({ contentId, data, meta }: Asset) {
+  private renderPreview ({ iAmOwner, contentId, data, meta }: Asset) {
     const { added_at } = meta;
     let { name, thumbnail } = meta.parseJson();
 
@@ -89,11 +100,16 @@ class InnerView extends React.PureComponent<ViewProps> {
     }
 
     return (
-      <Link className='MediaCell' to={`/media/play/${contentId}`}>
+      <Link className={`MediaCell ${iAmOwner ? 'MyContent' : ''}`} to={`/media/play/${contentId}`}>
         <div className='CellContent'>
           <div className='ThumbBox'>
             <img className='ThumbImg' src={thumbnail} onError={onImageError} />
           </div>
+          {iAmOwner &&
+            <Link className='ui small circular icon inverted primary button' style={{ float: 'right' }} title='Edit' to={`/media/edit/${contentId}`}>
+              <i className='pencil alternate icon'></i>
+            </Link>
+          }
           <div><h3>{name}</h3></div>
           <MutedText smaller>{new Date(added_at.time).toLocaleString()}</MutedText>
           <MutedText smaller>{formatNumber(data.size_in_bytes)} bytes</MutedText>
@@ -117,7 +133,7 @@ class InnerView extends React.PureComponent<ViewProps> {
     }
   }
 
-  private renderPlayer ({ contentId, meta }: Asset) {
+  private renderPlayer ({ iAmOwner, contentId, meta }: Asset) {
     const { added_at } = meta;
     const { name, description, thumbnail: cover } = meta.parseJson();
 
@@ -154,6 +170,12 @@ class InnerView extends React.PureComponent<ViewProps> {
         {content()}
         <div className='ContentHeader'>
           <a className='ui button outline DownloadBtn' href={`${url}?download`}><i className='cloud download icon'></i> Download</a>
+          {iAmOwner &&
+            <Link className='ui button' style={{ float: 'right' }} to={`/media/edit/${contentId}`}>
+              <i className='pencil alternate icon'></i>
+              Edit
+            </Link>
+          }
           <h1>{name}</h1>
         </div>
         <div className='smaller grey text'>Published on {new Date(added_at.time).toLocaleString()}</div>

@@ -6,11 +6,13 @@ import BN from 'bn.js';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
+import { withCalls, withMulti } from '@polkadot/ui-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Option } from '@polkadot/types/codec';
-import { ContentId, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from './types';
+import { ContentId, ContentMetadata, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from './types';
 import { OptionText } from '@polkadot/joy-utils/types';
+import Section from '@polkadot/joy-utils/Section';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
   name: Yup.string()
@@ -40,7 +42,8 @@ type ValidationProps = {
 
 type OuterProps = ValidationProps & {
   contentId: ContentId,
-  fileName: string
+  fileName?: string,
+  metadataOpt?: Option<ContentMetadata>
 };
 
 type FormValues = {
@@ -59,6 +62,7 @@ const LabelledText = JoyForms.LabelledText<FormValues>();
 const InnerForm = (props: FormProps) => {
   const {
     contentId,
+    metadataOpt,
     values,
     dirty,
     isValid,
@@ -82,6 +86,8 @@ const InnerForm = (props: FormProps) => {
   const onTxSuccess = (_txResult: SubmittableResult) => {
     setSubmitting(false);
   };
+
+  const isNew = !metadataOpt || metadataOpt.isNone;
 
   const buildTxParams = () => {
     if (!isValid) return [];
@@ -126,10 +132,16 @@ const InnerForm = (props: FormProps) => {
         <TxButton
           type='submit'
           size='large'
-          label={'Publish'}
+          label={isNew
+            ? 'Publish'
+            : 'Update'
+          }
           isDisabled={!dirty || isSubmitting}
           params={buildTxParams()}
-          tx={'dataDirectory.addMetadata'} // TODO or dataDirectory.updateMetadata
+          tx={isNew
+            ? 'dataDirectory.addMetadata'
+            : 'dataDirectory.updateMetadata'
+          }
           onClick={onSubmit}
           txCancelledCb={onTxCancelled}
           txFailedCb={onTxFailed}
@@ -151,11 +163,15 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
   mapPropsToValues: props => {
+    const { metadataOpt, fileName } = props;
+    const meta = metadataOpt ? metadataOpt.unwrapOr(undefined) : undefined;
+    const json = meta ? meta.parseJson() : undefined;
+
     return {
-      name: props.fileName,
-      description: '',
-      thumbnail: '',
-      keywords: ''
+      name: json && json.name || fileName || '',
+      description: json && json.description || '',
+      thumbnail: json && json.thumbnail || '',
+      keywords: json && json.keywords || ''
     };
   },
 
@@ -165,5 +181,46 @@ const EditForm = withFormik<OuterProps, FormValues>({
     // do submitting things
   }
 })(InnerForm);
+
+function FormOrLoading (props: OuterProps) {
+  const { metadataOpt } = props;
+  return (
+    <Section title='Edit my upload'>
+    {metadataOpt
+      ? <EditForm {...props} />
+      : <em>Loading...</em>
+    }
+    </Section>
+  );
+}
+
+export const EditByContentId = withMulti(
+  FormOrLoading,
+  withGetContentIdFromUrl,
+  withCalls<OuterProps>(
+    ['query.dataDirectory.metadataByContentId',
+      { paramName: 'contentId', propName: 'metadataOpt' } ]
+  )
+);
+
+type UrlHasContentIdProps = {
+  match: {
+    params: {
+      assetName: string
+    }
+  }
+};
+
+function withGetContentIdFromUrl (Component: React.ComponentType<OuterProps>) {
+  return function (props: UrlHasContentIdProps) {
+    const { match: { params: { assetName } } } = props;
+    try {
+      const contentId = ContentId.fromAddress(assetName);
+      return <Component contentId={contentId} />;
+    } catch (err) {
+      return <em>Invalid content ID: {assetName}</em>;
+    }
+  };
+}
 
 export default EditForm;

@@ -11,6 +11,7 @@ import translate from './translate';
 import Upload from './Upload';
 import Explore from './Explore';
 import { Play } from './View';
+import { EditByContentId } from './EditMeta';
 
 type Props = AppProps & I18nProps & {};
 
@@ -41,6 +42,7 @@ class App extends React.PureComponent<Props> {
         <Switch>
           <Route path={`${basePath}/play/:assetName`} component={Play} />
           <Route path={`${basePath}/upload`} component={Upload} />
+          <Route path={`${basePath}/edit/:assetName`} component={EditByContentId} />
           <Route component={Explore} />
         </Switch>
       </main>

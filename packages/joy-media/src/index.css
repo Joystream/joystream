@@ -54,7 +54,7 @@
   }
   .DownloadBtn {
     float: right;
-    margin-left: 1rem;
+    margin-left: .5rem;
   }
   .ContentDesc {
     margin-top: 1rem;
@@ -69,10 +69,13 @@
 
   .MediaCell {
     width: 25%;
+    
+    &.MyContent {
+      /* background-color: #fff8e1; */
+    }
     &:hover {
       background-color: #ccdcec;
     }
-    
     .CellContent {
       padding: 5px;
       margin-bottom: 15px;
