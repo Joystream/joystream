@@ -31,14 +31,10 @@
     text-align: center;
   }
 
-  .UploadSidebar {
-    width: 200px;
-    overflow: hidden;
-  }
-
-  .UploadMainContent {
-    width: calc(100% - 200px);
-    overflow: hidden;
+  .UploadProgress {
+    margin-left: calc(210px + 1rem) !important;
+    width: 100%;
+    max-width: 600px;
   }
 }
 
@@ -74,7 +70,7 @@
       /* background-color: #fff8e1; */
     }
     &:hover {
-      background-color: #ccdcec;
+      background-color: #deeffc;
     }
     .CellContent {
       padding: 5px;
@@ -99,5 +95,30 @@
         display: block;
       }
     }
+  }
+}
+
+.EditMetaBox {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  /* width: 880px; */
+
+  .EditMetaThumb {
+    width: 100%;
+    max-width: 210px;
+    max-height: 118px;
+    margin-right: 1rem;
+
+    img {
+      width: 100%;
+      max-width: 210px;
+      max-height: 118px;
+    }
+  }
+
+  .EditMetaForm {
+    width: 100%;
+    max-width: 600px;
   }
 }

@@ -15,7 +15,7 @@ import translate from './translate';
 import { withStorageProvider, StorageProviderProps } from './StorageProvider';
 import { DataObject, ContentMetadata, ContentId } from './types';
 import { MutedText } from '@polkadot/joy-utils/MutedText';
-import { DEFAULT_THUMBNAIL_URL } from './utils';
+import { DEFAULT_THUMBNAIL_URL, onImageError } from './utils';
 import { isEmptyStr } from '@polkadot/joy-utils/';
 import { MyAccountContext, MyAccountContextProps } from '@polkadot/joy-utils/MyAccountContext';
 
@@ -48,19 +48,6 @@ type ViewProps = ApiProps & I18nProps & StorageProviderProps & {
   metadataOpt?: Option<ContentMetadata>,
   preview?: boolean
 };
-
-// This is a hack to just satisfy TypeScript compiler.
-type ImageOnErrorEvent = EventTarget & {
-  src: string,
-  onerror?: (e: any) => void
-};
-
-function onImageError (event: React.SyntheticEvent<HTMLImageElement, Event>) {
-  const target = event.target as ImageOnErrorEvent;
-  // Set onerror callback to undefined to prevent infinite callbacks when image src path fails:
-  target.onerror = undefined;
-  target.src = DEFAULT_THUMBNAIL_URL;
-}
 
 class InnerView extends React.PureComponent<ViewProps> {
 

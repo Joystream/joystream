@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from 'semantic-ui-react';
+import { Button, Message } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import BN from 'bn.js';
@@ -12,7 +12,10 @@ import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Option } from '@polkadot/types/codec';
 import { ContentId, ContentMetadata, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from './types';
 import { OptionText } from '@polkadot/joy-utils/types';
+import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
+import { onImageError } from './utils';
+import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
   name: Yup.string()
@@ -71,6 +74,13 @@ const InnerForm = (props: FormProps) => {
     resetForm
   } = props;
 
+  const {
+    name,
+    description,
+    thumbnail,
+    keywords
+  } = values;
+
   const onSubmit = (sendTx: () => void) => {
     if (isValid) sendTx();
   };
@@ -92,13 +102,6 @@ const InnerForm = (props: FormProps) => {
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    const {
-      name,
-      description,
-      thumbnail,
-      keywords
-    } = values;
-
     const json = JSON.stringify({
       name,
       description,
@@ -117,8 +120,13 @@ const InnerForm = (props: FormProps) => {
     return [ contentId, meta ];
   };
 
-  return (
-    <Form className='ui form JoyForm'>
+  return <div className='EditMetaBox'>
+    <div className='EditMetaThumb'>
+    {thumbnail &&
+      <img src={thumbnail} onError={onImageError} />
+    }
+    </div>
+    <Form className='ui form JoyForm EditMetaForm'>
       <LabelledText name='name' placeholder={`Name`} {...props} />
       <LabelledField name='description' {...props}>
         <Field component='textarea' id='description' name='description' disabled={isSubmitting} rows={3} placeholder='Description' />
@@ -156,7 +164,7 @@ const InnerForm = (props: FormProps) => {
         />
       </LabelledField>
     </Form>
-  );
+  </div>;
 };
 
 const EditForm = withFormik<OuterProps, FormValues>({
@@ -183,19 +191,31 @@ const EditForm = withFormik<OuterProps, FormValues>({
 })(InnerForm);
 
 function FormOrLoading (props: OuterProps) {
+  const { state: { address } } = useMyAccount();
   const { metadataOpt } = props;
-  return (
-    <Section title='Edit my upload'>
-    {metadataOpt
-      ? <EditForm {...props} />
-      : <em>Loading...</em>
-    }
-    </Section>
-  );
+
+  if (!address || !metadataOpt) {
+    return <em>Loading...</em>;
+  }
+
+  const isMyContent =
+    metadataOpt && metadataOpt.isSome &&
+    address === metadataOpt.unwrap().owner.toString();
+
+  if (isMyContent) {
+    return (
+      <Section title='Edit my upload'>
+        <EditForm {...props} />
+      </Section>
+    );
+  }
+
+  return <Message error className='JoyMainStatus' header='You are not allowed edit this content.' />;
 }
 
 export const EditByContentId = withMulti(
   FormOrLoading,
+  withOnlyMembers,
   withGetContentIdFromUrl,
   withCalls<OuterProps>(
     ['query.dataDirectory.metadataByContentId',

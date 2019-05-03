@@ -78,15 +78,10 @@ class Component extends React.PureComponent<Props, State> {
     const { file, newContentId } = this.state;
     if (!file) return <em>Loading...</em>;
 
-    return <>
-      <div className='UploadSidebar'>
-        TODO show thumbnail here !!!
-      </div>
-      <div className='UploadMainContent'>
-        {this.renderProgress()}
-        <EditMeta contentId={newContentId} fileName={fileNameWoExt(file.name)} />
-      </div>
-    </>;
+    return <div style={{ width: '100%' }}>
+      {this.renderProgress()}
+      <EditMeta contentId={newContentId} fileName={fileNameWoExt(file.name)} />
+    </div>;
   }
 
   private renderProgress () {
@@ -105,6 +100,7 @@ class Component extends React.PureComponent<Props, State> {
     }
 
     return <Progress
+      className='UploadProgress'
       progress={success}
       percent={percent}
       active={active}
