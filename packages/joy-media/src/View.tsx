@@ -30,6 +30,15 @@ const PLAYER_COMMON_PARAMS = {
   theme: '#2185d0'
 };
 
+// This is just a part of Player's methods that are used in this component.
+// To see all the methods available on APlayer and DPlayer visit the next URLs:
+// http://aplayer.js.org/#/home?id=api
+// http://dplayer.js.org/#/home?id=api
+type PartOfPlayer = {
+  pause: () => void,
+  destroy: () => void
+};
+
 type ViewProps = ApiProps & I18nProps & StorageProviderProps & {
   contentId: ContentId,
   contentType?: string,
@@ -93,6 +102,21 @@ class InnerView extends React.PureComponent<ViewProps> {
     );
   }
 
+  private player?: PartOfPlayer = undefined;
+
+  private onPlayerCreated = (player: PartOfPlayer) => {
+    this.player = player;
+  }
+
+  componentWillUnmount () {
+    const { player } = this;
+    if (player) {
+      console.log('Destroy the current player');
+      player.pause();
+      player.destroy();
+    }
+  }
+
   private renderPlayer ({ contentId, meta }: Asset) {
     const { added_at } = meta;
     const { name, description, thumbnail: cover } = meta.parseJson();
@@ -106,10 +130,20 @@ class InnerView extends React.PureComponent<ViewProps> {
     const content = () => {
       if (prefix === 'video') {
         const video = { url, name, pic: cover };
-        return <DPlayer video={video} {...PLAYER_COMMON_PARAMS} loop={false} />;
+        return <DPlayer
+          video={video}
+          {...PLAYER_COMMON_PARAMS}
+          loop={false}
+          onLoad={this.onPlayerCreated} // Note that DPlayer has onLoad, but APlayer - onInit.
+        />;
       } else if (prefix === 'audio') {
         const audio = { url, name, cover };
-        return <APlayer audio={audio} {...PLAYER_COMMON_PARAMS} loop='none' />;
+        return <APlayer
+          audio={audio}
+          {...PLAYER_COMMON_PARAMS}
+          loop='none'
+          onInit={this.onPlayerCreated} // Note that APlayer has onInit, but DPlayer - onLoad.
+        />;
       } else {
         return <em>Unsupported type of content: {contentType}</em>;
       }
