@@ -93,15 +93,20 @@ class Component extends React.PureComponent<Props, State> {
     const { progress, error } = this.state;
     const active = !error && progress < 100;
     const success = !error && progress >= 100;
+
+    // This is a visual hack to show that progress bar is active while uploading a file.
+    const percent = 100;
+
     let label = '';
     if (active) {
-      label = `Your file is still uploading. Please keep this page open until it's done.`;
+      label = `Your file is uploading. Please keep this page open until it's done.`;
     } else if (success) {
-      label = `Click "Publish" to make your file live.`;
+      label = `Uploaded! Click "Publish" button to make your file live.`;
     }
+
     return <Progress
-      progress={true}
-      percent={progress}
+      progress={success}
+      percent={percent}
       active={active}
       success={success}
       label={label}
