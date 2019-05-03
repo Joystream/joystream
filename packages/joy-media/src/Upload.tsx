@@ -1,7 +1,6 @@
 import React from 'react';
 import BN from 'bn.js';
 import axios from 'axios';
-import uuidv4 from 'uuid/v4';
 import { Progress, Message } from 'semantic-ui-react';
 
 import { InputFile } from '@polkadot/ui-app/index';
@@ -9,7 +8,7 @@ import { ApiProps } from '@polkadot/ui-api/types';
 import { I18nProps } from '@polkadot/ui-app/types';
 import { SubmittableResult } from '@polkadot/api';
 import { withMulti } from '@polkadot/ui-api';
-import { stringToU8a, u8aToString, formatNumber } from '@polkadot/util';
+import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
 import { fileNameWoExt } from './utils';
@@ -21,11 +20,6 @@ import TxButton from '@polkadot/joy-utils/TxButton';
 
 const MAX_FILE_SIZE_MB = 100;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-
-function generateContentId () {
-  const uuid = uuidv4().replace(/-/g, '');
-  return new ContentId(stringToU8a(uuid));
-}
 
 type Props = ApiProps & I18nProps & MyAccountProps & StorageProviderProps;
 
@@ -40,7 +34,7 @@ type State = {
 const defaultState = (): State => ({
   error: undefined,
   file: undefined,
-  newContentId: generateContentId(),
+  newContentId: ContentId.generate(),
   uploading: false,
   progress: 0
 });
@@ -48,8 +42,6 @@ const defaultState = (): State => ({
 class Component extends React.PureComponent<Props, State> {
 
   state = defaultState();
-
-  // TODO show warning if user is not a member
 
   render () {
     return (
@@ -181,7 +173,7 @@ class Component extends React.PureComponent<Props, State> {
     const { file, newContentId } = this.state;
     if (!file) return;
 
-    const uniqueName = u8aToString(newContentId);
+    const uniqueName = newContentId.toAddress();
     const config = {
       headers: {
         // TODO uncomment this once the issue fixed:

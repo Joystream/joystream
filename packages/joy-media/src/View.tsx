@@ -9,12 +9,14 @@ import { ApiProps } from '@polkadot/ui-api/types';
 import { I18nProps } from '@polkadot/ui-app/types';
 import { withCalls, withMulti } from '@polkadot/ui-api/with';
 import { Option } from '@polkadot/types/codec';
-import { u8aToString, stringToU8a, formatNumber } from '@polkadot/util';
+import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
 import { withStorageProvider, StorageProviderProps } from './StorageProvider';
 import { DataObject, ContentMetadata, ContentId } from './types';
 import { MutedText } from '@polkadot/joy-utils/MutedText';
+import { DEFAULT_THUMBNAIL_URL } from './utils';
+import { isEmptyStr } from '@polkadot/joy-utils/';
 
 type Asset = {
   contentId: string,
@@ -36,6 +38,19 @@ type ViewProps = ApiProps & I18nProps & StorageProviderProps & {
   preview?: boolean
 };
 
+// This is a hack to just satisfy TypeScript compiler.
+type ImageOnErrorEvent = EventTarget & {
+  src: string,
+  onerror?: (e: any) => void
+};
+
+function onImageError (event: React.SyntheticEvent<HTMLImageElement, Event>) {
+  const target = event.target as ImageOnErrorEvent;
+  // Set onerror callback to undefined to prevent infinite callbacks when image src path fails:
+  target.onerror = undefined;
+  target.src = DEFAULT_THUMBNAIL_URL;
+}
+
 class InnerView extends React.PureComponent<ViewProps> {
 
   render () {
@@ -46,7 +61,7 @@ class InnerView extends React.PureComponent<ViewProps> {
     }
 
     const asset = {
-      contentId: u8aToString(this.props.contentId),
+      contentId: this.props.contentId.toAddress(),
       data: dataObjectOpt.unwrap(),
       meta: metadataOpt.unwrap()
     };
@@ -58,13 +73,17 @@ class InnerView extends React.PureComponent<ViewProps> {
 
   private renderPreview ({ contentId, data, meta }: Asset) {
     const { added_at } = meta;
-    const { name, thumbnail } = meta.parseJson();
+    let { name, thumbnail } = meta.parseJson();
+
+    if (isEmptyStr(thumbnail)) {
+      thumbnail = DEFAULT_THUMBNAIL_URL;
+    }
 
     return (
       <Link className='MediaCell' to={`/media/play/${contentId}`}>
         <div className='CellContent'>
           <div className='ThumbBox'>
-            <img className='ThumbImg' src={thumbnail} />
+            <img className='ThumbImg' src={thumbnail} onError={onImageError} />
           </div>
           <div><h3>{name}</h3></div>
           <MutedText smaller>{new Date(added_at.time).toLocaleString()}</MutedText>
@@ -115,8 +134,10 @@ export const View = withMulti(
   translate,
   withStorageProvider,
   withCalls<ViewProps>(
-    ['query.dataDirectory.dataObjectByContentId', { paramName: 'contentId', propName: 'dataObjectOpt' } ],
-    ['query.dataDirectory.metadataByContentId', { paramName: 'contentId', propName: 'metadataOpt' } ]
+    ['query.dataDirectory.dataObjectByContentId',
+      { paramName: 'contentId', propName: 'dataObjectOpt' } ],
+    ['query.dataDirectory.metadataByContentId',
+      { paramName: 'contentId', propName: 'metadataOpt' } ]
   )
 );
 
@@ -157,7 +178,7 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
   render () {
     const { match: { params: { assetName } } } = this.props;
     try {
-      const contentId = new ContentId(stringToU8a(assetName));
+      const contentId = ContentId.fromAddress(assetName);
       const { contentType, contentTypeRequested } = this.state;
       if (typeof contentType === 'string') {
         return <View contentId={contentId} contentType={contentType} />;

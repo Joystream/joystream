@@ -17,8 +17,7 @@ import { withMulti, withObservable } from '@polkadot/ui-api';
 import Dropdown from '../Dropdown';
 import { classes, getAddrName } from '../util';
 import addressToAddress from '../util/toAddress';
-import { MyAccountContainer } from '@polkadot/joy-utils/MyAccount';
-import { Subscribe, Provider } from 'unstated';
+import { MyAccountContext } from '@polkadot/joy-utils/MyAccountContext';
 
 type Props = BareProps & {
   defaultValue?: string | null,
@@ -83,6 +82,8 @@ const createOption = (address: string) => {
 class InputAddress extends React.PureComponent<Props, State> {
   state: State = {};
 
+  static contextType = MyAccountContext;
+
   static getDerivedStateFromProps ({ value }: Props): State | null {
     try {
       return {
@@ -133,7 +134,6 @@ class InputAddress extends React.PureComponent<Props, State> {
       );
 
     return (
-      <Provider><Subscribe to={[ MyAccountContainer ]}>{(me: MyAccountContainer) =>
       <Dropdown
         className={classes('ui--InputAddress', hideAddress ? 'flag--hideAddress' : '', className)}
         defaultValue={
@@ -149,7 +149,7 @@ class InputAddress extends React.PureComponent<Props, State> {
         onChange={
           isMultiple
             ? this.onChangeMulti
-            : this.onChange(me)
+            : this.onChange
         }
         onSearch={this.onSearch}
         options={
@@ -175,7 +175,6 @@ class InputAddress extends React.PureComponent<Props, State> {
         }
         withLabel={withLabel}
       />
-      }</Subscribe></Provider>
     );
   }
 
@@ -215,17 +214,16 @@ class InputAddress extends React.PureComponent<Props, State> {
     );
   }
 
-  private onChange = (me: MyAccountContainer) => {
-    return (address: string) => {
-      const { onChange, type } = this.props;
+  private onChange = (address: string) => {
+    const { onChange, type } = this.props;
 
-      InputAddress.setLastValue(type, address);
-      if (type === 'account') {
-        me.setAddress(address);
-      }
+    InputAddress.setLastValue(type, address);
+    if (type === 'account') {
+      const { set } = this.context;
+      set(address);
+    }
 
-      onChange && onChange(transformToAccountId(address));
-    };
+    onChange && onChange(transformToAccountId(address));
   }
 
   private onChangeMulti = (addresses: Array<string>) => {

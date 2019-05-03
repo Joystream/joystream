@@ -2,9 +2,46 @@ import { Enum, Struct, Option, Vector } from '@polkadot/types/codec';
 import { getTypeRegistry, u64, Bool, Text, BlockNumber, Moment, AccountId, Hash } from '@polkadot/types';
 import { OptionText } from '@polkadot/joy-utils/types';
 
+import { randomAsU8a } from '@polkadot/util-crypto';
+import { encodeAddress, decodeAddress } from '@polkadot/keyring';
+import { u8aToString, stringToU8a } from '@polkadot/util';
+
+export class ContentId extends Hash {
+
+  static generate (): ContentId {
+    // randomAsU8a uses https://www.npmjs.com/package/tweetnacl#random-bytes-generation
+    return new ContentId(randomAsU8a());
+  }
+
+  /** This function is for backward-compatibility with content ids that were generated as UUID. */
+  // TODO Delete this backward-compatibility when a new version of blockchain launched.
+  static isUuidFormat (contentId: string | Uint8Array): boolean {
+    return typeof contentId === 'string'
+        ? contentId.indexOf('-') > 0
+        : contentId.indexOf('-'.charCodeAt(0)) > 0;
+  }
+
+  static fromAddress (contentId: string): ContentId {
+    return new ContentId(
+      ContentId.isUuidFormat(contentId)
+        ? stringToU8a(contentId)
+        : decodeAddress(contentId)
+    );
+  }
+
+  static toAddress (contentId: Uint8Array): string {
+    return ContentId.isUuidFormat(contentId)
+      ? u8aToString(contentId)
+      : encodeAddress(contentId);
+  }
+
+  toAddress (): string {
+    return ContentId.toAddress(this);
+  }
+}
+
 export class DataObjectTypeId extends u64 {}
 export class DataObjectStorageRelationshipId extends u64 {}
-export class ContentId extends Hash {}
 export class SchemaId extends u64 {}
 export class DownloadSessionId extends u64 {}
 
