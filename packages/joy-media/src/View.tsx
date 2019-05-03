@@ -106,10 +106,10 @@ class InnerView extends React.PureComponent<ViewProps> {
     const content = () => {
       if (prefix === 'video') {
         const video = { url, name, pic: cover };
-        return <DPlayer video={video} {...PLAYER_COMMON_PARAMS} />;
+        return <DPlayer video={video} {...PLAYER_COMMON_PARAMS} loop={false} />;
       } else if (prefix === 'audio') {
         const audio = { url, name, cover };
-        return <APlayer audio={audio} {...PLAYER_COMMON_PARAMS} />;
+        return <APlayer audio={audio} {...PLAYER_COMMON_PARAMS} loop='none' />;
       } else {
         return <em>Unsupported type of content: {contentType}</em>;
       }
