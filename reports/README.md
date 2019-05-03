@@ -28,3 +28,4 @@ Write in third person voice to keep report maximally neutral.
 This is the index of past reports, they should all be stored in the `archive` subfolder under an integer file name.
 
 1. [Content Directory Encoding Discussion](archive/1.md)
+2. [Runtime Spec Proposal Discussion](archive/2.md)
