@@ -137,7 +137,7 @@ No
 ## User Stories Meeting
 
 **ID:** `Acropolis User Stories Meeting`
-- **Date:** `30.04.19` -> `02.04.19`
+- **Date:** `30.04.19` -> `02.05.19`
 - **Starts:** `12:15 CET`
 - **Duration:** `90min`
 - **Venue:** `ZOOM`
@@ -353,15 +353,15 @@ As a downloader, I don't want to know anything about storage tranches.
 
 **Other Topics raised:** No
 
-**Ended at:** `14:05CET`
+**Ended at:** `14:05 GMT+2`
 
 ---
 
-## Release Plan Finalisation Meeting
+## Release Plan Finalization Meeting
 
 **ID:** `Acropolis Release Plan Finalization Meeting`
-- **Date:** `08.05.19`
-- **Starts:** `12:15 CET`
+- **Date:** `09.05.19`
+- **Starts:** `12:15 GMT+2`
 - **Duration:** `mm`
 - **Venue:** `ZOOM`
 - **Lead**: `Bedeho`
