@@ -58,7 +58,7 @@ function setStorageProvider<P extends StorageProviderProps> (Component: React.Co
       const storageProvider = newStorageProvider(this.props);
 
       // TODO delete debugging console log
-      console.log({ storageProvider });
+      // console.log({ storageProvider });
 
       if (!storageProviderAddress && !storageProviderRepoId) {
         // Still loading a storage provider settings...
