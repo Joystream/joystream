@@ -18,7 +18,8 @@ import { withStorageProvider, StorageProviderProps } from './StorageProvider';
 import EditMeta from './EditMeta';
 import TxButton from '@polkadot/joy-utils/TxButton';
 
-const MAX_FILE_SIZE_200_MB = 200 * 1024 * 1024;
+const MAX_FILE_SIZE_MB = 100;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 type Props = ApiProps & I18nProps & MyAccountProps & StorageProviderProps;
 
@@ -62,10 +63,15 @@ class Component extends React.PureComponent<Props, State> {
     const { error } = this.state;
     return (
       <Message error className='JoyMainStatus'>
-        <Message.Header>Failed to upload the file</Message.Header>
+        <Message.Header>Failed to upload your file</Message.Header>
         <p>{error.toString()}</p>
+        <button className='ui button' onClick={this.resetForm}>Start over</button>
       </Message>
     );
+  }
+
+  private resetForm = () => {
+    this.setState(defaultState());
   }
 
   private renderUploading () {
@@ -87,15 +93,20 @@ class Component extends React.PureComponent<Props, State> {
     const { progress, error } = this.state;
     const active = !error && progress < 100;
     const success = !error && progress >= 100;
+
+    // This is a visual hack to show that progress bar is active while uploading a file.
+    const percent = 100;
+
     let label = '';
     if (active) {
-      label = `Your file is still uploading. Please keep this page open until it's done.`;
+      label = `Your file is uploading. Please keep this page open until it's done.`;
     } else if (success) {
-      label = `Click "Publish" to make your file live.`;
+      label = `Uploaded! Click "Publish" button to make your file live.`;
     }
+
     return <Progress
-      progress={true}
-      percent={progress}
+      progress={success}
+      percent={percent}
       active={active}
       success={success}
       label={label}
@@ -107,16 +118,18 @@ class Component extends React.PureComponent<Props, State> {
 
     return <div className='UploadSelectForm'>
       <InputFile
-        // isError={!isValidContent}
         withLabel={false}
         className={`UploadInputFile ${file ? 'FileSelected' : ''}`}
         placeholder={
           <div>
-            <i className='cloud upload icon'></i>{' '}
-            {file
+            <div><i className='cloud upload icon'></i></div>
+            <div>{file
               ? `${file.name} (${formatNumber(file.size)} bytes)`
-              : 'Drag and drop either video or audio file here'
-            }
+              : <>
+                <div>Drag and drop either video or audio file here.</div>
+                <div>Your file should not be more than {MAX_FILE_SIZE_MB} MB.</div>
+              </>
+            }</div>
           </div>
         }
         onFileSelected={this.onFileSelected}
@@ -135,8 +148,14 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private onFileSelected = (data: Uint8Array, file: File) => {
-    const isValidContent = data && data.length > 0 && data.length <= MAX_FILE_SIZE_200_MB;
-    if (isValidContent) {
+    if (!data || data.length === 0) {
+      this.setState({ error: `You cannot upload an empty file.` });
+    } else if (data.length > MAX_FILE_SIZE_BYTES) {
+      this.setState({ error:
+        `You cannot upload a file that is more than ${MAX_FILE_SIZE_MB} MB.`
+      });
+    } else {
+      // File size is valid and can be uploaded:
       this.setState({ file });
     }
   }

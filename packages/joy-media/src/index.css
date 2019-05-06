@@ -11,6 +11,8 @@
   .UploadInputFile {
     padding: 2rem 3rem;
     margin-bottom: 1rem;
+    text-align: center;
+    height: auto;
 
     &:hover,
     &.FileSelected {
@@ -18,6 +20,10 @@
       .label {
         color: #2185d0 !important;
       }
+    }
+
+    i.cloud.icon {
+      font-size: 3rem;
     }
   }
 
