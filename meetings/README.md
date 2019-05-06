@@ -21,10 +21,11 @@ Each meeting which will be archived has a _meeting identifier_, which is just a 
 
 This is the index of past meetings with itineraries, they should all be stored in this directory.
 
-| Identifier                           | Invitation sent  | Scheduled   (held)    | Itinerary and Minutes                              |
-| :----------------------------------: | :---------------:|-----------------------| :------------------------------------------------: |
-| Acropolis Launch Meeting             | 24.04.19         | 26.04.19-12:15CET (x) | [link](../meetings/acropolis#launch-meeting)       |
-| Acropolis User Stories Meeting       | 26.04.19         | 30.04.19-12:15CET     | [link](../meetings/acropolis#user-stories-meeting) |
+| Identifier                                  | Invitation sent  | Scheduled   (held)    | Itinerary and Minutes                              | Notes                         |
+| :-----------------------------------------: | :---------------:|-----------------------| :------------------------------------------------: | :----------------------------:|
+| Acropolis Launch Meeting                    | 24.04.19         | 26.04.19-12:15GMT+2 (x) | [link](../meetings/acropolis#launch-meeting)       |              -                |   
+| Acropolis User Stories Meeting              | 26.04.19         | 02.05.19-12:15GMT+2 (x) | [link](../meetings/acropolis#user-stories-meeting) | Rescheduled from 30.04        |
+| Acropolis Release Plan Finalization Meeting | 06.05.19         | 09.05.19-12:15GMT+2     | [link](../meetings/acropolis#user-stories-meeting) | Two working days not feasible |
 
 
 # Itinerary Template
