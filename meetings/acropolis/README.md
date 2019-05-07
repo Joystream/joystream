@@ -362,7 +362,7 @@ As a downloader, I don't want to know anything about storage tranches.
 **ID:** `Acropolis Release Plan Finalization Meeting`
 - **Date:** `09.05.19`
 - **Starts:** `12:15 GMT+2`
-- **Duration:** `mm`
+- **Duration:** `90min`
 - **Venue:** `ZOOM`
 - **Lead**: `Bedeho`
 - **Minutes**: `Martin`
@@ -375,11 +375,9 @@ As a downloader, I don't want to know anything about storage tranches.
 
 #### Agenda
 
-DRAFT:
-
 :one: Finalize Release Plan
 
-:two: ....
+Temporary [link](https://github.com/bwhm/joystream/tree/acropolis/testnets/acropolis).
 
 #### Minutes
 **Started at:** `time`
