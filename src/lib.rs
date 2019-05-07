@@ -311,6 +311,33 @@ impl finality_tracker::Trait for Runtime {
     type OnFinalizationStalled = grandpa::SyncedAuthorities<Runtime>;
 }
 
+use runtime_example_module;
+use traits::Members as MembersTrait;
+pub struct MembershipRegistryForExample {}
+impl runtime_example_module::MembershipRegistry<Runtime> for MembershipRegistryForExample {
+    fn ensure_member(who: <Runtime as system::Trait>::AccountId) -> Result<(), &'static str> {
+        // call public methods on module
+        // <Members as membership::members::Trait>::ensure_is_member(&who);
+
+        // Access storage values directly
+        // return <members::FirstMemberId<Runtime>>::get();
+
+        // Call methods on a specific trait
+        if <Members as MembersTrait<Runtime>>::is_active_member(&who) {
+            return Ok(());
+        } else {
+            return Err("account is not a member");
+        }
+    }
+}
+
+impl runtime_example_module::Trait for Runtime {
+    /// The uniquitous event type.
+    type Event = Event;
+    type Currency = balances::Module<Self>;
+    type MembershipRegistry = MembershipRegistryForExample;
+}
+
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, AuthorityId, AuthoritySignature>) where
 		Block = Block,
@@ -339,6 +366,7 @@ construct_runtime!(
 		DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
 		DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
 		DownloadSessions: downloads::{Module, Call, Storage, Event<T>, Config<T>},
+        ExampleModule: runtime_example_module,
 	}
 );
 

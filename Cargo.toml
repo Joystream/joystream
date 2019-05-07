@@ -37,7 +37,14 @@ std = [
     'consensus-authorities/std',
     'grandpa/std',
     'finality-tracker/std',
+    'runtime-example-module/std',
 ]
+
+[dependencies.runtime-example-module]
+git = 'https://github.com/joystream/runtime-example-module.git'
+default_features = false
+rev = 'a14d1433ab9691170cd0b68fd6a82197ee7c61b9'
+
 [dependencies.aura]
 default_features = false
 git = 'https://github.com/joystream/substrate.git'
