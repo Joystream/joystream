@@ -1,5 +1,6 @@
 import { Enum, EnumType, Option } from '@polkadot/types/codec';
 import { getTypeRegistry, BlockNumber, AccountId, Balance, Hash, u32, Text } from '@polkadot/types';
+import { registerForumTypes } from '@polkadot/joy-forum/types';
 import { registerMediaTypes } from '@polkadot/joy-media/types';
 import { registerMembershipTypes } from '@polkadot/joy-members/types';
 import { registerRolesTypes } from '@polkadot/joy-roles/types';
@@ -225,5 +226,6 @@ export function registerJoystreamTypes () {
   registerMembershipTypes();
   registerRolesTypes();
   registerMediaTypes();
+  registerForumTypes();
   registerElectionAndProposalTypes();
 }
