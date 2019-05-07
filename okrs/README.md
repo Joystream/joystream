@@ -74,8 +74,8 @@ Archived OKRs are found in [archive](/OKR-archive), below only live OKRs are fou
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |Comments|
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------:|
 | 23.04.19 |   0   |  0.3  |  0    |  0.05 |   1   | #1-3 from `n` to `ewd` |
-| 07.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
-| 21.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 07.05.19 |  0.1  |  0.5  |  0.1  |  0.5  |   1   | -      |
+| 21.05.19 |       |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 04.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 18.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 02.07.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
@@ -110,7 +110,7 @@ Archived OKRs are found in [archive](/OKR-archive), below only live OKRs are fou
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |Comments|
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------:|
 | 23.04.19 |(31) **0.06**  |  (182,318) **0.08**   |  (30,5) **0.01** | **0.25** |   0  | Changed #1 from `ewd` to `n`  |
-| 07.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 07.05.19 |(35) **0.07**   |  (344,552) **0.14**   |  (46,12) **0.01**    |  **0.35**   |   **0.1**  | -|
 | 21.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 04.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 18.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
@@ -186,8 +186,7 @@ Fill in if needed.
 - **Key Results:** Bedeho
   1. `Write Rust|Substrate forum module which is ready for release (ewd)`
   2. `Define first full technical specification framework, and apply to a release (ewd)`
-  3. `Finalize and use testnet planning process for releases in this quarter (n)`
-  4. `Define runtime architecture guidelines (stretch goal) (n)`
+  3. `Define runtime architecture guidelines (stretch goal) (n)`
 
   <br />
 
@@ -197,14 +196,14 @@ Fill in if needed.
 
 - **Tracking:**
 
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 |Comments|
-|:--------:|:-----:|:-----:|:-----:|:-----:|:------:|
-| 07.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 21.05.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 04.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 18.06.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 02.07.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
-| 16.07.19 |   NA  |  NA   |  NA   |  NA   | **NA** |
+| Date     | KR #1 | KR #2 | KR #3 |Comments|
+|:--------:|:-----:|:-----:|:-----:|:------:|
+| 07.05.19 |  0.3  |  0.5  |  0.15 | Killed KR #4 |
+| 21.05.19 |   NA  |  NA   |  NA   | **NA** |
+| 04.06.19 |   NA  |  NA   |  NA   | **NA** |
+| 18.06.19 |   NA  |  NA   |  NA   | **NA** |
+| 02.07.19 |   NA  |  NA   |  NA   | **NA** |
+| 16.07.19 |   NA  |  NA   |  NA   | **NA** |
 
 ## `Jens` (@jfinkhaeuser)
 
@@ -219,7 +218,7 @@ Fill in if needed.
 - **Tracking Manager:** Bedeho
 - **Key Results:** Martin
   1. `Improve meeting tracking/reporting system as measured by no more than 1-off 7-day delay of release milestones (ewd)`
-  2. `Schedule, perform and report on weekly testing of new features in staging testnet(s) (n)`
+  2. `Schedule, perform and report on weekly testing of new features in staging testnet(s) (ewd)`
   3. `Submit minutes for all "Core" release meetings (n)`
   4. `Finish the rust book. (n)`
   5. `Have 2 (/src) PRs merged to our technical repos (n)`
@@ -234,7 +233,7 @@ Fill in if needed.
 
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |Comments|
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------:|
-| 07.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
+| 07.05.19 |   0.4 |  0.05 |  1.0  |  0.14 |   0   | KR#2 -> ewd |
 | 21.05.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 04.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
 | 18.06.19 |   NA  |  NA   |  NA   |  NA   |   NA  | **NA** |
