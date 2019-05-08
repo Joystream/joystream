@@ -8,34 +8,10 @@ import Tabs, { TabItem } from '@polkadot/ui-app/Tabs';
 import './index.css';
 
 import translate from './translate';
-
-function Forum () {
-  return <em>TODO Forum</em>;
-}
-
-function NewCategory () {
-  return <em>TODO New Category</em>;
-}
-
-function EditCategory () {
-  return <em>TODO Edit Category</em>;
-}
-
-function ViewCategory () {
-  return <em>TODO View Category: subcategories and threads</em>;
-}
-
-function TopCategories () {
-  return <em>TODO List of Top Categories</em>;
-}
-
-function NewThread () {
-  return <em>TODO New Thread</em>;
-}
-
-function EditThread () {
-  return <em>TODO Edit Thread</em>;
-}
+import { NewCategory, EditCategory } from './EditCategory';
+import { NewThread, EditThread } from './EditThread';
+import { ForumProvider } from './Context';
+import { RootCategories, ViewCategoryById } from './RootCategories';
 
 function ViewThread () {
   return <em>TODO View Thread: details and replies</em>;
@@ -67,23 +43,25 @@ class App extends React.PureComponent<Props> {
     const { basePath } = this.props;
     const tabs = this.buildTabs();
     return (
+      <ForumProvider>
       <main className='forum--App'>
         <header>
           <Tabs basePath={basePath} items={tabs} />
         </header>
         <Switch>
           <Route path={`${basePath}/categories/new`} component={NewCategory} />
-          <Route path={`${basePath}/categories/:categoryId/edit`} component={EditCategory} />
-          <Route path={`${basePath}/categories/:categoryId`} component={ViewCategory} />
-          <Route path={`${basePath}/categories`} component={TopCategories} />
+          <Route path={`${basePath}/categories/:id/edit`} component={EditCategory} />
+          <Route path={`${basePath}/categories/:id`} component={ViewCategoryById} />
+          <Route path={`${basePath}/categories`} component={RootCategories} />
 
           <Route path={`${basePath}/threads/new`} component={NewThread} />
-          <Route path={`${basePath}/threads/:threadId/edit`} component={EditThread} />
-          <Route path={`${basePath}/threads/:threadId`} component={ViewThread} />
+          <Route path={`${basePath}/threads/:id/edit`} component={EditThread} />
+          <Route path={`${basePath}/threads/:id`} component={ViewThread} />
 
-          <Route component={Forum} />
+          <Route component={RootCategories} />
         </Switch>
       </main>
+      </ForumProvider>
     );
   }
 }
