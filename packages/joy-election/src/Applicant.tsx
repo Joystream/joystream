@@ -19,11 +19,7 @@ type Props = ApiProps & I18nProps & {
   stake?: Stake
 };
 
-type State = {};
-
-class Applicant extends React.PureComponent<Props, State> {
-
-  state: State = {};
+class Applicant extends React.PureComponent<Props> {
 
   render () {
     const { index, accountId, stake } = this.props;
