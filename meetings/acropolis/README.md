@@ -1,18 +1,15 @@
 # Table of contents
 
+<!-- TOC START min:1 max:3 link:true asterisk:false update:true -->
+- [Table of contents](#table-of-contents)
 - [Conducted Meetings](#conducted-meetings)
-    - [Launch Meeting](#launch-meeting)
-      - [Agenda](#agenda)
-      - [Minutes](#minutes)
-- [Planned Meetings](#planned-meetings)
-    - [User Stories Meeting](#user-stories-meeting)
-      - [Agenda](#agenda-1)
-      - [Minutes](#minutes-1)
-    - [Release Plan Finalization Meeting](#release-plan-finalization-meeting)
-      - [Agenda](#agenda-2)
-      - [Minutes](#minutes-2)
-    - [Other/Placeholder](#other)
-    - [Lessons Learned](#lessons-learned)
+  - [Launch Meeting](#launch-meeting)
+  - [User Stories Meeting](#user-stories-meeting)
+  - [Release Plan Finalization Meeting](#release-plan-finalization-meeting)
+- [Planned meetings](#planned-meetings)
+  - [Other](#other)
+  - [Lessons Learned](#lessons-learned)
+<!-- TOC END -->
 
 
 # Conducted Meetings
@@ -37,7 +34,7 @@
 :one: Present first release OKR proposal for discussion:
 
 
-### Objective: `Launch Rome network`
+#### Objective: `Launch Rome network`
 - **Active from:** 29.04.19
 - **KR Measurement Deadline**: 7-9 days after Rome launch (first weekday)
 - **Tracked**: Every Monday
@@ -89,7 +86,7 @@ Jens made a good point, which I hope is clarified in the KR now. (comments?)
 As a consequence of `5.`, this seems more like a subrelease from a user POW. This makes it a smaller release, thus no point in straying away from the greek theme. The discussion led to the following OKR for Acropolis:
 
 
-### Objective: `Launch Acropolis Network`
+#### Objective: `Launch Acropolis Network`
 - **Active from:** 30.04.19
 - **KR Measurement Deadline**: 7-9 days after Acropolis launch (first weekday)
 - **Tracked**: Every Monday
@@ -131,8 +128,6 @@ The User Stories meeting is to be held on Tuesday at 12:15CET.
 No
 
 **Ended at:** 13:15CET
-
-# Planned meetings
 
 ## User Stories Meeting
 
@@ -414,6 +409,9 @@ Settled on:
 Before the meeting was adjourned, the issue of making the Forum work without an [Indexing Node](https://github.com/Joystream/indexing-node-joystream) was discussed.
 
 **Ended at:** `12:30 GMT+2`
+
+# Planned meetings
+
 
 ---
 
