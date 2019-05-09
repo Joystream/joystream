@@ -15,6 +15,7 @@ import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { useForum } from './Context';
+import { UrlHasIdProps } from './utils';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
   name: Yup.string()
@@ -115,7 +116,11 @@ const InnerForm = (props: FormProps) => {
     }
   };
 
-  return <div className='EditEntityBox'>
+  const sectionTitle = isNew
+    ? 'New category'
+    : 'Edit my category';
+
+  return <Section className='EditEntityBox' title={sectionTitle}>
     <Form className='ui form JoyForm EditEntityForm'>
 
       { /* TODO show dropdown with top categories and select parentId if defined. */}
@@ -128,7 +133,7 @@ const InnerForm = (props: FormProps) => {
 
       <LabelledField {...props}>
 
-        { /* TODO delete once integrated w/ substrate */ }
+        { /* TODO delete this button once integrated w/ substrate */ }
         <Button
           type='button'
           size='large'
@@ -169,7 +174,7 @@ const InnerForm = (props: FormProps) => {
         />
       </LabelledField>
     </Form>
-  </div>;
+  </Section>;
 };
 
 const EditForm = withFormik<OuterProps, FormValues>({
@@ -205,33 +210,22 @@ function FormOrLoading (props: LoadStructProps) {
   const { structOpt } = props;
 
   if (!address || !structOpt) {
-    return <em>Loading...</em>;
+    return <em>Loading category...</em>;
+  }
+
+  if (structOpt.isNone) {
+    return <em>Category not found</em>;
   }
 
   const struct = structOpt.unwrap();
-
-  const isMyStruct =
-    structOpt && structOpt.isSome &&
-    address === struct.owner.toString();
+  const isMyStruct = address === struct.owner.toString();
 
   if (isMyStruct) {
-    return (
-      <Section title='Edit my category'>
-        <EditForm {...props} struct={struct} />
-      </Section>
-    );
+    return <EditForm {...props} struct={struct} />;
   }
 
   return <Message error className='JoyMainStatus' header='You are not allowed edit this category.' />;
 }
-
-type UrlHasIdProps = {
-  match: {
-    params: {
-      id: string
-    }
-  }
-};
 
 function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
   return function (props: UrlHasIdProps) {

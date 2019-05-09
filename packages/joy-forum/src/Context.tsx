@@ -83,7 +83,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
 
   switch (action.type) {
 
-    case 'NewCategory':
+    case 'NewCategory': {
       const { category } = action;
       const { parent_id } = category;
 
@@ -98,6 +98,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
         let childrenIds = categoryIdsByParentId.get(parent_id.toNumber());
         if (!childrenIds) {
           childrenIds = [];
+          categoryIdsByParentId.set(parent_id.toNumber(), childrenIds);
         }
         childrenIds.push(nextCategoryId);
       } else {
@@ -117,6 +118,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
         rootCategoryIds,
         categoryIdsByParentId
       };
+    }
 
     case 'UpdateCategory': {
       const { category, id } = action;
@@ -130,8 +132,46 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       };
     }
 
-    case 'NewThread':
-    case 'UpdateThread':
+    case 'NewThread': {
+      const { thread } = action;
+      const { category_id } = thread;
+
+      let {
+        nextThreadId,
+        threadById,
+        threadIdsByCategoryId
+      } = state;
+
+      let threadIds = threadIdsByCategoryId.get(category_id.toNumber());
+      if (!threadIds) {
+        threadIds = [];
+        threadIdsByCategoryId.set(category_id.toNumber(), threadIds);
+      }
+      threadIds.push(nextThreadId);
+
+      threadById.set(nextThreadId, thread);
+      nextThreadId = nextThreadId + 1;
+
+      return {
+        ...state,
+        nextThreadId,
+        threadById,
+        threadIdsByCategoryId
+      };
+    }
+
+    case 'UpdateThread': {
+      const { thread, id } = action;
+      const { threadById } = state;
+
+      threadById.set(id, thread);
+
+      return {
+        ...state,
+        threadById
+      };
+    }
+
     case 'NewReply':
     case 'UpdateReply':
       // TODO implement reducers

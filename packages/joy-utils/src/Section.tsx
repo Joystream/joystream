@@ -2,6 +2,7 @@ import React from 'react';
 import { BareProps } from '@polkadot/ui-app/types';
 
 type Props = BareProps & {
+  className?: string,
   title?: JSX.Element | string,
   level?: number
 };
@@ -9,9 +10,11 @@ type Props = BareProps & {
 export default class Section extends React.PureComponent<Props> {
 
   render () {
-    const { children } = this.props;
+    let { className, children } = this.props;
+    className = (className || '') + ' JoySection';
+
     return (
-      <section className='JoySection'>
+      <section className={className}>
         {this.renderTitle()}
         <div>{children}</div>
       </section>

@@ -12,10 +12,8 @@ import { NewCategory, EditCategory } from './EditCategory';
 import { NewThread, EditThread } from './EditThread';
 import { ForumProvider } from './Context';
 import { RootCategories, ViewCategoryById } from './RootCategories';
-
-function ViewThread () {
-  return <em>TODO View Thread: details and replies</em>;
-}
+import { NewReply } from './EditReply';
+import { ViewThreadById } from './ViewThread';
 
 type Props = AppProps & I18nProps & {};
 
@@ -29,12 +27,9 @@ class App extends React.PureComponent<Props> {
         text: t('Forum')
       },
       {
+        // TODO show this tab only if current user is the sudo:
         name: 'categories/new',
         text: t('New category')
-      },
-      {
-        name: 'threads/new',
-        text: t('New thread')
       }
     ];
   }
@@ -50,13 +45,14 @@ class App extends React.PureComponent<Props> {
         </header>
         <Switch>
           <Route path={`${basePath}/categories/new`} component={NewCategory} />
+          <Route path={`${basePath}/categories/:id/newThread`} component={NewThread} />
           <Route path={`${basePath}/categories/:id/edit`} component={EditCategory} />
           <Route path={`${basePath}/categories/:id`} component={ViewCategoryById} />
           <Route path={`${basePath}/categories`} component={RootCategories} />
 
-          <Route path={`${basePath}/threads/new`} component={NewThread} />
+          <Route path={`${basePath}/threads/:id/reply`} component={NewReply} />
           <Route path={`${basePath}/threads/:id/edit`} component={EditThread} />
-          <Route path={`${basePath}/threads/:id`} component={ViewThread} />
+          <Route path={`${basePath}/threads/:id`} component={ViewThreadById} />
 
           <Route component={RootCategories} />
         </Switch>
