@@ -8,7 +8,7 @@
     - [User Stories Meeting](#user-stories-meeting)
       - [Agenda](#agenda-1)
       - [Minutes](#minutes-1)
-    - [Release Plan Finalization Meeting](#release-plan-finalisation-meeting)
+    - [Release Plan Finalization Meeting](#release-plan-finalization-meeting)
       - [Agenda](#agenda-2)
       - [Minutes](#minutes-2)
     - [Other/Placeholder](#other)
@@ -361,10 +361,10 @@ As a downloader, I don't want to know anything about storage tranches.
 
 **ID:** `Acropolis Release Plan Finalization Meeting`
 - **Date:** `09.05.19`
-- **Starts:** `12:15 GMT+2`
+- **Starts:** `11:15 GMT+2`
 - **Duration:** `90min`
 - **Venue:** `ZOOM`
-- **Lead**: `Bedeho`
+- **Lead**: `Martin`
 - **Minutes**: `Martin`
 - **Participants**:
  - `Alex`
@@ -377,21 +377,43 @@ As a downloader, I don't want to know anything about storage tranches.
 
 :one: Finalize Release Plan
 
-Temporary [link](https://github.com/bwhm/joystream/tree/acropolis/testnets/acropolis).
-
 #### Minutes
-**Started at:** `time`
+**Started at:** `11:15 GMT+2`
 **Present:**
-* `person1`
-* `...`
+- `Alex`
+- `Bedeho`
+- `Jens`
+- `Martin`
+- `Mokhtar`
+- `Dagur` (observer)
 
-:one: Item 1.
+:one:
+The items in the draft [Release Plan](../testnets/acropolis) was examined and discussed. The main points of discussions were:
 
-:two: ....
+ - Realistic numbers for the the [release OKR](../testnets/acropolis#release-okrs)
+
+Settled on:
+1. `Get 75 posts on forum (limits, not Jsg) (ewd)`
+2. `Forum (runtime), storage (runtime and P2P) fully specd (n)`
+3. `Have 4x replication for all 2 tranches on storage node (ewd)`
+4. `95% uptime Storage Providers (ewd)`
+5. `No PRs merged to master (excluding bugfixes and "pioneer") after "Sub-system Test" (ewd)`
+
+- `Colossus` and `Pioneer` had not been filled in by their respective leads, and was only covered superficially.
+
+- The [milestones](../testnets/acropolis#milestones) sections saw small adjustments to the Spec Release date, and a request to re-write the Sub-systems Test for clarity.
+
+- For the [Public Infrastructure](../testnets/acropolis#public-infrastructure) section:
+  - It was decided finally to remove the `Storage and Distribution Error Endpoint` tool to reduce the SoW for the [Colossus](../testnets/acropolis#colossus) team.
+  - Hosted Joystream Storage Node(s) will be set up to "ensure" service, but the node(s) will not have any special status on the network.
+
+- For the [Internal Infrastructure](../testnets/acropolis#internal-infrastructure-and-tools) section, it was decided after some back and forth that Alex will be the manager Storage Uptime and Quality Tool.
 
 **Other topics raised:**
 
-**Ended at:** `time`
+Before the meeting was adjourned, the issue of making the Forum work without an [Indexing Node](https://github.com/Joystream/indexing-node-joystream) was discussed.
+
+**Ended at:** `12:30 GMT+2`
 
 ---
 
