@@ -44,7 +44,6 @@
   - [Public Infrastructure](#public-infrastructure)
     - [Hosted Joystream Pioneer](#hosted-joystream-pioneer)
     - [Hosted Joystream Storage Node](#hosted-joystream-storage-node)
-    - [Storage & distribution error endpoint](#storage--distribution-error-endpoint)
     - [Faucet service backend](#faucet-service-backend)
   - [Internal Infrastructure and Tools](#internal-infrastructure-and-tools)
     - [Payout Tool](#payout-tool)
@@ -58,7 +57,7 @@
 
 # Live Milestones
 
-WIP
+- **TBD**
 
 
 #### Actual dates:
@@ -69,14 +68,15 @@ WIP
 
 # Past Release Meetings
 
-| Name/category            | Date            | Itinerary and Minutes                                  |
-| :----------------------: | :-------------: |:------------------------------------------------------:|
-| Launch Meeting           | 26.04.19        | [link](../meetings/acropolis/#launch-meeting)          |
-| Acropolis User Stories   | 02.05.19        | [link](../meetings/acropolis#user-stories-meeting)     |
+| Name/category               | Date            | Itinerary and Minutes                                     |
+| :-------------------------: | :-------------: |:---------------------------------------------------------:|
+| Launch Meeting              | 26.04.19        | [link](../meetings/acropolis/#launch-meeting)             |
+| User Stories                | 02.05.19        | [link](../meetings/acropolis#user-stories-meeting)        |
+| Release Plan Finalization   | 09.05.19        | [link](../meetings/acropolis#release-plan-finalization)   |
 
 #  Specification
 
-After [discussing](../reports/archive/2.md) internally, the specs for Acropolis will be made using [this](https://github.com/bedeho/joystream/blob/rome-spec/testnets/rome/members-module.md) as a reference (link to be replaced after merge).
+After [discussing](../reports/archive/2.md) internally, the specs for Acropolis will be made using [this](https://github.com/Joystream/joystream/blob/master/reports/archive/2-attachments/members-module.md) as a reference (link to be replaced after merge).
 
 # GitHub Projects
 
@@ -105,7 +105,6 @@ NA.
 20 June 2019, 12:00 (GMT+2)
 
 ## OKRs
-WIP
 
 # Release OKRs
 ### Objective: `Launch Acropolis Network`
@@ -114,9 +113,9 @@ WIP
 - **Tracked**: Every Monday
 - **Tracking Manager**: Martin
 - **Key Results**:
-1. `Get 100 posts on forum (limits, not Jsg) (ewd)`
+1. `Get 75 posts on forum (limits, not Jsg) (ewd)`
 2. `Forum (runtime), storage (runtime and P2P) fully specd (n)`
-3. `Have 4x coverage for all 3 tranches on storage node (ewd)`
+3. `Have 4x replication for all 2 tranches on storage node (ewd)`
 4. `95% uptime Storage Providers (ewd)`
 5. `No PRs merged to master (excluding bugfixes and "pioneer") after "Sub-system Test" (ewd)`
 
@@ -130,7 +129,6 @@ Go [here](../okrs/#release-okrs) for more details and tracking.
 ## Risks
 
 - [Specification](#specification-plans) of new sub-systems may be more time consuming and iterative than anticipated.
-- The full implication of re-writing [Storage Node/Colossus](#colossus) are unknown at the time of writing.
 - Risks are partially mitigated by extending the cycle for Acropolis. Somewhat ironically, this introduces some risk that the release might collide with peak holiday season.
 
 ## Deployment
@@ -152,27 +150,29 @@ The following public products will be part of this release.
   - **Bedeho:** Developer
   - **Martin:** Testing
 - **Main repo:** [substrate-runtime-joystream](https://github.com/Joystream/substrate-runtime-joystream)
-- **Current version:** *FILL IN*
-- **New version:** *FILL IN*
+- **Current version:** v5.3.0
+- **New version:** target v5.4.0 (unless there are bugfix runtime upgrades before release)
 - **Audit:** No
-- **Documentation:** *FILL IN*
-- **Legal Review/ToS update:** *FILL IN*
+- **Documentation:** Publish the rust docs for the runtime at testnet.joystream.org/runtime-docs/
+- **Legal Review/ToS update:** No
 - **Build/CI system:**
-  - **NN:** *FILL IN*
-- **Target Platforms:** *FILL IN*
+  - **Mokhtar:**
+    * CI: Simple travis job for PRs, running cargo tests, and verifying build doesn't fail and rustfmt is used to format code
+    * Build: Will have a working Docker file for building proposed WASM runtime blob
 - **New/Altered Functionality:**
-    * *FILL IN*
+    * New Forum module (Bedeho)
+    * Updated Actors module to support storage tranches (Jens/Mokhtar)
+    * Updated storage modules to support storage tranches (Jens/Mokhtar)
+    * Cleanup old migration code in members module (Mokhtar)
 - **Refactor/Reorganization:**
-  - Split the runtime into its own repo, *and include a docker script for doing
-reproducible builds. Will be needed for testing/verifying runtime upgrade
-proposals, and first use will be for this next release*
-- **New Key User Stories:** *FILL IN*
+  - Best effort should be made to make new runtime modules as separate git repos
+  - Existing modules can remain in same repo
+  - Docker
 - **Deployment/Distribution:**
     - Will be voted in through an upgrade proposal in council, see Events section for how.
 
 ### Colossus
 ---
-*(keep name?)*
 
 - **Description:** Combined storage and distribution node.
 - **Manager:** Jens
@@ -185,10 +185,10 @@ proposals, and first use will be for this next release*
 - **Current version:** *FILL IN*
 - **New version:** *FILL IN*
 - **Audit:** No
-- **Documentation:** *FILL IN*
+- **Documentation:** *FILL IN* (moar)
 - **Legal Review/ToS update:** *FILL IN*
 - **Build/CI system:** *FILL IN*
-- **Target Platforms:** *FILL IN*
+- **Target Platforms:** Linux
 - **New/Altered Functionality:** Jens
   - *FILL IN*
 - **New Key User Stories:**
@@ -199,32 +199,39 @@ proposals, and first use will be for this next release*
 
 ### Pioneer
 ---
+
  - **Description:** The user interface for interacting with the platform.
  - **Manager:** Alex
  - **Team:**
-  - **Alex:** Developer
-  - **Mokhtar:** Developer
-  - **Martin:** Testing
+    - **Alex:** Developer
+    - **Mokhtar:** Developer
+    - **Martin:** Testing
  - **Main repo:** [apps](https://github.com/Joystream/apps)
- - **Current version:** *FILL IN*
- - **New version:** *FILL IN*
+ - **Current version:** N/A (`0.32.0-beta.6` shown in Pioneer)
+ - **New version:** `3.0`
+   - `0.x` - goes to Polka Apps.
+   - `1.x` - Elections + Proposals modules.
+   - `2.x` - Media module (explore + upload).
  - **Audit:** No
- - **Documentation:** *FILL IN*
- - **Legal Review/ToS update:** *FILL IN*
- - **Build/CI system:** *FILL IN*
- - **Target Platforms:** *FILL IN*
- - **New/Altered Functionality**: Alex
-  - *FILL IN*
+ - **Documentation:** No
+ - **Legal Review/ToS update:** No. License to be added to migrated Repo.
+ - **Build/CI system:** No
+ - **Target Platforms:** Cross-platform and cross-browser.
+ - **New/Altered Functionality**:
+    - Integration with new storage system
+    - Integration of forum
  - **New User Stories:**
-  - *FILL IN*
+    - See [here](../meetings/acropolis#)
  - **Deployment/Distribution:**
- - *FILL IN*
+    - Upgrade of [hosted](#hosted-joystream-pioneer) Pioneer must be timed with release for integration with new storage system and forum.
+    - Frequent non-breaking improvements/updates performed expected.
+
 
 ## Milestones
 
 | Date            |   Event                               |     Involved                            |
 | :--------------:|:-------------------------------------:|:---------------------------------------:|
-|    15.05.19     | [Spec Release](#spec-release)         | Alex, Bedeho, Jens, Mokhtar             |
+|    21.05.19     | [Spec Release](#spec-release)         | Alex, Bedeho, Jens, Mokhtar             |
 |    12.06.19     | [Sub-system Test](#sub-system-test)   | All                                     |
 |    17.06.19     | [Final Test](#final-test)             | Martin, Mokhtar + 2x community members  |
 |    18.06.19     | [Runtime Proposal](#runtime-proposal) | Mokhtar, Martin                         |
@@ -234,32 +241,36 @@ proposals, and first use will be for this next release*
 ### Spec Release
 
 - **Description:** Release the specs for Acropolis
-- **Deadline:** 15. May
+- **Deadline:** 21. May
 - **Manager:** **Bedeho**
 - **Team:**
   - **Mokhtar:**
-  - **Alex:**
   - **Jens:**
   - **Bedeho:**
 - **Time line:**
   - First draft of specs must be ready for review on the 15th of May at the latest.
   - Bedeho will review and approve, or delegate the task.
+  - Bedeho: Forum module & main spec document & review contributions
 
 ### Sub-system Test
 
-- **Description:** Test all sub-systems/software separately on a/the staging testnet
+- **Description:** Test all sub-systems/software separately on the [`staging-reckless`](#staging-testnets) testnet
 - **Deadline:** 12. June
 - **Manager:** **Martin**
-- **Team:**
-  - **Mokhtar:** Test guide for all sub-systems/software under his responsibility
-  - **Alex:** Test guide for all sub-systems/software under his responsibility
-  - **Jens:** Test guide for all sub-systems/software under his responsibility
-  - **Bedeho:** Test guide for all sub-systems/software under his responsibility
+- **Forum Team:**
+  - **Alex:**
+  - **Bedeho:**
+- **Storage Team:**
+  - **Mokhtar:**
+  - **Alex:**
+  - **Jens:**
 - **Test specification:**
-  - All developers must demonstrate full functionality of their sub-systems/software. Runtime should be completed.
-      1. with a working branch of Pioneer (compatible with Athens, _must_ not include rest of Acropolis scope)
-      2. any other supporting software (compatible with Athens, _must_ not include rest of Acropolis scope)
-      3. if applicable, present clear list of items outstanding with:
+  - The members of each **Team** must be able present full functionality of their sub-systems/software, in the following environment:
+      1. Perform runtime upgrade from current to test version
+          * It's a preference, but not a requirement, for the same runtime to be used for both tests.
+      2. with a working branch of Pioneer (compatible with Athens, _must_ not include rest of Acropolis scope)
+      3. any other supporting software (compatible with Athens, _must_ not include rest of Acropolis scope)
+      4. if applicable, present clear list of items outstanding with:
           - dependencies / responsible person(s)
           - realistic timeline
           - what, if any, should be postponed/abandoned for late release or next release.
@@ -269,7 +280,7 @@ proposals, and first use will be for this next release*
 
 ### Final Test
 
-- **Description:** Upgrade a staging testnet runtime to "Acropolis", and perform a full feature test.
+- **Description:** Upgrade the [`staging-lts`](#staging-testnets) testnet runtime to "Acropolis", and perform a full feature test.
 - **Deadline:** 17. June
 - **Manager:** **Mokhtar**
 - **Team:**
@@ -281,16 +292,17 @@ proposals, and first use will be for this next release*
 
 ### Runtime Proposal
 
-- **Description:** Make `proposal` for a new runtime with the `sudo.key`.
+- **Description:** Create a council runtime upgrade proposal for a new runtime with a member key.
+provide a script/instructions for how to build the identical runtime proposed.
 - **Deadline:** 18. June 11:00GMT+2
 - **Manager:** **Mokhtar**
 - **Team:**
   - **Martin:** Reach out to council members, promote voting, and prepare final blog/newsletter for Acropolis.
-- **Time line:** After the runtime upgrade proposal is submitted, the actual upgrade will happen 48h later.
+- **Time line:** Time line: After the runtime upgrade proposal is submitted, the actual upgrade will happen after all council members have voted. *48h in practice*
 
 ### Release
-- **Description:** If proposal does not reach quorum and the proposal has not received legitimate criticism, immediately force the new proposal with the `sudo key`. To avoid having the runtime upgrade happen before that time, Martin and Mokhtar will hold their vote until 10 blocks before the voting period expires.
-- **Deadline:** 20. June 12:00GMT+2
+- **Description:** If proposal does not reach quorum and the proposal has not received legitimate criticism, immediately force the new proposal with the `sudo key`.
+- **Deadline:** 20. June 11:00GMT+2
 - **Manager:** **Mokhtar**
 
 ---
@@ -314,26 +326,26 @@ Reference to a date or a [milestone](#milestones) should be made for each of the
   - **Bedeho:** ElPassion Manager
   - **Mokhtar:** Developer
   - **Tomasz:** Designer
-  - *FILL IN* Community manager
 - **Tasks:**
   - **Bedeho**, **Tomasz:**
     - Update Joystream.org with new testnet summary information
-    - *FILL IN*
-  - **Mokhtar:**
-    - *FILL IN*
   - **Martin:**
     - Write & publish blog post(s) and newsletter
     - Update/maintain [Helpdesk](#helpdesk)
-    - *FILL IN*
+    - Maintain [payout scripts](#payout-tool) and perform [payouts](#payouts)
   - **FILL IN:**
     - Tech support/online presence
     - Monitor tlgrm, RC, and on-chain forums.
 
 ### Helpdesk
 
-**Description:** Updated guides must be ready for launch.
+- **Description:** Updated guides must be ready for launch.
 - **Deadline:** 19. June
-- **Author:** **Martin**
+- **Manager:** **Martin**
+- **Team:**
+  - **Martin**
+  - **Community Member 1:** Tester
+  - **Community Member 2:** Tester
 - **Distribution:** helpdesk [repo](https://github.com/Joystream/helpdesk)
 - **Assets:** Cover(s)
 
@@ -377,40 +389,26 @@ time they must act.
 
 ### Hosted Joystream Pioneer
 
-- **Description:** Host a version of Joystream Pioneer on joystream.org + others? (*FILL IN*)
-- **Manager:** *FILL IN*
-- **DevOps:** *FILL IN*
-- **Repo:** Aim for static build of pioneer repo (similar to polkadot-js apps deployment)
+- **Description:** Host a version of Joystream Pioneer on testnet.joystream.org
+- **Manager:** Mokhtar
+- **DevOps:** Mokhtar
+- **Repo:** [apps](https://github.com/Joystream/apps) joystream branch (static build with yarn build)
 - **Team:**
-  - *FILL IN*
+  - **Mokhtar**
 - **Tasks:**
-  - *FILL IN*
+  - Update Caddy file to redirect https://testnet.joystream.org/athens/pioneer/ to https://testnet.joystream.org/acropolis/pioneer/
 
 ### Hosted Joystream Storage Node
 
-- **Description:** *FILL IN* (liason? regular? fallback only? )
+- **Description:** One or more storage node(s) without any special status
 - **Manager:** **Jens**
-- **DevOps:** **Jens**
+- **DevOps:** **Jens** **Mokhtar**
 - **Repo:** [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)
 - **Team:**
   - **Jens**
-  - *FILL IN*
+  - **Mokhtar**
 - **Tasks:**
-  - *FILL IN*
-
-### Storage & distribution error endpoint
-
-- **Description:** Reporting endpoint where any user of the data storage and distribution protocol can signal peer failures, will be deployed on error.joystream.org. *FILL IN*
-- **Manager:** *FILL IN* (Jens?)
-- **DevsOps:** *FILL IN*
-- **Repo:** TBD by *FILL IN*
-- **Team:**
-  - *FILL IN*
-  - *FILL IN*
-- **Tasks:**
-  - *FILL IN*
-- **Note:**
-  - Check out Logstash/Kibana/Mixpanel/Splunk *FILL IN*
+  - Host a node and signup to role in the tranches
 
 ### Faucet service backend
 
@@ -422,9 +420,10 @@ time they must act.
   - **Mokhtar**
   - **Martin**  
 - **Tasks:**
-  - Update README with instructions on how to deploy backend *FILL IN*
+  - Update README with instructions on how to deploy backend
   - Keep it stocked with tokens
   - Delete old data at least weekly
+  - Modify frontend
 
 ## Internal Infrastructure and Tools
 
@@ -448,17 +447,17 @@ time they must act.
   - Martin
 - **Tasks:**
   - Keep at least two staging testnets running.
-  - One continuous that will mirror existing testnet
-  - One "on demand" for reckless testing
+  - One continuous that will mirror existing testnet - `staging-lts`
+  - One "on demand" for reckless testing - `staging-reckless`
 
 ### Storage uptime and quality tool
 
 - **Description:** Tool to verify uptime and quality of service by registered `Storage Providers`
-- **Manager:** **Mokhtar** *FILL IN ?*
-- **Repo (private):** *FILL IN*
+- **Manager:** **Alex**
+- **Repo (private):** [storage-quality-of-service](https://github.com/Joystream/storage-quality-of-service)
 - **Team:**
-  - **Mokhtar**
-  - **Martin**
+  - **Alex**
+  - **Jens**
 - **Tasks:**
     - Build the tool
     - Maintain
@@ -481,7 +480,8 @@ time they must act.
 - **Manager:** - **Martin**
 - **Team:**
   - **Martin**
-  - *FILL IN*
+  - **Community Member 1:**
+  - **Community Member 2:**
 - **Duration:**
   - Very high availability in the week following releases
   - No more than 24 hour lag in response to queries after that
