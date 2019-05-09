@@ -124,9 +124,9 @@ WIP
 - **Tracked**: Every Monday
 - **Tracking Manager**: Martin
 - **Key Results**:
-1. `Get 100 posts on forum (limits, not Jsg) (ewd)`
-    - Bedeho: 3/4
-    - Alex: 1/4
+1. `Get 75 posts on forum (limits, not Jsg) (ewd)`
+    - Bedeho: 2/3
+    - Alex: 1/3
 2. `Forum (runtime), storage (runtime and P2P) fully specd (n)`
     - Bedeho (as manager): 1/2
     - Bedeho (as writer): 1/6
@@ -135,9 +135,10 @@ WIP
     - Jens: 2/3
     - Mokhtar: 1/3
 4. `95% uptime Storage Providers (ewd)`
-    - Jens: 1/3
-    - Mokhtar: 1/3
-    - Martin: 1/3
+    - Jens: 1/4
+    - Mokhtar: 1/4
+    - Martin: 1/4
+    - Alex: 1/4
 5. `No PRs merged to master (excluding bugfixes and "pioneer") after "Sub-system Test" (ewd)`
     - Martin: 1/2
     - Jens: 1/8
@@ -153,13 +154,14 @@ WIP
 
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |    Comments       |
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----------------:|
-| 13.05.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 20.05.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 27.05.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 03.06.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 10.06.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 1x.06.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 1x.06.19 | -     |    -  |    -  |     - |  -    | **Actual Score**  |
+| 13.05.19 |       |       |       |       |       |     **NA**        |
+| 20.05.19 |       |       |       |       |       |     **NA**        |
+| 27.05.19 |       |       |       |       |       |     **NA**        |
+| 03.06.19 |       |       |       |       |       |     **NA**        |
+| 10.06.19 |       |       |       |       |       |     **NA**        |
+| 17.06.19 |       |       |       |       |       |     **NA**        |
+| 24.06.19 |       |       |       |       |       |     **NA**        |
+
 
 
 # Group OKRs
