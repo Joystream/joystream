@@ -3,7 +3,7 @@ import { Table } from 'semantic-ui-react';
 import { BareProps, CallProps } from '@polkadot/ui-api/types';
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import { withCalls, withMulti } from '@polkadot/ui-api/index';
-import { Request, Role, RoleParameters } from '../types';
+import { Request, Role, RoleParameters } from '@joystream/types/roles';
 import { AccountId, Balance, Option } from '@polkadot/types';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import BN from 'bn.js';

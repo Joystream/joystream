@@ -11,7 +11,7 @@ import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
 
 import translate from './translate';
 import { calcTotalStake } from '@polkadot/joy-utils/index';
-import { Stake } from '@polkadot/joy-utils/types';
+import { Stake } from '@joystream/types/';
 
 type Props = ApiProps & I18nProps & {
   index: number,

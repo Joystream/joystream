@@ -10,8 +10,8 @@ import { withCalls, withMulti } from '@polkadot/ui-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Option } from '@polkadot/types/codec';
-import { ContentId, ContentMetadata, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from './types';
-import { OptionText } from '@polkadot/joy-utils/types';
+import { ContentId, ContentMetadata, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from '@joystream/types/media';
+import { OptionText } from '@joystream/types/';
 import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { onImageError } from './utils';

@@ -14,7 +14,7 @@ import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
 import Section from '@polkadot/joy-utils/Section';
 import translate from './translate';
 import FilterProps from './FilterProps';
-import { Seat, VoteKind, VoteKinds, Proposal, ProposalVotes, ProposalStatuses as Status } from '@polkadot/joy-utils/types';
+import { Seat, VoteKind, VoteKinds, Proposal, ProposalVotes, ProposalStatuses as Status } from '@joystream/types/';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
 import { Link } from 'react-router-dom';

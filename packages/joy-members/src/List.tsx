@@ -7,7 +7,7 @@ import { I18nProps } from '@polkadot/ui-app/types';
 import Section from '@polkadot/joy-utils/Section';
 import translate from './translate';
 import Details from './Details';
-import { MemberId } from './types';
+import { MemberId } from '@joystream/types/members';
 
 type Props = ApiProps & I18nProps & {
   firstMemberId: BN,

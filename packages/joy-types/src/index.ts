@@ -1,8 +1,8 @@
 import { Enum, EnumType, Option } from '@polkadot/types/codec';
 import { getTypeRegistry, BlockNumber, AccountId, Balance, Hash, u32, Text } from '@polkadot/types';
-import { registerMediaTypes } from '@polkadot/joy-media/types';
-import { registerMembershipTypes } from '@polkadot/joy-members/types';
-import { registerRolesTypes } from '@polkadot/joy-roles/types';
+import { registerMediaTypes } from './media';
+import { registerMembershipTypes } from './members';
+import { registerRolesTypes } from './roles';
 
 class Amount extends Balance {}
 

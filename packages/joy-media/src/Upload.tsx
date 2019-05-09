@@ -12,7 +12,7 @@ import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
 import { fileNameWoExt } from './utils';
-import { ContentId } from './types';
+import { ContentId } from '@joystream/types/media';
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import { withStorageProvider, StorageProviderProps } from './StorageProvider';
 import EditMeta from './EditMeta';

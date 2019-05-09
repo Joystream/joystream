@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Option } from '@polkadot/types';
 import { withCalls, withMulti } from '@polkadot/ui-api/with';
 
-import { MemberId } from '@polkadot/joy-members/types';
+import { MemberId } from '@joystream/types/members';
 import { queryMembershipToProp } from '@polkadot/joy-members/utils';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 

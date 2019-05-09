@@ -7,7 +7,7 @@ import { stringToU8a, u8aToHex } from '@polkadot/util';
 
 import translate from './translate';
 import Details from './Details';
-import { MemberId } from './types';
+import { MemberId } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
 
 type DetailsByHandleProps = {

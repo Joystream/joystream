@@ -1,4 +1,4 @@
-import { Request, Role } from './types';
+import { Request, Role } from '@joystream/types/roles';
 
 export type ComponentProps = {
   actorAccountIds: Array<string>,

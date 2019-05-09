@@ -66,7 +66,7 @@ export function isKnownAddress (address: string): boolean {
 // Joystream Stake utils
 // --------------------------------------
 
-import { Stake, Backer } from './types';
+import { Stake, Backer } from '@joystream/types/';
 
 export function calcTotalStake (stakes: Stake | Stake[] | undefined): BN {
   if (typeof stakes === 'undefined') {

@@ -6,7 +6,7 @@ import { withCalls } from '@polkadot/ui-api/with';
 import { Vector } from '@polkadot/types/codec';
 
 import translate from './translate';
-import { ContentId } from './types';
+import { ContentId } from '@joystream/types/media';
 import { View } from './View';
 
 type Props = ApiProps & I18nProps & {

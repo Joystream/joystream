@@ -18,7 +18,7 @@ import { Option } from '@polkadot/types';
 
 import ReactTooltip from 'react-tooltip';
 import { queryToProp } from '@polkadot/joy-utils/index';
-import { ElectionStage } from '@polkadot/joy-utils/types';
+import { ElectionStage } from '@joystream/types/';
 import { councilSidebarName } from '../routing/joy-election';
 
 type Props = I18nProps & ApiProps & {

@@ -13,7 +13,7 @@ import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
 import { withStorageProvider, StorageProviderProps } from './StorageProvider';
-import { DataObject, ContentMetadata, ContentId } from './types';
+import { DataObject, ContentMetadata, ContentId } from '@joystream/types/media';
 import { MutedText } from '@polkadot/joy-utils/MutedText';
 import { DEFAULT_THUMBNAIL_URL, onImageError } from './utils';
 import { isEmptyStr } from '@polkadot/joy-utils/';

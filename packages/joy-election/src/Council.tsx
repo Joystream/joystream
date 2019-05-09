@@ -8,7 +8,7 @@ import { formatBalance } from '@polkadot/util';
 import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
 
 import { calcBackersStake } from '@polkadot/joy-utils/index';
-import { Seat } from '@polkadot/joy-utils/types';
+import { Seat } from '@joystream/types/';
 import translate from './translate';
 import Section from '@polkadot/joy-utils/Section';
 
