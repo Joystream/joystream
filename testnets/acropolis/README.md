@@ -178,12 +178,11 @@ The following public products will be part of this release.
 - **Manager:** Jens
 - **Team:**
   - **Jens:** Developer
-  - **Mokhtar:** Developer  
-  - *FILL IN*
+  - **Mokhtar:** Developer
   - **Martin:** Testing
 - **Main repo:** [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)
-- **Current version:** *FILL IN*
-- **New version:** *FILL IN*
+- **Current version:** 0.1.0 (did not bump last release)
+- **New version:** 0.2.0
 - **Audit:** No
 - **Documentation:** *FILL IN* (moar)
 - **Legal Review/ToS update:** *FILL IN*
