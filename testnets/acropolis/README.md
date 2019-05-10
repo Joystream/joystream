@@ -187,7 +187,7 @@ The following public products will be part of this release.
 - **Documentation:**
   - [README](https://github.com/Joystream/storage-node-joystream/blob/master/README.md)
   - [Released API specs](https://storage-node-1.joystream.org/swagger.json)
-- **Legal Review/ToS update:** *FILL IN*
+- **Legal Review/ToS update:** No
 - **Build/CI system:**
   - **Jens**
     * CI: Simple travis job, running unit tests.
@@ -343,7 +343,7 @@ Reference to a date or a [milestone](#milestones) should be made for each of the
     - Write & publish blog post(s) and newsletter
     - Update/maintain [Helpdesk](#helpdesk)
     - Maintain [payout scripts](#payout-tool) and perform [payouts](#payouts)
-  - **FILL IN:**
+  - **Community Member(s):**
     - Tech support/online presence
     - Monitor tlgrm, RC, and on-chain forums.
 
