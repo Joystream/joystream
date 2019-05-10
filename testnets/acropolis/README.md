@@ -184,14 +184,25 @@ The following public products will be part of this release.
 - **Current version:** 0.1.0 (did not bump last release)
 - **New version:** 0.2.0
 - **Audit:** No
-- **Documentation:** *FILL IN* (moar)
+- **Documentation:**
+  - [README](https://github.com/Joystream/storage-node-joystream/blob/master/README.md)
+  - [Released API specs](https://storage-node-1.joystream.org/swagger.json)
 - **Legal Review/ToS update:** *FILL IN*
-- **Build/CI system:** *FILL IN*
+- **Build/CI system:**
+  - **Jens**
+    * CI: Simple travis job, running unit tests.
+    * Build docker image
 - **Target Platforms:** Linux
-- **New/Altered Functionality:** Jens
-  - *FILL IN*
+- **New/Altered Functionality:**
+  - Support storage tranches. The main difference is to stake for joining a tranche rather than the storage provider role.
+    - Allow multiple keys, or allow one key to stake for multiple tranches.
+  - Drop hyperdrive backend. Replace with file system or IPFS backend **TBD**
+    - Drop multiple repository concept, and repository IDs in URLs.
+    - Replace sync protocol stack with simpler synchronization, downloading or pinning content from staked tranches.
+  - Finalize DHT for liaison/download node selection
 - **New Key User Stories:**
-  - *FILL IN*
+  - As a storage provider, in order to selectively provide storage, I want to stake for storage tranches.
+  - As a storage provider, in order to fulfil my role, I want my storage node to synchronize content.
 - **Deployment/Distribution:**
   - *FILL IN*
   - Will replace old storage system with the runtime upgrade.
