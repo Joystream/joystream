@@ -204,7 +204,7 @@ The following public products will be part of this release.
   - As a storage provider, in order to selectively provide storage, I want to stake for storage tranches.
   - As a storage provider, in order to fulfil my role, I want my storage node to synchronize content.
 - **Deployment/Distribution:**
-  - *FILL IN*
+  - Dockerfile for deployment
   - Will replace old storage system with the runtime upgrade.
 
 ### Pioneer
