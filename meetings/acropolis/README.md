@@ -1,18 +1,15 @@
 # Table of contents
 
+<!-- TOC START min:1 max:3 link:true asterisk:false update:true -->
+- [Table of contents](#table-of-contents)
 - [Conducted Meetings](#conducted-meetings)
-    - [Launch Meeting](#launch-meeting)
-      - [Agenda](#agenda)
-      - [Minutes](#minutes)
-- [Planned Meetings](#planned-meetings)
-    - [User Stories Meeting](#user-stories-meeting)
-      - [Agenda](#agenda-1)
-      - [Minutes](#minutes-1)
-    - [Release Plan Finalization Meeting](#release-plan-finalisation-meeting)
-      - [Agenda](#agenda-2)
-      - [Minutes](#minutes-2)
-    - [Other/Placeholder](#other)
-    - [Lessons Learned](#lessons-learned)
+  - [Launch Meeting](#launch-meeting)
+  - [User Stories Meeting](#user-stories-meeting)
+  - [Release Plan Finalization Meeting](#release-plan-finalization-meeting)
+- [Planned meetings](#planned-meetings)
+  - [Other](#other)
+  - [Lessons Learned](#lessons-learned)
+<!-- TOC END -->
 
 
 # Conducted Meetings
@@ -37,7 +34,7 @@
 :one: Present first release OKR proposal for discussion:
 
 
-### Objective: `Launch Rome network`
+#### Objective: `Launch Rome network`
 - **Active from:** 29.04.19
 - **KR Measurement Deadline**: 7-9 days after Rome launch (first weekday)
 - **Tracked**: Every Monday
@@ -89,7 +86,7 @@ Jens made a good point, which I hope is clarified in the KR now. (comments?)
 As a consequence of `5.`, this seems more like a subrelease from a user POW. This makes it a smaller release, thus no point in straying away from the greek theme. The discussion led to the following OKR for Acropolis:
 
 
-### Objective: `Launch Acropolis Network`
+#### Objective: `Launch Acropolis Network`
 - **Active from:** 30.04.19
 - **KR Measurement Deadline**: 7-9 days after Acropolis launch (first weekday)
 - **Tracked**: Every Monday
@@ -131,8 +128,6 @@ The User Stories meeting is to be held on Tuesday at 12:15CET.
 No
 
 **Ended at:** 13:15CET
-
-# Planned meetings
 
 ## User Stories Meeting
 
@@ -361,10 +356,10 @@ As a downloader, I don't want to know anything about storage tranches.
 
 **ID:** `Acropolis Release Plan Finalization Meeting`
 - **Date:** `09.05.19`
-- **Starts:** `12:15 GMT+2`
-- **Duration:** `mm`
+- **Starts:** `11:15 GMT+2`
+- **Duration:** `90min`
 - **Venue:** `ZOOM`
-- **Lead**: `Bedeho`
+- **Lead**: `Martin`
 - **Minutes**: `Martin`
 - **Participants**:
  - `Alex`
@@ -375,25 +370,48 @@ As a downloader, I don't want to know anything about storage tranches.
 
 #### Agenda
 
-DRAFT:
-
 :one: Finalize Release Plan
 
-:two: ....
-
 #### Minutes
-**Started at:** `time`
+**Started at:** `11:15 GMT+2`
 **Present:**
-* `person1`
-* `...`
+- `Alex`
+- `Bedeho`
+- `Jens`
+- `Martin`
+- `Mokhtar`
+- `Dagur` (observer)
 
-:one: Item 1.
+:one:
+The items in the draft [Release Plan](../testnets/acropolis) was examined and discussed. The main points of discussions were:
 
-:two: ....
+ - Realistic numbers for the the [release OKR](../testnets/acropolis#release-okrs)
+
+Settled on:
+1. `Get 75 posts on forum (limits, not Jsg) (ewd)`
+2. `Forum (runtime), storage (runtime and P2P) fully specd (n)`
+3. `Have 4x replication for all 2 tranches on storage node (ewd)`
+4. `95% uptime Storage Providers (ewd)`
+5. `No PRs merged to master (excluding bugfixes and "pioneer") after "Sub-system Test" (ewd)`
+
+- `Colossus` and `Pioneer` had not been filled in by their respective leads, and was only covered superficially.
+
+- The [milestones](../testnets/acropolis#milestones) sections saw small adjustments to the Spec Release date, and a request to re-write the Sub-systems Test for clarity.
+
+- For the [Public Infrastructure](../testnets/acropolis#public-infrastructure) section:
+  - It was decided finally to remove the `Storage and Distribution Error Endpoint` tool to reduce the SoW for the [Colossus](../testnets/acropolis#colossus) team.
+  - Hosted Joystream Storage Node(s) will be set up to "ensure" service, but the node(s) will not have any special status on the network.
+
+- For the [Internal Infrastructure](../testnets/acropolis#internal-infrastructure-and-tools) section, it was decided after some back and forth that Alex will be the manager Storage Uptime and Quality Tool.
 
 **Other topics raised:**
 
-**Ended at:** `time`
+Before the meeting was adjourned, the issue of making the Forum work without an [Indexing Node](https://github.com/Joystream/indexing-node-joystream) was discussed.
+
+**Ended at:** `12:30 GMT+2`
+
+# Planned meetings
+
 
 ---
 

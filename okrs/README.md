@@ -119,50 +119,49 @@ Archived OKRs are found in [archive](/OKR-archive), below only live OKRs are fou
 # Release OKRs
 WIP
 ## Objective: `Launch Acropolis Network`
-- **Active from:** 29.04.19
+- **Active from:** 09.05.19
 - **KR Measurement Deadline**: 7-9 days after Acropolis launch (first weekday)
 - **Tracked**: Every Monday
 - **Tracking Manager**: Martin
 - **Key Results**:
-1. `Get 200 posts on forum (limits, not Jsg) (ewd)`
-    - Bedeho: 3/4
+1. `Get 75 posts on forum (limits, not Jsg) (ewd)`
+    - Bedeho: 2/3
+    - Alex: 1/3
+2. `Forum (runtime), storage (runtime and P2P) fully specd (n)`
+    - Bedeho (as manager): 1/2
+    - Bedeho (as writer): 1/6
+    - Jens: 2/6
+3. `Have 4x coverage for all 3 tranches on storage node (ewd)`
+    - Jens: 2/3
+    - Mokhtar: 1/3
+4. `95% uptime Storage Providers (ewd)`
+    - Jens: 1/4
+    - Mokhtar: 1/4
+    - Martin: 1/4
     - Alex: 1/4
-2. `All n* modules fully specd (n)`
-    - Bedeho: 1/2
-    - Mokhtar: n_m/(n*2)
-    - Alex: n_a/(n*2)
-    - Jens: n_j/(n*2)
-    - Bedeho: n_b/(n*2)    
-3. `Add tranches to storage-node (ewd)`
-    - Jens (2/3)
-    - Mokhtar (1/3)
-4. `No PRs merged to master (excluding bugfixes and "pioneer") after "Module Test" (ewd)`
+5. `No PRs merged to master (excluding bugfixes and "pioneer") after "Sub-system Test" (ewd)`
     - Martin: 1/2
     - Jens: 1/8
     - Mokhtar: 1/8
     - Bedeho: 1/8
     - Alex: 1/8
 
-`* Bedeho to define n, n_m, n_a, n_j, n_b`
-
-
-
 - **Notes**
-  * `WIP`
+  * N/A
 <br />
 
 - **Tracking:**
 
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |    Comments       |
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----------------:|
-| 06.05.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 13.05.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 20.05.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 27.05.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 03.06.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 10.06.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 1x.06.19 | -     |    -  |    -  |     - |  -    |       -           |
-| 1x.06.19 | -     |    -  |    -  |     - |  -    | **Actual Score**  |
+| 13.05.19 |       |       |       |       |       |     **NA**        |
+| 20.05.19 |       |       |       |       |       |     **NA**        |
+| 27.05.19 |       |       |       |       |       |     **NA**        |
+| 03.06.19 |       |       |       |       |       |     **NA**        |
+| 10.06.19 |       |       |       |       |       |     **NA**        |
+| 17.06.19 |       |       |       |       |       |     **NA**        |
+| 24.06.19 |       |       |       |       |       |     **NA**        |
+
 
 
 # Group OKRs

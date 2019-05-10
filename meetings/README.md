@@ -15,17 +15,17 @@
 
 # Meeting Archiving
 
-Each meeting which will be archived has a _meeting identifier_, which is just a unique number, as seen in the template [below](#meeting-itinerary-archive-index). The itinerary, and any other related assets, for a meeting should be placed in a subdirectory of this directory with the same name as this identifier.
+Each meeting which will be archived has a _meeting identifier_, which should reflect the topics covered, as seen in the template [below](#meeting-itinerary-archive-index). The itinerary, and any other related assets, for a meeting should be placed in a subdirectory of this directory with the same name as this identifier.
 
 # Archive Index
 
 This is the index of past meetings with itineraries, they should all be stored in this directory.
 
-| Identifier                                  | Invitation sent  | Scheduled   (held)    | Itinerary and Minutes                              | Notes                         |
+| Meeting Identifier                             | Invitation sent  | Scheduled   (held)    | Itinerary and Minutes                              | Notes                         |
 | :-----------------------------------------: | :---------------:|-----------------------| :------------------------------------------------: | :----------------------------:|
 | Acropolis Launch Meeting                    | 24.04.19         | 26.04.19-12:15GMT+2 (x) | [link](../meetings/acropolis#launch-meeting)       |              -                |   
 | Acropolis User Stories Meeting              | 26.04.19         | 02.05.19-12:15GMT+2 (x) | [link](../meetings/acropolis#user-stories-meeting) | Rescheduled from 30.04        |
-| Acropolis Release Plan Finalization Meeting | 06.05.19         | 09.05.19-12:15GMT+2     | [link](../meetings/acropolis#user-stories-meeting) | Two working days not feasible |
+| Acropolis Release Plan Finalization Meeting | 06.05.19         | 09.05.19-11:15GMT+2 (x)  | [link](../meetings/acropolis#release-plan-finalisation-meeting) | Two working days not feasible |
 
 
 # Itinerary Template
