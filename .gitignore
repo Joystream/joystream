@@ -20,13 +20,5 @@ yarn-error.log*
 .vscode
 .*.sw*
 
-# Node modules except our own
-node_modules/*
-!node_modules/joystream
-
-# Generated JS files
-lib/joystream/substrate/types/*.js
-!lib/joystream/substrate/types/index.js
-
 # Ignore nvm config file
 .nvmrc

@@ -1,0 +1,48 @@
+{
+  "name": "@joystream/dht",
+  "version": "0.1.0",
+  "description": "DHT for Joystream Storage Node",
+  "author": "Joystream",
+  "homepage": "https://github.com/Joystream/storage-node-joystream",
+  "bugs": {
+    "url": "https://github.com/Joystream/storage-node-joystream/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joystream/storage-node-joystream.git"
+  },
+  "license": "GPL-3.0",
+  "contributors": [
+    {
+      "name": "Jens Finkhaeuser",
+      "email": "jens@finkhaeuser.de",
+      "url": "https://finkhaeuser.de/"
+    }
+  ],
+  "keywords": [
+    "joystream",
+    "storage",
+    "node",
+    "dht"
+  ],
+  "os": [ "darwin", "linux" ],
+
+  "scripts": {
+    "test": "mocha 'test/**/*.js'",
+    "lint": "eslint '**/*.js' --ignore-pattern '*test/**/*.js'",
+    "browser": "yarn run browserify -r ./client.js:joystream-dht/client -o webtest/bundle.js"
+  },
+
+  "devDependencies": {
+    "browserify": "^16.2.3",
+    "chai": "^4.2.0",
+    "eslint": "^5.13.0",
+    "mocha": "^5.2.0",
+    "temp": "^0.9.0"
+  },
+  "dependencies": {
+    "bittorrent-dht": "^9.0.0",
+    "rpc-websockets": "^4.3.5",
+    "sha3": "^2.0.1"
+  }
+}

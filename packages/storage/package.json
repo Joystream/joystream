@@ -1,10 +1,8 @@
 {
+  "name": "@joystream/storage",
   "version": "0.1.0",
-  "private": true,
-  "engines": {
-    "node": ">=v10.15.3",
-    "yarn": "^1.15.2"
-  },
+  "description": "Storage management code for Joystream Storage Node",
+  "author": "Joystream",
   "homepage": "https://github.com/Joystream/storage-node-joystream",
   "bugs": {
     "url": "https://github.com/Joystream/storage-node-joystream/issues"
@@ -24,13 +22,22 @@
   "keywords": [
     "joystream",
     "storage",
-    "node"
+    "node",
+    "storage"
   ],
-  "os": [
-    "darwin",
-    "linux"
-  ],
-  "workspaces": [
-    "packages/*"
-  ]
+  "os": [ "darwin", "linux" ],
+
+  "scripts": {
+    "test": "mocha 'test/**/*.js'",
+    "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'"
+  },
+
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "eslint": "^5.13.0",
+    "mocha": "^5.2.0",
+    "temp": "^0.9.0"
+  },
+  "dependencies": {
+  }
 }
