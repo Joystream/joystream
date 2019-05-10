@@ -196,10 +196,10 @@ The following public products will be part of this release.
 - **New/Altered Functionality:**
   - Support storage tranches. The main difference is to stake for joining a tranche rather than the storage provider role.
     - Allow multiple keys, or allow one key to stake for multiple tranches.
-  - Drop hyperdrive backend. Replace with file system or IPFS backend **TBD**
+  - Drop hyperdrive backend. Replace with IPFS backend.
     - Drop multiple repository concept, and repository IDs in URLs.
     - Replace sync protocol stack with simpler synchronization, downloading or pinning content from staked tranches.
-  - Finalize DHT for liaison/download node selection
+  - Drop bittorrent-dht and use IPFS DHT and IPNS for liason/download endpoint announcement.
 - **New Key User Stories:**
   - As a storage provider, in order to selectively provide storage, I want to stake for storage tranches.
   - As a storage provider, in order to fulfil my role, I want my storage node to synchronize content.
