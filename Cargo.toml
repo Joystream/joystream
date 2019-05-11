@@ -1,0 +1,36 @@
+[package]
+name = "substrate-forum-module"
+version = "0.1.0"
+authors = ["Bedeho Mender <bedeho.mender@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+# restrict version of syn, see https://github.com/paritytech/substrate/issues/2326
+syn = { version = ">= 0.15.26, < 0.15.32", features = ["full"] }
+hex-literal = "0.1.0"
+serde = { version = "1.0", optional = true }
+parity-codec = { version = "3.2", default-features = false }
+parity-codec-derive = { version = "3.1", default-features = false }
+rstd = { package = 'sr-std', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
+runtime-primitives = { package = 'sr-primitives', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
+srml-support = { package = 'srml-support', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
+srml-support-procedural = { package = 'srml-support-procedural', git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
+system = { package = 'srml-system', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
+balances = { package = 'srml-balances', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
+
+[dev-dependencies]
+runtime-io = { package = 'sr-io', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
+primitives = { package = 'substrate-primitives', git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
+
+[features]
+default = ["std"]
+std = [
+	"serde",
+	"parity-codec/std",
+	"parity-codec-derive/std",
+	"rstd/std",
+	"runtime-primitives/std",
+	"srml-support/std",
+	"system/std",
+  "balances/std",
+]
