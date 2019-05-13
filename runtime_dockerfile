@@ -1,0 +1,16 @@
+FROM wasm-toolchain
+LABEL description="Joystream substrate runtime build"
+
+WORKDIR /runtime
+COPY . /runtime
+ENV TERM=xterm
+
+RUN rustup show
+
+# Ensure clean build
+RUN cargo clean
+RUN rm -fr target/
+RUN rm -fr wasm/target/
+
+# Build the runtime
+RUN cargo test && ./build.sh

@@ -2,6 +2,9 @@
 
 set -e
 
+# Install OS dependencies
+curl https://getsubstrate.io -sSf | bash -s -- --fast
+
 echo "*** Initialising WASM build environment"
 
 if [ -z $CI_PROJECT_NAME ] ; then
