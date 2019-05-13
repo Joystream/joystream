@@ -72,7 +72,7 @@
 | :-------------------------: | :-------------: |:---------------------------------------------------------:|
 | Launch Meeting              | 26.04.19        | [link](../../meetings/acropolis/#launch-meeting)             |
 | User Stories                | 02.05.19        | [link](../../meetings/acropolis#user-stories-meeting)        |
-| Release Plan Finalization   | 09.05.19        | [link](../../meetings/acropolis#release-plan-finalization)   |
+| Release Plan Finalization   | 09.05.19        | [link](../../meetings/acropolis#release-plan-finalization-meeting)   |
 
 #  Specification
 
