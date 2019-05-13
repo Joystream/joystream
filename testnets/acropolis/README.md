@@ -70,13 +70,13 @@
 
 | Name/category               | Date            | Itinerary and Minutes                                     |
 | :-------------------------: | :-------------: |:---------------------------------------------------------:|
-| Launch Meeting              | 26.04.19        | [link](../meetings/acropolis/#launch-meeting)             |
-| User Stories                | 02.05.19        | [link](../meetings/acropolis#user-stories-meeting)        |
-| Release Plan Finalization   | 09.05.19        | [link](../meetings/acropolis#release-plan-finalization)   |
+| Launch Meeting              | 26.04.19        | [link](../../meetings/acropolis/#launch-meeting)             |
+| User Stories                | 02.05.19        | [link](../../meetings/acropolis#user-stories-meeting)        |
+| Release Plan Finalization   | 09.05.19        | [link](../../meetings/acropolis#release-plan-finalization)   |
 
 #  Specification
 
-After [discussing](../reports/archive/2.md) internally, the specs for Acropolis will be made using [this](https://github.com/Joystream/joystream/blob/master/reports/archive/2-attachments/members-module.md) as a reference (link to be replaced after merge).
+After [discussing](../../reports/archive/2.md) internally, the specs for Acropolis will be made using [this](https://github.com/Joystream/joystream/blob/master/reports/archive/2-attachments/members-module.md) as a reference (link to be replaced after merge).
 
 # GitHub Projects
 
@@ -117,10 +117,10 @@ NA.
 2. `Forum (runtime), storage (runtime and P2P) fully specd (n)`
 3. `Have 4x replication for all 2 tranches on storage node (ewd)`
 4. `95% uptime Storage Providers (ewd)`
-5. `No PRs merged to master (excluding bugfixes and "pioneer") after "Sub-system Test" (ewd)`
+5. `No PRs merged to master (excluding bugfixes and "pioneer") after "Sub-system Test" (conf)`
 
 
-Go [here](../okrs/#release-okrs) for more details and tracking.
+Go [here](../../okrs/#release-okrs) for more details and tracking.
 
 ## Constraints
 
