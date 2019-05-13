@@ -117,7 +117,7 @@ Archived OKRs are found in [archive](/OKR-archive), below only live OKRs are fou
 | 02.07.19 |       |       |       |       |       | **NA** |
 
 # Release OKRs
-WIP
+
 ## Objective: `Launch Acropolis Network`
 - **Active from:** 09.05.19
 - **KR Measurement Deadline**: 7-9 days after Acropolis launch (first weekday)
@@ -131,7 +131,7 @@ WIP
     - Bedeho (as manager): 1/2
     - Bedeho (as writer): 1/6
     - Jens: 2/6
-3. `Have 4x coverage for all 3 tranches on storage node (ewd)`
+3. `Have 4x replication for all 2 tranches on storage node (ewd)`
     - Jens: 2/3
     - Mokhtar: 1/3
 4. `95% uptime Storage Providers (ewd)`
@@ -139,7 +139,7 @@ WIP
     - Mokhtar: 1/4
     - Martin: 1/4
     - Alex: 1/4
-5. `No PRs merged to master (excluding bugfixes and "pioneer") after "Sub-system Test" (ewd)`
+5. `No PRs merged to master (excluding bugfixes and "pioneer") after "Sub-system Test" (conf)`
     - Martin: 1/2
     - Jens: 1/8
     - Mokhtar: 1/8
@@ -147,14 +147,14 @@ WIP
     - Alex: 1/8
 
 - **Notes**
-  * N/A
+  * During the first tracking, it was decided to track KR5 by how confident (conf) each assigned individual is that the KR will be achieved.
 <br />
 
 - **Tracking:**
 
 | Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |    Comments       |
 |:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----------------:|
-| 13.05.19 |       |       |       |       |       |     **NA**        |
+| 13.05.19 |(0.55,0.65) **0.58**|(0.4,1,0.1) **0.4**|(0,0) **0**|(0,0,0,0) **0**|(0.5,1,0.5,0.95,0.95) **0.675**|KR3 tracking N/A as SoW must be finalized|
 | 20.05.19 |       |       |       |       |       |     **NA**        |
 | 27.05.19 |       |       |       |       |       |     **NA**        |
 | 03.06.19 |       |       |       |       |       |     **NA**        |
