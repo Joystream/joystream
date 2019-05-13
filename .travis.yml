@@ -1,0 +1,9 @@
+language: rust
+rust:
+  - 1.34.0
+cache:
+  - cargo
+script:
+  - ./setup.sh
+  - ./build.sh
+  - cargo test --verbose --all
