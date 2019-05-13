@@ -3,7 +3,10 @@ rust:
   - 1.34.0
 cache:
   - cargo
-script:
+before_script:
+  - rustup component add rustfmt
   - ./setup.sh
+script:
+  - cargo fmt --all -- --check
   - ./build.sh
   - cargo test --verbose --all
