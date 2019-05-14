@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# TODO: get this image from docker hub instead
 # Build the toolchain image - contains only the compiler environmet for building runtime
-docker build --tag wasm-toolchain --file ./wasm_dockerfile .
+# This is then pushed to docker hub: https://cloud.docker.com/repository/docker/mokhtargz/wasm-toolchain/general
+# docker build --tag mokhtargz/wasm-toolchain --file ./wasm_dockerfile .
 
 # Build the runtime in a new image
 docker build --tag runtime-build --file ./runtime_dockerfile .

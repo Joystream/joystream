@@ -1,4 +1,5 @@
-FROM wasm-toolchain
+# use toolchain image from: https://cloud.docker.com/repository/docker/mokhtargz/wasm-toolchain/general
+FROM mokhtargz/wasm-toolchain
 LABEL description="Joystream substrate runtime build"
 
 WORKDIR /runtime
