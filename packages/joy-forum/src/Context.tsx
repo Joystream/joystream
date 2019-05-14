@@ -172,10 +172,45 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       };
     }
 
-    case 'NewReply':
-    case 'UpdateReply':
-      // TODO implement reducers
-      throw new Error('Reducer is not yet implemented for this type of action: ' + action.type);
+    case 'NewReply': {
+      const { reply } = action;
+      const { thread_id } = reply;
+
+      let {
+        nextReplyId,
+        replyById,
+        replyIdsByThreadId
+      } = state;
+
+      let replyIds = replyIdsByThreadId.get(thread_id.toNumber());
+      if (!replyIds) {
+        replyIds = [];
+        replyIdsByThreadId.set(thread_id.toNumber(), replyIds);
+      }
+      replyIds.push(nextReplyId);
+
+      replyById.set(nextReplyId, reply);
+      nextReplyId = nextReplyId + 1;
+
+      return {
+        ...state,
+        nextReplyId,
+        replyById,
+        replyIdsByThreadId
+      };
+    }
+
+    case 'UpdateReply': {
+      const { reply, id } = action;
+      const { replyById } = state;
+
+      replyById.set(id, reply);
+
+      return {
+        ...state,
+        replyById
+      };
+    }
 
     default:
       throw new Error('Unexptected action: ' + JSON.stringify(action));

@@ -4,17 +4,52 @@ import ReactMarkdown from 'react-markdown';
 import { Table } from 'semantic-ui-react';
 
 import { CategoryId, ThreadId } from './types';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
 import { useForum } from './Context';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { UrlHasIdProps } from './utils';
+import { UrlHasIdProps, AuthorPreview } from './utils';
 import Section from '@polkadot/joy-utils/Section';
 
 type ViewCategoryProps = {
   id: CategoryId,
   preview?: boolean
 };
+
+function CategoryActions ({ id }: { id: CategoryId }) {
+  const className = 'ui small button ActionButton';
+  return (
+    <>
+    <Link
+      to={`/forum/categories/${id.toString()}/newThread`}
+      className={className}
+    >
+      <i className='add icon' />
+      New thread
+    </Link>
+    <Link
+      to={`/forum/categories/${id.toString()}/edit`}
+      className={className}
+    >
+      <i className='pencil alternate icon' />
+      Edit
+    </Link>
+    <button
+      className={className}
+      onClick={() => alert('TODO Archive this category')}
+    >
+      <i className='file archive outline icon' />
+      Archive
+    </button>
+    <button
+      className={className}
+      onClick={() => alert('TODO Delete this category')}
+    >
+      <i className='trash alternate outline icon' />
+      Delete
+    </button>
+    </>
+  );
+}
 
 function ViewCategory (props: ViewCategoryProps) {
   const { state: {
@@ -43,8 +78,10 @@ function ViewCategory (props: ViewCategoryProps) {
             {threadIds.length}
           </Table.Cell>
           <Table.Cell>
-            {/* TODO show member instead of address */}
-            <AddressMini value={category.owner} isShort={false} isPadded={false} withBalance={true} withName={true} withMemo={true} size={36} />
+            <CategoryActions id={id} />
+          </Table.Cell>
+          <Table.Cell>
+            <AuthorPreview address={category.owner} />
           </Table.Cell>
         </Table.Row>
       );
@@ -60,27 +97,11 @@ function ViewCategory (props: ViewCategoryProps) {
 
     <h1 style={{ display: 'flex' }}>
       {category.name}
-      <Link
-        to={`/forum/categories/${id.toString()}/edit`}
-        className='ui small button'
-        style={{ marginLeft: '.5rem' }}
-      >
-        <i className='pencil alternate icon' />
-        Edit
-      </Link>
-      <Link
-        to={`/forum/categories/${id.toString()}/newThread`}
-        className='ui small button'
-        style={{ marginLeft: '.5rem' }}
-      >
-        <i className='add icon' />
-        New thread
-      </Link>
+      <CategoryActions id={id} />
     </h1>
     <div>
       <MutedSpan>Moderator: </MutedSpan>
-      {/* TODO show member instead of address */}
-      <AddressMini value={category.owner} isShort={false} isPadded={false} withBalance={true} withName={true} withMemo={true} size={36} />
+      <AuthorPreview address={category.owner} />
     </div>
     <div style={{ marginTop: '1rem' }}>
       <ReactMarkdown className='JoyMemo--full' source={category.text} linkTarget='_blank' />
@@ -98,8 +119,8 @@ function ViewCategory (props: ViewCategoryProps) {
           <Table.HeaderCell>Moderator</Table.HeaderCell>
         </Table.Row>
       </Table.Header>
-      <Table.Body>{threadIds.map((threadId, i) => (
-        <ViewThread key={i} id={new ThreadId(threadId)} preview />
+      <Table.Body>{threadIds.map((id, i) => (
+        <ViewThread key={i} id={new ThreadId(id)} preview />
       ))}</Table.Body>
       </Table>
     }
@@ -129,6 +150,7 @@ export function RootCategories () {
         <Table.HeaderCell>Root category</Table.HeaderCell>
         <Table.HeaderCell>Subcategories</Table.HeaderCell>
         <Table.HeaderCell>Threads</Table.HeaderCell>
+        <Table.HeaderCell>Actions</Table.HeaderCell>
         <Table.HeaderCell>Moderator</Table.HeaderCell>
       </Table.Row>
     </Table.Header>

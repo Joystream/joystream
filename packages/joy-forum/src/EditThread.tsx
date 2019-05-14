@@ -25,6 +25,7 @@ const buildSchema = (p: ValidationProps) => Yup.object().shape({
   text: Yup.string()
     // .min(p.minTextLen, `Thread description is too short. Minimum length is ${p.minTextLen} chars.`)
     // .max(p.maxTextLen, `Thread description is too long. Maximum length is ${p.maxTextLen} chars.`)
+    .required('Thread text is required')
 });
 
 type ValidationProps = {

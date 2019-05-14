@@ -8,12 +8,13 @@ import Tabs, { TabItem } from '@polkadot/ui-app/Tabs';
 import './index.css';
 
 import translate from './translate';
+import { ForumProvider } from './Context';
 import { NewCategory, EditCategory } from './EditCategory';
 import { NewThread, EditThread } from './EditThread';
-import { ForumProvider } from './Context';
+import { NewReply, EditReply } from './EditReply';
 import { RootCategories, ViewCategoryById } from './RootCategories';
-import { NewReply } from './EditReply';
 import { ViewThreadById } from './ViewThread';
+import { ViewReplyById } from './ViewReply';
 
 type Props = AppProps & I18nProps & {};
 
@@ -53,6 +54,9 @@ class App extends React.PureComponent<Props> {
           <Route path={`${basePath}/threads/:id/reply`} component={NewReply} />
           <Route path={`${basePath}/threads/:id/edit`} component={EditThread} />
           <Route path={`${basePath}/threads/:id`} component={ViewThreadById} />
+
+          <Route path={`${basePath}/replies/:id/edit`} component={EditReply} />
+          <Route path={`${basePath}/replies/:id`} component={ViewReplyById} />
 
           <Route component={RootCategories} />
         </Switch>

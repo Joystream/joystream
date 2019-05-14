@@ -1,3 +1,13 @@
+.forum--App {
+  .ActionButton {
+    white-space: 'nowrap';
+    margin-left: '.5rem';
+  }
+
+  .ReplyBox {
+    background-color: #fff;
+  }
+}
 
 .EditEntityBox {
   width: 100%;

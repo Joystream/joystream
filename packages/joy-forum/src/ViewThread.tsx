@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Table } from 'semantic-ui-react';
 
-import { ThreadId } from './types';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
+import { ThreadId, ReplyId } from './types';
 import { useForum } from './Context';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { UrlHasIdProps } from './utils';
+import { UrlHasIdProps, AuthorPreview } from './utils';
+import Section from '@polkadot/joy-utils/Section';
+import { ViewReply } from './ViewReply';
 
 type ViewThreadProps = {
   id: ThreadId,
@@ -22,7 +23,7 @@ export function ViewThread (props: ViewThreadProps) {
 
   const { id, preview = false } = props;
   const thread = threadById.get(id.toNumber());
-  const replies = replyIdsByThreadId.get(id.toNumber()) || [];
+  const replyIds = replyIdsByThreadId.get(id.toNumber()) || [];
 
   if (preview) {
     return !thread
@@ -33,11 +34,10 @@ export function ViewThread (props: ViewThreadProps) {
             <Link to={`/forum/threads/${id.toString()}`}>{thread.title}</Link>
           </Table.Cell>
           <Table.Cell>
-            {replies.length}
+            {replyIds.length}
           </Table.Cell>
           <Table.Cell>
-            {/* TODO show member instead of address */}
-            <AddressMini value={thread.owner} isShort={false} isPadded={false} withBalance={true} withName={true} withMemo={true} size={36} />
+            <AuthorPreview address={thread.owner} />
           </Table.Cell>
         </Table.Row>
       );
@@ -54,14 +54,6 @@ export function ViewThread (props: ViewThreadProps) {
     <h1 style={{ display: 'flex' }}>
       {thread.title}
       <Link
-        to={`/forum/threads/${id.toString()}/edit`}
-        className='ui small button'
-        style={{ marginLeft: '.5rem' }}
-      >
-        <i className='pencil alternate icon' />
-        Edit
-      </Link>
-      <Link
         to={`/forum/threads/${id.toString()}/reply`}
         className='ui small button'
         style={{ marginLeft: '.5rem' }}
@@ -69,18 +61,31 @@ export function ViewThread (props: ViewThreadProps) {
         <i className='reply icon' />
         Reply
       </Link>
+      <Link
+        to={`/forum/threads/${id.toString()}/edit`}
+        className='ui small button'
+        style={{ marginLeft: '.5rem' }}
+      >
+        <i className='pencil alternate icon' />
+        Edit
+      </Link>
     </h1>
     <div>
-      <MutedSpan>Author: </MutedSpan>
-      {/* TODO show member instead of address */}
-      <AddressMini value={thread.owner} isShort={false} isPadded={false} withBalance={true} withName={true} withMemo={true} size={36} />
+      <MutedSpan>Posted by </MutedSpan>
+      <AuthorPreview address={thread.owner} />
     </div>
     <div style={{ marginTop: '1rem' }}>
       <ReactMarkdown className='JoyMemo--full' source={thread.text} linkTarget='_blank' />
     </div>
 
-    {/* TODO list replies to this thread */}
-
+    <Section title='Replies'>
+    {replyIds.length === 0
+      ? <em>No replies in this thread yet</em>
+      : replyIds.map((id, i) => (
+        <ViewReply key={i} id={new ReplyId(id)} />
+      ))
+    }
+    </Section>
   </>);
 }
 
