@@ -28,7 +28,7 @@ if (!rootElement) {
 console.log('Web socket url=', url);
 
 try {
-  require('@polkadot/joy-utils/types').registerJoystreamTypes();
+  require('@joystream/types/').registerJoystreamTypes();
 
   const types = store.get('types') || {};
   const names = Object.keys(types);

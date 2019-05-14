@@ -10,7 +10,7 @@ import { formatBalance } from '@polkadot/util';
 
 import translate from './translate';
 import { calcTotalStake } from '@polkadot/joy-utils/index';
-import { SealedVote } from '@polkadot/joy-utils/types';
+import { SealedVote } from '@joystream/types/';
 import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
 import { findVoteByHash } from './myVotesStore';
 

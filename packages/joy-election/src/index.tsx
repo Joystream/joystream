@@ -18,7 +18,7 @@ import Applicants from './Applicants';
 import Votes from './Votes';
 import Reveals from './Reveals';
 import { queryToProp } from '@polkadot/joy-utils/index';
-import { Seat } from '@polkadot/joy-utils/types';
+import { Seat } from '@joystream/types/';
 
 // define out internal types
 type Props = AppProps & ApiProps & I18nProps & {

@@ -13,9 +13,9 @@ import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
 import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
-import { MemberId, Profile, EntryMethod, Paid, Screening,SubscriptionId } from './types';
+import { MemberId, Profile, EntryMethod, Paid, Screening,SubscriptionId } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
-import { Seat } from '@polkadot/joy-utils/types';
+import { Seat } from '@joystream/types/';
 import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/index';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
 

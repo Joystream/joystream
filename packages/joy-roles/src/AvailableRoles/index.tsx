@@ -1,7 +1,7 @@
 import React from 'react'
 import { BareProps } from '@polkadot/ui-app/types';
 import { ComponentProps } from '../props';
-import { Role, RoleParameters } from  '../types';
+import { Role, RoleParameters } from  '@joystream/types/roles';
 import { Option, AccountId } from '@polkadot/types';
 import { withCalls } from '@polkadot/ui-api/index';
 import { Table } from 'semantic-ui-react';
