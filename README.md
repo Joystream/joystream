@@ -82,11 +82,11 @@ The central repos will have multiple members of the core team with write access,
 The core team, maintainers and outside contributors are encouraged to follow these general guidelines when contributing to the code repositories:
 
 * All contributions should be via pull requests.
-* Do not create arbitrary branches or push directly to the central repo `master` or `development` branches, and definitely no force pushes.
+* Do not create arbitrary branches or push directly to the central repo `master` or `development` branches
+* Do not force push branches.
 * Avoid rebasing branches of open PRs to help preserve conversation history.
-* Do not merge your own PR.
-* Always request a review.
-* Maintainer should merge PRs after thorough review.
+* Authors must always request a review for their PRs, Exception: It does not alter any logic (e.g. comments, dependencies, docs, file organisation), then it may merged once CI checks are complete.
+* Author should avoid merging their own PR, if it hasn't been reviewed and approved.
 * If travis or other CI integrations are configured for the repo, avoid merging PRs that fail checks.
 * When the maintainer is opening a PRs they must still request review from a core team member.
 
