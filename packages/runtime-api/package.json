@@ -1,0 +1,56 @@
+{
+  "name": "@joystream/runtime-api",
+  "version": "0.1.0",
+  "description": "Runtime API abstraction for Joystream Storage Node",
+  "author": "Joystream",
+  "homepage": "https://github.com/Joystream/storage-node-joystream",
+  "bugs": {
+    "url": "https://github.com/Joystream/storage-node-joystream/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joystream/storage-node-joystream.git"
+  },
+  "license": "GPL-3.0",
+  "contributors": [
+    {
+      "name": "Jens Finkhaeuser",
+      "email": "jens@finkhaeuser.de",
+      "url": "https://finkhaeuser.de/"
+    }
+  ],
+  "keywords": [
+    "joystream",
+    "storage",
+    "node",
+    "runtime"
+  ],
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "engines": {
+    "node": "^10.15.3"
+  },
+  "scripts": {
+    "test": "mocha 'test/**/*.js'",
+    "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'",
+    "postinstall": "tsc --build tsconfig.json"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "eslint": "^5.13.0",
+    "mocha": "^5.2.0",
+    "temp": "^0.9.0"
+  },
+  "dependencies": {
+    "@joystream/crypto": "^0.1.0",
+    "@polkadot/api": "^0.78.1",
+    "@polkadot/keyring": "^0.90.1",
+    "@polkadot/ts": "^0.1.56",
+    "@polkadot/types": "^0.78.1",
+    "@polkadot/util-crypto": "^0.90.1",
+    "lodash": "^4.17.11",
+    "typescript": "^3.4.2"
+  }
+}
