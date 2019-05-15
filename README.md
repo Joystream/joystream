@@ -3,7 +3,7 @@
 This repository contains several Node packages, located under the `packages/`
 subdirectory. See each individual package for details:
 
-* [colossus](./packages/colossus/README.md') - the main colossus app.
+* [colossus](./packages/colossus/README.md) - the main colossus app.
 * [storage](./packages/storage/README.md) - abstraction over the storage backend.
 * [runtime-api](./packages/runtime-api/README.md) - convenience wrappers for the runtime API.
 * [crypto](./packages/crypto/README.md) - cryptographic utility functions.
