@@ -1,5 +1,9 @@
 ![Storage Nodes for Joystream](./banner.svg)
 
+**Note:** For the upcoming [Acropolis](https://github.com/orgs/Joystream/projects/7) release,
+this repository will undergo significant changes. In the light of this, we will not maintain
+or bugfix this branch any longer.
+
 Installation
 ------------
 
