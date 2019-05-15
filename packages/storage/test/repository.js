@@ -22,6 +22,8 @@ const mocha = require('mocha');
 const expect = require('chai').expect;
 const temp = require('temp').track();
 
+const path = require('path');
+
 const repository = require('@joystream/storage/repository');
 
 function write_mode(store, filename, mode, content, cb)
@@ -258,7 +260,7 @@ function tests(backend)
       it('can create a repository from a path template', function(done)
       {
         new_repo((repo) => {
-          repo.populate('./test/template', (err) =>
+          repo.populate(path.resolve(__dirname, 'template'), (err) =>
           {
             expect(err).to.be.undefined;
 
@@ -283,7 +285,7 @@ function tests(backend)
   };
 }
 
-describe('core/repository', function()
+describe('storage/repository', function()
 {
   describe('filesystem backend', tests('fs'));
   describe('hyperdrive backend', tests('hyperdrive'));

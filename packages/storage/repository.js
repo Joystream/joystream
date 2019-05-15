@@ -286,6 +286,7 @@ class Repository extends events.EventEmitter
   {
     var fname = fsresolve(this.base_path, name);
     debug('Create dir', fname);
+    // FIXME hyperdrive throws an error for already existing paths
     this.archive.mkdir(fname, { recursive: true }, cb);
   }
 

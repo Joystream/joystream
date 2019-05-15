@@ -20,5 +20,8 @@ yarn-error.log*
 .vscode
 .*.sw*
 
+# Node modules
+node_modules/
+
 # Ignore nvm config file
 .nvmrc

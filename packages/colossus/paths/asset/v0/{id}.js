@@ -18,7 +18,7 @@
 
 'use strict';
 
-const fswalk = require('joystream/util/fs/walk');
+const fswalk = require('@joystream/util/fs/walk');
 
 const debug = require('debug')('joystream:api:asset');
 

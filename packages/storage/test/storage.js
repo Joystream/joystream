@@ -20,8 +20,10 @@
 
 const mocha = require('mocha');
 const expect = require('chai').expect;
-const fs = require('fs');
 const temp = require('temp').track();
+
+const fs = require('fs');
+const path = require('path');
 
 const storage = require('@joystream/storage/storage');
 const repository = require('@joystream/storage/repository');
@@ -154,7 +156,7 @@ describe('storage/storage', function()
     it('can create a repository from a path template', function(done)
     {
       var s = new_storage();
-      var res = s.create(undefined, './test/template', (err, id, repo) => {
+      var res = s.create(undefined, path.resolve(__dirname, 'template'), (err, id, repo) => {
         // At this point, we can check the repo for a file list.
         repo.list('/', (err, files) => {
           expect(files).to.have.lengthOf(2);

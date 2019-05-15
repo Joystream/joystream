@@ -25,22 +25,9 @@ const FLAG_DEFINITIONS = {
     alias: 'p',
     _default: 3000,
   },
-  'syncPort': {
-    type: 'integer',
-    alias: 'q',
-    _default: 3030,
-  },
-  'syncPeriod': {
+  'syncPeriod': { // TODO Keep for later
     type: 'integer',
     _default: 30000,
-  },
-  'dhtPort': {
-    type: 'integer',
-    _default: 3060,
-  },
-  'dhtRpcPort': {
-    type: 'integer',
-    _default: 3090,
   },
   keyFile: {
     type: 'string',
@@ -62,7 +49,7 @@ const FLAG_DEFINITIONS = {
 
 const cli = meow(`
   Usage:
-    $ js_storage [command] [options]
+    $ colossus [command] [options]
 
   Commands:
     server [default]  Run a server instance with the given configuration.
@@ -82,13 +69,8 @@ const cli = meow(`
     --config=PATH, -c PATH  Configuration file path. Defaults to
                             "${default_config.path}".
     --port=PORT, -p PORT    Port number to listen on, defaults to 3000.
-    --sync-port, -q PORT    The port number to listen of for the synchronization
-                            protocol. Defaults to 3030.
     --sync-period           Number of milliseconds to wait between synchronization
                             runs. Defaults to 30,000 (30s).
-    --dht-port              UDP port for running the DHT on; defaults to 3060.
-    --dht-rpc-port          WebSocket port for running the DHT JSON-RPC interface on.
-                            Defaults to 3090.
     --key-file              JSON key export file to use as the storage provider.
     --storage=PATH, -s PATH Storage path to use.
     --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "hyperdrive".
@@ -125,22 +107,6 @@ function create_config(pkgname, flags)
   return config;
 }
 
-// Read nodes
-function read_nodes(config)
-{
-  const fname = config.dhtNodes || undefined;
-  if (!fname) {
-    return;
-  }
-
-  const data = fs.readFileSync(fname);
-  const nodes = JSON.parse(data);
-  return {
-    filename: fname,
-    nodes: nodes,
-  };
-}
-
 // All-important banner!
 function banner()
 {
@@ -150,66 +116,10 @@ function banner()
 // Start app
 function start_app(project_root, store, api, config)
 {
-  const app = require('joystream/app')(store, api, config);
+  const app = require('../lib/app')(store, api, config);
   const port = config.get('port');
   app.listen(port);
   console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
-}
-
-// Start sync server
-function start_sync_server(store, substrate_api, dht_client, config)
-{
-  const { create_server, synchronize } = require('joystream/sync');
-
-  // Sync server
-  const syncserver = create_server(config, substrate_api, store);
-  const port = config.get('syncPort');
-  syncserver.listen(port);
-  console.log('Sync server started at', syncserver.address());
-
-  // Periodically synchronize
-  synchronize(config, substrate_api, dht_client, store);
-}
-
-// Start DHT
-function start_dht(address, config)
-{
-  const { JoystreamDHT } = require('joystream-dht');
-
-  // Start DHT
-  var nodes = read_nodes(config);
-  if (!nodes) {
-    nodes = {
-      nodes: [],
-    }
-  }
-
-  const api_port = config.get('port');
-  const sync_port = config.get('syncPort');
-  const dht_port = config.get('dhtPort');
-  const dht_rpc_port = config.get('dhtRpcPort');
-
-  const announce_ports = {
-    api_port: api_port,
-    sync_port: sync_port,
-    rpc_port: dht_rpc_port,
-  };
-
-  const dht_config = {};
-  if (config.get('development')) {
-    dht_config.add_localhost = true;
-  }
-  const dht = new JoystreamDHT(address, dht_port, announce_ports, dht_config);
-  console.log('DHT started on port', dht_port);
-  if (dht_rpc_port) {
-    console.log('DHT JSON-RPC service started on port', dht_rpc_port);
-  }
-
-  // Create DHT client and return that.
-  const { JoystreamDHTClient } = require('joystream-dht/client');
-
-  const connect_str = `ws://localhost:${dht_rpc_port}`;
-  return JoystreamDHTClient.connect(connect_str);
 }
 
 // Get an initialized storage instance
@@ -218,7 +128,7 @@ function get_storage(config)
   const store_path = config.get('storage');
   const store_type = config.get('storageType');
 
-  const storage = require('joystream/core/storage');
+  const storage = require('@joystream/storage');
 
   const store = new storage.Storage(store_path, storage.DEFAULT_POOL_SIZE,
       store_type);
@@ -247,7 +157,7 @@ function list_repo(store, repo_id)
 {
   console.log(`Contents of repository "${repo_id}":`);
   const repo = store.get(repo_id);
-  const fswalk = require('joystream/util/fs/walk');
+  const fswalk = require('@joystream/util/fs/walk');
   const siprefix = require('si-prefix');
 
   fswalk('/', repo.archive, (err, relname, stat) => {
@@ -283,8 +193,8 @@ function list_repo(store, repo_id)
 
 async function run_signup(account_file)
 {
-  const substrate_api = require('joystream/substrate');
-  const api = await substrate_api.create(account_file);
+  const runtime_api = require('@joystream/runtime-api');
+  const api = await runtime_api.create(account_file);
   const member_address = api.key.address();
 
   // Check if account works
@@ -316,12 +226,12 @@ async function run_signup(account_file)
 async function wait_for_role(config)
 {
   // Load key information
-  const substrate_api = require('joystream/substrate');
+  const runtime_api = require('@joystream/runtime-api');
   const keyFile = config.get('keyFile');
   if (!keyFile) {
-    throw new Error("Must specify a key file for running a storage node! Sign up for the role; see `js_storage --help' for details.");
+    throw new Error("Must specify a key file for running a storage node! Sign up for the role; see `colussus --help' for details.");
   }
-  const api = await substrate_api.create(keyFile);
+  const api = await runtime_api.create(keyFile);
 
   // Wait for the account role to be finalized
   console.log('Waiting for the account to be staked as a storage provider role...');
@@ -359,11 +269,6 @@ const commands = {
         const store = get_storage(cfg);
         banner();
         start_app(project_root, store, api, cfg);
-        start_dht(api.key.address(), cfg)
-          .then((dht_client) => {
-            start_sync_server(store, api, dht_client, cfg);
-          })
-          .catch(errfunc);
       })
       .catch(errfunc);
   },

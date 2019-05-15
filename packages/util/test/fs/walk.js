@@ -23,6 +23,7 @@ const expect = require('chai').expect;
 const temp = require('temp').track();
 
 const fs = require('fs');
+const path = require('path');
 
 const fswalk = require('@joystream/util/fs/walk');
 
@@ -63,6 +64,6 @@ describe('util/fs/walk', function()
 {
   it('reports all files in a file system hierarchy', function(done)
   {
-    walktest(fs, './test/data', done)
+    walktest(fs, path.resolve(__dirname, '../data'), done)
   });
 });

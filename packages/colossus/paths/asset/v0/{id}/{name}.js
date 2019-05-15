@@ -25,8 +25,8 @@ const mime_types = require('mime-types');
 
 const debug = require('debug')('joystream:api:asset');
 
-const util_ranges = require('joystream/util/ranges');
-const filter = require('joystream/core/filter');
+const util_ranges = require('@joystream/util/ranges');
+const filter = require('@joystream/storage/filter');
 
 module.exports = function(config, storage, substrate)
 {
