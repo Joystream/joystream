@@ -101,7 +101,7 @@ created or updated entries.
 
 #### Side effect(s)
 
-`accountInfoLifetime` is updated.
+`AccountInfoLifetime` is updated.
 
 #### Event(s)
 
