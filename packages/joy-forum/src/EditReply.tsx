@@ -15,7 +15,7 @@ import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { useForum } from './Context';
-import { UrlHasIdProps } from './utils';
+import { UrlHasIdProps, CategoryCrumbs } from './utils';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
   text: Yup.string()
@@ -80,6 +80,7 @@ const InnerForm = (props: FormProps) => {
   };
 
   const isNew = struct === undefined;
+  const resolvedThreadId = !threadId && struct ? struct.thread_id : threadId;
 
   const buildTxParams = () => {
     if (!isValid) return [];
@@ -94,7 +95,7 @@ const InnerForm = (props: FormProps) => {
   const updateForumContext = () => {
     const reply = new Reply({
       owner: struct ? struct.owner : new AccountId(address),
-      thread_id: !threadId && struct ? struct.thread_id : threadId,
+      thread_id: resolvedThreadId,
       locked: new Bool(false), // TODO update from the form.
       text: new Text(text)
     });
@@ -105,11 +106,7 @@ const InnerForm = (props: FormProps) => {
     }
   };
 
-  const sectionTitle = isNew
-    ? 'New reply'
-    : 'Edit my reply';
-
-  return <Section className='EditEntityBox' title={sectionTitle}>
+  const form =
     <Form className='ui form JoyForm EditEntityForm'>
 
       <LabelledField name='text' {...props}>
@@ -126,7 +123,7 @@ const InnerForm = (props: FormProps) => {
           disabled={!dirty || isSubmitting}
           onClick={updateForumContext}
           content={isNew
-            ? 'Create a reply'
+            ? 'Post a reply'
             : 'Update a reply'
           }
         />
@@ -136,7 +133,7 @@ const InnerForm = (props: FormProps) => {
           type='submit'
           size='large'
           label={isNew
-            ? 'Create a reply'
+            ? 'Post a reply'
             : 'Update a reply'
           }
           isDisabled={!dirty || isSubmitting}
@@ -158,8 +155,18 @@ const InnerForm = (props: FormProps) => {
           content='Reset form'
         />
       </LabelledField>
-    </Form>
-  </Section>;
+    </Form>;
+
+  const sectionTitle = isNew
+    ? 'New reply'
+    : 'Edit my reply';
+
+  return <>
+    <CategoryCrumbs threadId={resolvedThreadId} />
+    <Section className='EditEntityBox' title={sectionTitle}>
+      {form}
+    </Section>
+  </>;
 };
 
 const EditForm = withFormik<OuterProps, FormValues>({

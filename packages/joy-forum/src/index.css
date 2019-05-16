@@ -4,8 +4,17 @@
     margin-left: '.5rem';
   }
 
-  .ReplyBox {
+  .ui.segment {
     background-color: #fff;
+  }
+
+  .ForumPageTitle {
+    display: flex;
+    margin-top: 1rem;
+
+    .TitleText {
+      margin-right: 1rem;
+    }
   }
 }
 

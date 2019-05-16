@@ -15,7 +15,7 @@ import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { useForum } from './Context';
-import { UrlHasIdProps } from './utils';
+import { UrlHasIdProps, CategoryCrumbs } from './utils';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
   name: Yup.string()
@@ -89,6 +89,7 @@ const InnerForm = (props: FormProps) => {
   };
 
   const isNew = struct === undefined;
+  const resolvedParentId = !parentId && struct ? struct.parent_id : parentId;
 
   const buildTxParams = () => {
     if (!isValid) return [];
@@ -103,7 +104,7 @@ const InnerForm = (props: FormProps) => {
   const updateForumContext = () => {
     const category = new Category({
       owner: new AccountId(address),
-      parent_id: new Option(CategoryId, parentId),
+      parent_id: new Option(CategoryId, resolvedParentId),
       children_ids: new Vector(CategoryId, []),
       locked: new Bool(false), // TODO update from the form.
       name: new Text(name),
@@ -116,11 +117,7 @@ const InnerForm = (props: FormProps) => {
     }
   };
 
-  const sectionTitle = isNew
-    ? 'New category'
-    : 'Edit my category';
-
-  return <Section className='EditEntityBox' title={sectionTitle}>
+  const form =
     <Form className='ui form JoyForm EditEntityForm'>
 
       { /* TODO show dropdown with top categories and select parentId if defined. */}
@@ -173,8 +170,20 @@ const InnerForm = (props: FormProps) => {
           content='Reset form'
         />
       </LabelledField>
-    </Form>
-  </Section>;
+    </Form>;
+
+  const parentCategoryId = resolvedParentId ? new CategoryId(resolvedParentId) : undefined;
+
+  const sectionTitle = isNew
+    ? 'New category'
+    : 'Edit my category';
+
+  return <>
+    <CategoryCrumbs categoryId={parentCategoryId} />
+    <Section className='EditEntityBox' title={sectionTitle}>
+      {form}
+    </Section>
+  </>;
 };
 
 const EditForm = withFormik<OuterProps, FormValues>({

@@ -1,18 +1,20 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Table } from 'semantic-ui-react';
+import { Table, Segment } from 'semantic-ui-react';
+import { History } from 'history';
 
 import { ThreadId, ReplyId } from './types';
 import { useForum } from './Context';
-import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { UrlHasIdProps, AuthorPreview } from './utils';
+import { UrlHasIdProps, AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs } from './utils';
 import Section from '@polkadot/joy-utils/Section';
 import { ViewReply } from './ViewReply';
 
 type ViewThreadProps = {
   id: ThreadId,
-  preview?: boolean
+  page?: number,
+  preview?: boolean,
+  history?: History
 };
 
 export function ViewThread (props: ViewThreadProps) {
@@ -21,7 +23,7 @@ export function ViewThread (props: ViewThreadProps) {
     replyIdsByThreadId
   } } = useForum();
 
-  const { id, preview = false } = props;
+  const { history, id, page = 1, preview = false } = props;
   const thread = threadById.get(id.toNumber());
   const replyIds = replyIdsByThreadId.get(id.toNumber()) || [];
 
@@ -43,16 +45,45 @@ export function ViewThread (props: ViewThreadProps) {
       );
   }
 
-  if (!thread) {
+  if (!thread || !history) {
     return <em>Thread not found</em>;
   }
 
+  const renderPageOfReplies = () => {
+    if (!replyIds.length) {
+      return <em>No replies in this thread yet</em>;
+    }
+
+    const onPageChange = (activePage?: string | number) => {
+      history.push(`/forum/threads/${id.toString()}/page/${activePage}`);
+    };
+
+    const pagination =
+      <Pagination
+        currentPage={page}
+        totalItems={replyIds.length}
+        itemsPerPage={RepliesPerPage}
+        onPageChange={onPageChange}
+      />;
+
+    const minId = (page - 1) * RepliesPerPage;
+    const maxId = minId + RepliesPerPage - 1;
+
+    const pageOfItems = replyIds
+      .filter((_id, i) => i >= minId && i <= maxId)
+      .map((id, i) => <ViewReply key={i} id={new ReplyId(id)} />);
+
+    return (<>
+      {pagination}
+      {pageOfItems}
+      {pagination}
+    </>);
+  };
+
   return (<>
-
-    {/* TODO show bread crumbs to this thread */}
-
-    <h1 style={{ display: 'flex' }}>
-      {thread.title}
+    <CategoryCrumbs categoryId={thread.category_id} />
+    <h1 className='ForumPageTitle'>
+      <span className='TitleText'>{thread.title}</span>
       <Link
         to={`/forum/threads/${id.toString()}/reply`}
         className='ui small button'
@@ -61,6 +92,8 @@ export function ViewThread (props: ViewThreadProps) {
         <i className='reply icon' />
         Reply
       </Link>
+
+      {/* TODO show 'Edit' button only if I am owner */}
       <Link
         to={`/forum/threads/${id.toString()}/edit`}
         className='ui small button'
@@ -70,29 +103,36 @@ export function ViewThread (props: ViewThreadProps) {
         Edit
       </Link>
     </h1>
-    <div>
-      <MutedSpan>Posted by </MutedSpan>
-      <AuthorPreview address={thread.owner} />
-    </div>
-    <div style={{ marginTop: '1rem' }}>
-      <ReactMarkdown className='JoyMemo--full' source={thread.text} linkTarget='_blank' />
-    </div>
-
-    <Section title='Replies'>
-    {replyIds.length === 0
-      ? <em>No replies in this thread yet</em>
-      : replyIds.map((id, i) => (
-        <ViewReply key={i} id={new ReplyId(id)} />
-      ))
-    }
+    <Segment>
+      <div>
+        <AuthorPreview address={thread.owner} />
+      </div>
+      <div style={{ marginTop: '1rem' }}>
+        <ReactMarkdown className='JoyMemo--full' source={thread.text} linkTarget='_blank' />
+      </div>
+    </Segment>
+    <Section title={`Replies (${replyIds.length})`}>
+      {renderPageOfReplies()}
     </Section>
   </>);
 }
 
-export function ViewThreadById (props: UrlHasIdProps) {
-  const { match: { params: { id } } } = props;
+type ViewThreadByIdProps = UrlHasIdProps & {
+  history: History,
+  match: {
+    params: {
+      id: string
+      page?: string
+    }
+  }
+};
+
+export function ViewThreadById (props: ViewThreadByIdProps) {
+  const { history, match: { params: { id, page: pageStr } } } = props;
   try {
-    return <ViewThread id={new ThreadId(id)} />;
+    // tslint:disable-next-line:radix
+    const page = pageStr ? parseInt(pageStr) : 1;
+    return <ViewThread id={new ThreadId(id)} page={page} history={history} />;
   } catch (err) {
     return <em>Invalid thread ID: {id}</em>;
   }

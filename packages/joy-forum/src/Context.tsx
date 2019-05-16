@@ -98,9 +98,9 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
         let childrenIds = categoryIdsByParentId.get(parent_id.toNumber());
         if (!childrenIds) {
           childrenIds = [];
-          categoryIdsByParentId.set(parent_id.toNumber(), childrenIds);
         }
         childrenIds.push(nextCategoryId);
+        categoryIdsByParentId.set(parent_id.toNumber(), childrenIds);
       } else {
         if (!rootCategoryIds) {
           rootCategoryIds = [];

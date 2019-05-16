@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Table } from 'semantic-ui-react';
+import { Table, Dropdown, Button, Segment } from 'semantic-ui-react';
 
 import { CategoryId, ThreadId } from './types';
 import { useForum } from './Context';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { UrlHasIdProps, AuthorPreview } from './utils';
+import { UrlHasIdProps, AuthorPreview, CategoryCrumbs } from './utils';
 import Section from '@polkadot/joy-utils/Section';
 
 type ViewCategoryProps = {
@@ -17,6 +17,7 @@ type ViewCategoryProps = {
 
 function CategoryActions ({ id }: { id: CategoryId }) {
   const className = 'ui small button ActionButton';
+
   return (
     <>
     <Link
@@ -26,27 +27,21 @@ function CategoryActions ({ id }: { id: CategoryId }) {
       <i className='add icon' />
       New thread
     </Link>
-    <Link
-      to={`/forum/categories/${id.toString()}/edit`}
-      className={className}
-    >
-      <i className='pencil alternate icon' />
-      Edit
-    </Link>
-    <button
-      className={className}
-      onClick={() => alert('TODO Archive this category')}
-    >
-      <i className='file archive outline icon' />
-      Archive
-    </button>
-    <button
-      className={className}
-      onClick={() => alert('TODO Delete this category')}
-    >
-      <i className='trash alternate outline icon' />
-      Delete
-    </button>
+
+    {/* TODO show 'Edit', 'Archive', 'Delete' button only if I am owner */}
+
+    <Button.Group>
+      <Link className={className} to={`/forum/categories/${id.toString()}/edit`}>
+        <i className='pencil alternate icon' />
+        <span className='text'>Edit</span>
+      </Link>
+      <Dropdown floating button className='icon small' style={{ display: 'inline-block', width: 'auto', margin: 0 }} trigger={<></>}>
+        <Dropdown.Menu>
+          <Dropdown.Item icon='file archive outline' text='Archive' onClick={() => alert('TODO Archive this category')} />
+          <Dropdown.Item icon='trash alternate outline' text='Delete' onClick={() => alert('TODO Delete this category')} />
+        </Dropdown.Menu>
+      </Dropdown>
+    </Button.Group>
     </>
   );
 }
@@ -92,23 +87,29 @@ function ViewCategory (props: ViewCategoryProps) {
   }
 
   return (<>
-
-    {/* TODO show bread crumbs to this category */}
-
-    <h1 style={{ display: 'flex' }}>
-      {category.name}
+    <CategoryCrumbs categoryId={category.parent_id} />
+    <h1 className='ForumPageTitle'>
+      <span className='TitleText'>{category.name}</span>
       <CategoryActions id={id} />
     </h1>
-    <div>
-      <MutedSpan>Moderator: </MutedSpan>
-      <AuthorPreview address={category.owner} />
-    </div>
-    <div style={{ marginTop: '1rem' }}>
-      <ReactMarkdown className='JoyMemo--full' source={category.text} linkTarget='_blank' />
-    </div>
+    <Segment>
+      <div>
+        <MutedSpan>Moderator: </MutedSpan>
+        <AuthorPreview address={category.owner} />
+      </div>
+      <div style={{ marginTop: '1rem' }}>
+        <ReactMarkdown className='JoyMemo--full' source={category.text} linkTarget='_blank' />
+      </div>
+    </Segment>
+
+    {subcategories.length > 0 &&
+      <Section title={`Subcategories (${subcategories.length})`}>
+        <CategoryList parentId={id} />
+      </Section>
+    }
 
     {/* TODO refactor: extract to a separate component: CategoryThreads */}
-    <Section title='Threads'>
+    <Section title={`Threads (${threadIds.length})`}>
     {threadIds.length === 0
       ? <em>No threads in this category</em>
       : <Table celled selectable compact>
@@ -137,8 +138,18 @@ export function ViewCategoryById (props: UrlHasIdProps) {
   }
 }
 
-export function RootCategories () {
-  const { state: { rootCategoryIds: ids } } = useForum();
+type CategoryListProps = {
+  parentId?: CategoryId
+};
+
+export function CategoryList (props: CategoryListProps) {
+  const { state: { rootCategoryIds, categoryIdsByParentId } } = useForum();
+  const { parentId } = props;
+
+  const ids: number[] = parentId
+    ? categoryIdsByParentId.get(parentId.toNumber()) || []
+    : rootCategoryIds;
+
   if (!ids || ids.length === 0) {
     return <em>Forum is empty</em>;
   }
@@ -147,7 +158,7 @@ export function RootCategories () {
     <Table celled selectable compact>
     <Table.Header>
       <Table.Row>
-        <Table.HeaderCell>Root category</Table.HeaderCell>
+        <Table.HeaderCell>Category</Table.HeaderCell>
         <Table.HeaderCell>Subcategories</Table.HeaderCell>
         <Table.HeaderCell>Threads</Table.HeaderCell>
         <Table.HeaderCell>Actions</Table.HeaderCell>

@@ -1,9 +1,10 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+import { Segment } from 'semantic-ui-react';
 
 import { ThreadId, ReplyId } from './types';
 import { useForum } from './Context';
-import { MutedSpan } from '@polkadot/joy-utils/MutedText';
 import { UrlHasIdProps, AuthorPreview } from './utils';
 
 type ViewReplyProps = {
@@ -23,15 +24,24 @@ export function ViewReply (props: ViewReplyProps) {
   }
 
   return (
-    <div className='ui segment ReplyBox'>
+    <Segment>
       <div>
-        <MutedSpan>Posted by </MutedSpan>
         <AuthorPreview address={reply.owner} />
+
+        {/* TODO show 'Edit' button only if I am owner */}
+        <Link
+          to={`/forum/replies/${id.toString()}/edit`}
+          className='ui small button'
+          style={{ marginLeft: '.5rem' }}
+        >
+          <i className='pencil alternate icon' />
+          Edit
+        </Link>
       </div>
       <div style={{ marginTop: '1rem' }}>
         <ReactMarkdown className='JoyMemo--full' source={reply.text} linkTarget='_blank' />
       </div>
-    </div>
+    </Segment>
   );
 }
 

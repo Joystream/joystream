@@ -15,7 +15,7 @@ import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { useForum } from './Context';
-import { UrlHasIdProps } from './utils';
+import { UrlHasIdProps, CategoryCrumbs } from './utils';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
   title: Yup.string()
@@ -90,6 +90,7 @@ const InnerForm = (props: FormProps) => {
   };
 
   const isNew = struct === undefined;
+  const resolvedCategoryId = !categoryId && struct ? struct.category_id : categoryId;
 
   const buildTxParams = () => {
     if (!isValid) return [];
@@ -104,7 +105,7 @@ const InnerForm = (props: FormProps) => {
   const updateForumContext = () => {
     const thread = new Thread({
       owner: struct ? struct.owner : new AccountId(address),
-      category_id: !categoryId && struct ? struct.category_id : categoryId,
+      category_id: resolvedCategoryId,
       locked: new Bool(false), // TODO update from the form.
       title: new Text(title),
       text: new Text(text)
@@ -116,11 +117,7 @@ const InnerForm = (props: FormProps) => {
     }
   };
 
-  const sectionTitle = isNew
-    ? 'New thread'
-    : 'Edit my thread';
-
-  return <Section className='EditEntityBox' title={sectionTitle}>
+  const form =
     <Form className='ui form JoyForm EditEntityForm'>
 
       <LabelledText name='title' placeholder={`Title`} {...props} />
@@ -171,8 +168,18 @@ const InnerForm = (props: FormProps) => {
           content='Reset form'
         />
       </LabelledField>
-    </Form>
-  </Section>;
+    </Form>;
+
+  const sectionTitle = isNew
+    ? 'New thread'
+    : 'Edit my thread';
+
+  return <>
+    <CategoryCrumbs categoryId={resolvedCategoryId} />
+    <Section className='EditEntityBox' title={sectionTitle}>
+      {form}
+    </Section>
+  </>;
 };
 
 const EditForm = withFormik<OuterProps, FormValues>({

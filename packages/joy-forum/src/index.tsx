@@ -12,9 +12,10 @@ import { ForumProvider } from './Context';
 import { NewCategory, EditCategory } from './EditCategory';
 import { NewThread, EditThread } from './EditThread';
 import { NewReply, EditReply } from './EditReply';
-import { RootCategories, ViewCategoryById } from './RootCategories';
+import { CategoryList, ViewCategoryById } from './CategoryList';
 import { ViewThreadById } from './ViewThread';
 import { ViewReplyById } from './ViewReply';
+import { MockState } from './MockContext';
 
 type Props = AppProps & I18nProps & {};
 
@@ -40,6 +41,10 @@ class App extends React.PureComponent<Props> {
     const tabs = this.buildTabs();
     return (
       <ForumProvider>
+
+        {/* TODO for debug purposes only */}
+        <MockState />
+
       <main className='forum--App'>
         <header>
           <Tabs basePath={basePath} items={tabs} />
@@ -49,16 +54,17 @@ class App extends React.PureComponent<Props> {
           <Route path={`${basePath}/categories/:id/newThread`} component={NewThread} />
           <Route path={`${basePath}/categories/:id/edit`} component={EditCategory} />
           <Route path={`${basePath}/categories/:id`} component={ViewCategoryById} />
-          <Route path={`${basePath}/categories`} component={RootCategories} />
+          <Route path={`${basePath}/categories`} component={CategoryList} />
 
           <Route path={`${basePath}/threads/:id/reply`} component={NewReply} />
           <Route path={`${basePath}/threads/:id/edit`} component={EditThread} />
+          <Route path={`${basePath}/threads/:id/page/:page`} component={ViewThreadById} />
           <Route path={`${basePath}/threads/:id`} component={ViewThreadById} />
 
           <Route path={`${basePath}/replies/:id/edit`} component={EditReply} />
           <Route path={`${basePath}/replies/:id`} component={ViewReplyById} />
 
-          <Route component={RootCategories} />
+          <Route component={CategoryList} />
         </Switch>
       </main>
       </ForumProvider>
