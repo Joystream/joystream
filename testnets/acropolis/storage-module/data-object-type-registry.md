@@ -24,10 +24,9 @@ a file or media type, but rather how `DataObjects` of this type are to be
 handled by the storage network. This information is encapsualted in the
 `DataObjectType` structure, identified by a `DataObjectTypeId`.
 
-For the time being, the `DataObjectType` structure does not contain a lot of
-information. However, it is intended to contain or refer to such information
-in future extensions. In the meantime, `DataObjects` to be uploaded can already
-refer to a `DataObjectTypeId`.
+Of course, storage nodes should still impose some constraints on how what
+uploads to accept. These constraints are described by the
+`DataObjectTypeConstraints` structure.
 
 ## Name
 
@@ -41,12 +40,73 @@ None.
 
 See [the module documentation](./storage-module.md#concepts) for an overview.
 
+Additionally:
+
+- `DataObjectTypeConstraints` is a structure refering to exactly one
+  `DataObjectType` by `DataObjectTypeId`, and a number of constraints.
+  Currently, only a maximum file size constraint is implemented.
+
+Each `DataObjectType` maps to a unique set of constraints to be queried by
+uploading apps, and to be enforced by storage nodes. The exact mapping is:
+
+1. Each `DataObjectTypeConstraints` entry maps to exactly one `DataObjectTypeId`.
+1. Multiple `DataObjectTypeConstraints` may map to the same `DataObjectTypeId`.
+
+This is to facilitate the definition of constraints for `DataObjectTypes` with
+exceptions, e.g. allow all `image/*`, but allow larger file sizes for
+`image/tiff`. This would be defined with two separate `DataObjectTypeConstraints`,
+both refering to the same `DataObjectTypeId`.
+
+**Content Creation**
+
+For apps attempting to upload data, these constraints serve as the information
+necessary for deciding which `DataObjectType` to pick when creating a
+`DataObject`.
+
+1. Try to find a `DataObjectTypeConstraints` structure for the exact
+   [IANA Media Type](https://www.iana.org/assignments/media-types/media-types.xhtml)
+   of the file to be uploaded.
+1. If none can be found, try to find a `DataObjectTypeConstraints` structure
+   for the type registry. That is, if the file is of type `image/jpeg`, try
+   to find an entry for `image/*` in the registry.
+1. If none can be found, apply the default `DataObjectTypeConstraints`
+   structure.
+
+At each step, if a matching `DataObjectTypeConstraints` field is found, the file
+to be upload *must* pass the constraints. If it does not, the file cannot be
+uploaded, and no `DataObject` should be created for it. If multiple constraints
+entries are found to match, select the entry with the most restrictive constraints.
+
+If the file does pass the constraints, then the `DataObjectTypeId` in the
+`DataObjectTypeConstraints` structure is to be used when creating the `DataObject`.
+
+
+**Content Liaison Approval**
+
+For storage nodes acting as liaison for a data object, the following process
+applies:
+
+1. Retrieve the `DataObjectTypeConstraints` entries for the `DataObjectTypeId`
+   provided in a `DataObject`. As per above, note that there may be several
+   matching constraints.
+1. Of the constraints, select the most appropriate one by going from the most
+   complete to the defaults as per the section above, preferring more
+   restrictive constraints over less restrictive ones.
+
+If a constraint is found and the file seems to match the described constraints,
+approve the `DataObject`. Otherwise, reject it.
+
+
 ## State
 
 - `FirstDataObjectTypeId`/`NextDataObjectTypeId` - handling incrementing numeric
   `DataObjectTypeIds`.
 
 - `DataObjectTypes` - map of `DataObjectTypeId` to `DataObjectType`.
+
+- `DataObjectTypeConstraintsRegistry` - map of IANA media types (with wildcards) to
+  a `DataObjectTypeConstraints` structure. The `*/*` media type refers to the
+  default constraints.
 
 ## Events
 

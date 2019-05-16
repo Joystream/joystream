@@ -22,9 +22,10 @@ retrievable.
 The module is structured into several sub-modules with their own distinct
 documentation:
 
-- [Data Object Type Registry](./storage-module-data-object-type-registry.md)
-- [Data Object Storage Registry](./storage-module-data-object-storage-registry.md)
-- [Data Directory](./storage-module-data-directory.md)
+- [Data Object Type Registry](./storage-module/data-object-type-registry.md)
+- [Data Object Storage Registry](./storage-module/data-object-storage-registry.md)
+- [Data Directory](./storage-module/data-directory.md)
+- [Content Directory](./storage-module/content-directory.md')
 
 ## Name
 
@@ -40,20 +41,31 @@ documentation:
 - `DataObjectType`: a structure describing the type of data objects that can be
   stored. This is not to be confused with file types. Instead, data object
   types will be used to group files that should follow the same storage
-  patterns. See the [Data Object Type Registry](./storage-module-data-object-type-registry.md)
+  patterns. See the [Data Object Type Registry](./storage-module/data-object-type-registry.md)
   for details.
-- `DataObject`: an entry in the [Data Directory](./storage-module-data-directory.md)
-  describing a single piece of content in the network.
-- `ContentMetadata`: a structure for describing content metadata in a
-  hierarchical fashion. Refers to one or more `DataObject` entries.
+
+- `DataObjectTypeConstraints`: a structure imposing constraints on `DataObjects`
+  to be added for a given `DataObjectType`. Here, you will constraints such as
+  media types or file sizes, etc.
+
 - `ContentId`: a unique identifier for `DataObject` and `ContentMetadata`
   entries.
-- `Liaison`: the actor account that is responsible for accepting uploads for
-  a `DataObject`, and making the content available to other storage nodes.
+
+- `DataObject`: an entry in the [Data Directory](./storage-module/data-directory.md)
+  describing a single piece of content in the network.
+
+- `ContentMetadata`: a structure for describing content metadata in a
+  hierarchical fashion. Refers to one or more `DataObject` entries.
+
 - `SchemaId`: an identifier for a metadata schema. Metadata schemas are used to
   validate `ContentMetadata` entries.
-- `DataObjectStorageRelationship`: an entry in the [Data Object Storage Registry](./storage-module-data-object-storage-registry.md),
+
+- `Liaison`: the actor account that is responsible for accepting uploads for
+  a `DataObject`, and making the content available to other storage nodes.
+
+- `DataObjectStorageRelationship`: an entry in the [Data Object Storage Registry](./storage-module/data-object-storage-registry.md),
   describing which actor has stored a particular `DataObject`.
+
 - A storage provider is an `actor` who has staked for the Storage role via the
   `storage/actors` module.
 
