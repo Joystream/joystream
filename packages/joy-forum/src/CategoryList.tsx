@@ -2,24 +2,19 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Table, Dropdown, Button, Segment } from 'semantic-ui-react';
+import { History } from 'history';
 
 import { CategoryId, ThreadId } from './types';
 import { useForum } from './Context';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { UrlHasIdProps, AuthorPreview, CategoryCrumbs } from './utils';
+import { UrlHasIdProps, AuthorPreview, CategoryCrumbs, Pagination, ThreadsPerPage } from './utils';
 import Section from '@polkadot/joy-utils/Section';
-
-type ViewCategoryProps = {
-  id: CategoryId,
-  preview?: boolean
-};
 
 function CategoryActions ({ id }: { id: CategoryId }) {
   const className = 'ui small button ActionButton';
 
-  return (
-    <>
+  return <>
     <Link
       to={`/forum/categories/${id.toString()}/newThread`}
       className={className}
@@ -42,9 +37,15 @@ function CategoryActions ({ id }: { id: CategoryId }) {
         </Dropdown.Menu>
       </Dropdown>
     </Button.Group>
-    </>
-  );
+  </>;
 }
+
+type ViewCategoryProps = {
+  id: CategoryId,
+  page?: number,
+  preview?: boolean,
+  history?: History
+};
 
 function ViewCategory (props: ViewCategoryProps) {
   const { state: {
@@ -53,7 +54,7 @@ function ViewCategory (props: ViewCategoryProps) {
     threadIdsByCategoryId
   } } = useForum();
 
-  const { id, preview = false } = props;
+  const { history, id, page = 1, preview = false } = props;
   const category = categoryById.get(id.toNumber());
   const subcategories = categoryIdsByParentId.get(id.toNumber()) || [];
   const threadIds = threadIdsByCategoryId.get(id.toNumber()) || [];
@@ -82,7 +83,7 @@ function ViewCategory (props: ViewCategoryProps) {
       );
   }
 
-  if (!category) {
+  if (!category || !history) {
     return <em>Category not found</em>;
   }
 
@@ -108,11 +109,49 @@ function ViewCategory (props: ViewCategoryProps) {
       </Section>
     }
 
-    {/* TODO refactor: extract to a separate component: CategoryThreads */}
     <Section title={`Threads (${threadIds.length})`}>
-    {threadIds.length === 0
-      ? <em>No threads in this category</em>
-      : <Table celled selectable compact>
+      <CategoryThreads categoryId={id} threadIds={threadIds} page={page} history={history} />
+    </Section>
+  </>);
+}
+
+type CategoryThreadsProps = {
+  categoryId: CategoryId,
+  threadIds: number[],
+  page: number,
+  history: History
+};
+
+function CategoryThreads (props: CategoryThreadsProps) {
+  const { categoryId, threadIds, page, history } = props;
+
+  if (threadIds.length === 0) {
+    return <em>No threads in this category</em>;
+  }
+
+  const onPageChange = (activePage?: string | number) => {
+    history.push(`/forum/categories/${categoryId.toString()}/page/${activePage}`);
+  };
+
+  const itemsPerPage = ThreadsPerPage;
+  const minIdx = (page - 1) * itemsPerPage;
+  const maxIdx = minIdx + itemsPerPage - 1;
+
+  const pagination =
+    <Pagination
+      currentPage={page}
+      totalItems={threadIds.length}
+      itemsPerPage={itemsPerPage}
+      onPageChange={onPageChange}
+    />;
+
+  const pageOfItems = threadIds
+    .filter((_id, i) => i >= minIdx && i <= maxIdx)
+    .map((id, i) => <ViewThread key={i} id={new ThreadId(id)} preview />);
+
+  return <>
+    {pagination}
+    <Table celled selectable compact>
       <Table.Header>
         <Table.Row>
           <Table.HeaderCell>Thread</Table.HeaderCell>
@@ -120,19 +159,30 @@ function ViewCategory (props: ViewCategoryProps) {
           <Table.HeaderCell>Moderator</Table.HeaderCell>
         </Table.Row>
       </Table.Header>
-      <Table.Body>{threadIds.map((id, i) => (
-        <ViewThread key={i} id={new ThreadId(id)} preview />
-      ))}</Table.Body>
-      </Table>
-    }
-    </Section>
-  </>);
+      <Table.Body>
+        {pageOfItems}
+      </Table.Body>
+    </Table>
+    {pagination}
+  </>;
 }
 
-export function ViewCategoryById (props: UrlHasIdProps) {
-  const { match: { params: { id } } } = props;
+type ViewCategoryByIdProps = UrlHasIdProps & {
+  history: History,
+  match: {
+    params: {
+      id: string
+      page?: string
+    }
+  }
+};
+
+export function ViewCategoryById (props: ViewCategoryByIdProps) {
+  const { history, match: { params: { id, page: pageStr } } } = props;
   try {
-    return <ViewCategory id={new CategoryId(id)} />;
+    // tslint:disable-next-line:radix
+    const page = pageStr ? parseInt(pageStr) : 1;
+    return <ViewCategory id={new CategoryId(id)} page={page} history={history} />;
   } catch (err) {
     return <em>Invalid category ID: {id}</em>;
   }

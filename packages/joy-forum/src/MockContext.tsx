@@ -30,7 +30,7 @@ export function MockState () {
     dispatch({ type: 'NewCategory', category });
   };
 
-  const newThread = (categoryId?: number) => {
+  const newThread1 = (categoryId?: number) => {
     threadId++;
     const name = `Thread ${threadId} in category ${categoryId}`;
     const thread = new Thread({
@@ -45,6 +45,15 @@ export function MockState () {
     if (threadId === 1) {
       for (let i = 0; i < 50; i++) {
         newReply(threadId);
+      }
+    }
+  };
+
+  const newThread = (categoryId?: number) => {
+    newThread1(categoryId);
+    if (categoryId === 1 || categoryId === 2) {
+      for (let i = 0; i < 50; i++) {
+        newThread1(categoryId);
       }
     }
   };

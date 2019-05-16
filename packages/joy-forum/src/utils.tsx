@@ -30,12 +30,14 @@ type PaginationProps = {
 
 export const Pagination = (p: PaginationProps) => {
   const { currentPage = 1, itemsPerPage = 20 } = p;
+  const totalPages = Math.floor(p.totalItems / itemsPerPage);
+
   return (
     <SuiPagination
       firstItem={null}
       lastItem={null}
       defaultActivePage={currentPage}
-      totalPages={p.totalItems / itemsPerPage}
+      totalPages={totalPages}
       onPageChange={(_event, { activePage }) => p.onPageChange(activePage)}
     />
   );

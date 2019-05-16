@@ -58,29 +58,30 @@ export function ViewThread (props: ViewThreadProps) {
       history.push(`/forum/threads/${id.toString()}/page/${activePage}`);
     };
 
+    const itemsPerPage = RepliesPerPage;
+    const minIdx = (page - 1) * RepliesPerPage;
+    const maxIdx = minIdx + RepliesPerPage - 1;
+
     const pagination =
       <Pagination
         currentPage={page}
         totalItems={replyIds.length}
-        itemsPerPage={RepliesPerPage}
+        itemsPerPage={itemsPerPage}
         onPageChange={onPageChange}
       />;
 
-    const minId = (page - 1) * RepliesPerPage;
-    const maxId = minId + RepliesPerPage - 1;
-
     const pageOfItems = replyIds
-      .filter((_id, i) => i >= minId && i <= maxId)
+      .filter((_id, i) => i >= minIdx && i <= maxIdx)
       .map((id, i) => <ViewReply key={i} id={new ReplyId(id)} />);
 
-    return (<>
+    return <>
       {pagination}
       {pageOfItems}
       {pagination}
-    </>);
+    </>;
   };
 
-  return (<>
+  return <>
     <CategoryCrumbs categoryId={thread.category_id} />
     <h1 className='ForumPageTitle'>
       <span className='TitleText'>{thread.title}</span>
@@ -114,7 +115,7 @@ export function ViewThread (props: ViewThreadProps) {
     <Section title={`Replies (${replyIds.length})`}>
       {renderPageOfReplies()}
     </Section>
-  </>);
+  </>;
 }
 
 type ViewThreadByIdProps = UrlHasIdProps & {

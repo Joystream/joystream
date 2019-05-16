@@ -53,6 +53,7 @@ class App extends React.PureComponent<Props> {
           <Route path={`${basePath}/categories/new`} component={NewCategory} />
           <Route path={`${basePath}/categories/:id/newThread`} component={NewThread} />
           <Route path={`${basePath}/categories/:id/edit`} component={EditCategory} />
+          <Route path={`${basePath}/categories/:id/page/:page`} component={ViewCategoryById} />
           <Route path={`${basePath}/categories/:id`} component={ViewCategoryById} />
           <Route path={`${basePath}/categories`} component={CategoryList} />
 
