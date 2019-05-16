@@ -89,7 +89,7 @@ None.
 
 #### Description
 
-Allow root to set the lifetime for entries in the `peerIdByAccount` mapping.
+Allow root to set the lifetime for entries in the `PeerIdByAccount` mapping.
 Note that setting this value does not modify
 the lifetime of already existing entries, and is only applied to newly
 created or updated entries.
