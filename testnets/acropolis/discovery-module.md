@@ -90,7 +90,7 @@ None.
 #### Description
 
 Allow root to set the lifetime for entries in the `peerIdByAccount` mapping.
-Older entries will be cleared. Note that setting this value does not modify
+Note that setting this value does not modify
 the lifetime of already existing entries, and is only applied to newly
 created or updated entries.
 
