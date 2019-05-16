@@ -62,7 +62,7 @@ const CategoryCrumb = (p: CategoryCrumbsProps) => {
         </>;
       }
     } catch (err) {
-      /* OK */
+      console.log('Failed to create a category breadcrumb', err);
     }
   }
 
@@ -85,7 +85,7 @@ const ThreadCrumb = (p: CategoryCrumbsProps) => {
         </>;
       }
     } catch (err) {
-      /* OK */
+      console.log('Failed to create a thread breadcrumb', err);
     }
   }
 
