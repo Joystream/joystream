@@ -69,7 +69,7 @@ None.
 - `peerIdByAccount`: A map of Account IDs to `IPNSPeerId`. The map value also
   contains lifetime parameters in order to gracefully remove outdated entries.
 
-- `accountInfoLifetime`: A time-to-live for entries in the `peerIdByAccount` table.
+- `AccountInfoLifetime`: A time-to-live for entries in the `PeerIdByAccount` table.
   Configured from the genesis block.
 
 ## Events
