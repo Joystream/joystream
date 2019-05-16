@@ -6,6 +6,7 @@
 - [Dependencies](#dependencies)
 - [Name](#name)
 - [Concepts](#concepts)
+- [Architecture](#architecture)
 
 ## Design
 
@@ -53,3 +54,37 @@ documentation:
   validate `ContentMetadata` entries.
 - `DataObjectStorageRelationship`: an entry in the [Data Object Storage Registry](./storage-module-data-object-storage-registry.md),
   describing which actor has stored a particular `DataObject`.
+
+### Architecture
+
+The basic unit of storage is a `DataObject`, for which a unique `ContentId` is
+entered into the `DataDirectory`. Each `DataObject` is associated with a
+`DataObjectType`, which describes storage parameters such as maximum permissible
+file sizes, etc.
+
+For each `DataObject`, one storage provider acts as the `Liaison`, accepting and
+validating the actual content upload, and making the content available to other
+storage providers. The `Liaison` and any other storage provider that holds the
+content available enters this fact into the runtime as a
+`DataObjectStorageRelationship`.
+
+For purposes of content discovery, `ContentMetadata` is added to the runtime.
+Each `ContentMetadata` is identified by a `ContentId`; that is, one `ContentId`
+usually maps to a `DataObject` and a `ContentMetadata` entry. The
+`ContentMetadata` has a JSON payload, and a `SchemaId` indicating to clients how
+are to interpret the payload.
+
+`ContentMetadata` *can* be used hierarchically. Each entry can have any number
+of `ContentId` as children. These child IDs can be used to store `DataObject`
+and/or `ContentMetadata` entries of their own, allowing for organizing
+`DataObject` entries into hierarchical structures, e.g. for:
+
+- Podcast episodes in a Podcast
+- Series episodes in a video series
+- Individual language audio files for translated videos, or subtitle texts.
+- etc.
+
+The runtime imposes no restrictions on how `SchemaId` is to be used; however,
+the intent is to eventually add a schema registry that stores e.g.
+[well documented schemas](https://schema.org), or some Joystream specific
+derivates.
