@@ -72,7 +72,28 @@ This landing repo as meant as a the best starting place to get a coherent view o
 
 # Contribute
 
-WIP.
+For software development we try to follow the [git-flow](https://nvie.com/posts/a-successful-git-branching-model/) branching [model](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) with some minor differences:
+  - `development` branch instead of `develop`.
+  - feature branches should be created in contributors' own fork of the repo.
+  - for more collaborative long running feature development, a feature branch may be created by the maintainer on the central repo.
+
+The central repos will have multiple members of the core team with write access, but there will be one designated maintainer or "product owner" and responsible for the final product. The maintainer must approve either directly or by delegation (accepting other members' reviews) PRs to be merged.
+
+The core team, maintainers and outside contributors are encouraged to follow these general guidelines when contributing to the code repositories:
+
+* All contributions should be via pull requests.
+* Do not create arbitrary branches or push directly to the central repo `master` or `development` branches
+* Do not force push branches.
+* Avoid rebasing branches of open PRs to help preserve conversation history.
+* Authors must always request a review for their PRs, Exception: It does not alter any logic (e.g. comments, dependencies, docs, file organisation), then it may merged once CI checks are complete.
+* Author should avoid merging their own PR, if it hasn't been reviewed and approved.
+* If travis or other CI integrations are configured for the repo, avoid merging PRs that fail checks.
+* When the maintainer is opening a PRs they must still request review from a core team member.
+
+Each repository may have contributing guidelines detailed in their README files.
+Maintainer must ensure this contribution section is linked to as the base guideline.
+
+Documentation, Project management and other or non-code repositories should try to follow similar PR etiquette if it makes sense but exceptions can be made as changes usually don't require the same level of review.
 
 # Repository Index
 
