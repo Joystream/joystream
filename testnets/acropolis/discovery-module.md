@@ -66,7 +66,7 @@ None.
 
 - `bootstrapNodes`: A vector of bootstrap nodes maintained by sudo.
 
-- `peerIdByAccount`: A map of Account IDs to `IPNSPeerId`. The map value also
+- `PeerIdByAccount`: A map of Account IDs to `IPNSPeerId`. The map value also
   contains lifetime parameters in order to gracefully remove outdated entries.
 
 - `AccountInfoLifetime`: A time-to-live for entries in the `PeerIdByAccount` table.
