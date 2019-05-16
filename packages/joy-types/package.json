@@ -2,13 +2,18 @@
   "name": "@joystream/types",
   "version": "0.1.0",
   "description": "Joystream types for Substrate modules",
-  "scripts": {},
+  "main": "src/index.js",
+  "scripts": {
+    "postinstall": "npm run build",
+    "build": "tsc --build tsconfig.json"
+  },
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
     "@polkadot/keyring": "^0.76.1",
     "@polkadot/types": "^0.77.0-beta.4",
     "@polkadot/util": "^0.76.1",
-    "@polkadot/util-crypto": "^0.76.1"
+    "@polkadot/util-crypto": "^0.76.1",
+    "typescript": "^3.4.5"
   }
 }
