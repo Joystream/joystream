@@ -10,7 +10,7 @@
 - [Events](#events)
 - [Dispatchable Methods](#dispatchable-methods)
   - [set_account_info_lifetime](#set_account_info_lifetime)
-  - [set_boostrap_nodes](#set_bootstrap_nodes)
+  - [set_boostrap_endpoints](#set_bootstrap_endpoints)
   - [set_ipns_peer_id](#set_ipns_peer_id)
   - [unset_ipns_peer_id](#unset_ipns_peer_id)
 - [Other](#other)
@@ -58,13 +58,13 @@ None.
 
 ## Concepts
 
-- `BootstrapNode`: Identifies a URL prefix for querying the discovery system.
+- `BootstrapEndpoints`: Identifies a URL prefix for querying the discovery system.
 
 - `IPNSPeerId`: Identifies a peer on the IPFS network, of which IPNS is part.
 
 ## State
 
-- `bootstrapNodes`: A vector of bootstrap nodes maintained by sudo.
+- `bootstrapEndpoints`: A vector of bootstrap endpoints maintained by sudo.
 
 - `PeerIdByAccount`: A map of Account IDs to `IPNSPeerId`. The map value also
   contains lifetime parameters in order to gracefully remove outdated entries.
@@ -107,28 +107,28 @@ created or updated entries.
 
 None.
 
-### `set_bootstrap_nodes`
+### `set_bootstrap_endpoints`
 
 #### Payload
 
 - implied root origin
-- `bootstrapNodes`: a vector of URL prefixes
+- `bootstrapEndpoints`: a vector of URL prefixes
 
 #### Description
 
-Allow root to set the current bootstrap nodes. Note that the number of nodes
+Allow root to set the current bootstrap endpoints. Note that the number of endpoints
 is never expected to grow large, as new nodes are discovered from this set of
 boostrap nodes - therefore always setting the entire vector is sufficient.
 
 #### Errors
 
 - Not root origin
-- Empty bootstrap node vector
+- Empty bootstrap endpoint vector
 - Empty vector entries
 
 #### Side effect(s)
 
-`bootstrapNodes` is updated.
+`bootstrapEndpoints` is updated.
 
 #### Event(s)
 
