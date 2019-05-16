@@ -118,7 +118,7 @@ None.
 
 Allow root to set the current bootstrap endpoints. Note that the number of endpoints
 is never expected to grow large, as new nodes are discovered from this set of
-boostrap nodes - therefore always setting the entire vector is sufficient.
+boostrap endpoints - therefore always setting the entire vector is sufficient.
 
 #### Errors
 
