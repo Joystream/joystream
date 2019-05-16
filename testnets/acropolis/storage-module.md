@@ -54,6 +54,8 @@ documentation:
   validate `ContentMetadata` entries.
 - `DataObjectStorageRelationship`: an entry in the [Data Object Storage Registry](./storage-module-data-object-storage-registry.md),
   describing which actor has stored a particular `DataObject`.
+- A storage provider is an `actor` who has staked for the Storage role via the
+  `storage/actors` module.
 
 ### Architecture
 
