@@ -10,6 +10,10 @@
 - [State](#state)
 - [Events](#events)
 - [Dispatchable Methods](#dispatchable-methods)
+  - [register_data_object_type](#register_data_object_type)
+  - [update_data_object_type](#update_data_object_type)
+  - [activate_data_object_type](#activate_data_object_type)
+  - [deactivate_data_object_type](#deactivate_data_object_type)
 
 ## Design
 
