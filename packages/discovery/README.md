@@ -14,7 +14,7 @@ as well as runtime information.
 ## Discovery Workflow
 
 The discovery workflow provides an actor key to the `discover()` function, which
-will eventuall return structured data.
+will eventually return structured data.
 
 Clients can verify that the structured data has been signed by the identifying
 actor. This is normally done automatically, unless a `verify: false` option is
@@ -89,8 +89,12 @@ following must hold:
   definition of the API(s) provided by this endpoint.
 - The OpenAPI definitions include paths prefixed by
   `https://user:password@host:port/XXX/vYYY` where
-  - `XXX` is the service name, identical to the field name of the service.
+  - `XXX` is the service name, identical to the field name of the service spec
+    in the published service information.
   - `YYY` the version identifier for the published service API.
+
+**Note:** The `version` field in the spec indicates the version of the spec.
+The `YYY` path component above indicates the version of the published OpenAPI.
 
 ### Discovery Service
 
@@ -108,11 +112,18 @@ always `1`.
 {
   "asset": {
     "version": 1,
-    "endpoint": "https://foo.bar/asset/v0"
+    "endpoint": "https://foo.bar/"
   },
   "discovery": {
     "version": 1,
-    "endpoint": "http://quux.io/discovery/v0"
+    "endpoint": "http://quux.io/"
   },
 }
 ```
+
+Here, the following must be true:
+
+- `https://foo.bar/swagger.json` must include paths beginning with `https://foo.bar/asset/vXXX`
+  where `XXX` is the API version of the asset API.
+- `https://quux.io/swagger.json` must include paths beginning with `https://foo.bar/discovery/vYYY`
+  where `XXX` is the API version of the asset API.
