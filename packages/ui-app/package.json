@@ -37,8 +37,8 @@
     "react-markdown": "^4.0.6",
     "react-router": "^5.0.0",
     "react-router-dom": "^5.0.0",
-    "semantic-ui-css": "^2.3.1",
-    "semantic-ui-react": "^0.86.0",
+    "semantic-ui-css": "^2.4.1",
+    "semantic-ui-react": "^0.87.1",
     "store": "^2.0.12",
     "styled-theming": "^2.2.0"
   }
