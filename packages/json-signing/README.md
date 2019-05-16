@@ -8,8 +8,8 @@ by wrapping any JSON to be signed in another JSON object:
 * `version` contains the version of the wrapper JSON, currently always `1`.
 * `serialized` contains the serialized version of the data, currently this
   will be the base64 encoded, serialized JSON payload.
-* `signature` contains the base64 encoded signature of the `serialized` prior
-  to its base64 encoding.
+* `signature` contains the base64 encoded signature of the `serialized` field
+  value prior to its base64 encoding.
 * `payload` [optional] contains the deserialized JSON object corresponding
   to the `serialized` payload.
 
@@ -21,7 +21,7 @@ Given some structured data:
 1. Create a signature over the serialized JSON string.
 1. Create a new structured data with the appropriate `version` field.
 1. Add a base64 encoded version of the serialized JSON string as the `serialized` field.
-1. Add a base64 encoded version of the serialized signature as the `signature` field.
+1. Add a base64 encoded version of the signature as the `signature` field.
 1. Optionally add the original structured data as the `payload` field.
 
 #### Verification Process
