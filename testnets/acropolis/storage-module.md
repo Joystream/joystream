@@ -22,10 +22,14 @@ retrievable.
 The module is structured into several sub-modules with their own distinct
 documentation:
 
-- [Data Object Type Registry](./storage-module/data-object-type-registry.md)
-- [Data Object Storage Registry](./storage-module/data-object-storage-registry.md)
-- [Data Directory](./storage-module/data-directory.md)
-- [Content Directory](./storage-module/content-directory.md')
+1. [Data Object Type Registry](./storage-module/data-object-type-registry.md):
+   manages how data may be stored on the network.
+1. [Data Directory](./storage-module/data-directory.md):
+   manages *what* data exists on the network.
+1. [Data Object Storage Registry](./storage-module/data-object-storage-registry.md):
+   manages  *where* data exists on the network.
+1. [Content Directory](./storage-module/content-directory.md'):
+   explains how to interpret data stored on the network.
 
 ## Name
 
