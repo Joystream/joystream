@@ -33,7 +33,7 @@ async function main () {
   // Create the API and wait until ready
   const api = await ApiPromise.create(provider);
 
-  // Retrieve the chain & node information information via rpc calls
+  // Retrieve the chain & node information information via RPC calls
   const [chain, nodeName, nodeVersion] = await Promise.all([
     api.rpc.system.chain(),
     api.rpc.system.name(),
