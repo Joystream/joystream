@@ -17,7 +17,7 @@ npm install --save @joystream/types
 
 ## Registering the types
 
-Call `registerJoystreamTypes()` before creating a polkadot api client.
+Call `registerJoystreamTypes()` before creating a Polkadot API client.
 
 ```javascript
 import { registerJoystreamTypes } from '@joystream/types';
