@@ -13,7 +13,7 @@ as well as runtime information.
 
 ## Discovery Workflow
 
-The discovery workflow provides an actor key to the `discover()` function, which
+The discovery workflow provides an actor public key to the `discover()` function, which
 will eventually return structured data.
 
 Clients can verify that the structured data has been signed by the identifying
