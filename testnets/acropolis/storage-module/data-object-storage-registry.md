@@ -1,4 +1,4 @@
-# Storage Module - Data Directory
+# Storage Module - Data Object Storage Registry
 
 ## Table Of Content
 
