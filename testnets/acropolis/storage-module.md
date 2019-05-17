@@ -28,7 +28,7 @@ documentation:
    manages *what* data exists on the network.
 1. [Data Object Storage Registry](./storage-module/data-object-storage-registry.md):
    manages  *where* data exists on the network.
-1. [Content Directory](./storage-module/content-directory.md'):
+1. [Content Directory](./storage-module/content-directory.md):
    explains how to interpret data stored on the network.
 
 ## Name

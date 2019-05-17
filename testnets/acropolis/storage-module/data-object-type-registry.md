@@ -1,4 +1,4 @@
-# Forum Module - Data Object Type Registry
+# Storage Module - Data Object Type Registry
 
 ## Table Of Content
 
@@ -40,7 +40,7 @@ None.
 
 ## Concepts
 
-See [the module documentation](./storage-module.md#concepts) for an overview.
+See [the module documentation](../storage-module.md#concepts) for an overview.
 
 Additionally:
 
