@@ -73,6 +73,27 @@ documentation:
 - A storage provider is an `actor` who has staked for the Storage role via the
   `storage/actors` module.
 
+#### ContentId, DataObject, ContentMetadata
+
+There is a somewhat strange relationship between these three concepts, as
+`ContentId` identifies both `DataObject` and `ContentMetadata`.
+
+Each `ContentId` can be thought of as a file name in a file system: it
+identifies the file contents on disk (i.e. `DataObject` here), as well as some
+metadata, such as file ownership, permissions, etc.
+
+In our system, we do not manage ownership or permissions in quite this manner,
+but in order to have content discoverable by humans, *do* manage descriptive
+information - aka `ContentMetadata`.
+
+The most often used term for such identifiers is a *content identifier*, hence
+the `ContentId` and corresponding `ContentMetadata` names. They best reflect
+the consumer's point of view, that content has a name and some information.
+
+The `DataObject` on the other hand refers to any generic data BLOB. Rather
+than introducing a `DataObjectId` and creating a 1:1 mapping between them
+and `ContentIds`, the latter is simply re-used.
+
 ### Architecture
 
 The basic unit of storage is a `DataObject`, for which a unique `ContentId` is
