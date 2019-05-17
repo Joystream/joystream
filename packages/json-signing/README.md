@@ -13,7 +13,10 @@ by wrapping any JSON to be signed in another JSON object:
 * `payload` [optional] contains the deserialized JSON object corresponding
   to the `serialized` payload.
 
-#### Signing Process
+For signing and verification, we'll use polkadot's *ed25519* or *sr25519* keys
+directly.
+
+## Signing Process
 
 Given some structured data:
 
@@ -24,7 +27,7 @@ Given some structured data:
 1. Add a base64 encoded version of the signature as the `signature` field.
 1. Optionally add the original structured data as the `payload` field.
 
-#### Verification Process
+## Verification Process
 
 1. Verify data contains a `version`, `serialized` and `signature` field.
 1. Currently, verify that the `version` field's value is `1`.
@@ -34,3 +37,18 @@ Given some structured data:
 1. JSON deserialize the decoded `serialized` field.
 1. Add the resulting structured data as the `payload` field, and return the
   modified object.
+
+# Alternatives
+
+There are alternative schemes available for signing JSON objects, but they
+have specific issues we'd like to avoid.
+
+* [JOSE](https://jose.readthedocs.io/en/latest/) has no support for the *ed25519*
+  or *sr25519* keys used in polkadot apps, and
+  [appears to be fraught with security issues](https://paragonie.com/blog/2017/03/jwt-json-web-tokens-is-bad-standard-that-everyone-should-avoid).
+  Either makes its use hard to justify.
+* While [PASETO](https://paseto.io/) does use *ed25519* keys and seems to have
+  a reasonably robuts JavaScript implementation, it requires its secret keys to
+  be 512 bits long, while polkadot provides 256 bit secret keys. The implication
+  is that we would have to manage 512 bit keys and their corresponding public
+  keys as linked to polkadot's keys, which is cumbersome at the very least.
