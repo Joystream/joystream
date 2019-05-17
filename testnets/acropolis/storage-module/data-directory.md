@@ -5,19 +5,6 @@
 - [Design](#design)
 - [Dependencies](#dependencies)
 - [Name](#name)
-- [Concepts](#concepts)
-- [State](#state)
-- [Events](#events)
-- [Dispatchable Methods](#dispatchable-methods)
-  - [create_category](#create_category)
-  - [update_category](#update_category)
-  - [create_thread](#create_thread)
-  - [moderate_thread](#moderate_thread)
-  - [add_post](#add_post)
-  - [edit_post_text](#edit_post_text)
-  - [moderate_post](#moderate_post)
-  - [set_forum_sudo](#set_forum_sudo)
-- [Non-dispatchable Methods](#non-dispatchable-methods)
 
 ## Design
 
