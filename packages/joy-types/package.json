@@ -1,6 +1,6 @@
 {
   "name": "@joystream/types",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Joystream types for Substrate modules",
   "main": "lib/index.js",
   "scripts": {
@@ -15,5 +15,23 @@
     "@polkadot/util": "^0.76.1",
     "@polkadot/util-crypto": "^0.76.1",
     "typescript": "^3.4.5"
-  }
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Joystream/apps.git"
+  },
+  "keywords": [
+    "substrate",
+    "joystream",
+    "runtime"
+  ],
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Joystream/apps/issues"
+  },
+  "homepage": "https://github.com/Joystream/apps#readme"
 }
