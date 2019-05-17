@@ -10,7 +10,7 @@ Add the package as a dependency in your project.
 ```shell
 yarn add @joystream/types
 
-or
+# or
 
 npm install --save @joystream/types
 ```
