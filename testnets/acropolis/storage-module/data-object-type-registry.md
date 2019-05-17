@@ -275,11 +275,11 @@ Update an existing constraint for the given media type.
 
 #### Side effect(s)
 
-See `[add_data_object_type_constraints](#add_data_object_type_constraints)`.
+See [add_data_object_type_constraints](#add_data_object_type_constraints).
 
 #### Event(s)
 
-See `[add_data_object_type_constraints](#add_data_object_type_constraints)`.
+See [add_data_object_type_constraints](#add_data_object_type_constraints).
 
 ### `remove_data_object_type_constraints`
 
@@ -307,6 +307,6 @@ Remove constraints for a given media type and `DataObjectType`.
 
 #### Event(s)
 
-See `[add_data_object_type_constraints](#add_data_object_type_constraints)`.
+See [add_data_object_type_constraints](#add_data_object_type_constraints).
 
 
