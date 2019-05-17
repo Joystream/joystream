@@ -1,4 +1,3 @@
-
 # Forum Module - Data Object Type Registry
 
 ## Table Of Content
@@ -14,6 +13,9 @@
   - [update_data_object_type](#update_data_object_type)
   - [activate_data_object_type](#activate_data_object_type)
   - [deactivate_data_object_type](#deactivate_data_object_type)
+  - [add_data_object_type_constraints](#add_data_object_type_constraints)
+  - [update_data_object_type_constraints](#update_data_object_type_constraints)
+  - [remove_data_object_type_constraints](#remove_data_object_type_constraints)
 
 ## Design
 
@@ -91,7 +93,8 @@ applies:
    matching constraints.
 1. Of the constraints, select the most appropriate one by going from the most
    complete to the defaults as per the section above, preferring more
-   restrictive constraints over less restrictive ones.
+   restrictive constraints over less restrictive ones if there are alternatives
+   at the end.
 
 If a constraint is found and the file seems to match the described constraints,
 approve the `DataObject`. Otherwise, reject it.
@@ -105,8 +108,8 @@ approve the `DataObject`. Otherwise, reject it.
 - `DataObjectTypes` - map of `DataObjectTypeId` to `DataObjectType`.
 
 - `DataObjectTypeConstraintsRegistry` - map of IANA media types (with wildcards) to
-  a `DataObjectTypeConstraints` structure. The `*/*` media type refers to the
-  default constraints.
+  a vector of `DataObjectTypeConstraints` structures. The `*/*` media type refers to
+  the default constraints.
 
 ## Events
 
@@ -117,7 +120,6 @@ Each event has the affected `DataObjectTypeId` as its payload.
 - `DataObjectTypeUpdated` - a `DataObjectType` was modified in the registry.
 
 ## Dispatchable Methods
-
 ### `register_data_object_type`
 
 #### Payload
@@ -218,3 +220,93 @@ uploading new `DataObjects`.
 #### Event(s)
 
 - `DataObjectTypeUpdated`
+
+### `add_data_object_type_constraints`
+
+#### Payload
+
+- implied root origin
+- `media_type`: a IANA media type, optionally with wildcards
+- `constraints`: a `DataObjectTypeConstraints` structure.
+
+#### Description
+
+Add a constraint for the given media type. Since the constraints structure
+references a `DataObjectType`, the new constraints apply to this type.
+
+#### Errors
+
+- Origin isn't root.
+- A constraint for this exact `media_type` and `DataObjectTypeId` already exists.
+- The constraint specifies an invalid maximum file size (e.g. zero;
+  implementation defined.)
+
+#### Side effect(s)
+
+- `DataObjectTypeConstraintsRegistry` is updated to contain the `constraints`
+  entry for the `media_type` key.
+
+#### Event(s)
+
+- `DataObjectTypeConstraintsRegistryUpdated`: currently, the only reason to
+  keep watch over the registry is to update a local cache of it. Listening
+  to this event allows callers to invalidate the cache.
+
+  An IANA media type payload equal to the `media_type` parameter limits how
+  much of a cache might need to be invalidated.
+
+### `update_data_object_type_constraints`
+
+#### Payload
+
+- implied root origin
+- `media_type`: a IANA media type, optionally with wildcards
+- `constraints`: a `DataObjectTypeConstraints` structure.
+
+#### Description
+
+Update an existing constraint for the given media type.
+
+#### Errors
+
+- Origin isn't root.
+- A constraint for this exact `media_type` and `DataObjectTypeId` does not exist.
+- The constraint specifies an invalid maximum file size (e.g. zero;
+
+#### Side effect(s)
+
+See `[add_data_object_type_constraints](#add_data_object_type_constraints)`.
+
+#### Event(s)
+
+See `[add_data_object_type_constraints](#add_data_object_type_constraints)`.
+
+### `remove_data_object_type_constraints`
+
+#### Payload
+
+- implied root origin
+- `media_type`: a IANA media type, optionally with wildcards
+- `data_object_type_id`: the `DataObjectTypeId` for which the constraints are
+  to be removed.
+
+#### Description
+
+Remove constraints for a given media type and `DataObjectType`.
+
+#### Errors
+
+- Origin isn't root.
+
+#### Side effect(s)
+
+- None, if the specified constraints cannot be found. There is no particular
+  need to produce an error here.
+- Otherwise, constraints for the given `media_type` and `DataObjectTypeId` are
+  removed from `DataObjectTypeConstraintsRegistry`.
+
+#### Event(s)
+
+See `[add_data_object_type_constraints](#add_data_object_type_constraints)`.
+
+
