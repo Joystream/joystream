@@ -1,6 +1,6 @@
 # `@joystream/types`
 
-The types packages is required to register the custom substrate runtime types when working with [`@polkadot/api`](https://www.npmjs.com/package/@polkadot/api#registering-custom-types) to communicate with a joystream full node.
+The types package is required to register the custom Substrate runtime types when working with [`@polkadot/api`](https://www.npmjs.com/package/@polkadot/api#registering-custom-types) to communicate with a Joystream full node.
 
 
 ## Installation
