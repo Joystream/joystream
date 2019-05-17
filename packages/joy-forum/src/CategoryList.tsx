@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Table, Dropdown, Button, Segment } from 'semantic-ui-react';
 import { History } from 'history';
+import orderBy from 'lodash/orderBy';
 
-import { CategoryId, ThreadId } from './types';
+import { CategoryId, ThreadId, Thread, ThreadType } from './types';
 import { useForum } from './Context';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
@@ -124,6 +125,7 @@ type CategoryThreadsProps = {
 
 function CategoryThreads (props: CategoryThreadsProps) {
   const { categoryId, threadIds, page, history } = props;
+  const { state: { threadById } } = useForum();
 
   if (threadIds.length === 0) {
     return <em>No threads in this category</em>;
@@ -145,7 +147,25 @@ function CategoryThreads (props: CategoryThreadsProps) {
       onPageChange={onPageChange}
     />;
 
-  const pageOfItems = threadIds
+  type SortableThread = ThreadType & {
+    id: number,
+    pinned: boolean
+  };
+
+  const threads: SortableThread[] = threadIds
+    .map(id => {
+      const thread = threadById.get(id);
+      return !thread ? thread : { id, pinned: thread.pinned };
+    })
+    .filter(x => x !== undefined) as SortableThread[];
+
+  const sortedThreadIds = orderBy(threads,
+    // TODO Replace sort by id with sort by blocktime of the last reply.
+    [ x => x.pinned, x => x.id ],
+    [ 'desc', 'desc' ]
+  ).map(x => x.id);
+
+  const pageOfItems = sortedThreadIds
     .filter((_id, i) => i >= minIdx && i <= maxIdx)
     .map((id, i) => <ViewThread key={i} id={new ThreadId(id)} preview />);
 

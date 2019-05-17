@@ -37,16 +37,17 @@ export function MockState () {
       owner: new AccountId(address),
       category_id: new CategoryId(categoryId),
       locked: new Bool(false),
+      pinned: new Bool(false),
       title: new Text(name),
       text: new Text(`**Description** of ${name}`)
     });
     dispatch({ type: 'NewThread', thread });
 
-    if (threadId === 1) {
-      for (let i = 0; i < 50; i++) {
-        newReply(threadId);
-      }
-    }
+    // if (threadId === 1) {
+    //   for (let i = 0; i < 50; i++) {
+    //     newReply(threadId);
+    //   }
+    // }
   };
 
   const newThread = (categoryId?: number) => {

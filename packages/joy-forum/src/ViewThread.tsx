@@ -4,11 +4,28 @@ import ReactMarkdown from 'react-markdown';
 import { Table, Segment } from 'semantic-ui-react';
 import { History } from 'history';
 
-import { ThreadId, ReplyId } from './types';
+import { Thread, ThreadId, ReplyId } from './types';
 import { useForum } from './Context';
 import { UrlHasIdProps, AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs } from './utils';
 import Section from '@polkadot/joy-utils/Section';
 import { ViewReply } from './ViewReply';
+
+type ThreadTitleProps = {
+  thread: Thread,
+  className?: string
+};
+
+function ThreadTitle (props: ThreadTitleProps) {
+  const { thread, className } = props;
+  return <span className={className}>
+    {thread.pinned && <i
+      className='star icon'
+      title='This post is pinned by moderator'
+      style={{ marginRight: '.5rem' }} 
+    />}
+    {thread.title}
+  </span>;
+}
 
 type ViewThreadProps = {
   id: ThreadId,
@@ -33,7 +50,9 @@ export function ViewThread (props: ViewThreadProps) {
       : (
         <Table.Row>
           <Table.Cell>
-            <Link to={`/forum/threads/${id.toString()}`}>{thread.title}</Link>
+            <Link to={`/forum/threads/${id.toString()}`}>
+              <ThreadTitle thread={thread} />
+            </Link>
           </Table.Cell>
           <Table.Cell>
             {replyIds.length}
@@ -84,7 +103,7 @@ export function ViewThread (props: ViewThreadProps) {
   return <>
     <CategoryCrumbs categoryId={thread.category_id} />
     <h1 className='ForumPageTitle'>
-      <span className='TitleText'>{thread.title}</span>
+      <ThreadTitle thread={thread} className='TitleText' />
       <Link
         to={`/forum/threads/${id.toString()}/reply`}
         className='ui small button'

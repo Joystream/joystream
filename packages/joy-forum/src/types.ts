@@ -1,6 +1,6 @@
 import { getTypeRegistry, u64, AccountId, Text, Bool } from '@polkadot/types';
 import { Struct, Option, Vector } from '@polkadot/types/codec';
-import { getTextPropAsString } from '@polkadot/joy-utils/types';
+import { getTextPropAsString, getBoolPropAsBoolean } from '@polkadot/joy-utils/types';
 
 export class CategoryId extends u64 {}
 export class OptionCategoryId extends Option.with(CategoryId) {}
@@ -46,8 +46,8 @@ export class Category extends Struct {
     return this.get('children_ids') as VecCategoryId;
   }
 
-  get locked (): Bool {
-    return this.get('locked') as Bool;
+  get locked (): boolean {
+    return getBoolPropAsBoolean(this, 'locked');
   }
 
   get name (): string {
@@ -59,12 +59,22 @@ export class Category extends Struct {
   }
 }
 
+export type ThreadType = {
+  owner: AccountId,
+  category_id: CategoryId,
+  locked: Bool,
+  pinned: Bool,
+  title: Text,
+  text: Text
+};
+
 export class Thread extends Struct {
-  constructor (value: any) {
+  constructor (value: ThreadType) {
     super({
       owner: AccountId,
       category_id: CategoryId,
       locked: Bool,
+      pinned: Bool,
       title: Text,
       text: Text
     }, value);
@@ -78,8 +88,12 @@ export class Thread extends Struct {
     return this.get('category_id') as CategoryId;
   }
 
-  get locked (): Bool {
-    return this.get('locked') as Bool;
+  get locked (): boolean {
+    return getBoolPropAsBoolean(this, 'locked');
+  }
+
+  get pinned (): boolean {
+    return getBoolPropAsBoolean(this, 'pinned');
   }
 
   get title (): string {
@@ -91,8 +105,14 @@ export class Thread extends Struct {
   }
 }
 
+export type ReplyType = {
+  owner: AccountId,
+  thread_id: ThreadId,
+  text: Text
+};
+
 export class Reply extends Struct {
-  constructor (value: any) {
+  constructor (value: ReplyType) {
     super({
       owner: AccountId,
       thread_id: ThreadId,

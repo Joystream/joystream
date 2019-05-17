@@ -1,5 +1,5 @@
 import { Enum, EnumType, Option, Struct } from '@polkadot/types/codec';
-import { getTypeRegistry, BlockNumber, AccountId, Balance, Hash, u32, Text } from '@polkadot/types';
+import { getTypeRegistry, BlockNumber, AccountId, Balance, Hash, u32, Text, Bool } from '@polkadot/types';
 import { registerForumTypes } from '@polkadot/joy-forum/types';
 import { registerMediaTypes } from '@polkadot/joy-media/types';
 import { registerMembershipTypes } from '@polkadot/joy-members/types';
@@ -7,6 +7,10 @@ import { registerRolesTypes } from '@polkadot/joy-roles/types';
 
 export function getTextPropAsString (struct: Struct, fieldName: string): string {
   return (struct.get(fieldName) as Text).toString();
+}
+
+export function getBoolPropAsBoolean (struct: Struct, fieldName: string): boolean {
+  return (struct.get(fieldName) as Bool).valueOf();
 }
 
 class Amount extends Balance {}

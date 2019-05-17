@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Message } from 'semantic-ui-react';
+import { Button, Checkbox as SuiCheckbox, Message } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
@@ -42,6 +42,7 @@ type OuterProps = ValidationProps & {
 };
 
 type FormValues = {
+  pinned: boolean,
   title: string,
   text: string
 };
@@ -66,6 +67,7 @@ const InnerForm = (props: FormProps) => {
   } = props;
 
   const {
+    pinned,
     title,
     text
   } = values;
@@ -89,8 +91,16 @@ const InnerForm = (props: FormProps) => {
     setSubmitting(false);
   };
 
+  if (!categoryId && !struct) {
+    return (
+      <Message error className='JoyMainStatus'>
+        <Message.Header>Neither category id nor thread id is provided</Message.Header>
+      </Message>
+    );
+  }
+
   const isNew = struct === undefined;
-  const resolvedCategoryId = !categoryId && struct ? struct.category_id : categoryId;
+  const resolvedCategoryId = categoryId ? categoryId : (struct as Thread).category_id;
 
   const buildTxParams = () => {
     if (!isValid) return [];
@@ -107,6 +117,7 @@ const InnerForm = (props: FormProps) => {
       owner: struct ? struct.owner : new AccountId(address),
       category_id: resolvedCategoryId,
       locked: new Bool(false), // TODO update from the form.
+      pinned: new Bool(pinned),
       title: new Text(title),
       text: new Text(text)
     });
@@ -117,8 +128,36 @@ const InnerForm = (props: FormProps) => {
     }
   };
 
+  const Checkbox = ({
+    field: { name, value, onChange, onBlur },
+    form: { errors, touched },
+    id,
+    label,
+    className,
+    ...props
+  }) => {
+    return (
+      <SuiCheckbox
+        toggle
+        id={id}
+        name={name}
+        value={value}
+        checked={value}
+        onChange={onChange}
+        onBlur={onBlur}
+        label={label}
+        className={className}
+      />
+    );
+  };
+
   const form =
     <Form className='ui form JoyForm EditEntityForm'>
+
+      {/* // TODO show pin toggle only if the current user is forum admin */}
+      <LabelledField name='pinned' {...props}>
+        <Field component={Checkbox} id='pinned' name='pinned' disabled={isSubmitting} label={`This thread is ${!pinned ? 'not' : '' } pinned`} />
+      </LabelledField>
 
       <LabelledText name='title' placeholder={`Title`} {...props} />
 
@@ -188,6 +227,7 @@ const EditForm = withFormik<OuterProps, FormValues>({
   mapPropsToValues: props => {
     const { struct } = props;
     return {
+      pinned: struct && struct.pinned || false,
       title: struct && struct.title || '',
       text: struct && struct.text || ''
     };
