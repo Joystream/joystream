@@ -94,6 +94,18 @@ The `DataObject` on the other hand refers to any generic data BLOB. Rather
 than introducing a `DataObjectId` and creating a 1:1 mapping between them
 and `ContentIds`, the latter is simply re-used.
 
+#### Storage Providers
+
+Storage providers, as indicated above, are actor accounts (public keys) which
+have staked for the storage role. The specs will treat these and storage nodes
+interchangeably, which may leave the impression that the runtime stores any
+information on where storage machines are to be contacted, such as IP addresses
+or host names. This is not true.
+
+At the level of abstraction of the storage module, *only* actor account IDs are
+managed. It is the purpose of the [Discovery Module](./discovery-module.md) to
+resolve actor account IDs further to currently up-to-date contact information.
+
 ### Architecture
 
 The basic unit of storage is a `DataObject`, for which a unique `ContentId` is
