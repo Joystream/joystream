@@ -1,6 +1,6 @@
 import { Enum, Struct, Option, Vector } from '@polkadot/types/codec';
 import { getTypeRegistry, u64, Bool, Text, BlockNumber, Moment, AccountId, Hash } from '@polkadot/types';
-import { OptionText } from '@joystream/types/';
+import { OptionText } from './';
 
 import { randomAsU8a } from '@polkadot/util-crypto';
 import { encodeAddress, decodeAddress } from '@polkadot/keyring';
