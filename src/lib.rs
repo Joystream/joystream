@@ -1,12 +1,6 @@
 // Copyright 2017-2019 Parity Technologies (UK) Ltd.
-// This file is part of Substrate.
 
-// Substrate is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Substrate is distributed in the hope that it will be useful,
+// This is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
@@ -218,9 +212,165 @@ use srml_support::traits::Currency;
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, StorageValue};
 use system::ensure_signed;
 
-pub trait MembershipRegistry<T: system::Trait> {
-    fn ensure_member(who: T::AccountId) -> Result<(), &'static str>;
+use rstd::collections::btree_map::BTreeMap;
+
+/// Constant values
+/// Later add to st
+///
+
+/// Represents a user in this forum.
+pub trait ForumUser<AccountId> {
+    
+    /// Identifier of user 
+    fn id(&self) -> &AccountId;
+
+    // In the future one could add things like 
+    // - updating post count of a user
+    // - updating status (e.g. hero, new, etc.)
+    //
+
 }
+
+/// Represents a regsitry of `ForumUser` instances.
+pub trait ForumUserRegistry<AccountId> {
+
+    type ForumUser: ForumUser<AccountId>;
+    
+    fn get_forum_user(&self, id:AccountId) -> Option<&Self::ForumUser>;
+
+}
+
+/// Convenient composite time stamp 
+struct BlockchainTimestamp<BlockNumber, Moment> {
+    block : BlockNumber,
+    time: Moment
+}
+
+//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+/// Represents a moderation outcome applied to a post or a thread. 
+struct ModerationAction<BlockNumber, Moment, AccountId> {
+
+    /// When action occured.
+    occured_at: BlockchainTimestamp<BlockNumber, Moment>,
+
+    /// Account forum sudo which acted.
+    moderator_id: AccountId,
+
+    /// Moderation rationale
+    rationale: Vec<u8>
+
+}
+
+/// Represents a revision of the text of a Post
+struct PostTextEdit<BlockNumber, Moment> {
+
+    /// What this edit occured.
+    edited_at: BlockchainTimestamp<BlockNumber, Moment>,
+
+    /// New text
+    new_text: Vec<u8>
+}
+
+/// Represents a thread post
+type PostId = u64;
+struct Post<BlockNumber, Moment, AccountId> {
+
+    /// Post identifier
+    id: PostId,
+
+    /// Id of thread to which this post corresponds.
+    thread_id: ThreadId,
+
+    // Position of post in thread.
+    position: u64,
+
+    /// Initial text of post
+    initial_text: Vec<u8>,
+
+    /// Possible moderation of this post
+    moderation : Option<ModerationAction<BlockNumber, Moment, AccountId>>,
+    
+    /// Edits of post ordered chronologically by edit time.
+    post_text_edits: Vec<PostTextEdit<BlockNumber, Moment>>,
+
+    /// When post was submitted.
+    created_at : BlockchainTimestamp<BlockNumber, Moment>,
+    
+    /// Author of post.
+    author_id : AccountId
+
+}
+
+/// Represents a thread
+type ThreadId = u64;
+struct Thread<BlockNumber, Moment, AccountId> {
+
+    /// Thread identifier
+    id : ThreadId,
+
+    /// Title
+    title : Vec<u8>,
+
+    /// Category in which this thread lives
+    category_id: CategoryId,
+
+    /// Position of thread in category.
+    position: u64,
+
+    /// Possible moderation of this thread
+    moderation : Option<ModerationAction<BlockNumber, Moment, AccountId>>,
+
+    /// Number of unmoderated posts in this thread
+    num_unmoderated_posts: u64,
+
+    /// Number of moderated posts in this thread
+    num_moderated_posts: u64,
+
+    /// When thread was established.
+    created_at : BlockchainTimestamp<BlockNumber, Moment>,
+    
+    /// Author of post.
+    author_id : AccountId
+}
+
+/// Represents a category
+type CategoryId = u64;
+struct Category<BlockNumber, Moment, AccountId> {
+
+    /// Category identifier
+    id : CategoryId,
+
+    /// Title
+    title : Vec<u8>,
+
+    /// Description
+    description: Vec<u8>,
+
+    /// When category was established.
+    created_at : BlockchainTimestamp<BlockNumber, Moment>,
+
+    /// Whether category is deleted.
+    deleted: bool,
+
+    /// Whether category is archived.
+    archived: bool,
+
+    /// Number direct subcategories.
+    num_direct_subcategories: u64,
+
+    /// Number of unmoderated threads directly in this category.
+    num_direct_unmoderated_threads: u64,
+
+    /// Number of moderated threads directly in this category.
+    num_direct_moderated_threads: u64,
+
+    /// Parent category, if present, otherwise this category is a root categoryl
+    parent_id: Option<CategoryId>,
+
+    /// Account of the forum sudo which created category.
+    forum_sudo_creator: AccountId
+}
+
 
 pub type BalanceOf<T> =
     <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
@@ -236,7 +386,7 @@ pub trait Trait: system::Trait + Sized {
 
     type Currency: Currency<Self::AccountId>;
 
-    type MembershipRegistry: MembershipRegistry<Self>;
+    type MembershipRegistry: ForumUserRegistry<Self::AccountId>;
 }
 
 decl_storage! {
@@ -274,6 +424,10 @@ decl_storage! {
 
         // this one uses the default, we'll demonstrate the usage of 'mutate' API.
         Foo get(foo) config(): BalanceOf<T>;
+
+
+        // ==== Constraints ====
+
     }
 }
 
@@ -370,7 +524,7 @@ decl_module! {
             // This is a public call, so we ensure that the origin is some signed account.
             let sender = ensure_signed(origin)?;
 
-            let _ = T::MembershipRegistry::ensure_member(sender)?;
+            //// let _ = T::MembershipRegistry::ensure_member(sender)?;
 
             // Read the value of dummy from storage.
             // let dummy = Self::dummy();
@@ -508,16 +662,38 @@ mod tests {
     impl Trait for Test {
         type Event = ();
         type Currency = Balances;
-        type MembershipRegistry = MockMembershipRegistry;
+        type MembershipRegistry = MockForumUserRegistry<<Test as system::Trait>::AccountId>;
     }
 
-    pub struct MockMembershipRegistry {}
-    impl MembershipRegistry<Test> for MockMembershipRegistry {
-        fn ensure_member(_who: <Test as system::Trait>::AccountId) -> Result<(), &'static str> {
-            Ok(())
+    // Mock implementation o
+    pub struct MockForumUser<AccountId>  {
+        _id: AccountId
+    }
+
+    impl<AccountId> ForumUser<AccountId> for MockForumUser<AccountId> {
+
+        fn id(&self) -> &AccountId {
+            &self._id
         }
     }
 
+    pub struct MockForumUserRegistry<AccountId: std::cmp::Ord> {
+
+        forum_user_from_id: BTreeMap<AccountId, <Self as ForumUserRegistry<AccountId>>::ForumUser>
+        
+        // HashMap<AccountId, <Self as ForumUserRegistry<AccountId>>::ForumUser>
+    }
+
+    impl<AccountId> ForumUserRegistry<AccountId> for MockForumUserRegistry<AccountId> where AccountId: std::cmp::Ord{
+
+        type ForumUser = MockForumUser<AccountId>;
+
+        fn get_forum_user(&self, id:AccountId) -> Option<&Self::ForumUser> {
+            self.forum_user_from_id.get(&id)
+        }
+        
+    }
+    
     type Example = Module<Test>;
     type Balances = balances::Module<Test>;
 
