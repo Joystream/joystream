@@ -1,4 +1,4 @@
-<p align="center"><img src="landing-cover.svg"></p>
+<p align="center"><img src="img/landing-cover.svg"></p>
 
 <div align="center">
   <h4>Eventually, this all goes on-chain, read our :scroll: <a href="https://github.com/Joystream/whitepaper/blob/master/paper.pdf">whitepaper</a> :scroll:, we are on-chain governance maximalists!<h4>
@@ -110,7 +110,7 @@ This is the set of key repos that
 | [helpdesk](https://github.com/Joystream/helpdesk)                             | Information and guides for users and contributors    | @bwhm           |
 
 <br />
-<img src="testnet-releases.svg" id="testnet-releases"/>
+<img src="img/testnet-releases.svg" id="testnet-releases"/>
 
 
 Until the Joystream mainnet goes live, a sequence of test networks will be rolled out and deployed, and this section covers this activity.
@@ -131,7 +131,7 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 | Mesopotamia     | 21.12.18          |   28.02.19    |       NA        |
 
 <br />
-<img src="pm-section.svg" id="project-management"/>
+<img src="img/pm-section.svg" id="project-management"/>
 
 ## Why is this on Github?
 
@@ -143,7 +143,7 @@ The reason this is placed in public view on Github is two fold
 
 
 <br />
-<img src="meetings.svg" id="meetings"/>
+<img src="img/meetings.svg" id="meetings"/>
 
 ### Itinerary
 
@@ -180,7 +180,7 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
 - **Record&Publish:** YES, if no participant objects.
 
 <br />
-<img src="okr-section.svg" id="okr-system"/>
+<img src="img/okr-section.svg" id="okr-system"/>
 
 Project management is primarily centred around planning and tracking OKRs. OKRs is a planning and project management system, which can be reviewed in further detail [here](https://en.wikipedia.org/wiki/OKR).
 
@@ -265,7 +265,7 @@ The template used for recording and tracking OKRs has the following form:
 | `<date2>` | (`<... assignment set scores>`)  **Total KR score**  | ... |  **Tracking comments** |
 
 <br />
-<img src="testnet-planning.svg" id="testnet-planning"/>
+<img src="img/testnet-planning.svg" id="testnet-planning"/>
 
 ### Branding
 
@@ -395,7 +395,7 @@ This whole process should take no more than **7** working days from start to fin
 
 
 <br />
-<img src="github-policy.svg" id="github-policy"/>
+<img src="img/github-policy.svg" id="github-policy"/>
 
 WIP: describe how we use github, in particular
 

@@ -1,4 +1,4 @@
-<p align="center"><img src="live-okr.svg"></p>
+<p align="center"><img src="img/live-okr.svg"></p>
 
 <div align="center">
   <h4>These are our currently :microphone: live objectives :microphone: and tracked achievement :crown: </h4>
