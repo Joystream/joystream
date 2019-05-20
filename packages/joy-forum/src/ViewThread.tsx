@@ -21,7 +21,7 @@ function ThreadTitle (props: ThreadTitleProps) {
     {thread.pinned && <i
       className='star icon'
       title='This post is pinned by moderator'
-      style={{ marginRight: '.5rem' }} 
+      style={{ marginRight: '.5rem' }}
     />}
     {thread.title}
   </span>;

@@ -35,12 +35,12 @@ type ValidationProps = {
 };
 
 type OuterProps = ValidationProps & {
-  id?: CategoryId
+  id?: CategoryId,
+  parentId?: CategoryId,
   struct?: Category
 };
 
 type FormValues = {
-  parentId?: string,
   name: string,
   text: string
 };
@@ -54,6 +54,7 @@ const LabelledText = JoyForms.LabelledText<FormValues>();
 const InnerForm = (props: FormProps) => {
   const {
     id,
+    parentId,
     struct,
     values,
     dirty,
@@ -64,7 +65,6 @@ const InnerForm = (props: FormProps) => {
   } = props;
 
   const {
-    parentId,
     name,
     text
   } = values;
@@ -89,7 +89,7 @@ const InnerForm = (props: FormProps) => {
   };
 
   const isNew = struct === undefined;
-  const resolvedParentId = !parentId && struct ? struct.parent_id : parentId;
+  const isSubcategory = parentId !== undefined;
 
   const buildTxParams = () => {
     if (!isValid) return [];
@@ -104,7 +104,7 @@ const InnerForm = (props: FormProps) => {
   const updateForumContext = () => {
     const category = new Category({
       owner: new AccountId(address),
-      parent_id: new Option(CategoryId, resolvedParentId),
+      parent_id: new Option(CategoryId, parentId),
       children_ids: new Vector(CategoryId, []),
       locked: new Bool(false), // TODO update from the form.
       name: new Text(name),
@@ -117,15 +117,15 @@ const InnerForm = (props: FormProps) => {
     }
   };
 
+  const categoryWord = isSubcategory ? `subcategory` : `category`;
+
   const form =
     <Form className='ui form JoyForm EditEntityForm'>
 
-      { /* TODO show dropdown with top categories and select parentId if defined. */}
-
-      <LabelledText name='name' placeholder={`Name your category`} {...props} />
+      <LabelledText name='name' placeholder={`Name your ${categoryWord}`} {...props} />
 
       <LabelledField name='text' {...props}>
-        <Field component='textarea' id='text' name='text' disabled={isSubmitting} rows={3} placeholder='Describe your category. You can use Markdown.' />
+        <Field component='textarea' id='text' name='text' disabled={isSubmitting} rows={3} placeholder={`Describe your ${categoryWord}. You can use Markdown.`} />
       </LabelledField>
 
       <LabelledField {...props}>
@@ -138,8 +138,8 @@ const InnerForm = (props: FormProps) => {
           disabled={!dirty || isSubmitting}
           onClick={updateForumContext}
           content={isNew
-            ? 'Create a category'
-            : 'Update a category'
+            ? `Create a ${categoryWord}`
+            : `Update a category`
           }
         />
 
@@ -148,8 +148,8 @@ const InnerForm = (props: FormProps) => {
           type='submit'
           size='large'
           label={isNew
-            ? 'Create a category'
-            : 'Update a category'
+            ? `Create a ${categoryWord}`
+            : `Update a category`
           }
           isDisabled={!dirty || isSubmitting}
           params={buildTxParams()}
@@ -172,14 +172,12 @@ const InnerForm = (props: FormProps) => {
       </LabelledField>
     </Form>;
 
-  const parentCategoryId = resolvedParentId ? new CategoryId(resolvedParentId) : undefined;
-
   const sectionTitle = isNew
-    ? 'New category'
-    : 'Edit my category';
+    ? `New ${categoryWord}`
+    : `Edit my ${categoryWord}`;
 
   return <>
-    <CategoryCrumbs categoryId={parentCategoryId} />
+    <CategoryCrumbs categoryId={parentId} />
     <Section className='EditEntityBox' title={sectionTitle}>
       {form}
     </Section>
@@ -190,16 +188,12 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
   mapPropsToValues: props => {
-    const { struct } = props;
-
-    const parentId = (struct && struct.parent_id)
-      ? struct.parent_id.toHex()
-      : undefined;
+    const { parentId, struct } = props;
 
     return {
-      parentId: parentId,
-      name: struct && struct.name || '',
-      text: struct && struct.text || ''
+      parentId: struct ? struct.parent_id : parentId,
+      name: struct ? struct.name : '',
+      text: struct ? struct.text : ''
     };
   },
 
@@ -263,11 +257,31 @@ function withLoadStruct (Component: React.ComponentType<OuterProps & LoadStructP
   };
 }
 
-export const NewCategory = EditForm;
+function NewSubcategoryForm (props: UrlHasIdProps) {
+  const { match: { params: { id } } } = props;
+  try {
+    return <EditForm parentId={new CategoryId(id)} />;
+  } catch (err) {
+    return <em>Invalid parent category id: {id}</em>;
+  }
+}
+
+// TODO implement withOnlyForumSudo
+export const withOnlyForumSudo = withOnlyMembers;
+
+export const NewCategory = withMulti(
+  EditForm,
+  withOnlyForumSudo
+);
+
+export const NewSubcategory = withMulti(
+  NewSubcategoryForm,
+  withOnlyForumSudo
+);
 
 export const EditCategory = withMulti(
   FormOrLoading,
-  withOnlyMembers, // TODO change to: withOnlySudo
+  withOnlyForumSudo,
   withIdFromUrl,
   withLoadStruct
 

@@ -9,7 +9,7 @@ import './index.css';
 
 import translate from './translate';
 import { ForumProvider } from './Context';
-import { NewCategory, EditCategory } from './EditCategory';
+import { NewCategory, NewSubcategory, EditCategory } from './EditCategory';
 import { NewThread, EditThread } from './EditThread';
 import { NewReply, EditReply } from './EditReply';
 import { CategoryList, ViewCategoryById } from './CategoryList';
@@ -51,6 +51,7 @@ class App extends React.PureComponent<Props> {
         </header>
         <Switch>
           <Route path={`${basePath}/categories/new`} component={NewCategory} />
+          <Route path={`${basePath}/categories/:id/newSubcategory`} component={NewSubcategory} />
           <Route path={`${basePath}/categories/:id/newThread`} component={NewThread} />
           <Route path={`${basePath}/categories/:id/edit`} component={EditCategory} />
           <Route path={`${basePath}/categories/:id/page/:page`} component={ViewCategoryById} />

@@ -53,7 +53,8 @@ export function MockState () {
   const newThread = (categoryId?: number) => {
     newThread1(categoryId);
     if (categoryId === 1 || categoryId === 2) {
-      for (let i = 0; i < 50; i++) {
+      // for (let i = 0; i < 35; i++) {
+      for (let i = 0; i < 3; i++) {
         newThread1(categoryId);
       }
     }

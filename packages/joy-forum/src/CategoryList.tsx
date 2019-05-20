@@ -13,7 +13,7 @@ import { UrlHasIdProps, AuthorPreview, CategoryCrumbs, Pagination, ThreadsPerPag
 import Section from '@polkadot/joy-utils/Section';
 
 function CategoryActions ({ id }: { id: CategoryId }) {
-  const className = 'ui small button ActionButton';
+  const className = 'ui button ActionButton';
 
   return <>
     <Link
@@ -33,6 +33,10 @@ function CategoryActions ({ id }: { id: CategoryId }) {
       </Link>
       <Dropdown floating button className='icon small' style={{ display: 'inline-block', width: 'auto', margin: 0 }} trigger={<></>}>
         <Dropdown.Menu>
+          <Link className='item' role='option' to={`/forum/categories/${id.toString()}/newSubcategory`}>
+            <i className='add icon' />
+            Add subcategory
+          </Link>
           <Dropdown.Item icon='file archive outline' text='Archive' onClick={() => alert('TODO Archive this category')} />
           <Dropdown.Item icon='trash alternate outline' text='Delete' onClick={() => alert('TODO Delete this category')} />
         </Dropdown.Menu>
