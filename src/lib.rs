@@ -254,7 +254,7 @@ struct ModerationAction<BlockNumber, Moment, AccountId> {
     occured_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Account forum sudo which acted.
-    forum_sudo_account_id: AccountId,
+    moderator_id: AccountId,
 
     /// Moderation rationale
     rationale: Vec<u8>
@@ -265,7 +265,7 @@ struct ModerationAction<BlockNumber, Moment, AccountId> {
 struct PostTextEdit<BlockNumber, Moment> {
 
     /// What this edit occured.
-    occured_at: BlockchainTimestamp<BlockNumber, Moment>,
+    edited_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// New text
     new_text: Vec<u8>
@@ -312,7 +312,7 @@ struct Thread<BlockNumber, Moment, AccountId> {
     title : Vec<u8>,
 
     /// Category in which this thread lives
-    category: CategoryId,
+    category_id: CategoryId,
 
     /// Position of thread in category.
     position: u64,
@@ -365,7 +365,7 @@ struct Category<BlockNumber, Moment, AccountId> {
     num_direct_moderated_threads: u64,
 
     /// Parent category, if present, otherwise this category is a root categoryl
-    parent_category: Option<CategoryId>,
+    parent_category_id: Option<CategoryId>,
 
     /// Account of the forum sudo which created category.
     forum_sudo_creator: AccountId
