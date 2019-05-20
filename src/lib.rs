@@ -352,7 +352,7 @@ struct Category<BlockNumber, Moment, AccountId> {
     /// Whether category is deleted.
     deleted: bool,
 
-    /// Whether category is archved.
+    /// Whether category is archived.
     archived: bool,
 
     /// Number direct subcategories.
