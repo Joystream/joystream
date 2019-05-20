@@ -365,7 +365,7 @@ struct Category<BlockNumber, Moment, AccountId> {
     num_direct_moderated_threads: u64,
 
     /// Parent category, if present, otherwise this category is a root categoryl
-    parent_category_id: Option<CategoryId>,
+    parent_id: Option<CategoryId>,
 
     /// Account of the forum sudo which created category.
     forum_sudo_creator: AccountId
