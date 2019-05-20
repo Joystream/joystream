@@ -1,5 +1,5 @@
 
-<img src="acropolis-cover.svg"/>
+<img src="img/acropolis-cover.svg"/>
 
 <div align="center">
   <h3>

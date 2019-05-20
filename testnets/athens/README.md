@@ -1,4 +1,4 @@
-<img src="athens-cover.svg"/>
+<img src="img/athens-cover.svg"/>
 
 <div align="center">
   <h3>
