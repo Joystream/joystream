@@ -18,6 +18,16 @@ srml-support-procedural = { package = 'srml-support-procedural', git = "https://
 system = { package = 'srml-system', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
 balances = { package = 'srml-balances', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
 
+[dependencies.timestamp]
+default_features = false
+git = 'https://github.com/joystream/substrate.git'
+package = 'srml-timestamp'
+rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+
+[dependencies.serde_derive]
+optional = true
+version = '1.0'
+
 [dev-dependencies]
 runtime-io = { package = 'sr-io', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
 primitives = { package = 'substrate-primitives', git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
@@ -32,5 +42,7 @@ std = [
 	"runtime-primitives/std",
 	"srml-support/std",
 	"system/std",
-  "balances/std",
+  	"balances/std",
+	"timestamp/std",
+	'serde_derive',
 ]
