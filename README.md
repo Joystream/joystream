@@ -212,7 +212,7 @@ _Note:_ Any OKR from the first family is
 
 The following figure attempts to summarise how these OKR families and types are related, and their relevant temporal scopes.
 
-![alt text](OKR-figure.svg "OKR Tree")
+![alt text](img/OKR-figure.svg "OKR Tree")
 
 ### Hierarchy
 
@@ -222,7 +222,7 @@ All OKRs, except the project OKR, should be derived, in terms of its objective, 
 
 In order to keep track of whether a key result, and thus the corresponding objective, will in the end be satisfied, forecasts are tracked throughout the lifetime of an OKR. Each OKR has its own periodic tracking of progress, and to compute the its forecasted value, do as indicated in the example figure below.
 
-![alt text](KR-Weighting.svg "Key Result ")
+![alt text](img/KR-Weighting.svg "Key Result ")
 
 Briefly, do a topological sort of the key result graph, where having an objective in the result assignment set counts towards the indegree. Then just do ascending weighted averaging of scores, where key results are simply averaged into objective scores. Importantly, in order to do this, one has to get personal scores on key results, and there are two modes of doing this
 
