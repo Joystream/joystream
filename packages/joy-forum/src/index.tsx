@@ -9,6 +9,7 @@ import './index.css';
 
 import translate from './translate';
 import { ForumProvider } from './Context';
+import { EditForumSudo } from './ForumSudo';
 import { NewCategory, NewSubcategory, EditCategory } from './EditCategory';
 import { NewThread, EditThread } from './EditThread';
 import { NewReply, EditReply } from './EditReply';
@@ -32,6 +33,10 @@ class App extends React.PureComponent<Props> {
         // TODO show this tab only if current user is the sudo:
         name: 'categories/new',
         text: t('New category')
+      },
+      {
+        name: 'sudo',
+        text: t('Forum sudo')
       }
     ];
   }
@@ -50,6 +55,8 @@ class App extends React.PureComponent<Props> {
           <Tabs basePath={basePath} items={tabs} />
         </header>
         <Switch>
+          <Route path={`${basePath}/sudo`} component={EditForumSudo} />
+
           <Route path={`${basePath}/categories/new`} component={NewCategory} />
           <Route path={`${basePath}/categories/:id/newSubcategory`} component={NewSubcategory} />
           <Route path={`${basePath}/categories/:id/newThread`} component={NewThread} />

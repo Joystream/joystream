@@ -5,7 +5,7 @@ import { Option, Vector } from '@polkadot/types/codec';
 import { Category, CategoryId, Thread, ThreadId, Reply } from './types';
 import { useForum } from './Context';
 
-const address = '5GSMNn8Sy8k64mGUWPDafjMZu9bQNX26GujbBQ1LeJpNbrfg';
+const address = '5Drcpx3M7FhPgexUyxoEJDR9Ltne69r3YVhCkQifBV1b5zGz';
 let categoryId = 0;
 let threadId = 0;
 let replyId = 0;

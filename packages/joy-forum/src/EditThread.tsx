@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button, Checkbox as SuiCheckbox, Message } from 'semantic-ui-react';
-import { Form, Field, withFormik, FormikProps } from 'formik';
+import { Button, Checkbox as SuiCheckbox, CheckboxProps as SuiCheckboxProps, Message } from 'semantic-ui-react';
+import { Form, Field, FieldProps, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
@@ -128,25 +128,15 @@ const InnerForm = (props: FormProps) => {
     }
   };
 
-  const Checkbox = ({
-    field: { name, value, onChange, onBlur },
-    form: { errors, touched },
-    id,
-    label,
-    className,
-    ...props
-  }) => {
+  type CheckboxProps = FieldProps<FormValues> & SuiCheckboxProps;
+
+  const Checkbox = ({ field, ...props }: CheckboxProps) => {
     return (
       <SuiCheckbox
+        {...props}
+        {...field}
         toggle
-        id={id}
-        name={name}
-        value={value}
-        checked={value}
-        onChange={onChange}
-        onBlur={onBlur}
-        label={label}
-        className={className}
+        checked={field.value}
       />
     );
   };

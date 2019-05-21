@@ -11,11 +11,11 @@ import * as JoyForms from '@polkadot/joy-utils/forms';
 import { AccountId, Text, Bool } from '@polkadot/types';
 import { Option, Vector } from '@polkadot/types/codec';
 import { CategoryId, Category } from './types';
-import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { useForum } from './Context';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
+import { withOnlyForumSudo } from './ForumSudo';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
   name: Yup.string()
@@ -265,9 +265,6 @@ function NewSubcategoryForm (props: UrlHasIdProps) {
     return <em>Invalid parent category id: {id}</em>;
   }
 }
-
-// TODO implement withOnlyForumSudo
-export const withOnlyForumSudo = withOnlyMembers;
 
 export const NewCategory = withMulti(
   EditForm,

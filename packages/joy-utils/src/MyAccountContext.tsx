@@ -11,7 +11,7 @@ function readMyAddress (): string | undefined {
 
 type MyAccountState = {
   inited: boolean,
-  address?: string
+  address?: string // TODO rename to 'myAddress'
 };
 
 type MyAccountAction = {

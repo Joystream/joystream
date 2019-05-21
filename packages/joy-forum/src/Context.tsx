@@ -9,6 +9,8 @@ type ThreadId = number;
 type ReplyId = number;
 
 type ForumState = {
+  sudo?: string,
+
   nextCategoryId: CategoryId,
   categoryById: Map<CategoryId, Category>,
   rootCategoryIds: CategoryId[],
@@ -24,6 +26,8 @@ type ForumState = {
 };
 
 const initialState: ForumState = {
+  sudo: undefined,
+
   nextCategoryId: 1,
   categoryById: new Map(),
   rootCategoryIds: [],
@@ -36,6 +40,11 @@ const initialState: ForumState = {
   nextReplyId: 1,
   replyById: new Map(),
   replyIdsByThreadId: new Map()
+};
+
+type SetForumSudo = {
+  type: 'SetForumSudo',
+  sudo?: string
 };
 
 type NewCategoryAction = {
@@ -72,6 +81,7 @@ type UpdateReplyAction = {
 };
 
 type ForumAction =
+  SetForumSudo |
   NewCategoryAction |
   UpdateCategoryAction |
   NewThreadAction |
@@ -82,6 +92,14 @@ type ForumAction =
 function reducer (state: ForumState, action: ForumAction): ForumState {
 
   switch (action.type) {
+
+    case 'SetForumSudo': {
+      const { sudo } = action;
+      return {
+        ...state,
+        sudo
+      };
+    }
 
     case 'NewCategory': {
       const { category } = action;
