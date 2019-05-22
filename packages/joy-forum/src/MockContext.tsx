@@ -5,7 +5,7 @@ import { Option, Vector } from '@polkadot/types/codec';
 import { Category, CategoryId, Thread, ThreadId, Reply } from './types';
 import { useForum } from './Context';
 
-const address = '5Drcpx3M7FhPgexUyxoEJDR9Ltne69r3YVhCkQifBV1b5zGz';
+const address = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
 let categoryId = 0;
 let threadId = 0;
 let replyId = 0;
@@ -69,6 +69,8 @@ export function MockState () {
     });
     dispatch({ type: 'NewReply', reply });
   };
+
+  dispatch({ type: 'SetForumSudo', sudo: address });
 
   for (let i = 0; i < 3; i++) {
     newCategory();
