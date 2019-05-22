@@ -2,9 +2,10 @@
 
 ## Table Of Content
 
-- [Design](#design)
-- [Dependencies](#dependencies)
 - [Name](#name)
+- [Dependencies](#dependencies)
+- [Design](#design)
+- [Future TODOs](#future-todos)
 - [State](#state)
 - [Events](#events)
 - [Dispatchable Methods](#dispatchable-methods)
@@ -99,6 +100,14 @@ The content creation protocol is as follows:
   in the `ContentDirectory`.
 1. Publish the root `ContentMetadata` (see the [Hierarchy](#hierarchy)
   section) to make content discoverable.
+
+## Future TODOs
+
+1. Dispatchable methods take a relatively long time to return. For
+  hierarchical `ContentMetadata` that may be modified piecemeal, it
+  would be good to provide variations of [add_metadata](#add_metadata)
+  and [update_metadata](#update_metadata) that accept vectors of
+  content metadata (update) objects to process in a single transaction.
 
 ## State
 
