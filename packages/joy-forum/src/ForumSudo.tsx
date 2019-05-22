@@ -210,8 +210,8 @@ export function withOnlyForumSudo<P extends {}> (Component: React.ComponentType<
       return (
         <Message warning className='JoyMainStatus'>
           <Message.Header>Only forum sudo can access this functionality.</Message.Header>
-          <p style={{ marginTop: '1rem' }}>Current forum sudo:</p>
-          <p>{sudo ? <AuthorPreview address={sudo} /> : 'UNDEFINED'}</p>
+          <div style={{ marginTop: '1rem' }}>Current forum sudo:</div>
+          <div>{sudo ? <AuthorPreview address={sudo} /> : 'UNDEFINED'}</div>
         </Message>
       );
     }
