@@ -49,7 +49,8 @@ type SetForumSudo = {
 
 type NewCategoryAction = {
   type: 'NewCategory',
-  category: Category
+  category: Category,
+  onCreated?: (newId: number) => void
 };
 
 type UpdateCategoryAction = {
@@ -60,7 +61,8 @@ type UpdateCategoryAction = {
 
 type NewThreadAction = {
   type: 'NewThread',
-  thread: Thread
+  thread: Thread,
+  onCreated?: (newId: number) => void
 };
 
 type UpdateThreadAction = {
@@ -71,7 +73,8 @@ type UpdateThreadAction = {
 
 type NewReplyAction = {
   type: 'NewReply',
-  reply: Reply
+  reply: Reply,
+  onCreated?: (newId: number) => void
 };
 
 type UpdateReplyAction = {
@@ -102,7 +105,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
     }
 
     case 'NewCategory': {
-      const { category } = action;
+      const { category, onCreated } = action;
       const { parent_id } = category;
 
       let {
@@ -126,8 +129,11 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
         rootCategoryIds.push(nextCategoryId);
       }
 
-      categoryById.set(nextCategoryId, category);
+      const newId = nextCategoryId;
+      categoryById.set(newId, category);
       nextCategoryId = nextCategoryId + 1;
+
+      if (onCreated) onCreated(newId);
 
       return {
         ...state,
@@ -151,7 +157,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
     }
 
     case 'NewThread': {
-      const { thread } = action;
+      const { thread, onCreated } = action;
       const { category_id } = thread;
 
       let {
@@ -167,8 +173,11 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       }
       threadIds.push(nextThreadId);
 
-      threadById.set(nextThreadId, thread);
+      const newId = nextThreadId;
+      threadById.set(newId, thread);
       nextThreadId = nextThreadId + 1;
+
+      if (onCreated) onCreated(newId);
 
       return {
         ...state,
@@ -191,7 +200,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
     }
 
     case 'NewReply': {
-      const { reply } = action;
+      const { reply, onCreated } = action;
       const { thread_id } = reply;
 
       let {
@@ -207,8 +216,11 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       }
       replyIds.push(nextReplyId);
 
-      replyById.set(nextReplyId, reply);
+      const newId = nextReplyId;
+      replyById.set(newId, reply);
       nextReplyId = nextReplyId + 1;
+
+      if (onCreated) onCreated(newId);
 
       return {
         ...state,
