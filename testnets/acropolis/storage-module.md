@@ -2,11 +2,19 @@
 
 ## Table Of Content
 
-- [Design](#design)
-- [Dependencies](#dependencies)
 - [Name](#name)
+- [Dependencies](#dependencies)
+- [Design](#design)
 - [Concepts](#concepts)
 - [Architecture](#architecture)
+
+## Name
+
+`Storage`
+
+## Dependencies
+
+None.
 
 ## Design
 
@@ -28,17 +36,14 @@ documentation:
    manages *what* data exists on the network.
 1. [Data Object Storage Registry](./storage-module/data-object-storage-registry.md):
    manages  *where* data exists on the network.
-1. [Content Directory](./storage-module/content-directory.md):
-   explains how to interpret data stored on the network.
+1. TODO a staking sub-module based on the current roles/actors module.
 
-## Name
+Currently, all sub-modules are separate Substrate modules. This is going to
+change with the Acropolis release, where they'll be merged into a single
+`Storage` module.
 
-`Storage`
-
-## Dependencies
-
-- `roles/actors`: An external module which manages staking for roles within the
-  network.
+Also related is the [Content Directory](./content-module.md), which provides
+information for users to discover stored content.
 
 ## Concepts
 
@@ -47,10 +52,6 @@ documentation:
   types will be used to group files that should follow the same storage
   patterns. See the [Data Object Type Registry](./storage-module/data-object-type-registry.md)
   for details.
-
-- `DataObjectTypeConstraints`: a structure imposing constraints on `DataObjects`
-  to be added for a given `DataObjectType`. Here, you will constraints such as
-  media types or file sizes, etc.
 
 - `ContentId`: a unique identifier for `DataObject` and `ContentMetadata`
   entries.
