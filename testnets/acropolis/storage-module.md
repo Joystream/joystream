@@ -72,8 +72,8 @@ information for users to discover stored content.
 - `StorageRelationship`: an entry in the [Data Object Storage Registry](./storage-module/data-object-storage-registry.md),
   describing which actor has stored a particular `DataObject`.
 
-- A storage provider is an `actor` who has staked for the Storage role via the
-  `storage/actors` module.
+- A storage provider is an `actor` who has staked for a storage tranche via
+  the **TODO staking sub-module**.
 
 #### ContentId, DataObject, ContentMetadata
 
@@ -99,7 +99,7 @@ and `ContentIds`, the latter is simply re-used.
 #### Storage Providers
 
 Storage providers, as indicated above, are actor accounts (public keys) which
-have staked for the storage role. The specs will treat these and storage nodes
+have staked for a storage tranche. The specs will treat these and storage nodes
 interchangeably, which may leave the impression that the runtime stores any
 information on where storage machines are to be contacted, such as IP addresses
 or host names. This is not true.
