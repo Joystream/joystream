@@ -188,6 +188,7 @@ Modify an existing `ContentMetadata` for the given `ContentId`. With the
 #### Errors
 
 - The origin is not an active member.
+- The origin is not the original creator of the `ContentMetadata`.
 - There exists no `ContentMetadata` for this `ContentId`.
 - For the given `ContentId`, the [Storage Module](./storage-module.md) does
   not have any currently active `StorageRelationship` entries, i.e. the
