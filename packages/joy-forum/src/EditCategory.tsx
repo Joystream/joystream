@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button, Message } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
+import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
@@ -35,6 +36,7 @@ type ValidationProps = {
 };
 
 type OuterProps = ValidationProps & {
+  history?: History,
   id?: CategoryId,
   parentId?: CategoryId,
   struct?: Category
@@ -53,6 +55,7 @@ const LabelledText = JoyForms.LabelledText<FormValues>();
 
 const InnerForm = (props: FormProps) => {
   const {
+    history,
     id,
     parentId,
     struct,
@@ -101,6 +104,12 @@ const InnerForm = (props: FormProps) => {
     }
   };
 
+  const goToView = (id: CategoryId | number) => {
+    if (history) {
+      history.push('/forum/categories/' + id.toString());
+    }
+  };
+
   const updateForumContext = () => {
     const category = new Category({
       owner: new AccountId(address),
@@ -112,8 +121,9 @@ const InnerForm = (props: FormProps) => {
     });
     if (id) {
       dispatch({ type: 'UpdateCategory', category, id: id.toNumber() });
+      goToView(id);
     } else {
-      dispatch({ type: 'NewCategory', category });
+      dispatch({ type: 'NewCategory', category, onCreated: goToView });
     }
   };
 

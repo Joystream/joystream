@@ -2,13 +2,14 @@ import React from 'react';
 import { Button, Message } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
+import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
 import { /* withCalls, */ withMulti } from '@polkadot/ui-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
-import { AccountId, Text, Bool } from '@polkadot/types';
+import { AccountId, Text } from '@polkadot/types';
 import { Option } from '@polkadot/types/codec';
 import { ReplyId, Reply, ThreadId } from './types';
 import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
@@ -30,9 +31,10 @@ type ValidationProps = {
 };
 
 type OuterProps = ValidationProps & {
+  history?: History,
   id?: ReplyId
   struct?: Reply
-  threadId?: ThreadId
+  threadId: ThreadId
 };
 
 type FormValues = {
@@ -45,6 +47,7 @@ const LabelledField = JoyForms.LabelledField<FormValues>();
 
 const InnerForm = (props: FormProps) => {
   const {
+    history,
     id,
     threadId,
     struct,
@@ -80,7 +83,6 @@ const InnerForm = (props: FormProps) => {
   };
 
   const isNew = struct === undefined;
-  const resolvedThreadId = !threadId && struct ? struct.thread_id : threadId;
 
   const buildTxParams = () => {
     if (!isValid) return [];
@@ -92,11 +94,16 @@ const InnerForm = (props: FormProps) => {
     }
   };
 
+  const goToThreadView = () => {
+    if (history) {
+      history.push('/forum/threads/' + threadId.toString());
+    }
+  };
+
   const updateForumContext = () => {
     const reply = new Reply({
       owner: struct ? struct.owner : new AccountId(address),
-      thread_id: resolvedThreadId,
-      locked: new Bool(false), // TODO update from the form.
+      thread_id: threadId,
       text: new Text(text)
     });
     if (id) {
@@ -104,6 +111,7 @@ const InnerForm = (props: FormProps) => {
     } else {
       dispatch({ type: 'NewReply', reply });
     }
+    goToThreadView();
   };
 
   const form =
@@ -162,7 +170,7 @@ const InnerForm = (props: FormProps) => {
     : 'Edit my reply';
 
   return <>
-    <CategoryCrumbs threadId={resolvedThreadId} />
+    <CategoryCrumbs threadId={threadId} />
     <Section className='EditEntityBox' title={sectionTitle}>
       {form}
     </Section>
@@ -206,7 +214,7 @@ function FormOrLoading (props: LoadStructProps) {
   const isMyStruct = address === struct.owner.toString();
 
   if (isMyStruct) {
-    return <EditForm {...props} struct={struct} />;
+    return <EditForm {...props} struct={struct} threadId={struct.thread_id} />;
   }
 
   return <Message error className='JoyMainStatus' header='You are not allowed edit this reply.' />;
@@ -216,18 +224,22 @@ function withThreadIdFromUrl (Component: React.ComponentType<OuterProps>) {
   return function (props: UrlHasIdProps) {
     const { match: { params: { id } } } = props;
     try {
-      return <Component threadId={new ThreadId(id)} />;
+      return <Component {...props} threadId={new ThreadId(id)} />;
     } catch (err) {
       return <em>Invalid thread ID: {id}</em>;
     }
   };
 }
 
-function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
+type HasReplyIdProps = {
+  id: ReplyId
+};
+
+function withIdFromUrl (Component: React.ComponentType<HasReplyIdProps>) {
   return function (props: UrlHasIdProps) {
     const { match: { params: { id } } } = props;
     try {
-      return <Component id={new ReplyId(id)} />;
+      return <Component {...props} id={new ReplyId(id)} />;
     } catch (err) {
       return <em>Invalid reply ID: {id}</em>;
     }

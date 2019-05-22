@@ -2,6 +2,7 @@ import React from 'react';
 import { Button, Checkbox as SuiCheckbox, CheckboxProps as SuiCheckboxProps, Message } from 'semantic-ui-react';
 import { Form, Field, FieldProps, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
+import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
@@ -36,6 +37,7 @@ type ValidationProps = {
 };
 
 type OuterProps = ValidationProps & {
+  history?: History,
   id?: ThreadId
   struct?: Thread
   categoryId?: CategoryId
@@ -55,6 +57,7 @@ const LabelledText = JoyForms.LabelledText<FormValues>();
 
 const InnerForm = (props: FormProps) => {
   const {
+    history,
     id,
     categoryId,
     struct,
@@ -112,6 +115,12 @@ const InnerForm = (props: FormProps) => {
     }
   };
 
+  const goToView = (id: ThreadId | number) => {
+    if (history) {
+      history.push('/forum/threads/' + id.toString());
+    }
+  };
+
   const updateForumContext = () => {
     const thread = new Thread({
       owner: struct ? struct.owner : new AccountId(address),
@@ -123,19 +132,21 @@ const InnerForm = (props: FormProps) => {
     });
     if (id) {
       dispatch({ type: 'UpdateThread', thread, id: id.toNumber() });
+      goToView(id);
     } else {
-      dispatch({ type: 'NewThread', thread });
+      dispatch({ type: 'NewThread', thread, onCreated: goToView });
     }
   };
 
   type CheckboxProps = FieldProps<FormValues> & SuiCheckboxProps;
 
-  const Checkbox = ({ field, ...props }: CheckboxProps) => {
+  const Checkbox = ({ field, form, ...props }: CheckboxProps) => {
     return (
       <SuiCheckbox
         {...props}
         {...field}
         toggle
+        value='_ignore_value_'
         checked={field.value}
       />
     );
@@ -260,7 +271,7 @@ function withCategoryIdFromUrl (Component: React.ComponentType<OuterProps>) {
   return function (props: UrlHasIdProps) {
     const { match: { params: { id } } } = props;
     try {
-      return <Component categoryId={new CategoryId(id)} />;
+      return <Component {...props} categoryId={new CategoryId(id)} />;
     } catch (err) {
       return <em>Invalid category ID: {id}</em>;
     }
@@ -271,7 +282,7 @@ function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
   return function (props: UrlHasIdProps) {
     const { match: { params: { id } } } = props;
     try {
-      return <Component id={new ThreadId(id)} />;
+      return <Component {...props} id={new ThreadId(id)} />;
     } catch (err) {
       return <em>Invalid thread ID: {id}</em>;
     }
