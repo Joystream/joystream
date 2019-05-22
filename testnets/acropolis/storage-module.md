@@ -7,6 +7,7 @@
 - [Design](#design)
 - [Concepts](#concepts)
 - [Architecture](#architecture)
+- [Traits](#traits)
 
 ## Name
 
@@ -68,7 +69,7 @@ information for users to discover stored content.
 - `Liaison`: the actor account that is responsible for accepting uploads for
   a `DataObject`, and making the content available to other storage nodes.
 
-- `DataObjectStorageRelationship`: an entry in the [Data Object Storage Registry](./storage-module/data-object-storage-registry.md),
+- `StorageRelationship`: an entry in the [Data Object Storage Registry](./storage-module/data-object-storage-registry.md),
   describing which actor has stored a particular `DataObject`.
 
 - A storage provider is an `actor` who has staked for the Storage role via the
@@ -118,7 +119,7 @@ For each `DataObject`, one storage provider acts as the `Liaison`, accepting and
 validating the actual content upload, and making the content available to other
 storage providers. The `Liaison` and any other storage provider that holds the
 content available enters this fact into the runtime as a
-`DataObjectStorageRelationship`.
+`StorageRelationship`.
 
 For purposes of content discovery, `ContentMetadata` is added to the runtime.
 Each `ContentMetadata` is identified by a `ContentId`; that is, one `ContentId`
@@ -140,3 +141,14 @@ The runtime imposes no restrictions on how `SchemaId` is to be used; however,
 the intent is to eventually add a schema registry that stores e.g.
 [well documented schemas](https://schema.org), or some Joystream specific
 derivates.
+
+## Traits
+
+Most of the storage module's sub-modules only make use of each other, so
+there is not much need for documenting traits as interfaces between them.
+However, one public trait, to be used by the related [Content Directory](./content-module.md)
+does exist:
+
+- `DataObjectHasActiveStorageRelationships`: implements a method
+  `has_active_storage_relationships(content_id)` that returns true if there
+  exist active `StorageRelationship` entries, and false otherwise.

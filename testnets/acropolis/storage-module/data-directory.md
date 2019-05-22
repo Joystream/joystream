@@ -98,7 +98,7 @@ on Joystream's first storage node.
    The event payload consists of the `ContentId` and the *Liaison*
    `AccountId`.
 
-- `DataObjectAccepted` - the chosen *Liaison* rejected the data object.
+- `DataObjectRejected` - the chosen *Liaison* rejected the data object.
 
    The event payload consists of the `ContentId` and the *Liaison*
    `AccountId`.
