@@ -8,11 +8,11 @@ class Amount extends Balance {}
 
 export class OptionText extends Option.with(Text) {
 
-  static none () {
+  static none (): OptionText {
     return new Option(Text, null);
   }
 
-  static some (text: string) {
+  static some (text: string): OptionText {
     return new Option(Text, text);
   }
 }
