@@ -34,8 +34,7 @@
   },
   "scripts": {
     "test": "mocha 'test/**/*.js'",
-    "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'",
-    "postinstall": "tsc --build tsconfig.json"
+    "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'"
   },
   "devDependencies": {
     "chai": "^4.2.0",
@@ -45,12 +44,10 @@
   },
   "dependencies": {
     "@joystream/crypto": "^0.1.0",
-    "@polkadot/api": "^0.78.1",
-    "@polkadot/keyring": "^0.90.1",
-    "@polkadot/ts": "^0.1.56",
-    "@polkadot/types": "^0.78.1",
-    "@polkadot/util-crypto": "^0.90.1",
-    "lodash": "^4.17.11",
-    "typescript": "^3.4.2"
+    "@joystream/types": "/home/jens/src/joy/apps/packages/joy-types/",
+    "@polkadot/api": "^0.76.1",
+    "@polkadot/keyring": "^0.76.1",
+    "@polkadot/util-crypto": "^0.76.1",
+    "lodash": "^4.17.11"
   }
 }
