@@ -11,12 +11,7 @@
     "esModuleInterop": true,                  /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */
     "experimentalDecorators": true,           /* Enables experimental support for ES7 decorators. */
     "declaration": true,
-    "outDir": "lib",
-    "typeRoots": [
-      "./node_modules/@polkadot/ts",
-      "./node_modules/@types",
-      "./lib"
-    ]
+    "outDir": "lib"
   },
   "include": [
     "src/*.ts"
