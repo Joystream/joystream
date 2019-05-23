@@ -30,18 +30,17 @@ const util_crypto = require('@polkadot/util-crypto');
 
 const { _ } = require('lodash');
 
-const { SubstrateApi } = require('@joystream/runtime-api/base');
-
 /*
  * Add identity management to the substrate API.
  *
  * This loosely groups: accounts, key management, and membership.
  */
-class IdentitiesApi extends SubstrateApi
+class IdentitiesApi
 {
-  static async create(account_file)
+  static async create(base, account_file)
   {
     const ret = new IdentitiesApi();
+    ret.base = base;
     await ret.init(account_file);
     return ret;
   }
@@ -50,18 +49,19 @@ class IdentitiesApi extends SubstrateApi
   {
     debug('Init');
 
-    // Super init
-    await super.init();
-
     // Creatre keyring
     this.keyring = await Keyring.create();
 
     // Load account file, if possible.
-    const fullname = path.resolve(account_file);
-    debug('Initializing key from', fullname);
-    this.key = this.keyring.addFromJson(require(fullname));
-    await this.tryUnlock(this.key);
-    debug('Successfully initialized with address', this.key.address());
+    try {
+      const fullname = path.resolve(account_file);
+      debug('Initializing key from', fullname);
+      this.key = this.keyring.addFromJson(require(fullname));
+      await this.tryUnlock(this.key);
+      debug('Successfully initialized with address', this.key.address());
+    } catch (err) {
+      debug('Error loading account file', err);
+    }
   }
 
   /*
@@ -119,7 +119,7 @@ class IdentitiesApi extends SubstrateApi
   async memberIdOf(accountId)
   {
     const decoded = this.keyring.decodeAddress(accountId);
-    return await this.api.query.membership.memberIdByAccountId(decoded);
+    return await this.base.api.query.membership.memberIdByAccountId(decoded);
   }
 
   /*
