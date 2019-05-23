@@ -1,6 +1,6 @@
 {
   "name": "@joystream/types",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "description": "Joystream types for Substrate modules",
   "main": "lib/index.js",
   "scripts": {
