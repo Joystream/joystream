@@ -20,7 +20,7 @@
 
 const debug = require('debug')('joystream:runtime:base');
 
-const { registerJoystreamTypes } = require('@joystream/runtime-api/types');
+const { registerJoystreamTypes } = require('@joystream/types');
 const { ApiPromise } = require('@polkadot/api');
 
 /*
