@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Table, Segment } from 'semantic-ui-react';
+import { Table, Segment, Button, Message, Label } from 'semantic-ui-react';
 import { History } from 'history';
 
 import { Thread, ThreadId, ReplyId } from './types';
@@ -9,6 +9,8 @@ import { useForum } from './Context';
 import { UrlHasIdProps, AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs } from './utils';
 import Section from '@polkadot/joy-utils/Section';
 import { ViewReply } from './ViewReply';
+import { Moderate } from './Moderate';
+import { MutedSpan } from '@polkadot/joy-utils/MutedText';
 
 type ThreadTitleProps = {
   thread: Thread,
@@ -40,32 +42,39 @@ export function ViewThread (props: ViewThreadProps) {
     replyIdsByThreadId
   } } = useForum();
 
+  const [showModerateForm, setShowModerateForm] = useState(false);
   const { history, id, page = 1, preview = false } = props;
   const thread = threadById.get(id.toNumber());
+
+  if (!thread) {
+    return preview ? null : <em>Thread not found</em>;
+  }
+
+  const isModerated = thread.moderation !== undefined;
   const replyIds = replyIdsByThreadId.get(id.toNumber()) || [];
 
   if (preview) {
-    return !thread
-      ? <></>
-      : (
-        <Table.Row>
-          <Table.Cell>
-            <Link to={`/forum/threads/${id.toString()}`}>
-              <ThreadTitle thread={thread} />
-            </Link>
-          </Table.Cell>
-          <Table.Cell>
-            {replyIds.length}
-          </Table.Cell>
-          <Table.Cell>
-            <AuthorPreview address={thread.owner} />
-          </Table.Cell>
-        </Table.Row>
-      );
+    const titleLink = <ThreadTitle thread={thread} />;
+    return (
+      <Table.Row>
+        <Table.Cell>
+          <Link to={`/forum/threads/${id.toString()}`}>{isModerated
+            ? <MutedSpan><Label color='orange'>Moderated</Label> {titleLink}</MutedSpan>
+            : titleLink
+          }</Link>
+        </Table.Cell>
+        <Table.Cell>
+          {replyIds.length}
+        </Table.Cell>
+        <Table.Cell>
+          <AuthorPreview address={thread.owner} />
+        </Table.Cell>
+      </Table.Row>
+    );
   }
 
-  if (!thread || !history) {
-    return <em>Thread not found</em>;
+  if (!history) {
+    return <em>Hisotry propoerty is undefined</em>;
   }
 
   const renderPageOfReplies = () => {
@@ -100,14 +109,27 @@ export function ViewThread (props: ViewThreadProps) {
     </>;
   };
 
-  return <>
-    <CategoryCrumbs categoryId={thread.category_id} />
-    <h1 className='ForumPageTitle'>
-      <ThreadTitle thread={thread} className='TitleText' />
+  const renderThreadDetailsAndReplies = () => {
+    return <>
+      <Segment>
+        <div>
+          <AuthorPreview address={thread.owner} />
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          <ReactMarkdown className='JoyMemo--full' source={thread.text} linkTarget='_blank' />
+        </div>
+      </Segment>
+      <Section title={`Replies (${replyIds.length})`}>
+        {renderPageOfReplies()}
+      </Section>
+    </>;
+  };
+
+  const renderActions = () => {
+    return <span className='ForumInlineActions'>
       <Link
         to={`/forum/threads/${id.toString()}/reply`}
         className='ui small button'
-        style={{ marginLeft: '.5rem' }}
       >
         <i className='reply icon' />
         Reply
@@ -117,23 +139,45 @@ export function ViewThread (props: ViewThreadProps) {
       <Link
         to={`/forum/threads/${id.toString()}/edit`}
         className='ui small button'
-        style={{ marginLeft: '.5rem' }}
       >
         <i className='pencil alternate icon' />
         Edit
       </Link>
+
+      {/* TODO show 'Moderate' button only if current user is a forum sudo */}
+      <Button
+        type='button'
+        size='small'
+        content={'Moderate'}
+        onClick={() => setShowModerateForm(!showModerateForm)}
+      />
+    </span>;
+  };
+
+  const renderModerationRationale = () => {
+    if (!thread.moderation) return null;
+
+    return <>
+      <Message warning className='JoyMainStatus'>
+        <Message.Header>This thread is moderated. Rationale:</Message.Header>
+        <ReactMarkdown className='JoyMemo--full' source={thread.moderation.rationale} linkTarget='_blank' />
+      </Message>
+    </>;
+  };
+
+  return <>
+    <CategoryCrumbs categoryId={thread.category_id} />
+    <h1 className='ForumPageTitle'>
+      <ThreadTitle thread={thread} className='TitleText' />
+      {!isModerated && renderActions()}
     </h1>
-    <Segment>
-      <div>
-        <AuthorPreview address={thread.owner} />
-      </div>
-      <div style={{ marginTop: '1rem' }}>
-        <ReactMarkdown className='JoyMemo--full' source={thread.text} linkTarget='_blank' />
-      </div>
-    </Segment>
-    <Section title={`Replies (${replyIds.length})`}>
-      {renderPageOfReplies()}
-    </Section>
+    {showModerateForm &&
+      <Moderate id={id} onCloseForm={() => setShowModerateForm(false)} />
+    }
+    {isModerated
+      ? renderModerationRationale()
+      : renderThreadDetailsAndReplies()
+    }
   </>;
 }
 

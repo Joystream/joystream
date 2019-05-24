@@ -11,7 +11,7 @@ import { /* withCalls, */ withMulti } from '@polkadot/ui-api/with';
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { AccountId, Text, Bool } from '@polkadot/types';
 import { Option } from '@polkadot/types/codec';
-import { ThreadId, Thread, CategoryId } from './types';
+import { ThreadId, Thread, CategoryId, ModerationAction } from './types';
 import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
@@ -128,7 +128,8 @@ const InnerForm = (props: FormProps) => {
       locked: new Bool(false), // TODO update from the form.
       pinned: new Bool(pinned),
       title: new Text(title),
-      text: new Text(text)
+      text: new Text(text),
+      moderation: new Option(ModerationAction, null)
     });
     if (id) {
       dispatch({ type: 'UpdateThread', thread, id: id.toNumber() });

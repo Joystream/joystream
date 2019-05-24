@@ -1,6 +1,48 @@
 import { getTypeRegistry, u64, AccountId, Text, Bool } from '@polkadot/types';
 import { Struct, Option, Vector } from '@polkadot/types/codec';
-import { getTextPropAsString, getBoolPropAsBoolean } from '@polkadot/joy-utils/types';
+import { getTextPropAsString, getBoolPropAsBoolean, getOptionPropOrUndefined } from '@polkadot/joy-utils/types';
+import { Codec } from '@polkadot/types/types';
+
+export class JoyStruct<T extends { [K: string]: Codec }> extends Struct {
+
+  getRequired <C extends Codec> (name: keyof T): C {
+    return super.get(name as string) as C;
+  }
+
+  cloneValues (): T {
+    const res: Partial<T> = {};
+    super.forEach((v, k) => {
+      res[k] = v;
+    });
+    return res as T;
+  }
+}
+
+export type ModerationActionType = {
+  // TODO occured_at: BlockchainTimestamp,
+  moderator_id: AccountId,
+  rationale: Text
+};
+
+export class ModerationAction extends JoyStruct<ModerationActionType> {
+  constructor (value: ModerationActionType) {
+    super({
+      // TODO occured_at: BlockchainTimestamp,
+      moderator_id: AccountId,
+      rationale: Text
+    }, value);
+  }
+
+  get moderator_id (): AccountId {
+    return this.get('moderator_id') as AccountId;
+  }
+
+  get rationale (): string {
+    return getTextPropAsString(this, 'rationale');
+  }
+}
+
+export class OptionModerationAction extends Option.with(ModerationAction) {}
 
 export class CategoryId extends u64 {}
 export class OptionCategoryId extends Option.with(CategoryId) {}
@@ -21,7 +63,7 @@ export type CategoryType = {
   text: Text
 };
 
-export class Category extends Struct {
+export class Category extends JoyStruct<CategoryType> {
   constructor (value: CategoryType) {
     super({
       owner: AccountId,
@@ -38,8 +80,7 @@ export class Category extends Struct {
   }
 
   get parent_id (): CategoryId | undefined {
-    const parentId = this.get('parent_id') as OptionCategoryId;
-    return parentId && parentId.isSome ? parentId.unwrap() as CategoryId : undefined;
+    return getOptionPropOrUndefined(this, 'parent_id');
   }
 
   get children_ids (): VecCategoryId {
@@ -65,10 +106,11 @@ export type ThreadType = {
   locked: Bool,
   pinned: Bool,
   title: Text,
-  text: Text
+  text: Text,
+  moderation: OptionModerationAction
 };
 
-export class Thread extends Struct {
+export class Thread extends JoyStruct<ThreadType> {
   constructor (value: ThreadType) {
     super({
       owner: AccountId,
@@ -76,7 +118,8 @@ export class Thread extends Struct {
       locked: Bool,
       pinned: Bool,
       title: Text,
-      text: Text
+      text: Text,
+      moderation: OptionModerationAction
     }, value);
   }
 
@@ -103,20 +146,26 @@ export class Thread extends Struct {
   get text (): string {
     return getTextPropAsString(this, 'text');
   }
+
+  get moderation (): ModerationAction | undefined {
+    return getOptionPropOrUndefined(this, 'moderation');
+  }
 }
 
 export type ReplyType = {
   owner: AccountId,
   thread_id: ThreadId,
-  text: Text
+  text: Text,
+  moderation: OptionModerationAction
 };
 
-export class Reply extends Struct {
+export class Reply extends JoyStruct<ReplyType> {
   constructor (value: ReplyType) {
     super({
       owner: AccountId,
       thread_id: ThreadId,
-      text: Text
+      text: Text,
+      moderation: OptionModerationAction
     }, value);
   }
 
@@ -131,13 +180,17 @@ export class Reply extends Struct {
   get text (): string {
     return getTextPropAsString(this, 'text');
   }
+
+  get moderation (): ModerationAction | undefined {
+    return getOptionPropOrUndefined(this, 'moderation');
+  }
 }
 
 export function registerForumTypes () {
   try {
     getTypeRegistry().register({
+      ModerationAction,
       CategoryId,
-      OptionCategoryId,
       VecCategoryId,
       Category,
       ThreadId,

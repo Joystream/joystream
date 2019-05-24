@@ -1,5 +1,6 @@
 .text.muted,
-.text.grey {
+.text.grey,
+.text.grey a {
   color: #999999;
 }
 
@@ -82,8 +83,7 @@
 }
 
 .JoySection {
-  margin-top: 2rem;
-  margin-bottom: 1rem;
+  margin: 2rem 0;
 
   .JoySection-title {
     border-bottom: 1px solid #ddd;

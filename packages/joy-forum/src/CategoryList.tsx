@@ -153,20 +153,25 @@ function CategoryThreads (props: CategoryThreadsProps) {
 
   type SortableThread = ThreadType & {
     id: number,
-    pinned: boolean
+    pinned: boolean,
+    moderated: boolean
   };
 
   const threads: SortableThread[] = threadIds
     .map(id => {
       const thread = threadById.get(id);
-      return !thread ? thread : { id, pinned: thread.pinned };
+      return !thread ? thread : {
+        id,
+        pinned: thread.pinned,
+        moderated: thread.moderation !== undefined
+      };
     })
     .filter(x => x !== undefined) as SortableThread[];
 
   const sortedThreadIds = orderBy(threads,
     // TODO Replace sort by id with sort by blocktime of the last reply.
-    [ x => x.pinned, x => x.id ],
-    [ 'desc', 'desc' ]
+    [ x => x.moderated, x => x.pinned, x => x.id ],
+    [ 'asc', 'desc', 'desc' ]
   ).map(x => x.id);
 
   const pageOfItems = sortedThreadIds

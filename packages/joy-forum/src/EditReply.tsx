@@ -11,7 +11,7 @@ import { /* withCalls, */ withMulti } from '@polkadot/ui-api/with';
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { AccountId, Text } from '@polkadot/types';
 import { Option } from '@polkadot/types/codec';
-import { ReplyId, Reply, ThreadId } from './types';
+import { ReplyId, Reply, ThreadId, ModerationAction } from './types';
 import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
@@ -104,7 +104,8 @@ const InnerForm = (props: FormProps) => {
     const reply = new Reply({
       owner: struct ? struct.owner : new AccountId(address),
       thread_id: threadId,
-      text: new Text(text)
+      text: new Text(text),
+      moderation: new Option(ModerationAction, null)
     });
     if (id) {
       dispatch({ type: 'UpdateReply', reply, id: id.toNumber() });

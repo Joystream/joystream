@@ -1,7 +1,8 @@
 .forum--App {
+  .ForumInlineActions .button,
   .ActionButton {
     white-space: 'nowrap';
-    margin-left: '.5rem';
+    margin-left: .25rem !important;
   }
 
   .ui.segment {

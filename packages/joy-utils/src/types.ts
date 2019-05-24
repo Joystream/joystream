@@ -4,6 +4,7 @@ import { registerForumTypes } from '@polkadot/joy-forum/types';
 import { registerMediaTypes } from '@polkadot/joy-media/types';
 import { registerMembershipTypes } from '@polkadot/joy-members/types';
 import { registerRolesTypes } from '@polkadot/joy-roles/types';
+import { Codec } from '@polkadot/types/types';
 
 export function getTextPropAsString (struct: Struct, fieldName: string): string {
   return (struct.get(fieldName) as Text).toString();
@@ -11,6 +12,12 @@ export function getTextPropAsString (struct: Struct, fieldName: string): string 
 
 export function getBoolPropAsBoolean (struct: Struct, fieldName: string): boolean {
   return (struct.get(fieldName) as Bool).valueOf();
+}
+
+export function getOptionPropOrUndefined <T extends Codec>
+  (struct: Struct, fieldName: string): T | undefined {
+
+  return (struct.get(fieldName) as Option<T>).unwrapOr(undefined);
 }
 
 class Amount extends Balance {}
@@ -81,8 +88,6 @@ export type TallyResult = {
   status: ProposalStatus,
   finalized_at: BlockNumber
 };
-
-
 
 export class Announcing extends BlockNumber { }
 export class Voting extends BlockNumber { }

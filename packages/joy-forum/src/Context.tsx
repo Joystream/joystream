@@ -2,7 +2,8 @@
 // NOTE: The purpose of this context is to immitate a Substrate storage for the forum until it's implemented as a substrate runtime module.
 
 import React, { useReducer, createContext, useContext } from 'react';
-import { Category, Thread, Reply } from './types';
+import { Category, Thread, Reply, ModerationAction } from './types';
+import { Option, AccountId, Text } from '@polkadot/types';
 
 type CategoryId = number;
 type ThreadId = number;
@@ -71,6 +72,13 @@ type UpdateThreadAction = {
   id: ThreadId
 };
 
+type ModerateThreadAction = {
+  type: 'ModerateThread',
+  id: ThreadId,
+  moderator: string,
+  rationale: string
+};
+
 type NewReplyAction = {
   type: 'NewReply',
   reply: Reply,
@@ -83,14 +91,23 @@ type UpdateReplyAction = {
   id: ReplyId
 };
 
+type ModerateReplyAction = {
+  type: 'ModerateReply',
+  id: ReplyId,
+  moderator: string,
+  rationale: string
+};
+
 type ForumAction =
   SetForumSudo |
   NewCategoryAction |
   UpdateCategoryAction |
   NewThreadAction |
   UpdateThreadAction |
+  ModerateThreadAction |
   NewReplyAction |
-  UpdateReplyAction;
+  UpdateReplyAction |
+  ModerateReplyAction;
 
 function reducer (state: ForumState, action: ForumAction): ForumState {
 
@@ -199,6 +216,27 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       };
     }
 
+    case 'ModerateThread': {
+      const { id, moderator, rationale } = action;
+      const { threadById } = state;
+
+      const thread = threadById.get(id) as Thread;
+      const moderation = new ModerationAction({
+        moderator_id: new AccountId(moderator),
+        rationale: new Text(rationale)
+      });
+      const threadUpd = new Thread(Object.assign(
+        thread.cloneValues(),
+        { moderation: new Option(ModerationAction, moderation) }
+      ));
+      threadById.set(id, threadUpd);
+
+      return {
+        ...state,
+        threadById
+      };
+    }
+
     case 'NewReply': {
       const { reply, onCreated } = action;
       const { thread_id } = reply;
@@ -235,6 +273,27 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       const { replyById } = state;
 
       replyById.set(id, reply);
+
+      return {
+        ...state,
+        replyById
+      };
+    }
+
+    case 'ModerateReply': {
+      const { id, moderator, rationale } = action;
+      const { replyById } = state;
+
+      const reply = replyById.get(id) as Reply;
+      const moderation = new ModerationAction({
+        moderator_id: new AccountId(moderator),
+        rationale: new Text(rationale)
+      });
+      const replyUpd = new Reply(Object.assign(
+        reply.cloneValues(),
+        { moderation: new Option(ModerationAction, moderation) }
+      ));
+      replyById.set(id, replyUpd);
 
       return {
         ...state,
