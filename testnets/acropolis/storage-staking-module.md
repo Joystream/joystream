@@ -31,7 +31,7 @@
 ### Motivation
 The storage staking module is the gatekeeper for entry and orderly exit of platform members into and out of the `Storage Provider` role.
 Entry is achieved through staking. Storage providers are rewarded periodically with new funds as incentive to maintain operational status. Storage providers can
-choose to stop offering their services by un-staking. With sudo privileges designated admins can forcefully remove storage providers from active participation, and possibly punishing by slashing staked funds.
+choose to stop offering their services by un-staking. System sudo account designated can forcefully remove storage providers from active participation, and optionally punishing by slashing staked funds.
 
 ### Tranches
 The module is used to configure the storage tranches available in the storage system, and for updating operational parameters associated with each tranche, such as minimum stake and storage capacity.
@@ -253,9 +253,10 @@ Member chooses to unstake and stop providing service.
 #### Payload
   - origin: call Origin
   - role_account
+  - punish: bool
 
 #### Description
-Forcefully remove a storage provider from service.
+Forcefully remove a storage provider from service. And optionally slashing staked balance.
 
 #### Errors
   - Bad signature
@@ -265,6 +266,7 @@ Forcefully remove a storage provider from service.
 ### Side effects
   - Update balance lock on role account to become liquid after UnbondingPeriod
   - Remove role account from `RoleAccountsByTrancheId`, `RoleAccounts`, `RoleAccountIdsByMemberId`, `StorageProviderInfoByRoleAccount`
+  - If `punish` is true slash stake amount from role account
 
 ## On Initialize
 Clear expired entry requests.
