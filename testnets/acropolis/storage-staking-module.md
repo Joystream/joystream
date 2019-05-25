@@ -30,47 +30,47 @@
 
 ### Motivation
 The storage staking module is the gatekeeper for entry and orderly exit of platform members into and out of the `Storage Provider` role.
-Entry is achieved through staking. Storage providers are rewarded periodically with new funds as incentive to maintain operational status. Storage providers can
-choose to stop offering their services by un-staking. System sudo account designated can forcefully remove storage providers from active participation, and optionally punishing by slashing staked funds.
+Entry is achieved through staking funds. Storage providers are rewarded periodically with new funds as incentive to maintain operational status. Storage providers can
+choose to stop offering their services by un-staking. System sudo account can forcefully remove storage providers from active participation, and optionally punish provider by slashing staked funds.
 
 ### Tranches
 The module is used to configure the storage tranches available in the storage system, and for updating operational parameters associated with each tranche, such as minimum stake and storage capacity.
-Tranches must always aim to maintain a minimum number of providers.
-The module will prevent providers un-staking if it would result in a tranche having less than the minimum required providers. A tranche configured with zero as the minimum providers can be considered a volatile tranche without guarantees that of service.
+Tranches must always aim to maintain a minimum number of providers (MinSlots).
+The module will prevent providers un-staking if it would result in a tranche having less than the minimum required providers. Once tranches are created they cannot be destroyed, however their operational parameters can be adjusted.
 
 ### Role Account
-Members will utilize a separate private key, which will be associated with their membership, to hold the staked funds for the role. This key, is referred to as the role key and the account holding balance for the role is referred to as the role account.
-The role key is also used to sign an extrinsic sent by the storage provider software when interacting with the chain.
-A role key may only only be associated with a single member at any given time.
-A role key can only be used to stake into a single tranche at any given time.
+Members will utilize a separate account, referred to as the role account, which will be associated with their membership, to hold the staked funds. This corresponding key, is referred to as the role key.
+The role key is also used to sign a extrinsics sent by the storage provider software when interacting with the chain.
+A role account may only only be associated with a single member at any given time.
+A role account can only be used to stake into a single tranche at any given time.
 
 ### Locking Funds
-Staking is achieved by locking funds in the role account. The amount locked will be equal to the stake amount parameter for the tranche the storage provider is participating in. The storage provider may transfer funds out of the role account only that are in excess of the locked amount.
-The funds can still be used to pay for transactions fees.
+Staking is achieved by locking funds in the role account. The amount locked will be equal to the `StakeAmount` parameter for the tranche the storage provider is participating in. The storage provider may transfer funds out of the role account only that are in excess of the locked amount.
+For convenience, the locked funds can still be used to pay for transactions fees. This means the balance may fall below the locked amount.
 
 ### Entering Role
 Entering a tranche is a multi-step process:
-  1. A member must generate a new keypair and deposit the minimum stake funds into the corresponding account, plus the request entry fee for the tranche they wish to join.
-  1. Request entry to a specific tranche using the role account, associating it with their membership account.
+  1. A member must generate a new keypair and deposit at least the StakeAmount funds into the corresponding account, plus the request entry fee for the tranche they plus some extra to cover transaction fees.
+  1. Request entry into a specific tranche using the role account, associating it with their membership account.
   1. Using their member account, approve the request.
 
-There must be an available slot in a tranche to enter. All providers stake the same amount, and there is no preference given for staking more. This means new storage providers cannot displace existing providers.
+There must be an available slot in a tranche to enter. All providers stake the same amount of funds, this means it's not possible for a new storage provider to displace an existing provider.
 
 ### Rewards
 At regular intervals defined by tranche parameters, a fixed award is distributed to distributors. The reward amount is a configurable parameter.
-The reward will go to the member account, unless the balance in the role account is below the minimum required stake, in which case it
-will go to the role account. This allows a staked storage provider to gradually add funds to their role account in order to maintain their commitment of staking a certain amount.
+The reward will go to the member account, unless the balance in the role account is below the `StakeAmount`, in which case it
+will go to the role account. This forces storage providers to gradually add funds to their role account in order to maintain their commitment of staking a certain amount.
 
 ### Leaving Role
-When a storage provider chooses to stop servicing the platform they initiate the process by un-staking. If the platform allows it this begins an un-bonding period after which the funds in the role account will be transferable.
-The provider is expected to still provide minimal service (allow other provider to sync any content from them) up until the end of the un-bonding period.
+When a storage provider decides to leave a tranche, they can initiate the process by un-staking. If the platform allows it, the provider goes immediately out of service.
+An un-bonding period follows after which the funds in the role account become transferable.
+
 
 ## Concepts
-  - `StorageProviderInfo`: Information on storage provider. Represents when the provider joined a tranche, the member identifier they are associated with, and their role account.
-  - `EntryRequest`: Represents intent to join a tranche, with a certain role account and member identity. Requests have to be approved by the member account by invoking the `stake` dispatchable method to tie the member identity to the storage provider. Requests expire after `RequestLifeTime`.
+  - `StorageProviderInfo`: Represents when the provider joined a tranche, the member identifier they are associated with, and their role account identifier.
+  - `EntryRequest`: Represents intent to join a specific tranche, with a certain role account and member identity. Requests have a lifetime `RequestLifeTime`. If not approved before expiry they are cleared from state.
 
 ## State
-Tranche identifier starts at 0.
 
 - `TrancheCount`: Number of tranches created.
 - `RoleAccountIds`: List of currently staked role accounts.
@@ -89,6 +89,8 @@ Tranche Operational Parameters
 - `FixedRewardPeriod`: Map of tranche identifier to Optional BlockNumber
 - `UnbondingPeriod`: Map of tranche identifier to Optional BlockNumber
 - `EntryRequestFee`: Map of tranche identifier to Optional Fee Amount
+
+Tranche identifier starts at 0. So if TrancheCount = 4, the identifiers of the created tranches are 0, 1, 2, and 3.
 
 ## Events
 Each event has payload as sublist
@@ -140,8 +142,8 @@ Creates a new tranche with provided parameters.
   - MinSlots > MaxSlots
 
 #### Side effects
-  - Increase `TrancheCount` by one
-  - Set tranche operational parameter values in each corresponding parameter map
+  - `TrancheCount` increased by one
+  - Tranche operational parameter values set in each corresponding parameter map
 #### Event(s)
   - TrancheCreated
     - TrancheCount - 1
@@ -172,7 +174,7 @@ Change tranche operational parameters
   - MinSlots > MaxSlots
 
 #### Side effects
-  - Update operational parameter values
+  - Operational parameter values updated
 
 #### Event(s)
   - `TrancheUpdated`
@@ -195,12 +197,14 @@ Member creating request to join a tranche
   - not enough balance in role account to pay entry request fee
   - membership identifier invalid
   - no available slots in tranche
-  - origin still unbonding
+  - origin still un-bonding
 
 #### Side effects
-  - Add new entry request to `EntryRequests`
-  - Burn entry request fee from role account balance
-#### Events
+  - Entry request fee burned from role account balance
+  - If no errors
+    - `EntryRequests` List has new request
+
+#### Event(s)
   - `EntryRequested`
 
 ### stake
@@ -219,12 +223,12 @@ Member approves a pending request to stake and join a tranche using the role acc
   - not enough balance in role account to stake
 
 #### Side effects
-  - Lock stake amount in role account
-  - add role account to `RoleAccountIds`
-  - add mapping in `StorageProviderInfoByRoleAccount`
-  - Add role account to list for tranche in `RoleAccountsByTrancheId`
-  - Add role account to member mapping in `RoleAccountIdsByMemberId`
-  - Remove request from `EntryRequests`
+  - Stake amount locked in role account
+  - Role account added to `RoleAccountIds`
+  - `StorageProviderInfoByRoleAccount` map
+  - Role account added to list for tranche in `RoleAccountsByTrancheId`
+  - Role account added to member mapping in `RoleAccountIdsByMemberId`
+  - Request removed from `EntryRequests`
 
 #### Events
   - `ProviderJoined`
@@ -236,17 +240,17 @@ Member approves a pending request to stake and join a tranche using the role acc
   - role account
 
 #### Description
-Member chooses to unstake and stop providing service.
+Member chooses to un-stake and stop providing service.
 
 #### Errors
   - Bad signature
   - origin is not a member associated with role account
   - role account is not staked provider account
-  - too few slots filled if unstaking allowed
+  - too few slots filled if un-staking allowed
 
 #### Side effects
-  - Update balance lock on role account to become liquid after UnbondingPeriod
-  - Remove role account from `RoleAccountsByTrancheId`, `RoleAccounts`, `RoleAccountIdsByMemberId`, `StorageProviderInfoByRoleAccount`
+  - Balance lock updated on role account, so funds become liquid after UnbondingPeriod
+  - Role account removed from `RoleAccountsByTrancheId`, `RoleAccounts`, `RoleAccountIdsByMemberId`, `StorageProviderInfoByRoleAccount`
 
 ### eject_provider
 
@@ -256,7 +260,7 @@ Member chooses to unstake and stop providing service.
   - punish: bool
 
 #### Description
-Forcefully remove a storage provider from service. And optionally slashing staked balance.
+Forcefully remove a storage provider from service. And optionally slash staked balance.
 
 #### Errors
   - Bad signature
@@ -264,9 +268,9 @@ Forcefully remove a storage provider from service. And optionally slashing stake
   - role_account is not an active storage provider
 
 ### Side effects
-  - Update balance lock on role account to become liquid after UnbondingPeriod
+  - Balance lock updated on role account, so funds become liquid after UnbondingPeriod
   - Remove role account from `RoleAccountsByTrancheId`, `RoleAccounts`, `RoleAccountIdsByMemberId`, `StorageProviderInfoByRoleAccount`
-  - If `punish` is true slash stake amount from role account
+  - If `punish` is true, slash stake amount from role account
 
 ## On Initialize
 Clear expired entry requests.
