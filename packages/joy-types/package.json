@@ -10,10 +10,7 @@
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@polkadot/keyring": "^0.76.1",
-    "@polkadot/types": "^0.77.0-beta.4",
-    "@polkadot/util": "^0.76.1",
-    "@polkadot/util-crypto": "^0.76.1",
+    "@polkadot/types": "^0.79.1",
     "typescript": "^3.4.5"
   },
   "directories": {
