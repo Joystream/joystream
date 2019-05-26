@@ -1,6 +1,6 @@
 {
   "name": "@joystream/types",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Joystream types for Substrate modules",
   "main": "lib/index.js",
   "scripts": {
@@ -9,7 +9,7 @@
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@polkadot/types": "^0.79.1"
+    "@polkadot/types": "=0.77.0-beta.4"
   },
   "directories": {
     "lib": "lib"
