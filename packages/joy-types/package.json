@@ -1,22 +1,22 @@
 {
   "name": "@joystream/types",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Joystream types for Substrate modules",
   "main": "lib/index.js",
   "scripts": {
-    "postinstall": "npm run build",
     "build": "tsc --build tsconfig.json"
   },
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@polkadot/types": "^0.79.1",
-    "typescript": "^3.4.5"
+    "@polkadot/types": "^0.79.1"
   },
   "directories": {
     "lib": "lib"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "typescript": "^3.4.5"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Joystream/apps.git"
