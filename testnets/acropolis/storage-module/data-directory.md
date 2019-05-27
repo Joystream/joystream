@@ -75,10 +75,26 @@ version is currently not stable, so a `v0` namespace is specified. [The most
 current API specs](https://storage-node-1.joystream.org/swagger.json) live
 on Joystream's first storage node.
 
+#### Storage Backend Metadata
+
+Note that `DataObject` contains a `storage_metadata` and corresponding
+`storage_metadata_version` object. The version determines how to interpret the
+metadata field. They are maintained by the *Liaison* (and potentially other
+storage providers) for managing storage backend specific metadata.
+
+In version `1` of this metadata, it is expected that:
+
+1. It is serialized JSON with an Object at the top level.
+1. It contains an `ipfs_content_id` field specifying a content ID to map
+   to when using [IPFS](https://ipfs.io/) as the backend.
+
 ## Future TODOs
 
 1. Purge state of all Pending `DataObjects` older than a configurable
    period.
+1. Concoct a scheme for content signing, perhaps as described in the
+   [signing/verification issue](https://github.com/Joystream/storage-node-joystream/issues/5#issuecomment-495552847)
+   on the storage node.
 
 ## State
 
