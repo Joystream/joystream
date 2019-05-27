@@ -46,6 +46,13 @@ async function main () {
 main();
 ```
 
+## Publishing Instructions
+The package is published with typescipt sources pre-compiled, automated with prepublish hook in package.json
+
+```
+npm publish
+```
+
 ## Users
 
 See [joystream-api-examples](https://github.com/Joystream/joystream-api-examples) for some additional examples on usage.
