@@ -97,18 +97,11 @@ class IdentitiesApi
   /*
    * Ask for a passphrase
    */
-  async askForPassphrase(address)
+  askForPassphrase(address)
   {
     // Query for passphrase
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    const question = (str) => new Promise(resolve => rl.question(str, resolve));
-    const passphrase = await question(`Enter passphrase for ${address}: `);
-    rl.close();
-    return passphrase;
+    const prompt = require('password-prompt');
+    return prompt(`Enter passphrase for ${address}: `);
   }
 
   /*
