@@ -44,10 +44,8 @@
   },
   "dependencies": {
     "@joystream/crypto": "^0.1.0",
-    "@joystream/types": "/home/jens/src/joy/apps/packages/joy-types/",
-    "@polkadot/api": "^0.76.1",
-    "@polkadot/keyring": "^0.76.1",
-    "@polkadot/util-crypto": "^0.76.1",
+    "@joystream/types": "=0.1.8",
+    "@polkadot/api": "^0.77.1",
     "lodash": "^4.17.11"
   }
 }
