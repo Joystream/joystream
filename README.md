@@ -30,8 +30,8 @@
       Helpdesk
     </a>
     <span> | </span>
-    <a href="/reports">
-      Reports
+    <a href="/testnets/acropolis">
+      Acropolis Testnet
     </a>
   </h3>
 </div>
