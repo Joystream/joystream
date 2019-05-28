@@ -5,7 +5,8 @@ import * as Yup from 'yup';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
-import { InputAddress, Props as InputAddressProps } from '@polkadot/ui-app/index';
+import { InputAddress } from '@polkadot/ui-app/index';
+import { Props as InputAddressProps } from '@polkadot/ui-app/InputAddress';
 import { /* withCalls, */ withMulti } from '@polkadot/ui-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';

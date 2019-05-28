@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button, Message } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
@@ -115,7 +115,8 @@ const InnerForm = (props: FormProps) => {
       owner: new AccountId(address),
       parent_id: new Option(CategoryId, parentId),
       children_ids: new Vector(CategoryId, []),
-      locked: new Bool(false), // TODO update from the form.
+      deleted: new Bool(false),
+      archived: new Bool(false),
       name: new Text(name),
       text: new Text(text)
     });

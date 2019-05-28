@@ -5,7 +5,7 @@ import { Table, Dropdown, Button, Segment } from 'semantic-ui-react';
 import { History } from 'history';
 import orderBy from 'lodash/orderBy';
 
-import { CategoryId, ThreadId, Thread, ThreadType } from './types';
+import { CategoryId, ThreadId, ThreadType } from './types';
 import { useForum } from './Context';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';

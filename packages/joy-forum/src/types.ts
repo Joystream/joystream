@@ -58,7 +58,8 @@ export type CategoryType = {
   owner: AccountId,
   parent_id: OptionCategoryId,
   children_ids: VecCategoryId,
-  locked: Bool,
+  deleted: Bool,
+  archived: Bool,
   name: Text,
   text: Text
 };
@@ -69,7 +70,8 @@ export class Category extends JoyStruct<CategoryType> {
       owner: AccountId,
       parent_id: OptionCategoryId,
       children_ids: VecCategoryId,
-      locked: Bool,
+      deleted: Bool,
+      archived: Bool,
       name: Text,
       text: Text
     }, value);
@@ -87,8 +89,12 @@ export class Category extends JoyStruct<CategoryType> {
     return this.get('children_ids') as VecCategoryId;
   }
 
-  get locked (): boolean {
-    return getBoolPropAsBoolean(this, 'locked');
+  get deleted (): boolean {
+    return getBoolPropAsBoolean(this, 'deleted');
+  }
+
+  get archived (): boolean {
+    return getBoolPropAsBoolean(this, 'archived');
   }
 
   get name (): string {
@@ -103,7 +109,6 @@ export class Category extends JoyStruct<CategoryType> {
 export type ThreadType = {
   owner: AccountId,
   category_id: CategoryId,
-  locked: Bool,
   pinned: Bool,
   title: Text,
   text: Text,
@@ -115,7 +120,6 @@ export class Thread extends JoyStruct<ThreadType> {
     super({
       owner: AccountId,
       category_id: CategoryId,
-      locked: Bool,
       pinned: Bool,
       title: Text,
       text: Text,
@@ -129,10 +133,6 @@ export class Thread extends JoyStruct<ThreadType> {
 
   get category_id (): CategoryId {
     return this.get('category_id') as CategoryId;
-  }
-
-  get locked (): boolean {
-    return getBoolPropAsBoolean(this, 'locked');
   }
 
   get pinned (): boolean {

@@ -125,7 +125,6 @@ const InnerForm = (props: FormProps) => {
     const thread = new Thread({
       owner: struct ? struct.owner : new AccountId(address),
       category_id: resolvedCategoryId,
-      locked: new Bool(false), // TODO update from the form.
       pinned: new Bool(pinned),
       title: new Text(title),
       text: new Text(text),

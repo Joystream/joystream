@@ -23,7 +23,8 @@ export function MockState () {
       owner: new AccountId(address),
       parent_id: new Option(CategoryId, parentId),
       children_ids: new Vector(CategoryId, []),
-      locked: new Bool(false),
+      deleted: new Bool(false),
+      archived: new Bool(false),
       name: new Text(name),
       text: new Text(`**Description** of ${name}`)
     });
@@ -36,7 +37,6 @@ export function MockState () {
     const thread = new Thread({
       owner: new AccountId(address),
       category_id: new CategoryId(categoryId),
-      locked: new Bool(false),
       pinned: new Bool(false),
       title: new Text(name),
       text: new Text(`**Description** of ${name}`),
