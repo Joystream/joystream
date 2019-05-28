@@ -155,6 +155,11 @@ impl data_object_storage_registry::Trait for Test {
 impl actors::Trait for Test {
     type Event = MetaEvent;
     type Members = MockMembers;
+    type OnActorRemoved = ();
+}
+
+impl actors::ActorRemoved<Test> for () {
+    fn actor_removed(_: &u64) {}
 }
 
 impl timestamp::Trait for Test {
