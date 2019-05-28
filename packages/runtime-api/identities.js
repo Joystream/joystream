@@ -30,18 +30,17 @@ const util_crypto = require('@polkadot/util-crypto');
 
 const { _ } = require('lodash');
 
-const { SubstrateApi } = require('@joystream/runtime-api/base');
-
 /*
  * Add identity management to the substrate API.
  *
  * This loosely groups: accounts, key management, and membership.
  */
-class IdentitiesApi extends SubstrateApi
+class IdentitiesApi
 {
-  static async create(account_file)
+  static async create(base, account_file)
   {
     const ret = new IdentitiesApi();
+    ret.base = base;
     await ret.init(account_file);
     return ret;
   }
@@ -50,18 +49,28 @@ class IdentitiesApi extends SubstrateApi
   {
     debug('Init');
 
-    // Super init
-    await super.init();
-
     // Creatre keyring
     this.keyring = await Keyring.create();
 
     // Load account file, if possible.
+    try {
+      this.key = await this.loadUnlock(account_file);
+    } catch (err) {
+      debug('Error loading account file', err);
+    }
+  }
+
+  /*
+   * Load a key file and unlock it if necessary.
+   */
+  async loadUnlock(account_file)
+  {
     const fullname = path.resolve(account_file);
     debug('Initializing key from', fullname);
-    this.key = this.keyring.addFromJson(require(fullname));
-    await this.tryUnlock(this.key);
-    debug('Successfully initialized with address', this.key.address());
+    const key = this.keyring.addFromJson(require(fullname));
+    await this.tryUnlock(key);
+    debug('Successfully initialized with address', key.address());
+    return key;
   }
 
   /*
@@ -82,25 +91,18 @@ class IdentitiesApi extends SubstrateApi
     }
 
     // If that didn't work, ask for a passphrase.
-    const passphrase = await this.askForPassphrase(this.key.address());
+    const passphrase = await this.askForPassphrase(key.address());
     key.decodePkcs8(passphrase);
   }
 
   /*
    * Ask for a passphrase
    */
-  async askForPassphrase(address)
+  askForPassphrase(address)
   {
     // Query for passphrase
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    const question = (str) => new Promise(resolve => rl.question(str, resolve));
-    const passphrase = await question(`Enter passphrase for ${address}: `);
-    rl.close();
-    return passphrase;
+    const prompt = require('password-prompt');
+    return prompt(`Enter passphrase for ${address}: `);
   }
 
   /*
@@ -119,7 +121,7 @@ class IdentitiesApi extends SubstrateApi
   async memberIdOf(accountId)
   {
     const decoded = this.keyring.decodeAddress(accountId);
-    return await this.api.query.membership.memberIdByAccountId(decoded);
+    return await this.base.api.query.membership.memberIdByAccountId(decoded);
   }
 
   /*
@@ -166,13 +168,17 @@ class IdentitiesApi extends SubstrateApi
    * Export a key pair and write it to a JSON file with the account ID as the
    * name.
    */
-  async writeKeyPairExport(accountId)
+  async writeKeyPairExport(accountId, prefix)
   {
     // Generate JSON
     const data = await this.exportKeyPair(accountId);
 
     // Write JSON
-    const filename = `${data.address}.json`;
+    var filename = `${data.address}.json`;
+    if (prefix) {
+      const path = require('path');
+      filename = path.resolve(prefix, filename);
+    }
     fs.writeFileSync(filename, JSON.stringify(data), {
       encoding: 'utf8',
       mode: 0o600,
