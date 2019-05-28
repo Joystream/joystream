@@ -355,6 +355,7 @@ impl actors::ActorRemoved<Runtime> for HandleActorRemoved {
 
 impl discovery::Trait for Runtime {
     type Event = Event;
+    type Roles = LookupRoles;
 }
 
 impl grandpa::Trait for Runtime {

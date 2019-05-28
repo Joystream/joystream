@@ -1,3 +1,4 @@
+use crate::traits::Roles;
 use rstd::prelude::*;
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
@@ -32,6 +33,8 @@ pub struct AccountInfo<BlockNumber> {
 
 pub trait Trait: system::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
+    type Roles: Roles<Self>;
 }
 
 decl_storage! {
@@ -72,6 +75,7 @@ decl_module! {
 
         pub fn set_ipns_id(origin, id: Vec<u8>) {
             let sender = ensure_signed(origin)?;
+            ensure!(T::Roles::is_role_account(&sender), "only role accounts can set ipns id");
             <AccountInfoByAccountId<T>>::insert(&sender, AccountInfo {
                 identity: id.clone(),
                 ttl: <system::Module<T>>::block_number() + Self::account_info_lifetime(),
