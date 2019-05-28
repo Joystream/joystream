@@ -88,6 +88,18 @@ In version `1` of this metadata, it is expected that:
 1. It contains an `ipfs_content_id` field specifying a content ID to map
    to when using [IPFS](https://ipfs.io/) as the backend.
 
+#### Liaison Selection
+
+The runtime is responsible for selecting a *Liaison* for a `DataObject`. The
+*Liaison* is selected from the currently staked pool of storage providers from
+any of the *tranches* configured in the [Staking](./staking.md) part of this
+module, for matching `DataObjectType`.
+
+The implication of this is that between creating a `DataObject` and uploading
+data to the *Liaison*, not too much time should pass. If there is a reason for
+the *Liaison* to un-stake before re-distributing the content, then the
+`DataObject` cannot be uploaded, and a new `DataObject` needs to be created.
+
 ## Future TODOs
 
 1. Purge state of all Pending `DataObjects` older than a configurable

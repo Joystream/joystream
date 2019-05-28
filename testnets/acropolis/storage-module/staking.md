@@ -127,6 +127,7 @@ Each event has payload as sublist
   - `fixed_reward_period`
   - `unbonding_period`
   - `entry_request_fee`
+  - `data_object_type_id`
 
 
 #### Description
@@ -139,6 +140,7 @@ Creates a new tranche with provided parameters.
   - MaxSlots == 0
   - MinSlots == 0 unless we want [temporary tranches](#temporary tranches)
   - MinSlots > MaxSlots
+  - No matching `DataObjectType`.
 
 #### Side effects
   - `TrancheCount` increased by one

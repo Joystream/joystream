@@ -37,7 +37,8 @@ documentation:
    manages *what* data exists on the network.
 1. [Data Object Storage Registry](./storage-module/data-object-storage-registry.md):
    manages  *where* data exists on the network.
-1. TODO a staking sub-module based on the current roles/actors module.
+1. A [Staking](./storage-module/staking.md) sub-module, for joining and leaving
+   storage *Tranches*.
 
 Currently, all sub-modules are separate Substrate modules. This is going to
 change with the Acropolis release, where they'll be merged into a single
@@ -72,8 +73,7 @@ information for users to discover stored content.
 - `StorageRelationship`: an entry in the [Data Object Storage Registry](./storage-module/data-object-storage-registry.md),
   describing which actor has stored a particular `DataObject`.
 
-- A storage provider is an `actor` who has staked for a storage tranche via
-  the **TODO staking sub-module**.
+- A storage provider is an `actor` who has staked for a storage tranche.
 
 #### ContentId, DataObject, ContentMetadata
 
