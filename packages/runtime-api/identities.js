@@ -168,13 +168,17 @@ class IdentitiesApi
    * Export a key pair and write it to a JSON file with the account ID as the
    * name.
    */
-  async writeKeyPairExport(accountId)
+  async writeKeyPairExport(accountId, prefix)
   {
     // Generate JSON
     const data = await this.exportKeyPair(accountId);
 
     // Write JSON
-    const filename = `${data.address}.json`;
+    var filename = `${data.address}.json`;
+    if (prefix) {
+      const path = require('path');
+      filename = path.resolve(prefix, filename);
+    }
     fs.writeFileSync(filename, JSON.stringify(data), {
       encoding: 'utf8',
       mode: 0o600,

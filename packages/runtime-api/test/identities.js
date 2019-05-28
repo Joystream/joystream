@@ -95,10 +95,12 @@ describe('Identities', () => {
   });
 
   it('writes key export files', async () => {
+    const prefix = temp.mkdirSync('joystream-runtime-api-test');
+
     const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json');
 
     const passphrase_stub = sinon.stub(api.identities, 'askForPassphrase').callsFake(_ => 'asdf');
-    const filename = await api.identities.writeKeyPairExport(key.address());
+    const filename = await api.identities.writeKeyPairExport(key.address(), prefix);
     passphrase_stub.restore();
 
     const fs = require('fs');
