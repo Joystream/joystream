@@ -65,11 +65,8 @@ describe('Identities', () => {
     expect(await api.identities.isMember(addr)).to.be.false;
     const member_id = await api.identities.memberIdOf(addr);
 
-    const { Null } = require('@polkadot/types/primitive');
-    const { Option } = require('@polkadot/types/codec');
-    expect(member_id).to.be.instanceof(Option);
-    expect(member_id).to.have.property('raw');
-    expect(member_id.raw).to.be.instanceof(Null);
+    const { isNullOption } = require('./common');
+    expect(isNullOption(member_id)).to.be.true;
   });
 
   it('exports keys', async () => {

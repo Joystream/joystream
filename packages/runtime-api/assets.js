@@ -6,8 +6,6 @@ const { Null, U64 } = require('@polkadot/types/primitive');
 
 const { _ } = require('lodash');
 
-const { RolesApi } = require('@joystream/runtime-api/roles');
-
 const { decodeAddress } = require('@polkadot/keyring');
 
 function parseContentId(contentId) {
@@ -18,23 +16,21 @@ function parseContentId(contentId) {
   }
 }
 /*
- * Add role related functionality to the substrate API.
+ * Add asset related functionality to the substrate API.
  */
-class AssetApi extends RolesApi
+class AssetsApi
 {
-  static async create(account_file)
+  static async create(base)
   {
-    const ret = new AssetApi();
-    await ret.init(account_file);
+    const ret = new AssetsApi();
+    ret.base = base;
+    await ret.init();
     return ret;
   }
 
   async init(account_file)
   {
     debug('Init');
-
-    // Super init
-    await super.init(account_file);
   }
 
   /*
@@ -43,7 +39,7 @@ class AssetApi extends RolesApi
   async getDataObject(contentId)
   {
     contentId = parseContentId(contentId)
-    const obj = await this.api.query.dataDirectory.dataObjectByContentId(contentId);
+    const obj = await this.base.api.query.dataDirectory.dataObjectByContentId(contentId);
     return obj;
   }
 
@@ -89,8 +85,8 @@ class AssetApi extends RolesApi
   async acceptContent(accountId, contentId)
   {
     contentId = parseContentId(contentId)
-    const tx = this.api.tx.dataDirectory.acceptContent(contentId);
-    return await this.signAndSendWithRetry(accountId, tx);
+    const tx = this.base.api.tx.dataDirectory.acceptContent(contentId);
+    return await this.base.signAndSendWithRetry(accountId, tx);
   }
 
   /*
@@ -99,8 +95,8 @@ class AssetApi extends RolesApi
   async rejectContent(accountId, contentId)
   {
     contentId = parseContentId(contentId)
-    const tx = this.api.tx.dataDirectory.rejectContent(contentId);
-    return await this.signAndSendWithRetry(accountId, tx);
+    const tx = this.base.api.tx.dataDirectory.rejectContent(contentId);
+    return await this.base.signAndSendWithRetry(accountId, tx);
   }
 
   /*
@@ -109,10 +105,10 @@ class AssetApi extends RolesApi
   async createStorageRelationship(accountId, contentId, callback)
   {
     contentId = parseContentId(contentId)
-    const tx = this.api.tx.dataObjectStorageRegistry.addRelationship(contentId);
+    const tx = this.base.api.tx.dataObjectStorageRegistry.addRelationship(contentId);
 
     const subscribed = [['dataObjectStorageRegistry', 'DataObjectStorageRelationshipAdded']];
-    return await this.signAndSendWithRetry(accountId, tx, 3, subscribed, callback);
+    return await this.base.signAndSendWithRetry(accountId, tx, 3, subscribed, callback);
   }
 
   async createAndReturnStorageRelationship(accountId, contentId)
@@ -137,12 +133,12 @@ class AssetApi extends RolesApi
   async toggleStorageRelationshipReady(accountId, dosrId, ready)
   {
     var tx = ready
-      ? this.api.tx.dataObjectStorageRegistry.setRelationshipReady(dosrId)
-      : this.api.tx.dataObjectStorageRegistry.unsetRelationshipReady(dosrId);
-    return await this.signAndSendWithRetry(accountId, tx);
+      ? this.base.api.tx.dataObjectStorageRegistry.setRelationshipReady(dosrId)
+      : this.base.api.tx.dataObjectStorageRegistry.unsetRelationshipReady(dosrId);
+    return await this.base.signAndSendWithRetry(accountId, tx);
   }
 }
 
 module.exports = {
-  AssetApi: AssetApi,
+  AssetsApi: AssetsApi,
 }
