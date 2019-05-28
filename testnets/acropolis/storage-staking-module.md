@@ -35,8 +35,8 @@ choose to stop offering their services by un-staking. System sudo account can fo
 
 ### Tranches
 The module is used to configure the storage tranches available in the storage system, and for updating operational parameters associated with each tranche, such as minimum stake and storage capacity.
-Tranches must always aim to maintain a minimum number of providers (MinSlots).
-The module will prevent providers un-staking if it would result in a tranche having less than the minimum required providers. Once tranches are created they cannot be destroyed, however their operational parameters can be adjusted.
+Tranches must always aim to maintain a minimum number of providers `MinSlots`.
+The module will prevent providers un-staking if it would result in a tranche having less than the minimum required providers. Once tranches are created they cannot be destroyed, however their operational parameters can be adjusted. If at anytime the maximum number of slots `MaxSlots` for a tranche is update to be less than the number of active providers `N` in the tranche, no new providers can be allowed to join until the number drops below `MaxSlots` again.
 
 ### Role Account
 Members will utilize a separate account, referred to as the role account, which will be associated with their membership, to hold the staked funds. This corresponding key, is referred to as the role key.
