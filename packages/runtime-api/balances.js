@@ -25,21 +25,19 @@ const { IdentitiesApi } = require('@joystream/runtime-api/identities');
 /*
  * Bundle API calls related to account balances.
  */
-class BalancesApi extends IdentitiesApi
+class BalancesApi
 {
-  static async create(account_file)
+  static async create(base)
   {
     const ret = new BalancesApi();
-    await ret.init(account_file);
+    ret.base = base;
+    await ret.init();
     return ret;
   }
 
   async init(account_file)
   {
     debug('Init');
-
-    // Super init
-    await super.init(account_file);
   }
 
   /*
@@ -61,8 +59,8 @@ class BalancesApi extends IdentitiesApi
    */
   async freeBalance(accountId)
   {
-    const decoded = this.keyring.decodeAddress(accountId, true);
-    return await this.api.query.balances.freeBalance(decoded);
+    const decoded = this.base.identities.keyring.decodeAddress(accountId, true);
+    return await this.base.api.query.balances.freeBalance(decoded);
   }
 
   /*
@@ -70,7 +68,7 @@ class BalancesApi extends IdentitiesApi
    */
   async baseTransactionFee()
   {
-    return await this.api.query.balances.transactionBaseFee();
+    return await this.base.api.query.balances.transactionBaseFee();
   }
 
   /*
@@ -82,8 +80,8 @@ class BalancesApi extends IdentitiesApi
     const decode = require('@polkadot/keyring/address/decode').default;
     const to_decoded = decode(to, true);
 
-    const tx = this.api.tx.balances.transfer(to_decoded, amount);
-    return await this.signAndSendWithRetry(from, tx);
+    const tx = this.base.api.tx.balances.transfer(to_decoded, amount);
+    return await this.base.signAndSendWithRetry(from, tx);
   }
 }
 
