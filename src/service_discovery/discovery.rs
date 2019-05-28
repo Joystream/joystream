@@ -56,6 +56,11 @@ impl<T: Trait> Module<T> {
     pub fn remove_account_info(accountid: &T::AccountId) {
         <AccountInfoByAccountId<T>>::remove(accountid);
     }
+
+    pub fn is_alive(accountid: &T::AccountId) -> bool {
+        <AccountInfoByAccountId<T>>::exists(accountid)
+            && <AccountInfoByAccountId<T>>::get(accountid).ttl > <system::Module<T>>::block_number()
+    }
 }
 
 decl_module! {
