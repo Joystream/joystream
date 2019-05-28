@@ -2,7 +2,7 @@
 import React from 'react';
 import { AccountId, Text, Bool } from '@polkadot/types';
 import { Option, Vector } from '@polkadot/types/codec';
-import { Category, CategoryId, Thread, ThreadId, Reply } from './types';
+import { Category, CategoryId, Thread, ThreadId, Reply, ModerationAction } from './types';
 import { useForum } from './Context';
 
 const address = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
@@ -39,7 +39,8 @@ export function MockState () {
       locked: new Bool(false),
       pinned: new Bool(false),
       title: new Text(name),
-      text: new Text(`**Description** of ${name}`)
+      text: new Text(`**Description** of ${name}`),
+      moderation: new Option(ModerationAction, null)
     });
     dispatch({ type: 'NewThread', thread });
 
@@ -65,7 +66,8 @@ export function MockState () {
     const reply = new Reply({
       owner: new AccountId(address),
       thread_id: new ThreadId(threadId),
-      text: new Text(`Reply ${replyId} in thread ${threadId}`)
+      text: new Text(`Reply ${replyId} in thread ${threadId}`),
+      moderation: new Option(ModerationAction, null)
     });
     dispatch({ type: 'NewReply', reply });
   };
