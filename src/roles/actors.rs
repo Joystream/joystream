@@ -214,7 +214,7 @@ impl<T: Trait> Module<T> {
 
         <ActorByAccountId<T>>::remove(&actor_account);
 
-        T::OnActorRemoved::remove_actor(&actor_account);
+        T::OnActorRemoved::actor_removed(&actor_account);
     }
 
     fn apply_unstake(
