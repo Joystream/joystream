@@ -25,6 +25,7 @@ const { ApiPromise } = require('@polkadot/api');
 
 const { IdentitiesApi } = require('@joystream/runtime-api/identities');
 const { BalancesApi } = require('@joystream/runtime-api/balances');
+const { RolesApi } = require('@joystream/runtime-api/roles');
 
 /*
  * Initialize runtime (substrate) API and keyring.
@@ -54,6 +55,7 @@ class RuntimeApi
     // Ok, create individual APIs
     this.identities = await IdentitiesApi.create(this, options.account_file);
     this.balances = await BalancesApi.create(this);
+    this.roles = await RolesApi.create(this);
   }
 
   disconnect()
