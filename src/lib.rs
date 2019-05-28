@@ -25,6 +25,9 @@ mod traits;
 use membership::members;
 mod migration;
 mod roles;
+mod service_discovery;
+use service_discovery::discovery;
+
 use client::{
     block_builder::api::{self as block_builder_api, CheckInherentsResult, InherentData},
     impl_runtime_apis, runtime_api as client_api,
@@ -301,6 +304,10 @@ impl actors::Trait for Runtime {
     type Members = Members;
 }
 
+impl discovery::Trait for Runtime {
+    type Event = Event;
+}
+
 impl grandpa::Trait for Runtime {
     type SessionKey = AuthorityId;
     type Log = Log;
@@ -339,6 +346,7 @@ construct_runtime!(
 		DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
 		DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
 		DownloadSessions: downloads::{Module, Call, Storage, Event<T>, Config<T>},
+        Discovery: discovery::{Module, Call, Storage, Event<T>},
 	}
 );
 
