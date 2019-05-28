@@ -54,7 +54,7 @@ class IdentitiesApi
 
     // Load account file, if possible.
     try {
-      await this.loadUnlock(account_file);
+      this.key = await this.loadUnlock(account_file);
     } catch (err) {
       debug('Error loading account file', err);
     }
@@ -67,9 +67,10 @@ class IdentitiesApi
   {
     const fullname = path.resolve(account_file);
     debug('Initializing key from', fullname);
-    this.key = this.keyring.addFromJson(require(fullname));
-    await this.tryUnlock(this.key);
-    debug('Successfully initialized with address', this.key.address());
+    const key = this.keyring.addFromJson(require(fullname));
+    await this.tryUnlock(key);
+    debug('Successfully initialized with address', key.address());
+    return key;
   }
 
   /*
@@ -90,7 +91,7 @@ class IdentitiesApi
     }
 
     // If that didn't work, ask for a passphrase.
-    const passphrase = await this.askForPassphrase(this.key.address());
+    const passphrase = await this.askForPassphrase(key.address());
     key.decodePkcs8(passphrase);
   }
 

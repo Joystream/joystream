@@ -21,6 +21,7 @@
 const mocha = require('mocha');
 const expect = require('chai').expect;
 const sinon = require('sinon');
+const temp = require('temp').track();
 
 const { RuntimeApi } = require('@joystream/runtime-api');
 
@@ -37,7 +38,7 @@ describe('Identities', () => {
     expect(key.getMeta().name).to.include('bar');
   });
 
-  it('Can import keys', async () => {
+  it('imports keys', async () => {
     // Unlocked keys can be imported without asking for a passphrase
     await api.identities.loadUnlock('test/data/edwards_unlocked.json');
 
@@ -53,5 +54,55 @@ describe('Identities', () => {
       await api.identities.loadUnlock('test/data/edwards.json');
     }).to.throw;
     passphrase_stub_bad.restore();
+  });
+
+  it('knows about membership', async () => {
+    const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json');
+    const addr = key.address();
+
+    // Without seeding the runtime with data, we can only verify that the API
+    // reacts well in the absence of membership
+    expect(await api.identities.isMember(addr)).to.be.false;
+    const member_id = await api.identities.memberIdOf(addr);
+
+    const { Null } = require('@polkadot/types/primitive');
+    const { Option } = require('@polkadot/types/codec');
+    expect(member_id).to.be.instanceof(Option);
+    expect(member_id).to.have.property('raw');
+    expect(member_id.raw).to.be.instanceof(Null);
+  });
+
+  it('exports keys', async () => {
+    const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json');
+
+    const passphrase_stub = sinon.stub(api.identities, 'askForPassphrase').callsFake(_ => 'asdf');
+    const exported = await api.identities.exportKeyPair(key.address());
+    passphrase_stub.restore();
+
+    expect(exported).to.have.property('address');
+    expect(exported.address).to.equal(key.address());
+
+    expect(exported).to.have.property('encoding');
+
+    expect(exported.encoding).to.have.property('version', '2');
+
+    expect(exported.encoding).to.have.property('content');
+    expect(exported.encoding.content).to.include('pkcs8');
+    expect(exported.encoding.content).to.include('ed25519');
+
+    expect(exported.encoding).to.have.property('type');
+    expect(exported.encoding.type).to.include('salsa20');
+  });
+
+  it('writes key export files', async () => {
+    const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json');
+
+    const passphrase_stub = sinon.stub(api.identities, 'askForPassphrase').callsFake(_ => 'asdf');
+    const filename = await api.identities.writeKeyPairExport(key.address());
+    passphrase_stub.restore();
+
+    const fs = require('fs');
+    const stat = fs.statSync(filename);
+    expect(stat.isFile()).to.be.true;
   });
 });
