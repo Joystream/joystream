@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Segment } from 'semantic-ui-react';
+import { Segment, Button, Message } from 'semantic-ui-react';
 
-import { ThreadId, ReplyId } from './types';
+import { ReplyId } from './types';
 import { useForum } from './Context';
 import { UrlHasIdProps, AuthorPreview } from './utils';
+import { Moderate } from './Moderate';
 
 type ViewReplyProps = {
-  id: ThreadId
+  id: ReplyId
 };
 
 export function ViewReply (props: ViewReplyProps) {
@@ -16,6 +17,7 @@ export function ViewReply (props: ViewReplyProps) {
     replyById
   } } = useForum();
 
+  const [showModerateForm, setShowModerateForm] = useState(false);
   const { id } = props;
   const reply = replyById.get(id.toNumber());
 
@@ -23,23 +25,59 @@ export function ViewReply (props: ViewReplyProps) {
     return <em>Reply not found</em>;
   }
 
+  const isModerated = reply.moderation !== undefined;
+
+  const renderReplyDetails = () => {
+    return <ReactMarkdown className='JoyMemo--full' source={reply.text} linkTarget='_blank' />;
+  };
+
+  const renderModerationRationale = () => {
+    if (!reply.moderation) return null;
+
+    return <>
+      <Message warning className='JoyMainStatus'>
+        <Message.Header>This reply is moderated. Rationale:</Message.Header>
+        <ReactMarkdown className='JoyMemo--full' source={reply.moderation.rationale} linkTarget='_blank' />
+      </Message>
+    </>;
+  };
+
+  const renderActions = () => {
+    return <>
+      {/* TODO show 'Edit' button only if I am owner */}
+      <Link
+        to={`/forum/replies/${id.toString()}/edit`}
+        className='ui small button'
+        style={{ marginLeft: '.5rem' }}
+      >
+        <i className='pencil alternate icon' />
+        Edit
+      </Link>
+
+      {/* TODO show 'Moderate' button only if current user is a forum sudo */}
+      <Button
+        type='button'
+        size='small'
+        content={'Moderate'}
+        onClick={() => setShowModerateForm(!showModerateForm)}
+      />
+    </>;
+  };
+
   return (
     <Segment>
       <div>
         <AuthorPreview address={reply.owner} />
-
-        {/* TODO show 'Edit' button only if I am owner */}
-        <Link
-          to={`/forum/replies/${id.toString()}/edit`}
-          className='ui small button'
-          style={{ marginLeft: '.5rem' }}
-        >
-          <i className='pencil alternate icon' />
-          Edit
-        </Link>
+        {!isModerated && renderActions()}
       </div>
       <div style={{ marginTop: '1rem' }}>
-        <ReactMarkdown className='JoyMemo--full' source={reply.text} linkTarget='_blank' />
+        {showModerateForm &&
+          <Moderate id={id} onCloseForm={() => setShowModerateForm(false)} />
+        }
+        {isModerated
+          ? renderModerationRationale()
+          : renderReplyDetails()
+        }
       </div>
     </Segment>
   );

@@ -43,11 +43,11 @@ export function MockState () {
     });
     dispatch({ type: 'NewThread', thread });
 
-    // if (threadId === 1) {
-    //   for (let i = 0; i < 50; i++) {
-    //     newReply(threadId);
-    //   }
-    // }
+    if (threadId === 1) {
+      for (let i = 0; i < 10; i++) {
+        newReply(threadId);
+      }
+    }
   };
 
   const newThread = (categoryId?: number) => {

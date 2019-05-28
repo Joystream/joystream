@@ -9,10 +9,10 @@ import { /* withCalls, */ withMulti } from '@polkadot/ui-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { ReplyId, ThreadId } from './types';
-import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { useForum } from './Context';
+import { withOnlyForumSudo } from './ForumSudo';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
   rationale: Yup.string()
@@ -177,5 +177,5 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
 export const Moderate = withMulti<OuterProps>(
   EditForm,
-  withOnlyMembers, // TODO replace with withOnlyForumSudo
+  withOnlyForumSudo
 );
