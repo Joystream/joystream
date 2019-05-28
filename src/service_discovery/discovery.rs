@@ -2,6 +2,7 @@ use crate::traits::Roles;
 use rstd::prelude::*;
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
+use runtime_primitives::traits::{As};
 
 /*
   Although there is support for ed25519 keys as the IPNS identity key and we could potentially
@@ -22,6 +23,8 @@ pub type IPNSIdentity = Vec<u8>;
 /// HTTP Url string to a discovery service endpoint
 pub type Url = Vec<u8>;
 
+const DEFAULT_LIFETIME: u64 = 10000;
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct AccountInfo<BlockNumber> {
@@ -40,11 +43,11 @@ pub trait Trait: system::Trait {
 decl_storage! {
     trait Store for Module<T: Trait> as Discovery {
         /// Bootstrap endpoints maintained by root
-        BootstrapEndpoints get(bootstrap_endpoints): Vec<Url>;
+        pub BootstrapEndpoints get(bootstrap_endpoints): Vec<Url>;
         /// Mapping of service providers' AccountIds to their AccountInfo
-        AccountInfoByAccountId get(peer_info_by_account_id): map T::AccountId => AccountInfo<T::BlockNumber>;
+        pub AccountInfoByAccountId get(account_info_by_account_id): map T::AccountId => AccountInfo<T::BlockNumber>;
         /// Lifetime of an AccountInfo record in AccountInfoByAccountId map
-        AccountInfoLifetime get(account_info_lifetime): T::BlockNumber;
+        pub AccountInfoLifetime get(account_info_lifetime): T::BlockNumber = T::BlockNumber::sa(DEFAULT_LIFETIME);
     }
 }
 
@@ -76,6 +79,7 @@ decl_module! {
         pub fn set_ipns_id(origin, id: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             ensure!(T::Roles::is_role_account(&sender), "only role accounts can set ipns id");
+            // TODO: ensure id is a valid base58 encoded IPNS identity
             <AccountInfoByAccountId<T>>::insert(&sender, AccountInfo {
                 identity: id.clone(),
                 ttl: <system::Module<T>>::block_number() + Self::account_info_lifetime(),
