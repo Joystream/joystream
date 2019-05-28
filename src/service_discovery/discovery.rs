@@ -54,7 +54,10 @@ decl_event! {
 
 impl<T: Trait> Module<T> {
     pub fn remove_account_info(accountid: &T::AccountId) {
-        <AccountInfoByAccountId<T>>::remove(accountid);
+        if <AccountInfoByAccountId<T>>::exists(accountid) {
+            <AccountInfoByAccountId<T>>::remove(accountid);
+            Self::deposit_event(RawEvent::AccountInfoRemoved(accountid.clone()));
+        }
     }
 
     pub fn is_alive(accountid: &T::AccountId) -> bool {
