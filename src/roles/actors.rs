@@ -2,7 +2,9 @@ use crate::currency::{BalanceOf, GovernanceCurrency};
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{As, Bounded, MaybeDebug, Zero};
-use srml_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReasons, WithdrawReason};
+use srml_support::traits::{
+    Currency, LockIdentifier, LockableCurrency, WithdrawReason, WithdrawReasons,
+};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
 
@@ -81,10 +83,16 @@ pub struct Actor<T: Trait> {
     pub joined_at: T::BlockNumber,
 }
 
+pub trait ActorRemoved<T: Trait> {
+    fn actor_removed(actor: &T::AccountId);
+}
+
 pub trait Trait: system::Trait + GovernanceCurrency + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type Members: Members<Self>;
+
+    type OnActorRemoved: ActorRemoved<Self>;
 }
 
 pub type MemberId<T> = <<T as Trait>::Members as Members<T>>::Id;
@@ -205,6 +213,8 @@ impl<T: Trait> Module<T> {
         <ActorAccountIds<T>>::put(accounts);
 
         <ActorByAccountId<T>>::remove(&actor_account);
+
+        T::OnActorRemoved::remove_actor(&actor_account);
     }
 
     fn apply_unstake(

@@ -302,6 +302,14 @@ impl migration::Trait for Runtime {
 impl actors::Trait for Runtime {
     type Event = Event;
     type Members = Members;
+    type OnActorRemoved = HandleActorRemoved;
+}
+
+pub struct HandleActorRemoved {}
+impl actors::ActorRemoved<Runtime> for HandleActorRemoved {
+    fn actor_removed(actor: &<Runtime as system::Trait>::AccountId) {
+        Discovery::remove_account_info(actor);
+    }
 }
 
 impl discovery::Trait for Runtime {

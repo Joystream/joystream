@@ -1,9 +1,6 @@
+use rstd::prelude::*;
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
-use rstd::prelude::*;
-
-// Add hook to be called from actors module when a provider leaves to remove
-// record assocaited with their account
 
 /*
   Although there is support for ed25519 keys as the IPNS identity key and we could potentially
@@ -55,6 +52,12 @@ decl_event! {
     }
 }
 
+impl<T: Trait> Module<T> {
+    pub fn remove_account_info(accountid: &T::AccountId) {
+        <AccountInfoByAccountId<T>>::remove(accountid);
+    }
+}
+
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
@@ -69,7 +72,7 @@ decl_module! {
 
         pub fn unset_ipns_id(origin) {
             let sender = ensure_signed(origin)?;
-            <AccountInfoByAccountId<T>>::remove(&sender);
+            Self::remove_account_info(&sender);
         }
 
         // priviledged methods
