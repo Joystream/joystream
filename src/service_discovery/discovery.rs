@@ -3,7 +3,7 @@ use rstd::prelude::*;
 use runtime_primitives::traits::As;
 
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
-use system::{self, ensure_signed};
+use system::{self, ensure_root, ensure_signed};
 /*
   Although there is support for ed25519 keys as the IPNS identity key and we could potentially
   reuse the same key for the role account and ipns (and make this discovery module obselete)
@@ -69,7 +69,8 @@ impl<T: Trait> Module<T> {
 
     pub fn is_account_info_expired(accountid: &T::AccountId) -> bool {
         !<AccountInfoByAccountId<T>>::exists(accountid)
-            || <system::Module<T>>::block_number() > <AccountInfoByAccountId<T>>::get(accountid).expires_at
+            || <system::Module<T>>::block_number()
+                > <AccountInfoByAccountId<T>>::get(accountid).expires_at
     }
 }
 
@@ -107,12 +108,17 @@ decl_module! {
 
         // privileged methods
 
-        pub fn set_default_lifetime(lifetime: T::BlockNumber) {
+        pub fn set_default_lifetime(origin, lifetime: T::BlockNumber) {
+            // although not strictly required to have an origin parameter and ensure_root
+            // decl_module! macro takes care of it.. its required for unit tests to work correctly
+            // otherwise it complains the method
+            ensure_root(origin)?;
             ensure!(lifetime >= T::BlockNumber::sa(MINIMUM_LIFETIME), "discovery: default lifetime must be gte minimum lifetime");
             <DefaultLifetime<T>>::put(lifetime);
         }
 
-        pub fn set_bootstrap_endpoints(endpoints: Vec<Url>) {
+        pub fn set_bootstrap_endpoints(origin, endpoints: Vec<Url>) {
+            ensure_root(origin)?;
             <BootstrapEndpoints<T>>::put(endpoints);
         }
     }

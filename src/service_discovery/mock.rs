@@ -42,7 +42,6 @@ impl system::Trait for Test {
     type Lookup = IdentityLookup<u64>;
 }
 
-
 pub fn alice_account() -> u64 {
     1
 }

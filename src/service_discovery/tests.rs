@@ -83,7 +83,7 @@ fn is_account_info_expired() {
             &alice,
             discovery::AccountInfo {
                 expires_at,
-                identity: id.clone()
+                identity: id.clone(),
             },
         );
 
@@ -95,5 +95,42 @@ fn is_account_info_expired() {
     });
 }
 
-//set_default_lifetime
-//set_bootstrap_endpoints
+#[test]
+fn set_default_lifetime() {
+    with_externalities(&mut initial_test_ext(), || {
+        let lifetime = discovery::MINIMUM_LIFETIME + 2000;
+        // priviliged method should fail if not from root origin
+        assert!(
+            Discovery::set_default_lifetime(Origin::signed(1), lifetime).is_err(),
+            ""
+        );
+        assert!(
+            Discovery::set_default_lifetime(Origin::ROOT, lifetime).is_ok(),
+            ""
+        );
+        assert_eq!(Discovery::default_lifetime(), lifetime, "");
+
+        // cannot set default lifetime to less than minimum
+        assert!(
+            Discovery::set_default_lifetime(Origin::ROOT, discovery::MINIMUM_LIFETIME - 1).is_err(),
+            ""
+        );
+    });
+}
+
+#[test]
+fn set_bootstrap_endpoints() {
+    with_externalities(&mut initial_test_ext(), || {
+        let endpoints = vec!["endpoint1".as_bytes().to_vec()];
+        // priviliged method should fail if not from root origin
+        assert!(
+            Discovery::set_bootstrap_endpoints(Origin::signed(1), endpoints.clone()).is_err(),
+            ""
+        );
+        assert!(
+            Discovery::set_bootstrap_endpoints(Origin::ROOT, endpoints.clone()).is_ok(),
+            ""
+        );
+        assert_eq!(Discovery::bootstrap_endpoints(), endpoints, "");
+    });
+}
