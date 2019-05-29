@@ -13,18 +13,22 @@ fn set_ipns_id() {
 
         let alice = alice_account();
         let identity = "alice".as_bytes().to_vec();
-        assert!(Discovery::set_ipns_id(Origin::signed(alice), identity.clone()).is_ok());
+        let ttl = discovery::MINIMUM_LIFETIME + 100;
+        assert!(Discovery::set_ipns_id(Origin::signed(alice), identity.clone(), Some(ttl)).is_ok());
 
         assert!(<discovery::AccountInfoByAccountId<Test>>::exists(&alice));
         let account_info = Discovery::account_info_by_account_id(&alice);
-        assert_eq!(account_info, discovery::AccountInfo {
-            identity: identity.clone(),
-            ttl: current_block_number + Discovery::account_info_lifetime()
-        });
+        assert_eq!(
+            account_info,
+            discovery::AccountInfo {
+                identity: identity.clone(),
+                ttl: current_block_number + ttl
+            }
+        );
         // Test for event
 
         // Non role account trying to set account into should fail
-        assert!(Discovery::set_ipns_id(Origin::signed(100), identity.clone()).is_err());
+        assert!(Discovery::set_ipns_id(Origin::signed(100), identity.clone(), None).is_err());
     });
 }
 
