@@ -23,7 +23,7 @@ fn set_ipns_id() {
             account_info,
             discovery::AccountInfo {
                 identity: identity.clone(),
-                ttl: current_block_number + ttl
+                expires_at: current_block_number + ttl
             }
         );
 
@@ -53,7 +53,7 @@ fn unset_ipns_id() {
         <discovery::AccountInfoByAccountId<Test>>::insert(
             &alice,
             discovery::AccountInfo {
-                ttl: 1000,
+                expires_at: 1000,
                 identity: "alice".as_bytes().to_vec(),
             },
         );

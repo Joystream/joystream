@@ -32,7 +32,7 @@ pub struct AccountInfo<BlockNumber> {
     /// IPNS Identity
     pub identity: IPNSIdentity,
     /// Block at which information expires
-    pub ttl: BlockNumber,
+    pub expires_at: BlockNumber,
 }
 
 pub trait Trait: system::Trait {
@@ -69,7 +69,8 @@ impl<T: Trait> Module<T> {
 
     pub fn is_alive(accountid: &T::AccountId) -> bool {
         <AccountInfoByAccountId<T>>::exists(accountid)
-            && <AccountInfoByAccountId<T>>::get(accountid).ttl > <system::Module<T>>::block_number()
+            && <AccountInfoByAccountId<T>>::get(accountid).expires_at
+                > <system::Module<T>>::block_number()
     }
 }
 
@@ -94,7 +95,7 @@ decl_module! {
 
             <AccountInfoByAccountId<T>>::insert(&sender, AccountInfo {
                 identity: id.clone(),
-                ttl: <system::Module<T>>::block_number() + ttl,
+                expires_at: <system::Module<T>>::block_number() + ttl,
             });
 
             Self::deposit_event(RawEvent::AccountInfoUpdated(sender.clone(), id.clone()));
@@ -108,7 +109,7 @@ decl_module! {
         // privileged methods
 
         pub fn set_default_lifetime(lifetime: T::BlockNumber) {
-            ensure!(lifetime >= T::BlockNumber::sa(MINIMUM_LIFETIME), "discovery: default ttl must be gte minimum ttl");
+            ensure!(lifetime >= T::BlockNumber::sa(MINIMUM_LIFETIME), "discovery: default lifetime must be gte minimum lifetime");
             <DefaultLifetime<T>>::put(lifetime);
         }
 
