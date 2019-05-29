@@ -79,5 +79,4 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
 }
 
 pub type System = system::Module<Test>;
-pub type Actors = actors::Module<Test>;
 pub type Discovery = discovery::Module<Test>;

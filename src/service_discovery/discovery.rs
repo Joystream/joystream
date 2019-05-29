@@ -48,7 +48,7 @@ decl_storage! {
         /// Mapping of service providers' AccountIds to their AccountInfo
         pub AccountInfoByAccountId get(account_info_by_account_id): map T::AccountId => AccountInfo<T::BlockNumber>;
         /// Lifetime of an AccountInfo record in AccountInfoByAccountId map
-        pub DefaultLifetime get(default_lifetime): T::BlockNumber = T::BlockNumber::sa(DEFAULT_LIFETIME);
+        pub DefaultLifetime get(default_lifetime) config(): T::BlockNumber = T::BlockNumber::sa(DEFAULT_LIFETIME);
     }
 }
 
