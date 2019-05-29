@@ -316,7 +316,7 @@ impl traits::Roles<Runtime> for LookupRoles {
 
         let live_ids: Vec<<Runtime as system::Trait>::AccountId> = ids
             .into_iter()
-            .filter(|id| <discovery::Module<Runtime>>::is_alive(id))
+            .filter(|id| !<discovery::Module<Runtime>>::is_account_info_expired(id))
             .collect();
 
         if live_ids.len() == 0 {

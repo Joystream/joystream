@@ -67,10 +67,9 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub fn is_alive(accountid: &T::AccountId) -> bool {
-        <AccountInfoByAccountId<T>>::exists(accountid)
-            && <AccountInfoByAccountId<T>>::get(accountid).expires_at
-                > <system::Module<T>>::block_number()
+    pub fn is_account_info_expired(accountid: &T::AccountId) -> bool {
+        !<AccountInfoByAccountId<T>>::exists(accountid)
+            || <system::Module<T>>::block_number() > <AccountInfoByAccountId<T>>::get(accountid).expires_at
     }
 }
 

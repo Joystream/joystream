@@ -73,5 +73,27 @@ fn unset_ipns_id() {
     });
 }
 
-//remove_account_info
-//is_alive
+#[test]
+fn is_account_info_expired() {
+    with_externalities(&mut initial_test_ext(), || {
+        let alice = alice_account();
+        let expires_at = 1000;
+        let id = "alice".as_bytes().to_vec();
+        <discovery::AccountInfoByAccountId<Test>>::insert(
+            &alice,
+            discovery::AccountInfo {
+                expires_at,
+                identity: id.clone()
+            },
+        );
+
+        System::set_block_number(expires_at - 10);
+        assert!(!Discovery::is_account_info_expired(&alice));
+
+        System::set_block_number(expires_at + 10);
+        assert!(Discovery::is_account_info_expired(&alice));
+    });
+}
+
+//set_default_lifetime
+//set_bootstrap_endpoints
