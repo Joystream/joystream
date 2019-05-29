@@ -28,14 +28,31 @@ fn set_ipns_id() {
         // Test for event
 
         // Non role account trying to set account into should fail
-        assert!(Discovery::set_ipns_id(Origin::signed(100), identity.clone(), None).is_err());
+        let bob = bob_account();
+        assert!(Discovery::set_ipns_id(Origin::signed(bob), identity.clone(), None).is_err());
+        assert!(!<discovery::AccountInfoByAccountId<Test>>::exists(&bob));
     });
 }
 
 #[test]
 fn unset_ipns_id() {
     with_externalities(&mut initial_test_ext(), || {
-        assert!(false);
+        let alice = alice_account();
+
+        <discovery::AccountInfoByAccountId<Test>>::insert(
+            &alice,
+            discovery::AccountInfo {
+                ttl: 1000,
+                identity: "alice".as_bytes().to_vec(),
+            },
+        );
+
+        assert!(<discovery::AccountInfoByAccountId<Test>>::exists(&alice));
+
+        assert!(Discovery::unset_ipns_id(Origin::signed(alice)).is_ok());
+        assert!(!<discovery::AccountInfoByAccountId<Test>>::exists(&alice));
+
+        // Test for Event
     });
 }
 
