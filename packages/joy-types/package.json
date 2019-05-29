@@ -4,6 +4,7 @@
   "description": "Joystream types for Substrate modules",
   "main": "lib/index.js",
   "scripts": {
+    "prepublish": "npm run build",
     "build": "tsc --build tsconfig.json"
   },
   "author": "Joystream contributors",
@@ -16,6 +17,13 @@
   },
   "devDependencies": {
     "typescript": "^3.4.5"
+  },
+  "engines": {
+    "node": ">=10.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "repository": {
     "type": "git",
