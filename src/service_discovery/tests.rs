@@ -4,6 +4,7 @@ use super::mock::*;
 
 use runtime_io::with_externalities;
 use srml_support::*;
+use system::{self, EventRecord, Phase};
 
 #[test]
 fn set_ipns_id() {
@@ -25,7 +26,17 @@ fn set_ipns_id() {
                 ttl: current_block_number + ttl
             }
         );
-        // Test for event
+
+        assert_eq!(
+            *System::events().last().unwrap(),
+            EventRecord {
+                phase: Phase::ApplyExtrinsic(0),
+                event: MetaEvent::discovery(discovery::RawEvent::AccountInfoUpdated(
+                    alice,
+                    identity.clone()
+                )),
+            }
+        );
 
         // Non role account trying to set account into should fail
         let bob = bob_account();
@@ -52,7 +63,13 @@ fn unset_ipns_id() {
         assert!(Discovery::unset_ipns_id(Origin::signed(alice)).is_ok());
         assert!(!<discovery::AccountInfoByAccountId<Test>>::exists(&alice));
 
-        // Test for Event
+        assert_eq!(
+            *System::events().last().unwrap(),
+            EventRecord {
+                phase: Phase::ApplyExtrinsic(0),
+                event: MetaEvent::discovery(discovery::RawEvent::AccountInfoRemoved(alice)),
+            }
+        );
     });
 }
 

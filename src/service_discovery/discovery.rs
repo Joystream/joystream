@@ -96,6 +96,8 @@ decl_module! {
                 identity: id.clone(),
                 ttl: <system::Module<T>>::block_number() + ttl,
             });
+
+            Self::deposit_event(RawEvent::AccountInfoUpdated(sender.clone(), id.clone()));
         }
 
         pub fn unset_ipns_id(origin) {
