@@ -3,6 +3,7 @@ import { getTypeRegistry, BlockNumber, AccountId, Balance, Hash, u32, Text } fro
 import { registerMediaTypes } from './media';
 import { registerMembershipTypes } from './members';
 import { registerRolesTypes } from './roles';
+import { registerDiscoveryTypes } from './discovery';
 
 class Amount extends Balance {}
 
@@ -226,4 +227,5 @@ export function registerJoystreamTypes () {
   registerRolesTypes();
   registerMediaTypes();
   registerElectionAndProposalTypes();
+  registerDiscoveryTypes();
 }
