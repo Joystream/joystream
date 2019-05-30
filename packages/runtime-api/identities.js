@@ -115,6 +115,16 @@ class IdentitiesApi
   }
 
   /*
+   * Return true if the account is an actor/role account
+   */
+  async isActor(accountId)
+  {
+    const decoded = this.keyring.decodeAddress(accountId);
+    const actor = await this.base.api.query.actors.actorByAccountId(decoded)
+    return actor.isSome
+  }
+
+  /*
    * Return the member ID of an account - this is an Option, so '.raw' may or may not
    * have a useful value.
    */

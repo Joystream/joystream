@@ -27,6 +27,7 @@ const { IdentitiesApi } = require('@joystream/runtime-api/identities');
 const { BalancesApi } = require('@joystream/runtime-api/balances');
 const { RolesApi } = require('@joystream/runtime-api/roles');
 const { AssetsApi } = require('@joystream/runtime-api/assets');
+const { DiscoveryApi } = require('@joystream/runtime-api/discovery');
 
 /*
  * Initialize runtime (substrate) API and keyring.
@@ -58,6 +59,7 @@ class RuntimeApi
     this.balances = await BalancesApi.create(this);
     this.roles = await RolesApi.create(this);
     this.assets = await AssetsApi.create(this);
+    this.discovery = await DiscoveryApi.create(this);
   }
 
   disconnect()
@@ -148,7 +150,7 @@ class RuntimeApi
     var attempts_left = attempts;
 
     // Prepare key
-    const from_key = this.keyring.getPair(accountId);
+    const from_key = this.identities.keyring.getPair(accountId);
     if (from_key.isLocked()) {
       throw new Error('Must unlock key before using it to sign!');
     }
