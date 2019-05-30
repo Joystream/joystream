@@ -38,13 +38,16 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
     "eslint": "^5.13.0",
     "mocha": "^5.2.0",
     "temp": "^0.9.0"
   },
   "dependencies": {
+    "bluebird": "^3.5.5",
     "file-type": "^11.0.0",
     "hyperdrive": "^10.0.0-rc3",
+    "ipfs-http-client": "^32.0.1",
     "stream-buffers": "^3.0.2"
   }
 }
