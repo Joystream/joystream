@@ -33,7 +33,7 @@
     "node": "^10.15.3"
   },
   "scripts": {
-    "test": "mocha 'test/**/*.js'",
+    "test": "mocha --exit 'test/**/*.js'",
     "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'"
   },
   "devDependencies": {
