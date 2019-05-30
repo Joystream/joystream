@@ -150,6 +150,10 @@ export class Thread extends JoyStruct<ThreadType> {
   get moderation (): ModerationAction | undefined {
     return getOptionPropOrUndefined(this, 'moderation');
   }
+
+  get moderated (): boolean {
+    return this.moderation !== undefined;
+  }
 }
 
 export type ReplyType = {
@@ -183,6 +187,10 @@ export class Reply extends JoyStruct<ReplyType> {
 
   get moderation (): ModerationAction | undefined {
     return getOptionPropOrUndefined(this, 'moderation');
+  }
+
+  get moderated (): boolean {
+    return this.moderation !== undefined;
   }
 }
 

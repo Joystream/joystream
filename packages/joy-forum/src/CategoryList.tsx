@@ -1,21 +1,43 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Table, Dropdown, Button, Segment } from 'semantic-ui-react';
+import { Table, Dropdown, Button, Segment, Label } from 'semantic-ui-react';
 import { History } from 'history';
 import orderBy from 'lodash/orderBy';
 
-import { CategoryId, ThreadId, ThreadType } from './types';
+import { CategoryId, Category, ThreadId, ThreadType } from './types';
 import { useForum } from './Context';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
 import { UrlHasIdProps, AuthorPreview, CategoryCrumbs, Pagination, ThreadsPerPage } from './utils';
 import Section from '@polkadot/joy-utils/Section';
+import { Bool } from '@polkadot/types';
+import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 
-function CategoryActions ({ id }: { id: CategoryId }) {
+type CategoryActionsProps = {
+  id: CategoryId
+  category: Category
+};
+
+function CategoryActions (props: CategoryActionsProps) {
+  const { id, category } = props;
+  const { dispatch } = useForum();
   const className = 'ui button ActionButton';
 
-  return <>
+  const updateBoolFieldOnCategory = (fieldName: string) => {
+    category.set(fieldName, new Bool(true));
+    dispatch({ type: 'UpdateCategory', category, id: id.toNumber() });
+  };
+
+  const archiveCategory = () => {
+    updateBoolFieldOnCategory('archived');
+  };
+
+  const deleteCategory = () => {
+    updateBoolFieldOnCategory('deleted');
+  };
+
+  return <span className='JoyInlineActions'>
     <Link
       to={`/forum/categories/${id.toString()}/newThread`}
       className={className}
@@ -24,25 +46,27 @@ function CategoryActions ({ id }: { id: CategoryId }) {
       New thread
     </Link>
 
-    {/* TODO show 'Edit', 'Archive', 'Delete' button only if I am owner */}
-
     <Button.Group>
+
+      {/* TODO show 'Edit' if I am owner */}
       <Link className={className} to={`/forum/categories/${id.toString()}/edit`}>
         <i className='pencil alternate icon' />
         <span className='text'>Edit</span>
       </Link>
       <Dropdown floating button className='icon small' style={{ display: 'inline-block', width: 'auto', margin: 0 }} trigger={<></>}>
         <Dropdown.Menu>
+
+          {/* TODO show 'Add subcategory', 'Archive', 'Delete' button only if I am forum sudo */}
           <Link className='item' role='option' to={`/forum/categories/${id.toString()}/newSubcategory`}>
             <i className='add icon' />
             Add subcategory
           </Link>
-          <Dropdown.Item icon='file archive outline' text='Archive' onClick={() => alert('TODO Archive this category')} />
-          <Dropdown.Item icon='trash alternate outline' text='Delete' onClick={() => alert('TODO Delete this category')} />
+          <Dropdown.Item icon='file archive outline' text='Archive' onClick={archiveCategory} />
+          <Dropdown.Item icon='trash alternate outline' text='Delete' onClick={deleteCategory} />
         </Dropdown.Menu>
       </Dropdown>
     </Button.Group>
-  </>;
+  </span>;
 }
 
 type ViewCategoryProps = {
@@ -64,40 +88,55 @@ function ViewCategory (props: ViewCategoryProps) {
   const subcategories = categoryIdsByParentId.get(id.toNumber()) || [];
   const threadIds = threadIdsByCategoryId.get(id.toNumber()) || [];
 
+  if (!category) {
+    return preview ? null : <em>Category not found</em>;
+  }
+
+  const renderCategoryActions = () => {
+    if (category.archived || category.deleted) {
+      return null;
+    }
+    return <CategoryActions id={id} category={category} />;
+  };
+
   if (preview) {
-    return !category
-      ? <></>
-      : (
-        <Table.Row>
-          <Table.Cell>
-            <Link to={`/forum/categories/${id.toString()}`}>{category.name}</Link>
-          </Table.Cell>
-          <Table.Cell>
-            {subcategories.length}
-          </Table.Cell>
-          <Table.Cell>
-            {threadIds.length}
-          </Table.Cell>
-          <Table.Cell>
-            <CategoryActions id={id} />
-          </Table.Cell>
-          <Table.Cell>
-            <AuthorPreview address={category.owner} />
-          </Table.Cell>
-        </Table.Row>
-      );
+    return (
+      <Table.Row>
+        <Table.Cell>
+          <Link to={`/forum/categories/${id.toString()}`}>
+            {category.archived
+              ? <MutedSpan><Label color='orange'>Archived</Label> {category.name}</MutedSpan>
+              : category.name
+            }
+          </Link>
+        </Table.Cell>
+        <Table.Cell>
+          {subcategories.length}
+        </Table.Cell>
+        <Table.Cell>
+          {threadIds.length}
+        </Table.Cell>
+        <Table.Cell>
+          {renderCategoryActions()}
+        </Table.Cell>
+        <Table.Cell>
+          <AuthorPreview address={category.owner} />
+        </Table.Cell>
+      </Table.Row>
+    );
   }
 
-  if (!category || !history) {
-    return <em>Category not found</em>;
+  if (!history) {
+    return <em>Error: <code>history</code> property was not found.</em>;
   }
 
-  return (<>
-    <CategoryCrumbs categoryId={category.parent_id} />
-    <h1 className='ForumPageTitle'>
-      <span className='TitleText'>{category.name}</span>
-      <CategoryActions id={id} />
-    </h1>
+  const renderSubCategoriesAndThreads = () => <>
+    {category.archived &&
+      <JoyWarn title={`This category is archived.`}>
+        No new subcategories, threads and posts can be added to it.
+      </JoyWarn>
+    }
+
     <Segment>
       <div>
         <MutedSpan>Moderator: </MutedSpan>
@@ -117,6 +156,19 @@ function ViewCategory (props: ViewCategoryProps) {
     <Section title={`Threads (${threadIds.length})`}>
       <CategoryThreads categoryId={id} threadIds={threadIds} page={page} history={history} />
     </Section>
+  </>;
+
+  return (<>
+    <CategoryCrumbs categoryId={category.parent_id} />
+    <h1 className='ForumPageTitle'>
+      <span className='TitleText'>{category.name}</span>
+      {renderCategoryActions()}
+    </h1>
+
+    {category.deleted
+      ? <JoyWarn title={`This category is deleted`} />
+      : renderSubCategoriesAndThreads()
+    }
   </>);
 }
 
@@ -222,7 +274,11 @@ type CategoryListProps = {
 };
 
 export function CategoryList (props: CategoryListProps) {
-  const { state: { rootCategoryIds, categoryIdsByParentId } } = useForum();
+  const { state: {
+    rootCategoryIds,
+    categoryIdsByParentId,
+    categoryById
+  }} = useForum();
   const { parentId } = props;
 
   const ids: number[] = parentId
@@ -232,6 +288,12 @@ export function CategoryList (props: CategoryListProps) {
   if (!ids || ids.length === 0) {
     return <em>Forum is empty</em>;
   }
+
+  const idsOfNonDeletedCats = ids
+    .filter(id => {
+      const category = categoryById.get(id);
+      return category && !category.deleted;
+    });
 
   return (
     <Table celled selectable compact>
@@ -244,7 +306,7 @@ export function CategoryList (props: CategoryListProps) {
         <Table.HeaderCell>Moderator</Table.HeaderCell>
       </Table.Row>
     </Table.Header>
-    <Table.Body>{ids.map((id, i) => (
+    <Table.Body>{idsOfNonDeletedCats.map((id, i) => (
       <ViewCategory key={i} preview id={new CategoryId(id)} />
     ))}</Table.Body>
     </Table>

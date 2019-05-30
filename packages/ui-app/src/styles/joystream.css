@@ -128,3 +128,7 @@
     margin-right: 0;
   }
 }
+
+.JoyInlineActions {
+  white-space: 'nowrap';
+}

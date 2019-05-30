@@ -1,10 +1,4 @@
 .forum--App {
-  .ForumInlineActions .button,
-  .ActionButton {
-    white-space: 'nowrap';
-    margin-left: .25rem !important;
-  }
-
   .ui.segment {
     background-color: #fff;
   }

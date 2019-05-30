@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Message } from 'semantic-ui-react';
+import { Button } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps, FieldProps } from 'formik';
 import * as Yup from 'yup';
 
@@ -17,6 +17,7 @@ import { useForum } from './Context';
 import { withOnlySudo } from '@polkadot/joy-utils/Sudo';
 import { AccountId } from '@polkadot/types';
 import { AuthorPreview } from './utils';
+import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 
 const buildSchema = () => Yup.object().shape({});
 
@@ -209,11 +210,10 @@ export function withOnlyForumSudo<P extends {}> (Component: React.ComponentType<
       return <Component {...props} />;
     } else {
       return (
-        <Message warning className='JoyMainStatus'>
-          <Message.Header>Only forum sudo can access this functionality.</Message.Header>
-          <div style={{ marginTop: '1rem' }}>Current forum sudo:</div>
+        <JoyWarn title={`Only forum sudo can access this functionality.`}>
+          <div>Current forum sudo:</div>
           <div>{sudo ? <AuthorPreview address={sudo} /> : 'UNDEFINED'}</div>
-        </Message>
+        </JoyWarn>
       );
     }
   };

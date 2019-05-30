@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Table, Segment, Button, Message, Label } from 'semantic-ui-react';
+import { Table, Segment, Button, Label } from 'semantic-ui-react';
 import { History } from 'history';
 
 import { Thread, ThreadId, ReplyId } from './types';
 import { useForum } from './Context';
-import { UrlHasIdProps, AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs } from './utils';
+import { AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs, UrlHasIdProps } from './utils';
 import Section from '@polkadot/joy-utils/Section';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
+import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 
 type ThreadTitleProps = {
   thread: Thread,
@@ -38,29 +39,40 @@ type ViewThreadProps = {
 
 export function ViewThread (props: ViewThreadProps) {
   const { state: {
+    categoryById,
     threadById,
     replyIdsByThreadId
-  } } = useForum();
+  }} = useForum();
 
   const [showModerateForm, setShowModerateForm] = useState(false);
   const { history, id, page = 1, preview = false } = props;
   const thread = threadById.get(id.toNumber());
 
+  const renderThreadNotFound = () => (
+    preview ? null : <em>Thread not found</em>
+  );
+
   if (!thread) {
-    return preview ? null : <em>Thread not found</em>;
+    return renderThreadNotFound();
   }
 
-  const isModerated = thread.moderation !== undefined;
   const replyIds = replyIdsByThreadId.get(id.toNumber()) || [];
+  const category = categoryById.get(thread.category_id.toNumber());
+
+  if (!category) {
+    return <em>Thread's category was not found.</em>;
+  } else if (category.deleted) {
+    return renderThreadNotFound();
+  }
 
   if (preview) {
-    const titleLink = <ThreadTitle thread={thread} />;
+    const title = <ThreadTitle thread={thread} />;
     return (
       <Table.Row>
         <Table.Cell>
-          <Link to={`/forum/threads/${id.toString()}`}>{isModerated
-            ? <MutedSpan><Label color='orange'>Moderated</Label> {titleLink}</MutedSpan>
-            : titleLink
+          <Link to={`/forum/threads/${id.toString()}`}>{thread.moderated
+            ? <MutedSpan><Label color='orange'>Moderated</Label> {title}</MutedSpan>
+            : title
           }</Link>
         </Table.Cell>
         <Table.Cell>
@@ -74,7 +86,7 @@ export function ViewThread (props: ViewThreadProps) {
   }
 
   if (!history) {
-    return <em>Hisotry propoerty is undefined</em>;
+    return <em>History propoerty is undefined</em>;
   }
 
   const renderPageOfReplies = () => {
@@ -100,7 +112,7 @@ export function ViewThread (props: ViewThreadProps) {
 
     const pageOfItems = replyIds
       .filter((_id, i) => i >= minIdx && i <= maxIdx)
-      .map((id, i) => <ViewReply key={i} id={new ReplyId(id)} />);
+      .map((id, i) => <ViewReply key={i} id={new ReplyId(id)} thread={thread} category={category} />);
 
     return <>
       {pagination}
@@ -126,7 +138,10 @@ export function ViewThread (props: ViewThreadProps) {
   };
 
   const renderActions = () => {
-    return <span className='ForumInlineActions'>
+    if (thread.moderated || category.archived || category.deleted) {
+      return null;
+    }
+    return <span className='JoyInlineActions'>
       <Link
         to={`/forum/threads/${id.toString()}/reply`}
         className='ui small button'
@@ -158,10 +173,9 @@ export function ViewThread (props: ViewThreadProps) {
     if (!thread.moderation) return null;
 
     return <>
-      <Message warning className='JoyMainStatus'>
-        <Message.Header>This thread is moderated. Rationale:</Message.Header>
+      <JoyWarn title={`This thread is moderated. Rationale:`}>
         <ReactMarkdown className='JoyMemo--full' source={thread.moderation.rationale} linkTarget='_blank' />
-      </Message>
+      </JoyWarn>
     </>;
   };
 
@@ -169,12 +183,17 @@ export function ViewThread (props: ViewThreadProps) {
     <CategoryCrumbs categoryId={thread.category_id} />
     <h1 className='ForumPageTitle'>
       <ThreadTitle thread={thread} className='TitleText' />
-      {!isModerated && renderActions()}
+      {renderActions()}
     </h1>
+    {category.archived &&
+      <JoyWarn title={`This thread is in archived category.`}>
+        No new replies can be posted.
+      </JoyWarn>
+    }
     {showModerateForm &&
       <Moderate id={id} onCloseForm={() => setShowModerateForm(false)} />
     }
-    {isModerated
+    {thread.moderated
       ? renderModerationRationale()
       : renderThreadDetailsAndReplies()
     }
