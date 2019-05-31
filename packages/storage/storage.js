@@ -25,6 +25,7 @@ Promise.config({
   cancellation: true,
 });
 
+const file_type = require('file-type');
 
 const ipfs_client = require('ipfs-http-client');
 const _ = require('lodash');
@@ -33,13 +34,18 @@ const _ = require('lodash');
 // client doesn't seem to care.
 const DEFAULT_TIMEOUT = 30 * 1000;
 
-/*
- * Default/dummy resolution implementation.
- */
+// Default/dummy resolution implementation.
 const DEFAULT_RESOLVE_CONTENT_ID = async (original) => {
   debug('Default resolution returns original CID', original);
   return original;
 }
+
+// Default file info if nothing could be detected.
+const DEFAULT_FILE_INFO = {
+  mime_type: 'application/octet-stream',
+  ext: 'bin',
+};
+
 
 /*
  * Manages the storage backend interaction. This provides a Promise-based API.
@@ -154,6 +160,8 @@ class Storage
   async size(content_id, timeout)
   {
     const stat = await this.stat(content_id, timeout);
+    // DataSize is not the same as file size - it may be a bit more. Still, it's
+    // the best we're getting out of IPFS short of reading the entire stream.
     return stat.DataSize;
   }
 
@@ -171,10 +179,35 @@ class Storage
       throw Error('The only supported modes are "r", "w" and "a".');
     }
 
+    // Write stream
     if (mode === 'w') {
       return await this._create_write_stream(content_id, timeout);
     }
-    return await this._create_read_stream(content_id, timeout);
+
+    // Read stream - with file type detection
+    const ipfs_stream = await this._create_read_stream(content_id, timeout);
+    const ft_stream = await file_type.stream(ipfs_stream);
+    return this._fix_file_info(ft_stream);
+  }
+
+  _fix_file_info(stream)
+  {
+    // fileType is a weird name, because we're really looking at MIME types.
+    // Also, the type field includes extension info, so we're going to call
+    // it file_info { mime_type, ext } instead.
+    // Nitpicking, but it also means we can add our default type if things
+    // go wrong.
+    var info = stream.fileType;
+    delete(stream.fileType);
+    if (!info) {
+      info = DEFAULT_FILE_INFO;
+    }
+    else {
+      info.mime_type = info.mime;
+      delete(info.mime);
+    }
+    stream.file_info = info;
+    return stream;
   }
 
   async _create_write_stream(content_id)

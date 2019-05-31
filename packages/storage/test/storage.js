@@ -26,6 +26,8 @@ const expect = chai.expect;
 
 const temp = require('temp').track();
 
+const fs = require('fs');
+
 const { Storage } = require('@joystream/storage');
 
 function write(store, content_id, contents, callback)
@@ -36,7 +38,23 @@ function write(store, content_id, contents, callback)
       stream.on('committed', callback);
       stream.write(contents);
       stream.end();
+    })
+    .catch((err) => {
+      expect.fail(err);
     });
+}
+
+function read_all(stream)
+{
+  var data = Buffer.alloc(0);
+  var buffer;
+  do {
+    buffer = stream.read();
+    if (buffer) {
+      data = Buffer.concat([data, buffer]);
+    }
+  } while (buffer);
+  return data;
 }
 
 
@@ -54,6 +72,9 @@ function create_known_object(content_id, contents, callback)
 
       callback(store, hash);
     });
+  })
+  .catch((err) => {
+    expect.fail(err);
   });
 }
 
@@ -78,11 +99,35 @@ describe('storage/storage', () => {
       create_known_object('foobar', contents, (store, hash) => {
         store.open('foobar', 'r')
           .then((stream) => {
-            const data = stream.read();
+            const data = read_all(stream);
             expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0);
             done();
+          })
+          .catch((err) => {
+            expect.fail(err);
           });
       });
+    });
+
+    it('detects the file type of a read stream', (done) => {
+      const contents = fs.readFileSync('../../banner.svg');
+      create_known_object('foobar', contents, (store, hash) => {
+        store.open('foobar', 'r')
+          .then((stream) => {
+            const data = read_all(stream);
+            expect(Buffer.compare(data, contents)).to.equal(0);
+            expect(stream).to.have.property('file_info');
+
+            // application/xml+svg would be better, but this is good-ish.
+            expect(stream.file_info).to.have.property('mime_type', 'application/xml');
+            expect(stream.file_info).to.have.property('ext', 'xml');
+            done();
+          })
+          .catch((err) => {
+            expect.fail(err);
+          });
+      });
+
     });
   });
 
