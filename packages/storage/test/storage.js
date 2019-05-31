@@ -24,18 +24,22 @@ const chai_as_promised = require('chai-as-promised');
 chai.use(chai_as_promised);
 const expect = chai.expect;
 
-const temp = require('temp').track();
-
 const fs = require('fs');
 
 const { Storage } = require('@joystream/storage');
+
+const IPFS_CID_REGEX = /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/;
 
 function write(store, content_id, contents, callback)
 {
   store.open('content_id', 'w')
     .then((stream) => {
 
+      stream.on('finish', () => {
+        stream.commit();
+      });
       stream.on('committed', callback);
+
       stream.write(contents);
       stream.end();
     })
@@ -88,8 +92,7 @@ describe('storage/storage', () => {
     it('can write a stream', (done) => {
       write(storage, 'foobar', 'test-content', (hash) => {
         expect(hash).to.not.be.undefined;
-        // We know that 'test-content' creates this hash
-        expect(hash).to.equal('QmfCXRe6PP21EWFfL5byA8bvX4KPPrzuGykh9GXBsEe9Kk');
+        expect(hash).to.match(IPFS_CID_REGEX)
         done();
       });
     });

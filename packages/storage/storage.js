@@ -18,6 +18,9 @@
 
 'use strict';
 
+const { Transform } = require('stream');
+const fs = require('fs');
+
 const debug = require('debug')('joystream:storage:storage');
 
 const Promise = require('bluebird');
@@ -26,8 +29,8 @@ Promise.config({
 });
 
 const file_type = require('file-type');
-
 const ipfs_client = require('ipfs-http-client');
+const temp = require('temp').track();
 const _ = require('lodash');
 
 // Default request timeout; imposed on top of the IPFS client, because the
@@ -45,6 +48,102 @@ const DEFAULT_FILE_INFO = {
   mime_type: 'application/octet-stream',
   ext: 'bin',
 };
+
+
+/*
+ * fileType is a weird name, because we're really looking at MIME types.
+ * Also, the type field includes extension info, so we're going to call
+ * it file_info { mime_type, ext } instead.
+ * Nitpicking, but it also means we can add our default type if things
+ * go wrong.
+ */
+function fix_file_info(stream)
+{
+  var info = stream.fileType;
+  delete(stream.fileType);
+  if (!info) {
+    info = DEFAULT_FILE_INFO;
+  }
+  else {
+    info.mime_type = info.mime;
+    delete(info.mime);
+  }
+  stream.file_info = info;
+  return stream;
+}
+
+
+/*
+ * Internal Transform stream for helping write to a temporary location, adding
+ * MIME type detection, and a commit() function.
+ */
+class StorageWriteStream extends Transform
+{
+  constructor(storage, options)
+  {
+    options = _.clone(options || {});
+
+    super(options);
+
+    this.storage = storage;
+
+    // Create temp target.
+    this.temp = temp.createWriteStream();
+  }
+
+  _transform(chunk, encoding, callback)
+  {
+    // Deal with buffers only
+    if (typeof chunk === 'string') {
+      chunk = Buffer.from(chunk);
+    }
+
+    debug('Writing temporary chunk', chunk.length, chunk);
+    this.temp.write(chunk);
+    callback(null);
+  }
+
+  _flush(callback)
+  {
+    debug('Flushing temporary stream:', this.temp.path);
+    this.temp.end();
+    callback(null);
+  }
+
+  /*
+   * Commit this stream to the IPFS backend.
+   */
+  commit()
+  {
+    // Create a read stream from the temp file.
+    if (!this.temp) {
+      throw new Error('Cannot commit a temporary stream that does not exist. Did you call cleanup()?');
+    }
+
+    debug('Committing temporary stream: ', this.temp.path);
+    this.storage.ipfs.addFromFs(this.temp.path)
+      .then((result) => {
+        const hash = result[0].hash;
+        debug('Stream committed as', hash);
+        this.emit('committed', hash);
+      })
+      .catch((err) => {
+        debug('Error committing stream', err);
+        this.emit('error', err);
+      })
+  }
+
+  /*
+   * Clean up temporary data.
+   */
+  cleanup()
+  {
+    debug('Cleaning up temporary file: ', this.temp.path);
+    fs.unlink(this.temp.path, () => {}); // Ignore errors
+    delete(this.temp);
+  }
+}
+
 
 
 /*
@@ -144,6 +243,7 @@ class Storage
     const resolved = await this._resolve_content_id_with_timeout(timeout, content_id);
 
     return await this._with_specified_timeout(timeout, (resolve, reject) => {
+      debug('Trying to stat', resolved);
       this.ipfs.object.stat(resolved, {}, (err, res) => {
         if (err) {
           reject(err);
@@ -169,9 +269,23 @@ class Storage
    * Opens the specified content in read or write mode, and returns a Promise
    * with the stream.
    *
-   * When a stream is opened for writing, it emits a final event after all
-   * writing finished, 'committed', which is passed the stream's internal
-   * content ID (i.e. from IPFS in this implementation).
+   * Read streams will contain a file_info property, with:
+   *  - a `mime_type` field providing the file's MIME type, or a default.
+   *  - an `ext` property, providing a file extension suggestion, or a default.
+   *
+   * Write streams have a slightly different flow, in order to allow for MIME
+   * type detection and potential filtering. First off, they are written to a
+   * temporary location, and only committed to the backend once their
+   * `commit()` function is called.
+   *
+   * When the commit has finished, a `committed` event is emitted, which
+   * contains the IPFS backend's content ID.
+   *
+   * Write streams also emit a `file_info` event during writing. It is passed
+   * the `file_info` field as described above. Event listeners may now opt to
+   * abort the write or continue and eventually `commit()` the file. There is
+   * an explicit `cleanup()` function that removes temporary files as well,
+   * in case comitting is not desired.
    */
   async open(content_id, mode, timeout)
   {
@@ -188,26 +302,6 @@ class Storage
     return await this._create_read_stream(content_id, timeout);
   }
 
-  _fix_file_info(stream)
-  {
-    // fileType is a weird name, because we're really looking at MIME types.
-    // Also, the type field includes extension info, so we're going to call
-    // it file_info { mime_type, ext } instead.
-    // Nitpicking, but it also means we can add our default type if things
-    // go wrong.
-    var info = stream.fileType;
-    delete(stream.fileType);
-    if (!info) {
-      info = DEFAULT_FILE_INFO;
-    }
-    else {
-      info.mime_type = info.mime;
-      delete(info.mime);
-    }
-    stream.file_info = info;
-    return stream;
-  }
-
   async _create_write_stream(content_id)
   {
     // IPFS wants us to just dump a stream into its storage, then returns a
@@ -215,22 +309,8 @@ class Storage
     // We need to instead return a stream immediately, that we eventually
     // decorate with the content ID when that's available.
     return new Promise((resolve, reject) => {
-      const { PassThrough } = require('stream');
-      const stream = new PassThrough();
-
-      // Not sure what will happen by resolving this Promise here, and later
-      // potentially rejecting it. We'll see.
+      const stream = new StorageWriteStream(this);
       resolve(stream);
-
-      this.ipfs.addFromStream(stream)
-        .then((result) => {
-          const hash = result[0].hash;
-          stream.hash = hash;
-          stream.emit('committed', hash);
-        })
-        .catch((err) => {
-          reject(err);
-        });
     });
   }
 
@@ -246,7 +326,7 @@ class Storage
           found = true;
 
           const ft_stream = await file_type.stream(result.content);
-          resolve(this._fix_file_info(ft_stream));
+          resolve(fix_file_info(ft_stream));
         }
       });
       ls.on('error', (err) => {
