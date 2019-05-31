@@ -244,6 +244,20 @@ async function wait_for_role(config)
   return [result, api];
 }
 
+function get_service_information(config) {
+  // For now assume we run all services on the same endpoint
+  return({
+    assets: {
+      version: 1, // howto get version from openapi
+      endpoint: config.get('publicUrl')
+    },
+    discovery: {
+      version: 1, // howto get version from openapi
+      endpoint: config.get('publicUrl')
+    }
+  })
+}
+
 async function announce_public_url(api, config) {
   const { publish } = require('@joystream/discovery')
 
@@ -252,10 +266,9 @@ async function announce_public_url(api, config) {
   let reannounceAfterMilliSeconds = 1000 * 60 * 60
 
   try {
-    let published = await publish.publish(accountId, {
-      apiEndpoint: config.get('publicUrl')
-    },
-    api)
+    const serviceInformation = get_service_information(config)
+
+    let published = await publish.publish(accountId, serviceInformation, api)
 
     // reannounceAfterMilliSeconds = convertToMs(published.ttl)
 
