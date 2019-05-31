@@ -273,29 +273,28 @@ const CATEGORY_TITLE: InputValidationLengthConstraint = InputValidationLengthCon
 
 const CATEGORY_DESCRIPTION: InputValidationLengthConstraint = InputValidationLengthConstraint{
     min: 10,
-    max_as_min_diff: 100
+    max_as_min_diff: 140
 };
 
 /// The greatest valid depth of a category.
 /// The depth of a root category is 0.
-const MAX_VALID_CATEGORY_DEPTH: u32 = 3;
+const MAX_CATEGORY_DEPTH: u32 = 3;
 
 /// Error messages for dispatchables
 /// Later perhaps make error message functions, to add parametization
 
-const DISPATCHABLE_ERROR_FORUM_SUDO_NOT_SET: &str = "Forum sudo not set.";
-const DISPATCHABLE_ERROR_ORIGIN_NOT_FORUM_SUDO: &str = "Origin not forum sudo.";
+const ERROR_FORUM_SUDO_NOT_SET: &str = "Forum sudo not set.";
+const ERROR_ORIGIN_NOT_FORUM_SUDO: &str = "Origin not forum sudo.";
 
-const DISPATCHABLE_ERROR_CATEGORY_TITLE_TOO_SHORT: &str = "Category title too short.";
-const DISPATCHABLE_ERROR_CATEGORY_TITLE_TOO_LONG: &str = "Category title too long.";
+const ERROR_CATEGORY_TITLE_TOO_SHORT: &str = "Category title too short.";
+const ERROR_CATEGORY_TITLE_TOO_LONG: &str = "Category title too long.";
 
-const DISPATCHABLE_ERROR_CATEGORY_DESCRIPTION_TOO_SHORT: &str = "Category description too long.";
-const DISPATCHABLE_ERROR_CATEGORY_DESCRIPTION_TOO_LONG: &str = "Category description too long.";
+const ERROR_CATEGORY_DESCRIPTION_TOO_SHORT: &str = "Category description too long.";
+const ERROR_CATEGORY_DESCRIPTION_TOO_LONG: &str = "Category description too long.";
 
-const DISPATCHABLE_ERROR_PARENT_CATEGORY_DOES_NOT_EXIST: &str = "Parent category does not exist.";
-const DISPATCHABLE_ERROR_PARENT_CATEGORY_DELETED: &str = "Parent directly category deleted.";
-const DISPATCHABLE_ERROR_PARENT_CATEGORY_ARCHIVED: &str = "Parent directly category archived.";
-const DISPATCHABLE_ERROR_PARENT_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
+const ERROR_PARENT_CATEGORY_DOES_NOT_EXIST: &str = "Parent category does not exist.";
+const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str = "Ancestor category immutable, i.e. deleted or archived";
+const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
 
 
 //use srml_support::storage::*;
@@ -499,6 +498,10 @@ pub struct Category<BlockNumber, Moment, AccountId> {
     moderator_id: AccountId
 }
 
+/// Represents a sequence of categories which have child-parent relatioonship
+/// where last element is final ancestor, or root, in the context of the category tree.
+type CategoryTreePath<BlockNumber, Moment, AccountId> = Vec<Category<BlockNumber, Moment, AccountId>>;
+
 pub trait Trait: system::Trait + timestamp::Trait + Sized {
 
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -638,36 +641,22 @@ decl_module! {
             // Validate description
             ensure_category_description_is_valid(&description)?;
 
+            // If not root, then check that we can create in parent category
             if let Some(parent_category_id) = parent {
 
-                // The new category is subcategory of 'parent_category_id'
-
                 // Get path from parent to root of category tree.
-                let mut category_path = vec![];
-                Self::build_category_path(parent_category_id, &mut category_path);
+                let mut category_tree_path = vec![];
+
+                Self::build_category_tree_path(parent_category_id, &mut category_tree_path);
 
                 // If path is empty, it just means the parent did not exist,
                 // which means teh user provided an invalid parent category id.
-                ensure!(category_path.len() > 0,
-                    DISPATCHABLE_ERROR_PARENT_CATEGORY_DOES_NOT_EXIST
+                ensure!(category_tree_path.len() > 0,
+                    ERROR_PARENT_CATEGORY_DOES_NOT_EXIST
                 );
 
-                // Is parent category directly or indirectly deleted category
-                ensure!(!category_path.iter().any(|c:&Category<T::BlockNumber, T::Moment, T::AccountId>| c.deleted),
-                    DISPATCHABLE_ERROR_PARENT_CATEGORY_DELETED
-                );
-
-                // Is parent category directly or indirectly archived category
-                ensure!(!category_path.iter().any(|c:&Category<T::BlockNumber, T::Moment, T::AccountId>| c.archived),
-                    DISPATCHABLE_ERROR_PARENT_CATEGORY_ARCHIVED
-                );
-
-                // Does adding a new category exceed maximum depth
-                let depth_of_new_category = 1 + 1 + category_path.len();
-
-                ensure!(depth_of_new_category <= MAX_VALID_CATEGORY_DEPTH as usize,
-                    DISPATCHABLE_ERROR_PARENT_MAX_VALID_CATEGORY_DEPTH_EXCEEDED
-                );    
+                // Can we mutate in this category?
+                Self::ensure_can_add_subcategory_to_path_tip(&category_tree_path)?;
             }
 
             let next_category_id = <NextCategoryId<T>>::get();
@@ -681,7 +670,7 @@ decl_module! {
                 deleted: false,
                 archived: false,
                 parent_id: parent,
-                forum_sudo_creator: who
+                moderator_id: who
             };
 
             // Insert category in map
@@ -704,8 +693,8 @@ decl_module! {
 fn ensure_category_title_is_valid(title: &Vec<u8>) -> Result<(),&'static str> {
 
     match CATEGORY_TITLE.validate(title.len()) {
-        LengthValidationResult::TooShort => Err(DISPATCHABLE_ERROR_CATEGORY_TITLE_TOO_SHORT),
-        LengthValidationResult::TooLong => Err(DISPATCHABLE_ERROR_CATEGORY_TITLE_TOO_LONG),
+        LengthValidationResult::TooShort => Err(ERROR_CATEGORY_TITLE_TOO_SHORT),
+        LengthValidationResult::TooLong => Err(ERROR_CATEGORY_TITLE_TOO_LONG),
         LengthValidationResult::Success => Ok(())
     }
 }
@@ -713,21 +702,14 @@ fn ensure_category_title_is_valid(title: &Vec<u8>) -> Result<(),&'static str> {
 fn ensure_category_description_is_valid(description: &Vec<u8>) -> Result<(),&'static str> {
 
     match CATEGORY_DESCRIPTION.validate(description.len()) {
-        LengthValidationResult::TooShort => Err(DISPATCHABLE_ERROR_CATEGORY_DESCRIPTION_TOO_SHORT),
-        LengthValidationResult::TooLong => Err(DISPATCHABLE_ERROR_CATEGORY_DESCRIPTION_TOO_LONG),
+        LengthValidationResult::TooShort => Err(ERROR_CATEGORY_DESCRIPTION_TOO_SHORT),
+        LengthValidationResult::TooLong => Err(ERROR_CATEGORY_DESCRIPTION_TOO_LONG),
         LengthValidationResult::Success => Ok(())
     }
 
 }
 
 impl<T: Trait> Module<T> {
-    
-    // Public immutable
-    // - Public interface. These are functions that are `pub` and generally fall into inspector
-    // functions that do not write to storage and operation functions that do.
-    
-    // Private mutables
-    // - Private functions. These are your usual private utilities unavailable to other modules.
 
     fn current_block_and_time() -> BlockchainTimestamp<T::BlockNumber, T::Moment> {
 
@@ -741,7 +723,7 @@ impl<T: Trait> Module<T> {
 
         match <ForumSudo<T>>::get() {
             Some(account_id) => Ok(account_id),
-            None => Err(DISPATCHABLE_ERROR_FORUM_SUDO_NOT_SET)
+            None => Err(ERROR_FORUM_SUDO_NOT_SET)
         }
     }
 
@@ -751,8 +733,34 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             *account_id == forum_sudo_account,
-            DISPATCHABLE_ERROR_ORIGIN_NOT_FORUM_SUDO
+            ERROR_ORIGIN_NOT_FORUM_SUDO
         );
+        Ok(())
+    }
+
+    fn ensure_can_add_subcategory_to_path_tip(category_tree_path:&CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) -> dispatch::Result {
+
+        Self::ensure_can_mutate_in_category(category_tree_path)?;
+
+        // Does adding a new category exceed maximum depth
+        let depth_of_new_category = 1 + 1 + category_tree_path.len();
+
+        ensure!(depth_of_new_category <= MAX_CATEGORY_DEPTH as usize,
+            ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED
+        );   
+
+        Ok(())
+
+    }
+
+    fn ensure_can_mutate_in_category(category_tree_path:&CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) -> dispatch::Result {
+
+        // Is parent category directly or indirectly deleted or archived category
+        ensure!(!category_tree_path.iter().any(|c:&Category<T::BlockNumber, T::Moment, T::AccountId>| c.deleted || c.archived ),
+            ERROR_ANCESTOR_CATEGORY_IMMUTABLE
+        );
+
+    
         Ok(())
     }
 
@@ -771,7 +779,7 @@ impl<T: Trait> Module<T> {
     }
 */
 
-    fn build_category_path(category_id:CategoryId, path: &mut Vec<Category<T::BlockNumber, T::Moment, T::AccountId>>) {
+    fn build_category_tree_path(category_id:CategoryId, path: &mut CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) {
 
         // <CategoryById<T>>::exists(&category_id)
 
@@ -788,7 +796,7 @@ impl<T: Trait> Module<T> {
 
             // Make recursive call on parent if we are not at root
             if let Some(parent_category_id) = parent_id_field {
-                Self::build_category_path(parent_category_id, path);
+                Self::build_category_tree_path(parent_category_id, path);
             }
         }
 
