@@ -264,7 +264,7 @@ pub struct BlockchainTimestamp<BlockNumber, Moment> {
 pub struct ModerationAction<BlockNumber, Moment, AccountId> {
 
     /// When action occured.
-    occured_at: BlockchainTimestamp<BlockNumber, Moment>,
+    moderated_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Account forum sudo which acted.
     moderator_id: AccountId,
@@ -300,8 +300,11 @@ pub struct Post<BlockNumber, Moment, AccountId> {
     /// Id of thread to which this post corresponds.
     thread_id: ThreadId,
 
-    // Position of post in thread.
-    position: u32,
+    /// The post number of this post in its thread, i.e. total number of posts added (including this)
+    /// to a thread when it was added.
+    /// Is needed to give light clients assurance about getting all posts in a given range,
+    // `created_at` is not sufficient.
+    post_nr: u32,
 
     /// Initial text of post
     initial_text: Vec<u8>,
@@ -337,8 +340,11 @@ pub struct Thread<BlockNumber, Moment, AccountId> {
     /// Category in which this thread lives
     category_id: CategoryId,
 
-    /// Position of thread in category.
-    position: u32,
+    /// The thread number of this thread in its category, i.e. total number of thread added (including this)
+    /// to a category when it was added.
+    /// Is needed to give light clients assurance about getting all threads in a given range,
+    /// `created_at` is not sufficient.
+    thread_nr: u32,
 
     /// Possible moderation of this thread
     moderation : Option<ModerationAction<BlockNumber, Moment, AccountId>>,
@@ -394,8 +400,8 @@ pub struct Category<BlockNumber, Moment, AccountId> {
     /// Parent category, if present, otherwise this category is a root categoryl
     parent_id: Option<CategoryId>,
 
-    /// Account of the forum sudo which created category.
-    forum_sudo_creator: AccountId
+    /// Account of the moderator which created category.
+    moderator_id: AccountId
 }
 
 pub trait Trait: system::Trait + timestamp::Trait + Sized {
