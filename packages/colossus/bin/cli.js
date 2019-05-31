@@ -244,6 +244,33 @@ async function wait_for_role(config)
   return [result, api];
 }
 
+async function announce_public_url(api, config) {
+  const { publish } = require('@joystream/discovery')
+
+  const accountId = api.identities.key.address()
+
+  let reannounceAfterMilliSeconds = 1000 * 60 * 60
+
+  try {
+    let published = await publish.publish(accountId, {
+      apiEndpoint: config.get('publicUrl')
+    },
+    api)
+
+    // reannounceAfterMilliSeconds = convertToMs(published.ttl)
+
+  } catch (err) {
+    debug(`announcing public url failed: ${err.message}`)
+
+    // If it failed we should probably retry sooner
+  }
+
+  // re-announce in future
+  setTimeout(() => {
+    announce_public_url(api, config)
+  }, reannounceAfterMilliSeconds)
+}
+
 // Simple CLI commands
 var command = cli.input[0];
 if (!command) {
@@ -270,10 +297,16 @@ const commands = {
         }
         console.log('Staked, proceeding.');
 
+        // Make sure a public URL is configured
+        if (!cfg.get('publicUrl')) {
+          throw new Error('publicUrl not configured')
+        }
+
         // Continue with server setup
         const store = get_storage(cfg);
         banner();
         start_app(project_root, store, api, cfg);
+        announce_public_url(api, cfg);
       })
       .catch(errfunc);
   },

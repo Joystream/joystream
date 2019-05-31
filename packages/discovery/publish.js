@@ -36,6 +36,8 @@ async function publish (accountId, service_info, runtimeApi) {
         // ttl:      // string - Time duration this record should be cached
     })
 
+    debug(published)
+
     refreshAccountInfo(accountId, keyId, runtimeApi)
 
     return published
