@@ -296,6 +296,9 @@ const ERROR_PARENT_CATEGORY_DOES_NOT_EXIST: &str = "Parent category does not exi
 const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str = "Ancestor category immutable, i.e. deleted or archived";
 const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
 
+const DISPATCHABLE_ERROR_CATEGORY_DOES_NOT_EXIST: &str = "Category does not exist.";
+//const DISPATCHABLE_ERROR_CATEGORY_
+
 
 //use srml_support::storage::*;
 
@@ -680,9 +683,57 @@ decl_module! {
         }
         
         /// Update category
-        fn update_category(origin, category_id: CategoryId, archive: bool, deleted: bool) -> dispatch::Result {
+        fn update_category(origin, category_id: CategoryId, archived: bool, deleted: bool) -> dispatch::Result {
 
-            Ok(())
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Not signed by forum SUDO
+            Self::ensure_is_forum_sudo(&who)?;
+
+            // Get path from parent to root of category tree.
+            let mut category_tree_path = vec![];
+
+            Self::build_category_tree_path(category_id, &mut category_tree_path);
+
+            if !category_tree_path.is_empty() {
+
+                // Make sure we can actually mutate this category
+                Self::ensure_can_mutate_in_category(&category_tree_path)?;
+
+                // Grab mutable category reference
+                let mut category = category_tree_path.get_mut(0).unwrap();
+
+                // Value change events params
+                let mut archived_change_to = None;
+                let mut deleted_changed_to = None;
+
+                // Mutate category, and set possible new change parameters
+
+                if archived != category.archived {
+                    category.archived = archived;
+                    archived_change_to = Some(archived);
+                }
+
+                if deleted != category.deleted {
+                    category.deleted = deleted;
+                    deleted_changed_to = Some(deleted)
+                }
+
+                // Write back mutated category
+                <CategoryById<T>>::insert(category_id, category);
+
+                // Generate event
+                Self::deposit_event(RawEvent::CategoryUpdated(category_id, archived_change_to, deleted_changed_to));
+
+                Ok(())
+
+            } else {
+
+                // If path is empty, it just means the category did not exist,
+                // which means the user provided an invalid category id.
+                Err(DISPATCHABLE_ERROR_CATEGORY_DOES_NOT_EXIST)
+            }
         }
     }
 }
@@ -766,7 +817,6 @@ impl<T: Trait> Module<T> {
     
         Ok(())
     }
-
 
 
 /*
