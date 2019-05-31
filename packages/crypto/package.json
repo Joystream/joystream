@@ -44,9 +44,9 @@
     "temp": "^0.9.0"
   },
   "dependencies": {
-    "@polkadot/keyring": "^0.90.1",
-    "@polkadot/util": "^0.90.1",
-    "@polkadot/util-crypto": "^0.90.1",
+    "@polkadot/keyring": "^0.76.1",
+    "@polkadot/util": "^0.76.1",
+    "@polkadot/util-crypto": "^0.76.1",
     "@polkadot/wasm-crypto": "^0.10.1",
     "sodium": "^3.0.2"
   }

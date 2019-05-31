@@ -16,19 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Copyright 2017-2019 @polkadot/ui-settings authors & contributors
-// This software may be modified and distributed under the terms
-// of the Apache-2.0 license. See the LICENSE file for details.
+'use strict';
 
-export type Options = Array<{
-  disabled?: boolean,
-  text: string,
-  value: string
-}>;
+const mocha = require('mocha');
+const expect = require('chai').expect;
 
-export interface SettingsStruct {
-  apiUrl: string;
-  i18nLang: string;
-  uiMode: string;
-  uiTheme: string;
-}
+const { RuntimeApi } = require('@joystream/runtime-api');
+
+describe('RuntimeApi', () => {
+  it('can be created', async () => {
+    const api = await RuntimeApi.create();
+    api.disconnect();
+  });
+});

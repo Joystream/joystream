@@ -33,24 +33,22 @@
     "node": "^10.15.3"
   },
   "scripts": {
-    "test": "mocha 'test/**/*.js'",
-    "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'",
-    "postinstall": "tsc --build tsconfig.json"
+    "test": "mocha 'test/**/*.js' --exit",
+    "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "eslint": "^5.13.0",
     "mocha": "^5.2.0",
+    "sinon": "^7.3.2",
+    "sinon-chai": "^3.3.0",
     "temp": "^0.9.0"
   },
   "dependencies": {
     "@joystream/crypto": "^0.1.0",
-    "@polkadot/api": "^0.78.1",
-    "@polkadot/keyring": "^0.90.1",
-    "@polkadot/ts": "^0.1.56",
-    "@polkadot/types": "^0.78.1",
-    "@polkadot/util-crypto": "^0.90.1",
+    "@joystream/types": "=0.1.8",
+    "@polkadot/api": "^0.77.1",
     "lodash": "^4.17.11",
-    "typescript": "^3.4.2"
+    "password-prompt": "^1.1.2"
   }
 }

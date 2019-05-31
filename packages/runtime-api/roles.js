@@ -24,29 +24,25 @@ const { Null, U64 } = require('@polkadot/types/primitive');
 
 const { _ } = require('lodash');
 
-const { BalancesApi } = require('@joystream/runtime-api/balances');
-
 /*
  * Add role related functionality to the substrate API.
  */
-class RolesApi extends BalancesApi
+class RolesApi
 {
-  static async create(account_file)
+  static async create(base)
   {
     const ret = new RolesApi();
-    await ret.init(account_file);
+    ret.base = base;
+    await ret.init();
     return ret;
   }
 
-  async init(account_file)
+  async init()
   {
     debug('Init');
 
     // Constants
     this.ROLE_STORAGE = new U64(0x00);
-
-    // Super init
-    await super.init(account_file);
   }
 
   /*
@@ -57,13 +53,13 @@ class RolesApi extends BalancesApi
   {
     role = role || this.ROLE_STORAGE;
 
-    if (!await this.isMember(accountId)) {
+    if (!await this.base.identities.isMember(accountId)) {
       const msg = `Account with id "${accountId}" is not a member!`;
       debug(msg);
       throw new Error(msg);
     }
 
-    if (!await this.hasBalanceForRoleStaking(accountId, role)) {
+    if (!await this.base.balances.hasBalanceForRoleStaking(accountId, role)) {
       const msg = `Account with id "${accountId}" does not have sufficient free balance for role staking!`;
       debug(msg);
       throw new Error(msg);
@@ -78,13 +74,13 @@ class RolesApi extends BalancesApi
    */
   async requiredBalanceForRoleStaking(role)
   {
-    const params = await this.api.query.actors.parameters(role);
+    const params = await this.base.api.query.actors.parameters(role);
     if (_.isEqual(params.raw, new Null())) {
       throw new Error(`Role ${role} is not defined!`);
     }
     const result = params.raw.min_stake
       .add(params.raw.entry_request_fee)
-      .add(await this.baseTransactionFee());
+      .add(await this.base.balances.baseTransactionFee());
     return result;
   }
 
@@ -95,7 +91,7 @@ class RolesApi extends BalancesApi
   async hasBalanceForRoleStaking(accountId, role)
   {
     const required = await this.requiredBalanceForRoleStaking(role);
-    return await this.hasMinimumBalanceOf(accountId, required);
+    return await this.base.balances.hasMinimumBalanceOf(accountId, required);
   }
 
   /*
@@ -104,7 +100,7 @@ class RolesApi extends BalancesApi
   async transferForStaking(from, to, role)
   {
     const required = await this.requiredBalanceForRoleStaking(role);
-    return await this.transfer(from, to, required);
+    return await this.base.balances.transfer(from, to, required);
   }
 
   /*
@@ -112,7 +108,7 @@ class RolesApi extends BalancesApi
    */
   async accountIdsByRole(role)
   {
-    const ids = await this.api.query.actors.accountIdsByRole(role);
+    const ids = await this.base.api.query.actors.accountIdsByRole(role);
     return ids.map(id => id.toString());
   }
 
@@ -127,14 +123,14 @@ class RolesApi extends BalancesApi
    */
   async applyForRole(roleAccountId, role, memberAccountId)
   {
-    const memberId = await this.memberIdOf(memberAccountId);
+    const memberId = await this.base.identities.memberIdOf(memberAccountId);
     if (_.isEqual(memberId.raw, new Null())) {
       throw new Error('Account is not a member!');
     }
     const converted = memberId.raw;
 
-    const tx = this.api.tx.actors.roleEntryRequest(role, converted);
-    return await this.signAndSendWithRetry(roleAccountId, tx);
+    const tx = this.base.api.tx.actors.roleEntryRequest(role, converted);
+    return await this.base.signAndSendWithRetry(roleAccountId, tx);
   }
 
   /*
@@ -142,7 +138,7 @@ class RolesApi extends BalancesApi
    */
   async checkForRole(roleAccountId, role)
   {
-    const actor = await this.api.query.actors.actorByAccountId(roleAccountId);
+    const actor = await this.base.api.query.actors.actorByAccountId(roleAccountId);
     return !_.isEqual(actor.raw, new Null());
   }
 
