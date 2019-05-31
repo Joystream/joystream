@@ -193,20 +193,20 @@ function list_repo(store, repo_id)
 
 async function run_signup(account_file)
 {
-  const runtime_api = require('@joystream/runtime-api');
-  const api = await runtime_api.create(account_file);
+  const { RuntimeApi } = require('@joystream/runtime-api');
+  const api = await RuntimeApi.create({account_file});
   const member_address = api.key.address();
 
   // Check if account works
-  const min = await api.requiredBalanceForRoleStaking(api.ROLE_STORAGE);
+  const min = await api.roles.requiredBalanceForRoleStaking(api.roles.ROLE_STORAGE);
   console.log(`Account needs to be a member and have a minimum balance of ${min.toString()}`);
-  const check = await api.checkAccountForStaking(member_address);
+  const check = await api.role.checkAccountForStaking(member_address);
   if (check) {
     console.log('Account is working for staking, proceeding.');
   }
 
   // Create a role key
-  const role_key = await api.createRoleKey(member_address);
+  const role_key = await api.identities.createRoleKey(member_address);
   const role_address = role_key.address();
   console.log('Generated', role_address, '- this is going to be exported to a JSON file.\n',
     ' You can provide an empty passphrase to make starting the server easier,\n',
@@ -215,27 +215,27 @@ async function run_signup(account_file)
   console.log('Identity stored in', filename);
 
   // Ok, transfer for staking.
-  await api.transferForStaking(member_address, role_address, api.ROLE_STORAGE);
+  await api.roles.transferForStaking(member_address, role_address, api.roles.ROLE_STORAGE);
   console.log('Funds transferred.');
 
   // Now apply for the role
-  await api.applyForRole(role_address, api.ROLE_STORAGE, member_address);
+  await api.roles.applyForRole(role_address, api.roles.ROLE_STORAGE, member_address);
   console.log('Role application sent.\nNow visit Roles > My Requests in the app.');
 }
 
 async function wait_for_role(config)
 {
   // Load key information
-  const runtime_api = require('@joystream/runtime-api');
+  const { RuntimeApi } = require('@joystream/runtime-api');
   const keyFile = config.get('keyFile');
   if (!keyFile) {
     throw new Error("Must specify a key file for running a storage node! Sign up for the role; see `colussus --help' for details.");
   }
-  const api = await runtime_api.create(keyFile);
+  const api = await RuntimeApi.create({account_file: keyFile});
 
   // Wait for the account role to be finalized
   console.log('Waiting for the account to be staked as a storage provider role...');
-  const result = await api.waitForRole(api.key.address(), api.ROLE_STORAGE);
+  const result = await api.roles.waitForRole(api.identities.key.address(), api.roles.ROLE_STORAGE);
   return [result, api];
 }
 
