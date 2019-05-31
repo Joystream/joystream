@@ -57,10 +57,8 @@ const DEFAULT_FILE_INFO = {
  * Nitpicking, but it also means we can add our default type if things
  * go wrong.
  */
-function fix_file_info(stream)
+function fix_file_info(info)
 {
-  var info = stream.fileType;
-  delete(stream.fileType);
   if (!info) {
     info = DEFAULT_FILE_INFO;
   }
@@ -68,6 +66,13 @@ function fix_file_info(stream)
     info.mime_type = info.mime;
     delete(info.mime);
   }
+  return info;
+}
+
+function fix_file_info_on_stream(stream)
+{
+  var info = fix_file_info(stream.fileType);
+  delete(stream.fileType);
   stream.file_info = info;
   return stream;
 }
@@ -89,6 +94,7 @@ class StorageWriteStream extends Transform
 
     // Create temp target.
     this.temp = temp.createWriteStream();
+    this.buf = Buffer.alloc(0);
   }
 
   _transform(chunk, encoding, callback)
@@ -100,6 +106,21 @@ class StorageWriteStream extends Transform
 
     debug('Writing temporary chunk', chunk.length, chunk);
     this.temp.write(chunk);
+
+    // Try to detect file type during streaming.
+    if (!this.file_info && this.buf < file_type.minimumBytes) {
+      this.buf = Buffer.concat([this.buf, chunk]);
+
+      if (this.buf >= file_type.minimumBytes) {
+        const info = file_type(this.buf);
+        // No info? We can try again at the end of the stream.
+        if (info) {
+          this.file_info = fix_file_info(info);
+          this.emit('file_info', this.file_info);
+        }
+      }
+    }
+
     callback(null);
   }
 
@@ -107,6 +128,20 @@ class StorageWriteStream extends Transform
   {
     debug('Flushing temporary stream:', this.temp.path);
     this.temp.end();
+
+    // Since we're finished, we can try to detect the file type again.
+    if (!this.file_info) {
+      const read = fs.createReadStream(this.temp.path);
+      file_type.stream(read)
+        .then((stream) => {
+          this.file_info = fix_file_info_on_stream(stream).file_info;
+          this.emit('file_info', this.file_info);
+        })
+        .catch((err) => {
+          debug('Error trying to detect file type at end-of-stream:', err);
+        });
+    }
+
     callback(null);
   }
 
@@ -326,7 +361,7 @@ class Storage
           found = true;
 
           const ft_stream = await file_type.stream(result.content);
-          resolve(fix_file_info(ft_stream));
+          resolve(fix_file_info_on_stream(ft_stream));
         }
       });
       ls.on('error', (err) => {

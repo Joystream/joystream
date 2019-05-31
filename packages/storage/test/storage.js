@@ -32,7 +32,7 @@ const IPFS_CID_REGEX = /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/;
 
 function write(store, content_id, contents, callback)
 {
-  store.open('content_id', 'w')
+  store.open(content_id, 'w')
     .then((stream) => {
 
       stream.on('finish', () => {
@@ -94,6 +94,44 @@ describe('storage/storage', () => {
         expect(hash).to.not.be.undefined;
         expect(hash).to.match(IPFS_CID_REGEX)
         done();
+      });
+    });
+
+    it('detects the MIME type of a write stream', (done) => {
+      const contents = fs.readFileSync('../../banner.svg');
+      Storage.create({
+        resolve_content_id: () => {
+          return hash;
+        },
+      })
+      .then((store) => {
+        var file_info;
+        store.open('mime-test', 'w')
+          .then((stream) => {
+
+            stream.on('file_info', (info) => {
+              // Could filter & abort here now, but we're just going to set this,
+              // and expect it to be set later...
+              file_info = info;
+            });
+
+            stream.on('finish', () => {
+              stream.commit();
+            });
+            stream.on('committed', (hash) => {
+              // ... if file_info is not set here, there's an issue.
+              expect(file_info).to.have.property('mime_type', 'application/xml');
+              expect(file_info).to.have.property('ext', 'xml');
+
+              done();
+            });
+
+            stream.write(contents);
+            stream.end();
+          })
+          .catch((err) => {
+            expect.fail(err);
+          });
       });
     });
 
