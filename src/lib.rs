@@ -649,14 +649,8 @@ decl_module! {
 
                 Self::build_category_tree_path(parent_category_id, &mut category_tree_path);
 
-                // If path is empty, it just means the parent did not exist,
-                // which means teh user provided an invalid parent category id.
-                ensure!(category_tree_path.len() > 0,
-                    ERROR_PARENT_CATEGORY_DOES_NOT_EXIST
-                );
-
                 // Can we mutate in this category?
-                Self::ensure_can_add_subcategory_to_path_tip(&category_tree_path)?;
+                Self::ensure_can_add_subcategory_to_parent_at_path_tip(&category_tree_path)?;
             }
 
             let next_category_id = <NextCategoryId<T>>::get();
@@ -738,7 +732,13 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_can_add_subcategory_to_path_tip(category_tree_path:&CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) -> dispatch::Result {
+    fn ensure_can_add_subcategory_to_parent_at_path_tip(category_tree_path:&CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) -> dispatch::Result {
+
+        // If path is empty, it just means the parent did not exist,
+        // which means teh user provided an invalid parent category id.
+        ensure!(category_tree_path.len() > 0,
+            ERROR_PARENT_CATEGORY_DOES_NOT_EXIST
+        );
 
         Self::ensure_can_mutate_in_category(category_tree_path)?;
 
