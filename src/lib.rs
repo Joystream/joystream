@@ -673,6 +673,9 @@ decl_module! {
             // Update other things
             <NextCategoryId<T>>::put(next_category_id + 1);
 
+            // Generate event
+            Self::deposit_event(RawEvent::CategoryCreated(next_category_id));
+
             Ok(())
         }
         
