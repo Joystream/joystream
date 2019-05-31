@@ -185,9 +185,7 @@ class Storage
     }
 
     // Read stream - with file type detection
-    const ipfs_stream = await this._create_read_stream(content_id, timeout);
-    const ft_stream = await file_type.stream(ipfs_stream);
-    return this._fix_file_info(ft_stream);
+    return await this._create_read_stream(content_id, timeout);
   }
 
   _fix_file_info(stream)
@@ -243,10 +241,12 @@ class Storage
     var found = false;
     return await this._with_specified_timeout(timeout, (resolve, reject) => {
       const ls = this.ipfs.getReadableStream(resolved);
-      ls.on('data', (result) => {
+      ls.on('data', async (result) => {
         if (result.path === resolved) {
           found = true;
-          resolve(result.content);
+
+          const ft_stream = await file_type.stream(result.content);
+          resolve(this._fix_file_info(ft_stream));
         }
       });
       ls.on('error', (err) => {
