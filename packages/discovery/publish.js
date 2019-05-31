@@ -2,7 +2,7 @@ const ipfsClient = require('ipfs-http-client')
 const debug = require('debug')('discovery::publish')
 
 const SERVICES_KEY_NAME = 'services'
-const DEFAULT_LIFETIME = 600
+const DEFAULT_LIFETIME = 14400 // Service key shouldn't change very often
 
 function bufferFrom(data) {
     data = typeof data === 'string' ? data : JSON.stringify(data)
@@ -50,6 +50,7 @@ async function refreshAccountInfo(accountId, keyId, runtimeApi) {
     let currentInfo = await runtimeApi.discovery.getAccountInfo(accountId)
 
     if (currentInfo == null ||
+        // change checking blockNumber so we refresh before expiery
         currentBlockHeader.blockNumber.gt(currentInfo.expires_at) ||
         currentInfo.identity.toString() !== keyId) {
         debug('updating account info')

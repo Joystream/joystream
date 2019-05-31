@@ -68,6 +68,8 @@ const cli = meow(`
                       sufficient balance for staking as a storage provider.
                       Writes a new account file that should be used to run the
                       storage node.
+    down              Signal to network that all services are down. Running
+                      the server will signal that services as online again.
 
   Options:
     --config=PATH, -c PATH  Configuration file path. Defaults to
@@ -284,6 +286,10 @@ async function announce_public_url(api, config) {
   }, reannounceAfterMilliSeconds)
 }
 
+async function go_offline(api) {
+  let _ = await api.discovery.unsetAccountInfo(api.identities.key.address())
+}
+
 // Simple CLI commands
 var command = cli.input[0];
 if (!command) {
@@ -367,6 +373,28 @@ const commands = {
     const ret = run_signup(account_file);
     ret.catch(console.error).finally(_ => process.exit());
   },
+  'down': () => {
+    const cfg = create_config(pkg.name, cli.flags);
+
+    const errfunc = (err) => {
+      console.log(err);
+      process.exit(-1);
+    }
+
+    const promise = wait_for_role(cfg);
+    promise
+      .then((values) => {
+        const result = values[0]
+        const api = values[1];
+        if (!result) {
+          throw new Error(`Not staked as storage role.`);
+        }
+
+        let ret = go_offline(api)
+        ret.catch(console.error).finally(_ => process.exit());
+      })
+      .catch(errfunc);
+  }
 };
 
 if (commands.hasOwnProperty(command)) {
