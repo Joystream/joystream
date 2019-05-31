@@ -109,7 +109,7 @@ describe('storage/storage', () => {
       });
     });
 
-    it('detects the file type of a read stream', (done) => {
+    it('detects the MIME type of a read stream', (done) => {
       const contents = fs.readFileSync('../../banner.svg');
       create_known_object('foobar', contents, (store, hash) => {
         store.open('foobar', 'r')
@@ -127,8 +127,27 @@ describe('storage/storage', () => {
             expect.fail(err);
           });
       });
-
     });
+
+    it('provides default MIME type for read streams', (done) => {
+      const contents = 'test-for-reading';
+      create_known_object('foobar', contents, (store, hash) => {
+        store.open('foobar', 'r')
+          .then((stream) => {
+            const data = read_all(stream);
+            expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0);
+
+            expect(stream.file_info).to.have.property('mime_type', 'application/octet-stream');
+            expect(stream.file_info).to.have.property('ext', 'bin');
+            done();
+          })
+          .catch((err) => {
+            expect.fail(err);
+          });
+      });
+    });
+
+
   });
 
   describe('stat()', () => {
