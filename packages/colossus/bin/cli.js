@@ -249,12 +249,12 @@ async function wait_for_role(config)
 function get_service_information(config) {
   // For now assume we run all services on the same endpoint
   return({
-    assets: {
-      version: 1, // howto get version from openapi
+    asset: {
+      version: 0, // howto get version from openapi
       endpoint: config.get('publicUrl')
     },
-    discovery: {
-      version: 1, // howto get version from openapi
+    discover: {
+      version: 0, // howto get version from openapi
       endpoint: config.get('publicUrl')
     }
   })

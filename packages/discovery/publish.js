@@ -5,8 +5,14 @@ const SERVICES_KEY_NAME = 'services'
 const DEFAULT_LIFETIME = 14400 // Service key shouldn't change very often
 
 function bufferFrom(data) {
-    data = typeof data === 'string' ? data : JSON.stringify(data)
-    return Buffer.from(data, 'utf-8')
+    return Buffer.from(JSON.stringify(data), 'utf-8')
+}
+
+function encodeServiceInfo(info) {
+    return bufferFrom({
+        serialized: JSON.stringify(info),
+        // signature: ''
+    })
 }
 
 async function publish (accountId, service_info, runtimeApi) {
@@ -26,7 +32,7 @@ async function publish (accountId, service_info, runtimeApi) {
     }
 
     debug('adding service info file to node')
-    const files = await ipfs.add(bufferFrom(service_info))
+    const files = await ipfs.add(encodeServiceInfo(service_info))
 
     debug('publishing...')
     const published = await ipfs.name.publish(files[0].hash, {
