@@ -45,6 +45,10 @@ const FLAG_DEFINITIONS = {
     type: 'string',
     _default: 'hyperdrive',
   },
+  'publicUrl': {
+    type: 'string',
+    alias: 'u'
+  },
 };
 
 const cli = meow(`
@@ -74,6 +78,7 @@ const cli = meow(`
     --key-file              JSON key export file to use as the storage provider.
     --storage=PATH, -s PATH Storage path to use.
     --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "hyperdrive".
+    --public-url=URL, -u    Public URL to announce. No URL will be announced if not specified.
   `,
   { flags: FLAG_DEFINITIONS });
 
