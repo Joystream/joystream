@@ -97,9 +97,9 @@ module.exports = function(config, storage, substrate)
 
       // First check if we're the liaison for the name, otherwise we can bail
       // out already.
-      const role_addr = substrate.key.address();
+      const role_addr = substrate.identities.key.address();
       try {
-        await substrate.checkLiaisonForDataObject(role_addr, name);
+        await substrate.assets.checkLiaisonForDataObject(role_addr, name);
       } catch (err) {
         res.status(403).send({ message: err.toString() });
         return;
@@ -116,10 +116,10 @@ module.exports = function(config, storage, substrate)
         res.status(filter_result.code).send({ message: filter_result.message });
 
         // Reject the content
-        await substrate.rejectContent(role_addr, name);
+        await substrate.assets.rejectContent(role_addr, name);
         return;
       }
-      await substrate.acceptContent(role_addr, name);
+      await substrate.assets.acceptContent(role_addr, name);
 
       // Open file
       repo.open(name, 'w', (err, type, stream) => {
@@ -138,8 +138,8 @@ module.exports = function(config, storage, substrate)
 //        util_ranges.send(res, stream, opts);
         ft_stream.on('end', async () => {
           // Create storage relationship and flip it to ready.
-          const dosr_id = await substrate.createAndReturnStorageRelationship(role_addr, name);
-          await substrate.toggleStorageRelationshipReady(role_addr, dosr_id, true);
+          const dosr_id = await substrate.assets.createAndReturnStorageRelationship(role_addr, name);
+          await substrate.assets.toggleStorageRelationshipReady(role_addr, dosr_id, true);
 
           res.status(200).send({ message: 'Asset uploaded.' });
         });
