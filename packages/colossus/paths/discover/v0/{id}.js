@@ -33,7 +33,7 @@ module.exports = function(config, storage, substrate)
             }
           })
           .catch((err) => {
-            res.status(500).end()
+            res.status(400).end()
           })
     }
   };
