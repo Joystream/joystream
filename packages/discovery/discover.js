@@ -39,16 +39,24 @@ async function discover_over_ipfs_http_gateway(actorAccountId, runtimeApi, gatew
     return response.data
 }
 
-async function discover_over_joystream_discovery_service(actorAccountId, runtimeApi, gateway) {
+async function discover_over_joystream_discovery_service(actorAccountId, runtimeApi, discoverApiEndpoint) {
     let isActor = await runtimeApi.identities.isActor(actorAccountId)
 
     if (!isActor) {
         throw new Error('Cannot discover non actor account service info')
     }
 
-    if (!gateway) {
-        // get gateway select a bootstrap endpoint
+    if (!discoverApiEndpoint) {
+        // TODO: get from bootstrap nodes, or discovered endpoints
+        discoverApiEndpoint = 'https://storage-node.joystream.org/discover/v0/'
     }
+
+    const url = `${discoverApiEndpoint}/${actorAccountId}`
+
+    // should have parsed if data was json?
+    const response = await axios.get(url)
+
+    return response.data
 }
 
 async function discover_over_local_ipfs_node(actorAccountId, runtimeApi) {
