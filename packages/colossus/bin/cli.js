@@ -70,6 +70,7 @@ const cli = meow(`
                       storage node.
     down              Signal to network that all services are down. Running
                       the server will signal that services as online again.
+    jds               Run a discovery server only.
 
   Options:
     --config=PATH, -c PATH  Configuration file path. Defaults to
@@ -126,7 +127,16 @@ function start_app(project_root, store, api, config)
   const app = require('../lib/app')(store, api, config);
   const port = config.get('port');
   app.listen(port);
-  console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
+  console.log('Storage API server started; API docs at http://localhost:' + port + '/swagger.json');
+}
+
+// Start discovery service app
+function start_discovery_app(api, config)
+{
+  const app = require('../lib/discovery_app')(api, config);
+  const port = config.get('port');
+  app.listen(port);
+  console.log('Discovery Service API server started; API docs at http://localhost:' + port + '/swagger.json');
 }
 
 // Get an initialized storage instance
@@ -394,6 +404,13 @@ const commands = {
         ret.catch(console.error).finally(_ => process.exit());
       })
       .catch(errfunc);
+  },
+  'jds': async () => {
+    debug("Starting Joystream Discovery Service")
+    const { RuntimeApi } = require('@joystream/runtime-api')
+    const cfg = create_config(pkg.name, cli.flags)
+    const api = await RuntimeApi.create()
+    start_discovery_app(api, cfg)
   }
 };
 

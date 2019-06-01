@@ -40,12 +40,14 @@ async function discover_over_ipfs_http_gateway(actorAccountId, runtimeApi, gatew
 }
 
 async function discover_over_joystream_discovery_service(actorAccountId, runtimeApi, gateway) {
-    // JSD will be similar to ipfs http gateway except it would only resolve
-    // known actor account ids
     let isActor = await runtimeApi.identities.isActor(actorAccountId)
 
     if (!isActor) {
         throw new Error('Cannot discover non actor account service info')
+    }
+
+    if (!gateway) {
+        // get gateway select a bootstrap endpoint
     }
 }
 
@@ -72,7 +74,7 @@ async function discover_over_local_ipfs_node(actorAccountId, runtimeApi) {
     // there should only be one file published under the resolved path
     let content = data[0].content
 
-    // if there is endpoint information about JDS (joystream discovery service)
+    // verify information and if 'discovery' service found
     // add it to our list of bootstrap nodes
 
     // TODO cache result or flag

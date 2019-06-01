@@ -10,8 +10,10 @@ async function main() {
     let published = await publish.publish(
         "5Gn9n7SDJ7VgHqHQWYzkSA4vX6DCmS5TFWdHxikTXp9b4L32",
         {
-            version: 1,
-            data: 'http://endpoint.com'
+            asset: {
+                version: 1,
+                endpoint: 'http://endpoint.com'
+            }
         },
         runtimeApi
     )
