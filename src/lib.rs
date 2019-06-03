@@ -208,9 +208,19 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+
+#[cfg(feature = "std")]
+#[macro_use]
+extern crate serde_derive;
+
+use rstd::prelude::*;
+//use parity_codec::Codec;
+
+use parity_codec_derive::{Decode, Encode};
 use srml_support::traits::Currency;
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, StorageValue};
 use system::ensure_signed;
+use system;
 
 use rstd::collections::btree_map::BTreeMap;
 
@@ -241,17 +251,20 @@ pub trait ForumUserRegistry<AccountId> {
 }
 
 /// Convenient composite time stamp 
-struct BlockchainTimestamp<BlockNumber, Moment> {
+//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct BlockchainTimestamp<BlockNumber, Moment> {
     block : BlockNumber,
     time: Moment
 }
 
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 /// Represents a moderation outcome applied to a post or a thread. 
-struct ModerationAction<BlockNumber, Moment, AccountId> {
+//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct ModerationAction<BlockNumber, Moment, AccountId> {
 
     /// When action occured.
-    occured_at: BlockchainTimestamp<BlockNumber, Moment>,
+    moderated_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Account forum sudo which acted.
     moderator_id: AccountId,
@@ -262,7 +275,9 @@ struct ModerationAction<BlockNumber, Moment, AccountId> {
 }
 
 /// Represents a revision of the text of a Post
-struct PostTextEdit<BlockNumber, Moment> {
+//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct PostTextEdit<BlockNumber, Moment> {
 
     /// What this edit occured.
     edited_at: BlockchainTimestamp<BlockNumber, Moment>,
@@ -271,9 +286,13 @@ struct PostTextEdit<BlockNumber, Moment> {
     new_text: Vec<u8>
 }
 
+/// Represents a post identifier
+pub type PostId = u64;
+
 /// Represents a thread post
-type PostId = u64;
-struct Post<BlockNumber, Moment, AccountId> {
+//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Post<BlockNumber, Moment, AccountId> {
 
     /// Post identifier
     id: PostId,
@@ -281,8 +300,11 @@ struct Post<BlockNumber, Moment, AccountId> {
     /// Id of thread to which this post corresponds.
     thread_id: ThreadId,
 
-    // Position of post in thread.
-    position: u64,
+    /// The post number of this post in its thread, i.e. total number of posts added (including this)
+    /// to a thread when it was added.
+    /// Is needed to give light clients assurance about getting all posts in a given range,
+    // `created_at` is not sufficient.
+    post_nr: u32,
 
     /// Initial text of post
     initial_text: Vec<u8>,
@@ -301,9 +323,13 @@ struct Post<BlockNumber, Moment, AccountId> {
 
 }
 
+/// Represents a thread identifier
+pub type ThreadId = u64;
+
 /// Represents a thread
-type ThreadId = u64;
-struct Thread<BlockNumber, Moment, AccountId> {
+//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Thread<BlockNumber, Moment, AccountId> {
 
     /// Thread identifier
     id : ThreadId,
@@ -314,8 +340,11 @@ struct Thread<BlockNumber, Moment, AccountId> {
     /// Category in which this thread lives
     category_id: CategoryId,
 
-    /// Position of thread in category.
-    position: u64,
+    /// The thread number of this thread in its category, i.e. total number of thread added (including this)
+    /// to a category when it was added.
+    /// Is needed to give light clients assurance about getting all threads in a given range,
+    /// `created_at` is not sufficient.
+    thread_nr: u32,
 
     /// Possible moderation of this thread
     moderation : Option<ModerationAction<BlockNumber, Moment, AccountId>>,
@@ -333,9 +362,13 @@ struct Thread<BlockNumber, Moment, AccountId> {
     author_id : AccountId
 }
 
+/// Represents a category identifier
+pub type CategoryId = u64;
+
 /// Represents a category
-type CategoryId = u64;
-struct Category<BlockNumber, Moment, AccountId> {
+//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Category<BlockNumber, Moment, AccountId> {
 
     /// Category identifier
     id : CategoryId,
@@ -367,20 +400,12 @@ struct Category<BlockNumber, Moment, AccountId> {
     /// Parent category, if present, otherwise this category is a root categoryl
     parent_id: Option<CategoryId>,
 
-    /// Account of the forum sudo which created category.
-    forum_sudo_creator: AccountId
+    /// Account of the moderator which created category.
+    moderator_id: AccountId
 }
 
+pub trait Trait: system::Trait + timestamp::Trait + Sized {
 
-pub type BalanceOf<T> =
-    <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-
-/// Our module's configuration trait. All our types and consts go in here. If the
-/// module is dependent on specific other modules, then their configuration traits
-/// should be added to our implied traits list.
-///
-/// `system::Trait` should always be included in our implied traits.
-pub trait Trait: system::Trait + Sized {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -390,58 +415,65 @@ pub trait Trait: system::Trait + Sized {
 }
 
 decl_storage! {
-    // A macro for the Storage trait, and its implementation, for this module.
-    // This allows for type-safe usage of the Substrate storage database, so you can
-    // keep things around between blocks.
-    trait Store for Module<T: Trait> as Example {
-        // Any storage declarations of the form:
-        //   `pub? Name get(getter_name)? [config()|config(myname)] [build(|_| {...})] : <type> (= <new_default_value>)?;`
-        // where `<type>` is either:
-        //   - `Type` (a basic value item); or
-        //   - `map KeyType => ValueType` (a map item).
-        //
-        // Note that there are two optional modifiers for the storage type declaration.
-        // - `Foo: Option<u32>`:
-        //   - `Foo::put(1); Foo::get()` returns `Some(1)`;
-        //   - `Foo::kill(); Foo::get()` returns `None`.
-        // - `Foo: u32`:
-        //   - `Foo::put(1); Foo::get()` returns `1`;
-        //   - `Foo::kill(); Foo::get()` returns `0` (u32::default()).
-        // e.g. Foo: u32;
-        // e.g. pub Bar get(bar): map T::AccountId => Vec<(BalanceOf<T>, u64)>;
-        //
-        // For basic value items, you'll get a type which implements
-        // `support::StorageValue`. For map items, you'll get a type which
-        // implements `support::StorageMap`.
-        //
-        // If they have a getter (`get(getter_name)`), then your module will come
-        // equipped with `fn getter_name() -> Type` for basic value items or
-        // `fn getter_name(key: KeyType) -> ValueType` for map items.
-        Dummy get(dummy) config(): Option<BalanceOf<T>>;
+    trait Store for Module<T: Trait> as Forum {
 
-        // A map that has enumerable entries.
-        Bar get(bar) config(): linked_map T::AccountId => BalanceOf<T>;
+        /// Map category identifier to corresponding category.
+        pub CategoryById get(category_by_id) config(): map CategoryId => Category<T::BlockNumber, T::Moment, T::AccountId>;
 
-        // this one uses the default, we'll demonstrate the usage of 'mutate' API.
-        Foo get(foo) config(): BalanceOf<T>;
+        /// Category identifier value to be used for the next Category created.
+        pub NextCategoryId get(next_category_id) config(): CategoryId;
 
+        /// Map thread identifier to corresponding thread.
+        pub ThreadById get(thread_by_id): map ThreadId => Thread<T::BlockNumber, T::Moment, T::AccountId>;
 
-        // ==== Constraints ====
+        /// Thread identifier value to be used for next Thread in threadById.
+        pub NextThreadId get(next_thread_id) config(): ThreadId;
+
+        /// Map post identifier to corresponding post.
+        pub PostById get(post_by_id): map PostId => Post<T::BlockNumber, T::Moment, T::AccountId>;
+
+        /// Post identifier value to be used for for next post created.
+        pub NextPostId get(next_post_id) config(): PostId;
+
+        /// Account of forum sudo.
+        pub ForumSudo get(forum_sudo) config(): T::AccountId;
+
+        // === Add constraints here ===
 
     }
 }
 
 decl_event!(
-    /// Events are a simple means of reporting specific conditions and
-    /// circumstances that have happened that users, Dapps and/or chain explorers would find
-    /// interesting and otherwise difficult to detect.
     pub enum Event<T>
     where
-        B = BalanceOf<T>,
+        <T as system::Trait>::AccountId,
     {
-        // Just a normal `enum`, here's a dummy event to ensure it compiles.
-        /// Dummy event, just here so there's a generic type that's used.
-        Dummy(B),
+        /// A category was introduced
+        CategoryCreated(CategoryId),
+
+        /// A category with given id was updated. 
+        /// The second argument reflects the new archival status of the category, if changed.
+        /// The third argument reflects the new deletion status of the category, if changed.
+        CategoryUpdated(CategoryId, Option<bool>, Option<bool>),
+
+        /// A thread with given id was created.
+        ThreadCreated(ThreadId),
+
+        /// A thread with given id was moderated.
+        ThreadModerated(ThreadId),
+
+        /// Post with given id was created.
+        PostAdded(PostId),
+
+        /// Post with givne id was moderated.
+        PostModerated(PostId),
+
+        /// Post with given id had its text updated.
+        /// The second argument reflects the number of total edits when the text update occurs.
+        PostTextUpdated(PostId, u64),
+
+        /// Given account was set as forum sudo.
+        ForumSudoSet(AccountId),
     }
 );
 
@@ -476,53 +508,17 @@ decl_event!(
 // in system that do the matching for you and return a convenient result: `ensure_signed`,
 // `ensure_root` and `ensure_inherent`.
 decl_module! {
-    // Simple declaration of the `Module` type. Lets the macro know what its working on.
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         /// Deposit one of this module's events by using the default implementation.
         /// It is also possible to provide a custom implementation.
         /// For non-generic events, the generic parameter just needs to be dropped, so that it
         /// looks like: `fn deposit_event() = default;`.
         fn deposit_event<T>() = default;
-        /// This is your public interface. Be extremely careful.
-        /// This is just a simple example of how to interact with the module from the external
-        /// world.
-        // This just increases the value of `Dummy` by `increase_by`.
-        //
-        // Since this is a dispatched function there are two extremely important things to
-        // remember:
-        //
-        // - MUST NOT PANIC: Under no circumstances (save, perhaps, storage getting into an
-        // irreparably damaged state) must this function panic.
-        // - NO SIDE-EFFECTS ON ERROR: This function must either complete totally (and return
-        // `Ok(())` or it must have no side-effects on storage and return `Err('Some reason')`.
-        //
-        // The first is relatively easy to audit for - just ensure all panickers are removed from
-        // logic that executes in production (which you do anyway, right?!). To ensure the second
-        // is followed, you should do all tests for validity at the top of your function. This
-        // is stuff like checking the sender (`origin`) or that state is such that the operation
-        // makes sense.
-        //
-        // Once you've determined that it's all good, then enact the operation and change storage.
-        // If you can't be certain that the operation will succeed without substantial computation
-        // then you have a classic blockchain attack scenario. The normal way of managing this is
-        // to attach a bond to the operation. As the first major alteration of storage, reserve
-        // some value from the sender's account (`Balances` module has a `reserve` function for
-        // exactly this scenario). This amount should be enough to cover any costs of the
-        // substantial execution in case it turns out that you can't proceed with the operation.
-        //
-        // If it eventually transpires that the operation is fine and, therefore, that the
-        // expense of the checks should be borne by the network, then you can refund the reserved
-        // deposit. If, however, the operation turns out to be invalid and the computation is
-        // wasted, then you can burn it or repatriate elsewhere.
-        //
-        // Security bonds ensure that attackers can't game it by ensuring that anyone interacting
-        // with the system either progresses it or pays for the trouble of faffing around with
-        // no progress.
-        //
-        // If you don't respect these rules, it is likely that your chain will be attackable.
-        fn accumulate_dummy(origin, increase_by: BalanceOf<T>) -> dispatch::Result {
+
+
+        fn accumulate_dummy(origin) -> dispatch::Result {
             // This is a public call, so we ensure that the origin is some signed account.
-            let sender = ensure_signed(origin)?;
+            //let sender = ensure_signed(origin)?;
 
             //// let _ = T::MembershipRegistry::ensure_member(sender)?;
 
@@ -540,13 +536,13 @@ decl_module! {
             // <Dummy<T>>::put(&new_dummy);
 
             // Here's the new one of read and then modify the value.
-            <Dummy<T>>::mutate(|dummy| {
-                let new_dummy = dummy.map_or(increase_by, |dummy| dummy + increase_by);
-                *dummy = Some(new_dummy);
-            });
+            //<Dummy<T>>::mutate(|dummy| {
+            //    let new_dummy = dummy.map_or(increase_by, |dummy| dummy + increase_by);
+            //    *dummy = Some(new_dummy);
+            //});
 
             // Let's deposit an event to let the outside world know this happened.
-            Self::deposit_event(RawEvent::Dummy(increase_by));
+            //Self::deposit_event(RawEvent::Dummy(increase_by));
 
             // All good.
             Ok(())
@@ -561,10 +557,12 @@ decl_module! {
         // without worrying about gameability or attack scenarios.
         // If you not specify `Result` explicitly as return value, it will be added automatically
         // for you and `Ok(())` will be returned.
+        /*
         fn set_dummy(#[compact] new_value: BalanceOf<T>) {
             // Put the new value into storage.
-            <Dummy<T>>::put(new_value);
+            //<Dummy<T>>::put(new_value);
         }
+        */
 
         // The signature could also look like: `fn on_initialize()`
         fn on_initialize(_n: T::BlockNumber) {
@@ -576,7 +574,7 @@ decl_module! {
         fn on_finalize(_n: T::BlockNumber) {
             // Anything that needs to be done at the end of the block.
             // We just kill our dummy storage item.
-            <Dummy<T>>::kill();
+            //<Dummy<T>>::kill();
         }
 
         // A runtime code run after every block and have access to extended set of APIs.
@@ -597,8 +595,11 @@ decl_module! {
 // - Private functions. These are your usual private utilities unavailable to other modules.
 impl<T: Trait> Module<T> {
     // Add public immutables and private mutables.
+
+    /*
     #[allow(dead_code)]
     fn accumulate_foo(origin: T::Origin, increase_by: BalanceOf<T>) -> dispatch::Result {
+        
         let _sender = ensure_signed(origin)?;
 
         let prev = <Foo<T>>::get();
@@ -611,6 +612,7 @@ impl<T: Trait> Module<T> {
 
         Ok(())
     }
+    */
 }
 
 #[cfg(test)]
@@ -659,11 +661,16 @@ mod tests {
         type TransferPayment = ();
         type DustRemoval = ();
     }
+    impl timestamp::Trait for Test {
+        type Moment = u64;
+        type OnTimestampSet = ();
+    }
     impl Trait for Test {
         type Event = ();
         type Currency = Balances;
         type MembershipRegistry = MockForumUserRegistry<<Test as system::Trait>::AccountId>;
     }
+
 
     // Mock implementation o
     pub struct MockForumUser<AccountId>  {
@@ -696,7 +703,7 @@ mod tests {
     
     type Example = Module<Test>;
     type Balances = balances::Module<Test>;
-
+/*
     // This function basically just builds a genesis storage key/value store according to
     // our desired mockup.
     fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
@@ -746,6 +753,7 @@ mod tests {
         });
     }
 
+    
     #[test]
     fn it_works_for_default_value() {
         with_externalities(&mut new_test_ext(), || {
@@ -754,4 +762,5 @@ mod tests {
             assert_eq!(Example::foo(), 25);
         });
     }
+    */
 }
