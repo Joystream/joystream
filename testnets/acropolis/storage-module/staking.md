@@ -78,6 +78,7 @@ An un-bonding period follows after which the funds in the role account become tr
 - `RoleAccountIdsByMemberId`: Map of member identifier to list of role accounts
 - `EntryRequests`: List of pending requests to enter storage provider role
 - `RequestLifeTime`: Duration of time before a role entry request expires
+- `TrancheIdsByDataObjectTypeId`: Mapping of tranches available for a `DataObjectType`
 
 Tranche Operational Parameters
 
@@ -88,8 +89,13 @@ Tranche Operational Parameters
 - `FixedRewardPeriod`: Map of tranche identifier to Optional BlockNumber
 - `UnbondingPeriod`: Map of tranche identifier to Optional BlockNumber
 - `EntryRequestFee`: Map of tranche identifier to Optional Fee Amount
+- `DataObjectTypeId`: The `DataObjectType` for which this tranche is created.
 
 Tranche identifier starts at 0. So if TrancheCount = 4, the identifiers of the created tranches are 0, 1, 2, and 3.
+
+**Note:** Currently, tranches are not limited in size. When good tooling for
+monitoring and creating tranches is available, the intend is to limit tranches
+in size, and add new ones before storage space runs out.
 
 ## Events
 Each event has payload as sublist
