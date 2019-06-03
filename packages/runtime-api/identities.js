@@ -102,7 +102,7 @@ class IdentitiesApi
   {
     // Query for passphrase
     const prompt = require('password-prompt');
-    return prompt(`Enter passphrase for ${address}: `);
+    return prompt(`Enter passphrase for ${address}: `, { required: false });
   }
 
   /*

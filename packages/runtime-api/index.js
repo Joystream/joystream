@@ -148,7 +148,7 @@ class RuntimeApi
     var attempts_left = attempts;
 
     // Prepare key
-    const from_key = this.keyring.getPair(accountId);
+    const from_key = this.identities.keyring.getPair(accountId);
     if (from_key.isLocked()) {
       throw new Error('Must unlock key before using it to sign!');
     }

@@ -59,7 +59,7 @@ class RolesApi
       throw new Error(msg);
     }
 
-    if (!await this.base.balances.hasBalanceForRoleStaking(accountId, role)) {
+    if (!await this.hasBalanceForRoleStaking(accountId, role)) {
       const msg = `Account with id "${accountId}" does not have sufficient free balance for role staking!`;
       debug(msg);
       throw new Error(msg);
