@@ -195,12 +195,12 @@ async function run_signup(account_file)
 {
   const { RuntimeApi } = require('@joystream/runtime-api');
   const api = await RuntimeApi.create({account_file});
-  const member_address = api.key.address();
+  const member_address = api.identities.key.address();
 
   // Check if account works
   const min = await api.roles.requiredBalanceForRoleStaking(api.roles.ROLE_STORAGE);
   console.log(`Account needs to be a member and have a minimum balance of ${min.toString()}`);
-  const check = await api.role.checkAccountForStaking(member_address);
+  const check = await api.roles.checkAccountForStaking(member_address);
   if (check) {
     console.log('Account is working for staking, proceeding.');
   }
@@ -211,7 +211,7 @@ async function run_signup(account_file)
   console.log('Generated', role_address, '- this is going to be exported to a JSON file.\n',
     ' You can provide an empty passphrase to make starting the server easier,\n',
     ' but you must keep the file very safe, then.');
-  const filename = await api.writeKeyPairExport(role_address);
+  const filename = await api.identities.writeKeyPairExport(role_address);
   console.log('Identity stored in', filename);
 
   // Ok, transfer for staking.
