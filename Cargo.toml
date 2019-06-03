@@ -24,6 +24,12 @@ git = 'https://github.com/joystream/substrate.git'
 package = 'srml-timestamp'
 rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
 
+[dependencies.runtime-io]
+default_features = false
+git = 'https://github.com/joystream/substrate.git'
+package = 'sr-io'
+rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+
 [dependencies.serde_derive]
 optional = true
 version = '1.0'
@@ -39,6 +45,7 @@ std = [
 	"parity-codec/std",
 	"parity-codec-derive/std",
 	"rstd/std",
+	"runtime-io/std",
 	"runtime-primitives/std",
 	"srml-support/std",
 	"system/std",

@@ -208,18 +208,106 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-
 #[cfg(feature = "std")]
 #[macro_use]
 extern crate serde_derive;
 
 use rstd::prelude::*;
-//use parity_codec::Codec;
 
 use parity_codec_derive::{Decode, Encode};
-use srml_support::traits::Currency;
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, StorageValue};
-use system::ensure_signed;
+use srml_support::{ decl_event, decl_module, decl_storage, ensure, dispatch, StorageValue, StorageMap};
+
+/// Length constraint for input validation
+
+enum LengthValidationResult {
+    TooShort,
+    TooLong,
+    Success
+}
+
+struct InputValidationLengthConstraint {
+
+    /// Minimum length
+    min : usize,
+
+    /// Maximum length
+    /// While having max would have been more direct, this
+    /// way makes max < min unrepresentable semantically, 
+    /// which is safer.
+    max_as_min_diff: usize,
+}
+
+impl InputValidationLengthConstraint {
+    
+    /// Helper for computing max
+    fn max(&self) -> usize {
+        self.min + self.max_as_min_diff
+    }
+
+    /// Just to give method interface to read min, like max
+    fn min(&self) -> usize {
+        self.min
+    }
+
+    fn validate(&self, length: usize) -> LengthValidationResult {
+
+        if length < self.min {
+            LengthValidationResult::TooShort
+        }
+        else if length > self.max() {
+            LengthValidationResult::TooLong
+        }
+        else {
+            LengthValidationResult::Success
+        }
+    } 
+
+    // TODO: add more vliadtion stuff here in the future?
+}
+
+/// Constants
+const CATEGORY_TITLE: InputValidationLengthConstraint = InputValidationLengthConstraint{
+    min: 3,
+    max_as_min_diff: 30
+};
+
+const CATEGORY_DESCRIPTION: InputValidationLengthConstraint = InputValidationLengthConstraint{
+    min: 10,
+    max_as_min_diff: 140
+};
+
+/// The greatest valid depth of a category.
+/// The depth of a root category is 0.
+const MAX_CATEGORY_DEPTH: u32 = 3;
+
+/// Error messages for dispatchables
+/// Later perhaps make error message functions, to add parametization
+
+const ERROR_FORUM_SUDO_NOT_SET: &str = "Forum sudo not set.";
+const ERROR_ORIGIN_NOT_FORUM_SUDO: &str = "Origin not forum sudo.";
+
+const ERROR_CATEGORY_TITLE_TOO_SHORT: &str = "Category title too short.";
+const ERROR_CATEGORY_TITLE_TOO_LONG: &str = "Category title too long.";
+
+const ERROR_CATEGORY_DESCRIPTION_TOO_SHORT: &str = "Category description too long.";
+const ERROR_CATEGORY_DESCRIPTION_TOO_LONG: &str = "Category description too long.";
+
+const ERROR_PARENT_CATEGORY_DOES_NOT_EXIST: &str = "Parent category does not exist.";
+const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str = "Ancestor category immutable, i.e. deleted or archived";
+const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
+
+
+//use srml_support::storage::*;
+
+//use sr_io::{StorageOverlay, ChildrenStorageOverlay};
+
+//#[cfg(feature = "std")]
+//use runtime_io::{StorageOverlay, ChildrenStorageOverlay};
+
+//#[cfg(any(feature = "std", test))]
+//use sr_primitives::{StorageOverlay, ChildrenStorageOverlay};
+
+use system::{ensure_signed};
 use system;
 
 use rstd::collections::btree_map::BTreeMap;
@@ -388,6 +476,11 @@ pub struct Category<BlockNumber, Moment, AccountId> {
     /// Whether category is archived.
     archived: bool,
 
+    /*
+     * These next three numbers are not maintained currently, 
+     * they inadverdently made it into the spec without being
+     * part of the user storeis
+     
     /// Number direct subcategories.
     num_direct_subcategories: u64,
 
@@ -396,6 +489,7 @@ pub struct Category<BlockNumber, Moment, AccountId> {
 
     /// Number of moderated threads directly in this category.
     num_direct_moderated_threads: u64,
+    */
 
     /// Parent category, if present, otherwise this category is a root categoryl
     parent_id: Option<CategoryId>,
@@ -404,12 +498,13 @@ pub struct Category<BlockNumber, Moment, AccountId> {
     moderator_id: AccountId
 }
 
+/// Represents a sequence of categories which have child-parent relatioonship
+/// where last element is final ancestor, or root, in the context of the category tree.
+type CategoryTreePath<BlockNumber, Moment, AccountId> = Vec<Category<BlockNumber, Moment, AccountId>>;
+
 pub trait Trait: system::Trait + timestamp::Trait + Sized {
 
-    /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-
-    type Currency: Currency<Self::AccountId>;
 
     type MembershipRegistry: ForumUserRegistry<Self::AccountId>;
 }
@@ -424,23 +519,48 @@ decl_storage! {
         pub NextCategoryId get(next_category_id) config(): CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(thread_by_id): map ThreadId => Thread<T::BlockNumber, T::Moment, T::AccountId>;
+        pub ThreadById get(thread_by_id) config(): map ThreadId => Thread<T::BlockNumber, T::Moment, T::AccountId>;
 
         /// Thread identifier value to be used for next Thread in threadById.
         pub NextThreadId get(next_thread_id) config(): ThreadId;
 
         /// Map post identifier to corresponding post.
-        pub PostById get(post_by_id): map PostId => Post<T::BlockNumber, T::Moment, T::AccountId>;
+        pub PostById get(post_by_id) config(): map PostId => Post<T::BlockNumber, T::Moment, T::AccountId>;
 
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): PostId;
 
         /// Account of forum sudo.
-        pub ForumSudo get(forum_sudo) config(): T::AccountId;
+        pub ForumSudo get(forum_sudo) config(): Option<T::AccountId>;
 
         // === Add constraints here ===
 
+        // Will add all the constrainst here later!
+
     }
+    /*
+    JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
+    Review : https://github.com/paritytech/polkadot/blob/620b8610431e7b5fdd71ce3e94c3ee0177406dcc/runtime/src/parachains.rs#L123-L141
+
+    add_extra_genesis {
+
+        // Explain why we need to put this here.
+        config(initial_forum_sudo) : Option<T::AccountId>;
+
+        build(|
+            storage: &mut generator::StorageOverlay, 
+            _: &mut generator::ChildrenStorageOverlay,
+            config: &GenesisConfig<T>
+            | {
+
+
+			if let Some(account_id) = &config.initial_forum_sudo {
+                println!("{}: <ForumSudo<T>>::put(account_id)", account_id); 
+                <ForumSudo<T> as generator::StorageValue<_>>::put(&account_id, storage);
+            }
+		})
+    }
+    */
 }
 
 decl_event!(
@@ -473,146 +593,260 @@ decl_event!(
         PostTextUpdated(PostId, u64),
 
         /// Given account was set as forum sudo.
-        ForumSudoSet(AccountId),
+        ForumSudoSet(Option<AccountId>, Option<AccountId>),
     }
 );
 
-// The module declaration. This states the entry points that we handle. The
-// macro takes care of the marshalling of arguments and dispatch.
-//
-// Anyone can have these functions execute by signing and submitting
-// an extrinsic. Ensure that calls into each of these execute in a time, memory and
-// using storage space proportional to any costs paid for by the caller or otherwise the
-// difficulty of forcing the call to happen.
-//
-// Generally you'll want to split these into three groups:
-// - Public calls that are signed by an external account.
-// - Root calls that are allowed to be made only by the governance system.
-// - Inherent calls that are allowed to be made only by the block authors and validators.
-//
-// Information about where this dispatch initiated from is provided as the first argument
-// "origin". As such functions must always look like:
-//
-// `fn foo(origin, bar: Bar, baz: Baz) -> Result;`
-//
-// The `Result` is required as part of the syntax (and expands to the conventional dispatch
-// result of `Result<(), &'static str>`).
-//
-// When you come to `impl` them later in the module, you must specify the full type for `origin`:
-//
-// `fn foo(origin: T::Origin, bar: Bar, baz: Baz) { ... }`
-//
-// There are three entries in the `system::Origin` enum that correspond
-// to the above bullets: `::Signed(AccountId)`, `::Root` and `::Inherent`. You should always match
-// against them as the first thing you do in your function. There are three convenience calls
-// in system that do the matching for you and return a convenient result: `ensure_signed`,
-// `ensure_root` and `ensure_inherent`.
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        /// Deposit one of this module's events by using the default implementation.
-        /// It is also possible to provide a custom implementation.
-        /// For non-generic events, the generic parameter just needs to be dropped, so that it
-        /// looks like: `fn deposit_event() = default;`.
+
         fn deposit_event<T>() = default;
 
+        /// Set forum sudo.
+        fn set_forum_sudo(newForumSudo: Option<T::AccountId>) -> dispatch::Result {
 
-        fn accumulate_dummy(origin) -> dispatch::Result {
-            // This is a public call, so we ensure that the origin is some signed account.
-            //let sender = ensure_signed(origin)?;
+            /*
+             * Question: when this routine is called by non sudo or with bad signature, what error is raised?
+             * Update ERror set in spec
+             */
 
-            //// let _ = T::MembershipRegistry::ensure_member(sender)?;
+            // Hold on to old value
+            let oldForumSudo = <ForumSudo<T>>::get().clone();
 
-            // Read the value of dummy from storage.
-            // let dummy = Self::dummy();
-            // Will also work using the `::get` on the storage item type itself:
-            // let dummy = <Dummy<T>>::get();
+            // Update forum sudo
+            match newForumSudo.clone() {
+                Some(accountId) => <ForumSudo<T>>::put(accountId),
+                None => <ForumSudo<T>>::kill()
+            };
 
-            // Calculate the new value.
-            // let new_dummy = dummy.map_or(increase_by, |dummy| dummy + increase_by);
-
-            // Put the new value into storage.
-            // <Dummy<T>>::put(new_dummy);
-            // Will also work with a reference:
-            // <Dummy<T>>::put(&new_dummy);
-
-            // Here's the new one of read and then modify the value.
-            //<Dummy<T>>::mutate(|dummy| {
-            //    let new_dummy = dummy.map_or(increase_by, |dummy| dummy + increase_by);
-            //    *dummy = Some(new_dummy);
-            //});
-
-            // Let's deposit an event to let the outside world know this happened.
-            //Self::deposit_event(RawEvent::Dummy(increase_by));
+            // Generate event
+            Self::deposit_event(RawEvent::ForumSudoSet(oldForumSudo, newForumSudo));
 
             // All good.
             Ok(())
         }
 
-        /// A privileged call; in this case it resets our dummy value to something new.
-        // Implementation of a privileged call. This doesn't have an `origin` parameter because
-        // it's not (directly) from an extrinsic, but rather the system as a whole has decided
-        // to execute it. Different runtimes have different reasons for allow privileged
-        // calls to be executed - we don't need to care why. Because it's privileged, we can
-        // assume it's a one-off operation and substantial processing/storage/memory can be used
-        // without worrying about gameability or attack scenarios.
-        // If you not specify `Result` explicitly as return value, it will be added automatically
-        // for you and `Ok(())` will be returned.
-        /*
-        fn set_dummy(#[compact] new_value: BalanceOf<T>) {
-            // Put the new value into storage.
-            //<Dummy<T>>::put(new_value);
-        }
-        */
+        /// Add a new category.
+        fn create_category(origin, parent: Option<CategoryId>, title: Vec<u8>, description: Vec<u8>) -> dispatch::Result {
 
-        // The signature could also look like: `fn on_initialize()`
-        fn on_initialize(_n: T::BlockNumber) {
-            // Anything that needs to be done at the start of the block.
-            // We don't do anything here.
-        }
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
 
-        // The signature could also look like: `fn on_finalize()`
-        fn on_finalize(_n: T::BlockNumber) {
-            // Anything that needs to be done at the end of the block.
-            // We just kill our dummy storage item.
-            //<Dummy<T>>::kill();
-        }
+            // Not signed by forum SUDO
+            Self::ensure_is_forum_sudo(&who)?;
 
-        // A runtime code run after every block and have access to extended set of APIs.
-        //
-        // For instance you can generate extrinsics for the upcoming produced block.
-        fn offchain_worker(_n: T::BlockNumber) {
-            // We don't do anything here.
-            // but we could dispatch extrinsic (transaction/inherent) using
-            // runtime_io::submit_extrinsic
+            // Validate title
+            ensure_category_title_is_valid(&title)?;
+
+            // Validate description
+            ensure_category_description_is_valid(&description)?;
+
+            // If not root, then check that we can create in parent category
+            if let Some(parent_category_id) = parent {
+
+                // Get path from parent to root of category tree.
+                let mut category_tree_path = vec![];
+
+                Self::build_category_tree_path(parent_category_id, &mut category_tree_path);
+
+                // Can we mutate in this category?
+                Self::ensure_can_add_subcategory_to_parent_at_path_tip(&category_tree_path)?;
+            }
+
+            let next_category_id = <NextCategoryId<T>>::get();
+
+            // Create new category
+            let new_category = Category {
+                id : next_category_id,
+                title : title.clone(),
+                description: description.clone(),
+                created_at : Self::current_block_and_time(),
+                deleted: false,
+                archived: false,
+                parent_id: parent,
+                moderator_id: who
+            };
+
+            // Insert category in map
+            <CategoryById<T>>::insert(new_category.id, new_category);
+
+            // Update other things
+            <NextCategoryId<T>>::put(next_category_id + 1);
+
+            Ok(())
+        }
+        
+        /// Update category
+        fn update_category(origin, category_id: CategoryId, archive: bool, deleted: bool) -> dispatch::Result {
+
+            Ok(())
         }
     }
 }
 
-// The main implementation block for the module. Functions here fall into three broad
-// categories:
-// - Public interface. These are functions that are `pub` and generally fall into inspector
-// functions that do not write to storage and operation functions that do.
-// - Private functions. These are your usual private utilities unavailable to other modules.
+fn ensure_category_title_is_valid(title: &Vec<u8>) -> Result<(),&'static str> {
+
+    match CATEGORY_TITLE.validate(title.len()) {
+        LengthValidationResult::TooShort => Err(ERROR_CATEGORY_TITLE_TOO_SHORT),
+        LengthValidationResult::TooLong => Err(ERROR_CATEGORY_TITLE_TOO_LONG),
+        LengthValidationResult::Success => Ok(())
+    }
+}
+
+fn ensure_category_description_is_valid(description: &Vec<u8>) -> Result<(),&'static str> {
+
+    match CATEGORY_DESCRIPTION.validate(description.len()) {
+        LengthValidationResult::TooShort => Err(ERROR_CATEGORY_DESCRIPTION_TOO_SHORT),
+        LengthValidationResult::TooLong => Err(ERROR_CATEGORY_DESCRIPTION_TOO_LONG),
+        LengthValidationResult::Success => Ok(())
+    }
+
+}
+
 impl<T: Trait> Module<T> {
-    // Add public immutables and private mutables.
 
-    /*
-    #[allow(dead_code)]
-    fn accumulate_foo(origin: T::Origin, increase_by: BalanceOf<T>) -> dispatch::Result {
-        
-        let _sender = ensure_signed(origin)?;
+    fn current_block_and_time() -> BlockchainTimestamp<T::BlockNumber, T::Moment> {
 
-        let prev = <Foo<T>>::get();
-        // Because Foo has 'default', the type of 'foo' in closure is the raw type instead of an Option<> type.
-        let result = <Foo<T>>::mutate(|foo| {
-            *foo = *foo + increase_by;
-            *foo
-        });
-        assert!(prev + increase_by == result);
+        BlockchainTimestamp {
+            block: <system::Module<T>>::block_number(),
+            time: <timestamp::Module<T>>::now(),
+        }
+    }
 
+    fn ensure_forum_sudo_set() -> Result<T::AccountId, &'static str> {
+
+        match <ForumSudo<T>>::get() {
+            Some(account_id) => Ok(account_id),
+            None => Err(ERROR_FORUM_SUDO_NOT_SET)
+        }
+    }
+
+    fn ensure_is_forum_sudo(account_id: &T::AccountId) -> dispatch::Result {
+
+        let forum_sudo_account = Self::ensure_forum_sudo_set()?;
+
+        ensure!(
+            *account_id == forum_sudo_account,
+            ERROR_ORIGIN_NOT_FORUM_SUDO
+        );
         Ok(())
     }
+
+    fn ensure_can_add_subcategory_to_parent_at_path_tip(category_tree_path:&CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) -> dispatch::Result {
+
+        // If path is empty, it just means the parent did not exist,
+        // which means teh user provided an invalid parent category id.
+        ensure!(category_tree_path.len() > 0,
+            ERROR_PARENT_CATEGORY_DOES_NOT_EXIST
+        );
+
+        Self::ensure_can_mutate_in_category(category_tree_path)?;
+
+        // Does adding a new category exceed maximum depth
+        let depth_of_new_category = 1 + 1 + category_tree_path.len();
+
+        ensure!(depth_of_new_category <= MAX_CATEGORY_DEPTH as usize,
+            ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED
+        );   
+
+        Ok(())
+
+    }
+
+    fn ensure_can_mutate_in_category(category_tree_path:&CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) -> dispatch::Result {
+
+        // Is parent category directly or indirectly deleted or archived category
+        ensure!(!category_tree_path.iter().any(|c:&Category<T::BlockNumber, T::Moment, T::AccountId>| c.deleted || c.archived ),
+            ERROR_ANCESTOR_CATEGORY_IMMUTABLE
+        );
+
+    
+        Ok(())
+    }
+
+
+
+/*
+    fn ensure_category_exits(category_id:&CategoryId) -> Result<Category<T::BlockNumber, T::Moment, T::AccountId> , &'static str> {
+
+        if <CategoryById<T>>::exists(category_id) {
+            <CategoryById<T>>::get(category_id)
+        } else {
+            Err("Category does not exist.")
+        }
+
+        Err("dddd")
+    }
+*/
+
+    fn build_category_tree_path(category_id:CategoryId, path: &mut CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) {
+
+        // <CategoryById<T>>::exists(&category_id)
+
+        if <CategoryById<T>>::exists(&category_id) {
+
+            // Grab category
+            let category = <CategoryById<T>>::get(category_id);
+
+            // Copy out parent_id field
+            let parent_id_field = category.parent_id.clone();
+
+            // Add category to path container
+            path.push(category);
+
+            // Make recursive call on parent if we are not at root
+            if let Some(parent_category_id) = parent_id_field {
+                Self::build_category_tree_path(parent_category_id, path);
+            }
+        }
+
+    }
+
+/*
+    /// Populate 'ancestors' vector with ancestors of provided category 'category', starting with parents in front of vector.
+    fn get_ancestor_categories(
+        category: &Category<T::BlockNumber, T::Moment, T::AccountId>, 
+        ancestors: &mut Vec<Category<T::BlockNumber, T::Moment, T::AccountId>>
+        ) {
+
+        let mut parent_id_field = &category.parent_id;
+
+        while parent_id_field.is_some() {
+
+            // Get parent id
+            let parent_id = parent_id_field.unwrap();
+
+            // Grab parent category
+            let parent_category = <CategoryById<T>>::get(&parent_id);
+
+            // Add to ancestors
+            ancestors.push(parent_category);
+
+            // Move on to (possible) parent of parent
+            parent_id_field = &ancestors.last().unwrap().parent_id; //&parent_category.parent_id;
+        }
+
+        
+    }
     */
+
+    /*
+    /// Determines how deep a category is nested, a top level category has depth 0.
+    fn get_category_depth<BlockNumber, Moment, AccountId>(category:&Category<BlockNumber, Moment, AccountId>) -> u32 {
+
+        if let Some(parent_id) = category.parent_id {
+
+            // Get parent
+            let parent_category = <CategoryById<T>>::get(&parent_id);
+
+            Self::get_category_depth(&parent_category) + 1
+        }
+        else {
+            0
+        }
+    }
+    */
+
 }
 
 #[cfg(test)]
@@ -621,12 +855,12 @@ mod tests {
 
     use primitives::{Blake2Hasher, H256};
     use runtime_io::with_externalities;
-    use srml_support::{assert_ok, impl_outer_origin};
+    use srml_support::{impl_outer_origin, assert_ok}; // assert, assert_eq
     // The testing primitives are very useful for avoiding having to work with signatures
     // or public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
     use runtime_primitives::{
         testing::{Digest, DigestItem, Header},
-        traits::{BlakeTwo256, IdentityLookup, OnFinalize, OnInitialize},
+        traits::{BlakeTwo256, IdentityLookup}, //OnFinalize, OnInitialize},
         BuildStorage,
     };
 
@@ -667,10 +901,12 @@ mod tests {
     }
     impl Trait for Test {
         type Event = ();
-        type Currency = Balances;
         type MembershipRegistry = MockForumUserRegistry<<Test as system::Trait>::AccountId>;
     }
 
+    type TestForumModule = Module<Test>;
+
+    /// FACTOR THESE MOCKS OUT!
 
     // Mock implementation o
     pub struct MockForumUser<AccountId>  {
@@ -687,8 +923,6 @@ mod tests {
     pub struct MockForumUserRegistry<AccountId: std::cmp::Ord> {
 
         forum_user_from_id: BTreeMap<AccountId, <Self as ForumUserRegistry<AccountId>>::ForumUser>
-        
-        // HashMap<AccountId, <Self as ForumUserRegistry<AccountId>>::ForumUser>
     }
 
     impl<AccountId> ForumUserRegistry<AccountId> for MockForumUserRegistry<AccountId> where AccountId: std::cmp::Ord{
@@ -700,67 +934,177 @@ mod tests {
         }
         
     }
+
+    fn initialize_membership_registry() {
+
+    }
     
-    type Example = Module<Test>;
-    type Balances = balances::Module<Test>;
-/*
     // This function basically just builds a genesis storage key/value store according to
     // our desired mockup.
-    fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-        let mut t = system::GenesisConfig::<Test>::default()
+
+    // refactor
+    /// - add each config as parameter, then 
+    /// 
+    
+    fn default_genesis_config() -> GenesisConfig<Test> {
+
+        GenesisConfig::<Test> {
+            category_by_id: vec![], // endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
+            next_category_id: 0,
+            thread_by_id: vec![],
+            next_thread_id: 0,
+            post_by_id: vec![],
+            next_post_id: 0,
+
+            forum_sudo: 33
+
+
+            // JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
+
+            // Extra genesis fields
+            //initial_forum_sudo: Some(143)
+        }
+    }
+
+    // Wanted to have payload: a: &GenesisConfig<Test>
+    // but borrow checker made my life miserabl, so giving up for now.
+    fn build_test_externalities() -> runtime_io::TestExternalities<Blake2Hasher> {
+
+        let t = default_genesis_config()
             .build_storage()
             .unwrap()
             .0;
-        // We use default for brevity, but you can configure as desired if needed.
-        t.extend(
-            balances::GenesisConfig::<Test>::default()
-                .build_storage()
-                .unwrap()
-                .0,
-        );
-        t.extend(
-            GenesisConfig::<Test> {
-                dummy: 42,
-                // we configure the map with (key, value) pairs.
-                bar: vec![(1, 2), (2, 3)],
-                foo: 24,
-            }
-            .build_storage()
-            .unwrap()
-            .0,
-        );
+
         t.into()
     }
 
+    /*
+     * NB!: No test checks for even emission!!!!
+     */
+
+    /*
+     * set_forum_sudo 
+     * ==============================================================================
+     * 
+     * Missing cases
+     * 
+     * set_forum_bad_origin
+     * 
+     */
+
     #[test]
-    fn it_works_for_optional_value() {
-        with_externalities(&mut new_test_ext(), || {
-            // Check that GenesisBuilder works properly.
-            assert_eq!(Example::dummy(), Some(42));
+    fn set_forum_sudo_unset() {
+        with_externalities(&mut build_test_externalities(), || {
 
-            // Check that accumulate works when we have Some value in Dummy already.
-            assert_ok!(Example::accumulate_dummy(Origin::signed(1), 27));
-            assert_eq!(Example::dummy(), Some(69));
+            // Ensure that forum sudo is default
+            assert_eq!(TestForumModule::forum_sudo(), Some(33));
 
-            // Check that finalizing the block removes Dummy from storage.
-            <Example as OnFinalize<u64>>::on_finalize(1);
-            assert_eq!(Example::dummy(), None);
+            // Unset forum sudo
+            assert_ok!(TestForumModule::set_forum_sudo(None));
 
-            // Check that accumulate works when we Dummy has None in it.
-            <Example as OnInitialize<u64>>::on_initialize(2);
-            assert_ok!(Example::accumulate_dummy(Origin::signed(1), 42));
-            assert_eq!(Example::dummy(), Some(42));
+            // Sudo no longer set
+            assert!(!<ForumSudo<Test>>::exists());
+
+            // event emitted?!
+
         });
     }
 
-    
     #[test]
-    fn it_works_for_default_value() {
-        with_externalities(&mut new_test_ext(), || {
-            assert_eq!(Example::foo(), 24);
-            assert_ok!(Example::accumulate_foo(Origin::signed(1), 1));
-            assert_eq!(Example::foo(), 25);
+    fn set_forum_sudo_update() {
+        with_externalities(&mut build_test_externalities(), || {
+
+            // Ensure that forum sudo is default
+            assert_eq!(TestForumModule::forum_sudo(), Some(default_genesis_config().forum_sudo));
+
+            let new_forum_sudo_account_id = 780;
+
+            // Unset forum sudo
+            assert_ok!(TestForumModule::set_forum_sudo(Some(new_forum_sudo_account_id)));
+
+            // Sudo no longer set
+            //assert!(!<ForumSudo<Test>>::exists());
+            assert_eq!(<ForumSudo<Test>>::get(), Some(new_forum_sudo_account_id));
+
         });
     }
-    */
+
+    /*
+     * create_category 
+     * ==============================================================================
+     * 
+     * Missing cases
+     * 
+     * create_category_bad_origin
+     * create_category_forum_sudo_not_set
+     * create_category_forum_origin_not_forum_sudo
+     * create_category_title_too_short
+     * create_category_title_too_long
+     * create_category_description_too_short
+     * create_category_description_too_long
+     */
+
+    // Here are a few testing utilities and fixtures, will reorganize
+    // later with more tests.
+
+    enum OriginType {
+        Signed(<Test as system::Trait>::AccountId),
+        //Inherent, <== did not find how to make such an origin yet
+        Root
+    }
+
+    struct CreateCategoryFixture {
+        origin: OriginType,
+        parent: Option<CategoryId>,
+        title: Vec<u8>,
+        description: Vec<u8>
+    }
+
+    impl CreateCategoryFixture {
+
+        fn call_module(&self) -> dispatch::Result {
+
+            TestForumModule::create_category(
+                match self.origin {
+                    OriginType::Signed(account_id) => Origin::signed(account_id),
+                    //OriginType::Inherent => Origin::inherent,
+                    OriginType::Root => system::RawOrigin::Root.into() //Origin::root
+                },
+                self.parent,
+                self.title.clone(),
+                self.description.clone()
+            )
+        }
+    }
+
+    #[test]
+    fn create_category_successfully() {
+        with_externalities(&mut build_test_externalities(), || {
+
+            // Make some new catg
+            let f1 = CreateCategoryFixture {
+                origin: OriginType::Signed(default_genesis_config().forum_sudo),
+                parent: None,
+                title: "My new category".as_bytes().to_vec(),
+                description: "This is a great new category for the forum".as_bytes().to_vec()
+            };
+
+            // let f2 = ...
+            // let f3 = ...
+            // let f4 = ...
+
+            // Make module call
+            f1.call_module().is_ok();
+
+            // f2.call_module();
+            // f3.call_module();
+            // f4.call_module();
+
+            // assert state!
+
+        });
+    }
+
+
+
 }
