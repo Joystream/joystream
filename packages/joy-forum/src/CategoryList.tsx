@@ -24,17 +24,37 @@ function CategoryActions (props: CategoryActionsProps) {
   const { dispatch } = useForum();
   const className = 'ui button ActionButton';
 
-  const updateBoolFieldOnCategory = (fieldName: string) => {
-    category.set(fieldName, new Bool(true));
+  const updateBoolFieldOnCategory = (fieldName: string, flag: boolean) => {
+    category.set(fieldName, new Bool(flag));
     dispatch({ type: 'UpdateCategory', category, id: id.toNumber() });
   };
 
+  if (category.archived) {
+    const unarchiveCategory = () => {
+      updateBoolFieldOnCategory('archived', false);
+    };
+    {/* TODO show 'Unarchive' button only if I am forum sudo */}
+    return (
+      <Button icon='file archive outline' content='Unarchive' onClick={unarchiveCategory} />
+    );
+  }
+
+  if (category.deleted) {
+    const undeleteCategory = () => {
+      updateBoolFieldOnCategory('deleted', false);
+    };
+    {/* TODO show 'Undelete' button only if I am forum sudo */}
+    return (
+      <Button icon='trash alternate outline' content='Undelete' onClick={undeleteCategory} />
+    );
+  }
+
   const archiveCategory = () => {
-    updateBoolFieldOnCategory('archived');
+    updateBoolFieldOnCategory('archived', true);
   };
 
   const deleteCategory = () => {
-    updateBoolFieldOnCategory('deleted');
+    updateBoolFieldOnCategory('deleted', true);
   };
 
   return <span className='JoyInlineActions'>
@@ -93,9 +113,6 @@ function ViewCategory (props: ViewCategoryProps) {
   }
 
   const renderCategoryActions = () => {
-    if (category.archived || category.deleted) {
-      return null;
-    }
     return <CategoryActions id={id} category={category} />;
   };
 
