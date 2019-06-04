@@ -104,7 +104,8 @@ class StorageWriteStream extends Transform
       chunk = Buffer.from(chunk);
     }
 
-    debug('Writing temporary chunk', chunk.length, chunk);
+    // Logging this all the time is too verbose
+    // debug('Writing temporary chunk', chunk.length, chunk);
     this.temp.write(chunk);
 
     // Try to detect file type during streaming.
