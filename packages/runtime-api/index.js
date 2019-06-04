@@ -185,10 +185,15 @@ class RuntimeApi
           }
         })
         .catch((err) => {
-          if (err && err.toString().indexOf(' 1014:') < 0) { // Bad nonce
-            debug('TX error', err);
-            reject(err);
-            return;
+          if (err) {
+            const errstr = err.toString();
+            if (errstr.indexOf(' 1014:') < 0 && // bad nonce
+                errstr.indexOf(' 1010:') < 0) // bad transaction
+            {
+              debug('TX error', err);
+              reject(err);
+              return;
+            }
           }
 
           if (--attempts_left <= 0) {
