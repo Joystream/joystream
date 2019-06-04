@@ -39,11 +39,8 @@ const pagination = require('@joystream/util/pagination');
 const storage = require('@joystream/storage');
 
 // Configure app
-function create_app(storage, substrate, config)
+function create_app(storage, runtime, config)
 {
-  const store_path = config.get('storage');
-  const store_type = config.get('storageType');
-
   const app = express();
   app.use(cors());
   app.use(bodyParser.json());
@@ -68,7 +65,7 @@ function create_app(storage, substrate, config)
     dependencies: {
       config: config,
       storage: storage,
-      substrate: substrate,
+      runtime: runtime,
     },
   });
 
