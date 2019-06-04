@@ -58,6 +58,26 @@ class AssetsApi
   }
 
   /*
+   * Store storage backend related metadata for a given content ID.
+   */
+  async setStorageMetadata(contentId, metadata)
+  {
+    // TODO needs a runtime change. Fake it until you make it.
+    this.metadata = this.metadata || {};
+    this.metadata[contentId] = metadata;
+  }
+
+  /*
+   * Retrieve storage backend related metadata for a given content ID.
+   */
+  async getStorageMetadata(contentId)
+  {
+    // TODO needs a runtime change. Fake it until you make it.
+    this.metadata = this.metadata || {};
+    return this.metadata[contentId];
+  }
+
+  /*
    * Verify the liaison state for a DO:
    * - Check the content ID has a DO
    * - Check the account is the liaison
