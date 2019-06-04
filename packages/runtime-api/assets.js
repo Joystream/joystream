@@ -34,6 +34,20 @@ class AssetsApi
   }
 
   /*
+   * Create a data object.
+   */
+  async createDataObject(accountId, contentId, doTypeId, size)
+  {
+    contentId = parseContentId(contentId)
+    const tx = this.base.api.tx.dataDirectory.addContent(contentId, doTypeId, size);
+    await this.base.signAndSendWithRetry(accountId, tx);
+
+    // If the data object constructed properly, we should now be able to return
+    // the data object from the state.
+    return await this.getDataObject(contentId);
+  }
+
+  /*
    * Return the Data Object for a CID
    */
   async getDataObject(contentId)
