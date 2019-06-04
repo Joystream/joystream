@@ -9,6 +9,8 @@ const meow = require('meow');
 const configstore = require('configstore');
 const chalk = require('chalk');
 const figlet = require('figlet');
+const _ = require('lodash');
+
 const debug = require('debug')('joystream:cli');
 
 // Project root
@@ -36,15 +38,6 @@ const FLAG_DEFINITIONS = {
     type: 'string',
     alias: 'c',
   },
-  storage: {
-    type: 'string',
-    alias: 's',
-    _default: path.resolve(project_root, './storage'),
-  },
-  'storageType': {
-    type: 'string',
-    _default: 'hyperdrive',
-  },
 };
 
 const cli = meow(`
@@ -53,12 +46,6 @@ const cli = meow(`
 
   Commands:
     server [default]  Run a server instance with the given configuration.
-    create            Create a repository in the configured storage location.
-                      If a second argument is given, it is a directory from which
-                      the repository will be populated.
-    list              Output a list of storage entries. If an argument is given,
-                      it is interpreted as a repo ID, and the contents of the
-                      repo are listed instead.
     signup            Sign up as a storage provider. Requires that you provide
                       a JSON account file of an account that is a member, and has
                       sufficient balance for staking as a storage provider.
@@ -72,8 +59,6 @@ const cli = meow(`
     --sync-period           Number of milliseconds to wait between synchronization
                             runs. Defaults to 30,000 (30s).
     --key-file              JSON key export file to use as the storage provider.
-    --storage=PATH, -s PATH Storage path to use.
-    --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "hyperdrive".
   `,
   { flags: FLAG_DEFINITIONS });
 
@@ -114,81 +99,32 @@ function banner()
 }
 
 // Start app
-function start_app(project_root, store, api, config)
+async function start_app(project_root, store, api, config)
 {
   const app = require('../lib/app')(store, api, config);
   const port = config.get('port');
-  app.listen(port);
-  console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
+
+  const http = require('http');
+  const server = http.createServer(app);
+
+  return new Promise((resolve, reject) => {
+    server.on('error', reject);
+    server.on('close', (...args) => {
+      console.log('Server closed, shutting down...');
+      resolve(...args);
+    });
+    server.listen(port);
+    console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
+  });
 }
 
 // Get an initialized storage instance
-function get_storage(config)
+async function get_storage(config)
 {
-  const store_path = config.get('storage');
-  const store_type = config.get('storageType');
-
-  const storage = require('@joystream/storage');
-
-  const store = new storage.Storage(store_path, storage.DEFAULT_POOL_SIZE,
-      store_type);
-
-  return store;
-}
-
-// List repos in a storage
-function list_repos(store)
-{
-  console.log('Repositories in storage:');
-  store.repos((err, id) => {
-    if (err) {
-      console.log(err);
-      return;
-    }
-    if (!id) {
-      return;
-    }
-    console.log(`  ${id}`);
-  });
-}
-
-// List repository contents
-function list_repo(store, repo_id)
-{
-  console.log(`Contents of repository "${repo_id}":`);
-  const repo = store.get(repo_id);
-  const fswalk = require('@joystream/util/fs/walk');
-  const siprefix = require('si-prefix');
-
-  fswalk('/', repo.archive, (err, relname, stat) => {
-    if (err) {
-      throw err;
-    }
-    if (!relname) {
-      return;
-    }
-
-    var line = stat.ctime.toUTCString() + '  ';
-    if (stat.isDirectory()) {
-      line += 'D  ';
-    }
-    else {
-      line += 'F  ';
-    }
-
-    var size = '-';
-    if (stat.isFile()) {
-      var info = siprefix.byte.convert(stat.size);
-      size = `${Math.ceil(info[0])} ${info[1]}`;
-    }
-    while (size.length < 8) {
-      size = ' ' + size;
-    }
-
-    line += size + '  ' + relname;
-
-    console.log('  ' + line);
-  });
+  // TODO at some point, we can figure out what backend-specific connection
+  // options make sense. For now, just don't use any configuration.
+  const { Storage } = require('@joystream/storage');
+  return await Storage.create();
 }
 
 async function run_signup(account_file)
@@ -239,91 +175,54 @@ async function wait_for_role(config)
   return [result, api];
 }
 
-// Simple CLI commands
-var command = cli.input[0];
-if (!command) {
-  command = 'server';
-}
-
 const commands = {
-  'server': () => {
+  'server': async () => {
     const cfg = create_config(pkg.name, cli.flags);
 
     // Load key information
-    const errfunc = (err) => {
-      console.log(err);
-      process.exit(-1);
+    const values = await wait_for_role(cfg);
+    const result = values[0]
+    const api = values[1];
+    if (!result) {
+      throw new Error(`Not staked as storage role.`);
     }
+    console.log('Staked, proceeding.');
 
-    const promise = wait_for_role(cfg);
-    promise
-      .then((values) => {
-        const result = values[0]
-        const api = values[1];
-        if (!result) {
-          throw new Error(`Not staked as storage role.`);
-        }
-        console.log('Staked, proceeding.');
-
-        // Continue with server setup
-        const store = get_storage(cfg);
-        banner();
-        start_app(project_root, store, api, cfg);
-      })
-      .catch(errfunc);
+    // Continue with server setup
+    const store = await get_storage(cfg);
+    banner();
+    await start_app(project_root, store, api, cfg);
   },
-  'create': () => {
-    const cfg = create_config(pkg.name, cli.flags);
-    const store = get_storage(cfg);
-
-    if (store.new) {
-      console.log('Storage created.');
-    }
-    else {
-      console.log('Storage already existed, not created.');
-    }
-
-    // Create the repo
-    const template_path = cli.input[1];
-    if (template_path) {
-      console.log('Creating repository...');
-    }
-    else {
-      console.log(`Creating repository from template "${template_path}"...`);
-    }
-    store.create(undefined, template_path, (err, id, repo) => {
-      if (err) {
-        throw err;
-      }
-
-      console.log('Repository created with id:', id);
-    });
-  },
-  'list': () => {
-    const cfg = create_config(pkg.name, cli.flags);
-    const store = get_storage(cfg);
-
-    const repo_id = cli.input[1];
-    if (repo_id) {
-      list_repo(store, repo_id);
-    }
-    else {
-      list_repos(store);
-    }
-  },
-  'signup': () => {
-    const account_file = cli.input[1];
-    const ret = run_signup(account_file);
-    ret.catch(console.error).finally(_ => process.exit());
+  'signup': async (account_file) => {
+    await run_signup(account_file);
   },
 };
 
-if (commands.hasOwnProperty(command)) {
-  // Command recognized
-  commands[command]();
+
+async function main()
+{
+  // Simple CLI commands
+  var command = cli.input[0];
+  if (!command) {
+    command = 'server';
+  }
+
+  if (commands.hasOwnProperty(command)) {
+    // Command recognized
+    const args = _.clone(cli.input).slice(1);
+    await commands[command](...args);
+  }
+  else {
+    throw new Error(`Command "${command}" not recognized, aborting!`);
+  }
 }
-else {
-  // An error!
-  console.log(chalk.red(`Command "${command}" not recognized, aborting!`));
-  process.exit(1);
-}
+
+main()
+  .then(() => {
+    console.log('Process exiting gracefully.');
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error(chalk.red(err.stack));
+    process.exit(-1);
+  });
