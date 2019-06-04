@@ -856,39 +856,11 @@ decl_module! {
              * Here it is safe to mutate state.
              */
 
-            // Get category
-            let category = category_tree_path.first().unwrap().clone();
+            // Add thread
+            let thread = Self::add_new_thread(category_id, &title, &who);
 
             assert_eq!(category.id, category_id);
             
-            // Update (unmoderated) thread count in corresponding category
-            <CategoryById<T>>::mutate(category_id, |c| {
-                c.num_direct_unmoderated_threads += 1;
-            });
-
-            // Get thread counter
-            let new_thread_id = <NextThreadId<T>>::get();
-
-            // Create and add new thread
-            let new_thread = Thread {
-                id : new_thread_id,
-                title : title.clone(),
-                category_id: category_id,
-                nr_in_category: category.num_threads_created(),
-                moderation : None,
-                num_unmoderated_posts: 0,
-                num_moderated_posts: 1,
-                created_at : Self::current_block_and_time(),
-                author_id : who.clone()
-            };
-
-            <ThreadById<T>>::insert(new_thread_id, new_thread);
-
-            // Update next thread id
-            <NextThreadId<T>>::mutate(|n| {
-                *n += 1;
-            });
-
             // Make and add initial post
 
             // TODO: perhaps factor out later?
@@ -1140,7 +1112,42 @@ impl<T: Trait> Module<T> {
             Self::_build_category_tree_path(child_position_in_parent.parent_id, path);
         }
     }
-}
+
+    fn add_new_thread(category_id: CategoryId, title: &Vec<u8>, author_id: &T::AccountId) -> Thread<T::BlockNumber, T::Moment, T::AccountId> {
+
+        // Get category
+        let category = <CategoryById<T>>::get(category_id);
+
+        // Create and add new thread
+        let new_thread_id = <NextThreadId<T>>::get();
+
+        let new_thread = Thread {
+            id : new_thread_id,
+            title : title.clone(),
+            category_id: category_id,
+            thread_nr_in_category: category.num_threads_ever_created() + 1,
+            moderation : None,
+            num_unmoderated_posts: 0,
+            num_moderated_posts: 0,
+            created_at : Self::current_block_and_time(),
+            author_id : author_id.clone()
+        };
+
+        // Store thread
+        <ThreadById<T>>::insert(new_thread_id, new_thread.clone());
+
+        // Update next thread id
+        <NextThreadId<T>>::mutate(|n| {
+            *n += 1;
+        });
+
+        // Update unmoderated thread count in corresponding category
+        <CategoryById<T>>::mutate(category_id, |c| {
+            c.num_direct_unmoderated_threads += 1;
+        });
+
+        new_thread
+    }
 
 #[cfg(test)]
 mod tests {
