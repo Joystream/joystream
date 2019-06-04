@@ -346,6 +346,12 @@ const ERROR_THREAD_ALREADY_MODERATED: &str = "Thread already moderated.";
 
 const ERROR_THREAD_MODERATED: &str = "Thread is moderated.";
 
+const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
+
+const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match post author.";
+
+const ERROR_POST_MODERATED: &str = "Post is moderated.";
+
 //use srml_support::storage::*;
 
 //use sr_io::{StorageOverlay, ChildrenStorageOverlay};
@@ -962,11 +968,49 @@ decl_module! {
 
             Ok(())
         }
-/*
-        fn edit_post_text() {
 
+        /// Edit post text
+        fn edit_post_text(origin, post_id: PostId, new_text: Vec<u8>) -> dispatch::Result {
+
+            /* Edit spec. 
+              - forum member guard missing
+            */
+
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_member(&who)?;
+
+            // Make sure there exists a mutable post with post id `post_id`
+            let mut post = Self::ensure_post_is_mutable(&post_id)?;
+
+            // Signer does not match creator of post with identifier postId
+            ensure!(post.author_id == who, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
+
+            /*
+             * Here we are safe to mutate
+             */
+
+            // Copy current text to history of expired texts
+            post.expired_post_texts.push(ExpiredPostText {
+                expired_at: Self::current_block_and_time(),
+                text: post.current_text.clone()
+            });
+
+            // Set current text to new text
+            post.current_text = new_text;
+
+            // Store new version of post
+            <PostById<T>>::insert(post_id, post.clone());
+
+            // Generate event
+            Self::deposit_event(RawEvent::PostTextUpdated(post.id, 1 + post.expired_post_texts.len() as u64));
+
+            Ok(())
         }
 
+/*
         fn moderate_post() {
 
         }
@@ -1031,6 +1075,26 @@ impl<T: Trait> Module<T> {
         BlockchainTimestamp {
             block: <system::Module<T>>::block_number(),
             time: <timestamp::Module<T>>::now(),
+        }
+    }
+
+    fn ensure_post_is_mutable(post_id: &PostId) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+
+        // Make sure post exists
+        let post = Self::ensure_post_exists(post_id)?;
+
+        // and is unmoderated
+        ensure!(post.moderation.is_none(), ERROR_POST_MODERATED);
+
+        Ok(post)
+    }
+
+    fn ensure_post_exists(post_id: &PostId) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+
+        if <PostById<T>>::exists(post_id) {
+            Ok(<PostById<T>>::get(post_id))
+        } else {
+            Err(ERROR_POST_DOES_NOT_EXIST)
         }
     }
 
