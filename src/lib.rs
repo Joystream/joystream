@@ -307,6 +307,11 @@ const THREAD_MODERATION_RATIONALE: InputValidationLengthConstraint = InputValida
     max_as_min_diff: 2000
 };
 
+const POST_MODERATIONALE_RATIONALE:  InputValidationLengthConstraint = InputValidationLengthConstraint{
+    min: 100,
+    max_as_min_diff: 2000
+};
+
 /// The greatest valid depth of a category.
 /// The depth of a root category is 0.
 const MAX_CATEGORY_DEPTH: u32 = 3;
@@ -351,6 +356,9 @@ const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
 const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match post author.";
 
 const ERROR_POST_MODERATED: &str = "Post is moderated.";
+
+const ERROR_POST_MODERATION_RATIONALE_TOO_SHORT: &str = "Post moderation rationale too short.";
+const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rationale too long.";
 
 //use srml_support::storage::*;
 
@@ -974,6 +982,7 @@ decl_module! {
 
             /* Edit spec. 
               - forum member guard missing
+              - check that both post and thread and category are mutable
             */
 
             // Check that its a valid signature
@@ -992,29 +1001,67 @@ decl_module! {
              * Here we are safe to mutate
              */
 
-            // Copy current text to history of expired texts
-            post.expired_post_texts.push(ExpiredPostText {
-                expired_at: Self::current_block_and_time(),
-                text: post.current_text.clone()
+            <PostById<T>>::mutate(post_id, |p| {
+
+                let expired_post_text = ExpiredPostText {
+                    expired_at: Self::current_block_and_time(),
+                    text: post.current_text.clone()
+                };
+
+                // Set current text to new text
+                post.current_text = new_text;
+
+                // Copy current text to history of expired texts
+                p.expired_post_texts.push(expired_post_text);
             });
 
-            // Set current text to new text
-            post.current_text = new_text;
-
-            // Store new version of post
-            <PostById<T>>::insert(post_id, post.clone());
-
             // Generate event
-            Self::deposit_event(RawEvent::PostTextUpdated(post.id, 1 + post.expired_post_texts.len() as u64));
+            Self::deposit_event(RawEvent::PostTextUpdated(post.id, post.expired_post_texts.len() as u64));
 
             Ok(())
         }
 
-/*
-        fn moderate_post() {
+        /// Moderate post
+        fn moderate_post(origin, post_id: PostId, rationale: Vec<u8>) -> dispatch::Result {
 
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+            
+            // Signed by forum SUDO
+            Self::ensure_is_forum_sudo(&who)?;
+
+            // Make sure post exists and is mutable
+            let post = Self::ensure_post_is_mutable(&post_id)?;
+
+            ensure_rationale_is_valid(&rationale)?;
+
+            /*
+             * Here we are safe to mutate
+             */
+
+            // Update moderation action on post
+            let moderation_action = ModerationAction{
+                moderated_at: Self::current_block_and_time(),
+                moderator_id: who,
+                rationale: rationale.clone()
+            };
+
+            <PostById<T>>::mutate(post_id, |p| {
+                p.moderation = Some(moderation_action);
+            });
+
+            // Update moderated and unmoderated post count of corresponding thread  
+            <ThreadById<T>>::mutate(post.thread_id, |t| {
+                t.num_unmoderated_posts -= 1;
+                t.num_moderated_posts += 1;
+            });
+
+            // Generate event
+            Self::deposit_event(RawEvent::PostModerated(post.id));
+
+            Ok(())
         }
-*/
+
     }
 }
 
@@ -1068,6 +1115,15 @@ fn ensure_post_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
     }
 }
 
+fn ensure_rationale_is_valid(rationale: &Vec<u8>) -> dispatch::Result {
+
+    match POST_MODERATIONALE_RATIONALE.validate(rationale.len()) {
+        LengthValidationResult::TooShort => Err(ERROR_POST_MODERATION_RATIONALE_TOO_SHORT),
+        LengthValidationResult::TooLong => Err(ERROR_POST_MODERATION_RATIONALE_TOO_LONG),
+        LengthValidationResult::Success => Ok(())
+    }
+}
+
 impl<T: Trait> Module<T> {
 
     fn current_block_and_time() -> BlockchainTimestamp<T::BlockNumber, T::Moment> {
@@ -1085,6 +1141,9 @@ impl<T: Trait> Module<T> {
 
         // and is unmoderated
         ensure!(post.moderation.is_none(), ERROR_POST_MODERATED);
+
+        // and make sure thread is mutable
+        Self::ensure_thread_is_mutable(&post.thread_id)?;
 
         Ok(post)
     }
@@ -1105,6 +1164,9 @@ impl<T: Trait> Module<T> {
 
         // and is unmoderated
         ensure!(thread.moderation.is_none(), ERROR_THREAD_MODERATED);
+
+        // and corresponding category is mutable
+        Self::ensure_catgory_is_mutable(thread.category_id)?;
 
         Ok(thread)
     }
@@ -1147,6 +1209,13 @@ impl<T: Trait> Module<T> {
         } else {
             Err(ERROR_NOT_FORUM_USER)
         }
+    }
+
+    fn ensure_catgory_is_mutable(category_id:CategoryId) -> dispatch::Result {
+
+        let category_tree_path = Self::build_category_tree_path(category_id);
+
+        Self::ensure_can_mutate_in_path_leaf(&category_tree_path)
     }
 
     fn ensure_can_mutate_in_path_leaf(category_tree_path:&CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) -> dispatch::Result {
