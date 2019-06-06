@@ -219,11 +219,17 @@ use srml_support::{ decl_event, decl_module, decl_storage, ensure, dispatch, Sto
 
 /// Length constraint for input validation
 
+// Drop later!!!
 enum LengthValidationResult {
     TooShort,
     TooLong,
     Success
 }
+
+
+/*
+ * MOVE ALL OF THESE OUT TO COMMON LATER
+ */
 
 struct InputValidationLengthConstraint {
 
@@ -235,6 +241,16 @@ struct InputValidationLengthConstraint {
     /// way makes max < min unrepresentable semantically, 
     /// which is safer.
     max_as_min_diff: usize,
+
+    /*
+
+    add later after review from Alex done
+
+    too_short_error_msg: &'static str,
+
+    too_long_error_msg: &'static str,
+    */
+
 }
 
 impl InputValidationLengthConstraint {
@@ -276,6 +292,21 @@ const CATEGORY_DESCRIPTION: InputValidationLengthConstraint = InputValidationLen
     max_as_min_diff: 140
 };
 
+const THREAD_TITLE: InputValidationLengthConstraint = InputValidationLengthConstraint{
+    min: 3,
+    max_as_min_diff: 43
+};
+
+const POST_TEXT: InputValidationLengthConstraint = InputValidationLengthConstraint{
+    min: 1,
+    max_as_min_diff: 1001
+};
+
+const THREAD_MODERATION_RATIONALE: InputValidationLengthConstraint = InputValidationLengthConstraint{
+    min: 100,
+    max_as_min_diff: 2000
+};
+
 /// The greatest valid depth of a category.
 /// The depth of a root category is 0.
 const MAX_CATEGORY_DEPTH: u32 = 3;
@@ -292,10 +323,26 @@ const ERROR_CATEGORY_TITLE_TOO_LONG: &str = "Category title too long.";
 const ERROR_CATEGORY_DESCRIPTION_TOO_SHORT: &str = "Category description too long.";
 const ERROR_CATEGORY_DESCRIPTION_TOO_LONG: &str = "Category description too long.";
 
-const ERROR_PARENT_CATEGORY_DOES_NOT_EXIST: &str = "Parent category does not exist.";
+//  drop, using ERROR_CATEGORY_DOES_NOT_EXIST instead of const ERROR_PARENT_CATEGORY_DOES_NOT_EXIST: &str = "Parent category does not exist.";
 const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str = "Ancestor category immutable, i.e. deleted or archived";
 const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
 
+const ERROR_CATEGORY_DOES_NOT_EXIST: &str = "Category does not exist.";
+
+const ERROR_NOT_FORUM_USER: &str = "Not forum user.";
+
+const ERROR_THREAD_TITLE_TOO_SHORT: &str = "Thread title too short.";
+const ERROR_THREAD_TITLE_TOO_LONG: &str = "Thread title too long.";
+
+const ERROR_POST_TEXT_TOO_SHORT: &str = "Post text too short.";
+const ERROR_POST_TEXT_TOO_LONG: &str = "Post too long.";
+
+const ERROR_THREAD_DOES_NOT_EXIST: &str = "Thread does not exist";
+
+const ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT: &str = "Thread moderation rationale too short.";
+const ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG: &str = "Thread moderation rationale too long.";
+
+const ERROR_THREAD_ALREADY_MODERATED: &str = "Thread alrady moderated.";
 
 //use srml_support::storage::*;
 
@@ -317,10 +364,11 @@ use rstd::collections::btree_map::BTreeMap;
 ///
 
 /// Represents a user in this forum.
-pub trait ForumUser<AccountId> {
+#[derive(Debug, Copy, Clone)]
+pub struct ForumUser<AccountId> {
     
     /// Identifier of user 
-    fn id(&self) -> &AccountId;
+    id: AccountId
 
     // In the future one could add things like 
     // - updating post count of a user
@@ -331,10 +379,8 @@ pub trait ForumUser<AccountId> {
 
 /// Represents a regsitry of `ForumUser` instances.
 pub trait ForumUserRegistry<AccountId> {
-
-    type ForumUser: ForumUser<AccountId>;
     
-    fn get_forum_user(&self, id:AccountId) -> Option<&Self::ForumUser>;
+    fn get_forum_user(id: &AccountId) -> Option<ForumUser<AccountId>>;
 
 }
 
@@ -365,13 +411,13 @@ pub struct ModerationAction<BlockNumber, Moment, AccountId> {
 /// Represents a revision of the text of a Post
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct PostTextEdit<BlockNumber, Moment> {
+pub struct PostTextChange<BlockNumber, Moment> {
 
-    /// What this edit occured.
-    edited_at: BlockchainTimestamp<BlockNumber, Moment>,
+    /// When this expiration occured
+    expired_at: BlockchainTimestamp<BlockNumber, Moment>,
 
-    /// New text
-    new_text: Vec<u8>
+    /// Text that expired
+    text: Vec<u8>
 }
 
 /// Represents a post identifier
@@ -392,16 +438,17 @@ pub struct Post<BlockNumber, Moment, AccountId> {
     /// to a thread when it was added.
     /// Is needed to give light clients assurance about getting all posts in a given range,
     // `created_at` is not sufficient.
-    post_nr: u32,
+    /// Starts at 1 for first post in thread.
+    nr_in_thread: u32,
 
-    /// Initial text of post
-    initial_text: Vec<u8>,
+    /// Current text of post
+    current_text: Vec<u8>,
 
     /// Possible moderation of this post
     moderation : Option<ModerationAction<BlockNumber, Moment, AccountId>>,
     
     /// Edits of post ordered chronologically by edit time.
-    post_text_edits: Vec<PostTextEdit<BlockNumber, Moment>>,
+    text_change_history: Vec<PostTextChange<BlockNumber, Moment>>,
 
     /// When post was submitted.
     created_at : BlockchainTimestamp<BlockNumber, Moment>,
@@ -432,16 +479,24 @@ pub struct Thread<BlockNumber, Moment, AccountId> {
     /// to a category when it was added.
     /// Is needed to give light clients assurance about getting all threads in a given range,
     /// `created_at` is not sufficient.
-    thread_nr: u32,
+    /// Starts at 1 for first thread in category.
+    nr_in_category: u32,
 
     /// Possible moderation of this thread
     moderation : Option<ModerationAction<BlockNumber, Moment, AccountId>>,
 
-    /// Number of unmoderated posts in this thread
-    num_unmoderated_posts: u64,
-
-    /// Number of moderated posts in this thread
-    num_moderated_posts: u64,
+    /// Number of unmoderated and moderated posts in this thread.
+    /// The sum of these two only increases, and former is incremented
+    /// for each new post added to this thread. A new post is added 
+    /// with a `nr_in_thread` equal to this sum
+    /// 
+    /// When there is a moderation
+    /// of a post, the variables are incremented and decremented, respectively.
+    /// 
+    /// These values are vital for light clients, in order to validate that they are
+    /// not being censored from posts in a thread.
+    num_unmoderated_posts: u32,
+    num_moderated_posts: u32,
 
     /// When thread was established.
     created_at : BlockchainTimestamp<BlockNumber, Moment>,
@@ -452,6 +507,18 @@ pub struct Thread<BlockNumber, Moment, AccountId> {
 
 /// Represents a category identifier
 pub type CategoryId = u64;
+
+/// Represents 
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct ChildPositionInParentCategory {
+
+    /// Id of parent category
+    parent_id: CategoryId,
+
+    /// Nr of the child in the parent
+    /// Starts at 1
+    child_nr_in_parent_category: u32
+}
 
 /// Represents a category
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -476,26 +543,36 @@ pub struct Category<BlockNumber, Moment, AccountId> {
     /// Whether category is archived.
     archived: bool,
 
-    /*
-     * These next three numbers are not maintained currently, 
-     * they inadverdently made it into the spec without being
-     * part of the user storeis
-     
-    /// Number direct subcategories.
-    num_direct_subcategories: u64,
+    /// Number of subcategories (deleted, archived or neither),
+    /// unmoderated threads and moderated threads, _directly_ in this category.
+    /// 
+    /// As noted, the first is unaffected by any change in state of direct subcategory.
+    ///  
+    /// The sum of the latter two only increases, and former is incremented
+    /// for each new thread added to this category. A new thread is added 
+    /// with a `nr_in_category` equal to this sum.
+    /// 
+    /// When there is a moderation
+    /// of a thread, the variables are incremented and decremented, respectively.
+    /// 
+    /// These values are vital for light clients, in order to validate that they are
+    /// not being censored from subcategories or threads in a category.
+    num_direct_subcategories: u32,
+    num_direct_unmoderated_threads: u32,
+    num_direct_moderated_threads: u32,
 
-    /// Number of unmoderated threads directly in this category.
-    num_direct_unmoderated_threads: u64,
-
-    /// Number of moderated threads directly in this category.
-    num_direct_moderated_threads: u64,
-    */
-
-    /// Parent category, if present, otherwise this category is a root categoryl
-    parent_id: Option<CategoryId>,
+    /// Position as child in parent, if present, otherwise this category is a root category
+    position_in_parent_category: Option<ChildPositionInParentCategory>,
 
     /// Account of the moderator which created category.
     moderator_id: AccountId
+}
+
+impl<BlockNumber, Moment, AccountId> Category<BlockNumber, Moment, AccountId>  {
+
+    fn num_threads_created(&self) -> u32 {
+        self.num_direct_unmoderated_threads + self.num_direct_moderated_threads
+    }
 }
 
 /// Represents a sequence of categories which have child-parent relatioonship
@@ -641,17 +718,40 @@ decl_module! {
             // Validate description
             ensure_category_description_is_valid(&description)?;
 
+            // Position in parent field value for new category
+            let mut position_in_parent_category_field = None;
+
             // If not root, then check that we can create in parent category
             if let Some(parent_category_id) = parent {
 
-                // Get path from parent to root of category tree.
-                let mut category_tree_path = vec![];
-
-                Self::build_category_tree_path(parent_category_id, &mut category_tree_path);
+                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(parent_category_id)?;
 
                 // Can we mutate in this category?
-                Self::ensure_can_add_subcategory_to_parent_at_path_tip(&category_tree_path)?;
+                Self::ensure_can_add_subcategory_path_leaf(&category_tree_path)?;
+
+                /*
+                 * Here we are safe to mutate
+                 */
+
+                // Increment number of subcategories to reflect this new category being
+                // added as a child
+                <CategoryById<T>>::mutate(parent_category_id, |c| {
+                    c.num_direct_subcategories += 1;
+                });
+
+                // Set `position_in_parent_category_field`
+                let parent_category = category_tree_path.first().unwrap();
+
+                position_in_parent_category_field = Some(ChildPositionInParentCategory{
+                    parent_id: parent_category_id,
+                    child_nr_in_parent_category: parent_category.num_direct_subcategories
+                });
+
             }
+
+            /*
+             * Here we are safe to mutate
+             */
 
             let next_category_id = <NextCategoryId<T>>::get();
 
@@ -663,7 +763,10 @@ decl_module! {
                 created_at : Self::current_block_and_time(),
                 deleted: false,
                 archived: false,
-                parent_id: parent,
+                num_direct_subcategories: 0,
+                num_direct_unmoderated_threads: 0,
+                num_direct_moderated_threads: 0,
+                position_in_parent_category: position_in_parent_category_field,
                 moderator_id: who
             };
 
@@ -673,18 +776,215 @@ decl_module! {
             // Update other things
             <NextCategoryId<T>>::put(next_category_id + 1);
 
+            // Generate event
+            Self::deposit_event(RawEvent::CategoryCreated(next_category_id));
+
             Ok(())
         }
         
         /// Update category
-        fn update_category(origin, category_id: CategoryId, archive: bool, deleted: bool) -> dispatch::Result {
+        fn update_category(origin, category_id: CategoryId, archived: bool, deleted: bool) -> dispatch::Result {
+
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Not signed by forum SUDO
+            Self::ensure_is_forum_sudo(&who)?;
+
+            // Get path from parent to root of category tree.
+            let mut category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
+
+            // Make sure we can actually mutate this category
+            Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+
+            // Grab mutable category for updating
+            let mut category = category_tree_path.first().unwrap().clone();
+
+            // Value change events params
+            let mut archived_change_to = None;
+            let mut deleted_changed_to = None;
+
+            // Mutate category, and set possible new change parameters
+
+            if archived != category.archived {
+                category.archived = archived;
+                archived_change_to = Some(archived);
+            }
+
+            if deleted != category.deleted {
+                category.deleted = deleted;
+                deleted_changed_to = Some(deleted)
+            }
+
+            // Write back mutated category
+            <CategoryById<T>>::insert(category_id, category);
+
+            // Generate event
+            Self::deposit_event(RawEvent::CategoryUpdated(category_id, archived_change_to, deleted_changed_to));
 
             Ok(())
         }
+
+        /// Create new thread in category
+        fn create_thread(origin, category_id: CategoryId, title: Vec<u8>, text: Vec<u8>) -> dispatch::Result {
+
+            /*
+             * Update SPEC with new errors,
+             * and mutation of Category class,
+             * as well as side effect to update Category::num_threads_created.
+             */ 
+
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_member(&who)?;
+
+            // Get path from parent to root of category tree.
+            let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
+
+            // No ancestor is blocking us doing mutation in this category
+            Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+            
+            // Validate title
+            ensure_thread_title_is_valid(&title)?;
+
+            // Validate post text
+            ensure_post_text_is_valid(&text)?;
+
+            /*
+             * Here it is safe to mutate state.
+             */
+
+            // Get category
+            let category = category_tree_path.first().unwrap().clone();
+
+            assert_eq!(category.id, category_id);
+            
+            // Update (unmoderated) thread count in corresponding category
+            <CategoryById<T>>::mutate(category_id, |c| {
+                c.num_direct_unmoderated_threads += 1;
+            });
+
+            // Get thread counter
+            let new_thread_id = <NextThreadId<T>>::get();
+
+            // Create and add new thread
+            let new_thread = Thread {
+                id : new_thread_id,
+                title : title.clone(),
+                category_id: category_id,
+                nr_in_category: category.num_threads_created(),
+                moderation : None,
+                num_unmoderated_posts: 0,
+                num_moderated_posts: 1,
+                created_at : Self::current_block_and_time(),
+                author_id : who.clone()
+            };
+
+            <ThreadById<T>>::insert(new_thread_id, new_thread);
+
+            // Update next thread id
+            <NextThreadId<T>>::mutate(|n| {
+                *n += 1;
+            });
+
+            // Make and add initial post
+
+            // TODO: perhaps factor out later?
+
+            let new_post_id = <NextPostId<T>>::get();
+
+            <NextPostId<T>>::put(new_post_id + 1);
+
+            // Create and add new post
+            let new_post = Post {
+                id: new_post_id,
+                thread_id: new_thread_id,
+                nr_in_thread: 1, // Starts at 1
+                current_text: text.clone(),
+                moderation : None,
+                text_change_history: vec![],
+                created_at : Self::current_block_and_time(),
+                author_id : who.clone()
+            };
+
+            <PostById<T>>::insert(new_post_id, new_post);
+
+            // Generate event
+            Self::deposit_event(RawEvent::ThreadCreated(new_thread_id));
+
+            Ok(())
+        }
+
+        /// Moderate thread
+        fn moderate_thread(origin, thread_id: ThreadId, rationale: Vec<u8>) -> dispatch::Result {
+
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+            
+            // Signed by forum SUDO
+            Self::ensure_is_forum_sudo(&who)?;
+
+            // Get thread
+            let mut thread = Self::ensure_thread_exists(&thread_id)?;
+
+            // Thread is not already moderated
+            ensure!(thread.moderation.is_none(), ERROR_THREAD_ALREADY_MODERATED);
+
+            // Rationale valid
+            ensure_thread_moderation_rationale_is_valid(&rationale)?;
+
+            // Can mutate in corresponding category
+            let path = Self::build_category_tree_path(thread.category_id);
+
+            // Path must be non-empty, as category id is from thread in state
+            assert!(!path.is_empty());
+
+            Self::ensure_can_mutate_in_path_leaf(&path)?;
+
+            /*
+             * Here we are safe to mutate
+             */
+
+            // Add moderation to thread
+            thread.moderation = Some(ModerationAction {
+                moderated_at: Self::current_block_and_time(),
+                moderator_id: who,
+                rationale: rationale.clone()
+            });
+
+            <ThreadById<T>>::insert(thread_id, thread.clone());
+
+            // Update moderation/umoderation count of corresponding category
+            <CategoryById<T>>::mutate(thread.category_id, |category| {
+                category.num_direct_unmoderated_threads -= 1;
+                category.num_direct_moderated_threads += 1;
+            });
+
+            // Generate event
+            Self::deposit_event(RawEvent::ThreadModerated(thread_id));
+
+            Ok(())
+        }
+
     }
 }
 
-fn ensure_category_title_is_valid(title: &Vec<u8>) -> Result<(),&'static str> {
+/*
+ * Drop all of these later
+ */
+
+fn ensure_thread_moderation_rationale_is_valid(rationale: &Vec<u8>) -> dispatch::Result {
+
+    match THREAD_MODERATION_RATIONALE.validate(rationale.len()) {
+        LengthValidationResult::TooShort => Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT),
+        LengthValidationResult::TooLong => Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG),
+        LengthValidationResult::Success => Ok(())
+    }
+}
+
+fn ensure_category_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
 
     match CATEGORY_TITLE.validate(title.len()) {
         LengthValidationResult::TooShort => Err(ERROR_CATEGORY_TITLE_TOO_SHORT),
@@ -693,7 +993,7 @@ fn ensure_category_title_is_valid(title: &Vec<u8>) -> Result<(),&'static str> {
     }
 }
 
-fn ensure_category_description_is_valid(description: &Vec<u8>) -> Result<(),&'static str> {
+fn ensure_category_description_is_valid(description: &Vec<u8>) -> dispatch::Result {
 
     match CATEGORY_DESCRIPTION.validate(description.len()) {
         LengthValidationResult::TooShort => Err(ERROR_CATEGORY_DESCRIPTION_TOO_SHORT),
@@ -701,6 +1001,24 @@ fn ensure_category_description_is_valid(description: &Vec<u8>) -> Result<(),&'st
         LengthValidationResult::Success => Ok(())
     }
 
+}
+
+fn ensure_thread_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
+
+    match THREAD_TITLE.validate(title.len()) {
+        LengthValidationResult::TooShort => Err(ERROR_THREAD_TITLE_TOO_SHORT),
+        LengthValidationResult::TooLong => Err(ERROR_THREAD_TITLE_TOO_LONG),
+        LengthValidationResult::Success => Ok(())
+    }
+}
+
+fn ensure_post_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+
+    match THREAD_TITLE.validate(text.len()) {
+        LengthValidationResult::TooShort => Err(ERROR_POST_TEXT_TOO_SHORT),
+        LengthValidationResult::TooLong => Err(ERROR_POST_TEXT_TOO_LONG),
+        LengthValidationResult::Success => Ok(())
+    }
 }
 
 impl<T: Trait> Module<T> {
@@ -711,6 +1029,16 @@ impl<T: Trait> Module<T> {
             block: <system::Module<T>>::block_number(),
             time: <timestamp::Module<T>>::now(),
         }
+    }
+
+    fn ensure_thread_exists(thread_id: &ThreadId) -> Result<Thread<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+
+        if <ThreadById<T>>::exists(thread_id) {
+            Ok(<ThreadById<T>>::get(thread_id))
+        } else {
+            Err(ERROR_THREAD_DOES_NOT_EXIST)
+        }
+
     }
 
     fn ensure_forum_sudo_set() -> Result<T::AccountId, &'static str> {
@@ -732,121 +1060,86 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_can_add_subcategory_to_parent_at_path_tip(category_tree_path:&CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) -> dispatch::Result {
+    fn ensure_is_forum_member(account_id: &T::AccountId) -> Result<ForumUser<T::AccountId>, &'static str> {
 
-        // If path is empty, it just means the parent did not exist,
-        // which means teh user provided an invalid parent category id.
-        ensure!(category_tree_path.len() > 0,
-            ERROR_PARENT_CATEGORY_DOES_NOT_EXIST
-        );
+        let forum_user_query = T::MembershipRegistry::get_forum_user(account_id);
 
-        Self::ensure_can_mutate_in_category(category_tree_path)?;
-
-        // Does adding a new category exceed maximum depth
-        let depth_of_new_category = 1 + 1 + category_tree_path.len();
-
-        ensure!(depth_of_new_category <= MAX_CATEGORY_DEPTH as usize,
-            ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED
-        );   
-
-        Ok(())
-
+        if let Some(forum_user) = forum_user_query {
+            Ok(forum_user)
+        } else {
+            Err(ERROR_NOT_FORUM_USER)
+        }
     }
 
-    fn ensure_can_mutate_in_category(category_tree_path:&CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) -> dispatch::Result {
+    fn ensure_can_mutate_in_path_leaf(category_tree_path:&CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) -> dispatch::Result {
 
         // Is parent category directly or indirectly deleted or archived category
         ensure!(!category_tree_path.iter().any(|c:&Category<T::BlockNumber, T::Moment, T::AccountId>| c.deleted || c.archived ),
             ERROR_ANCESTOR_CATEGORY_IMMUTABLE
         );
 
-    
         Ok(())
     }
 
+    fn ensure_can_add_subcategory_path_leaf(category_tree_path:&CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) -> dispatch::Result {
 
+        Self::ensure_can_mutate_in_path_leaf(category_tree_path)?;
 
-/*
-    fn ensure_category_exits(category_id:&CategoryId) -> Result<Category<T::BlockNumber, T::Moment, T::AccountId> , &'static str> {
+        // Does adding a new category exceed maximum depth
+        let depth_of_new_category = 1 + 1 + category_tree_path.len();
 
-        if <CategoryById<T>>::exists(category_id) {
-            <CategoryById<T>>::get(category_id)
-        } else {
-            Err("Category does not exist.")
-        }
+        ensure!(depth_of_new_category <= MAX_CATEGORY_DEPTH as usize,
+            ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED
+        );
 
-        Err("dddd")
-    }
-*/
-
-    fn build_category_tree_path(category_id:CategoryId, path: &mut CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) {
-
-        // <CategoryById<T>>::exists(&category_id)
-
-        if <CategoryById<T>>::exists(&category_id) {
-
-            // Grab category
-            let category = <CategoryById<T>>::get(category_id);
-
-            // Copy out parent_id field
-            let parent_id_field = category.parent_id.clone();
-
-            // Add category to path container
-            path.push(category);
-
-            // Make recursive call on parent if we are not at root
-            if let Some(parent_category_id) = parent_id_field {
-                Self::build_category_tree_path(parent_category_id, path);
-            }
-        }
-
+        Ok(())
     }
 
-/*
-    /// Populate 'ancestors' vector with ancestors of provided category 'category', starting with parents in front of vector.
-    fn get_ancestor_categories(
-        category: &Category<T::BlockNumber, T::Moment, T::AccountId>, 
-        ancestors: &mut Vec<Category<T::BlockNumber, T::Moment, T::AccountId>>
-        ) {
+    fn ensure_valid_category_and_build_category_tree_path(category_id:CategoryId) -> Result<CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
 
-        let mut parent_id_field = &category.parent_id;
+        ensure!(<CategoryById<T>>::exists(&category_id), ERROR_CATEGORY_DOES_NOT_EXIST);
 
-        while parent_id_field.is_some() {
+        // Get path from parent to root of category tree.
+        let category_tree_path = Self::build_category_tree_path(category_id);
 
-            // Get parent id
-            let parent_id = parent_id_field.unwrap();
+        assert!(category_tree_path.len() > 0);
 
-            // Grab parent category
-            let parent_category = <CategoryById<T>>::get(&parent_id);
+        Ok(category_tree_path)
+    }
 
-            // Add to ancestors
-            ancestors.push(parent_category);
+    /// Builds path and populates in `path`.
+    /// Requires that `category_id` is valid
+    fn build_category_tree_path(category_id:CategoryId) -> CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId> {
 
-            // Move on to (possible) parent of parent
-            parent_id_field = &ancestors.last().unwrap().parent_id; //&parent_category.parent_id;
-        }
-
+        // Get path from parent to root of category tree.
+        let mut category_tree_path = vec![];
         
+        Self::_build_category_tree_path(category_id, &mut category_tree_path);
+
+        category_tree_path
     }
-    */
 
-    /*
-    /// Determines how deep a category is nested, a top level category has depth 0.
-    fn get_category_depth<BlockNumber, Moment, AccountId>(category:&Category<BlockNumber, Moment, AccountId>) -> u32 {
+    /// Builds path and populates in `path`.
+    /// Requires that `category_id` is valid
+    fn _build_category_tree_path(category_id:CategoryId, path: &mut CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) {
 
-        if let Some(parent_id) = category.parent_id {
+        // Grab category
+        let category = <CategoryById<T>>::get(category_id);
 
-            // Get parent
-            let parent_category = <CategoryById<T>>::get(&parent_id);
+        // Copy out position_in_parent_category
+        let position_in_parent_category_field = category.position_in_parent_category.clone();
 
-            Self::get_category_depth(&parent_category) + 1
-        }
-        else {
-            0
+        // Add category to path container
+        path.push(category);
+
+        // Make recursive call on parent if we are not at root
+        if let Some(child_position_in_parent) = position_in_parent_category_field {
+
+            assert!(<CategoryById<T>>::exists(&child_position_in_parent.parent_id));
+
+            Self::_build_category_tree_path(child_position_in_parent.parent_id, path);
         }
     }
-    */
-
 }
 
 #[cfg(test)]
@@ -901,44 +1194,44 @@ mod tests {
     }
     impl Trait for Test {
         type Event = ();
-        type MembershipRegistry = MockForumUserRegistry<<Test as system::Trait>::AccountId>;
+        type MembershipRegistry = MockForumUserRegistry; //< <Test as system::Trait>::AccountId >;
     }
 
     type TestForumModule = Module<Test>;
 
-    /// FACTOR THESE MOCKS OUT!
+    // Data store for MockForumUserRegistry
 
-    // Mock implementation o
-    pub struct MockForumUser<AccountId>  {
-        _id: AccountId
+    static mut forum_user_store: Option<BTreeMap< <Test as system::Trait>::AccountId , ForumUser< <Test as system::Trait>::AccountId > > > = None;
+
+    fn initialize_forum_user_store() {
+
+        //formUserStore
+
     }
 
-    impl<AccountId> ForumUser<AccountId> for MockForumUser<AccountId> {
+    // MockForumUserRegistry
+    pub struct MockForumUserRegistry { }
 
-        fn id(&self) -> &AccountId {
-            &self._id
-        }
-    }
+    impl ForumUserRegistry< <Test as system::Trait>::AccountId > for MockForumUserRegistry {
 
-    pub struct MockForumUserRegistry<AccountId: std::cmp::Ord> {
+        fn get_forum_user(id: &<Test as system::Trait>::AccountId) -> Option<ForumUser< <Test as system::Trait>::AccountId >> {
 
-        forum_user_from_id: BTreeMap<AccountId, <Self as ForumUserRegistry<AccountId>>::ForumUser>
-    }
+            let query_result;
+            
+            unsafe {
+                query_result = forum_user_store.as_ref().unwrap().get(&id);
+            }
+            
+            if let Some(forum_user) = query_result {
+                Some(forum_user.clone())
+            } else {
+                None
+            }
 
-    impl<AccountId> ForumUserRegistry<AccountId> for MockForumUserRegistry<AccountId> where AccountId: std::cmp::Ord{
-
-        type ForumUser = MockForumUser<AccountId>;
-
-        fn get_forum_user(&self, id:AccountId) -> Option<&Self::ForumUser> {
-            self.forum_user_from_id.get(&id)
         }
         
     }
 
-    fn initialize_membership_registry() {
-
-    }
-    
     // This function basically just builds a genesis storage key/value store according to
     // our desired mockup.
 
@@ -1037,7 +1330,7 @@ mod tests {
      * 
      * create_category_bad_origin
      * create_category_forum_sudo_not_set
-     * create_category_forum_origin_not_forum_sudo
+     * create_category_origin_not_forum_sudo
      * create_category_title_too_short
      * create_category_title_too_long
      * create_category_description_too_short
@@ -1104,6 +1397,30 @@ mod tests {
 
         });
     }
+
+    /*
+     * update_category 
+     * ==============================================================================
+     * 
+     * Missing cases
+     * 
+     * create_category_bad_origin
+     * create_category_forum_sudo_not_set
+     * create_category_origin_not_forum_sudo
+     * create_category_immutable_ancestor_category
+     */
+
+    /*
+     * create_thread 
+     * ==============================================================================
+     * 
+     * Missing cases
+     * 
+     * create_thread_bad_origin
+     * create_thread_forum_sudo_not_set
+     * ...
+     */
+
 
 
 
