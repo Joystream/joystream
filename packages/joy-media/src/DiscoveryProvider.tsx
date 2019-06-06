@@ -44,7 +44,7 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
     const serviceInfoQuery = `${discoveryUrl}${liaison.toString()}`;
 
     // It feels really wrong to be doing this sort of async call in this component!
-    let serviceInfo = await axios.get(serviceInfoQuery) as any
+    const serviceInfo = await axios.get(serviceInfoQuery) as any
 
     if (!serviceInfo) {
       throw new Error('empty response to service discovery query')
