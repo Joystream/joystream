@@ -117,7 +117,7 @@ decl_module! {
             <DefaultLifetime<T>>::put(lifetime);
         }
 
-        pub fn set_bootstrap_endpoints(origin, endpoints: Vec<Url>) {
+        pub fn set_bootstrap_endpoints(origin, endpoints: Vec<Vec<u8>>) {
             ensure_root(origin)?;
             <BootstrapEndpoints<T>>::put(endpoints);
         }
