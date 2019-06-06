@@ -158,10 +158,11 @@ class StorageWriteStream extends Transform
 
     debug('Committing temporary stream: ', this.temp.path);
     this.storage.ipfs.addFromFs(this.temp.path)
-      .then((result) => {
+      .then(async (result) => {
         const hash = result[0].hash;
         debug('Stream committed as', hash);
         this.emit('committed', hash);
+        await this.storage.ipfs.pin.add(hash);
       })
       .catch((err) => {
         debug('Error committing stream', err);
@@ -296,9 +297,10 @@ class Storage
   async size(content_id, timeout)
   {
     const stat = await this.stat(content_id, timeout);
-    // DataSize is not the same as file size - it may be a bit more. Still, it's
-    // the best we're getting out of IPFS short of reading the entire stream.
-    return stat.DataSize;
+    // FIXME CumulativeSize isn't correct - but it's the closest to a correct
+    //       size we're getting from IPFS. Returning this means we overestimate
+    //       Content-Length a little, which is better than underestimating it.
+    return stat.CumulativeSize;
   }
 
   /*
