@@ -56,6 +56,8 @@ const cli = meow(`
                       Object Type ID - this defaults to "1" if not provided.
     download          Retrieve a file. Requires a storage node URL and a content
                       ID, as well as an output filename.
+    head              Send a HEAD request for a file, and print headers.
+                      Requires a storage node URL and a content ID.
   `,
   { flags: FLAG_DEFINITIONS });
 
@@ -158,6 +160,37 @@ const commands = {
       r.pipe(f);
     });
   },
+
+  'head': async (runtime_api, url, content_id) => {
+    const request = require('request');
+    url = `${url}asset/v0/${content_id}`;
+    console.log('Checking URL', chalk.green(url), '...');
+
+    const opts = {
+      url: url,
+      json: true,
+    };
+    return new Promise((resolve, reject) => {
+      const r = request.head(opts, (error, response, body) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        if (response.statusCode / 100 != 2) {
+          reject(new Error(`${response.statusCode}: ${body.message || 'unknown reason'}`));
+          return;
+        }
+
+        for (var propname in response.headers) {
+          console.log(`  ${chalk.yellow(propname)}: ${response.headers[propname]}`);
+        }
+
+        resolve();
+      });
+    });
+  },
+
 };
 
 
