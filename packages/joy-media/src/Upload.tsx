@@ -7,21 +7,23 @@ import { InputFile } from '@polkadot/ui-app/index';
 import { ApiProps } from '@polkadot/ui-api/types';
 import { I18nProps } from '@polkadot/ui-app/types';
 import { SubmittableResult } from '@polkadot/api';
+import { Option } from '@polkadot/types/codec';
 import { withMulti } from '@polkadot/ui-api';
 import { formatNumber } from '@polkadot/util';
+import { AccountId } from '@polkadot/types';
 
 import translate from './translate';
 import { fileNameWoExt } from './utils';
-import { ContentId } from '@joystream/types/media';
+import { ContentId, DataObject } from '@joystream/types/media';
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import { withStorageProvider, StorageProviderProps } from './StorageProvider';
+import { withDiscoveryProvider, DiscoveryProviderProps } from './DiscoveryProvider';
 import EditMeta from './EditMeta';
 import TxButton from '@polkadot/joy-utils/TxButton';
 
 const MAX_FILE_SIZE_MB = 100;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-type Props = ApiProps & I18nProps & MyAccountProps & StorageProviderProps;
+type Props = ApiProps & I18nProps & MyAccountProps & DiscoveryProviderProps;
 
 type State = {
   error?: any,
@@ -166,15 +168,25 @@ class Component extends React.PureComponent<Props, State> {
     return [ newContentId, dataObjectTypeId, new BN(file.size) ];
   }
 
-  private onDataObjectCreated = (_txResult: SubmittableResult) => {
-    this.uploadFile();
+  private onDataObjectCreated = async (_txResult: SubmittableResult) => {
+    const { api } = this.props;
+    const { newContentId } = this.state;
+    const dataObject = await api.query.dataDirectory.dataObjectByContentId(newContentId) as Option<DataObject>;
+    if (dataObject.isSome) {
+      const storageProvider = dataObject.unwrap().liaison;
+      this.uploadFileTo(storageProvider);
+    } else {
+      this.setState({
+        error: new Error('No Liason set for new DataObject')
+      })
+    }
   }
 
-  private uploadFile = () => {
+  private uploadFileTo = async (storageProvider: AccountId) => {
     const { file, newContentId } = this.state;
     if (!file) return;
 
-    const uniqueName = newContentId.toAddress();
+    const contentId = newContentId.toAddress();
     const config = {
       headers: {
         // TODO uncomment this once the issue fixed:
@@ -183,8 +195,10 @@ class Component extends React.PureComponent<Props, State> {
         'Content-Type': '' // <-- this is a temporary hack
       }
     };
-    const { storageProvider } = this.props;
-    const url = storageProvider.buildApiUrl(uniqueName);
+
+    const { discoveryProvider } = this.props;
+    const url =  await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId);
+
     this.setState({ uploading: true });
 
     axios
@@ -198,5 +212,5 @@ export default withMulti(
   Component,
   translate,
   withOnlyMembers,
-  withStorageProvider
+  withDiscoveryProvider
 );
