@@ -65,7 +65,7 @@ function setDiscoveryProvider<P extends DiscoveryProviderProps> (Component: Reac
       const { bootstrapNodes } = this.props;
       const discoveryProvider = newDiscoveryProvider(this.props);
 
-      if (!bootstrapNodes ) {
+      if (!bootstrapNodes) {
         // Still loading bootstrap nodes...
         return (
           <Message info className='JoyMainStatus'>
