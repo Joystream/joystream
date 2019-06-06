@@ -28,7 +28,7 @@ const debug = require('debug')('joystream:api:asset');
 const util_ranges = require('@joystream/util/ranges');
 const filter = require('@joystream/storage/filter');
 
-module.exports = function(config, storage, substrate)
+module.exports = function(config, storage, runtime)
 {
   var doc = {
     // parameters for all operations in this path
@@ -37,16 +37,7 @@ module.exports = function(config, storage, substrate)
         name: 'id',
         in: 'path',
         required: true,
-        description: 'Repository ID',
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'name',
-        in: 'path',
-        required: true,
-        description: 'Asset name',
+        description: 'Joystream Content ID',
         schema: {
           type: 'string',
         },
@@ -54,111 +45,140 @@ module.exports = function(config, storage, substrate)
     ],
 
     // Head: report that ranges are OK
-    head: function(req, res, _next)
+    head: async function(req, res, _next)
     {
       const id = req.params.id;
-      const repo = storage.get(id);
-      if (!repo) {
-        res.status(404).send({ message: `Repository with id "${id}" not found.` });
-        return;
-      }
 
-      const name = req.params.name;
-      repo.stat(name, true, (err, stats, type) => {
-        if (err) {
-          res.status(err.code).send({ message: err.message });
-          return;
-        }
+      // Open file
+      try {
+        const size = await storage.size(id);
+        const stream = await storage.open(id, 'r');
+        const type = stream.file_info.mime_type;
+
+        // Close the stream; we don't need to fetch the file (if we haven't
+        // already). Then return result.
+        stream.close();
 
         res.status(200);
-        res.contentType(type || 'application/octet-stream');
+        res.contentType(type);
         res.header('Content-Disposition', 'inline');
         res.header('Content-Transfer-Encoding', 'binary');
         res.header('Accept-Ranges', 'bytes');
-        if (stats && stats.size > 0) {
-          res.header('Content-Length', stats.size);
+        if (size > 0) {
+          res.header('Content-Length', size);
         }
         res.send();
-      });
+      } catch (err) {
+        res.status(err.code || 500).send({ message: err.message });
+      }
     },
 
     // Put for uploads
     put: async function(req, res, _next)
     {
       const id = req.params.id;
-      const name = req.params.name;
-
-      // Find repository
-      const repo = storage.get(id);
-      if (!repo) {
-        res.status(404).send({ message: `Repository with id "${id}" not found.` });
-        return;
-      }
 
       // First check if we're the liaison for the name, otherwise we can bail
       // out already.
-      const role_addr = substrate.identities.key.address();
+      const role_addr = runtime.identities.key.address();
       try {
-        await substrate.assets.checkLiaisonForDataObject(role_addr, name);
+        await runtime.assets.checkLiaisonForDataObject(role_addr, id);
       } catch (err) {
         res.status(403).send({ message: err.toString() });
         return;
       }
 
-      // Check for file type.
-      const ft_stream = await file_type.stream(req);
-      const fileType = ft_stream.fileType || { mime: 'application/octet-stream' };
-      debug('Detected Content-Type is', fileType.mime);
+      const errfunc = (err) => {
+        debug(err);
+        res.status(500).send({ message: err.toString() });
+      }
 
-      // Filter
-      const filter_result = filter(config, req.headers, fileType.mime);
-      if (200 != filter_result.code) {
-        res.status(filter_result.code).send({ message: filter_result.message });
+      // We'll open a write stream to the backend, but reserve the right to
+      // abort upload if the filters don't smell right.
+      var stream;
+      try {
+        stream = await storage.open(id, 'w');
 
-        // Reject the content
-        await substrate.assets.rejectContent(role_addr, name);
+        // We don't know whether the filtering occurs before or after the
+        // stream was finished, and can only commit if both passed.
+        var finished = false;
+        var accepted = false;
+        const possibly_commit = () => {
+          if (finished && accepted) {
+            debug('Stream is finished and passed filters; committing.');
+            stream.commit();
+          }
+        };
+
+
+        stream.on('file_info', async (info) => {
+          try {
+            debug('Detected file info:', info);
+
+            // Filter
+            const filter_result = filter(config, req.headers, info.mime_type);
+            if (200 != filter_result.code) {
+              debug('Rejecting content', filter_result.message);
+              stream.end();
+              res.status(filter_result.code).send({ message: filter_result.message });
+
+              // Reject the content
+              await runtime.assets.rejectContent(role_addr, id);
+              return;
+            }
+            debug('Content accepted.');
+            accepted = true;
+            await runtime.assets.acceptContent(role_addr, id);
+
+            // We may have to commit the stream.
+            possibly_commit();
+          } catch (err) {
+            errfunc(err);
+          }
+        });
+
+        stream.on('finish', () => {
+          try {
+            finished = true;
+            possibly_commit();
+          } catch (err) {
+            errfunc(err);
+          }
+        });
+
+        stream.on('committed', async (hash) => {
+          try {
+            // Store the hash in the backend.
+            await runtime.assets.setStorageMetadata(id, {
+              version: 1,
+              ipfs_content_id: hash,
+            });
+
+            // Create storage relationship and flip it to ready.
+            const dosr_id = await runtime.assets.createAndReturnStorageRelationship(role_addr, id);
+            await runtime.assets.toggleStorageRelationshipReady(role_addr, dosr_id, true);
+
+            debug('Sending OK response.');
+            res.status(200).send({ message: 'Asset uploaded.' });
+          } catch (err) {
+            res.status(500).send({ message: err.toString() });
+          }
+        });
+
+        stream.on('error', errfunc);
+        req.pipe(stream);
+
+      } catch (err) {
+        errfunc(err);
         return;
       }
-      await substrate.assets.acceptContent(role_addr, name);
-
-      // Open file
-      repo.open(name, 'w', (err, type, stream) => {
-        if (err) {
-          res.status(err.code).send({ message: err.message });
-          return;
-        }
-
-        // XXX Can we do ranges?
-//        var opts = {
-//          name: name,
-//          type: type,
-//          ranges: ranges,
-//          download: download,
-//        };
-//        util_ranges.send(res, stream, opts);
-        ft_stream.on('end', async () => {
-          // Create storage relationship and flip it to ready.
-          const dosr_id = await substrate.assets.createAndReturnStorageRelationship(role_addr, name);
-          await substrate.assets.toggleStorageRelationshipReady(role_addr, dosr_id, true);
-
-          res.status(200).send({ message: 'Asset uploaded.' });
-        });
-        ft_stream.pipe(stream);
-      });
     },
 
     // Get content
-    get: function(req, res, _next)
+    get: async function(req, res, _next)
     {
       const id = req.params.id;
-      const name = req.params.name;
-      var download = req.query.download;
-
-      const repo = storage.get(id);
-      if (!repo) {
-        res.status(404).send({ message: `Repository with id "${id}" not found.` });
-        return;
-      }
+      const download = req.query.download;
 
       // Parse range header
       var ranges;
@@ -178,41 +198,37 @@ module.exports = function(config, storage, substrate)
       debug('Requested range(s) is/are', ranges);
 
       // Open file
-      repo.size(name, (err, size) => {
-        if (err) {
-          res.status(err.code).send({ message: err.message });
-          return;
-        }
+      try {
+        const size = await storage.size(id);
+        const stream = await storage.open(id, 'r');
 
-        repo.open(name, 'r', (err, type, stream) => {
-          if (err) {
-            res.status(err.code).send({ message: err.message });
-            return;
-          }
-
-          // Add a file extension to download requests if necessary. If the file
-          // already contains an extension, don't add one.
-          var send_name = name;
-          if (download) {
-            var ext = path.extname(send_name);
-            if (!ext) {
-              ext = mime_types.extension(type);
-              if (ext) {
-                send_name = `${send_name}.${ext}`;
-              }
+        // Add a file extension to download requests if necessary. If the file
+        // already contains an extension, don't add one.
+        var send_name = id;
+        const type = stream.file_info.mime_type;
+        if (download) {
+          var ext = path.extname(send_name);
+          if (!ext) {
+            ext = stream.file_info.ext;
+            if (ext) {
+              send_name = `${send_name}.${ext}`;
             }
           }
+        }
 
-          var opts = {
-            name: send_name,
-            type: type,
-            size: size,
-            ranges: ranges,
-            download: download,
-          };
-          util_ranges.send(res, stream, opts);
-        });
-      });
+        var opts = {
+          name: send_name,
+          type: type,
+          size: size,
+          ranges: ranges,
+          download: download,
+        };
+        util_ranges.send(res, stream, opts);
+
+
+      } catch (err) {
+        res.status(err.code || 500).send({ message: err.message });
+      }
     }
   };
 
