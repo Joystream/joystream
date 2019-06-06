@@ -6,7 +6,7 @@ import axios from 'axios';
 import { AccountId } from '@polkadot/types';
 import { withCalls, withMulti } from '@polkadot/ui-api/with';
 
-import { queryToProp, nonEmptyStr } from '@polkadot/joy-utils/index';
+import { queryToProp } from '@polkadot/joy-utils/index';
 import { Url } from '@joystream/types/discovery'
 
 export type BootstrapNodes = {
@@ -40,7 +40,7 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
   }
 
   const resolveAssetEndpoint = async (liaison: AccountId, contentId?: string) => {
-    const serviceInfoQuery = `${discoveryUrl}${liaison.toString()}`;
+    const serviceInfoQuery = `${discoveryUrl}discover/v0/${liaison.toString()}`;
 
     // It feels really wrong to be doing this sort of async call in this component!
     const serviceInfo = await axios.get(serviceInfoQuery) as any
@@ -50,10 +50,12 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
     }
 
     // assert serviceInfo.version === 1
+    const assetApi = JSON.parse(serviceInfo.data.serialized).asset
 
-    const assetApi = JSON.parse(serviceInfo.serialized).asset
-
+    // demo - old storage backend
+    // return `${assetApi.endpoint}/asset/v${assetApi.version}/920eefe7-adf5-56f7-bee2-13cb0259d34a/${contentId || ''}`
     return `${assetApi.endpoint}/asset/v${assetApi.version}/${contentId || ''}`
+
   };
 
   return { resolveAssetEndpoint };
@@ -61,6 +63,11 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
 
 function setDiscoveryProvider<P extends DiscoveryProviderProps> (Component: React.ComponentType<P>) {
   return class extends React.Component<P & BootstrapNodes> {
+    componentWillUnmount() {
+      // cancel axios requests in discoveryProvider
+      // https://stackoverflow.com/questions/38329209/how-to-cancel-abort-ajax-request-in-axios
+    }
+
     render () {
       const { bootstrapNodes } = this.props;
       const discoveryProvider = newDiscoveryProvider(this.props);

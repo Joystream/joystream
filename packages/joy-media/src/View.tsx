@@ -12,8 +12,8 @@ import { Option } from '@polkadot/types/codec';
 import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
-import { withStorageProvider, StorageProviderProps } from './StorageProvider';
-import { DataObject, ContentMetadata, ContentId } from '@joystream/types/media';
+import { withDiscoveryProvider, DiscoveryProviderProps } from './DiscoveryProvider';
+import { DataObject, ContentMetadata, ContentId, DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '@joystream/types/media';
 import { MutedText } from '@polkadot/joy-utils/MutedText';
 import { DEFAULT_THUMBNAIL_URL, onImageError } from './utils';
 import { isEmptyStr } from '@polkadot/joy-utils/';
@@ -41,12 +41,13 @@ type PartOfPlayer = {
   destroy: () => void
 };
 
-type ViewProps = ApiProps & I18nProps & StorageProviderProps & {
+type ViewProps = ApiProps & I18nProps & DiscoveryProviderProps & {
   contentId: ContentId,
   contentType?: string,
   dataObjectOpt?: Option<DataObject>,
   metadataOpt?: Option<ContentMetadata>,
-  preview?: boolean
+  preview?: boolean,
+  resolvedAssetUrl?: string,
 };
 
 class InnerView extends React.PureComponent<ViewProps> {
@@ -124,8 +125,7 @@ class InnerView extends React.PureComponent<ViewProps> {
     const { added_at } = meta;
     const { name, description, thumbnail: cover } = meta.parseJson();
 
-    const { storageProvider } = this.props;
-    const url = storageProvider.buildApiUrl(contentId);
+    const {resolvedAssetUrl: url} = this.props;
 
     const { contentType = 'video/video' } = this.props;
     const prefix = contentType.substring(0, contentType.indexOf('/'));
@@ -175,7 +175,6 @@ class InnerView extends React.PureComponent<ViewProps> {
 export const View = withMulti(
   InnerView,
   translate,
-  withStorageProvider,
   withCalls<ViewProps>(
     ['query.dataDirectory.dataObjectByContentId',
       { paramName: 'contentId', propName: 'dataObjectOpt' } ],
@@ -184,7 +183,7 @@ export const View = withMulti(
   )
 );
 
-type PlayProps = ApiProps & I18nProps & StorageProviderProps & {
+type PlayProps = ApiProps & I18nProps & DiscoveryProviderProps & {
   match: {
     params: {
       assetName: string
@@ -193,51 +192,90 @@ type PlayProps = ApiProps & I18nProps & StorageProviderProps & {
 };
 
 type PlayState = {
+  contentId?: ContentId,
   contentType?: string,
-  contentTypeRequested: boolean
+  resolvingAsset: boolean,
+  resolvedAssetUrl?: string,
+  error?: Error
 };
 
 class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
 
   state: PlayState = {
-    contentTypeRequested: false
+    resolvingAsset: false
   };
 
-  requestContentType (contentId: string) {
-    console.log('Request content type...');
+  componentDidMount() {
+    this.resolveAsset();
+  }
 
-    const { storageProvider } = this.props;
-    const url = storageProvider.buildApiUrl(contentId);
-    this.setState({ contentTypeRequested: true });
+  componentWillUnmount() {
+    // cancel axios requests
+    // https://stackoverflow.com/questions/38329209/how-to-cancel-abort-ajax-request-in-axios
+  }
 
-    axios
-      .head(url)
-      .then(response => {
-        const contentType = response.headers['content-type'] || 'video/video';
-        this.setState({ contentType });
+  async resolveAsset () {
+    const { discoveryProvider, api } = this.props;
+    const { match: { params: { assetName } } } = this.props;
+    const contentId = ContentId.fromAddress(assetName);
+
+    if (!contentId) {
+      this.setState({
+        error: new Error('Invalid content id')
       });
+      return;
+    }
+
+    this.setState({ resolvingAsset: true, contentId });
+
+    const rids: DataObjectStorageRelationshipId[] = await api.query.dataObjectStorageRegistry.relationshipsByContentId(contentId) as any;
+
+    const allRelationships: Option<DataObjectStorageRelationship>[] = await Promise.all(rids.map((id) => api.query.dataObjectStorageRegistry.relationships(id))) as any;
+
+    let readyProviders = allRelationships.filter(r => r.isSome).map(r => r.unwrap())
+        .filter(r => r.ready)
+        .map(r => r.storage_provider);
+
+    if (!readyProviders.length) {
+      this.setState({resolvingAsset: false, error: new Error('No Storage Providers found')});
+      return
+    }
+
+    // shuffle then loop over providers until we find one that responds
+    // TODO: readyProviders = readyProviders.shuffle()
+    for(let provider; provider = readyProviders.pop();) {
+      const resolvedAssetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.toAddress())
+
+      try {
+        let response = await axios.head(resolvedAssetUrl)
+        const contentType = response.headers['content-type'] || 'video/video';
+        this.setState({ contentType, resolvedAssetUrl, resolvingAsset: false });
+        return
+      } catch (err) {
+        // try next provider
+      }
+    }
+
+    this.setState({resolvingAsset: false, error: new Error('Unable to contact a Storage Providers')});
   }
 
   render () {
-    const { match: { params: { assetName } } } = this.props;
-    try {
-      const contentId = ContentId.fromAddress(assetName);
-      const { contentType, contentTypeRequested } = this.state;
-      if (typeof contentType === 'string') {
-        return <View contentId={contentId} contentType={contentType} />;
-      } else if (!contentTypeRequested) {
-        this.requestContentType(assetName);
-      }
-      return <em>Loading...</em>;
-    } catch (err) {
-      console.log('Invalid content ID:', assetName);
+    const { error, resolvedAssetUrl, contentType, contentId } = this.state;
+
+    if (error) {
+      return <em>Error loading content: {error.message}</em>;
     }
-    return <em>Content was not found by ID: {assetName}</em>;
+
+    if (resolvedAssetUrl) {
+      return <View contentType={contentType} resolvedAssetUrl={resolvedAssetUrl} contentId={contentId}/>;
+    } else {
+      return <em>Loading...</em>;
+    }
   }
 }
 
 export const Play = withMulti(
   InnerPlay,
   translate,
-  withStorageProvider
+  withDiscoveryProvider
 );
