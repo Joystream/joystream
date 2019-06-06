@@ -69,7 +69,7 @@ function setDiscoveryProvider<P extends DiscoveryProviderProps> (Component: Reac
       if (!bootstrapNodes ) {
         // Still loading bootstrap nodes...
         return (
-          <Message error className='JoyMainStatus'>
+          <Message info className='JoyMainStatus'>
               <Message.Header>Loading</Message.Header>
               <div style={{ marginTop: '1rem' }}>
                 Bootstrapping discovery service...
