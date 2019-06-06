@@ -9,7 +9,6 @@ import { withCalls, withMulti } from '@polkadot/ui-api/with';
 import { queryToProp, nonEmptyStr } from '@polkadot/joy-utils/index';
 import { Url } from '@joystream/types/discovery'
 
-
 export type BootstrapNodes = {
   bootstrapNodes?: Url[],
 };
