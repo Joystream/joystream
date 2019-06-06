@@ -307,6 +307,11 @@ const THREAD_MODERATION_RATIONALE: InputValidationLengthConstraint = InputValida
     max_as_min_diff: 2000
 };
 
+const POST_MODERATIONALE_RATIONALE:  InputValidationLengthConstraint = InputValidationLengthConstraint{
+    min: 100,
+    max_as_min_diff: 2000
+};
+
 /// The greatest valid depth of a category.
 /// The depth of a root category is 0.
 const MAX_CATEGORY_DEPTH: u32 = 3;
@@ -342,7 +347,18 @@ const ERROR_THREAD_DOES_NOT_EXIST: &str = "Thread does not exist";
 const ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT: &str = "Thread moderation rationale too short.";
 const ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG: &str = "Thread moderation rationale too long.";
 
-const ERROR_THREAD_ALREADY_MODERATED: &str = "Thread alrady moderated.";
+const ERROR_THREAD_ALREADY_MODERATED: &str = "Thread already moderated.";
+
+const ERROR_THREAD_MODERATED: &str = "Thread is moderated.";
+
+const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
+
+const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match post author.";
+
+const ERROR_POST_MODERATED: &str = "Post is moderated.";
+
+const ERROR_POST_MODERATION_RATIONALE_TOO_SHORT: &str = "Post moderation rationale too short.";
+const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rationale too long.";
 
 //use srml_support::storage::*;
 
@@ -504,6 +520,14 @@ pub struct Thread<BlockNumber, Moment, AccountId> {
     /// Author of post.
     author_id : AccountId
 }
+
+impl<BlockNumber, Moment, AccountId> Thread<BlockNumber, Moment, AccountId>  {
+
+    fn num_posts_ever_created(&self) -> u32 {
+        self.num_unmoderated_posts + self.num_moderated_posts
+    }
+}
+
 
 /// Represents a category identifier
 pub type CategoryId = u64;
@@ -856,63 +880,14 @@ decl_module! {
              * Here it is safe to mutate state.
              */
 
-            // Get category
-            let category = category_tree_path.first().unwrap().clone();
+            // Add thread
+            let thread = Self::add_new_thread(category_id, &title, &who);
 
-            assert_eq!(category.id, category_id);
-            
-            // Update (unmoderated) thread count in corresponding category
-            <CategoryById<T>>::mutate(category_id, |c| {
-                c.num_direct_unmoderated_threads += 1;
-            });
-
-            // Get thread counter
-            let new_thread_id = <NextThreadId<T>>::get();
-
-            // Create and add new thread
-            let new_thread = Thread {
-                id : new_thread_id,
-                title : title.clone(),
-                category_id: category_id,
-                nr_in_category: category.num_threads_created(),
-                moderation : None,
-                num_unmoderated_posts: 0,
-                num_moderated_posts: 1,
-                created_at : Self::current_block_and_time(),
-                author_id : who.clone()
-            };
-
-            <ThreadById<T>>::insert(new_thread_id, new_thread);
-
-            // Update next thread id
-            <NextThreadId<T>>::mutate(|n| {
-                *n += 1;
-            });
-
-            // Make and add initial post
-
-            // TODO: perhaps factor out later?
-
-            let new_post_id = <NextPostId<T>>::get();
-
-            <NextPostId<T>>::put(new_post_id + 1);
-
-            // Create and add new post
-            let new_post = Post {
-                id: new_post_id,
-                thread_id: new_thread_id,
-                nr_in_thread: 1, // Starts at 1
-                current_text: text.clone(),
-                moderation : None,
-                text_change_history: vec![],
-                created_at : Self::current_block_and_time(),
-                author_id : who.clone()
-            };
-
-            <PostById<T>>::insert(new_post_id, new_post);
+            // Add inital post to thread
+            Self::add_new_post(thread.id, &text, &who);
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadCreated(new_thread_id));
+            Self::deposit_event(RawEvent::ThreadCreated(thread.id));
 
             Ok(())
         }
@@ -964,6 +939,125 @@ decl_module! {
 
             // Generate event
             Self::deposit_event(RawEvent::ThreadModerated(thread_id));
+
+            Ok(())
+        }
+
+        /// Edit post text
+        fn add_post(origin, thread_id: ThreadId, text: Vec<u8>) -> dispatch::Result {
+
+            /*
+             * Update SPEC with new errors,
+             */ 
+
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_member(&who)?;
+
+            // Make sure thread exists and is mutable
+            let thread = Self::ensure_thread_is_mutable(&thread_id)?;
+
+            // Get path from parent to root of category tree.
+            let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(thread.category_id)?;
+
+            // No ancestor is blocking us doing mutation in this category
+            Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+
+            /*
+             * Here we are safe to mutate
+             */
+
+            let post = Self::add_new_post(thread_id, &text, &who);
+
+            // Generate event
+            Self::deposit_event(RawEvent::PostAdded(post.id));
+
+            Ok(())
+        }
+
+        /// Edit post text
+        fn edit_post_text(origin, post_id: PostId, new_text: Vec<u8>) -> dispatch::Result {
+
+            /* Edit spec. 
+              - forum member guard missing
+              - check that both post and thread and category are mutable
+            */
+
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_member(&who)?;
+
+            // Make sure there exists a mutable post with post id `post_id`
+            let mut post = Self::ensure_post_is_mutable(&post_id)?;
+
+            // Signer does not match creator of post with identifier postId
+            ensure!(post.author_id == who, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
+
+            /*
+             * Here we are safe to mutate
+             */
+
+            <PostById<T>>::mutate(post_id, |p| {
+
+                let expired_post_text = ExpiredPostText {
+                    expired_at: Self::current_block_and_time(),
+                    text: post.current_text.clone()
+                };
+
+                // Set current text to new text
+                post.current_text = new_text;
+
+                // Copy current text to history of expired texts
+                p.expired_post_texts.push(expired_post_text);
+            });
+
+            // Generate event
+            Self::deposit_event(RawEvent::PostTextUpdated(post.id, post.expired_post_texts.len() as u64));
+
+            Ok(())
+        }
+
+        /// Moderate post
+        fn moderate_post(origin, post_id: PostId, rationale: Vec<u8>) -> dispatch::Result {
+
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+            
+            // Signed by forum SUDO
+            Self::ensure_is_forum_sudo(&who)?;
+
+            // Make sure post exists and is mutable
+            let post = Self::ensure_post_is_mutable(&post_id)?;
+
+            ensure_rationale_is_valid(&rationale)?;
+
+            /*
+             * Here we are safe to mutate
+             */
+
+            // Update moderation action on post
+            let moderation_action = ModerationAction{
+                moderated_at: Self::current_block_and_time(),
+                moderator_id: who,
+                rationale: rationale.clone()
+            };
+
+            <PostById<T>>::mutate(post_id, |p| {
+                p.moderation = Some(moderation_action);
+            });
+
+            // Update moderated and unmoderated post count of corresponding thread  
+            <ThreadById<T>>::mutate(post.thread_id, |t| {
+                t.num_unmoderated_posts -= 1;
+                t.num_moderated_posts += 1;
+            });
+
+            // Generate event
+            Self::deposit_event(RawEvent::PostModerated(post.id));
 
             Ok(())
         }
@@ -1021,6 +1115,15 @@ fn ensure_post_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
     }
 }
 
+fn ensure_rationale_is_valid(rationale: &Vec<u8>) -> dispatch::Result {
+
+    match POST_MODERATIONALE_RATIONALE.validate(rationale.len()) {
+        LengthValidationResult::TooShort => Err(ERROR_POST_MODERATION_RATIONALE_TOO_SHORT),
+        LengthValidationResult::TooLong => Err(ERROR_POST_MODERATION_RATIONALE_TOO_LONG),
+        LengthValidationResult::Success => Ok(())
+    }
+}
+
 impl<T: Trait> Module<T> {
 
     fn current_block_and_time() -> BlockchainTimestamp<T::BlockNumber, T::Moment> {
@@ -1029,6 +1132,43 @@ impl<T: Trait> Module<T> {
             block: <system::Module<T>>::block_number(),
             time: <timestamp::Module<T>>::now(),
         }
+    }
+
+    fn ensure_post_is_mutable(post_id: &PostId) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+
+        // Make sure post exists
+        let post = Self::ensure_post_exists(post_id)?;
+
+        // and is unmoderated
+        ensure!(post.moderation.is_none(), ERROR_POST_MODERATED);
+
+        // and make sure thread is mutable
+        Self::ensure_thread_is_mutable(&post.thread_id)?;
+
+        Ok(post)
+    }
+
+    fn ensure_post_exists(post_id: &PostId) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+
+        if <PostById<T>>::exists(post_id) {
+            Ok(<PostById<T>>::get(post_id))
+        } else {
+            Err(ERROR_POST_DOES_NOT_EXIST)
+        }
+    }
+
+    fn ensure_thread_is_mutable(thread_id: &ThreadId) -> Result<Thread<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+
+        // Make sure thread exists
+        let thread = Self::ensure_thread_exists(&thread_id)?;
+
+        // and is unmoderated
+        ensure!(thread.moderation.is_none(), ERROR_THREAD_MODERATED);
+
+        // and corresponding category is mutable
+        Self::ensure_catgory_is_mutable(thread.category_id)?;
+
+        Ok(thread)
     }
 
     fn ensure_thread_exists(thread_id: &ThreadId) -> Result<Thread<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
@@ -1069,6 +1209,13 @@ impl<T: Trait> Module<T> {
         } else {
             Err(ERROR_NOT_FORUM_USER)
         }
+    }
+
+    fn ensure_catgory_is_mutable(category_id:CategoryId) -> dispatch::Result {
+
+        let category_tree_path = Self::build_category_tree_path(category_id);
+
+        Self::ensure_can_mutate_in_path_leaf(&category_tree_path)
     }
 
     fn ensure_can_mutate_in_path_leaf(category_tree_path:&CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>) -> dispatch::Result {
@@ -1140,6 +1287,80 @@ impl<T: Trait> Module<T> {
             Self::_build_category_tree_path(child_position_in_parent.parent_id, path);
         }
     }
+
+    fn add_new_thread(category_id: CategoryId, title: &Vec<u8>, author_id: &T::AccountId) -> Thread<T::BlockNumber, T::Moment, T::AccountId> {
+
+        // Get category
+        let category = <CategoryById<T>>::get(category_id);
+
+        // Create and add new thread
+        let new_thread_id = <NextThreadId<T>>::get();
+
+        let new_thread = Thread {
+            id : new_thread_id,
+            title : title.clone(),
+            category_id: category_id,
+            thread_nr_in_category: category.num_threads_ever_created() + 1,
+            moderation : None,
+            num_unmoderated_posts: 0,
+            num_moderated_posts: 0,
+            created_at : Self::current_block_and_time(),
+            author_id : author_id.clone()
+        };
+
+        // Store thread
+        <ThreadById<T>>::insert(new_thread_id, new_thread.clone());
+
+        // Update next thread id
+        <NextThreadId<T>>::mutate(|n| {
+            *n += 1;
+        });
+
+        // Update unmoderated thread count in corresponding category
+        <CategoryById<T>>::mutate(category_id, |c| {
+            c.num_direct_unmoderated_threads += 1;
+        });
+
+        new_thread
+    }
+
+    /// Creates and ads a new post ot the given thread, and makes all required state updates
+    /// `thread_id` must be valid
+    fn add_new_post(thread_id: ThreadId, text: &Vec<u8>, author_id: &T::AccountId) -> Post<T::BlockNumber, T::Moment, T::AccountId> {
+
+        // Get thread
+        let thread = <ThreadById<T>>::get(thread_id);
+
+        // Make and add initial post
+        let new_post_id = <NextPostId<T>>::get();
+
+        let new_post = Post {
+            id: new_post_id,
+            thread_id: thread_id,
+            post_nr_in_thread: thread.num_posts_ever_created() + 1,
+            current_text: text.clone(),
+            moderation : None,
+            expired_post_texts: vec![],
+            created_at : Self::current_block_and_time(),
+            author_id : author_id.clone()
+        };
+
+        // Store post
+        <PostById<T>>::insert(new_post_id, new_post.clone());
+
+        // Update next post id
+        <NextPostId<T>>::mutate(|n| {
+            *n += 1;
+        });
+
+        // Update unmoderated post count of thread
+        <ThreadById<T>>::mutate(thread_id, |t| {
+            t.num_unmoderated_posts += 1;
+        });
+
+        new_post
+    }
+
 }
 
 #[cfg(test)]
