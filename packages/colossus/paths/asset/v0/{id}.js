@@ -66,8 +66,6 @@ module.exports = function(config, storage, runtime)
         // already). Then return result.
         stream.destroy();
 
-        console.log(size, type);
-
         res.status(200);
         res.contentType(type);
         res.header('Content-Disposition', 'inline');
@@ -77,7 +75,6 @@ module.exports = function(config, storage, runtime)
           res.header('Content-Length', size);
         }
         res.send();
-        console.log('response sent');
       } catch (err) {
         error_handler(err, err.code);
       }
