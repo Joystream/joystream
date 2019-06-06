@@ -197,7 +197,7 @@ class Component extends React.PureComponent<Props, State> {
     };
 
     const { discoveryProvider } = this.props;
-    const url =  await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId);
+    const url = await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId);
 
     this.setState({ uploading: true });
 
