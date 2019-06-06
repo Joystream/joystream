@@ -16,7 +16,7 @@ import translate from './translate';
 import { fileNameWoExt } from './utils';
 import { ContentId, DataObject } from '@joystream/types/media';
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import { withDiscoveryProvider, DiscoveryProviderProps } from './DiscoveryProvider';
+import { DiscoveryProviderProps } from './DiscoveryProvider';
 import EditMeta from './EditMeta';
 import TxButton from '@polkadot/joy-utils/TxButton';
 
@@ -212,5 +212,4 @@ export default withMulti(
   Component,
   translate,
   withOnlyMembers,
-  withDiscoveryProvider
 );
