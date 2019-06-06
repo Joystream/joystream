@@ -27,7 +27,7 @@ const FLAG_DEFINITIONS = {
     alias: 'p',
     _default: 3000,
   },
-  'syncPeriod': { // TODO Keep for later
+  'syncPeriod': {
     type: 'integer',
     _default: 30000,
   },
@@ -111,22 +111,6 @@ async function start_app(project_root, store, api, config)
 {
   const app = require('../lib/app')(store, api, config);
   const port = config.get('port');
-<<<<<<< HEAD
-=======
-  app.listen(port);
-  console.log('Storage API server started; API docs at http://localhost:' + port + '/swagger.json');
-}
-
-// Start discovery service app
-function start_discovery_app(api, config)
-{
-  const app = require('../lib/discovery_app')(api, config);
-  const port = config.get('port');
-  app.listen(port);
-  console.log('Discovery Service API server started; API docs at http://localhost:' + port + '/swagger.json');
-}
->>>>>>> mnaamani/discovery
-
   const http = require('http');
   const server = http.createServer(app);
 
@@ -166,20 +150,12 @@ async function run_signup(account_file)
 {
   const { RuntimeApi } = require('@joystream/runtime-api');
   const api = await RuntimeApi.create({account_file});
-<<<<<<< HEAD
-  const member_address = api.identities.key.address();
-=======
   const member_address = api.key.address();
->>>>>>> mnaamani/discovery
 
   // Check if account works
   const min = await api.roles.requiredBalanceForRoleStaking(api.roles.ROLE_STORAGE);
   console.log(`Account needs to be a member and have a minimum balance of ${min.toString()}`);
-<<<<<<< HEAD
   const check = await api.roles.checkAccountForStaking(member_address);
-=======
-  const check = await api.role.checkAccountForStaking(member_address);
->>>>>>> mnaamani/discovery
   if (check) {
     console.log('Account is working for staking, proceeding.');
   }
@@ -247,7 +223,7 @@ async function announce_public_url(api, config) {
     // reannounceAfterMilliSeconds = convertToMs(published.ttl)
 
   } catch (err) {
-    debug(`announcing public url failed: ${err.message}`)
+    debug(`announcing public url failed: ${err.stack}`)
 
     // If it failed we should probably retry sooner
   }
@@ -289,8 +265,12 @@ const commands = {
     // Continue with server setup
     const store = await get_storage(api, cfg);
     banner();
+
+    await announce_public_url(api, cfg);
+    const { start_syncing } = require('../lib/sync');
+    start_syncing(api, cfg);
+
     await start_app(project_root, store, api, cfg);
-    announce_public_url(api, cfg);
   },
   'signup': async (account_file) => {
     await run_signup(account_file);
@@ -307,13 +287,6 @@ const commands = {
 
     await go_offline(api)
   },
-  'jds': async () => {
-    debug("Starting Joystream Discovery Service")
-    const { RuntimeApi } = require('@joystream/runtime-api')
-    const cfg = create_config(pkg.name, cli.flags)
-    const api = await RuntimeApi.create()
-    start_discovery_app(api, cfg)
-  }
 };
 
 
