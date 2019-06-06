@@ -1,6 +1,6 @@
 const { discover } = require('@joystream/discovery')
 const debug = require('debug')('joystream:api:discovery');
-module.exports = function(config, storage, substrate)
+module.exports = function(config, storage, runtime)
 {
   var doc = {
     // parameters for all operations in this path
@@ -21,12 +21,12 @@ module.exports = function(config, storage, substrate)
     {
         const id = req.params.id;
 
-        substrate.roles.checkForRole(id)
+        runtime.roles.checkForRole(id)
           .then((isActor) => {
             if (!isActor) {
               res.status(404).end()
             } else {
-              discover.discover(id, substrate).then((info) => {
+              discover.discover(id, runtime).then((info) => {
                 debug(info)
                 res.status(200).send(info)
               })
