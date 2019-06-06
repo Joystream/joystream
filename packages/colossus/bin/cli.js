@@ -119,12 +119,24 @@ async function start_app(project_root, store, api, config)
 }
 
 // Get an initialized storage instance
-async function get_storage(config)
+async function get_storage(runtime_api, config)
 {
   // TODO at some point, we can figure out what backend-specific connection
   // options make sense. For now, just don't use any configuration.
   const { Storage } = require('@joystream/storage');
-  return await Storage.create();
+
+  const options = {
+    resolve_content_id: async (content_id) => {
+      const meta = await runtime_api.assets.getStorageMetadata(content_id);
+      if (!meta) {
+        return;
+      }
+      // TODO should check version, but for now this is probably fine.
+      return meta.ipfs_content_id;
+    },
+  };
+
+  return await Storage.create(options);
 }
 
 async function run_signup(account_file)
@@ -189,7 +201,7 @@ const commands = {
     console.log('Staked, proceeding.');
 
     // Continue with server setup
-    const store = await get_storage(cfg);
+    const store = await get_storage(api, cfg);
     banner();
     await start_app(project_root, store, api, cfg);
   },
