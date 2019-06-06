@@ -28,6 +28,13 @@ const debug = require('debug')('joystream:api:asset');
 const util_ranges = require('@joystream/util/ranges');
 const filter = require('@joystream/storage/filter');
 
+function error_handler(err, code)
+{
+  debug(err);
+  res.status(code || 500).send({ message: err.toString() });
+}
+
+
 module.exports = function(config, storage, runtime)
 {
   var doc = {
@@ -57,7 +64,9 @@ module.exports = function(config, storage, runtime)
 
         // Close the stream; we don't need to fetch the file (if we haven't
         // already). Then return result.
-        stream.close();
+        stream.destroy();
+
+        console.log(size, type);
 
         res.status(200);
         res.contentType(type);
@@ -68,8 +77,9 @@ module.exports = function(config, storage, runtime)
           res.header('Content-Length', size);
         }
         res.send();
+        console.log('response sent');
       } catch (err) {
-        res.status(err.code || 500).send({ message: err.message });
+        error_handler(err, err.code);
       }
     },
 
@@ -84,13 +94,8 @@ module.exports = function(config, storage, runtime)
       try {
         await runtime.assets.checkLiaisonForDataObject(role_addr, id);
       } catch (err) {
-        res.status(403).send({ message: err.toString() });
+        error_handler(err, 403);
         return;
-      }
-
-      const errfunc = (err) => {
-        debug(err);
-        res.status(500).send({ message: err.toString() });
       }
 
       // We'll open a write stream to the backend, but reserve the right to
@@ -133,7 +138,7 @@ module.exports = function(config, storage, runtime)
             // We may have to commit the stream.
             possibly_commit();
           } catch (err) {
-            errfunc(err);
+            error_handler(err);
           }
         });
 
@@ -142,7 +147,7 @@ module.exports = function(config, storage, runtime)
             finished = true;
             possibly_commit();
           } catch (err) {
-            errfunc(err);
+            error_handler(err);
           }
         });
 
@@ -161,15 +166,15 @@ module.exports = function(config, storage, runtime)
             debug('Sending OK response.');
             res.status(200).send({ message: 'Asset uploaded.' });
           } catch (err) {
-            res.status(500).send({ message: err.toString() });
+            error_handler(err);
           }
         });
 
-        stream.on('error', errfunc);
+        stream.on('error', error_handler);
         req.pipe(stream);
 
       } catch (err) {
-        errfunc(err);
+        error_handler(err);
         return;
       }
     },
@@ -227,7 +232,7 @@ module.exports = function(config, storage, runtime)
 
 
       } catch (err) {
-        res.status(err.code || 500).send({ message: err.message });
+        error_handler(err, err.code);
       }
     }
   };
