@@ -38,6 +38,10 @@ const FLAG_DEFINITIONS = {
     type: 'string',
     alias: 'c',
   },
+  'publicUrl': {
+    type: 'string',
+    alias: 'u'
+  },
 };
 
 const cli = meow(`
@@ -51,6 +55,9 @@ const cli = meow(`
                       sufficient balance for staking as a storage provider.
                       Writes a new account file that should be used to run the
                       storage node.
+    down              Signal to network that all services are down. Running
+                      the server will signal that services as online again.
+    jds               Run a discovery server only.
 
   Options:
     --config=PATH, -c PATH  Configuration file path. Defaults to
@@ -59,6 +66,7 @@ const cli = meow(`
     --sync-period           Number of milliseconds to wait between synchronization
                             runs. Defaults to 30,000 (30s).
     --key-file              JSON key export file to use as the storage provider.
+    --public-url=URL, -u    Public URL to announce. No URL will be announced if not specified.
   `,
   { flags: FLAG_DEFINITIONS });
 
@@ -103,6 +111,21 @@ async function start_app(project_root, store, api, config)
 {
   const app = require('../lib/app')(store, api, config);
   const port = config.get('port');
+<<<<<<< HEAD
+=======
+  app.listen(port);
+  console.log('Storage API server started; API docs at http://localhost:' + port + '/swagger.json');
+}
+
+// Start discovery service app
+function start_discovery_app(api, config)
+{
+  const app = require('../lib/discovery_app')(api, config);
+  const port = config.get('port');
+  app.listen(port);
+  console.log('Discovery Service API server started; API docs at http://localhost:' + port + '/swagger.json');
+}
+>>>>>>> mnaamani/discovery
 
   const http = require('http');
   const server = http.createServer(app);
@@ -143,12 +166,20 @@ async function run_signup(account_file)
 {
   const { RuntimeApi } = require('@joystream/runtime-api');
   const api = await RuntimeApi.create({account_file});
+<<<<<<< HEAD
   const member_address = api.identities.key.address();
+=======
+  const member_address = api.key.address();
+>>>>>>> mnaamani/discovery
 
   // Check if account works
   const min = await api.roles.requiredBalanceForRoleStaking(api.roles.ROLE_STORAGE);
   console.log(`Account needs to be a member and have a minimum balance of ${min.toString()}`);
+<<<<<<< HEAD
   const check = await api.roles.checkAccountForStaking(member_address);
+=======
+  const check = await api.role.checkAccountForStaking(member_address);
+>>>>>>> mnaamani/discovery
   if (check) {
     console.log('Account is working for staking, proceeding.');
   }
@@ -187,6 +218,56 @@ async function wait_for_role(config)
   return [result, api];
 }
 
+function get_service_information(config) {
+  // For now assume we run all services on the same endpoint
+  return({
+    asset: {
+      version: 0, // howto get version from openapi
+      endpoint: config.get('publicUrl')
+    },
+    discover: {
+      version: 0, // howto get version from openapi
+      endpoint: config.get('publicUrl')
+    }
+  })
+}
+
+async function announce_public_url(api, config) {
+  const { publish } = require('@joystream/discovery')
+
+  const accountId = api.identities.key.address()
+
+  let reannounceAfterMilliSeconds = 1000 * 60 * 60
+
+  try {
+    const serviceInformation = get_service_information(config)
+
+    let published = await publish.publish(accountId, serviceInformation, api)
+
+    // reannounceAfterMilliSeconds = convertToMs(published.ttl)
+
+  } catch (err) {
+    debug(`announcing public url failed: ${err.message}`)
+
+    // If it failed we should probably retry sooner
+  }
+
+  // re-announce in future
+  setTimeout(() => {
+    announce_public_url(api, config)
+  }, reannounceAfterMilliSeconds)
+}
+
+async function go_offline(api) {
+  let _ = await api.discovery.unsetAccountInfo(api.identities.key.address())
+}
+
+// Simple CLI commands
+var command = cli.input[0];
+if (!command) {
+  command = 'server';
+}
+
 const commands = {
   'server': async () => {
     const cfg = create_config(pkg.name, cli.flags);
@@ -200,14 +281,39 @@ const commands = {
     }
     console.log('Staked, proceeding.');
 
+    // Make sure a public URL is configured
+    if (!cfg.get('publicUrl')) {
+      throw new Error('publicUrl not configured')
+    }
+
     // Continue with server setup
     const store = await get_storage(api, cfg);
     banner();
     await start_app(project_root, store, api, cfg);
+    announce_public_url(api, cfg);
   },
   'signup': async (account_file) => {
     await run_signup(account_file);
   },
+  'down': async () => {
+    const cfg = create_config(pkg.name, cli.flags);
+
+    const values = await wait_for_role(cfg);
+    const result = values[0]
+    const api = values[1];
+    if (!result) {
+      throw new Error(`Not staked as storage role.`);
+    }
+
+    await go_offline(api)
+  },
+  'jds': async () => {
+    debug("Starting Joystream Discovery Service")
+    const { RuntimeApi } = require('@joystream/runtime-api')
+    const cfg = create_config(pkg.name, cli.flags)
+    const api = await RuntimeApi.create()
+    start_discovery_app(api, cfg)
+  }
 };
 
 

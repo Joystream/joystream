@@ -27,6 +27,7 @@ const { IdentitiesApi } = require('@joystream/runtime-api/identities');
 const { BalancesApi } = require('@joystream/runtime-api/balances');
 const { RolesApi } = require('@joystream/runtime-api/roles');
 const { AssetsApi } = require('@joystream/runtime-api/assets');
+const { DiscoveryApi } = require('@joystream/runtime-api/discovery');
 
 /*
  * Initialize runtime (substrate) API and keyring.
@@ -58,6 +59,7 @@ class RuntimeApi
     this.balances = await BalancesApi.create(this);
     this.roles = await RolesApi.create(this);
     this.assets = await AssetsApi.create(this);
+    this.discovery = await DiscoveryApi.create(this);
   }
 
   disconnect()

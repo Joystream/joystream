@@ -1,7 +1,7 @@
 {
-  "name": "@joystream/runtime-api",
+  "name": "@joystream/discovery",
   "version": "0.1.0",
-  "description": "Runtime API abstraction for Joystream Storage Node",
+  "description": "Service Discovery - Joystream Storage Node",
   "author": "Joystream",
   "homepage": "https://github.com/Joystream/storage-node-joystream",
   "bugs": {
@@ -22,8 +22,7 @@
   "keywords": [
     "joystream",
     "storage",
-    "node",
-    "runtime"
+    "node"
   ],
   "os": [
     "darwin",
@@ -32,23 +31,29 @@
   "engines": {
     "node": "^10.15.3"
   },
+  "main": "./index.js",
   "scripts": {
-    "test": "mocha 'test/**/*.js' --exit",
-    "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'"
+    "test": "mocha 'test/**/*.js'",
+    "lint": "eslint 'paths/**/*.js' 'lib/**/*.js'"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "eslint": "^5.13.0",
     "mocha": "^5.2.0",
-    "sinon": "^7.3.2",
-    "sinon-chai": "^3.3.0",
+    "supertest": "^3.4.2",
     "temp": "^0.9.0"
   },
   "dependencies": {
-    "@joystream/crypto": "^0.1.0",
-    "@joystream/types": "^0.2.0",
-    "@polkadot/api": "^0.77.1",
-    "lodash": "^4.17.11",
-    "password-prompt": "^1.1.2"
+    "@joystream/runtime-api": "^0.1.0",
+    "@joystream/util": "^0.1.0",
+    "axios": "^0.18.0",
+    "chalk": "^2.4.2",
+    "configstore": "^4.0.0",
+    "figlet": "^1.2.1",
+    "ipfs-http-client": "^32.0.1",
+    "js-yaml": "^3.13.1",
+    "meow": "^5.0.0",
+    "multer": "^1.4.1",
+    "si-prefix": "^0.2.0"
   }
 }
