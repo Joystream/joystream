@@ -411,7 +411,7 @@ pub struct ModerationAction<BlockNumber, Moment, AccountId> {
 /// Represents a revision of the text of a Post
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct ExpiredPostText<BlockNumber, Moment> {
+pub struct PostTextChange<BlockNumber, Moment> {
 
     /// When this expiration occured
     expired_at: BlockchainTimestamp<BlockNumber, Moment>,
@@ -439,7 +439,7 @@ pub struct Post<BlockNumber, Moment, AccountId> {
     /// Is needed to give light clients assurance about getting all posts in a given range,
     // `created_at` is not sufficient.
     /// Starts at 1 for first post in thread.
-    post_nr_in_thread: u32,
+    nr_in_thread: u32,
 
     /// Current text of post
     current_text: Vec<u8>,
@@ -448,7 +448,7 @@ pub struct Post<BlockNumber, Moment, AccountId> {
     moderation : Option<ModerationAction<BlockNumber, Moment, AccountId>>,
     
     /// Edits of post ordered chronologically by edit time.
-    expired_post_texts: Vec<ExpiredPostText<BlockNumber, Moment>>,
+    text_change_history: Vec<PostTextChange<BlockNumber, Moment>>,
 
     /// When post was submitted.
     created_at : BlockchainTimestamp<BlockNumber, Moment>,
@@ -480,7 +480,7 @@ pub struct Thread<BlockNumber, Moment, AccountId> {
     /// Is needed to give light clients assurance about getting all threads in a given range,
     /// `created_at` is not sufficient.
     /// Starts at 1 for first thread in category.
-    thread_nr_in_category: u32,
+    nr_in_category: u32,
 
     /// Possible moderation of this thread
     moderation : Option<ModerationAction<BlockNumber, Moment, AccountId>>,
@@ -488,7 +488,7 @@ pub struct Thread<BlockNumber, Moment, AccountId> {
     /// Number of unmoderated and moderated posts in this thread.
     /// The sum of these two only increases, and former is incremented
     /// for each new post added to this thread. A new post is added 
-    /// with a `post_nr_in_thread` equal to this sum
+    /// with a `nr_in_thread` equal to this sum
     /// 
     /// When there is a moderation
     /// of a post, the variables are incremented and decremented, respectively.
@@ -517,7 +517,7 @@ pub struct ChildPositionInParentCategory {
 
     /// Nr of the child in the parent
     /// Starts at 1
-    child_category_nr_in_parent_category: u32
+    child_nr_in_parent_category: u32
 }
 
 /// Represents a category
@@ -550,7 +550,7 @@ pub struct Category<BlockNumber, Moment, AccountId> {
     ///  
     /// The sum of the latter two only increases, and former is incremented
     /// for each new thread added to this category. A new thread is added 
-    /// with a `thread_nr_in_category` equal to this sum.
+    /// with a `nr_in_category` equal to this sum.
     /// 
     /// When there is a moderation
     /// of a thread, the variables are incremented and decremented, respectively.
@@ -562,7 +562,7 @@ pub struct Category<BlockNumber, Moment, AccountId> {
     num_direct_moderated_threads: u32,
 
     /// Position as child in parent, if present, otherwise this category is a root category
-    slot_in_parent_category: Option<ChildPositionInParentCategory>,
+    position_in_parent_category: Option<ChildPositionInParentCategory>,
 
     /// Account of the moderator which created category.
     moderator_id: AccountId
@@ -570,7 +570,7 @@ pub struct Category<BlockNumber, Moment, AccountId> {
 
 impl<BlockNumber, Moment, AccountId> Category<BlockNumber, Moment, AccountId>  {
 
-    fn num_threads_ever_created(&self) -> u32 {
+    fn num_threads_created(&self) -> u32 {
         self.num_direct_unmoderated_threads + self.num_direct_moderated_threads
     }
 }
@@ -718,8 +718,8 @@ decl_module! {
             // Validate description
             ensure_category_description_is_valid(&description)?;
 
-            // Slot in parent field value for new category
-            let mut slot_in_parent_category_field = None;
+            // Position in parent field value for new category
+            let mut position_in_parent_category_field = None;
 
             // If not root, then check that we can create in parent category
             if let Some(parent_category_id) = parent {
@@ -739,12 +739,12 @@ decl_module! {
                     c.num_direct_subcategories += 1;
                 });
 
-                // Set `slot_in_parent_category_field`
+                // Set `position_in_parent_category_field`
                 let parent_category = category_tree_path.first().unwrap();
 
-                slot_in_parent_category_field = Some(ChildPositionInParentCategory{
+                position_in_parent_category_field = Some(ChildPositionInParentCategory{
                     parent_id: parent_category_id,
-                    child_category_nr_in_parent_category: parent_category.num_direct_subcategories
+                    child_nr_in_parent_category: parent_category.num_direct_subcategories
                 });
 
             }
@@ -765,8 +765,8 @@ decl_module! {
                 archived: false,
                 num_direct_subcategories: 0,
                 num_direct_unmoderated_threads: 0,
-                num_direct_moderated_threads: 1,
-                slot_in_parent_category: slot_in_parent_category_field,
+                num_direct_moderated_threads: 0,
+                position_in_parent_category: position_in_parent_category_field,
                 moderator_id: who
             };
 
@@ -831,7 +831,7 @@ decl_module! {
             /*
              * Update SPEC with new errors,
              * and mutation of Category class,
-             * as well as side effect to update Category::num_threads_ever_created.
+             * as well as side effect to update Category::num_threads_created.
              */ 
 
             // Check that its a valid signature
@@ -874,7 +874,7 @@ decl_module! {
                 id : new_thread_id,
                 title : title.clone(),
                 category_id: category_id,
-                thread_nr_in_category: category.num_threads_ever_created(),
+                nr_in_category: category.num_threads_created(),
                 moderation : None,
                 num_unmoderated_posts: 0,
                 num_moderated_posts: 1,
@@ -901,10 +901,10 @@ decl_module! {
             let new_post = Post {
                 id: new_post_id,
                 thread_id: new_thread_id,
-                post_nr_in_thread: 1, // Starts at 1
+                nr_in_thread: 1, // Starts at 1
                 current_text: text.clone(),
                 moderation : None,
-                expired_post_texts: vec![],
+                text_change_history: vec![],
                 created_at : Self::current_block_and_time(),
                 author_id : who.clone()
             };
@@ -939,7 +939,7 @@ decl_module! {
             let path = Self::build_category_tree_path(thread.category_id);
 
             // Path must be non-empty, as category id is from thread in state
-            assert!(path.len() > 0);
+            assert!(!path.is_empty());
 
             Self::ensure_can_mutate_in_path_leaf(&path)?;
 
@@ -1126,14 +1126,14 @@ impl<T: Trait> Module<T> {
         // Grab category
         let category = <CategoryById<T>>::get(category_id);
 
-        // Copy out slot_in_parent_category
-        let slot_in_parent_category_field = category.slot_in_parent_category.clone();
+        // Copy out position_in_parent_category
+        let position_in_parent_category_field = category.position_in_parent_category.clone();
 
         // Add category to path container
         path.push(category);
 
         // Make recursive call on parent if we are not at root
-        if let Some(child_position_in_parent) = slot_in_parent_category_field {
+        if let Some(child_position_in_parent) = position_in_parent_category_field {
 
             assert!(<CategoryById<T>>::exists(&child_position_in_parent.parent_id));
 
