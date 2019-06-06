@@ -5,14 +5,15 @@ import { Table, Dropdown, Button, Segment, Label } from 'semantic-ui-react';
 import { History } from 'history';
 import orderBy from 'lodash/orderBy';
 
+import { Option, Bool } from '@polkadot/types';
 import { CategoryId, Category, ThreadId, ThreadType } from './types';
 import { useForum } from './Context';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
 import { UrlHasIdProps, AuthorPreview, CategoryCrumbs, Pagination, ThreadsPerPage } from './utils';
 import Section from '@polkadot/joy-utils/Section';
-import { Bool } from '@polkadot/types';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
+import { withForumCalls } from './calls';
 
 type CategoryActionsProps = {
   id: CategoryId
@@ -90,27 +91,36 @@ function CategoryActions (props: CategoryActionsProps) {
 }
 
 type ViewCategoryProps = {
+  category?: Option<Category>,
   id: CategoryId,
   page?: number,
   preview?: boolean,
   history?: History
 };
 
-function ViewCategory (props: ViewCategoryProps) {
+const ViewCategory = withForumCalls<ViewCategoryProps>(
+  ['categoryById', { propName: 'category', paramName: 'id' }]
+)(InnerViewCategory);
+
+function InnerViewCategory (props: ViewCategoryProps) {
   const { state: {
-    categoryById,
     categoryIdsByParentId,
     threadIdsByCategoryId
-  } } = useForum();
+  }} = useForum();
 
-  const { history, id, page = 1, preview = false } = props;
-  const category = categoryById.get(id.toNumber());
-  const subcategories = categoryIdsByParentId.get(id.toNumber()) || [];
-  const threadIds = threadIdsByCategoryId.get(id.toNumber()) || [];
+  const { history, category: opt, id, page = 1, preview = false } = props;
 
+  if (!opt) {
+    return <em>Loading...</em>;
+  }
+
+  const category = opt.unwrapOr(undefined);
   if (!category) {
     return preview ? null : <em>Category not found</em>;
   }
+
+  const subcategories = categoryIdsByParentId.get(id.toNumber()) || [];
+  const threadIds = threadIdsByCategoryId.get(id.toNumber()) || [];
 
   const renderCategoryActions = () => {
     return <CategoryActions id={id} category={category} />;

@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import { Table, Segment, Button, Label } from 'semantic-ui-react';
 import { History } from 'history';
 
+import { Option } from '@polkadot/types';
 import { Thread, ThreadId, ReplyId } from './types';
 import { useForum } from './Context';
 import { AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs, UrlHasIdProps } from './utils';
@@ -12,6 +13,7 @@ import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
+import { withForumCalls } from './calls';
 
 type ThreadTitleProps = {
   thread: Thread,
@@ -31,27 +33,35 @@ function ThreadTitle (props: ThreadTitleProps) {
 }
 
 type ViewThreadProps = {
+  thread?: Option<Thread>,
   id: ThreadId,
   page?: number,
   preview?: boolean,
   history?: History
 };
 
-export function ViewThread (props: ViewThreadProps) {
+export const ViewThread = withForumCalls<ViewThreadProps>(
+  ['threadById', { propName: 'thread', paramName: 'id' }]
+)(InnerViewThread);
+
+function InnerViewThread (props: ViewThreadProps) {
   const { state: {
     categoryById,
-    threadById,
     replyIdsByThreadId
   }} = useForum();
 
   const [showModerateForm, setShowModerateForm] = useState(false);
-  const { history, id, page = 1, preview = false } = props;
-  const thread = threadById.get(id.toNumber());
+  const { history, thread: opt, id, page = 1, preview = false } = props;
+
+  if (!opt) {
+    return <em>Loading...</em>;
+  }
 
   const renderThreadNotFound = () => (
     preview ? null : <em>Thread not found</em>
   );
 
+  const thread = opt.unwrapOr(undefined);
   if (!thread) {
     return renderThreadNotFound();
   }

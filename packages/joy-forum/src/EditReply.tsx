@@ -17,6 +17,7 @@ import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { useForum } from './Context';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
+import { withForumCalls } from './calls';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
   text: Yup.string()
@@ -247,22 +248,6 @@ function withIdFromUrl (Component: React.ComponentType<HasReplyIdProps>) {
   };
 }
 
-// TODO delete once integrated w/ Substrate's state:
-function withLoadStruct (Component: React.ComponentType<OuterProps & LoadStructProps>) {
-  return function (props: OuterProps) {
-    const { id } = props;
-    if (!id) {
-      throw new Error('This component requires an id');
-    }
-
-    const { state: { replyById } } = useForum();
-    const reply = replyById.get(id.toNumber());
-    const structOpt: Option<Reply> = new Option(Reply, reply);
-
-    return <Component {...props} structOpt={structOpt} />;
-  };
-}
-
 export const NewReply = withMulti(
   EditForm,
   withOnlyMembers,
@@ -273,11 +258,7 @@ export const EditReply = withMulti(
   FormOrLoading,
   withOnlyMembers,
   withIdFromUrl,
-  withLoadStruct
-
-  // TODO Get reply struct from Substrate:
-  // , withCalls<OuterProps>(
-  //   ['query.forum.replyById',
-  //     { paramName: 'id', propName: 'structOpt' } ]
-  // )
+  withForumCalls<OuterProps>(
+    ['replyById', { paramName: 'id', propName: 'structOpt' }]
+  )
 );

@@ -17,6 +17,7 @@ import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { useForum } from './Context';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
+import { withForumCalls } from './calls';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
   title: Yup.string()
@@ -289,22 +290,6 @@ function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
   };
 }
 
-// TODO delete once integrated w/ Substrate's state:
-function withLoadStruct (Component: React.ComponentType<OuterProps & LoadStructProps>) {
-  return function (props: OuterProps) {
-    const { id } = props;
-    if (!id) {
-      throw new Error('This component requires an id');
-    }
-
-    const { state: { threadById } } = useForum();
-    const thread = threadById.get(id.toNumber());
-    const structOpt: Option<Thread> = new Option(Thread, thread);
-
-    return <Component {...props} structOpt={structOpt} />;
-  };
-}
-
 export const NewThread = withMulti(
   EditForm,
   withOnlyMembers,
@@ -315,11 +300,7 @@ export const EditThread = withMulti(
   FormOrLoading,
   withOnlyMembers,
   withIdFromUrl,
-  withLoadStruct
-
-  // TODO Get thread struct from Substrate:
-  // , withCalls<OuterProps>(
-  //   ['query.forum.threadById',
-  //     { paramName: 'id', propName: 'structOpt' } ]
-  // )
+  withForumCalls<OuterProps>(
+    ['threadById', { paramName: 'id', propName: 'structOpt' }]
+  )
 );

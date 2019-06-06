@@ -9,7 +9,7 @@ type CategoryId = number;
 type ThreadId = number;
 type ReplyId = number;
 
-type ForumState = {
+export type ForumState = {
   sudo?: string,
 
   nextCategoryId: CategoryId,

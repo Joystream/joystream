@@ -17,6 +17,7 @@ import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { useForum } from './Context';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withOnlyForumSudo } from './ForumSudo';
+import { withForumCalls } from './calls';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
   name: Yup.string()
@@ -252,22 +253,6 @@ function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
   };
 }
 
-// TODO delete once integrated w/ Substrate's state:
-function withLoadStruct (Component: React.ComponentType<OuterProps & LoadStructProps>) {
-  return function (props: OuterProps) {
-    const { id } = props;
-    if (!id) {
-      throw new Error('This component requires an id');
-    }
-
-    const { state: { categoryById } } = useForum();
-    const category = categoryById.get(id.toNumber());
-    const structOpt: Option<Category> = new Option(Category, category);
-
-    return <Component {...props} structOpt={structOpt} />;
-  };
-}
-
 function NewSubcategoryForm (props: UrlHasIdProps) {
   const { match: { params: { id } } } = props;
   try {
@@ -291,11 +276,7 @@ export const EditCategory = withMulti(
   FormOrLoading,
   withOnlyForumSudo,
   withIdFromUrl,
-  withLoadStruct
-
-  // TODO Get category struct from Substrate:
-  // , withCalls<OuterProps>(
-  //   ['query.forum.categoryById',
-  //     { paramName: 'id', propName: 'structOpt' } ]
-  // )
+  withForumCalls<OuterProps>(
+    ['categoryById', { paramName: 'id', propName: 'structOpt' }]
+  )
 );
