@@ -28,10 +28,10 @@ const debug = require('debug')('joystream:api:asset');
 const util_ranges = require('@joystream/util/ranges');
 const filter = require('@joystream/storage/filter');
 
-function error_handler(err, code)
+function error_handler(response, err, code)
 {
   debug(err);
-  res.status(code || 500).send({ message: err.toString() });
+  response.status((err.code || code) || 500).send({ message: err.toString() });
 }
 
 
@@ -76,7 +76,7 @@ module.exports = function(config, storage, runtime)
         }
         res.send();
       } catch (err) {
-        error_handler(err, err.code);
+        error_handler(res, err, err.code);
       }
     },
 
@@ -91,7 +91,7 @@ module.exports = function(config, storage, runtime)
       try {
         await runtime.assets.checkLiaisonForDataObject(role_addr, id);
       } catch (err) {
-        error_handler(err, 403);
+        error_handler(res, err, 403);
         return;
       }
 
@@ -135,7 +135,7 @@ module.exports = function(config, storage, runtime)
             // We may have to commit the stream.
             possibly_commit();
           } catch (err) {
-            error_handler(err);
+            error_handler(res, err);
           }
         });
 
@@ -144,7 +144,7 @@ module.exports = function(config, storage, runtime)
             finished = true;
             possibly_commit();
           } catch (err) {
-            error_handler(err);
+            error_handler(res, err);
           }
         });
 
@@ -163,15 +163,15 @@ module.exports = function(config, storage, runtime)
             debug('Sending OK response.');
             res.status(200).send({ message: 'Asset uploaded.' });
           } catch (err) {
-            error_handler(err);
+            error_handler(res, err);
           }
         });
 
-        stream.on('error', error_handler);
+        stream.on('error', (err) => error_handler(res, err));
         req.pipe(stream);
 
       } catch (err) {
-        error_handler(err);
+        error_handler(res, err);
         return;
       }
     },
@@ -229,7 +229,7 @@ module.exports = function(config, storage, runtime)
 
 
       } catch (err) {
-        error_handler(err, err.code);
+        error_handler(res, err, err.code);
       }
     }
   };
