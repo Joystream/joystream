@@ -134,6 +134,14 @@ async function get_storage(runtime_api, config)
 
   const options = {
     resolve_content_id: async (content_id) => {
+      // FIXME remove this in future.
+      const mapping = config.get('resolve') || {};
+      const hardcoded = mapping[content_id];
+      if (hardcoded) {
+        return hardcoded;
+      }
+
+      // Resolve via API
       const meta = await runtime_api.assets.getStorageMetadata(content_id);
       if (!meta) {
         return;
@@ -268,7 +276,7 @@ const commands = {
 
     await announce_public_url(api, cfg);
     const { start_syncing } = require('../lib/sync');
-    start_syncing(api, cfg);
+    start_syncing(api, cfg, store);
 
     await start_app(project_root, store, api, cfg);
   },

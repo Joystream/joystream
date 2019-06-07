@@ -20,18 +20,37 @@
 
 const debug = require('debug')('joystream:sync');
 
-async function sync_callback(api, config)
+async function sync_callback(api, config, storage)
 {
   debug('Trying to sync...');
 
   // The first step is to gather all data objects from chain.
   // TODO: in future, limit to a configured tranche
+  // FIXME this isn't actually on chain yet, so we'll fake it.
+  const sync_objects = (config.sync || {}).objects || [];
+
+  // Iterate over all sync objects, and ensure they're synced. We don't
+  // need to explicitly contact the liaison; that's what the backend does for
+  // us.
+  sync_objects.forEach(async (content_id) => {
+    try {
+      await storage.synchronize(content_id);
+    } catch (err) {
+      debug(`Error synchronizing ${content_id}: ${err.stack}`);
+  });
 }
 
 
-function start_syncing(api, cfg)
+async function sync_periodic(api, config, storage)
 {
-  setInterval(sync_callback, cfg.get('syncPeriod'), api, cfg);
+  await sync_callback(api, config, storage);
+  setTimeout(sync_periodic, config.get('syncPeriod'), api, config, storage);
+}
+
+
+function start_syncing(api, config, storage)
+{
+  setTimeout(sync_periodic, config.get('syncPeriod'), api, config, storage);
 }
 
 module.exports = {

@@ -382,6 +382,21 @@ class Storage
       ls.resume();
     });
   }
+
+  /*
+   * Synchronize the given content ID
+   */
+  async synchronize(content_id)
+  {
+    const resolved = await this._resolve_content_id_with_timeout(timeout, content_id);
+    await this.ipfs.pin.add(resolved);
+
+    // Just to be on the safe side, also read the file. Calling resume()
+    // should trigger reading, but we don't need to do anything, so discard
+    // all data immediately.
+    const stream = await this.open(content_id, 'r');
+    stream.resume();
+  }
 }
 
 module.exports = {
