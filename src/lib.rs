@@ -209,7 +209,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "std")]
-#[macro_use]
 extern crate serde_derive;
 
 use rstd::prelude::*;
@@ -261,6 +260,7 @@ impl InputValidationLengthConstraint {
     }
 
     /// Just to give method interface to read min, like max
+    #[allow(dead_code)]
     fn min(&self) -> usize {
         self.min
     }
@@ -704,7 +704,7 @@ decl_module! {
         fn deposit_event<T>() = default;
 
         /// Set forum sudo.
-        fn set_forum_sudo(newForumSudo: Option<T::AccountId>) -> dispatch::Result {
+        fn set_forum_sudo(new_forum_sudo: Option<T::AccountId>) -> dispatch::Result {
 
             /*
              * Question: when this routine is called by non sudo or with bad signature, what error is raised?
@@ -712,16 +712,16 @@ decl_module! {
              */
 
             // Hold on to old value
-            let oldForumSudo = <ForumSudo<T>>::get().clone();
+            let old_forum_sudo = <ForumSudo<T>>::get().clone();
 
             // Update forum sudo
-            match newForumSudo.clone() {
-                Some(accountId) => <ForumSudo<T>>::put(accountId),
+            match new_forum_sudo.clone() {
+                Some(account_id) => <ForumSudo<T>>::put(account_id),
                 None => <ForumSudo<T>>::kill()
             };
 
             // Generate event
-            Self::deposit_event(RawEvent::ForumSudoSet(oldForumSudo, newForumSudo));
+            Self::deposit_event(RawEvent::ForumSudoSet(old_forum_sudo, new_forum_sudo));
 
             // All good.
             Ok(())
@@ -816,7 +816,7 @@ decl_module! {
             Self::ensure_is_forum_sudo(&who)?;
 
             // Get path from parent to root of category tree.
-            let mut category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
+            let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
 
             // Make sure we can actually mutate this category
             Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
@@ -1424,11 +1424,13 @@ mod tests {
 
     static mut forum_user_store: Option<BTreeMap< <Test as system::Trait>::AccountId , ForumUser< <Test as system::Trait>::AccountId > > > = None;
 
+    /*
     fn initialize_forum_user_store() {
 
         //formUserStore
 
     }
+    */
 
     // MockForumUserRegistry
     pub struct MockForumUserRegistry { }
