@@ -1003,7 +1003,7 @@ decl_module! {
 
             <PostById<T>>::mutate(post_id, |p| {
 
-                let expired_post_text = ExpiredPostText {
+                let expired_post_text = PostTextChange {
                     expired_at: Self::current_block_and_time(),
                     text: post.current_text.clone()
                 };
@@ -1012,11 +1012,11 @@ decl_module! {
                 post.current_text = new_text;
 
                 // Copy current text to history of expired texts
-                p.expired_post_texts.push(expired_post_text);
+                p.text_change_history.push(expired_post_text);
             });
 
             // Generate event
-            Self::deposit_event(RawEvent::PostTextUpdated(post.id, post.expired_post_texts.len() as u64));
+            Self::deposit_event(RawEvent::PostTextUpdated(post.id, post.text_change_history.len() as u64));
 
             Ok(())
         }
@@ -1300,7 +1300,7 @@ impl<T: Trait> Module<T> {
             id : new_thread_id,
             title : title.clone(),
             category_id: category_id,
-            thread_nr_in_category: category.num_threads_ever_created() + 1,
+            nr_in_category: category.num_threads_created() + 1,
             moderation : None,
             num_unmoderated_posts: 0,
             num_moderated_posts: 0,
@@ -1337,10 +1337,10 @@ impl<T: Trait> Module<T> {
         let new_post = Post {
             id: new_post_id,
             thread_id: thread_id,
-            post_nr_in_thread: thread.num_posts_ever_created() + 1,
+            nr_in_thread: thread.num_posts_ever_created() + 1,
             current_text: text.clone(),
             moderation : None,
-            expired_post_texts: vec![],
+            text_change_history: vec![],
             created_at : Self::current_block_and_time(),
             author_id : author_id.clone()
         };
