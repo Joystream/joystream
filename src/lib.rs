@@ -211,6 +211,10 @@
 #[cfg(feature = "std")]
 extern crate serde_derive;
 
+//use serde::{Serialize, Deserialize};
+
+use serde_derive::{Serialize, Deserialize};
+
 use rstd::prelude::*;
 
 use parity_codec_derive::{Decode, Encode};
@@ -364,7 +368,7 @@ const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rational
 
 //use sr_io::{StorageOverlay, ChildrenStorageOverlay};
 
-//#[cfg(feature = "std")]
+#[cfg(feature = "std")]
 //use runtime_io::{StorageOverlay, ChildrenStorageOverlay};
 
 //#[cfg(any(feature = "std", test))]
@@ -401,7 +405,7 @@ pub trait ForumUserRegistry<AccountId> {
 }
 
 /// Convenient composite time stamp 
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct BlockchainTimestamp<BlockNumber, Moment> {
     block : BlockNumber,
@@ -409,7 +413,7 @@ pub struct BlockchainTimestamp<BlockNumber, Moment> {
 }
 
 /// Represents a moderation outcome applied to a post or a thread. 
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct ModerationAction<BlockNumber, Moment, AccountId> {
 
@@ -425,7 +429,7 @@ pub struct ModerationAction<BlockNumber, Moment, AccountId> {
 }
 
 /// Represents a revision of the text of a Post
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct PostTextChange<BlockNumber, Moment> {
 
@@ -440,7 +444,7 @@ pub struct PostTextChange<BlockNumber, Moment> {
 pub type PostId = u64;
 
 /// Represents a thread post
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Post<BlockNumber, Moment, AccountId> {
 
@@ -478,7 +482,7 @@ pub struct Post<BlockNumber, Moment, AccountId> {
 pub type ThreadId = u64;
 
 /// Represents a thread
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Thread<BlockNumber, Moment, AccountId> {
 
@@ -533,6 +537,7 @@ impl<BlockNumber, Moment, AccountId> Thread<BlockNumber, Moment, AccountId>  {
 pub type CategoryId = u64;
 
 /// Represents 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct ChildPositionInParentCategory {
 
@@ -545,7 +550,7 @@ pub struct ChildPositionInParentCategory {
 }
 
 /// Represents a category
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Category<BlockNumber, Moment, AccountId> {
 
