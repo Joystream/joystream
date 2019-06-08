@@ -1,3 +1,6 @@
 
 # Ignore output folder for build
 target
+
+# Cargo lock file for native runtime - only used for cargo test
+./Cargo.lock
