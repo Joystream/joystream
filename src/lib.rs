@@ -23,6 +23,8 @@ mod membership;
 mod memo;
 mod traits;
 use membership::members;
+use forum;
+
 mod migration;
 mod roles;
 use client::{
@@ -292,6 +294,36 @@ impl members::Trait for Runtime {
     type Roles = Actors;
 }
 
+/*
+ * Forum module integration
+ */
+
+/// Shim registry which will proxy ForumUserRegistry behaviour to the members module
+pub struct ShimMembershipRegistry {}
+
+impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
+
+    fn get_forum_user(id: &AccountId) -> Option<forum::ForumUser<AccountId>> {
+
+        if let Some(profile) = members::Module::<Runtime>::get_profile(id) {
+
+            // Now convert member profile to a forum user
+            Some(forum::ForumUser{
+                id: id.clone()
+            })
+
+        } else {
+            None
+        }
+    }
+}
+
+impl forum::Trait for Runtime {
+    
+    type Event = Event;
+    type MembershipRegistry = ShimMembershipRegistry;
+}
+
 impl migration::Trait for Runtime {
     type Event = Event;
 }
@@ -333,6 +365,7 @@ construct_runtime!(
 		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
 		Memo: memo::{Module, Call, Storage, Event<T>},
 		Members: members::{Module, Call, Storage, Event<T>, Config<T>},
+        Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
 		Migration: migration::{Module, Call, Storage, Event<T>},
 		Actors: actors::{Module, Call, Storage, Event<T>, Config<T>},
 		DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
