@@ -4,7 +4,7 @@ import { ApiProps, Subtract } from '@polkadot/ui-api/types';
 import { Options } from '@polkadot/ui-api/with/types';
 import { withApi, withCall as withSubstrateCall } from '@polkadot/ui-api';
 import { useForum, ForumState } from './Context';
-import { U64, Option } from '@polkadot/types';
+import { U64 } from '@polkadot/types';
 import { Constructor } from '@polkadot/types/types';
 import { Category, Thread, Reply } from './types';
 
@@ -21,7 +21,7 @@ const getReactValue = (state: ForumState, endpoint: string, paramValue: any): an
   const getEntityById = (mapName: EntityMapName, constructor: Constructor): any => {
     const id = (paramValue as U64).toNumber();
     const entity = state[mapName].get(id);
-    return new Option(constructor, entity);
+    return new constructor(entity);
   };
 
   switch (endpoint) {

@@ -196,27 +196,21 @@ const EditForm = withFormik<OuterProps, FormValues>({
   }
 })(InnerForm);
 
-type LoadStructProps = OuterProps & {
-  structOpt: Option<Reply>
-};
-
-function FormOrLoading (props: LoadStructProps) {
+function FormOrLoading (props: OuterProps) {
   const { state: { address } } = useMyAccount();
-  const { structOpt } = props;
+  const { struct } = props;
 
-  if (!address || !structOpt) {
+  if (!address || !struct) {
     return <em>Loading reply...</em>;
   }
 
-  if (structOpt.isNone) {
+  if (struct.isEmpty) {
     return <em>Reply not found</em>;
   }
 
-  const struct = structOpt.unwrap();
   const isMyStruct = address === struct.owner.toString();
-
   if (isMyStruct) {
-    return <EditForm {...props} struct={struct} threadId={struct.thread_id} />;
+    return <EditForm {...props} threadId={struct.thread_id} />;
   }
 
   return <Message error className='JoyMainStatus' header='You are not allowed edit this reply.' />;
@@ -259,6 +253,6 @@ export const EditReply = withMulti(
   withOnlyMembers,
   withIdFromUrl,
   withForumCalls<OuterProps>(
-    ['replyById', { paramName: 'id', propName: 'structOpt' }]
+    ['replyById', { paramName: 'id', propName: 'struct' }]
   )
 );

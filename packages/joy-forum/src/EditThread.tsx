@@ -242,27 +242,21 @@ const EditForm = withFormik<OuterProps, FormValues>({
   }
 })(InnerForm);
 
-type LoadStructProps = OuterProps & {
-  structOpt: Option<Thread>
-};
-
-function FormOrLoading (props: LoadStructProps) {
+function FormOrLoading (props: OuterProps) {
   const { state: { address } } = useMyAccount();
-  const { structOpt } = props;
+  const { struct } = props;
 
-  if (!address || !structOpt) {
+  if (!address || !struct) {
     return <em>Loading thread...</em>;
   }
 
-  if (structOpt.isNone) {
+  if (struct.isEmpty) {
     return <em>Thread not found</em>;
   }
 
-  const struct = structOpt.unwrap();
   const isMyStruct = address === struct.owner.toString();
-
   if (isMyStruct) {
-    return <EditForm {...props} struct={struct} />;
+    return <EditForm {...props} />;
   }
 
   return <Message error className='JoyMainStatus' header='You are not allowed edit this thread.' />;
@@ -301,6 +295,6 @@ export const EditThread = withMulti(
   withOnlyMembers,
   withIdFromUrl,
   withForumCalls<OuterProps>(
-    ['threadById', { paramName: 'id', propName: 'structOpt' }]
+    ['threadById', { paramName: 'id', propName: 'struct' }]
   )
 );

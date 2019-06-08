@@ -4,7 +4,6 @@ import ReactMarkdown from 'react-markdown';
 import { Table, Segment, Button, Label } from 'semantic-ui-react';
 import { History } from 'history';
 
-import { Option } from '@polkadot/types';
 import { Thread, ThreadId, ReplyId } from './types';
 import { useForum } from './Context';
 import { AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs, UrlHasIdProps } from './utils';
@@ -33,7 +32,7 @@ function ThreadTitle (props: ThreadTitleProps) {
 }
 
 type ViewThreadProps = {
-  thread?: Option<Thread>,
+  thread?: Thread,
   id: ThreadId,
   page?: number,
   preview?: boolean,
@@ -51,9 +50,9 @@ function InnerViewThread (props: ViewThreadProps) {
   }} = useForum();
 
   const [showModerateForm, setShowModerateForm] = useState(false);
-  const { history, thread: opt, id, page = 1, preview = false } = props;
+  const { history, thread, id, page = 1, preview = false } = props;
 
-  if (!opt) {
+  if (!thread) {
     return <em>Loading...</em>;
   }
 
@@ -61,8 +60,7 @@ function InnerViewThread (props: ViewThreadProps) {
     preview ? null : <em>Thread not found</em>
   );
 
-  const thread = opt.unwrapOr(undefined);
-  if (!thread) {
+  if (thread.isEmpty) {
     return renderThreadNotFound();
   }
 

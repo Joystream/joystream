@@ -5,7 +5,7 @@ import { Table, Dropdown, Button, Segment, Label } from 'semantic-ui-react';
 import { History } from 'history';
 import orderBy from 'lodash/orderBy';
 
-import { Option, Bool } from '@polkadot/types';
+import { Bool } from '@polkadot/types';
 import { CategoryId, Category, ThreadId, ThreadType } from './types';
 import { useForum } from './Context';
 import { ViewThread } from './ViewThread';
@@ -91,7 +91,7 @@ function CategoryActions (props: CategoryActionsProps) {
 }
 
 type ViewCategoryProps = {
-  category?: Option<Category>,
+  category?: Category,
   id: CategoryId,
   page?: number,
   preview?: boolean,
@@ -108,14 +108,13 @@ function InnerViewCategory (props: ViewCategoryProps) {
     threadIdsByCategoryId
   }} = useForum();
 
-  const { history, category: opt, id, page = 1, preview = false } = props;
+  const { history, category, id, page = 1, preview = false } = props;
 
-  if (!opt) {
+  if (!category) {
     return <em>Loading...</em>;
   }
 
-  const category = opt.unwrapOr(undefined);
-  if (!category) {
+  if (category.isEmpty) {
     return preview ? null : <em>Category not found</em>;
   }
 

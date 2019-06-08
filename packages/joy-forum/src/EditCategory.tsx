@@ -216,27 +216,21 @@ const EditForm = withFormik<OuterProps, FormValues>({
   }
 })(InnerForm);
 
-type LoadStructProps = OuterProps & {
-  structOpt: Option<Category>
-};
-
-function FormOrLoading (props: LoadStructProps) {
+function FormOrLoading (props: OuterProps) {
   const { state: { address } } = useMyAccount();
-  const { structOpt } = props;
+  const { struct } = props;
 
-  if (!address || !structOpt) {
+  if (!address || !struct) {
     return <em>Loading category...</em>;
   }
 
-  if (structOpt.isNone) {
+  if (struct.isEmpty) {
     return <em>Category not found</em>;
   }
 
-  const struct = structOpt.unwrap();
   const isMyStruct = address === struct.owner.toString();
-
   if (isMyStruct) {
-    return <EditForm {...props} struct={struct} />;
+    return <EditForm {...props} />;
   }
 
   return <Message error className='JoyMainStatus' header='You are not allowed edit this category.' />;
@@ -277,6 +271,6 @@ export const EditCategory = withMulti(
   withOnlyForumSudo,
   withIdFromUrl,
   withForumCalls<OuterProps>(
-    ['categoryById', { paramName: 'id', propName: 'structOpt' }]
+    ['categoryById', { paramName: 'id', propName: 'struct' }]
   )
 );

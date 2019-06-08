@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Segment, Button } from 'semantic-ui-react';
 
-import { Option } from '@polkadot/types';
 import { ReplyId, Reply, Category, Thread } from './types';
 import { useForum } from './Context';
 import { UrlHasIdProps, AuthorPreview } from './utils';
@@ -12,7 +11,7 @@ import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import { withForumCalls } from './calls';
 
 type ViewReplyProps = {
-  reply?: Option<Reply>,
+  reply?: Reply,
   id: ReplyId,
   thread: Thread,
   category: Category
@@ -24,14 +23,13 @@ export const ViewReply = withForumCalls<ViewReplyProps>(
 
 function InnerViewReply (props: ViewReplyProps) {
   const [showModerateForm, setShowModerateForm] = useState(false);
-  const { reply: opt, id, thread, category } = props;
+  const { reply, id, thread, category } = props;
 
-  if (!opt) {
+  if (!reply) {
     return <em>Loading...</em>;
   }
 
-  const reply = opt.unwrapOr(undefined);
-  if (!reply) {
+  if (reply.isEmpty) {
     return <em>Reply not found</em>;
   }
 
