@@ -274,11 +274,11 @@ const commands = {
     const store = await get_storage(api, cfg);
     banner();
 
-    await announce_public_url(api, cfg);
     const { start_syncing } = require('../lib/sync');
     start_syncing(api, cfg, store);
 
     await start_app(project_root, store, api, cfg);
+    await announce_public_url(api, cfg);
   },
   'signup': async (account_file) => {
     await run_signup(account_file);

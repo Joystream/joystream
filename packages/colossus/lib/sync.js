@@ -37,6 +37,7 @@ async function sync_callback(api, config, storage)
       await storage.synchronize(content_id);
     } catch (err) {
       debug(`Error synchronizing ${content_id}: ${err.stack}`);
+    }
   });
 }
 

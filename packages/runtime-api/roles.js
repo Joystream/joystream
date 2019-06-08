@@ -153,12 +153,14 @@ class RolesApi
     }
 
     return new Promise((resolve, reject) => {
-      this.waitForEvent('actors', 'Staked').then((values) => {
-        const name = values[0];
-        const payload = values[1];
+      this.base.waitForEvent('actors', 'Staked').then((values) => {
+        const name = values[0][0];
+        const payload = values[0][1];
 
         if (payload.AccountId == roleAccountId) {
           resolve(true);
+        } else {
+          // reject() ?
         }
       });
     });
