@@ -3,10 +3,11 @@ import React from 'react';
 import { ApiProps, Subtract } from '@polkadot/ui-api/types';
 import { Options } from '@polkadot/ui-api/with/types';
 import { withApi, withCall as withSubstrateCall } from '@polkadot/ui-api';
-import { useForum, ForumState } from './Context';
-import { U64 } from '@polkadot/types';
+import { Option } from '@polkadot/types/codec';
+import { U64, AccountId } from '@polkadot/types';
 import { Constructor } from '@polkadot/types/types';
 import { Category, Thread, Reply } from './types';
+import { useForum, ForumState } from './Context';
 
 type Call = string | [string, Options];
 
@@ -25,6 +26,7 @@ const getReactValue = (state: ForumState, endpoint: string, paramValue: any): an
   };
 
   switch (endpoint) {
+    case 'forumSudo': return new Option(AccountId, state.sudo);
     case 'categoryById': return getEntityById(endpoint, Category);
     case 'threadById': return getEntityById(endpoint, Thread);
     case 'replyById': return getEntityById(endpoint, Reply);

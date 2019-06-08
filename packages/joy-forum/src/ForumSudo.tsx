@@ -18,6 +18,7 @@ import { withOnlySudo } from '@polkadot/joy-utils/Sudo';
 import { AccountId } from '@polkadot/types';
 import { AuthorPreview } from './utils';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
+import { withForumCalls } from './calls';
 
 const buildSchema = () => Yup.object().shape({});
 
@@ -188,23 +189,48 @@ const EditForm = withFormik<OuterProps, FormValues>({
   }
 })(InnerForm);
 
-function InjectCurrentSudo () {
-  // TODO Get the current sudo from blockchain:
-  const { state: { sudo } } = useForum();
+type LoadStructProps = {
+  structOpt: Option<AccountId>
+};
+
+const withLoadForumSudo = withForumCalls<LoadStructProps>(
+  ['forumSudo', { propName: 'structOpt' }]
+);
+
+function InjectCurrentSudo (props: LoadStructProps) {
+  const { structOpt } = props;
+  if (!structOpt) {
+    return <em>Loading forum sudo...</em>;
+  }
+
+  const sudo = structOpt.isSome ? structOpt.unwrap().toString() : undefined;
   return <EditForm currentSudo={sudo} />;
 }
 
 export const EditForumSudo = withMulti(
   InjectCurrentSudo,
-  withOnlySudo
+  withOnlySudo,
+  withLoadForumSudo
 );
 
-// TODO implement withOnlyForumSudo
 export function withOnlyForumSudo<P extends {}> (Component: React.ComponentType<P>) {
+  return withMulti(
+    Component,
+    withLoadForumSudo,
+    innerWithOnlyForumSudo
+  );
+}
+
+function innerWithOnlyForumSudo<P extends LoadStructProps> (Component: React.ComponentType<P>) {
   return function (props: P) {
+    const { structOpt } = props;
+    if (!structOpt) {
+      return <em>Loading forum sudo...</em>;
+    }
+
+    const sudo = structOpt.isSome ? structOpt.unwrap().toString() : undefined;
     const { state: { address: myAddress } } = useMyAccount();
-    const { state: { sudo } } = useForum();
-    const iAmForumSudo = myAddress === sudo;
+    const iAmForumSudo = sudo === myAddress;
 
     if (iAmForumSudo) {
       return <Component {...props} />;
