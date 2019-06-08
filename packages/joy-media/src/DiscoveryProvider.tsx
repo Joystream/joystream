@@ -1,7 +1,7 @@
 import React from 'react';
 import { Message } from 'semantic-ui-react';
 
-import axios from 'axios';
+import axios, { CancelToken } from 'axios';
 
 import { AccountId } from '@polkadot/types';
 import { withCalls, withMulti } from '@polkadot/ui-api/with';
@@ -14,7 +14,7 @@ export type BootstrapNodes = {
 };
 
 export type DiscoveryProvider = {
-  resolveAssetEndpoint: (accountId: AccountId, contentId: string) => Promise<string>
+  resolveAssetEndpoint: (accountId: AccountId, contentId?: string, cancelToken?: CancelToken) => Promise<string>
 };
 
 export type DiscoveryProviderProps = {
@@ -22,6 +22,7 @@ export type DiscoveryProviderProps = {
 };
 
 function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryProvider | undefined {
+
   if (!bootstrapNodes || bootstrapNodes.length == 0) {
     return undefined;
   }
@@ -39,11 +40,10 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
     discoveryUrl += '/'
   }
 
-  const resolveAssetEndpoint = async (liaison: AccountId, contentId?: string) => {
-    const serviceInfoQuery = `${discoveryUrl}discover/v0/${liaison.toString()}`;
+  const resolveAssetEndpoint = async (storageProvider: AccountId, contentId?: string, cancelToken?: CancelToken) => {
+    const serviceInfoQuery = `${discoveryUrl}discover/v0/${storageProvider.toString()}`;
 
-    // It feels really wrong to be doing this sort of async call in this component!
-    const serviceInfo = await axios.get(serviceInfoQuery) as any
+    const serviceInfo = await axios.get(serviceInfoQuery,{ cancelToken }) as any
 
     if (!serviceInfo) {
       throw new Error('empty response to service discovery query')
@@ -53,7 +53,7 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
     const assetApi = JSON.parse(serviceInfo.data.serialized).asset
 
     // demo - old storage backend
-    // return `${assetApi.endpoint}/asset/v${assetApi.version}/920eefe7-adf5-56f7-bee2-13cb0259d34a/${contentId || ''}`
+    // return `${assetApi.endpoint}/asset/v${assetApi.version}/9f131394-2a2a-5d67-b653-8e6f2553a7a0/${contentId || ''}`
     return `${assetApi.endpoint}/asset/v${assetApi.version}/${contentId || ''}`
 
   };
@@ -63,11 +63,6 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
 
 function setDiscoveryProvider<P extends DiscoveryProviderProps> (Component: React.ComponentType<P>) {
   return class extends React.Component<P & BootstrapNodes> {
-    componentWillUnmount() {
-      // cancel axios requests in discoveryProvider
-      // https://stackoverflow.com/questions/38329209/how-to-cancel-abort-ajax-request-in-axios
-    }
-
     render () {
       const { bootstrapNodes } = this.props;
       const discoveryProvider = newDiscoveryProvider(this.props);

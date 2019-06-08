@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import axios from 'axios';
+import axios, { CancelTokenSource } from 'axios';
 import DPlayer from 'react-dplayer';
 import APlayer from 'react-aplayer';
 
@@ -196,13 +196,15 @@ type PlayState = {
   contentType?: string,
   resolvingAsset: boolean,
   resolvedAssetUrl?: string,
-  error?: Error
+  error?: Error,
+  cancelSource: CancelTokenSource
 };
 
 class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
 
   state: PlayState = {
-    resolvingAsset: false
+    resolvingAsset: false,
+    cancelSource: axios.CancelToken.source()
   };
 
   componentDidMount() {
@@ -210,8 +212,8 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
   }
 
   componentWillUnmount() {
-    // cancel axios requests
-    // https://stackoverflow.com/questions/38329209/how-to-cancel-abort-ajax-request-in-axios
+    const { cancelSource } = this.state;
+    cancelSource.cancel();
   }
 
   async resolveAsset () {
@@ -237,26 +239,49 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
         .map(r => r.storage_provider);
 
     if (!readyProviders.length) {
-      this.setState({resolvingAsset: false, error: new Error('No Storage Providers found')});
+      this.setState({resolvingAsset: false, error: new Error('No Storage Provider found storing this content')});
       return
     }
 
     // shuffle then loop over providers until we find one that responds
     // TODO: readyProviders = readyProviders.shuffle()
+    const { cancelSource } = this.state;
+
     for(let provider; provider = readyProviders.pop();) {
-      const resolvedAssetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.toAddress())
+      const {resolvingAsset} = this.state;
+      if (!resolvingAsset) {
+        break;
+      }
 
       try {
-        let response = await axios.head(resolvedAssetUrl)
+        var resolvedAssetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.toAddress(), cancelSource.token)
+      } catch (err) {
+        if (axios.isCancel(err)){
+          break;
+        } else {
+          continue;
+        }
+      }
+
+      try {
+        let response = await axios.head(resolvedAssetUrl, {cancelToken: cancelSource.token})
         const contentType = response.headers['content-type'] || 'video/video';
         this.setState({ contentType, resolvedAssetUrl, resolvingAsset: false });
         return
       } catch (err) {
-        // try next provider
+        if (axios.isCancel(err)){
+          break;
+        } else {
+          // try next provider
+          continue;
+        }
       }
     }
 
-    this.setState({resolvingAsset: false, error: new Error('Unable to contact a Storage Providers')});
+    this.setState({
+      resolvingAsset: false,
+      error: new Error('Unable to reach any provider serving this content')
+    });
   }
 
   render () {

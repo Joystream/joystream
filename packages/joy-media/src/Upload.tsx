@@ -1,6 +1,6 @@
 import React from 'react';
 import BN from 'bn.js';
-import axios from 'axios';
+import axios, { CancelTokenSource } from 'axios';
 import { Progress, Message } from 'semantic-ui-react';
 
 import { InputFile } from '@polkadot/ui-app/index';
@@ -29,21 +29,35 @@ type State = {
   error?: any,
   file?: File,
   newContentId: ContentId,
+  discovering: boolean,
   uploading: boolean,
-  progress: number
+  progress: number,
+  cancelSource: CancelTokenSource
 };
 
 const defaultState = (): State => ({
   error: undefined,
   file: undefined,
   newContentId: ContentId.generate(),
+  discovering: false,
   uploading: false,
-  progress: 0
+  progress: 0,
+  cancelSource: axios.CancelToken.source()
 });
 
 class Component extends React.PureComponent<Props, State> {
 
   state = defaultState();
+
+  componentWillUnmount () {
+    this.setState({
+      discovering: false,
+      uploading: false,
+    })
+
+    const { cancelSource } = this.state;
+    cancelSource.cancel('unmounting');
+  }
 
   render () {
     return (
@@ -54,9 +68,10 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private renderContent () {
-    const { error, uploading } = this.state;
+    const { error, uploading, discovering } = this.state;
 
     if (error) return this.renderError();
+    else if (discovering) return this.renderDiscovering();
     else if (uploading) return this.renderUploading();
     else return this.renderFileInput();
   }
@@ -73,7 +88,10 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private resetForm = () => {
-    this.setState(defaultState());
+    let newDefaultState = defaultState();
+    const { cancelSource } = this.state;
+    newDefaultState.cancelSource = cancelSource;
+    this.setState(newDefaultState);
   }
 
   private renderUploading () {
@@ -84,6 +102,10 @@ class Component extends React.PureComponent<Props, State> {
       {this.renderProgress()}
       <EditMeta contentId={newContentId} fileName={fileNameWoExt(file.name)} />
     </div>;
+  }
+
+  private renderDiscovering () {
+    return <em>Contacting Storage Provider...</em>
   }
 
   private renderProgress () {
@@ -169,21 +191,39 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private onDataObjectCreated = async (_txResult: SubmittableResult) => {
+    this.setState({ discovering: true});
+
     const { api } = this.props;
     const { newContentId } = this.state;
-    const dataObject = await api.query.dataDirectory.dataObjectByContentId(newContentId) as Option<DataObject>;
+    try {
+      var dataObject = await api.query.dataDirectory.dataObjectByContentId(newContentId) as Option<DataObject>;
+    } catch (err) {
+      this.setState({
+        error: err,
+        discovering: false
+      });
+      return
+    }
+
+    const { discovering } = this.state;
+
+    if (!discovering) {
+      return
+    }
+
     if (dataObject.isSome) {
       const storageProvider = dataObject.unwrap().liaison;
       this.uploadFileTo(storageProvider);
     } else {
       this.setState({
-        error: new Error('No Liason set for new DataObject')
-      })
+        error: new Error('No Storage Provider assigned to process upload'),
+        discovering: false
+      });
     }
   }
 
   private uploadFileTo = async (storageProvider: AccountId) => {
-    const { file, newContentId } = this.state;
+    const { file, newContentId, cancelSource } = this.state;
     if (!file) return;
 
     const contentId = newContentId.toAddress();
@@ -193,18 +233,35 @@ class Component extends React.PureComponent<Props, State> {
         // https://github.com/Joystream/storage-node-joystream/issues/16
         // 'Content-Type': file.type
         'Content-Type': '' // <-- this is a temporary hack
-      }
+      },
+      cancelToken: cancelSource.token
     };
 
     const { discoveryProvider } = this.props;
-    const url = await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId);
 
-    this.setState({ uploading: true });
+    try {
+      var url = await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId, cancelSource.token);
+    } catch (err) {
+      return this.setState({
+        error: new Error(`Failed to contact storage provider: ${err.message}`),
+        discovering: false,
+      });
+    }
 
-    axios
-      .put<{ message: string }>(url, file, config)
-      .then(_res => this.setState({ progress: 100 }))
-      .catch(error => this.setState({ progress: 100, error }));
+    const { discovering } = this.state;
+
+    if (!discovering) {
+      return
+    }
+
+    this.setState({ discovering: false, uploading: true });
+
+    try {
+      await axios.put<{ message: string }>(url, file, config);
+      this.setState({ progress: 100 });
+    } catch(error) {
+      this.setState({ progress: 100, error, uploading: false });
+    }
   }
 }
 
