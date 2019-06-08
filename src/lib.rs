@@ -388,7 +388,7 @@ use rstd::collections::btree_map::BTreeMap;
 pub struct ForumUser<AccountId> {
     
     /// Identifier of user 
-    id: AccountId
+    pub id: AccountId
 
     // In the future one could add things like 
     // - updating post count of a user
