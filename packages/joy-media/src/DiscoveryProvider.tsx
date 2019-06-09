@@ -49,12 +49,9 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
       throw new Error('empty response to service discovery query')
     }
 
-    // assert serviceInfo.version === 1
     const assetApi = JSON.parse(serviceInfo.data.serialized).asset
 
-    // demo - old storage backend
-    // return `${assetApi.endpoint}/asset/v${assetApi.version}/9f131394-2a2a-5d67-b653-8e6f2553a7a0/${contentId || ''}`
-    return `${assetApi.endpoint}/asset/v${assetApi.version}/${contentId || ''}`
+    return `${assetApi.endpoint}/asset/v0/${contentId || ''}`
 
   };
 
