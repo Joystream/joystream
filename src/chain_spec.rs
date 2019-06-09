@@ -2,7 +2,7 @@ use hex_literal::{hex, hex_impl};
 use joystream_node_runtime::{
     AccountId, BalancesConfig, ConsensusConfig, CouncilConfig,
     CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
-    DownloadSessionsConfig, GenesisConfig, GrandpaConfig, IndicesConfig, MembersConfig, Perbill,
+    DownloadSessionsConfig, GenesisConfig, GrandpaConfig, IndicesConfig, MembersConfig, ForumConfig, Perbill,
     ProposalsConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig, TimestampConfig,
 	ActorsConfig,
 };
@@ -250,6 +250,15 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
 			default_paid_membership_fee: 100u128,
 			first_member_id: 1,
 		}),
+		forum: Some(ForumConfig {
+			category_by_id: vec![],
+			thread_by_id: vec![],
+			post_by_id: vec![],
+			next_category_id: 1,
+			next_thread_id: 1,
+			next_post_id: 1,
+			forum_sudo: endowed_accounts[0].clone(),
+		}),
 		data_object_type_registry: Some(DataObjectTypeRegistryConfig {
 			first_data_object_type_id: 1,
 		}),
@@ -300,7 +309,7 @@ fn testnet_genesis(
 			transaction_byte_fee: 0,
 		}),
 		sudo: Some(SudoConfig {
-			key: root_key,
+			key: root_key.clone(),
 		}),
 		session: Some(SessionConfig {
 			validators: initial_authorities.iter().map(|x| x.1.clone()).collect(),
@@ -351,6 +360,15 @@ fn testnet_genesis(
 		members: Some(MembersConfig {
 			default_paid_membership_fee: 100u128,
 			first_member_id: 1,
+		}),
+		forum: Some(ForumConfig {
+			category_by_id: vec![],
+			thread_by_id: vec![],
+			post_by_id: vec![],
+			next_category_id: 1,
+			next_thread_id: 1,
+			next_post_id: 1,
+			forum_sudo: root_key
 		}),
 		data_object_type_registry: Some(DataObjectTypeRegistryConfig {
 			first_data_object_type_id: 1,
