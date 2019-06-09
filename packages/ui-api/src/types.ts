@@ -3,11 +3,12 @@
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { SubmittableExtrinsicFunction } from '@polkadot/api/promise/types';
+
 import ApiPromise from '@polkadot/api/promise';
 
 // helpers for HOC props
-export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
-export type Subtract<T, K> = Omit<T, keyof K>;
+export type OmitProps<T, K> = Pick<T, Exclude<keyof T, K>>;
+export type SubtractProps<T, K> = OmitProps<T, keyof K>;
 
 export type BareProps = {
   className?: string,
@@ -17,20 +18,22 @@ export type BareProps = {
 export type ApiProps = {
   api: ApiPromise,
   apiDefaultTx: SubmittableExtrinsicFunction,
+  currentChain: string,
   isApiConnected: boolean,
   isApiReady: boolean,
   isDevelopment: boolean,
+  isWaitingInjected: boolean,
   setApiUrl: (url?: string) => void
 };
 
 export type OnChangeCb$Obs = { next: (value?: any) => any };
 export type OnChangeCb$Fn = (value?: any) => any;
-
 export type OnChangeCb = OnChangeCb$Obs | OnChangeCb$Fn;
 
 export type ChangeProps = {
   callOnResult?: OnChangeCb
 };
+
 export type CallState = {
   callResult?: any;
   callUpdated?: boolean;

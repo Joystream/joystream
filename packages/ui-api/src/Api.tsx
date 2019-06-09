@@ -124,16 +124,18 @@ export default class ApiWrapper extends React.PureComponent<Props, State> {
   }
 
   render () {
-    const { api, apiDefaultTx, chain, isApiConnected, isApiReady, isDevelopment, setApiUrl } = this.state;
+    const { api, apiDefaultTx, chain, isApiConnected, isApiReady, isDevelopment, isWaitingInjected, setApiUrl } = this.state;
 
     return (
       <ApiContext.Provider
         value={{
           api,
           apiDefaultTx,
+          currentChain: chain || '<unknown>',
           isApiConnected,
           isApiReady: isApiReady && !!chain,
           isDevelopment,
+          isWaitingInjected,
           setApiUrl
         }}
       >
