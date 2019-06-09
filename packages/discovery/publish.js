@@ -25,9 +25,9 @@ async function publish (accountId, service_info, runtimeApi) {
     const ipfs = ipfsClient('localhost', '5001', { protocol: 'http' })
 
     const keys = await ipfs.key.list()
-    const keyId = keys.find((key) => key.name === SERVICES_KEY_NAME).id
+    const services_key = keys.find((key) => key.name === SERVICES_KEY_NAME)
 
-    if (!keyId) {
+    if (!services_key) {
         throw new Error(`Expected IPNS key name ${SERVICES_KEY_NAME} not found`)
     }
 
@@ -44,7 +44,7 @@ async function publish (accountId, service_info, runtimeApi) {
 
     debug(published)
 
-    refreshAccountInfo(accountId, keyId, runtimeApi)
+    await refreshAccountInfo(accountId, services_key.id, runtimeApi)
 
     return published
 }
