@@ -14,10 +14,10 @@ const _ = require('lodash');
 const debug = require('debug')('joystream:cli');
 
 // Project root
-const project_root = path.resolve(__dirname, '..');
+const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 // Configuration (default)
-const pkg = require(path.resolve(project_root, 'package.json'));
+const pkg = require(path.resolve(PROJECT_ROOT, 'package.json'));
 const default_config = new configstore(pkg.name);
 
 // Parse CLI
@@ -57,7 +57,7 @@ const cli = meow(`
                       storage node.
     down              Signal to network that all services are down. Running
                       the server will signal that services as online again.
-    jds               Run a discovery server only.
+    discovery         Run the discovery service only.
 
   Options:
     --config=PATH, -c PATH  Configuration file path. Defaults to
@@ -106,11 +106,7 @@ function banner()
   console.log(chalk.blue(figlet.textSync('joystream', 'Speed')));
 }
 
-// Start app
-async function start_app(project_root, store, api, config)
-{
-  const app = require('../lib/app')(store, api, config);
-  const port = config.get('port');
+function start_express_app(app, port) {
   const http = require('http');
   const server = http.createServer(app);
 
@@ -123,6 +119,21 @@ async function start_app(project_root, store, api, config)
     server.listen(port);
     console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
   });
+}
+// Start app
+function start_all_services(store, api, config)
+{
+  const app = require('../lib/app')(PROJECT_ROOT, store, api, config);
+  const port = config.get('port');
+  return start_express_app(app, port);
+}
+
+// Start discovery service app
+function start_discovery_service(api, config)
+{
+  const app = require('../lib/discovery')(PROJECT_ROOT, api, config);
+  const port = config.get('port');
+  return start_express_app(app, port);
 }
 
 // Get an initialized storage instance
@@ -277,8 +288,8 @@ const commands = {
     const { start_syncing } = require('../lib/sync');
     start_syncing(api, cfg, store);
 
-    await start_app(project_root, store, api, cfg);
-    await announce_public_url(api, cfg);
+    announce_public_url(api, cfg);
+    await start_all_services(store, api, cfg);
   },
   'signup': async (account_file) => {
     await run_signup(account_file);
@@ -295,6 +306,13 @@ const commands = {
 
     await go_offline(api)
   },
+  'discovery': async () => {
+    debug("Starting Joystream Discovery Service")
+    const { RuntimeApi } = require('@joystream/runtime-api')
+    const cfg = create_config(pkg.name, cli.flags)
+    const api = await RuntimeApi.create()
+    await start_discovery_service(api, cfg)
+  }
 };
 
 

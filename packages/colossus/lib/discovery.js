@@ -18,10 +18,6 @@
 
 'use strict';
 
-// Node requires
-const fs = require('fs');
-const path = require('path');
-
 // npm requires
 const express = require('express');
 const openapi = require('express-openapi');
@@ -29,14 +25,15 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const yaml = require('js-yaml');
 
+// Node requires
+const fs = require('fs');
+const path = require('path');
+
 // Project requires
 const validateResponses = require('./middleware/validate_responses');
-const fileUploads = require('./middleware/file_uploads');
-const pagination = require('@joystream/util/pagination');
-const storage = require('@joystream/storage');
 
 // Configure app
-function create_app(project_root, storage, runtime, config)
+function create_app(project_root, runtime, config)
 {
   const app = express();
   app.use(cors());
@@ -49,19 +46,17 @@ function create_app(project_root, storage, runtime, config)
   api['x-express-openapi-additional-middleware'] = [validateResponses];
   api['x-express-openapi-validation-strict'] = true;
 
-  api = pagination.openapi(api);
-
   openapi.initialize({
     apiDoc: api,
     app: app,
-    paths: path.resolve(project_root, 'paths'),
-    docsPath: '/swagger.json',
-    consumesMiddleware: {
-      'multipart/form-data': fileUploads
+    //paths: path.resolve(project_root, 'discovery_app_paths'),
+    paths: {
+      path: '/discover/v0/{id}',
+      module: require('../paths/discover/v0/{id}')
     },
+    docsPath: '/swagger.json',
     dependencies: {
       config: config,
-      storage: storage,
       runtime: runtime,
     },
   });

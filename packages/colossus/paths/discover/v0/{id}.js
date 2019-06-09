@@ -1,6 +1,6 @@
 const { discover } = require('@joystream/discovery')
 const debug = require('debug')('joystream:api:discovery');
-module.exports = function(config, storage, runtime)
+module.exports = function(config, runtime)
 {
   var doc = {
     // parameters for all operations in this path
@@ -67,4 +67,3 @@ module.exports = function(config, storage, runtime)
 
     return doc;
 };
-
