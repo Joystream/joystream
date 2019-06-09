@@ -296,6 +296,13 @@ impl members::Trait for Runtime {
 
 /*
  * Forum module integration
+ * 
+ * ForumUserRegistry could have been implemented directly on 
+ * the membership module, and likewise ForumUser on Profile,
+ * however this approach is more loosley coupled.
+ * 
+ * Further exploration required to decide what the long
+ * run convention should be.
  */
 
 /// Shim registry which will proxy ForumUserRegistry behaviour to the members module
@@ -306,6 +313,11 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
     fn get_forum_user(id: &AccountId) -> Option<forum::ForumUser<AccountId>> {
 
         if let Some(profile) = members::Module::<Runtime>::get_profile(id) {
+
+            // For now the profile is not used for anything,
+            // but in the future we may need it to read out more
+            // information possibly required to construct a 
+            // ForumUser.
 
             // Now convert member profile to a forum user
             Some(forum::ForumUser{
