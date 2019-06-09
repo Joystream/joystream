@@ -217,11 +217,11 @@ function get_service_information(config) {
   // For now assume we run all services on the same endpoint
   return({
     asset: {
-      version: 0, // howto get version from openapi
+      version: 1, // spec version
       endpoint: config.get('publicUrl')
     },
     discover: {
-      version: 0, // howto get version from openapi
+      version: 1, // spec version
       endpoint: config.get('publicUrl')
     }
   })
