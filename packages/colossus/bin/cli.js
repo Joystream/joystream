@@ -258,8 +258,8 @@ async function announce_public_url(api, config) {
   }, reannounceAfterMilliSeconds)
 }
 
-async function go_offline(api) {
-  let _ = await api.discovery.unsetAccountInfo(api.identities.key.address())
+function go_offline(api) {
+  return api.discovery.unsetAccountInfo(api.identities.key.address())
 }
 
 // Simple CLI commands
