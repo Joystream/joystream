@@ -31,6 +31,10 @@ const FLAG_DEFINITIONS = {
     type: 'integer',
     _default: 30000,
   },
+  'reannouncePeriod': {
+    type: 'integer',
+    _default: 1000 * 60 * 60,
+  },
   keyFile: {
     type: 'string',
   },
@@ -66,7 +70,8 @@ const cli = meow(`
     --sync-period           Number of milliseconds to wait between synchronization
                             runs. Defaults to 30,000 (30s).
     --key-file              JSON key export file to use as the storage provider.
-    --public-url=URL, -u    Public URL to announce. No URL will be announced if not specified.
+    --public-url=URL        Public URL to announce. No URL will be announced if not specified.
+    --reannounce-period     Number of milliseconds to wait between reannouncing public url.
   `,
   { flags: FLAG_DEFINITIONS });
 
@@ -232,7 +237,7 @@ async function announce_public_url(api, config) {
 
   const accountId = api.identities.key.address()
 
-  let reannounceAfterMilliSeconds = 1000 * 60 * 60
+  let reannounceAfterMilliSeconds = config.get('reannouncePeriod')
 
   try {
     const serviceInformation = get_service_information(config)
