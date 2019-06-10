@@ -13,7 +13,7 @@ type Call = string | [string, Options];
 
 type StorageType = 'substrate' | 'react';
 
-const storage: StorageType = 'react';
+const storage: StorageType = 'substrate';
 
 type EntityMapName = 'categoryById' | 'threadById' | 'replyById';
 
