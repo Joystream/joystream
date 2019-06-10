@@ -5,13 +5,11 @@ import * as Yup from 'yup';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
-import { /* withCalls, */ withMulti } from '@polkadot/ui-api/with';
+import { withMulti } from '@polkadot/ui-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { ReplyId, ThreadId } from './types';
 import Section from '@polkadot/joy-utils/Section';
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
-import { useForum } from './Context';
 import { withOnlyForumSudo } from './ForumSudo';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
@@ -54,13 +52,6 @@ const InnerForm = (props: FormProps) => {
     rationale
   } = values;
 
-  const { state: { address: moderator } } = useMyAccount();
-  const { dispatch } = useForum();
-
-  if (!moderator) {
-    return <em>Error: Current user should be a member.</em>;
-  }
-
   const closeForm = () => {
     if (onCloseForm) onCloseForm();
   };
@@ -87,20 +78,12 @@ const InnerForm = (props: FormProps) => {
   const buildTxParams = () => {
     if (!isValid) return [];
 
+    const rationaleParam = new Text(rationale);
     if (isThread) {
-      return [ /* TODO add all required params */ ];
+      return [ id, rationaleParam ];
     } else {
-      return [ /* TODO add all required params */ ];
+      return [ id, rationaleParam ];
     }
-  };
-
-  const updateForumContext = () => {
-    if (isThread) {
-      dispatch({ type: 'ModerateThread', id: id.toNumber(), moderator, rationale });
-    } else {
-      dispatch({ type: 'ModerateReply', id: id.toNumber(), moderator, rationale });
-    }
-    closeForm();
   };
 
   const form =
@@ -111,19 +94,7 @@ const InnerForm = (props: FormProps) => {
       </LabelledField>
 
       <LabelledField {...props}>
-
-        { /* TODO delete this button once integrated w/ substrate */ }
-        <Button
-          type='button'
-          size='large'
-          primary
-          disabled={!dirty || isSubmitting}
-          onClick={updateForumContext}
-          content={'Moderate'}
-        />
-
         <TxButton
-          style={{ display: 'none' }} // TODO delete once integrated w/ substrate
           type='submit'
           size='large'
           label={'Moderate'}

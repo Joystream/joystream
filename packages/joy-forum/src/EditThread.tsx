@@ -1,21 +1,21 @@
 import React from 'react';
-import { Button, Checkbox as SuiCheckbox, CheckboxProps as SuiCheckboxProps, Message } from 'semantic-ui-react';
-import { Form, Field, FieldProps, withFormik, FormikProps } from 'formik';
+// import { Button, Checkbox as SuiCheckbox, CheckboxProps as SuiCheckboxProps, Message } from 'semantic-ui-react';
+// import { Form, Field, FieldProps, withFormik, FormikProps } from 'formik';
+import { Button, Message } from 'semantic-ui-react';
+import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
-import { /* withCalls, */ withMulti } from '@polkadot/ui-api/with';
+import { withMulti } from '@polkadot/ui-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
-import { AccountId, Text, Bool } from '@polkadot/types';
-import { Option } from '@polkadot/types/codec';
-import { ThreadId, Thread, CategoryId, ModerationAction } from './types';
+import { Text } from '@polkadot/types';
+import { ThreadId, Thread, CategoryId } from './types';
 import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
-import { useForum } from './Context';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withForumCalls } from './calls';
 
@@ -45,7 +45,7 @@ type OuterProps = ValidationProps & {
 };
 
 type FormValues = {
-  pinned: boolean,
+  // pinned: boolean,
   title: string,
   text: string
 };
@@ -71,13 +71,10 @@ const InnerForm = (props: FormProps) => {
   } = props;
 
   const {
-    pinned,
+    // pinned,
     title,
     text
   } = values;
-
-  const { state: { address } } = useMyAccount();
-  const { dispatch } = useForum();
 
   const onSubmit = (sendTx: () => void) => {
     if (isValid) sendTx();
@@ -93,6 +90,8 @@ const InnerForm = (props: FormProps) => {
 
   const onTxSuccess = (_txResult: SubmittableResult) => {
     setSubmitting(false);
+    // TODO redirect to newly created thread. Get id from Substrate event.
+    // goToView();
   };
 
   if (!categoryId && !struct) {
@@ -110,56 +109,45 @@ const InnerForm = (props: FormProps) => {
     if (!isValid) return [];
 
     if (isNew) {
-      return [ id /* TODO add all required params */ ];
+      return [
+        resolvedCategoryId,
+        new Text(title),
+        new Text(text)
+      ];
     } else {
+      // NOTE: currently forum SRML doesn't support thread update.
       return [ /* TODO add all required params */ ];
     }
   };
 
-  const goToView = (id: ThreadId | number) => {
-    if (history) {
-      history.push('/forum/threads/' + id.toString());
-    }
-  };
+  // const goToView = (id: ThreadId | number) => {
+  //   if (history) {
+  //     history.push('/forum/threads/' + id.toString());
+  //   }
+  // };
 
-  const updateForumContext = () => {
-    const thread = new Thread({
-      owner: struct ? struct.owner : new AccountId(address),
-      category_id: resolvedCategoryId,
-      pinned: new Bool(pinned),
-      title: new Text(title),
-      text: new Text(text),
-      moderation: new Option(ModerationAction, null)
-    });
-    if (id) {
-      dispatch({ type: 'UpdateThread', thread, id: id.toNumber() });
-      goToView(id);
-    } else {
-      dispatch({ type: 'NewThread', thread, onCreated: goToView });
-    }
-  };
+  // type CheckboxProps = FieldProps<FormValues> & SuiCheckboxProps;
 
-  type CheckboxProps = FieldProps<FormValues> & SuiCheckboxProps;
-
-  const Checkbox = ({ field, form, ...props }: CheckboxProps) => {
-    return (
-      <SuiCheckbox
-        {...props}
-        {...field}
-        toggle
-        value='_ignore_value_'
-        checked={field.value}
-      />
-    );
-  };
+  // const Checkbox = ({ field, form, ...props }: CheckboxProps) => {
+  //   return (
+  //     <SuiCheckbox
+  //       {...props}
+  //       {...field}
+  //       toggle
+  //       value='_ignore_value_'
+  //       checked={field.value}
+  //     />
+  //   );
+  // };
 
   const form =
     <Form className='ui form JoyForm EditEntityForm'>
 
-      {/* // TODO show pin toggle only if the current user is forum admin */}
-      <LabelledField name='pinned' {...props}>
+      {/* TODO show pin toggle only if the current user is forum admin */}
+      {/* NOTE: pin a thread is not yet supported by Forum SRML. */}
+      {/* <LabelledField name='pinned' {...props}>
         <Field component={Checkbox} id='pinned' name='pinned' disabled={isSubmitting} label={`This thread is ${!pinned ? 'not' : '' } pinned`} />
-      </LabelledField>
+      </LabelledField> */}
 
       <LabelledText name='title' placeholder={`Title`} {...props} />
 
@@ -168,22 +156,7 @@ const InnerForm = (props: FormProps) => {
       </LabelledField>
 
       <LabelledField {...props}>
-
-        { /* TODO delete this button once integrated w/ substrate */ }
-        <Button
-          type='button'
-          size='large'
-          primary
-          disabled={!dirty || isSubmitting}
-          onClick={updateForumContext}
-          content={isNew
-            ? 'Create a thread'
-            : 'Update a thread'
-          }
-        />
-
         <TxButton
-          style={{ display: 'none' }} // TODO delete once integrated w/ substrate
           type='submit'
           size='large'
           label={isNew
@@ -193,7 +166,7 @@ const InnerForm = (props: FormProps) => {
           isDisabled={!dirty || isSubmitting}
           params={buildTxParams()}
           tx={isNew
-            ? 'forum.newThread'
+            ? 'forum.createThread'
             : 'forum.updateThread'
           }
           onClick={onSubmit}
@@ -227,11 +200,10 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
   mapPropsToValues: props => {
-    const { struct } = props;
     return {
-      pinned: struct && struct.pinned || false,
-      title: struct && struct.title || '',
-      text: struct && struct.text || ''
+      // pinned: struct && struct.pinned || false,
+      title: '',
+      text: ''
     };
   },
 
@@ -254,7 +226,7 @@ function FormOrLoading (props: OuterProps) {
     return <em>Thread not found</em>;
   }
 
-  const isMyStruct = address === struct.owner.toString();
+  const isMyStruct = address === struct.author_id.toString();
   if (isMyStruct) {
     return <EditForm {...props} />;
   }

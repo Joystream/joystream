@@ -6,16 +6,13 @@ import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
-import { /* withCalls, */ withMulti } from '@polkadot/ui-api/with';
+import { withMulti } from '@polkadot/ui-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
-import { AccountId, Text } from '@polkadot/types';
-import { Option } from '@polkadot/types/codec';
-import { ReplyId, Reply, ThreadId, ModerationAction } from './types';
+import { PostId, Post, ThreadId } from './types';
 import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
-import { useForum } from './Context';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withForumCalls } from './calls';
 
@@ -33,8 +30,8 @@ type ValidationProps = {
 
 type OuterProps = ValidationProps & {
   history?: History,
-  id?: ReplyId
-  struct?: Reply
+  id?: PostId
+  struct?: Post
   threadId: ThreadId
 };
 
@@ -64,9 +61,6 @@ const InnerForm = (props: FormProps) => {
     text
   } = values;
 
-  const { state: { address } } = useMyAccount();
-  const { dispatch } = useForum();
-
   const onSubmit = (sendTx: () => void) => {
     if (isValid) sendTx();
   };
@@ -81,6 +75,7 @@ const InnerForm = (props: FormProps) => {
 
   const onTxSuccess = (_txResult: SubmittableResult) => {
     setSubmitting(false);
+    goToThreadView();
   };
 
   const isNew = struct === undefined;
@@ -88,10 +83,11 @@ const InnerForm = (props: FormProps) => {
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    if (isNew) {
-      return [ id /* TODO add all required params */ ];
+    const textParam = new Text(text);
+    if (!id) {
+      return [ threadId, textParam ];
     } else {
-      return [ /* TODO add all required params */ ];
+      return [ id, textParam ];
     }
   };
 
@@ -99,21 +95,6 @@ const InnerForm = (props: FormProps) => {
     if (history) {
       history.push('/forum/threads/' + threadId.toString());
     }
-  };
-
-  const updateForumContext = () => {
-    const reply = new Reply({
-      owner: struct ? struct.owner : new AccountId(address),
-      thread_id: threadId,
-      text: new Text(text),
-      moderation: new Option(ModerationAction, null)
-    });
-    if (id) {
-      dispatch({ type: 'UpdateReply', reply, id: id.toNumber() });
-    } else {
-      dispatch({ type: 'NewReply', reply });
-    }
-    goToThreadView();
   };
 
   const form =
@@ -124,22 +105,7 @@ const InnerForm = (props: FormProps) => {
       </LabelledField>
 
       <LabelledField {...props}>
-
-        { /* TODO delete this button once integrated w/ substrate */ }
-        <Button
-          type='button'
-          size='large'
-          primary
-          disabled={!dirty || isSubmitting}
-          onClick={updateForumContext}
-          content={isNew
-            ? 'Post a reply'
-            : 'Update a reply'
-          }
-        />
-
         <TxButton
-          style={{ display: 'none' }} // TODO delete once integrated w/ substrate
           type='submit'
           size='large'
           label={isNew
@@ -149,8 +115,8 @@ const InnerForm = (props: FormProps) => {
           isDisabled={!dirty || isSubmitting}
           params={buildTxParams()}
           tx={isNew
-            ? 'forum.newReply'
-            : 'forum.updateReply'
+            ? 'forum.addPost'
+            : 'forum.editPostText'
           }
           onClick={onSubmit}
           txCancelledCb={onTxCancelled}
@@ -185,7 +151,7 @@ const EditForm = withFormik<OuterProps, FormValues>({
   mapPropsToValues: props => {
     const { struct } = props;
     return {
-      text: struct && struct.text || ''
+      text: struct && struct.current_text || ''
     };
   },
 
@@ -208,7 +174,7 @@ function FormOrLoading (props: OuterProps) {
     return <em>Reply not found</em>;
   }
 
-  const isMyStruct = address === struct.owner.toString();
+  const isMyStruct = address === struct.author_id.toString();
   if (isMyStruct) {
     return <EditForm {...props} threadId={struct.thread_id} />;
   }
@@ -227,15 +193,15 @@ function withThreadIdFromUrl (Component: React.ComponentType<OuterProps>) {
   };
 }
 
-type HasReplyIdProps = {
-  id: ReplyId
+type HasPostIdProps = {
+  id: PostId
 };
 
-function withIdFromUrl (Component: React.ComponentType<HasReplyIdProps>) {
+function withIdFromUrl (Component: React.ComponentType<HasPostIdProps>) {
   return function (props: UrlHasIdProps) {
     const { match: { params: { id } } } = props;
     try {
-      return <Component {...props} id={new ReplyId(id)} />;
+      return <Component {...props} id={new PostId(id)} />;
     } catch (err) {
       return <em>Invalid reply ID: {id}</em>;
     }

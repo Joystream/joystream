@@ -6,34 +6,34 @@ import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
-import { /* withCalls, */ withMulti } from '@polkadot/ui-api/with';
+import { withMulti } from '@polkadot/ui-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
-import { AccountId, Text, Bool } from '@polkadot/types';
-import { Option, Vector } from '@polkadot/types/codec';
+import { Text } from '@polkadot/types';
+import { Option } from '@polkadot/types/codec';
 import { CategoryId, Category } from './types';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
-import { useForum } from './Context';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withOnlyForumSudo } from './ForumSudo';
 import { withForumCalls } from './calls';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
-  name: Yup.string()
-    // .min(p.minNameLen, `Category name is too short. Minimum length is ${p.minNameLen} chars.`)
-    // .max(p.maxNameLen, `Category name is too long. Maximum length is ${p.maxNameLen} chars.`)
-    .required('Category name is required'),
-  text: Yup.string()
-    // .min(p.minTextLen, `Category description is too short. Minimum length is ${p.minTextLen} chars.`)
-    // .max(p.maxTextLen, `Category description is too long. Maximum length is ${p.maxTextLen} chars.`)
+  title: Yup.string()
+    // .min(p.minTitleLen, `Category title is too short. Minimum length is ${p.minTitleLen} chars.`)
+    // .max(p.maxTitleLen, `Category title is too long. Maximum length is ${p.maxTitleLen} chars.`)
+    .required('Category title is required'),
+  description: Yup.string()
+    // .min(p.minDescriptionLen, `Category description is too short. Minimum length is ${p.minDescriptionLen} chars.`)
+    // .max(p.maxDescriptionLen, `Category description is too long. Maximum length is ${p.maxDescriptionLen} chars.`)
+    .required('Category description is required'),
 });
 
 type ValidationProps = {
-  // minNameLen: number,
-  // maxNameLen: number,
-  // minTextLen: number,
-  // maxTextLen: number
+  // minTitleLen: number,
+  // maxTitleLen: number,
+  // minDescriptionLen: number,
+  // maxDescriptionLen: number
 };
 
 type OuterProps = ValidationProps & {
@@ -44,8 +44,8 @@ type OuterProps = ValidationProps & {
 };
 
 type FormValues = {
-  name: string,
-  text: string
+  title: string,
+  description: string
 };
 
 type FormProps = OuterProps & FormikProps<FormValues>;
@@ -69,12 +69,9 @@ const InnerForm = (props: FormProps) => {
   } = props;
 
   const {
-    name,
-    text
+    title,
+    description
   } = values;
-
-  const { state: { address } } = useMyAccount();
-  const { dispatch } = useForum();
 
   const onSubmit = (sendTx: () => void) => {
     if (isValid) sendTx();
@@ -90,6 +87,8 @@ const InnerForm = (props: FormProps) => {
 
   const onTxSuccess = (_txResult: SubmittableResult) => {
     setSubmitting(false);
+    // TODO redirect to newly created category. Get id from Substrate event.
+    // goToView(id);
   };
 
   const isNew = struct === undefined;
@@ -99,64 +98,36 @@ const InnerForm = (props: FormProps) => {
     if (!isValid) return [];
 
     if (isNew) {
-      return [ id /* TODO add all required params */ ];
+      return [
+        new Option(CategoryId, parentId),
+        new Text(title),
+        new Text(description)
+      ];
     } else {
+      // NOTE: currently update_category doesn't support title and description updates.
       return [ /* TODO add all required params */ ];
     }
   };
 
-  const goToView = (id: CategoryId | number) => {
-    if (history) {
-      history.push('/forum/categories/' + id.toString());
-    }
-  };
-
-  const updateForumContext = () => {
-    const category = new Category({
-      owner: new AccountId(address),
-      parent_id: new Option(CategoryId, parentId),
-      children_ids: new Vector(CategoryId, []),
-      deleted: new Bool(false),
-      archived: new Bool(false),
-      name: new Text(name),
-      text: new Text(text)
-    });
-    if (id) {
-      dispatch({ type: 'UpdateCategory', category, id: id.toNumber() });
-      goToView(id);
-    } else {
-      dispatch({ type: 'NewCategory', category, onCreated: goToView });
-    }
-  };
+  // const goToView = (id: CategoryId | number) => {
+  //   if (history) {
+  //     history.push('/forum/categories/' + id.toString());
+  //   }
+  // };
 
   const categoryWord = isSubcategory ? `subcategory` : `category`;
 
   const form =
     <Form className='ui form JoyForm EditEntityForm'>
 
-      <LabelledText name='name' placeholder={`Name your ${categoryWord}`} {...props} />
+      <LabelledText name='title' placeholder={`Name your ${categoryWord}`} {...props} />
 
-      <LabelledField name='text' {...props}>
-        <Field component='textarea' id='text' name='text' disabled={isSubmitting} rows={3} placeholder={`Describe your ${categoryWord}. You can use Markdown.`} />
+      <LabelledField name='description' {...props}>
+        <Field component='textarea' id='description' name='description' disabled={isSubmitting} rows={3} placeholder={`Describe your ${categoryWord}. You can use Markdown.`} />
       </LabelledField>
 
       <LabelledField {...props}>
-
-        { /* TODO delete this button once integrated w/ substrate */ }
-        <Button
-          type='button'
-          size='large'
-          primary
-          disabled={!dirty || isSubmitting}
-          onClick={updateForumContext}
-          content={isNew
-            ? `Create a ${categoryWord}`
-            : `Update a category`
-          }
-        />
-
         <TxButton
-          style={{ display: 'none' }} // TODO delete once integrated w/ substrate
           type='submit'
           size='large'
           label={isNew
@@ -166,7 +137,7 @@ const InnerForm = (props: FormProps) => {
           isDisabled={!dirty || isSubmitting}
           params={buildTxParams()}
           tx={isNew
-            ? 'forum.newCategory'
+            ? 'forum.createCategory'
             : 'forum.updateCategory'
           }
           onClick={onSubmit}
@@ -204,8 +175,8 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
     return {
       parentId: struct ? struct.parent_id : parentId,
-      name: struct ? struct.name : '',
-      text: struct ? struct.text : ''
+      title: struct ? struct.title : '',
+      description: struct ? struct.description : ''
     };
   },
 
@@ -228,7 +199,7 @@ function FormOrLoading (props: OuterProps) {
     return <em>Category not found</em>;
   }
 
-  const isMyStruct = address === struct.owner.toString();
+  const isMyStruct = address === struct.moderator_id.toString();
   if (isMyStruct) {
     return <EditForm {...props} />;
   }
