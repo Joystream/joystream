@@ -205,8 +205,18 @@ export class Category extends JoyStruct<CategoryType> {
     return new u32(this.num_direct_unmoderated_threads.add(this.num_direct_moderated_threads));
   }
 
-  get position_in_parent_category (): OptionChildPositionInParentCategory | undefined {
-    return getOptionPropOrUndefined(this, 'position_in_parent_category');
+  get position_in_parent_category (): Option<ChildPositionInParentCategory> {
+    return this.getRequired('position_in_parent_category');
+  }
+
+  get parent_id (): CategoryId | undefined {
+    const pos = this.position_in_parent_category;
+    return pos.isSome ? pos.unwrap().parent_id : undefined;
+  }
+
+  get nr_in_parent (): u32 | undefined {
+    const pos = this.position_in_parent_category;
+    return pos.isSome ? pos.unwrap().child_nr_in_parent_category : undefined;
   }
 
   get moderator_id (): AccountId {
