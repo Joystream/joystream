@@ -209,154 +209,87 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "std")]
-#[macro_use]
 extern crate serde_derive;
+
+//use serde::{Serialize, Deserialize};
+
+use serde_derive::{Serialize, Deserialize};
 
 use rstd::prelude::*;
 
 use parity_codec_derive::{Decode, Encode};
 use srml_support::{ decl_event, decl_module, decl_storage, ensure, dispatch, StorageValue, StorageMap};
 
-/// Length constraint for input validation
-
-// Drop later!!!
-enum LengthValidationResult {
-    TooShort,
-    TooLong,
-    Success
-}
-
-
 /*
  * MOVE ALL OF THESE OUT TO COMMON LATER
  */
 
-struct InputValidationLengthConstraint {
+/// Length constraint for input validation
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct InputValidationLengthConstraint {
 
     /// Minimum length
     min : usize,
 
-    /// Maximum length
+    /// Difference between minimum length and max length.
     /// While having max would have been more direct, this
     /// way makes max < min unrepresentable semantically, 
     /// which is safer.
-    max_as_min_diff: usize,
-
-    /*
-
-    add later after review from Alex done
-
-    too_short_error_msg: &'static str,
-
-    too_long_error_msg: &'static str,
-    */
-
+    max_min_diff: usize,
 }
 
 impl InputValidationLengthConstraint {
     
     /// Helper for computing max
     fn max(&self) -> usize {
-        self.min + self.max_as_min_diff
+        self.min + self.max_min_diff
     }
 
-    /// Just to give method interface to read min, like max
-    fn min(&self) -> usize {
-        self.min
-    }
-
-    fn validate(&self, length: usize) -> LengthValidationResult {
+    fn ensure_valid(&self, length: usize, too_short_msg: &'static str, too_long_msg: &'static str) -> Result<(),&'static str> {
 
         if length < self.min {
-            LengthValidationResult::TooShort
+            Err(too_short_msg)
         }
         else if length > self.max() {
-            LengthValidationResult::TooLong
+            Err(too_long_msg)
         }
         else {
-            LengthValidationResult::Success
+            Ok(())
         }
     } 
-
-    // TODO: add more vliadtion stuff here in the future?
 }
 
 /// Constants
-const CATEGORY_TITLE: InputValidationLengthConstraint = InputValidationLengthConstraint{
-    min: 3,
-    max_as_min_diff: 30
-};
-
-const CATEGORY_DESCRIPTION: InputValidationLengthConstraint = InputValidationLengthConstraint{
-    min: 10,
-    max_as_min_diff: 140
-};
-
-const THREAD_TITLE: InputValidationLengthConstraint = InputValidationLengthConstraint{
-    min: 3,
-    max_as_min_diff: 43
-};
-
-const POST_TEXT: InputValidationLengthConstraint = InputValidationLengthConstraint{
-    min: 1,
-    max_as_min_diff: 1001
-};
-
-const THREAD_MODERATION_RATIONALE: InputValidationLengthConstraint = InputValidationLengthConstraint{
-    min: 100,
-    max_as_min_diff: 2000
-};
-
-const POST_MODERATIONALE_RATIONALE:  InputValidationLengthConstraint = InputValidationLengthConstraint{
-    min: 100,
-    max_as_min_diff: 2000
-};
+/////////////////////////////////////////////////////////////////
 
 /// The greatest valid depth of a category.
 /// The depth of a root category is 0.
 const MAX_CATEGORY_DEPTH: u32 = 3;
 
 /// Error messages for dispatchables
-/// Later perhaps make error message functions, to add parametization
-
 const ERROR_FORUM_SUDO_NOT_SET: &str = "Forum sudo not set.";
 const ERROR_ORIGIN_NOT_FORUM_SUDO: &str = "Origin not forum sudo.";
-
 const ERROR_CATEGORY_TITLE_TOO_SHORT: &str = "Category title too short.";
 const ERROR_CATEGORY_TITLE_TOO_LONG: &str = "Category title too long.";
-
 const ERROR_CATEGORY_DESCRIPTION_TOO_SHORT: &str = "Category description too long.";
 const ERROR_CATEGORY_DESCRIPTION_TOO_LONG: &str = "Category description too long.";
-
-//  drop, using ERROR_CATEGORY_DOES_NOT_EXIST instead of const ERROR_PARENT_CATEGORY_DOES_NOT_EXIST: &str = "Parent category does not exist.";
 const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str = "Ancestor category immutable, i.e. deleted or archived";
 const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
-
 const ERROR_CATEGORY_DOES_NOT_EXIST: &str = "Category does not exist.";
-
 const ERROR_NOT_FORUM_USER: &str = "Not forum user.";
-
 const ERROR_THREAD_TITLE_TOO_SHORT: &str = "Thread title too short.";
 const ERROR_THREAD_TITLE_TOO_LONG: &str = "Thread title too long.";
-
 const ERROR_POST_TEXT_TOO_SHORT: &str = "Post text too short.";
 const ERROR_POST_TEXT_TOO_LONG: &str = "Post too long.";
-
 const ERROR_THREAD_DOES_NOT_EXIST: &str = "Thread does not exist";
-
 const ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT: &str = "Thread moderation rationale too short.";
 const ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG: &str = "Thread moderation rationale too long.";
-
 const ERROR_THREAD_ALREADY_MODERATED: &str = "Thread already moderated.";
-
 const ERROR_THREAD_MODERATED: &str = "Thread is moderated.";
-
 const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
-
 const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match post author.";
-
 const ERROR_POST_MODERATED: &str = "Post is moderated.";
-
 const ERROR_POST_MODERATION_RATIONALE_TOO_SHORT: &str = "Post moderation rationale too short.";
 const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rationale too long.";
 
@@ -364,7 +297,7 @@ const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rational
 
 //use sr_io::{StorageOverlay, ChildrenStorageOverlay};
 
-//#[cfg(feature = "std")]
+#[cfg(feature = "std")]
 //use runtime_io::{StorageOverlay, ChildrenStorageOverlay};
 
 //#[cfg(any(feature = "std", test))]
@@ -375,16 +308,12 @@ use system;
 
 use rstd::collections::btree_map::BTreeMap;
 
-/// Constant values
-/// Later add to st
-///
-
 /// Represents a user in this forum.
 #[derive(Debug, Copy, Clone)]
 pub struct ForumUser<AccountId> {
     
     /// Identifier of user 
-    id: AccountId
+    pub id: AccountId
 
     // In the future one could add things like 
     // - updating post count of a user
@@ -401,7 +330,7 @@ pub trait ForumUserRegistry<AccountId> {
 }
 
 /// Convenient composite time stamp 
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct BlockchainTimestamp<BlockNumber, Moment> {
     block : BlockNumber,
@@ -409,7 +338,7 @@ pub struct BlockchainTimestamp<BlockNumber, Moment> {
 }
 
 /// Represents a moderation outcome applied to a post or a thread. 
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct ModerationAction<BlockNumber, Moment, AccountId> {
 
@@ -425,7 +354,7 @@ pub struct ModerationAction<BlockNumber, Moment, AccountId> {
 }
 
 /// Represents a revision of the text of a Post
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct PostTextChange<BlockNumber, Moment> {
 
@@ -440,7 +369,7 @@ pub struct PostTextChange<BlockNumber, Moment> {
 pub type PostId = u64;
 
 /// Represents a thread post
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Post<BlockNumber, Moment, AccountId> {
 
@@ -478,7 +407,7 @@ pub struct Post<BlockNumber, Moment, AccountId> {
 pub type ThreadId = u64;
 
 /// Represents a thread
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Thread<BlockNumber, Moment, AccountId> {
 
@@ -533,6 +462,7 @@ impl<BlockNumber, Moment, AccountId> Thread<BlockNumber, Moment, AccountId>  {
 pub type CategoryId = u64;
 
 /// Represents 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct ChildPositionInParentCategory {
 
@@ -545,7 +475,7 @@ pub struct ChildPositionInParentCategory {
 }
 
 /// Represents a category
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Category<BlockNumber, Moment, AccountId> {
 
@@ -634,10 +564,15 @@ decl_storage! {
         /// Account of forum sudo.
         pub ForumSudo get(forum_sudo) config(): Option<T::AccountId>;
 
-        // === Add constraints here ===
-
-        // Will add all the constrainst here later!
-
+        /// Input constraints
+        /// These are all forward looking, that is they are enforced on all
+        /// future calls.
+        pub CategoryTitleConstraint get(category_title_constraint) config(): InputValidationLengthConstraint;
+        pub CategoryDescriptionConstraint get(category_description_constraint) config(): InputValidationLengthConstraint;
+        pub ThreadTitleConstraint get(thread_title_constraint) config(): InputValidationLengthConstraint;
+        pub PostTextConstraint get(post_text_constraint) config(): InputValidationLengthConstraint;
+        pub ThreadModerationRationaleConstraint get(thread_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
+        pub PostModerationRationaleConstraint get(post_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
     }
     /*
     JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
@@ -704,7 +639,7 @@ decl_module! {
         fn deposit_event<T>() = default;
 
         /// Set forum sudo.
-        fn set_forum_sudo(newForumSudo: Option<T::AccountId>) -> dispatch::Result {
+        fn set_forum_sudo(new_forum_sudo: Option<T::AccountId>) -> dispatch::Result {
 
             /*
              * Question: when this routine is called by non sudo or with bad signature, what error is raised?
@@ -712,16 +647,16 @@ decl_module! {
              */
 
             // Hold on to old value
-            let oldForumSudo = <ForumSudo<T>>::get().clone();
+            let old_forum_sudo = <ForumSudo<T>>::get().clone();
 
             // Update forum sudo
-            match newForumSudo.clone() {
-                Some(accountId) => <ForumSudo<T>>::put(accountId),
+            match new_forum_sudo.clone() {
+                Some(account_id) => <ForumSudo<T>>::put(account_id),
                 None => <ForumSudo<T>>::kill()
             };
 
             // Generate event
-            Self::deposit_event(RawEvent::ForumSudoSet(oldForumSudo, newForumSudo));
+            Self::deposit_event(RawEvent::ForumSudoSet(old_forum_sudo, new_forum_sudo));
 
             // All good.
             Ok(())
@@ -737,10 +672,10 @@ decl_module! {
             Self::ensure_is_forum_sudo(&who)?;
 
             // Validate title
-            ensure_category_title_is_valid(&title)?;
+            Self::ensure_category_title_is_valid(&title)?;
 
             // Validate description
-            ensure_category_description_is_valid(&description)?;
+            Self::ensure_category_description_is_valid(&description)?;
 
             // Position in parent field value for new category
             let mut position_in_parent_category_field = None;
@@ -807,7 +742,7 @@ decl_module! {
         }
         
         /// Update category
-        fn update_category(origin, category_id: CategoryId, archived: bool, deleted: bool) -> dispatch::Result {
+        fn update_category(origin, category_id: CategoryId, new_archival_status: Option<bool>, new_deletion_status: Option<bool>) -> dispatch::Result {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -816,35 +751,26 @@ decl_module! {
             Self::ensure_is_forum_sudo(&who)?;
 
             // Get path from parent to root of category tree.
-            let mut category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
+            let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
 
             // Make sure we can actually mutate this category
             Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
 
-            // Grab mutable category for updating
-            let mut category = category_tree_path.first().unwrap().clone();
-
-            // Value change events params
-            let mut archived_change_to = None;
-            let mut deleted_changed_to = None;
-
             // Mutate category, and set possible new change parameters
 
-            if archived != category.archived {
-                category.archived = archived;
-                archived_change_to = Some(archived);
-            }
+            <CategoryById<T>>::mutate(category_id, |c| {
 
-            if deleted != category.deleted {
-                category.deleted = deleted;
-                deleted_changed_to = Some(deleted)
-            }
+                if let Some(archived) = new_archival_status {
+                    c.archived = archived;
+                }
 
-            // Write back mutated category
-            <CategoryById<T>>::insert(category_id, category);
+                if let Some(deleted) = new_deletion_status {
+                    c.deleted = deleted;
+                }
+            });
 
             // Generate event
-            Self::deposit_event(RawEvent::CategoryUpdated(category_id, archived_change_to, deleted_changed_to));
+            Self::deposit_event(RawEvent::CategoryUpdated(category_id, new_archival_status, new_deletion_status));
 
             Ok(())
         }
@@ -871,10 +797,10 @@ decl_module! {
             Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
             
             // Validate title
-            ensure_thread_title_is_valid(&title)?;
+            Self::ensure_thread_title_is_valid(&title)?;
 
             // Validate post text
-            ensure_post_text_is_valid(&text)?;
+            Self::ensure_post_text_is_valid(&text)?;
 
             /*
              * Here it is safe to mutate state.
@@ -908,7 +834,7 @@ decl_module! {
             ensure!(thread.moderation.is_none(), ERROR_THREAD_ALREADY_MODERATED);
 
             // Rationale valid
-            ensure_thread_moderation_rationale_is_valid(&rationale)?;
+            Self::ensure_thread_moderation_rationale_is_valid(&rationale)?;
 
             // Can mutate in corresponding category
             let path = Self::build_category_tree_path(thread.category_id);
@@ -1033,7 +959,7 @@ decl_module! {
             // Make sure post exists and is mutable
             let post = Self::ensure_post_is_mutable(&post_id)?;
 
-            ensure_rationale_is_valid(&rationale)?;
+            Self::ensure_post_moderation_rationale_is_valid(&rationale)?;
 
             /*
              * Here we are safe to mutate
@@ -1065,66 +991,61 @@ decl_module! {
     }
 }
 
-/*
- * Drop all of these later
- */
-
-fn ensure_thread_moderation_rationale_is_valid(rationale: &Vec<u8>) -> dispatch::Result {
-
-    match THREAD_MODERATION_RATIONALE.validate(rationale.len()) {
-        LengthValidationResult::TooShort => Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT),
-        LengthValidationResult::TooLong => Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG),
-        LengthValidationResult::Success => Ok(())
-    }
-}
-
-fn ensure_category_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
-
-    match CATEGORY_TITLE.validate(title.len()) {
-        LengthValidationResult::TooShort => Err(ERROR_CATEGORY_TITLE_TOO_SHORT),
-        LengthValidationResult::TooLong => Err(ERROR_CATEGORY_TITLE_TOO_LONG),
-        LengthValidationResult::Success => Ok(())
-    }
-}
-
-fn ensure_category_description_is_valid(description: &Vec<u8>) -> dispatch::Result {
-
-    match CATEGORY_DESCRIPTION.validate(description.len()) {
-        LengthValidationResult::TooShort => Err(ERROR_CATEGORY_DESCRIPTION_TOO_SHORT),
-        LengthValidationResult::TooLong => Err(ERROR_CATEGORY_DESCRIPTION_TOO_LONG),
-        LengthValidationResult::Success => Ok(())
-    }
-
-}
-
-fn ensure_thread_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
-
-    match THREAD_TITLE.validate(title.len()) {
-        LengthValidationResult::TooShort => Err(ERROR_THREAD_TITLE_TOO_SHORT),
-        LengthValidationResult::TooLong => Err(ERROR_THREAD_TITLE_TOO_LONG),
-        LengthValidationResult::Success => Ok(())
-    }
-}
-
-fn ensure_post_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
-
-    match THREAD_TITLE.validate(text.len()) {
-        LengthValidationResult::TooShort => Err(ERROR_POST_TEXT_TOO_SHORT),
-        LengthValidationResult::TooLong => Err(ERROR_POST_TEXT_TOO_LONG),
-        LengthValidationResult::Success => Ok(())
-    }
-}
-
-fn ensure_rationale_is_valid(rationale: &Vec<u8>) -> dispatch::Result {
-
-    match POST_MODERATIONALE_RATIONALE.validate(rationale.len()) {
-        LengthValidationResult::TooShort => Err(ERROR_POST_MODERATION_RATIONALE_TOO_SHORT),
-        LengthValidationResult::TooLong => Err(ERROR_POST_MODERATION_RATIONALE_TOO_LONG),
-        LengthValidationResult::Success => Ok(())
-    }
-}
-
 impl<T: Trait> Module<T> {
+
+    fn ensure_category_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
+
+        <CategoryTitleConstraint<T>>::get().ensure_valid(
+            title.len(),
+            ERROR_CATEGORY_TITLE_TOO_SHORT,
+            ERROR_CATEGORY_TITLE_TOO_LONG
+        )
+    }
+
+    fn ensure_category_description_is_valid(description: &Vec<u8>) -> dispatch::Result {
+
+        CategoryDescriptionConstraint::<T>::get().ensure_valid(
+            description.len(),
+            ERROR_CATEGORY_DESCRIPTION_TOO_SHORT,
+            ERROR_CATEGORY_DESCRIPTION_TOO_LONG
+        )
+    }
+
+    fn ensure_thread_moderation_rationale_is_valid(rationale: &Vec<u8>) -> dispatch::Result {
+
+        <ThreadModerationRationaleConstraint<T>>::get().ensure_valid(
+            rationale.len(),
+            ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT,
+            ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG
+        )
+    }
+
+    fn ensure_thread_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
+
+        <ThreadTitleConstraint<T>>::get().ensure_valid(
+            title.len(),
+            ERROR_THREAD_TITLE_TOO_SHORT,
+            ERROR_THREAD_TITLE_TOO_LONG
+        )
+    }
+
+    fn ensure_post_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+
+        <PostTextConstraint<T>>::get().ensure_valid(
+            text.len(),
+            ERROR_POST_TEXT_TOO_SHORT,
+            ERROR_POST_TEXT_TOO_LONG
+        )
+    }
+
+    fn ensure_post_moderation_rationale_is_valid(rationale: &Vec<u8>) -> dispatch::Result {
+
+        <PostModerationRationaleConstraint<T>>::get().ensure_valid(
+            rationale.len(),
+            ERROR_POST_MODERATION_RATIONALE_TOO_SHORT,
+            ERROR_POST_MODERATION_RATIONALE_TOO_LONG
+        )
+    }
 
     fn current_block_and_time() -> BlockchainTimestamp<T::BlockNumber, T::Moment> {
 
@@ -1424,11 +1345,13 @@ mod tests {
 
     static mut forum_user_store: Option<BTreeMap< <Test as system::Trait>::AccountId , ForumUser< <Test as system::Trait>::AccountId > > > = None;
 
+    /*
     fn initialize_forum_user_store() {
 
         //formUserStore
 
     }
+    */
 
     // MockForumUserRegistry
     pub struct MockForumUserRegistry { }
@@ -1470,7 +1393,37 @@ mod tests {
             post_by_id: vec![],
             next_post_id: 0,
 
-            forum_sudo: 33
+            forum_sudo: 33,
+
+            category_title_constraint: InputValidationLengthConstraint{
+                min: 10,
+                max_min_diff: 140
+            },
+
+            category_description_constraint: InputValidationLengthConstraint{
+                min: 10,
+                max_min_diff: 140
+            },
+
+            thread_title_constraint: InputValidationLengthConstraint{
+                min: 3,
+                max_min_diff: 43
+            },
+
+            post_text_constraint: InputValidationLengthConstraint{
+                min: 1,
+                max_min_diff: 1001
+            },
+
+            thread_moderation_rationale_constraint: InputValidationLengthConstraint{
+                min: 100,
+                max_min_diff: 2000
+            },
+
+            post_moderation_rationale_constraint: InputValidationLengthConstraint{
+                min: 100,
+                max_min_diff: 2000
+            }
 
 
             // JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
