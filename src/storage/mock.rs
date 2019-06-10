@@ -105,6 +105,7 @@ impl traits::ContentIdExists<Test> for MockContent {
                 owner: 1,
                 liaison: TEST_MOCK_LIAISON,
                 liaison_judgement: data_directory::LiaisonJudgement::Pending,
+                ipfs_content_id: vec![],
             }),
             _ => Err("nope, missing"),
         }

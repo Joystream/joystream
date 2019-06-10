@@ -69,11 +69,12 @@ pub struct DataObject<T: Trait> {
     pub size: u64,
     pub liaison: T::AccountId,
     pub liaison_judgement: LiaisonJudgement,
-    // TODO signing_key: public key supplied by the uploader,
-    // they sigh the content with this key
+    pub ipfs_content_id: Vec<u8>, // shoule we use rust multi-format crate?
+                                  // TODO signing_key: public key supplied by the uploader,
+                                  // they sigh the content with this key
 
-    // TODO add support for this field (Some if judgment == Rejected)
-    // pub rejection_reason: Option<Vec<u8>>,
+                                  // TODO add support for this field (Some if judgment == Rejected)
+                                  // pub rejection_reason: Option<Vec<u8>>,
 }
 
 #[derive(Clone, Encode, Decode, PartialEq)]
@@ -117,12 +118,12 @@ decl_storage! {
 
         // TODO this list of ids should be moved off-chain once we have Content Indexer.
         // TODO deprecated, moved tp storage relationship
-        KnownContentIds get(known_content_ids): Vec<T::ContentId> = vec![];
+        pub KnownContentIds get(known_content_ids): Vec<T::ContentId> = vec![];
 
-        DataObjectByContentId get(data_object_by_content_id):
+        pub DataObjectByContentId get(data_object_by_content_id):
             map T::ContentId => Option<DataObject<T>>;
 
-        MetadataByContentId get(metadata_by_content_id):
+        pub MetadataByContentId get(metadata_by_content_id):
             map T::ContentId => Option<ContentMetadata<T>>;
 
         // Default storage provider address
@@ -161,7 +162,8 @@ decl_module! {
             origin,
             content_id: T::ContentId,
             type_id: <T as DOTRTrait>::DataObjectTypeId,
-            size: u64
+            size: u64,
+            ipfs_content_id: Vec<u8>
         ) {
             let who = ensure_signed(origin)?;
             ensure!(T::Members::is_active_member(&who), MSG_CREATOR_MUST_BE_MEMBER);
@@ -188,6 +190,7 @@ decl_module! {
                 owner: who.clone(),
                 liaison: liaison,
                 liaison_judgement: LiaisonJudgement::Pending,
+                ipfs_content_id: ipfs_content_id.clone(),
             };
 
             <DataObjectByContentId<T>>::insert(&content_id, data);
@@ -365,7 +368,8 @@ mod tests {
     fn succeed_adding_content() {
         with_default_mock_builder(|| {
             // Register a content with 1234 bytes of type 1, which should be recognized.
-            let res = TestDataDirectory::add_content(Origin::signed(1), 1, 1234, 0);
+            let res =
+                TestDataDirectory::add_content(Origin::signed(1), 1, 1234, 0, vec![1, 3, 3, 7]);
             assert!(res.is_ok());
         });
     }
@@ -374,7 +378,13 @@ mod tests {
     fn accept_content_as_liaison() {
         with_default_mock_builder(|| {
             let sender = 1 as u64;
-            let res = TestDataDirectory::add_content(Origin::signed(sender), 1, 1234, 0);
+            let res = TestDataDirectory::add_content(
+                Origin::signed(sender),
+                1,
+                1234,
+                0,
+                vec![1, 2, 3, 4],
+            );
             assert!(res.is_ok());
 
             // An appropriate event should have been fired.
@@ -403,7 +413,13 @@ mod tests {
     fn reject_content_as_liaison() {
         with_default_mock_builder(|| {
             let sender = 1 as u64;
-            let res = TestDataDirectory::add_content(Origin::signed(sender), 1, 1234, 0);
+            let res = TestDataDirectory::add_content(
+                Origin::signed(sender),
+                1,
+                1234,
+                0,
+                vec![1, 2, 3, 4],
+            );
             assert!(res.is_ok());
 
             // An appropriate event should have been fired.
