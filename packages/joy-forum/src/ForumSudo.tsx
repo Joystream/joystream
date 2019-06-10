@@ -13,7 +13,6 @@ import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Option } from '@polkadot/types/codec';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
-import { useForum } from './Context';
 import { withOnlySudo } from '@polkadot/joy-utils/Sudo';
 import { AccountId } from '@polkadot/types';
 import { AuthorPreview } from './utils';
@@ -49,7 +48,6 @@ const InnerForm = (props: FormProps) => {
   } = values;
 
   const [ showSelector, setShowSelector ] = useState(false);
-  const { dispatch } = useForum();
 
   const resetForm = () => {
     setShowSelector(false);
@@ -81,11 +79,6 @@ const InnerForm = (props: FormProps) => {
     return [ new Option(AccountId, sudo) ];
   };
 
-  const updateForumContext = () => {
-    dispatch({ type: 'SetForumSudo', sudo });
-    resetForm();
-  };
-
   type SudoInputAddressProps = FieldProps<FormValues> & InputAddressProps;
 
   const SudoInputAddress = ({ field, form, ...props }: SudoInputAddressProps) => {
@@ -114,22 +107,7 @@ const InnerForm = (props: FormProps) => {
       </LabelledField>
 
       <LabelledField {...props}>
-
-        { /* TODO delete this button once integrated w/ substrate */ }
-        <Button
-          type='button'
-          size='large'
-          primary
-          disabled={!dirty || isSubmitting}
-          onClick={updateForumContext}
-          content={isNotSet
-            ? 'Set forum sudo'
-            : 'Update forum sudo'
-          }
-        />
-
         <TxButton
-          style={{ display: 'none' }} // TODO delete once integrated w/ substrate
           type='submit'
           size='large'
           label={isNotSet
