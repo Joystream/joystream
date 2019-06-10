@@ -742,7 +742,7 @@ decl_module! {
         }
         
         /// Update category
-        fn update_category(origin, category_id: CategoryId, archived: bool, deleted: bool) -> dispatch::Result {
+        fn update_category(origin, category_id: CategoryId, new_archival_status: Option<bool>, new_deletion_status: Option<bool>) -> dispatch::Result {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -756,30 +756,21 @@ decl_module! {
             // Make sure we can actually mutate this category
             Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
 
-            // Grab mutable category for updating
-            let mut category = category_tree_path.first().unwrap().clone();
-
-            // Value change events params
-            let mut archived_change_to = None;
-            let mut deleted_changed_to = None;
-
             // Mutate category, and set possible new change parameters
 
-            if archived != category.archived {
-                category.archived = archived;
-                archived_change_to = Some(archived);
-            }
+            <CategoryById<T>>::mutate(category_id, |c| {
 
-            if deleted != category.deleted {
-                category.deleted = deleted;
-                deleted_changed_to = Some(deleted)
-            }
+                if let Some(archived) = new_archival_status {
+                    c.archived = archived;
+                }
 
-            // Write back mutated category
-            <CategoryById<T>>::insert(category_id, category);
+                if let Some(deleted) = new_deletion_status {
+                    c.deleted = deleted;
+                }
+            });
 
             // Generate event
-            Self::deposit_event(RawEvent::CategoryUpdated(category_id, archived_change_to, deleted_changed_to));
+            Self::deposit_event(RawEvent::CategoryUpdated(category_id, new_archival_status, new_deletion_status));
 
             Ok(())
         }
