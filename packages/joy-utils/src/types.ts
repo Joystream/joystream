@@ -1,4 +1,4 @@
-import { Enum, Option, Struct } from '@polkadot/types/codec';
+import { Enum, EnumType, Option, Struct } from '@polkadot/types/codec';
 import { getTypeRegistry, BlockNumber, AccountId, Balance, Hash, u32, Text, Bool } from '@polkadot/types';
 import { registerForumTypes } from '@polkadot/joy-forum/types';
 import { registerMediaTypes } from '@polkadot/joy-media/types';
@@ -93,7 +93,7 @@ export class Announcing extends BlockNumber { }
 export class Voting extends BlockNumber { }
 export class Revealing extends BlockNumber { }
 
-export class ElectionStage extends Enum {
+export class ElectionStage extends EnumType<Announcing | Voting | Revealing> {
   constructor (value?: any, index?: number) {
     super({
       Announcing,

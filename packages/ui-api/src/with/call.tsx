@@ -2,7 +2,7 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { ApiProps, CallState, SubtractProps } from '../types';
+import { ApiProps, CallState, Subtract } from '../types';
 import { Options } from './types';
 
 import React from 'react';
@@ -15,7 +15,6 @@ import withApi from './api';
 interface Method {
   (...params: Array<any>): Promise<any>;
   at: (hash: Uint8Array | string, ...params: Array<any>) => Promise<any>;
-  multi: (params: Array<any>, cb: (value?: any) => void) => Promise<any>;
 }
 
 type State = CallState;
@@ -24,8 +23,8 @@ const NOOP = () => {
   // ignore
 };
 
-export default function withCall<P extends ApiProps> (endpoint: string, { at, atProp, callOnResult, isMulti = false, params = [], paramName, paramValid = false, propName, transform = echoTransform }: Options = {}): (Inner: React.ComponentType<ApiProps>) => React.ComponentType<any> {
-  return (Inner: React.ComponentType<ApiProps>): React.ComponentType<SubtractProps<P, ApiProps>> => {
+export default function withCall<P extends ApiProps> (endpoint: string, { at, atProp, callOnResult, params = [], paramName, paramValid = false, propName, transform = echoTransform }: Options = {}): (Inner: React.ComponentType<ApiProps>) => React.ComponentType<any> {
+  return (Inner: React.ComponentType<ApiProps>): React.ComponentType<Subtract<P, ApiProps>> => {
     class WithPromise extends React.Component<P, State> {
       state: State = {
         callResult: void 0,
@@ -110,7 +109,7 @@ export default function withCall<P extends ApiProps> (endpoint: string, { at, at
         const values = isUndefined(paramValue)
           ? params
           : params.concat(
-            (Array.isArray(paramValue) && !(paramValue as any).toU8a)
+            Array.isArray(paramValue)
               ? paramValue
               : [paramValue]
           );
@@ -135,7 +134,7 @@ export default function withCall<P extends ApiProps> (endpoint: string, { at, at
 
         assert(area.length && section.length && method.length && others.length === 0, `Invalid API format, expected <area>.<section>.<method>, found ${endpoint}`);
         assert(['rpc', 'query', 'derive'].includes(area), `Unknown api.${area}, expected rpc, query or derive`);
-        assert(!at || area === 'query', `Only able to do an 'at' query on the api.query interface`);
+        assert(!at || area === 'query', 'Only able todo an at query on the api.query interface');
 
         const apiSection = (api as any)[area][section];
 
@@ -173,12 +172,9 @@ export default function withCall<P extends ApiProps> (endpoint: string, { at, at
           await this.unsubscribe();
 
           if (isSubscription) {
-            const updateCb = (value?: any) =>
-              this.triggerUpdate(this.props, value);
-
-            this.destroy = isMulti
-              ? await apiMethod.multi(params, updateCb)
-              : await apiMethod(...params, updateCb);
+            this.destroy = await apiMethod(...params, (value?: any) =>
+              this.triggerUpdate(this.props, value)
+            );
           } else {
             const value: any = at
               ? await apiMethod.at(at, ...params)

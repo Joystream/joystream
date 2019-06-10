@@ -1,4 +1,4 @@
-import { Enum, Option, Struct } from '@polkadot/types/codec';
+import { EnumType, Option, Struct } from '@polkadot/types/codec';
 import { getTypeRegistry, Bool, BlockNumber, Moment, AccountId, BalanceOf, u64, Text } from '@polkadot/types';
 import { OptionText } from '@polkadot/joy-utils/types';
 
@@ -8,7 +8,7 @@ export class SubscriptionId extends u64 {}
 
 export class Paid extends PaidTermId {}
 export class Screening extends AccountId {}
-export class EntryMethod extends Enum {
+export class EntryMethod extends EnumType<Paid | Screening> {
   constructor (value?: any, index?: number) {
     super({
       Paid,
