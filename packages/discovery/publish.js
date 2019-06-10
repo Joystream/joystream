@@ -25,10 +25,15 @@ async function publish (accountId, service_info, runtimeApi) {
     const ipfs = ipfsClient('localhost', '5001', { protocol: 'http' })
 
     const keys = await ipfs.key.list()
-    const services_key = keys.find((key) => key.name === SERVICES_KEY_NAME)
+    let services_key = keys.find((key) => key.name === SERVICES_KEY_NAME)
 
+    // generate a new services key if not found
     if (!services_key) {
-        throw new Error(`Expected IPNS key name ${SERVICES_KEY_NAME} not found`)
+        debug('generating ipns services key')
+        services_key = await ipfs.key.gen(SERVICES_KEY_NAME, {
+          type: 'rsa',
+          size: 2048
+        });
     }
 
     debug('adding service info file to node')

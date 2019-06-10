@@ -233,11 +233,17 @@ function get_service_information(config) {
 }
 
 async function announce_public_url(api, config) {
+  // re-announce in future
+  const reannounce = function (timeout) {
+    setTimeout(announce_public_url, timeout, api, config);
+  }
+
+  debug('announcing public url')
   const { publish } = require('@joystream/discovery')
 
   const accountId = api.identities.key.address()
 
-  let reannounceAfterMilliSeconds = config.get('reannouncePeriod')
+  const reannounceAfterMilliSeconds = config.get('reannouncePeriod')
 
   try {
     const serviceInformation = get_service_information(config)
@@ -245,17 +251,15 @@ async function announce_public_url(api, config) {
     let published = await publish.publish(accountId, serviceInformation, api)
 
     // reannounceAfterMilliSeconds = convertToMs(published.ttl)
+    reannounce(reannounceAfterMilliSeconds)
 
   } catch (err) {
     debug(`announcing public url failed: ${err.stack}`)
 
-    // If it failed we should probably retry sooner
+    // On failure retry sooner
+    debug(`announcing failed, retrying in: 2 minutes`)
+    reannounce(120 * 1000)
   }
-
-  // re-announce in future
-  setTimeout(() => {
-    announce_public_url(api, config)
-  }, reannounceAfterMilliSeconds)
 }
 
 function go_offline(api) {
