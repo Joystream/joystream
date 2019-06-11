@@ -297,7 +297,7 @@ const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rational
 
 //use sr_io::{StorageOverlay, ChildrenStorageOverlay};
 
-#[cfg(feature = "std")]
+//#[cfg(feature = "std")]
 //use runtime_io::{StorageOverlay, ChildrenStorageOverlay};
 
 //#[cfg(any(feature = "std", test))]
