@@ -2,7 +2,8 @@ use hex_literal::{hex, hex_impl};
 use joystream_node_runtime::{
     AccountId, BalancesConfig, ConsensusConfig, CouncilConfig,
     CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
-    DownloadSessionsConfig, GenesisConfig, GrandpaConfig, IndicesConfig, MembersConfig, ForumConfig, Perbill,
+    DownloadSessionsConfig, GenesisConfig, GrandpaConfig, IndicesConfig, MembersConfig, 
+	ForumConfig, forum::InputValidationLengthConstraint, Perbill,
     ProposalsConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig, TimestampConfig,
 	ActorsConfig,
 };
@@ -152,6 +153,13 @@ pub fn staging_testnet_config() -> ChainSpec {
     )
 }
 
+fn new_validation(min: usize, max_min_diff: usize) -> InputValidationLengthConstraint {
+	return InputValidationLengthConstraint {
+		min,
+		max_min_diff
+	}
+}
+
 fn staging_testnet_config_genesis() -> GenesisConfig {
     let initial_authorities: Vec<(AccountId, AccountId, AuthorityId)> = vec![(
         hex!["0610d1a2b1d704723e588c842a934737491688b18b052baae1286f12e96adb65"].unchecked_into(), // stash
@@ -258,6 +266,12 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
 			next_thread_id: 1,
 			next_post_id: 1,
 			forum_sudo: endowed_accounts[0].clone(),
+			category_title_constraint: new_validation(10, 90),
+			category_description_constraint: new_validation(10, 490),
+			thread_title_constraint: new_validation(10, 90),
+			post_text_constraint: new_validation(10, 990),
+			thread_moderation_rationale_constraint: new_validation(10, 290),
+			post_moderation_rationale_constraint: new_validation(10, 290)
 		}),
 		data_object_type_registry: Some(DataObjectTypeRegistryConfig {
 			first_data_object_type_id: 1,
@@ -368,7 +382,13 @@ fn testnet_genesis(
 			next_category_id: 1,
 			next_thread_id: 1,
 			next_post_id: 1,
-			forum_sudo: root_key
+			forum_sudo: root_key,
+			category_title_constraint: new_validation(10, 90),
+			category_description_constraint: new_validation(10, 490),
+			thread_title_constraint: new_validation(10, 90),
+			post_text_constraint: new_validation(10, 990),
+			thread_moderation_rationale_constraint: new_validation(10, 290),
+			post_moderation_rationale_constraint: new_validation(10, 290)
 		}),
 		data_object_type_registry: Some(DataObjectTypeRegistryConfig {
 			first_data_object_type_id: 1,
