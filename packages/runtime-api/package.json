@@ -30,7 +30,7 @@
     "linux"
   ],
   "engines": {
-    "node": "^10.15.3"
+    "node": ">=10.15.3"
   },
   "scripts": {
     "test": "mocha 'test/**/*.js' --exit",
@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "@joystream/crypto": "^0.1.0",
-    "@joystream/types": "^0.2.0",
+    "@joystream/types": "^0.2.1",
     "@polkadot/api": "^0.77.1",
     "lodash": "^4.17.11",
     "password-prompt": "^1.1.2"

@@ -30,7 +30,7 @@
     "linux"
   ],
   "engines": {
-    "node": "^10.15.3"
+    "node": ">=10.15.3"
   },
   "scripts": {
     "test": "mocha --exit 'test/**/*.js'",
