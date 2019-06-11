@@ -208,8 +208,8 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "std")]
-extern crate serde_derive;
+//#[cfg(feature = "std")]
+//extern crate serde_derive;
 
 //use serde::{Serialize, Deserialize};
 
