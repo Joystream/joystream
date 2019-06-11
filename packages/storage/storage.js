@@ -388,7 +388,8 @@ class Storage
    */
   async synchronize(content_id)
   {
-    const resolved = await this._resolve_content_id_with_timeout(timeout, content_id);
+    // debug('syncing', content_id.encode())
+    const resolved = await this._resolve_content_id_with_timeout(this._timeout, content_id);
     await this.ipfs.pin.add(resolved);
 
     // Just to be on the safe side, also read the file. Calling resume()

@@ -152,6 +152,10 @@ class AssetsApi
       : this.base.api.tx.dataObjectStorageRegistry.unsetRelationshipReady(dosrId);
     return await this.base.signAndSendWithRetry(accountId, tx);
   }
+
+  async getKnownContentIds() {
+    return this.base.api.query.dataDirectory.knownContentIds();
+  }
 }
 
 module.exports = {

@@ -22,12 +22,12 @@ const debug = require('debug')('joystream:sync');
 
 async function sync_callback(api, config, storage)
 {
-  debug('Trying to sync...');
+  debug('Starting sync run...');
 
   // The first step is to gather all data objects from chain.
   // TODO: in future, limit to a configured tranche
   // FIXME this isn't actually on chain yet, so we'll fake it.
-  const sync_objects = (config.sync || {}).objects || [];
+  const sync_objects = await api.assets.getKnownContentIds() || [];
 
   // Iterate over all sync objects, and ensure they're synced. We don't
   // need to explicitly contact the liaison; that's what the backend does for
