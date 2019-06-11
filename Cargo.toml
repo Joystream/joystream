@@ -193,4 +193,4 @@ rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
 default_features = false
 git = 'https://github.com/bedeho/substrate-forum-module'
 package = 'substrate-forum-module'
-rev = '9c0cf6544f8f6f9b7ae185007ccf3d8623d5f62a'
+rev = '869bb5c72b5a82b6e50aad32ea73544aeec45b55'
