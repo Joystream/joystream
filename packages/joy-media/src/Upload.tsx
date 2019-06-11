@@ -19,6 +19,7 @@ import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import { DiscoveryProviderProps } from './DiscoveryProvider';
 import EditMeta from './EditMeta';
 import TxButton from '@polkadot/joy-utils/TxButton';
+import IpfsHash from 'ipfs-only-hash';
 
 const MAX_FILE_SIZE_MB = 100;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -28,6 +29,7 @@ type Props = ApiProps & I18nProps & MyAccountProps & DiscoveryProviderProps;
 type State = {
   error?: any,
   file?: File,
+  ipfs_cid?: string,
   newContentId: ContentId,
   discovering: boolean,
   uploading: boolean,
@@ -167,7 +169,7 @@ class Component extends React.PureComponent<Props, State> {
     </div>;
   }
 
-  private onFileSelected = (data: Uint8Array, file: File) => {
+  private onFileSelected = async (data: Uint8Array, file: File) => {
     if (!data || data.length === 0) {
       this.setState({ error: `You cannot upload an empty file.` });
     } else if (data.length > MAX_FILE_SIZE_BYTES) {
@@ -175,19 +177,21 @@ class Component extends React.PureComponent<Props, State> {
         `You cannot upload a file that is more than ${MAX_FILE_SIZE_MB} MB.`
       });
     } else {
+      const ipfs_cid = await IpfsHash.of(Buffer.from(data));
+      console.log('computed IPFS hash:', ipfs_cid)
       // File size is valid and can be uploaded:
-      this.setState({ file });
+      this.setState({ file, ipfs_cid });
     }
   }
 
   private buildTxParams = () => {
-    const { file, newContentId } = this.state;
-    if (!file) return [];
+    const { file, newContentId, ipfs_cid } = this.state;
+    if (!file || !ipfs_cid) return [];
 
     // TODO get corresponding data type id based on file content
     const dataObjectTypeId = new BN(1);
 
-    return [ newContentId, dataObjectTypeId, new BN(file.size) ];
+    return [ newContentId, dataObjectTypeId, new BN(file.size), ipfs_cid];
   }
 
   private onDataObjectCreated = async (_txResult: SubmittableResult) => {
@@ -226,7 +230,7 @@ class Component extends React.PureComponent<Props, State> {
     const { file, newContentId, cancelSource } = this.state;
     if (!file) return;
 
-    const contentId = newContentId.toAddress();
+    const contentId = newContentId.encode();
     const config = {
       headers: {
         // TODO uncomment this once the issue fixed:

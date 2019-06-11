@@ -4,39 +4,25 @@ import { OptionText } from './';
 
 import { randomAsU8a } from '@polkadot/util-crypto';
 import { encodeAddress, decodeAddress } from '@polkadot/keyring';
-import { u8aToString, stringToU8a } from '@polkadot/util';
+// import { u8aToString, stringToU8a } from '@polkadot/util';
 
 export class ContentId extends Hash {
-
   static generate (): ContentId {
     // randomAsU8a uses https://www.npmjs.com/package/tweetnacl#random-bytes-generation
     return new ContentId(randomAsU8a());
   }
 
-  /** This function is for backward-compatibility with content ids that were generated as UUID. */
-  // TODO Delete this backward-compatibility when a new version of blockchain launched.
-  static isUuidFormat (contentId: string | Uint8Array): boolean {
-    return typeof contentId === 'string'
-        ? contentId.indexOf('-') > 0
-        : contentId.indexOf('-'.charCodeAt(0)) > 0;
+  static decode (contentId: string): ContentId {
+    return new ContentId(decodeAddress(contentId));
   }
 
-  static fromAddress (contentId: string): ContentId {
-    return new ContentId(
-      ContentId.isUuidFormat(contentId)
-        ? stringToU8a(contentId)
-        : decodeAddress(contentId)
-    );
+  static encode (contentId: Uint8Array): string {
+    // console.log('contentId:', Buffer.from(contentId).toString('hex'))
+    return encodeAddress(contentId);
   }
 
-  static toAddress (contentId: Uint8Array): string {
-    return ContentId.isUuidFormat(contentId)
-      ? u8aToString(contentId)
-      : encodeAddress(contentId);
-  }
-
-  toAddress (): string {
-    return ContentId.toAddress(this);
+  encode (): string {
+    return ContentId.encode(this);
   }
 }
 
@@ -171,7 +157,8 @@ export class DataObject extends Struct {
       type_id: DataObjectTypeId,
       size: u64,
       liaison: AccountId,
-      liaison_judgement: LiaisonJudgement
+      liaison_judgement: LiaisonJudgement,
+      ipfs_content_id: Text,
     }, value);
   }
 
@@ -198,6 +185,10 @@ export class DataObject extends Struct {
 
   get liaison_judgement (): LiaisonJudgement {
     return this.get('liaison_judgement') as LiaisonJudgement;
+  }
+
+  get ipfs_content_id () : Text {
+    return this.get('ipfs_content_id') as Text
   }
 }
 

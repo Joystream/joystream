@@ -69,7 +69,7 @@ class InnerView extends React.PureComponent<ViewProps> {
 
     const asset = {
       iAmOwner,
-      contentId: this.props.contentId.toAddress(),
+      contentId: this.props.contentId.encode(),
       data: dataObjectOpt.unwrap(),
       meta
     };
@@ -219,7 +219,7 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
   async resolveAsset () {
     const { discoveryProvider, api } = this.props;
     const { match: { params: { assetName } } } = this.props;
-    const contentId = ContentId.fromAddress(assetName);
+    const contentId = ContentId.decode(assetName);
 
     if (!contentId) {
       this.setState({
@@ -254,10 +254,10 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
       }
 
       try {
-        var resolvedAssetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.toAddress(), cancelSource.token)
+        var resolvedAssetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.encode(), cancelSource.token)
       } catch (err) {
         if (axios.isCancel(err)){
-          break;
+          return;
         } else {
           continue;
         }
@@ -270,7 +270,7 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
         return
       } catch (err) {
         if (axios.isCancel(err)){
-          break;
+          return;
         } else {
           // try next provider
           continue;
