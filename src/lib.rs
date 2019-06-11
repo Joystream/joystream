@@ -23,7 +23,7 @@ mod membership;
 mod memo;
 mod traits;
 use membership::members;
-use forum;
+pub use forum;
 
 mod migration;
 mod roles;

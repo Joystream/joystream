@@ -191,6 +191,6 @@ rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
 
 [dependencies.forum]
 default_features = false
-git = 'https://github.com/bedeho/substrate-forum-module'
+git = 'https://github.com/joystream/substrate-forum-module'
 package = 'substrate-forum-module'
-rev = '869bb5c72b5a82b6e50aad32ea73544aeec45b55'
+rev = '4615fdc126ad7f3fe0fef7620177b38c307d9e2d'
