@@ -209,10 +209,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "std")]
-extern crate serde_derive;
-
-//use serde::{Serialize, Deserialize};
-
 use serde_derive::{Serialize, Deserialize};
 
 use rstd::prelude::*;
@@ -297,7 +293,7 @@ const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rational
 
 //use sr_io::{StorageOverlay, ChildrenStorageOverlay};
 
-#[cfg(feature = "std")]
+//#[cfg(feature = "std")]
 //use runtime_io::{StorageOverlay, ChildrenStorageOverlay};
 
 //#[cfg(any(feature = "std", test))]
