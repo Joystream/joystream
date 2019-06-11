@@ -85,7 +85,7 @@ const commands = {
     // https://github.com/Joystream/apps/issues/207
     const { ContentId } = require('@joystream/types/lib/media');
     var cid = ContentId.generate();
-    cid = cid.toAddress().toString();
+    cid = cid.encode().toString();
     console.log('Generated content ID: ' + chalk.green(cid));
 
     // Create Data Object

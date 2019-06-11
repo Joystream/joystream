@@ -150,20 +150,13 @@ async function get_storage(runtime_api, config)
 
   const options = {
     resolve_content_id: async (content_id) => {
-      // FIXME remove this in future.
-      const mapping = config.get('resolve') || {};
-      const hardcoded = mapping[content_id];
-      if (hardcoded) {
-        return hardcoded;
-      }
-
       // Resolve via API
-      const meta = await runtime_api.assets.getStorageMetadata(content_id);
-      if (!meta) {
+      const obj = await runtime_api.assets.getDataObject(content_id);
+      if (!obj || obj.isNone) {
         return;
       }
-      // TODO should check version, but for now this is probably fine.
-      return meta.ipfs_content_id;
+
+      return obj.unwrap().ipfs_content_id.toString();
     },
   };
 

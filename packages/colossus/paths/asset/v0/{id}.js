@@ -88,8 +88,9 @@ module.exports = function(config, storage, runtime)
       // First check if we're the liaison for the name, otherwise we can bail
       // out already.
       const role_addr = runtime.identities.key.address();
+      let dataObject;
       try {
-        await runtime.assets.checkLiaisonForDataObject(role_addr, id);
+        dataObject = await runtime.assets.checkLiaisonForDataObject(role_addr, id);
       } catch (err) {
         error_handler(res, err, 403);
         return;
@@ -130,7 +131,6 @@ module.exports = function(config, storage, runtime)
             }
             debug('Content accepted.');
             accepted = true;
-            await runtime.assets.acceptContent(role_addr, id);
 
             // We may have to commit the stream.
             possibly_commit();
@@ -149,12 +149,16 @@ module.exports = function(config, storage, runtime)
         });
 
         stream.on('committed', async (hash) => {
+          console.log('commited', dataObject)
           try {
-            // Store the hash in the backend.
-            await runtime.assets.setStorageMetadata(id, {
-              version: 1,
-              ipfs_content_id: hash,
-            });
+            if (hash !== dataObject.ipfs_content_id.toString()) {
+              debug('Rejecting content. IPFS hash does not match value in objectId');
+              await runtime.assets.rejectContent(role_addr, id);
+              res.status(400).send({ message: "Uploaded content doesn't match IPFS hash" });
+              return;
+            }
+
+            await runtime.assets.acceptContent(role_addr, id);
 
             // Create storage relationship and flip it to ready.
             const dosr_id = await runtime.assets.createAndReturnStorageRelationship(role_addr, id);
@@ -348,5 +352,3 @@ module.exports = function(config, storage, runtime)
 
   return doc;
 };
-
-

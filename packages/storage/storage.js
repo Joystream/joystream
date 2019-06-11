@@ -39,7 +39,7 @@ const DEFAULT_TIMEOUT = 30 * 1000;
 
 // Default/dummy resolution implementation.
 const DEFAULT_RESOLVE_CONTENT_ID = async (original) => {
-  debug('Default resolution returns original CID', original);
+  debug('Warning: Default resolution returns original CID', original);
   return original;
 }
 
