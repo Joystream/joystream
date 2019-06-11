@@ -57,7 +57,15 @@
 
 # Live Milestones
 
-- **TBD**
+Due to changing circumstances, a meeting [Evaluating the feasibility](../meetings/acropolis##release-plan-milestone-evaluation-meeting) of the planned [Milestones](#milestones), the following conclusion was made:
+
+| Date            |   Event                               |     Involved                            |
+| :--------------:|:-------------------------------------:|:---------------------------------------:|
+|    19.06.19     | [Spec Release](#spec-release)         | Alex, Bedeho, Mokhtar                   |
+|    17.06.19     | [Sub-system Test](#sub-system-test)   | All                                     |
+|    20.06.19     | [Final Test](#final-test)             | Martin, Mokhtar + 2x community members  |
+|    22.06.19     | [Runtime Proposal](#runtime-proposal) | Mokhtar, Martin                         |
+|    24.06.19     | [Release](#release)                   | All                                     |
 
 
 #### Actual dates:
@@ -73,6 +81,7 @@
 | Launch Meeting              | 26.04.19        | [link](../../meetings/acropolis/#launch-meeting)             |
 | User Stories                | 02.05.19        | [link](../../meetings/acropolis#user-stories-meeting)        |
 | Release Plan Finalization   | 09.05.19        | [link](../../meetings/acropolis#release-plan-finalization-meeting)   |
+| Release Plan Milestone Evaluation Meeting | 10.06.19         | [link](../../meetings/acropolis##release-plan-milestone-evaluation-meeting) | Re-evaluation of Milestones due to changing circumstances |
 
 #  Specification
 
