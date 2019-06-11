@@ -6,6 +6,7 @@
   - [Launch Meeting](#launch-meeting)
   - [User Stories Meeting](#user-stories-meeting)
   - [Release Plan Finalization Meeting](#release-plan-finalization-meeting)
+  - [Release Plan Milestone Evaluation Meeting](#release-plan-milestone-evaluation-meeting)
 - [Planned meetings](#planned-meetings)
   - [Other](#other)
   - [Lessons Learned](#lessons-learned)
@@ -410,8 +411,65 @@ Before the meeting was adjourned, the issue of making the Forum work without an 
 
 **Ended at:** `12:30 GMT+2`
 
-# Planned meetings
+---
 
+## Release Plan Milestone Evaluation Meeting
+
+**ID:** `Acropolis Release Plan Milestone Evaluation Meeting`
+- **Date:** `11.06.19`
+- **Starts:** `11:15 GMT+2`
+- **Duration:** `45 min`
+- **Venue:** `ZOOM`
+- **Lead**: `Martin`
+- **Minutes**: `Martin`
+- **Participants**:
+ - `Alex`
+ - `Bedeho`
+ - `Martin`
+ - `Mokhtar`
+
+#### Agenda
+
+:one: Evaluate the feasibility of [Scheduled Milestones](../testnets/acropolis#milestones) and update [Live Milestones](../testnets/acropolis#live-milestones).
+:two: Evaluate feasibility of the scope.
+
+
+#### Minutes
+**Started at:** `11:15 GMT+2`
+**Present:**
+- `Alex`
+- `Bedeho`
+- `Martin`
+- `Mokhtar`
+- `Dagur` (observer)
+
+:one:
+#### Sub-System test Forum:
+- Bedeho to complete runtime build, assisted by Mokhtar/Alex
+  - To be completed by Thursday for Alex to be unblocked
+- Alex to focus on functionality, and reduce scope related to UI (e.g. not add pagination)
+  - Sub-System test scheduled for Monday 17.06.19
+
+- After Sub-System test, minor changes will be made to the runtime to initialize the new state.
+
+#### Sub-System test Storage:
+- Mokhtar to continue test and development of IPFS backend
+- Discovery test on `staging-reckless`
+  - Demo later today
+
+- Sub-System test scheduled for Friday the 14.06.19
+
+#### Full integration
+
+- Final test scheduled for Thursday 20.06.19
+
+:two:
+Based on the conclusion in :one:, it was decided to delay Storage Tranches for the next release.
+
+**Ended at:** `12:30 GMT+2`
+
+
+# Planned meetings
 
 ---
 
