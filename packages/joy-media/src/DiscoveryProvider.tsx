@@ -21,27 +21,31 @@ export type DiscoveryProviderProps = {
   discoveryProvider: DiscoveryProvider
 };
 
+// return string Url with last `/` removed
+function normalizeUrl(url: string | Url) : string {
+  let st = new String(url)
+  if (st.endsWith('/')) {
+    return st.substring(0, st.length - 1);
+  }
+  return st.toString()
+}
+
 function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryProvider | undefined {
 
   if (!bootstrapNodes || bootstrapNodes.length == 0) {
     return undefined;
   }
 
-  const discoveryEndpoint = bootstrapNodes[0]
-
-  let discoveryUrl = discoveryEndpoint.toString();
+  // TODO: pick random node? retry if first node fails..round robin
+  let discoveryUrl = normalizeUrl(bootstrapNodes[0])
 
   // TODO: better url validation
   if (discoveryUrl === '') {
     return undefined;
   }
 
-  if (!discoveryEndpoint.endsWith('/')) {
-    discoveryUrl += '/'
-  }
-
   const resolveAssetEndpoint = async (storageProvider: AccountId, contentId?: string, cancelToken?: CancelToken) => {
-    const serviceInfoQuery = `${discoveryUrl}discover/v0/${storageProvider.toString()}`;
+    const serviceInfoQuery = `${discoveryUrl}/discover/v0/${storageProvider.toString()}`;
 
     const serviceInfo = await axios.get(serviceInfoQuery,{ cancelToken }) as any
 
@@ -51,8 +55,9 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
 
     const assetApi = JSON.parse(serviceInfo.data.serialized).asset
 
-    return `${assetApi.endpoint}/asset/v0/${contentId || ''}`
+    const assetEndpoint = `${normalizeUrl(assetApi.endpoint)}/asset/v0/${contentId || ''}`;
 
+    return assetEndpoint;
   };
 
   return { resolveAssetEndpoint };
