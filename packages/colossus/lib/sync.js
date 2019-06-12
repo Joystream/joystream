@@ -27,16 +27,50 @@ async function sync_callback(api, config, storage)
   // The first step is to gather all data objects from chain.
   // TODO: in future, limit to a configured tranche
   // FIXME this isn't actually on chain yet, so we'll fake it.
-  const sync_objects = await api.assets.getKnownContentIds() || [];
+  const knownContentIds = await api.assets.getKnownContentIds() || [];
+
+  const role_addr = api.identities.key.address();
 
   // Iterate over all sync objects, and ensure they're synced. We don't
   // need to explicitly contact the liaison; that's what the backend does for
   // us.
-  sync_objects.forEach(async (content_id) => {
+  knownContentIds.forEach(async (content_id) => {
+    let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(role_addr, content_id);
+
     try {
-      await storage.synchronize(content_id);
+      // check if we have content or not
+      await storage.stat(content_id, 5000);
     } catch (err) {
-      debug(`Error synchronizing ${content_id}: ${err.stack}`);
+      // we don't have content if we can't stat it
+      try {
+        await storage.synchronize(content_id);
+      } catch (err) {
+        debug(`Error synchronizing ${content_id.encode()}: ${err.stack}`);
+      }
+      return;
+    }
+
+    if (!relationship) {
+      // create relationship
+      debug(`Creating new storage relationship for ${content_id.encode()}`);
+      try {
+        relationshipId = await api.assets.createAndReturnStorageRelationship(role_addr, content_id);
+        await api.assets.toggleStorageRelationshipReady(role_addr, relationshipId, true);
+      } catch (err) {
+        debug(`Error creating new storage relationship ${content_id.encode()}: ${err.stack}`);
+        return;
+      }
+    } else if (!relationship.ready) {
+      debug(`Updating storage relationship to ready for ${content_id.encode()}`);
+      // update to ready. (Why would there be a relationship set to ready: false?)
+      try {
+        await api.assets.toggleStorageRelationshipReady(role_addr, relationshipId, true);
+      } catch(err) {
+        debug(`Error setting relationship ready ${content_id.encode()}: ${err.stack}`);
+      }
+    } else {
+      // we already have content and a ready relationship set. No need to do anything
+      // debug(`content already stored locally ${content_id.encode()}`);
     }
   });
 }
@@ -44,7 +78,12 @@ async function sync_callback(api, config, storage)
 
 async function sync_periodic(api, config, storage)
 {
-  await sync_callback(api, config, storage);
+  try {
+    await sync_callback(api, config, storage);
+  } catch (err) {
+    debug(`Error in sync_periodic ${err.stack}`);
+  }
+  // always try again
   setTimeout(sync_periodic, config.get('syncPeriod'), api, config, storage);
 }
 

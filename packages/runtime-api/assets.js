@@ -126,6 +126,25 @@ class AssetsApi
     return await this.base.signAndSendWithRetry(accountId, tx, 3, subscribed, callback);
   }
 
+  /*
+   * Get storage relationship for contentId
+   */
+  async getStorageRelationshipAndId(accountId, contentId) {
+    contentId = parseContentId(contentId)
+    let rids = await this.base.api.query.dataObjectStorageRegistry.relationshipsByContentId(contentId);
+
+    for (let relationshipId = rids.shift(); rids.length; relationshipId = rids.shift()) {
+      if (relationshipId == undefined) continue;
+      let relationship = await this.base.api.query.dataObjectStorageRegistry.relationships(relationshipId);
+      relationship = relationship.unwrap();
+      if (relationship.storage_provider.eq(decodeAddress(accountId))) {
+        return { relationship, relationshipId };
+      }
+    }
+
+    return {};
+  }
+
   async createAndReturnStorageRelationship(accountId, contentId)
   {
     contentId = parseContentId(contentId)
