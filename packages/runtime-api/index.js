@@ -210,7 +210,7 @@ class RuntimeApi
 
           debug('TX nonce was invalid, incrementing.');
           nonce.iaddn(1);
-          this.nonces[accountId] = nonce;
+          // this.nonces[accountId] = nonce;
 
           // Try again.
           setImmediate(() => executor(resolve, reject));
