@@ -19,6 +19,8 @@ import { DEFAULT_THUMBNAIL_URL, onImageError } from './utils';
 import { isEmptyStr } from '@polkadot/joy-utils/';
 import { MyAccountContext, MyAccountContextProps } from '@polkadot/joy-utils/MyAccountContext';
 
+import _ from 'lodash';
+
 type Asset = {
   iAmOwner: boolean,
   contentId: string,
@@ -238,16 +240,25 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
         .filter(r => r.ready)
         .map(r => r.storage_provider);
 
+    // runtime doesn't currently guarantee unique set
+    readyProviders = _.uniqBy(readyProviders, provider => provider.toString());
+
     if (!readyProviders.length) {
-      this.setState({resolvingAsset: false, error: new Error('No Storage Provider found storing this content')});
+      this.setState({resolvingAsset: false, error: new Error('No Storage Providers found storing this content')});
       return
     }
 
-    // shuffle then loop over providers until we find one that responds
-    // TODO: readyProviders = readyProviders.shuffle()
+    console.log(`found ${readyProviders.length} providers ready to serve content: ${readyProviders}`);
+
+    readyProviders = _.shuffle(readyProviders);
+
     const { cancelSource } = this.state;
 
-    for(let provider; provider = readyProviders.pop();) {
+    // loop over providers until we find one that responds
+    while(readyProviders.length) {
+      const provider = readyProviders.shift();
+      if (!provider) continue;
+
       const {resolvingAsset} = this.state;
       if (!resolvingAsset) {
         break;
@@ -264,6 +275,7 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
       }
 
       try {
+        console.log('trying', resolvedAssetUrl)
         let response = await axios.head(resolvedAssetUrl, {cancelToken: cancelSource.token})
         const contentType = response.headers['content-type'] || 'video/video';
         this.setState({ contentType, resolvedAssetUrl, resolvingAsset: false });

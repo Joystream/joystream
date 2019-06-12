@@ -14,6 +14,7 @@
     "aplayer": "^1.10.1",
     "dplayer": "^1.25.0",
     "ipfs-only-hash": "^1.0.2",
+    "lodash": "^4.17.11",
     "mime-types": "^2.1.22",
     "react-aplayer": "^1.0.0",
     "react-dplayer": "^0.2.3"

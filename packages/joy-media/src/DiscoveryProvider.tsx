@@ -47,7 +47,7 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
   const resolveAssetEndpoint = async (storageProvider: AccountId, contentId?: string, cancelToken?: CancelToken) => {
     const serviceInfoQuery = `${discoveryUrl}/discover/v0/${storageProvider.toString()}`;
 
-    const serviceInfo = await axios.get(serviceInfoQuery,{ cancelToken }) as any
+    const serviceInfo = await axios.get(serviceInfoQuery, {cancelToken}) as any
 
     if (!serviceInfo) {
       throw new Error('empty response to service discovery query')
