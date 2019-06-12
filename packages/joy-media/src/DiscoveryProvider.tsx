@@ -8,6 +8,7 @@ import { withCalls, withMulti } from '@polkadot/ui-api/with';
 
 import { queryToProp } from '@polkadot/joy-utils/index';
 import { Url } from '@joystream/types/discovery'
+import { debug } from 'util';
 
 export type BootstrapNodes = {
   bootstrapNodes?: Url[],
@@ -36,28 +37,40 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
     return undefined;
   }
 
-  // TODO: pick random node? retry if first node fails..round robin
-  let discoveryUrl = normalizeUrl(bootstrapNodes[0])
-
-  // TODO: better url validation
-  if (discoveryUrl === '') {
-    return undefined;
-  }
-
   const resolveAssetEndpoint = async (storageProvider: AccountId, contentId?: string, cancelToken?: CancelToken) => {
-    const serviceInfoQuery = `${discoveryUrl}/discover/v0/${storageProvider.toString()}`;
+    for(let n = 0; n < bootstrapNodes.length; n++) {
+      let discoveryUrl = normalizeUrl(bootstrapNodes[n])
 
-    const serviceInfo = await axios.get(serviceInfoQuery, {cancelToken}) as any
+      // TODO: better url validation
+      if (discoveryUrl === '') {
+        continue;
+      }
 
-    if (!serviceInfo) {
-      throw new Error('empty response to service discovery query')
+      const serviceInfoQuery = `${discoveryUrl}/discover/v0/${storageProvider.toString()}`;
+
+      try {
+        const serviceInfo = await axios.get(serviceInfoQuery, {cancelToken}) as any
+
+        if (!serviceInfo) {
+          debug('empty response to service discovery query')
+          continue;
+        }
+
+        const assetApi = JSON.parse(serviceInfo.data.serialized).asset
+
+        const assetEndpoint = `${normalizeUrl(assetApi.endpoint)}/asset/v0/${contentId || ''}`;
+
+        return assetEndpoint;
+
+      } catch (err) {
+        if (axios.isCancel(err)) {
+          throw err;
+        }
+        continue;
+      }
     }
 
-    const assetApi = JSON.parse(serviceInfo.data.serialized).asset
-
-    const assetEndpoint = `${normalizeUrl(assetApi.endpoint)}/asset/v0/${contentId || ''}`;
-
-    return assetEndpoint;
+    throw new Error("Resolving failed.")
   };
 
   return { resolveAssetEndpoint };
