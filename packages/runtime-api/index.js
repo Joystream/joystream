@@ -52,7 +52,7 @@ class RuntimeApi
     this.api = await ApiPromise.create();
 
     // Keep track locally of account nonces.
-    this.nonces = {};
+    // this.nonces = {};
 
     // Ok, create individual APIs
     this.identities = await IdentitiesApi.create(this, options.account_file);
@@ -155,17 +155,20 @@ class RuntimeApi
       throw new Error('Must unlock key before using it to sign!');
     }
 
-    // Try to get the nonce locally.
-    var nonce = this.nonces[accountId];
+    // // Try to get the nonce locally.
+    // var nonce = this.nonces[accountId];
 
-    // If the nonce isn't available, get it from chain.
-    if (!nonce) {
-      nonce = await this.api.query.system.accountNonce(accountId);
-      debug(`Got nonce for ${accountId} from chain: ${nonce}`);
-    }
+    // // If the nonce isn't available, get it from chain.
+    // if (!nonce) {
+    //   nonce = await this.api.query.system.accountNonce(accountId);
+    //   debug(`Got nonce for ${accountId} from chain: ${nonce}`);
+    // }
 
-    // Increment and store the nonce.
-    this.nonces[accountId] = nonce.addn(1);
+    // // Increment and store the nonce.
+    // this.nonces[accountId] = nonce.addn(1);
+
+    let nonce = await this.api.query.system.accountNonce(accountId);
+    debug(`Got nonce for ${accountId} from chain: ${nonce}`);
 
     // Executor
     const executor = (resolve, reject) => {
