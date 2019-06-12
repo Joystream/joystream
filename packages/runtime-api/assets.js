@@ -133,12 +133,12 @@ class AssetsApi
     contentId = parseContentId(contentId)
     let rids = await this.base.api.query.dataObjectStorageRegistry.relationshipsByContentId(contentId);
 
-    for (let relationshipId = rids.shift(); rids.length; relationshipId = rids.shift()) {
-      if (relationshipId == undefined) continue;
+    while(rids.length) {
+      const relationshipId = rids.shift();
       let relationship = await this.base.api.query.dataObjectStorageRegistry.relationships(relationshipId);
       relationship = relationship.unwrap();
       if (relationship.storage_provider.eq(decodeAddress(accountId))) {
-        return { relationship, relationshipId };
+        return ({ relationship, relationshipId });
       }
     }
 
