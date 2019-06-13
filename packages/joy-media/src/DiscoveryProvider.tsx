@@ -8,7 +8,8 @@ import { withCalls, withMulti } from '@polkadot/ui-api/with';
 
 import { queryToProp } from '@polkadot/joy-utils/index';
 import { Url } from '@joystream/types/discovery'
-import { debug } from 'util';
+// import { debug } from 'util';
+// import { string } from 'prop-types';
 
 export type BootstrapNodes = {
   bootstrapNodes?: Url[],
@@ -31,6 +32,8 @@ function normalizeUrl(url: string | Url) : string {
   return st.toString()
 }
 
+let cache = new Map();
+
 function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryProvider | undefined {
 
   if (!bootstrapNodes || bootstrapNodes.length == 0) {
@@ -38,39 +41,49 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
   }
 
   const resolveAssetEndpoint = async (storageProvider: AccountId, contentId?: string, cancelToken?: CancelToken) => {
-    for(let n = 0; n < bootstrapNodes.length; n++) {
-      let discoveryUrl = normalizeUrl(bootstrapNodes[n])
+    const cacheKey = storageProvider.toString();
+    let assetApiEndpoint;
 
-      // TODO: better url validation
-      if (discoveryUrl === '') {
-        continue;
-      }
+    if(cache.has(cacheKey)) {
+      // TODO: check validity
+      // if close to expiery, still return cached value, but query and updae cache in background
+      assetApiEndpoint = cache.get(cacheKey)
+    } else {
+      for(let n = 0; n < bootstrapNodes.length; n++) {
+        let discoveryUrl = normalizeUrl(bootstrapNodes[n])
 
-      const serviceInfoQuery = `${discoveryUrl}/discover/v0/${storageProvider.toString()}`;
-
-      try {
-        const serviceInfo = await axios.get(serviceInfoQuery, {cancelToken}) as any
-
-        if (!serviceInfo) {
-          debug('empty response to service discovery query')
+        // TODO: better url validation
+        if (discoveryUrl === '') {
           continue;
         }
 
-        const assetApi = JSON.parse(serviceInfo.data.serialized).asset
+        const serviceInfoQuery = `${discoveryUrl}/discover/v0/${storageProvider.toString()}`;
 
-        const assetEndpoint = `${normalizeUrl(assetApi.endpoint)}/asset/v0/${contentId || ''}`;
+        try {
+          console.log(`resolving ${cacheKey}`)
 
-        return assetEndpoint;
+          const serviceInfo = await axios.get(serviceInfoQuery, {cancelToken}) as any
 
-      } catch (err) {
-        if (axios.isCancel(err)) {
-          throw err;
+          if (!serviceInfo) {
+            continue;
+          }
+
+          assetApiEndpoint = normalizeUrl(JSON.parse(serviceInfo.data.serialized).asset.endpoint);
+          cache.set(cacheKey, assetApiEndpoint);
+        } catch (err) {
+          if (axios.isCancel(err)) {
+            throw err;
+          }
+          continue;
         }
-        continue;
       }
     }
 
-    throw new Error("Resolving failed.")
+    if (!assetApiEndpoint) {
+      throw new Error("Resolving failed.")
+    }
+
+    return `${assetApiEndpoint}/asset/v0/${contentId || ''}`;
   };
 
   return { resolveAssetEndpoint };

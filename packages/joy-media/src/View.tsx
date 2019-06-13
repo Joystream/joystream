@@ -18,6 +18,7 @@ import { MutedText } from '@polkadot/joy-utils/MutedText';
 import { DEFAULT_THUMBNAIL_URL, onImageError } from './utils';
 import { isEmptyStr } from '@polkadot/joy-utils/';
 import { MyAccountContext, MyAccountContextProps } from '@polkadot/joy-utils/MyAccountContext';
+import { Message } from 'semantic-ui-react';
 
 import _ from 'lodash';
 
@@ -218,7 +219,7 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
     cancelSource.cancel();
   }
 
-  async resolveAsset () {
+  private resolveAsset = async () => {
     const { discoveryProvider, api } = this.props;
     const { match: { params: { assetName } } } = this.props;
     const contentId = ContentId.decode(assetName);
@@ -230,7 +231,7 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
       return;
     }
 
-    this.setState({ resolvingAsset: true, contentId });
+    this.setState({ resolvingAsset: true, contentId, error: undefined });
 
     const rids: DataObjectStorageRelationshipId[] = await api.query.dataObjectStorageRegistry.relationshipsByContentId(contentId) as any;
 
@@ -300,7 +301,13 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
     const { error, resolvedAssetUrl, contentType, contentId } = this.state;
 
     if (error) {
-      return <em>Error loading content: {error.message}</em>;
+      return (
+        <Message error className='JoyMainStatus'>
+          <Message.Header>Error Loading Content</Message.Header>
+          <p>{error.toString()}</p>
+          <button className='ui button' onClick={this.resolveAsset}>Try again</button>
+        </Message>
+        )
     }
 
     if (resolvedAssetUrl) {
