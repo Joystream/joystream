@@ -1,4 +1,4 @@
-import { getTypeRegistry, u32, u64, AccountId, Text, Bool, BlockNumber, Moment } from '@polkadot/types';
+import { getTypeRegistry, u32, u64, AccountId, Text, Bool, BlockNumber, Moment, usize } from '@polkadot/types';
 import { Struct, Option, Vector } from '@polkadot/types/codec';
 import { getTextPropAsString, getBoolPropAsBoolean, getOptionPropOrUndefined } from '@polkadot/joy-utils/types';
 import { Codec } from '@polkadot/types/types';
@@ -109,6 +109,32 @@ export class VecPostId extends Vector.with(PostId) {}
 // TODO deprectated: replaced w/ PostId
 export class ReplyId extends u64 {}
 export class VecReplyId extends Vector.with(ReplyId) {}
+
+export type InputValidationLengthConstraintType = {
+  min: usize,
+  max_min_diff: usize
+};
+
+export class InputValidationLengthConstraint extends JoyStruct<InputValidationLengthConstraintType> {
+  constructor (value: InputValidationLengthConstraintType) {
+    super({
+      min: usize,
+      max_min_diff: usize
+    }, value);
+  }
+
+  get min (): usize {
+    return this.getRequired('min');
+  }
+
+  get max_min_diff (): usize {
+    return this.getRequired('max_min_diff');
+  }
+
+  get max (): usize {
+    return new usize(this.min.add(this.max_min_diff));
+  }
+}
 
 export type ChildPositionInParentCategoryType = {
   parent_id: CategoryId,
@@ -404,6 +430,7 @@ export function registerForumTypes () {
       BlockchainTimestamp,
       PostTextChange,
       ModerationAction,
+      InputValidationLengthConstraint,
       ChildPositionInParentCategory,
       CategoryId,
       Category,
