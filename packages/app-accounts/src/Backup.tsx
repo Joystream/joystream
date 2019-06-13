@@ -12,6 +12,7 @@ import { ActionStatus } from '@polkadot/ui-app/Status/types';
 import keyring from '@polkadot/ui-keyring';
 
 import translate from './translate';
+import { isEmptyStr } from '@polkadot/joy-utils/';
 
 type Props = I18nProps & {
   onStatusChange: (status: ActionStatus) => void,
@@ -26,7 +27,7 @@ type State = {
 
 class Backup extends React.PureComponent<Props, State> {
   state: State = {
-    isPassValid: false,
+    isPassValid: true,
     password: ''
   };
 
@@ -128,7 +129,7 @@ class Backup extends React.PureComponent<Props, State> {
 
   private onChangePass = (password: string) => {
     this.setState({
-      isPassValid: keyring.isPassValid(password),
+      isPassValid: isEmptyStr(password) || keyring.isPassValid(password),
       password
     });
   }
