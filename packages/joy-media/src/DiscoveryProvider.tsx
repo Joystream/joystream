@@ -8,8 +8,6 @@ import { withCalls, withMulti } from '@polkadot/ui-api/with';
 
 import { queryToProp } from '@polkadot/joy-utils/index';
 import { Url } from '@joystream/types/discovery'
-// import { debug } from 'util';
-// import { string } from 'prop-types';
 
 export type BootstrapNodes = {
   bootstrapNodes?: Url[],
@@ -32,7 +30,7 @@ function normalizeUrl(url: string | Url) : string {
   return st.toString()
 }
 
-let cache = new Map();
+let cache = new Map(); // store/load this from/to localStorage when mounting/unmounting component
 
 function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryProvider | undefined {
 
@@ -49,7 +47,7 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
       // if close to expiery, still return cached value, but query and updae cache in background
       assetApiEndpoint = cache.get(cacheKey)
     } else {
-      for(let n = 0; n < bootstrapNodes.length; n++) {
+      for(let n = 0; bootstrapNodes && n < bootstrapNodes.length; n++) {
         let discoveryUrl = normalizeUrl(bootstrapNodes[n])
 
         // TODO: better url validation
@@ -89,37 +87,50 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
   return { resolveAssetEndpoint };
 }
 
-function setDiscoveryProvider<P extends DiscoveryProviderProps> (Component: React.ComponentType<P>) {
-  return class extends React.Component<P & BootstrapNodes> {
-    render () {
-      const { bootstrapNodes } = this.props;
-      const discoveryProvider = newDiscoveryProvider(this.props);
+type State = {
+  discoveryProvider?: DiscoveryProvider
+}
 
-      if (!bootstrapNodes) {
+function setDiscoveryProvider<P extends DiscoveryProviderProps> (Component: React.ComponentType<P>) {
+  console.log('setDiscoveryProvider called!');
+
+  return class extends React.Component<P & BootstrapNodes, State> {
+    state: State = {}
+
+    componentWillReceiveProps() {
+      let { discoveryProvider } = this.state;
+
+      // only set the discovery provider once
+      if (discoveryProvider) {
+        return
+      } else {
+        const { bootstrapNodes } = this.props;
+        const discoveryProvider = newDiscoveryProvider({bootstrapNodes});
+        if (discoveryProvider) {
+          this.setState({discoveryProvider})
+        }
+      }
+    }
+
+    render () {
+      const { discoveryProvider } = this.state;
+
+      if (!discoveryProvider) {
         // Still loading bootstrap nodes...
         return (
           <Message info className='JoyMainStatus'>
-              <Message.Header>Loading</Message.Header>
+              <Message.Header>Initializing..</Message.Header>
               <div style={{ marginTop: '1rem' }}>
-                Bootstrapping discovery service...
+                Bootstrapping discovery service.
               </div>
           </Message>
         );
-      } else if (discoveryProvider) {
+      } else {
         return (
           <Component
             {...this.props}
             discoveryProvider={discoveryProvider}
           />
-        );
-      } else {
-        return (
-          <Message error className='JoyMainStatus'>
-            <Message.Header>Discovery Bootstrap Nodes not found</Message.Header>
-            <div style={{ marginTop: '1rem' }}>
-              This functionality cannot work properly without a discovery provider.
-            </div>
-          </Message>
         );
       }
     }
