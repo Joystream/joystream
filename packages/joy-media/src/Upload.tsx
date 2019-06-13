@@ -264,6 +264,13 @@ class Component extends React.PureComponent<Props, State> {
       await axios.put<{ message: string }>(url, file, config);
       this.setState({ progress: 100 });
     } catch(error) {
+      if (axios.isCancel) {
+        return
+      }
+      if (!error.response) {
+        // network connection error
+        discoveryProvider.reportUnreachable(storageProvider);
+      }
       this.setState({ progress: 100, error, uploading: false });
     }
   }

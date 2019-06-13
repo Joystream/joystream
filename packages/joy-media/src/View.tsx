@@ -285,6 +285,10 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
         if (axios.isCancel(err)){
           return;
         } else {
+          if (!err.response) {
+            // network connection error
+            discoveryProvider.reportUnreachable(provider);
+          }
           // try next provider
           continue;
         }

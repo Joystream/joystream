@@ -9,12 +9,19 @@ import { withCalls, withMulti } from '@polkadot/ui-api/with';
 import { queryToProp } from '@polkadot/joy-utils/index';
 import { Url } from '@joystream/types/discovery'
 
+import store from 'store';
+
+// import { parse } from 'url';
+
+
 export type BootstrapNodes = {
   bootstrapNodes?: Url[],
 };
 
 export type DiscoveryProvider = {
-  resolveAssetEndpoint: (accountId: AccountId, contentId?: string, cancelToken?: CancelToken) => Promise<string>
+  resolveAssetEndpoint: (provider: AccountId, contentId?: string, cancelToken?: CancelToken) => Promise<string>
+  shutdown: () => void,
+  reportUnreachable: (provider: AccountId) => void
 };
 
 export type DiscoveryProviderProps = {
@@ -30,12 +37,22 @@ function normalizeUrl(url: string | Url) : string {
   return st.toString()
 }
 
-let cache = new Map(); // store/load this from/to localStorage when mounting/unmounting component
-
 function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryProvider | undefined {
 
   if (!bootstrapNodes || bootstrapNodes.length == 0) {
     return undefined;
+  }
+
+  let cache: Map<string, string> = new Map();
+
+  // Load cache from localStorage. If switching between networks and same account id
+  // is reused, the cached value will not be correct.
+
+  try {
+    const savedCache = JSON.parse(store.get('resolvedProviders'))
+    cache = new Map(savedCache)
+  } catch (err) {
+    console.log('failed to load resolve cache from store')
   }
 
   const resolveAssetEndpoint = async (storageProvider: AccountId, contentId?: string, cancelToken?: CancelToken) => {
@@ -84,7 +101,16 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
     return `${assetApiEndpoint}/asset/v0/${contentId || ''}`;
   };
 
-  return { resolveAssetEndpoint };
+  const shutdown = () => {
+    store.set('resolvedProviders', JSON.stringify(Array.from(cache.entries())));
+  }
+
+  const reportUnreachable = (provider: AccountId) => {
+    // clear the cache entry
+    cache.delete(provider.toString());
+  }
+
+  return { resolveAssetEndpoint, shutdown, reportUnreachable };
 }
 
 type State = {
@@ -109,6 +135,13 @@ function setDiscoveryProvider<P extends DiscoveryProviderProps> (Component: Reac
         if (discoveryProvider) {
           this.setState({discoveryProvider})
         }
+      }
+    }
+
+    componentWillUnmount() {
+      let { discoveryProvider } = this.state;
+      if (discoveryProvider) {
+        discoveryProvider.shutdown();
       }
     }
 
