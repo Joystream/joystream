@@ -192,7 +192,7 @@ class RuntimeApi
         // send(statusUpdates) returns a function for unsubscribing from status updates
         let unsubscribe = tx.sign(from_key, { nonce })
           .send(({events = [], status}) => {
-            // debug(status)
+            debug(status);
             // Whatever events we get, process them if there's someone interested.
             if (subscribed && callback) {
               const matched = this._matchingEvents(subscribed, events);
@@ -204,9 +204,13 @@ class RuntimeApi
 
             if (status.isReady) {
               debug('TX Ready.');
-              // Assumption is that transaction was accepted by node
+              // Assumption is that transaction is valid and with a good nonce
               // prepare nonce for next tx
               incrementNonce();
+              // releases lock
+              resolve(unsubscribe);
+            } else if (status.isBrodcast) {
+              debug('TX Broadcast.');
             } else if (status.isFinalized) {
               debug('TX Finalized.');
               finalizedPromise.resolve(status)
@@ -217,17 +221,16 @@ class RuntimeApi
               debug('TX Future!')
               // nonce is likely out of sync, delete it so we reload it from chain on next attempt
               delete this.nonces[accountId];
-              finalizedPromise.reject(new Error('Extrinsic nonce set in future'));
+              const err = new Error('transaction nonce set in future');
+              finalizedPromise.reject(err);
+              reject(err);
             }
-            /* why don't we see these status updates?
+            /* why don't we see these status updates on local devchain (single node)
             isUsurped
             isBroadcast
             isDropped
             isInvalid
             */
-
-            // releases lock
-            resolve(unsubscribe);
           })
           .catch((err) => {
             if (err) {
