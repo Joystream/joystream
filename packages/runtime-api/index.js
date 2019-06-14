@@ -192,15 +192,7 @@ class RuntimeApi
         // send(statusUpdates) returns a function for unsubscribing from status updates
         let unsubscribe = tx.sign(from_key, { nonce })
           .send(({events = [], status}) => {
-            debug(status);
-            // Whatever events we get, process them if there's someone interested.
-            if (subscribed && callback) {
-              const matched = this._matchingEvents(subscribed, events);
-              debug('Matching events:', matched);
-              if (matched.length) {
-                callback(matched);
-              }
-            }
+            debug(`TX status: ${status.type}`);
 
             if (status.isReady) {
               debug('TX Ready.');
@@ -225,19 +217,37 @@ class RuntimeApi
               finalizedPromise.reject(err);
               reject(err);
             }
+
             /* why don't we see these status updates on local devchain (single node)
             isUsurped
             isBroadcast
             isDropped
             isInvalid
             */
+
+            // Handle these events after processing status to make sure any exceptions in handlers
+            // doesn't affect us.
+
+            // Whatever events we get, process them if there's someone interested.
+            if (subscribed && callback) {
+              const matched = this._matchingEvents(subscribed, events);
+              debug('Matching events:', matched);
+              if (matched.length) {
+                callback(matched);
+              }
+            }
+
           })
           .catch((err) => {
+            // 1014 error: Most likely you are sending transaction with the same nonce,
+            // so it assumes you want to replace existing one, but the priority is too low to replace it (priority = fee = len(encoded_transaction) currently)
+            // Remember this can also happen if in the past we sent a tx with a future nonce, and the current nonce
+            // now matches it.
             if (err) {
               const errstr = err.toString();
               // not the best way to check error code.
               // https://github.com/polkadot-js/api/blob/master/packages/rpc-provider/src/coder/index.ts#L52
-              if (errstr.indexOf('Error: 1014:') < 0 && // bad nonce
+              if (errstr.indexOf('Error: 1014:') < 0 && // low priority
                   errstr.indexOf('Error: 1010:') < 0) // bad transaction
               {
                 // Error but not nonce related. (bad arguments maybe)
