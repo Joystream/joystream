@@ -110,7 +110,6 @@ const ViewCategory = withForumCalls<ViewCategoryProps>(
 
 function InnerViewCategory (props: InnerViewCategoryProps) {
   const { state: {
-    categoryIdsByParentId,
     threadIdsByCategoryId
   }} = useForum();
 
@@ -125,9 +124,9 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
   }
 
   const { id } = category;
+  const hasSubcats = !category.num_direct_subcategories.isZero();
 
   // TODO replace w/ Substrate
-  const subcategories = categoryIdsByParentId.get(id.toNumber()) || [];
   const threadIds = threadIdsByCategoryId.get(id.toNumber()) || [];
 
   const renderCategoryActions = () => {
@@ -182,8 +181,8 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
       </div>
     </Segment>
 
-    {subcategories.length > 0 &&
-      <Section title={`Subcategories (${subcategories.length})`}>
+    {hasSubcats &&
+      <Section title={`Subcategories (${category.num_direct_subcategories.toString()})`}>
         <CategoryList parentId={id} />
       </Section>
     }
@@ -344,8 +343,8 @@ function InnerCategoryList (props: CategoryListProps) {
       const allCats = await Promise.all<Category>(apiCalls);
       const filteredCats = allCats.filter(cat =>
         !cat.isEmpty &&
-        !cat.deleted &&
-        (parentId ? cat.parent_id === parentId : cat.isRoot)
+        !cat.deleted && // TODO show deleted categories if current user is forum sudo
+        (parentId ? parentId.eq(cat.parent_id) : cat.isRoot)
       );
 
       setCategories(filteredCats);
