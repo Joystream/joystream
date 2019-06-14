@@ -147,12 +147,13 @@ class RuntimeApi
 
   /*
    * Nonce-aware signAndSend(). Also allows you to use the accountId instead
-   * of the key, making calls a little simpler.
+   * of the key, making calls a little simpler. Will lock to prevent concurrent
+   * calls so correct nonce is used.
    *
    * If the subscribed events are given, and a callback as well, then the
    * callback is invoked with matching events.
    */
-  async signAndSendWithRetry(accountId, tx, attempts, subscribed, callback)
+  async signAndSend(accountId, tx, attempts, subscribed, callback)
   {
     // Prepare key
     const from_key = this.identities.keyring.getPair(accountId);
@@ -175,7 +176,6 @@ class RuntimeApi
       var nonce = this.nonces[accountId];
 
       const incrementNonce = () => {
-        // Increment and store the nonce.
         nonce = nonce.addn(1);
         this.nonces[accountId] = nonce;
       }

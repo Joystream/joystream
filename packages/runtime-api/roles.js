@@ -130,7 +130,7 @@ class RolesApi
     const converted = memberId.raw;
 
     const tx = this.base.api.tx.actors.roleEntryRequest(role, converted);
-    return await this.base.signAndSendWithRetry(roleAccountId, tx);
+    return await this.base.signAndSend(roleAccountId, tx);
   }
 
   /*

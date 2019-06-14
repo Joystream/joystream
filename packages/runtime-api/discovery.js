@@ -45,7 +45,7 @@ class DiscoveryApi
     if (isActor) {
       const decoded = this.base.identities.keyring.decodeAddress(accountId, true)
       const tx = this.base.api.tx.discovery.setIpnsId(ipnsId, ttl)
-      return this.base.signAndSendWithRetry(decoded, tx)
+      return this.base.signAndSend(decoded, tx)
     } else {
       throw new Error('Cannot set AccountInfo for non actor account')
     }
@@ -56,7 +56,7 @@ class DiscoveryApi
    */
   async unsetAccountInfo(accountId) {
     var tx = this.base.api.tx.discovery.unsetIpnsId()
-    return this.base.signAndSendWithRetry(accountId, tx)
+    return this.base.signAndSend(accountId, tx)
   }
 }
 

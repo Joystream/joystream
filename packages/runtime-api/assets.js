@@ -41,7 +41,7 @@ class AssetsApi
   {
     contentId = parseContentId(contentId)
     const tx = this.base.api.tx.dataDirectory.addContent(contentId, doTypeId, size);
-    await this.base.signAndSendWithRetry(accountId, tx);
+    await this.base.signAndSend(accountId, tx);
 
     // If the data object constructed properly, we should now be able to return
     // the data object from the state.
@@ -101,7 +101,7 @@ class AssetsApi
   {
     contentId = parseContentId(contentId)
     const tx = this.base.api.tx.dataDirectory.acceptContent(contentId);
-    return await this.base.signAndSendWithRetry(accountId, tx);
+    return await this.base.signAndSend(accountId, tx);
   }
 
   /*
@@ -111,7 +111,7 @@ class AssetsApi
   {
     contentId = parseContentId(contentId)
     const tx = this.base.api.tx.dataDirectory.rejectContent(contentId);
-    return await this.base.signAndSendWithRetry(accountId, tx);
+    return await this.base.signAndSend(accountId, tx);
   }
 
   /*
@@ -123,7 +123,7 @@ class AssetsApi
     const tx = this.base.api.tx.dataObjectStorageRegistry.addRelationship(contentId);
 
     const subscribed = [['dataObjectStorageRegistry', 'DataObjectStorageRelationshipAdded']];
-    return await this.base.signAndSendWithRetry(accountId, tx, 3, subscribed, callback);
+    return await this.base.signAndSend(accountId, tx, 3, subscribed, callback);
   }
 
   /*
@@ -169,7 +169,7 @@ class AssetsApi
     var tx = ready
       ? this.base.api.tx.dataObjectStorageRegistry.setRelationshipReady(dosrId)
       : this.base.api.tx.dataObjectStorageRegistry.unsetRelationshipReady(dosrId);
-    return await this.base.signAndSendWithRetry(accountId, tx);
+    return await this.base.signAndSend(accountId, tx);
   }
 
   async getKnownContentIds() {
