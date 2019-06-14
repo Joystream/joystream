@@ -48,6 +48,7 @@
     "@joystream/crypto": "^0.1.0",
     "@joystream/types": "^0.2.1",
     "@polkadot/api": "^0.77.1",
+    "async-lock": "^1.2.0",
     "lodash": "^4.17.11",
     "password-prompt": "^1.1.2"
   }
