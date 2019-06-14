@@ -231,6 +231,14 @@ export class Category extends JoyStruct<CategoryType> {
     return new u32(this.num_direct_unmoderated_threads.add(this.num_direct_moderated_threads));
   }
 
+  get hasSubcategories (): boolean {
+    return !this.num_direct_subcategories.isZero();
+  }
+
+  get hasUnmoderatedThreads (): boolean {
+    return !this.num_direct_unmoderated_threads.isZero();
+  }
+
   get position_in_parent_category (): Option<ChildPositionInParentCategory> {
     return this.getRequired('position_in_parent_category');
   }
