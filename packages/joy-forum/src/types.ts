@@ -240,6 +240,10 @@ export class Category extends JoyStruct<CategoryType> {
     return pos.isSome ? pos.unwrap().parent_id : undefined;
   }
 
+  get isRoot (): boolean {
+    return this.parent_id === undefined;
+  }
+
   get nr_in_parent (): u32 | undefined {
     const pos = this.position_in_parent_category;
     return pos.isSome ? pos.unwrap().child_nr_in_parent_category : undefined;

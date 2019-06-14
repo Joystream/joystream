@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Table, Dropdown, Button, Segment, Label } from 'semantic-ui-react';
 import { History } from 'history';
 import orderBy from 'lodash/orderBy';
+import BN from 'bn.js';
 
 import { Bool } from '@polkadot/types';
-import { CategoryId, Category, ThreadId, ThreadType } from './types';
+import { CategoryId, Category, ThreadId, ThreadType, Thread } from './types';
 import { useForum } from './Context';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
@@ -14,6 +15,8 @@ import { UrlHasIdProps, AuthorPreview, CategoryCrumbs, Pagination, ThreadsPerPag
 import Section from '@polkadot/joy-utils/Section';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import { withForumCalls } from './calls';
+import { withMulti, withApi } from '@polkadot/ui-api';
+import { ApiProps } from '@polkadot/ui-api/types';
 
 type CategoryActionsProps = {
   id: CategoryId
@@ -69,7 +72,7 @@ function CategoryActions (props: CategoryActionsProps) {
 
     <Button.Group>
 
-      {/* TODO show 'Edit' if I am owner */}
+      {/* TODO show 'Edit' if I am moderator_id */}
       <Link className={className} to={`/forum/categories/${id.toString()}/edit`}>
         <i className='pencil alternate icon' />
         <span className='text'>Edit</span>
@@ -90,25 +93,28 @@ function CategoryActions (props: CategoryActionsProps) {
   </span>;
 }
 
-type ViewCategoryProps = {
+type InnerViewCategoryProps = {
   category?: Category,
-  id: CategoryId,
   page?: number,
   preview?: boolean,
   history?: History
+};
+
+type ViewCategoryProps = InnerViewCategoryProps & {
+  id: CategoryId
 };
 
 const ViewCategory = withForumCalls<ViewCategoryProps>(
   ['categoryById', { propName: 'category', paramName: 'id' }]
 )(InnerViewCategory);
 
-function InnerViewCategory (props: ViewCategoryProps) {
+function InnerViewCategory (props: InnerViewCategoryProps) {
   const { state: {
     categoryIdsByParentId,
     threadIdsByCategoryId
   }} = useForum();
 
-  const { history, category, id, page = 1, preview = false } = props;
+  const { history, category, page = 1, preview = false } = props;
 
   if (!category) {
     return <em>Loading...</em>;
@@ -118,6 +124,9 @@ function InnerViewCategory (props: ViewCategoryProps) {
     return preview ? null : <em>Category not found</em>;
   }
 
+  const { id } = category;
+
+  // TODO replace w/ Substrate
   const subcategories = categoryIdsByParentId.get(id.toNumber()) || [];
   const threadIds = threadIdsByCategoryId.get(id.toNumber()) || [];
 
@@ -131,22 +140,22 @@ function InnerViewCategory (props: ViewCategoryProps) {
         <Table.Cell>
           <Link to={`/forum/categories/${id.toString()}`}>
             {category.archived
-              ? <MutedSpan><Label color='orange'>Archived</Label> {category.name}</MutedSpan>
-              : category.name
+              ? <MutedSpan><Label color='orange'>Archived</Label> {category.title}</MutedSpan>
+              : category.title
             }
           </Link>
         </Table.Cell>
         <Table.Cell>
-          {subcategories.length}
+          {category.num_direct_subcategories.toString()}
         </Table.Cell>
         <Table.Cell>
-          {threadIds.length}
+          {category.num_direct_unmoderated_threads.toString()}
         </Table.Cell>
         <Table.Cell>
           {renderCategoryActions()}
         </Table.Cell>
         <Table.Cell>
-          <AuthorPreview address={category.owner} />
+          <AuthorPreview address={category.moderator_id} />
         </Table.Cell>
       </Table.Row>
     );
@@ -166,10 +175,10 @@ function InnerViewCategory (props: ViewCategoryProps) {
     <Segment>
       <div>
         <MutedSpan>Moderator: </MutedSpan>
-        <AuthorPreview address={category.owner} />
+        <AuthorPreview address={category.moderator_id} />
       </div>
       <div style={{ marginTop: '1rem' }}>
-        <ReactMarkdown className='JoyMemo--full' source={category.text} linkTarget='_blank' />
+        <ReactMarkdown className='JoyMemo--full' source={category.description} linkTarget='_blank' />
       </div>
     </Segment>
 
@@ -187,7 +196,7 @@ function InnerViewCategory (props: ViewCategoryProps) {
   return (<>
     <CategoryCrumbs categoryId={category.parent_id} />
     <h1 className='ForumPageTitle'>
-      <span className='TitleText'>{category.name}</span>
+      <span className='TitleText'>{category.title}</span>
       {renderCategoryActions()}
     </h1>
 
@@ -231,7 +240,7 @@ function CategoryThreads (props: CategoryThreadsProps) {
 
   type SortableThread = ThreadType & {
     id: number,
-    pinned: boolean,
+    // pinned: boolean,
     moderated: boolean
   };
 
@@ -240,7 +249,7 @@ function CategoryThreads (props: CategoryThreadsProps) {
       const thread = threadById.get(id);
       return !thread ? thread : {
         id,
-        pinned: thread.pinned,
+        // pinned: thread.pinned,
         moderated: thread.moderation !== undefined
       };
     })
@@ -248,8 +257,15 @@ function CategoryThreads (props: CategoryThreadsProps) {
 
   const sortedThreadIds = orderBy(threads,
     // TODO Replace sort by id with sort by blocktime of the last reply.
-    [ x => x.moderated, x => x.pinned, x => x.id ],
-    [ 'asc', 'desc', 'desc' ]
+    [
+      x => x.moderated,
+      // x => x.pinned,
+      x => x.id ],
+    [
+      'asc',
+      // 'desc',
+      'desc'
+    ]
   ).map(x => x.id);
 
   const pageOfItems = sortedThreadIds
@@ -295,31 +311,57 @@ export function ViewCategoryById (props: ViewCategoryByIdProps) {
   }
 }
 
-type CategoryListProps = {
+type CategoryListProps = ApiProps & {
+  nextCategoryId?: CategoryId,
   parentId?: CategoryId
 };
 
-export function CategoryList (props: CategoryListProps) {
-  const { state: {
-    rootCategoryIds,
-    categoryIdsByParentId,
-    categoryById
-  }} = useForum();
-  const { parentId } = props;
+export const CategoryList = withMulti(
+  InnerCategoryList,
+  withApi,
+  withForumCalls<CategoryListProps>(
+    ['nextCategoryId', { propName: 'nextCategoryId' }]
+  )
+);
 
-  const ids: number[] = parentId
-    ? categoryIdsByParentId.get(parentId.toNumber()) || []
-    : rootCategoryIds;
+function InnerCategoryList (props: CategoryListProps) {
+  const { api, parentId, nextCategoryId } = props;
+  const [catsLoaded, setCatsLoaded] = useState(false);
+  const [categories, setCategories] = useState(new Array<Category>());
 
-  if (!ids || ids.length === 0) {
-    return <em>Forum is empty</em>;
+  useEffect(() => {
+    const loadCategories = async () => {
+      if (!nextCategoryId) return;
+
+      const newId = (id: number | BN) => new CategoryId(id);
+      const apiCalls: Promise<Category>[] = [];
+      let id = newId(1);
+      while (nextCategoryId.gt(id)) {
+        apiCalls.push(api.query.forum.categoryById(id) as Promise<Category>);
+        id = newId(id.add(newId(1)));
+      }
+
+      const allCats = await Promise.all<Category>(apiCalls);
+      const filteredCats = allCats.filter(cat =>
+        !cat.isEmpty &&
+        !cat.deleted &&
+        (parentId ? cat.parent_id === parentId : cat.isRoot)
+      );
+
+      setCategories(filteredCats);
+      setCatsLoaded(true);
+    };
+
+    loadCategories();
+  }, [parentId, nextCategoryId]);
+
+  if (!catsLoaded) {
+    return <em>Loading categories...</em>;
   }
 
-  const idsOfNonDeletedCats = ids
-    .filter(id => {
-      const category = categoryById.get(id);
-      return category && !category.deleted;
-    });
+  if (!categories) {
+    return <em>Forum is empty</em>;
+  }
 
   return (
     <Table celled selectable compact>
@@ -332,8 +374,8 @@ export function CategoryList (props: CategoryListProps) {
         <Table.HeaderCell>Moderator</Table.HeaderCell>
       </Table.Row>
     </Table.Header>
-    <Table.Body>{idsOfNonDeletedCats.map((id, i) => (
-      <ViewCategory key={i} preview id={new CategoryId(id)} />
+    <Table.Body>{categories.map((category, i) => (
+      <InnerViewCategory key={i} preview category={category} />
     ))}</Table.Body>
     </Table>
   );
