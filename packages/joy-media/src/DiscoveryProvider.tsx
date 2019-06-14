@@ -11,7 +11,7 @@ import { Url } from '@joystream/types/discovery'
 
 import store from 'store';
 
-// import { parse } from 'url';
+import { parse as parseUrl } from 'url';
 
 
 export type BootstrapNodes = {
@@ -67,8 +67,9 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
       for(let n = 0; bootstrapNodes && n < bootstrapNodes.length; n++) {
         let discoveryUrl = normalizeUrl(bootstrapNodes[n])
 
-        // TODO: better url validation
-        if (discoveryUrl === '') {
+        try {
+          parseUrl(discoveryUrl);
+        } catch(err) {
           continue;
         }
 
