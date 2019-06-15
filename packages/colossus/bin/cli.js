@@ -121,8 +121,11 @@ function start_express_app(app, port) {
       console.log('Server closed, shutting down...');
       resolve(...args);
     });
-    server.listen(port);
-    console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
+    server.on('listening', () => {
+      console.log('API server started.', server.address());
+    });
+    server.listen(port, '::');
+    console.log('Starting API server...');
   });
 }
 // Start app
