@@ -167,7 +167,7 @@ async function run_signup(account_file)
 {
   const { RuntimeApi } = require('@joystream/runtime-api');
   const api = await RuntimeApi.create({account_file});
-  const member_address = api.key.address();
+  const member_address = api.identities.key.address();
 
   // Check if account works
   const min = await api.roles.requiredBalanceForRoleStaking(api.roles.ROLE_STORAGE);
