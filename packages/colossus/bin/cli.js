@@ -142,7 +142,7 @@ function start_discovery_service(api, config)
 }
 
 // Get an initialized storage instance
-async function get_storage(runtime_api, config)
+function get_storage(runtime_api, config)
 {
   // TODO at some point, we can figure out what backend-specific connection
   // options make sense. For now, just don't use any configuration.
@@ -160,7 +160,7 @@ async function get_storage(runtime_api, config)
     },
   };
 
-  return await Storage.create(options);
+  return Storage.create(options);
 }
 
 async function run_signup(account_file)
@@ -284,7 +284,7 @@ const commands = {
     }
 
     // Continue with server setup
-    const store = await get_storage(api, cfg);
+    const store = get_storage(api, cfg);
     banner();
 
     const { start_syncing } = require('../lib/sync');

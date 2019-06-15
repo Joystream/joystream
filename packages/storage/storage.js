@@ -211,14 +211,14 @@ class Storage
    * timeout is given, it is used - otherwise, the `option.timeout` value
    * above is used.
    */
-  static async create(options)
+  static create(options)
   {
     const storage = new Storage();
-    await storage._init(options);
+    storage._init(options);
     return storage;
   }
 
-  async _init(options)
+  _init(options)
   {
     this.options = _.clone(options || {});
     this.options.ipfs = this.options.ipfs || {};
@@ -227,18 +227,13 @@ class Storage
     this._resolve_content_id = this.options.resolve_content_id || DEFAULT_RESOLVE_CONTENT_ID;
 
     this.ipfs = ipfs_client(this.options.ipfs.connect_options);
-    return this._with_specified_timeout(this._timeout, (resolve, reject) => {
-      this.ipfs.id((err, identity) => {
-        if (err) {
-          debug('Error connecting', err);
-          reject(err);
-          return;
-        }
 
-        this.id = identity;
-        debug('Connected; managing IPFS node', identity.id);
-        resolve();
-      });
+    this.ipfs.id((err, identity) => {
+      if (err) {
+        debug(`Warning IPFS daemon not running: ${err.message}`);
+      } else {
+        debug(`IPFS node is up with identity: ${identity.id}`);
+      }
     });
   }
 
