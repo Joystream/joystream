@@ -24,12 +24,23 @@ module.exports = function(config, runtime)
     get: async function(req, res)
     {
         const id = req.params.id;
+        let cacheMaxAge = req.query.max_age;
+
+        if (cacheMaxAge) {
+          try {
+            cacheMaxAge = parseInt(cacheMaxAge);
+          } catch(err) {
+            cacheMaxAge = MAX_CACHE_AGE
+          }
+        } else {
+          cacheMaxAge = 0
+        }
 
         // todo - validate id before querying
 
         try {
           debug(`resolving ${id}`);
-          const info = await discover.discover(id, runtime, USE_CACHE, MAX_CACHE_AGE);
+          const info = await discover.discover(id, runtime, USE_CACHE, cacheMaxAge);
           if (info == null) {
             debug('info not found');
             res.status(404).end();

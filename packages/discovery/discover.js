@@ -8,6 +8,7 @@ function inBrowser() {
 
 const discoveryLock = new AsyncLock();
 var accountInfoCache = {};
+const CACHE_TTL = 60 * 60 * 1000;
 
 async function getIpnsIdentity (actorAccountId, runtimeApi) {
     // lookup ipns identity from chain corresponding to actorAccountId
@@ -96,13 +97,17 @@ async function discover (actorAccountId, runtimeApi, useCachedValue = false, max
         const cached = accountInfoCache[id];
 
         if (cached && useCachedValue) {
-            if (maxCacheAge) {
+            if (maxCacheAge > 0) {
+                // get latest value
                 if (Date.now() > (cached.updated + maxCacheAge)) {
                     return _discover(actorAccountId, runtimeApi);
-                } else {
-                    _discover(actorAccountId, runtimeApi);
                 }
             }
+            // refresh if cache is stale, new value returned on next cached query
+            if (Date.now() > (cached.updated + CACHE_TTL)) {
+                _discover(actorAccountId, runtimeApi);
+            }
+            // return best known value
             return cached.value;
         } else {
             return _discover(actorAccountId, runtimeApi);
