@@ -42,8 +42,6 @@ class RuntimeApi
     return ret;
   }
 
-  static NONCE_LOCK_KEY = 'nonce';
-
   async init(options)
   {
     debug('Init');
@@ -271,6 +269,8 @@ class RuntimeApi
     return finalizedPromise.promise;
   }
 }
+
+RuntimeApi.NONCE_LOCK_KEY = 'nonce';
 
 module.exports = {
   RuntimeApi: RuntimeApi,
