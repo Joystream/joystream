@@ -1,5 +1,9 @@
 const { discover } = require('@joystream/discovery')
 const debug = require('debug')('joystream:api:discovery');
+
+const MAX_CACHE_AGE = 30 * 60 * 1000;
+const USE_CACHE = true;
+
 module.exports = function(config, runtime)
 {
   var doc = {
@@ -17,24 +21,26 @@ module.exports = function(config, runtime)
     ],
 
     // Resolve Service Information
-    get: function(req, res, _next)
+    get: async function(req, res)
     {
         const id = req.params.id;
 
-        runtime.roles.checkForRole(id)
-          .then((isActor) => {
-            if (!isActor) {
-              res.status(404).end()
-            } else {
-              discover.discover(id, runtime).then((info) => {
-                debug(info)
-                res.status(200).send(info)
-              })
-            }
-          })
-          .catch((err) => {
-            res.status(400).end()
-          })
+        // todo - validate id before querying
+
+        try {
+          debug(`resolving ${id}`);
+          const info = await discover.discover(id, runtime, USE_CACHE, MAX_CACHE_AGE);
+          if (info == null) {
+            debug('info not found');
+            res.status(404).end();
+          } else {
+            res.status(200).send(info);
+          }
+
+        } catch (err) {
+          debug(`Error: ${err}`);
+          res.status(400).end()
+        }
     }
   };
 
