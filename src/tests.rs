@@ -86,22 +86,26 @@ struct CreateCategoryFixture {
     origin: OriginType,
     parent: Option<CategoryId>,
     title: Vec<u8>,
-    description: Vec<u8>
+    description: Vec<u8>,
+    result: dispatch::Result
 }
 
 impl CreateCategoryFixture {
 
-    fn call_module(&self) -> dispatch::Result {
+    fn call_and_assert(&self) {
 
-        TestForumModule::create_category(
-            match self.origin {
-                OriginType::Signed(account_id) => Origin::signed(account_id),
-                //OriginType::Inherent => Origin::inherent,
-                OriginType::Root => system::RawOrigin::Root.into() //Origin::root
-            },
-            self.parent,
-            self.title.clone(),
-            self.description.clone()
+        assert_eq!(
+            TestForumModule::create_category(
+                match self.origin {
+                    OriginType::Signed(account_id) => Origin::signed(account_id),
+                    //OriginType::Inherent => Origin::inherent,
+                    OriginType::Root => system::RawOrigin::Root.into() //Origin::root
+                },
+                self.parent,
+                self.title.clone(),
+                self.description.clone()
+            ),
+            self.result
         )
     }
 }
@@ -110,29 +114,37 @@ impl CreateCategoryFixture {
 fn create_category_successfully() {
     with_externalities(&mut build_test_externalities(), || {
 
-        // Make some new catg
-        let f1 = CreateCategoryFixture {
+        CreateCategoryFixture {
             origin: OriginType::Signed(default_genesis_config().forum_sudo),
             parent: None,
             title: "My new category".as_bytes().to_vec(),
-            description: "This is a great new category for the forum".as_bytes().to_vec()
-        };
-
-        // let f2 = ...
-        // let f3 = ...
-        // let f4 = ...
-
-        // Make module call
-        f1.call_module().is_ok();
-
-        // f2.call_module();
-        // f3.call_module();
-        // f4.call_module();
-
-        // assert state!
+            description: "This is a great new category for the forum".as_bytes().to_vec(),
+            result: Ok(())
+        }
+        .call_and_assert();
 
     });
 }
+
+
+#[test]
+fn create_category_title_too_long() {
+    with_externalities(&mut build_test_externalities(), || {
+
+        let genesis_config = default_genesis_config();
+
+        CreateCategoryFixture {
+            origin: OriginType::Signed(genesis_config.forum_sudo),
+            parent: None,
+            title: vec![b'X'; genesis_config.category_title_constraint.max() + 1],
+            description: "This is a great new category for the forum".as_bytes().to_vec(),
+            result: Err(ERROR_CATEGORY_TITLE_TOO_LONG)
+        }
+        .call_and_assert();
+
+    });
+}
+
 
 /*
  * update_category 
@@ -176,3 +188,4 @@ fn create_thread_not_forum_member() {
 
     });
 }
+
