@@ -261,7 +261,7 @@ function InnerViewThread (props: ViewThreadProps) {
   </>;
 }
 
-type InnerViewThreadByIdProps = UrlHasIdProps & {
+type ViewThreadByIdProps = UrlHasIdProps & {
   history: History,
   match: {
     params: {
@@ -271,16 +271,7 @@ type InnerViewThreadByIdProps = UrlHasIdProps & {
   }
 };
 
-// TODO finish!
-
-export const ViewThreadById = withMulti(
-  InnerViewThreadById,
-  withForumCalls<ViewThreadProps>(
-    ['threadById', { propName: 'thread', paramName: 'id' }]
-  )
-);
-
-function InnerViewThreadById (props: InnerViewThreadByIdProps) {
+export function ViewThreadById (props: ViewThreadByIdProps) {
   const { history, match: { params: { id, page: pageStr } } } = props;
 
   let page = 1;
