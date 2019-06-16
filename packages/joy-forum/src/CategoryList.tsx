@@ -239,13 +239,18 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
       }
 
       const allThreads = await Promise.all<Thread>(apiCalls);
-      const filteredThreads = allThreads.filter(item => !item.isEmpty);
-      const sortedThreads = orderBy(filteredThreads,
+      const threadsInThisCategory = allThreads.filter(item =>
+        !item.isEmpty &&
+        item.category_id.eq(category.id)
+      );
+      const sortedThreads = orderBy(
+        threadsInThisCategory,
         // TODO UX: Replace sort by id with sort by blocktime of the last reply.
         [
           x => x.moderated,
           // x => x.pinned,
-          x => x.id ],
+          x => x.id
+        ],
         [
           'asc',
           // 'desc',
