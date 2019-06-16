@@ -9,7 +9,7 @@ import { withCalls, withMulti } from '@polkadot/ui-api/with';
 import { queryToProp } from '@polkadot/joy-utils/index';
 import { Url } from '@joystream/types/discovery'
 
-import store from 'store';
+// import store from 'store';
 
 import { parse as parseUrl } from 'url';
 
