@@ -60,7 +60,7 @@ const CategoryCrumb = (p: CategoryCrumbsProps) => {
         return <>
           {category.parent_id ? <CategoryCrumb categoryId={category.parent_id} /> : null}
           <i className='right angle icon divider'></i>
-          <Link className='section' to={url}>{category.name}</Link>
+          <Link className='section' to={url}>{category.title}</Link>
         </>;
       }
     } catch (err) {
