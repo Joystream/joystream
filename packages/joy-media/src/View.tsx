@@ -252,6 +252,7 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
     console.log(`found ${readyProviders.length} providers ready to serve content: ${readyProviders}`);
 
     readyProviders = _.shuffle(readyProviders);
+    // Alternative - prioritize already resolved providers, and least reported unreachable?
 
     const { cancelSource } = this.state;
 
@@ -285,7 +286,7 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
         if (axios.isCancel(err)){
           return;
         } else {
-          if (!err.response) {
+          if (!err.response || (err.response.status >= 500 && err.response.status <= 504)) {
             // network connection error
             discoveryProvider.reportUnreachable(provider);
           }

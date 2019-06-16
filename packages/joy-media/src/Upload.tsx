@@ -258,20 +258,22 @@ class Component extends React.PureComponent<Props, State> {
       return
     }
 
+    // TODO: validate url .. must start with http
+
     this.setState({ discovering: false, uploading: true });
 
     try {
       await axios.put<{ message: string }>(url, file, config);
       this.setState({ progress: 100 });
-    } catch(error) {
+    } catch(err) {
       if (axios.isCancel) {
         return
       }
-      if (!error.response) {
+      if (!err.response || (err.response.status >= 500 && err.response.status <= 504)) {
         // network connection error
         discoveryProvider.reportUnreachable(storageProvider);
       }
-      this.setState({ progress: 100, error, uploading: false });
+      this.setState({ progress: 100, error: err, uploading: false });
     }
   }
 }
