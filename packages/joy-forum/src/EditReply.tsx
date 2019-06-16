@@ -9,6 +9,7 @@ import { SubmittableResult } from '@polkadot/api';
 import { withMulti } from '@polkadot/ui-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
+import { Text } from '@polkadot/types';
 import { PostId, Post, ThreadId } from './types';
 import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
@@ -85,6 +86,7 @@ const InnerForm = (props: FormProps) => {
 
     const textParam = new Text(text);
     if (!id) {
+      console.log({ text });
       return [ threadId, textParam ];
     } else {
       return [ id, textParam ];
