@@ -16,12 +16,11 @@
 
 use hex_literal::{hex, hex_impl};
 use joystream_node_runtime::{
-    AccountId, BalancesConfig, ConsensusConfig, CouncilConfig,
-    CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
-    DownloadSessionsConfig, GenesisConfig, GrandpaConfig, IndicesConfig, MembersConfig, 
-	ForumConfig, forum::InputValidationLengthConstraint, Perbill,
-    ProposalsConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig, TimestampConfig,
-	ActorsConfig,
+    forum::InputValidationLengthConstraint, AccountId, ActorsConfig, BalancesConfig,
+    ConsensusConfig, CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
+    DataObjectTypeRegistryConfig, DownloadSessionsConfig, ForumConfig, GenesisConfig,
+    GrandpaConfig, IndicesConfig, MembersConfig, Perbill, ProposalsConfig, SessionConfig,
+    StakerStatus, StakingConfig, SudoConfig, TimestampConfig,
 };
 use primitives::{crypto::UncheckedInto, ed25519, sr25519, Pair};
 use substrate_service;
@@ -57,9 +56,9 @@ fn authority_key(s: &str) -> AuthorityId {
 }
 
 fn account_key(s: &str) -> AccountId {
-	sr25519::Pair::from_string(&format!("//{}", s), None)
-		.expect("static values are valid; qed")
-		.public()
+    sr25519::Pair::from_string(&format!("//{}", s), None)
+        .expect("static values are valid; qed")
+        .public()
 }
 
 impl Alternative {
@@ -170,10 +169,7 @@ pub fn staging_testnet_config() -> ChainSpec {
 }
 
 fn new_validation(min: u16, max_min_diff: u16) -> InputValidationLengthConstraint {
-	return InputValidationLengthConstraint {
-		min,
-		max_min_diff
-	}
+    return InputValidationLengthConstraint { min, max_min_diff };
 }
 
 fn staging_testnet_config_genesis() -> GenesisConfig {
