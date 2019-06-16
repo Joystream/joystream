@@ -74,10 +74,10 @@ function CategoryActions (props: CategoryActionsProps) {
     <Button.Group>
 
       {/* TODO show 'Edit' if I am moderator_id */}
-      <Link className={className} to={`/forum/categories/${id.toString()}/edit`}>
+      {/* <Link className={className} to={`/forum/categories/${id.toString()}/edit`}>
         <i className='pencil alternate icon' />
         <span className='text'>Edit</span>
-      </Link>
+      </Link> */}
       <Dropdown floating button className='icon small' style={{ display: 'inline-block', width: 'auto', margin: 0 }} trigger={<></>}>
         <Dropdown.Menu>
 

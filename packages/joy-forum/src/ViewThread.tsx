@@ -212,13 +212,13 @@ function InnerViewThread (props: ViewThreadProps) {
       </Link>
 
       {/* TODO show 'Edit' button only if I am owner */}
-      <Link
+      {/* <Link
         to={`/forum/threads/${id.toString()}/edit`}
         className='ui small button'
       >
         <i className='pencil alternate icon' />
         Edit
-      </Link>
+      </Link> */}
 
       {/* TODO show 'Moderate' button only if current user is a forum sudo */}
       <Button
