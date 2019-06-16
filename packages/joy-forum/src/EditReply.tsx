@@ -220,6 +220,6 @@ export const EditReply = withMulti(
   withOnlyMembers,
   withIdFromUrl,
   withForumCalls<OuterProps>(
-    ['replyById', { paramName: 'id', propName: 'struct' }]
+    ['postById', { paramName: 'id', propName: 'struct' }]
   )
 );
