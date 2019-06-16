@@ -48,12 +48,12 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
   // Load cache from localStorage. If switching between networks and same account id
   // is reused, the cached value will not be correct.
 
-  try {
-    const savedCache = JSON.parse(store.get('resolvedProviders'))
-    cache = new Map(savedCache)
-  } catch (err) {
-    console.log('failed to load resolve cache from store')
-  }
+  // try {
+  //   const savedCache = JSON.parse(store.get('resolvedProviders'))
+  //   cache = new Map(savedCache)
+  // } catch (err) {
+  //   console.log('failed to load resolve cache from store')
+  // }
 
   const resolveAssetEndpoint = async (storageProvider: AccountId, contentId?: string, cancelToken?: CancelToken) => {
     const cacheKey = storageProvider.toString();
@@ -76,7 +76,7 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
         const serviceInfoQuery = `${discoveryUrl}/discover/v0/${storageProvider.toString()}`;
 
         try {
-          console.log(`resolving ${cacheKey}`)
+          console.log(`resolving ${cacheKey} using ${discoveryUrl}`);
 
           const serviceInfo = await axios.get(serviceInfoQuery, {cancelToken}) as any
 
@@ -86,7 +86,9 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
 
           assetApiEndpoint = normalizeUrl(JSON.parse(serviceInfo.data.serialized).asset.endpoint);
           cache.set(cacheKey, assetApiEndpoint);
+          break;
         } catch (err) {
+          console.log(err);
           if (axios.isCancel(err)) {
             throw err;
           }
@@ -103,7 +105,7 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
   };
 
   const shutdown = () => {
-    store.set('resolvedProviders', JSON.stringify(Array.from(cache.entries())));
+    // store.set('resolvedProviders', JSON.stringify(Array.from(cache.entries())));
   }
 
   const reportUnreachable = (provider: AccountId) => {
