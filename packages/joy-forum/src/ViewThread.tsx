@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Table, Segment, Button, Label } from 'semantic-ui-react';
 import { History } from 'history';
 
-import { Thread, ThreadId, ReplyId } from './types';
+import { Category, Thread, ThreadId, ReplyId } from './types';
 import { useForum } from './Context';
 import { AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs, UrlHasIdProps } from './utils';
 import Section from '@polkadot/joy-utils/Section';
@@ -13,6 +13,9 @@ import { Moderate } from './Moderate';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import { withForumCalls } from './calls';
+import { withApi, withMulti, api } from '@polkadot/ui-api';
+import { ApiProps } from '@polkadot/ui-api/types';
+import { orderBy } from 'lodash';
 
 type ThreadTitleProps = {
   thread: Thread,
@@ -22,35 +25,35 @@ type ThreadTitleProps = {
 function ThreadTitle (props: ThreadTitleProps) {
   const { thread, className } = props;
   return <span className={className}>
-    {thread.pinned && <i
+    {/* {thread.pinned && <i
       className='star icon'
       title='This post is pinned by moderator'
       style={{ marginRight: '.5rem' }}
-    />}
+    />} */}
     {thread.title}
   </span>;
 }
 
-type ViewThreadProps = {
-  thread?: Thread,
-  id: ThreadId,
+type ViewThreadProps = ApiProps & {
+  category: Category,
+  thread: Thread,
   page?: number,
   preview?: boolean,
   history?: History
 };
 
-export const ViewThread = withForumCalls<ViewThreadProps>(
-  ['threadById', { propName: 'thread', paramName: 'id' }]
-)(InnerViewThread);
+export const ViewThread = withMulti(
+  InnerViewThread,
+  withApi
+);
 
 function InnerViewThread (props: ViewThreadProps) {
   const { state: {
-    categoryById,
     replyIdsByThreadId
   }} = useForum();
 
   const [showModerateForm, setShowModerateForm] = useState(false);
-  const { history, thread, id, page = 1, preview = false } = props;
+  const { history, category, thread, page = 1, preview = false } = props;
 
   if (!thread) {
     return <em>Loading...</em>;
@@ -64,8 +67,10 @@ function InnerViewThread (props: ViewThreadProps) {
     return renderThreadNotFound();
   }
 
+  const id = thread.id;
+
+  // TODO get replies from Substrate!
   const replyIds = replyIdsByThreadId.get(id.toNumber()) || [];
-  const category = categoryById.get(thread.category_id.toNumber());
 
   if (!category) {
     return <em>Thread's category was not found.</em>;
@@ -87,7 +92,7 @@ function InnerViewThread (props: ViewThreadProps) {
           {replyIds.length}
         </Table.Cell>
         <Table.Cell>
-          <AuthorPreview address={thread.owner} />
+          <AuthorPreview address={thread.author_id} />
         </Table.Cell>
       </Table.Row>
     );
@@ -129,14 +134,17 @@ function InnerViewThread (props: ViewThreadProps) {
     </>;
   };
 
+  // TODO get the first post of thread.
+  const firstPost = thread.title;
+
   const renderThreadDetailsAndReplies = () => {
     return <>
       <Segment>
         <div>
-          <AuthorPreview address={thread.owner} />
+          <AuthorPreview address={thread.author_id} />
         </div>
         <div style={{ marginTop: '1rem' }}>
-          <ReactMarkdown className='JoyMemo--full' source={thread.text} linkTarget='_blank' />
+          <ReactMarkdown className='JoyMemo--full' source={firstPost} linkTarget='_blank' />
         </div>
       </Segment>
       <Section title={`Replies (${replyIds.length})`}>
@@ -208,7 +216,7 @@ function InnerViewThread (props: ViewThreadProps) {
   </>;
 }
 
-type ViewThreadByIdProps = UrlHasIdProps & {
+type InnerViewThreadByIdProps = UrlHasIdProps & {
   history: History,
   match: {
     params: {
@@ -218,13 +226,66 @@ type ViewThreadByIdProps = UrlHasIdProps & {
   }
 };
 
-export function ViewThreadById (props: ViewThreadByIdProps) {
+// TODO finish!
+
+export const ViewThreadById = withMulti(
+  InnerViewThreadById,
+  withForumCalls<ViewThreadProps>(
+    ['threadById', { propName: 'thread', paramName: 'id' }]
+  )
+);
+
+function InnerViewThreadById (props: InnerViewThreadByIdProps) {
   const { history, match: { params: { id, page: pageStr } } } = props;
+
+  let page = 1;
+  if (pageStr) {
+    try {
+      // tslint:disable-next-line:radix
+      page = parseInt(pageStr);
+    } catch (err) {
+      console.log('Failed to parse page number form URL');
+    }
+  }
+
+  let threadId: ThreadId;
   try {
-    // tslint:disable-next-line:radix
-    const page = pageStr ? parseInt(pageStr) : 1;
-    return <ViewThread id={new ThreadId(id)} page={page} history={history} />;
+    threadId = new ThreadId(id);
   } catch (err) {
+    console.log('Failed to parse thread id form URL');
     return <em>Invalid thread ID: {id}</em>;
   }
+
+  const [loaded, setLoaded] = useState(false);
+  const [thread, setThread] = useState(Thread.newEmpty());
+  const [category, setCategory] = useState(Category.newEmpty());
+
+  useEffect(() => {
+    const loadThreadAndCategory = async () => {
+      if (!threadId) return;
+
+      const thread = await api.query.forum.threadById(threadId) as Thread;
+      const category = await api.query.forum.categoryById(thread.category_id) as Category;
+
+      setThread(thread);
+      setCategory(category);
+      setLoaded(true);
+    };
+
+    loadThreadAndCategory();
+  }, [threadId, page]);
+
+  if (!loaded) {
+    return <em>Loading thread details...</em>;
+  }
+
+  if (thread.isEmpty) {
+    return <em>Thread was not found by id</em>;
+  }
+
+  if (category.isEmpty) {
+    return <em>Thread's category was not found</em>;
+  }
+
+  return <ViewThread id={threadId} category={category} thread={thread} page={page} history={history} />;
 }

@@ -109,10 +109,6 @@ const ViewCategory = withForumCalls<ViewCategoryProps>(
 )(InnerViewCategory);
 
 function InnerViewCategory (props: InnerViewCategoryProps) {
-  const { state: {
-    threadIdsByCategoryId
-  }} = useForum();
-
   const { history, category, page = 1, preview = false } = props;
 
   if (!category) {
@@ -124,10 +120,6 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
   }
 
   const { id } = category;
-  const hasSubcats = !category.num_direct_subcategories.isZero();
-
-  // TODO replace w/ Substrate
-  const threadIds = threadIdsByCategoryId.get(id.toNumber()) || [];
 
   const renderCategoryActions = () => {
     return <CategoryActions id={id} category={category} />;
@@ -181,14 +173,14 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
       </div>
     </Segment>
 
-    {hasSubcats &&
+    {category.hasSubcategories &&
       <Section title={`Subcategories (${category.num_direct_subcategories.toString()})`}>
         <CategoryList parentId={id} />
       </Section>
     }
 
-    <Section title={`Threads (${threadIds.length})`}>
-      <CategoryThreads categoryId={id} threadIds={threadIds} page={page} history={history} />
+    <Section title={`Threads (${category.num_direct_unmoderated_threads.toString()})`}>
+      <CategoryThreads category={category} page={page} history={history} />
     </Section>
   </>;
 
@@ -206,25 +198,81 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
   </>);
 }
 
-type CategoryThreadsProps = {
-  categoryId: CategoryId,
-  threadIds: number[],
+type InnerCategoryThreadsProps = {
+  category: Category,
   page: number,
   history: History
 };
 
-function CategoryThreads (props: CategoryThreadsProps) {
-  const { categoryId, threadIds, page, history } = props;
-  const { state: { threadById } } = useForum();
+type CategoryThreadsProps = ApiProps & InnerCategoryThreadsProps & {
+  nextThreadId?: ThreadId
+};
 
-  if (threadIds.length === 0) {
+export const CategoryThreads = withMulti(
+  InnerCategoryThreads,
+  withApi,
+  withForumCalls<CategoryThreadsProps>(
+    ['nextThreadId', { propName: 'nextThreadId' }]
+  )
+);
+
+function InnerCategoryThreads (props: CategoryThreadsProps) {
+  const { api, category, nextThreadId, page, history } = props;
+
+  if (!category.hasUnmoderatedThreads) {
+    return <em>No threads in this category</em>;
+  }
+
+  const [loaded, setLoaded] = useState(false);
+  const [threads, setThreads] = useState(new Array<Thread>());
+
+  useEffect(() => {
+    const loadThreads = async () => {
+      if (!nextThreadId) return;
+
+      const newId = (id: number | BN) => new ThreadId(id);
+      const apiCalls: Promise<Thread>[] = [];
+      let id = newId(1);
+      while (nextThreadId.gt(id)) {
+        apiCalls.push(api.query.forum.threadById(id) as Promise<Thread>);
+        id = newId(id.add(newId(1)));
+      }
+
+      const allThreads = await Promise.all<Thread>(apiCalls);
+      const filteredThreads = allThreads.filter(item => !item.isEmpty);
+      const sortedThreads = orderBy(filteredThreads,
+        // TODO UX: Replace sort by id with sort by blocktime of the last reply.
+        [
+          x => x.moderated,
+          // x => x.pinned,
+          x => x.id ],
+        [
+          'asc',
+          // 'desc',
+          'desc'
+        ]
+      );
+
+      setThreads(sortedThreads);
+      setLoaded(true);
+    };
+
+    loadThreads();
+  }, [category, nextThreadId]);
+
+  if (!loaded) {
+    return <em>Loading threads...</em>;
+  }
+
+  if (!threads) {
     return <em>No threads in this category</em>;
   }
 
   const onPageChange = (activePage?: string | number) => {
-    history.push(`/forum/categories/${categoryId.toString()}/page/${activePage}`);
+    history.push(`/forum/categories/${category.id.toString()}/page/${activePage}`);
   };
 
+  const totalItems = category.num_direct_unmoderated_threads.toNumber();
   const itemsPerPage = ThreadsPerPage;
   const minIdx = (page - 1) * itemsPerPage;
   const maxIdx = minIdx + itemsPerPage - 1;
@@ -232,44 +280,14 @@ function CategoryThreads (props: CategoryThreadsProps) {
   const pagination =
     <Pagination
       currentPage={page}
-      totalItems={threadIds.length}
+      totalItems={totalItems}
       itemsPerPage={itemsPerPage}
       onPageChange={onPageChange}
     />;
 
-  type SortableThread = ThreadType & {
-    id: number,
-    // pinned: boolean,
-    moderated: boolean
-  };
-
-  const threads: SortableThread[] = threadIds
-    .map(id => {
-      const thread = threadById.get(id);
-      return !thread ? thread : {
-        id,
-        // pinned: thread.pinned,
-        moderated: thread.moderation !== undefined
-      };
-    })
-    .filter(x => x !== undefined) as SortableThread[];
-
-  const sortedThreadIds = orderBy(threads,
-    // TODO Replace sort by id with sort by blocktime of the last reply.
-    [
-      x => x.moderated,
-      // x => x.pinned,
-      x => x.id ],
-    [
-      'asc',
-      // 'desc',
-      'desc'
-    ]
-  ).map(x => x.id);
-
-  const pageOfItems = sortedThreadIds
-    .filter((_id, i) => i >= minIdx && i <= maxIdx)
-    .map((id, i) => <ViewThread key={i} id={new ThreadId(id)} preview />);
+  const pageOfItems = threads
+    .filter((_thread, i) => i >= minIdx && i <= maxIdx)
+    .map((thread, i) => <ViewThread key={i} category={category} thread={thread} preview />);
 
   return <>
     {pagination}
@@ -325,7 +343,7 @@ export const CategoryList = withMulti(
 
 function InnerCategoryList (props: CategoryListProps) {
   const { api, parentId, nextCategoryId } = props;
-  const [catsLoaded, setCatsLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [categories, setCategories] = useState(new Array<Category>());
 
   useEffect(() => {
@@ -348,13 +366,13 @@ function InnerCategoryList (props: CategoryListProps) {
       );
 
       setCategories(filteredCats);
-      setCatsLoaded(true);
+      setLoaded(true);
     };
 
     loadCategories();
   }, [parentId, nextCategoryId]);
 
-  if (!catsLoaded) {
+  if (!loaded) {
     return <em>Loading categories...</em>;
   }
 
