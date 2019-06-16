@@ -191,6 +191,10 @@ export class Category extends JoyStruct<CategoryType> {
     }, value);
   }
 
+  static newEmpty (): Category {
+    return new Category({} as CategoryType);
+  }
+
   get id (): CategoryId {
     return this.getRequired('id');
   }
@@ -289,6 +293,10 @@ export class Thread extends JoyStruct<ThreadType> {
     }, value);
   }
 
+  static newEmpty (): Thread {
+    return new Thread({} as ThreadType);
+  }
+
   get id (): ThreadId {
     return this.getRequired('id');
   }
@@ -358,6 +366,10 @@ export class Post extends JoyStruct<PostType> {
       created_at: BlockchainTimestamp,
       author_id: AccountId
     }, value);
+  }
+
+  static newEmpty (): Post {
+    return new Post({} as PostType);
   }
 
   get id (): PostId {
