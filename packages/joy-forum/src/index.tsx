@@ -16,7 +16,6 @@ import { NewReply, EditReply } from './EditReply';
 import { CategoryList, ViewCategoryById } from './CategoryList';
 import { ViewThreadById } from './ViewThread';
 import { ViewReplyById } from './ViewReply';
-import { MockState } from './MockContext';
 
 type Props = AppProps & I18nProps & {};
 
@@ -46,10 +45,6 @@ class App extends React.PureComponent<Props> {
     const tabs = this.buildTabs();
     return (
       <ForumProvider>
-
-        {/* TODO for debug purposes only */}
-        <MockState />
-
       <main className='forum--App'>
         <header>
           <Tabs basePath={basePath} items={tabs} />
