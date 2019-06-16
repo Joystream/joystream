@@ -2,6 +2,10 @@ import BN from 'bn.js';
 
 export const ZERO = new BN(0);
 
+export function bnToStr (bn?: BN, dflt: string = ''): string {
+  return bn ? bn.toString() : dflt;
+}
+
 // String, Numbers, Object
 // --------------------------------------
 

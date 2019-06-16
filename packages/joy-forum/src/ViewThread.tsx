@@ -16,6 +16,7 @@ import { withForumCalls } from './calls';
 import { withApi, withMulti, api } from '@polkadot/ui-api';
 import { ApiProps } from '@polkadot/ui-api/types';
 import { orderBy } from 'lodash';
+import { bnToStr } from '@polkadot/joy-utils/';
 
 type ThreadTitleProps = {
   thread: Thread,
@@ -138,9 +139,10 @@ function InnerViewThread (props: ViewThreadProps) {
     };
 
     loadPosts();
-  }, [id.toNumber(), nextPostId]);
+  }, [ bnToStr(thread.id), bnToStr(nextPostId) ]);
 
-  // TODO get the first post of thread. !!!
+  // console.log({ nextPostId: bnToStr(nextPostId), loaded, posts });
+
   const [ firstPost, ...replies ] = posts;
   const threadBody = firstPost ? firstPost.current_text : '';
 
@@ -316,7 +318,9 @@ function InnerViewThreadById (props: InnerViewThreadByIdProps) {
     };
 
     loadThreadAndCategory();
-  }, [threadId, page]);
+  }, [ id, page ]);
+
+  // console.log({ threadId: id, page });
 
   if (!loaded) {
     return <em>Loading thread details...</em>;

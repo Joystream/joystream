@@ -17,6 +17,7 @@ import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import { withForumCalls } from './calls';
 import { withMulti, withApi } from '@polkadot/ui-api';
 import { ApiProps } from '@polkadot/ui-api/types';
+import { bnToStr } from '@polkadot/joy-utils/';
 
 type CategoryActionsProps = {
   id: CategoryId
@@ -264,7 +265,9 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
     };
 
     loadThreads();
-  }, [category.id, nextThreadId]);
+  }, [ bnToStr(category.id), bnToStr(nextThreadId) ]);
+
+  // console.log({ nextThreadId: bnToStr(nextThreadId), loaded, threads });
 
   if (!loaded) {
     return <em>Loading threads...</em>;
@@ -375,7 +378,9 @@ function InnerCategoryList (props: CategoryListProps) {
     };
 
     loadCategories();
-  }, [parentId, nextCategoryId]);
+  }, [ bnToStr(parentId), bnToStr(nextCategoryId) ]);
+
+  // console.log({ nextCategoryId: bnToStr(nextCategoryId), loaded, categories });
 
   if (!loaded) {
     return <em>Loading categories...</em>;
