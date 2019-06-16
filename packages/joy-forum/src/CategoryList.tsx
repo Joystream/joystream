@@ -7,7 +7,7 @@ import orderBy from 'lodash/orderBy';
 import BN from 'bn.js';
 
 import { Bool } from '@polkadot/types';
-import { CategoryId, Category, ThreadId, ThreadType, Thread } from './types';
+import { CategoryId, Category, ThreadId, Thread } from './types';
 import { useForum } from './Context';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
@@ -223,12 +223,13 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
     return <em>No threads in this category</em>;
   }
 
+  const threadCount = category.num_direct_unmoderated_threads.toNumber();
   const [loaded, setLoaded] = useState(false);
   const [threads, setThreads] = useState(new Array<Thread>());
 
   useEffect(() => {
     const loadThreads = async () => {
-      if (!nextThreadId) return;
+      if (!nextThreadId || threadCount === 0) return;
 
       const newId = (id: number | BN) => new ThreadId(id);
       const apiCalls: Promise<Thread>[] = [];
@@ -249,7 +250,7 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
         [
           x => x.moderated,
           // x => x.pinned,
-          x => x.id
+          x => x.nr_in_category.toNumber()
         ],
         [
           'asc',
@@ -263,7 +264,7 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
     };
 
     loadThreads();
-  }, [category, nextThreadId]);
+  }, [category.id, nextThreadId]);
 
   if (!loaded) {
     return <em>Loading threads...</em>;
@@ -277,7 +278,6 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
     history.push(`/forum/categories/${category.id.toString()}/page/${activePage}`);
   };
 
-  const totalItems = category.num_direct_unmoderated_threads.toNumber();
   const itemsPerPage = ThreadsPerPage;
   const minIdx = (page - 1) * itemsPerPage;
   const maxIdx = minIdx + itemsPerPage - 1;
@@ -285,7 +285,7 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
   const pagination =
     <Pagination
       currentPage={page}
-      totalItems={totalItems}
+      totalItems={threadCount}
       itemsPerPage={itemsPerPage}
       onPageChange={onPageChange}
     />;

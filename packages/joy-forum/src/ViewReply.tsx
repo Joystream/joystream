@@ -3,38 +3,28 @@ import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Segment, Button } from 'semantic-ui-react';
 
-import { ReplyId, Reply, Category, Thread } from './types';
-import { useForum } from './Context';
-import { UrlHasIdProps, AuthorPreview } from './utils';
+import { Post, Category, Thread } from './types';
+import { AuthorPreview } from './utils';
 import { Moderate } from './Moderate';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
-import { withForumCalls } from './calls';
 
 type ViewReplyProps = {
-  reply?: Reply,
-  id: ReplyId,
+  reply: Post,
   thread: Thread,
   category: Category
 };
 
-export const ViewReply = withForumCalls<ViewReplyProps>(
-  ['replyById', { propName: 'reply', paramName: 'id' }]
-)(InnerViewReply);
-
-function InnerViewReply (props: ViewReplyProps) {
+export function ViewReply (props: ViewReplyProps) {
   const [showModerateForm, setShowModerateForm] = useState(false);
-  const { reply, id, thread, category } = props;
-
-  if (!reply) {
-    return <em>Loading...</em>;
-  }
+  const { reply, thread, category } = props;
+  const { id } = reply;
 
   if (reply.isEmpty) {
     return <em>Reply not found</em>;
   }
 
   const renderReplyDetails = () => {
-    return <ReactMarkdown className='JoyMemo--full' source={reply.text} linkTarget='_blank' />;
+    return <ReactMarkdown className='JoyMemo--full' source={reply.current_text} linkTarget='_blank' />;
   };
 
   const renderModerationRationale = () => {
@@ -75,7 +65,7 @@ function InnerViewReply (props: ViewReplyProps) {
   return (
     <Segment>
       <div>
-        <AuthorPreview address={reply.owner} />
+        <AuthorPreview address={reply.author_id} />
         {renderActions()}
       </div>
       <div style={{ marginTop: '1rem' }}>
@@ -89,42 +79,4 @@ function InnerViewReply (props: ViewReplyProps) {
       </div>
     </Segment>
   );
-}
-
-export function ViewReplyById (props: UrlHasIdProps) {
-  const { match: { params: { id } } } = props;
-
-  const { state: {
-    categoryById,
-    threadById,
-    replyById
-  }} = useForum();
-
-  let replyId: ReplyId | undefined;
-  try {
-    replyId = new ReplyId(id);
-  } catch (err) {
-    console.log('Invalid reply ID', id);
-  }
-
-  if (!replyId) {
-    return <em>Invalid reply ID: {id}</em>;
-  }
-
-  const reply = replyById.get(replyId.toNumber());
-  if (!reply) {
-    return <em>Reply was not found.</em>;
-  }
-
-  const thread = threadById.get(reply.thread_id.toNumber());
-  if (!thread) {
-    return <em>Reply's thread was not found.</em>;
-  }
-
-  const category = categoryById.get(thread.category_id.toNumber());
-  if (!category) {
-    return <em>Reply's category was not found.</em>;
-  }
-
-  return <ViewReply id={replyId} thread={thread} category={category} />;
 }
