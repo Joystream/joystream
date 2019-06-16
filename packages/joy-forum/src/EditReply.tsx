@@ -86,7 +86,6 @@ const InnerForm = (props: FormProps) => {
 
     const textParam = new Text(text);
     if (!id) {
-      console.log({ text });
       return [ threadId, textParam ];
     } else {
       return [ id, textParam ];
