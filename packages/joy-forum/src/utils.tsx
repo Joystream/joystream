@@ -4,8 +4,9 @@ import { Pagination as SuiPagination } from 'semantic-ui-react';
 
 import { AccountId, AccountIndex, Address } from '@polkadot/types';
 import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
-import { CategoryId, ThreadId } from './types';
-import { useForum } from './Context';
+import { Category, CategoryId, Thread, ThreadId } from './types';
+import { withForumCalls } from './calls';
+import { withMulti } from '@polkadot/ui-api';
 
 export const ThreadsPerPage = 10;
 export const RepliesPerPage = 10;
@@ -45,54 +46,62 @@ export const Pagination = (p: PaginationProps) => {
 
 type CategoryCrumbsProps = {
   categoryId?: CategoryId
+  category?: Category
   threadId?: ThreadId
+  thread?: Thread
 };
 
-const CategoryCrumb = (p: CategoryCrumbsProps) => {
-  const { state: { categoryById } } = useForum();
-  const { categoryId: id } = p;
+const CategoryCrumb = withMulti(
+  InnerCategoryCrumb,
+  withForumCalls<CategoryCrumbsProps>(
+    ['categoryById', { propName: 'category', paramName: 'categoryId' }]
+  )
+);
 
-  if (id) {
+function InnerCategoryCrumb (p: CategoryCrumbsProps) {
+  const { category } = p;
+
+  if (category) {
     try {
-      const category = categoryById.get(id.toNumber());
-      if (category) {
-        const url = `/forum/categories/${id.toString()}`;
-        return <>
-          {category.parent_id ? <CategoryCrumb categoryId={category.parent_id} /> : null}
-          <i className='right angle icon divider'></i>
-          <Link className='section' to={url}>{category.title}</Link>
-        </>;
-      }
+      const url = `/forum/categories/${category.id.toString()}`;
+      return <>
+        {category.parent_id ? <CategoryCrumb categoryId={category.parent_id} /> : null}
+        <i className='right angle icon divider'></i>
+        <Link className='section' to={url}>{category.title}</Link>
+      </>;
     } catch (err) {
       console.log('Failed to create a category breadcrumb', err);
     }
   }
 
   return null;
-};
+}
 
-const ThreadCrumb = (p: CategoryCrumbsProps) => {
-  const { state: { threadById } } = useForum();
-  const { threadId: id } = p;
+const ThreadCrumb = withMulti(
+  InnerThreadCrumb,
+  withForumCalls<CategoryCrumbsProps>(
+    ['threadById', { propName: 'thread', paramName: 'threadId' }]
+  )
+);
 
-  if (id) {
+function InnerThreadCrumb (p: CategoryCrumbsProps) {
+  const { thread } = p;
+
+  if (thread) {
     try {
-      const thread = threadById.get(id.toNumber());
-      if (thread) {
-        const url = `/forum/threads/${id.toString()}`;
-        return <>
-          <CategoryCrumb categoryId={thread.category_id} />
-          <i className='right angle icon divider'></i>
-          <Link className='section' to={url}>{thread.title}</Link>
-        </>;
-      }
+      const url = `/forum/threads/${thread.id.toString()}`;
+      return <>
+        <CategoryCrumb categoryId={thread.category_id} />
+        <i className='right angle icon divider'></i>
+        <Link className='section' to={url}>{thread.title}</Link>
+      </>;
     } catch (err) {
       console.log('Failed to create a thread breadcrumb', err);
     }
   }
 
   return null;
-};
+}
 
 export const CategoryCrumbs = (p: CategoryCrumbsProps) => {
   return (
