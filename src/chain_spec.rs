@@ -153,7 +153,7 @@ pub fn staging_testnet_config() -> ChainSpec {
     )
 }
 
-fn new_validation(min: usize, max_min_diff: usize) -> InputValidationLengthConstraint {
+fn new_validation(min: u16, max_min_diff: u16) -> InputValidationLengthConstraint {
 	return InputValidationLengthConstraint {
 		min,
 		max_min_diff
