@@ -115,9 +115,6 @@ class Component extends React.PureComponent<Props, State> {
     const active = !error && progress < 100;
     const success = !error && progress >= 100;
 
-    // This is a visual hack to show that progress bar is active while uploading a file.
-    const percent = 100;
-
     let label = '';
     if (active) {
       label = `Your file is uploading. Please keep this page open until it's done.`;
@@ -128,7 +125,7 @@ class Component extends React.PureComponent<Props, State> {
     return <Progress
       className='UploadProgress'
       progress={success}
-      percent={percent}
+      percent={progress}
       active={active}
       success={success}
       label={label}
@@ -238,7 +235,13 @@ class Component extends React.PureComponent<Props, State> {
         // 'Content-Type': file.type
         'Content-Type': '' // <-- this is a temporary hack
       },
-      cancelToken: cancelSource.token
+      cancelToken: cancelSource.token,
+      onUploadProgress: (progressEvent: any) => {
+        const percentCompleted = Math.round( (progressEvent.loaded * 100) / progressEvent.total );
+        this.setState({
+          progress: percentCompleted
+        });
+      }
     };
 
     const { discoveryProvider } = this.props;
@@ -264,7 +267,7 @@ class Component extends React.PureComponent<Props, State> {
 
     try {
       await axios.put<{ message: string }>(url, file, config);
-      this.setState({ progress: 100 });
+      this.setState({ progress: 0 });
     } catch(err) {
       if (axios.isCancel) {
         return
@@ -273,7 +276,7 @@ class Component extends React.PureComponent<Props, State> {
         // network connection error
         discoveryProvider.reportUnreachable(storageProvider);
       }
-      this.setState({ progress: 100, error: err, uploading: false });
+      this.setState({ progress: 0, error: err, uploading: false });
     }
   }
 }
