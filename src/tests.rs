@@ -136,7 +136,7 @@ fn create_category_title_too_long() {
         CreateCategoryFixture {
             origin: OriginType::Signed(genesis_config.forum_sudo),
             parent: None,
-            title: vec![b'X'; genesis_config.category_title_constraint.max() + 1],
+            title: vec![b'X'; (genesis_config.category_title_constraint.max() as usize) + 1],
             description: "This is a great new category for the forum".as_bytes().to_vec(),
             result: Err(ERROR_CATEGORY_TITLE_TOO_LONG)
         }
