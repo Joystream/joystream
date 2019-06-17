@@ -227,7 +227,7 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
     return <em>No threads in this category</em>;
   }
 
-  const threadCount = category.num_direct_unmoderated_threads.toNumber();
+  const threadCount = category.num_threads_created.toNumber();
   const [loaded, setLoaded] = useState(false);
   const [threads, setThreads] = useState(new Array<Thread>());
 

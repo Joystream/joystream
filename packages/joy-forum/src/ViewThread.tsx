@@ -72,10 +72,11 @@ function InnerViewThread (props: ViewThreadProps) {
   }
 
   const { id } = thread;
+  const totalPostsInThread = thread.num_posts_ever_created.toNumber();
 
   // We substract 1 from num of posts because the first post is not a reply,
   // it's an initial text (body) on the thread.
-  const replyCount = thread.num_unmoderated_posts.toNumber() - 1;
+  const replyCount = totalPostsInThread - 1;
 
   if (!category) {
     return <em>Thread's category was not found.</em>;
@@ -113,7 +114,7 @@ function InnerViewThread (props: ViewThreadProps) {
 
   useEffect(() => {
     const loadPosts = async () => {
-      if (!nextPostId || replyCount === 0) return;
+      if (!nextPostId || totalPostsInThread === 0) return;
 
       const newId = (id: number | BN) => new PostId(id);
       const apiCalls: Promise<Post>[] = [];
