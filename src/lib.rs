@@ -932,7 +932,7 @@ decl_module! {
                 };
 
                 // Set current text to new text
-                post.current_text = new_text;
+                p.current_text = new_text;
 
                 // Copy current text to history of expired texts
                 p.text_change_history.push(expired_post_text);
