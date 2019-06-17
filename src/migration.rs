@@ -1,9 +1,9 @@
+use crate::forum;
 use crate::VERSION;
 use runtime_io::print;
 use srml_support::{decl_event, decl_module, decl_storage, StorageValue};
-use system;
-use crate::forum;
 use sudo;
+use system;
 
 // When preparing a new major runtime release version bump this value to match it and update
 // the initialization code in runtime_initialization(). Because of the way substrate runs runtime code
@@ -42,19 +42,31 @@ impl<T: Trait> Module<T> {
         <forum::ForumSudo<T>>::put(<sudo::Module<T>>::key().clone());
 
         // input validation constraints
-        <forum::CategoryTitleConstraint<T>>::put(Self::create_input_validation_length_constraint(10, 90));
-        <forum::CategoryDescriptionConstraint<T>>::put(Self::create_input_validation_length_constraint(10, 490));
-        <forum::ThreadTitleConstraint<T>>::put(Self::create_input_validation_length_constraint(10, 90));
-        <forum::PostTextConstraint<T>>::put(Self::create_input_validation_length_constraint(10, 990));
-        <forum::ThreadModerationRationaleConstraint<T>>::put(Self::create_input_validation_length_constraint(10, 290));
-        <forum::PostModerationRationaleConstraint<T>>::put(Self::create_input_validation_length_constraint(10, 290));
+        <forum::CategoryTitleConstraint<T>>::put(Self::create_input_validation_length_constraint(
+            10, 90,
+        ));
+        <forum::CategoryDescriptionConstraint<T>>::put(
+            Self::create_input_validation_length_constraint(10, 490),
+        );
+        <forum::ThreadTitleConstraint<T>>::put(Self::create_input_validation_length_constraint(
+            10, 90,
+        ));
+        <forum::PostTextConstraint<T>>::put(Self::create_input_validation_length_constraint(
+            10, 990,
+        ));
+        <forum::ThreadModerationRationaleConstraint<T>>::put(
+            Self::create_input_validation_length_constraint(10, 290),
+        );
+        <forum::PostModerationRationaleConstraint<T>>::put(
+            Self::create_input_validation_length_constraint(10, 290),
+        );
     }
 
-    fn create_input_validation_length_constraint(min: u16, max_min_diff: u16) -> forum::InputValidationLengthConstraint {
-	    return forum::InputValidationLengthConstraint {
-		    min,
-		    max_min_diff
-	    }
+    fn create_input_validation_length_constraint(
+        min: u16,
+        max_min_diff: u16,
+    ) -> forum::InputValidationLengthConstraint {
+        return forum::InputValidationLengthConstraint { min, max_min_diff };
     }
 }
 
