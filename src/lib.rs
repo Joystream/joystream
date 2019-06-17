@@ -226,24 +226,25 @@ use srml_support::{ decl_event, decl_module, decl_storage, ensure, dispatch, Sto
 pub struct InputValidationLengthConstraint {
 
     /// Minimum length
-    pub min : usize,
+    pub min: u16,
 
     /// Difference between minimum length and max length.
     /// While having max would have been more direct, this
     /// way makes max < min unrepresentable semantically, 
     /// which is safer.
-    pub max_min_diff: usize,
+    pub max_min_diff: u16,
 }
 
 impl InputValidationLengthConstraint {
     
     /// Helper for computing max
-    pub fn max(&self) -> usize {
+    pub fn max(&self) -> u16 {
         self.min + self.max_min_diff
     }
 
-    pub fn ensure_valid(&self, length: usize, too_short_msg: &'static str, too_long_msg: &'static str) -> Result<(),&'static str> {
+    pub fn ensure_valid(&self, len: usize, too_short_msg: &'static str, too_long_msg: &'static str) -> Result<(),&'static str> {
 
+        let length = len as u16;
         if length < self.min {
             Err(too_short_msg)
         }
@@ -261,7 +262,7 @@ impl InputValidationLengthConstraint {
 
 /// The greatest valid depth of a category.
 /// The depth of a root category is 0.
-const MAX_CATEGORY_DEPTH: u32 = 3;
+const MAX_CATEGORY_DEPTH: u16 = 3;
 
 /// Error messages for dispatchables
 const ERROR_FORUM_SUDO_NOT_SET: &str = "Forum sudo not set.";
