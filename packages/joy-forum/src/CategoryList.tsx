@@ -307,7 +307,7 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
         <Table.Row>
           <Table.HeaderCell>Thread</Table.HeaderCell>
           <Table.HeaderCell>Replies</Table.HeaderCell>
-          <Table.HeaderCell>Moderator</Table.HeaderCell>
+          <Table.HeaderCell>Creator</Table.HeaderCell>
         </Table.Row>
       </Table.Header>
       <Table.Body>
