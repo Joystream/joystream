@@ -916,7 +916,7 @@ decl_module! {
             Self::ensure_is_forum_member(&who)?;
 
             // Make sure there exists a mutable post with post id `post_id`
-            let mut post = Self::ensure_post_is_mutable(&post_id)?;
+            let post = Self::ensure_post_is_mutable(&post_id)?;
 
             // Signer does not match creator of post with identifier postId
             ensure!(post.author_id == who, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
