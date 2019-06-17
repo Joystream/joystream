@@ -22,8 +22,8 @@ use storage::{data_directory, data_object_storage_registry, data_object_type_reg
 mod membership;
 mod memo;
 mod traits;
-use membership::members;
 pub use forum;
+use membership::members;
 
 mod migration;
 mod roles;
@@ -296,11 +296,11 @@ impl members::Trait for Runtime {
 
 /*
  * Forum module integration
- * 
- * ForumUserRegistry could have been implemented directly on 
+ *
+ * ForumUserRegistry could have been implemented directly on
  * the membership module, and likewise ForumUser on Profile,
  * however this approach is more loosley coupled.
- * 
+ *
  * Further exploration required to decide what the long
  * run convention should be.
  */
@@ -309,21 +309,16 @@ impl members::Trait for Runtime {
 pub struct ShimMembershipRegistry {}
 
 impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
-
     fn get_forum_user(id: &AccountId) -> Option<forum::ForumUser<AccountId>> {
-
-        if let Some(profile) = members::Module::<Runtime>::get_profile(id) {
-
+        if let Some(_profile) = members::Module::<Runtime>::get_profile(id) {
             // For now the profile is not used for anything,
             // but in the future we may need it to read out more
-            // information possibly required to construct a 
+            // information possibly required to construct a
             // ForumUser.
 
             // Now convert member profile to a forum user
-            Some(forum::ForumUser{
-                id: id.clone()
-            })
 
+            Some(forum::ForumUser { id: id.clone() })
         } else {
             None
         }
@@ -331,7 +326,6 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
 }
 
 impl forum::Trait for Runtime {
-    
     type Event = Event;
     type MembershipRegistry = ShimMembershipRegistry;
 }
