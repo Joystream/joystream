@@ -17,7 +17,7 @@ import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import { withForumCalls } from './calls';
 import { withMulti, withApi } from '@polkadot/ui-api';
 import { ApiProps } from '@polkadot/ui-api/types';
-import { bnToStr } from '@polkadot/joy-utils/';
+import { bnToStr, isEmptyArr } from '@polkadot/joy-utils/';
 
 type CategoryActionsProps = {
   id: CategoryId
@@ -26,8 +26,11 @@ type CategoryActionsProps = {
 
 function CategoryActions (props: CategoryActionsProps) {
   const { id, category } = props;
-  const { dispatch } = useForum();
   const className = 'ui button ActionButton';
+
+  // TODO get rid of dispatch!
+  // replace with tx button
+  const { dispatch } = useForum();
 
   const updateBoolFieldOnCategory = (fieldName: string, flag: boolean) => {
     category.set(fieldName, new Bool(flag));
@@ -273,7 +276,7 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
     return <em>Loading threads...</em>;
   }
 
-  if (!threads) {
+  if (isEmptyArr(threads)) {
     return <em>No threads in this category</em>;
   }
 
@@ -386,7 +389,7 @@ function InnerCategoryList (props: CategoryListProps) {
     return <em>Loading categories...</em>;
   }
 
-  if (!categories) {
+  if (isEmptyArr(categories)) {
     return <em>Forum is empty</em>;
   }
 

@@ -45,6 +45,9 @@ export const parseNumStr = (num: string): number | undefined => {
 export const nonEmptyArr = (x: any): boolean =>
   Array.isArray(x) && x.length > 0;
 
+export const isEmptyArr = (x: any): boolean =>
+  !nonEmptyArr(x);
+
 // Keyring stuff:
 // --------------------------------------
 
