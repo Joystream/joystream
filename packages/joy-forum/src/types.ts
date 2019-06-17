@@ -40,6 +40,10 @@ export class BlockchainTimestamp extends JoyStruct<BlockchainTimestampType> {
   get time (): Moment {
     return this.getRequired('time');
   }
+
+  static newEmpty (): BlockchainTimestamp {
+    return new BlockchainTimestamp({} as BlockchainTimestampType);
+  }
 }
 
 export type ModerationActionType = {

@@ -2,7 +2,7 @@
 // NOTE: The purpose of this context is to immitate a Substrate storage for the forum until it's implemented as a substrate runtime module.
 
 import React, { useReducer, createContext, useContext } from 'react';
-import { Category, Thread, Reply, ModerationAction } from './types';
+import { Category, Thread, Reply, ModerationAction, BlockchainTimestamp } from './types';
 import { Option, AccountId, Text } from '@polkadot/types';
 
 type CategoryId = number;
@@ -222,6 +222,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
 
       const thread = threadById.get(id) as Thread;
       const moderation = new ModerationAction({
+        moderated_at: BlockchainTimestamp.newEmpty(),
         moderator_id: new AccountId(moderator),
         rationale: new Text(rationale)
       });
@@ -286,6 +287,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
 
       const reply = replyById.get(id) as Reply;
       const moderation = new ModerationAction({
+        moderated_at: BlockchainTimestamp.newEmpty(),
         moderator_id: new AccountId(moderator),
         rationale: new Text(rationale)
       });

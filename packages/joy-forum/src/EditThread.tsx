@@ -58,8 +58,8 @@ const LabelledText = JoyForms.LabelledText<FormValues>();
 
 const InnerForm = (props: FormProps) => {
   const {
-    history,
-    id,
+    // history,
+    // id,
     categoryId,
     struct,
     values,
