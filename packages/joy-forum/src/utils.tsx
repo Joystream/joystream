@@ -31,7 +31,7 @@ type PaginationProps = {
 
 export const Pagination = (p: PaginationProps) => {
   const { currentPage = 1, itemsPerPage = 20 } = p;
-  const totalPages = Math.floor(p.totalItems / itemsPerPage);
+  const totalPages = Math.ceil(p.totalItems / itemsPerPage);
 
   return totalPages <= 1 ? null : (
     <SuiPagination
