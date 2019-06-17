@@ -115,9 +115,6 @@ impl Trait for Runtime {
     type MembershipRegistry = registry::TestMembershipRegistryModule;
 }
 
-// Here are a few testing utilities and fixtures, will reorganize
-// later with more tests.
-
 pub enum OriginType {
     Signed(<Runtime as system::Trait>::AccountId),
     //Inherent, <== did not find how to make such an origin yet
@@ -125,25 +122,29 @@ pub enum OriginType {
 }
 
 pub struct CreateCategoryFixture {
-    origin: OriginType,
-    parent: Option<CategoryId>,
-    title: Vec<u8>,
-    description: Vec<u8>
+    pub origin: OriginType,
+    pub parent: Option<CategoryId>,
+    pub title: Vec<u8>,
+    pub description: Vec<u8>,
+    pub result: dispatch::Result
 }
 
 impl CreateCategoryFixture {
 
-    fn call_module(&self) -> dispatch::Result {
+    pub fn call_and_assert(&self) {
 
-        TestForumModule::create_category(
-            match self.origin {
-                OriginType::Signed(account_id) => Origin::signed(account_id),
-                //OriginType::Inherent => Origin::inherent,
-                OriginType::Root => system::RawOrigin::Root.into() //Origin::root
-            },
-            self.parent,
-            self.title.clone(),
-            self.description.clone()
+        assert_eq!(
+            TestForumModule::create_category(
+                match self.origin {
+                    OriginType::Signed(account_id) => Origin::signed(account_id),
+                    //OriginType::Inherent => Origin::inherent,
+                    OriginType::Root => system::RawOrigin::Root.into() //Origin::root
+                },
+                self.parent,
+                self.title.clone(),
+                self.description.clone()
+            ),
+            self.result
         )
     }
 }

@@ -73,43 +73,6 @@ fn set_forum_sudo_update() {
  * create_category_description_too_long
  */
 
-// Here are a few testing utilities and fixtures, will reorganize
-// later with more tests.
-
-enum OriginType {
-    Signed(<Runtime as system::Trait>::AccountId),
-    //Inherent, <== did not find how to make such an origin yet
-    Root
-}
-
-struct CreateCategoryFixture {
-    origin: OriginType,
-    parent: Option<CategoryId>,
-    title: Vec<u8>,
-    description: Vec<u8>,
-    result: dispatch::Result
-}
-
-impl CreateCategoryFixture {
-
-    fn call_and_assert(&self) {
-
-        assert_eq!(
-            TestForumModule::create_category(
-                match self.origin {
-                    OriginType::Signed(account_id) => Origin::signed(account_id),
-                    //OriginType::Inherent => Origin::inherent,
-                    OriginType::Root => system::RawOrigin::Root.into() //Origin::root
-                },
-                self.parent,
-                self.title.clone(),
-                self.description.clone()
-            ),
-            self.result
-        )
-    }
-}
-
 #[test]
 fn create_category_successfully() {
     with_externalities(&mut build_test_externalities(), || {
