@@ -126,10 +126,6 @@ decl_storage! {
         pub MetadataByContentId get(metadata_by_content_id):
             map T::ContentId => Option<ContentMetadata<T>>;
 
-        // Default storage provider address
-        pub StorageProviderAddress get(storage_provider_address): Vec<u8>;
-        // Default storage provider repository id
-        pub StorageProviderRepoId get(storage_provider_repo_id): Vec<u8>;
         // Default storage provider account id, overrides all active storage providers as liason if set
         pub PrimaryLiaisonAccountId get(primary_liaison_account_id): Option<T::AccountId>;
     }
@@ -281,14 +277,6 @@ decl_module! {
         }
 
         // Sudo methods
-
-        fn set_storage_provider_repo_id(repo_id: Vec<u8>) {
-            <StorageProviderRepoId<T>>::put(repo_id);
-        }
-
-        fn set_storage_provider_address(address: Vec<u8>) {
-            <StorageProviderAddress<T>>::put(address);
-        }
 
         fn set_primary_liaison_account_id(account: T::AccountId) {
             <PrimaryLiaisonAccountId<T>>::put(account);

@@ -74,6 +74,9 @@ impl<T: Trait> Module<T> {
     }
 
     fn initialize_storage_module() {
+        // Remove hardcoded liaison
+        <storage::data_directory::PrimaryLiaisonAccountId<T>>::take();
+
         // remove all content
         for content_id in <storage::data_directory::KnownContentIds<T>>::get().iter() {
             <storage::data_directory::DataObjectByContentId<T>>::remove(content_id);
