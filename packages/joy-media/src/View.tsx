@@ -10,6 +10,7 @@ import { I18nProps } from '@polkadot/ui-app/types';
 import { withCalls, withMulti } from '@polkadot/ui-api/with';
 import { Option } from '@polkadot/types/codec';
 import { formatNumber } from '@polkadot/util';
+import { AccountId } from '@polkadot/types';
 
 import translate from './translate';
 import { DiscoveryProviderProps } from './DiscoveryProvider';
@@ -249,10 +250,17 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
       return
     }
 
+    // filter out providers no longer in actors list
+    const stakedActors = await api.query.actors.actorAccountIds() as unknown as AccountId[];
+
+    readyProviders = _.intersectionBy(stakedActors, readyProviders, provider => provider.toString());
     console.log(`found ${readyProviders.length} providers ready to serve content: ${readyProviders}`);
 
+    // shuffle to spread the load
     readyProviders = _.shuffle(readyProviders);
-    // Alternative - prioritize already resolved providers, and least reported unreachable?
+
+    // TODO: prioritize already resolved providers, least reported unreachable, closest
+    // by geography etc..
 
     const { cancelSource } = this.state;
 
