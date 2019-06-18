@@ -228,6 +228,8 @@ class Storage
 
     this.ipfs = ipfs_client(this.options.ipfs.connect_options);
 
+    this.pins = {};
+
     this.ipfs.id((err, identity) => {
       if (err) {
         debug(`Warning IPFS daemon not running: ${err.message}`);
@@ -275,8 +277,7 @@ class Storage
     const resolved = await this._resolve_content_id_with_timeout(timeout, content_id);
 
     return await this._with_specified_timeout(timeout, (resolve, reject) => {
-      debug('Trying to stat', resolved);
-      this.ipfs.object.stat(resolved, {}, (err, res) => {
+      this.ipfs.files.stat(`/ipfs/${resolved}`, { withLocal: true }, (err, res) => {
         if (err) {
           reject(err);
           return;
@@ -383,17 +384,23 @@ class Storage
    */
   async synchronize(content_id)
   {
-    // debug('syncing', content_id.encode())
     const resolved = await this._resolve_content_id_with_timeout(this._timeout, content_id);
 
-    debug(`Pinning ${resolved}`);
-    await this.ipfs.pin.add(resolved); // TODO: if not already pinned
+    if (this.pins[resolved]) {
+      return;
+    }
 
-    // Just to be on the safe side, also read the file. Calling resume()
-    // should trigger reading, but we don't need to do anything, so discard
-    // all data immediately.
-    const stream = await this.open(content_id, 'r');
-    stream.resume();
+    debug(`Pinning ${resolved}`);
+
+    // This call blocks until file is retreived..
+    this.ipfs.pin.add(resolved, {quiet: true, pin: true}, (err, res) => {
+      if (err) {
+        debug(`Error Pinning: ${resolved}`)
+        delete this.pins[resolved];
+      } else {
+        debug(`Pinned ${resolved}`);
+      }
+    });
   }
 }
 

@@ -31,21 +31,27 @@ async function sync_callback(api, config, storage)
 
   const role_addr = api.identities.key.address();
 
-  // Iterate over all sync objects, and ensure they're synced. We don't
-  // need to explicitly contact the liaison; that's what the backend does for
-  // us.
-  knownContentIds.forEach(async (content_id) => {
+  // Iterate over all sync objects, and ensure they're synced.
+  const allChecks = knownContentIds.map(async (content_id) => {
     let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(role_addr, content_id);
 
+    let fileLocal;
     try {
       // check if we have content or not
-      await storage.stat(content_id, 5000);
+      let stats = await storage.stat(content_id);
+      fileLocal = stats.local;
     } catch (err) {
+      // on error stating or timeout
+      debug(err.message);
       // we don't have content if we can't stat it
+      fileLocal = false;
+    }
+
+    if (!fileLocal) {
       try {
         await storage.synchronize(content_id);
       } catch (err) {
-        debug(`Error synchronizing ${content_id.encode()}: ${err.stack}`);
+        debug(err.message)
       }
       return;
     }
@@ -73,6 +79,10 @@ async function sync_callback(api, config, storage)
       // debug(`content already stored locally ${content_id.encode()}`);
     }
   });
+
+
+  await Promise.all(allChecks);
+  debug('sync run complete');
 }
 
 

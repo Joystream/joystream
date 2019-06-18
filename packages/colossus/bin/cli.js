@@ -29,7 +29,7 @@ const FLAG_DEFINITIONS = {
   },
   'syncPeriod': {
     type: 'integer',
-    _default: 30000,
+    _default: 300000,
   },
   'reannouncePeriod': {
     type: 'integer',
