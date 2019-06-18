@@ -296,7 +296,7 @@ class Storage
     // FIXME CumulativeSize isn't correct - but it's the closest to a correct
     //       size we're getting from IPFS. Returning this means we overestimate
     //       Content-Length a little, which is better than underestimating it.
-    return stat.CumulativeSize;
+    return stat.cumulativeSize;
   }
 
   /*
