@@ -331,6 +331,15 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    pub fn get_profile(id: &T::AccountId) -> Option<Profile<T>> {
+        if let Some(member_id) = Self::ensure_is_member(id).ok() {
+            // This option _must_ be set
+            Self::member_profile(&member_id)
+        } else {
+            None
+        }
+    }
+
     fn ensure_not_member(who: &T::AccountId) -> dispatch::Result {
         ensure!(
             !<MemberIdByAccountId<T>>::exists(who),

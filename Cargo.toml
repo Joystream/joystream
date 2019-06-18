@@ -37,6 +37,7 @@ std = [
     'consensus-authorities/std',
     'grandpa/std',
     'finality-tracker/std',
+    'forum/std'
 ]
 [dependencies.aura]
 default_features = false
@@ -188,3 +189,8 @@ git = 'https://github.com/joystream/substrate.git'
 package = 'srml-finality-tracker'
 rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
 
+[dependencies.forum]
+default_features = false
+git = 'https://github.com/joystream/substrate-forum-module'
+package = 'substrate-forum-module'
+rev = '5ab4944344966e0b460f3883cbc45eab94ef666e'
