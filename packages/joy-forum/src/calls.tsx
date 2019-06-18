@@ -6,7 +6,7 @@ import { withApi, withCall as withSubstrateCall } from '@polkadot/ui-api';
 import { Option } from '@polkadot/types/codec';
 import { U64, AccountId } from '@polkadot/types';
 import { Constructor } from '@polkadot/types/types';
-import { Category, Thread, Reply } from './types';
+import { Category, Thread, Reply } from '@joystream/types/forum';
 import { useForum, ForumState } from './Context';
 
 type Call = string | [string, Options];

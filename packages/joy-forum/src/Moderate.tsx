@@ -9,7 +9,7 @@ import { withMulti } from '@polkadot/ui-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Text } from '@polkadot/types';
-import { ReplyId, ThreadId } from './types';
+import { ReplyId, ThreadId } from '@joystream/types/forum';
 import Section from '@polkadot/joy-utils/Section';
 import { withOnlyForumSudo } from './ForumSudo';
 

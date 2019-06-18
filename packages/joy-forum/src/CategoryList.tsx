@@ -7,7 +7,7 @@ import orderBy from 'lodash/orderBy';
 import BN from 'bn.js';
 
 import { Bool } from '@polkadot/types';
-import { CategoryId, Category, ThreadId, Thread } from './types';
+import { CategoryId, Category, ThreadId, Thread } from '@joystream/types/forum';
 import { useForum } from './Context';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';

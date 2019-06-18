@@ -11,7 +11,7 @@ import { withMulti } from '@polkadot/ui-api/with';
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Text } from '@polkadot/types';
 import { Option } from '@polkadot/types/codec';
-import { CategoryId, Category } from './types';
+import { CategoryId, Category } from '@joystream/types/forum';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';

@@ -1,6 +1,6 @@
 import { getTypeRegistry, u32, u64, AccountId, Text, Bool, BlockNumber, Moment, usize } from '@polkadot/types';
 import { Struct, Option, Vector } from '@polkadot/types/codec';
-import { getTextPropAsString, getBoolPropAsBoolean, getOptionPropOrUndefined } from '@polkadot/joy-utils/types';
+import { getTextPropAsString, getBoolPropAsBoolean, getOptionPropOrUndefined } from './';
 import { Codec } from '@polkadot/types/types';
 
 export class JoyStruct<T extends { [K: string]: Codec }> extends Struct {

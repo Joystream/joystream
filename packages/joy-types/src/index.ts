@@ -1,9 +1,9 @@
 import { Enum, EnumType, Option, Struct } from '@polkadot/types/codec';
 import { getTypeRegistry, BlockNumber, AccountId, Balance, Hash, u32, Text, Bool } from '@polkadot/types';
-import { registerForumTypes } from '@polkadot/joy-forum/types';
-import { registerMediaTypes } from '@polkadot/joy-media/types';
-import { registerMembershipTypes } from '@polkadot/joy-members/types';
-import { registerRolesTypes } from '@polkadot/joy-roles/types';
+import { registerForumTypes } from './forum';
+import { registerMediaTypes } from './media';
+import { registerMembershipTypes } from './members';
+import { registerRolesTypes } from './roles';
 import { registerDiscoveryTypes } from './discovery';
 import { Codec } from '@polkadot/types/types';
 

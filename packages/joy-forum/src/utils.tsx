@@ -4,7 +4,7 @@ import { Pagination as SuiPagination } from 'semantic-ui-react';
 
 import { AccountId, AccountIndex, Address } from '@polkadot/types';
 import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
-import { Category, CategoryId, Thread, ThreadId } from './types';
+import { Category, CategoryId, Thread, ThreadId } from '@joystream/types/forum';
 import { withForumCalls } from './calls';
 import { withMulti } from '@polkadot/ui-api';
 

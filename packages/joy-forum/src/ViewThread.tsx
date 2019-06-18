@@ -5,7 +5,7 @@ import { Table, Segment, Button, Label } from 'semantic-ui-react';
 import { History } from 'history';
 import BN from 'bn.js';
 
-import { Category, Thread, ThreadId, Post, PostId } from './types';
+import { Category, Thread, ThreadId, Post, PostId } from '@joystream/types/forum';
 import { AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs, UrlHasIdProps } from './utils';
 import Section from '@polkadot/joy-utils/Section';
 import { ViewReply } from './ViewReply';
