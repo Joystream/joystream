@@ -15,7 +15,7 @@ import { AccountId } from '@polkadot/types';
 import translate from './translate';
 import { DiscoveryProviderProps } from './DiscoveryProvider';
 import { DataObject, ContentMetadata, ContentId, DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '@joystream/types/media';
-import { MutedText } from '@polkadot/joy-utils/MutedText';
+import { MutedDiv } from '@polkadot/joy-utils/MutedText';
 import { DEFAULT_THUMBNAIL_URL, onImageError } from './utils';
 import { isEmptyStr } from '@polkadot/joy-utils/';
 import { MyAccountContext, MyAccountContextProps } from '@polkadot/joy-utils/MyAccountContext';
@@ -103,8 +103,8 @@ class InnerView extends React.PureComponent<ViewProps> {
             </Link>
           }
           <div><h3>{name}</h3></div>
-          <MutedText smaller>{new Date(added_at.time).toLocaleString()}</MutedText>
-          <MutedText smaller>{formatNumber(data.size_in_bytes)} bytes</MutedText>
+          <MutedDiv smaller>{new Date(added_at.time).toLocaleString()}</MutedDiv>
+          <MutedDiv smaller>{formatNumber(data.size_in_bytes)} bytes</MutedDiv>
         </div>
       </Link>
     );

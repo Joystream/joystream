@@ -19,7 +19,7 @@ import { classes, getAddrName } from '../util';
 import addressToAddress from '../util/toAddress';
 import { MyAccountContext } from '@polkadot/joy-utils/MyAccountContext';
 
-type Props = BareProps & {
+export type Props = BareProps & {
   defaultValue?: string | null,
   help?: React.ReactNode,
   hideAddress?: boolean;

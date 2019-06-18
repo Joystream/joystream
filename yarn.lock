@@ -1955,6 +1955,52 @@
     "@polkadot/keyring" "^0.76.1"
     "@polkadot/util" "^0.76.1"
 
+"@polkadot/ui-api@^0.31.1":
+  version "0.31.1"
+  resolved "https://registry.yarnpkg.com/@polkadot/ui-api/-/ui-api-0.31.1.tgz#b3781dec3e732ae15f379a5e68045314417a1987"
+  integrity sha512-htEGca6qx194kifGuHOGNAJ5AOzOLBQY24ZfZbsyNMuMoTLJ4BORmfJcKhx5hIcydVR2U4O5ixxcJrGtjDCHSw==
+  dependencies:
+    "@babel/runtime" "^7.4.3"
+    "@polkadot/api" "^0.77.0-beta.4"
+    rxjs-compat "^6.3.2"
+
+"@polkadot/ui-app@^0.31.0-beta.18":
+  version "0.31.1"
+  resolved "https://registry.yarnpkg.com/@polkadot/ui-app/-/ui-app-0.31.1.tgz#8d19480b13fbf82754683e3475ccf0b5b3e1a119"
+  integrity sha512-QTQqIP9t1fLI6MVmV5s+LFCPoFsk5sCthtxOvntD0flpIXz33CEYcCdgEwLVC+Ek9gUEU+qIR4apWIwJhnWyNw==
+  dependencies:
+    "@babel/runtime" "^7.4.3"
+    "@polkadot/ui-api" "^0.31.1"
+    "@polkadot/ui-identicon" "^0.38.0-beta.2"
+    "@polkadot/ui-keyring" "^0.38.0-beta.2"
+    "@polkadot/ui-reactive" "^0.31.1"
+    "@polkadot/ui-settings" "^0.38.0-beta.2"
+    "@types/chart.js" "^2.7.45"
+    "@types/classnames" "^2.2.7"
+    "@types/i18next" "^12.1.0"
+    "@types/react-copy-to-clipboard" "^4.2.6"
+    "@types/react-dropzone" "^4.2.2"
+    "@types/react-router-dom" "^4.3.0q"
+    "@types/styled-theming" "^2.2.0"
+    chart.js "^2.7.2"
+    codeflask "^1.4.0"
+    i18next "^15.0.9"
+    i18next-browser-languagedetector "^3.0.1"
+    i18next-xhr-backend "^2.0.1"
+    react "^16.8.2"
+    react-chartjs-2 "^2.7.4"
+    react-copy-to-clipboard "^5.0.1"
+    react-dom "^16.8.2"
+    react-dropzone "^7.0.1"
+    react-i18next "^10.6.0"
+    react-markdown "^4.0.6"
+    react-router "^5.0.0"
+    react-router-dom "^5.0.0"
+    semantic-ui-css "^2.3.1"
+    semantic-ui-react "^0.86.0"
+    store "^2.0.12"
+    styled-theming "^2.2.0"
+
 "@polkadot/ui-assets@^0.38.0-beta.3":
   version "0.38.1"
   resolved "https://registry.yarnpkg.com/@polkadot/ui-assets/-/ui-assets-0.38.1.tgz#493a83e8cfd21e53a2236d30f087c3d73babd6a2"
@@ -1962,7 +2008,7 @@
   dependencies:
     "@babel/runtime" "^7.4.4"
 
-"@polkadot/ui-identicon@^0.38.0-beta.3":
+"@polkadot/ui-identicon@^0.38.0-beta.2", "@polkadot/ui-identicon@^0.38.0-beta.3":
   version "0.38.1"
   resolved "https://registry.yarnpkg.com/@polkadot/ui-identicon/-/ui-identicon-0.38.1.tgz#2d0883ac145a46b3e635d34c3b6cc632dcad45b4"
   integrity sha512-B+KbQKS/dAA2U8VfjlEusnnKfHQbUGGjuuFpxZMoH0NXWeuJZFA6Kqmh5HAT9ycVeMtO79r3mTkYUPgqfraPrg==
@@ -1976,7 +2022,7 @@
     react-copy-to-clipboard "^5.0.1"
     styled-components "^4.2.0"
 
-"@polkadot/ui-keyring@^0.38.0-beta.3":
+"@polkadot/ui-keyring@^0.38.0-beta.2", "@polkadot/ui-keyring@^0.38.0-beta.3":
   version "0.38.1"
   resolved "https://registry.yarnpkg.com/@polkadot/ui-keyring/-/ui-keyring-0.38.1.tgz#c9557f010ce217149e164433f9d5a8f61f818b94"
   integrity sha512-sMQ4sDs8nnvK2i4VICq1oKv1OFzWwfdwk05MBukxgRRajXkOjCfttITzvHuwwq8zcHRRUzWt+Shj96BO97Ufbw==
@@ -1986,7 +2032,15 @@
     store "^2.0.12"
     styled-components "^4.2.0"
 
-"@polkadot/ui-settings@^0.38.1":
+"@polkadot/ui-reactive@^0.31.1":
+  version "0.31.1"
+  resolved "https://registry.yarnpkg.com/@polkadot/ui-reactive/-/ui-reactive-0.31.1.tgz#a653a28cb51d6fe2b5754dd5b61073519256ab20"
+  integrity sha512-exViFmEOIkCN0yOUfGSlAr6MBBH1R8S9DQ3xWurnKgnvAzYF1t0ID4diQwmHAmygBQucWI7nPvkJInkrPypxrw==
+  dependencies:
+    "@babel/runtime" "^7.4.3"
+    rxjs-compat "^6.3.2"
+
+"@polkadot/ui-settings@^0.38.0-beta.2", "@polkadot/ui-settings@^0.38.1":
   version "0.38.1"
   resolved "https://registry.yarnpkg.com/@polkadot/ui-settings/-/ui-settings-0.38.1.tgz#c52ede839a8b04b20b1177131087c96d64f1edb6"
   integrity sha512-ZpqCcusimDMrkqqcYS+49OuTcmO9RsjrUq6J2+B74vnABJaRQ702YUJJtHPvmehF30fRFIxm3yeBp97y+EPb4w==
@@ -5000,6 +5054,14 @@ create-hmac@^1.1.0, create-hmac@^1.1.2, create-hmac@^1.1.4:
     ripemd160 "^2.0.0"
     safe-buffer "^5.0.1"
     sha.js "^2.4.8"
+
+create-react-context@<=0.2.2:
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/create-react-context/-/create-react-context-0.2.2.tgz#9836542f9aaa22868cd7d4a6f82667df38019dca"
+  integrity sha512-KkpaLARMhsTsgp0d2NA/R94F/eDLbhXERdIq3LvX2biCAXcDvHYoOqHfWCHf1+OLj+HKBotLG3KqaOOf+C1C+A==
+  dependencies:
+    fbjs "^0.8.0"
+    gud "^1.0.0"
 
 create-react-context@^0.2.2:
   version "0.2.3"
@@ -11562,6 +11624,11 @@ pn@^1.1.0:
   resolved "https://registry.yarnpkg.com/pn/-/pn-1.1.0.tgz#e2f4cef0e219f463c179ab37463e4e1ecdccbafb"
   integrity sha512-2qHaIQr2VLRFoxe2nASzsV6ef4yOOH+Fi9FBOVH6cqeSgUnoyySPZkxzLuzd+RYOQTRpROA0ztTMqxROKSb/nA==
 
+popper.js@^1.14.4:
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/popper.js/-/popper.js-1.15.0.tgz#5560b99bbad7647e9faa475c6b8056621f5a4ff2"
+  integrity sha512-w010cY1oCUmI+9KwwlWki+r5jxKfTFDVoadl7MSrIujHU5MJ5OR6HTDj6Xo8aoR/QsA56x8jKjA59qGH4ELtrA==
+
 portfinder@^1.0.13, portfinder@^1.0.9:
   version "1.0.20"
   resolved "https://registry.yarnpkg.com/portfinder/-/portfinder-1.0.20.tgz#bea68632e54b2e13ab7b0c4775e9b41bf270e44a"
@@ -13184,6 +13251,18 @@ react-markdown@^4.0.6:
     unist-util-visit "^1.3.0"
     xtend "^4.0.1"
 
+react-popper@^1.3.3:
+  version "1.3.3"
+  resolved "https://registry.yarnpkg.com/react-popper/-/react-popper-1.3.3.tgz#2c6cef7515a991256b4f0536cd4bdcb58a7b6af6"
+  integrity sha512-ynMZBPkXONPc5K4P5yFWgZx5JGAUIP3pGGLNs58cfAPgK67olx7fmLp+AdpZ0+GoQ+ieFDa/z4cdV6u7sioH6w==
+  dependencies:
+    "@babel/runtime" "^7.1.2"
+    create-react-context "<=0.2.2"
+    popper.js "^1.14.4"
+    prop-types "^15.6.1"
+    typed-styles "^0.0.7"
+    warning "^4.0.2"
+
 react-router-dom@^5.0.0:
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/react-router-dom/-/react-router-dom-5.0.0.tgz#542a9b86af269a37f0b87218c4c25ea8dcf0c073"
@@ -13973,7 +14052,7 @@ selfsigned@^1.9.1:
   dependencies:
     node-forge "0.7.5"
 
-semantic-ui-css@^2.3.1:
+semantic-ui-css@^2.3.1, semantic-ui-css@^2.4.1:
   version "2.4.1"
   resolved "https://registry.yarnpkg.com/semantic-ui-css/-/semantic-ui-css-2.4.1.tgz#f5aea39fafb787cbd905ec724272a3f9cba9004a"
   integrity sha512-Pkp0p9oWOxlH0kODx7qFpIRYpK1T4WJOO4lNnpNPOoWKCrYsfHqYSKgk5fHfQtnWnsAKy7nLJMW02bgDWWFZFg==
@@ -13992,6 +14071,21 @@ semantic-ui-react@^0.86.0:
     lodash "^4.17.11"
     prop-types "^15.6.2"
     react-is "^16.7.0"
+    shallowequal "^1.1.0"
+
+semantic-ui-react@^0.87.1:
+  version "0.87.1"
+  resolved "https://registry.yarnpkg.com/semantic-ui-react/-/semantic-ui-react-0.87.1.tgz#249cca258fe05ee0a7095d8be0b3a749f34a1837"
+  integrity sha512-eHSuYEJWYz9EEiM4r0b/Q2t/RPvQC/xMU5ucrsdk1TZHqEzLkyMzSBdVnXhhqHwUaHA2kt9NRxDaRUmLlGx4wg==
+  dependencies:
+    "@babel/runtime" "^7.1.2"
+    "@semantic-ui-react/event-stack" "^3.1.0"
+    classnames "^2.2.6"
+    keyboard-key "^1.0.4"
+    lodash "^4.17.11"
+    prop-types "^15.6.2"
+    react-is "^16.7.0"
+    react-popper "^1.3.3"
     shallowequal "^1.1.0"
 
 "semver@2 || 3 || 4 || 5", "semver@2.x || 3.x || 4 || 5", semver@^5.1.0, semver@^5.3.0, semver@^5.4.1, semver@^5.5.0, semver@^5.5.1, semver@^5.6.0:
@@ -15370,6 +15464,11 @@ type-is@^1.6.16, type-is@~1.6.16:
     media-typer "0.3.0"
     mime-types "~2.1.18"
 
+typed-styles@^0.0.7:
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/typed-styles/-/typed-styles-0.0.7.tgz#93392a008794c4595119ff62dde6809dbc40a3d9"
+  integrity sha512-pzP0PWoZUhsECYjABgCGQlRGL1n7tOHsgwYv3oIiEpJwGhFTuty/YNeduxQYzXXa3Ge5BdT6sHYIQYpl4uJ+5Q==
+
 typedarray-to-buffer@^3.1.5:
   version "3.1.5"
   resolved "https://registry.yarnpkg.com/typedarray-to-buffer/-/typedarray-to-buffer-3.1.5.tgz#a97ee7a9ff42691b9f783ff1bc5112fe3fca9080"
@@ -15920,6 +16019,13 @@ walker@^1.0.7, walker@~1.0.5:
   integrity sha1-L3+bj9ENZ3JisYqITijRlhjgKPs=
   dependencies:
     makeerror "1.0.x"
+
+warning@^4.0.2:
+  version "4.0.3"
+  resolved "https://registry.yarnpkg.com/warning/-/warning-4.0.3.tgz#16e9e077eb8a86d6af7d64aa1e05fd85b4678ca3"
+  integrity sha512-rpJyN222KWIvHJ/F53XSZv0Zl/accqHR8et1kpaMTD/fLCRxtV8iX8czMzY7sVZupTI3zcUTg8eycS2kNF9l6w==
+  dependencies:
+    loose-envify "^1.0.0"
 
 watchpack@^1.5.0:
   version "1.6.0"

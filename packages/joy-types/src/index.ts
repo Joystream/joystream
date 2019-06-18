@@ -1,9 +1,25 @@
-import { Enum, EnumType, Option } from '@polkadot/types/codec';
-import { getTypeRegistry, BlockNumber, AccountId, Balance, Hash, u32, Text } from '@polkadot/types';
-import { registerMediaTypes } from './media';
-import { registerMembershipTypes } from './members';
-import { registerRolesTypes } from './roles';
+import { Enum, EnumType, Option, Struct } from '@polkadot/types/codec';
+import { getTypeRegistry, BlockNumber, AccountId, Balance, Hash, u32, Text, Bool } from '@polkadot/types';
+import { registerForumTypes } from '@polkadot/joy-forum/types';
+import { registerMediaTypes } from '@polkadot/joy-media/types';
+import { registerMembershipTypes } from '@polkadot/joy-members/types';
+import { registerRolesTypes } from '@polkadot/joy-roles/types';
 import { registerDiscoveryTypes } from './discovery';
+import { Codec } from '@polkadot/types/types';
+
+export function getTextPropAsString (struct: Struct, fieldName: string): string {
+  return (struct.get(fieldName) as Text).toString();
+}
+
+export function getBoolPropAsBoolean (struct: Struct, fieldName: string): boolean {
+  return (struct.get(fieldName) as Bool).valueOf();
+}
+
+export function getOptionPropOrUndefined <T extends Codec>
+  (struct: Struct, fieldName: string): T | undefined {
+
+  return (struct.get(fieldName) as Option<T>).unwrapOr(undefined);
+}
 
 class Amount extends Balance {}
 
@@ -73,8 +89,6 @@ export type TallyResult = {
   status: ProposalStatus,
   finalized_at: BlockNumber
 };
-
-
 
 export class Announcing extends BlockNumber { }
 export class Voting extends BlockNumber { }
@@ -226,6 +240,7 @@ export function registerJoystreamTypes () {
   registerMembershipTypes();
   registerRolesTypes();
   registerMediaTypes();
+  registerForumTypes();
   registerElectionAndProposalTypes();
   registerDiscoveryTypes();
 }

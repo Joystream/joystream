@@ -25,11 +25,7 @@ type Props = AppProps & ApiProps & I18nProps & {
   activeProposalIds?: BN[]
 };
 
-type State = {};
-
-class App extends React.PureComponent<Props, State> {
-
-  state: State = {};
+class App extends React.PureComponent<Props> {
 
   private buildTabs (): TabItem[] {
     const { t, proposalCount = ZERO, activeProposalIds = [] } = this.props;

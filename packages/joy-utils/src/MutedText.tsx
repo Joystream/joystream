@@ -5,7 +5,13 @@ type Props = {
   smaller?: boolean
 };
 
-export const MutedText = ({ children, smaller = false }: Props) =>
-  <div className={`grey text ${smaller ? 'smaller' : ''}`}>{children}</div>;
+function getClassNames (props: Props): string {
+  const { smaller = false } = props;
+  return `grey text ${smaller ? 'smaller' : ''}`;
+}
 
-export default MutedText;
+export const MutedSpan = (props: Props) =>
+  <span className={getClassNames(props)}>{props.children}</span>;
+
+export const MutedDiv = (props: Props) =>
+  <div className={getClassNames(props)}>{props.children}</div>;

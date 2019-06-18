@@ -37,22 +37,20 @@ const withMyMemberId = withCalls<MyAccountProps>(
 );
 
 function withMyMembership<P extends MyAccountProps> (Component: React.ComponentType<P>) {
-  return class extends React.Component<P> {
-    render () {
-      const { myMemberIdOpt } = this.props;
-      const myMemberIdChecked = myMemberIdOpt !== undefined;
-      const myMemberId = myMemberIdOpt && myMemberIdOpt.isSome
-        ? myMemberIdOpt.unwrap() : undefined;
-      const iAmMember = myMemberId !== undefined;
+  return function (props: P) {
+    const { myMemberIdOpt } = props;
+    const myMemberIdChecked = myMemberIdOpt !== undefined;
+    const myMemberId = myMemberIdOpt && myMemberIdOpt.isSome
+      ? myMemberIdOpt.unwrap() : undefined;
+    const iAmMember = myMemberId !== undefined;
 
-      const newProps = {
-        myMemberIdChecked,
-        myMemberId,
-        iAmMember
-      };
+    const newProps = {
+      myMemberIdChecked,
+      myMemberId,
+      iAmMember
+    };
 
-      return <Component {...this.props} {...newProps} />;
-    }
+    return <Component {...props} {...newProps} />;
   };
 }
 
@@ -65,25 +63,23 @@ withMulti(
 );
 
 function OnlyMembers<P extends MyAccountProps> (Component: React.ComponentType<P>) {
-  return class extends React.Component<P> {
-    render () {
-      const { myMemberIdChecked, iAmMember } = this.props;
-      if (!myMemberIdChecked) {
-        return <em>Loading...</em>;
-      } else if (iAmMember) {
-        return <Component {...this.props} />;
-      } else {
-        return (
-          <Message warning className='JoyMainStatus'>
-            <Message.Header>Only members can access this functionality.</Message.Header>
-            <div style={{ marginTop: '1rem' }}>
-              <Link to={`/members/edit`} className='ui button orange'>Register here</Link>
-              <span style={{ margin: '0 .5rem' }}> or </span>
-              <Link to={`/accounts`} className='ui button'>Change key</Link>
-            </div>
-          </Message>
-        );
-      }
+  return function (props: P) {
+    const { myMemberIdChecked, iAmMember } = props;
+    if (!myMemberIdChecked) {
+      return <em>Loading...</em>;
+    } else if (iAmMember) {
+      return <Component {...props} />;
+    } else {
+      return (
+        <Message warning className='JoyMainStatus'>
+          <Message.Header>Only members can access this functionality.</Message.Header>
+          <div style={{ marginTop: '1rem' }}>
+            <Link to={`/members/edit`} className='ui button orange'>Register here</Link>
+            <span style={{ margin: '0 .5rem' }}> or </span>
+            <Link to={`/accounts`} className='ui button'>Change key</Link>
+          </div>
+        </Message>
+      );
     }
   };
 }
