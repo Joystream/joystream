@@ -292,6 +292,7 @@ const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match p
 const ERROR_POST_MODERATED: &str = "Post is moderated.";
 const ERROR_POST_MODERATION_RATIONALE_TOO_SHORT: &str = "Post moderation rationale too short.";
 const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rationale too long.";
+const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
 
 //use srml_support::storage::*;
 
@@ -747,6 +748,12 @@ decl_module! {
 
             // Not signed by forum SUDO
             Self::ensure_is_forum_sudo(&who)?;
+
+            // Make sure something is actually being changed
+            ensure!(
+                new_archival_status.is_some() || new_deletion_status.is_some(),
+                ERROR_CATEGORY_NOT_BEING_UPDATED
+            );
 
             // Get path from parent to root of category tree.
             let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
