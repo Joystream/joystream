@@ -121,6 +121,11 @@ pub enum OriginType {
     Root
 }
 
+/*
+ * These test fixtures can be heavily refactored to avoid repotition, needs macros, and event
+ * assertions are also missing.
+ */ 
+
 pub struct CreateCategoryFixture {
     pub origin: OriginType,
     pub parent: Option<CategoryId>,
@@ -143,6 +148,34 @@ impl CreateCategoryFixture {
                 self.parent,
                 self.title.clone(),
                 self.description.clone()
+            ),
+            self.result
+        )
+    }
+}
+
+pub struct UpdateCategoryFixture {
+    pub origin: OriginType,
+    pub category_id: CategoryId,
+    pub new_archival_status: Option<bool>,
+    pub new_deletion_status: Option<bool>,
+    pub result: dispatch::Result
+}
+
+impl UpdateCategoryFixture {
+
+    pub fn call_and_assert(&self) {
+
+        assert_eq!(
+            TestForumModule::update_category(
+                match self.origin {
+                    OriginType::Signed(account_id) => Origin::signed(account_id),
+                    //OriginType::Inherent => Origin::inherent,
+                    OriginType::Root => system::RawOrigin::Root.into() //Origin::root
+                },
+                self.category_id,
+                self.new_archival_status.clone(),
+                self.new_deletion_status.clone()
             ),
             self.result
         )
@@ -206,6 +239,46 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     }
 }
 
+pub type RuntimeMap<K,V> = std::vec::Vec<(K, V)>;
+pub type RuntimeCategory = Category< <Runtime as system::Trait>::BlockNumber, <Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::AccountId>;
+pub type RuntimeThread = Thread< <Runtime as system::Trait>::BlockNumber, <Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::AccountId>;
+pub type RuntimePost = Post< <Runtime as system::Trait>::BlockNumber, <Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::AccountId>;
+pub type RuntimeBlockchainTimestamp = BlockchainTimestamp<<Runtime as system::Trait>::BlockNumber, <Runtime as timestamp::Trait>::Moment>;
+
+pub fn genesis_config(
+    category_by_id: &RuntimeMap<CategoryId, RuntimeCategory>,
+    next_category_id: u64,
+    thread_by_id: &RuntimeMap<ThreadId, RuntimeThread>,
+    next_thread_id: u64,
+    post_by_id: &RuntimeMap<PostId, RuntimePost>,
+    next_post_id: u64,
+    forum_sudo: <Runtime as system::Trait>::AccountId,
+    category_title_constraint: &InputValidationLengthConstraint,
+    category_description_constraint: &InputValidationLengthConstraint,
+    thread_title_constraint: &InputValidationLengthConstraint,
+    post_text_constraint: &InputValidationLengthConstraint,
+    thread_moderation_rationale_constraint: &InputValidationLengthConstraint,
+    post_moderation_rationale_constraint: &InputValidationLengthConstraint
+    ) 
+    -> GenesisConfig<Runtime> {
+
+    GenesisConfig::<Runtime> {
+        category_by_id: category_by_id.clone(),
+        next_category_id: next_category_id,
+        thread_by_id: thread_by_id.clone(),
+        next_thread_id: next_thread_id,
+        post_by_id: post_by_id.clone(),
+        next_post_id: next_post_id,
+        forum_sudo: forum_sudo,
+        category_title_constraint: category_title_constraint.clone(),
+        category_description_constraint: category_description_constraint.clone(),
+        thread_title_constraint: thread_title_constraint.clone(),
+        post_text_constraint: post_text_constraint.clone(),
+        thread_moderation_rationale_constraint: thread_moderation_rationale_constraint.clone(),
+        post_moderation_rationale_constraint: post_moderation_rationale_constraint.clone()
+    }
+}
+
 // MockForumUserRegistry
 pub fn default_mock_forum_user_registry_genesis_config() -> registry::GenesisConfig<Runtime> {
 
@@ -217,9 +290,9 @@ pub fn default_mock_forum_user_registry_genesis_config() -> registry::GenesisCon
 // NB!:
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
-pub fn build_test_externalities() -> runtime_io::TestExternalities<Blake2Hasher> {
+pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities<Blake2Hasher> {
 
-    let mut t = default_genesis_config()
+    let mut t = config
         .build_storage()
         .unwrap()
         .0;

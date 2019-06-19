@@ -292,6 +292,8 @@ const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match p
 const ERROR_POST_MODERATED: &str = "Post is moderated.";
 const ERROR_POST_MODERATION_RATIONALE_TOO_SHORT: &str = "Post moderation rationale too short.";
 const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rationale too long.";
+const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
+const ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED: &str = "Category cannot be unarchived when deleted.";
 
 //use srml_support::storage::*;
 
@@ -748,11 +750,40 @@ decl_module! {
             // Not signed by forum SUDO
             Self::ensure_is_forum_sudo(&who)?;
 
+            // Make sure something is actually being changed
+            ensure!(
+                new_archival_status.is_some() || new_deletion_status.is_some(),
+                ERROR_CATEGORY_NOT_BEING_UPDATED
+            );
+
             // Get path from parent to root of category tree.
             let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
 
-            // Make sure we can actually mutate this category
-            Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+            // When we are dealing with a non-root category, we
+            // must ensure mutability of our category by traversing to
+            // root.
+            if category_tree_path.len() > 1  {
+
+                // We must skip checking category itself.
+                // NB: This is kind of hacky way to avoid last element, 
+                // something clearn can be done later.
+                let mut path_to_check = category_tree_path.clone();
+                path_to_check.remove(0);
+
+                Self::ensure_can_mutate_in_path_leaf(&path_to_check)?;
+            } 
+
+            // If the category itself is already deleted, then this
+            // update *must* simultaneously do an undelete, otherwise it is blocked,
+            // as we do not permit unarchiving a deleted category. Doing 
+            // a simultanous undelete and unarchive is accepted.
+
+            let category = <CategoryById<T>>::get(category_id);
+
+            ensure!(
+                !category.deleted || (new_deletion_status == Some(false)),
+                ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED
+            );
 
             // Mutate category, and set possible new change parameters
 

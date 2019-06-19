@@ -24,7 +24,10 @@ use srml_support::{assert_ok};
 
 #[test]
 fn set_forum_sudo_unset() {
-    with_externalities(&mut build_test_externalities(), || {
+
+    let config = default_genesis_config();
+
+    with_externalities(&mut build_test_externalities(config), || {
 
         // Ensure that forum sudo is default
         assert_eq!(TestForumModule::forum_sudo(), Some(33));
@@ -42,7 +45,10 @@ fn set_forum_sudo_unset() {
 
 #[test]
 fn set_forum_sudo_update() {
-    with_externalities(&mut build_test_externalities(), || {
+
+    let config = default_genesis_config();
+
+    with_externalities(&mut build_test_externalities(config), || {
 
         // Ensure that forum sudo is default
         assert_eq!(TestForumModule::forum_sudo(), Some(default_genesis_config().forum_sudo));
@@ -75,7 +81,10 @@ fn set_forum_sudo_update() {
 
 #[test]
 fn create_category_successfully() {
-    with_externalities(&mut build_test_externalities(), || {
+
+    let config = default_genesis_config();
+
+    with_externalities(&mut build_test_externalities(config), || {
 
         CreateCategoryFixture {
             origin: OriginType::Signed(default_genesis_config().forum_sudo),
@@ -92,7 +101,10 @@ fn create_category_successfully() {
 
 #[test]
 fn create_category_title_too_long() {
-    with_externalities(&mut build_test_externalities(), || {
+
+    let config = default_genesis_config();
+
+    with_externalities(&mut build_test_externalities(config), || {
 
         let genesis_config = default_genesis_config();
 
@@ -121,6 +133,98 @@ fn create_category_title_too_long() {
  * create_category_immutable_ancestor_category
  */
 
+
+
+#[test]
+fn update_category_undelete_and_unarchive() {
+
+    /*
+     * Create an initial state with two levels of categories, where
+     * leaf category is deleted, and then try to undelete.
+     */
+
+    let forum_sudo = 32;
+
+    let created_at = RuntimeBlockchainTimestamp {
+        block : 0,
+        time: 0
+    };
+
+    let category_by_id =  vec![
+
+        // A root category
+        (0, Category{
+            id: 0,
+            title: "New root".as_bytes().to_vec(),
+            description: "This is a new root category".as_bytes().to_vec(),
+            created_at : created_at.clone(),
+            deleted: false,
+            archived: false,
+            num_direct_subcategories: 1,
+            num_direct_unmoderated_threads: 0,
+            num_direct_moderated_threads: 0,
+            position_in_parent_category: None,
+            moderator_id: forum_sudo
+        }),
+
+        // A subcategory of the one above
+        (1, Category{
+            id: 1,
+            title: "New subcategory".as_bytes().to_vec(),
+            description: "This is a new subcategory to root category".as_bytes().to_vec(),
+            created_at : created_at.clone(),
+            deleted: true,
+            archived: false,
+            num_direct_subcategories: 0,
+            num_direct_unmoderated_threads: 0,
+            num_direct_moderated_threads: 0,
+            position_in_parent_category: Some(
+                ChildPositionInParentCategory {
+                    parent_id: 0,
+                    child_nr_in_parent_category: 1
+                }
+            ),
+            moderator_id: forum_sudo
+        }),
+    ];
+
+    // Set constraints to be sloppy, we don't care about enforcing them.
+    let sloppy_constraint = InputValidationLengthConstraint{
+        min: 0,
+        max_min_diff: 1000
+    };
+
+    let config = genesis_config( 
+        &category_by_id, // category_by_id
+        category_by_id.len() as u64, // next_category_id
+        &vec![], // thread_by_id
+        0, // next_thread_id
+        &vec![], // post_by_id
+        0, // next_post_id
+        forum_sudo, 
+        &sloppy_constraint,
+        &sloppy_constraint,
+        &sloppy_constraint,
+        &sloppy_constraint,
+        &sloppy_constraint,
+        &sloppy_constraint
+    );
+
+    with_externalities(&mut build_test_externalities(config), || {
+
+        UpdateCategoryFixture {
+            origin: OriginType::Signed(forum_sudo),
+            category_id: category_by_id[1].1.id,
+            new_archival_status: None, // same as before
+            new_deletion_status: Some(true), // delete
+            result: Ok(())
+        }
+        .call_and_assert();
+
+    });
+}
+
+
 /*
  * create_thread 
  * ==============================================================================
@@ -134,7 +238,10 @@ fn create_category_title_too_long() {
 
 #[test]
 fn create_thread_not_forum_member() {
-    with_externalities(&mut build_test_externalities(), || {
+
+    let config = default_genesis_config();
+
+    with_externalities(&mut build_test_externalities(config), || {
 
         let new_member = registry::Member {
             id : 113
