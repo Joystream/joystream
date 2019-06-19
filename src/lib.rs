@@ -759,7 +759,7 @@ decl_module! {
             // Get path from parent to root of category tree.
             let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
 
-            // When we are dealing witha non-root category, we
+            // When we are dealing with a non-root category, we
             // must ensure mutability of our category by traversing to
             // root.
             if category_tree_path.len() > 1  {
