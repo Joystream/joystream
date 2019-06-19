@@ -6,9 +6,8 @@ import { History } from 'history';
 import orderBy from 'lodash/orderBy';
 import BN from 'bn.js';
 
-import { Bool } from '@polkadot/types';
+import { Bool, Option } from '@polkadot/types';
 import { CategoryId, Category, ThreadId, Thread } from '@joystream/types/forum';
-import { useForum } from './Context';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
 import { UrlHasIdProps, AuthorPreview, CategoryCrumbs, Pagination, ThreadsPerPage } from './utils';
@@ -18,6 +17,7 @@ import { withForumCalls } from './calls';
 import { withMulti, withApi } from '@polkadot/ui-api';
 import { ApiProps } from '@polkadot/ui-api/types';
 import { bnToStr, isEmptyArr } from '@polkadot/joy-utils/';
+import TxButton from '@polkadot/joy-utils/TxButton';
 
 type CategoryActionsProps = {
   id: CategoryId
@@ -28,42 +28,32 @@ function CategoryActions (props: CategoryActionsProps) {
   const { id, category } = props;
   const className = 'ui button ActionButton';
 
-  // TODO get rid of dispatch!
-  // replace with tx button
-  const { dispatch } = useForum();
+  type BtnProps = {
+    label: string,
+    icon?: string,
+    archive?: boolean,
+    delete?: boolean
+  };
 
-  const updateBoolFieldOnCategory = (fieldName: string, flag: boolean) => {
-    category.set(fieldName, new Bool(flag));
-    dispatch({ type: 'UpdateCategory', category, id: id.toNumber() });
+  const UpdateCategoryButton = (btnProps: BtnProps) => {
+    return <TxButton
+      className='item'
+      isPrimary={false}
+      label={<><i className={`${btnProps.icon} icon`} />{btnProps.label}</>}
+      params={[id, new Option(Bool, btnProps.archive), new Option(Bool, btnProps.delete)]}
+      tx={'forum.updateCategory'}
+    />;
   };
 
   if (category.archived) {
-    const unarchiveCategory = () => {
-      updateBoolFieldOnCategory('archived', false);
-    };
     {/* TODO show 'Unarchive' button only if I am forum sudo */}
-    return (
-      <Button icon='file archive outline' content='Unarchive' onClick={unarchiveCategory} />
-    );
+    return <UpdateCategoryButton icon='file archive outline' label='Unarchive' archive={false} />;
   }
 
   if (category.deleted) {
-    const undeleteCategory = () => {
-      updateBoolFieldOnCategory('deleted', false);
-    };
     {/* TODO show 'Undelete' button only if I am forum sudo */}
-    return (
-      <Button icon='trash alternate outline' content='Undelete' onClick={undeleteCategory} />
-    );
+    return <UpdateCategoryButton icon='trash alternate outline' label='Undelete' delete={false} />;
   }
-
-  const archiveCategory = () => {
-    updateBoolFieldOnCategory('archived', true);
-  };
-
-  const deleteCategory = () => {
-    updateBoolFieldOnCategory('deleted', true);
-  };
 
   return <span className='JoyInlineActions'>
     <Link
@@ -81,6 +71,7 @@ function CategoryActions (props: CategoryActionsProps) {
         <i className='pencil alternate icon' />
         <span className='text'>Edit</span>
       </Link> */}
+
       <Dropdown floating button className='icon small' style={{ display: 'inline-block', width: 'auto', margin: 0 }} trigger={<></>}>
         <Dropdown.Menu>
 
@@ -89,8 +80,8 @@ function CategoryActions (props: CategoryActionsProps) {
             <i className='add icon' />
             Add subcategory
           </Link>
-          <Dropdown.Item icon='file archive outline' text='Archive' onClick={archiveCategory} />
-          <Dropdown.Item icon='trash alternate outline' text='Delete' onClick={deleteCategory} />
+          <UpdateCategoryButton icon='file archive outline' label='Archive' archive={true} />
+          <UpdateCategoryButton icon='trash alternate outline' label='Delete' delete={true} />
         </Dropdown.Menu>
       </Dropdown>
     </Button.Group>
