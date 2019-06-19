@@ -1,47 +1,65 @@
 import React from 'react';
 import BN from 'bn.js';
-import axios from 'axios';
+import axios, { CancelTokenSource } from 'axios';
 import { Progress, Message } from 'semantic-ui-react';
 
 import { InputFile } from '@polkadot/ui-app/index';
 import { ApiProps } from '@polkadot/ui-api/types';
 import { I18nProps } from '@polkadot/ui-app/types';
 import { SubmittableResult } from '@polkadot/api';
+import { Option } from '@polkadot/types/codec';
 import { withMulti } from '@polkadot/ui-api';
 import { formatNumber } from '@polkadot/util';
+import { AccountId } from '@polkadot/types';
 
 import translate from './translate';
 import { fileNameWoExt } from './utils';
-import { ContentId } from '@joystream/types/media';
+import { ContentId, DataObject } from '@joystream/types/media';
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import { withStorageProvider, StorageProviderProps } from './StorageProvider';
+import { DiscoveryProviderProps } from './DiscoveryProvider';
 import EditMeta from './EditMeta';
 import TxButton from '@polkadot/joy-utils/TxButton';
+import IpfsHash from 'ipfs-only-hash';
 
 const MAX_FILE_SIZE_MB = 100;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-type Props = ApiProps & I18nProps & MyAccountProps & StorageProviderProps;
+type Props = ApiProps & I18nProps & MyAccountProps & DiscoveryProviderProps;
 
 type State = {
   error?: any,
   file?: File,
+  ipfs_cid?: string,
   newContentId: ContentId,
+  discovering: boolean,
   uploading: boolean,
-  progress: number
+  progress: number,
+  cancelSource: CancelTokenSource
 };
 
 const defaultState = (): State => ({
   error: undefined,
   file: undefined,
   newContentId: ContentId.generate(),
+  discovering: false,
   uploading: false,
-  progress: 0
+  progress: 0,
+  cancelSource: axios.CancelToken.source()
 });
 
 class Component extends React.PureComponent<Props, State> {
 
   state = defaultState();
+
+  componentWillUnmount () {
+    this.setState({
+      discovering: false,
+      uploading: false,
+    })
+
+    const { cancelSource } = this.state;
+    cancelSource.cancel('unmounting');
+  }
 
   render () {
     return (
@@ -52,9 +70,10 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private renderContent () {
-    const { error, uploading } = this.state;
+    const { error, uploading, discovering } = this.state;
 
     if (error) return this.renderError();
+    else if (discovering) return this.renderDiscovering();
     else if (uploading) return this.renderUploading();
     else return this.renderFileInput();
   }
@@ -71,7 +90,10 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private resetForm = () => {
-    this.setState(defaultState());
+    let newDefaultState = defaultState();
+    const { cancelSource } = this.state;
+    newDefaultState.cancelSource = cancelSource;
+    this.setState(newDefaultState);
   }
 
   private renderUploading () {
@@ -84,13 +106,14 @@ class Component extends React.PureComponent<Props, State> {
     </div>;
   }
 
+  private renderDiscovering () {
+    return <em>Contacting Storage Provider...</em>
+  }
+
   private renderProgress () {
     const { progress, error } = this.state;
     const active = !error && progress < 100;
     const success = !error && progress >= 100;
-
-    // This is a visual hack to show that progress bar is active while uploading a file.
-    const percent = 100;
 
     let label = '';
     if (active) {
@@ -102,7 +125,7 @@ class Component extends React.PureComponent<Props, State> {
     return <Progress
       className='UploadProgress'
       progress={success}
-      percent={percent}
+      percent={progress}
       active={active}
       success={success}
       label={label}
@@ -143,7 +166,7 @@ class Component extends React.PureComponent<Props, State> {
     </div>;
   }
 
-  private onFileSelected = (data: Uint8Array, file: File) => {
+  private onFileSelected = async (data: Uint8Array, file: File) => {
     if (!data || data.length === 0) {
       this.setState({ error: `You cannot upload an empty file.` });
     } else if (data.length > MAX_FILE_SIZE_BYTES) {
@@ -151,46 +174,110 @@ class Component extends React.PureComponent<Props, State> {
         `You cannot upload a file that is more than ${MAX_FILE_SIZE_MB} MB.`
       });
     } else {
+      const ipfs_cid = await IpfsHash.of(Buffer.from(data));
+      console.log('computed IPFS hash:', ipfs_cid)
       // File size is valid and can be uploaded:
-      this.setState({ file });
+      this.setState({ file, ipfs_cid });
     }
   }
 
   private buildTxParams = () => {
-    const { file, newContentId } = this.state;
-    if (!file) return [];
+    const { file, newContentId, ipfs_cid } = this.state;
+    if (!file || !ipfs_cid) return [];
 
     // TODO get corresponding data type id based on file content
     const dataObjectTypeId = new BN(1);
 
-    return [ newContentId, dataObjectTypeId, new BN(file.size) ];
+    return [ newContentId, dataObjectTypeId, new BN(file.size), ipfs_cid];
   }
 
-  private onDataObjectCreated = (_txResult: SubmittableResult) => {
-    this.uploadFile();
+  private onDataObjectCreated = async (_txResult: SubmittableResult) => {
+    this.setState({ discovering: true});
+
+    const { api } = this.props;
+    const { newContentId } = this.state;
+    try {
+      var dataObject = await api.query.dataDirectory.dataObjectByContentId(newContentId) as Option<DataObject>;
+    } catch (err) {
+      this.setState({
+        error: err,
+        discovering: false
+      });
+      return
+    }
+
+    const { discovering } = this.state;
+
+    if (!discovering) {
+      return
+    }
+
+    if (dataObject.isSome) {
+      const storageProvider = dataObject.unwrap().liaison;
+      this.uploadFileTo(storageProvider);
+    } else {
+      this.setState({
+        error: new Error('No Storage Provider assigned to process upload'),
+        discovering: false
+      });
+    }
   }
 
-  private uploadFile = () => {
-    const { file, newContentId } = this.state;
+  private uploadFileTo = async (storageProvider: AccountId) => {
+    const { file, newContentId, cancelSource } = this.state;
     if (!file) return;
 
-    const uniqueName = newContentId.toAddress();
+    const contentId = newContentId.encode();
     const config = {
       headers: {
         // TODO uncomment this once the issue fixed:
         // https://github.com/Joystream/storage-node-joystream/issues/16
         // 'Content-Type': file.type
         'Content-Type': '' // <-- this is a temporary hack
+      },
+      cancelToken: cancelSource.token,
+      onUploadProgress: (progressEvent: any) => {
+        const percentCompleted = Math.round( (progressEvent.loaded * 100) / progressEvent.total );
+        this.setState({
+          progress: percentCompleted
+        });
       }
     };
-    const { storageProvider } = this.props;
-    const url = storageProvider.buildApiUrl(uniqueName);
-    this.setState({ uploading: true });
 
-    axios
-      .put<{ message: string }>(url, file, config)
-      .then(_res => this.setState({ progress: 100 }))
-      .catch(error => this.setState({ progress: 100, error }));
+    const { discoveryProvider } = this.props;
+
+    try {
+      var url = await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId, cancelSource.token);
+    } catch (err) {
+      return this.setState({
+        error: new Error(`Failed to contact storage provider: ${err.message}`),
+        discovering: false,
+      });
+    }
+
+    const { discovering } = this.state;
+
+    if (!discovering) {
+      return
+    }
+
+    // TODO: validate url .. must start with http
+
+    this.setState({ discovering: false, uploading: true });
+
+    try {
+      await axios.put<{ message: string }>(url, file, config);
+      this.setState({ progress: 0 });
+    } catch(err) {
+      if (axios.isCancel) {
+        return
+      }
+      if (!err.response || (err.response.status >= 500 && err.response.status <= 504)) {
+        // network connection error
+        discoveryProvider.reportUnreachable(storageProvider);
+      }
+      this.setState({ progress: 0, error: err, uploading: false });
+    }
   }
 }
 
@@ -198,5 +285,4 @@ export default withMulti(
   Component,
   translate,
   withOnlyMembers,
-  withStorageProvider
 );

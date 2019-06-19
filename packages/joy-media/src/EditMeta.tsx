@@ -235,7 +235,7 @@ function withGetContentIdFromUrl (Component: React.ComponentType<OuterProps>) {
   return function (props: UrlHasContentIdProps) {
     const { match: { params: { assetName } } } = props;
     try {
-      const contentId = ContentId.fromAddress(assetName);
+      const contentId = ContentId.decode(assetName);
       return <Component contentId={contentId} />;
     } catch (err) {
       return <em>Invalid content ID: {assetName}</em>;

@@ -12,8 +12,11 @@ import Upload from './Upload';
 import Explore from './Explore';
 import { Play } from './View';
 import { EditByContentId } from './EditMeta';
+import { withDiscoveryProvider, DiscoveryProviderProps } from './DiscoveryProvider';
+import { ApiProps } from '@polkadot/ui-api/types';
+import { withMulti } from '@polkadot/ui-api/with';
 
-type Props = AppProps & I18nProps & {};
+type Props = AppProps & I18nProps & ApiProps & DiscoveryProviderProps & {};
 
 class App extends React.PureComponent<Props> {
 
@@ -32,7 +35,7 @@ class App extends React.PureComponent<Props> {
   }
 
   render () {
-    const { basePath } = this.props;
+    const { basePath, discoveryProvider, api } = this.props;
     const tabs = this.buildTabs();
     return (
       <main className='media--App'>
@@ -40,8 +43,8 @@ class App extends React.PureComponent<Props> {
           <Tabs basePath={basePath} items={tabs} />
         </header>
         <Switch>
-          <Route path={`${basePath}/play/:assetName`} component={Play} />
-          <Route path={`${basePath}/upload`} component={Upload} />
+          <Route path={`${basePath}/play/:assetName`} render={(props) => <Play {...props} discoveryProvider={discoveryProvider} api={api} />} />
+          <Route path={`${basePath}/upload`} render={(props) => <Upload {...props} discoveryProvider={discoveryProvider} api={api} />} />
           <Route path={`${basePath}/edit/:assetName`} component={EditByContentId} />
           <Route component={Explore} />
         </Switch>
@@ -50,4 +53,8 @@ class App extends React.PureComponent<Props> {
   }
 }
 
-export default translate(App);
+export default withMulti(
+  App,
+  translate,
+  withDiscoveryProvider
+);

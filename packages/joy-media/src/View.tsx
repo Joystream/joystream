@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import axios from 'axios';
+import axios, { CancelTokenSource } from 'axios';
 import DPlayer from 'react-dplayer';
 import APlayer from 'react-aplayer';
 
@@ -10,14 +10,18 @@ import { I18nProps } from '@polkadot/ui-app/types';
 import { withCalls, withMulti } from '@polkadot/ui-api/with';
 import { Option } from '@polkadot/types/codec';
 import { formatNumber } from '@polkadot/util';
+import { AccountId } from '@polkadot/types';
 
 import translate from './translate';
-import { withStorageProvider, StorageProviderProps } from './StorageProvider';
-import { DataObject, ContentMetadata, ContentId } from '@joystream/types/media';
-import { MutedText } from '@polkadot/joy-utils/MutedText';
+import { DiscoveryProviderProps } from './DiscoveryProvider';
+import { DataObject, ContentMetadata, ContentId, DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '@joystream/types/media';
+import { MutedDiv } from '@polkadot/joy-utils/MutedText';
 import { DEFAULT_THUMBNAIL_URL, onImageError } from './utils';
 import { isEmptyStr } from '@polkadot/joy-utils/';
 import { MyAccountContext, MyAccountContextProps } from '@polkadot/joy-utils/MyAccountContext';
+import { Message } from 'semantic-ui-react';
+
+import _ from 'lodash';
 
 type Asset = {
   iAmOwner: boolean,
@@ -41,12 +45,13 @@ type PartOfPlayer = {
   destroy: () => void
 };
 
-type ViewProps = ApiProps & I18nProps & StorageProviderProps & {
+type ViewProps = ApiProps & I18nProps & DiscoveryProviderProps & {
   contentId: ContentId,
   contentType?: string,
   dataObjectOpt?: Option<DataObject>,
   metadataOpt?: Option<ContentMetadata>,
-  preview?: boolean
+  preview?: boolean,
+  resolvedAssetUrl?: string,
 };
 
 class InnerView extends React.PureComponent<ViewProps> {
@@ -68,7 +73,7 @@ class InnerView extends React.PureComponent<ViewProps> {
 
     const asset = {
       iAmOwner,
-      contentId: this.props.contentId.toAddress(),
+      contentId: this.props.contentId.encode(),
       data: dataObjectOpt.unwrap(),
       meta
     };
@@ -98,8 +103,8 @@ class InnerView extends React.PureComponent<ViewProps> {
             </Link>
           }
           <div><h3>{name}</h3></div>
-          <MutedText smaller>{new Date(added_at.time).toLocaleString()}</MutedText>
-          <MutedText smaller>{formatNumber(data.size_in_bytes)} bytes</MutedText>
+          <MutedDiv smaller>{new Date(added_at.time).toLocaleString()}</MutedDiv>
+          <MutedDiv smaller>{formatNumber(data.size_in_bytes)} bytes</MutedDiv>
         </div>
       </Link>
     );
@@ -124,8 +129,7 @@ class InnerView extends React.PureComponent<ViewProps> {
     const { added_at } = meta;
     const { name, description, thumbnail: cover } = meta.parseJson();
 
-    const { storageProvider } = this.props;
-    const url = storageProvider.buildApiUrl(contentId);
+    const {resolvedAssetUrl: url} = this.props;
 
     const { contentType = 'video/video' } = this.props;
     const prefix = contentType.substring(0, contentType.indexOf('/'));
@@ -175,7 +179,6 @@ class InnerView extends React.PureComponent<ViewProps> {
 export const View = withMulti(
   InnerView,
   translate,
-  withStorageProvider,
   withCalls<ViewProps>(
     ['query.dataDirectory.dataObjectByContentId',
       { paramName: 'contentId', propName: 'dataObjectOpt' } ],
@@ -184,7 +187,7 @@ export const View = withMulti(
   )
 );
 
-type PlayProps = ApiProps & I18nProps & StorageProviderProps & {
+type PlayProps = ApiProps & I18nProps & DiscoveryProviderProps & {
   match: {
     params: {
       assetName: string
@@ -193,51 +196,142 @@ type PlayProps = ApiProps & I18nProps & StorageProviderProps & {
 };
 
 type PlayState = {
+  contentId?: ContentId,
   contentType?: string,
-  contentTypeRequested: boolean
+  resolvingAsset: boolean,
+  resolvedAssetUrl?: string,
+  error?: Error,
+  cancelSource: CancelTokenSource
 };
 
 class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
 
   state: PlayState = {
-    contentTypeRequested: false
+    resolvingAsset: false,
+    cancelSource: axios.CancelToken.source()
   };
 
-  requestContentType (contentId: string) {
-    console.log('Request content type...');
+  componentDidMount() {
+    this.resolveAsset();
+  }
 
-    const { storageProvider } = this.props;
-    const url = storageProvider.buildApiUrl(contentId);
-    this.setState({ contentTypeRequested: true });
+  componentWillUnmount() {
+    const { cancelSource } = this.state;
+    cancelSource.cancel();
+  }
 
-    axios
-      .head(url)
-      .then(response => {
-        const contentType = response.headers['content-type'] || 'video/video';
-        this.setState({ contentType });
+  private resolveAsset = async () => {
+    const { discoveryProvider, api } = this.props;
+    const { match: { params: { assetName } } } = this.props;
+    const contentId = ContentId.decode(assetName);
+
+    if (!contentId) {
+      this.setState({
+        error: new Error('Invalid content id')
       });
+      return;
+    }
+
+    this.setState({ resolvingAsset: true, contentId, error: undefined });
+
+    const rids: DataObjectStorageRelationshipId[] = await api.query.dataObjectStorageRegistry.relationshipsByContentId(contentId) as any;
+
+    const allRelationships: Option<DataObjectStorageRelationship>[] = await Promise.all(rids.map((id) => api.query.dataObjectStorageRegistry.relationships(id))) as any;
+
+    let readyProviders = allRelationships.filter(r => r.isSome).map(r => r.unwrap())
+        .filter(r => r.ready)
+        .map(r => r.storage_provider);
+
+    // runtime doesn't currently guarantee unique set
+    readyProviders = _.uniqBy(readyProviders, provider => provider.toString());
+
+    if (!readyProviders.length) {
+      this.setState({resolvingAsset: false, error: new Error('No Storage Providers found storing this content')});
+      return
+    }
+
+    // filter out providers no longer in actors list
+    const stakedActors = await api.query.actors.actorAccountIds() as unknown as AccountId[];
+
+    readyProviders = _.intersectionBy(stakedActors, readyProviders, provider => provider.toString());
+    console.log(`found ${readyProviders.length} providers ready to serve content: ${readyProviders}`);
+
+    // shuffle to spread the load
+    readyProviders = _.shuffle(readyProviders);
+
+    // TODO: prioritize already resolved providers, least reported unreachable, closest
+    // by geography etc..
+
+    const { cancelSource } = this.state;
+
+    // loop over providers until we find one that responds
+    while(readyProviders.length) {
+      const provider = readyProviders.shift();
+      if (!provider) continue;
+
+      const {resolvingAsset} = this.state;
+      if (!resolvingAsset) {
+        break;
+      }
+
+      try {
+        var resolvedAssetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.encode(), cancelSource.token)
+      } catch (err) {
+        if (axios.isCancel(err)){
+          return;
+        } else {
+          continue;
+        }
+      }
+
+      try {
+        console.log('trying', resolvedAssetUrl)
+        let response = await axios.head(resolvedAssetUrl, {cancelToken: cancelSource.token})
+        const contentType = response.headers['content-type'] || 'video/video';
+        this.setState({ contentType, resolvedAssetUrl, resolvingAsset: false });
+        return
+      } catch (err) {
+        if (axios.isCancel(err)){
+          return;
+        } else {
+          if (!err.response || (err.response.status >= 500 && err.response.status <= 504)) {
+            // network connection error
+            discoveryProvider.reportUnreachable(provider);
+          }
+          // try next provider
+          continue;
+        }
+      }
+    }
+
+    this.setState({
+      resolvingAsset: false,
+      error: new Error('Unable to reach any provider serving this content')
+    });
   }
 
   render () {
-    const { match: { params: { assetName } } } = this.props;
-    try {
-      const contentId = ContentId.fromAddress(assetName);
-      const { contentType, contentTypeRequested } = this.state;
-      if (typeof contentType === 'string') {
-        return <View contentId={contentId} contentType={contentType} />;
-      } else if (!contentTypeRequested) {
-        this.requestContentType(assetName);
-      }
-      return <em>Loading...</em>;
-    } catch (err) {
-      console.log('Invalid content ID:', assetName);
+    const { error, resolvedAssetUrl, contentType, contentId } = this.state;
+
+    if (error) {
+      return (
+        <Message error className='JoyMainStatus'>
+          <Message.Header>Error Loading Content</Message.Header>
+          <p>{error.toString()}</p>
+          <button className='ui button' onClick={this.resolveAsset}>Try again</button>
+        </Message>
+        )
     }
-    return <em>Content was not found by ID: {assetName}</em>;
+
+    if (resolvedAssetUrl) {
+      return <View contentType={contentType} resolvedAssetUrl={resolvedAssetUrl} contentId={contentId}/>;
+    } else {
+      return <em>Loading...</em>;
+    }
   }
 }
 
 export const Play = withMulti(
   InnerPlay,
   translate,
-  withStorageProvider
 );
