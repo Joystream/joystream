@@ -121,6 +121,11 @@ pub enum OriginType {
     Root
 }
 
+/*
+ * These test fixtures can be heavily refactored to avoid repotition, needs macros, and event
+ * assertions are also missing.
+ */ 
+
 pub struct CreateCategoryFixture {
     pub origin: OriginType,
     pub parent: Option<CategoryId>,
@@ -143,6 +148,34 @@ impl CreateCategoryFixture {
                 self.parent,
                 self.title.clone(),
                 self.description.clone()
+            ),
+            self.result
+        )
+    }
+}
+
+pub struct UpdateCategoryFixture {
+    pub origin: OriginType,
+    pub category_id: CategoryId,
+    pub new_archival_status: Option<bool>,
+    pub new_deletion_status: Option<bool>,
+    pub result: dispatch::Result
+}
+
+impl UpdateCategoryFixture {
+
+    pub fn call_and_assert(&self) {
+
+        assert_eq!(
+            TestForumModule::update_category(
+                match self.origin {
+                    OriginType::Signed(account_id) => Origin::signed(account_id),
+                    //OriginType::Inherent => Origin::inherent,
+                    OriginType::Root => system::RawOrigin::Root.into() //Origin::root
+                },
+                self.category_id,
+                self.new_archival_status.clone(),
+                self.new_deletion_status.clone()
             ),
             self.result
         )
