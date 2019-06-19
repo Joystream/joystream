@@ -774,7 +774,7 @@ decl_module! {
             } 
 
             // If the category itself is already deleted, then this
-            // update *most* simultanously do an undelete, otherwise it is blocked,
+            // update *must* simultaneously do an undelete, otherwise it is blocked,
             // as we do not permit unarchiving a deleted category. Doing 
             // a simultanous undelete and unarchive is accepted.
 
