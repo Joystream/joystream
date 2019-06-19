@@ -781,7 +781,7 @@ decl_module! {
             let category = <CategoryById<T>>::get(category_id);
 
             ensure!(
-                !category.deleted || (new_deletion_status.is_some() && new_deletion_status.unwrap()),
+                !category.deleted || (new_deletion_status == Some(false)),
                 ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED
             );
 
