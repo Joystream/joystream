@@ -293,6 +293,7 @@ const ERROR_POST_MODERATED: &str = "Post is moderated.";
 const ERROR_POST_MODERATION_RATIONALE_TOO_SHORT: &str = "Post moderation rationale too short.";
 const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rationale too long.";
 const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
+const ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED: &str = "Category cannot be unarchived when deleted.";
 
 //use srml_support::storage::*;
 
@@ -760,6 +761,17 @@ decl_module! {
 
             // Make sure we can actually mutate this category
             Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+            // If the category itself is already deleted, then this
+            // update *most* simultanously do an undelete, otherwise it is blocked,
+            // as we do not permit unarchiving a deleted category. Doing 
+            // a simultanous undelete and unarchive is accepted.
+
+            let category = <CategoryById<T>>::get(category_id);
+
+            ensure!(
+                !category.deleted || (new_deletion_status.is_some() && new_deletion_status.unwrap()),
+                ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED
+            );
 
             // Mutate category, and set possible new change parameters
 
