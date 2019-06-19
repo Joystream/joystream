@@ -759,8 +759,20 @@ decl_module! {
             // Get path from parent to root of category tree.
             let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
 
-            // Make sure we can actually mutate this category
-            Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+            // When we are dealing witha non-root category, we
+            // must ensure mutability of our category by traversing to
+            // root.
+            if category_tree_path.len() > 1  {
+
+                // We must skip checking category itself.
+                // NB: This is kind of hacky way to avoid last element, 
+                // something clearn can be done later.
+                let mut path_to_check = category_tree_path.clone();
+                path_to_check.remove(0);
+
+                Self::ensure_can_mutate_in_path_leaf(&path_to_check)?;
+            } 
+
             // If the category itself is already deleted, then this
             // update *most* simultanously do an undelete, otherwise it is blocked,
             // as we do not permit unarchiving a deleted category. Doing 
