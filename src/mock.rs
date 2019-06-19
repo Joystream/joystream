@@ -257,9 +257,9 @@ pub fn default_mock_forum_user_registry_genesis_config() -> registry::GenesisCon
 // NB!:
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
-pub fn build_test_externalities() -> runtime_io::TestExternalities<Blake2Hasher> {
+pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities<Blake2Hasher> {
 
-    let mut t = default_genesis_config()
+    let mut t = config
         .build_storage()
         .unwrap()
         .0;

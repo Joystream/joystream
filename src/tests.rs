@@ -24,7 +24,10 @@ use srml_support::{assert_ok};
 
 #[test]
 fn set_forum_sudo_unset() {
-    with_externalities(&mut build_test_externalities(), || {
+
+    let config = default_genesis_config();
+
+    with_externalities(&mut build_test_externalities(config), || {
 
         // Ensure that forum sudo is default
         assert_eq!(TestForumModule::forum_sudo(), Some(33));
@@ -42,7 +45,10 @@ fn set_forum_sudo_unset() {
 
 #[test]
 fn set_forum_sudo_update() {
-    with_externalities(&mut build_test_externalities(), || {
+
+    let config = default_genesis_config();
+
+    with_externalities(&mut build_test_externalities(config), || {
 
         // Ensure that forum sudo is default
         assert_eq!(TestForumModule::forum_sudo(), Some(default_genesis_config().forum_sudo));
@@ -75,7 +81,10 @@ fn set_forum_sudo_update() {
 
 #[test]
 fn create_category_successfully() {
-    with_externalities(&mut build_test_externalities(), || {
+
+    let config = default_genesis_config();
+
+    with_externalities(&mut build_test_externalities(config), || {
 
         CreateCategoryFixture {
             origin: OriginType::Signed(default_genesis_config().forum_sudo),
@@ -92,7 +101,10 @@ fn create_category_successfully() {
 
 #[test]
 fn create_category_title_too_long() {
-    with_externalities(&mut build_test_externalities(), || {
+
+    let config = default_genesis_config();
+
+    with_externalities(&mut build_test_externalities(config), || {
 
         let genesis_config = default_genesis_config();
 
@@ -134,7 +146,10 @@ fn create_category_title_too_long() {
 
 #[test]
 fn create_thread_not_forum_member() {
-    with_externalities(&mut build_test_externalities(), || {
+
+    let config = default_genesis_config();
+
+    with_externalities(&mut build_test_externalities(config), || {
 
         let new_member = registry::Member {
             id : 113
