@@ -1,7 +1,9 @@
 use crate::forum;
+use crate::storage;
 use crate::VERSION;
+use rstd::prelude::*;
 use runtime_io::print;
-use srml_support::{decl_event, decl_module, decl_storage, StorageValue};
+use srml_support::{decl_event, decl_module, decl_storage, StorageMap, StorageValue};
 use sudo;
 use system;
 
@@ -25,6 +27,8 @@ impl<T: Trait> Module<T> {
         // ...
 
         Self::initialize_forum_module();
+
+        Self::initialize_storage_module();
 
         Self::deposit_event(RawEvent::Migrated(
             <system::Module<T>>::block_number(),
@@ -68,9 +72,30 @@ impl<T: Trait> Module<T> {
     ) -> forum::InputValidationLengthConstraint {
         return forum::InputValidationLengthConstraint { min, max_min_diff };
     }
+
+    fn initialize_storage_module() {
+        // Remove hardcoded liaison
+        <storage::data_directory::PrimaryLiaisonAccountId<T>>::take();
+
+        // remove all content
+        for content_id in <storage::data_directory::KnownContentIds<T>>::get().iter() {
+            <storage::data_directory::DataObjectByContentId<T>>::remove(content_id);
+            <storage::data_directory::MetadataByContentId<T>>::remove(content_id);
+            <storage::data_object_storage_registry::RelationshipsByContentId<T>>::remove(
+                content_id,
+            );
+        }
+        <storage::data_directory::KnownContentIds<T>>::put(vec![]);
+    }
 }
 
-pub trait Trait: system::Trait + forum::Trait + sudo::Trait {
+pub trait Trait:
+    system::Trait
+    + storage::data_directory::Trait
+    + storage::data_object_storage_registry::Trait
+    + forum::Trait
+    + sudo::Trait
+{
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 

@@ -27,6 +27,9 @@ use membership::members;
 
 mod migration;
 mod roles;
+mod service_discovery;
+use service_discovery::discovery;
+
 use client::{
     block_builder::api::{self as block_builder_api, CheckInherentsResult, InherentData},
     impl_runtime_apis, runtime_api as client_api,
@@ -57,7 +60,7 @@ pub use consensus::Call as ConsensusCall;
 #[cfg(any(feature = "std", test))]
 pub use runtime_primitives::BuildStorage;
 pub use runtime_primitives::{Perbill, Permill};
-pub use srml_support::{construct_runtime, StorageValue};
+pub use srml_support::{construct_runtime, StorageMap, StorageValue};
 pub use staking::StakerStatus;
 pub use timestamp::BlockPeriod;
 pub use timestamp::Call as TimestampCall;
@@ -268,7 +271,7 @@ impl storage::data_directory::Trait for Runtime {
     type ContentId = ContentId;
     type SchemaId = u64;
     type Members = Members;
-    type Roles = Actors;
+    type Roles = LookupRoles;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
 }
 
@@ -282,8 +285,49 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectStorageRelationshipId = u64;
     type Members = Members;
-    type Roles = Actors;
+    type Roles = LookupRoles;
     type ContentIdExists = DataDirectory;
+}
+
+fn random_index(upper_bound: usize) -> usize {
+    let seed = <system::Module<Runtime>>::random_seed();
+    let mut rand: u64 = 0;
+    for offset in 0..8 {
+        rand += (seed.as_ref()[offset] as u64) << offset;
+    }
+    (rand as usize) % upper_bound
+}
+
+pub struct LookupRoles {}
+impl traits::Roles<Runtime> for LookupRoles {
+    fn is_role_account(account_id: &<Runtime as system::Trait>::AccountId) -> bool {
+        <actors::Module<Runtime>>::is_role_account(account_id)
+    }
+
+    fn account_has_role(
+        account_id: &<Runtime as system::Trait>::AccountId,
+        role: actors::Role,
+    ) -> bool {
+        <actors::Module<Runtime>>::account_has_role(account_id, role)
+    }
+
+    fn random_account_for_role(
+        role: actors::Role,
+    ) -> Result<<Runtime as system::Trait>::AccountId, &'static str> {
+        let ids = <actors::AccountIdsByRole<Runtime>>::get(role);
+
+        let live_ids: Vec<<Runtime as system::Trait>::AccountId> = ids
+            .into_iter()
+            .filter(|id| !<discovery::Module<Runtime>>::is_account_info_expired(id))
+            .collect();
+
+        if live_ids.len() == 0 {
+            Err("no staked account found")
+        } else {
+            let index = random_index(live_ids.len());
+            Ok(live_ids[index].clone())
+        }
+    }
 }
 
 impl members::Trait for Runtime {
@@ -291,7 +335,7 @@ impl members::Trait for Runtime {
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type Roles = Actors;
+    type Roles = LookupRoles;
 }
 
 /*
@@ -337,6 +381,19 @@ impl migration::Trait for Runtime {
 impl actors::Trait for Runtime {
     type Event = Event;
     type Members = Members;
+    type OnActorRemoved = HandleActorRemoved;
+}
+
+pub struct HandleActorRemoved {}
+impl actors::ActorRemoved<Runtime> for HandleActorRemoved {
+    fn actor_removed(actor: &<Runtime as system::Trait>::AccountId) {
+        Discovery::remove_account_info(actor);
+    }
+}
+
+impl discovery::Trait for Runtime {
+    type Event = Event;
+    type Roles = LookupRoles;
 }
 
 impl grandpa::Trait for Runtime {
@@ -378,6 +435,7 @@ construct_runtime!(
 		DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
 		DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
 		DownloadSessions: downloads::{Module, Call, Storage, Event<T>, Config<T>},
+        Discovery: discovery::{Module, Call, Storage, Event<T>},
 	}
 );
 

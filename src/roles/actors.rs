@@ -8,7 +8,7 @@ use srml_support::traits::{
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
 
-use crate::traits::{Members, Roles};
+use crate::traits::Members;
 
 static MSG_NO_ACTOR_FOR_ROLE: &str = "For the specified role, no actor is currently staked.";
 
@@ -83,10 +83,16 @@ pub struct Actor<T: Trait> {
     pub joined_at: T::BlockNumber,
 }
 
+pub trait ActorRemoved<T: Trait> {
+    fn actor_removed(actor: &T::AccountId);
+}
+
 pub trait Trait: system::Trait + GovernanceCurrency + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type Members: Members<Self>;
+
+    type OnActorRemoved: ActorRemoved<Self>;
 }
 
 pub type MemberId<T> = <<T as Trait>::Members as Members<T>>::Id;
@@ -207,6 +213,8 @@ impl<T: Trait> Module<T> {
         <ActorAccountIds<T>>::put(accounts);
 
         <ActorByAccountId<T>>::remove(&actor_account);
+
+        T::OnActorRemoved::actor_removed(&actor_account);
     }
 
     fn apply_unstake(
@@ -237,29 +245,13 @@ impl<T: Trait> Module<T> {
             WithdrawReasons::all() & !(WithdrawReason::TransactionPayment | WithdrawReason::Fee),
         );
     }
-}
 
-impl<T: Trait> Roles<T> for Module<T> {
-    fn is_role_account(account_id: &T::AccountId) -> bool {
+    pub fn is_role_account(account_id: &T::AccountId) -> bool {
         <ActorByAccountId<T>>::exists(account_id)
     }
 
-    fn account_has_role(account_id: &T::AccountId, role: Role) -> bool {
+    pub fn account_has_role(account_id: &T::AccountId, role: Role) -> bool {
         Self::actor_by_account_id(account_id).map_or(false, |actor| actor.role == role)
-    }
-
-    fn random_account_for_role(role: Role) -> Result<T::AccountId, &'static str> {
-        let ids = Self::account_ids_by_role(role);
-        if 0 == ids.len() {
-            return Err(MSG_NO_ACTOR_FOR_ROLE);
-        }
-        let seed = <system::Module<T>>::random_seed();
-        let mut rand: u64 = 0;
-        for offset in 0..8 {
-            rand += (seed.as_ref()[offset] as u64) << offset;
-        }
-        let idx = (rand as usize) % ids.len();
-        return Ok(ids[idx].clone());
     }
 }
 
