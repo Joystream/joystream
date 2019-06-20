@@ -17,23 +17,35 @@ import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withOnlyForumSudo } from './ForumSudo';
 import { withForumCalls } from './calls';
+import { ValidationProps, withCategoryValidation } from './validation';
 
-const buildSchema = (p: ValidationProps) => Yup.object().shape({
-  title: Yup.string()
-    // .min(p.minTitleLen, `Category title is too short. Minimum length is ${p.minTitleLen} chars.`)
-    // .max(p.maxTitleLen, `Category title is too long. Maximum length is ${p.maxTitleLen} chars.`)
-    .required('Category title is required'),
-  description: Yup.string()
-    // .min(p.minDescriptionLen, `Category description is too short. Minimum length is ${p.minDescriptionLen} chars.`)
-    // .max(p.maxDescriptionLen, `Category description is too long. Maximum length is ${p.maxDescriptionLen} chars.`)
-    .required('Category description is required'),
-});
+const buildSchema = (props: ValidationProps) => {
+  const {
+    categoryTitleConstraint,
+    categoryDescriptionConstraint
+  } = props;
 
-type ValidationProps = {
-  // minTitleLen: number,
-  // maxTitleLen: number,
-  // minDescriptionLen: number,
-  // maxDescriptionLen: number
+  if (!categoryTitleConstraint || !categoryDescriptionConstraint) {
+    throw new Error('Missing some validation constraints');
+  }
+
+  const minTitle = categoryTitleConstraint.min.toNumber();
+  const maxTitle = categoryTitleConstraint.max.toNumber();
+  const minDescr = categoryDescriptionConstraint.min.toNumber();
+  const maxDescr = categoryDescriptionConstraint.max.toNumber();
+
+  return Yup.object().shape({
+
+    title: Yup.string()
+      .min(minTitle, `Category title is too short. Minimum length is ${minTitle} chars.`)
+      .max(maxTitle, `Category title is too long. Maximum length is ${maxTitle} chars.`)
+      .required('Category title is required'),
+
+    description: Yup.string()
+      .min(minDescr, `Category description is too short. Minimum length is ${minDescr} chars.`)
+      .max(maxDescr, `Category description is too long. Maximum length is ${maxDescr} chars.`)
+      .required('Category description is required')
+  });
 };
 
 type OuterProps = ValidationProps & {
@@ -218,10 +230,10 @@ function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
   };
 }
 
-function NewSubcategoryForm (props: UrlHasIdProps) {
+function NewSubcategoryForm (props: UrlHasIdProps & OuterProps) {
   const { match: { params: { id } } } = props;
   try {
-    return <EditForm parentId={new CategoryId(id)} />;
+    return <EditForm {...props} parentId={new CategoryId(id)} />;
   } catch (err) {
     return <em>Invalid parent category id: {id}</em>;
   }
@@ -229,18 +241,21 @@ function NewSubcategoryForm (props: UrlHasIdProps) {
 
 export const NewCategory = withMulti(
   EditForm,
-  withOnlyForumSudo
+  withOnlyForumSudo,
+  withCategoryValidation
 );
 
 export const NewSubcategory = withMulti(
   NewSubcategoryForm,
-  withOnlyForumSudo
+  withOnlyForumSudo,
+  withCategoryValidation
 );
 
 export const EditCategory = withMulti(
   FormOrLoading,
   withOnlyForumSudo,
   withIdFromUrl,
+  withCategoryValidation,
   withForumCalls<OuterProps>(
     ['categoryById', { paramName: 'id', propName: 'struct' }]
   )

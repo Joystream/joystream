@@ -54,6 +54,9 @@ function withReactCall<P extends ApiProps> (endpoint: string, { paramName, propN
 }
 
 function withForumCall<P extends ApiProps> (endpoint: string, opts: Options = {}): (Inner: React.ComponentType<ApiProps>) => React.ComponentType<any> {
+  if (!opts.propName) {
+    opts.propName = endpoint;
+  }
   if (storage === 'react') {
     return withReactCall(endpoint, opts);
   } else {

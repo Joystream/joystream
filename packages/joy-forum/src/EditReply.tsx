@@ -16,17 +16,26 @@ import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withForumCalls } from './calls';
+import { ValidationProps, withReplyValidation } from './validation';
 
-const buildSchema = (p: ValidationProps) => Yup.object().shape({
-  text: Yup.string()
-    // .min(p.minTextLen, `Reply text is too short. Minimum length is ${p.minTextLen} chars.`)
-    // .max(p.maxTextLen, `Reply text is too long. Maximum length is ${p.maxTextLen} chars.`)
-    .required('Text is required')
-});
+const buildSchema = (props: ValidationProps) => {
+  const {
+    postTextConstraint
+  } = props;
 
-type ValidationProps = {
-  // minTextLen: number,
-  // maxTextLen: number
+  if (!postTextConstraint) {
+    throw new Error('Missing some validation constraints');
+  }
+
+  const minText = postTextConstraint.min.toNumber();
+  const maxText = postTextConstraint.max.toNumber();
+
+  return Yup.object().shape({
+    text: Yup.string()
+      .min(minText, `Reply text is too short. Minimum length is ${minText} chars.`)
+      .max(maxText, `Reply text is too long. Maximum length is ${maxText} chars.`)
+      .required('Text is required')
+  });
 };
 
 type OuterProps = ValidationProps & {
@@ -212,13 +221,15 @@ function withIdFromUrl (Component: React.ComponentType<HasPostIdProps>) {
 export const NewReply = withMulti(
   EditForm,
   withOnlyMembers,
-  withThreadIdFromUrl
+  withThreadIdFromUrl,
+  withReplyValidation
 );
 
 export const EditReply = withMulti(
   FormOrLoading,
   withOnlyMembers,
   withIdFromUrl,
+  withReplyValidation,
   withForumCalls<OuterProps>(
     ['postById', { paramName: 'id', propName: 'struct' }]
   )
