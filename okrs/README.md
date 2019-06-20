@@ -23,7 +23,7 @@
 
 # Archive
 
-Archived OKRs are found in [archive](/OKR-archive), below only live OKRs are found.
+Archived OKRs are found in [archive](OKR-archive), below only live OKRs are found.
 
 # Project OKRs
 
