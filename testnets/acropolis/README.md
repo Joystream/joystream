@@ -70,8 +70,11 @@ Due to changing circumstances, a meeting [Evaluating the feasibility](../meeting
 
 #### Actual dates:
 
-- **TBD**
+- `Spec Release` is not yet completed.
+- `Sub-system Test` performed on or before 17.06.19.
+- `Final Test` successfully completed on the 20.06.19
 
+A summery of the tests for `forum` and `storage` can be read [here](https://github.com/Joystream/joystream/issues/47) and [here](https://github.com/Joystream/joystream/issues/57).
 
 
 # Past Release Meetings

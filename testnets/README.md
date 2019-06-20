@@ -18,11 +18,11 @@ It also contains templates for for planning releases.
 
 ## Live Testnet
 
-[Athens](/testnets/athens/README.md)
+[Athens](testnets/athens/README.md)
 
 ## Next Testnet
 
-[Acropolis](/testnets/acropolis/README.md)
+[Acropolis](testnets/acropolis/README.md)
 
 ## Past Testnets
 
