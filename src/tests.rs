@@ -216,7 +216,7 @@ fn update_category_undelete_and_unarchive() {
             origin: OriginType::Signed(forum_sudo),
             category_id: category_by_id[1].1.id,
             new_archival_status: None, // same as before
-            new_deletion_status: Some(true), // delete
+            new_deletion_status: Some(false), // undelete
             result: Ok(())
         }
         .call_and_assert();
