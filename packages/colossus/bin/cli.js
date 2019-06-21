@@ -225,6 +225,10 @@ async function wait_for_role(config)
   }
   const api = await RuntimeApi.create({account_file: keyFile, passphrase: cli.flags.passphrase});
 
+  if (!api.identities.key) {
+    throw new Error('Failed to ulock storage provider account');
+  }
+
   // Wait for the account role to be finalized
   console.log('Waiting for the account to be staked as a storage provider role...');
   const result = await api.roles.waitForRole(api.identities.key.address(), api.roles.ROLE_STORAGE);
