@@ -267,6 +267,7 @@ class RuntimeApi
 
             // releases lock
             reject(err);
+            finalizedPromise.reject(err);
           });
       });
     })
