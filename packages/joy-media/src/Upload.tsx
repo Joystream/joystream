@@ -104,7 +104,7 @@ class Component extends React.PureComponent<Props, State> {
 
     return <div style={{ width: '100%' }}>
       {this.renderProgress()}
-      { success ? <EditMeta contentId={newContentId} fileName={fileNameWoExt(file.name)} /> : null }
+      {success && <EditMeta contentId={newContentId} fileName={fileNameWoExt(file.name)} />}
     </div>;
   }
 
