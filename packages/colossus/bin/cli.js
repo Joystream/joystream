@@ -73,6 +73,7 @@ const cli = meow(`
     --sync-period           Number of milliseconds to wait between synchronization
                             runs. Defaults to 30,000 (30s).
     --key-file              JSON key export file to use as the storage provider.
+    --passphrase            Optional passphrase to use to decrypt the key-file (if its encrypted).
     --public-url=URL        Public URL to announce. No URL will be announced if not specified.
     --reannounce-period     Number of milliseconds to wait between reannouncing public url.
   `,
