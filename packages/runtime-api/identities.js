@@ -88,6 +88,11 @@ class IdentitiesApi
     // First try with an empty passphrase - for convenience
     try {
       key.decodePkcs8('');
+
+      if (passphrase) {
+        debug('Key was not encrypted, supplied passphrase was ignored');
+      }
+
       return;
     } catch (err) {
       // pass
