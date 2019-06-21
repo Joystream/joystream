@@ -97,12 +97,14 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private renderUploading () {
-    const { file, newContentId } = this.state;
+    const { file, newContentId, progress, error } = this.state;
     if (!file) return <em>Loading...</em>;
+
+    const success = !error && progress >= 100;
 
     return <div style={{ width: '100%' }}>
       {this.renderProgress()}
-      <EditMeta contentId={newContentId} fileName={fileNameWoExt(file.name)} />
+      { success ? <EditMeta contentId={newContentId} fileName={fileNameWoExt(file.name)} /> : null }
     </div>;
   }
 
@@ -225,7 +227,13 @@ class Component extends React.PureComponent<Props, State> {
 
   private uploadFileTo = async (storageProvider: AccountId) => {
     const { file, newContentId, cancelSource } = this.state;
-    if (!file) return;
+    if (!file) {
+      this.setState({
+        error: new Error('No file to upload!'),
+        discovering: false,
+      });
+      return;
+    }
 
     const contentId = newContentId.encode();
     const config = {
@@ -263,12 +271,12 @@ class Component extends React.PureComponent<Props, State> {
 
     // TODO: validate url .. must start with http
 
-    this.setState({ discovering: false, uploading: true });
+    this.setState({ discovering: false, progress: 0, uploading: true });
 
     try {
       await axios.put<{ message: string }>(url, file, config);
-      this.setState({ progress: 0 });
     } catch(err) {
+      this.setState({ progress: 0, error: err, uploading: false });
       if (axios.isCancel) {
         return
       }
@@ -276,7 +284,6 @@ class Component extends React.PureComponent<Props, State> {
         // network connection error
         discoveryProvider.reportUnreachable(storageProvider);
       }
-      this.setState({ progress: 0, error: err, uploading: false });
     }
   }
 }
