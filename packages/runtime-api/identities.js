@@ -37,46 +37,49 @@ const { _ } = require('lodash');
  */
 class IdentitiesApi
 {
-  static async create(base, account_file)
+  static async create(base, {account_file, passphrase, canPromptForPassphrase})
   {
     const ret = new IdentitiesApi();
     ret.base = base;
-    await ret.init(account_file);
+    await ret.init(account_file, passphrase, canPromptForPassphrase);
     return ret;
   }
 
-  async init(account_file)
+  async init(account_file, passphrase, canPromptForPassphrase)
   {
     debug('Init');
 
     // Creatre keyring
     this.keyring = await Keyring.create();
 
+    this.canPromptForPassphrase = canPromptForPassphrase || false;
+
     // Load account file, if possible.
     try {
-      this.key = await this.loadUnlock(account_file);
+      this.key = await this.loadUnlock(account_file, passphrase);
     } catch (err) {
-      debug('Error loading account file', err);
+      debug('Error loading account file:', err.message);
     }
   }
 
   /*
    * Load a key file and unlock it if necessary.
    */
-  async loadUnlock(account_file)
+  async loadUnlock(account_file, passphrase)
   {
     const fullname = path.resolve(account_file);
     debug('Initializing key from', fullname);
     const key = this.keyring.addFromJson(require(fullname));
-    await this.tryUnlock(key);
+    await this.tryUnlock(key, passphrase);
     debug('Successfully initialized with address', key.address());
     return key;
   }
 
   /*
-   * Try to unlock a key if it isn't already unlocked. May ask for a passphrase.
+   * Try to unlock a key if it isn't already unlocked.
+   * passphrase should be supplied as argument.
    */
-  async tryUnlock(key)
+  async tryUnlock(key, passphrase)
   {
     if (!key.isLocked()) {
       return;
@@ -85,14 +88,33 @@ class IdentitiesApi
     // First try with an empty passphrase - for convenience
     try {
       key.decodePkcs8('');
+
+      if (passphrase) {
+        debug('Key was not encrypted, supplied passphrase was ignored');
+      }
+
       return;
     } catch (err) {
       // pass
     }
 
-    // If that didn't work, ask for a passphrase.
-    const passphrase = await this.askForPassphrase(key.address());
-    key.decodePkcs8(passphrase);
+    // Then with supplied passphrase
+    try {
+      debug('Decrypting with supplied passphrase');
+      key.decodePkcs8(passphrase);
+      return;
+    } catch (err) {
+      // pass
+    }
+
+    // If that didn't work, ask for a passphrase if appropriate
+    if (this.canPromptForPassphrase) {
+      passphrase = await this.askForPassphrase(key.address());
+      key.decodePkcs8(passphrase);
+      return
+    }
+
+    throw new Error('invalid passphrase supplied');
   }
 
   /*
