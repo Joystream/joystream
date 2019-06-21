@@ -38,7 +38,9 @@ class RuntimeApi
   static async create(options)
   {
     const ret = new RuntimeApi();
-    await ret.init(options || {});
+    await ret.init(options || {
+      canPromptForPassphrase: false
+    });
     return ret;
   }
 
@@ -58,7 +60,11 @@ class RuntimeApi
     this.nonces = {};
 
     // Ok, create individual APIs
-    this.identities = await IdentitiesApi.create(this, options.account_file);
+    this.identities = await IdentitiesApi.create(this, {
+      account_file: options.account_file,
+      passphrase: options.passphrase,
+      canPromptForPassphrase: options.canPromptForPassphrase
+    });
     this.balances = await BalancesApi.create(this);
     this.roles = await RolesApi.create(this);
     this.assets = await AssetsApi.create(this);

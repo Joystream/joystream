@@ -46,6 +46,9 @@ const FLAG_DEFINITIONS = {
     type: 'string',
     alias: 'u'
   },
+  'passphrase': {
+    type: 'string'
+  }
 };
 
 const cli = meow(`
@@ -95,6 +98,8 @@ function create_config(pkgname, flags)
   for (var key in flags) {
     // Skip aliases and self-referential config flag
     if (key.length == 1 || key === 'config') continue;
+    // Skip sensitive flags
+    if (key == 'passphrase') continue;
     // Skip unset flags
     if (!flags[key]) continue;
     // Otherwise set.
@@ -168,8 +173,19 @@ function get_storage(runtime_api, config)
 
 async function run_signup(account_file)
 {
+  if (!account_file) {
+    console.log('Cannot proceed without keyfile');
+    return
+  }
+
   const { RuntimeApi } = require('@joystream/runtime-api');
-  const api = await RuntimeApi.create({account_file});
+  const api = await RuntimeApi.create({account_file, canPromptForPassphrase: true});
+
+  if (!api.identities.key) {
+    console.log('Cannot proceed without a member account');
+    return
+  }
+
   const member_address = api.identities.key.address();
 
   // Check if account works
@@ -206,7 +222,7 @@ async function wait_for_role(config)
   if (!keyFile) {
     throw new Error("Must specify a key file for running a storage node! Sign up for the role; see `colussus --help' for details.");
   }
-  const api = await RuntimeApi.create({account_file: keyFile});
+  const api = await RuntimeApi.create({account_file: keyFile, passphrase: cli.flags.passphrase});
 
   // Wait for the account role to be finalized
   console.log('Waiting for the account to be staked as a storage provider role...');
