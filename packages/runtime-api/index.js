@@ -179,7 +179,9 @@ class RuntimeApi
       // Try to get the next nonce to use
       var nonce = this.nonces[accountId];
 
-      const incrementNonce = () => {
+      let incrementNonce = () => {
+        // only increment once
+        incrementNonce = () => {}; // turn it into a noop
         nonce = nonce.addn(1);
         this.nonces[accountId] = nonce;
       }
@@ -198,15 +200,16 @@ class RuntimeApi
           .send(({events = [], status}) => {
             debug(`TX status: ${status.type}`);
 
+            // We want to release lock as early as possible, sometimes Ready status
+            // doesn't occur, so we do it on Broadcast instead
             if (status.isReady) {
               debug('TX Ready.');
-              // Assumption is that transaction is valid and with a good nonce
-              // prepare nonce for next tx
               incrementNonce();
-              // releases lock
-              resolve(unsubscribe);
+              resolve(unsubscribe); //releases lock
             } else if (status.isBrodcast) {
               debug('TX Broadcast.');
+              incrementNonce();
+              resolve(unsubscribe); //releases lock
             } else if (status.isFinalized) {
               debug('TX Finalized.');
               finalizedPromise.resolve(status)
