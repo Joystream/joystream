@@ -100,7 +100,7 @@ class IdentitiesApi
 
     // Then with supplied passphrase
     try {
-      console.log('trying with passphrase:', passphrase)
+      debug('Decrypting with supplied passphrase');
       key.decodePkcs8(passphrase);
       return;
     } catch (err) {
