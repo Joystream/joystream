@@ -9,13 +9,15 @@ const meow = require('meow');
 const configstore = require('configstore');
 const chalk = require('chalk');
 const figlet = require('figlet');
+const _ = require('lodash');
+
 const debug = require('debug')('joystream:cli');
 
 // Project root
-const project_root = path.resolve(__dirname, '..');
+const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 // Configuration (default)
-const pkg = require(path.resolve(project_root, 'package.json'));
+const pkg = require(path.resolve(PROJECT_ROOT, 'package.json'));
 const default_config = new configstore(pkg.name);
 
 // Parse CLI
@@ -25,9 +27,13 @@ const FLAG_DEFINITIONS = {
     alias: 'p',
     _default: 3000,
   },
-  'syncPeriod': { // TODO Keep for later
+  'syncPeriod': {
     type: 'integer',
-    _default: 30000,
+    _default: 300000,
+  },
+  'reannouncePeriod': {
+    type: 'integer',
+    _default: 1000 * 60 * 60,
   },
   keyFile: {
     type: 'string',
@@ -36,14 +42,9 @@ const FLAG_DEFINITIONS = {
     type: 'string',
     alias: 'c',
   },
-  storage: {
+  'publicUrl': {
     type: 'string',
-    alias: 's',
-    _default: path.resolve(project_root, './storage'),
-  },
-  'storageType': {
-    type: 'string',
-    _default: 'hyperdrive',
+    alias: 'u'
   },
 };
 
@@ -53,17 +54,14 @@ const cli = meow(`
 
   Commands:
     server [default]  Run a server instance with the given configuration.
-    create            Create a repository in the configured storage location.
-                      If a second argument is given, it is a directory from which
-                      the repository will be populated.
-    list              Output a list of storage entries. If an argument is given,
-                      it is interpreted as a repo ID, and the contents of the
-                      repo are listed instead.
     signup            Sign up as a storage provider. Requires that you provide
                       a JSON account file of an account that is a member, and has
                       sufficient balance for staking as a storage provider.
                       Writes a new account file that should be used to run the
                       storage node.
+    down              Signal to network that all services are down. Running
+                      the server will signal that services as online again.
+    discovery         Run the discovery service only.
 
   Options:
     --config=PATH, -c PATH  Configuration file path. Defaults to
@@ -72,8 +70,8 @@ const cli = meow(`
     --sync-period           Number of milliseconds to wait between synchronization
                             runs. Defaults to 30,000 (30s).
     --key-file              JSON key export file to use as the storage provider.
-    --storage=PATH, -s PATH Storage path to use.
-    --storage-type=TYPE     One of "fs", "hyperdrive". Defaults to "hyperdrive".
+    --public-url=URL        Public URL to announce. No URL will be announced if not specified.
+    --reannounce-period     Number of milliseconds to wait between reannouncing public url.
   `,
   { flags: FLAG_DEFINITIONS });
 
@@ -113,94 +111,71 @@ function banner()
   console.log(chalk.blue(figlet.textSync('joystream', 'Speed')));
 }
 
+function start_express_app(app, port) {
+  const http = require('http');
+  const server = http.createServer(app);
+
+  return new Promise((resolve, reject) => {
+    server.on('error', reject);
+    server.on('close', (...args) => {
+      console.log('Server closed, shutting down...');
+      resolve(...args);
+    });
+    server.on('listening', () => {
+      console.log('API server started.', server.address());
+    });
+    server.listen(port, '::');
+    console.log('Starting API server...');
+  });
+}
 // Start app
-function start_app(project_root, store, api, config)
+function start_all_services(store, api, config)
 {
-  const app = require('../lib/app')(store, api, config);
+  const app = require('../lib/app')(PROJECT_ROOT, store, api, config);
   const port = config.get('port');
-  app.listen(port);
-  console.log('API server started; API docs at http://localhost:' + port + '/swagger.json');
+  return start_express_app(app, port);
+}
+
+// Start discovery service app
+function start_discovery_service(api, config)
+{
+  const app = require('../lib/discovery')(PROJECT_ROOT, api, config);
+  const port = config.get('port');
+  return start_express_app(app, port);
 }
 
 // Get an initialized storage instance
-function get_storage(config)
+function get_storage(runtime_api, config)
 {
-  const store_path = config.get('storage');
-  const store_type = config.get('storageType');
+  // TODO at some point, we can figure out what backend-specific connection
+  // options make sense. For now, just don't use any configuration.
+  const { Storage } = require('@joystream/storage');
 
-  const storage = require('@joystream/storage');
+  const options = {
+    resolve_content_id: async (content_id) => {
+      // Resolve via API
+      const obj = await runtime_api.assets.getDataObject(content_id);
+      if (!obj || obj.isNone) {
+        return;
+      }
 
-  const store = new storage.Storage(store_path, storage.DEFAULT_POOL_SIZE,
-      store_type);
+      return obj.unwrap().ipfs_content_id.toString();
+    },
+  };
 
-  return store;
-}
-
-// List repos in a storage
-function list_repos(store)
-{
-  console.log('Repositories in storage:');
-  store.repos((err, id) => {
-    if (err) {
-      console.log(err);
-      return;
-    }
-    if (!id) {
-      return;
-    }
-    console.log(`  ${id}`);
-  });
-}
-
-// List repository contents
-function list_repo(store, repo_id)
-{
-  console.log(`Contents of repository "${repo_id}":`);
-  const repo = store.get(repo_id);
-  const fswalk = require('@joystream/util/fs/walk');
-  const siprefix = require('si-prefix');
-
-  fswalk('/', repo.archive, (err, relname, stat) => {
-    if (err) {
-      throw err;
-    }
-    if (!relname) {
-      return;
-    }
-
-    var line = stat.ctime.toUTCString() + '  ';
-    if (stat.isDirectory()) {
-      line += 'D  ';
-    }
-    else {
-      line += 'F  ';
-    }
-
-    var size = '-';
-    if (stat.isFile()) {
-      var info = siprefix.byte.convert(stat.size);
-      size = `${Math.ceil(info[0])} ${info[1]}`;
-    }
-    while (size.length < 8) {
-      size = ' ' + size;
-    }
-
-    line += size + '  ' + relname;
-
-    console.log('  ' + line);
-  });
+  return Storage.create(options);
 }
 
 async function run_signup(account_file)
 {
   const { RuntimeApi } = require('@joystream/runtime-api');
   const api = await RuntimeApi.create({account_file});
-  const member_address = api.key.address();
+  const member_address = api.identities.key.address();
 
   // Check if account works
   const min = await api.roles.requiredBalanceForRoleStaking(api.roles.ROLE_STORAGE);
   console.log(`Account needs to be a member and have a minimum balance of ${min.toString()}`);
-  const check = await api.role.checkAccountForStaking(member_address);
+  const check = await api.roles.checkAccountForStaking(member_address);
   if (check) {
     console.log('Account is working for staking, proceeding.');
   }
@@ -211,7 +186,7 @@ async function run_signup(account_file)
   console.log('Generated', role_address, '- this is going to be exported to a JSON file.\n',
     ' You can provide an empty passphrase to make starting the server easier,\n',
     ' but you must keep the file very safe, then.');
-  const filename = await api.writeKeyPairExport(role_address);
+  const filename = await api.identities.writeKeyPairExport(role_address);
   console.log('Identity stored in', filename);
 
   // Ok, transfer for staking.
@@ -239,6 +214,54 @@ async function wait_for_role(config)
   return [result, api];
 }
 
+function get_service_information(config) {
+  // For now assume we run all services on the same endpoint
+  return({
+    asset: {
+      version: 1, // spec version
+      endpoint: config.get('publicUrl')
+    },
+    discover: {
+      version: 1, // spec version
+      endpoint: config.get('publicUrl')
+    }
+  })
+}
+
+async function announce_public_url(api, config) {
+  // re-announce in future
+  const reannounce = function (timeout) {
+    setTimeout(announce_public_url, timeout, api, config);
+  }
+
+  debug('announcing public url')
+  const { publish } = require('@joystream/discovery')
+
+  const accountId = api.identities.key.address()
+
+  const reannounceAfterMilliSeconds = config.get('reannouncePeriod')
+
+  try {
+    const serviceInformation = get_service_information(config)
+
+    let published = await publish.publish(accountId, serviceInformation, api)
+
+    // reannounceAfterMilliSeconds = convertToMs(published.ttl)
+    reannounce(reannounceAfterMilliSeconds)
+
+  } catch (err) {
+    debug(`announcing public url failed: ${err.stack}`)
+
+    // On failure retry sooner
+    debug(`announcing failed, retrying in: 2 minutes`)
+    reannounce(120 * 1000)
+  }
+}
+
+function go_offline(api) {
+  return api.discovery.unsetAccountInfo(api.identities.key.address())
+}
+
 // Simple CLI commands
 var command = cli.input[0];
 if (!command) {
@@ -246,84 +269,82 @@ if (!command) {
 }
 
 const commands = {
-  'server': () => {
+  'server': async () => {
     const cfg = create_config(pkg.name, cli.flags);
 
     // Load key information
-    const errfunc = (err) => {
-      console.log(err);
-      process.exit(-1);
+    const values = await wait_for_role(cfg);
+    const result = values[0]
+    const api = values[1];
+    if (!result) {
+      throw new Error(`Not staked as storage role.`);
+    }
+    console.log('Staked, proceeding.');
+
+    // Make sure a public URL is configured
+    if (!cfg.get('publicUrl')) {
+      throw new Error('publicUrl not configured')
     }
 
-    const promise = wait_for_role(cfg);
-    promise
-      .then((values) => {
-        const result = values[0]
-        const api = values[1];
-        if (!result) {
-          throw new Error(`Not staked as storage role.`);
-        }
-        console.log('Staked, proceeding.');
+    // Continue with server setup
+    const store = get_storage(api, cfg);
+    banner();
 
-        // Continue with server setup
-        const store = get_storage(cfg);
-        banner();
-        start_app(project_root, store, api, cfg);
-      })
-      .catch(errfunc);
+    const { start_syncing } = require('../lib/sync');
+    start_syncing(api, cfg, store);
+
+    announce_public_url(api, cfg);
+    await start_all_services(store, api, cfg);
   },
-  'create': () => {
+  'signup': async (account_file) => {
+    await run_signup(account_file);
+  },
+  'down': async () => {
     const cfg = create_config(pkg.name, cli.flags);
-    const store = get_storage(cfg);
 
-    if (store.new) {
-      console.log('Storage created.');
-    }
-    else {
-      console.log('Storage already existed, not created.');
+    const values = await wait_for_role(cfg);
+    const result = values[0]
+    const api = values[1];
+    if (!result) {
+      throw new Error(`Not staked as storage role.`);
     }
 
-    // Create the repo
-    const template_path = cli.input[1];
-    if (template_path) {
-      console.log('Creating repository...');
-    }
-    else {
-      console.log(`Creating repository from template "${template_path}"...`);
-    }
-    store.create(undefined, template_path, (err, id, repo) => {
-      if (err) {
-        throw err;
-      }
-
-      console.log('Repository created with id:', id);
-    });
+    await go_offline(api)
   },
-  'list': () => {
-    const cfg = create_config(pkg.name, cli.flags);
-    const store = get_storage(cfg);
-
-    const repo_id = cli.input[1];
-    if (repo_id) {
-      list_repo(store, repo_id);
-    }
-    else {
-      list_repos(store);
-    }
-  },
-  'signup': () => {
-    const account_file = cli.input[1];
-    const ret = run_signup(account_file);
-    ret.catch(console.error).finally(_ => process.exit());
-  },
+  'discovery': async () => {
+    debug("Starting Joystream Discovery Service")
+    const { RuntimeApi } = require('@joystream/runtime-api')
+    const cfg = create_config(pkg.name, cli.flags)
+    const api = await RuntimeApi.create()
+    await start_discovery_service(api, cfg)
+  }
 };
 
-if (commands.hasOwnProperty(command)) {
-  // Command recognized
-  commands[command]();
+
+async function main()
+{
+  // Simple CLI commands
+  var command = cli.input[0];
+  if (!command) {
+    command = 'server';
+  }
+
+  if (commands.hasOwnProperty(command)) {
+    // Command recognized
+    const args = _.clone(cli.input).slice(1);
+    await commands[command](...args);
+  }
+  else {
+    throw new Error(`Command "${command}" not recognized, aborting!`);
+  }
 }
-else {
-  // An error!
-  console.log(chalk.red(`Command "${command}" not recognized, aborting!`));
-  process.exit(1);
-}
+
+main()
+  .then(() => {
+    console.log('Process exiting gracefully.');
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error(chalk.red(err.stack));
+    process.exit(-1);
+  });

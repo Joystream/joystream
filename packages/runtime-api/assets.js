@@ -15,6 +15,7 @@ function parseContentId(contentId) {
     return contentId
   }
 }
+
 /*
  * Add asset related functionality to the substrate API.
  */
@@ -31,6 +32,20 @@ class AssetsApi
   async init(account_file)
   {
     debug('Init');
+  }
+
+  /*
+   * Create a data object.
+   */
+  async createDataObject(accountId, contentId, doTypeId, size)
+  {
+    contentId = parseContentId(contentId)
+    const tx = this.base.api.tx.dataDirectory.addContent(contentId, doTypeId, size);
+    await this.base.signAndSend(accountId, tx);
+
+    // If the data object constructed properly, we should now be able to return
+    // the data object from the state.
+    return await this.getDataObject(contentId);
   }
 
   /*
@@ -54,8 +69,8 @@ class AssetsApi
   async checkLiaisonForDataObject(accountId, contentId)
   {
     contentId = parseContentId(contentId)
-    const obj = await this.getDataObject(contentId);
-    if (_.isEqual(obj.raw, new Null())) {
+    let obj = await this.getDataObject(contentId);
+    if (obj.isNone) {
       throw new Error(`No DataObject created for content ID: ${contentId}`);
     }
 
@@ -76,7 +91,7 @@ class AssetsApi
       throw new Error(`Expected Pending judgement, but found: ${judge_arr[judge_val]}`);
     }
 
-    return obj;
+    return obj.unwrap();
   }
 
   /*
@@ -86,7 +101,7 @@ class AssetsApi
   {
     contentId = parseContentId(contentId)
     const tx = this.base.api.tx.dataDirectory.acceptContent(contentId);
-    return await this.base.signAndSendWithRetry(accountId, tx);
+    return await this.base.signAndSend(accountId, tx);
   }
 
   /*
@@ -96,7 +111,7 @@ class AssetsApi
   {
     contentId = parseContentId(contentId)
     const tx = this.base.api.tx.dataDirectory.rejectContent(contentId);
-    return await this.base.signAndSendWithRetry(accountId, tx);
+    return await this.base.signAndSend(accountId, tx);
   }
 
   /*
@@ -108,7 +123,26 @@ class AssetsApi
     const tx = this.base.api.tx.dataObjectStorageRegistry.addRelationship(contentId);
 
     const subscribed = [['dataObjectStorageRegistry', 'DataObjectStorageRelationshipAdded']];
-    return await this.base.signAndSendWithRetry(accountId, tx, 3, subscribed, callback);
+    return await this.base.signAndSend(accountId, tx, 3, subscribed, callback);
+  }
+
+  /*
+   * Get storage relationship for contentId
+   */
+  async getStorageRelationshipAndId(accountId, contentId) {
+    contentId = parseContentId(contentId)
+    let rids = await this.base.api.query.dataObjectStorageRegistry.relationshipsByContentId(contentId);
+
+    while(rids.length) {
+      const relationshipId = rids.shift();
+      let relationship = await this.base.api.query.dataObjectStorageRegistry.relationships(relationshipId);
+      relationship = relationship.unwrap();
+      if (relationship.storage_provider.eq(decodeAddress(accountId))) {
+        return ({ relationship, relationshipId });
+      }
+    }
+
+    return {};
   }
 
   async createAndReturnStorageRelationship(accountId, contentId)
@@ -135,7 +169,11 @@ class AssetsApi
     var tx = ready
       ? this.base.api.tx.dataObjectStorageRegistry.setRelationshipReady(dosrId)
       : this.base.api.tx.dataObjectStorageRegistry.unsetRelationshipReady(dosrId);
-    return await this.base.signAndSendWithRetry(accountId, tx);
+    return await this.base.signAndSend(accountId, tx);
+  }
+
+  async getKnownContentIds() {
+    return this.base.api.query.dataDirectory.knownContentIds();
   }
 }
 

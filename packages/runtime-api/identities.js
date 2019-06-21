@@ -102,7 +102,7 @@ class IdentitiesApi
   {
     // Query for passphrase
     const prompt = require('password-prompt');
-    return prompt(`Enter passphrase for ${address}: `);
+    return prompt(`Enter passphrase for ${address}: `, { required: false });
   }
 
   /*
@@ -112,6 +112,16 @@ class IdentitiesApi
   {
     const memberId = await this.memberIdOf(accountId);
     return !_.isEqual(memberId.raw, new Null());
+  }
+
+  /*
+   * Return true if the account is an actor/role account
+   */
+  async isActor(accountId)
+  {
+    const decoded = this.keyring.decodeAddress(accountId);
+    const actor = await this.base.api.query.actors.actorByAccountId(decoded)
+    return actor.isSome
   }
 
   /*

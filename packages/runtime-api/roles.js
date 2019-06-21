@@ -59,7 +59,7 @@ class RolesApi
       throw new Error(msg);
     }
 
-    if (!await this.base.balances.hasBalanceForRoleStaking(accountId, role)) {
+    if (!await this.hasBalanceForRoleStaking(accountId, role)) {
       const msg = `Account with id "${accountId}" does not have sufficient free balance for role staking!`;
       debug(msg);
       throw new Error(msg);
@@ -130,7 +130,7 @@ class RolesApi
     const converted = memberId.raw;
 
     const tx = this.base.api.tx.actors.roleEntryRequest(role, converted);
-    return await this.base.signAndSendWithRetry(roleAccountId, tx);
+    return await this.base.signAndSend(roleAccountId, tx);
   }
 
   /*
@@ -153,12 +153,14 @@ class RolesApi
     }
 
     return new Promise((resolve, reject) => {
-      this.waitForEvent('actors', 'Staked').then((values) => {
-        const name = values[0];
-        const payload = values[1];
+      this.base.waitForEvent('actors', 'Staked').then((values) => {
+        const name = values[0][0];
+        const payload = values[0][1];
 
         if (payload.AccountId == roleAccountId) {
           resolve(true);
+        } else {
+          // reject() ?
         }
       });
     });

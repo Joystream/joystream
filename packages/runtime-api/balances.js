@@ -81,7 +81,7 @@ class BalancesApi
     const to_decoded = decode(to, true);
 
     const tx = this.base.api.tx.balances.transfer(to_decoded, amount);
-    return await this.base.signAndSendWithRetry(from, tx);
+    return await this.base.signAndSend(from, tx);
   }
 }
 

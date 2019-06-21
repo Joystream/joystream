@@ -18,11 +18,8 @@
 
 'use strict';
 
-const { Storage, DEFAULT_POOL_SIZE } = require('./storage');
-const { Repository } = require('./repository');
+const { Storage } = require('./storage');
 
 module.exports = {
   Storage: Storage,
-  DEFAULT_POOL_SIZE: DEFAULT_POOL_SIZE,
-  Repository: Repository,
 };

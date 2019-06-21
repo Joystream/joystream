@@ -18,227 +18,392 @@
 
 'use strict';
 
-const DEFAULT_POOL_SIZE = 1024;
-
-const path = require('path');
+const { Transform } = require('stream');
 const fs = require('fs');
-const uuidv4 = require('uuid/v4');
-const uuidv5 = require('uuid/v5');
 
 const debug = require('debug')('joystream:storage:storage');
 
-const repository = require('@joystream/storage/repository');
-const lru = require('@joystream/util/lru');
-const fswalk = require('@joystream/util/fs/walk');
+const Promise = require('bluebird');
+Promise.config({
+  cancellation: true,
+});
+
+const file_type = require('file-type');
+const ipfs_client = require('ipfs-http-client');
+const temp = require('temp').track();
+const _ = require('lodash');
+
+// Default request timeout; imposed on top of the IPFS client, because the
+// client doesn't seem to care.
+const DEFAULT_TIMEOUT = 30 * 1000;
+
+// Default/dummy resolution implementation.
+const DEFAULT_RESOLVE_CONTENT_ID = async (original) => {
+  debug('Warning: Default resolution returns original CID', original);
+  return original;
+}
+
+// Default file info if nothing could be detected.
+const DEFAULT_FILE_INFO = {
+  mime_type: 'application/octet-stream',
+  ext: 'bin',
+};
 
 
 /*
- * Manages multiple storage repositories.
+ * fileType is a weird name, because we're really looking at MIME types.
+ * Also, the type field includes extension info, so we're going to call
+ * it file_info { mime_type, ext } instead.
+ * Nitpicking, but it also means we can add our default type if things
+ * go wrong.
+ */
+function fix_file_info(info)
+{
+  if (!info) {
+    info = DEFAULT_FILE_INFO;
+  }
+  else {
+    info.mime_type = info.mime;
+    delete(info.mime);
+  }
+  return info;
+}
+
+function fix_file_info_on_stream(stream)
+{
+  var info = fix_file_info(stream.fileType);
+  delete(stream.fileType);
+  stream.file_info = info;
+  return stream;
+}
+
+
+/*
+ * Internal Transform stream for helping write to a temporary location, adding
+ * MIME type detection, and a commit() function.
+ */
+class StorageWriteStream extends Transform
+{
+  constructor(storage, options)
+  {
+    options = _.clone(options || {});
+
+    super(options);
+
+    this.storage = storage;
+
+    // Create temp target.
+    this.temp = temp.createWriteStream();
+    this.buf = Buffer.alloc(0);
+  }
+
+  _transform(chunk, encoding, callback)
+  {
+    // Deal with buffers only
+    if (typeof chunk === 'string') {
+      chunk = Buffer.from(chunk);
+    }
+
+    // Logging this all the time is too verbose
+    // debug('Writing temporary chunk', chunk.length, chunk);
+    this.temp.write(chunk);
+
+    // Try to detect file type during streaming.
+    if (!this.file_info && this.buf < file_type.minimumBytes) {
+      this.buf = Buffer.concat([this.buf, chunk]);
+
+      if (this.buf >= file_type.minimumBytes) {
+        const info = file_type(this.buf);
+        // No info? We can try again at the end of the stream.
+        if (info) {
+          this.file_info = fix_file_info(info);
+          this.emit('file_info', this.file_info);
+        }
+      }
+    }
+
+    callback(null);
+  }
+
+  _flush(callback)
+  {
+    debug('Flushing temporary stream:', this.temp.path);
+    this.temp.end();
+
+    // Since we're finished, we can try to detect the file type again.
+    if (!this.file_info) {
+      const read = fs.createReadStream(this.temp.path);
+      file_type.stream(read)
+        .then((stream) => {
+          this.file_info = fix_file_info_on_stream(stream).file_info;
+          this.emit('file_info', this.file_info);
+        })
+        .catch((err) => {
+          debug('Error trying to detect file type at end-of-stream:', err);
+        });
+    }
+
+    callback(null);
+  }
+
+  /*
+   * Commit this stream to the IPFS backend.
+   */
+  commit()
+  {
+    // Create a read stream from the temp file.
+    if (!this.temp) {
+      throw new Error('Cannot commit a temporary stream that does not exist. Did you call cleanup()?');
+    }
+
+    debug('Committing temporary stream: ', this.temp.path);
+    this.storage.ipfs.addFromFs(this.temp.path)
+      .then(async (result) => {
+        const hash = result[0].hash;
+        debug('Stream committed as', hash);
+        this.emit('committed', hash);
+        await this.storage.ipfs.pin.add(hash);
+      })
+      .catch((err) => {
+        debug('Error committing stream', err);
+        this.emit('error', err);
+      })
+  }
+
+  /*
+   * Clean up temporary data.
+   */
+  cleanup()
+  {
+    debug('Cleaning up temporary file: ', this.temp.path);
+    fs.unlink(this.temp.path, () => {}); // Ignore errors
+    delete(this.temp);
+  }
+}
+
+
+
+/*
+ * Manages the storage backend interaction. This provides a Promise-based API.
  *
- * - A common file system root contains all repositories.
- * - Keeps a LRU pool of Repository instances, so that we can manage memory
- *   consumption better.
+ * Usage:
+ *
+ *   const store = await Storage.create({ ... });
+ *   store.open(...);
  */
 class Storage
 {
-  constructor(base_path, pool_size = DEFAULT_POOL_SIZE, storage_type)
-  {
-    this.base_path = path.resolve(base_path);
-    this.pool_size = pool_size;
-    this.pool = new lru.LRUCache(this.pool_size);
-    this.use_fs = (storage_type === 'fs');
-
-    this.new = false;
-    this.id = this._initialize();
-    debug('Initialized storage', this.id, 'at', this.base_path, 'with LRU of', this.pool_size);
-  }
-
-
   /*
-   * Return a Repository instance for the repo with the given ID
-   */
-  get(id)
-  {
-    // Return from pool if it exists.
-    if (this.pool.has(id)) {
-      debug('Return repo', id, 'from LRU cache.');
-      return this.pool.get(id);
-    }
-
-    // Check if there is a path for this id.
-    const repo_path = this._path_for_repo(id);
-    if (!fs.existsSync(repo_path)) {
-      debug('Repo', id, 'does not exist at path:', repo_path);
-      return undefined;
-    }
-
-    var repo = new repository.Repository(repo_path, this.use_fs);
-    this.pool.put(id, repo);
-    return repo;
-  }
-
-  /*
-   * Return a synchronization stream for the repository, nor nothing. read_open()
-   * and write_open() aliases exist in case this is going to be a different stream
-   * in future.
-   */
-  read_open(id)
-  {
-    return this.sync_stream(id);
-  }
-
-  write_open(id)
-  {
-    return this.sync_stream(id);
-  }
-
-  sync_stream(id)
-  {
-    const repo = this.get(id);
-    if (!repo) {
-      debug('No repository for', id);
-      return undefined;
-    }
-
-    // It's also possible that the repository cannot be synchronized.
-    if (!repo.replicate) {
-      debug('Repository', id, 'cannot be synchronized.');
-      return undefined;
-    }
-    return repo.replicate();
-  }
-
-
-  /*
-   * Create a repository. Return the id and repository in an object.
+   * Create a Storage instance. Options include:
    *
-   * The public key is optional. If given, it will be stored in the storage
-   * hierarchy, and passed on to the repository instance as the signing
-   * authority for all changes. TODO implement this
+   * - an `ipfs` property, which is itself a hash containing
+   *   - `connect_options` to be passed to the IPFS client library for
+   *     connecting to an IPFS node.
+   * - a `resolve_content_id` function, which translates Joystream
+   *   content IDs to IPFS content IDs or vice versa. The default is to
+   *   not perform any translation, which is not practical for a production
+   *   system, but serves its function during development and testing. The
+   *   function must be asynchronous.
+   * - a `timeout` parameter, defaulting to DEFAULT_TIMEOUT. After this time,
+   *   requests to the IPFS backend time out.
    *
-   * Also optional is the template function. It's a simple function accepting
-   * the repository, and initializing it with data *before* the repository
-   * instance is put into the pool. This allows for the repository to be
-   * populated before use.
-   *
-   * Finally, the callback(err, id, repo) is invoked when the Repository
-   * instance has become part of the pool. Before the callback is invoked,
-   * the id and pool are returned by the create() function, but the repo
-   * may not be finalized. Passing the callback is equivalent to registering
-   * a 'ready' event handler on the returned repository.
+   * Functions in this class accept an optional timeout parameter. If the
+   * timeout is given, it is used - otherwise, the `option.timeout` value
+   * above is used.
    */
-  create(pubkey, template, cb)
+  static create(options)
   {
-    // Make repo ID globally unique by using the storage ID as a namespace.
-    // This assumes storage IDs are globally unique, but since they're much
-    // less common, that's significantly more likely (then again, UUIDv4
-    // should already be unique enough...)
-    const id = uuidv5(uuidv4(), this.id);
-    const repo_path = this._path_for_repo(id);
-
-    // Just for paranoia, though, let's ensure the repo path does not exist.
-    if (fs.existsSync(repo_path)) {
-      throw new Error(`Repository ${id} at path "${repo_path}" already exists, aborting!`);
-    }
-
-    // Finaliser function after the template is done.
-    const commit = () => {
-      this.pool.put(id, repo);
-      if (cb) {
-        cb(null, id, repo);
-      }
-    };
-
-    const repo = new repository.Repository(repo_path, this.use_fs);
-    repo.on('ready', () => {
-      if (template) {
-        repo.populate(template, commit);
-      }
-      else {
-        // No template, commit
-        commit();
-      }
-    });
-
-    return {
-      id: id,
-      repo: repo,
-    }
+    const storage = new Storage();
+    storage._init(options);
+    return storage;
   }
 
-  /*
-   * Return true if a repo exists.
-   */
-  has(id)
+  _init(options)
   {
-    const repo_path = this._path_for_repo(id);
-    return fs.existsSync(repo_path);
-  }
+    this.options = _.clone(options || {});
+    this.options.ipfs = this.options.ipfs || {};
 
-  /*
-   * Call the callback with all repository IDs found in the storage.
-   */
-  repos(cb)
-  {
-    fswalk(this.base_path, (err, relname, stat, linktarget) => {
+    this._timeout = this.options.timeout || DEFAULT_TIMEOUT;
+    this._resolve_content_id = this.options.resolve_content_id || DEFAULT_RESOLVE_CONTENT_ID;
+
+    this.ipfs = ipfs_client(this.options.ipfs.connect_options);
+
+    this.pins = {};
+
+    this.ipfs.id((err, identity) => {
       if (err) {
-        cb(err);
-        return;
-      }
-      if (!relname) {
-        cb(null, undefined);
-        return;
-      }
-
-      const base = path.basename(relname);
-      if (this.has(base)) {
-        cb(null, base);
+        debug(`Warning IPFS daemon not running: ${err.message}`);
+      } else {
+        debug(`IPFS node is up with identity: ${identity.id}`);
       }
     });
   }
 
+  /*
+   * Uses bluebird's timeout mechanism to return a Promise that times out after
+   * the given timeout interval, and tries to execute the given operation within
+   * that time.
+   */
+  async _with_specified_timeout(timeout, operation)
+  {
+    return new Promise(async (resolve, reject) => {
+      try {
+        resolve(await new Promise(operation));
+      } catch (err) {
+        reject(err);
+      }
+    }).timeout(timeout || this._timeout);
+  }
 
   /*
-   * Ensure the storage directory has the correct layout.
+   * Resolve content ID with timeout.
    */
-  _initialize()
+  async _resolve_content_id_with_timeout(timeout, content_id)
   {
-    // Create directories (if they don't exist)
-    fs.mkdirSync(path.resolve(this.base_path, 'keys'), { recursive: true, mode: 0o700 });
-    fs.mkdirSync(path.resolve(this.base_path, 'repos'), { recursive: true, mode: 0o700 });
+    return await this._with_specified_timeout(timeout, async (resolve, reject) => {
+      try {
+        resolve(await this._resolve_content_id(content_id));
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
 
-    // Create an ID file; this is is persistent for the node and random.
-    const id_path = path.resolve(this.base_path, 'id');
-    var id;
-    try {
-      id = fs.readFileSync(id_path, { encoding: 'utf8' });
-    } catch (e) {
-      // No ID? Generate one and write it.
-      id = uuidv4();
-      fs.writeFileSync(id_path, id, { encoding: 'utf8' });
-      this.new = true;
+  /*
+   * Stat a content ID.
+   */
+  async stat(content_id, timeout)
+  {
+    const resolved = await this._resolve_content_id_with_timeout(timeout, content_id);
+
+    return await this._with_specified_timeout(timeout, (resolve, reject) => {
+      this.ipfs.files.stat(`/ipfs/${resolved}`, { withLocal: true }, (err, res) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(res);
+      });
+    });
+  }
+
+  /*
+   * Return the size of a content ID.
+   */
+  async size(content_id, timeout)
+  {
+    const stat = await this.stat(content_id, timeout);
+    // FIXME CumulativeSize isn't correct - but it's the closest to a correct
+    //       size we're getting from IPFS. Returning this means we overestimate
+    //       Content-Length a little, which is better than underestimating it.
+    return stat.cumulativeSize;
+  }
+
+  /*
+   * Opens the specified content in read or write mode, and returns a Promise
+   * with the stream.
+   *
+   * Read streams will contain a file_info property, with:
+   *  - a `mime_type` field providing the file's MIME type, or a default.
+   *  - an `ext` property, providing a file extension suggestion, or a default.
+   *
+   * Write streams have a slightly different flow, in order to allow for MIME
+   * type detection and potential filtering. First off, they are written to a
+   * temporary location, and only committed to the backend once their
+   * `commit()` function is called.
+   *
+   * When the commit has finished, a `committed` event is emitted, which
+   * contains the IPFS backend's content ID.
+   *
+   * Write streams also emit a `file_info` event during writing. It is passed
+   * the `file_info` field as described above. Event listeners may now opt to
+   * abort the write or continue and eventually `commit()` the file. There is
+   * an explicit `cleanup()` function that removes temporary files as well,
+   * in case comitting is not desired.
+   */
+  async open(content_id, mode, timeout)
+  {
+    if (mode != 'r' && mode != 'w') {
+      throw Error('The only supported modes are "r", "w" and "a".');
     }
-    return id;
+
+    // Write stream
+    if (mode === 'w') {
+      return await this._create_write_stream(content_id, timeout);
+    }
+
+    // Read stream - with file type detection
+    return await this._create_read_stream(content_id, timeout);
   }
 
+  async _create_write_stream(content_id)
+  {
+    // IPFS wants us to just dump a stream into its storage, then returns a
+    // content ID (of its own).
+    // We need to instead return a stream immediately, that we eventually
+    // decorate with the content ID when that's available.
+    return new Promise((resolve, reject) => {
+      const stream = new StorageWriteStream(this);
+      resolve(stream);
+    });
+  }
+
+  async _create_read_stream(content_id, timeout)
+  {
+    const resolved = await this._resolve_content_id_with_timeout(timeout, content_id);
+
+    var found = false;
+    return await this._with_specified_timeout(timeout, (resolve, reject) => {
+      const ls = this.ipfs.getReadableStream(resolved);
+      ls.on('data', async (result) => {
+        if (result.path === resolved) {
+          found = true;
+
+          const ft_stream = await file_type.stream(result.content);
+          resolve(fix_file_info_on_stream(ft_stream));
+        }
+      });
+      ls.on('error', (err) => {
+        ls.end();
+        debug(err);
+        reject(err);
+      });
+      ls.on('end', () => {
+        if (!found) {
+          const err = new Error('No matching content found for', content_id);
+          debug(err);
+          reject(err);
+        }
+      });
+      ls.resume();
+    });
+  }
 
   /*
-   * Return the file system path for the given repo ID.
+   * Synchronize the given content ID
    */
-  _path_for_repo(id)
+  async synchronize(content_id)
   {
-    // Since IDs are UUIDs, which are hashes, there's enough entropy
-    // in the ID already that we can use it to create fs paths.
-    const part1 = id.slice(0, 2);
-    const part2 = id.slice(2, 4);
-    const ret = path.resolve(this.base_path, 'repos', part1, part2, id);
-    debug('Path for repo', id, 'is:', ret);
-    return ret;
-  }
+    const resolved = await this._resolve_content_id_with_timeout(this._timeout, content_id);
 
+    if (this.pins[resolved]) {
+      return;
+    }
+
+    debug(`Pinning ${resolved}`);
+
+    // This call blocks until file is retreived..
+    this.ipfs.pin.add(resolved, {quiet: true, pin: true}, (err, res) => {
+      if (err) {
+        debug(`Error Pinning: ${resolved}`)
+        delete this.pins[resolved];
+      } else {
+        debug(`Pinned ${resolved}`);
+      }
+    });
+  }
 }
 
 module.exports = {
   Storage: Storage,
-  DEFAULT_POOL_SIZE: DEFAULT_POOL_SIZE,
 };

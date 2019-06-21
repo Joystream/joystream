@@ -1,7 +1,7 @@
 {
   "private": true,
   "engines": {
-    "node": "^10.15.3",
+    "node": ">=10.15.3",
     "yarn": "^1.15.2"
   },
   "homepage": "https://github.com/Joystream/storage-node-joystream",
