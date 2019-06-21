@@ -271,7 +271,7 @@ class Component extends React.PureComponent<Props, State> {
 
     // TODO: validate url .. must start with http
 
-    this.setState({ discovering: false, progress: 0, uploading: true });
+    this.setState({ discovering: false, uploading: true, progress: 0 });
 
     try {
       await axios.put<{ message: string }>(url, file, config);
