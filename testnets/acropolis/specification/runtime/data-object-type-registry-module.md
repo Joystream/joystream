@@ -1,6 +1,6 @@
-# Storage Module - Data Object Type Registry
+# Data Object Type Registry Module
 
-## Table Of Content
+## Table Of Contents
 
 - [Name](#name)
 - [Dependencies](#dependencies)

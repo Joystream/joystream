@@ -1,7 +1,6 @@
+# Members Module: is not part of Acropolis spec, only kept for future purposes.
 
-# Members Module
-
-## Table Of Content
+## Table Of Contents
 
 - [Design](#design)
 - [Dependencies](#dependencies)

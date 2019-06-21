@@ -1,64 +1,49 @@
-# Storage Module
+# Storage Modules
 
-## Table Of Content
+## Table Of Contents
 
-- [Name](#name)
-- [Dependencies](#dependencies)
 - [Design](#design)
 - [Concepts](#concepts)
 - [Architecture](#architecture)
 - [Traits](#traits)
 
-## Name
-
-`Storage`
-
-## Dependencies
-
-None.
-
 ## Design
 
 ### Motivation
 
-The storage module contains all runtime functionality pertaining to managing
+The storage modules contains all runtime functionality pertaining to managing
 the Joystream storage and distribution network. As such it contains information
 on actors participating in the network, as well as data that should be
 retrievable.
 
 ### Structure
 
-The module is structured into several sub-modules with their own distinct
-documentation:
+There are the following modules, with their own detailed specifications.
 
-1. [Data Object Type Registry](./storage-module/data-object-type-registry.md):
+1. [Data Object Type Registry](data-object-type-registry-module.md):
    manages how data may be stored on the network.
-1. [Data Directory](./storage-module/data-directory.md):
+2. [Data Directory](data-directory-module.md):
    manages *what* data exists on the network.
-1. [Data Object Storage Registry](./storage-module/data-object-storage-registry.md):
+3. [Data Object Storage Registry](data-object-storage-registry-module.md):
    manages  *where* data exists on the network.
-1. A [Staking](./storage-module/staking.md) sub-module, for joining and leaving
-   storage *Tranches*.
+4. [Storage Staking](storage-staking-module.md) manages joining and leaving
+   storage *tranches*.
 
-Currently, all sub-modules are separate Substrate modules. This is going to
-change with the Acropolis release, where they'll be merged into a single
-`Storage` module.
-
-Also related is the [Content Directory](./content-module.md), which provides
-information for users to discover stored content.
+Also related is the [Content Directory](content-directory.md), which provides
+information for users to discover stored content, but it is not a proper module.
 
 ## Concepts
 
 - `DataObjectType`: a structure describing the type of data objects that can be
   stored. This is not to be confused with file types. Instead, data object
   types will be used to group files that should follow the same storage
-  patterns. See the [Data Object Type Registry](./storage-module/data-object-type-registry.md)
+  patterns. See the [Data Object Type Registry](data-object-type-registry-module.md)
   for details.
 
 - `ContentId`: a unique identifier for `DataObject` and `ContentMetadata`
   entries.
 
-- `DataObject`: an entry in the [Data Directory](./storage-module/data-directory.md)
+- `DataObject`: an entry in the [Data Directory](data-directory-module.md)
   describing a single piece of content in the network.
 
 - `ContentMetadata`: a structure for describing content metadata in a
@@ -70,7 +55,7 @@ information for users to discover stored content.
 - `Liaison`: the actor account that is responsible for accepting uploads for
   a `DataObject`, and making the content available to other storage nodes.
 
-- `StorageRelationship`: an entry in the [Data Object Storage Registry](./storage-module/data-object-storage-registry.md),
+- `StorageRelationship`: an entry in the [Data Object Storage Registry](data-object-storage-registry-module.md),
   describing which actor has stored a particular `DataObject`.
 
 - A storage provider is an `actor` who has staked for a storage tranche.
@@ -105,7 +90,7 @@ information on where storage machines are to be contacted, such as IP addresses
 or host names. This is not true.
 
 At the level of abstraction of the storage module, *only* actor account IDs are
-managed. It is the purpose of the [Discovery Module](./discovery-module.md) to
+managed. It is the purpose of the [Discovery Module](discovery-module.md) to
 resolve actor account IDs further to currently up-to-date contact information.
 
 ### Architecture
@@ -144,9 +129,11 @@ derivates.
 
 ## Traits
 
+<!-- This section must be reworked and renamed, we dont ahve this in standard. -->
+
 Most of the storage module's sub-modules only make use of each other, so
 there is not much need for documenting traits as interfaces between them.
-However, one public trait, to be used by the related [Content Directory](./content-module.md)
+However, one public trait, to be used by the related [Content Directory](content-directory.md)
 does exist:
 
 - `DataObjectHasActiveStorageRelationships`: implements a method

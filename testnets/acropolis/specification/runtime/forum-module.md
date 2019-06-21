@@ -1,7 +1,6 @@
-
 # Forum Module
 
-## Table Of Content
+## Table Of Contents
 
 - [Design](#design)
 - [Dependencies](#dependencies)

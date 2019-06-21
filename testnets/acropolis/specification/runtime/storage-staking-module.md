@@ -1,4 +1,4 @@
-# Storage Role Staking
+# Storage Staking Module
 
 ## Table Of Contents
 
@@ -18,7 +18,9 @@
 
 ## Name
 
-`StorageStaking`
+`Actors`
+
+NB: Irregular naming, should be `StorageStaking`
 
 ## Dependencies
 

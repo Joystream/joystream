@@ -1,6 +1,6 @@
-# Storage Module - Data Object Storage Registry
+# Data Object Storage Registry Module
 
-## Table Of Content
+## Table Of Contents
 
 - [Name](#name)
 - [Dependencies](#dependencies)
@@ -43,11 +43,6 @@ whether the relationship is currently fulfillable by the storage provider.
 This permits indiciating an intent to fulfil on the runtime by providing
 an inactive relationship, then synchronizing content, and finally updating
 the relationship when content can be served.
-
-## Future TODOs
-
-1. Purge all `StorageRelationships` which have the `available` flag unset
-   for a configurable period of time.
 
 ## State
 
