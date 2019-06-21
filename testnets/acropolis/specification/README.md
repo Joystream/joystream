@@ -5,7 +5,6 @@
 - [Document](#document)
 - [Caveat](#caveat)
 - [Glossary](#glossary)
-- [Format](#format)
 - [Overview](#overview)
 - [Substrate Runtime](#substrate-runtime)
   - [Runtime Version](#runtime-version)
@@ -17,7 +16,7 @@
     - [CouncilElection](#councilelection)
     - [Council](#council)
     - [Memo](#memo)
-    - [Members](#members)
+    - [Membership](#membership)
     - [Migration](#migration)
     - [Actors](#actors)
     - [DataObjectTypeRegistry](#dataobjecttyperegistry)
@@ -25,7 +24,7 @@
     - [DataObjectStorageRegistry](#dataobjectstorageregistry)
     - [DownloadSessions](#downloadsessions)
   - [SRML Modules](#srml-modules)
-  - [Runtime API](#runtime-api)
+  - [Runtime API](#runtime-apis)
 <!-- - [Communication Protocols](#communication-protocols) -->
 
 ## Document
@@ -94,7 +93,7 @@ A full featured hierarchical topic based, and single moderator, membership forum
 
 These are the Joystream specific modules, for each module, there is either a link to a module specification document, or no link, for already implemented modules (see [caveat](#caveat)). Standard configurations, for example based on values from the System module, are omitted.
 
-An integrated explanation of the modules constituting the storage system is found [here](storage-system.md).
+An integrated explanation of the modules constituting the storage system is found [here](runtime/storage-modules.md).
 
 #### Forum
 
@@ -165,7 +164,7 @@ An integrated explanation of the modules constituting the storage system is foun
 #### Actors
 
 - **Description**: Staking manager for storage system.
-- **Specification**: [**READ HERE**](runtime/staking-module.md)
+- **Specification**: [**READ HERE**](runtime/actors-module.md)
 - **Status:** Unchanged from Athens.
 - **Configuration:**
   - _Members_: [Membership](#membership) module.

@@ -20,8 +20,6 @@
 
 `Actors`
 
-NB: Irregular naming, should be `StorageStaking`
-
 ## Dependencies
 
 - `srml::system`

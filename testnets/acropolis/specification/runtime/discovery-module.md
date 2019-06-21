@@ -43,7 +43,7 @@ peformed. This current version uses [IPNS](https://docs.ipfs.io/guides/concepts/
 as a building block for discovery. The *publishing workflow* includes modifying
 on-chain data, albeit relatively rarely.
 
-<-- This document is concerned only with *on-chain* operations. For the full,
+<!-- This document is concerned only with *on-chain* operations. For the full,
 high-level documentation see [TODO](#TODO). -->
 
 ## Name
