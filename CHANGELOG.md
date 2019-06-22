@@ -1,4 +1,4 @@
-### Version 5.4.0 - Athens testnet update 3 - Acropolis
+### Version 5.4.0 (Acropolis) - Athens testnet update 3 - June 22n 2019
 - New Forum - v1.0.0
 - Discovery Service to support new Storage Provider implementation.
 - Removing all previously uploaded content
