@@ -1,13 +1,13 @@
 use crate::currency::{BalanceOf, GovernanceCurrency};
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
+use runtime_io::print;
 use runtime_primitives::traits::{As, Bounded, MaybeDebug, Zero};
 use srml_support::traits::{
     Currency, LockIdentifier, LockableCurrency, WithdrawReason, WithdrawReasons,
 };
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
-use runtime_io::print;
 
 use crate::traits::Members;
 
