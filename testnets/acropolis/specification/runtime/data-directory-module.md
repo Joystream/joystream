@@ -1,11 +1,10 @@
-# Storage Module - Data Directory
+# Data Directory Module
 
-## Table Of Content
+## Table Of Contents
 
 - [Name](#name)
 - [Dependencies](#dependencies)
 - [Design](#design)
-- [Future TODOs](#future-todos)
 - [State](#state)
 - [Events](#events)
 - [Dispatchable Methods](#dispatchable-methods)
@@ -100,13 +99,6 @@ data to the *Liaison*, not too much time should pass. If there is a reason for
 the *Liaison* to un-stake before re-distributing the content, then the
 `DataObject` cannot be uploaded, and a new `DataObject` needs to be created.
 
-## Future TODOs
-
-1. Purge state of all Pending `DataObjects` older than a configurable
-   period.
-1. Concoct a scheme for content signing, perhaps as described in the
-   [signing/verification issue](https://github.com/Joystream/storage-node-joystream/issues/5#issuecomment-495552847)
-   on the storage node.
 
 ## State
 

@@ -19,9 +19,7 @@
 
 ### Motivation
 
-Various services on the Joystream network need to be discovered by each other
-or the [pioneer app](https://github.com/Joystream/apps). This module describes
-data structures and dispatchable methods for helping discover these services.
+Accessing most services requires resolving a host corresponding the public key of some service provider. This module describes the on-chain component of making this possible.
 
 ### Basic Functionality
 
@@ -45,8 +43,8 @@ peformed. This current version uses [IPNS](https://docs.ipfs.io/guides/concepts/
 as a building block for discovery. The *publishing workflow* includes modifying
 on-chain data, albeit relatively rarely.
 
-This document is concerned only with *on-chain* operations. For the full,
-high-level documentation see [TODO](#TODO).
+<!-- This document is concerned only with *on-chain* operations. For the full,
+high-level documentation see [TODO](#TODO). -->
 
 ## Name
 
@@ -184,6 +182,8 @@ Allows well-behaving actors to clear their IPNS peer ID, e.g. when shutting down
 - `AccountInfoUpdated`
 
 ## Other
+
+<!--  bad format, underspecified , change later to use on_initlize -->
 
 Every block, outdated entries are removed and an `AccountInfoUpdated` event is
 raised for each removed entry.
