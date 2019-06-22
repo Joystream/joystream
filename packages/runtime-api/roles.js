@@ -113,6 +113,21 @@ class RolesApi
   }
 
   /*
+   * Returns the number of slots available for a role
+   */
+  async availableSlotsForRole(role)
+  {
+    let params = await this.base.api.query.actors.parameters(role);
+    if (params.isNone) {
+      throw new Error(`Role ${role} is not defined!`);
+    }
+    params = params.unwrap();
+    const slots = params.max_actors;
+    const active = await this.accountIdsByRole(role);
+    return (slots.subn(active.length)).toNumber();
+  }
+
+  /*
    * Send a role application.
    * - The role account must not be a member, but have sufficient funds for
    *   staking.
