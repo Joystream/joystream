@@ -2,7 +2,11 @@
 authors = ['Joystream']
 edition = '2018'
 name = 'joystream-node-runtime'
-version = '5.3.0'
+version = '5.4.0'
+
+[dependencies]
+# restrict version of syn, see https://github.com/paritytech/substrate/issues/2326
+syn = { version = ">= 0.15.26, < 0.15.32", features = ["full"] }
 
 [features]
 default = ['std']
@@ -33,6 +37,7 @@ std = [
     'consensus-authorities/std',
     'grandpa/std',
     'finality-tracker/std',
+    'forum/std'
 ]
 [dependencies.aura]
 default_features = false
@@ -183,3 +188,9 @@ default_features = false
 git = 'https://github.com/joystream/substrate.git'
 package = 'srml-finality-tracker'
 rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+
+[dependencies.forum]
+default_features = false
+git = 'https://github.com/joystream/substrate-forum-module'
+package = 'substrate-forum-module'
+tag = "v1.0.0"

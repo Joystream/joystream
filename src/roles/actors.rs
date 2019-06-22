@@ -1,12 +1,15 @@
 use crate::currency::{BalanceOf, GovernanceCurrency};
 use parity_codec_derive::{Decode, Encode};
 use rstd::prelude::*;
+use runtime_io::print;
 use runtime_primitives::traits::{As, Bounded, MaybeDebug, Zero};
-use srml_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReasons, WithdrawReason};
+use srml_support::traits::{
+    Currency, LockIdentifier, LockableCurrency, WithdrawReason, WithdrawReasons,
+};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
 
-use crate::traits::{Members, Roles};
+use crate::traits::Members;
 
 static MSG_NO_ACTOR_FOR_ROLE: &str = "For the specified role, no actor is currently staked.";
 
@@ -81,10 +84,16 @@ pub struct Actor<T: Trait> {
     pub joined_at: T::BlockNumber,
 }
 
+pub trait ActorRemoved<T: Trait> {
+    fn actor_removed(actor: &T::AccountId);
+}
+
 pub trait Trait: system::Trait + GovernanceCurrency + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type Members: Members<Self>;
+
+    type OnActorRemoved: ActorRemoved<Self>;
 }
 
 pub type MemberId<T> = <<T as Trait>::Members as Members<T>>::Id;
@@ -205,6 +214,8 @@ impl<T: Trait> Module<T> {
         <ActorAccountIds<T>>::put(accounts);
 
         <ActorByAccountId<T>>::remove(&actor_account);
+
+        T::OnActorRemoved::actor_removed(&actor_account);
     }
 
     fn apply_unstake(
@@ -235,29 +246,13 @@ impl<T: Trait> Module<T> {
             WithdrawReasons::all() & !(WithdrawReason::TransactionPayment | WithdrawReason::Fee),
         );
     }
-}
 
-impl<T: Trait> Roles<T> for Module<T> {
-    fn is_role_account(account_id: &T::AccountId) -> bool {
+    pub fn is_role_account(account_id: &T::AccountId) -> bool {
         <ActorByAccountId<T>>::exists(account_id)
     }
 
-    fn account_has_role(account_id: &T::AccountId, role: Role) -> bool {
+    pub fn account_has_role(account_id: &T::AccountId, role: Role) -> bool {
         Self::actor_by_account_id(account_id).map_or(false, |actor| actor.role == role)
-    }
-
-    fn random_account_for_role(role: Role) -> Result<T::AccountId, &'static str> {
-        let ids = Self::account_ids_by_role(role);
-        if 0 == ids.len() {
-            return Err(MSG_NO_ACTOR_FOR_ROLE);
-        }
-        let seed = <system::Module<T>>::random_seed();
-        let mut rand: u64 = 0;
-        for offset in 0..8 {
-            rand += (seed.as_ref()[offset] as u64) << offset;
-        }
-        let idx = (rand as usize) % ids.len();
-        return Ok(ids[idx].clone());
     }
 }
 
@@ -418,10 +413,11 @@ decl_module! {
         }
 
         pub fn remove_actor(actor_account: T::AccountId) {
-            let member_id = T::Members::lookup_member_id(&actor_account)?;
-            let actor = Self::ensure_actor_is_member(&actor_account, member_id)?;
+            ensure!(<ActorByAccountId<T>>::exists(&actor_account), "error trying to remove non actor account");
+            let actor = Self::actor_by_account_id(&actor_account).unwrap();
             let role_parameters = Self::ensure_role_parameters(actor.role)?;
-            Self::apply_unstake(actor.account, actor.role, actor.member_id, role_parameters.unbonding_period, role_parameters.min_stake);
+            Self::apply_unstake(actor_account, actor.role, actor.member_id, role_parameters.unbonding_period, role_parameters.min_stake);
+            print("sudo removed actor");
         }
     }
 }

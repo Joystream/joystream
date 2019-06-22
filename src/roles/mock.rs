@@ -122,6 +122,11 @@ impl Members<Test> for MockMembers {
 impl actors::Trait for Test {
     type Event = ();
     type Members = MockMembers;
+    type OnActorRemoved = ();
+}
+
+impl actors::ActorRemoved<Test> for () {
+    fn actor_removed(_: &u64) {}
 }
 
 pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
