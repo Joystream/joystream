@@ -43,9 +43,8 @@ class DiscoveryApi
   async setAccountInfo(accountId, ipnsId, ttl) {
     const isActor = await this.base.identities.isActor(accountId)
     if (isActor) {
-      const decoded = this.base.identities.keyring.decodeAddress(accountId, true)
       const tx = this.base.api.tx.discovery.setIpnsId(ipnsId, ttl)
-      return this.base.signAndSend(decoded, tx)
+      return this.base.signAndSend(accountId, tx)
     } else {
       throw new Error('Cannot set AccountInfo for non actor account')
     }
