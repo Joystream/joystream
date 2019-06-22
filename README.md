@@ -8,6 +8,7 @@ subdirectory. See each individual package for details:
 * [runtime-api](./packages/runtime-api/README.md) - convenience wrappers for the runtime API.
 * [crypto](./packages/crypto/README.md) - cryptographic utility functions.
 * [util](./packages/util/README.md) - general utility functions.
+* [discovery](./packages/discovery/README.md) - service discovery using IPNS.
 
 Installation
 ------------
@@ -49,6 +50,10 @@ Running tests from the repository root will run tests from all packages:
 ```
 $ yarn run test
 ```
+
+
+## Detailed Setup and Configuration Guide
+For details on how to setup a storage node on the Joystream network, follow this [step by step guide](https://github.com/Joystream/helpdesk/tree/master/roles/storage-providers).
 
 Storage Provider Staking
 ------------------------
