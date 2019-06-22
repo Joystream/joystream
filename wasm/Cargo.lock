@@ -783,7 +783,7 @@ dependencies = [
  "substrate-client 1.0.0 (git+https://github.com/joystream/substrate.git?rev=6dfc3e8b057bb00322136251a0f10305fbb1ad8f)",
  "substrate-consensus-aura-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=6dfc3e8b057bb00322136251a0f10305fbb1ad8f)",
  "substrate-consensus-authorities 1.0.0 (git+https://github.com/joystream/substrate.git?rev=6dfc3e8b057bb00322136251a0f10305fbb1ad8f)",
- "substrate-forum-module 0.1.0 (git+https://github.com/joystream/substrate-forum-module?rev=5ab4944344966e0b460f3883cbc45eab94ef666e)",
+ "substrate-forum-module 1.0.0 (git+https://github.com/joystream/substrate-forum-module?tag=v1.0.0)",
  "substrate-offchain-primitives 0.1.0 (git+https://github.com/joystream/substrate.git?rev=6dfc3e8b057bb00322136251a0f10305fbb1ad8f)",
  "substrate-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=6dfc3e8b057bb00322136251a0f10305fbb1ad8f)",
  "syn 0.15.31 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2576,8 +2576,8 @@ dependencies = [
 
 [[package]]
 name = "substrate-forum-module"
-version = "0.1.0"
-source = "git+https://github.com/joystream/substrate-forum-module?rev=5ab4944344966e0b460f3883cbc45eab94ef666e#5ab4944344966e0b460f3883cbc45eab94ef666e"
+version = "1.0.0"
+source = "git+https://github.com/joystream/substrate-forum-module?tag=v1.0.0#d724d9946ab01c6d3b4307ca6ea9263dabd58d34"
 dependencies = [
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-codec 3.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3485,7 +3485,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum substrate-consensus-common 1.0.0 (git+https://github.com/joystream/substrate.git?rev=6dfc3e8b057bb00322136251a0f10305fbb1ad8f)" = "<none>"
 "checksum substrate-executor 1.0.0 (git+https://github.com/joystream/substrate.git?rev=6dfc3e8b057bb00322136251a0f10305fbb1ad8f)" = "<none>"
 "checksum substrate-finality-grandpa-primitives 1.0.0 (git+https://github.com/joystream/substrate.git?rev=6dfc3e8b057bb00322136251a0f10305fbb1ad8f)" = "<none>"
-"checksum substrate-forum-module 0.1.0 (git+https://github.com/joystream/substrate-forum-module?rev=5ab4944344966e0b460f3883cbc45eab94ef666e)" = "<none>"
+"checksum substrate-forum-module 1.0.0 (git+https://github.com/joystream/substrate-forum-module?tag=v1.0.0)" = "<none>"
 "checksum substrate-inherents 1.0.0 (git+https://github.com/joystream/substrate.git?rev=6dfc3e8b057bb00322136251a0f10305fbb1ad8f)" = "<none>"
 "checksum substrate-keyring 1.0.0 (git+https://github.com/joystream/substrate.git?rev=6dfc3e8b057bb00322136251a0f10305fbb1ad8f)" = "<none>"
 "checksum substrate-offchain-primitives 0.1.0 (git+https://github.com/joystream/substrate.git?rev=6dfc3e8b057bb00322136251a0f10305fbb1ad8f)" = "<none>"
