@@ -187,6 +187,19 @@ async function run_signup(account_file)
     return
   }
 
+  // Check there is an opening
+  let availableSlots = await api.roles.availableSlotsForRole(api.roles.ROLE_STORAGE);
+
+  if (availableSlots == 0) {
+    console.log(`
+      There are no open storage provider slots available at this time.
+      Please try again later.
+    `);
+    return;
+  } else {
+    console.log(`There are still ${availableSlots} slots available, proceeding`);
+  }
+
   const member_address = api.identities.key.address();
 
   // Check if account works
