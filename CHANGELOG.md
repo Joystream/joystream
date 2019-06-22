@@ -8,6 +8,7 @@
 
 ### Version 5.2.0 - Athens testnet update 1 - April 17th 2019
 - Fix account locking for staked roles to allow storage providers to submit transaction
+- Update substrate version to `6dfc3e8b057bb00322136251a0f10305fbb1ad8f` from v1 branch
 
 ### Version 5.1.0 - Athens testnet release - April 14th 2019
 - Storage Role
