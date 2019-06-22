@@ -200,6 +200,15 @@ class RuntimeApi
           .send(({events = [], status}) => {
             debug(`TX status: ${status.type}`);
 
+            // Whatever events we get, process them if there's someone interested.
+            if (subscribed && callback) {
+              const matched = this._matchingEvents(subscribed, events);
+              debug('Matching events:', matched);
+              if (matched.length) {
+                callback(matched);
+              }
+            }
+
             // We want to release lock as early as possible, sometimes Ready status
             // doesn't occur, so we do it on Broadcast instead
             if (status.isReady) {
@@ -231,19 +240,6 @@ class RuntimeApi
             isDropped
             isInvalid
             */
-
-            // Handle these events after processing status to make sure any exceptions in handlers
-            // doesn't affect us.
-
-            // Whatever events we get, process them if there's someone interested.
-            if (subscribed && callback) {
-              const matched = this._matchingEvents(subscribed, events);
-              debug('Matching events:', matched);
-              if (matched.length) {
-                callback(matched);
-              }
-            }
-
           })
           .catch((err) => {
             // 1014 error: Most likely you are sending transaction with the same nonce,
@@ -265,9 +261,9 @@ class RuntimeApi
               }
             }
 
+            finalizedPromise.reject(err);
             // releases lock
             reject(err);
-            finalizedPromise.reject(err);
           });
       });
     })
