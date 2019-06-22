@@ -18,9 +18,14 @@ The joystream runtime builds on [substrate v1.0](https://docs.substrate.dev/docs
 ## Getting Started - Building the WASM runtime
 
 ```bash
+# Clone repository
 git clone https://github.com/Joystream/substrate-runtime-joystream
 cd substrate-runtime-joystream/
+
+# Install Pre-requisits
 ./setup.sh
+
+# Compile runtime
 ./build.sh
 ```
 
@@ -44,7 +49,7 @@ Deploying the compiled runtime on a live system can be done in one of two ways:
 cargo test
 ```
 
-### Coding style
+## Coding style
 
 We use `rustfmt` to format the source code for consistency.
 
@@ -59,6 +64,10 @@ Running rustfmt can be applied to all source files recursing subfolders:
 ```
 rustfmt src/*.*
 ```
+
+## Reproducible Builds
+
+In an attempt to have a reproducuble version of the runtime that can be verified independantly (by council members for example when deciding wether to vote in a runtime upgrade proposal) there is a `build-with-docker.sh` script which can be run to generate a `joystream_runtime.wasm` file to the current directory.
 
 ## Built With
 
