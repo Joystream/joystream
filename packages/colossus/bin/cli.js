@@ -31,10 +31,6 @@ const FLAG_DEFINITIONS = {
     type: 'integer',
     _default: 300000,
   },
-  'reannouncePeriod': {
-    type: 'integer',
-    _default: 1000 * 60 * 60,
-  },
   keyFile: {
     type: 'string',
   },
@@ -251,8 +247,8 @@ function get_service_information(config) {
 
 async function announce_public_url(api, config) {
   // re-announce in future
-  const reannounce = function (timeout) {
-    setTimeout(announce_public_url, timeout, api, config);
+  const reannounce = function (timeoutMs) {
+    setTimeout(announce_public_url, timeoutMs, api, config);
   }
 
   debug('announcing public url')
@@ -260,15 +256,16 @@ async function announce_public_url(api, config) {
 
   const accountId = api.identities.key.address()
 
-  const reannounceAfterMilliSeconds = config.get('reannouncePeriod')
-
   try {
     const serviceInformation = get_service_information(config)
 
-    let published = await publish.publish(accountId, serviceInformation, api)
+    let keyId = await publish.publish(serviceInformation);
 
-    // reannounceAfterMilliSeconds = convertToMs(published.ttl)
-    reannounce(reannounceAfterMilliSeconds)
+    const expiresInBlocks = 600; // ~ 1 hour (6s block interval)
+    await api.discovery.setAccountInfo(accountId, keyId, expiresInBlocks);
+
+    // Reannounce before expiery
+    reannounce(50 * 60 * 1000); // in 50 minutes
 
   } catch (err) {
     debug(`announcing public url failed: ${err.stack}`)
