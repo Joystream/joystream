@@ -7,6 +7,7 @@ use srml_support::traits::{
 };
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_signed};
+use runtime_io::print;
 
 use crate::traits::Members;
 
@@ -412,10 +413,11 @@ decl_module! {
         }
 
         pub fn remove_actor(actor_account: T::AccountId) {
-            let member_id = T::Members::lookup_member_id(&actor_account)?;
-            let actor = Self::ensure_actor_is_member(&actor_account, member_id)?;
+            ensure!(<ActorByAccountId<T>>::exists(&actor_account), "error trying to remove non actor account");
+            let actor = Self::actor_by_account_id(&actor_account).unwrap();
             let role_parameters = Self::ensure_role_parameters(actor.role)?;
-            Self::apply_unstake(actor.account, actor.role, actor.member_id, role_parameters.unbonding_period, role_parameters.min_stake);
+            Self::apply_unstake(actor_account, actor.role, actor.member_id, role_parameters.unbonding_period, role_parameters.min_stake);
+            print("sudo removed actor");
         }
     }
 }
