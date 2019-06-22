@@ -1,8 +1,7 @@
 const ipfsClient = require('ipfs-http-client')
 const debug = require('debug')('discovery::publish')
 
-const SERVICES_KEY_NAME = 'services'
-const DEFAULT_LIFETIME = 14400 // Service key shouldn't change very often
+const SERVICES_KEY_NAME = 'services';
 
 function bufferFrom(data) {
     return Buffer.from(JSON.stringify(data), 'utf-8')
@@ -15,13 +14,7 @@ function encodeServiceInfo(info) {
     })
 }
 
-async function publish (accountId, service_info, runtimeApi) {
-    let isActor = await runtimeApi.identities.isActor(accountId)
-
-    if (!isActor) {
-        throw new Error('Non actor account cannot publish service info')
-    }
-
+async function publish (service_info) {
     const ipfs = ipfsClient('localhost', '5001', { protocol: 'http' })
 
     const keys = await ipfs.key.list()
@@ -48,25 +41,7 @@ async function publish (accountId, service_info, runtimeApi) {
     })
 
     debug(published)
-
-    await refreshAccountInfo(accountId, services_key.id, runtimeApi)
-
-    return published
-}
-
-async function refreshAccountInfo(accountId, keyId, runtimeApi) {
-    const currentBlockHeader = await runtimeApi.api.rpc.chain.getHeader()
-
-    // determine if we need to update onchain account
-    let currentInfo = await runtimeApi.discovery.getAccountInfo(accountId)
-
-    if (currentInfo == null ||
-        // change checking blockNumber so we refresh before expiery
-        currentBlockHeader.blockNumber.gt(currentInfo.expires_at) ||
-        currentInfo.identity.toString() !== keyId) {
-        debug('updating account info')
-        return runtimeApi.discovery.setAccountInfo(accountId, keyId, DEFAULT_LIFETIME)
-    }
+    return services_key.id;
 }
 
 module.exports = {

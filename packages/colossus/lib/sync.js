@@ -100,7 +100,7 @@ async function sync_periodic(api, config, storage)
 
 function start_syncing(api, config, storage)
 {
-  setTimeout(sync_periodic, config.get('syncPeriod'), api, config, storage);
+  sync_periodic(api, config, storage);
 }
 
 module.exports = {
