@@ -12,14 +12,8 @@ The joystream runtime builds on [substrate v1.0](https://docs.substrate.dev/docs
 - [User membership system](src/membership/)
 - [Staked Roles](src/roles)
    - [Storage Provider](src/storage/)
-
-### Prerequisites
-
-To compile the runtime you will need some tools such as: Rust, llvm and openssl. You can install most of the dependencies with:
-
-```bash
-curl https://getsubstrate.io -sSf | bash
-```
+- [Forum](https://github.com/Joystream/substrate-forum-module)
+- [Discovery](src/discovery_service)
 
 ## Getting Started - Building the WASM runtime
 
@@ -72,7 +66,7 @@ rustfmt src/*.*
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
+Please see our [contributing guidlines](https://github.com/Joystream/joystream#contribute) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
