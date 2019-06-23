@@ -18,6 +18,7 @@ import { withMulti, withApi } from '@polkadot/ui-api';
 import { ApiProps } from '@polkadot/ui-api/types';
 import { bnToStr, isEmptyArr } from '@polkadot/joy-utils/';
 import TxButton from '@polkadot/joy-utils/TxButton';
+import { IfIAmForumSudo } from './ForumSudo';
 
 type CategoryActionsProps = {
   id: CategoryId
@@ -46,13 +47,19 @@ function CategoryActions (props: CategoryActionsProps) {
   };
 
   if (category.archived) {
-    {/* TODO show 'Unarchive' button only if I am forum sudo */}
-    return <UpdateCategoryButton icon='file archive outline' label='Unarchive' archive={false} />;
+    return (
+      <IfIAmForumSudo>
+        <UpdateCategoryButton icon='file archive outline' label='Unarchive' archive={false} />
+      </IfIAmForumSudo>
+    );
   }
 
   if (category.deleted) {
-    {/* TODO show 'Undelete' button only if I am forum sudo */}
-    return <UpdateCategoryButton icon='trash alternate outline' label='Undelete' delete={false} />;
+    return (
+      <IfIAmForumSudo>
+        <UpdateCategoryButton icon='trash alternate outline' label='Undelete' delete={false} />;
+      </IfIAmForumSudo>
+    );
   }
 
   return <span className='JoyInlineActions'>
@@ -72,18 +79,19 @@ function CategoryActions (props: CategoryActionsProps) {
         <span className='text'>Edit</span>
       </Link> */}
 
-      <Dropdown floating button className='icon small' style={{ display: 'inline-block', width: 'auto', margin: 0 }} trigger={<></>}>
-        <Dropdown.Menu>
+      <IfIAmForumSudo>
+        <Dropdown floating button className='icon small' style={{ display: 'inline-block', width: 'auto', margin: 0 }} trigger={<></>}>
+          <Dropdown.Menu>
+            <Link className='item' role='option' to={`/forum/categories/${id.toString()}/newSubcategory`}>
+              <i className='add icon' />
+              Add subcategory
+            </Link>
+            <UpdateCategoryButton icon='file archive outline' label='Archive' archive={true} />
+            <UpdateCategoryButton icon='trash alternate outline' label='Delete' delete={true} />
+          </Dropdown.Menu>
+        </Dropdown>
+      </IfIAmForumSudo>
 
-          {/* TODO show 'Add subcategory', 'Archive', 'Delete' button only if I am forum sudo */}
-          <Link className='item' role='option' to={`/forum/categories/${id.toString()}/newSubcategory`}>
-            <i className='add icon' />
-            Add subcategory
-          </Link>
-          <UpdateCategoryButton icon='file archive outline' label='Archive' archive={true} />
-          <UpdateCategoryButton icon='trash alternate outline' label='Delete' delete={true} />
-        </Dropdown.Menu>
-      </Dropdown>
     </Button.Group>
   </span>;
 }

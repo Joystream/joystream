@@ -8,6 +8,7 @@ import { AuthorPreview } from './utils';
 import { Moderate } from './Moderate';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { IfIAmForumSudo } from './ForumSudo';
 
 type ViewReplyProps = {
   reply: Post,
@@ -55,13 +56,14 @@ export function ViewReply (props: ViewReplyProps) {
         </Link>
       }
 
-      {/* TODO show 'Moderate' button only if current user is a forum sudo */}
-      <Button
-        type='button'
-        size='small'
-        content={'Moderate'}
-        onClick={() => setShowModerateForm(!showModerateForm)}
-      />
+      <IfIAmForumSudo>
+        <Button
+          type='button'
+          size='small'
+          content={'Moderate'}
+          onClick={() => setShowModerateForm(!showModerateForm)}
+        />
+      </IfIAmForumSudo>
     </span>;
   };
 

@@ -16,6 +16,7 @@ import { withApi, withMulti, api } from '@polkadot/ui-api';
 import { ApiProps } from '@polkadot/ui-api/types';
 import { orderBy } from 'lodash';
 import { bnToStr } from '@polkadot/joy-utils/';
+import { IfIAmForumSudo } from './ForumSudo';
 
 type ThreadTitleProps = {
   thread: Thread,
@@ -194,13 +195,14 @@ function InnerViewThread (props: ViewThreadProps) {
         Edit
       </Link> */}
 
-      {/* TODO show 'Moderate' button only if current user is a forum sudo */}
-      <Button
-        type='button'
-        size='small'
-        content={'Moderate'}
-        onClick={() => setShowModerateForm(!showModerateForm)}
-      />
+      <IfIAmForumSudo>
+        <Button
+          type='button'
+          size='small'
+          content={'Moderate'}
+          onClick={() => setShowModerateForm(!showModerateForm)}
+        />
+      </IfIAmForumSudo>
     </span>;
   };
 
