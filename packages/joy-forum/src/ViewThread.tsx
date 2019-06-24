@@ -6,13 +6,13 @@ import { History } from 'history';
 import BN from 'bn.js';
 
 import { Category, Thread, ThreadId, Post, PostId } from '@joystream/types/forum';
-import { AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs, UrlHasIdProps } from './utils';
+import { AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import { withForumCalls } from './calls';
-import { withApi, withMulti, api } from '@polkadot/ui-api';
+import { withApi, withMulti } from '@polkadot/ui-api';
 import { ApiProps } from '@polkadot/ui-api/types';
 import { orderBy } from 'lodash';
 import { bnToStr } from '@polkadot/joy-utils/';
@@ -105,7 +105,7 @@ function InnerViewThread (props: ViewThreadProps) {
     return <em>History propoerty is undefined</em>;
   }
 
-  const { nextPostId } = props;
+  const { api, nextPostId } = props;
   const [loaded, setLoaded] = useState(false);
   const [posts, setPosts] = useState(new Array<Post>());
 
@@ -237,7 +237,7 @@ function InnerViewThread (props: ViewThreadProps) {
   </div>;
 }
 
-type ViewThreadByIdProps = UrlHasIdProps & {
+type ViewThreadByIdProps = ApiProps & {
   history: History,
   match: {
     params: {
@@ -247,8 +247,10 @@ type ViewThreadByIdProps = UrlHasIdProps & {
   }
 };
 
-export function ViewThreadById (props: ViewThreadByIdProps) {
-  const { history, match: { params: { id, page: pageStr } } } = props;
+export const ViewThreadById = withApi(InnerViewThreadById);
+
+function InnerViewThreadById (props: ViewThreadByIdProps) {
+  const { api, history, match: { params: { id, page: pageStr } } } = props;
 
   let page = 1;
   if (pageStr) {
