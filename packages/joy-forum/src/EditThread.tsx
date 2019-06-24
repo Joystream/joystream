@@ -70,8 +70,8 @@ const LabelledText = JoyForms.LabelledText<FormValues>();
 
 const InnerForm = (props: FormProps) => {
   const {
-    // history,
-    // id,
+    history,
+    id,
     categoryId,
     struct,
     values,
@@ -102,8 +102,24 @@ const InnerForm = (props: FormProps) => {
 
   const onTxSuccess = (_txResult: SubmittableResult) => {
     setSubmitting(false);
-    // TODO redirect to newly created thread. Get id from Substrate event.
-    // goToView();
+    if (!history) return;
+
+    // Get id of newly created thread:
+    let _id = id;
+    if (!_id) {
+      _txResult.events.find(event => {
+        const { event: { data, method } } = event;
+        if (method === 'ThreadCreated') {
+          _id = data.toArray()[0] as ThreadId;
+        }
+        return true;
+      });
+    }
+
+    // Redirect to thread view:
+    if (_id) {
+      history.push('/forum/threads/' + _id.toString());
+    }
   };
 
   if (!categoryId && !struct) {
@@ -131,12 +147,6 @@ const InnerForm = (props: FormProps) => {
       return [ /* TODO add all required params */ ];
     }
   };
-
-  // const goToView = (id: ThreadId | number) => {
-  //   if (history) {
-  //     history.push('/forum/threads/' + id.toString());
-  //   }
-  // };
 
   // type CheckboxProps = FieldProps<FormValues> & SuiCheckboxProps;
 

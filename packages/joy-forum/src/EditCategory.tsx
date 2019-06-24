@@ -68,8 +68,8 @@ const LabelledText = JoyForms.LabelledText<FormValues>();
 
 const InnerForm = (props: FormProps) => {
   const {
-    // history,
-    // id,
+    history,
+    id,
     parentId,
     struct,
     values,
@@ -99,8 +99,24 @@ const InnerForm = (props: FormProps) => {
 
   const onTxSuccess = (_txResult: SubmittableResult) => {
     setSubmitting(false);
-    // TODO redirect to newly created category. Get id from Substrate event.
-    // goToView(id);
+    if (!history) return;
+
+    // Get id of newly created category:
+    let _id = id;
+    if (!_id) {
+      _txResult.events.find(event => {
+        const { event: { data, method } } = event;
+        if (method === 'CategoryCreated') {
+          _id = data.toArray()[0] as CategoryId;
+        }
+        return true;
+      });
+    }
+
+    // Redirect to category view:
+    if (_id) {
+      history.push('/forum/categories/' + _id.toString());
+    }
   };
 
   const isNew = struct === undefined;
@@ -120,12 +136,6 @@ const InnerForm = (props: FormProps) => {
       return [ /* TODO add all required params */ ];
     }
   };
-
-  // const goToView = (id: CategoryId | number) => {
-  //   if (history) {
-  //     history.push('/forum/categories/' + id.toString());
-  //   }
-  // };
 
   const categoryWord = isSubcategory ? `subcategory` : `category`;
 
