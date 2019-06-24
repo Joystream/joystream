@@ -4,10 +4,10 @@
 
 import { Options } from './types';
 
-const WSS_JOYSTREAM = 'wss://testnet.joystream.org/athens/rpc/';
+const WSS_JOYSTREAM = 'wss://testnet.joystream.org/acropolis/rpc/';
 
 const ENDPOINTS: Options = [
-  { text: 'Joystream Testnet (hosted by joystream.org)', value: WSS_JOYSTREAM },
+  { text: 'Joystream Acropolis Testnet (hosted by joystream.org)', value: WSS_JOYSTREAM },
   { text: 'Local Node (127.0.0.1:9944)', value: 'ws://127.0.0.1:9944/' }
 ];
 
