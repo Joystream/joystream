@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Table, Segment, Button, Label } from 'semantic-ui-react';
+import { Table, Button, Label } from 'semantic-ui-react';
 import { History } from 'history';
 import BN from 'bn.js';
 
 import { Category, Thread, ThreadId, Post, PostId } from '@joystream/types/forum';
-import { AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs, UrlHasIdProps } from './utils';
-import Section from '@polkadot/joy-utils/Section';
+import { AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import { withForumCalls } from './calls';
-import { withApi, withMulti, api } from '@polkadot/ui-api';
+import { withApi, withMulti } from '@polkadot/ui-api';
 import { ApiProps } from '@polkadot/ui-api/types';
 import { orderBy } from 'lodash';
 import { bnToStr } from '@polkadot/joy-utils/';
+import { IfIAmForumSudo } from './ForumSudo';
 
 type ThreadTitleProps = {
   thread: Thread,
@@ -74,10 +74,6 @@ function InnerViewThread (props: ViewThreadProps) {
   const { id } = thread;
   const totalPostsInThread = thread.num_posts_ever_created.toNumber();
 
-  // We substract 1 from num of posts because the first post is not a reply,
-  // it's an initial text (body) on the thread.
-  const replyCount = totalPostsInThread - 1;
-
   if (!category) {
     return <em>Thread's category was not found.</em>;
   } else if (category.deleted) {
@@ -86,6 +82,7 @@ function InnerViewThread (props: ViewThreadProps) {
 
   if (preview) {
     const title = <ThreadTitle thread={thread} />;
+    const repliesCount = totalPostsInThread - 1;
     return (
       <Table.Row>
         <Table.Cell>
@@ -95,7 +92,7 @@ function InnerViewThread (props: ViewThreadProps) {
           }</Link>
         </Table.Cell>
         <Table.Cell>
-          {replyCount}
+          {repliesCount}
         </Table.Cell>
         <Table.Cell>
           <AuthorPreview address={thread.author_id} />
@@ -108,7 +105,7 @@ function InnerViewThread (props: ViewThreadProps) {
     return <em>History propoerty is undefined</em>;
   }
 
-  const { nextPostId } = props;
+  const { api, nextPostId } = props;
   const [loaded, setLoaded] = useState(false);
   const [posts, setPosts] = useState(new Array<Post>());
 
@@ -144,16 +141,9 @@ function InnerViewThread (props: ViewThreadProps) {
 
   // console.log({ nextPostId: bnToStr(nextPostId), loaded, posts });
 
-  const [ firstPost, ...replies ] = posts;
-  const threadBody = firstPost ? firstPost.current_text : '';
-
-  const renderPageOfReplies = () => {
-    if (!replyCount) {
-      return <em>No replies in this thread yet</em>;
-    }
-
+  const renderPageOfPosts = () => {
     if (!loaded) {
-      return <em>Loading post's replies...</em>;
+      return <em>Loading posts...</em>;
     }
 
     const onPageChange = (activePage?: string | number) => {
@@ -167,12 +157,12 @@ function InnerViewThread (props: ViewThreadProps) {
     const pagination =
       <Pagination
         currentPage={page}
-        totalItems={replyCount}
+        totalItems={totalPostsInThread}
         itemsPerPage={itemsPerPage}
         onPageChange={onPageChange}
       />;
 
-    const pageOfItems = replies
+    const pageOfItems = posts
       .filter((_id, i) => i >= minIdx && i <= maxIdx)
       .map((reply, i) => <ViewReply key={i} category={category} thread={thread} reply={reply} />);
 
@@ -180,22 +170,6 @@ function InnerViewThread (props: ViewThreadProps) {
       {pagination}
       {pageOfItems}
       {pagination}
-    </>;
-  };
-
-  const renderThreadDetailsAndReplies = () => {
-    return <>
-      <Segment>
-        <div>
-          <AuthorPreview address={thread.author_id} />
-        </div>
-        <div style={{ marginTop: '1rem' }}>
-          <ReactMarkdown className='JoyMemo--full' source={threadBody} linkTarget='_blank' />
-        </div>
-      </Segment>
-      <Section title={`Replies (${replyCount})`}>
-        {renderPageOfReplies()}
-      </Section>
     </>;
   };
 
@@ -221,13 +195,14 @@ function InnerViewThread (props: ViewThreadProps) {
         Edit
       </Link> */}
 
-      {/* TODO show 'Moderate' button only if current user is a forum sudo */}
-      <Button
-        type='button'
-        size='small'
-        content={'Moderate'}
-        onClick={() => setShowModerateForm(!showModerateForm)}
-      />
+      <IfIAmForumSudo>
+        <Button
+          type='button'
+          size='small'
+          content={'Moderate'}
+          onClick={() => setShowModerateForm(!showModerateForm)}
+        />
+      </IfIAmForumSudo>
     </span>;
   };
 
@@ -241,7 +216,7 @@ function InnerViewThread (props: ViewThreadProps) {
     </>;
   };
 
-  return <>
+  return <div style={{ marginBottom: '1rem' }}>
     <CategoryCrumbs categoryId={thread.category_id} />
     <h1 className='ForumPageTitle'>
       <ThreadTitle thread={thread} className='TitleText' />
@@ -257,12 +232,12 @@ function InnerViewThread (props: ViewThreadProps) {
     }
     {thread.moderated
       ? renderModerationRationale()
-      : renderThreadDetailsAndReplies()
+      : renderPageOfPosts()
     }
-  </>;
+  </div>;
 }
 
-type ViewThreadByIdProps = UrlHasIdProps & {
+type ViewThreadByIdProps = ApiProps & {
   history: History,
   match: {
     params: {
@@ -272,8 +247,10 @@ type ViewThreadByIdProps = UrlHasIdProps & {
   }
 };
 
-export function ViewThreadById (props: ViewThreadByIdProps) {
-  const { history, match: { params: { id, page: pageStr } } } = props;
+export const ViewThreadById = withApi(InnerViewThreadById);
+
+function InnerViewThreadById (props: ViewThreadByIdProps) {
+  const { api, history, match: { params: { id, page: pageStr } } } = props;
 
   let page = 1;
   if (pageStr) {

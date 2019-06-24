@@ -1,4 +1,4 @@
-import { getTypeRegistry, u32, u64, AccountId, Text, Bool, BlockNumber, Moment, usize } from '@polkadot/types';
+import { getTypeRegistry, u16, u32, u64, AccountId, Text, Bool, BlockNumber, Moment } from '@polkadot/types';
 import { Struct, Option, Vector } from '@polkadot/types/codec';
 import { getTextPropAsString, getBoolPropAsBoolean, getOptionPropOrUndefined } from './';
 import { Codec } from '@polkadot/types/types';
@@ -115,28 +115,28 @@ export class ReplyId extends u64 {}
 export class VecReplyId extends Vector.with(ReplyId) {}
 
 export type InputValidationLengthConstraintType = {
-  min: usize,
-  max_min_diff: usize
+  min: u16,
+  max_min_diff: u16
 };
 
 export class InputValidationLengthConstraint extends JoyStruct<InputValidationLengthConstraintType> {
   constructor (value: InputValidationLengthConstraintType) {
     super({
-      min: usize,
-      max_min_diff: usize
+      min: u16,
+      max_min_diff: u16
     }, value);
   }
 
-  get min (): usize {
+  get min (): u16 {
     return this.getRequired('min');
   }
 
-  get max_min_diff (): usize {
+  get max_min_diff (): u16 {
     return this.getRequired('max_min_diff');
   }
 
-  get max (): usize {
-    return new usize(this.min.add(this.max_min_diff));
+  get max (): u16 {
+    return new u16(this.min.add(this.max_min_diff));
   }
 }
 

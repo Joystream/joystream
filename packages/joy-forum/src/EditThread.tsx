@@ -18,23 +18,35 @@ import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withForumCalls } from './calls';
+import { ValidationProps, withThreadValidation } from './validation';
 
-const buildSchema = (p: ValidationProps) => Yup.object().shape({
-  title: Yup.string()
-    // .min(p.minTitleLen, `Thread title is too short. Minimum length is ${p.minTitleLen} chars.`)
-    // .max(p.maxTitleLen, `Thread title is too long. Maximum length is ${p.maxTitleLen} chars.`)
-    .required('Thread title is required'),
-  text: Yup.string()
-    // .min(p.minTextLen, `Thread description is too short. Minimum length is ${p.minTextLen} chars.`)
-    // .max(p.maxTextLen, `Thread description is too long. Maximum length is ${p.maxTextLen} chars.`)
-    .required('Thread text is required')
-});
+const buildSchema = (props: ValidationProps) => {
+  const {
+    threadTitleConstraint,
+    postTextConstraint
+  } = props;
 
-type ValidationProps = {
-  // minTitleLen: number,
-  // maxTitleLen: number,
-  // minTextLen: number,
-  // maxTextLen: number
+  if (!threadTitleConstraint || !postTextConstraint) {
+    throw new Error('Missing some validation constraints');
+  }
+
+  const minTitle = threadTitleConstraint.min.toNumber();
+  const maxTitle = threadTitleConstraint.max.toNumber();
+  const minText = postTextConstraint.min.toNumber();
+  const maxText = postTextConstraint.max.toNumber();
+
+  return Yup.object().shape({
+
+    title: Yup.string()
+      .min(minTitle, `Thread title is too short. Minimum length is ${minTitle} chars.`)
+      .max(maxTitle, `Thread title is too long. Maximum length is ${maxTitle} chars.`)
+      .required('Thread title is required'),
+
+    text: Yup.string()
+      .min(minText, `Thread text is too short. Minimum length is ${minText} chars.`)
+      .max(maxText, `Thread text is too long. Maximum length is ${maxText} chars.`)
+      .required('Thread text is required')
+  });
 };
 
 type OuterProps = ValidationProps & {
@@ -58,8 +70,8 @@ const LabelledText = JoyForms.LabelledText<FormValues>();
 
 const InnerForm = (props: FormProps) => {
   const {
-    // history,
-    // id,
+    history,
+    id,
     categoryId,
     struct,
     values,
@@ -90,8 +102,24 @@ const InnerForm = (props: FormProps) => {
 
   const onTxSuccess = (_txResult: SubmittableResult) => {
     setSubmitting(false);
-    // TODO redirect to newly created thread. Get id from Substrate event.
-    // goToView();
+    if (!history) return;
+
+    // Get id of newly created thread:
+    let _id = id;
+    if (!_id) {
+      _txResult.events.find(event => {
+        const { event: { data, method } } = event;
+        if (method === 'ThreadCreated') {
+          _id = data.toArray()[0] as ThreadId;
+        }
+        return true;
+      });
+    }
+
+    // Redirect to thread view:
+    if (_id) {
+      history.push('/forum/threads/' + _id.toString());
+    }
   };
 
   if (!categoryId && !struct) {
@@ -119,12 +147,6 @@ const InnerForm = (props: FormProps) => {
       return [ /* TODO add all required params */ ];
     }
   };
-
-  // const goToView = (id: ThreadId | number) => {
-  //   if (history) {
-  //     history.push('/forum/threads/' + id.toString());
-  //   }
-  // };
 
   // type CheckboxProps = FieldProps<FormValues> & SuiCheckboxProps;
 
@@ -259,13 +281,15 @@ function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
 export const NewThread = withMulti(
   EditForm,
   withOnlyMembers,
-  withCategoryIdFromUrl
+  withCategoryIdFromUrl,
+  withThreadValidation
 );
 
 export const EditThread = withMulti(
   FormOrLoading,
   withOnlyMembers,
   withIdFromUrl,
+  withThreadValidation,
   withForumCalls<OuterProps>(
     ['threadById', { paramName: 'id', propName: 'struct' }]
   )

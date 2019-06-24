@@ -9,7 +9,7 @@ import './index.css';
 
 import translate from './translate';
 import { ForumProvider } from './Context';
-import { EditForumSudo } from './ForumSudo';
+import { EditForumSudo, ForumSudoProvider } from './ForumSudo';
 import { NewCategory, NewSubcategory, EditCategory } from './EditCategory';
 import { NewThread, EditThread } from './EditThread';
 import { NewReply, EditReply } from './EditReply';
@@ -44,6 +44,7 @@ class App extends React.PureComponent<Props> {
     const tabs = this.buildTabs();
     return (
       <ForumProvider>
+      <ForumSudoProvider>
       <main className='forum--App'>
         <header>
           <Tabs basePath={basePath} items={tabs} />
@@ -70,6 +71,7 @@ class App extends React.PureComponent<Props> {
           <Route component={CategoryList} />
         </Switch>
       </main>
+      </ForumSudoProvider>
       </ForumProvider>
     );
   }

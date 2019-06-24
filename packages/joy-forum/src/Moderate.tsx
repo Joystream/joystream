@@ -12,17 +12,26 @@ import { Text } from '@polkadot/types';
 import { ReplyId, ThreadId } from '@joystream/types/forum';
 import Section from '@polkadot/joy-utils/Section';
 import { withOnlyForumSudo } from './ForumSudo';
+import { ValidationProps, withPostModerationValidation } from './validation';
 
-const buildSchema = (p: ValidationProps) => Yup.object().shape({
-  rationale: Yup.string()
-    // .min(p.minRationaleLen, `Rationale is too short. Minimum length is ${p.minRationaleLen} chars.`)
-    // .max(p.maxRationaleLen, `Rationale is too long. Maximum length is ${p.maxRationaleLen} chars.`)
-    .required('Rationale is required')
-});
+const buildSchema = (props: ValidationProps) => {
+  const {
+    postModerationRationaleConstraint: constraint
+  } = props;
 
-type ValidationProps = {
-  // minRationaleLen: number,
-  // maxRationaleLen: number
+  if (!constraint) {
+    throw new Error('Missing some validation constraints');
+  }
+
+  const minLen = constraint.min.toNumber();
+  const maxLen = constraint.max.toNumber();
+
+  return Yup.object().shape({
+    rationale: Yup.string()
+      .min(minLen, `Rationale is too short. Minimum length is ${minLen} chars.`)
+      .max(maxLen, `Rationale is too long. Maximum length is ${maxLen} chars.`)
+      .required('Rationale is required')
+  });
 };
 
 type OuterProps = ValidationProps & {
@@ -149,5 +158,6 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
 export const Moderate = withMulti<OuterProps>(
   EditForm,
-  withOnlyForumSudo
+  withOnlyForumSudo,
+  withPostModerationValidation
 );

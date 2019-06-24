@@ -7,6 +7,8 @@ import { Post, Category, Thread } from '@joystream/types/forum';
 import { AuthorPreview } from './utils';
 import { Moderate } from './Moderate';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
+import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { IfIAmForumSudo } from './ForumSudo';
 
 type ViewReplyProps = {
   reply: Post,
@@ -15,6 +17,7 @@ type ViewReplyProps = {
 };
 
 export function ViewReply (props: ViewReplyProps) {
+  const { state: { address: myAddress } } = useMyAccount();
   const [showModerateForm, setShowModerateForm] = useState(false);
   const { reply, thread, category } = props;
   const { id } = reply;
@@ -41,24 +44,26 @@ export function ViewReply (props: ViewReplyProps) {
     if (reply.moderated || thread.moderated || category.archived || category.deleted) {
       return null;
     }
-    return <span className='JoyInlineActions'>
-      {/* TODO show 'Edit' button only if I am owner */}
-      <Link
-        to={`/forum/replies/${id.toString()}/edit`}
-        className='ui small button'
-        style={{ marginLeft: '.5rem' }}
-      >
-        <i className='pencil alternate icon' />
-        Edit
-      </Link>
+    const isMyPost = reply.author_id.eq(myAddress);
+    return <span className='JoyInlineActions' style={{ marginLeft: '.5rem' }}>
+      {isMyPost &&
+        <Link
+          to={`/forum/replies/${id.toString()}/edit`}
+          className='ui small button'
+        >
+          <i className='pencil alternate icon' />
+          Edit
+        </Link>
+      }
 
-      {/* TODO show 'Moderate' button only if current user is a forum sudo */}
-      <Button
-        type='button'
-        size='small'
-        content={'Moderate'}
-        onClick={() => setShowModerateForm(!showModerateForm)}
-      />
+      <IfIAmForumSudo>
+        <Button
+          type='button'
+          size='small'
+          content={'Moderate'}
+          onClick={() => setShowModerateForm(!showModerateForm)}
+        />
+      </IfIAmForumSudo>
     </span>;
   };
 
