@@ -168,7 +168,7 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
 
     <Segment>
       <div>
-        <MutedSpan>Moderator: </MutedSpan>
+        <MutedSpan>Creator: </MutedSpan>
         <AuthorPreview address={category.moderator_id} />
       </div>
       <div style={{ marginTop: '1rem' }}>
@@ -400,7 +400,7 @@ function InnerCategoryList (props: CategoryListProps) {
         <Table.HeaderCell>Subcategories</Table.HeaderCell>
         <Table.HeaderCell>Threads</Table.HeaderCell>
         <Table.HeaderCell>Actions</Table.HeaderCell>
-        <Table.HeaderCell>Moderator</Table.HeaderCell>
+        <Table.HeaderCell>Creator</Table.HeaderCell>
       </Table.Row>
     </Table.Header>
     <Table.Body>{categories.map((category, i) => (
