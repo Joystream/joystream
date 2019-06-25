@@ -6,7 +6,7 @@ import { History } from 'history';
 import BN from 'bn.js';
 
 import { Category, Thread, ThreadId, Post, PostId } from '@joystream/types/forum';
-import { AuthorPreview, Pagination, RepliesPerPage, CategoryCrumbs } from './utils';
+import { Pagination, RepliesPerPage, CategoryCrumbs } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
@@ -17,6 +17,7 @@ import { ApiProps } from '@polkadot/ui-api/types';
 import { orderBy } from 'lodash';
 import { bnToStr } from '@polkadot/joy-utils/';
 import { IfIAmForumSudo } from './ForumSudo';
+import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
 
 type ThreadTitleProps = {
   thread: Thread,
@@ -95,7 +96,7 @@ function InnerViewThread (props: ViewThreadProps) {
           {repliesCount}
         </Table.Cell>
         <Table.Cell>
-          <AuthorPreview address={thread.author_id} />
+          <MemberPreview accountId={thread.author_id} />
         </Table.Cell>
       </Table.Row>
     );

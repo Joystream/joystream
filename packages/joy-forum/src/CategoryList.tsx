@@ -10,7 +10,7 @@ import { Bool, Option } from '@polkadot/types';
 import { CategoryId, Category, ThreadId, Thread } from '@joystream/types/forum';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { UrlHasIdProps, AuthorPreview, CategoryCrumbs, Pagination, ThreadsPerPage } from './utils';
+import { UrlHasIdProps, CategoryCrumbs, Pagination, ThreadsPerPage } from './utils';
 import Section from '@polkadot/joy-utils/Section';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import { withForumCalls } from './calls';
@@ -19,6 +19,8 @@ import { ApiProps } from '@polkadot/ui-api/types';
 import { bnToStr, isEmptyArr } from '@polkadot/joy-utils/';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { IfIAmForumSudo } from './ForumSudo';
+import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
+import { FlexCenter } from '@polkadot/joy-utils/FlexCenter';
 
 type CategoryActionsProps = {
   id: CategoryId
@@ -149,7 +151,7 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
           {renderCategoryActions()}
         </Table.Cell>
         <Table.Cell>
-          <AuthorPreview address={category.moderator_id} />
+          <MemberPreview accountId={category.moderator_id} />
         </Table.Cell>
       </Table.Row>
     );
@@ -168,8 +170,7 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
 
     <Segment>
       <div>
-        <MutedSpan>Creator: </MutedSpan>
-        <AuthorPreview address={category.moderator_id} />
+        <MemberPreview accountId={category.moderator_id} prefixLabel='Creator:' />
       </div>
       <div style={{ marginTop: '1rem' }}>
         <ReactMarkdown className='JoyMemo--full' source={category.description} linkTarget='_blank' />
