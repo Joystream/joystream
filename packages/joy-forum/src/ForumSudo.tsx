@@ -15,8 +15,8 @@ import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { withOnlySudo } from '@polkadot/joy-utils/Sudo';
 import { AccountId } from '@polkadot/types';
-import { AuthorPreview } from './utils';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
+import { AddressPreview } from '@polkadot/ui-app/AddressMiniJoy';
 import { withForumCalls } from './calls';
 
 const buildSchema = () => Yup.object().shape({});
@@ -140,7 +140,7 @@ const InnerForm = (props: FormProps) => {
       </Section>
     )
     : (<>
-      {currentSudo && <p><AuthorPreview address={currentSudo} /></p>}
+      {currentSudo && <p><AddressPreview address={currentSudo} /></p>}
       <Button
         type='button'
         size='large'
@@ -216,7 +216,7 @@ function innerWithOnlyForumSudo<P extends LoadStructProps> (Component: React.Com
       return (
         <JoyWarn title={`Only forum sudo can access this functionality.`}>
           <div>Current forum sudo:</div>
-          <div>{sudo ? <AuthorPreview address={sudo} /> : 'UNDEFINED'}</div>
+          <div>{sudo ? <AddressPreview address={sudo} /> : 'UNDEFINED'}</div>
         </JoyWarn>
       );
     }
