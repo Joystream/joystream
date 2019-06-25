@@ -142,10 +142,10 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
           </Link>
         </Table.Cell>
         <Table.Cell>
-          {category.num_direct_subcategories.toString()}
+          {category.num_direct_unmoderated_threads.toString()}
         </Table.Cell>
         <Table.Cell>
-          {category.num_direct_unmoderated_threads.toString()}
+          {category.num_direct_subcategories.toString()}
         </Table.Cell>
         <Table.Cell>
           {renderCategoryActions()}
@@ -398,8 +398,8 @@ function InnerCategoryList (props: CategoryListProps) {
     <Table.Header>
       <Table.Row>
         <Table.HeaderCell>Category</Table.HeaderCell>
-        <Table.HeaderCell>Subcategories</Table.HeaderCell>
         <Table.HeaderCell>Threads</Table.HeaderCell>
+        <Table.HeaderCell>Subcategories</Table.HeaderCell>
         <Table.HeaderCell>Actions</Table.HeaderCell>
         <Table.HeaderCell>Creator</Table.HeaderCell>
       </Table.Row>
