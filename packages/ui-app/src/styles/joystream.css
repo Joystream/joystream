@@ -133,6 +133,11 @@
   white-space: 'nowrap';
 }
 
+.FlexCenter {
+  display: flex;
+  align-items: center;
+}
+
 .ui.dropdown button {
   width: 100% !important;
   background-color: transparent !important;
