@@ -20,7 +20,6 @@ import { bnToStr, isEmptyArr } from '@polkadot/joy-utils/';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { IfIAmForumSudo } from './ForumSudo';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
-import { FlexCenter } from '@polkadot/joy-utils/FlexCenter';
 
 type CategoryActionsProps = {
   id: CategoryId
