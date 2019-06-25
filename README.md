@@ -14,8 +14,8 @@
 
 <div align="center">
   <h3>
-    <a href="/testnets/athens">
-      Athens Testnet
+    <a href="/testnets/acropolis">
+      Acropolis Testnet
     </a>
     <span> | </span>
     <a href="/okrs">
@@ -29,10 +29,12 @@
     <a href="https://github.com/Joystream/helpdesk/blob/master/README.md">
       Helpdesk
     </a>
+    <!--
     <span> | </span>
     <a href="/testnets/acropolis">
       Acropolis Testnet
     </a>
+    -->
   </h3>
 </div>
 
@@ -117,11 +119,15 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 
 ## Live Testnet
 
-[Athens](/testnets/athens/README.md)
+[Acropolis](/testnets/acropolis/README.md)
+
+<!--
 
 ## Next Testnet
 
 [Acropolis](/testnets/acropolis/README.md)
+
+-->
 
 ## Past Testnets
 

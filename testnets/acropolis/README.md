@@ -3,7 +3,7 @@
 
 <div align="center">
   <h3>
-    <a href="#">
+    <a href="specification/README.md">
       Specification
     </a>
   </h3>
