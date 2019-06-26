@@ -40,6 +40,7 @@
 
 .PlayBox {
   max-width: 700px;
+  margin-bottom: 1rem;
   h1, h2 {
     text-transform: none;
     margin: 0;
