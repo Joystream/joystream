@@ -20,6 +20,7 @@ import { DEFAULT_THUMBNAIL_URL, onImageError } from './utils';
 import { isEmptyStr } from '@polkadot/joy-utils/';
 import { MyAccountContext, MyAccountContextProps } from '@polkadot/joy-utils/MyAccountContext';
 import { Message } from 'semantic-ui-react';
+import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
 
 import _ from 'lodash';
 
@@ -103,6 +104,7 @@ class InnerView extends React.PureComponent<ViewProps> {
             </Link>
           }
           <div><h3>{name}</h3></div>
+          <MemberPreview accountId={meta.owner} style={{ marginBottom: '.5rem' }} />
           <MutedDiv smaller>{new Date(added_at.time).toLocaleString()}</MutedDiv>
           <MutedDiv smaller>{formatNumber(data.size_in_bytes)} bytes</MutedDiv>
         </div>
@@ -129,9 +131,7 @@ class InnerView extends React.PureComponent<ViewProps> {
     const { added_at } = meta;
     const { name, description, thumbnail: cover } = meta.parseJson();
 
-    const {resolvedAssetUrl: url} = this.props;
-
-    const { contentType = 'video/video' } = this.props;
+    const { resolvedAssetUrl: url, contentType = 'video/video' } = this.props;
     const prefix = contentType.substring(0, contentType.indexOf('/'));
 
     const content = () => {
@@ -169,8 +169,11 @@ class InnerView extends React.PureComponent<ViewProps> {
           }
           <h1>{name}</h1>
         </div>
+        <MemberPreview accountId={meta.owner} style={{ marginBottom: '.5rem' }} />
         <div className='smaller grey text'>Published on {new Date(added_at.time).toLocaleString()}</div>
-        { description && <ReactMarkdown className='JoyMemo--full ContentDesc' source={description.toString()} linkTarget='_blank' />}
+        {description &&
+          <ReactMarkdown className='JoyMemo--full ContentDesc' source={description.toString()} linkTarget='_blank' />
+        }
       </div>
     );
   }
@@ -211,11 +214,11 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
     cancelSource: axios.CancelToken.source()
   };
 
-  componentDidMount() {
+  componentDidMount () {
     this.resolveAsset();
   }
 
-  componentWillUnmount() {
+  componentWillUnmount () {
     const { cancelSource } = this.state;
     cancelSource.cancel();
   }
@@ -246,8 +249,11 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
     readyProviders = _.uniqBy(readyProviders, provider => provider.toString());
 
     if (!readyProviders.length) {
-      this.setState({resolvingAsset: false, error: new Error('No Storage Providers found storing this content')});
-      return
+      this.setState({
+        resolvingAsset: false,
+        error: new Error('No Storage Providers found storing this content')
+      });
+      return;
     }
 
     // filter out providers no longer in actors list
@@ -265,19 +271,19 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
     const { cancelSource } = this.state;
 
     // loop over providers until we find one that responds
-    while(readyProviders.length) {
+    while (readyProviders.length) {
       const provider = readyProviders.shift();
       if (!provider) continue;
 
-      const {resolvingAsset} = this.state;
+      const { resolvingAsset } = this.state;
       if (!resolvingAsset) {
         break;
       }
 
       try {
-        var resolvedAssetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.encode(), cancelSource.token)
+        var resolvedAssetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.encode(), cancelSource.token);
       } catch (err) {
-        if (axios.isCancel(err)){
+        if (axios.isCancel(err)) {
           return;
         } else {
           continue;
@@ -285,13 +291,13 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
       }
 
       try {
-        console.log('trying', resolvedAssetUrl)
-        let response = await axios.head(resolvedAssetUrl, {cancelToken: cancelSource.token})
+        console.log('trying', resolvedAssetUrl);
+        let response = await axios.head(resolvedAssetUrl, { cancelToken: cancelSource.token });
         const contentType = response.headers['content-type'] || 'video/video';
         this.setState({ contentType, resolvedAssetUrl, resolvingAsset: false });
-        return
+        return;
       } catch (err) {
-        if (axios.isCancel(err)){
+        if (axios.isCancel(err)) {
           return;
         } else {
           if (!err.response || (err.response.status >= 500 && err.response.status <= 504)) {
@@ -320,7 +326,7 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
           <p>{error.toString()}</p>
           <button className='ui button' onClick={this.resolveAsset}>Try again</button>
         </Message>
-        )
+      );
     }
 
     if (resolvedAssetUrl) {
@@ -333,5 +339,5 @@ class InnerPlay extends React.PureComponent<PlayProps, PlayState> {
 
 export const Play = withMulti(
   InnerPlay,
-  translate,
+  translate
 );
