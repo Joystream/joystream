@@ -10,7 +10,7 @@ import { Bool, Option } from '@polkadot/types';
 import { CategoryId, Category, ThreadId, Thread } from '@joystream/types/forum';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { UrlHasIdProps, AuthorPreview, CategoryCrumbs, Pagination, ThreadsPerPage } from './utils';
+import { UrlHasIdProps, CategoryCrumbs, Pagination, ThreadsPerPage } from './utils';
 import Section from '@polkadot/joy-utils/Section';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import { withForumCalls } from './calls';
@@ -19,6 +19,7 @@ import { ApiProps } from '@polkadot/ui-api/types';
 import { bnToStr, isEmptyArr } from '@polkadot/joy-utils/';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { IfIAmForumSudo } from './ForumSudo';
+import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
 
 type CategoryActionsProps = {
   id: CategoryId
@@ -140,16 +141,16 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
           </Link>
         </Table.Cell>
         <Table.Cell>
-          {category.num_direct_subcategories.toString()}
+          {category.num_direct_unmoderated_threads.toString()}
         </Table.Cell>
         <Table.Cell>
-          {category.num_direct_unmoderated_threads.toString()}
+          {category.num_direct_subcategories.toString()}
         </Table.Cell>
         <Table.Cell>
           {renderCategoryActions()}
         </Table.Cell>
         <Table.Cell>
-          <AuthorPreview address={category.moderator_id} />
+          <MemberPreview accountId={category.moderator_id} />
         </Table.Cell>
       </Table.Row>
     );
@@ -168,8 +169,7 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
 
     <Segment>
       <div>
-        <MutedSpan>Creator: </MutedSpan>
-        <AuthorPreview address={category.moderator_id} />
+        <MemberPreview accountId={category.moderator_id} prefixLabel='Creator:' />
       </div>
       <div style={{ marginTop: '1rem' }}>
         <ReactMarkdown className='JoyMemo--full' source={category.description} linkTarget='_blank' />
@@ -397,8 +397,8 @@ function InnerCategoryList (props: CategoryListProps) {
     <Table.Header>
       <Table.Row>
         <Table.HeaderCell>Category</Table.HeaderCell>
-        <Table.HeaderCell>Subcategories</Table.HeaderCell>
         <Table.HeaderCell>Threads</Table.HeaderCell>
+        <Table.HeaderCell>Subcategories</Table.HeaderCell>
         <Table.HeaderCell>Actions</Table.HeaderCell>
         <Table.HeaderCell>Creator</Table.HeaderCell>
       </Table.Row>

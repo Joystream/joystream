@@ -36,3 +36,23 @@
     white-space: nowrap;
   }
 }
+
+.JoyMemberPreview {
+  margin-right: .5rem;
+  .PrefixLabel {
+    margin-right: .5rem;
+  }
+  .Avatar {
+    margin-right: .5rem;
+    border-radius: 100%;
+  }
+  .Content {
+    .Username {
+      font-weight: bold;
+    }
+    .Details {
+      font-weight: 100;
+      opacity: .75;
+    }
+  }
+}

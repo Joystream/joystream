@@ -4,11 +4,12 @@ import ReactMarkdown from 'react-markdown';
 import { Segment, Button } from 'semantic-ui-react';
 
 import { Post, Category, Thread } from '@joystream/types/forum';
-import { AuthorPreview } from './utils';
 import { Moderate } from './Moderate';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { IfIAmForumSudo } from './ForumSudo';
+import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
+import { FlexCenter } from '@polkadot/joy-utils/FlexCenter';
 
 type ViewReplyProps = {
   reply: Post,
@@ -69,10 +70,10 @@ export function ViewReply (props: ViewReplyProps) {
 
   return (
     <Segment>
-      <div>
-        <AuthorPreview address={reply.author_id} />
+      <FlexCenter>
+        <MemberPreview accountId={reply.author_id} />
         {renderActions()}
-      </div>
+      </FlexCenter>
       <div style={{ marginTop: '1rem' }}>
         {showModerateForm &&
           <Moderate id={id} onCloseForm={() => setShowModerateForm(false)} />

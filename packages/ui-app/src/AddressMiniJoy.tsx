@@ -128,3 +128,19 @@ export default withMulti(
   AddressMini,
   withCall('query.session.validators')
 );
+
+type AddressPreviewProps = {
+  address: AccountId | AccountIndex | Address | string
+};
+
+export function AddressPreview ({ address }: AddressPreviewProps) {
+  return <AddressMini
+    value={address}
+    isShort={false}
+    isPadded={false}
+    withBalance={true}
+    withName={true}
+    withMemo={false}
+    size={36}
+  />;
+}
