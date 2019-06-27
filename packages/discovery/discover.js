@@ -49,10 +49,10 @@ async function discover_over_joystream_discovery_service(actorAccountId, runtime
 
     if (!discoverApiEndpoint) {
         // TODO: get from bootstrap nodes, or discovered endpoints
-        discoverApiEndpoint = 'https://storage-node.joystream.org/discover/v0/'
+        discoverApiEndpoint = 'https://storage-node-1.joystream.org'
     }
 
-    const url = `${discoverApiEndpoint}/${actorAccountId}`
+    const url = `${discoverApiEndpoint}/discover/v0/${actorAccountId}`
 
     // should have parsed if data was json?
     const response = await axios.get(url)
