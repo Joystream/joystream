@@ -1,6 +1,7 @@
 import React from 'react';
 import BN from 'bn.js';
 import axios, { CancelTokenSource } from 'axios';
+import { History } from 'history';
 import { Progress, Message } from 'semantic-ui-react';
 
 import { InputFile } from '@polkadot/ui-app/index';
@@ -24,7 +25,9 @@ import IpfsHash from 'ipfs-only-hash';
 const MAX_FILE_SIZE_MB = 100;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-type Props = ApiProps & I18nProps & MyAccountProps & DiscoveryProviderProps;
+type Props = ApiProps & I18nProps & MyAccountProps & DiscoveryProviderProps & {
+  history?: History
+};
 
 type State = {
   error?: any,
@@ -55,7 +58,7 @@ class Component extends React.PureComponent<Props, State> {
     this.setState({
       discovering: false,
       uploading: false,
-    })
+    });
 
     const { cancelSource } = this.state;
     cancelSource.cancel('unmounting');
@@ -104,12 +107,12 @@ class Component extends React.PureComponent<Props, State> {
 
     return <div style={{ width: '100%' }}>
       {this.renderProgress()}
-      {success && <EditMeta contentId={newContentId} fileName={fileNameWoExt(file.name)} />}
+      {success && <EditMeta contentId={newContentId} fileName={fileNameWoExt(file.name)} history={this.props.history} />}
     </div>;
   }
 
   private renderDiscovering () {
-    return <em>Contacting Storage Provider...</em>
+    return <em>Contacting Storage Provider...</em>;
   }
 
   private renderProgress () {
@@ -205,13 +208,13 @@ class Component extends React.PureComponent<Props, State> {
         error: err,
         discovering: false
       });
-      return
+      return;
     }
 
     const { discovering } = this.state;
 
     if (!discovering) {
-      return
+      return;
     }
 
     if (dataObject.isSome) {
@@ -266,7 +269,7 @@ class Component extends React.PureComponent<Props, State> {
     const { discovering } = this.state;
 
     if (!discovering) {
-      return
+      return;
     }
 
     // TODO: validate url .. must start with http
@@ -278,7 +281,7 @@ class Component extends React.PureComponent<Props, State> {
     } catch(err) {
       this.setState({ progress: 0, error: err, uploading: false });
       if (axios.isCancel) {
-        return
+        return;
       }
       if (!err.response || (err.response.status >= 500 && err.response.status <= 504)) {
         // network connection error
@@ -291,5 +294,5 @@ class Component extends React.PureComponent<Props, State> {
 export default withMulti(
   Component,
   translate,
-  withOnlyMembers,
+  withOnlyMembers
 );
