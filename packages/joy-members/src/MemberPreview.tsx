@@ -22,7 +22,9 @@ type MemberPreviewProps = ApiProps & I18nProps & {
   memberId?: MemberId,
   memberProfile?: Option<any>, // TODO refactor to Option<Profile>
   activeCouncil?: Seat[],
-  prefixLabel?: string
+  prefixLabel?: string,
+  className?: string,
+  style?: React.CSSProperties
 };
 
 class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
@@ -35,13 +37,13 @@ class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
   }
 
   private renderProfile (memberProfile: Profile) {
-    const { activeCouncil = [], accountId, prefixLabel } = this.props;
+    const { activeCouncil = [], accountId, prefixLabel, className, style } = this.props;
     const { handle, avatar_uri } = memberProfile;
 
     const hasAvatar = avatar_uri && nonEmptyStr(avatar_uri.toString());
     const isCouncilor: boolean = accountId !== undefined && activeCouncil.find(x => accountId.eq(x.member)) !== undefined;
 
-    return <div className='JoyMemberPreview'>
+    return <div className={`JoyMemberPreview ${className}`} style={style}>
       <FlexCenter>
         {prefixLabel &&
           <MutedSpan className='PrefixLabel'>{prefixLabel}</MutedSpan>
