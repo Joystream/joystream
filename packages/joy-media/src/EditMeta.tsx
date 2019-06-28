@@ -3,6 +3,7 @@ import { Button, Message } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import BN from 'bn.js';
+import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
@@ -44,6 +45,7 @@ type ValidationProps = {
 };
 
 type OuterProps = ValidationProps & {
+  history?: History,
   contentId: ContentId,
   fileName?: string,
   metadataOpt?: Option<ContentMetadata>
@@ -64,6 +66,7 @@ const LabelledText = JoyForms.LabelledText<FormValues>();
 
 const InnerForm = (props: FormProps) => {
   const {
+    history,
     contentId,
     metadataOpt,
     values,
@@ -95,6 +98,13 @@ const InnerForm = (props: FormProps) => {
 
   const onTxSuccess = (_txResult: SubmittableResult) => {
     setSubmitting(false);
+    goToPlayerPage();
+  };
+
+  const goToPlayerPage = () => {
+    if (history) {
+      history.push('/media/play/' + contentId.encode());
+    }
   };
 
   const isNew = !metadataOpt || metadataOpt.isNone;
@@ -236,7 +246,7 @@ function withGetContentIdFromUrl (Component: React.ComponentType<OuterProps>) {
     const { match: { params: { assetName } } } = props;
     try {
       const contentId = ContentId.decode(assetName);
-      return <Component contentId={contentId} />;
+      return <Component contentId={contentId} {...props} />;
     } catch (err) {
       return <em>Invalid content ID: {assetName}</em>;
     }
