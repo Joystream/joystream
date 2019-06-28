@@ -52,8 +52,8 @@ const axios = require('axios');
   }));
 
   // Resolve IPNS identities of providers
-  console.log('\nResolving provider API Endpoints...')
-  providersStatuses = providersStatuses.concat(expiredProviderStatuses);
+  console.log('\nResolving live provider API Endpoints...')
+  //providersStatuses = providersStatuses.concat(expiredProviderStatuses);
   let endpoints = await Promise.all(providersStatuses.map(async (status) => {
     try {
       let serviceInfo = await discover.discover_over_joystream_discovery_service(status.address, runtime);
@@ -61,12 +61,17 @@ const axios = require('axios');
       console.log(`${status.address} -> ${info.asset.endpoint}`);
       return { address: status.address, endpoint: info.asset.endpoint};
     } catch (err) {
-      console.log(err.message, 'failed resolving provider:', status.address)
+      console.log('resolve failed', status.address, err.message);
+      return { address: status.address, endpoint: null};
     }
   }));
 
   console.log('\nChecking API Endpoint is online')
   await Promise.all(endpoints.map(async (provider) => {
+    if (!provider.endpoint) {
+      console.log('skipping', provider.address);
+      return
+    }
     const swaggerUrl = `${removeEndingForwardSlash(provider.endpoint)}/swagger.json`;
     let error;
     try {
@@ -87,10 +92,14 @@ const axios = require('axios');
   }));
 
   console.log('\nChecking available assets on providers...');
+
   endpoints.map(async ({address, endpoint}) => {
-    let count = await countContentAvailability(knownContentIds, endpoint);
-    console.log(`${address}: has ${count} assets`);
+    if (!endpoint) { return }
+    let { found, content } = await countContentAvailability(knownContentIds, endpoint);
+    console.log(`${address}: has ${found} assets`);
+    return content
   });
+
 
   // interesting disconnect doesn't work unless an explicit provider was created
   // for underlying api instance
@@ -118,15 +127,21 @@ function mapInfoToStatus(providers, currentHeight) {
 }
 
 async function countContentAvailability(contentIds, source) {
+  let content = {}
   let found = 0;
   for(let i = 0; i < contentIds.length; i++) {
     const assetUrl = makeAssetUrl(contentIds[i], source);
     try {
-      await axios.head(assetUrl)
+      let info = await axios.head(assetUrl)
+      content[encodeAddress(contentIds[i])] = {
+        type: info.headers['content-type'],
+        bytes: info.headers['content-length']
+      }
       found++
     } catch(err) { console.log(`${assetUrl} ${err.message}`); continue; }
   }
-  return found;
+  console.log(content);
+  return { found, content };
 }
 
 function makeAssetUrl(contentId, source) {
