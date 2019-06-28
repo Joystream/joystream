@@ -115,10 +115,39 @@ impl Trait for Runtime {
     type MembershipRegistry = registry::TestMembershipRegistryModule;
 }
 
+#[derive(Clone)]
 pub enum OriginType {
     Signed(<Runtime as system::Trait>::AccountId),
     //Inherent, <== did not find how to make such an origin yet
     Root
+}
+
+fn mock_origin(origin: OriginType) -> mock::Origin {
+    match origin {
+        OriginType::Signed(account_id) => Origin::signed(account_id),
+        //OriginType::Inherent => Origin::inherent,
+        OriginType::Root => system::RawOrigin::Root.into() //Origin::root
+    }
+}
+
+pub fn generate_text(len: usize) -> Vec<u8> {
+    vec![b'x'; len]
+}
+
+pub fn good_category_title() -> Vec<u8> {
+    b"Great new category".to_vec()
+}
+
+pub fn good_category_description() -> Vec<u8> {
+    b"This is a great new category for the forum".to_vec()
+}
+
+pub fn good_thread_title() -> Vec<u8> {
+    b"Great new thread".to_vec()
+}
+
+pub fn good_thread_text() -> Vec<u8> {
+    b"The first post in this thread".to_vec()
 }
 
 /*
@@ -137,14 +166,9 @@ pub struct CreateCategoryFixture {
 impl CreateCategoryFixture {
 
     pub fn call_and_assert(&self) {
-
         assert_eq!(
             TestForumModule::create_category(
-                match self.origin {
-                    OriginType::Signed(account_id) => Origin::signed(account_id),
-                    //OriginType::Inherent => Origin::inherent,
-                    OriginType::Root => system::RawOrigin::Root.into() //Origin::root
-                },
+                mock_origin(self.origin.clone()),
                 self.parent,
                 self.title.clone(),
                 self.description.clone()
@@ -165,17 +189,35 @@ pub struct UpdateCategoryFixture {
 impl UpdateCategoryFixture {
 
     pub fn call_and_assert(&self) {
-
         assert_eq!(
             TestForumModule::update_category(
-                match self.origin {
-                    OriginType::Signed(account_id) => Origin::signed(account_id),
-                    //OriginType::Inherent => Origin::inherent,
-                    OriginType::Root => system::RawOrigin::Root.into() //Origin::root
-                },
+                mock_origin(self.origin.clone()),
                 self.category_id,
                 self.new_archival_status.clone(),
                 self.new_deletion_status.clone()
+            ),
+            self.result
+        )
+    }
+}
+
+pub struct CreateThreadFixture {
+    pub origin: OriginType,
+    pub category_id: CategoryId,
+    pub title: Vec<u8>,
+    pub text: Vec<u8>,
+    pub result: dispatch::Result
+}
+
+impl CreateThreadFixture {
+
+    pub fn call_and_assert(&self) {
+        assert_eq!(
+            TestForumModule::create_thread(
+                mock_origin(self.origin.clone()),
+                self.category_id,
+                self.title.clone(),
+                self.text.clone()
             ),
             self.result
         )
@@ -193,11 +235,11 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 
     GenesisConfig::<Runtime> {
         category_by_id: vec![], // endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
-        next_category_id: 0,
+        next_category_id: 1,
         thread_by_id: vec![],
-        next_thread_id: 0,
+        next_thread_id: 1,
         post_by_id: vec![],
-        next_post_id: 0,
+        next_post_id: 1,
 
         forum_sudo: 33,
 
@@ -308,6 +350,8 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::T
 
     t.into()
 }
+
+pub type System = system::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;
