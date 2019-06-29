@@ -1,7 +1,7 @@
 const axios = require('axios')
 const debug = require('debug')('discovery::discover')
 
-var ipfs = require('ipfs-http-client')('localhost', '5001', { protocol: 'http' })
+const ipfs = require('ipfs-http-client')('localhost', '5001', { protocol: 'http' })
 
 function inBrowser() {
     return typeof window !== 'undefined'

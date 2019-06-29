@@ -1,4 +1,6 @@
 const ipfsClient = require('ipfs-http-client')
+const ipfs = ipfsClient('localhost', '5001', { protocol: 'http' })
+
 const debug = require('debug')('discovery::publish')
 
 const SERVICES_KEY_NAME = 'services';
@@ -15,8 +17,6 @@ function encodeServiceInfo(info) {
 }
 
 async function publish (service_info) {
-    const ipfs = ipfsClient('localhost', '5001', { protocol: 'http' })
-
     const keys = await ipfs.key.list()
     let services_key = keys.find((key) => key.name === SERVICES_KEY_NAME)
 
