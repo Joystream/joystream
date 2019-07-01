@@ -85,6 +85,7 @@ A summery of the tests for `forum` and `storage` can be read [here](https://gith
 | User Stories                | 02.05.19        | [link](../../meetings/acropolis#user-stories-meeting)        |
 | Release Plan Finalization   | 09.05.19        | [link](../../meetings/acropolis#release-plan-finalization-meeting)   |
 | Release Plan Milestone Evaluation Meeting | 10.06.19         | [link](../../meetings/acropolis##release-plan-milestone-evaluation-meeting) | Re-evaluation of Milestones due to changing circumstances |
+| Lessons Learned             | 02.07.19        | [link](../../meetings/acropolis/#lessons-learned)             |
 
 #  Specification
 

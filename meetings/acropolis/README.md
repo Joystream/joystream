@@ -8,7 +8,6 @@
   - [Release Plan Finalization Meeting](#release-plan-finalization-meeting)
   - [Release Plan Milestone Evaluation Meeting](#release-plan-milestone-evaluation-meeting)
 - [Planned meetings](#planned-meetings)
-  - [Other](#other)
   - [Lessons Learned](#lessons-learned)
 <!-- TOC END -->
 
@@ -471,17 +470,11 @@ Based on the conclusion in :one:, it was decided to delay Storage Tranches for t
 
 # Planned meetings
 
----
-
-## Other
-
----
-
 ## Lessons Learned
 
 **ID:** `Acropolis Lessons Learned`
-- **Date:** `dd.mm.yy`
-- **Starts:** `hh:mm CET`
+- **Date:** `02.07.19`
+- **Starts:** `11:15 GMT+2`
 - **Duration:** `mm`
 - **Venue:** `ZOOM`
 - **Lead**: `Martin`
@@ -489,15 +482,24 @@ Based on the conclusion in :one:, it was decided to delay Storage Tranches for t
 - **Participants**:
  - `Alex`
  - `Bedeho`
- - `Jens`
  - `Martin`
  - `Mokhtar`
 
 #### Agenda
 
-:one: Item 1.
+:one:
+What went wrong with planning and producing specs?
 
-:two: ....
+:two:
+Although we ended up releasing almost on time, we were not really ready.
+- We merged non-bug PRs after `Full test` (even worse than `Sub-system`)
+- We found a lot of bugs after `Full test`, that should have been uncovered earlier.
+- The release was poorly managed from a PR/marketing point of view.
+- The weekend before the release put some extra strain on the team.
+
+:three:
+
+
 
 #### Minutes
 **Started at:** `time`
