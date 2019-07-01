@@ -488,16 +488,19 @@ Based on the conclusion in :one:, it was decided to delay Storage Tranches for t
 #### Agenda
 
 :one:
-What went wrong with planning and producing specs?
+OKR grading.
 
 :two:
+What went wrong with planning and producing specs?
+
+:three:
 Although we ended up releasing almost on time, we were not really ready.
 - We merged non-bug PRs after `Full test` (even worse than `Sub-system`)
 - We found a lot of bugs after `Full test`, that should have been uncovered earlier.
 - The release was poorly managed from a PR/marketing point of view.
 - The weekend before the release put some extra strain on the team.
 
-:three:
+:four:
 We initially set out to make `issues` in the applicable repos, and add them to the [Release Project](https://github.com/orgs/Joystream/projects/7). In practice, we tracked both [forum](https://github.com/Joystream/joystream/issues/47) and [storage](https://github.com/Joystream/joystream/issues/57) progress with a single issue in this repo. Should we continue this way?
 
 
