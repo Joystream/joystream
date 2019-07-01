@@ -133,6 +133,7 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 
 | Network         | Started           | Ended         | Release Plan    |
 | -------------   | -------------     | -----         | -----           |
+| Acropolis       | 24.04.19          |   -           |       [Plan](/testnets/acropolis/README.md)        |
 | Sparta          | 28.02.19          |   29.03.19    |       NA        |
 | Mesopotamia     | 21.12.18          |   28.02.19    |       NA        |
 
