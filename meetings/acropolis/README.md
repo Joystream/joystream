@@ -498,7 +498,7 @@ Although we ended up releasing almost on time, we were not really ready.
 - The weekend before the release put some extra strain on the team.
 
 :three:
-
+We initially set out to make `issues` in the applicable repos, and add them to the [Release Project](https://github.com/orgs/Joystream/projects/7). In practice, we tracked both [forum](https://github.com/Joystream/joystream/issues/47) and [storage](https://github.com/Joystream/joystream/issues/57) progress with a single issue in this repo. Should we continue this way?
 
 
 #### Minutes
