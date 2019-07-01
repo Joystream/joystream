@@ -4,6 +4,7 @@ const { RuntimeApi } = require('@joystream/runtime-api');
 const { encodeAddress } = require('@polkadot/keyring')
 const { discover } = require('@joystream/discovery');
 const axios = require('axios');
+const stripEndingSlash = require('@joystream/util/stripEndingSlash');
 
 (async function main () {
 
@@ -72,7 +73,7 @@ const axios = require('axios');
       console.log('skipping', provider.address);
       return
     }
-    const swaggerUrl = `${removeEndingForwardSlash(provider.endpoint)}/swagger.json`;
+    const swaggerUrl = `${stripEndingSlash(provider.endpoint)}/swagger.json`;
     let error;
     try {
       await axios.get(swaggerUrl)
@@ -145,17 +146,8 @@ async function countContentAvailability(contentIds, source) {
 }
 
 function makeAssetUrl(contentId, source) {
-  source = removeEndingForwardSlash(source);
+  source = stripEndingSlash(source);
   return `${source}/asset/v0/${encodeAddress(contentId)}`
-}
-
-// return url with last `/` removed
-function removeEndingForwardSlash(url) {
-  let st = new String(url)
-  if (st.endsWith('/')) {
-    return st.substring(0, st.length - 1);
-  }
-  return st.toString()
 }
 
 async function assetRelationshipState(api, contentId, providers) {

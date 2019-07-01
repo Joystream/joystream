@@ -1,5 +1,6 @@
 const axios = require('axios')
 const debug = require('debug')('discovery::discover')
+const stripEndingSlash = require('@joystream/util/stripEndingSlash')
 
 const ipfs = require('ipfs-http-client')('localhost', '5001', { protocol: 'http' })
 
@@ -48,9 +49,22 @@ async function discover_over_joystream_discovery_service(actorAccountId, runtime
         throw new Error('Cannot discover non actor account service info')
     }
 
+    const identity = await getIpnsIdentity(actorAccountId, runtimeApi)
+
+    if (identity == null) {
+        // dont waste time trying to resolve if no identity was found
+        throw new Error('no identity to resolve');
+    }
+
     if (!discoverApiEndpoint) {
-        // TODO: get from bootstrap nodes, or discovered endpoints
-        discoverApiEndpoint = 'https://storage-node-1.joystream.org'
+        // Use bootstrap nodes
+        let discoveryBootstrapNodes = await runtimeApi.discovery.getBootstrapEndpoints()
+
+        if (discoveryBootstrapNodes.length) {
+            discoverApiEndpoint = stripEndingSlash(discoveryBootstrapNodes[0].toString())
+        } else {
+            throw new Error('No known discovery bootstrap nodes found on network');
+        }
     }
 
     const url = `${discoverApiEndpoint}/discover/v0/${actorAccountId}`
