@@ -27,6 +27,7 @@ This is the index of past meetings with itineraries, they should all be stored i
 | Acropolis User Stories Meeting              | 26.04.19         | 02.05.19-12:15GMT+2 (x) | [link](../meetings/acropolis#user-stories-meeting) | Rescheduled from 30.04        |
 | Acropolis Release Plan Finalization Meeting | 06.05.19         | 09.05.19-11:15GMT+2 (x)  | [link](../meetings/acropolis#release-plan-finalisation-meeting) | Two working days not feasible |
 | Acropolis Release Plan Milestone Evaluation Meeting | 10.06.19         | 11.06.19-11:15GMT+2 (x)  | [link](../meetings/acropolis##release-plan-milestone-evaluation-meeting) | Re-evaluation of Milestones due to changing circumstances |
+| Acropolis - Lessons Learned | 01.07.19         | 02.07.19-11:15GMT+2 (x)  | [link](../meetings/acropolis##lessons-learned) | Lessons learned after release |
 
 # Itinerary Template
 
