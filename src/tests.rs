@@ -413,3 +413,45 @@ fn create_thread_text_too_long() {
         .call_and_assert();
     });
 }
+
+#[test]
+fn create_post_text_too_short() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+    let min_len = config.post_text_constraint.min as usize;
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (member_origin, _, thread_id) = create_root_category_and_thread(origin);
+
+        CreatePostFixture {
+            origin: member_origin,
+            thread_id,
+            text: generate_text(min_len - 1),
+            result: Err(ERROR_POST_TEXT_TOO_SHORT)
+        }
+        .call_and_assert();
+    });
+}
+
+#[test]
+fn create_post_text_too_long() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+    let max_len = config.post_text_constraint.max() as usize;
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (member_origin, _, thread_id) = create_root_category_and_thread(origin);
+
+        CreatePostFixture {
+            origin: member_origin,
+            thread_id,
+            text: generate_text(max_len + 1),
+            result: Err(ERROR_POST_TEXT_TOO_LONG)
+        }
+        .call_and_assert();
+    });
+}
+
+// TODO test moderation rationale: too short
+
+// TODO test moderation rationale: too long

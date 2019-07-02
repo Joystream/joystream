@@ -224,6 +224,27 @@ impl CreateThreadFixture {
     }
 }
 
+pub struct CreatePostFixture {
+    pub origin: OriginType,
+    pub thread_id: ThreadId,
+    pub text: Vec<u8>,
+    pub result: dispatch::Result
+}
+
+impl CreatePostFixture {
+
+    pub fn call_and_assert(&self) {
+        assert_eq!(
+            TestForumModule::add_post(
+                mock_origin(self.origin.clone()),
+                self.thread_id,
+                self.text.clone()
+            ),
+            self.result
+        )
+    }
+}
+
 pub fn create_forum_member() -> OriginType {
     let member_id = 123;
     let new_member = registry::Member { id: member_id };
@@ -246,6 +267,23 @@ pub fn create_category(forum_sudo: OriginType, parent_category_id: Option<Catego
 
 pub fn create_root_category(forum_sudo: OriginType) -> CategoryId {
     create_category(forum_sudo, None)
+}
+
+pub fn create_root_category_and_thread(forum_sudo: OriginType) -> (OriginType, CategoryId, ThreadId) {
+    let member_origin = create_forum_member();
+    let category_id = create_root_category(forum_sudo);
+    let thread_id = TestForumModule::next_thread_id();
+
+    CreateThreadFixture {
+        origin: member_origin.clone(),
+        category_id,
+        title: good_thread_title(),
+        text: good_thread_text(),
+        result: Ok(())
+    }
+    .call_and_assert();
+
+    (member_origin, category_id, thread_id)
 }
 
 // This function basically just builds a genesis storage key/value store according to
