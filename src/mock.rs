@@ -12,6 +12,8 @@ use runtime_primitives::{
     BuildStorage,
 };
 
+use runtime_io::with_externalities;
+
 /// Module which has a full Substrate module for 
 /// mocking behaviour of MembershipRegistry
 pub mod registry {
@@ -129,6 +131,10 @@ fn mock_origin(origin: OriginType) -> mock::Origin {
         OriginType::Root => system::RawOrigin::Root.into() //Origin::root
     }
 }
+
+pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(111);
+
+// pub const NOT_MEMBER_ORIGIN: OriginType = OriginType::Signed(222);
 
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
@@ -260,16 +266,22 @@ pub fn create_forum_member() -> OriginType {
     OriginType::Signed(member_id)
 }
 
-pub fn create_category(forum_sudo: OriginType, parent_category_id: Option<CategoryId>) -> CategoryId {
-    let category_id = TestForumModule::next_category_id();
+pub fn assert_create_category(forum_sudo: OriginType, parent_category_id: Option<CategoryId>, expected_result: dispatch::Result) {
     CreateCategoryFixture {
         origin: forum_sudo,
         parent: parent_category_id,
         title: good_category_title(),
         description: good_category_description(),
-        result: Ok(())
-    }
-    .call_and_assert();
+        result: expected_result
+    }.call_and_assert();
+}
+
+pub fn create_category(forum_sudo: OriginType, parent_category_id: Option<CategoryId>) -> CategoryId {
+    let category_id = TestForumModule::next_category_id();
+    assert_create_category(
+        forum_sudo, parent_category_id, 
+        Ok(())
+    );
     category_id
 }
 
@@ -318,6 +330,55 @@ pub fn moderate_post(forum_sudo: OriginType, post_id: PostId, rationale: Vec<u8>
     TestForumModule::moderate_post(
         mock_origin(forum_sudo), post_id, rationale
     )
+}
+
+pub fn archive_category(forum_sudo: OriginType, category_id: CategoryId) -> dispatch::Result {
+    TestForumModule::update_category(
+        mock_origin(forum_sudo),
+        category_id,
+        Some(true),
+        None
+    )
+}
+
+pub fn unarchive_category(forum_sudo: OriginType, category_id: CategoryId) -> dispatch::Result {
+    TestForumModule::update_category(
+        mock_origin(forum_sudo),
+        category_id,
+        Some(false),
+        None,
+    )
+}
+
+pub fn delete_category(forum_sudo: OriginType, category_id: CategoryId) -> dispatch::Result {
+    TestForumModule::update_category(
+        mock_origin(forum_sudo),
+        category_id,
+        None,
+        Some(true),
+    )
+}
+
+pub fn undelete_category(forum_sudo: OriginType, category_id: CategoryId) -> dispatch::Result {
+    TestForumModule::update_category(
+        mock_origin(forum_sudo),
+        category_id,
+        None,
+        Some(false),
+    )
+}
+
+pub fn assert_not_forum_sudo_cannot_update_category(update_operation: fn (OriginType, CategoryId) -> dispatch::Result) {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let category_id = create_root_category(origin.clone());
+        assert_eq!(
+            update_operation(NOT_FORUM_SUDO_ORIGIN, category_id), 
+            Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
+        );
+    });
 }
 
 // This function basically just builds a genesis storage key/value store according to

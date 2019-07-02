@@ -76,100 +76,91 @@ fn set_forum_sudo_update() {
  */
 
 #[test]
-fn create_category_successfully() {
-
+fn create_root_category_successfully() {
     let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
 
     with_externalities(&mut build_test_externalities(config), || {
+        assert_create_category(origin, None, Ok(()));
+    });
+}
 
-        CreateCategoryFixture {
-            origin: OriginType::Signed(default_genesis_config().forum_sudo),
-            parent: None,
-            title: good_category_title(),
-            description: good_category_description(),
-            result: Ok(())
-        }
-        .call_and_assert();
+#[test]
+fn create_subcategory_successfully() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let root_category_id = create_root_category(origin.clone());
+        assert_create_category(origin, Some(root_category_id), Ok(()));
     });
 }
 
 #[test]
 fn create_category_title_too_short() {
-
     let config = default_genesis_config();
     let origin = OriginType::Signed(config.forum_sudo);
     let min_len = config.category_title_constraint.min as usize;
 
     with_externalities(&mut build_test_externalities(config), || {
-
         CreateCategoryFixture {
             origin,
             parent: None,
             title: generate_text(min_len - 1),
             description: good_category_description(),
             result: Err(ERROR_CATEGORY_TITLE_TOO_SHORT)
-        }
-        .call_and_assert();
+        }.call_and_assert();
     });
 }
 
 #[test]
 fn create_category_title_too_long() {
-
     let config = default_genesis_config();
     let origin = OriginType::Signed(config.forum_sudo);
     let max_len = config.category_title_constraint.max() as usize;
 
     with_externalities(&mut build_test_externalities(config), || {
-
         CreateCategoryFixture {
             origin,
             parent: None,
             title: generate_text(max_len + 1),
             description: good_category_description(),
             result: Err(ERROR_CATEGORY_TITLE_TOO_LONG)
-        }
-        .call_and_assert();
+        }.call_and_assert();
     });
 }
 
 #[test]
 fn create_category_description_too_short() {
-
     let config = default_genesis_config();
     let origin = OriginType::Signed(config.forum_sudo);
     let min_len = config.category_description_constraint.min as usize;
 
     with_externalities(&mut build_test_externalities(config), || {
-
         CreateCategoryFixture {
             origin,
             parent: None,
             title: good_category_title(),
             description: generate_text(min_len - 1),
             result: Err(ERROR_CATEGORY_DESCRIPTION_TOO_SHORT)
-        }
-        .call_and_assert();
+        }.call_and_assert();
     });
 }
 
 #[test]
 fn create_category_description_too_long() {
-
     let config = default_genesis_config();
     let origin = OriginType::Signed(config.forum_sudo);
     let max_len = config.category_description_constraint.max() as usize;
 
     with_externalities(&mut build_test_externalities(config), || {
-
         CreateCategoryFixture {
             origin,
             parent: None,
             title: good_category_title(),
             description: generate_text(max_len + 1),
             result: Err(ERROR_CATEGORY_DESCRIPTION_TOO_LONG)
-        }
-        .call_and_assert();
+        }.call_and_assert();
     });
 }
 
@@ -261,16 +252,13 @@ fn update_category_undelete_and_unarchive() {
     );
 
     with_externalities(&mut build_test_externalities(config), || {
-
         UpdateCategoryFixture {
             origin: OriginType::Signed(forum_sudo),
             category_id: 2,
             new_archival_status: None, // same as before
             new_deletion_status: Some(false), // undelete
             result: Ok(())
-        }
-        .call_and_assert();
-
+        }.call_and_assert();
     });
 }
 
@@ -288,7 +276,6 @@ fn update_category_undelete_and_unarchive() {
 
 #[test]
 fn create_thread_not_forum_member() {
-
     let config = default_genesis_config();
 
     with_externalities(&mut build_test_externalities(config), || {
@@ -325,8 +312,7 @@ fn create_thread_successfully() {
             title: good_thread_title(),
             text: good_thread_text(),
             result: Ok(())
-        }
-        .call_and_assert();
+        }.call_and_assert();
     });
 }
 
@@ -346,8 +332,7 @@ fn create_thread_title_too_short() {
             title: generate_text(min_len - 1),
             text: good_thread_text(),
             result: Err(ERROR_THREAD_TITLE_TOO_SHORT)
-        }
-        .call_and_assert();
+        }.call_and_assert();
     });
 }
 
@@ -367,8 +352,7 @@ fn create_thread_title_too_long() {
             title: generate_text(max_len + 1),
             text: good_thread_text(),
             result: Err(ERROR_THREAD_TITLE_TOO_LONG)
-        }
-        .call_and_assert();
+        }.call_and_assert();
     });
 }
 
@@ -388,8 +372,7 @@ fn create_thread_text_too_short() {
             title: good_thread_title(),
             text: generate_text(min_len - 1),
             result: Err(ERROR_POST_TEXT_TOO_SHORT)
-        }
-        .call_and_assert();
+        }.call_and_assert();
     });
 }
 
@@ -409,8 +392,7 @@ fn create_thread_text_too_long() {
             title: good_thread_title(),
             text: generate_text(max_len + 1),
             result: Err(ERROR_POST_TEXT_TOO_LONG)
-        }
-        .call_and_assert();
+        }.call_and_assert();
     });
 }
 
@@ -428,8 +410,7 @@ fn create_post_text_too_short() {
             thread_id,
             text: generate_text(min_len - 1),
             result: Err(ERROR_POST_TEXT_TOO_SHORT)
-        }
-        .call_and_assert();
+        }.call_and_assert();
     });
 }
 
@@ -447,8 +428,7 @@ fn create_post_text_too_long() {
             thread_id,
             text: generate_text(max_len + 1),
             result: Err(ERROR_POST_TEXT_TOO_LONG)
-        }
-        .call_and_assert();
+        }.call_and_assert();
     });
 }
 
@@ -574,6 +554,112 @@ fn cannot_moderate_already_moderated_post() {
     });
 }
 
-// TODO test invalid category when creating thread
+#[test]
+fn not_forum_sudo_cannot_create_root_category() {
+    let config = default_genesis_config();
 
-// TODO test invalid thread when creating post
+    with_externalities(&mut build_test_externalities(config), || {
+        assert_create_category(
+            NOT_FORUM_SUDO_ORIGIN, None,
+            Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
+        );
+    });
+}
+
+#[test]
+fn not_forum_sudo_cannot_create_subcategory() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let root_category_id = create_root_category(origin);
+        assert_create_category(
+            NOT_FORUM_SUDO_ORIGIN, Some(root_category_id),
+            Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
+        );
+    });
+}
+
+#[test]
+fn not_forum_sudo_cannot_archive_category() {
+    assert_not_forum_sudo_cannot_update_category(
+        archive_category
+    );
+}
+
+#[test]
+fn not_forum_sudo_cannot_unarchive_category() {
+    assert_not_forum_sudo_cannot_update_category(
+        unarchive_category
+    );
+}
+
+#[test]
+fn not_forum_sudo_cannot_delete_category() {
+    assert_not_forum_sudo_cannot_update_category(
+        delete_category
+    );
+}
+
+#[test]
+fn not_forum_sudo_cannot_undelete_category() {
+    assert_not_forum_sudo_cannot_update_category(
+        undelete_category
+    );
+}
+
+#[test]
+fn not_forum_sudo_cannot_moderate_thread() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
+        assert_eq!(
+            moderate_thread(NOT_FORUM_SUDO_ORIGIN, thread_id, good_rationale()), 
+            Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
+        );
+    });
+}
+
+#[test]
+fn not_forum_sudo_cannot_moderate_post() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
+        assert_eq!(
+            moderate_post(NOT_FORUM_SUDO_ORIGIN, post_id, good_rationale()), 
+            Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
+        );
+    });
+}
+
+// TODO test: not member cannot create a thread
+
+// TODO test: not member cannot create a post
+
+// TODO test: not member cannot edit a post
+
+// ------------------------------------------------
+
+// TODO test: invalid category id when creating thread
+
+// TODO test: invalid thread id when creating post
+
+// TODO test: invalid thread id when moderating thread
+
+// TODO test: invalid post id when moderating post
+
+// ------------------------------------------------
+
+// TODO test: edit a post successfully
+
+// TODO test: archive a category successfully
+
+// TODO test: unarchive an archived category successfully
+
+// TODO test: delete a category successfully
+
+// TODO test: undelete a deleted category successfully
