@@ -158,15 +158,20 @@ module.exports = function(config, storage, runtime)
               return;
             }
 
+            debug('accepting Content')
             await runtime.assets.acceptContent(role_addr, id);
 
+            debug('creating storage relationship for newly uploaded content')
             // Create storage relationship and flip it to ready.
             const dosr_id = await runtime.assets.createAndReturnStorageRelationship(role_addr, id);
+
+            debug('toggling storage relationship for newly uploaded content')
             await runtime.assets.toggleStorageRelationshipReady(role_addr, dosr_id, true);
 
             debug('Sending OK response.');
             res.status(200).send({ message: 'Asset uploaded.' });
           } catch (err) {
+            debug(`${err.message}`);
             error_handler(res, err);
           }
         });

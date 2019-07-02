@@ -24,7 +24,7 @@ class DiscoveryApi
    * Get Bootstrap endpoints
    */
   async getBootstrapEndpoints() {
-    return this.base.api.query.discovery.bootstrap_endpoints()
+    return this.base.api.query.discovery.bootstrapEndpoints()
   }
 
   /*

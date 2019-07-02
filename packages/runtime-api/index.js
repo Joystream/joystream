@@ -21,7 +21,7 @@
 const debug = require('debug')('joystream:runtime:base');
 
 const { registerJoystreamTypes } = require('@joystream/types');
-const { ApiPromise } = require('@polkadot/api');
+const { ApiPromise, WsProvider } = require('@polkadot/api');
 
 const { IdentitiesApi } = require('@joystream/runtime-api/identities');
 const { BalancesApi } = require('@joystream/runtime-api/balances');
@@ -51,8 +51,10 @@ class RuntimeApi
     // Register joystream types
     registerJoystreamTypes();
 
+    const provider = new WsProvider('ws://localhost:9944');
+
     // Create the API instrance
-    this.api = await ApiPromise.create();
+    this.api = await ApiPromise.create(provider);
 
     this.asyncLock = new AsyncLock();
 
@@ -201,12 +203,17 @@ class RuntimeApi
             debug(`TX status: ${status.type}`);
 
             // Whatever events we get, process them if there's someone interested.
-            if (subscribed && callback) {
-              const matched = this._matchingEvents(subscribed, events);
-              debug('Matching events:', matched);
-              if (matched.length) {
-                callback(matched);
+            // It is critical that this event handling doesn't prevent
+            try {
+              if (subscribed && callback) {
+                const matched = this._matchingEvents(subscribed, events);
+                debug('Matching events:', matched);
+                if (matched.length) {
+                  callback(matched);
+                }
               }
+            } catch(err) {
+              debug(`Error handling events ${err.stack}`)
             }
 
             // We want to release lock as early as possible, sometimes Ready status
@@ -215,7 +222,7 @@ class RuntimeApi
               debug('TX Ready.');
               incrementNonce();
               resolve(unsubscribe); //releases lock
-            } else if (status.isBrodcast) {
+            } else if (status.isBroadcast) {
               debug('TX Broadcast.');
               incrementNonce();
               resolve(unsubscribe); //releases lock

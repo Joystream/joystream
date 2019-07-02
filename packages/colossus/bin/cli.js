@@ -277,6 +277,10 @@ async function announce_public_url(api, config) {
     const expiresInBlocks = 600; // ~ 1 hour (6s block interval)
     await api.discovery.setAccountInfo(accountId, keyId, expiresInBlocks);
 
+    debug('publishing complete, scheduling next update')
+
+// >> sometimes after tx is finalized.. we are not reaching here!
+
     // Reannounce before expiery
     reannounce(50 * 60 * 1000); // in 50 minutes
 

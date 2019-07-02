@@ -49,7 +49,7 @@ module.exports = function(config, runtime)
           }
 
         } catch (err) {
-          debug(`Error: ${err}`);
+          debug(`${err}`);
           res.status(400).end()
         }
     }
