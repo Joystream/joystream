@@ -203,12 +203,17 @@ class RuntimeApi
             debug(`TX status: ${status.type}`);
 
             // Whatever events we get, process them if there's someone interested.
-            if (subscribed && callback) {
-              const matched = this._matchingEvents(subscribed, events);
-              debug('Matching events:', matched);
-              if (matched.length) {
-                callback(matched);
+            // It is critical that this event handling doesn't prevent
+            try {
+              if (subscribed && callback) {
+                const matched = this._matchingEvents(subscribed, events);
+                debug('Matching events:', matched);
+                if (matched.length) {
+                  callback(matched);
+                }
               }
+            } catch(err) {
+              debug(`Error handling events ${err.stack}`)
             }
 
             // We want to release lock as early as possible, sometimes Ready status
