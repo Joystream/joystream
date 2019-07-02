@@ -224,6 +224,30 @@ impl CreateThreadFixture {
     }
 }
 
+pub fn create_forum_member() -> OriginType {
+    let member_id = 123;
+    let new_member = registry::Member { id: member_id };
+    registry::TestMembershipRegistryModule::add_member(&new_member);
+    OriginType::Signed(member_id)
+}
+
+pub fn create_category(forum_sudo: OriginType, parent_category_id: Option<CategoryId>) -> CategoryId {
+    let category_id = TestForumModule::next_category_id();
+    CreateCategoryFixture {
+        origin: forum_sudo,
+        parent: parent_category_id,
+        title: good_category_title(),
+        description: good_category_description(),
+        result: Ok(())
+    }
+    .call_and_assert();
+    category_id
+}
+
+pub fn create_root_category(forum_sudo: OriginType) -> CategoryId {
+    create_category(forum_sudo, None)
+}
+
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 
@@ -347,11 +371,10 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::T
         .0
     );
 
-
     t.into()
 }
 
-pub type System = system::Module<Runtime>;
+// pub type System = system::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;
