@@ -222,7 +222,7 @@ class RuntimeApi
               debug('TX Ready.');
               incrementNonce();
               resolve(unsubscribe); //releases lock
-            } else if (status.isBrodcast) {
+            } else if (status.isBroadcast) {
               debug('TX Broadcast.');
               incrementNonce();
               resolve(unsubscribe); //releases lock
