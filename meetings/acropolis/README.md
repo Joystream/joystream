@@ -7,7 +7,6 @@
   - [User Stories Meeting](#user-stories-meeting)
   - [Release Plan Finalization Meeting](#release-plan-finalization-meeting)
   - [Release Plan Milestone Evaluation Meeting](#release-plan-milestone-evaluation-meeting)
-- [Planned meetings](#planned-meetings)
   - [Lessons Learned](#lessons-learned)
 <!-- TOC END -->
 
@@ -467,8 +466,7 @@ Based on the conclusion in :one:, it was decided to delay Storage Tranches for t
 
 **Ended at:** `12:30 GMT+2`
 
-
-# Planned meetings
+---
 
 ## Lessons Learned
 
@@ -503,17 +501,115 @@ Although we ended up releasing almost on time, we were not really ready.
 :four:
 We initially set out to make `issues` in the applicable repos, and add them to the [Release Project](https://github.com/orgs/Joystream/projects/7). In practice, we tracked both [forum](https://github.com/Joystream/joystream/issues/47) and [storage](https://github.com/Joystream/joystream/issues/57) progress with a single issue in this repo. Should we continue this way?
 
+:five:
+1. Migration was an afterthought, we missed part of the state. Must be fully specced, and later finalized when we know more. Release plan template and progress tracking must include it.
+2. Problems discovered that final test missed => we need final test protocol defined well before test, e.g. when scheduled
+3. Reddit forgotten.
+4. Coordination with Web3/Polkadot failed.
+5. Infrastructure rollout of Pioneer and front page must be 100% finished _before_ we make upgrade an announce, there must be no time where page & pioneer are publicly broken or waiting to be upgraded.
+6. Last minute chrome issue was not detected.
+7. We need more time to do full cross platform Quality Assurance on node setup, multiple days perhaps.
+8. We need to schedule enough time after all software is finished for fully writing up all guides.
+
 
 #### Minutes
-**Started at:** `time`
+**Started at:** `11:15 GMT+2`
 **Present:**
-* `person1`
-* `...`
+* `Alex`
+* `Bedeho`
+* `Mokhtar`
+* `Martin`
 
-:one: Item 1.
+:one:  
+1. `Get 75 posts on forum (limits, not Jsg) (ewd)`
+**Results:**
+0.55
+**Comment:**
+Although we only got 7 posts that counts, the forum was shipped successfully. We decided to grade it as two separate results:
+```
+1.0 * 0.5 + 7/75 * 0.5 = 0.55
+```
 
-:two: ....
+2. `Forum (runtime), storage (runtime and P2P) fully specd (n)`
+**Results:**
+0.67
+**Comment:**
+The forum and storage runtime was fully spec'd, whereas the P2P aspect of the storage was considered too incomplete to publish.
+
+3. `Have 4x replication for all 2 tranches on storage node (ewd)`
+**Results:**
+0.5
+**Comment:**
+We achieved more than 4x replication, but tranches had to be abandoned.
+
+4. `95% uptime Storage Providers (ewd)`
+**Results:**
+0.75
+**Comment:**
+We split this up in two parts, where the end user uptime, and provider uptime was weighted at 0.5 each:
+```
+1.0 * 0.5 + 0.5 * 0.5 = 0.75
+```
+
+5. `No PRs merged to master (excluding bugfixes and "pioneer") after "Sub-system Test" (conf)`
+**Results:**
+0.5
+**Comment:**
+The storage node had non-bug fixes (improvements) merged to master after "Full test", whereas the forum side had none.
+
+##### Improve phrasing
+
+In general, we learned that the KRs have to be written and clarified better to reflect the goals for the release. It should be trivial to grade the OKR, while it should also reflect the level of success. This was brought up on later points as well. KR specifici commments below:
+
+1. We need to make it clear whether the goal is shipping a feature or getting interest. In this case, the KR only reflected participation, which was not Alex and Bedehos job. In the future, we must go for one or the other.
+
+2. This KR was clear and unambiguous.
+
+3. This KR was clear and unambiguous.
+
+4. The "tool" was delayed, and not properly followed up. As a consequence, it was hard to actually grade it. Like for `1.`, it must be clear what we are actually tracking.
+
+5. We realized we need more time between testing and release. See items :three: and :four:.
+
+Finally, we discussed some general thoughts on how to organize OKRs. This was a recurring in the meeting, and we learned that we need to reconsider our approach to writing and tracking them for releases.
+
+:two:  
+Runtime was "easier" to spec, whereas high level p2p is much harder to formalize.
+Conclusion was to accept that specs need to be high level at this stage in development.
+
+:three:  
+Without addressing each point in this item specifically, we agreed that:
+- Need more time between `Sub-system test` and actual release.
+- Checklist (for launches)
+- Checklist (for testing)
+- More milestones (so we can follow the release plan deliverables)
+
+:four:
+Everyone agreed to continue "large" issues, covering all aspects of each goal.
+If possible, we should try to combine KRs with these largeer issues in a way where we can grade and track based on checkmarks filled either directly or with weighting.
+
+:five:
+1. Put more though and planning in to migration.
+2. See item :three: (more extensive unit tests)
+3. Wrongish (posted on r/dot and r/joystream, but no follow up).
+4. See planning of releases in general.
+5. Again, somewhat poor planning due to time-constraints. Should prepare a deployment plan for updates in `Pioneer`. Potentially have `Pioneer` (and other apps) check the runtime version before serving the user, or make a simpler way of deploying where the user get a notification that an upgrade is happening.
+6. See `5.`
+7. Not really an issue.
+8. See various points on needing more time before release.
 
 **Other topics raised:**
 
-**Ended at:** `time`
+- We need more eyes on each repo.
+
+This leads to problems close to releases, when there is no one that can review properly. In particular for the storage node, where we had to rely on testing, not actually reviewing the codebase.
+
+- Size of PRs.
+
+Smaller, contained and more frequent PRs, when possible.
+
+- Forum, unlike storage, had better follow-up and timeline more in line with the milestones.
+
+However, there should have been better unit test coverage, and explanations of what the test did/should do. In the future, we should add empty tests as "todo" in the code.
+
+**Ended at:** `12:35GMT+2`
