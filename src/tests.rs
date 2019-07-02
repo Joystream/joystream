@@ -486,9 +486,40 @@ fn moderate_thread_rationale_too_long() {
     });
 }
 
-// TODO test post moderation rationale: too short
 
-// TODO test post moderation rationale: too long
+#[test]
+fn moderate_post_rationale_too_short() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+    let min_len = config.post_moderation_rationale_constraint.min as usize;
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
+        let bad_rationale = generate_text(min_len - 1);
+
+        assert_eq!(
+            moderate_post(origin, post_id, bad_rationale),
+            Err(ERROR_POST_MODERATION_RATIONALE_TOO_SHORT)
+        );
+    });
+}
+
+#[test]
+fn moderate_post_rationale_too_long() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+    let max_len = config.post_moderation_rationale_constraint.max() as usize;
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
+        let bad_rationale = generate_text(max_len + 1);
+
+        assert_eq!(
+            moderate_post(origin, post_id, bad_rationale),
+            Err(ERROR_POST_MODERATION_RATIONALE_TOO_LONG)
+        );
+    });
+}
 
 // TODO test thread already moderated
 

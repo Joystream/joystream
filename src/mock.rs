@@ -150,6 +150,10 @@ pub fn good_thread_text() -> Vec<u8> {
     b"The first post in this thread".to_vec()
 }
 
+pub fn good_post_text() -> Vec<u8> {
+    b"A response in the thread".to_vec()
+}
+
 /*
  * These test fixtures can be heavily refactored to avoid repotition, needs macros, and event
  * assertions are also missing.
@@ -286,9 +290,29 @@ pub fn create_root_category_and_thread(forum_sudo: OriginType) -> (OriginType, C
     (member_origin, category_id, thread_id)
 }
 
+pub fn create_root_category_and_thread_and_post(forum_sudo: OriginType) -> (OriginType, CategoryId, ThreadId, PostId) {
+    let (member_origin, category_id, thread_id) = create_root_category_and_thread(forum_sudo);
+    let post_id = TestForumModule::next_post_id();
+    
+    CreatePostFixture {
+        origin: member_origin.clone(),
+        thread_id: thread_id.clone(),
+        text: good_post_text(),
+        result: Ok(())
+    }.call_and_assert();
+
+    (member_origin, category_id, thread_id, post_id)
+}
+
 pub fn moderate_thread(forum_sudo: OriginType, thread_id: ThreadId, rationale: Vec<u8>) -> dispatch::Result {
     TestForumModule::moderate_thread(
         mock_origin(forum_sudo), thread_id, rationale
+    )
+}
+
+pub fn moderate_post(forum_sudo: OriginType, post_id: PostId, rationale: Vec<u8>) -> dispatch::Result {
+    TestForumModule::moderate_post(
+        mock_origin(forum_sudo), post_id, rationale
     )
 }
 
