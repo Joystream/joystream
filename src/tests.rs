@@ -5,7 +5,7 @@ use super::*;
 use crate::mock::*;
 
 use runtime_io::with_externalities;
-use srml_support::{assert_ok};
+use srml_support::{assert_ok, assert_err};
 
 
 /*
@@ -72,7 +72,6 @@ fn set_forum_sudo_update() {
  *
  * create_category_bad_origin
  * create_category_forum_sudo_not_set
- * create_category_origin_not_forum_sudo
  */
 
 #[test]
@@ -275,29 +274,6 @@ fn update_category_undelete_and_unarchive() {
  */
 
 #[test]
-fn create_thread_not_forum_member() {
-    let config = default_genesis_config();
-
-    with_externalities(&mut build_test_externalities(config), || {
-
-        let new_member = registry::Member {
-            id : 113
-        };
-
-        // User not there
-        assert!(registry::TestMembershipRegistryModule::get_member(&new_member.id).is_none());
-
-        // Add new member
-        registry::TestMembershipRegistryModule::add_member(&new_member);
-
-        // Make sure its now there
-        assert!(registry::TestMembershipRegistryModule::get_member(&new_member.id).is_some());
-
-        // TODO finish test...
-    });
-}
-
-#[test]
 fn create_thread_successfully() {
     let config = default_genesis_config();
     let origin = OriginType::Signed(config.forum_sudo);
@@ -432,6 +408,9 @@ fn create_post_text_too_long() {
     });
 }
 
+// Test moderation:
+// -----------------------------------------------------------------------------
+
 #[test]
 fn moderate_thread_successfully() {
     let config = default_genesis_config();
@@ -554,6 +533,9 @@ fn cannot_moderate_already_moderated_post() {
     });
 }
 
+// Not a forum sudo:
+// -----------------------------------------------------------------------------
+
 #[test]
 fn not_forum_sudo_cannot_create_root_category() {
     let config = default_genesis_config();
@@ -636,13 +618,61 @@ fn not_forum_sudo_cannot_moderate_post() {
     });
 }
 
-// TODO test: not member cannot create a thread
+// Not a member:
+// -----------------------------------------------------------------------------
 
-// TODO test: not member cannot create a post
+#[test]
+fn not_member_cannot_create_thread() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
 
-// TODO test: not member cannot edit a post
+    with_externalities(&mut build_test_externalities(config), || {
+        CreateThreadFixture {
+            origin: NOT_MEMBER_ORIGIN,
+            category_id: create_root_category(origin),
+            title: good_thread_title(),
+            text: good_thread_text(),
+            result: Err(ERROR_NOT_FORUM_USER)
+        }.call_and_assert();
+    });
+}
 
-// ------------------------------------------------
+#[test]
+fn not_member_cannot_create_post() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, thread_id) = create_root_category_and_thread(origin);
+        CreatePostFixture {
+            origin: NOT_MEMBER_ORIGIN,
+            thread_id,
+            text: good_post_text(),
+            result: Err(ERROR_NOT_FORUM_USER)
+        }.call_and_assert();
+    });
+}
+
+#[test]
+fn not_member_cannot_edit_post() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin);
+        assert_err!(
+            TestForumModule::edit_post_text(
+                mock_origin(NOT_MEMBER_ORIGIN),
+                post_id,
+                b"Updated text of the post".to_vec()
+            ),
+            ERROR_NOT_FORUM_USER
+        );
+    });
+}
+
+// Invalid id passed:
+// -----------------------------------------------------------------------------
 
 // TODO test: invalid category id when creating thread
 
@@ -652,7 +682,8 @@ fn not_forum_sudo_cannot_moderate_post() {
 
 // TODO test: invalid post id when moderating post
 
-// ------------------------------------------------
+// Successfull extrinsics
+// -----------------------------------------------------------------------------
 
 // TODO test: edit a post successfully
 

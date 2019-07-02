@@ -45,21 +45,9 @@ pub mod registry {
     }
 
     impl<T: Trait> Module<T> {
-
-        pub fn get_member(account_id: &T::AccountId) -> Option<Member<T::AccountId>> { 
-            
-            if <ForumUserById<T>>::exists(account_id) {
-                Some(<ForumUserById<T>>::get(account_id))
-            } else {
-                None
-            }
-
-        }
-
         pub fn add_member(member: & Member<T::AccountId>) {
             <ForumUserById<T>>::insert(member.id.clone(), member.clone());
         }
-
     }
 
     impl<T: Trait> ForumUserRegistry<T::AccountId> for Module<T> {
@@ -124,7 +112,7 @@ pub enum OriginType {
     Root
 }
 
-fn mock_origin(origin: OriginType) -> mock::Origin {
+pub fn mock_origin(origin: OriginType) -> mock::Origin {
     match origin {
         OriginType::Signed(account_id) => Origin::signed(account_id),
         //OriginType::Inherent => Origin::inherent,
@@ -134,7 +122,7 @@ fn mock_origin(origin: OriginType) -> mock::Origin {
 
 pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(111);
 
-// pub const NOT_MEMBER_ORIGIN: OriginType = OriginType::Signed(222);
+pub const NOT_MEMBER_ORIGIN: OriginType = OriginType::Signed(222);
 
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
