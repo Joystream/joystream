@@ -286,6 +286,12 @@ pub fn create_root_category_and_thread(forum_sudo: OriginType) -> (OriginType, C
     (member_origin, category_id, thread_id)
 }
 
+pub fn moderate_thread(forum_sudo: OriginType, thread_id: ThreadId, rationale: Vec<u8>) -> dispatch::Result {
+    TestForumModule::moderate_thread(
+        mock_origin(forum_sudo), thread_id, rationale
+    )
+}
+
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 

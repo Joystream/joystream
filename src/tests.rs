@@ -452,6 +452,48 @@ fn create_post_text_too_long() {
     });
 }
 
-// TODO test moderation rationale: too short
+#[test]
+fn moderate_thread_rationale_too_short() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+    let min_len = config.thread_moderation_rationale_constraint.min as usize;
 
-// TODO test moderation rationale: too long
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
+        let bad_rationale = generate_text(min_len - 1);
+
+        assert_eq!(
+            moderate_thread(origin, thread_id, bad_rationale),
+            Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT)
+        );
+    });
+}
+
+#[test]
+fn moderate_thread_rationale_too_long() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+    let max_len = config.thread_moderation_rationale_constraint.max() as usize;
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
+        let bad_rationale = generate_text(max_len + 1);
+
+        assert_eq!(
+            moderate_thread(origin, thread_id, bad_rationale),
+            Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG)
+        );
+    });
+}
+
+// TODO test post moderation rationale: too short
+
+// TODO test post moderation rationale: too long
+
+// TODO test thread already moderated
+
+// TODO test post already moderated
+
+// TODO test invalid category when creating thread
+
+// TODO test invalid thread when creating post
