@@ -110,6 +110,7 @@ This is the set of key repos that
 | [whitepaper](https://github.com/Joystream/whitepaper)                                     | The Joystream whitepaper.                             | @bedeho         |
 | [communications](https://github.com/Joystream/communications)                             | The Joystream communications workspace and archive.   | @bwhm           |
 | [helpdesk](https://github.com/Joystream/helpdesk)                             | Information and guides for users and contributors    | @bwhm           |
+| [bounties](https://github.com/Joystream/bounties)                             | Bounties and testnet payout overview    | @bwhm           |
 
 <br />
 <img src="img/testnet-releases.svg" id="testnet-releases"/>
