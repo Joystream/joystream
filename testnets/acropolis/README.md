@@ -17,13 +17,14 @@
 - [Specification](#specification)
 - [GitHub Projects](#github-projects)
 - [OKR results](#okr-results)
+  - [Objective: `Launch Acropolis Network`](#objective-launch-acropolis-network)
 - [Release Plan](#release-plan)
   - [Name](#name)
   - [Manager](#manager)
   - [Release Date](#release-date)
   - [OKRs](#okrs)
 - [Release OKRs](#release-okrs)
-    - [Objective: `Launch Acropolis Network`](#objective-launch-acropolis-network)
+    - [Objective: `Launch Acropolis Network`](#objective-launch-acropolis-network-1)
   - [Constraints](#constraints)
   - [Risks](#risks)
   - [Deployment](#deployment)
@@ -70,11 +71,13 @@ Due to changing circumstances, a meeting [Evaluating the feasibility](../meeting
 
 #### Actual dates:
 
-- `Spec Release` is not yet completed.
+- `Spec Release` was partially completed on the 22.06.19 [link](https://github.com/Joystream/joystream/tree/master/testnets/acropolis/specification).
 - `Sub-system Test` performed on or before 17.06.19.
 - `Final Test` successfully completed on the 20.06.19
+- `Runtime Proposal` made on the 22.06.19 [link](https://testnet-rpc.joystream.org/acropolis/pioneer/#/proposals/2)
+- `Release` the network successfully upgraded on the 24.06.19
 
-A summery of the tests for `forum` and `storage` can be read [here](https://github.com/Joystream/joystream/issues/47) and [here](https://github.com/Joystream/joystream/issues/57).
+A summary of the tests for `forum` and `storage` can be read [here](https://github.com/Joystream/joystream/issues/47) and [here](https://github.com/Joystream/joystream/issues/57).
 
 
 # Past Release Meetings
@@ -99,7 +102,27 @@ The current set of relevant GitHub projects are
 
 # OKR results
 
-NA.
+## Objective: `Launch Acropolis Network`
+- **Active from:** 09.05.19
+- **KR Measurement Deadline**: 7-9 days after Acropolis launch (first weekday)
+- **Key Results**:
+##### 1. `Get 75 posts on forum (limits, not Jsg) (ewd)`
+##### 2. `Forum (runtime), storage (runtime and P2P) fully specd (n)`
+##### 3. `Have 4x replication for all 2 tranches on storage node (ewd)`
+##### 4. `95% uptime Storage Providers (ewd)`
+##### 5. `No PRs merged to master (excluding bugfixes and "pioneer") after "Sub-system Test" (conf)`
+
+<br />
+
+- **Final Score**
+
+| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |  Total  |
+|:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:-------:|
+| 03.07.19 | 0.55  | 0.67  |  0.5  |  0.75 | 0.5   |**0.594**|
+
+<br />
+
+Full details of tracking of results can be found in the [archive](../okrs/OKR-archive/acropolis).
 
 # Release Plan
 
