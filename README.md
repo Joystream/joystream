@@ -106,7 +106,7 @@ This is the set of key repos that
 | [substrate-runtime-joystream](https://github.com/Joystream/substrate-runtime-joystream)   | The Joystream substrate runtime.                      | @mnaamani       |
 | [substrate-node-joystream](https://github.com/Joystream/substrate-node-joystream)         | The Joystream substrate node.                         | @mnaamani       |
 | [apps](https://github.com/Joystream/apps)                                                 | The Pioneer application.                              | @siman          |
-| [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)             | The storage node application.                         | @jfinkhaeuser   |
+| [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)             | The storage node application.                         | @mnaamani   |
 | [whitepaper](https://github.com/Joystream/whitepaper)                                     | The Joystream whitepaper.                             | @bedeho         |
 | [communications](https://github.com/Joystream/communications)                             | The Joystream communications workspace and archive.   | @bwhm           |
 | [helpdesk](https://github.com/Joystream/helpdesk)                             | Information and guides for users and contributors    | @bwhm           |
@@ -133,7 +133,7 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 
 | Network         | Started           | Ended         | Release Plan    |
 | -------------   | -------------     | -----         | -----           |
-| Acropolis       | 24.04.19          |   -           |       [Plan](/testnets/acropolis/README.md)        |
+| Athens          | 17.04.19          |   24.06.19    | [Link](/testnets/athens/README.md)        |
 | Sparta          | 28.02.19          |   29.03.19    |       NA        |
 | Mesopotamia     | 21.12.18          |   28.02.19    |       NA        |
 
