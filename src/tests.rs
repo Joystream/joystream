@@ -453,6 +453,35 @@ fn create_post_text_too_long() {
 }
 
 #[test]
+fn moderate_thread_successfully() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
+        assert_eq!(moderate_thread(origin, thread_id, good_rationale()), Ok(()));
+    });
+}
+
+#[test]
+fn cannot_moderate_already_moderated_thread() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
+        assert_eq!(
+            moderate_thread(origin.clone(), thread_id.clone(), good_rationale()),
+            Ok(())
+        );
+        assert_eq!(
+            moderate_thread(origin, thread_id, good_rationale()),
+            Err(ERROR_THREAD_ALREADY_MODERATED)
+        );
+    });
+}
+
+#[test]
 fn moderate_thread_rationale_too_short() {
     let config = default_genesis_config();
     let origin = OriginType::Signed(config.forum_sudo);
@@ -461,7 +490,6 @@ fn moderate_thread_rationale_too_short() {
     with_externalities(&mut build_test_externalities(config), || {
         let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
         let bad_rationale = generate_text(min_len - 1);
-
         assert_eq!(
             moderate_thread(origin, thread_id, bad_rationale),
             Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT)
@@ -478,7 +506,6 @@ fn moderate_thread_rationale_too_long() {
     with_externalities(&mut build_test_externalities(config), || {
         let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
         let bad_rationale = generate_text(max_len + 1);
-
         assert_eq!(
             moderate_thread(origin, thread_id, bad_rationale),
             Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG)
@@ -486,6 +513,16 @@ fn moderate_thread_rationale_too_long() {
     });
 }
 
+#[test]
+fn moderate_post_successfully() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
+        assert_eq!(moderate_post(origin, post_id, good_rationale()), Ok(()));
+    });
+}
 
 #[test]
 fn moderate_post_rationale_too_short() {
@@ -496,7 +533,6 @@ fn moderate_post_rationale_too_short() {
     with_externalities(&mut build_test_externalities(config), || {
         let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
         let bad_rationale = generate_text(min_len - 1);
-
         assert_eq!(
             moderate_post(origin, post_id, bad_rationale),
             Err(ERROR_POST_MODERATION_RATIONALE_TOO_SHORT)
@@ -513,7 +549,6 @@ fn moderate_post_rationale_too_long() {
     with_externalities(&mut build_test_externalities(config), || {
         let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
         let bad_rationale = generate_text(max_len + 1);
-
         assert_eq!(
             moderate_post(origin, post_id, bad_rationale),
             Err(ERROR_POST_MODERATION_RATIONALE_TOO_LONG)
@@ -521,9 +556,23 @@ fn moderate_post_rationale_too_long() {
     });
 }
 
-// TODO test thread already moderated
+#[test]
+fn cannot_moderate_already_moderated_post() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
 
-// TODO test post already moderated
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
+        assert_eq!(
+            moderate_post(origin.clone(), post_id.clone(), good_rationale()),
+            Ok(())
+        );
+        assert_eq!(
+            moderate_post(origin, post_id, good_rationale()),
+            Err(ERROR_POST_MODERATED)
+        );
+    });
+}
 
 // TODO test invalid category when creating thread
 

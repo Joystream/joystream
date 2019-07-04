@@ -154,6 +154,10 @@ pub fn good_post_text() -> Vec<u8> {
     b"A response in the thread".to_vec()
 }
 
+pub fn good_rationale() -> Vec<u8> {
+    b"This post violates our community rules".to_vec()
+}
+
 /*
  * These test fixtures can be heavily refactored to avoid repotition, needs macros, and event
  * assertions are also missing.
@@ -356,12 +360,12 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         },
 
         thread_moderation_rationale_constraint: InputValidationLengthConstraint{
-            min: 100,
+            min: 10,
             max_min_diff: 2000
         },
 
         post_moderation_rationale_constraint: InputValidationLengthConstraint{
-            min: 100,
+            min: 10,
             max_min_diff: 2000
         }
 
