@@ -124,6 +124,12 @@ pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(111);
 
 pub const NOT_MEMBER_ORIGIN: OriginType = OriginType::Signed(222);
 
+pub const INVLAID_CATEGORY_ID: CategoryId = 333;
+
+pub const INVLAID_THREAD_ID: ThreadId = 444;
+
+pub const INVLAID_POST_ID: ThreadId = 555;
+
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
 }
@@ -260,6 +266,25 @@ pub fn assert_create_category(forum_sudo: OriginType, parent_category_id: Option
         parent: parent_category_id,
         title: good_category_title(),
         description: good_category_description(),
+        result: expected_result
+    }.call_and_assert();
+}
+
+pub fn assert_create_thread(forum_sudo: OriginType, category_id: CategoryId, expected_result: dispatch::Result) {
+    CreateThreadFixture {
+        origin: forum_sudo,
+        category_id,
+        title: good_thread_title(),
+        text: good_thread_text(),
+        result: expected_result
+    }.call_and_assert();
+}
+
+pub fn assert_create_post(forum_sudo: OriginType, thread_id: ThreadId, expected_result: dispatch::Result) {
+    CreatePostFixture {
+        origin: forum_sudo,
+        thread_id,
+        text: good_thread_text(),
         result: expected_result
     }.call_and_assert();
 }
