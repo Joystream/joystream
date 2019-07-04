@@ -911,6 +911,9 @@ decl_module! {
             // Check that account is forum member
             Self::ensure_is_forum_member(&who)?;
 
+            // Validate post text
+            Self::ensure_post_text_is_valid(&text)?;
+
             // Make sure thread exists and is mutable
             let thread = Self::ensure_thread_is_mutable(&thread_id)?;
 
@@ -945,6 +948,9 @@ decl_module! {
 
             // Check that account is forum member
             Self::ensure_is_forum_member(&who)?;
+
+            // Validate post text
+            Self::ensure_post_text_is_valid(&new_text)?;
 
             // Make sure there exists a mutable post with post id `post_id`
             let post = Self::ensure_post_is_mutable(&post_id)?;

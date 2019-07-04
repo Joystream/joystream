@@ -150,6 +150,10 @@ pub fn good_thread_text() -> Vec<u8> {
     b"The first post in this thread".to_vec()
 }
 
+pub fn good_post_text() -> Vec<u8> {
+    b"A response in the thread".to_vec()
+}
+
 /*
  * These test fixtures can be heavily refactored to avoid repotition, needs macros, and event
  * assertions are also missing.
@@ -222,6 +226,94 @@ impl CreateThreadFixture {
             self.result
         )
     }
+}
+
+pub struct CreatePostFixture {
+    pub origin: OriginType,
+    pub thread_id: ThreadId,
+    pub text: Vec<u8>,
+    pub result: dispatch::Result
+}
+
+impl CreatePostFixture {
+
+    pub fn call_and_assert(&self) {
+        assert_eq!(
+            TestForumModule::add_post(
+                mock_origin(self.origin.clone()),
+                self.thread_id,
+                self.text.clone()
+            ),
+            self.result
+        )
+    }
+}
+
+pub fn create_forum_member() -> OriginType {
+    let member_id = 123;
+    let new_member = registry::Member { id: member_id };
+    registry::TestMembershipRegistryModule::add_member(&new_member);
+    OriginType::Signed(member_id)
+}
+
+pub fn create_category(forum_sudo: OriginType, parent_category_id: Option<CategoryId>) -> CategoryId {
+    let category_id = TestForumModule::next_category_id();
+    CreateCategoryFixture {
+        origin: forum_sudo,
+        parent: parent_category_id,
+        title: good_category_title(),
+        description: good_category_description(),
+        result: Ok(())
+    }
+    .call_and_assert();
+    category_id
+}
+
+pub fn create_root_category(forum_sudo: OriginType) -> CategoryId {
+    create_category(forum_sudo, None)
+}
+
+pub fn create_root_category_and_thread(forum_sudo: OriginType) -> (OriginType, CategoryId, ThreadId) {
+    let member_origin = create_forum_member();
+    let category_id = create_root_category(forum_sudo);
+    let thread_id = TestForumModule::next_thread_id();
+
+    CreateThreadFixture {
+        origin: member_origin.clone(),
+        category_id,
+        title: good_thread_title(),
+        text: good_thread_text(),
+        result: Ok(())
+    }
+    .call_and_assert();
+
+    (member_origin, category_id, thread_id)
+}
+
+pub fn create_root_category_and_thread_and_post(forum_sudo: OriginType) -> (OriginType, CategoryId, ThreadId, PostId) {
+    let (member_origin, category_id, thread_id) = create_root_category_and_thread(forum_sudo);
+    let post_id = TestForumModule::next_post_id();
+    
+    CreatePostFixture {
+        origin: member_origin.clone(),
+        thread_id: thread_id.clone(),
+        text: good_post_text(),
+        result: Ok(())
+    }.call_and_assert();
+
+    (member_origin, category_id, thread_id, post_id)
+}
+
+pub fn moderate_thread(forum_sudo: OriginType, thread_id: ThreadId, rationale: Vec<u8>) -> dispatch::Result {
+    TestForumModule::moderate_thread(
+        mock_origin(forum_sudo), thread_id, rationale
+    )
+}
+
+pub fn moderate_post(forum_sudo: OriginType, post_id: PostId, rationale: Vec<u8>) -> dispatch::Result {
+    TestForumModule::moderate_post(
+        mock_origin(forum_sudo), post_id, rationale
+    )
 }
 
 // This function basically just builds a genesis storage key/value store according to
@@ -347,11 +439,10 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::T
         .0
     );
 
-
     t.into()
 }
 
-pub type System = system::Module<Runtime>;
+// pub type System = system::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;

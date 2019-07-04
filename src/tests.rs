@@ -316,23 +316,12 @@ fn create_thread_successfully() {
     let origin = OriginType::Signed(config.forum_sudo);
 
     with_externalities(&mut build_test_externalities(config), || {
-        CreateCategoryFixture {
-            origin,
-            parent: None,
-            title: good_category_title(),
-            description: good_category_description(),
-            result: Ok(())
-        }
-        .call_and_assert();
-
-        let member_id = 123;
-        let new_member = registry::Member { id: member_id };
-        registry::TestMembershipRegistryModule::add_member(&new_member);
-        let origin_member = OriginType::Signed(member_id);
+        let category_id = create_root_category(origin);
+        let member_origin = create_forum_member();
 
         CreateThreadFixture {
-            origin: origin_member,
-            category_id: 1,
+            origin: member_origin,
+            category_id,
             title: good_thread_title(),
             text: good_thread_text(),
             result: Ok(())
@@ -348,23 +337,12 @@ fn create_thread_title_too_short() {
     let min_len = config.thread_title_constraint.min as usize;
 
     with_externalities(&mut build_test_externalities(config), || {
-        CreateCategoryFixture {
-            origin,
-            parent: None,
-            title: good_category_title(),
-            description: good_category_description(),
-            result: Ok(())
-        }
-        .call_and_assert();
-
-        let member_id = 123;
-        let new_member = registry::Member { id: member_id };
-        registry::TestMembershipRegistryModule::add_member(&new_member);
-        let origin_member = OriginType::Signed(member_id);
+        let category_id = create_root_category(origin);
+        let member_origin = create_forum_member();
 
         CreateThreadFixture {
-            origin: origin_member,
-            category_id: 1,
+            origin: member_origin,
+            category_id,
             title: generate_text(min_len - 1),
             text: good_thread_text(),
             result: Err(ERROR_THREAD_TITLE_TOO_SHORT)
@@ -380,23 +358,12 @@ fn create_thread_title_too_long() {
     let max_len = config.thread_title_constraint.max() as usize;
 
     with_externalities(&mut build_test_externalities(config), || {
-        CreateCategoryFixture {
-            origin,
-            parent: None,
-            title: good_category_title(),
-            description: good_category_description(),
-            result: Ok(())
-        }
-        .call_and_assert();
-
-        let member_id = 123;
-        let new_member = registry::Member { id: member_id };
-        registry::TestMembershipRegistryModule::add_member(&new_member);
-        let origin_member = OriginType::Signed(member_id);
+        let category_id = create_root_category(origin);
+        let member_origin = create_forum_member();
 
         CreateThreadFixture {
-            origin: origin_member,
-            category_id: 1,
+            origin: member_origin,
+            category_id,
             title: generate_text(max_len + 1),
             text: good_thread_text(),
             result: Err(ERROR_THREAD_TITLE_TOO_LONG)
@@ -412,23 +379,12 @@ fn create_thread_text_too_short() {
     let min_len = config.post_text_constraint.min as usize;
 
     with_externalities(&mut build_test_externalities(config), || {
-        CreateCategoryFixture {
-            origin,
-            parent: None,
-            title: good_category_title(),
-            description: good_category_description(),
-            result: Ok(())
-        }
-        .call_and_assert();
-
-        let member_id = 123;
-        let new_member = registry::Member { id: member_id };
-        registry::TestMembershipRegistryModule::add_member(&new_member);
-        let origin_member = OriginType::Signed(member_id);
+        let category_id = create_root_category(origin);
+        let member_origin = create_forum_member();
 
         CreateThreadFixture {
-            origin: origin_member,
-            category_id: 1,
+            origin: member_origin,
+            category_id,
             title: good_thread_title(),
             text: generate_text(min_len - 1),
             result: Err(ERROR_POST_TEXT_TOO_SHORT)
@@ -444,23 +400,12 @@ fn create_thread_text_too_long() {
     let max_len = config.post_text_constraint.max() as usize;
 
     with_externalities(&mut build_test_externalities(config), || {
-        CreateCategoryFixture {
-            origin,
-            parent: None,
-            title: good_category_title(),
-            description: good_category_description(),
-            result: Ok(())
-        }
-        .call_and_assert();
-
-        let member_id = 123;
-        let new_member = registry::Member { id: member_id };
-        registry::TestMembershipRegistryModule::add_member(&new_member);
-        let origin_member = OriginType::Signed(member_id);
+        let category_id = create_root_category(origin);
+        let member_origin = create_forum_member();
 
         CreateThreadFixture {
-            origin: origin_member,
-            category_id: 1,
+            origin: member_origin,
+            category_id,
             title: good_thread_title(),
             text: generate_text(max_len + 1),
             result: Err(ERROR_POST_TEXT_TOO_LONG)
@@ -468,3 +413,118 @@ fn create_thread_text_too_long() {
         .call_and_assert();
     });
 }
+
+#[test]
+fn create_post_text_too_short() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+    let min_len = config.post_text_constraint.min as usize;
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (member_origin, _, thread_id) = create_root_category_and_thread(origin);
+
+        CreatePostFixture {
+            origin: member_origin,
+            thread_id,
+            text: generate_text(min_len - 1),
+            result: Err(ERROR_POST_TEXT_TOO_SHORT)
+        }
+        .call_and_assert();
+    });
+}
+
+#[test]
+fn create_post_text_too_long() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+    let max_len = config.post_text_constraint.max() as usize;
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (member_origin, _, thread_id) = create_root_category_and_thread(origin);
+
+        CreatePostFixture {
+            origin: member_origin,
+            thread_id,
+            text: generate_text(max_len + 1),
+            result: Err(ERROR_POST_TEXT_TOO_LONG)
+        }
+        .call_and_assert();
+    });
+}
+
+#[test]
+fn moderate_thread_rationale_too_short() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+    let min_len = config.thread_moderation_rationale_constraint.min as usize;
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
+        let bad_rationale = generate_text(min_len - 1);
+
+        assert_eq!(
+            moderate_thread(origin, thread_id, bad_rationale),
+            Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT)
+        );
+    });
+}
+
+#[test]
+fn moderate_thread_rationale_too_long() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+    let max_len = config.thread_moderation_rationale_constraint.max() as usize;
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
+        let bad_rationale = generate_text(max_len + 1);
+
+        assert_eq!(
+            moderate_thread(origin, thread_id, bad_rationale),
+            Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG)
+        );
+    });
+}
+
+
+#[test]
+fn moderate_post_rationale_too_short() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+    let min_len = config.post_moderation_rationale_constraint.min as usize;
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
+        let bad_rationale = generate_text(min_len - 1);
+
+        assert_eq!(
+            moderate_post(origin, post_id, bad_rationale),
+            Err(ERROR_POST_MODERATION_RATIONALE_TOO_SHORT)
+        );
+    });
+}
+
+#[test]
+fn moderate_post_rationale_too_long() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+    let max_len = config.post_moderation_rationale_constraint.max() as usize;
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
+        let bad_rationale = generate_text(max_len + 1);
+
+        assert_eq!(
+            moderate_post(origin, post_id, bad_rationale),
+            Err(ERROR_POST_MODERATION_RATIONALE_TOO_LONG)
+        );
+    });
+}
+
+// TODO test thread already moderated
+
+// TODO test post already moderated
+
+// TODO test invalid category when creating thread
+
+// TODO test invalid thread when creating post
