@@ -373,6 +373,16 @@ fn create_thread_text_too_long() {
 }
 
 #[test]
+fn create_post_successfully() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, _, _) = create_root_category_and_thread_and_post(origin);
+    });
+}
+
+#[test]
 fn create_post_text_too_short() {
     let config = default_genesis_config();
     let origin = OriginType::Signed(config.forum_sudo);
@@ -664,7 +674,7 @@ fn not_member_cannot_edit_post() {
             TestForumModule::edit_post_text(
                 mock_origin(NOT_MEMBER_ORIGIN),
                 post_id,
-                b"Updated text of the post".to_vec()
+                good_rationale()
             ),
             ERROR_NOT_FORUM_USER
         );
@@ -674,23 +684,337 @@ fn not_member_cannot_edit_post() {
 // Invalid id passed:
 // -----------------------------------------------------------------------------
 
-// TODO test: invalid category id when creating thread
+#[test]
+fn cannot_create_subcategory_with_invalid_parent_category_id() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
 
-// TODO test: invalid thread id when creating post
+    with_externalities(&mut build_test_externalities(config), || {
+        assert_create_category(
+            origin, Some(INVLAID_CATEGORY_ID),
+            Err(ERROR_CATEGORY_DOES_NOT_EXIST)
+        );
+    });
+}
 
-// TODO test: invalid thread id when moderating thread
+#[test]
+fn cannot_create_thread_with_invalid_category_id() {
+    let config = default_genesis_config();
 
-// TODO test: invalid post id when moderating post
+    with_externalities(&mut build_test_externalities(config), || {
+        CreateThreadFixture {
+            origin: create_forum_member(),
+            category_id: INVLAID_CATEGORY_ID,
+            title: good_thread_title(),
+            text: good_thread_text(),
+            result: Err(ERROR_CATEGORY_DOES_NOT_EXIST)
+        }.call_and_assert();
+    });
+}
+
+#[test]
+fn cannot_create_post_with_invalid_thread_id() {
+    let config = default_genesis_config();
+
+    with_externalities(&mut build_test_externalities(config), || {
+        CreatePostFixture {
+            origin: create_forum_member(),
+            thread_id: INVLAID_THREAD_ID,
+            text: good_post_text(),
+            result: Err(ERROR_THREAD_DOES_NOT_EXIST)
+        }.call_and_assert();
+    });
+}
+
+#[test]
+fn cannot_moderate_thread_with_invalid_id() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        assert_err!(
+            moderate_thread(origin, INVLAID_THREAD_ID, good_rationale()),
+            ERROR_THREAD_DOES_NOT_EXIST
+        );
+    });
+}
+
+#[test]
+fn cannot_moderate_post_with_invalid_id() {
+    let config = default_genesis_config();
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        assert_err!(
+            moderate_post(origin, INVLAID_POST_ID, good_rationale()),
+            ERROR_POST_DOES_NOT_EXIST
+        );
+    });
+}
 
 // Successfull extrinsics
 // -----------------------------------------------------------------------------
 
-// TODO test: edit a post successfully
+#[test]
+fn archive_then_unarchive_category_successfully() {
+    let config = default_genesis_config();
+    let forum_sudo = OriginType::Signed(config.forum_sudo);
 
-// TODO test: archive a category successfully
+    with_externalities(&mut build_test_externalities(config), || {
+        let category_id = create_root_category(forum_sudo.clone());
+        assert_ok!(
+            archive_category(
+                forum_sudo.clone(),
+                category_id.clone(),
+            )
+        );
+        // TODO get category by id and assert archived == true.
 
-// TODO test: unarchive an archived category successfully
+        assert_ok!(
+            unarchive_category(
+                forum_sudo,
+                category_id,
+            )
+        );
+        // TODO get category by id and assert archived == false.
+    });
+}
 
-// TODO test: delete a category successfully
+#[test]
+fn delete_then_undelete_category_successfully() {
+    let config = default_genesis_config();
+    let forum_sudo = OriginType::Signed(config.forum_sudo);
 
-// TODO test: undelete a deleted category successfully
+    with_externalities(&mut build_test_externalities(config), || {
+        let category_id = create_root_category(forum_sudo.clone());
+        assert_ok!(
+            delete_category(
+                forum_sudo.clone(),
+                category_id.clone(),
+            )
+        );
+        // TODO get category by id and assert deleted == true.
+
+        assert_ok!(
+            undelete_category(
+                forum_sudo.clone(),
+                category_id.clone(),
+            )
+        );
+        // TODO get category by id and assert deleted == false.
+    });
+}
+
+// TODO Consider to fix the logic of the forum module
+// #[test]
+// fn cannot_unarchive_not_archived_category() {
+//     let config = default_genesis_config();
+//     let forum_sudo = OriginType::Signed(config.forum_sudo);
+
+//     with_externalities(&mut build_test_externalities(config), || {
+//         let category_id = create_root_category(forum_sudo.clone());
+
+//         // TODO bug in a logic! it should not be possible. !!!
+
+//         assert_err!(
+//             archive_category(
+//                 forum_sudo.clone(),
+//                 category_id.clone(),
+//             ),
+//             "... TODO expect error ..."
+//         );
+//     });
+// }
+
+// TODO Consider to fix the logic of the forum module
+// #[test]
+// fn cannot_undelete_not_deleted_category() {
+//     let config = default_genesis_config();
+//     let forum_sudo = OriginType::Signed(config.forum_sudo);
+
+//     with_externalities(&mut build_test_externalities(config), || {
+//         let category_id = create_root_category(forum_sudo.clone());
+//         assert_err!(
+//             delete_category(
+//                 forum_sudo.clone(),
+//                 category_id.clone(),
+//             ),
+//             "... TODO expect error ..."
+//         );
+//     });
+// }
+
+// With archived / deleted category, moderated thread
+// -----------------------------------------------------------------------------
+
+#[test]
+fn cannot_create_subcategory_in_archived_category() {
+    let config = default_genesis_config();
+    let forum_sudo = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let category_id = create_root_category(forum_sudo.clone());
+        assert_ok!(
+            archive_category(
+                forum_sudo.clone(),
+                category_id.clone(),
+            )
+        );
+        assert_create_category(
+            forum_sudo, Some(category_id),
+            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE)
+        );
+    });
+}
+
+#[test]
+fn cannot_create_subcategory_in_deleted_category() {
+    let config = default_genesis_config();
+    let forum_sudo = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let category_id = create_root_category(forum_sudo.clone());
+        assert_ok!(
+            delete_category(
+                forum_sudo.clone(),
+                category_id.clone(),
+            )
+        );
+        assert_create_category(
+            forum_sudo, Some(category_id),
+            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE)
+        );
+    });
+}
+
+#[test]
+fn cannot_create_thread_in_archived_category() {
+    let config = default_genesis_config();
+    let forum_sudo = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let category_id = create_root_category(forum_sudo.clone());
+        assert_ok!(
+            archive_category(
+                forum_sudo.clone(),
+                category_id.clone(),
+            )
+        );
+        assert_create_thread(
+            create_forum_member(), category_id,
+            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE)
+        );
+    });
+}
+
+#[test]
+fn cannot_create_thread_in_deleted_category() {
+    let config = default_genesis_config();
+    let forum_sudo = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let category_id = create_root_category(forum_sudo.clone());
+        assert_ok!(
+            delete_category(
+                forum_sudo.clone(),
+                category_id.clone(),
+            )
+        );
+        assert_create_thread(
+            create_forum_member(), category_id,
+            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE)
+        );
+    });
+}
+
+#[test]
+fn cannot_create_post_in_thread_of_archived_category() {
+    let config = default_genesis_config();
+    let forum_sudo = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let category_id = create_root_category(forum_sudo.clone());
+        let thread_id = TestForumModule::next_thread_id();
+        assert_create_thread(
+            create_forum_member(), category_id,
+            Ok(())
+        );
+        assert_ok!(
+            archive_category(
+                forum_sudo.clone(),
+                category_id.clone(),
+            )
+        );
+        assert_create_post(
+            create_forum_member(), thread_id,
+            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE)
+        );
+    });
+}
+
+#[test]
+fn cannot_create_post_in_thread_of_deleted_category() {
+    let config = default_genesis_config();
+    let forum_sudo = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let category_id = create_root_category(forum_sudo.clone());
+        let thread_id = TestForumModule::next_thread_id();
+        assert_create_thread(
+            create_forum_member(), category_id,
+            Ok(())
+        );
+        assert_ok!(
+            delete_category(
+                forum_sudo.clone(),
+                category_id.clone(),
+            )
+        );
+        assert_create_post(
+            create_forum_member(), thread_id,
+            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE)
+        );
+    });
+}
+
+#[test]
+fn cannot_create_post_in_moderated_thread() {
+    let config = default_genesis_config();
+    let forum_sudo = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (_, _, thread_id) = create_root_category_and_thread(forum_sudo.clone());
+        assert_ok!(
+            moderate_thread(forum_sudo, thread_id.clone(), good_rationale())
+        );
+        assert_create_post(
+            create_forum_member(), thread_id,
+            Err(ERROR_THREAD_MODERATED)
+        );
+    });
+}
+
+#[test]
+fn cannot_edit_post_in_moderated_thread() {
+    let config = default_genesis_config();
+    let forum_sudo = OriginType::Signed(config.forum_sudo);
+
+    with_externalities(&mut build_test_externalities(config), || {
+        let (member_origin, _, thread_id, post_id) = create_root_category_and_thread_and_post(forum_sudo.clone());
+        assert_ok!(
+            moderate_thread(forum_sudo, thread_id, good_rationale())
+        );
+        assert_err!(
+            TestForumModule::edit_post_text(
+                mock_origin(member_origin),
+                post_id,
+                good_rationale()
+            ),
+            ERROR_THREAD_MODERATED
+        );
+    });
+}
+
+// TODO impl
+// #[test]
+// fn cannot_edit_moderated_post() {}
