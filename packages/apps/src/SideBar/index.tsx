@@ -98,7 +98,7 @@ class SideBar extends React.PureComponent<Props> {
               <Menu.Divider hidden />
 
               <OuterLink url='https://testnet.joystream.org/faucet' title='Free Tokens' />
-              <OuterLink url='https://blog.joystream.org/athens-incentives/' title='Earn Monero' />
+              <OuterLink url='https://blog.joystream.org/acropolis-incentives/' title='Earn Monero' />
               <Menu.Divider hidden />
               {
                 isCollapsed
