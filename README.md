@@ -173,7 +173,7 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
   1. **OKR Tracking**: Track your OKRs and OKR assignments
   2. **Health Comments:** Any points you wish to discuss related to things like team health, code health, workflow/system health etc.
   3. **Weekly Priorities:** Your top 3-5 priorities this week. *Not* the same as your tasks today.
-  4. **Announcements:** Anything you think should be brought to everyones attention.
+  4. **Announcements:** Anything you think should be brought to everyone's attention.
 - **When:** Every working Monday at 10am (GMT)
 - **Where:** Zoom
 - **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
@@ -194,7 +194,7 @@ Project management is primarily centred around planning and tracking OKRs. OKRs 
 
 ### Assignment
 
-A key result can be _assigned_ to a mix of people or other objectives. The _assignment set_ of a key result consitutes the set of relevant actors, directly or indirectly - for OKRs, that are working to satisfy the result. Each assignment is given a weight from 0 to 1, and the total weight across an assignment set is 1. Some key results, in particular for very higher order OKRs, may not have assignments at all times.
+A key result can be _assigned_ to a mix of people or other objectives. The _assignment set_ of a key result constitutes the set of relevant actors, directly or indirectly - for OKRs, that are working to satisfy the result. Each assignment is given a weight from 0 to 1, and the total weight across an assignment set is 1. Some key results, in particular for very higher order OKRs, may not have assignments at all times.
 
 ### OKR types
 
@@ -290,7 +290,7 @@ All releases should have a corresponding _release directory_ in the `/testnets` 
 
 - `RELEASE_NAME`
   - `README.md`: Release document.
-  - **WIP**`specification.md`: Testnet speficiation.
+  - **WIP**`specification.md`: Testnet specification.
   - `/branding`: A directory which includes a branding document and related assets, as described in the branding [section](#branding).
 
 ### Roles
