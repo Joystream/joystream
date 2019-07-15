@@ -38,7 +38,7 @@
   </h3>
 </div>
 
-# Table of contents
+# Table of Contents
 
 - [Overview](#overview)
 - [Contribute](#contribute)
@@ -70,7 +70,7 @@
 
 # Overview
 
-This landing repo as meant as a the best starting place to get a coherent view of how information is organised in this GitHub organization.
+This landing repo is intended to be the best starting place to get a coherent view of how information is organised in this GitHub organization.
 
 # Contribute
 
@@ -84,7 +84,7 @@ The central repos will have multiple members of the core team with write access,
 The core team, maintainers and outside contributors are encouraged to follow these general guidelines when contributing to the code repositories:
 
 * All contributions should be via pull requests.
-* Do not create arbitrary branches or push directly to the central repo `master` or `development` branches
+* Do not create arbitrary branches or push directly to the central repo `master` or `development` branches.
 * Do not force push branches.
 * Avoid rebasing branches of open PRs to help preserve conversation history.
 * Authors must always request a review for their PRs, Exception: It does not alter any logic (e.g. comments, dependencies, docs, file organisation), then it may merged once CI checks are complete.
@@ -95,11 +95,11 @@ The core team, maintainers and outside contributors are encouraged to follow the
 Each repository may have contributing guidelines detailed in their README files.
 Maintainer must ensure this contribution section is linked to as the base guideline.
 
-Documentation, Project management and other or non-code repositories should try to follow similar PR etiquette if it makes sense but exceptions can be made as changes usually don't require the same level of review.
+Documentation, project management and other or non-code repositories should try to follow similar PR etiquette if it makes sense but exceptions can be made as changes usually don't require the same level of review.
 
 # Repository Index
 
-This is the set of key repos that
+This is the set of key repos to which this document refers:
 
 | Repo                                                                                      | Description                                           | Maintainer      |
 | :-------------                                                                            | :-------------                                        | :-----------:   |
@@ -143,11 +143,11 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 
 ## Why is this on Github?
 
-The reason this is placed in public view on Github is two fold
+The reason this is placed in public view on Github is two fold:
 
 - **Open Invitation:** Serve as an open invitation for anyone who wants to learn, comment and possibly contribute, to the current or future development of the Joystream project.
 
-- **Best Practices**: Establish best practices which can be replicated by the platform, when it is fully live, in how to collaboratively build and manage the platform using open tools. In particular, the current plan is that the platform has a built in Github equivalent, which thus would allow the use of these conventions.
+- **Best Practices**: Establish best practices which can be replicated by the platform, when it is fully live, in how to collaboratively build and manage the platform using open tools. In particular, the current plan is that the platform has a built-in Github equivalent, which thus would allow the use of these conventions.
 
 
 <br />
@@ -198,7 +198,7 @@ A key result can be _assigned_ to a mix of people or other objectives. The _assi
 
 ### OKR types
 
-The OKRs can be classified into two separate families of types, first
+The OKRs can be classified into two separate families of types, first:
 
 - **Project OKRs**: Project OKRs can run over multiple years and are graded very rarely. They contain the root objectives that require no deeper justification. Every other objective must be justified directly, or indirectly through another key result, by virtue of its relevance to the project OKRs. The current set of such OKRs can be found [below](#project-okrs).
 
@@ -206,7 +206,7 @@ The OKRs can be classified into two separate families of types, first
 
 - **Release OKRs**: Releases are planned one after the other on a rolling basis, and the release OKRs correspond to a single release. Only OKRs which have independent objectives are formally referred to as release OKRs, any derivative OKR is not, even if derived at in the context of a release. The current set of such OKRs can be found [below](#release-okrs)
 
-and then second
+and then second:
 
 - **Group OKRs**: Group OKRs are defined by the set of stakeholders assigned to the key results, and in particular that there is more than one person involved. Typically this could be a set of people working as a team on some topic or problem. In principle, such an OKR can be rationalised by a mix of release and quarterly OKRs, but in practice it will most often just be one or the other. These OKRs should be flexible in time scope, and should be reorganized if circumstances change. The current set of such OKRs can be found [below](#group-okrs).
 
@@ -232,13 +232,13 @@ In order to keep track of whether a key result, and thus the corresponding objec
 
 ![alt text](img/KR-Weighting.svg "Key Result ")
 
-Briefly, do a topological sort of the key result graph, where having an objective in the result assignment set counts towards the indegree. Then just do ascending weighted averaging of scores, where key results are simply averaged into objective scores. Importantly, in order to do this, one has to get personal scores on key results, and there are two modes of doing this
+Briefly, do a topological sort of the key result graph, where having an objective in the result assignment set counts towards the indegree. Then just do ascending weighted averaging of scores, where key results are simply averaged into objective scores. Importantly, in order to do this, one has to get personal scores on key results, and there are two modes of doing this:
 
 - **Naive (n)**: Simply evaluate the key result statement directly based on available data at the time. For example, if the result is `Get $100 in revenue`, and one has $20 so far, then the score would be 0.2. This method is often suitable, but no if partial work is unlikely to have had any real world effects while tracking.
 
 - **Estimate of Work Done (ewd)**: Fraction of estimated total hours required that have been completed. This means that, if the estimate of total time required changes, then the score can change, even there is not change in actual hours completed.
 
-The mode used depend on the nature of the key result.
+The mode used depends on the nature of the key result.
 
 ### Template
 
@@ -277,7 +277,7 @@ The template used for recording and tracking OKRs has the following form:
 
 ### Branding
 
-All releases have the following branding materials, which should be summarised in a markdown _Branding Document_
+All releases have the following branding materials, which should be summarised in a markdown _Branding Document_:
 
 - **Name:** Our current naming system is important historical ancient cities in the development of new political systems. It's still not clear if we will just stick to ancient cities, or move forward in time also (TBD).
 - **Naming Rationale:** A brief 40-150 word text about the significance of this city in our context.
@@ -286,7 +286,7 @@ All releases have the following branding materials, which should be summarised i
 
 ### Testnet Directory
 
-All releases should have a corresponding _release directory_ in the `/testnets` directory of this repo, and it should have the following structure
+All releases should have a corresponding _release directory_ in the `/testnets` directory of this repo, and it should have the following structure:
 
 - `RELEASE_NAME`
   - `README.md`: Release document.
@@ -297,7 +297,7 @@ All releases should have a corresponding _release directory_ in the `/testnets` 
 
 #### Release Manager
 
-Each release is directed by a _Release Manager_ (**RM**) who is responsible for
+Each release is directed by a _Release Manager_ (**RM**) who is responsible for:
 
  - Moving the release process forward and on track.
  - Calling and conducting release meetings.
@@ -317,37 +317,37 @@ The specification lead is responsible for moving the specification process forwa
 
 #### Launch Meeting
 
-First release meeting, should take no more than **45 minutes**, with agenda
+First release meeting, should take no more than **45 minutes**, with agenda:
 
-1. Propose set of release OKRs based on review of
-    - open help desk issues that have bearing on release  
-    - any possibly finalised OKRs from prior release
-    - project OKRs
+1. Propose set of release OKRs based on review of:
+    - open help desk issues that have bearing on release.  
+    - any possibly finalised OKRs from prior release.
+    - project OKRs.
 2. Identify set of projects, products etc. and assign leads.
-3. Assign responsibility to someone for finalising outstanding branding assets, which must be delivered no later than **five days after this meeting**
+3. Assign responsibility to someone for finalising outstanding branding assets, which must be delivered no later than **five days after this meeting**.
 4. Schedule the [user stories meeting](#user-stories-meeting) to no later than **two working days after this meeting**.
 
 #### User Stories Meeting
 
-Second release meeting, should take no more than **90 minutes**, with agenda
+Second release meeting, should take no more than **90 minutes**, with agenda:
 
-1. For experiences identified in the [launch meeting](#launch-meeting), review proposed user stories suggestions prepared by each lead, and settle on final set of stories
+1. For experiences identified in the [launch meeting](#launch-meeting), review proposed user stories suggestions prepared by each lead, and settle on final set of stories.
 2. Schedule the [Release Plan Finalisation Meeting](#release-plan-finalisation-meeting) to no later than **two working days after this meeting**.
 
 #### Release Plan Finalisation Meeting
 
-Third release meeting, should take no more than **90 minutes**, with agenda
+Third release meeting, should take no more than **90 minutes**, with agenda:
 
-1. Finalise release plan based on lead proposals
+1. Finalise release plan based on lead proposals.
 2. Evaluate whether plan is feasible based on projected total load on contributors, and tentative release date. If not feasible, try to make minor modifications of scope or deadline. If that also does not work, go back and redo process from launch meeting step.
 
-If feasible, then proceed with
+If feasible, then proceed with:
 
-3. If a specification is to be done, assign a [specification lead and committee](Specification Lead and Committee), and schedule first [specification planning meeting](#specification-planning-meeting)
+3. If a specification is to be done, assign a [specification lead and committee](Specification Lead and Committee), and schedule first [specification planning meeting](#specification-planning-meeting).
 
 #### Specification Planning meeting
 
-Open ended technical meetings which are conducted iteratively with implementing out parts of the release.
+Open-ended technical meetings which are conducted iteratively with implementing out parts of the release.
 
 ### Step-by-step Process
 
@@ -361,17 +361,17 @@ This whole process should take no more than **7** working days from start to fin
 
 2. **RM** shall have done the following no later than at **the day after the prior testnet release.**
 
-    - created PR establishing a new [testnet directory](/testnets), where
-        - the release name is set to `TESTNET_NAME`
-        - the naming rationale is left blank, unless it is ready
-        - the goal is left blank, unless it is ready
-        - the logomark is left blank, unless it is ready
+    - created PR establishing a new [testnet directory](/testnets), where:
+        - the release name is set to `TESTNET_NAME`.
+        - the naming rationale is left blank, unless it is ready.
+        - the goal is left blank, unless it is ready.
+        - the logomark is left blank, unless it is ready.
 
-    - initiated creation of possibly missing logomark
+    - initiated creation of possibly missing logomark.
 
     - scheduled a meeting time for the [launch meeting](#launch-meeting) no later than the next available working day when all core contributors are available.
 
-    - create a subdirectory of the [meeting](/meetings) directory that has itinerary with appropriate agenda
+    - create a subdirectory of the [meeting](/meetings) directory that has itinerary with appropriate agenda.
 
 3. Conduct launch meeting.
 
@@ -387,17 +387,17 @@ This whole process should take no more than **7** working days from start to fin
 
 9. Conduct release plan finalisation meeting.
 
-10. After the meeting is over, the **RM** shall on the same days
+10. After the meeting is over, the **RM** shall on the same days:
 
     - create a github project per release objective on the [Joystream Github Organisation](https://github.com/orgs/Joystream/projects) which kanban boards with standardized columns: `TODO`, `In progress`, `Done` and `Halted`.
 
     - update release document link to relevant github projects.
 
-    - updates the label set to reflect any new possible products
+    - update the label set to reflect any new possible products.
 
 10. Specification work begins, and is scheduled and organised on an ad-hoc basis. Anyone unaffected by this work can continue to move forward immediately.
 
-11. Leads must convert their release plan contributions into tangible tasks, in the form of github issues on the relevant github project created. After this process, the release plan itself should no longer be consulted, also if changes are made.
+11. Leads must convert their release plan contributions into tangible tasks, in the form of GitHub issues on the relevant github project created. After this process, the release plan itself should no longer be consulted, also if changes are made.
 
 12. Release planning meetings are conducted on a per-need basis, typically more frequently as the release date approaches.
 
