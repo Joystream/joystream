@@ -63,7 +63,7 @@ The purpose of creating such a hierarchy depends on the `SchemaId` used
 in the root entry. Possible uses are:
 
 * For structuring podcast/video episodes in a series.
-* For providing multiple languate tracks, subtitle tracks, commentary,
+* For providing multiple  language tracks, subtitle tracks, commentary,
   etc. for video content.
 * etc.
 
@@ -117,10 +117,10 @@ The content creation protocol is as follows:
 ## Events
 
 - `MetadataAdded`: `ContentMetadata` has been added to `MetadataByContentId`. The
-  event payload is the `ContentId` of the matching metdata.
+  event payload is the `ContentId` of the matching metadata.
 
 - `MetadataUpdated`: `ContentMetadata` has been updated. The
-  event payload is the `ContentId` of the matching metdata.
+  event payload is the `ContentId` of the matching metadata.
 
 - `RootContentUpdated`: a `ContentMetadata` that represents root content in a
   metadata hierarchy has been updated. The payload is the `ContentId`, and a

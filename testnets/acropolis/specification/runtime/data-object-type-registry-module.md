@@ -28,14 +28,14 @@ None.
 
 All stored `DataObjects` are associated with a type. This type does not describe
 a file or media type, but rather how `DataObjects` of this type are to be
-handled by the storage network. This information is encapsualted in the
+handled by the storage network. This information is encapsulated in the
 `DataObjectType` structure, identified by a `DataObjectTypeId`.
 
 Of course, storage nodes should still impose some constraints on how what
 uploads to accept. These constraints are described by the `constraints` field
 of the `DataObjectType`. There is a corresponding `constraints_version` field,
 which indicates the version of the constraints specification, i.e. how to
-inteprer the `constraints` field.
+interpreter the `constraints` field.
 
 ## Concepts
 
@@ -58,7 +58,7 @@ field is expected to be valid JSON with the following structure:
 ### Content Creation
 
 For apps attempting to upload data, the choice of `DataObjectType` is a
-harcoded property. `DataObjectType` represents a *purpose*, i.e. a media cover
+hardcoded property. `DataObjectType` represents a *purpose*, i.e. a media cover
 image or some such. The uploading app knows exactly the purpose of each file
 to upload, and chooses the appropriate `DataObjectType` accordingly.
 
@@ -73,7 +73,7 @@ to upload, and chooses the appropriate `DataObjectType` accordingly.
    commence.
 
 Applying constraints means verifying that the file to be uploaded passes the
-constraints - if it would not pass, the content is rejected immediatly, and none
+constraints - if it would not pass, the content is rejected immediately, and none
 of the following steps are executed. This effectively implements OR-chaining
 of conditions from most specific to least specific matches.
 

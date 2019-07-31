@@ -71,7 +71,7 @@ The second is for a screening authority, which is a designated account, to simpl
 
 - `MemberProfile`: Maps member id to `Profile` of member.
 
-- `Handles`: Maps handle to corresponding memberid.
+- `Handles`: Maps handle to corresponding member id.
 
 - `NextPaidMembershipTermsId`: Next paid membership terms id.
 
@@ -153,7 +153,7 @@ Change about text on membership.
 #### Errors
 
 - Bad signature.
-- No member id found for accountid.
+- No member id found for account id.
 - Not primary account.
 - Member profile not found.
 

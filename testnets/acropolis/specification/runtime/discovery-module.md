@@ -36,10 +36,10 @@ with the help of a cryptographic signature.
 
 As such, the *discovery workflow* is and should be largely independent on
 how discovery is performed. The *discovery workflow* is almost entirely off-chain,
-but boostraps from on-chain information.
+but bootstraps from on-chain information.
 
 The *publishing workflow* does require actors to understand how discovery is
-peformed. This current version uses [IPNS](https://docs.ipfs.io/guides/concepts/ipns/)
+performed. This current version uses [IPNS](https://docs.ipfs.io/guides/concepts/ipns/)
 as a building block for discovery. The *publishing workflow* includes modifying
 on-chain data, albeit relatively rarely.
 
@@ -116,7 +116,7 @@ None.
 
 Allow root to set the current bootstrap endpoints. Note that the number of endpoints
 is never expected to grow large, as new nodes are discovered from this set of
-boostrap endpoints - therefore always setting the entire vector is sufficient.
+bootstrap endpoints - therefore always setting the entire vector is sufficient.
 
 #### Errors
 

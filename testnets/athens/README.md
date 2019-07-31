@@ -515,11 +515,11 @@ new roles
   - **Martin**
 - **Schedule:**
   - Storage and Validator get payouts mondays at ~1100GMT
-  - Counil gets payouts ~10:00GMT day after election and, if applicable, vote.
+  - Council gets payouts ~10:00GMT day after election and, if applicable, vote.
 
 ### Support
 
-- **Description:** Provide support to users enaging with testnet functionality and campaigns
+- **Description:** Provide support to users engaging with testnet functionality and campaigns
 - **Manager:** **Jaydip**
 - **Team:**
   - **Jaydip**

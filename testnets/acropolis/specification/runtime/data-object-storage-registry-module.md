@@ -40,7 +40,7 @@ For an *available* `DataObject`, there is thus at least one, possibly many
 
 `StorageRelationship` contains an `available` flag, which shows
 whether the relationship is currently fulfillable by the storage provider.
-This permits indiciating an intent to fulfil on the runtime by providing
+This permits indicating an intent to fulfil on the runtime by providing
 an inactive relationship, then synchronizing content, and finally updating
 the relationship when content can be served.
 

@@ -50,7 +50,7 @@ Standard.
 
 ### Description
 
-Pre block execution code which actually performs migration and initilization under suitable conditions, namely
+Pre-block execution code which actually performs migration and initialization under suitable conditions, namely
 
 - `SpecVersion` is not set, which would possibly be the case from genesis
 - `SpecVersion` is less than the runtime [spec version](../README.md#runtime-version)
