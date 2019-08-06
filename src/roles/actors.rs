@@ -265,7 +265,7 @@ decl_module! {
             if now % T::BlockNumber::sa(REQUEST_CLEARING_INTERVAL) == T::BlockNumber::zero() {
                 let requests: Requests<T> = Self::role_entry_requests()
                     .into_iter()
-                    .filter(|request| request.3 < now)
+                    .filter(|request| request.3 > now)
                     .collect();
 
                 <RoleEntryRequests<T>>::put(requests);
