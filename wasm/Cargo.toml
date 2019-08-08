@@ -20,4 +20,4 @@ path = '..'
 authors = ['Joystream']
 edition = '2018'
 name = 'joystream-node-runtime-wasm'
-version = '5.4.0'
+version = '6.0.0'
