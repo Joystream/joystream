@@ -11,8 +11,6 @@ use system::{self, ensure_signed};
 
 use crate::traits::Members;
 
-static MSG_NO_ACTOR_FOR_ROLE: &str = "For the specified role, no actor is currently staked.";
-
 const STAKING_ID: LockIdentifier = *b"role_stk";
 
 #[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Debug)]
