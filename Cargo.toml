@@ -7,7 +7,7 @@ authors = ['Joystream']
 build = 'build.rs'
 edition = '2018'
 name = 'joystream-node'
-version = '1.0.0'
+version = '1.1.0'
 
 [dependencies]
 error-chain = '0.12'
