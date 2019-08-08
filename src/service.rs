@@ -25,7 +25,7 @@ use inherents::InherentDataProviders;
 use joystream_node_runtime::{self, opaque::Block, GenesisConfig, RuntimeApi};
 use log::info;
 use network::construct_simple_protocol;
-use primitives::{ed25519::Pair, Pair as PairT, sr25519::Public as SrPublic, crypto::Ss58Codec};
+use primitives::{crypto::Ss58Codec, ed25519::Pair, sr25519::Public as SrPublic, Pair as PairT};
 use std::sync::Arc;
 use std::time::Duration;
 use substrate_client as client;
@@ -41,7 +41,7 @@ use transaction_pool::{self, txpool::Pool as TransactionPool};
 fn ed_ss58check(public_key: &primitives::ed25519::Public) -> String {
     let raw_bytes: &[u8; 32] = public_key.as_ref();
     // Interpret bytes as sr25519 public key
-    let v : SrPublic = SrPublic::from_raw(raw_bytes.clone());
+    let v: SrPublic = SrPublic::from_raw(raw_bytes.clone());
     v.to_ss58check()
 }
 
