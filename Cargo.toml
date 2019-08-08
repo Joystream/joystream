@@ -21,72 +21,72 @@ tokio = '0.1'
 trie-root = '0.12.0'
 
 [dependencies.basic-authorship]
-git = 'https://github.com/joystream/substrate.git'
+git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-basic-authorship'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+branch = 'v1.0'
 
 [dependencies.consensus]
-git = 'https://github.com/joystream/substrate.git'
+git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-consensus-aura'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+branch = 'v1.0'
 
 [dependencies.ctrlc]
 features = ['termination']
 version = '3.0'
 
 [dependencies.inherents]
-git = 'https://github.com/joystream/substrate.git'
+git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-inherents'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+branch = 'v1.0'
 
 [dependencies.network]
-git = 'https://github.com/joystream/substrate.git'
+git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-network'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+branch = 'v1.0'
 
 [dependencies.joystream-node-runtime]
 # clone https://github.com/joystream/substrate-runtime-joystream to this path:
 path = 'substrate-runtime-joystream'
 
 [dependencies.primitives]
-git = 'https://github.com/joystream/substrate.git'
+git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-primitives'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+branch = 'v1.0'
 
 [dependencies.sr-io]
-git = 'https://github.com/joystream/substrate.git'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+git = 'https://github.com/paritytech/substrate.git'
+branch = 'v1.0'
 
 [dependencies.substrate-cli]
-git = 'https://github.com/joystream/substrate.git'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+git = 'https://github.com/paritytech/substrate.git'
+branch = 'v1.0'
 
 [dependencies.substrate-client]
-git = 'https://github.com/joystream/substrate.git'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+git = 'https://github.com/paritytech/substrate.git'
+branch = 'v1.0'
 
 [dependencies.substrate-executor]
-git = 'https://github.com/joystream/substrate.git'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+git = 'https://github.com/paritytech/substrate.git'
+branch = 'v1.0'
 
 [dependencies.substrate-service]
-git = 'https://github.com/joystream/substrate.git'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+git = 'https://github.com/paritytech/substrate.git'
+branch = 'v1.0'
 
 [dependencies.transaction-pool]
-git = 'https://github.com/joystream/substrate.git'
+git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-transaction-pool'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+branch = 'v1.0'
 
 [dependencies.substrate-telemetry]
-git = 'https://github.com/joystream/substrate.git'
+git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-telemetry'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+branch = 'v1.0'
 
 [dependencies.grandpa]
-git = 'https://github.com/joystream/substrate.git'
+git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-finality-grandpa'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+branch = 'v1.0'
 
 [profile.release]
 panic = 'unwind'
