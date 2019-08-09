@@ -1,10 +1,11 @@
 #![cfg(test)]
 
 use crate::*;
+use crate::{GenesisConfig, Module, Trait};
 
 use primitives::{Blake2Hasher, H256};
-use srml_support::{impl_outer_origin};
-use crate::{GenesisConfig, Module, Trait};
+use srml_support::{impl_outer_origin, assert_ok};
+use runtime_io::with_externalities;
 use runtime_primitives::{
     testing::{Digest, DigestItem, Header},
     traits::{BlakeTwo256, IdentityLookup},
@@ -37,32 +38,112 @@ impl Trait for Runtime {
     type Event = ();
 }
 
-pub const INVLAID_CLASS_ID: ClassId = 111;
+pub const UNKNOWN_CLASS_ID: ClassId = 111;
 
-pub const INVLAID_ENTITY_ID: EntityId = 222;
+pub const UNKNOWN_ENTITY_ID: EntityId = 222;
 
-pub fn generate_text(len: usize) -> Vec<u8> {
-    vec![b'x'; len]
-}
+// pub fn generate_text(len: usize) -> Vec<u8> {
+//     vec![b'x'; len]
+// }
 
 pub fn good_class_name() -> Vec<u8> {
-    b"Name of the class".to_vec()
+    b"Name of a class".to_vec()
 }
 
 pub fn good_class_description() -> Vec<u8> {
-    b"Description of the class".to_vec()
+    b"Description of a class".to_vec()
 }
 
 pub fn good_entity_name() -> Vec<u8> {
-    b"Name of the entity".to_vec()
+    b"Name of an entity".to_vec()
 }
 
-pub fn good_property_name() -> Vec<u8> {
-    b"Name of the property".to_vec()
+pub fn good_prop_bool() -> Property {
+    Property {
+        prop_type: PropertyType::Bool,
+        required: false,
+        name: b"Name of a bool property".to_vec(),
+        description: b"Description of a bool property".to_vec(),
+    }
 }
 
-pub fn good_property_description() -> Vec<u8> {
-    b"Description of the property".to_vec()
+pub fn good_prop_u32() -> Property {
+    Property {
+        prop_type: PropertyType::Uint32,
+        required: false,
+        name: b"Name of a u32 property".to_vec(),
+        description: b"Description of a u32 property".to_vec(),
+    }
+}
+
+pub fn good_prop_text() -> Property {
+    Property {
+        prop_type: PropertyType::Text(20),
+        required: false,
+        name: b"Name of a text property".to_vec(),
+        description: b"Description of a text property".to_vec(),
+    }
+}
+
+pub fn good_props() -> Vec<Property> {
+    vec![
+        good_prop_bool(),
+        good_prop_u32(),
+        good_prop_text(),
+    ]
+}
+
+pub fn good_schema() -> ClassSchema {
+    ClassSchema { properties: vec![ 0, 1, 2 ] }
+}
+
+pub fn good_schemas() -> Vec<ClassSchema> {
+    vec![
+        ClassSchema { properties: vec![ 0, 1 ] },
+        ClassSchema { properties: vec![ 0, 1, 2 ] },
+        ClassSchema { properties: vec![ 1, 2, 3 ] },
+    ]
+}
+
+pub fn good_schema_indices() -> Vec<u16> {
+    vec![ 0, 1, 2 ]
+}
+
+pub fn good_property_values() -> Vec<(u16, PropertyValue)> {
+    vec![
+        (0, PropertyValue::Bool(true)),
+        (1, PropertyValue::Uint32(123u32)),
+        (2, PropertyValue::Text(b"Small text".to_vec())),
+    ]
+}
+
+pub fn create_class() -> ClassId {
+    let class_id = TestModule::next_class_id();
+    assert_ok!(
+        TestModule::create_class(
+            good_props(),
+            good_schemas(),
+            good_class_name(),
+            good_class_description(),
+        ),
+        class_id
+    );
+    class_id
+}
+
+pub fn create_entity() -> EntityId {
+    let class_id = create_class();
+    let entity_id = TestModule::next_entity_id();
+    assert_ok!(
+        TestModule::create_entity(
+            class_id,
+            good_schema_indices(),
+            good_property_values(),
+            good_entity_name(),
+        ),
+        entity_id
+    );
+    entity_id
 }
 
 // This function basically just builds a genesis storage key/value store according to
@@ -78,30 +159,20 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     }
 }
 
-pub type RuntimeMap<K, V> = std::vec::Vec<(K, V)>;
-
-pub fn genesis_config(
-    class_by_id: &RuntimeMap<ClassId, Class>,
-    entity_by_id: &RuntimeMap<EntityId, Entity>,
-    next_class_id: u64,
-    next_entity_id: u64
-) -> GenesisConfig<Runtime> {
-
-    GenesisConfig::<Runtime> {
-        class_by_id: class_by_id.clone(),
-        entity_by_id: entity_by_id.clone(),
-        next_class_id: next_class_id,
-        next_entity_id: next_entity_id,
-        _genesis_phantom_data: std::marker::PhantomData {}
-    }
-}
-
-pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities<Blake2Hasher> {
+fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities<Blake2Hasher> {
     config
         .build_storage()
         .unwrap()
         .0
         .into()
+}
+
+pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
+    let config = default_genesis_config();
+    with_externalities(
+        &mut build_test_externalities(config),
+        f
+    )
 }
 
 // pub type System = system::Module<Runtime>;

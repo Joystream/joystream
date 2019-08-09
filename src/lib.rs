@@ -315,7 +315,7 @@ impl<T: Trait> Module<T> {
         let mut fields_updated = 0;
 
         if let Some(name) = name_opt {
-            if entity.name != name {
+            if name.len() > 0 && entity.name != name {
 
                 // TODO check name length
 
