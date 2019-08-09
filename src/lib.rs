@@ -19,7 +19,7 @@ use parity_codec_derive::{Decode, Encode};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, StorageValue, StorageMap};
 use system;
 
-// mod mock;
+mod mock;
 mod tests;
 
 /// Constants
@@ -148,7 +148,7 @@ impl Default for PropertyValue {
     }
 }
 
-pub trait Trait: system::Trait + timestamp::Trait + Sized {
+pub trait Trait: system::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
