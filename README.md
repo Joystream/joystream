@@ -93,7 +93,7 @@ The core team, maintainers and outside contributors are encouraged to follow the
 * When the maintainer is opening a PRs they must still request review from a core team member.
 
 Each repository may have contributing guidelines detailed in their README files.
-Maintainer must ensure this contribution section is linked to as the base guideline.
+The maintainer must ensure this contribution section is linked to as the base guideline.
 
 Documentation, project management and other or non-code repositories should try to follow similar PR etiquette if it makes sense but exceptions can be made as changes usually don't require the same level of review.
 
@@ -135,19 +135,19 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 | Network         | Started           | Ended         | Release Plan    |
 | -------------   | -------------     | -----         | -----           |
 | Athens          | 17.04.19          |   24.06.19    | [Link](/testnets/athens/README.md)        |
-| Sparta          | 28.02.19          |   29.03.19    |       NA        |
-| Mesopotamia     | 21.12.18          |   28.02.19    |       NA        |
+| Sparta          | 28.02.19          |   29.03.19    |       N/A        |
+| Mesopotamia     | 21.12.18          |   28.02.19    |       N/A        |
 
 <br />
 <img src="img/pm-section.svg" id="project-management"/>
 
-## Why is this on Github?
+## Why is this on GitHub?
 
-The reason this is placed in public view on Github is two fold:
+The reason this is placed in public view on GitHub is two fold:
 
-- **Open Invitation:** Serve as an open invitation for anyone who wants to learn, comment and possibly contribute, to the current or future development of the Joystream project.
+- **Open Invitation:** Serves as an open invitation for anyone who wants to learn, comment and possibly contribute, to the current or future development of the Joystream project.
 
-- **Best Practices**: Establish best practices which can be replicated by the platform, when it is fully live, in how to collaboratively build and manage the platform using open tools. In particular, the current plan is that the platform has a built-in Github equivalent, which thus would allow the use of these conventions.
+- **Best Practices**: Establish best practices which can be replicated by the platform, when it is fully live, in how to collaboratively build and manage the platform using open tools. In particular, the current plan is that the platform has a built-in GitHub equivalent, which thus would allow the use of these conventions.
 
 
 <br />
@@ -279,9 +279,9 @@ The template used for recording and tracking OKRs has the following form:
 
 All releases have the following branding materials, which should be summarised in a markdown _Branding Document_:
 
-- **Name:** Our current naming system is important historical ancient cities in the development of new political systems. It's still not clear if we will just stick to ancient cities, or move forward in time also (TBD).
+- **Name:** Our current naming system is important historical ancient cities in the development of new political systems. It's still not clear if we will just stick to ancient cities, or if we will also move forward in time (TBD).
 - **Naming Rationale:** A brief 40-150 word text about the significance of this city in our context.
-- **Goal:** A brief 100-200 word text about what technical and community goals we are trying to achieve.
+- **Goal:** A brief 100-200 word text about the technical and community goals we are trying to achieve.
 - **Logomark:** Illustrated logomark corresponding to name.
 
 ### Testnet Directory
@@ -299,7 +299,7 @@ All releases should have a corresponding _release directory_ in the `/testnets` 
 
 Each release is directed by a _Release Manager_ (**RM**) who is responsible for:
 
- - Moving the release process forward and on track.
+ - Moving the release process forward and keeping it on track.
  - Calling and conducting release meetings.
  - Preparing all administrative pull requests for the release on this repo.
 
@@ -389,15 +389,15 @@ This whole process should take no more than **7** working days from start to fin
 
 10. After the meeting is over, the **RM** shall on the same days:
 
-    - create a github project per release objective on the [Joystream Github Organisation](https://github.com/orgs/Joystream/projects) which kanban boards with standardized columns: `TODO`, `In progress`, `Done` and `Halted`.
+    - create a GitHub project per release objective on the [Joystream GitHub Organisation](https://github.com/orgs/Joystream/projects) which kanban boards with standardized columns: `TODO`, `In progress`, `Done` and `Halted`.
 
-    - update release document link to relevant github projects.
+    - update release document link to relevant GitHub projects.
 
     - update the label set to reflect any new possible products.
 
 10. Specification work begins, and is scheduled and organised on an ad-hoc basis. Anyone unaffected by this work can continue to move forward immediately.
 
-11. Leads must convert their release plan contributions into tangible tasks, in the form of GitHub issues on the relevant github project created. After this process, the release plan itself should no longer be consulted, also if changes are made.
+11. Leads must convert their release plan contributions into tangible tasks, in the form of GitHub issues on the relevant GitHub project created. After this process, the release plan itself should no longer be consulted, also if changes are made.
 
 12. Release planning meetings are conducted on a per-need basis, typically more frequently as the release date approaches.
 
@@ -405,7 +405,7 @@ This whole process should take no more than **7** working days from start to fin
 <br />
 <img src="img/github-policy.svg" id="github-policy"/>
 
-WIP: describe how we use github, in particular
+WIP: describe how we use GitHub, in particular
 
 - repo creation, naming and formatting policies
 - how to use this repo, in particular managing label sets, projects, etc.
