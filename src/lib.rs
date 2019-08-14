@@ -232,7 +232,7 @@ impl<T: Trait> Module<T> {
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
 
         // Use the current length of properties in this class as an index
-        // for the next property that will be used in returning value.
+        // for the next property that will be sent in a result of this function.
         let prop_idx = <ClassById<T>>::get(class_id).properties.len() as u16;
 
         <ClassById<T>>::mutate(class_id, |class| {
@@ -249,7 +249,7 @@ impl<T: Trait> Module<T> {
 
         ensure!(schema.properties.len() > 0, ERROR_NO_PROPS_IN_CLASS_SCHEMA);
         
-        let mut class = <ClassById<T>>::get(class_id);
+        let class = <ClassById<T>>::get(class_id);
 
         if let Some(prev_schema) = class.schemas.last() {
             // Check that prev schema has a different set of props:
@@ -258,9 +258,13 @@ impl<T: Trait> Module<T> {
 
         // TODO check that schema contains props that are in the list of class props.
 
+        // Use the current length of schemas in this class as an index
+        // for the next schema that will be sent in a result of this function.
         let schema_idx = class.schemas.len() as u16;
-        class.schemas.push(schema);
-        <ClassById<T>>::insert(class_id, class);
+        
+        <ClassById<T>>::mutate(class_id, |class| {
+            class.schemas.push(schema);
+        });
 
         Self::deposit_event(RawEvent::ClassSchemaAdded(class_id, schema_idx));
         Ok(schema_idx)
