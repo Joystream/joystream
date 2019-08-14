@@ -205,6 +205,8 @@ impl<T: Trait> Module<T> {
         ensure!(name.len() > 0, ERROR_CLASS_EMPTY_NAME);
         ensure!(description.len() > 0, ERROR_CLASS_EMPTY_DESCRIPTION);
 
+        // TODO Check validity of Internal(ClassId) for properties.
+
         let class_id = <NextClassId<T>>::get();
 
         let new_class = Class {
@@ -229,10 +231,13 @@ impl<T: Trait> Module<T> {
 
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
 
-        let mut class = <ClassById<T>>::get(class_id);
-        let prop_idx = class.properties.len() as u16;
-        class.properties.push(property);
-        <ClassById<T>>::insert(class_id, class);
+        // Use the current length of properties in this class as an index
+        // for the next property that will be used in returning value.
+        let prop_idx = <ClassById<T>>::get(class_id).properties.len() as u16;
+
+        <ClassById<T>>::mutate(class_id, |class| {
+            class.properties.push(property);
+        });
 
         Self::deposit_event(RawEvent::ClassPropertyAdded(class_id, prop_idx));
         Ok(prop_idx)
@@ -277,6 +282,8 @@ impl<T: Trait> Module<T> {
         // TODO check that every schema_indicies[i] < Class.schemas.size
 
         // TODO check that every property_values[i][0] < Class.properties.size
+
+        // TODO Check validity of Internal(EntityId) for properties.
 
         // TODO check name length
 
