@@ -219,7 +219,7 @@ impl<T: Trait> Module<T> {
         <ClassById<T>>::insert(class_id, new_class);
 
         // Increment the next class id:
-        <NextClassId<T>>::put(class_id + 1);
+        <NextClassId<T>>::mutate(|n| *n += 1);
 
         Self::deposit_event(RawEvent::ClassCreated(class_id));
         Ok(class_id)
@@ -295,7 +295,7 @@ impl<T: Trait> Module<T> {
         <EntityById<T>>::insert(entity_id, new_entity);
 
         // Increment the next entity id:
-        <NextEntityId<T>>::put(entity_id + 1);
+        <NextEntityId<T>>::mutate(|n| *n += 1);
 
         Self::deposit_event(RawEvent::EntityCreated(entity_id));
         Ok(entity_id)
