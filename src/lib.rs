@@ -28,12 +28,11 @@ mod tests;
 // Error messages for dispatchables
 
 const ERROR_CLASS_NOT_FOUND: &str = "Class was not found by id";
-const ERROR_CLASS_EMPTY_SCHEMAS: &str = "Class cannot have an empty list of schemas";
-const ERROR_CLASS_EMPTY_PROPS: &str = "Class cannot have an empty list of properties";
 const ERROR_CLASS_EMPTY_NAME: &str = "Class cannot have an empty name";
 const ERROR_CLASS_EMPTY_DESCRIPTION: &str = "Class cannot have an empty description";
+const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX: &str = "New class schema refers to an unknown property index";
+const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID: &str = "New class schema refers to an unknown internal class id";
 const ERROR_NO_PROPS_IN_CLASS_SCHEMA: &str = "Cannot add a class schema with an empty list of properties";
-const ERROR_SAME_PROPS_IN_CLASS_SCHEMA: &str = "Cannot add a class schema with the same list of properties as in the last schema of this class";
 
 const ERROR_ENTITY_NOT_FOUND: &str = "Entity was not found by id";
 const ERROR_ENTITY_EMPTY_SCHEMAS: &str = "Entity cannot have an empty list of schema indicies";
@@ -193,26 +192,24 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
 
+    /// Returns an id of a newly added class.
     pub fn create_class(
-        properties: Vec<Property>,
-        schemas: Vec<ClassSchema>,
         name: Vec<u8>,
         description: Vec<u8>
     ) -> Result<ClassId, &'static str> {
         
-        ensure!(schemas.len() > 0, ERROR_CLASS_EMPTY_SCHEMAS);
-        ensure!(properties.len() > 0, ERROR_CLASS_EMPTY_PROPS);
+        // TODO better validation of name:
         ensure!(name.len() > 0, ERROR_CLASS_EMPTY_NAME);
-        ensure!(description.len() > 0, ERROR_CLASS_EMPTY_DESCRIPTION);
 
-        // TODO Check validity of Internal(ClassId) for properties.
+        // TODO better validation of description:
+        ensure!(description.len() > 0, ERROR_CLASS_EMPTY_DESCRIPTION);
 
         let class_id = <NextClassId<T>>::get();
 
         let new_class = Class {
             id: class_id,
-            properties,
-            schemas,
+            properties: vec![],
+            schemas: vec![],
             name,
             description,
         };
@@ -227,48 +224,70 @@ impl<T: Trait> Module<T> {
         Ok(class_id)
     }
 
-    pub fn add_class_property(class_id: ClassId, property: Property) -> Result<u16, &'static str> {
+    /// Returns an index of a newly added class schema on success.
+    pub fn add_class_schema(
+        class_id: ClassId,
+        existing_properties: Vec<u16>,
+        new_properties: Vec<Property>
+    ) -> Result<u16, &'static str> {
 
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
 
-        // Use the current length of properties in this class as an index
-        // for the next property that will be sent in a result of this function.
-        let prop_idx = <ClassById<T>>::get(class_id).properties.len() as u16;
-
-        <ClassById<T>>::mutate(class_id, |class| {
-            class.properties.push(property);
-        });
-
-        Self::deposit_event(RawEvent::ClassPropertyAdded(class_id, prop_idx));
-        Ok(prop_idx)
-    }
-
-    pub fn add_class_schema(class_id: ClassId, schema: ClassSchema) -> Result<u16, &'static str> {
+        let non_empty_schema = 
+            !existing_properties.is_empty() || 
+            !new_properties.is_empty();
         
-        ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
+        ensure!(non_empty_schema, ERROR_NO_PROPS_IN_CLASS_SCHEMA);
 
-        ensure!(schema.properties.len() > 0, ERROR_NO_PROPS_IN_CLASS_SCHEMA);
-        
         let class = <ClassById<T>>::get(class_id);
 
-        if let Some(prev_schema) = class.schemas.last() {
-            // Check that prev schema has a different set of props:
-            ensure!(prev_schema.properties != schema.properties, ERROR_SAME_PROPS_IN_CLASS_SCHEMA);
-        }
-
-        // TODO check that schema contains props that are in the list of class props.
+        // Check that existing props are in the list of class props.
+        let has_unknown_props = existing_properties.iter().any(|&prop_id| {
+            class.properties.get(prop_id as usize).is_none()
+        });
+        ensure!(has_unknown_props, ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX);
+        
+        // Check validity of Internal(ClassId) for new_properties.
+        let has_unknown_internal_id = new_properties.iter().any(|prop| {
+            match prop.prop_type {
+                PropertyType::Internal(other_class_id) =>
+                    !<ClassById<T>>::exists(other_class_id),
+                _ => false
+            }
+        });
+        ensure!(has_unknown_internal_id, ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID);
 
         // Use the current length of schemas in this class as an index
         // for the next schema that will be sent in a result of this function.
         let schema_idx = class.schemas.len() as u16;
-        
+
+        let mut schema = ClassSchema {
+            properties: existing_properties
+        };
+
+        let mut new_class_props = class.properties;
+        new_properties.into_iter().for_each(|prop| {
+            let prop_id = new_class_props.len() as u16;
+            new_class_props.push(prop);
+            schema.properties.push(prop_id);
+        });
+
         <ClassById<T>>::mutate(class_id, |class| {
+            class.properties = new_class_props;
             class.schemas.push(schema);
         });
 
         Self::deposit_event(RawEvent::ClassSchemaAdded(class_id, schema_idx));
         Ok(schema_idx)
     }
+
+
+    // TODO Split into separate simpler functions:
+    // - create_entity
+    // - add_entity_schema
+    // - update_entity_properties
+    // - update_entity_name
+
 
     pub fn create_entity(
         class_id: ClassId,
@@ -312,6 +331,7 @@ impl<T: Trait> Module<T> {
         Ok(entity_id)
     }
 
+    // TODO delete update_entity as overbloated
     pub fn update_entity(
         entity_id: EntityId,
         schema_indices: Vec<u16>,
