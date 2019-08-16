@@ -360,17 +360,23 @@ impl<T: Trait> Module<T> {
 
         // TODO Check validity of Internal(EntityId) for properties.
 
+        // TODO Add all missing non required prop values as PropertyValue::None
+
         // TODO finish
 
         Ok(())
     }
 
-    pub fn update_or_insert_entity_properties(
+    pub fn update_entity_properties(
         entity_id: EntityId,
         property_values: Vec<(u16, PropertyValue)>
     ) -> dispatch::Result {
 
         ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+
+        // TODO don't allow to update any proerties if entity has no schemas yet.
+
+        // TODO check that every prop id is present in entity.values ids
 
         // TODO check that every property value matches prop type of class property with the same prop id
 
@@ -382,6 +388,45 @@ impl<T: Trait> Module<T> {
 
         // TODO finish
 
+        Ok(())
+    }
+    
+    /// Only non required property values can be removed.
+    /// In fact when removing a property value, it is replaced with PropertyValue::None.
+    pub fn remove_entity_properties(
+        entity_id: EntityId,
+        property_ids: Vec<u16>
+    ) -> dispatch::Result {
+
+        ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+
+        ensure!(!property_ids.is_empty(), "Cannot remove entity properties: an empty list of property ids provided");
+
+        let entity = <EntityById<T>>::get(entity_id);
+        let class = <ClassById<T>>::get(entity.class_id);
+
+        let mut updated_values = entity.values;
+        property_ids.into_iter().for_each(|prop_id| {
+            if let Some(prop) = class.properties.get(prop_id as usize) {
+                // Only non required property values can be removed:
+                if !prop.required {
+                    updated_values.iter_mut().any(|(id, value)| {
+                        if *id == prop_id {
+                            *value = PropertyValue::None;
+                            true
+                        } else {
+                            false
+                        }
+                    });
+                }
+            }
+        });
+
+        <EntityById<T>>::mutate(entity_id, |entity| {
+            entity.values = updated_values;
+        });
+
+        Self::deposit_event(RawEvent::EntityPropertiesUpdated(entity_id));
         Ok(())
     }
 
