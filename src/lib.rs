@@ -405,28 +405,30 @@ impl<T: Trait> Module<T> {
         let entity = <EntityById<T>>::get(entity_id);
         let class = <ClassById<T>>::get(entity.class_id);
 
+        let mut updates_count = 0;
         let mut updated_values = entity.values;
         property_ids.into_iter().for_each(|prop_id| {
             if let Some(prop) = class.properties.get(prop_id as usize) {
                 // Only non required property values can be removed:
                 if !prop.required {
-                    updated_values.iter_mut().any(|(id, value)| {
+                    for (id, value) in updated_values.iter_mut() {
                         if *id == prop_id {
                             *value = PropertyValue::None;
-                            true
-                        } else {
-                            false
+                            updates_count += 1;
+                            break
                         }
-                    });
+                    }
                 }
             }
         });
 
-        <EntityById<T>>::mutate(entity_id, |entity| {
-            entity.values = updated_values;
-        });
-
-        Self::deposit_event(RawEvent::EntityPropertiesUpdated(entity_id));
+        if updates_count > 0 {
+            <EntityById<T>>::mutate(entity_id, |entity| {
+                entity.values = updated_values;
+            });
+            Self::deposit_event(RawEvent::EntityPropertiesUpdated(entity_id));
+        }
+        
         Ok(())
     }
 
