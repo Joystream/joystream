@@ -178,6 +178,9 @@ decl_event!(
         EntityCreated(EntityId),
         EntityUpdated(EntityId),
         EntityDeleted(EntityId),
+        EntityNameUpdated(EntityId),
+        EntityPropertiesUpdated(EntityId),
+        EntitySchemaAdded(EntityId),
 
         /// This is a fake event that uses AccountId type just to make Rust compiler happy to compile this module.
         FixCompilation(AccountId),
@@ -241,11 +244,11 @@ impl<T: Trait> Module<T> {
 
         let class = <ClassById<T>>::get(class_id);
 
-        // Check that existing props are in the list of class props.
+        // Check that existing props are valid indices of class properties vector:
         let has_unknown_props = existing_properties.iter().any(|&prop_id| {
-            class.properties.get(prop_id as usize).is_none()
+            prop_id >= class.properties.len() as u16
         });
-        ensure!(has_unknown_props, ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX);
+        ensure!(!has_unknown_props, ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX);
         
         // Check validity of Internal(ClassId) for new_properties.
         let has_unknown_internal_id = new_properties.iter().any(|prop| {
@@ -255,7 +258,7 @@ impl<T: Trait> Module<T> {
                 _ => false
             }
         });
-        ensure!(has_unknown_internal_id, ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID);
+        ensure!(!has_unknown_internal_id, ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID);
 
         // Use the current length of schemas in this class as an index
         // for the next schema that will be sent in a result of this function.
@@ -281,42 +284,23 @@ impl<T: Trait> Module<T> {
         Ok(schema_idx)
     }
 
-
-    // TODO Split into separate simpler functions:
-    // - create_entity
-    // - add_entity_schema
-    // - update_entity_properties
-    // - update_entity_name
-
-
     pub fn create_entity(
         class_id: ClassId,
-        schema_indices: Vec<u16>,
-        property_values: Vec<(u16, PropertyValue)>,
         name: Vec<u8>
-    ) -> Result<EntityId, &'static str>{
-        
+    ) -> Result<EntityId, &'static str> {
+
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
 
-        ensure!(schema_indices.len() > 0, ERROR_ENTITY_EMPTY_SCHEMAS);
-        ensure!(property_values.len() > 0, ERROR_ENTITY_EMPTY_PROPS);
+        // TODO better validation of name:
         ensure!(name.len() > 0, ERROR_ENTITY_EMPTY_NAME);
-
-        // TODO check that every schema_indicies[i] < Class.schemas.size
-
-        // TODO check that every property_values[i][0] < Class.properties.size
-
-        // TODO Check validity of Internal(EntityId) for properties.
-
-        // TODO check name length
 
         let entity_id = <NextEntityId<T>>::get();
 
         let new_entity = Entity {
             id: entity_id,
             class_id,
-            schemas: schema_indices,
-            values: property_values,
+            schemas: vec![],
+            values: vec![],
             name,
             deleted: false,
         };
@@ -331,49 +315,73 @@ impl<T: Trait> Module<T> {
         Ok(entity_id)
     }
 
-    // TODO delete update_entity as overbloated
-    pub fn update_entity(
+    pub fn update_entity_name(
         entity_id: EntityId,
-        schema_indices: Vec<u16>,
-        property_values: Vec<(u16, PropertyValue)>,
-        name_opt: Option<Vec<u8>>
+        new_name: Vec<u8>
     ) -> dispatch::Result {
 
         ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
 
-        let mut entity = <EntityById<T>>::get(entity_id);
-        
-        let mut fields_updated = 0;
+        // TODO better validation of name:
+        ensure!(new_name.len() > 0, ERROR_ENTITY_EMPTY_NAME);
 
-        if let Some(name) = name_opt {
-            if name.len() > 0 && entity.name != name {
+        <EntityById<T>>::mutate(entity_id, |entity| {
+            entity.name = new_name;
+        });
 
-                // TODO check name length
+        Self::deposit_event(RawEvent::EntityNameUpdated(entity_id));
+        Ok(())
+    }
 
-                entity.name = name;
-                fields_updated += 1;
-            }
-        }
+    pub fn add_entity_schema(
+        entity_id: EntityId,
+        schema_id: u16,
+        property_values: Vec<(u16, PropertyValue)>
+    ) -> dispatch::Result {
 
-        if schema_indices.len() > 0 && entity.schemas != schema_indices {
+        ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
 
-            // TODO validate schema_indicies
+        let entity = <EntityById<T>>::get(entity_id);
+        let class = <ClassById<T>>::get(entity.class_id);
 
-            entity.schemas = schema_indices;
-            fields_updated += 1;
-        }
+        // Check that schema id is not yet added to this entity:
+        let schema_already_added = entity.schemas.get(schema_id as usize).is_some();
+        ensure!(!schema_already_added, "Cannot add a schema that is already added to this entity");
 
-        if property_values.len() > 0 && entity.values != property_values {
+        // Check that schema_id is a valid index of class schemas vector:
+        let unknown_schema_id = schema_id >= class.schemas.len() as u16;
+        ensure!(!unknown_schema_id, ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX);
 
-            // TODO validate property_values
-            // TODO replace only passed properties, don't do a full replacement of all prop values on entity?
+        // TODO check that prop_id is on schema.properties
 
-            entity.values = property_values;
-            fields_updated += 1;
-        }
+        // TODO Check that all required prop values are provided
 
-        ensure!(fields_updated > 0, ERROR_NOTHING_TO_UPDATE_IN_ENTITY);
-        Self::deposit_event(RawEvent::EntityUpdated(entity_id));
+        // TODO check that every property value matches a prop type of class property with the same prop id
+
+        // TODO Check validity of Internal(EntityId) for properties.
+
+        // TODO finish
+
+        Ok(())
+    }
+
+    pub fn update_or_insert_entity_properties(
+        entity_id: EntityId,
+        property_values: Vec<(u16, PropertyValue)>
+    ) -> dispatch::Result {
+
+        ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+
+        // TODO check that every property value matches prop type of class property with the same prop id
+
+        // TODO Check validity of Internal(EntityId) for properties.
+
+        // TODO Update prop value, if prop id exists in this entity
+
+        // TODO Add prop value, if prop id does noy exists in this entity
+
+        // TODO finish
+
         Ok(())
     }
 
