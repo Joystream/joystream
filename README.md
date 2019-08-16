@@ -164,7 +164,7 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
 - **Description:** Everyone states, within 1 minute, what they accomplished the prior day, and what the goals are for the day. After this, people can start separate calls which need not be conducted in plenum.
 - **When:** Every day at 10am (GMT)
 - **Where:** Zoom
-- **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
+- **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Telegram for invite).
 - **Record&Publish:** YES, if no participant objects.
 
 #### Monday all-hands
@@ -176,7 +176,7 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
   4. **Announcements:** Anything you think should be brought to everyone's attention.
 - **When:** Every working Monday at 10am (GMT)
 - **Where:** Zoom
-- **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
+- **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Telegram for invite).
 - **Record&Publish:** YES, if no participant objects.
 
 #### Release meeting
@@ -184,7 +184,7 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
 - **Description:** Discussion concerning testnet planning and release.
 - **When:** On-demand
 - **Where:** Zoom
-- **Participant:** Core release team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
+- **Participant:** Core release team _must_ be present, any one else is welcome (join Telegram for invite).
 - **Record&Publish:** YES, if no participant objects.
 
 <br />
