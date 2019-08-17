@@ -20,12 +20,10 @@ Table of Contents
   - [Name](#name)
   - [Manager](#manager)
   - [Release Date](#release-date)
-  - [OKRs](#okrs)
-- [Release OKRs](#release-okrs)
+  - [Release OKRs](#release-okrs)
     - [Objective: `Introduce a Better Content System`](#objective-introduce-a-better-content-system)
     - [Objective: `Engage community to understand Rome and join us in the future`](#objective-engage-community-to-understand-rome-and-join-us-in-the-future)
   - [Tracking Issues](#tracking-issues)
-    - [Explainer: What is a Tracking Issue?](#explainer-what-is-a-tracking-issue)
   - [Milestones](#milestones)
   - [Deployment](#deployment)
 <!-- TOC END -->
@@ -62,9 +60,7 @@ This Release Plan is considered "final" once merged to master, and anything belo
 
 06.11.19, 12:00 (GMT+2)
 
-## OKRs
-
-# Release OKRs
+## Release OKRs
 
 ### Objective: `Introduce a Better Content System`
 - **Active from:** 20.08.19
@@ -121,9 +117,7 @@ Go [here](/okrs#release-okrs) for tracking.
 
 ## Tracking Issues
 
-### Explainer: What is a Tracking Issue?
-
-A Tracking Issue is a Github issue which **evolves**, and at any given time holds a list of TODO items, with a corresponding completion status and and possibly responsibility indicator (i.e. each item has one responsible actor). TODO items are grouped into Tracking Issues based on what most deeply facilitates effective collaboration and progress tracking.
+The purpose and workflow of Tracking Issues can be found [here](/#tracking-issues)
 
   - [1. New Infrastructure Runtime Modules](https://github.com/Joystream/joystream/issues/95)
   - [2. Media System (Static Parts)](https://github.com/Joystream/joystream/issues/96)
@@ -134,8 +128,6 @@ A Tracking Issue is a Github issue which **evolves**, and at any given time hold
   - [7. Operations and Standalone Tasks](https://github.com/Joystream/joystream/issues/101)
   - [8. Release/Launch Operations](https://github.com/Joystream/joystream/issues/102)
 
-Every Monday, each Tracking Issue will be discussed in a video meeting between all assigned team members and the Release Manager. This meeting will take no more than 15min, and should be kept at a high level. The Release Manager will then update the Tracking Issue if necessary by changing/adding/removing/reassigning tasks, and checking off concluded tasks. Finally, a concise summary of the meeting will be added as a comment.
-
 **Unresolved Tasks**
 
 - Impact on Colossus? (Bruteforced in `5.` for now)
@@ -145,7 +137,7 @@ Every Monday, each Tracking Issue will be discussed in a video meeting between a
 
 ## Milestones
 
-The table below shows the milestone and dates as initially scheduled.
+The purpose and workflow of Milestones can be found [here](/#milestones)
 
 |    Date   |   Event                           |     Involved                   |
 |:---------:|-----------------------------------|:------------------------------:|
@@ -164,7 +156,6 @@ The table below shows the milestone and dates as initially scheduled.
 Go [here](https://github.com/Joystream/joystream/issues/103) for status and updated dates.
 
 ---
-
 
 ## Deployment
 
