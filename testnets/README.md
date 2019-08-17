@@ -1,13 +1,16 @@
 <p align="center"><img src="img/testnets.svg"></p>
 
-# Table of contents
+Table of Contents
+=================
 
+<!-- TOC START min:1 max:3 link:true asterisk:false update:true -->
 - [Overview](#overview)
 - [Testnet Releases](#testnet-releases)
-    - [Live Testnet](#live-testnet)
-    - [Next Testnet](#next-testnet)
-    - [Past Testnets](#past-testnets)
+  - [Live Testnet](#live-testnet)
+  - [Next Testnet](#next-testnet)
+  - [Past Testnets](#past-testnets)
 - [Templates](#templates)
+<!-- TOC END -->
 
 
 # Overview
@@ -18,17 +21,20 @@ It also contains templates for for planning releases.
 
 ## Live Testnet
 
-[Athens](testnets/athens/README.md)
+[Acropolis](acropolis)
 
 ## Next Testnet
 
-[Acropolis](testnets/acropolis/README.md)
+[Rome](rome)
+
 
 ## Past Testnets
 
 | Network         | Started           | Ended         | Release Plan    |
 | -------------   | -------------     | -----         | -----           |
+| Athens          | 27.04.19          |   24.06.19    | [Link](athens)  |
 | Sparta          | 28.02.19          |   29.03.19    |       NA        |
 | Mesopotamia     | 21.12.18          |   28.02.19    |       NA        |
+
 
 # Templates

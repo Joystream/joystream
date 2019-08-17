@@ -29,12 +29,10 @@
     <a href="https://github.com/Joystream/helpdesk/blob/master/README.md">
       Helpdesk
     </a>
-    <!--
     <span> | </span>
-    <a href="/testnets/acropolis">
-      Acropolis Testnet
+    <a href="/testnets/rome">
+      Rome Testnet
     </a>
-    -->
   </h3>
 </div>
 
@@ -122,13 +120,10 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 
 [Acropolis](/testnets/acropolis/README.md)
 
-<!--
-
 ## Next Testnet
 
-[Acropolis](/testnets/acropolis/README.md)
+[Rome](testnets/rome)
 
--->
 
 ## Past Testnets
 
@@ -158,6 +153,8 @@ The reason this is placed in public view on GitHub is two fold:
 Meeting itineraries are prepared on a case by case basis, depending on the context, and a template for this, as well as an index of archived itineraries, can be found [here](/meetings).
 
 ### Meeting Types
+
+*updates needed*
 
 #### Daily standup
 
@@ -285,6 +282,8 @@ All releases have the following branding materials, which should be summarised i
 - **Logomark:** Illustrated logomark corresponding to name.
 
 ### Testnet Directory
+
+*updates needed*
 
 All releases should have a corresponding _release directory_ in the `/testnets` directory of this repo, and it should have the following structure:
 
