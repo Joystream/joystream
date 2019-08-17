@@ -234,7 +234,7 @@ impl<T: Trait> Module<T> {
         new_properties: Vec<Property>
     ) -> Result<u16, &'static str> {
 
-        ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
+        Self::ensure_known_class_id(class_id)?;
 
         let non_empty_schema = 
             !existing_properties.is_empty() || 
@@ -289,7 +289,7 @@ impl<T: Trait> Module<T> {
         name: Vec<u8>
     ) -> Result<EntityId, &'static str> {
 
-        ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
+        Self::ensure_known_class_id(class_id)?;
 
         // TODO better validation of name:
         ensure!(name.len() > 0, ERROR_ENTITY_EMPTY_NAME);
@@ -320,7 +320,7 @@ impl<T: Trait> Module<T> {
         new_name: Vec<u8>
     ) -> dispatch::Result {
 
-        ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+        Self::ensure_known_entity_id(entity_id)?;
 
         // TODO better validation of name:
         ensure!(new_name.len() > 0, ERROR_ENTITY_EMPTY_NAME);
@@ -339,10 +339,9 @@ impl<T: Trait> Module<T> {
         property_values: Vec<(u16, PropertyValue)>
     ) -> dispatch::Result {
 
-        ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+        Self::ensure_known_entity_id(entity_id)?;
 
-        let entity = <EntityById<T>>::get(entity_id);
-        let class = <ClassById<T>>::get(entity.class_id);
+        let (entity, class) = Self::get_entity_and_class(entity_id);
 
         // Check that schema id is not yet added to this entity:
         let schema_already_added = entity.schemas.get(schema_id as usize).is_some();
@@ -372,9 +371,11 @@ impl<T: Trait> Module<T> {
         property_values: Vec<(u16, PropertyValue)>
     ) -> dispatch::Result {
 
-        ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+        Self::ensure_known_entity_id(entity_id)?;
 
-        // TODO don't allow to update any proerties if entity has no schemas yet.
+        let (entity, class) = Self::get_entity_and_class(entity_id);
+
+        // TODO don't allow to update any properties if entity has no schemas yet.
 
         // TODO check that every prop id is present in entity.values ids
 
@@ -398,12 +399,11 @@ impl<T: Trait> Module<T> {
         property_ids: Vec<u16>
     ) -> dispatch::Result {
 
-        ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+        Self::ensure_known_entity_id(entity_id)?;
 
         ensure!(!property_ids.is_empty(), "Cannot remove entity properties: an empty list of property ids provided");
 
-        let entity = <EntityById<T>>::get(entity_id);
-        let class = <ClassById<T>>::get(entity.class_id);
+        let (entity, class) = Self::get_entity_and_class(entity_id);
 
         let mut updates_count = 0;
         let mut updated_values = entity.values;
@@ -433,7 +433,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn delete_entity(entity_id: EntityId) -> dispatch::Result {
-        ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+        Self::ensure_known_entity_id(entity_id)?;
 
         let is_deleted = <EntityById<T>>::get(entity_id).deleted;
         ensure!(!is_deleted, ERROR_ENTITY_ALREADY_DELETED);
@@ -444,5 +444,24 @@ impl<T: Trait> Module<T> {
 
         Self::deposit_event(RawEvent::EntityDeleted(entity_id));
         Ok(())
+    }
+
+    // Helper functions:
+    // ----------------------------------------------------------------
+
+    fn ensure_known_class_id(class_id: ClassId) -> dispatch::Result {
+        ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
+        Ok(())
+    }
+
+    fn ensure_known_entity_id(entity_id: EntityId) -> dispatch::Result {
+        ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+        Ok(())
+    }
+
+    fn get_entity_and_class(entity_id: EntityId) -> (Entity, Class) {
+        let entity = <EntityById<T>>::get(entity_id);
+        let class = <ClassById<T>>::get(entity.class_id);
+        (entity, class)
     }
 }
