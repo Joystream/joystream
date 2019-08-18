@@ -35,10 +35,7 @@ const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID: &str = "New class schema re
 const ERROR_NO_PROPS_IN_CLASS_SCHEMA: &str = "Cannot add a class schema with an empty list of properties";
 
 const ERROR_ENTITY_NOT_FOUND: &str = "Entity was not found by id";
-const ERROR_ENTITY_EMPTY_SCHEMAS: &str = "Entity cannot have an empty list of schema indicies";
-const ERROR_ENTITY_EMPTY_PROPS: &str = "Entity cannot have an empty list of property values";
 const ERROR_ENTITY_EMPTY_NAME: &str = "Entity cannot have an empty name";
-const ERROR_NOTHING_TO_UPDATE_IN_ENTITY: &str = "Nothing to update in this entity";
 const ERROR_ENTITY_ALREADY_DELETED: &str = "Entity is already deleted";
 
 // const MAX_NUM_OF_PROPS_PER_CLASS: u16 = 30;
@@ -368,27 +365,57 @@ impl<T: Trait> Module<T> {
 
     pub fn update_entity_properties(
         entity_id: EntityId,
-        property_values: Vec<(u16, PropertyValue)>
+        new_property_values: Vec<(u16, PropertyValue)>
     ) -> dispatch::Result {
 
         Self::ensure_known_entity_id(entity_id)?;
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
-        // TODO don't allow to update any properties if entity has no schemas yet.
+        ensure!(!entity.schemas.is_empty(), "Cannot update entity properties because entity has no schemas yet");
 
-        // TODO check that every prop id is present in entity.values ids
+        let mut prop_id_not_found_on_class = false;
+        let mut prop_id_not_found_on_entity = false;
+        let mut has_unknown_internal_id = false;
+        let mut has_not_matching_prop_type = false;
+        let mut updated_values = entity.values;
 
-        // TODO check that every property value matches prop type of class property with the same prop id
+        for (id, new_value) in new_property_values.iter() {
+            if let Some(prop) = updated_values.iter_mut().find(|(valid_id, _)| *id == *valid_id) {
+                let (valid_id, current_value) = prop;
 
-        // TODO Check validity of Internal(EntityId) for properties.
+                if let Some(class_prop) = class.properties.get(*valid_id as usize) {
+                    if !Self::does_prop_value_match_type(new_value.clone(), class_prop.prop_type.clone()) {
+                        has_not_matching_prop_type = true;
+                        break;
+                    }
 
-        // TODO Update prop value, if prop id exists in this entity
+                    if Self::is_unknown_internal_entity_id(new_value.clone()) {
+                        has_unknown_internal_id = true;
+                        break;
+                    }
 
-        // TODO Add prop value, if prop id does noy exists in this entity
+                    *current_value = new_value.clone();
 
-        // TODO finish
+                } else {
+                    prop_id_not_found_on_class = true;
+                    break;
+                }
+            } else {
+                prop_id_not_found_on_entity = true;
+                break;
+            }
+        }
 
+        ensure!(!prop_id_not_found_on_entity, "Some of the provided property ids cannot be found on the current list of propery values of this entity");
+
+        ensure!(!prop_id_not_found_on_class, "Some of the provided property ids cannot be found on the list of class properties");
+
+        ensure!(!has_not_matching_prop_type, "Some of the provided property values don't match the expected property type");
+
+        ensure!(!has_unknown_internal_id, "Some of the provided property values has unknown internal entity id");
+
+        Self::deposit_event(RawEvent::EntityPropertiesUpdated(entity_id));
         Ok(())
     }
     
@@ -407,6 +434,7 @@ impl<T: Trait> Module<T> {
 
         let mut updates_count = 0;
         let mut updated_values = entity.values;
+
         property_ids.into_iter().for_each(|prop_id| {
             if let Some(prop) = class.properties.get(prop_id as usize) {
                 // Only non required property values can be removed:
@@ -459,9 +487,50 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    pub fn is_unknown_internal_class_id(id: PropertyType) -> bool {
+        if let PropertyType::Internal(class_id) = id {
+            !<ClassById<T>>::exists(class_id)
+        } else {
+            false
+        }
+    }
+
+    pub fn is_unknown_internal_entity_id(id: PropertyValue) -> bool {
+        if let PropertyValue::Internal(entity_id) = id {
+            !<EntityById<T>>::exists(entity_id)
+        } else {
+            false
+        }
+    }
+
     fn get_entity_and_class(entity_id: EntityId) -> (Entity, Class) {
         let entity = <EntityById<T>>::get(entity_id);
         let class = <ClassById<T>>::get(entity.class_id);
         (entity, class)
+    }
+
+    pub fn does_prop_value_match_type(
+        val: PropertyValue,
+        typ: PropertyType,
+    ) -> bool {
+
+        // Shortcuts for faster readability of match expression:
+        use {PropertyValue as PV};
+        use {PropertyType as PT};
+
+        match (val, typ) {
+            (PV::None,        PT::None)    |
+            (PV::Bool(_),     PT::Bool)    |
+            (PV::Uint16(_),   PT::Uint16)  |
+            (PV::Uint32(_),   PT::Uint32)  |
+            (PV::Uint64(_),   PT::Uint64)  |
+            (PV::Int16(_),    PT::Int16)   |
+            (PV::Int32(_),    PT::Int32)   |
+            (PV::Int64(_),    PT::Int64)   |
+            (PV::Text(_),     PT::Text(_)) |
+            (PV::Internal(_), PT::Internal(_)) => true,
+            // (PV::External(_), PT::External(_)) => true,
+            _ => false,
+        }
     }
 }
