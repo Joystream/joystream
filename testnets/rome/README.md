@@ -92,7 +92,7 @@ This Release Plan is considered "final" once merged to master, and anything belo
 
   2. `2 curators in the working group for each content type.`
 
-  3. `At 100 least uploads for each content type.`
+  3. `At least 100 uploads for each content type.`
 
   4. `50GBs of media content`
 
