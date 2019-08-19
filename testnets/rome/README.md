@@ -94,7 +94,7 @@ This Release Plan is considered "final" once merged to master, and anything belo
 
   3. `At least 100 uploads for each content type.`
 
-  4. `50GBs of media content`
+  4. `50GBs of media content.`
 
 <br />
 
@@ -142,11 +142,10 @@ The purpose and workflow of Milestones can be found [here](/#milestones)
 |    Date   |   Event                           |     Involved                   |
 |:---------:|-----------------------------------|:------------------------------:|
 | 21.08.19  | Rome Announced                    |  Martin, Bedeho, Elpassion     |
-| 26.08.19  | Spec Draft                        |  Alex, Bedeho, Mokhtar         |
+| 26.08.19  | Working Specs                     |  Alex, Bedeho, Mokhtar         |
 | 14.10.19  | Produce Sub-System Test Checklist | All                            |
 | 18.10.19  | Perform Sub-system Test           | All + 2x testers               |
 | 21.10.19  | Produce Final Test Checklist      | All                            |
-| 24.10.19  | Spec Release                      |  Alex, Bedeho, Mokhtar         |
 | 25.10.19  | Perform Final Test                | Martin, Mokhtar + 3x testers   |
 | 28.10.19  | Produce Release Checklist         | All                            |
 | 28.10.19  | Snapshot and kill Acropolis       | All                            |

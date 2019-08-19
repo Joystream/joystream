@@ -7,19 +7,20 @@
   <h5>The line between bureaucracy and rigour is 1px thin, but what are we to do? :pray:</h5>
 </div>
 
-# Table of contents
+Table of Contents
+=================
 
+<!-- TOC START min:1 max:3 link:true asterisk:false update:true -->
 - [Archive](#archive)
 - [Project OKRs](#project-okrs)
-  - [Launch Joystream on mainnet](#wip-construction_worker-objective-launch-a-functional-upgradable-video-platform-governed-and-operated-by-a-vibrant-community)
+  - [!WIP! :construction_worker: Objective: `Launch a functional, upgradable video platform, governed and operated by a vibrant community`](#wip-construction_worker-objective-launch-a-functional-upgradable-video-platform-governed-and-operated-by-a-vibrant-community)
 - [Quarterly OKRs](#quarterly-okrs)
-  - [Increase the Joystream building power](#objective-increase-the-joystream-building-power)
-  - [Expand Joystream brand awareness](#objective-expand-joystream-brand-awareness)
 - [Release OKRs](#release-okrs)
-  - [Launch Acropolis network](#objective-launch-acropolis-network)
+  - [Objective: `Introduce a Better Content System`](#objective-introduce-a-better-content-system)
+  - [Objective: `Engage community to understand Rome and join us in the future`](#objective-engage-community-to-understand-rome-and-join-us-in-the-future)
+- [Group OKRs](#group-okrs)
 - [Personal OKRs](#personal-okrs)
-    - [Bedeho - Improve Technical Productivity of Team](#objective-improve-technical-productivity-of-team)
-    - [Martin - Improve value as Release Manager](#objective-improve-value-as-release-manager)
+<!-- TOC END -->
 
 # Archive
 
@@ -56,7 +57,89 @@ TBD
 
 # Release OKRs
 
-TBD
+## Objective: `Introduce a Better Content System`
+- **Active from:** 20.08.19
+- **KR Measurement Deadline**: 7 days after Rome launch
+- **Tracked**: Every Tuesday
+- **Tracking Manager**: Martin
+- **Key Results**:
+  1. `Members can make a creator profile and publish content under this profile.`
+
+  2. `There is are content curators, policed by sudo.`
+
+  3. `Launch with 3 content types.`
+
+  4. `Add 1 new content type after release.`
+
+  5. `Add a new schema for a content type, and migrate only some instances to the new schema.`
+
+<br />
+
+#### Tracking
+
+| Date         | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |      Comments          |
+|--------------|:-----:|:-----:|:-----:|:-----:|:-----:|------------------------|
+| 27.08.19     |       |       |       |       |       |           -            |
+| 03.09.19     |       |       |       |       |       |           -            |
+| 10.09.19     |       |       |       |       |       |           -            |
+| 17.09.19     |       |       |       |       |       |           -            |
+| dd.mm.yy     |       |       |       |       |       |           -            |
+
+
+#### Tracking Notes
+
+* `NA`
+
+<br />
+
+## Objective: `Engage community to understand Rome and join us in the future`
+- **Active from:** 20.08.19
+- **KR Measurement Deadline**: 7 days after Rome launch
+- **Tracked**: Every Tuesday
+- **Tracking Manager**: Martin
+- **Key Results**:
+
+  1. `50 new creator profiles.`
+
+  2. `2 curators in the working group for each content type.`
+
+  3. `At least 100 uploads for each content type.`
+
+  4. `50GBs of media content.`
+
+<br />
+
+#### Tracking
+
+| Date         | KR #1 | KR #2 | KR #3 | KR #4 |      Comments          |
+|--------------|:-----:|:-----:|:-----:|:-----:|------------------------|
+| 27.08.19     |       |       |       |       |           -            |
+| 03.09.19     |       |       |       |       |           -            |
+| 10.09.19     |       |       |       |       |           -            |
+| 17.09.19     |       |       |       |       |           -            |
+| dd.mm.yy     |       |       |       |       |           -            |
+
+
+#### Tracking Notes
+
+* `NA`
+
+<br />
+
+#### OKR Notes
+
+* For previous testnet, we have tried making each KR be a mix of pure technical implementation, and community engagement in one single release OKR. This has lead to:
+  * confusion during tracking
+  * unclear responsibilities and and primary focus (ie. make it work, or make it easy)
+  * ambiguity around time and deadlines
+  * disappointment when the technical work has been completed, but "marketing" failed due to time or unrealistic numbers
+  * subjective/changing final grading to counter above point
+* For these reasons, we have decided on a new approach:
+  * separate the technical and community in two OKRs
+  * make all KRs as clear, unambiguous and objective as possible (for grading)
+  * make the tracking less subjective (as we have numbers from Tracking Issues as guides, not just the assigned individuals guesstimate)
+
+<br />
 
 # Group OKRs
 
@@ -64,6 +147,7 @@ Fill in if applicable.
 
 # Personal OKRs
 
+<!--
 ## `Alex` (@siman)
 
 Fill in if applicable.
@@ -77,5 +161,7 @@ TBD
 TBD
 
 ## `Mokhtar` (@mnaamani)
+
+-->
 
 Fill in if applicable.
