@@ -36,7 +36,8 @@
   </h3>
 </div>
 
-# Table of Contents
+Table of Contents
+=================
 
 - [Overview](#overview)
 - [Contribute](#contribute)
@@ -61,8 +62,8 @@
       - [Branding](#branding)
       - [Testnet Directory](#testnet-directory)
       - [Roles](#roles)
-        - [Release Manager](#release-manager)
-        - [Specification Lead and Committee](#specification-lead-and-committee)
+      - [Tracking Issues](#tracking-issues)
+      - [Milestones](#milestones)
       - [Step-by-step Process](#step-by-step-process)
 - [Github Policy](#github-policy)
 
@@ -239,7 +240,7 @@ The mode used depends on the nature of the key result.
 
 The template used for recording and tracking OKRs has the following form:
 
-## Objective:  `<Name of objective>`
+## Objective: `<Name of objective>`
  - **Active from:** `<When the OKR is set/live>`
  - **KR Measurement Deadline**: `<When the final grading is conducted>`
  - **Tracked**: `<Time interval at which OKR is tracked>`
@@ -299,17 +300,17 @@ Each release is directed by a _Release Manager_ (**RM**) who is responsible for:
  - Preparing all administrative pull requests for the release on this repo.
  - Follow up the Release [Milestones](#milestones)
 
-#### Tracking Issues
+### Tracking Issues
 
 A Tracking Issue is a GitHub issue which **evolves**, and at any given time holds a list of TODO items, with a corresponding completion status and and possibly responsibility indicator (i.e. each item has one responsible actor). TODO items are grouped into Tracking Issues based on what most deeply facilitates effective collaboration and progress tracking.
 
 - Every Monday, each Tracking Issue will be discussed in a video meeting between all assigned team members and the Release Manager.
 - These meetings should be highly focused, and kept at a reasonably high level.
-- If a discussion gets to deep, the RM can request that the relevant participants schedule a new meeting to address the issue.
+- If a discussion gets to deep, the **RM** can request that the relevant participants schedule a new meeting to address the issue.
 - The Release Manager will then update the Tracking Issue if necessary by changing/adding/removing/reassigning tasks, and checking off concluded tasks.
 - A concise summary of the meeting shall be added as a comment.
 
-#### Milestones
+### Milestones
 
 As part of the Release Plan, a set of Milestones are set, with a "target date". Similar to the concept of [Tracking Issues](#tracking-issues), the "Live Milestones" is a GitHub issue which **evolves**. Experience have shown, that during a release cycle:
 - we may require adjusting the target date(s)
@@ -326,7 +327,7 @@ In addition to the weekly follow-up up meetings addressed above, each release cy
 - `Release Checklist Meeting`
 - `Lessons Learned`
 
-The RM is responsible for scheduling, conducting and taking minutes. Go [here](/meetings) to read about previously held, and scheduled release meetings.
+The **RM** is responsible for scheduling, conducting and taking minutes. Go [here](/meetings) to read about previously held, and scheduled release meetings.
 
 ### Step by Step Process
 
