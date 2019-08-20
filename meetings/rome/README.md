@@ -3,72 +3,25 @@ Table of contents
 
 <!-- TOC START min:1 max:3 link:true asterisk:false update:true -->
 - [Planned Meetings](#planned-meetings)
-  - [Release Plan Finalization Meeting](#release-plan-finalization-meeting)
+  - [Release Checklist Meeting](#release-checklist-meeting)
     - [Agenda](#agenda)
     - [Minutes](#minutes)
-  - [Release Checklist Meeting](#release-checklist-meeting)
+  - [Lessons Learned](#lessons-learned)
     - [Agenda](#agenda-1)
     - [Minutes](#minutes-1)
-  - [Lessons Learned](#lessons-learned)
-    - [Agenda](#agenda-2)
-    - [Minutes](#minutes-2)
 - [Conducted Meetings](#conducted-meetings)
   - [Launch Meeting](#launch-meeting)
+    - [Agenda](#agenda-2)
+    - [Minutes](#minutes-2)
+  - [User Stories Meeting](#user-stories-meeting)
     - [Agenda](#agenda-3)
     - [Minutes](#minutes-3)
-  - [User Stories Meeting](#user-stories-meeting)
+  - [Release Plan Finalization Meeting](#release-plan-finalization-meeting)
     - [Agenda](#agenda-4)
     - [Minutes](#minutes-4)
 <!-- TOC END -->
 
 # Planned Meetings
-
-## Release Plan Finalization Meeting
-
-- **ID:** `Rome Release Plan Finalization Meeting`
-- **Date:** `20.08.19`
-- **Starts:** `11:15 GMT+2`
-- **Scheduled Duration:** `90min`
-- **Venue:** `ZOOM`
-- **Lead**: `Martin`
-- **Minutes**: `Martin`
-- **Participants**:
-  - `Alex`
-  - `Bedeho`
-  - `Martin`
-  - `Mokhtar`
-  - `Paul`
-
-### Agenda
-#### Item 1
-Go through the draft Release Plan and OKRs.
-- Correct any errors
-- Resolve open questions
-- Ensure the process is clear to all
-- Revisit the *very tentative* milestone dates
-
-#### Item 2
-Go through the Tracking Issues
-- Discuss how they are split
-- Discuss granularity
-- Discuss assigning
-- Discuss Tracking Issues -> OKR grading
-
-### Minutes
-**Started at:** `hh:mm GMT+2`
-**Present:**
-  - `name1`
-  - ...
-
-#### Item 1
-...
-
-**Other topics raised:**
-...
-
-**Ended at:** `hh:mm GMT+2`
-
----
 
 ## Release Checklist Meeting
 
@@ -581,3 +534,72 @@ Not addressed yet.
 
 
 **Ended at:** `11:15 GMT+2`
+
+---
+
+## Release Plan Finalization Meeting
+
+- **ID:** `Rome Release Plan Finalization Meeting`
+- **Date:** `20.08.19`
+- **Starts:** `11:15 GMT+2`
+- **Scheduled Duration:** `90min`
+- **Venue:** `ZOOM`
+- **Lead**: `Martin`
+- **Minutes**: `Martin`
+- **Participants**:
+  - `Alex`
+  - `Bedeho`
+  - `Martin`
+  - `Mokhtar`
+  - `Paul`
+
+### Agenda
+#### Item 1
+Go through the draft Release Plan and OKRs.
+- Correct any errors
+- Resolve open questions
+- Ensure the process is clear to all
+- Revisit the *very tentative* milestone dates
+
+#### Item 2
+Go through the Tracking Issues
+- Discuss how they are split
+- Discuss granularity
+- Discuss assigning
+- Discuss Tracking Issues -> OKR grading
+
+### Minutes
+**Started at:** `11:15 GMT+2`
+**Present:**
+  - `All`
+
+#### Item 1
+
+Started with a brief introduction of the new Release Plan format.
+
+- The main topic of discussion was the OKRs.
+  - Some changes were requested for clarity.
+  - Some numbers were changed for the community engagement KRs.
+- We agreed to leave the Milestone dates as proposed for now.
+- We agreed to upgrade the Substrate Node Template to a newer version, but decided to await more research and testing before choosing a specific version.
+- We agreed not to migrate any content from Acropolis to Rome.
+
+#### Item 2
+
+Started with a brief introduction of the Tracking Issues.
+
+- Two main issues raised:
+  - Should we add tentative dates to all tasks?
+    - We decided not to for now.
+  - Not everyone was convinced the Tracking Issues was split correctly.
+    - We decided to leave them as is unless a detailed counter proposal was made.
+- Due to time constraints, we only looked at their structure.
+- Everyone is responsible for reviewing the Tracking Issues, and propose improvements and additions.
+- Some good suggestions, like adding testing, was proposed and will be implemented.
+
+
+**Other topics raised:**
+
+NA
+
+**Ended at:** `12:50 GMT+2`
