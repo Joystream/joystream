@@ -63,9 +63,9 @@ TBD
 - **Tracked**: Every Tuesday
 - **Tracking Manager**: Martin
 - **Key Results**:
-  1. `Members can make a creator profile and publish content under this profile.`
+  1. `Members can make a Content Creator profile and publish content under this profile.`
 
-  2. `There is are content curators, policed by sudo.`
+  2. `Introduce the role of staked Content Curators, policed by sudo.`
 
   3. `Launch with 3 content types.`
 
@@ -99,13 +99,13 @@ TBD
 - **Tracking Manager**: Martin
 - **Key Results**:
 
-  1. `50 new creator profiles.`
+  1. `20 new creator profiles.`
 
-  2. `2 curators in the working group for each content type.`
+  2. `Get 5 active Content Curators.`
 
-  3. `At least 100 uploads for each content type.`
+  3. `At least 20 items for each content type enabled at launch.`
 
-  4. `50GBs of media content.`
+  4. `At least 500 items in total across all content types.`
 
 <br />
 
@@ -128,16 +128,15 @@ TBD
 
 #### OKR Notes
 
-* For previous testnet, we have tried making each KR be a mix of pure technical implementation, and community engagement in one single release OKR. This has lead to:
-  * confusion during tracking
-  * unclear responsibilities and and primary focus (ie. make it work, or make it easy)
-  * ambiguity around time and deadlines
-  * disappointment when the technical work has been completed, but "marketing" failed due to time or unrealistic numbers
-  * subjective/changing final grading to counter above point
-* For these reasons, we have decided on a new approach:
-  * separate the technical and community in two OKRs
-  * make all KRs as clear, unambiguous and objective as possible (for grading)
-  * make the tracking less subjective (as we have numbers from Tracking Issues as guides, not just the assigned individuals guesstimate)
+* [Technical OKR](#objective-introduce-a-better-content-system)
+  * `1.` A member can create multiple "Content Creator" profiles associated with their membership ID.
+  * `3. - 5.` The content types and schemas must be understood by both the runtime and pioneer.
+
+* [Community OKR](#objective-engage-community-to-understand-rome-and-join-us-in-the-future)
+  * `2.` "Active" means Content Curators that are not fired as a result of not following their responsibilities.
+  * `3. & 4.`: Content "items" means number of entries in the content directory, not the data objects associated with the entry.
+
+See [Release Plan](/testnets/rome/README.md#general) for general notes on the Release OKRs.
 
 <br />
 

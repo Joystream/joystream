@@ -28,7 +28,7 @@ Table of Contents
 
 # Overview
 
-After planning a new testnet, we produce a new release plan.
+During the planning stages of a new testnet, we produce a new release plan.
 
 While working on [Acropolis](/testnets/acropolis), we decided to abandon the approach of creating a single `Release Project` kanban board on GitHub. These quickly became bloated, and created more confusion than value. We instead created [Tracking Issues](#tracking-issues) for the two major component of the release - the [forum](https://github.com/Joystream/joystream/issues/47) and the [storage node](https://github.com/Joystream/joystream/issues/57). These made it far simpler to get a good grasp of completed and outstanding items at a high level.
 
@@ -40,7 +40,7 @@ TBD
 
 # OKR results
 
-This section will be only include the final grading after network release. The release OKRs can be found [here](#release-okrs), and you can track our progress [here](/okrs#release-okrs).
+This section will only include the final grading after network release. The release OKRs can be found [here](#release-okrs), and you can track our progress [here](/okrs#release-okrs).
 
 # Release Plan
 
@@ -56,7 +56,7 @@ This Release Plan is considered "final" once merged to master, and anything belo
 
 ## Release Date
 
-06.11.19, 12:00 (GMT+2)
+04.11.19, 11:00 (GMT+2)
 
 ## Release OKRs
 
@@ -66,9 +66,9 @@ This Release Plan is considered "final" once merged to master, and anything belo
 - **Tracked**: Every Tuesday
 - **Tracking Manager**: Martin
 - **Key Results**:
-  1. `Members can make a creator profile and publish content under this profile.`
+  1. `Members can make a Content Creator profile and publish content under this profile.`
 
-  2. `There is are content curators, policed by sudo.`
+  2. `Introduce the role of staked Content Curators, policed by sudo.`
 
   3. `Launch with 3 content types.`
 
@@ -86,26 +86,36 @@ This Release Plan is considered "final" once merged to master, and anything belo
 - **Tracking Manager**: Martin
 - **Key Results**:
 
-  1. `50 new creator profiles.`
+  1. `20 new creator profiles.`
 
-  2. `2 curators in the working group for each content type.`
+  2. `Get 5 active Content Curators.`
 
-  3. `At least 100 uploads for each content type.`
+  3. `At least 20 items for each content type enabled at launch.`
 
-  4. `50GBs of media content.`
+  4. `At least 500 items in total across all content types.`
 
 <br />
 
 #### OKR Notes
 
-* For previous testnet, we have tried making each KR be a mix of pure technical implementation, and community engagement in one single release OKR. This has lead to:
+##### Specific
+* [Technical OKR](#objective-introduce-a-better-content-system)
+  * `1.` A member can create multiple "Content Creator" profiles associated with their membership ID.
+  * `3. - 5.` The content types and schemas must be understood by both the runtime and pioneer.
+
+* [Community OKR](#objective-engage-community-to-understand-rome-and-join-us-in-the-future)
+  * `2.` "Active" means Content Curators that are not fired as a result of not following their responsibilities.
+  * `3. & 4.`: Content "items" means number of entries in the content directory, not the data objects associated with the entry.
+
+##### General
+* For previous testnet, we have tried making each KR be a mix of pure technical implementation, and community engagement in one single release OKR. This lead to:
   * confusion during tracking
-  * unclear responsibilities and and primary focus (ie. make it work, or make it easy)
+  * unclear responsibilities and and primary focus (ie. make it work, or make it user friendly)
   * ambiguity around time and deadlines
   * disappointment when the technical work has been completed, but "marketing" failed due to time or unrealistic numbers
   * subjective/changing final grading to counter above point
 * For these reasons, we have decided on a new approach:
-  * separate the technical and community in two OKRs
+  * separate the technical and community in two Release OKRs
   * make all KRs as clear, unambiguous and objective as possible (for grading)
   * make the tracking less subjective (as we have numbers from Tracking Issues as guides, not just the assigned individuals guesstimate)
 
@@ -115,7 +125,7 @@ Go [here](/okrs#release-okrs) for tracking.
 
 ## Tracking Issues
 
-The purpose and workflow of Tracking Issues can be found [here](/#tracking-issues)
+The purpose and workflow of Tracking Issues can be found [here](/README.md#tracking-issues)
 
   - [1. New Infrastructure Runtime Modules](https://github.com/Joystream/joystream/issues/95)
   - [2. Media System (Static Parts)](https://github.com/Joystream/joystream/issues/96)
@@ -126,16 +136,11 @@ The purpose and workflow of Tracking Issues can be found [here](/#tracking-issue
   - [7. Operations and Standalone Tasks](https://github.com/Joystream/joystream/issues/101)
   - [8. Release/Launch Operations](https://github.com/Joystream/joystream/issues/102)
 
-**Unresolved Tasks**
-
-- Impact on Colossus? (Bruteforced in `5.` for now)
-- Should we squeeze in a testnet Pioneer landing page somewhere?
-
 ---
 
 ## Milestones
 
-The purpose and workflow of Milestones can be found [here](/#milestones)
+The purpose and workflow of Milestones can be found [here](/README.md#milestones)
 
 |    Date   |   Event                           |     Involved                   |
 |:---------:|-----------------------------------|:------------------------------:|
@@ -157,18 +162,15 @@ Go [here](https://github.com/Joystream/joystream/issues/103) for status and upda
 ## Deployment
 
 Start a fresh chain, with a new genesis block and joystream-node binary.
-*built from a more recent version of the [substrate](https://github.com/paritytech/substrate) node template)?*
+
+Built from a more recent version of the [substrate](https://github.com/paritytech/substrate) node template.
 
 **Transferring of the following:**
 - Memberships
 - Forum Posts
-- Media Content
 
 All `keys` stored locally in the browser of each user will still work (though the balance will not be transferred).
 In practice, this means all `keys` associated with a `member` will still have the following qualities:
 
-- `forum` posts can still be edited by the `member` that made the post.
-- `content` uploaders will still be able to use their keys to edit `metadata` of their uploaded content.
-*how will this work with Content Creator role?*
-
-All `keys` tied to a `Membership` will start with a small balance to allow them to post on the `forum` and upload `content`.
+- Posts on the `forum` can still be edited by the `member` that made the post.
+- All `members` will be allocated a small balance in the genesis block to allow them to post on the `forum` and upload `content`.
