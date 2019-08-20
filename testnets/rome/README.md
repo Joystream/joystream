@@ -1,6 +1,4 @@
-<!--
 <img src="img/rome-cover.svg"/>
--->
 
 <div align="center">
   <h3>
