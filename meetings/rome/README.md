@@ -26,20 +26,33 @@ Table of contents
 ## Release Plan Finalization Meeting
 
 - **ID:** `Rome Release Plan Finalization Meeting`
-- **Date:** `dd.mm.yy`
-- **Starts:** `hh:mm GMT+2`
-- **Scheduled Duration:** `min`
+- **Date:** `20.08.19`
+- **Starts:** `11:15 GMT+2`
+- **Scheduled Duration:** `90min`
 - **Venue:** `ZOOM`
-- **Lead**: `NA`
-- **Minutes**: `NA`
+- **Lead**: `Martin`
+- **Minutes**: `Martin`
 - **Participants**:
-  - `name1`
-  - ...
+  - `Alex`
+  - `Bedeho`
+  - `Martin`
+  - `Mokhtar`
+  - `Paul`
 
 ### Agenda
 #### Item 1
-...
+Go through the draft Release Plan and OKRs.
+- Correct any errors
+- Resolve open questions
+- Ensure the process is clear to all
+- Revisit the *very tentative* milestone dates
 
+#### Item 2
+Go through the Tracking Issues
+- Discuss how they are split
+- Discuss granularity
+- Discuss assigning
+- Discuss Tracking Issues -> OKR grading
 
 ### Minutes
 **Started at:** `hh:mm GMT+2`
