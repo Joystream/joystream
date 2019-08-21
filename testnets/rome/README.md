@@ -144,7 +144,7 @@ The purpose and workflow of Milestones can be found [here](/README.md#milestones
 
 |    Date   |   Event                           |     Involved                   |
 |:---------:|-----------------------------------|:------------------------------:|
-| 21.08.19  | Rome Announced                    |  Martin, Bedeho, Elpassion     |
+| 22.08.19  | Rome Announced                    |  Martin, Bedeho, Elpassion     |
 | 26.08.19  | Working Specs                     |  Alex, Bedeho, Mokhtar         |
 | 14.10.19  | Produce Sub-System Test Checklist | All                            |
 | 18.10.19  | Perform Sub-system Test           | All + 2x testers               |
