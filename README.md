@@ -29,16 +29,15 @@
     <a href="https://github.com/Joystream/helpdesk/blob/master/README.md">
       Helpdesk
     </a>
-    <!--
     <span> | </span>
-    <a href="/testnets/acropolis">
-      Acropolis Testnet
+    <a href="/testnets/rome">
+      Rome Testnet
     </a>
-    -->
   </h3>
 </div>
 
-# Table of Contents
+Table of Contents
+=================
 
 - [Overview](#overview)
 - [Contribute](#contribute)
@@ -51,7 +50,7 @@
     - [Why is this on Github?](#why-is-this-on-github)
     - [Meetings](#meetings)
       - [Daily standup](#daily-standup)
-      - [Monday all-hands](#monday-all-hands)
+      - [Tuesday all-hands](#tuesday-all-hands)
       - [Release meeting](#release-meeting)
     - [OKR System](#okr-system)
       - [Assignment](#assignment)
@@ -63,8 +62,8 @@
       - [Branding](#branding)
       - [Testnet Directory](#testnet-directory)
       - [Roles](#roles)
-        - [Release Manager](#release-manager)
-        - [Specification Lead and Committee](#specification-lead-and-committee)
+      - [Tracking Issues](#tracking-issues)
+      - [Milestones](#milestones)
       - [Step-by-step Process](#step-by-step-process)
 - [Github Policy](#github-policy)
 
@@ -122,13 +121,10 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 
 [Acropolis](/testnets/acropolis/README.md)
 
-<!--
-
 ## Next Testnet
 
-[Acropolis](/testnets/acropolis/README.md)
+[Rome](testnets/rome)
 
--->
 
 ## Past Testnets
 
@@ -167,14 +163,14 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
 - **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Telegram for invite).
 - **Record&Publish:** YES, if no participant objects.
 
-#### Monday all-hands
+#### Tuesday all-hands
 
 - **Description:** Everyone states individual:
   1. **OKR Tracking**: Track your OKRs and OKR assignments
   2. **Health Comments:** Any points you wish to discuss related to things like team health, code health, workflow/system health etc.
   3. **Weekly Priorities:** Your top 3-5 priorities this week. *Not* the same as your tasks today.
   4. **Announcements:** Anything you think should be brought to everyone's attention.
-- **When:** Every working Monday at 10am (GMT)
+- **When:** Every working Tuesday at 10am (GMT)
 - **Where:** Zoom
 - **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Telegram for invite).
 - **Record&Publish:** YES, if no participant objects.
@@ -244,7 +240,7 @@ The mode used depends on the nature of the key result.
 
 The template used for recording and tracking OKRs has the following form:
 
-## Objective:  `<Name of objective>`
+## Objective: `<Name of objective>`
  - **Active from:** `<When the OKR is set/live>`
  - **KR Measurement Deadline**: `<When the final grading is conducted>`
  - **Tracked**: `<Time interval at which OKR is tracked>`
@@ -288,9 +284,9 @@ All releases have the following branding materials, which should be summarised i
 
 All releases should have a corresponding _release directory_ in the `/testnets` directory of this repo, and it should have the following structure:
 
-- `RELEASE_NAME`
+- `release_name`
   - `README.md`: Release document.
-  - **WIP**`specification.md`: Testnet specification.
+  - `specification.md`: Testnet specification.
   - `/branding`: A directory which includes a branding document and related assets, as described in the branding [section](#branding).
 
 ### Roles
@@ -299,108 +295,43 @@ All releases should have a corresponding _release directory_ in the `/testnets` 
 
 Each release is directed by a _Release Manager_ (**RM**) who is responsible for:
 
- - Moving the release process forward and keeping it on track.
- - Calling and conducting release meetings.
+ - Conduct weekly status meetings (Monday), for each [Tracking Issue](#tracking-issues) of the release.
+ - Based on this information, set a weekly tracking score for each KR to be presented and discussed with the team as part of the [Tuesday all-hands](#tuesday-all-hands).
  - Preparing all administrative pull requests for the release on this repo.
+ - Follow up the Release [Milestones](#milestones)
 
-#### Leads
+### Tracking Issues
 
-A [release plan](/testnets/#release-plan-template) will consist of a set of projects, each with a corresponding lead, these are referred to as the _leads_.
+A Tracking Issue is a GitHub issue which **evolves**, and at any given time holds a list of TODO items, with a corresponding completion status and and possibly responsibility indicator (i.e. each item has one responsible actor). TODO items are grouped into Tracking Issues based on what most deeply facilitates effective collaboration and progress tracking.
 
-#### Specification Lead and Committee
+- Every Monday, each Tracking Issue will be discussed in a video meeting between all assigned team members and the Release Manager.
+- These meetings should be highly focused, and kept at a reasonably high level.
+- If a discussion gets to deep, the **RM** can request that the relevant participants schedule a new meeting to address the issue.
+- The Release Manager will then update the Tracking Issue if necessary by changing/adding/removing/reassigning tasks, and checking off concluded tasks.
+- A concise summary of the meeting shall be added as a comment.
 
-The specification lead is responsible for moving the specification process forward, and the committee is anyone who is expected to contribute.
+### Milestones
 
-**WIP: we need to connect this to broader information about our specification work, but that is not done yet**
+As part of the Release Plan, a set of Milestones are set, with a "target date". Similar to the concept of [Tracking Issues](#tracking-issues), the "Live Milestones" is a GitHub issue which **evolves**. Experience have shown, that during a release cycle:
+- we may require adjusting the target date(s)
+- we may want to add or remove certain Milestones
+- we may want to adjust the scope of certain Milestones
 
 ### Standard Release Meetings
 
-#### Launch Meeting
+In addition to the weekly follow-up up meetings addressed above, each release cycle includes the more formal meetings listed below.
 
-First release meeting, should take no more than **45 minutes**, with agenda:
+- `Launch Meeting`
+- `User Stories Meeting`
+- `Release Plan Finalization Meeting]`
+- `Release Checklist Meeting`
+- `Lessons Learned`
 
-1. Propose set of release OKRs based on review of:
-    - open help desk issues that have bearing on release.  
-    - any possibly finalised OKRs from prior release.
-    - project OKRs.
-2. Identify set of projects, products etc. and assign leads.
-3. Assign responsibility to someone for finalising outstanding branding assets, which must be delivered no later than **five days after this meeting**.
-4. Schedule the [user stories meeting](#user-stories-meeting) to no later than **two working days after this meeting**.
+The **RM** is responsible for scheduling, conducting and taking minutes. Go [here](/meetings) to read about previously held, and scheduled release meetings.
 
-#### User Stories Meeting
+### Step by Step Process
 
-Second release meeting, should take no more than **90 minutes**, with agenda:
-
-1. For experiences identified in the [launch meeting](#launch-meeting), review proposed user stories suggestions prepared by each lead, and settle on final set of stories.
-2. Schedule the [Release Plan Finalisation Meeting](#release-plan-finalisation-meeting) to no later than **two working days after this meeting**.
-
-#### Release Plan Finalisation Meeting
-
-Third release meeting, should take no more than **90 minutes**, with agenda:
-
-1. Finalise release plan based on lead proposals.
-2. Evaluate whether plan is feasible based on projected total load on contributors, and tentative release date. If not feasible, try to make minor modifications of scope or deadline. If that also does not work, go back and redo process from launch meeting step.
-
-If feasible, then proceed with:
-
-3. If a specification is to be done, assign a [specification lead and committee](Specification Lead and Committee), and schedule first [specification planning meeting](#specification-planning-meeting).
-
-#### Specification Planning meeting
-
-Open-ended technical meetings which are conducted iteratively with implementing out parts of the release.
-
-### Step-by-step Process
-
-This whole process should take no more than **7** working days from start to finish, and involves the following sequence of events and corresponding deadlines.
-
-1. The following must be determined no later than **the day before the prior testnet release.**
-
-    - [**RM**](#release-manager)
-    - testnet name, denoted by `TESTNET_NAME`
-    - tentative release date
-
-2. **RM** shall have done the following no later than at **the day after the prior testnet release.**
-
-    - created PR establishing a new [testnet directory](/testnets), where:
-        - the release name is set to `TESTNET_NAME`.
-        - the naming rationale is left blank, unless it is ready.
-        - the goal is left blank, unless it is ready.
-        - the logomark is left blank, unless it is ready.
-
-    - initiated creation of possibly missing logomark.
-
-    - scheduled a meeting time for the [launch meeting](#launch-meeting) no later than the next available working day when all core contributors are available.
-
-    - create a subdirectory of the [meeting](/meetings) directory that has itinerary with appropriate agenda.
-
-3. Conduct launch meeting.
-
-4. After the meeting is over, the **RM** shall on the same day have the testnet directory pull request merged with completed itinerary.
-
-5. Leads must complete their user stories contributions, in the form of PRs into the meeting directory, before the user stories meeting starts.
-
-6. Conduct user stories meeting.
-
-7. After the meeting is over, the **RM** shall have the lead pull requests merged, with possible modifications, no later than **the day after**.
-
-8. Leads must complete their release plan sections, in the form of PRs into the meeting directory, before the release plan finalisation meeting starts.
-
-9. Conduct release plan finalisation meeting.
-
-10. After the meeting is over, the **RM** shall on the same days:
-
-    - create a GitHub project per release objective on the [Joystream GitHub Organisation](https://github.com/orgs/Joystream/projects) which kanban boards with standardized columns: `TODO`, `In progress`, `Done` and `Halted`.
-
-    - update release document link to relevant GitHub projects.
-
-    - update the label set to reflect any new possible products.
-
-10. Specification work begins, and is scheduled and organised on an ad-hoc basis. Anyone unaffected by this work can continue to move forward immediately.
-
-11. Leads must convert their release plan contributions into tangible tasks, in the form of GitHub issues on the relevant GitHub project created. After this process, the release plan itself should no longer be consulted, also if changes are made.
-
-12. Release planning meetings are conducted on a per-need basis, typically more frequently as the release date approaches.
-
+TODO
 
 <br />
 <img src="img/github-policy.svg" id="github-policy"/>

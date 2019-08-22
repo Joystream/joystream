@@ -7,19 +7,20 @@
   <h5>The line between bureaucracy and rigour is 1px thin, but what are we to do? :pray:</h5>
 </div>
 
-# Table of contents
+Table of Contents
+=================
 
+<!-- TOC START min:1 max:3 link:true asterisk:false update:true -->
 - [Archive](#archive)
 - [Project OKRs](#project-okrs)
-  - [Launch Joystream on mainnet](#wip-construction_worker-objective-launch-a-functional-upgradable-video-platform-governed-and-operated-by-a-vibrant-community)
+  - [!WIP! :construction_worker: Objective: `Launch a functional, upgradable video platform, governed and operated by a vibrant community`](#wip-construction_worker-objective-launch-a-functional-upgradable-video-platform-governed-and-operated-by-a-vibrant-community)
 - [Quarterly OKRs](#quarterly-okrs)
-  - [Increase the Joystream building power](#objective-increase-the-joystream-building-power)
-  - [Expand Joystream brand awareness](#objective-expand-joystream-brand-awareness)
 - [Release OKRs](#release-okrs)
-  - [Launch Acropolis network](#objective-launch-acropolis-network)
+  - [Objective: `Introduce a Better Content System`](#objective-introduce-a-better-content-system)
+  - [Objective: `Engage community to understand Rome and join us in the future`](#objective-engage-community-to-understand-rome-and-join-us-in-the-future)
+- [Group OKRs](#group-okrs)
 - [Personal OKRs](#personal-okrs)
-    - [Bedeho - Improve Technical Productivity of Team](#objective-improve-technical-productivity-of-team)
-    - [Martin - Improve value as Release Manager](#objective-improve-value-as-release-manager)
+<!-- TOC END -->
 
 # Archive
 
@@ -56,61 +57,88 @@ TBD
 
 # Release OKRs
 
-## Objective: `Launch Acropolis Network`
-- **Active from:** 09.05.19
-- **KR Measurement Deadline**: 7-9 days after Acropolis launch (first weekday)
-- **Tracked**: Every Monday
+## Objective: `Introduce a Better Content System`
+- **Active from:** 20.08.19
+- **KR Measurement Deadline**: 7 days after Rome launch
+- **Tracked**: Every Tuesday
 - **Tracking Manager**: Martin
 - **Key Results**:
-1. `Get 75 posts on forum (limits, not Jsg) (ewd)`
-    - Bedeho: 2/3
-    - Alex: 1/3
-2. `Forum (runtime), storage (runtime and P2P) fully specd (n)`
-    - Bedeho (as manager): 1/2
-    - Bedeho (as writer): 1/6
-    - Jens: 2/6
-      - Mokhtar from 10.06.19
-3. `Have 4x replication for all 2 tranches on storage node (ewd)`
-    - Jens: 2/3
-      - Mokhtar from 10.06.19
-    - Mokhtar: 1/3
-4. `95% uptime Storage Providers (ewd)`
-    - Jens: 1/4
-      - 0 from 10.06.19
-    - Mokhtar: 1/4
-      - 1/2 from 10.06.19
-    - Martin: 1/4
-    - Alex: 1/4
-5. `No PRs merged to master (excluding bugfixes and "pioneer") after "Sub-system Test" (conf)`
-    - Martin: 1/2
-    - Jens: 1/8
-      - 0 from 10.06.19
-    - Mokhtar: 1/8
-      - 1/6 from 10.06.19
-    - Bedeho: 1/8
-      - 1/6 from 10.06.19
-    - Alex: 1/8
-      - 1/6 from 10.06.19
+  1. `Members can make a Content Creator profile and publish content under this profile.`
 
+  2. `Introduce the role of staked Content Curators, policed by sudo.`
 
-- **Notes**
-  * During the first tracking, it was decided to track KR5 by how confident (conf) each assigned individual is that the KR will be achieved.
+  3. `Launch with 3 content types.`
+
+  4. `Add 1 new content type after release.`
+
+  5. `Add a new schema for a content type, and migrate only some instances to the new schema.`
+
 <br />
 
-- **Tracking:**
+#### Tracking
 
-| Date     | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |    Comments       |
-|:--------:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----------------:|
-| 13.05.19 |(0.55,0.65) **0.58**|(0.4,1,0.1) **0.4**|(0,0) **0**|(0,0,0,0) **0**|(0.5,1,0.5,0.95,0.95) **0.68**|KR3 tracking N/A as SoW must be finalized|
-| 20.05.19 |(0.6,0.8) **0.7**|(0.4,1,*0.1*) **0.4**|(*0*,0.1) **0.03**|(*0*,0,0,0) **0**|(0.5,*1*,0.25,0.95,0.95) **0.64**|  *n* denotes Jens' tracking (absent)|
-| 27.05.19 |(0.7,0.85) **0.78**|(0.4,1,0.9) **0.67**|(0,0.1) **0.03**|(0,0,0,0) **0**|(0.7,1,0.6,1,0.95) **0.79**|    -      |
-| 03.06.19 |(0.9,0.85) **0.88**|(0.4,1,0.95) **0.67**|(0.45,0.2) **0.37**|(0,0.2,0,0) **0.05**|(0.6,1,0.8,1,0.95) **0.77**|    **-**        |
-| 10.06.19 |(1.0,0.9) **0.95**|(0.4,1,0.95) **0.67**| (0.4) **0.4** |(0.85,0,0) **0.43**| `*` |`*` **Due to changes in circumstances, we chose abstain from tracking KR5**|
-| 17.06.19 |(0.99,0.97) **0.98**|(0.8,1.0,1.0) **0.9**|(0.49) **0.49**|(0.99,0.5,1.0) **0.85**|(0.65,0.95,0.3,0.7) **0.65**| - |
-| 24.06.19 |(1.0,1.0) **1.0**|(0.67,1.0,1.0) **0.83**|(0.5) **0.5**       |(0.9,0.8,1.0) **0.9**|(0,0.8,1.0,1.0) **0.47**  |   -        |
-| 03.07.19 | (1+7/75)x0.5 **0.55**| (2/3) **0.67**  | (1+0)x0.5 **0.5**| (1+0.5)x0.5 **0.75** | **0.5**   |Actual score|
+| Date         | KR #1 | KR #2 | KR #3 | KR #4 | KR #5 |      Comments          |
+|--------------|:-----:|:-----:|:-----:|:-----:|:-----:|------------------------|
+| 27.08.19     |       |       |       |       |       |           -            |
+| 03.09.19     |       |       |       |       |       |           -            |
+| 10.09.19     |       |       |       |       |       |           -            |
+| 17.09.19     |       |       |       |       |       |           -            |
+| dd.mm.yy     |       |       |       |       |       |           -            |
 
-See [archive](archive/acropolis) for more details.
+
+#### Tracking Notes
+
+* `NA`
+
+<br />
+
+## Objective: `Engage community to understand Rome and join us in the future`
+- **Active from:** 20.08.19
+- **KR Measurement Deadline**: 7 days after Rome launch
+- **Tracked**: Every Tuesday
+- **Tracking Manager**: Martin
+- **Key Results**:
+
+  1. `20 Content Creator profiles which add at least one content item.`
+
+  2. `Get 5 active Content Curators.`
+
+  3. `At least 20 items for each content type enabled at launch.`
+
+  4. `At least 500 items in total across all content types.`
+
+<br />
+
+#### Tracking
+
+| Date         | KR #1 | KR #2 | KR #3 | KR #4 |      Comments          |
+|--------------|:-----:|:-----:|:-----:|:-----:|------------------------|
+| 27.08.19     |       |       |       |       |           -            |
+| 03.09.19     |       |       |       |       |           -            |
+| 10.09.19     |       |       |       |       |           -            |
+| 17.09.19     |       |       |       |       |           -            |
+| dd.mm.yy     |       |       |       |       |           -            |
+
+
+#### Tracking Notes
+
+* `NA`
+
+<br />
+
+#### OKR Notes
+
+* [Technical OKR](#objective-introduce-a-better-content-system)
+  * `1.` A member can create multiple "Content Creator" profiles associated with their membership ID.
+  * `3. - 5.` The content types and schemas must be understood by both the runtime and pioneer.
+
+* [Community OKR](#objective-engage-community-to-understand-rome-and-join-us-in-the-future)
+  * `2.` "Active" means Content Curators that are not fired as a result of not following their responsibilities.
+  * `3. & 4.`: Content "items" means number of entries in the content directory, not the data objects associated with the entry.
+
+See [Release Plan](/testnets/rome/README.md#general) for general notes on the Release OKRs.
+
+<br />
 
 # Group OKRs
 
@@ -118,6 +146,7 @@ Fill in if applicable.
 
 # Personal OKRs
 
+<!--
 ## `Alex` (@siman)
 
 Fill in if applicable.
@@ -131,5 +160,7 @@ TBD
 TBD
 
 ## `Mokhtar` (@mnaamani)
+
+-->
 
 Fill in if applicable.
