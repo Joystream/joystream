@@ -86,7 +86,7 @@ This Release Plan is considered "final" once merged to master, and anything belo
 - **Tracking Manager**: Martin
 - **Key Results**:
 
-  1. `20 new creator profiles.`
+  1. `20 Content Creator profiles which add at least one content item.`
 
   2. `Get 5 active Content Curators.`
 
