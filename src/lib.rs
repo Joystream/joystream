@@ -330,7 +330,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn add_entity_schema(
+    pub fn add_schema_support_to_entity(
         entity_id: EntityId,
         schema_id: u16,
         property_values: Vec<(u16, PropertyValue)>
@@ -341,25 +341,71 @@ impl<T: Trait> Module<T> {
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
         // Check that schema id is not yet added to this entity:
-        let schema_already_added = entity.schemas.get(schema_id as usize).is_some();
-        ensure!(!schema_already_added, "Cannot add a schema that is already added to this entity");
+        let schema_not_added = entity.schemas.iter().position(|x| *x == schema_id).is_none();
+        ensure!(schema_not_added, "Cannot add a schema that is already added to this entity");
 
         // Check that schema_id is a valid index of class schemas vector:
-        let unknown_schema_id = schema_id >= class.schemas.len() as u16;
-        ensure!(!unknown_schema_id, ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX);
+        let known_schema_id = schema_id < class.schemas.len() as u16;
+        ensure!(known_schema_id, ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX);
 
-        // TODO check that prop_id is on schema.properties
+        let class_schema_opt = class.schemas.get(schema_id as usize);
+        let schema_prop_ids = class_schema_opt.unwrap().properties.clone();
 
-        // TODO Check that all required prop values are provided
+        // TODO apply new prop values on top of current prop values
 
-        // TODO check that every property value matches a prop type of class property with the same prop id
+        // TODO append any missing non required prop values to currently overriden prop values.
 
-        // TODO Check validity of Internal(EntityId) for properties.
+        let mut updated_values = entity.values;
 
-        // TODO Add all missing non required prop values as PropertyValue::None
+        // Iterate over provided property values and replace existing values
+        // for these properties on this entity.
+        for (new_id, new_value) in property_values.iter() {
+            if schema_prop_ids.get(*new_id as usize).is_none() {
+                return Err("Provided property id was not found in schema properties")
+            }
 
-        // TODO finish
+            let class_prop = class.properties.get(*new_id as usize).unwrap();
 
+            if !Self::does_prop_value_match_type(new_value.clone(), class_prop.clone()) {
+                return Err("Some of the provided property values don't match the expected property type")
+            }
+
+            if Self::is_unknown_internal_entity_id(new_value.clone()) {
+                return Err("Some of the provided property values has unknown internal entity id")
+            }
+
+            for (cur_id, cur_value) in updated_values.iter_mut() {
+                if new_id == cur_id {
+                    *cur_value = new_value.clone();
+                }
+            }
+        }
+
+        let mut upadted_values_with_nones = updated_values.clone();
+
+        for &id in schema_prop_ids.iter() {
+    
+            // If value was not povided for schema prop:
+            if updated_values.iter().find(|(x_id, _)| *x_id == id).is_none() {
+                
+                let class_prop = class.properties.get(id as usize).unwrap();
+
+                // Check that all required prop values are provided
+                if class_prop.required {
+                    return Err("Some required property was not found when adding schema support to entity")
+                } else {
+                    // Add all missing non required schema prop values as PropertyValue::None
+                    upadted_values_with_nones.push((id, PropertyValue::None));
+                }
+            }
+        }
+
+        <EntityById<T>>::mutate(entity_id, |entity| {
+            entity.schemas.push(schema_id);
+            entity.values = upadted_values_with_nones;
+        });
+
+        Self::deposit_event(RawEvent::EntitySchemaAdded(entity_id));
         Ok(())
     }
 
@@ -374,10 +420,6 @@ impl<T: Trait> Module<T> {
 
         ensure!(!entity.schemas.is_empty(), "Cannot update entity properties because entity has no schemas yet");
 
-        let mut prop_id_not_found_on_class = false;
-        let mut prop_id_not_found_on_entity = false;
-        let mut has_unknown_internal_id = false;
-        let mut has_not_matching_prop_type = false;
         let mut updated_values = entity.values;
 
         for (id, new_value) in new_property_values.iter() {
@@ -385,35 +427,27 @@ impl<T: Trait> Module<T> {
                 let (valid_id, current_value) = prop;
 
                 if let Some(class_prop) = class.properties.get(*valid_id as usize) {
-                    if !Self::does_prop_value_match_type(new_value.clone(), class_prop.prop_type.clone()) {
-                        has_not_matching_prop_type = true;
-                        break;
+                    if !Self::does_prop_value_match_type(new_value.clone(), class_prop.clone()) {
+                        return Err("Some of the provided property values don't match the expected property type")
                     }
 
                     if Self::is_unknown_internal_entity_id(new_value.clone()) {
-                        has_unknown_internal_id = true;
-                        break;
+                        return Err("Some of the provided property values has unknown internal entity id")
                     }
 
                     *current_value = new_value.clone();
 
                 } else {
-                    prop_id_not_found_on_class = true;
-                    break;
+                    return Err("Some of the provided property ids cannot be found on the list of class properties")
                 }
             } else {
-                prop_id_not_found_on_entity = true;
-                break;
+                return Err("Some of the provided property ids cannot be found on the current list of propery values of this entity")
             }
         }
 
-        ensure!(!prop_id_not_found_on_entity, "Some of the provided property ids cannot be found on the current list of propery values of this entity");
-
-        ensure!(!prop_id_not_found_on_class, "Some of the provided property ids cannot be found on the list of class properties");
-
-        ensure!(!has_not_matching_prop_type, "Some of the provided property values don't match the expected property type");
-
-        ensure!(!has_unknown_internal_id, "Some of the provided property values has unknown internal entity id");
+        <EntityById<T>>::mutate(entity_id, |entity| {
+            entity.values = updated_values;
+        });
 
         Self::deposit_event(RawEvent::EntityPropertiesUpdated(entity_id));
         Ok(())
@@ -510,15 +544,20 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn does_prop_value_match_type(
-        val: PropertyValue,
-        typ: PropertyType,
+        value: PropertyValue,
+        prop: Property,
     ) -> bool {
 
         // Shortcuts for faster readability of match expression:
         use {PropertyValue as PV};
         use {PropertyType as PT};
 
-        match (val, typ) {
+        // Not required property can be None:
+        if !prop.required && value == PV::None {
+            return true
+        }
+
+        match (value, prop.prop_type) {
             (PV::None,        PT::None)    |
             (PV::Bool(_),     PT::Bool)    |
             (PV::Uint16(_),   PT::Uint16)  |
