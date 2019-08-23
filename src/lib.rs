@@ -33,10 +33,18 @@ const ERROR_CLASS_EMPTY_DESCRIPTION: &str = "Class cannot have an empty descript
 const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX: &str = "New class schema refers to an unknown property index";
 const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID: &str = "New class schema refers to an unknown internal class id";
 const ERROR_NO_PROPS_IN_CLASS_SCHEMA: &str = "Cannot add a class schema with an empty list of properties";
-
 const ERROR_ENTITY_NOT_FOUND: &str = "Entity was not found by id";
 const ERROR_ENTITY_EMPTY_NAME: &str = "Entity cannot have an empty name";
 const ERROR_ENTITY_ALREADY_DELETED: &str = "Entity is already deleted";
+const ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY: &str = "Cannot add a schema that is already added to this entity";
+const ERROR_ID_NOT_FOUND_IN_SCHEMA_PROPS : &str = "Provided property id was not found in schema properties";
+const ERROR_PROP_VALUE_DONT_MATCH_TYPE: &str = "Some of the provided property values don't match the expected property type";
+const ERROR_UNKNOWN_INTERNAL_ENTITY_ID: &str = "Some of the provided property values has unknown internal entity id";
+const ERROR_MISSING_REQUIRED_PROP: &str = "Some required property was not found when adding schema support to entity";
+const ERROR_ENTITY_HAS_NO_SCHEMAS: &str = "Cannot update entity properties because entity has no schemas yet";
+const ERROR_UNKNOWN_CLASS_PROP_ID: &str = "Some of the provided property ids cannot be found on the list of class properties";
+const ERROR_UNKNOWN_ENTITY_PROP_ID: &str = "Some of the provided property ids cannot be found on the current list of propery values of this entity";
+const ERROR_NO_ENTITY_PROP_IDS_ON_REMOVE: &str = "Cannot remove entity properties: an empty list of property ids provided";
 
 // const MAX_NUM_OF_PROPS_PER_CLASS: u16 = 30;
 // const MAX_NAME_LENGTH: u16 = 100;
@@ -342,7 +350,7 @@ impl<T: Trait> Module<T> {
 
         // Check that schema id is not yet added to this entity:
         let schema_not_added = entity.schemas.iter().position(|x| *x == schema_id).is_none();
-        ensure!(schema_not_added, "Cannot add a schema that is already added to this entity");
+        ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
 
         // Check that schema_id is a valid index of class schemas vector:
         let known_schema_id = schema_id < class.schemas.len() as u16;
@@ -361,17 +369,17 @@ impl<T: Trait> Module<T> {
         // for these properties on this entity.
         for (new_id, new_value) in property_values.iter() {
             if schema_prop_ids.get(*new_id as usize).is_none() {
-                return Err("Provided property id was not found in schema properties")
+                return Err(ERROR_ID_NOT_FOUND_IN_SCHEMA_PROPS)
             }
 
             let class_prop = class.properties.get(*new_id as usize).unwrap();
 
             if !Self::does_prop_value_match_type(new_value.clone(), class_prop.clone()) {
-                return Err("Some of the provided property values don't match the expected property type")
+                return Err(ERROR_PROP_VALUE_DONT_MATCH_TYPE)
             }
 
             if Self::is_unknown_internal_entity_id(new_value.clone()) {
-                return Err("Some of the provided property values has unknown internal entity id")
+                return Err(ERROR_UNKNOWN_INTERNAL_ENTITY_ID)
             }
 
             for (cur_id, cur_value) in updated_values.iter_mut() {
@@ -392,7 +400,7 @@ impl<T: Trait> Module<T> {
 
                 // Check that all required prop values are provided
                 if class_prop.required {
-                    return Err("Some required property was not found when adding schema support to entity")
+                    return Err(ERROR_MISSING_REQUIRED_PROP)
                 } else {
                     // Add all missing non required schema prop values as PropertyValue::None
                     upadted_values_with_nones.push((id, PropertyValue::None));
@@ -418,7 +426,7 @@ impl<T: Trait> Module<T> {
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
-        ensure!(!entity.schemas.is_empty(), "Cannot update entity properties because entity has no schemas yet");
+        ensure!(!entity.schemas.is_empty(), ERROR_ENTITY_HAS_NO_SCHEMAS);
 
         let mut updated_values = entity.values;
 
@@ -428,20 +436,20 @@ impl<T: Trait> Module<T> {
 
                 if let Some(class_prop) = class.properties.get(*valid_id as usize) {
                     if !Self::does_prop_value_match_type(new_value.clone(), class_prop.clone()) {
-                        return Err("Some of the provided property values don't match the expected property type")
+                        return Err(ERROR_PROP_VALUE_DONT_MATCH_TYPE)
                     }
 
                     if Self::is_unknown_internal_entity_id(new_value.clone()) {
-                        return Err("Some of the provided property values has unknown internal entity id")
+                        return Err(ERROR_UNKNOWN_INTERNAL_ENTITY_ID)
                     }
 
                     *current_value = new_value.clone();
 
                 } else {
-                    return Err("Some of the provided property ids cannot be found on the list of class properties")
+                    return Err(ERROR_UNKNOWN_CLASS_PROP_ID)
                 }
             } else {
-                return Err("Some of the provided property ids cannot be found on the current list of propery values of this entity")
+                return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
             }
         }
 
@@ -462,7 +470,7 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_known_entity_id(entity_id)?;
 
-        ensure!(!property_ids.is_empty(), "Cannot remove entity properties: an empty list of property ids provided");
+        ensure!(!property_ids.is_empty(), ERROR_NO_ENTITY_PROP_IDS_ON_REMOVE);
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
