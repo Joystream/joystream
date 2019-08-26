@@ -6,8 +6,7 @@ use crate::mock::*;
 
 use runtime_io::with_externalities;
 use srml_support::{assert_ok, assert_err};
-
-
+use system::RawOrigin;
 /*
 * NB!: No test checks for event emission!!!!
 */
@@ -33,7 +32,7 @@ fn set_forum_sudo_unset() {
         assert_eq!(TestForumModule::forum_sudo(), Some(33));
 
         // Unset forum sudo
-        assert_ok!(TestForumModule::set_forum_sudo(None));
+        assert_ok!(TestForumModule::set_forum_sudo(RawOrigin::Root.into(), None));
 
         // Sudo no longer set
         assert!(TestForumModule::forum_sudo().is_none());
@@ -56,7 +55,7 @@ fn set_forum_sudo_update() {
         let new_forum_sudo_account_id = 780;
 
         // Unset forum sudo
-        assert_ok!(TestForumModule::set_forum_sudo(Some(new_forum_sudo_account_id)));
+        assert_ok!(TestForumModule::set_forum_sudo(RawOrigin::Root.into(), Some(new_forum_sudo_account_id)));
 
         // Sudo no longer set
         assert_eq!(TestForumModule::forum_sudo(), Some(new_forum_sudo_account_id));
@@ -608,7 +607,7 @@ fn not_forum_sudo_cannot_moderate_thread() {
     with_externalities(&mut build_test_externalities(config), || {
         let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
         assert_eq!(
-            moderate_thread(NOT_FORUM_SUDO_ORIGIN, thread_id, good_rationale()), 
+            moderate_thread(NOT_FORUM_SUDO_ORIGIN, thread_id, good_rationale()),
             Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
         );
     });
@@ -622,7 +621,7 @@ fn not_forum_sudo_cannot_moderate_post() {
     with_externalities(&mut build_test_externalities(config), || {
         let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
         assert_eq!(
-            moderate_post(NOT_FORUM_SUDO_ORIGIN, post_id, good_rationale()), 
+            moderate_post(NOT_FORUM_SUDO_ORIGIN, post_id, good_rationale()),
             Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
         );
     });
