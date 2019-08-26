@@ -93,36 +93,38 @@ pub fn good_props() -> Vec<Property> {
     ]
 }
 
-pub fn good_schema() -> ClassSchema {
-    ClassSchema { properties: vec![ 0, 1, 2 ] }
-}
-
-pub fn good_schemas() -> Vec<ClassSchema> {
-    vec![
-        ClassSchema { properties: vec![ 0, 1 ] },
-        ClassSchema { properties: vec![ 0, 1, 2 ] },
-        ClassSchema { properties: vec![ 1, 2, 3 ] },
-    ]
-}
-
-pub fn good_schema_indices() -> Vec<u16> {
+pub fn known_prop_ids() -> Vec<u16> {
     vec![ 0, 1, 2 ]
 }
 
-pub fn good_property_values() -> Vec<(u16, PropertyValue)> {
-    vec![
-        (0, PropertyValue::Bool(true)),
-        (1, PropertyValue::Uint32(123u32)),
-        (2, PropertyValue::Text(b"Small text".to_vec())),
-    ]
-}
+// pub fn good_schema() -> ClassSchema {
+//     ClassSchema { properties: vec![ 0, 1, 2 ] }
+// }
+
+// pub fn good_schemas() -> Vec<ClassSchema> {
+//     vec![
+//         ClassSchema { properties: vec![ 0, 1 ] },
+//         ClassSchema { properties: vec![ 0, 1, 2 ] },
+//         ClassSchema { properties: vec![ 1, 2, 3 ] },
+//     ]
+// }
+
+// pub fn good_schema_indices() -> Vec<u16> {
+//     vec![ 0, 1, 2 ]
+// }
+
+// pub fn good_property_values() -> Vec<(u16, PropertyValue)> {
+//     vec![
+//         (0, PropertyValue::Bool(true)),
+//         (1, PropertyValue::Uint32(123u32)),
+//         (2, PropertyValue::Text(b"Small text".to_vec())),
+//     ]
+// }
 
 pub fn create_class() -> ClassId {
     let class_id = TestModule::next_class_id();
     assert_ok!(
         TestModule::create_class(
-            good_props(),
-            good_schemas(),
             good_class_name(),
             good_class_description(),
         ),
@@ -137,8 +139,6 @@ pub fn create_entity() -> EntityId {
     assert_ok!(
         TestModule::create_entity(
             class_id,
-            good_schema_indices(),
-            good_property_values(),
             good_entity_name(),
         ),
         entity_id
