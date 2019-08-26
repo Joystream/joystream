@@ -4,17 +4,17 @@ use crate::*;
 
 use primitives::{Blake2Hasher, H256};
 
-use srml_support::{impl_outer_origin}; // assert, assert_eq
+use srml_support::{impl_outer_origin, parameter_types};
 use crate::{GenesisConfig, Module, Trait};
 use runtime_primitives::{
-    testing::{Digest, DigestItem, Header},
-    traits::{BlakeTwo256, IdentityLookup}, //OnFinalize, OnInitialize},
-    BuildStorage,
+    Perbill,
+    testing::{Header},
+    traits::{BlakeTwo256, IdentityLookup},
 };
 
 use runtime_io::with_externalities;
 
-/// Module which has a full Substrate module for 
+/// Module which has a full Substrate module for
 /// mocking behaviour of MembershipRegistry
 pub mod registry {
 
@@ -32,12 +32,6 @@ pub mod registry {
             pub ForumUserById get(forum_user_by_id) config(): map T::AccountId => Member<T::AccountId>;
 
         }
-
-        // A weird hack required to convince decl_storage that our field above
-        // does indeed use the T, otherwise would start complaining about phantom fields.
-        // An alternative fix is to add this extra key when initiatilising a gensisconfig for this module
-        // _genesis_phantom_data: Default::default() 
-        extra_genesis_skip_phantom_data_field;
     }
 
     decl_module! {
@@ -59,7 +53,7 @@ pub mod registry {
                 let m = <ForumUserById<T>>::get(id);
 
                 Some(ForumUser{
-                    id : m.id 
+                    id : m.id
                 })
 
             } else {
@@ -80,24 +74,37 @@ impl_outer_origin! {
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Runtime;
+parameter_types! {
+	pub const BlockHashCount: u64 = 250;
+	pub const MaximumBlockWeight: u32 = 1024;
+	pub const MaximumBlockLength: u32 = 2 * 1024;
+	pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const MinimumPeriod: u64 = 5;
+}
 
 impl system::Trait for Runtime {
-    type Origin = Origin;
-    type Index = u64;
-    type BlockNumber = u64;
-    type Hash = H256;
-    type Hashing = BlakeTwo256;
-    type Digest = Digest;
-    type AccountId = u64;
-    type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
-    type Event = ();
-    type Log = DigestItem;
+	type Origin = Origin;
+	type Index = u64;
+	type BlockNumber = u64;
+	type Call = ();
+	type Hash = H256;
+	type Hashing = BlakeTwo256;
+	type AccountId = u64;
+	type Lookup = IdentityLookup<Self::AccountId>;
+	type Header = Header;
+	type WeightMultiplierUpdate = ();
+	type Event = ();
+	type BlockHashCount = BlockHashCount;
+	type MaximumBlockWeight = MaximumBlockWeight;
+	type MaximumBlockLength = MaximumBlockLength;
+	type AvailableBlockRatio = AvailableBlockRatio;
+	type Version = ();
 }
 
 impl timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
 }
 
 impl Trait for Runtime {
@@ -161,7 +168,7 @@ pub fn good_rationale() -> Vec<u8> {
 /*
  * These test fixtures can be heavily refactored to avoid repotition, needs macros, and event
  * assertions are also missing.
- */ 
+ */
 
 pub struct CreateCategoryFixture {
     pub origin: OriginType,
@@ -292,7 +299,7 @@ pub fn assert_create_post(forum_sudo: OriginType, thread_id: ThreadId, expected_
 pub fn create_category(forum_sudo: OriginType, parent_category_id: Option<CategoryId>) -> CategoryId {
     let category_id = TestForumModule::next_category_id();
     assert_create_category(
-        forum_sudo, parent_category_id, 
+        forum_sudo, parent_category_id,
         Ok(())
     );
     category_id
@@ -322,7 +329,7 @@ pub fn create_root_category_and_thread(forum_sudo: OriginType) -> (OriginType, C
 pub fn create_root_category_and_thread_and_post(forum_sudo: OriginType) -> (OriginType, CategoryId, ThreadId, PostId) {
     let (member_origin, category_id, thread_id) = create_root_category_and_thread(forum_sudo);
     let post_id = TestForumModule::next_post_id();
-    
+
     CreatePostFixture {
         origin: member_origin.clone(),
         thread_id: thread_id.clone(),
@@ -388,7 +395,7 @@ pub fn assert_not_forum_sudo_cannot_update_category(update_operation: fn (Origin
     with_externalities(&mut build_test_externalities(config), || {
         let category_id = create_root_category(origin.clone());
         assert_eq!(
-            update_operation(NOT_FORUM_SUDO_ORIGIN, category_id), 
+            update_operation(NOT_FORUM_SUDO_ORIGIN, category_id),
             Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
         );
     });
@@ -398,8 +405,8 @@ pub fn assert_not_forum_sudo_cannot_update_category(update_operation: fn (Origin
 // our desired mockup.
 
 // refactor
-/// - add each config as parameter, then 
-/// 
+/// - add each config as parameter, then
+///
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 
@@ -471,7 +478,7 @@ pub fn genesis_config(
     post_text_constraint: &InputValidationLengthConstraint,
     thread_moderation_rationale_constraint: &InputValidationLengthConstraint,
     post_moderation_rationale_constraint: &InputValidationLengthConstraint
-    ) 
+    )
     -> GenesisConfig<Runtime> {
 
     GenesisConfig::<Runtime> {
@@ -503,19 +510,12 @@ pub fn default_mock_forum_user_registry_genesis_config() -> registry::GenesisCon
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
 pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities<Blake2Hasher> {
+    let mut t = system::GenesisConfig::default().build_storage::<Runtime>().unwrap();
 
-    let mut t = config
-        .build_storage()
-        .unwrap()
-        .0;
+    config.assimilate_storage(&mut t).unwrap();
 
     // Add mock registry configuration
-    t.extend(
-        default_mock_forum_user_registry_genesis_config()
-        .build_storage()
-        .unwrap()
-        .0
-    );
+    default_mock_forum_user_registry_genesis_config().assimilate_storage(&mut t).unwrap();
 
     t.into()
 }
