@@ -10,28 +10,29 @@ serde = { version = "1.0", optional = true }
 serde_derive = { version = "1.0", optional = true }
 parity-codec = { version = "3.2", default-features = false }
 parity-codec-derive = { version = "3.1", default-features = false }
-rstd = { package = 'sr-std', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "v1.0"}
-runtime-primitives = { package = 'sr-primitives', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "v1.0"}
-srml-support = { package = 'srml-support', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "v1.0"}
-srml-support-procedural = { package = 'srml-support-procedural', git = "https://github.com/paritytech/substrate.git", branch = "v1.0"}
-system = { package = 'srml-system', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "v1.0"}
-balances = { package = 'srml-balances', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "v1.0"}
+rstd = { package = 'sr-std', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master"}
+runtime-primitives = { package = 'sr-primitives', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master"}
+srml-support = { package = 'srml-support', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master"}
+srml-support-procedural = { package = 'srml-support-procedural', git = "https://github.com/paritytech/substrate.git", branch = "master"}
+system = { package = 'srml-system', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master"}
+balances = { package = 'srml-balances', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master"}
+codec = { package = "parity-scale-codec", version = "1.0.0", default-features = false, features = ["derive"] }
 
 [dependencies.timestamp]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-timestamp'
-branch = "v1.0"
+branch = "master"
 
 [dependencies.runtime-io]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
-branch = "v1.0"
+branch = "master"
 
 [dev-dependencies]
-runtime-io = { package = 'sr-io', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "v1.0"}
-primitives = { package = 'substrate-primitives', git = "https://github.com/paritytech/substrate.git", branch = "v1.0"}
+runtime-io = { package = 'sr-io', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master"}
+primitives = { package = 'substrate-primitives', git = "https://github.com/paritytech/substrate.git", branch = "master"}
 
 [features]
 default = ["std"]
