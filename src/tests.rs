@@ -6,7 +6,7 @@ use crate::mock::*;
 
 use runtime_io::with_externalities;
 use srml_support::{assert_ok, assert_err};
-use system::RawOrigin;
+
 /*
 * NB!: No test checks for event emission!!!!
 */
@@ -32,7 +32,7 @@ fn set_forum_sudo_unset() {
         assert_eq!(TestForumModule::forum_sudo(), Some(33));
 
         // Unset forum sudo
-        assert_ok!(TestForumModule::set_forum_sudo(RawOrigin::Root.into(), None));
+        assert_ok!(TestForumModule::set_forum_sudo(mock_origin(OriginType::Root), None));
 
         // Sudo no longer set
         assert!(TestForumModule::forum_sudo().is_none());
@@ -55,7 +55,7 @@ fn set_forum_sudo_update() {
         let new_forum_sudo_account_id = 780;
 
         // Unset forum sudo
-        assert_ok!(TestForumModule::set_forum_sudo(RawOrigin::Root.into(), Some(new_forum_sudo_account_id)));
+        assert_ok!(TestForumModule::set_forum_sudo(mock_origin(OriginType::Root), Some(new_forum_sudo_account_id)));
 
         // Sudo no longer set
         assert_eq!(TestForumModule::forum_sudo(), Some(new_forum_sudo_account_id));
