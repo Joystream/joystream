@@ -6,189 +6,162 @@ version = '6.0.0'
 
 [features]
 default = ['std']
+no_std = []
 std = [
-    'parity-codec/std',
-    'parity-codec-derive/std',
-    'primitives/std',
+    'codec/std',
     'substrate-client/std',
     'rstd/std',
     'runtime-io/std',
     'srml-support/std',
     'balances/std',
+    'babe/std',
+    'babe-primitives/std',
     'executive/std',
-    'aura/std',
     'indices/std',
+    'grandpa/std',
     'primitives/std',
+    'sr-primitives/std',
     'system/std',
     'timestamp/std',
     'sudo/std',
     'version/std',
-    'serde_derive',
-    'serde/std',
+    'serde',
     'safe-mix/std',
-    'consensus-aura/std',
-    'staking/std',
-    'session/std',
     'offchain-primitives/std',
-    'consensus-authorities/std',
-    'grandpa/std',
-    'finality-tracker/std',
-    'forum/std'
+    'substrate-session/std',
+    'forum/std',
 ]
-[dependencies.aura]
-default_features = false
+
+[dependencies.babe]
+default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-aura'
-branch = "v1.0"
+package = 'srml-babe'
+branch = 'master'
+
+[dependencies.babe-primitives]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'substrate-consensus-babe-primitives'
+branch = 'master'
 
 [dependencies.balances]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-balances'
-branch = "v1.0"
+branch = 'master'
 
-[dependencies.consensus]
+[dependencies.substrate-client]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-consensus'
-branch = "v1.0"
+package = 'substrate-client'
+branch = 'master'
 
-[dependencies.consensus-aura]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-consensus-aura-primitives'
-branch = "v1.0"
+[dependencies.codec]
+default-features = false
+features = ['derive']
+package = 'parity-scale-codec'
+version = '1.0.0'
 
 [dependencies.executive]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-executive'
-branch = "v1.0"
+branch = 'master'
+
+[dependencies.grandpa]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-grandpa'
+branch = 'master'
 
 [dependencies.indices]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-indices'
-branch = "v1.0"
+branch = 'master'
 
-[dependencies.parity-codec]
+[dependencies.offchain-primitives]
 default-features = false
-version = '3.2'
+git = 'https://github.com/paritytech/substrate.git'
+package = 'substrate-offchain-primitives'
+branch = 'master'
 
-[dependencies.parity-codec-derive]
-default-features = false
-version = '3.1'
-
+#renamed from runtime-primitives
 [dependencies.primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-primitives'
-branch = "v1.0"
+branch = 'master'
 
 [dependencies.rstd]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-std'
-branch = "v1.0"
+branch = 'master'
 
 [dependencies.runtime-io]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
-branch = "v1.0"
-
-[dependencies.runtime-primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-primitives'
-branch = "v1.0"
+branch = 'master'
 
 [dependencies.safe-mix]
 default-features = false
 version = '1.0'
 
 [dependencies.serde]
-default-features = false
-version = '1.0'
-
-[dependencies.serde_derive]
+features = ['derive']
 optional = true
 version = '1.0'
 
-[dependencies.srml-support]
+[dependencies.sr-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-branch = "v1.0"
+branch = 'master'
 
-[dependencies.substrate-client]
-default_features = false
+[dependencies.substrate-session]
+default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-branch = "v1.0"
+branch = 'master'
 
 [dependencies.sudo]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-sudo'
-branch = "v1.0"
+branch = 'master'
+
+[dependencies.srml-support]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-support'
+branch = 'master'
 
 [dependencies.system]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-system'
-branch = "v1.0"
+branch = 'master'
 
 [dependencies.timestamp]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-timestamp'
-branch = "v1.0"
+branch = 'master'
 
 [dependencies.version]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-version'
-branch = "v1.0"
+branch = 'master'
 
-[dependencies.staking]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-staking'
-branch = "v1.0"
-
-[dependencies.session]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-session'
-branch = "v1.0"
-
-[dependencies.offchain-primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-offchain-primitives'
-branch = "v1.0"
-
-[dependencies.consensus-authorities]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-consensus-authorities'
-branch = "v1.0"
-
-[dependencies.grandpa]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-grandpa'
-branch = "v1.0"
-
-[dependencies.finality-tracker]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-finality-tracker'
-branch = "v1.0"
+[build-dependencies.wasm-builder-runner]
+package = 'substrate-wasm-builder-runner'
+version = '1.0.2'
 
 [dependencies.forum]
 default_features = false
-git = 'https://github.com/joystream/substrate-forum-module'
+git = 'https://github.com/mnaamani/substrate-forum-module'
 package = 'substrate-forum-module'
-branch = "development"
+branch = "substrate-v2"
 # Before releasing Rome - finalize and tag release new forum and update this
 # tag = "v1.0.0"
