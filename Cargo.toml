@@ -8,8 +8,6 @@ edition = "2018"
 hex-literal = "0.1.0"
 serde = { version = "1.0", optional = true }
 serde_derive = { version = "1.0", optional = true }
-parity-codec = { version = "3.2", default-features = false }
-parity-codec-derive = { version = "3.1", default-features = false }
 rstd = { package = 'sr-std', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master"}
 runtime-primitives = { package = 'sr-primitives', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master"}
 srml-support = { package = 'srml-support', default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master"}
@@ -39,8 +37,7 @@ default = ["std"]
 std = [
 	"serde",
 	"serde_derive",
-	"parity-codec/std",
-	"parity-codec-derive/std",
+	"codec/std",
 	"rstd/std",
 	"runtime-io/std",
 	"runtime-primitives/std",
