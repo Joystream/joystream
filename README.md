@@ -29,16 +29,15 @@
     <a href="https://github.com/Joystream/helpdesk/blob/master/README.md">
       Helpdesk
     </a>
-    <!--
     <span> | </span>
-    <a href="/testnets/acropolis">
-      Acropolis Testnet
+    <a href="/testnets/rome">
+      Rome Testnet
     </a>
-    -->
   </h3>
 </div>
 
-# Table of contents
+Table of Contents
+=================
 
 - [Overview](#overview)
 - [Contribute](#contribute)
@@ -51,7 +50,7 @@
     - [Why is this on Github?](#why-is-this-on-github)
     - [Meetings](#meetings)
       - [Daily standup](#daily-standup)
-      - [Monday all-hands](#monday-all-hands)
+      - [Tuesday all-hands](#tuesday-all-hands)
       - [Release meeting](#release-meeting)
     - [OKR System](#okr-system)
       - [Assignment](#assignment)
@@ -63,14 +62,14 @@
       - [Branding](#branding)
       - [Testnet Directory](#testnet-directory)
       - [Roles](#roles)
-        - [Release Manager](#release-manager)
-        - [Specification Lead and Committee](#specification-lead-and-committee)
+      - [Tracking Issues](#tracking-issues)
+      - [Milestones](#milestones)
       - [Step-by-step Process](#step-by-step-process)
 - [Github Policy](#github-policy)
 
 # Overview
 
-This landing repo as meant as a the best starting place to get a coherent view of how information is organised in this GitHub organization.
+This landing repo is intended to be the best starting place to get a coherent view of how information is organised in this GitHub organization.
 
 # Contribute
 
@@ -84,7 +83,7 @@ The central repos will have multiple members of the core team with write access,
 The core team, maintainers and outside contributors are encouraged to follow these general guidelines when contributing to the code repositories:
 
 * All contributions should be via pull requests.
-* Do not create arbitrary branches or push directly to the central repo `master` or `development` branches
+* Do not create arbitrary branches or push directly to the central repo `master` or `development` branches.
 * Do not force push branches.
 * Avoid rebasing branches of open PRs to help preserve conversation history.
 * Authors must always request a review for their PRs, Exception: It does not alter any logic (e.g. comments, dependencies, docs, file organisation), then it may merged once CI checks are complete.
@@ -93,13 +92,13 @@ The core team, maintainers and outside contributors are encouraged to follow the
 * When the maintainer is opening a PRs they must still request review from a core team member.
 
 Each repository may have contributing guidelines detailed in their README files.
-Maintainer must ensure this contribution section is linked to as the base guideline.
+The maintainer must ensure this contribution section is linked to as the base guideline.
 
-Documentation, Project management and other or non-code repositories should try to follow similar PR etiquette if it makes sense but exceptions can be made as changes usually don't require the same level of review.
+Documentation, project management and other or non-code repositories should try to follow similar PR etiquette if it makes sense but exceptions can be made as changes usually don't require the same level of review.
 
 # Repository Index
 
-This is the set of key repos that
+This is the set of key repos to which this document refers:
 
 | Repo                                                                                      | Description                                           | Maintainer      |
 | :-------------                                                                            | :-------------                                        | :-----------:   |
@@ -122,32 +121,29 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 
 [Acropolis](/testnets/acropolis/README.md)
 
-<!--
-
 ## Next Testnet
 
-[Acropolis](/testnets/acropolis/README.md)
+[Rome](testnets/rome)
 
--->
 
 ## Past Testnets
 
 | Network         | Started           | Ended         | Release Plan    |
 | -------------   | -------------     | -----         | -----           |
 | Athens          | 17.04.19          |   24.06.19    | [Link](/testnets/athens/README.md)        |
-| Sparta          | 28.02.19          |   29.03.19    |       NA        |
-| Mesopotamia     | 21.12.18          |   28.02.19    |       NA        |
+| Sparta          | 28.02.19          |   29.03.19    |       N/A        |
+| Mesopotamia     | 21.12.18          |   28.02.19    |       N/A        |
 
 <br />
 <img src="img/pm-section.svg" id="project-management"/>
 
-## Why is this on Github?
+## Why is this on GitHub?
 
-The reason this is placed in public view on Github is two fold
+The reason this is placed in public view on GitHub is two fold:
 
-- **Open Invitation:** Serve as an open invitation for anyone who wants to learn, comment and possibly contribute, to the current or future development of the Joystream project.
+- **Open Invitation:** Serves as an open invitation for anyone who wants to learn, comment and possibly contribute, to the current or future development of the Joystream project.
 
-- **Best Practices**: Establish best practices which can be replicated by the platform, when it is fully live, in how to collaboratively build and manage the platform using open tools. In particular, the current plan is that the platform has a built in Github equivalent, which thus would allow the use of these conventions.
+- **Best Practices**: Establish best practices which can be replicated by the platform, when it is fully live, in how to collaboratively build and manage the platform using open tools. In particular, the current plan is that the platform has a built-in GitHub equivalent, which thus would allow the use of these conventions.
 
 
 <br />
@@ -164,19 +160,19 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
 - **Description:** Everyone states, within 1 minute, what they accomplished the prior day, and what the goals are for the day. After this, people can start separate calls which need not be conducted in plenum.
 - **When:** Every day at 10am (GMT)
 - **Where:** Zoom
-- **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
+- **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Telegram for invite).
 - **Record&Publish:** YES, if no participant objects.
 
-#### Monday all-hands
+#### Tuesday all-hands
 
 - **Description:** Everyone states individual:
   1. **OKR Tracking**: Track your OKRs and OKR assignments
   2. **Health Comments:** Any points you wish to discuss related to things like team health, code health, workflow/system health etc.
   3. **Weekly Priorities:** Your top 3-5 priorities this week. *Not* the same as your tasks today.
   4. **Announcements:** Anything you think should be brought to everyone's attention.
-- **When:** Every working Monday at 10am (GMT)
+- **When:** Every working Tuesday at 10am (GMT)
 - **Where:** Zoom
-- **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
+- **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Telegram for invite).
 - **Record&Publish:** YES, if no participant objects.
 
 #### Release meeting
@@ -184,7 +180,7 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
 - **Description:** Discussion concerning testnet planning and release.
 - **When:** On-demand
 - **Where:** Zoom
-- **Participant:** Core release team _must_ be present, any one else is welcome (join Rocket.Chat for invite).
+- **Participant:** Core release team _must_ be present, any one else is welcome (join Telegram for invite).
 - **Record&Publish:** YES, if no participant objects.
 
 <br />
@@ -198,7 +194,7 @@ A key result can be _assigned_ to a mix of people or other objectives. The _assi
 
 ### OKR types
 
-The OKRs can be classified into two separate families of types, first
+The OKRs can be classified into two separate families of types, first:
 
 - **Project OKRs**: Project OKRs can run over multiple years and are graded very rarely. They contain the root objectives that require no deeper justification. Every other objective must be justified directly, or indirectly through another key result, by virtue of its relevance to the project OKRs. The current set of such OKRs can be found [below](#project-okrs).
 
@@ -206,7 +202,7 @@ The OKRs can be classified into two separate families of types, first
 
 - **Release OKRs**: Releases are planned one after the other on a rolling basis, and the release OKRs correspond to a single release. Only OKRs which have independent objectives are formally referred to as release OKRs, any derivative OKR is not, even if derived at in the context of a release. The current set of such OKRs can be found [below](#release-okrs)
 
-and then second
+and then second:
 
 - **Group OKRs**: Group OKRs are defined by the set of stakeholders assigned to the key results, and in particular that there is more than one person involved. Typically this could be a set of people working as a team on some topic or problem. In principle, such an OKR can be rationalised by a mix of release and quarterly OKRs, but in practice it will most often just be one or the other. These OKRs should be flexible in time scope, and should be reorganized if circumstances change. The current set of such OKRs can be found [below](#group-okrs).
 
@@ -232,19 +228,19 @@ In order to keep track of whether a key result, and thus the corresponding objec
 
 ![alt text](img/KR-Weighting.svg "Key Result ")
 
-Briefly, do a topological sort of the key result graph, where having an objective in the result assignment set counts towards the indegree. Then just do ascending weighted averaging of scores, where key results are simply averaged into objective scores. Importantly, in order to do this, one has to get personal scores on key results, and there are two modes of doing this
+Briefly, do a topological sort of the key result graph, where having an objective in the result assignment set counts towards the indegree. Then just do ascending weighted averaging of scores, where key results are simply averaged into objective scores. Importantly, in order to do this, one has to get personal scores on key results, and there are two modes of doing this:
 
 - **Naive (n)**: Simply evaluate the key result statement directly based on available data at the time. For example, if the result is `Get $100 in revenue`, and one has $20 so far, then the score would be 0.2. This method is often suitable, but no if partial work is unlikely to have had any real world effects while tracking.
 
 - **Estimate of Work Done (ewd)**: Fraction of estimated total hours required that have been completed. This means that, if the estimate of total time required changes, then the score can change, even there is not change in actual hours completed.
 
-The mode used depend on the nature of the key result.
+The mode used depends on the nature of the key result.
 
 ### Template
 
 The template used for recording and tracking OKRs has the following form:
 
-## Objective:  `<Name of objective>`
+## Objective: `<Name of objective>`
  - **Active from:** `<When the OKR is set/live>`
  - **KR Measurement Deadline**: `<When the final grading is conducted>`
  - **Tracked**: `<Time interval at which OKR is tracked>`
@@ -277,135 +273,70 @@ The template used for recording and tracking OKRs has the following form:
 
 ### Branding
 
-All releases have the following branding materials, which should be summarised in a markdown _Branding Document_
+All releases have the following branding materials, which should be summarised in a markdown _Branding Document_:
 
-- **Name:** Our current naming system is important historical ancient cities in the development of new political systems. It's still not clear if we will just stick to ancient cities, or move forward in time also (TBD).
+- **Name:** Our current naming system is important historical ancient cities in the development of new political systems. It's still not clear if we will just stick to ancient cities, or if we will also move forward in time (TBD).
 - **Naming Rationale:** A brief 40-150 word text about the significance of this city in our context.
-- **Goal:** A brief 100-200 word text about what technical and community goals we are trying to achieve.
+- **Goal:** A brief 100-200 word text about the technical and community goals we are trying to achieve.
 - **Logomark:** Illustrated logomark corresponding to name.
 
 ### Testnet Directory
 
-All releases should have a corresponding _release directory_ in the `/testnets` directory of this repo, and it should have the following structure
+All releases should have a corresponding _release directory_ in the `/testnets` directory of this repo, and it should have the following structure:
 
-- `RELEASE_NAME`
+- `release_name`
   - `README.md`: Release document.
-  - **WIP**`specification.md`: Testnet specification.
+  - `specification.md`: Testnet specification.
   - `/branding`: A directory which includes a branding document and related assets, as described in the branding [section](#branding).
 
 ### Roles
 
 #### Release Manager
 
-Each release is directed by a _Release Manager_ (**RM**) who is responsible for
+Each release is directed by a _Release Manager_ (**RM**) who is responsible for:
 
- - Moving the release process forward and on track.
- - Calling and conducting release meetings.
+ - Conduct weekly status meetings (Monday), for each [Tracking Issue](#tracking-issues) of the release.
+ - Based on this information, set a weekly tracking score for each KR to be presented and discussed with the team as part of the [Tuesday all-hands](#tuesday-all-hands).
  - Preparing all administrative pull requests for the release on this repo.
+ - Follow up the Release [Milestones](#milestones)
 
-#### Leads
+### Tracking Issues
 
-A [release plan](/testnets/#release-plan-template) will consist of a set of projects, each with a corresponding lead, these are referred to as the _leads_.
+A Tracking Issue is a GitHub issue which **evolves**, and at any given time holds a list of TODO items, with a corresponding completion status and and possibly responsibility indicator (i.e. each item has one responsible actor). TODO items are grouped into Tracking Issues based on what most deeply facilitates effective collaboration and progress tracking.
 
-#### Specification Lead and Committee
+- Every Monday, each Tracking Issue will be discussed in a video meeting between all assigned team members and the Release Manager.
+- These meetings should be highly focused, and kept at a reasonably high level.
+- If a discussion gets to deep, the **RM** can request that the relevant participants schedule a new meeting to address the issue.
+- The Release Manager will then update the Tracking Issue if necessary by changing/adding/removing/reassigning tasks, and checking off concluded tasks.
+- A concise summary of the meeting shall be added as a comment.
 
-The specification lead is responsible for moving the specification process forward, and the committee is anyone who is expected to contribute.
+### Milestones
 
-**WIP: we need to connect this to broader information about our specification work, but that is not done yet**
+As part of the Release Plan, a set of Milestones are set, with a "target date". Similar to the concept of [Tracking Issues](#tracking-issues), the "Live Milestones" is a GitHub issue which **evolves**. Experience have shown, that during a release cycle:
+- we may require adjusting the target date(s)
+- we may want to add or remove certain Milestones
+- we may want to adjust the scope of certain Milestones
 
 ### Standard Release Meetings
 
-#### Launch Meeting
+In addition to the weekly follow-up up meetings addressed above, each release cycle includes the more formal meetings listed below.
 
-First release meeting, should take no more than **45 minutes**, with agenda
+- `Launch Meeting`
+- `User Stories Meeting`
+- `Release Plan Finalization Meeting]`
+- `Release Checklist Meeting`
+- `Lessons Learned`
 
-1. Propose set of release OKRs based on review of
-    - open help desk issues that have bearing on release  
-    - any possibly finalised OKRs from prior release
-    - project OKRs
-2. Identify set of projects, products etc. and assign leads.
-3. Assign responsibility to someone for finalising outstanding branding assets, which must be delivered no later than **five days after this meeting**
-4. Schedule the [user stories meeting](#user-stories-meeting) to no later than **two working days after this meeting**.
+The **RM** is responsible for scheduling, conducting and taking minutes. Go [here](/meetings) to read about previously held, and scheduled release meetings.
 
-#### User Stories Meeting
+### Step by Step Process
 
-Second release meeting, should take no more than **90 minutes**, with agenda
-
-1. For experiences identified in the [launch meeting](#launch-meeting), review proposed user stories suggestions prepared by each lead, and settle on final set of stories
-2. Schedule the [Release Plan Finalisation Meeting](#release-plan-finalisation-meeting) to no later than **two working days after this meeting**.
-
-#### Release Plan Finalisation Meeting
-
-Third release meeting, should take no more than **90 minutes**, with agenda
-
-1. Finalise release plan based on lead proposals
-2. Evaluate whether plan is feasible based on projected total load on contributors, and tentative release date. If not feasible, try to make minor modifications of scope or deadline. If that also does not work, go back and redo process from launch meeting step.
-
-If feasible, then proceed with
-
-3. If a specification is to be done, assign a [specification lead and committee](Specification Lead and Committee), and schedule first [specification planning meeting](#specification-planning-meeting)
-
-#### Specification Planning meeting
-
-Open ended technical meetings which are conducted iteratively with implementing out parts of the release.
-
-### Step-by-step Process
-
-This whole process should take no more than **7** working days from start to finish, and involves the following sequence of events and corresponding deadlines.
-
-1. The following must be determined no later than **the day before the prior testnet release.**
-
-    - [**RM**](#release-manager)
-    - testnet name, denoted by `TESTNET_NAME`
-    - tentative release date
-
-2. **RM** shall have done the following no later than at **the day after the prior testnet release.**
-
-    - created PR establishing a new [testnet directory](/testnets), where
-        - the release name is set to `TESTNET_NAME`
-        - the naming rationale is left blank, unless it is ready
-        - the goal is left blank, unless it is ready
-        - the logomark is left blank, unless it is ready
-
-    - initiated creation of possibly missing logomark
-
-    - scheduled a meeting time for the [launch meeting](#launch-meeting) no later than the next available working day when all core contributors are available.
-
-    - create a subdirectory of the [meeting](/meetings) directory that has itinerary with appropriate agenda
-
-3. Conduct launch meeting.
-
-4. After the meeting is over, the **RM** shall on the same day have the testnet directory pull request merged with completed itinerary.
-
-5. Leads must complete their user stories contributions, in the form of PRs into the meeting directory, before the user stories meeting starts.
-
-6. Conduct user stories meeting.
-
-7. After the meeting is over, the **RM** shall have the lead pull requests merged, with possible modifications, no later than **the day after**.
-
-8. Leads must complete their release plan sections, in the form of PRs into the meeting directory, before the release plan finalisation meeting starts.
-
-9. Conduct release plan finalisation meeting.
-
-10. After the meeting is over, the **RM** shall on the same days
-
-    - create a github project per release objective on the [Joystream Github Organisation](https://github.com/orgs/Joystream/projects) which kanban boards with standardized columns: `TODO`, `In progress`, `Done` and `Halted`.
-
-    - update release document link to relevant github projects.
-
-    - updates the label set to reflect any new possible products
-
-10. Specification work begins, and is scheduled and organised on an ad-hoc basis. Anyone unaffected by this work can continue to move forward immediately.
-
-11. Leads must convert their release plan contributions into tangible tasks, in the form of github issues on the relevant github project created. After this process, the release plan itself should no longer be consulted, also if changes are made.
-
-12. Release planning meetings are conducted on a per-need basis, typically more frequently as the release date approaches.
-
+TODO
 
 <br />
 <img src="img/github-policy.svg" id="github-policy"/>
 
-WIP: describe how we use github, in particular
+WIP: describe how we use GitHub, in particular
 
 - repo creation, naming and formatting policies
 - how to use this repo, in particular managing label sets, projects, etc.
