@@ -17,11 +17,11 @@ use grandpa::fg_primitives::{self, ScheduledChange};
 use grandpa::{AuthorityId as GrandpaId, AuthorityWeight as GrandpaWeight};
 use primitives::{crypto::key_types, OpaqueMetadata};
 use rstd::prelude::*;
-use sr_primitives::traits::{
+use runtime_primitives::traits::{
     BlakeTwo256, Block as BlockT, ConvertInto, DigestFor, NumberFor, StaticLookup, Verify,
 };
-use sr_primitives::weights::Weight;
-use sr_primitives::{
+use runtime_primitives::weights::Weight;
+use runtime_primitives::{
     create_runtime_str, generic, impl_opaque_keys, transaction_validity::TransactionValidity,
     AnySignature, ApplyResult,
 };
@@ -32,8 +32,8 @@ use version::RuntimeVersion;
 // A few exports that help ease life for downstream crates.
 pub use balances::Call as BalancesCall;
 #[cfg(any(feature = "std", test))]
-pub use sr_primitives::BuildStorage;
-pub use sr_primitives::{Perbill, Permill};
+pub use runtime_primitives::BuildStorage;
+pub use runtime_primitives::{Perbill, Permill};
 pub use srml_support::{construct_runtime, parameter_types, StorageValue};
 pub use timestamp::Call as TimestampCall;
 
@@ -70,7 +70,7 @@ pub type DigestItem = generic::DigestItem<Hash>;
 pub mod opaque {
     use super::*;
 
-    pub use sr_primitives::OpaqueExtrinsic as UncheckedExtrinsic;
+    pub use runtime_primitives::OpaqueExtrinsic as UncheckedExtrinsic;
 
     /// Opaque block header type.
     pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
@@ -266,6 +266,7 @@ mod migration;
 mod roles;
 mod service_discovery;
 use service_discovery::discovery;
+use roles::actors;
 
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;
@@ -427,16 +428,6 @@ impl actors::ActorRemoved<Runtime> for HandleActorRemoved {
 impl discovery::Trait for Runtime {
     type Event = Event;
     type Roles = LookupRoles;
-}
-
-impl grandpa::Trait for Runtime {
-    type SessionKey = AuthorityId;
-    type Log = Log;
-    type Event = Event;
-}
-
-impl finality_tracker::Trait for Runtime {
-    type OnFinalizationStalled = grandpa::SyncedAuthorities<Runtime>;
 }
 
 construct_runtime!(

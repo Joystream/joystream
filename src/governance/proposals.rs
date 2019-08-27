@@ -1,14 +1,15 @@
 use rstd::prelude::*;
 use runtime_io::print;
-use runtime_primitives::traits::{As, Hash, Zero};
+use runtime_primitives::traits::{Hash, Zero};
 use srml_support::traits::{Currency, ReservableCurrency};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
 };
 use {
     consensus,
-    system::{self, ensure_signed},
+    system::{self, ensure_signed, ensure_root},
 };
+use codec::{Encode, Decode};
 
 #[cfg(test)]
 use primitives::storage::well_known_keys;
@@ -171,19 +172,19 @@ decl_storage! {
 
         /// Minimum amount of a balance to be staked in order to make a proposal.
         MinStake get(min_stake) config(): BalanceOf<T> =
-            BalanceOf::<T>::sa(DEFAULT_MIN_STAKE);
+            BalanceOf::<T>::from(DEFAULT_MIN_STAKE);
 
         /// A fee to be slashed (burn) in case a proposer decides to cancel a proposal.
         CancellationFee get(cancellation_fee) config(): BalanceOf<T> =
-            BalanceOf::<T>::sa(DEFAULT_CANCELLATION_FEE);
+            BalanceOf::<T>::from(DEFAULT_CANCELLATION_FEE);
 
         /// A fee to be slashed (burn) in case a proposal was rejected.
         RejectionFee get(rejection_fee) config(): BalanceOf<T> =
-            BalanceOf::<T>::sa(DEFAULT_REJECTION_FEE);
+            BalanceOf::<T>::from(DEFAULT_REJECTION_FEE);
 
         /// Max duration of proposal in blocks until it will be expired if not enough votes.
         VotingPeriod get(voting_period) config(): T::BlockNumber =
-            T::BlockNumber::sa(DEFAULT_VOTING_PERIOD_IN_SECS /
+            T::BlockNumber::from(DEFAULT_VOTING_PERIOD_IN_SECS /
             (<timestamp::Module<T>>::minimum_period().as_() * 2));
 
         NameMaxLen get(name_max_len) config(): u32 = DEFAULT_NAME_MAX_LEN;
@@ -330,7 +331,8 @@ decl_module! {
         }
 
         /// Cancel a proposal and return stake without slashing
-        fn veto_proposal(proposal_id: u32) {
+        fn veto_proposal(origin, proposal_id: u32) {
+            ensure_root(origin)?;
             ensure!(<Proposals<T>>::exists(proposal_id), MSG_PROPOSAL_NOT_FOUND);
             let proposal = Self::proposals(proposal_id);
             ensure!(proposal.status == Active, MSG_PROPOSAL_FINALIZED);
@@ -342,7 +344,8 @@ decl_module! {
             Self::deposit_event(RawEvent::ProposalVetoed(proposal_id));
         }
 
-        fn set_approval_quorum(new_value: u32) {
+        fn set_approval_quorum(origin, new_value: u32) {
+            ensure_root(origin)?;
             ensure!(new_value > 0, "approval quorom must be greater than zero");
             <ApprovalQuorum<T>>::put(new_value);
         }

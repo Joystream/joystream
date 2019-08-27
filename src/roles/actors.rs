@@ -1,13 +1,13 @@
 use crate::currency::{BalanceOf, GovernanceCurrency};
-use parity_codec_derive::{Decode, Encode};
+use codec::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_io::print;
-use runtime_primitives::traits::{As, Bounded, MaybeDebug, Zero};
+use runtime_primitives::traits::{Bounded, MaybeDebug, Zero};
 use srml_support::traits::{
     Currency, LockIdentifier, LockableCurrency, WithdrawReason, WithdrawReasons,
 };
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
-use system::{self, ensure_signed};
+use system::{self, ensure_signed, ensure_root};
 
 use crate::traits::Members;
 
@@ -58,18 +58,18 @@ pub struct RoleParameters<T: Trait> {
 impl<T: Trait> Default for RoleParameters<T> {
     fn default() -> Self {
         Self {
-            min_stake: BalanceOf::<T>::sa(3000),
+            min_stake: BalanceOf::<T>::from(3000),
             max_actors: 10,
-            reward: BalanceOf::<T>::sa(10),
-            reward_period: T::BlockNumber::sa(600),
-            unbonding_period: T::BlockNumber::sa(600),
-            entry_request_fee: BalanceOf::<T>::sa(50),
+            reward: BalanceOf::<T>::from(10),
+            reward_period: T::BlockNumber::from(600),
+            unbonding_period: T::BlockNumber::from(600),
+            entry_request_fee: BalanceOf::<T>::from(50),
 
             // not currently used
             min_actors: 5,
-            bonding_period: T::BlockNumber::sa(600),
-            min_service_period: T::BlockNumber::sa(600),
-            startup_grace_period: T::BlockNumber::sa(600),
+            bonding_period: T::BlockNumber::from(600),
+            min_service_period: T::BlockNumber::from(600),
+            startup_grace_period: T::BlockNumber::from(600),
         }
     }
 }
@@ -260,7 +260,7 @@ decl_module! {
 
         fn on_initialize(now: T::BlockNumber) {
             // clear expired requests
-            if now % T::BlockNumber::sa(REQUEST_CLEARING_INTERVAL) == T::BlockNumber::zero() {
+            if now % T::BlockNumber::from(REQUEST_CLEARING_INTERVAL) == T::BlockNumber::zero() {
                 let requests: Requests<T> = Self::role_entry_requests()
                     .into_iter()
                     .filter(|request| request.3 > now)
@@ -315,7 +315,7 @@ decl_module! {
             let _ = T::Currency::slash(&sender, fee);
 
             <RoleEntryRequests<T>>::mutate(|requests| {
-                let expires = <system::Module<T>>::block_number()+ T::BlockNumber::sa(Self::request_life_time());
+                let expires = <system::Module<T>>::block_number()+ T::BlockNumber::from(Self::request_life_time());
                 requests.push((sender.clone(), member_id, role, expires));
             });
             Self::deposit_event(RawEvent::EntryRequested(sender, role));
@@ -383,7 +383,8 @@ decl_module! {
             Self::deposit_event(RawEvent::Unstaked(actor.account, actor.role));
         }
 
-        pub fn set_role_parameters(role: Role, params: RoleParameters<T>) {
+        pub fn set_role_parameters(origin, role: Role, params: RoleParameters<T>) {
+            ensure_root(origin)?;
             let new_stake = params.min_stake.clone();
             <Parameters<T>>::insert(role, params);
             // Update locks for all actors in the role. The lock for each account is already until max_value
@@ -394,23 +395,27 @@ decl_module! {
             }
         }
 
-        pub fn set_available_roles(roles: Vec<Role>) {
+        pub fn set_available_roles(origin, roles: Vec<Role>) {
+            ensure_root(origin)?;
             <AvailableRoles<T>>::put(roles);
         }
 
-        pub fn add_to_available_roles(role: Role) {
+        pub fn add_to_available_roles(origin, role: Role) {
+            ensure_root(origin)?;
             if !Self::available_roles().into_iter().any(|r| r == role) {
                 <AvailableRoles<T>>::mutate(|roles| roles.push(role));
             }
         }
 
-        pub fn remove_from_available_roles(role: Role) {
+        pub fn remove_from_available_roles(origin, role: Role) {
+            ensure_root(origin)?;
             // Should we eject actors in the role being removed?
             let roles: Vec<Role> = Self::available_roles().into_iter().filter(|r| role != *r).collect();
             <AvailableRoles<T>>::put(roles);
         }
 
-        pub fn remove_actor(actor_account: T::AccountId) {
+        pub fn remove_actor(origin, actor_account: T::AccountId) {
+            ensure_root(origin)?;
             ensure!(<ActorByAccountId<T>>::exists(&actor_account), "error trying to remove non actor account");
             let actor = Self::actor_by_account_id(&actor_account).unwrap();
             let role_parameters = Self::ensure_role_parameters(actor.role)?;

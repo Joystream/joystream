@@ -3,10 +3,10 @@ use srml_support::traits::{Currency, ReservableCurrency};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch::Result, ensure, StorageMap, StorageValue,
 };
-use system::{self, ensure_signed};
+use system::{self, ensure_signed, ensure_root};
 
-use runtime_primitives::traits::{As, Hash, Zero};
-
+use runtime_primitives::traits::{Hash, Zero};
+use codec::{Encode, Decode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
 
@@ -107,14 +107,14 @@ decl_storage! {
 
         // Current Election Parameters - default "zero" values are not meaningful. Running an election without
         // settings reasonable values is a bad idea. Parameters can be set in the TriggerElection hook.
-        AnnouncingPeriod get(announcing_period) config(): T::BlockNumber = T::BlockNumber::sa(100);
-        VotingPeriod get(voting_period) config(): T::BlockNumber = T::BlockNumber::sa(100);
-        RevealingPeriod get(revealing_period) config(): T::BlockNumber = T::BlockNumber::sa(100);
+        AnnouncingPeriod get(announcing_period) config(): T::BlockNumber = T::BlockNumber::from(100);
+        VotingPeriod get(voting_period) config(): T::BlockNumber = T::BlockNumber::from(100);
+        RevealingPeriod get(revealing_period) config(): T::BlockNumber = T::BlockNumber::from(100);
         CouncilSize get(council_size) config(): u32 = 10;
         CandidacyLimit get (candidacy_limit) config(): u32 = 20;
-        MinCouncilStake get(min_council_stake) config(): BalanceOf<T> = BalanceOf::<T>::sa(100);
-        NewTermDuration get(new_term_duration) config(): T::BlockNumber = T::BlockNumber::sa(1000);
-        MinVotingStake get(min_voting_stake) config(): BalanceOf<T> = BalanceOf::<T>::sa(10);
+        MinCouncilStake get(min_council_stake) config(): BalanceOf<T> = BalanceOf::<T>::from(100);
+        NewTermDuration get(new_term_duration) config(): T::BlockNumber = T::BlockNumber::from(1000);
+        MinVotingStake get(min_voting_stake) config(): BalanceOf<T> = BalanceOf::<T>::from(10);
     }
 }
 
@@ -783,62 +783,74 @@ decl_module! {
             Self::deposit_event(RawEvent::Revealed(sender, commitment, vote));
         }
 
-        fn set_stage_announcing(ends_at: T::BlockNumber) {
+        fn set_stage_announcing(origin, ends_at: T::BlockNumber) {
+            ensure_root(origin)?;
             ensure!(ends_at > <system::Module<T>>::block_number(), "must end at future block number");
             <Stage<T>>::put(ElectionStage::Announcing(ends_at));
         }
 
-        fn set_stage_revealing(ends_at: T::BlockNumber) {
+        fn set_stage_revealing(origin, ends_at: T::BlockNumber) {
+            ensure_root(origin)?;
             ensure!(ends_at > <system::Module<T>>::block_number(), "must end at future block number");
             <Stage<T>>::put(ElectionStage::Revealing(ends_at));
         }
 
-        fn set_stage_voting(ends_at: T::BlockNumber) {
+        fn set_stage_voting(origin, ends_at: T::BlockNumber) {
+            ensure_root(origin)?;
             ensure!(ends_at > <system::Module<T>>::block_number(), "must end at future block number");
             <Stage<T>>::put(ElectionStage::Voting(ends_at));
         }
 
-        fn set_param_announcing_period(period: T::BlockNumber) {
+        fn set_param_announcing_period(origin, period: T::BlockNumber) {
+            ensure_root(origin)?;
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(!period.is_zero(), "period cannot be zero");
             <AnnouncingPeriod<T>>::put(period);
         }
-        fn set_param_voting_period(period: T::BlockNumber) {
+        fn set_param_voting_period(origin,  period: T::BlockNumber) {
+            ensure_root(origin)?;
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(!period.is_zero(), "period cannot be zero");
             <VotingPeriod<T>>::put(period);
         }
-        fn set_param_revealing_period(period: T::BlockNumber) {
+        fn set_param_revealing_period(origin, period: T::BlockNumber) {
+            ensure_root(origin)?;
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(!period.is_zero(), "period cannot be zero");
             <RevealingPeriod<T>>::put(period);
         }
-        fn set_param_min_council_stake(amount: BalanceOf<T>) {
+        fn set_param_min_council_stake(origin, amount: BalanceOf<T>) {
+            ensure_root(origin)?;
             ensure!(!Self::is_election_running(), "cannot change params during election");
             <MinCouncilStake<T>>::put(amount);
         }
-        fn set_param_new_term_duration(duration: T::BlockNumber) {
+        fn set_param_new_term_duration(origin, duration: T::BlockNumber) {
+            ensure_root(origin)?;
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(!duration.is_zero(), "new term duration cannot be zero");
             <NewTermDuration<T>>::put(duration);
         }
-        fn set_param_council_size(council_size: u32) {
+        fn set_param_council_size(origin, council_size: u32) {
+            ensure_root(origin)?;
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(council_size > 0, "council size cannot be zero");
             ensure!(council_size <= Self::candidacy_limit(), "council size cannot greater than candidacy limit");
             <CouncilSize<T>>::put(council_size);
         }
-        fn set_param_candidacy_limit(limit: u32) {
+        fn set_param_candidacy_limit(origin, limit: u32) {
+            ensure_root(origin)?;
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(limit >= Self::council_size(), "candidacy limit cannot be less than council size");
             <CandidacyLimit<T>>::put(limit);
         }
-        fn set_param_min_voting_stake(amount: BalanceOf<T>) {
+        fn set_param_min_voting_stake(origin, amount: BalanceOf<T>) {
+            ensure_root(origin)?;
             ensure!(!Self::is_election_running(), "cannot change params during election");
             <MinVotingStake<T>>::put(amount);
         }
 
-        fn force_stop_election() {
+        fn force_stop_election(origin) {
+            ensure_root(origin)?;
             ensure!(Self::is_election_running(), "only running election can be stopped");
 
             let mut votes = Vec::new();
@@ -856,11 +868,13 @@ decl_module! {
             );
         }
 
-        fn force_start_election() {
+        fn force_start_election(origin) {
+            ensure_root(origin)?;
             Self::start_election(<council::Module<T>>::active_council())?;
         }
 
-        fn set_auto_start (flag: bool) {
+        fn set_auto_start (origin, flag: bool) {
+            ensure_root(origin)?;
             <AutoStart<T>>::put(flag);
         }
 
@@ -883,7 +897,7 @@ impl<T: Trait> council::CouncilTermEnded for Module<T> {
 mod tests {
     use super::*;
     use crate::governance::mock::*;
-    use parity_codec::Encode;
+    use codec::Encode;
     use runtime_io::with_externalities;
     use srml_support::*;
 

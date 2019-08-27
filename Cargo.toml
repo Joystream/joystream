@@ -20,7 +20,7 @@ std = [
     'indices/std',
     'grandpa/std',
     'primitives/std',
-    'sr-primitives/std',
+    'runtime-primitives/std',
     'system/std',
     'timestamp/std',
     'sudo/std',
@@ -86,7 +86,6 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-offchain-primitives'
 branch = 'master'
 
-#renamed from runtime-primitives
 [dependencies.primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
@@ -114,9 +113,11 @@ features = ['derive']
 optional = true
 version = '1.0'
 
-[dependencies.sr-primitives]
+#renamed from runtime_primitives
+[dependencies.runtime-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
+package = 'sr-primitives'
 branch = 'master'
 
 [dependencies.substrate-session]

@@ -1,7 +1,7 @@
 use rstd::prelude::*;
-use runtime_primitives::traits::{As, Zero};
+use runtime_primitives::traits::{Zero};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
-use system;
+use system::{self, ensure_root};
 
 pub use super::election::{self, CouncilElected, Seat, Seats};
 pub use crate::currency::{BalanceOf, GovernanceCurrency};
@@ -30,7 +30,7 @@ pub trait Trait: system::Trait + GovernanceCurrency {
 decl_storage! {
     trait Store for Module<T: Trait> as Council {
         ActiveCouncil get(active_council) config(): Seats<T::AccountId, BalanceOf<T>>;
-        TermEndsAt get(term_ends_at) config() : T::BlockNumber = T::BlockNumber::sa(1);
+        TermEndsAt get(term_ends_at) config() : T::BlockNumber = T::BlockNumber::one();
     }
 }
 
@@ -73,10 +73,11 @@ decl_module! {
             }
         }
 
-        // Sudo methods...
+        // Privileged methods
 
         /// Force set a zero staked council. Stakes in existing council will vanish into thin air!
-        fn set_council(accounts: Vec<T::AccountId>) {
+        fn set_council(origin, accounts: Vec<T::AccountId>) {
+            ensure_root(origin)?;
             let new_council: Seats<T::AccountId, BalanceOf<T>> = accounts.into_iter().map(|account| {
                 Seat {
                     member: account,
@@ -88,7 +89,8 @@ decl_module! {
         }
 
         /// Adds a zero staked council member
-        fn add_council_member(account: T::AccountId) {
+        fn add_council_member(origin, account: T::AccountId) {
+            ensure_root(origin)?;
             ensure!(!Self::is_councilor(&account), "cannot add same account multiple times");
             let seat = Seat {
                 member: account,
@@ -100,7 +102,8 @@ decl_module! {
             <ActiveCouncil<T>>::mutate(|council| council.push(seat));
         }
 
-        fn remove_council_member(account_to_remove: T::AccountId) {
+        fn remove_council_member(origin, account_to_remove: T::AccountId) {
+            ensure_root(origin)?;
             ensure!(Self::is_councilor(&account_to_remove), "account is not a councilor");
             let filtered_council: Seats<T::AccountId, BalanceOf<T>> = Self::active_council()
                 .into_iter()
@@ -110,7 +113,8 @@ decl_module! {
         }
 
         /// Set blocknumber when council term will end
-        fn set_term_ends_at(ends_at: T::BlockNumber) {
+        fn set_term_ends_at(origin, ends_at: T::BlockNumber) {
+            ensure_root(origin)?;
             ensure!(ends_at > <system::Module<T>>::block_number(), "must set future block number");
             <TermEndsAt<T>>::put(ends_at);
         }

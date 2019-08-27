@@ -1,9 +1,9 @@
 use crate::traits;
-use parity_codec::Codec;
-use parity_codec_derive::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, Parameter, StorageMap, StorageValue};
+use system::{ensure_root};
 
 pub trait Trait: system::Trait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -14,8 +14,6 @@ pub trait Trait: system::Trait + MaybeDebug {
         + Codec
         + Default
         + Copy
-        + As<usize>
-        + As<u64>
         + MaybeSerializeDebug
         + PartialEq;
 }
@@ -54,10 +52,10 @@ decl_storage! {
         // TODO hardcode data object type for ID 1
 
         // Start at this value
-        pub FirstDataObjectTypeId get(first_data_object_type_id) config(first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::sa(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
+        pub FirstDataObjectTypeId get(first_data_object_type_id) config(first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
         // Increment
-        pub NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>| config.first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::sa(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
+        pub NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>| config.first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
         // Mapping of Data object types
         pub DataObjectTypes get(data_object_types): map T::DataObjectTypeId => Option<DataObjectType>;
@@ -92,11 +90,12 @@ decl_module! {
                 let new_type_id = Self::next_data_object_type_id();
 
                 <DataObjectTypes<T>>::insert(new_type_id, do_type);
-                <NextDataObjectTypeId<T>>::mutate(|n| { *n += T::DataObjectTypeId::sa(1); });
+                <NextDataObjectTypeId<T>>::mutate(|n| { *n += T::DataObjectTypeId::from(1); });
             }
         }
 
-        pub fn register_data_object_type(data_object_type: DataObjectType) {
+        pub fn register_data_object_type(origin, data_object_type: DataObjectType) {
+            ensure_root(origin)?;
             let new_do_type_id = Self::next_data_object_type_id();
             let do_type: DataObjectType = DataObjectType {
                 description: data_object_type.description.clone(),
@@ -104,13 +103,14 @@ decl_module! {
             };
 
             <DataObjectTypes<T>>::insert(new_do_type_id, do_type);
-            <NextDataObjectTypeId<T>>::mutate(|n| { *n += T::DataObjectTypeId::sa(1); });
+            <NextDataObjectTypeId<T>>::mutate(|n| { *n += T::DataObjectTypeId::from(1); });
 
             Self::deposit_event(RawEvent::DataObjectTypeRegistered(new_do_type_id));
         }
 
         // TODO use DataObjectTypeUpdate
-        pub fn update_data_object_type(id: T::DataObjectTypeId, data_object_type: DataObjectType) {
+        pub fn update_data_object_type(origin, id: T::DataObjectTypeId, data_object_type: DataObjectType) {
+            ensure_root(origin)?;
             let mut do_type = Self::ensure_data_object_type(id)?;
 
             do_type.description = data_object_type.description.clone();
@@ -125,7 +125,8 @@ decl_module! {
         // toggling DO types is likely a more common operation than updating
         // other aspects.
         // TODO deprecate or express via update_data_type
-        pub fn activate_data_object_type(id: T::DataObjectTypeId) {
+        pub fn activate_data_object_type(origin, id: T::DataObjectTypeId) {
+            ensure_root(origin)?;
             let mut do_type = Self::ensure_data_object_type(id)?;
 
             do_type.active = true;
@@ -135,7 +136,8 @@ decl_module! {
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
 
-        pub fn deactivate_data_object_type(id: T::DataObjectTypeId) {
+        pub fn deactivate_data_object_type(origin, id: T::DataObjectTypeId) {
+            ensure_root(origin)?;
             let mut do_type = Self::ensure_data_object_type(id)?;
 
             do_type.active = false;

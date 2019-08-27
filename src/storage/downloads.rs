@@ -8,10 +8,9 @@
 use crate::storage::data_directory::Trait as DDTrait;
 use crate::storage::data_object_storage_registry::Trait as DOSRTrait;
 use crate::traits::{ContentHasStorage, ContentIdExists};
-use parity_codec::Codec;
-use parity_codec_derive::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{As, MaybeSerializeDebug, Member, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::{
     decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
 };
@@ -26,8 +25,6 @@ pub trait Trait: timestamp::Trait + system::Trait + DOSRTrait + DDTrait {
         + Codec
         + Default
         + Copy
-        + As<usize>
-        + As<u64>
         + MaybeSerializeDebug
         + PartialEq;
 
@@ -72,10 +69,10 @@ pub struct DownloadSession<T: Trait> {
 decl_storage! {
     trait Store for Module<T: Trait> as DownloadSessions {
         // Start at this value
-        pub FirstDownloadSessionId get(first_download_session_id) config(first_download_session_id): T::DownloadSessionId = T::DownloadSessionId::sa(DEFAULT_FIRST_DOWNLOAD_SESSION_ID);
+        pub FirstDownloadSessionId get(first_download_session_id) config(first_download_session_id): T::DownloadSessionId = T::DownloadSessionId::from(DEFAULT_FIRST_DOWNLOAD_SESSION_ID);
 
         // Increment
-        pub NextDownloadSessionId get(next_download_session_id) build(|config: &GenesisConfig<T>| config.first_download_session_id): T::DownloadSessionId = T::DownloadSessionId::sa(DEFAULT_FIRST_DOWNLOAD_SESSION_ID);
+        pub NextDownloadSessionId get(next_download_session_id) build(|config: &GenesisConfig<T>| config.first_download_session_id): T::DownloadSessionId = T::DownloadSessionId::from(DEFAULT_FIRST_DOWNLOAD_SESSION_ID);
 
         // Mapping of Data object types
         pub DownloadSessions get(download_sessions): map T::DownloadSessionId => Option<DownloadSession<T>>;
@@ -122,7 +119,7 @@ decl_module! {
             };
 
             <DownloadSessions<T>>::insert(new_id, session);
-            <NextDownloadSessionId<T>>::mutate(|n| { *n += T::DownloadSessionId::sa(1); });
+            <NextDownloadSessionId<T>>::mutate(|n| { *n += T::DownloadSessionId::from(1); });
 
             // Fire off event
             Self::deposit_event(RawEvent::DownloadStarted(content_id));

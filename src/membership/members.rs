@@ -1,14 +1,13 @@
 use crate::currency::{BalanceOf, GovernanceCurrency};
 use crate::traits::{Members, Roles};
-use parity_codec::Codec;
-use parity_codec_derive::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{As, MaybeSerializeDebug, Member, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::traits::Currency;
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
 };
-use system::{self, ensure_signed};
+use system::{self, ensure_signed, ensure_root};
 use timestamp;
 
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
@@ -20,8 +19,6 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Codec
         + Default
         + Copy
-        + As<usize>
-        + As<u64>
         + MaybeSerializeDebug
         + PartialEq;
 
@@ -31,8 +28,6 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Codec
         + Default
         + Copy
-        + As<usize>
-        + As<u64>
         + MaybeSerializeDebug
         + PartialEq;
 
@@ -42,8 +37,6 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Codec
         + Default
         + Copy
-        + As<usize>
-        + As<u64>
         + MaybeSerializeDebug
         + PartialEq;
 
@@ -324,7 +317,8 @@ decl_module! {
             Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member.clone()));
         }
 
-        pub fn set_screening_authority(authority: T::AccountId) {
+        pub fn set_screening_authority(origin, authority: T::AccountId) {
+            ensure_root(origin)?;
             <ScreeningAuthority<T>>::put(authority);
         }
     }
