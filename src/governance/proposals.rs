@@ -1,3 +1,4 @@
+use codec::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_io::print;
 use runtime_primitives::traits::{Hash, Zero};
@@ -7,9 +8,8 @@ use srml_support::{
 };
 use {
     consensus,
-    system::{self, ensure_signed, ensure_root},
+    system::{self, ensure_root, ensure_signed},
 };
-use codec::{Encode, Decode};
 
 #[cfg(test)]
 use primitives::storage::well_known_keys;

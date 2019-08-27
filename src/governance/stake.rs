@@ -1,6 +1,6 @@
+use codec::{Decode, Encode};
 use rstd::cmp::Ordering;
 use runtime_primitives::traits::SimpleArithmetic;
-use codec::{Encode, Decode};
 
 #[derive(Encode, Decode, Clone, Copy, Default, Debug)]
 pub struct Stake<Balance>

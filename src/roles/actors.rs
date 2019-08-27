@@ -7,7 +7,7 @@ use srml_support::traits::{
     Currency, LockIdentifier, LockableCurrency, WithdrawReason, WithdrawReasons,
 };
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
-use system::{self, ensure_signed, ensure_root};
+use system::{self, ensure_root, ensure_signed};
 
 use crate::traits::Members;
 

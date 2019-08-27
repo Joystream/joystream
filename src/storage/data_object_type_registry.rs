@@ -3,7 +3,7 @@ use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, Parameter, StorageMap, StorageValue};
-use system::{ensure_root};
+use system::ensure_root;
 
 pub trait Trait: system::Trait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;

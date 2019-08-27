@@ -9,10 +9,6 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use babe::AuthorityId as BabeId;
-use substrate_client::{
-    block_builder::api::{self as block_builder_api, CheckInherentsResult, InherentData},
-    impl_runtime_apis, runtime_api as client_api,
-};
 use grandpa::fg_primitives::{self, ScheduledChange};
 use grandpa::{AuthorityId as GrandpaId, AuthorityWeight as GrandpaWeight};
 use primitives::{crypto::key_types, OpaqueMetadata};
@@ -24,6 +20,10 @@ use runtime_primitives::weights::Weight;
 use runtime_primitives::{
     create_runtime_str, generic, impl_opaque_keys, transaction_validity::TransactionValidity,
     AnySignature, ApplyResult,
+};
+use substrate_client::{
+    block_builder::api::{self as block_builder_api, CheckInherentsResult, InherentData},
+    impl_runtime_apis, runtime_api as client_api,
 };
 #[cfg(feature = "std")]
 use version::NativeVersion;
@@ -265,8 +265,8 @@ use membership::members;
 mod migration;
 mod roles;
 mod service_discovery;
-use service_discovery::discovery;
 use roles::actors;
+use service_discovery::discovery;
 
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;

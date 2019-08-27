@@ -9,7 +9,7 @@ use runtime_primitives::traits::{
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
 };
-use system::{self, ensure_signed, ensure_root};
+use system::{self, ensure_root, ensure_signed};
 
 pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;

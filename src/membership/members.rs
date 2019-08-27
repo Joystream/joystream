@@ -7,7 +7,7 @@ use srml_support::traits::Currency;
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
 };
-use system::{self, ensure_signed, ensure_root};
+use system::{self, ensure_root, ensure_signed};
 use timestamp;
 
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {

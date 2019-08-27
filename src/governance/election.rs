@@ -3,12 +3,12 @@ use srml_support::traits::{Currency, ReservableCurrency};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch::Result, ensure, StorageMap, StorageValue,
 };
-use system::{self, ensure_signed, ensure_root};
+use system::{self, ensure_root, ensure_signed};
 
-use runtime_primitives::traits::{Hash, Zero};
-use codec::{Encode, Decode};
+use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
+use runtime_primitives::traits::{Hash, Zero};
 
 use super::sealed_vote::SealedVote;
 use super::stake::Stake;

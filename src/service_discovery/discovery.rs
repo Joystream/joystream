@@ -1,6 +1,6 @@
 use crate::traits::Roles;
+use codec::{Decode, Encode};
 use rstd::prelude::*;
-use codec::{Encode, Decode};
 
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_root, ensure_signed};
