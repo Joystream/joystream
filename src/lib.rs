@@ -37,7 +37,7 @@ const ERROR_ENTITY_NOT_FOUND: &str = "Entity was not found by id";
 const ERROR_ENTITY_EMPTY_NAME: &str = "Entity cannot have an empty name";
 const ERROR_ENTITY_ALREADY_DELETED: &str = "Entity is already deleted";
 const ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY: &str = "Cannot add a schema that is already added to this entity";
-const ERROR_ID_NOT_FOUND_IN_SCHEMA_PROPS : &str = "Provided property id was not found in schema properties";
+const ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS : &str = "Provided property id was not found in schema properties";
 const ERROR_PROP_VALUE_DONT_MATCH_TYPE: &str = "Some of the provided property values don't match the expected property type";
 const ERROR_UNKNOWN_INTERNAL_ENTITY_ID: &str = "Some of the provided property values has unknown internal entity id";
 const ERROR_MISSING_REQUIRED_PROP: &str = "Some required property was not found when adding schema support to entity";
@@ -369,7 +369,7 @@ impl<T: Trait> Module<T> {
         // for these properties on this entity.
         for (new_id, new_value) in property_values.iter() {
             if schema_prop_ids.get(*new_id as usize).is_none() {
-                return Err(ERROR_ID_NOT_FOUND_IN_SCHEMA_PROPS)
+                return Err(ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS)
             }
 
             let class_prop = class.properties.get(*new_id as usize).unwrap();

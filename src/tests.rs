@@ -63,7 +63,7 @@ fn cannot_add_schema_to_unknown_class() {
         assert_err!(
             TestModule::add_class_schema(
                 UNKNOWN_CLASS_ID,
-                known_prop_ids(),
+                good_prop_ids(),
                 good_props()
             ),
             ERROR_CLASS_NOT_FOUND
@@ -121,9 +121,156 @@ fn cannot_create_entity_with_empty_name() {
     })
 }
 
+// Add schema support to entity
+// --------------------------------------
+
+#[test]
+fn cannot_add_schema_to_entity_when_entity_not_found() {
+    with_test_externalities(|| {
+        assert_entity_not_found(
+            TestModule::add_schema_support_to_entity(
+                UNKNOWN_ENTITY_ID,
+                1,
+                vec![]
+            )
+        );
+    })
+}
+
+// #[test]
+// fn cannot_add_schema_to_entity_when_schema_already_added_to_entity() {
+//     with_test_externalities(|| {
+//         // TODO ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY
+//     })
+// }
+
+// #[test]
+// fn cannot_add_schema_to_entity_when_class_schema_refers_unknown_prop_index() {
+//     with_test_externalities(|| {
+//         // TODO ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
+//     })
+// }
+
+// #[test]
+// fn cannot_add_schema_to_entity_when_error_prop_id_not_found_in_schema_props() {
+//     with_test_externalities(|| {
+//         // TODO ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS
+//     })
+// }
+
+// #[test]
+// fn cannot_add_schema_to_entity_when_prop_value_dont_match_type() {
+//     with_test_externalities(|| {
+//         // TODO ERROR_PROP_VALUE_DONT_MATCH_TYPE
+//     })
+// }
+
+// #[test]
+// fn cannot_add_schema_to_entity_when_unknown_internal_entity_id() {
+//     with_test_externalities(|| {
+//         // TODO ERROR_UNKNOWN_INTERNAL_ENTITY_ID
+//     })
+// }
+
+// #[test]
+// fn cannot_add_schema_to_entity_when_missing_required_prop() {
+//     with_test_externalities(|| {
+//         // TODO ERROR_MISSING_REQUIRED_PROP
+//     })
+// }
+
+// #[test]
+// fn add_schema_to_entity_successfully() {
+//     with_test_externalities(|| {
+//         // TODO finish
+//     })
+// }
+
 // Update entity properties
 // --------------------------------------
 
+#[test]
+fn cannot_update_entity_props_when_entity_not_found() {
+    with_test_externalities(|| {
+        assert_entity_not_found(
+            TestModule::update_entity_properties(
+                UNKNOWN_ENTITY_ID,
+                vec![]
+            )
+        );
+    })
+}
+
+// #[test]
+// fn cannot_update_entity_props_when_entity_has_no_schemas() {
+//     with_test_externalities(|| {
+//         // TODO ERROR_ENTITY_HAS_NO_SCHEMAS
+//     })
+// }
+
+// #[test]
+// fn cannot_update_entity_props_when_prop_value_dont_match_type() {
+//     with_test_externalities(|| {
+//         // TODO ERROR_PROP_VALUE_DONT_MATCH_TYPE
+//     })
+// }
+
+// #[test]
+// fn cannot_update_entity_props_when_unknown_internal_entity_id() {
+//     with_test_externalities(|| {
+//         // TODO ERROR_UNKNOWN_INTERNAL_ENTITY_ID
+//     })
+// }
+
+// #[test]
+// fn cannot_update_entity_props_when_unknown_class_prop_id() {
+//     with_test_externalities(|| {
+//         // TODO ERROR_UNKNOWN_CLASS_PROP_ID
+//     })
+// }
+
+// #[test]
+// fn cannot_update_entity_props_when_unknown_entity_prop_id() {
+//     with_test_externalities(|| {
+//         // TODO ERROR_UNKNOWN_ENTITY_PROP_ID
+//     })
+// }
+
+// #[test]
+// fn update_entity_props_successfully() {
+//     with_test_externalities(|| {
+//         // TODO 
+//     })
+// }
+
+// Remove entity properties
+// --------------------------------------
+
+#[test]
+fn cannot_remove_entity_props_when_entity_not_found() {
+    with_test_externalities(|| {
+        assert_entity_not_found(
+            TestModule::remove_entity_properties(
+                UNKNOWN_ENTITY_ID,
+                vec![],
+            )
+        );
+    })
+}
+
+// #[test]
+// fn cannot_remove_entity_props_when_no_entity_prop_ids_provided() {
+//     with_test_externalities(|| {
+//         // TODO ERROR_NO_ENTITY_PROP_IDS_ON_REMOVE
+//     })
+// }
+
+// #[test]
+// fn remove_entity_props_successfully() {
+//     with_test_externalities(|| {
+//         // TODO 
+//     })
+// }
 
 // Delete entity
 // --------------------------------------
@@ -140,6 +287,15 @@ fn delete_entity_successfully() {
 }
 
 #[test]
+fn cannot_delete_entity_when_entity_not_found() {
+    with_test_externalities(|| {
+        assert_entity_not_found(
+            TestModule::delete_entity(UNKNOWN_ENTITY_ID)
+        );
+    })
+}
+
+#[test]
 fn cannot_delete_already_deleted_entity() {
     with_test_externalities(|| {
         let entity_id = create_entity();
@@ -147,16 +303,6 @@ fn cannot_delete_already_deleted_entity() {
         assert_err!(
             TestModule::delete_entity(entity_id),
             ERROR_ENTITY_ALREADY_DELETED
-        );
-    })
-}
-
-#[test]
-fn cannot_delete_entity_by_unknown_id() {
-    with_test_externalities(|| {
-        assert_err!(
-            TestModule::delete_entity(UNKNOWN_ENTITY_ID),
-            ERROR_ENTITY_NOT_FOUND
         );
     })
 }

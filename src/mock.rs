@@ -4,7 +4,7 @@ use crate::*;
 use crate::{GenesisConfig, Module, Trait};
 
 use primitives::{Blake2Hasher, H256};
-use srml_support::{impl_outer_origin, assert_ok};
+use srml_support::{impl_outer_origin, assert_ok, assert_err};
 use runtime_io::with_externalities;
 use runtime_primitives::{
     testing::{Digest, DigestItem, Header},
@@ -93,7 +93,7 @@ pub fn good_props() -> Vec<Property> {
     ]
 }
 
-pub fn known_prop_ids() -> Vec<u16> {
+pub fn good_prop_ids() -> Vec<u16> {
     vec![ 0, 1, 2 ]
 }
 
@@ -144,6 +144,13 @@ pub fn create_entity() -> EntityId {
         entity_id
     );
     entity_id
+}
+
+pub fn assert_entity_not_found(result: dispatch::Result) {
+    assert_err!(
+        result,
+        ERROR_ENTITY_NOT_FOUND
+    );
 }
 
 // This function basically just builds a genesis storage key/value store according to
