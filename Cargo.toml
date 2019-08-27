@@ -8,6 +8,15 @@ version = '6.0.0'
 default = ['std']
 no_std = []
 std = [
+    'authority-discovery-primitives/std',
+    'authority-discovery/std',
+    'authorship/std',
+    'finality-tracker/std',
+    'im-online/std',
+    'session/std',
+    'offences/std',
+    'sr-staking-primitives/std',
+    'staking/std',
     'codec/std',
     'substrate-client/std',
     'rstd/std',
@@ -30,6 +39,7 @@ std = [
     'offchain-primitives/std',
     'substrate-session/std',
     'forum/std',
+    'node-primitives/std'
 ]
 
 [dependencies.babe]
@@ -113,7 +123,6 @@ features = ['derive']
 optional = true
 version = '1.0'
 
-#renamed from runtime_primitives
 [dependencies.runtime-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
@@ -155,6 +164,66 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-version'
 branch = 'master'
 
+[dependencies.authority-discovery-primitives]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'substrate-authority-discovery-primitives'
+branch = 'master'
+
+[dependencies.authority-discovery]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-authority-discovery'
+branch = 'master'
+
+[dependencies.authorship]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-authorship'
+branch = 'master'
+
+[dependencies.finality-tracker]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-finality-tracker'
+branch = 'master'
+
+[dependencies.im-online]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-im-online'
+branch = 'master'
+
+[dependencies.session]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-session'
+branch = 'master'
+
+[dependencies.offences]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-offences'
+branch = 'master'
+
+[dependencies.sr-staking-primitives]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'sr-staking-primitives'
+branch = 'master'
+
+[dependencies.staking]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-staking'
+branch = 'master'
+
+[dependencies.node-primitives]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'node-primitives'
+branch = 'master'
+
 [build-dependencies.wasm-builder-runner]
 package = 'substrate-wasm-builder-runner'
 version = '1.0.2'
@@ -163,6 +232,6 @@ version = '1.0.2'
 default_features = false
 git = 'https://github.com/mnaamani/substrate-forum-module'
 package = 'substrate-forum-module'
-branch = "substrate-v2"
+branch = 'substrate-v2'
 # Before releasing Rome - finalize and tag release new forum and update this
-# tag = "v1.0.0"
+# tag = 'v1.0.0'

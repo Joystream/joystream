@@ -9,6 +9,8 @@ use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
 use runtime_primitives::traits::{Hash, Zero};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 use super::sealed_vote::SealedVote;
 use super::stake::Stake;
@@ -206,7 +208,7 @@ impl<T: Trait> Module<T> {
     /// for entering the stage has been performed.
     /// Bumps the election round.
     fn move_to_announcing_stage() {
-        let next_round = <Round<T>>::mutate(|n| {
+        let next_round = Round::mutate(|n| {
             *n += 1;
             *n
         });

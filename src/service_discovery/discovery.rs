@@ -1,6 +1,8 @@
 use crate::traits::Roles;
 use codec::{Decode, Encode};
 use rstd::prelude::*;
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_root, ensure_signed};
@@ -48,7 +50,7 @@ decl_storage! {
         /// Mapping of service providers' AccountIds to their AccountInfo
         pub AccountInfoByAccountId get(account_info_by_account_id): map T::AccountId => AccountInfo<T::BlockNumber>;
         /// Lifetime of an AccountInfo record in AccountInfoByAccountId map
-        pub DefaultLifetime get(default_lifetime) config(): T::BlockNumber = T::BlockNumber::sa(DEFAULT_LIFETIME);
+        pub DefaultLifetime get(default_lifetime) config(): T::BlockNumber = T::BlockNumber::from(DEFAULT_LIFETIME);
     }
 }
 
@@ -86,9 +88,9 @@ decl_module! {
 
             let ttl = match lifetime {
                 Some(value) => if value >= MINIMUM_LIFETIME {
-                    T::BlockNumber::sa(value)
+                    T::BlockNumber::from(value)
                 } else {
-                    T::BlockNumber::sa(MINIMUM_LIFETIME)
+                    T::BlockNumber::from(MINIMUM_LIFETIME)
                 },
                 _ => Self::default_lifetime()
             };
@@ -113,7 +115,7 @@ decl_module! {
             // decl_module! macro takes care of it.. its required for unit tests to work correctly
             // otherwise it complains the method
             ensure_root(origin)?;
-            ensure!(lifetime >= T::BlockNumber::sa(MINIMUM_LIFETIME), "discovery: default lifetime must be gte minimum lifetime");
+            ensure!(lifetime >= T::BlockNumber::from(MINIMUM_LIFETIME), "discovery: default lifetime must be gte minimum lifetime");
             <DefaultLifetime<T>>::put(lifetime);
         }
 

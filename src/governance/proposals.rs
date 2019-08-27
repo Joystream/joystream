@@ -1,15 +1,15 @@
 use codec::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_io::print;
-use runtime_primitives::traits::{Hash, Zero};
-use srml_support::traits::{Currency, ReservableCurrency};
+use runtime_primitives::traits::{Hash, SaturatedConversion, Zero};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+use srml_support::traits::{Currency, Get, ReservableCurrency};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
 };
-use {
-    consensus,
-    system::{self, ensure_root, ensure_signed},
-};
+
+use system::{self, ensure_root, ensure_signed};
 
 #[cfg(test)]
 use primitives::storage::well_known_keys;
@@ -19,12 +19,12 @@ pub use crate::currency::{BalanceOf, GovernanceCurrency};
 use crate::traits::Members;
 
 const DEFAULT_APPROVAL_QUORUM: u32 = 60;
-const DEFAULT_MIN_STAKE: u64 = 100;
-const DEFAULT_CANCELLATION_FEE: u64 = 5;
-const DEFAULT_REJECTION_FEE: u64 = 10;
+const DEFAULT_MIN_STAKE: u32 = 100;
+const DEFAULT_CANCELLATION_FEE: u32 = 5;
+const DEFAULT_REJECTION_FEE: u32 = 10;
 
-const DEFAULT_VOTING_PERIOD_IN_DAYS: u64 = 10;
-const DEFAULT_VOTING_PERIOD_IN_SECS: u64 = DEFAULT_VOTING_PERIOD_IN_DAYS * 24 * 60 * 60;
+const DEFAULT_VOTING_PERIOD_IN_DAYS: u32 = 10;
+const DEFAULT_VOTING_PERIOD_IN_SECS: u32 = DEFAULT_VOTING_PERIOD_IN_DAYS * 24 * 60 * 60;
 
 const DEFAULT_NAME_MAX_LEN: u32 = 100;
 const DEFAULT_DESCRIPTION_MAX_LEN: u32 = 10_000;
@@ -121,7 +121,7 @@ pub struct TallyResult<BlockNumber> {
     finalized_at: BlockNumber,
 }
 
-pub trait Trait: timestamp::Trait + council::Trait + consensus::Trait + GovernanceCurrency {
+pub trait Trait: timestamp::Trait + council::Trait + GovernanceCurrency {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -185,7 +185,7 @@ decl_storage! {
         /// Max duration of proposal in blocks until it will be expired if not enough votes.
         VotingPeriod get(voting_period) config(): T::BlockNumber =
             T::BlockNumber::from(DEFAULT_VOTING_PERIOD_IN_SECS /
-            (<timestamp::Module<T>>::minimum_period().as_() * 2));
+            (<T as timestamp::Trait>::MinimumPeriod::get().saturated_into::<u32>() * 2));
 
         NameMaxLen get(name_max_len) config(): u32 = DEFAULT_NAME_MAX_LEN;
         DescriptionMaxLen get(description_max_len) config(): u32 = DEFAULT_DESCRIPTION_MAX_LEN;
@@ -543,7 +543,7 @@ impl<T: Trait> Module<T> {
         let _ = T::Currency::unreserve(&proposal.proposer, proposal.stake);
 
         // Update wasm code of node's runtime:
-        <consensus::Module<T>>::set_code(wasm_code)?;
+        <system::Module<T>>::set_code(wasm_code)?;
 
         Self::deposit_event(RawEvent::RuntimeUpdated(proposal_id, proposal.wasm_hash));
 
@@ -575,12 +575,6 @@ mod tests {
     // configuration traits of modules we want to use.
     #[derive(Clone, Eq, PartialEq)]
     pub struct Test;
-
-    impl consensus::Trait for Test {
-        type SessionKey = UintAuthorityId;
-        type InherentOfflineReport = ();
-        type Log = DigestItem;
-    }
 
     impl system::Trait for Test {
         type Origin = Origin;

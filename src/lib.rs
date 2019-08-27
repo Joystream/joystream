@@ -11,6 +11,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use babe::AuthorityId as BabeId;
 use grandpa::fg_primitives::{self, ScheduledChange};
 use grandpa::{AuthorityId as GrandpaId, AuthorityWeight as GrandpaWeight};
+use im_online::AuthorityId as ImOnlineId;
 use primitives::{crypto::key_types, OpaqueMetadata};
 use rstd::prelude::*;
 use runtime_primitives::traits::{
@@ -34,7 +35,7 @@ pub use balances::Call as BalancesCall;
 #[cfg(any(feature = "std", test))]
 pub use runtime_primitives::BuildStorage;
 pub use runtime_primitives::{Perbill, Permill};
-pub use srml_support::{construct_runtime, parameter_types, StorageValue};
+pub use srml_support::{construct_runtime, parameter_types, StorageMap, StorageValue};
 pub use timestamp::Call as TimestampCall;
 
 /// An index to a block.
@@ -229,7 +230,7 @@ impl balances::Trait for Runtime {
     /// The type for recording an account's balance.
     type Balance = Balance;
     /// What to do if an account's free balance gets zeroed.
-    type OnFreeBalanceZero = ();
+    type OnFreeBalanceZero = (Staking, Session);
     /// What to do if a new account is created.
     type OnNewAccount = Indices;
     /// The ubiquitous event type.
@@ -249,6 +250,97 @@ impl balances::Trait for Runtime {
 impl sudo::Trait for Runtime {
     type Event = Event;
     type Proposal = Call;
+}
+
+parameter_types! {
+    pub const UncleGenerations: BlockNumber = 5;
+}
+
+impl authorship::Trait for Runtime {
+    type FindAuthor = session::FindAccountFromAuthorIndex<Self, Babe>;
+    type UncleGenerations = UncleGenerations;
+    type FilterUncle = ();
+    type EventHandler = Staking;
+}
+
+type SessionHandlers = (Grandpa, Babe, ImOnline);
+
+impl_opaque_keys! {
+    pub struct SessionKeys {
+        #[id(key_types::GRANDPA)]
+        pub grandpa: GrandpaId,
+        #[id(key_types::BABE)]
+        pub babe: BabeId,
+        #[id(key_types::IM_ONLINE)]
+        pub im_online: ImOnlineId,
+    }
+}
+
+// NOTE: `SessionHandler` and `SessionKeys` are co-dependent: One key will be used for each handler.
+// The number and order of items in `SessionHandler` *MUST* be the same number and order of keys in
+// `SessionKeys`.
+// TODO: Introduce some structure to tie these together to make it a bit less of a footgun. This
+// should be easy, since OneSessionHandler trait provides the `Key` as an associated type. #2858
+
+impl session::Trait for Runtime {
+    type OnSessionEnding = Staking;
+    type SessionHandler = SessionHandlers;
+    type ShouldEndSession = Babe;
+    type Event = Event;
+    type Keys = SessionKeys;
+    type ValidatorId = AccountId;
+    type ValidatorIdOf = staking::StashOf<Self>;
+    type SelectInitialValidators = Staking;
+}
+
+impl session::historical::Trait for Runtime {
+    type FullIdentification = staking::Exposure<AccountId, Balance>;
+    type FullIdentificationOf = staking::ExposureOf<Runtime>;
+}
+
+parameter_types! {
+    pub const SessionsPerEra: sr_staking_primitives::SessionIndex = 6;
+    pub const BondingDuration: staking::EraIndex = 24 * 28;
+}
+
+impl staking::Trait for Runtime {
+    type Currency = Balances;
+    type Time = Timestamp;
+    type CurrencyToVote = currency::CurrencyToVoteHandler;
+    type OnRewardMinted = ();
+    type Event = Event;
+    type Slash = (); // where to send the slashed funds.
+    type Reward = (); // rewards are minted from the void
+    type SessionsPerEra = SessionsPerEra;
+    type BondingDuration = BondingDuration;
+    type SessionInterface = Self;
+}
+
+impl im_online::Trait for Runtime {
+    type Call = Call;
+    type Event = Event;
+    type UncheckedExtrinsic = UncheckedExtrinsic;
+    type ReportUnresponsiveness = Offences;
+    type CurrentElectedSet = staking::CurrentElectedStashAccounts<Runtime>;
+}
+
+impl offences::Trait for Runtime {
+    type Event = Event;
+    type IdentificationTuple = session::historical::IdentificationTuple<Self>;
+    type OnOffenceHandler = Staking;
+}
+
+impl authority_discovery::Trait for Runtime {}
+
+parameter_types! {
+    pub const WindowSize: BlockNumber = 101;
+    pub const ReportLatency: BlockNumber = 1000;
+}
+
+impl finality_tracker::Trait for Runtime {
+    type OnFinalizationStalled = Grandpa;
+    type WindowSize = WindowSize;
+    type ReportLatency = ReportLatency;
 }
 
 pub mod currency;
@@ -436,12 +528,20 @@ construct_runtime!(
 		NodeBlock = opaque::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
+        // Substrate
 		System: system::{Module, Call, Storage, Config, Event},
-		Timestamp: timestamp::{Module, Call, Storage, Inherent},
 		Babe: babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
-		Grandpa: grandpa::{Module, Call, Storage, Config, Event},
-		Indices: indices::{default, Config<T>},
+		Timestamp: timestamp::{Module, Call, Storage, Inherent},
+		Authorship: authorship::{Module, Call, Storage, Inherent},
+		Indices: indices,
 		Balances: balances,
+		Staking: staking::{default, OfflineWorker},
+		Session: session::{Module, Call, Storage, Event, Config<T>},
+        FinalityTracker: finality_tracker::{Module, Call, Inherent},
+		Grandpa: grandpa::{Module, Call, Storage, Config, Event},
+        ImOnline: im_online::{Module, Call, Storage, Event, ValidateUnsigned, Config},
+		AuthorityDiscovery: authority_discovery::{Module, Call, Config},
+		Offences: offences::{Module, Call, Storage, Event},
 		Sudo: sudo,
         // Joystream
 		Proposals: proposals::{Module, Call, Storage, Event<T>, Config<T>},
@@ -586,10 +686,33 @@ impl_runtime_apis! {
         }
     }
 
+    impl authority_discovery_primitives::AuthorityDiscoveryApi<Block, im_online::AuthorityId> for Runtime {
+        fn authority_id() -> Option<im_online::AuthorityId> {
+            AuthorityDiscovery::authority_id()
+        }
+        fn authorities() -> Vec<im_online::AuthorityId> {
+            AuthorityDiscovery::authorities()
+        }
+
+        fn sign(payload: Vec<u8>, authority_id: im_online::AuthorityId) -> Option<Vec<u8>> {
+            AuthorityDiscovery::sign(payload, authority_id)
+        }
+
+        fn verify(payload: Vec<u8>, signature: Vec<u8>, public_key: im_online::AuthorityId) -> bool {
+            AuthorityDiscovery::verify(payload, signature, public_key)
+        }
+    }
+
+    impl node_primitives::AccountNonceApi<Block> for Runtime {
+        fn account_nonce(account: AccountId) -> Index {
+            System::account_nonce(account)
+        }
+    }
+
     impl substrate_session::SessionKeys<Block> for Runtime {
         fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
             let seed = seed.as_ref().map(|s| rstd::str::from_utf8(&s).expect("Seed is an utf8 string"));
-            opaque::SessionKeys::generate(seed)
+            SessionKeys::generate(seed)
         }
     }
 }
