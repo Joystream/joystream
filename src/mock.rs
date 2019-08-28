@@ -42,6 +42,11 @@ pub const UNKNOWN_CLASS_ID: ClassId = 111;
 
 pub const UNKNOWN_ENTITY_ID: EntityId = 222;
 
+pub const UNKNOWN_PROP_ID: u16 = 333;
+
+pub const SCHEMA_ID_0: u16 = 0;
+pub const SCHEMA_ID_1: u16 = 1;
+
 // pub fn generate_text(len: usize) -> Vec<u8> {
 //     vec![b'x'; len]
 // }
@@ -85,16 +90,24 @@ pub fn good_prop_text() -> Property {
     }
 }
 
+pub fn new_internal_class_prop(class_id: ClassId) -> Property {
+    Property {
+        prop_type: PropertyType::Internal(class_id),
+        required: false,
+        name: b"Name of a internal property".to_vec(),
+        description: b"Description of a internal property".to_vec(),
+    }
+}
+
 pub fn good_props() -> Vec<Property> {
     vec![
         good_prop_bool(),
         good_prop_u32(),
-        good_prop_text(),
     ]
 }
 
 pub fn good_prop_ids() -> Vec<u16> {
-    vec![ 0, 1, 2 ]
+    vec![ 0, 1 ]
 }
 
 // pub fn good_schema() -> ClassSchema {
@@ -144,6 +157,20 @@ pub fn create_entity() -> EntityId {
         entity_id
     );
     entity_id
+}
+
+
+pub fn assert_class_props(class_id: ClassId, expected_props: Vec<Property>) {
+    let class = TestModule::class_by_id(class_id);
+    assert_eq!(class.properties, expected_props);
+}
+
+pub fn assert_class_schemas(class_id: ClassId, expected_schema_prop_ids: Vec<Vec<u16>>) {
+    let class = TestModule::class_by_id(class_id);
+    let schemas: Vec<_> = expected_schema_prop_ids.iter().map(|prop_ids|
+        ClassSchema { properties: prop_ids.clone() }
+    ).collect();
+    assert_eq!(class.schemas, schemas);
 }
 
 pub fn assert_entity_not_found(result: dispatch::Result) {
