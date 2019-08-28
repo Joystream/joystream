@@ -1080,10 +1080,10 @@ mod tests {
 
             let applicant = 20 as u64;
 
-            let starting_balance = 1000 as u32;
+            let starting_balance = 1000 as u64;
             let _ = Balances::deposit_creating(&applicant, starting_balance);
 
-            let stake = 100 as u32;
+            let stake = 100 as u64;
 
             assert!(Election::try_add_applicant(applicant, stake).is_ok());
             assert_eq!(Election::applicants(), vec![applicant]);
@@ -1099,7 +1099,7 @@ mod tests {
     fn increasing_applicant_stake_should_work() {
         with_externalities(&mut initial_test_ext(), || {
             let applicant = 20 as u64;
-            let starting_stake = 100 as u32;
+            let starting_stake = 100 as u64;
 
             <Applicants<Test>>::put(vec![applicant]);
             <ApplicantStakes<Test>>::insert(
@@ -1110,7 +1110,7 @@ mod tests {
                 },
             );
 
-            let additional_stake = 100 as u32;
+            let additional_stake = 100 as u64;
             let _ = Balances::deposit_creating(&applicant, additional_stake);
             assert!(Election::try_add_applicant(applicant, additional_stake).is_ok());
 
@@ -1171,7 +1171,7 @@ mod tests {
         with_externalities(&mut initial_test_ext(), || {
             System::set_block_number(1);
             <AnnouncingPeriod<Test>>::put(20);
-            <CouncilSize<Test>>::put(10);
+            CouncilSize::put(10);
             Election::move_to_announcing_stage();
             let round = Election::round();
 
@@ -1217,7 +1217,7 @@ mod tests {
                 <ApplicantStakes<Test>>::insert(
                     applicant,
                     Stake {
-                        new: (i * 10) as u32,
+                        new: (i * 10) as u64,
                         transferred: 0,
                     },
                 );
@@ -1233,7 +1233,7 @@ mod tests {
                 <ApplicantStakes<Test>>::insert(
                     applicant,
                     Stake {
-                        new: 20 as u32,
+                        new: 20,
                         transferred: 0,
                     },
                 );
@@ -1346,7 +1346,7 @@ mod tests {
         });
     }
 
-    fn save_transferable_stake(id: u64, stake: TransferableStake<u32>) {
+    fn save_transferable_stake(id: u64, stake: TransferableStake<u64>) {
         <TransferableStakes<Test>>::insert(id, stake);
     }
 
@@ -1601,8 +1601,8 @@ mod tests {
     }
 
     pub fn mock_votes(
-        mock: Vec<(u64, u32, u32, u64)>,
-    ) -> Vec<SealedVote<u64, Stake<u32>, primitives::H256, u64>> {
+        mock: Vec<(u64, u64, u64, u64)>,
+    ) -> Vec<SealedVote<u64, Stake<u64>, primitives::H256, u64>> {
         let commitment = make_commitment_for_applicant(1, &mut vec![0u8]);
 
         mock.into_iter()
@@ -1610,8 +1610,8 @@ mod tests {
                 SealedVote::new_unsealed(
                     voter as u64,
                     Stake {
-                        new: stake_ref as u32,
-                        transferred: stake_tran as u32,
+                        new: stake_ref,
+                        transferred: stake_tran,
                     },
                     commitment,
                     applicant as u64,
@@ -1643,11 +1643,11 @@ mod tests {
                 vec![
                     Backer {
                         member: 10 as u64,
-                        stake: 100 as u32,
+                        stake: 100 as u64,
                     },
                     Backer {
                         member: 10 as u64,
-                        stake: 150 as u32,
+                        stake: 150 as u64,
                     },
                 ]
             );
@@ -1658,11 +1658,11 @@ mod tests {
                 vec![
                     Backer {
                         member: 10 as u64,
-                        stake: 500 as u32,
+                        stake: 500 as u64,
                     },
                     Backer {
                         member: 20 as u64,
-                        stake: 200 as u32,
+                        stake: 200 as u64,
                     }
                 ]
             );
@@ -1673,11 +1673,11 @@ mod tests {
                 vec![
                     Backer {
                         member: 30 as u64,
-                        stake: 300 as u32,
+                        stake: 300 as u64,
                     },
                     Backer {
                         member: 30 as u64,
-                        stake: 400 as u32,
+                        stake: 400 as u64,
                     }
                 ]
             );
@@ -1739,8 +1739,8 @@ mod tests {
             <ApplicantStakes<Test>>::insert(
                 100,
                 Stake {
-                    new: 20 as u32,
-                    transferred: 50 as u32,
+                    new: 20 as u64,
+                    transferred: 50 as u64,
                 },
             );
 
@@ -1752,12 +1752,12 @@ mod tests {
                 },
             );
 
-            let mut new_council: BTreeMap<u64, Seat<u64, u32>> = BTreeMap::new();
+            let mut new_council: BTreeMap<u64, Seat<u64, u64>> = BTreeMap::new();
             new_council.insert(
                 200 as u64,
                 Seat {
                     member: 200 as u64,
-                    stake: 0 as u32,
+                    stake: 0 as u64,
                     backers: vec![],
                 },
             );
@@ -1765,7 +1765,7 @@ mod tests {
                 300 as u64,
                 Seat {
                     member: 300 as u64,
-                    stake: 0 as u32,
+                    stake: 0 as u64,
                     backers: vec![],
                 },
             );
@@ -1829,12 +1829,12 @@ mod tests {
                 (30, 1000, 140, 300),
             ]);
 
-            let mut new_council: BTreeMap<u64, Seat<u64, u32>> = BTreeMap::new();
+            let mut new_council: BTreeMap<u64, Seat<u64, u64>> = BTreeMap::new();
             new_council.insert(
                 200 as u64,
                 Seat {
                     member: 200 as u64,
-                    stake: 0 as u32,
+                    stake: 0 as u64,
                     backers: vec![],
                 },
             );
@@ -1842,7 +1842,7 @@ mod tests {
                 300 as u64,
                 Seat {
                     member: 300 as u64,
-                    stake: 0 as u32,
+                    stake: 0 as u64,
                     backers: vec![],
                 },
             );
@@ -1908,12 +1908,12 @@ mod tests {
     #[test]
     fn council_elected_hook_should_work() {
         with_externalities(&mut initial_test_ext(), || {
-            let mut new_council: BTreeMap<u64, Seat<u64, u32>> = BTreeMap::new();
+            let mut new_council: BTreeMap<u64, Seat<u64, u64>> = BTreeMap::new();
             new_council.insert(
                 200 as u64,
                 Seat {
                     member: 200 as u64,
-                    stake: 10 as u32,
+                    stake: 10 as u64,
                     backers: vec![],
                 },
             );
@@ -1921,7 +1921,7 @@ mod tests {
                 300 as u64,
                 Seat {
                     member: 300 as u64,
-                    stake: 20 as u32,
+                    stake: 20 as u64,
                     backers: vec![],
                 },
             );
@@ -1944,12 +1944,12 @@ mod tests {
             assert_eq!(Council::active_council().len(), 0);
             assert!(Election::stage().is_none());
 
-            <CouncilSize<Test>>::put(10);
+            CouncilSize::put(10);
             <MinCouncilStake<Test>>::put(50);
             <AnnouncingPeriod<Test>>::put(10);
             <VotingPeriod<Test>>::put(10);
             <RevealingPeriod<Test>>::put(10);
-            <CandidacyLimit<Test>>::put(20);
+            CandidacyLimit::put(20);
             <NewTermDuration<Test>>::put(100);
             <MinVotingStake<Test>>::put(10);
 

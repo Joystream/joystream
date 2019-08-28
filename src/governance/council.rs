@@ -127,15 +127,19 @@ mod tests {
     use runtime_io::with_externalities;
     use srml_support::*;
 
+    fn add_council_member_as_root(account: <Test as system::Trait>::AccountId) -> dispatch::Result {
+        Council::add_council_member(system::RawOrigin::Root.into(), account)
+    }
+
     #[test]
     fn add_council_member_test() {
         with_externalities(&mut initial_test_ext(), || {
             assert!(!Council::is_councilor(&1));
 
-            assert_ok!(Council::add_council_member(1));
+            assert_ok!(add_council_member_as_root(1));
             assert!(Council::is_councilor(&1));
 
-            assert_ok!(Council::add_council_member(2));
+            assert_ok!(add_council_member_as_root(2));
             assert!(Council::is_councilor(&1));
             assert!(Council::is_councilor(&2));
         });
@@ -144,11 +148,14 @@ mod tests {
     #[test]
     fn remove_council_member_test() {
         with_externalities(&mut initial_test_ext(), || {
-            assert_ok!(Council::add_council_member(1));
-            assert_ok!(Council::add_council_member(2));
-            assert_ok!(Council::add_council_member(3));
+            assert_ok!(add_council_member_as_root(1));
+            assert_ok!(add_council_member_as_root(2));
+            assert_ok!(add_council_member_as_root(3));
 
-            assert_ok!(Council::remove_council_member(2));
+            assert_ok!(Council::remove_council_member(
+                system::RawOrigin::Root.into(),
+                2
+            ));
 
             assert!(!Council::is_councilor(&2));
             assert!(Council::is_councilor(&1));
@@ -159,7 +166,10 @@ mod tests {
     #[test]
     fn set_council_test() {
         with_externalities(&mut initial_test_ext(), || {
-            assert_ok!(Council::set_council(vec![4, 5, 6]));
+            assert_ok!(Council::set_council(
+                system::RawOrigin::Root.into(),
+                vec![4, 5, 6]
+            ));
             assert!(Council::is_councilor(&4));
             assert!(Council::is_councilor(&5));
             assert!(Council::is_councilor(&6));
