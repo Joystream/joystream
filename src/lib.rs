@@ -30,6 +30,7 @@ mod tests;
 const ERROR_CLASS_NOT_FOUND: &str = "Class was not found by id";
 const ERROR_CLASS_EMPTY_NAME: &str = "Class cannot have an empty name";
 const ERROR_CLASS_EMPTY_DESCRIPTION: &str = "Class cannot have an empty description";
+const ERROR_UNKNOWN_CLASS_SCHEMA_ID: &str = "Unknown class schema id";
 const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX: &str = "New class schema refers to an unknown property index";
 const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID: &str = "New class schema refers to an unknown internal class id";
 const ERROR_NO_PROPS_IN_CLASS_SCHEMA: &str = "Cannot add a class schema with an empty list of properties";
@@ -354,7 +355,7 @@ impl<T: Trait> Module<T> {
 
         // Check that schema_id is a valid index of class schemas vector:
         let known_schema_id = schema_id < class.schemas.len() as u16;
-        ensure!(known_schema_id, ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX);
+        ensure!(known_schema_id, ERROR_UNKNOWN_CLASS_SCHEMA_ID);
 
         let class_schema_opt = class.schemas.get(schema_id as usize);
         let schema_prop_ids = class_schema_opt.unwrap().properties.clone();

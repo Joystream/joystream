@@ -306,26 +306,62 @@ fn cannot_add_schema_to_entity_when_entity_not_found() {
     })
 }
 
-// #[test]
-// fn cannot_add_schema_to_entity_when_schema_already_added_to_entity() {
-//     with_test_externalities(|| {
-//         // TODO ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY
-//     })
-// }
+#[test]
+fn cannot_add_schema_to_entity_when_schema_already_added_to_entity() {
+    with_test_externalities(|| {
+        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+        
+        // Firstly we just add support for a valid class schema.
+        assert_ok!(
+            TestModule::add_schema_support_to_entity(
+                entity_id,
+                schema_id,
+                vec![]
+            )
+        );
 
-// #[test]
-// fn cannot_add_schema_to_entity_when_class_schema_refers_unknown_prop_index() {
-//     with_test_externalities(|| {
-//         // TODO ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
-//     })
-// }
+        // Secondly we try to add support for the same schema.
+        assert_err!(
+            TestModule::add_schema_support_to_entity(
+                entity_id,
+                schema_id,
+                vec![]
+            ),
+            ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY
+        );
+    })
+}
 
-// #[test]
-// fn cannot_add_schema_to_entity_when_error_prop_id_not_found_in_schema_props() {
-//     with_test_externalities(|| {
-//         // TODO ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS
-//     })
-// }
+#[test]
+fn cannot_add_schema_to_entity_when_class_schema_refers_unknown_prop_index() {
+    with_test_externalities(|| {
+        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+        let unknown_schema_id = schema_id + 1;
+        assert_err!(
+            TestModule::add_schema_support_to_entity(
+                entity_id,
+                unknown_schema_id,
+                vec![ (0, PropertyValue::None) ]
+            ),
+            ERROR_UNKNOWN_CLASS_SCHEMA_ID
+        );
+    })
+}
+
+#[test]
+fn cannot_add_schema_to_entity_when_error_prop_id_not_found_in_schema_props() {
+    with_test_externalities(|| {
+        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+        assert_err!(
+            TestModule::add_schema_support_to_entity(
+                entity_id,
+                schema_id,
+                vec![ (UNKNOWN_PROP_ID, PropertyValue::None) ]
+            ),
+            ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS
+        );
+    })
+}
 
 // #[test]
 // fn cannot_add_schema_to_entity_when_prop_value_dont_match_type() {
@@ -348,12 +384,38 @@ fn cannot_add_schema_to_entity_when_entity_not_found() {
 //     })
 // }
 
-// #[test]
-// fn add_schema_to_entity_successfully() {
-//     with_test_externalities(|| {
-//         // TODO finish
-//     })
-// }
+#[test]
+fn should_add_schema_to_entity_when_all_props_provided() {
+    with_test_externalities(|| {
+        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+        assert_ok!(
+            TestModule::add_schema_support_to_entity(
+                entity_id,
+                schema_id,
+                vec![
+                    (0, PropertyValue::Bool(true)),
+                    (1, PropertyValue::Uint32(123u32)),
+                ]
+            )
+        );
+    })
+}
+
+#[test]
+fn should_add_schema_to_entity_when_optional_props_not_provided() {
+    with_test_externalities(|| {
+        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+        assert_ok!(
+            TestModule::add_schema_support_to_entity(
+                entity_id,
+                schema_id,
+                vec![
+                    (0, PropertyValue::Bool(true)),
+                ]
+            )
+        );
+    })
+}
 
 // Update entity properties
 // --------------------------------------

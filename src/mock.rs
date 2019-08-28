@@ -44,6 +44,8 @@ pub const UNKNOWN_ENTITY_ID: EntityId = 222;
 
 pub const UNKNOWN_PROP_ID: u16 = 333;
 
+// pub const UNKNOWN_SCHEMA_ID: u16 = 444;
+
 pub const SCHEMA_ID_0: u16 = 0;
 pub const SCHEMA_ID_1: u16 = 1;
 
@@ -69,6 +71,14 @@ pub fn good_prop_bool() -> Property {
         required: false,
         name: b"Name of a bool property".to_vec(),
         description: b"Description of a bool property".to_vec(),
+    }
+}
+
+impl Property {
+    fn required(&self) -> Property {
+        let mut new_self = self.clone();
+        new_self.required = true;
+        new_self
     }
 }
 
@@ -146,8 +156,29 @@ pub fn create_class() -> ClassId {
     class_id
 }
 
+pub fn create_class_with_schema_and_entity() -> (ClassId, u16, EntityId) {
+    let class_id = create_class();
+    if let Ok(schema_id) = TestModule::add_class_schema(
+        class_id,
+        vec![],
+        vec![
+            good_prop_bool().required(),
+            good_prop_u32()
+        ]
+    ) {
+        let entity_id = create_entity_of_class(class_id);
+        (class_id, schema_id, entity_id)
+    } else {
+        panic!("This should not happen")
+    }
+}
+
 pub fn create_entity() -> EntityId {
     let class_id = create_class();
+    create_entity_of_class(class_id)
+}
+
+pub fn create_entity_of_class(class_id: ClassId) -> EntityId {
     let entity_id = TestModule::next_entity_id();
     assert_ok!(
         TestModule::create_entity(
