@@ -560,9 +560,10 @@ mod tests {
     // The testing primitives are very useful for avoiding having to work with signatures
     // or public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
     use runtime_primitives::{
-        testing::{Digest, DigestItem, Header, UintAuthorityId},
-        traits::{BlakeTwo256, IdentityLookup},
-        BuildStorage,
+        testing::Header,
+        traits::{BlakeTwo256, Convert, IdentityLookup},
+        weights::Weight,
+        BuildStorage, Perbill,
     };
     use srml_support::*;
 
@@ -570,39 +571,77 @@ mod tests {
         pub enum Origin for Test {}
     }
 
-    // For testing the module, we construct most of a mock runtime. This means
-    // first constructing a configuration type (`Test`) which `impl`s each of the
-    // configuration traits of modules we want to use.
-    #[derive(Clone, Eq, PartialEq)]
+    // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
+    #[derive(Clone, PartialEq, Eq, Debug)]
     pub struct Test;
+
+    parameter_types! {
+        pub const BlockHashCount: u64 = 250;
+        pub const MaximumBlockWeight: u32 = 1024;
+        pub const MaximumBlockLength: u32 = 2 * 1024;
+        pub const AvailableBlockRatio: Perbill = Perbill::one();
+        pub const MinimumPeriod: u64 = 5;
+    }
 
     impl system::Trait for Test {
         type Origin = Origin;
         type Index = u64;
         type BlockNumber = u64;
+        type Call = ();
         type Hash = H256;
         type Hashing = BlakeTwo256;
-        type Digest = Digest;
         type AccountId = u64;
-        type Lookup = IdentityLookup<u64>;
+        type Lookup = IdentityLookup<Self::AccountId>;
         type Header = Header;
+        type WeightMultiplierUpdate = ();
         type Event = ();
-        type Log = DigestItem;
-    }
-
-    impl balances::Trait for Test {
-        type Balance = u64;
-        type OnFreeBalanceZero = ();
-        type OnNewAccount = ();
-        type Event = ();
-        type TransactionPayment = ();
-        type DustRemoval = ();
-        type TransferPayment = ();
+        type BlockHashCount = BlockHashCount;
+        type MaximumBlockWeight = MaximumBlockWeight;
+        type MaximumBlockLength = MaximumBlockLength;
+        type AvailableBlockRatio = AvailableBlockRatio;
+        type Version = ();
     }
 
     impl timestamp::Trait for Test {
         type Moment = u64;
         type OnTimestampSet = ();
+        type MinimumPeriod = MinimumPeriod;
+    }
+
+    pub struct WeightToFee(u32);
+    impl Convert<Weight, u64> for WeightToFee {
+        fn convert(t: Weight) -> u64 {
+            t as u64
+        }
+    }
+
+    parameter_types! {
+        pub const ExistentialDeposit: u32 = 0;
+        pub const TransferFee: u32 = 0;
+        pub const CreationFee: u32 = 0;
+        pub const TransactionBaseFee: u32 = 1;
+        pub const TransactionByteFee: u32 = 0;
+    }
+
+    impl balances::Trait for Test {
+        /// The type for recording an account's balance.
+        type Balance = u64;
+        /// What to do if an account's free balance gets zeroed.
+        type OnFreeBalanceZero = ();
+        /// What to do if a new account is created.
+        type OnNewAccount = ();
+        /// The ubiquitous event type.
+        type Event = ();
+
+        type TransactionPayment = ();
+        type DustRemoval = ();
+        type TransferPayment = ();
+        type ExistentialDeposit = ExistentialDeposit;
+        type TransferFee = TransferFee;
+        type CreationFee = CreationFee;
+        type TransactionBaseFee = TransactionBaseFee;
+        type TransactionByteFee = TransactionByteFee;
+        type WeightToFee = WeightToFee;
     }
 
     impl council::Trait for Test {

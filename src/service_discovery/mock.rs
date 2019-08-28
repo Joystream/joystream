@@ -8,10 +8,10 @@ pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
     traits::{BlakeTwo256, IdentityLookup, OnFinalize},
-    BuildStorage,
+    BuildStorage, Perbill,
 };
 
-use srml_support::{impl_outer_event, impl_outer_origin};
+use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -23,23 +23,33 @@ impl_outer_event! {
     }
 }
 
-// For testing the module, we construct most of a mock runtime. This means
-// first constructing a configuration type (`Test`) which `impl`s each of the
-// configuration traits of modules we want to use.
-#[derive(Clone, Eq, PartialEq, Debug)]
+// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
+parameter_types! {
+    pub const BlockHashCount: u64 = 250;
+    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockLength: u32 = 2 * 1024;
+    pub const AvailableBlockRatio: Perbill = Perbill::one();
+}
+
 impl system::Trait for Test {
     type Origin = Origin;
     type Index = u64;
     type BlockNumber = u64;
+    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type Digest = Digest;
     type AccountId = u64;
+    type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
+    type WeightMultiplierUpdate = ();
     type Event = MetaEvent;
-    type Log = DigestItem;
-    type Lookup = IdentityLookup<u64>;
+    type BlockHashCount = BlockHashCount;
+    type MaximumBlockWeight = MaximumBlockWeight;
+    type MaximumBlockLength = MaximumBlockLength;
+    type AvailableBlockRatio = AvailableBlockRatio;
+    type Version = ();
 }
 
 pub fn alice_account() -> u64 {
