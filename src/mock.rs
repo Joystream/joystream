@@ -65,20 +65,20 @@ pub fn good_entity_name() -> Vec<u8> {
     b"Name of an entity".to_vec()
 }
 
+impl Property {
+    fn required(&self) -> Property {
+        let mut new_self = self.clone();
+        new_self.required = true;
+        new_self
+    }
+}
+
 pub fn good_prop_bool() -> Property {
     Property {
         prop_type: PropertyType::Bool,
         required: false,
         name: b"Name of a bool property".to_vec(),
         description: b"Description of a bool property".to_vec(),
-    }
-}
-
-impl Property {
-    fn required(&self) -> Property {
-        let mut new_self = self.clone();
-        new_self.required = true;
-        new_self
     }
 }
 
@@ -156,18 +156,24 @@ pub fn create_class() -> ClassId {
     class_id
 }
 
+pub fn bool_prop_value() -> (u16, PropertyValue) {
+    (0, PropertyValue::Bool(true))
+}
+
 pub fn create_class_with_schema_and_entity() -> (ClassId, u16, EntityId) {
-    let class_id = create_class();
+    let class_id_1 = create_class();
+    let class_id_2 = create_class();
     if let Ok(schema_id) = TestModule::add_class_schema(
-        class_id,
+        class_id_2,
         vec![],
         vec![
             good_prop_bool().required(),
-            good_prop_u32()
+            good_prop_u32(),
+            new_internal_class_prop(class_id_1)
         ]
     ) {
-        let entity_id = create_entity_of_class(class_id);
-        (class_id, schema_id, entity_id)
+        let entity_id = create_entity_of_class(class_id_2);
+        (class_id_2, schema_id, entity_id)
     } else {
         panic!("This should not happen")
     }
