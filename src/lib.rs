@@ -365,6 +365,10 @@ impl<T: Trait> Module<T> {
         // TODO append any missing non required prop values to currently overriden prop values.
 
         let mut updated_values = entity.values;
+        let mut new_values: Vec<(u16, PropertyValue)> = vec![];
+
+        // println!("\nproperty_values: {:?}", property_values);
+        // println!("\ncurrent_entity_values: {:?}", updated_values);
 
         // Iterate over provided property values and replace existing values
         // for these properties on this entity.
@@ -383,15 +387,26 @@ impl<T: Trait> Module<T> {
                 return Err(ERROR_UNKNOWN_INTERNAL_ENTITY_ID)
             }
 
+            let mut prop_updated = false;
             for (cur_id, cur_value) in updated_values.iter_mut() {
                 if new_id == cur_id {
                     *cur_value = new_value.clone();
+                    prop_updated = true;
                 }
+            }
+
+            if !prop_updated {
+                new_values.push((*new_id, new_value.clone()));
             }
         }
 
-        let mut upadted_values_with_nones = updated_values.clone();
+        // println!("\nupdated_values: {:?}", updated_values);
+        // println!("\nnew_values: {:?}", new_values);
 
+        updated_values.append(&mut new_values);
+        // println!("\nupdated_values + new_values: {:?}", updated_values);
+
+        let mut updated_values_with_nones = updated_values.clone();
         for &id in schema_prop_ids.iter() {
     
             // If value was not povided for schema prop:
@@ -404,14 +419,16 @@ impl<T: Trait> Module<T> {
                     return Err(ERROR_MISSING_REQUIRED_PROP)
                 } else {
                     // Add all missing non required schema prop values as PropertyValue::None
-                    upadted_values_with_nones.push((id, PropertyValue::None));
+                    updated_values_with_nones.push((id, PropertyValue::None));
                 }
             }
         }
 
+        // println!("\nupdated_values_with_nones: {:?}", updated_values_with_nones);
+
         <EntityById<T>>::mutate(entity_id, |entity| {
             entity.schemas.push(schema_id);
-            entity.values = upadted_values_with_nones;
+            entity.values = updated_values_with_nones;
         });
 
         Self::deposit_event(RawEvent::EntitySchemaAdded(entity_id));
