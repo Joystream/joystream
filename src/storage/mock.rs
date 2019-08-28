@@ -250,28 +250,21 @@ impl ExtBuilder {
         self
     }
     pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher> {
-        let mut t = system::GenesisConfig::<Test>::default()
-            .build_storage()
-            .unwrap()
-            .0;
+        let mut t = system::GenesisConfig::default()
+            .build_storage::<Test>()
+            .unwrap();
 
-        t.extend(
-            data_object_type_registry::GenesisConfig::<Test> {
-                first_data_object_type_id: self.first_data_object_type_id,
-            }
-            .build_storage()
-            .unwrap()
-            .0,
-        );
+        data_object_type_registry::GenesisConfig::<Test> {
+            first_data_object_type_id: self.first_data_object_type_id,
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
-        t.extend(
-            data_object_storage_registry::GenesisConfig::<Test> {
-                first_relationship_id: self.first_relationship_id,
-            }
-            .build_storage()
-            .unwrap()
-            .0,
-        );
+        data_object_storage_registry::GenesisConfig::<Test> {
+            first_relationship_id: self.first_relationship_id,
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
         t.into()
     }
@@ -295,7 +288,10 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
             .build(),
         || {
             let roles: Vec<actors::Role> = vec![actors::Role::Storage];
-            assert!(TestActors::set_available_roles(roles).is_ok(), "");
+            assert!(
+                TestActors::set_available_roles(system::RawOrigin::Root.into(), roles).is_ok(),
+                ""
+            );
 
             f()
         },

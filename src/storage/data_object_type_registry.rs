@@ -179,7 +179,10 @@ mod tests {
                 description: "foo".as_bytes().to_vec(),
                 active: false,
             };
-            let res = TestDataObjectTypeRegistry::register_data_object_type(data);
+            let res = TestDataObjectTypeRegistry::register_data_object_type(
+                system::RawOrigin::Root.into(),
+                data,
+            );
             assert!(res.is_ok());
         });
     }
@@ -192,7 +195,10 @@ mod tests {
                 description: "foo".as_bytes().to_vec(),
                 active: false,
             };
-            let id_res = TestDataObjectTypeRegistry::register_data_object_type(data);
+            let id_res = TestDataObjectTypeRegistry::register_data_object_type(
+                system::RawOrigin::Root.into(),
+                data,
+            );
             assert!(id_res.is_ok());
 
             let dot_id = match System::events().last().unwrap().event {
@@ -209,7 +215,11 @@ mod tests {
                 description: "bar".as_bytes().to_vec(),
                 active: false,
             };
-            let res = TestDataObjectTypeRegistry::update_data_object_type(dot_id + 1, updated1);
+            let res = TestDataObjectTypeRegistry::update_data_object_type(
+                system::RawOrigin::Root.into(),
+                dot_id + 1,
+                updated1,
+            );
             assert!(res.is_err());
 
             // Finally with an existing ID, it should work.
@@ -217,7 +227,11 @@ mod tests {
                 description: "bar".as_bytes().to_vec(),
                 active: false,
             };
-            let res = TestDataObjectTypeRegistry::update_data_object_type(dot_id, updated3);
+            let res = TestDataObjectTypeRegistry::update_data_object_type(
+                system::RawOrigin::Root.into(),
+                dot_id,
+                updated3,
+            );
             assert!(res.is_ok());
             assert_eq!(
                 *System::events().last().unwrap(),
@@ -226,6 +240,7 @@ mod tests {
                     event: MetaEvent::data_object_type_registry(
                         data_object_type_registry::RawEvent::DataObjectTypeUpdated(dot_id)
                     ),
+                    topics: vec![],
                 }
             );
         });
@@ -239,7 +254,10 @@ mod tests {
                 description: "foo".as_bytes().to_vec(),
                 active: false,
             };
-            let id_res = TestDataObjectTypeRegistry::register_data_object_type(data);
+            let id_res = TestDataObjectTypeRegistry::register_data_object_type(
+                system::RawOrigin::Root.into(),
+                data,
+            );
             assert!(id_res.is_ok());
             assert_eq!(
                 *System::events().last().unwrap(),
@@ -250,6 +268,7 @@ mod tests {
                             TEST_FIRST_DATA_OBJECT_TYPE_ID
                         )
                     ),
+                    topics: vec![],
                 }
             );
 
@@ -261,6 +280,7 @@ mod tests {
 
             // Now activate the data object type
             let res = TestDataObjectTypeRegistry::activate_data_object_type(
+                system::RawOrigin::Root.into(),
                 TEST_FIRST_DATA_OBJECT_TYPE_ID,
             );
             assert!(res.is_ok());
@@ -273,6 +293,7 @@ mod tests {
                             TEST_FIRST_DATA_OBJECT_TYPE_ID
                         )
                     ),
+                    topics: vec![],
                 }
             );
 
@@ -284,6 +305,7 @@ mod tests {
 
             // Deactivate again.
             let res = TestDataObjectTypeRegistry::deactivate_data_object_type(
+                system::RawOrigin::Root.into(),
                 TEST_FIRST_DATA_OBJECT_TYPE_ID,
             );
             assert!(res.is_ok());

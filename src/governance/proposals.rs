@@ -561,8 +561,7 @@ mod tests {
     // or public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
     use runtime_primitives::{
         testing::Header,
-        traits::{BlakeTwo256, Convert, IdentityLookup},
-        weights::Weight,
+        traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Perbill,
     };
     use srml_support::*;
@@ -698,17 +697,14 @@ mod tests {
     // This function basically just builds a genesis storage key/value store according to
     // our desired mockup.
     fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-        let mut t = system::GenesisConfig::<Test>::default()
-            .build_storage()
-            .unwrap()
-            .0;
+        let mut t = system::GenesisConfig::default()
+            .build_storage::<Test>()
+            .unwrap();
+
         // We use default for brevity, but you can configure as desired if needed.
-        t.extend(
-            balances::GenesisConfig::<Test>::default()
-                .build_storage()
-                .unwrap()
-                .0,
-        );
+        balances::GenesisConfig::<Test>::default()
+            .assimilate_storage(&mut t)
+            .unwrap();
 
         let council_mock: council::Seats<u64, u64> = ALL_COUNCILORS
             .iter()
@@ -719,15 +715,12 @@ mod tests {
             })
             .collect();
 
-        t.extend(
-            council::GenesisConfig::<Test> {
-                active_council: council_mock,
-                term_ends_at: 0,
-            }
-            .build_storage()
-            .unwrap()
-            .0,
-        );
+        council::GenesisConfig::<Test> {
+            active_council: council_mock,
+            term_ends_at: 0,
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
         // t.extend(GenesisConfig::<Test>{
         //     // Here we can override defaults.
@@ -808,9 +801,18 @@ mod tests {
     fn check_default_values() {
         with_externalities(&mut new_test_ext(), || {
             assert_eq!(Proposals::approval_quorum(), DEFAULT_APPROVAL_QUORUM);
-            assert_eq!(Proposals::min_stake(), DEFAULT_MIN_STAKE);
-            assert_eq!(Proposals::cancellation_fee(), DEFAULT_CANCELLATION_FEE);
-            assert_eq!(Proposals::rejection_fee(), DEFAULT_REJECTION_FEE);
+            assert_eq!(
+                Proposals::min_stake(),
+                BalanceOf::<Test>::from(DEFAULT_MIN_STAKE)
+            );
+            assert_eq!(
+                Proposals::cancellation_fee(),
+                BalanceOf::<Test>::from(DEFAULT_CANCELLATION_FEE)
+            );
+            assert_eq!(
+                Proposals::rejection_fee(),
+                BalanceOf::<Test>::from(DEFAULT_REJECTION_FEE)
+            );
             assert_eq!(Proposals::name_max_len(), DEFAULT_NAME_MAX_LEN);
             assert_eq!(
                 Proposals::description_max_len(),
