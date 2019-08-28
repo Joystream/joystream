@@ -551,7 +551,7 @@ construct_runtime!(
 		Members: members::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
 		Migration: migration::{Module, Call, Storage, Event<T>},
-		Actors: actors::{Module, Call, Storage, Event<T>, Config<T>},
+		Actors: actors::{Module, Call, Storage, Event<T>, Config},
 		DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
 		DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
 		DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},

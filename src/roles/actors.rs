@@ -110,7 +110,7 @@ pub const REQUEST_CLEARING_INTERVAL: u32 = 100;
 decl_storage! {
     trait Store for Module<T: Trait> as Actors {
         /// requirements to enter and maintain status in roles
-        pub Parameters get(parameters) build(|config: &GenesisConfig<T>| {
+        pub Parameters get(parameters) build(|config: &GenesisConfig| {
             if config.enable_storage_role {
                 let storage_params: RoleParameters<T> = Default::default();
                 vec![(Role::Storage, storage_params)]
@@ -120,7 +120,7 @@ decl_storage! {
         }): map Role => Option<RoleParameters<T>>;
 
         /// the roles members can enter into
-        pub AvailableRoles get(available_roles) build(|config: &GenesisConfig<T>| {
+        pub AvailableRoles get(available_roles) build(|config: &GenesisConfig| {
             if config.enable_storage_role {
                 vec![(Role::Storage)]
             } else {
