@@ -149,7 +149,27 @@ fn cannot_add_class_schema_when_it_refers_unknown_internal_id() {
     })
 }
 
-// TODO add successfully new_internal_class_prop to class.
+#[test]
+fn should_add_class_schema_with_internal_class_prop() {
+    with_test_externalities(|| {
+        let class_id = create_class();
+        let internal_class_prop = new_internal_class_prop(class_id);
+
+        // Add first schema with new props.
+        // No other props on the class at this time.
+        assert_eq!(
+            TestModule::add_class_schema(
+                class_id,
+                vec![],
+                vec![ internal_class_prop.clone() ]
+            ),
+            Ok(SCHEMA_ID_0)
+        );
+
+        assert_class_props(class_id, vec![ internal_class_prop ]);
+        assert_class_schemas(class_id, vec![ vec![ SCHEMA_ID_0 ] ]);
+    })
+}
 
 #[test]
 fn should_add_class_schema_when_only_new_props_passed() {
@@ -411,7 +431,7 @@ fn cannot_add_schema_to_entity_when_missing_required_prop() {
 }
 
 #[test]
-fn should_add_schema_to_entity_when_all_props_provided() {
+fn should_add_schema_to_entity_when_some_optional_props_provided() {
     with_test_externalities(|| {
         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
         assert_ok!(
@@ -421,25 +441,18 @@ fn should_add_schema_to_entity_when_all_props_provided() {
                 vec![
                     bool_prop_value(),
                     (PROP_ID_U32, PropertyValue::Uint32(123)),
+                    // Note that an optional internal prop is not provided here.
                 ]
             )
         );
-    })
-}
 
-#[test]
-fn should_add_schema_to_entity_when_optional_props_not_provided() {
-    with_test_externalities(|| {
-        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
-        assert_ok!(
-            TestModule::add_schema_support_to_entity(
-                entity_id,
-                schema_id,
-                vec![
-                    bool_prop_value(),
-                ]
-            )
-        );
+        let entity = TestModule::entity_by_id(entity_id);
+        assert_eq!(entity.schemas, [ SCHEMA_ID_0 ]);
+        assert_eq!(entity.values, vec![
+            bool_prop_value(),
+            (PROP_ID_U32, PropertyValue::Uint32(123)),
+            (PROP_ID_INTERNAL, PropertyValue::None),
+        ]);
     })
 }
 
@@ -560,19 +573,59 @@ fn cannot_remove_entity_props_when_entity_not_found() {
     })
 }
 
-// #[test]
-// fn cannot_remove_entity_props_when_no_entity_prop_ids_provided() {
-//     with_test_externalities(|| {
-//         // TODO ERROR_NO_ENTITY_PROP_IDS_ON_REMOVE
-//     })
-// }
+#[test]
+fn cannot_remove_entity_props_when_no_entity_prop_ids_provided() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        assert_err!(
+            TestModule::remove_entity_properties(
+                entity_id,
+                vec![],
+            ),
+            ERROR_NO_ENTITY_PROP_IDS_ON_REMOVE
+        );
+    })
+}
 
-// #[test]
-// fn remove_entity_props_successfully() {
-//     with_test_externalities(|| {
-//         // TODO 
-//     })
-// }
+#[test]
+fn remove_entity_props_successfully() {
+    with_test_externalities(|| {
+        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+        assert_ok!(
+            TestModule::add_schema_support_to_entity(
+                entity_id,
+                schema_id,
+                vec![
+                    (PROP_ID_BOOL,     PropertyValue::Bool(false)),
+                    (PROP_ID_U32,      PropertyValue::Uint32(123)),
+                    (PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
+                ]
+            )
+        );
+        assert_eq!(
+            TestModule::entity_by_id(entity_id).values,
+            vec![
+                (PROP_ID_BOOL,     PropertyValue::Bool(false)),
+                (PROP_ID_U32,      PropertyValue::Uint32(123)),
+                (PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
+            ]
+        );
+        assert_ok!(
+            TestModule::remove_entity_properties(
+                entity_id,
+                vec![ PROP_ID_U32, PROP_ID_INTERNAL ],
+            )
+        );
+        assert_eq!(
+            TestModule::entity_by_id(entity_id).values,
+            vec![
+                (PROP_ID_BOOL,     PropertyValue::Bool(false)),
+                (PROP_ID_U32,      PropertyValue::None),
+                (PROP_ID_INTERNAL, PropertyValue::None),
+            ]
+        );
+    })
+}
 
 // Delete entity
 // --------------------------------------
