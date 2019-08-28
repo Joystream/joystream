@@ -15,7 +15,7 @@ use im_online::AuthorityId as ImOnlineId;
 use primitives::{crypto::key_types, OpaqueMetadata};
 use rstd::prelude::*;
 use runtime_primitives::traits::{
-    BlakeTwo256, Block as BlockT, ConvertInto, DigestFor, NumberFor, StaticLookup, Verify,
+    BlakeTwo256, Block as BlockT, DigestFor, NumberFor, StaticLookup, Verify,
 };
 use runtime_primitives::weights::Weight;
 use runtime_primitives::{
@@ -244,7 +244,7 @@ impl balances::Trait for Runtime {
     type CreationFee = CreationFee;
     type TransactionBaseFee = TransactionBaseFee;
     type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = ConvertInto;
+    type WeightToFee = (); // computes fee to be default value of Balance/u128 = 0
 }
 
 impl sudo::Trait for Runtime {

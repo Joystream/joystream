@@ -55,13 +55,6 @@ impl timestamp::Trait for Test {
     type MinimumPeriod = MinimumPeriod;
 }
 
-pub struct WeightToFee(u32);
-impl Convert<Weight, u64> for WeightToFee {
-    fn convert(t: Weight) -> u64 {
-        t as u64
-    }
-}
-
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
     pub const TransferFee: u32 = 0;
@@ -88,7 +81,7 @@ impl balances::Trait for Test {
     type CreationFee = CreationFee;
     type TransactionBaseFee = TransactionBaseFee;
     type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = WeightToFee;
+    type WeightToFee = ();
 }
 
 impl GovernanceCurrency for Test {
