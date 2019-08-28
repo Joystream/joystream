@@ -335,7 +335,7 @@ fn cannot_add_schema_to_entity_when_schema_already_added_to_entity() {
 }
 
 #[test]
-fn cannot_add_schema_to_entity_when_class_schema_refers_unknown_prop_index() {
+fn cannot_add_schema_to_entity_when_schema_id_is_unknown() {
     with_test_externalities(|| {
         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
         let unknown_schema_id = schema_id + 1;
@@ -373,7 +373,7 @@ fn cannot_add_schema_to_entity_when_prop_value_dont_match_type() {
             TestModule::add_schema_support_to_entity(
                 entity_id,
                 schema_id,
-                vec![ (1, PropertyValue::Bool(true)) ]
+                vec![ (PROP_ID_U32, PropertyValue::Bool(true)) ]
             ),
             ERROR_PROP_VALUE_DONT_MATCH_TYPE
         );
@@ -388,7 +388,7 @@ fn cannot_add_schema_to_entity_when_unknown_internal_entity_id() {
             TestModule::add_schema_support_to_entity(
                 entity_id,
                 schema_id,
-                vec![ (2, PropertyValue::Internal(UNKNOWN_ENTITY_ID)) ]
+                vec![ (PROP_ID_INTERNAL, PropertyValue::Internal(UNKNOWN_ENTITY_ID)) ]
             ),
             ERROR_UNKNOWN_INTERNAL_ENTITY_ID
         );
@@ -403,7 +403,7 @@ fn cannot_add_schema_to_entity_when_missing_required_prop() {
             TestModule::add_schema_support_to_entity(
                 entity_id,
                 schema_id,
-                vec![ (1, PropertyValue::Uint32(456)) ]
+                vec![ (PROP_ID_U32, PropertyValue::Uint32(456)) ]
             ),
             ERROR_MISSING_REQUIRED_PROP
         );
@@ -420,7 +420,7 @@ fn should_add_schema_to_entity_when_all_props_provided() {
                 schema_id,
                 vec![
                     bool_prop_value(),
-                    (1, PropertyValue::Uint32(123)),
+                    (PROP_ID_U32, PropertyValue::Uint32(123)),
                 ]
             )
         );
@@ -458,47 +458,92 @@ fn cannot_update_entity_props_when_entity_not_found() {
     })
 }
 
-// #[test]
-// fn cannot_update_entity_props_when_entity_has_no_schemas() {
-//     with_test_externalities(|| {
-//         // TODO ERROR_ENTITY_HAS_NO_SCHEMAS
-//     })
-// }
+#[test]
+fn cannot_update_entity_props_when_entity_does_not_support_schemas_yet() {
+    with_test_externalities(|| {
+        let (_, _, entity_id) = create_class_with_schema_and_entity();
+        assert_err!(
+            TestModule::update_entity_properties(
+                entity_id,
+                vec![]
+            ),
+            ERROR_ENTITY_DOES_NOT_SUPPORT_SCHEMAS_YET
+        );
+    })
+}
 
-// #[test]
-// fn cannot_update_entity_props_when_prop_value_dont_match_type() {
-//     with_test_externalities(|| {
-//         // TODO ERROR_PROP_VALUE_DONT_MATCH_TYPE
-//     })
-// }
+#[test]
+fn cannot_update_entity_props_when_prop_value_dont_match_type() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        assert_err!(
+            TestModule::update_entity_properties(
+                entity_id,
+                vec![ (PROP_ID_BOOL, PropertyValue::Uint32(1)) ]
+            ),
+            ERROR_PROP_VALUE_DONT_MATCH_TYPE
+        );
+    })
+}
 
-// #[test]
-// fn cannot_update_entity_props_when_unknown_internal_entity_id() {
-//     with_test_externalities(|| {
-//         // TODO ERROR_UNKNOWN_INTERNAL_ENTITY_ID
-//     })
-// }
+#[test]
+fn cannot_update_entity_props_when_unknown_internal_entity_id() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        assert_err!(
+            TestModule::update_entity_properties(
+                entity_id,
+                vec![ (PROP_ID_INTERNAL, PropertyValue::Internal(UNKNOWN_ENTITY_ID)) ]
+            ),
+            ERROR_UNKNOWN_INTERNAL_ENTITY_ID
+        );
+    })
+}
 
-// #[test]
-// fn cannot_update_entity_props_when_unknown_class_prop_id() {
-//     with_test_externalities(|| {
-//         // TODO ERROR_UNKNOWN_CLASS_PROP_ID
-//     })
-// }
+#[test]
+fn cannot_update_entity_props_when_unknown_entity_prop_id() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        assert_err!(
+            TestModule::update_entity_properties(
+                entity_id,
+                vec![ (UNKNOWN_PROP_ID, PropertyValue::Bool(true)) ]
+            ),
+            ERROR_UNKNOWN_ENTITY_PROP_ID
+        );
+    })
+}
 
-// #[test]
-// fn cannot_update_entity_props_when_unknown_entity_prop_id() {
-//     with_test_externalities(|| {
-//         // TODO ERROR_UNKNOWN_ENTITY_PROP_ID
-//     })
-// }
-
-// #[test]
-// fn update_entity_props_successfully() {
-//     with_test_externalities(|| {
-//         // TODO 
-//     })
-// }
+#[test]
+fn update_entity_props_successfully() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        assert_eq!(
+            TestModule::entity_by_id(entity_id).values,
+            vec![
+                (PROP_ID_BOOL,     PropertyValue::Bool(true)),
+                (PROP_ID_U32,      PropertyValue::None),
+                (PROP_ID_INTERNAL, PropertyValue::None),
+            ]
+        );
+        assert_ok!(TestModule::update_entity_properties(
+            entity_id,
+            vec![
+                (PROP_ID_BOOL,     PropertyValue::Bool(false)),
+                (PROP_ID_U32,      PropertyValue::Uint32(123)),
+                (PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
+            ]
+        ));
+        assert_eq!(
+            TestModule::entity_by_id(entity_id).values,
+            vec![
+                (PROP_ID_BOOL,     PropertyValue::Bool(false)),
+                (PROP_ID_U32,      PropertyValue::Uint32(123)),
+                (PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
+            ]
+        );
+    })
+}
 
 // Remove entity properties
 // --------------------------------------

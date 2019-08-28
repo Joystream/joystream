@@ -120,30 +120,6 @@ pub fn good_prop_ids() -> Vec<u16> {
     vec![ 0, 1 ]
 }
 
-// pub fn good_schema() -> ClassSchema {
-//     ClassSchema { properties: vec![ 0, 1, 2 ] }
-// }
-
-// pub fn good_schemas() -> Vec<ClassSchema> {
-//     vec![
-//         ClassSchema { properties: vec![ 0, 1 ] },
-//         ClassSchema { properties: vec![ 0, 1, 2 ] },
-//         ClassSchema { properties: vec![ 1, 2, 3 ] },
-//     ]
-// }
-
-// pub fn good_schema_indices() -> Vec<u16> {
-//     vec![ 0, 1, 2 ]
-// }
-
-// pub fn good_property_values() -> Vec<(u16, PropertyValue)> {
-//     vec![
-//         (0, PropertyValue::Bool(true)),
-//         (1, PropertyValue::Uint32(123u32)),
-//         (2, PropertyValue::Text(b"Small text".to_vec())),
-//     ]
-// }
-
 pub fn create_class() -> ClassId {
     let class_id = TestModule::next_class_id();
     assert_ok!(
@@ -177,6 +153,22 @@ pub fn create_class_with_schema_and_entity() -> (ClassId, u16, EntityId) {
     } else {
         panic!("This should not happen")
     }
+}
+
+pub const PROP_ID_BOOL: u16     = 0;
+pub const PROP_ID_U32: u16      = 1;
+pub const PROP_ID_INTERNAL: u16 = 2;
+
+pub fn create_entity_with_schema_support() -> EntityId {
+    let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+    assert_ok!(
+        TestModule::add_schema_support_to_entity(
+            entity_id,
+            schema_id,
+            vec![ (PROP_ID_BOOL, PropertyValue::Bool(true)) ]
+        )
+    );
+    entity_id
 }
 
 pub fn create_entity() -> EntityId {

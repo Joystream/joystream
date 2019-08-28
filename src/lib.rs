@@ -42,8 +42,7 @@ const ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS : &str = "Provided property id was
 const ERROR_PROP_VALUE_DONT_MATCH_TYPE: &str = "Some of the provided property values don't match the expected property type";
 const ERROR_UNKNOWN_INTERNAL_ENTITY_ID: &str = "Some of the provided property values has unknown internal entity id";
 const ERROR_MISSING_REQUIRED_PROP: &str = "Some required property was not found when adding schema support to entity";
-const ERROR_ENTITY_HAS_NO_SCHEMAS: &str = "Cannot update entity properties because entity has no schemas yet";
-const ERROR_UNKNOWN_CLASS_PROP_ID: &str = "Some of the provided property ids cannot be found on the list of class properties";
+const ERROR_ENTITY_DOES_NOT_SUPPORT_SCHEMAS_YET: &str = "Cannot update entity properties because entity does not support any schemas yet";
 const ERROR_UNKNOWN_ENTITY_PROP_ID: &str = "Some of the provided property ids cannot be found on the current list of propery values of this entity";
 const ERROR_NO_ENTITY_PROP_IDS_ON_REMOVE: &str = "Cannot remove entity properties: an empty list of property ids provided";
 
@@ -444,28 +443,24 @@ impl<T: Trait> Module<T> {
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
-        ensure!(!entity.schemas.is_empty(), ERROR_ENTITY_HAS_NO_SCHEMAS);
+        ensure!(!entity.schemas.is_empty(), ERROR_ENTITY_DOES_NOT_SUPPORT_SCHEMAS_YET);
 
         let mut updated_values = entity.values;
 
         for (id, new_value) in new_property_values.iter() {
             if let Some(prop) = updated_values.iter_mut().find(|(valid_id, _)| *id == *valid_id) {
                 let (valid_id, current_value) = prop;
+                let class_prop = class.properties.get(*valid_id as usize).unwrap();
 
-                if let Some(class_prop) = class.properties.get(*valid_id as usize) {
-                    if !Self::does_prop_value_match_type(new_value.clone(), class_prop.clone()) {
-                        return Err(ERROR_PROP_VALUE_DONT_MATCH_TYPE)
-                    }
-
-                    if Self::is_unknown_internal_entity_id(new_value.clone()) {
-                        return Err(ERROR_UNKNOWN_INTERNAL_ENTITY_ID)
-                    }
-
-                    *current_value = new_value.clone();
-
-                } else {
-                    return Err(ERROR_UNKNOWN_CLASS_PROP_ID)
+                if !Self::does_prop_value_match_type(new_value.clone(), class_prop.clone()) {
+                    return Err(ERROR_PROP_VALUE_DONT_MATCH_TYPE)
                 }
+
+                if Self::is_unknown_internal_entity_id(new_value.clone()) {
+                    return Err(ERROR_UNKNOWN_INTERNAL_ENTITY_ID)
+                }
+
+                *current_value = new_value.clone();
             } else {
                 return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
             }
