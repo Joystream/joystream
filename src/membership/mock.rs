@@ -98,7 +98,7 @@ impl members::Trait for Test {
 
 pub struct ExtBuilder {
     first_member_id: u32,
-    default_paid_membership_fee: u32,
+    default_paid_membership_fee: u64,
 }
 impl Default for ExtBuilder {
     fn default() -> Self {
@@ -114,25 +114,21 @@ impl ExtBuilder {
         self.first_member_id = first_member_id;
         self
     }
-    pub fn default_paid_membership_fee(mut self, default_paid_membership_fee: u32) -> Self {
+    pub fn default_paid_membership_fee(mut self, default_paid_membership_fee: u64) -> Self {
         self.default_paid_membership_fee = default_paid_membership_fee;
         self
     }
     pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher> {
-        let mut t = system::GenesisConfig::<Test>::default()
-            .build_storage()
-            .unwrap()
-            .0;
+        let mut t = system::GenesisConfig::default()
+            .build_storage::<Test>()
+            .unwrap();
 
-        t.extend(
-            members::GenesisConfig::<Test> {
-                first_member_id: self.first_member_id,
-                default_paid_membership_fee: self.default_paid_membership_fee,
-            }
-            .build_storage()
-            .unwrap()
-            .0,
-        );
+        members::GenesisConfig::<Test> {
+            first_member_id: self.first_member_id,
+            default_paid_membership_fee: self.default_paid_membership_fee,
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
         t.into()
     }
