@@ -35,7 +35,7 @@ static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str =
     "Only the storage provider in a DOSR can decide whether they're ready.";
 
 // TODO deprecated
-const DEFAULT_FIRST_RELATIONSHIP_ID: u64 = 1;
+const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
 
 // TODO deprecated
 #[derive(Clone, Encode, Decode, PartialEq)]

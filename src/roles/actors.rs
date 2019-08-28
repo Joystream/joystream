@@ -104,8 +104,8 @@ pub type Request<T> = (
 );
 pub type Requests<T> = Vec<Request<T>>;
 
-pub const DEFAULT_REQUEST_LIFETIME: u64 = 300;
-pub const REQUEST_CLEARING_INTERVAL: u64 = 100;
+pub const DEFAULT_REQUEST_LIFETIME: u32 = 300;
+pub const REQUEST_CLEARING_INTERVAL: u32 = 100;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Actors {
@@ -149,7 +149,7 @@ decl_storage! {
         pub RoleEntryRequests get(role_entry_requests) : Requests<T>;
 
         /// Entry request expires after this number of blocks
-        pub RequestLifeTime get(request_life_time) config(request_life_time) : u64 = DEFAULT_REQUEST_LIFETIME;
+        pub RequestLifeTime get(request_life_time) config(request_life_time) : u32 = DEFAULT_REQUEST_LIFETIME;
     }
     add_extra_genesis {
         config(enable_storage_role): bool;
@@ -397,13 +397,13 @@ decl_module! {
 
         pub fn set_available_roles(origin, roles: Vec<Role>) {
             ensure_root(origin)?;
-            <AvailableRoles<T>>::put(roles);
+            AvailableRoles::put(roles);
         }
 
         pub fn add_to_available_roles(origin, role: Role) {
             ensure_root(origin)?;
             if !Self::available_roles().into_iter().any(|r| r == role) {
-                <AvailableRoles<T>>::mutate(|roles| roles.push(role));
+                AvailableRoles::mutate(|roles| roles.push(role));
             }
         }
 
@@ -411,7 +411,7 @@ decl_module! {
             ensure_root(origin)?;
             // Should we eject actors in the role being removed?
             let roles: Vec<Role> = Self::available_roles().into_iter().filter(|r| role != *r).collect();
-            <AvailableRoles<T>>::put(roles);
+            AvailableRoles::put(roles);
         }
 
         pub fn remove_actor(origin, actor_account: T::AccountId) {

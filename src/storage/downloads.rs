@@ -38,7 +38,7 @@ static MSG_INVALID_TRANSMITTED_VALUE: &str = "Invalid update to transmitted byte
 static MSG_NEED_STORAGE_PROVIDER: &str =
     "Cannnot download without at least one active storage relationship.";
 
-const DEFAULT_FIRST_DOWNLOAD_SESSION_ID: u64 = 1;
+const DEFAULT_FIRST_DOWNLOAD_SESSION_ID: u32 = 1;
 
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]

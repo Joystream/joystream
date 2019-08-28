@@ -837,13 +837,13 @@ decl_module! {
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(council_size > 0, "council size cannot be zero");
             ensure!(council_size <= Self::candidacy_limit(), "council size cannot greater than candidacy limit");
-            <CouncilSize<T>>::put(council_size);
+            CouncilSize::put(council_size);
         }
         fn set_param_candidacy_limit(origin, limit: u32) {
             ensure_root(origin)?;
             ensure!(!Self::is_election_running(), "cannot change params during election");
             ensure!(limit >= Self::council_size(), "candidacy limit cannot be less than council size");
-            <CandidacyLimit<T>>::put(limit);
+            CandidacyLimit::put(limit);
         }
         fn set_param_min_voting_stake(origin, amount: BalanceOf<T>) {
             ensure_root(origin)?;
@@ -877,7 +877,7 @@ decl_module! {
 
         fn set_auto_start (origin, flag: bool) {
             ensure_root(origin)?;
-            <AutoStart<T>>::put(flag);
+            AutoStart::put(flag);
         }
 
     }

@@ -24,7 +24,7 @@ const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and v
 const DEFAULT_TYPE_ACTIVE: bool = true;
 const CREATE_DETAULT_TYPE: bool = true;
 
-const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1;
+const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u32 = 1;
 
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]

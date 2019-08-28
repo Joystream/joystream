@@ -25,8 +25,8 @@ pub type IPNSIdentity = Vec<u8>;
 /// HTTP Url string to a discovery service endpoint
 pub type Url = Vec<u8>;
 
-pub const MINIMUM_LIFETIME: u64 = 600; // 1hr assuming 6s block times
-pub const DEFAULT_LIFETIME: u64 = MINIMUM_LIFETIME * 24; // 24hr
+pub const MINIMUM_LIFETIME: u32 = 600; // 1hr assuming 6s block times
+pub const DEFAULT_LIFETIME: u32 = MINIMUM_LIFETIME * 24; // 24hr
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
@@ -80,7 +80,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        pub fn set_ipns_id(origin, id: Vec<u8>, lifetime: Option<u64>) {
+        pub fn set_ipns_id(origin, id: Vec<u8>, lifetime: Option<u32>) {
             let sender = ensure_signed(origin)?;
             ensure!(T::Roles::is_role_account(&sender), "only role accounts can set ipns id");
 
@@ -121,7 +121,7 @@ decl_module! {
 
         pub fn set_bootstrap_endpoints(origin, endpoints: Vec<Vec<u8>>) {
             ensure_root(origin)?;
-            <BootstrapEndpoints<T>>::put(endpoints);
+            BootstrapEndpoints::put(endpoints);
         }
     }
 }

@@ -249,7 +249,7 @@ decl_module! {
                 .map_err(|_| MSG_STAKE_IS_GREATER_THAN_BALANCE)?;
 
             let proposal_id = Self::proposal_count() + 1;
-            <ProposalCount<T>>::put(proposal_id);
+            ProposalCount::put(proposal_id);
 
             // See in substrate repo @ srml/contract/src/wasm/code_cache.rs:73
             let wasm_hash = T::Hashing::hash(&wasm_code);
@@ -269,7 +269,7 @@ decl_module! {
               <WasmCodeByHash<T>>::insert(wasm_hash, wasm_code);
             }
             <Proposals<T>>::insert(proposal_id, new_proposal);
-            <ActiveProposalIds<T>>::mutate(|ids| ids.push(proposal_id));
+            ActiveProposalIds::mutate(|ids| ids.push(proposal_id));
             Self::deposit_event(RawEvent::ProposalCreated(proposer.clone(), proposal_id));
 
             // Auto-vote with Approve if proposer is a councilor:
@@ -347,7 +347,7 @@ decl_module! {
         fn set_approval_quorum(origin, new_value: u32) {
             ensure_root(origin)?;
             ensure!(new_value > 0, "approval quorom must be greater than zero");
-            <ApprovalQuorum<T>>::put(new_value);
+            ApprovalQuorum::put(new_value);
         }
     }
 }
@@ -501,7 +501,7 @@ impl<T: Trait> Module<T> {
                 Approved => Self::_approve_proposal(pid)?,
                 Active | Cancelled => { /* nothing */ }
             }
-            <ActiveProposalIds<T>>::put(other_active_ids);
+            ActiveProposalIds::put(other_active_ids);
             <Proposals<T>>::mutate(proposal_id, |p| p.status = new_status.clone());
             Self::deposit_event(RawEvent::ProposalStatusUpdated(proposal_id, new_status));
             Ok(())
@@ -543,7 +543,7 @@ impl<T: Trait> Module<T> {
         let _ = T::Currency::unreserve(&proposal.proposer, proposal.stake);
 
         // Update wasm code of node's runtime:
-        <system::Module<T>>::set_code(wasm_code)?;
+        <system::Module<T>>::set_code(system::RawOrigin::Root.into(), wasm_code)?;
 
         Self::deposit_event(RawEvent::RuntimeUpdated(proposal_id, proposal.wasm_hash));
 

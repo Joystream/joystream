@@ -63,7 +63,7 @@ decl_module! {
         fn on_initialize(_now: T::BlockNumber) {
             if Self::spec_version().map_or(true, |spec_version| VERSION.spec_version > spec_version) {
                 // mark store version with current version of the runtime
-                <SpecVersion<T>>::put(VERSION.spec_version);
+                SpecVersion::put(VERSION.spec_version);
 
                 // run migrations and store initializers
                 Self::runtime_initialization();
