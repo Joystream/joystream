@@ -80,12 +80,11 @@ impl Roles<Test> for MockRoles {
 }
 
 pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-    let t = system::GenesisConfig::<Test>::default()
-        .build_storage()
-        .unwrap()
-        .0;
+    let t = system::GenesisConfig::default()
+        .build_storage::<Test>()
+        .unwrap();
 
-    runtime_io::TestExternalities::new(t)
+    t.into()
 }
 
 pub type System = system::Module<Test>;

@@ -80,15 +80,15 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        pub fn set_ipns_id(origin, id: Vec<u8>, lifetime: Option<u32>) {
+        pub fn set_ipns_id(origin, id: Vec<u8>, lifetime: Option<T::BlockNumber>) {
             let sender = ensure_signed(origin)?;
             ensure!(T::Roles::is_role_account(&sender), "only role accounts can set ipns id");
 
             // TODO: ensure id is a valid base58 encoded IPNS identity
 
             let ttl = match lifetime {
-                Some(value) => if value >= MINIMUM_LIFETIME {
-                    T::BlockNumber::from(value)
+                Some(value) => if value >= T::BlockNumber::from(MINIMUM_LIFETIME) {
+                    value
                 } else {
                     T::BlockNumber::from(MINIMUM_LIFETIME)
                 },

@@ -562,7 +562,7 @@ mod tests {
     use runtime_primitives::{
         testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
-        BuildStorage, Perbill,
+        Perbill,
     };
     use srml_support::*;
 
