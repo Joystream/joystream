@@ -7,28 +7,36 @@ authors = ['Joystream']
 build = 'build.rs'
 edition = '2018'
 name = 'joystream-node'
-version = '1.1.0'
+version = '2.0.0'
 
 [dependencies]
-error-chain = '0.12'
+hex-literal = '0.1'
+derive_more = '0.14.0'
 exit-future = '0.1'
 futures = '0.1'
-hex-literal = '0.1'
 log = '0.4'
-parity-codec = '3.2'
-parking_lot = '0.7.1'
+parking_lot = '0.9.0'
 tokio = '0.1'
-trie-root = '0.12.0'
+trie-root = '0.15.2'
 
 [dependencies.basic-authorship]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-basic-authorship'
-branch = 'v1.0'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
-[dependencies.consensus]
+[dependencies.babe]
 git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-consensus-aura'
-branch = 'v1.0'
+package = 'substrate-consensus-babe'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+
+[dependencies.babe-primitives]
+git = 'https://github.com/paritytech/substrate.git'
+package = 'substrate-consensus-babe-primitives'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+
+[dependencies.codec]
+package = 'parity-scale-codec'
+version = '1.0.0'
 
 [dependencies.ctrlc]
 features = ['termination']
@@ -37,56 +45,68 @@ version = '3.0'
 [dependencies.inherents]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-inherents'
-branch = 'v1.0'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
 [dependencies.network]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-network'
-branch = 'v1.0'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
-[dependencies.joystream-node-runtime]
+[dependencies.node-template-runtime]
+package = "joystream-node-runtime"
 # clone https://github.com/joystream/substrate-runtime-joystream to this path:
 path = 'substrate-runtime-joystream'
 
 [dependencies.primitives]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-primitives'
-branch = 'v1.0'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
 [dependencies.sr-io]
 git = 'https://github.com/paritytech/substrate.git'
-branch = 'v1.0'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
 [dependencies.substrate-cli]
 git = 'https://github.com/paritytech/substrate.git'
-branch = 'v1.0'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
 [dependencies.substrate-client]
 git = 'https://github.com/paritytech/substrate.git'
-branch = 'v1.0'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
 [dependencies.substrate-executor]
 git = 'https://github.com/paritytech/substrate.git'
-branch = 'v1.0'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
 [dependencies.substrate-service]
 git = 'https://github.com/paritytech/substrate.git'
-branch = 'v1.0'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
 [dependencies.transaction-pool]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-transaction-pool'
-branch = 'v1.0'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
 [dependencies.substrate-telemetry]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-telemetry'
-branch = 'v1.0'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
 [dependencies.grandpa]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-finality-grandpa'
-branch = 'v1.0'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+
+[dependencies.grandpa-primitives]
+git = 'https://github.com/paritytech/substrate.git'
+package = 'substrate-finality-grandpa-primitives'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+
+[dependencies.im-online]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-im-online'
+rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
 [profile.release]
 panic = 'unwind'
