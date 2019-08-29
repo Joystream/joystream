@@ -33,6 +33,7 @@ use substrate_service::{
     error::Error as ServiceError, AbstractService, Configuration, ServiceBuilder,
 };
 use transaction_pool::{self, txpool::Pool as TransactionPool};
+pub use substrate_executor::NativeExecutor;
 
 // Our native executor instance.
 native_executor_instance!(
