@@ -155,8 +155,7 @@ impl Alternative {
 
 /// Joystream LiveTestnet generator
 pub fn live_testnet_config() -> Result<ChainSpec, String> {
-    //ChainSpec::from_embedded(include_bytes!("../res/joy_testnet_2.json"))
-    ChainSpec::from_json_bytes(&include_bytes!("../res/joy_testnet_2.json")[..])
+    ChainSpec::from_json_bytes(&include_bytes!("../res/dummy.json")[..])
 }
 
 /// Staging testnet config
