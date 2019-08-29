@@ -787,7 +787,7 @@ mod tests {
 
     macro_rules! assert_runtime_code_empty {
         () => {
-            assert_eq!(get_runtime_code(), None)
+            assert_eq!(get_runtime_code(), Some(vec![]))
         };
     }
 
