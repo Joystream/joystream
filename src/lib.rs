@@ -359,15 +359,8 @@ impl<T: Trait> Module<T> {
         let class_schema_opt = class.schemas.get(schema_id as usize);
         let schema_prop_ids = class_schema_opt.unwrap().properties.clone();
 
-        // TODO apply new prop values on top of current prop values
-
-        // TODO append any missing non required prop values to currently overriden prop values.
-
         let mut updated_values = entity.values;
         let mut new_values: Vec<(u16, PropertyValue)> = vec![];
-
-        // println!("\nproperty_values: {:?}", property_values);
-        // println!("\ncurrent_entity_values: {:?}", updated_values);
 
         // Iterate over provided property values and replace existing values
         // for these properties on this entity.
@@ -399,11 +392,7 @@ impl<T: Trait> Module<T> {
             }
         }
 
-        // println!("\nupdated_values: {:?}", updated_values);
-        // println!("\nnew_values: {:?}", new_values);
-
         updated_values.append(&mut new_values);
-        // println!("\nupdated_values + new_values: {:?}", updated_values);
 
         let mut updated_values_with_nones = updated_values.clone();
         for &id in schema_prop_ids.iter() {
@@ -422,8 +411,6 @@ impl<T: Trait> Module<T> {
                 }
             }
         }
-
-        // println!("\nupdated_values_with_nones: {:?}", updated_values_with_nones);
 
         <EntityById<T>>::mutate(entity_id, |entity| {
             entity.schemas.push(schema_id);
