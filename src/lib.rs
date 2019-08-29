@@ -37,6 +37,7 @@ pub use runtime_primitives::BuildStorage;
 pub use runtime_primitives::{Perbill, Permill};
 pub use srml_support::{construct_runtime, parameter_types, StorageMap, StorageValue};
 pub use timestamp::Call as TimestampCall;
+pub use staking::StakerStatus;
 
 /// An index to a block.
 pub type BlockNumber = u32;
