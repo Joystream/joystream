@@ -64,6 +64,9 @@ pub type Hash = primitives::H256;
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
 
+/// Moment type
+pub type Moment = u64;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -116,10 +119,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 /// `SLOT_DURATION` instead (like the timestamp module for calculating the
 /// minimum period).
 /// <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
-pub const MILLISECS_PER_BLOCK: u64 = 6000;
-pub const SECS_PER_BLOCK: u64 = MILLISECS_PER_BLOCK / 1000;
+pub const MILLISECS_PER_BLOCK: Moment = 6000;
+pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
 
-pub const SLOT_DURATION: u64 = 6000;
+pub const SLOT_DURATION: Moment = 6000;
 
 pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
 pub const EPOCH_DURATION_IN_SLOTS: u64 = {
@@ -189,7 +192,7 @@ impl system::Trait for Runtime {
 
 parameter_types! {
     pub const EpochDuration: u64 = EPOCH_DURATION_IN_SLOTS as u64;
-    pub const ExpectedBlockTime: u64 = MILLISECS_PER_BLOCK;
+    pub const ExpectedBlockTime: Moment = MILLISECS_PER_BLOCK;
 }
 
 impl babe::Trait for Runtime {
@@ -214,12 +217,12 @@ impl indices::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const MinimumPeriod: u64 = SLOT_DURATION / 2;
+    pub const MinimumPeriod: Moment = SLOT_DURATION / 2;
 }
 
 impl timestamp::Trait for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
-    type Moment = u64;
+    type Moment = Moment;
     type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
 }
