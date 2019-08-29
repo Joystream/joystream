@@ -11,7 +11,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use babe::AuthorityId as BabeId;
 use grandpa::fg_primitives::{self, ScheduledChange};
 use grandpa::{AuthorityId as GrandpaId, AuthorityWeight as GrandpaWeight};
-use im_online::sr25519::{AuthorityId as ImOnlineId};
+use im_online::sr25519::AuthorityId as ImOnlineId;
 use primitives::{crypto::key_types, OpaqueMetadata};
 use rstd::prelude::*;
 use runtime_primitives::traits::{
@@ -80,7 +80,7 @@ pub mod opaque {
     /// Opaque block identifier type.
     pub type BlockId = generic::BlockId<Block>;
 
-    pub type SessionHandlers = (Grandpa, Babe);
+    pub type SessionHandlers = (Grandpa, Babe, ImOnline);
 
     impl_opaque_keys! {
         pub struct SessionKeys {
@@ -117,13 +117,19 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 /// minimum period).
 /// <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
 pub const MILLISECS_PER_BLOCK: u64 = 6000;
+pub const SECS_PER_BLOCK: u64 = MILLISECS_PER_BLOCK / 1000;
 
-pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
+pub const SLOT_DURATION: u64 = 6000;
 
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = 10 * MINUTES;
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
+pub const EPOCH_DURATION_IN_SLOTS: u64 = {
+    const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
+
+    (EPOCH_DURATION_IN_BLOCKS as f64 * SLOT_FILL_RATE) as u64
+};
 
 // These time units are defined in number of blocks.
-pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
+pub const MINUTES: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
@@ -182,7 +188,7 @@ impl system::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const EpochDuration: u64 = EPOCH_DURATION_IN_BLOCKS as u64;
+    pub const EpochDuration: u64 = EPOCH_DURATION_IN_SLOTS as u64;
     pub const ExpectedBlockTime: u64 = MILLISECS_PER_BLOCK;
 }
 
@@ -208,7 +214,7 @@ impl indices::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const MinimumPeriod: u64 = 5000;
+    pub const MinimumPeriod: u64 = SLOT_DURATION / 2;
 }
 
 impl timestamp::Trait for Runtime {
