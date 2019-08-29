@@ -302,7 +302,7 @@ Each release is directed by a _Release Manager_ (**RM**) who is responsible for:
 
 ### Tracking Issues
 
-A Tracking Issue is a GitHub issue which **evolves**, and at any given time holds a list of TODO items, with a corresponding completion status and and possibly responsibility indicator (i.e. each item has one responsible actor). TODO items are grouped into Tracking Issues based on what most deeply facilitates effective collaboration and progress tracking.
+A Tracking Issue is a GitHub issue which **evolves**, and at any given time holds a list of TODO items, with a corresponding completion status and possibly responsibility indicator (i.e. each item has one responsible actor). TODO items are grouped into Tracking Issues based on what most deeply facilitates effective collaboration and progress tracking.
 
 - Every Monday, each Tracking Issue will be discussed in a video meeting between all assigned team members and the Release Manager.
 - These meetings should be highly focused, and kept at a reasonably high level.
@@ -319,7 +319,7 @@ As part of the Release Plan, a set of Milestones are set, with a "target date". 
 
 ### Standard Release Meetings
 
-In addition to the weekly follow-up up meetings addressed above, each release cycle includes the more formal meetings listed below.
+In addition to the weekly follow-up meetings addressed above, each release cycle includes the more formal meetings listed below.
 
 - `Launch Meeting`
 - `User Stories Meeting`

@@ -332,7 +332,7 @@ Notes: the current base of hyperdrive repositories effectively requires a fixed
 
 
 As a storage provider, I want to create storage tranches in order to advertise my liaison capacity.
-  -> Creating a tranche means comitting to be the liaison for it, as well as having capacity.
+  -> Creating a tranche means committing to be the liaison for it, as well as having capacity.
   -> Signing up for a tranche means having mirroring capacity and serving data.
 
 As a non-liaison storage provider, I want to sign up to a tranche in order to mirror and serve data.
@@ -559,7 +559,7 @@ The storage node had non-bug fixes (improvements) merged to master after "Full t
 
 ##### Improve phrasing
 
-In general, we learned that the KRs have to be written and clarified better to reflect the goals for the release. It should be trivial to grade the OKR, while it should also reflect the level of success. This was brought up on later points as well. KR specifici commments below:
+In general, we learned that the KRs have to be written and clarified better to reflect the goals for the release. It should be trivial to grade the OKR, while it should also reflect the level of success. This was brought up on later points as well. KR specific comments below:
 
 1. We need to make it clear whether the goal is shipping a feature or getting interest. In this case, the KR only reflected participation, which was not Alex and Bedehos job. In the future, we must go for one or the other.
 
@@ -586,7 +586,7 @@ Without addressing each point in this item specifically, we agreed that:
 
 :four:
 Everyone agreed to continue "large" issues, covering all aspects of each goal.
-If possible, we should try to combine KRs with these largeer issues in a way where we can grade and track based on checkmarks filled either directly or with weighting.
+If possible, we should try to combine KRs with these larger issues in a way where we can grade and track based on checkmarks filled either directly or with weighting.
 
 :five:
 1. Put more though and planning in to migration.
