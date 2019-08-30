@@ -171,10 +171,10 @@ pub fn create_entity_with_schema_support() -> EntityId {
     entity_id
 }
 
-pub fn create_entity() -> EntityId {
-    let class_id = create_class();
-    create_entity_of_class(class_id)
-}
+// pub fn create_entity() -> EntityId {
+//     let class_id = create_class();
+//     create_entity_of_class(class_id)
+// }
 
 pub fn create_entity_of_class(class_id: ClassId) -> EntityId {
     let entity_id = TestModule::next_entity_id();

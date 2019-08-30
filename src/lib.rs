@@ -47,7 +47,7 @@ const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX: &str = "New class schema ref
 const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID: &str = "New class schema refers to an unknown internal class id";
 const ERROR_NO_PROPS_IN_CLASS_SCHEMA: &str = "Cannot add a class schema with an empty list of properties";
 const ERROR_ENTITY_NOT_FOUND: &str = "Entity was not found by id";
-const ERROR_ENTITY_ALREADY_DELETED: &str = "Entity is already deleted";
+// const ERROR_ENTITY_ALREADY_DELETED: &str = "Entity is already deleted";
 const ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY: &str = "Cannot add a schema that is already added to this entity";
 const ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS : &str = "Provided property id was not found in schema properties";
 const ERROR_PROP_VALUE_DONT_MATCH_TYPE: &str = "Some of the provided property values don't match the expected property type";
@@ -137,7 +137,7 @@ pub struct Entity {
     values: Vec<(u16, PropertyValue)>, // Index is into properties vector of class. Fix anonymous type later.
 
     name: Vec<u8>,
-    deleted: bool,
+    // deleted: bool,
 }
 
 /// A schema defines what properties describe an entity
@@ -246,7 +246,7 @@ decl_event!(
 
         EntityCreated(EntityId),
         EntityUpdated(EntityId),
-        EntityDeleted(EntityId),
+        // EntityDeleted(EntityId),
         EntityNameUpdated(EntityId),
         EntityPropertiesUpdated(EntityId),
         EntitySchemaAdded(EntityId),
@@ -375,7 +375,7 @@ impl<T: Trait> Module<T> {
             schemas: vec![],
             values: vec![],
             name,
-            deleted: false,
+            // deleted: false,
         };
 
         // Save newly created entity:
@@ -569,19 +569,20 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn delete_entity(entity_id: EntityId) -> dispatch::Result {
-        Self::ensure_known_entity_id(entity_id)?;
+    // Commented out for now <- requested by Bedeho.
+    // pub fn delete_entity(entity_id: EntityId) -> dispatch::Result {
+    //     Self::ensure_known_entity_id(entity_id)?;
 
-        let is_deleted = <EntityById<T>>::get(entity_id).deleted;
-        ensure!(!is_deleted, ERROR_ENTITY_ALREADY_DELETED);
+    //     let is_deleted = <EntityById<T>>::get(entity_id).deleted;
+    //     ensure!(!is_deleted, ERROR_ENTITY_ALREADY_DELETED);
 
-        <EntityById<T>>::mutate(entity_id, |x| {
-            x.deleted = true;
-        });
+    //     <EntityById<T>>::mutate(entity_id, |x| {
+    //         x.deleted = true;
+    //     });
 
-        Self::deposit_event(RawEvent::EntityDeleted(entity_id));
-        Ok(())
-    }
+    //     Self::deposit_event(RawEvent::EntityDeleted(entity_id));
+    //     Ok(())
+    // }
 
     // Helper functions:
     // ----------------------------------------------------------------
