@@ -35,21 +35,21 @@ fn cannot_create_class_with_empty_name() {
                 empty_name,
                 good_class_description(),
             ),
-            ERROR_CLASS_EMPTY_NAME
+            ERROR_CLASS_NAME_TOO_SHORT
         );
     })
 }
 
 #[test]
-fn cannot_create_class_with_empty_description() {
+fn create_class_with_empty_description() {
     with_test_externalities(|| {
         let empty_description = vec![];
-        assert_err!(
+        assert_eq!(
             TestModule::create_class(
                 good_class_name(),
                 empty_description,
             ),
-            ERROR_CLASS_EMPTY_DESCRIPTION
+            Ok(1)
         );
     })
 }
@@ -307,7 +307,7 @@ fn cannot_create_entity_with_empty_name() {
                 class_id,
                 empty_name,
             ),
-            ERROR_ENTITY_EMPTY_NAME
+            ERROR_ENTITY_NAME_TOO_SHORT
         );
     })
 }

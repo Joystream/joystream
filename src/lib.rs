@@ -22,20 +22,31 @@ use system;
 mod mock;
 mod tests;
 
-/// Constants
-/////////////////////////////////////////////////////////////////
+// Validation errors
+// --------------------------------------
 
-// Error messages for dispatchables
+const ERROR_PROPERTY_NAME_TOO_SHORT: &str = "Property name is too short";
+const ERROR_PROPERTY_NAME_TOO_LONG: &str = "Property name is too long";
+const ERROR_PROPERTY_DESCRIPTION_TOO_SHORT: &str = "Property description is too long";
+const ERROR_PROPERTY_DESCRIPTION_TOO_LONG: &str = "Property description is too long";
+
+const ERROR_CLASS_NAME_TOO_SHORT: &str = "Class name is too short";
+const ERROR_CLASS_NAME_TOO_LONG: &str = "Class name is too long";
+const ERROR_CLASS_DESCRIPTION_TOO_SHORT: &str = "Class description is too long";
+const ERROR_CLASS_DESCRIPTION_TOO_LONG: &str = "Class description is too long";
+
+const ERROR_ENTITY_NAME_TOO_SHORT: &str = "Entity name is too short";
+const ERROR_ENTITY_NAME_TOO_LONG: &str = "Entity name is too long";
+
+// Main logic errors
+// --------------------------------------
 
 const ERROR_CLASS_NOT_FOUND: &str = "Class was not found by id";
-const ERROR_CLASS_EMPTY_NAME: &str = "Class cannot have an empty name";
-const ERROR_CLASS_EMPTY_DESCRIPTION: &str = "Class cannot have an empty description";
 const ERROR_UNKNOWN_CLASS_SCHEMA_ID: &str = "Unknown class schema id";
 const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX: &str = "New class schema refers to an unknown property index";
 const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID: &str = "New class schema refers to an unknown internal class id";
 const ERROR_NO_PROPS_IN_CLASS_SCHEMA: &str = "Cannot add a class schema with an empty list of properties";
 const ERROR_ENTITY_NOT_FOUND: &str = "Entity was not found by id";
-const ERROR_ENTITY_EMPTY_NAME: &str = "Entity cannot have an empty name";
 const ERROR_ENTITY_ALREADY_DELETED: &str = "Entity is already deleted";
 const ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY: &str = "Cannot add a schema that is already added to this entity";
 const ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS : &str = "Provided property id was not found in schema properties";
@@ -46,9 +57,47 @@ const ERROR_ENTITY_DOES_NOT_SUPPORT_SCHEMAS_YET: &str = "Cannot update entity pr
 const ERROR_UNKNOWN_ENTITY_PROP_ID: &str = "Some of the provided property ids cannot be found on the current list of propery values of this entity";
 const ERROR_NO_ENTITY_PROP_IDS_ON_REMOVE: &str = "Cannot remove entity properties: an empty list of property ids provided";
 
-// const MAX_NUM_OF_PROPS_PER_CLASS: u16 = 30;
-// const MAX_NAME_LENGTH: u16 = 100;
-// const MAX_DESCRIPTION_LENGTH: u16 = 1000;
+/// Length constraint for input validation
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct TextConstraint {
+
+    /// Minimum length
+    pub min: u16,
+
+    /// Difference between minimum length and max length.
+    /// While having max would have been more direct, this
+    /// way makes max < min unrepresentable semantically, 
+    /// which is safer.
+    pub max_min_diff: u16,
+}
+
+impl TextConstraint {
+    
+    /// Helper for computing max
+    pub fn max(&self) -> u16 {
+        self.min + self.max_min_diff
+    }
+
+    pub fn ensure_valid(
+        &self,
+        len: usize,
+        too_short_msg: &'static str,
+        too_long_msg: &'static str
+    ) -> Result<(),&'static str> {
+
+        let length = len as u16;
+        if length < self.min {
+            Err(too_short_msg)
+        }
+        else if length > self.max() {
+            Err(too_long_msg)
+        }
+        else {
+            Ok(())
+        }
+    } 
+}
 
 pub type ClassId = u64;
 pub type EntityId = u64;
@@ -167,6 +216,21 @@ decl_storage! {
         pub NextClassId get(next_class_id) config(): ClassId;
 
         pub NextEntityId get(next_entity_id) config(): EntityId;
+
+        pub PropertyNameConstraint get(property_name_constraint)
+            config(): TextConstraint;
+
+        pub PropertyDescriptionConstraint get(property_description_constraint)
+            config(): TextConstraint;
+
+        pub ClassNameConstraint get(class_name_constraint)
+            config(): TextConstraint;
+
+        pub ClassDescriptionConstraint get(class_description_constraint)
+            config(): TextConstraint;
+
+        pub EntityNameConstraint get(entity_name_constraint)
+            config(): TextConstraint;
     }
 }
 
@@ -206,11 +270,9 @@ impl<T: Trait> Module<T> {
         description: Vec<u8>
     ) -> Result<ClassId, &'static str> {
         
-        // TODO better validation of name:
-        ensure!(name.len() > 0, ERROR_CLASS_EMPTY_NAME);
+        Self::ensure_class_name_is_valid(&name)?;
 
-        // TODO better validation of description:
-        ensure!(description.len() > 0, ERROR_CLASS_EMPTY_DESCRIPTION);
+        Self::ensure_class_description_is_valid(&description)?;
 
         let class_id = <NextClassId<T>>::get();
 
@@ -246,6 +308,13 @@ impl<T: Trait> Module<T> {
             !new_properties.is_empty();
         
         ensure!(non_empty_schema, ERROR_NO_PROPS_IN_CLASS_SCHEMA);
+
+        for prop in new_properties.iter() {
+            Self::ensure_property_name_is_valid(&prop.name)?;
+            Self::ensure_property_description_is_valid(&prop.description)?;
+        }
+
+        // TODO validate descriptions of new_properties - can be empty
 
         let class = <ClassById<T>>::get(class_id);
 
@@ -296,8 +365,7 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_known_class_id(class_id)?;
 
-        // TODO better validation of name:
-        ensure!(name.len() > 0, ERROR_ENTITY_EMPTY_NAME);
+        Self::ensure_entity_name_is_valid(&name)?;
 
         let entity_id = <NextEntityId<T>>::get();
 
@@ -327,8 +395,7 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_known_entity_id(entity_id)?;
 
-        // TODO better validation of name:
-        ensure!(new_name.len() > 0, ERROR_ENTITY_EMPTY_NAME);
+        Self::ensure_entity_name_is_valid(&new_name)?;
 
         <EntityById<T>>::mutate(entity_id, |entity| {
             entity.name = new_name;
@@ -579,5 +646,45 @@ impl<T: Trait> Module<T> {
             // (PV::External(_), PT::External(_)) => true,
             _ => false,
         }
+    }
+
+    fn ensure_property_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        <PropertyNameConstraint<T>>::get().ensure_valid(
+            text.len(),
+            ERROR_PROPERTY_NAME_TOO_SHORT,
+            ERROR_PROPERTY_NAME_TOO_LONG
+        )
+    }
+
+    fn ensure_property_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        PropertyDescriptionConstraint::<T>::get().ensure_valid(
+            text.len(),
+            ERROR_PROPERTY_DESCRIPTION_TOO_SHORT,
+            ERROR_PROPERTY_DESCRIPTION_TOO_LONG
+        )
+    }
+
+    fn ensure_class_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        <ClassNameConstraint<T>>::get().ensure_valid(
+            text.len(),
+            ERROR_CLASS_NAME_TOO_SHORT,
+            ERROR_CLASS_NAME_TOO_LONG
+        )
+    }
+
+    fn ensure_class_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        ClassDescriptionConstraint::<T>::get().ensure_valid(
+            text.len(),
+            ERROR_CLASS_DESCRIPTION_TOO_SHORT,
+            ERROR_CLASS_DESCRIPTION_TOO_LONG
+        )
+    }
+
+    fn ensure_entity_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        <EntityNameConstraint<T>>::get().ensure_valid(
+            text.len(),
+            ERROR_ENTITY_NAME_TOO_SHORT,
+            ERROR_ENTITY_NAME_TOO_LONG
+        )
     }
 }
