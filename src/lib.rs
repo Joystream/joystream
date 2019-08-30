@@ -60,7 +60,7 @@ const ERROR_NO_ENTITY_PROP_IDS_ON_REMOVE: &str = "Cannot remove entity propertie
 /// Length constraint for input validation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct TextConstraint {
+pub struct InputValidationLengthConstraint {
 
     /// Minimum length
     pub min: u16,
@@ -72,7 +72,7 @@ pub struct TextConstraint {
     pub max_min_diff: u16,
 }
 
-impl TextConstraint {
+impl InputValidationLengthConstraint {
     
     /// Helper for computing max
     pub fn max(&self) -> u16 {
@@ -218,19 +218,19 @@ decl_storage! {
         pub NextEntityId get(next_entity_id) config(): EntityId;
 
         pub PropertyNameConstraint get(property_name_constraint)
-            config(): TextConstraint;
+            config(): InputValidationLengthConstraint;
 
         pub PropertyDescriptionConstraint get(property_description_constraint)
-            config(): TextConstraint;
+            config(): InputValidationLengthConstraint;
 
         pub ClassNameConstraint get(class_name_constraint)
-            config(): TextConstraint;
+            config(): InputValidationLengthConstraint;
 
         pub ClassDescriptionConstraint get(class_description_constraint)
-            config(): TextConstraint;
+            config(): InputValidationLengthConstraint;
 
         pub EntityNameConstraint get(entity_name_constraint)
-            config(): TextConstraint;
+            config(): InputValidationLengthConstraint;
     }
 }
 

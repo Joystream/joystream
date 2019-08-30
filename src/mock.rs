@@ -218,23 +218,23 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         entity_by_id: vec![],
         next_class_id: 1,
         next_entity_id: 1,
-        property_name_constraint: TextConstraint {
+        property_name_constraint: InputValidationLengthConstraint {
             min: 1,
             max_min_diff: 49
         },
-        property_description_constraint: TextConstraint {
+        property_description_constraint: InputValidationLengthConstraint {
             min: 0,
             max_min_diff: 500
         },
-        class_name_constraint: TextConstraint {
+        class_name_constraint: InputValidationLengthConstraint {
             min: 1,
             max_min_diff: 49
         },
-        class_description_constraint: TextConstraint {
+        class_description_constraint: InputValidationLengthConstraint {
             min: 0,
             max_min_diff: 500
         },
-        entity_name_constraint: TextConstraint {
+        entity_name_constraint: InputValidationLengthConstraint {
             min: 1,
             max_min_diff: 49
         },
