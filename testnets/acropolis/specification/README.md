@@ -262,7 +262,7 @@ The runtime implements the following set of APIs.
 
 #### [AuraApi](https://crates.parity.io/substrate_consensus_aura/trait.AuraApi.html)
 
-- **slot_duration**: Auro module `slot_duration` routine.
+- **slot_duration**: Aura module `slot_duration` routine.
 
 #### [AuthoritiesApi](#)
 
