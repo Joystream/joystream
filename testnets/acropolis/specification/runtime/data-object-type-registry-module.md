@@ -35,7 +35,7 @@ Of course, storage nodes should still impose some constraints on how what
 uploads to accept. These constraints are described by the `constraints` field
 of the `DataObjectType`. There is a corresponding `constraints_version` field,
 which indicates the version of the constraints specification, i.e. how to
-interpreter the `constraints` field.
+interpret the `constraints` field.
 
 ## Concepts
 
