@@ -130,11 +130,11 @@ pub struct Entity {
     /// What schemas under which this entity of a class is available, think
     /// v.2.0 Person schema for John, v3.0 Person schema for John
     /// Unlikely to be more than roughly 20ish, assuming schemas for a given class eventually stableize, or that very old schema are eventually removed.
-    schemas: Vec<u16>, // indices of schema in corresponding class
+    in_class_schema_indexes: Vec<u16>, // indices of schema in corresponding class
 
     /// Values for properties on class that are used by some schema used by this entity!
     /// Length is no more than Class.properties.
-    values: Vec<ClassPropertyValue>, // Index is into properties vector of class. Fix anonymous type later.
+    values: Vec<ClassPropertyValue>,
 
     name: Vec<u8>,
     // deleted: bool,
@@ -205,10 +205,10 @@ impl Default for PropertyValue {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct ClassPropertyValue {
 
-  /// Index is into properties vector of class. Fix anonymous type later.
+  /// Index is into properties vector of class.
   in_class_index: u16,
 
-  /// Value of property with index `class_property_index` in a given class
+  /// Value of property with index `in_class_index` in a given class.
   value: PropertyValue
 }
 
@@ -383,7 +383,7 @@ impl<T: Trait> Module<T> {
         let new_entity = Entity {
             id: entity_id,
             class_id,
-            schemas: vec![],
+            in_class_schema_indexes: vec![],
             values: vec![],
             name,
             // deleted: false,
@@ -427,7 +427,7 @@ impl<T: Trait> Module<T> {
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
         // Check that schema id is not yet added to this entity:
-        let schema_not_added = entity.schemas.iter().position(|x| *x == schema_id).is_none();
+        let schema_not_added = entity.in_class_schema_indexes.iter().position(|x| *x == schema_id).is_none();
         ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
 
         // Check that schema_id is a valid index of class schemas vector:
@@ -509,7 +509,7 @@ impl<T: Trait> Module<T> {
         }
 
         <EntityById<T>>::mutate(entity_id, |entity| {
-            entity.schemas.push(schema_id);
+            entity.in_class_schema_indexes.push(schema_id);
             entity.values = updated_values_with_nones;
         });
 
@@ -526,7 +526,7 @@ impl<T: Trait> Module<T> {
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
-        ensure!(!entity.schemas.is_empty(), ERROR_ENTITY_DOES_NOT_SUPPORT_SCHEMAS_YET);
+        ensure!(!entity.in_class_schema_indexes.is_empty(), ERROR_ENTITY_DOES_NOT_SUPPORT_SCHEMAS_YET);
 
         let mut updated_values = entity.values;
 

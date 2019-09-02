@@ -447,7 +447,7 @@ fn should_add_schema_to_entity_when_some_optional_props_provided() {
         );
 
         let entity = TestModule::entity_by_id(entity_id);
-        assert_eq!(entity.schemas, [ SCHEMA_ID_0 ]);
+        assert_eq!(entity.in_class_schema_indexes, [ SCHEMA_ID_0 ]);
         assert_eq!(entity.values, vec![
             bool_prop_value(),
             prop_value(PROP_ID_U32, PropertyValue::Uint32(123)),
