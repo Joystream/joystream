@@ -134,7 +134,7 @@ pub struct Entity {
 
     /// Values for properties on class that are used by some schema used by this entity!
     /// Length is no more than Class.properties.
-    values: Vec<(u16, PropertyValue)>, // Index is into properties vector of class. Fix anonymous type later.
+    values: Vec<ClassPropertyValue>, // Index is into properties vector of class. Fix anonymous type later.
 
     name: Vec<u8>,
     // deleted: bool,
@@ -199,6 +199,17 @@ impl Default for PropertyValue {
     fn default() -> Self {
         PropertyValue::None
     }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct ClassPropertyValue {
+
+  /// Index is into properties vector of class. Fix anonymous type later.
+  in_class_index: u16,
+
+  /// Value of property with index `class_property_index` in a given class
+  value: PropertyValue
 }
 
 pub trait Trait: system::Trait + Sized {
@@ -408,7 +419,7 @@ impl<T: Trait> Module<T> {
     pub fn add_schema_support_to_entity(
         entity_id: EntityId,
         schema_id: u16,
-        property_values: Vec<(u16, PropertyValue)>
+        property_values: Vec<ClassPropertyValue>
     ) -> dispatch::Result {
 
         Self::ensure_known_entity_id(entity_id)?;
@@ -427,11 +438,16 @@ impl<T: Trait> Module<T> {
         let schema_prop_ids = class_schema_opt.unwrap().properties.clone();
 
         let mut updated_values = entity.values;
-        let mut new_values: Vec<(u16, PropertyValue)> = vec![];
+        let mut new_values: Vec<ClassPropertyValue> = vec![];
 
         // Iterate over provided property values and replace existing values
         // for these properties on this entity.
-        for (new_id, new_value) in property_values.iter() {
+        for prop_value in property_values.iter() {
+            let ClassPropertyValue {
+                in_class_index: new_id,
+                value: new_value
+            } = prop_value;
+
             if schema_prop_ids.get(*new_id as usize).is_none() {
                 return Err(ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS)
             }
@@ -447,7 +463,12 @@ impl<T: Trait> Module<T> {
             }
 
             let mut prop_updated = false;
-            for (cur_id, cur_value) in updated_values.iter_mut() {
+            for cur_prop_value in updated_values.iter_mut() {
+                let ClassPropertyValue {
+                    in_class_index: cur_id,
+                    value: cur_value
+                } = cur_prop_value;
+
                 if new_id == cur_id {
                     *cur_value = new_value.clone();
                     prop_updated = true;
@@ -455,7 +476,11 @@ impl<T: Trait> Module<T> {
             }
 
             if !prop_updated {
-                new_values.push((*new_id, new_value.clone()));
+                let updated_prop_value = ClassPropertyValue {
+                    in_class_index: *new_id,
+                    value: new_value.clone()
+                };
+                new_values.push(updated_prop_value);
             }
         }
 
@@ -465,7 +490,7 @@ impl<T: Trait> Module<T> {
         for &id in schema_prop_ids.iter() {
     
             // If value was not povided for schema prop:
-            if updated_values.iter().find(|(x_id, _)| *x_id == id).is_none() {
+            if updated_values.iter().find(|prop| prop.in_class_index == id).is_none() {
                 
                 let class_prop = class.properties.get(id as usize).unwrap();
 
@@ -474,7 +499,11 @@ impl<T: Trait> Module<T> {
                     return Err(ERROR_MISSING_REQUIRED_PROP)
                 } else {
                     // Add all missing non required schema prop values as PropertyValue::None
-                    updated_values_with_nones.push((id, PropertyValue::None));
+                    let none_prop_value = ClassPropertyValue {
+                        in_class_index: id,
+                        value: PropertyValue::None
+                    };
+                    updated_values_with_nones.push(none_prop_value);
                 }
             }
         }
@@ -490,7 +519,7 @@ impl<T: Trait> Module<T> {
 
     pub fn update_entity_properties(
         entity_id: EntityId,
-        new_property_values: Vec<(u16, PropertyValue)>
+        new_property_values: Vec<ClassPropertyValue>
     ) -> dispatch::Result {
 
         Self::ensure_known_entity_id(entity_id)?;
@@ -501,9 +530,16 @@ impl<T: Trait> Module<T> {
 
         let mut updated_values = entity.values;
 
-        for (id, new_value) in new_property_values.iter() {
-            if let Some(prop) = updated_values.iter_mut().find(|(valid_id, _)| *id == *valid_id) {
-                let (valid_id, current_value) = prop;
+        for new_prop_value in new_property_values.iter() {
+            let ClassPropertyValue {
+                in_class_index: id,
+                value: new_value
+            } = new_prop_value;
+            if let Some(prop) = updated_values.iter_mut().find(|prop| *id == prop.in_class_index) {
+                let ClassPropertyValue {
+                    in_class_index: valid_id,
+                    value: current_value
+                } = prop;
                 let class_prop = class.properties.get(*valid_id as usize).unwrap();
 
                 if !Self::does_prop_value_match_type(new_value.clone(), class_prop.clone()) {
@@ -548,9 +584,9 @@ impl<T: Trait> Module<T> {
             if let Some(prop) = class.properties.get(prop_id as usize) {
                 // Only non required property values can be removed:
                 if !prop.required {
-                    for (id, value) in updated_values.iter_mut() {
-                        if *id == prop_id {
-                            *value = PropertyValue::None;
+                    for prop in updated_values.iter_mut() {
+                        if prop.in_class_index == prop_id {
+                            prop.value = PropertyValue::None;
                             updates_count += 1;
                             break
                         }

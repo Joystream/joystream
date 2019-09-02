@@ -132,8 +132,18 @@ pub fn create_class() -> ClassId {
     class_id
 }
 
-pub fn bool_prop_value() -> (u16, PropertyValue) {
-    (0, PropertyValue::Bool(true))
+pub fn bool_prop_value() -> ClassPropertyValue {
+    ClassPropertyValue {
+        in_class_index: 0,
+        value: PropertyValue::Bool(true)
+    }
+}
+
+pub fn prop_value(index: u16, value: PropertyValue) -> ClassPropertyValue {
+    ClassPropertyValue {
+        in_class_index: index,
+        value: value
+    }
 }
 
 pub fn create_class_with_schema_and_entity() -> (ClassId, u16, EntityId) {
@@ -165,7 +175,7 @@ pub fn create_entity_with_schema_support() -> EntityId {
         TestModule::add_schema_support_to_entity(
             entity_id,
             schema_id,
-            vec![ (PROP_ID_BOOL, PropertyValue::Bool(true)) ]
+            vec![ prop_value(PROP_ID_BOOL, PropertyValue::Bool(true)) ]
         )
     );
     entity_id

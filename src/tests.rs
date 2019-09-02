@@ -363,7 +363,7 @@ fn cannot_add_schema_to_entity_when_schema_id_is_unknown() {
             TestModule::add_schema_support_to_entity(
                 entity_id,
                 unknown_schema_id,
-                vec![ (0, PropertyValue::None) ]
+                vec![ prop_value(0, PropertyValue::None) ]
             ),
             ERROR_UNKNOWN_CLASS_SCHEMA_ID
         );
@@ -378,7 +378,7 @@ fn cannot_add_schema_to_entity_when_error_prop_id_not_found_in_schema_props() {
             TestModule::add_schema_support_to_entity(
                 entity_id,
                 schema_id,
-                vec![ (UNKNOWN_PROP_ID, PropertyValue::None) ]
+                vec![ prop_value(UNKNOWN_PROP_ID, PropertyValue::None) ]
             ),
             ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS
         );
@@ -393,7 +393,7 @@ fn cannot_add_schema_to_entity_when_prop_value_dont_match_type() {
             TestModule::add_schema_support_to_entity(
                 entity_id,
                 schema_id,
-                vec![ (PROP_ID_U32, PropertyValue::Bool(true)) ]
+                vec![ prop_value(PROP_ID_U32, PropertyValue::Bool(true)) ]
             ),
             ERROR_PROP_VALUE_DONT_MATCH_TYPE
         );
@@ -408,7 +408,7 @@ fn cannot_add_schema_to_entity_when_unknown_internal_entity_id() {
             TestModule::add_schema_support_to_entity(
                 entity_id,
                 schema_id,
-                vec![ (PROP_ID_INTERNAL, PropertyValue::Internal(UNKNOWN_ENTITY_ID)) ]
+                vec![ prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(UNKNOWN_ENTITY_ID)) ]
             ),
             ERROR_UNKNOWN_INTERNAL_ENTITY_ID
         );
@@ -423,7 +423,7 @@ fn cannot_add_schema_to_entity_when_missing_required_prop() {
             TestModule::add_schema_support_to_entity(
                 entity_id,
                 schema_id,
-                vec![ (PROP_ID_U32, PropertyValue::Uint32(456)) ]
+                vec![ prop_value(PROP_ID_U32, PropertyValue::Uint32(456)) ]
             ),
             ERROR_MISSING_REQUIRED_PROP
         );
@@ -440,7 +440,7 @@ fn should_add_schema_to_entity_when_some_optional_props_provided() {
                 schema_id,
                 vec![
                     bool_prop_value(),
-                    (PROP_ID_U32, PropertyValue::Uint32(123)),
+                    prop_value(PROP_ID_U32, PropertyValue::Uint32(123)),
                     // Note that an optional internal prop is not provided here.
                 ]
             )
@@ -450,8 +450,8 @@ fn should_add_schema_to_entity_when_some_optional_props_provided() {
         assert_eq!(entity.schemas, [ SCHEMA_ID_0 ]);
         assert_eq!(entity.values, vec![
             bool_prop_value(),
-            (PROP_ID_U32, PropertyValue::Uint32(123)),
-            (PROP_ID_INTERNAL, PropertyValue::None),
+            prop_value(PROP_ID_U32, PropertyValue::Uint32(123)),
+            prop_value(PROP_ID_INTERNAL, PropertyValue::None),
         ]);
     })
 }
@@ -492,7 +492,7 @@ fn cannot_update_entity_props_when_prop_value_dont_match_type() {
         assert_err!(
             TestModule::update_entity_properties(
                 entity_id,
-                vec![ (PROP_ID_BOOL, PropertyValue::Uint32(1)) ]
+                vec![ prop_value(PROP_ID_BOOL, PropertyValue::Uint32(1)) ]
             ),
             ERROR_PROP_VALUE_DONT_MATCH_TYPE
         );
@@ -506,7 +506,7 @@ fn cannot_update_entity_props_when_unknown_internal_entity_id() {
         assert_err!(
             TestModule::update_entity_properties(
                 entity_id,
-                vec![ (PROP_ID_INTERNAL, PropertyValue::Internal(UNKNOWN_ENTITY_ID)) ]
+                vec![ prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(UNKNOWN_ENTITY_ID)) ]
             ),
             ERROR_UNKNOWN_INTERNAL_ENTITY_ID
         );
@@ -520,7 +520,7 @@ fn cannot_update_entity_props_when_unknown_entity_prop_id() {
         assert_err!(
             TestModule::update_entity_properties(
                 entity_id,
-                vec![ (UNKNOWN_PROP_ID, PropertyValue::Bool(true)) ]
+                vec![ prop_value(UNKNOWN_PROP_ID, PropertyValue::Bool(true)) ]
             ),
             ERROR_UNKNOWN_ENTITY_PROP_ID
         );
@@ -534,25 +534,25 @@ fn update_entity_props_successfully() {
         assert_eq!(
             TestModule::entity_by_id(entity_id).values,
             vec![
-                (PROP_ID_BOOL,     PropertyValue::Bool(true)),
-                (PROP_ID_U32,      PropertyValue::None),
-                (PROP_ID_INTERNAL, PropertyValue::None),
+                prop_value(PROP_ID_BOOL,     PropertyValue::Bool(true)),
+                prop_value(PROP_ID_U32,      PropertyValue::None),
+                prop_value(PROP_ID_INTERNAL, PropertyValue::None),
             ]
         );
         assert_ok!(TestModule::update_entity_properties(
             entity_id,
             vec![
-                (PROP_ID_BOOL,     PropertyValue::Bool(false)),
-                (PROP_ID_U32,      PropertyValue::Uint32(123)),
-                (PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
+                prop_value(PROP_ID_BOOL,     PropertyValue::Bool(false)),
+                prop_value(PROP_ID_U32,      PropertyValue::Uint32(123)),
+                prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
             ]
         ));
         assert_eq!(
             TestModule::entity_by_id(entity_id).values,
             vec![
-                (PROP_ID_BOOL,     PropertyValue::Bool(false)),
-                (PROP_ID_U32,      PropertyValue::Uint32(123)),
-                (PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
+                prop_value(PROP_ID_BOOL,     PropertyValue::Bool(false)),
+                prop_value(PROP_ID_U32,      PropertyValue::Uint32(123)),
+                prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
             ]
         );
     })
@@ -596,18 +596,18 @@ fn remove_entity_props_successfully() {
                 entity_id,
                 schema_id,
                 vec![
-                    (PROP_ID_BOOL,     PropertyValue::Bool(false)),
-                    (PROP_ID_U32,      PropertyValue::Uint32(123)),
-                    (PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
+                    prop_value(PROP_ID_BOOL,     PropertyValue::Bool(false)),
+                    prop_value(PROP_ID_U32,      PropertyValue::Uint32(123)),
+                    prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
                 ]
             )
         );
         assert_eq!(
             TestModule::entity_by_id(entity_id).values,
             vec![
-                (PROP_ID_BOOL,     PropertyValue::Bool(false)),
-                (PROP_ID_U32,      PropertyValue::Uint32(123)),
-                (PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
+                prop_value(PROP_ID_BOOL,     PropertyValue::Bool(false)),
+                prop_value(PROP_ID_U32,      PropertyValue::Uint32(123)),
+                prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
             ]
         );
         assert_ok!(
@@ -619,9 +619,9 @@ fn remove_entity_props_successfully() {
         assert_eq!(
             TestModule::entity_by_id(entity_id).values,
             vec![
-                (PROP_ID_BOOL,     PropertyValue::Bool(false)),
-                (PROP_ID_U32,      PropertyValue::None),
-                (PROP_ID_INTERNAL, PropertyValue::None),
+                prop_value(PROP_ID_BOOL,     PropertyValue::Bool(false)),
+                prop_value(PROP_ID_U32,      PropertyValue::None),
+                prop_value(PROP_ID_INTERNAL, PropertyValue::None),
             ]
         );
     })
