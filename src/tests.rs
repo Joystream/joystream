@@ -410,7 +410,7 @@ fn cannot_add_schema_to_entity_when_unknown_internal_entity_id() {
                 schema_id,
                 vec![ prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(UNKNOWN_ENTITY_ID)) ]
             ),
-            ERROR_UNKNOWN_INTERNAL_ENTITY_ID
+            ERROR_ENTITY_NOT_FOUND
         );
     })
 }
@@ -508,7 +508,7 @@ fn cannot_update_entity_props_when_unknown_internal_entity_id() {
                 entity_id,
                 vec![ prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(UNKNOWN_ENTITY_ID)) ]
             ),
-            ERROR_UNKNOWN_INTERNAL_ENTITY_ID
+            ERROR_ENTITY_NOT_FOUND
         );
     })
 }
@@ -626,6 +626,10 @@ fn remove_entity_props_successfully() {
         );
     })
 }
+
+// TODO test text max len
+
+// TODO test vec max len
 
 // Delete entity
 // --------------------------------------

@@ -51,11 +51,13 @@ const ERROR_ENTITY_NOT_FOUND: &str = "Entity was not found by id";
 const ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY: &str = "Cannot add a schema that is already added to this entity";
 const ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS : &str = "Provided property id was not found in schema properties";
 const ERROR_PROP_VALUE_DONT_MATCH_TYPE: &str = "Some of the provided property values don't match the expected property type";
-const ERROR_UNKNOWN_INTERNAL_ENTITY_ID: &str = "Some of the provided property values has unknown internal entity id";
 const ERROR_MISSING_REQUIRED_PROP: &str = "Some required property was not found when adding schema support to entity";
 const ERROR_ENTITY_DOES_NOT_SUPPORT_SCHEMAS_YET: &str = "Cannot update entity properties because entity does not support any schemas yet";
 const ERROR_UNKNOWN_ENTITY_PROP_ID: &str = "Some of the provided property ids cannot be found on the current list of propery values of this entity";
 const ERROR_NO_ENTITY_PROP_IDS_ON_REMOVE: &str = "Cannot remove entity properties: an empty list of property ids provided";
+const ERROR_TEXT_PROP_IS_TOO_LONG: &str = "Text propery is too long";
+const ERROR_VEC_PROP_IS_TOO_LONG: &str = "Vector propery is too long";
+const ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS: &str = "Internal property does not match its class";
 
 /// Length constraint for input validation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -161,6 +163,8 @@ pub struct Property {
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub enum PropertyType {
     None,
+
+    // Single value:
     Bool,
     Uint16,
     Uint32,
@@ -168,9 +172,31 @@ pub enum PropertyType {
     Int16,
     Int32,
     Int64,
-    Text(u32),
+    Text(u16),
     Internal(ClassId),
+
+    // Vector of values.
+    // The first u16 value is the max length of this vector.
+    
+    BoolVec(u16),
+    Uint16Vec(u16),
+    Uint32Vec(u16),
+    Uint64Vec(u16),
+    Int16Vec(u16),
+    Int32Vec(u16),
+    Int64Vec(u16),
+
+    /// The first u16 value is the max length of this vector.
+    /// The second u16 value is the max length of every text item in this vector.
+    TextVec(u16, u16),
+
+    /// The first u16 value is the max length of this vector.
+    /// The second ClassId value tells that an every element of this vector
+    /// should be of a specific ClassId. 
+    InternalVec(u16, ClassId),
+
     // External(ExternalProperty),
+    // ExternalVec(u16, ExternalProperty),
 }
 
 impl Default for PropertyType {
@@ -183,6 +209,8 @@ impl Default for PropertyType {
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub enum PropertyValue {
     None,
+
+    // Single value:
     Bool(bool),
     Uint16(u16),
     Uint32(u32),
@@ -192,7 +220,20 @@ pub enum PropertyValue {
     Int64(i64),
     Text(Vec<u8>),
     Internal(EntityId),
+
+    // Vector of values:
+    BoolVec(Vec<bool>),
+    Uint16Vec(Vec<u16>),
+    Uint32Vec(Vec<u32>),
+    Uint64Vec(Vec<u64>),
+    Int16Vec(Vec<i16>),
+    Int32Vec(Vec<i32>),
+    Int64Vec(Vec<i64>),
+    TextVec(Vec<Vec<u8>>),
+    InternalVec(Vec<EntityId>),
+
     // External(ExternalPropertyType),
+    // ExternalVec(Vec<ExternalPropertyType>),
 }
 
 impl Default for PropertyValue {
@@ -272,6 +313,10 @@ decl_module! {
         fn deposit_event<T>() = default;
     }
 }
+
+// Shortcuts for faster readability of match expression:
+use {PropertyValue as PV};
+use {PropertyType as PT};
 
 impl<T: Trait> Module<T> {
 
@@ -454,13 +499,7 @@ impl<T: Trait> Module<T> {
 
             let class_prop = class.properties.get(*new_id as usize).unwrap();
 
-            if !Self::does_prop_value_match_type(new_value.clone(), class_prop.clone()) {
-                return Err(ERROR_PROP_VALUE_DONT_MATCH_TYPE)
-            }
-
-            if Self::is_unknown_internal_entity_id(new_value.clone()) {
-                return Err(ERROR_UNKNOWN_INTERNAL_ENTITY_ID)
-            }
+            Self::ensure_property_value_is_valid(new_value.clone(), class_prop.clone())?;
 
             let mut prop_updated = false;
             for cur_prop_value in updated_values.iter_mut() {
@@ -542,13 +581,7 @@ impl<T: Trait> Module<T> {
                 } = prop;
                 let class_prop = class.properties.get(*valid_id as usize).unwrap();
 
-                if !Self::does_prop_value_match_type(new_value.clone(), class_prop.clone()) {
-                    return Err(ERROR_PROP_VALUE_DONT_MATCH_TYPE)
-                }
-
-                if Self::is_unknown_internal_entity_id(new_value.clone()) {
-                    return Err(ERROR_UNKNOWN_INTERNAL_ENTITY_ID)
-                }
+                Self::ensure_property_value_is_valid(new_value.clone(), class_prop.clone())?;
 
                 *current_value = new_value.clone();
             } else {
@@ -633,11 +666,24 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn is_unknown_internal_class_id(id: PropertyType) -> bool {
-        if let PropertyType::Internal(class_id) = id {
-            !<ClassById<T>>::exists(class_id)
-        } else {
-            false
+    pub fn ensure_valid_internal_prop(
+        value: PropertyValue,
+        prop: Property,
+    ) -> dispatch::Result {
+        match (value, prop.prop_type) {
+            (PV::Internal(entity_id), PT::Internal(class_id)) => {
+                Self::ensure_known_class_id(class_id)?;
+                Self::ensure_known_entity_id(entity_id)?;
+                let entity = Self::entity_by_id(entity_id);
+
+                println!("internal class id: {:?}", class_id);
+                println!("internal entity: {:?}", entity);
+
+
+                ensure!(entity.class_id == class_id, ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS);
+                Ok(())
+            },
+            _ => Ok(())
         }
     }
 
@@ -655,14 +701,109 @@ impl<T: Trait> Module<T> {
         (entity, class)
     }
 
+    pub fn ensure_property_value_is_valid(
+        value: PropertyValue,
+        prop: Property,
+    ) -> dispatch::Result {
+        // TODO impl:
+        Self::ensure_prop_value_matches_its_type(value.clone(), prop.clone())?;
+        Self::ensure_valid_internal_prop(value.clone(), prop.clone())?;
+        Self::validate_max_len_if_text_prop(value.clone(), prop.clone())?;
+        Self::validate_max_len_if_vec_prop(value.clone(), prop.clone())?;
+        Ok(())
+    }
+
+    pub fn validate_max_len_if_text_prop(
+        value: PropertyValue,
+        prop: Property,
+    ) -> dispatch::Result {
+        match (value, prop.prop_type) {
+            (PV::Text(text), PT::Text(max_len)) =>
+                Self::validate_max_len_of_text(text, max_len),
+            _ => Ok(())
+        }
+    }
+
+    pub fn validate_max_len_of_text(
+        text: Vec<u8>,
+        max_len: u16,
+    ) -> dispatch::Result {
+        if text.len() <= max_len as usize {
+            Ok(())
+        } else {
+            Err(ERROR_TEXT_PROP_IS_TOO_LONG)
+        }
+    }
+
+    pub fn validate_max_len_if_vec_prop(
+        value: PropertyValue,
+        prop: Property,
+    ) -> dispatch::Result {
+
+        fn validate_vec_len<T>(vec: Vec<T>, max_len: u16) -> bool {
+            vec.len() <= max_len as usize
+        }
+
+        fn validate_vec_len_ref<T>(vec: &Vec<T>, max_len: u16) -> bool {
+            vec.len() <= max_len as usize
+        }
+        
+        let is_valid_len = match (value, prop.prop_type) {
+            (PV::BoolVec(vec),     PT::BoolVec(max_len))   => validate_vec_len(vec, max_len),
+            (PV::Uint16Vec(vec),   PT::Uint16Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Uint32Vec(vec),   PT::Uint32Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Uint64Vec(vec),   PT::Uint64Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Int16Vec(vec),    PT::Int16Vec(max_len))  => validate_vec_len(vec, max_len),
+            (PV::Int32Vec(vec),    PT::Int32Vec(max_len))  => validate_vec_len(vec, max_len),
+            (PV::Int64Vec(vec),    PT::Int64Vec(max_len))  => validate_vec_len(vec, max_len),
+            (PV::TextVec(vec),     PT::TextVec(vec_max_len, text_max_len)) => {
+                if validate_vec_len_ref(&vec, vec_max_len) {
+                    for text_item in vec.iter() {
+                        Self::validate_max_len_of_text(text_item.clone(), text_max_len)?;
+                    }
+                    true
+                } else {
+                    false
+                }
+            },
+            (PV::InternalVec(vec), PT::InternalVec(vec_max_len, class_id)) => {
+                Self::ensure_known_class_id(class_id)?;
+                if validate_vec_len_ref(&vec, vec_max_len) {
+                    for entity_id in vec.iter() {
+                        Self::ensure_known_entity_id(entity_id.clone())?;
+                        let entity = Self::entity_by_id(entity_id);
+                        ensure!(entity.class_id == class_id, ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS);
+                    }
+                    true
+                } else {
+                    false
+                }
+            },
+            _ => true
+        };
+
+        if is_valid_len {
+            Ok(())
+        } else {
+            Err(ERROR_VEC_PROP_IS_TOO_LONG)
+        }
+    }
+
+    pub fn ensure_prop_value_matches_its_type(
+        value: PropertyValue,
+        prop: Property,
+    ) -> dispatch::Result {
+        if Self::does_prop_value_match_type(value, prop) {
+            Ok(())
+        } else {
+            Err(ERROR_PROP_VALUE_DONT_MATCH_TYPE)
+        }
+    }
+
     pub fn does_prop_value_match_type(
         value: PropertyValue,
         prop: Property,
     ) -> bool {
-
-        // Shortcuts for faster readability of match expression:
-        use {PropertyValue as PV};
-        use {PropertyType as PT};
 
         // Not required property can be None:
         if !prop.required && value == PV::None {
@@ -670,17 +811,32 @@ impl<T: Trait> Module<T> {
         }
 
         match (value, prop.prop_type) {
-            (PV::None,        PT::None)    |
-            (PV::Bool(_),     PT::Bool)    |
-            (PV::Uint16(_),   PT::Uint16)  |
-            (PV::Uint32(_),   PT::Uint32)  |
-            (PV::Uint64(_),   PT::Uint64)  |
-            (PV::Int16(_),    PT::Int16)   |
-            (PV::Int32(_),    PT::Int32)   |
-            (PV::Int64(_),    PT::Int64)   |
+            (PV::None,        PT::None) |
+
+            // Single values
+            (PV::Bool(_),     PT::Bool) |
+            (PV::Uint16(_),   PT::Uint16) |
+            (PV::Uint32(_),   PT::Uint32) |
+            (PV::Uint64(_),   PT::Uint64) |
+            (PV::Int16(_),    PT::Int16) |
+            (PV::Int32(_),    PT::Int32) |
+            (PV::Int64(_),    PT::Int64) |
             (PV::Text(_),     PT::Text(_)) |
-            (PV::Internal(_), PT::Internal(_)) => true,
+            (PV::Internal(_), PT::Internal(_)) |
+
+            // Vectors:
+            (PV::BoolVec(_),     PT::BoolVec(_)) |
+            (PV::Uint16Vec(_),   PT::Uint16Vec(_)) |
+            (PV::Uint32Vec(_),   PT::Uint32Vec(_)) |
+            (PV::Uint64Vec(_),   PT::Uint64Vec(_)) |
+            (PV::Int16Vec(_),    PT::Int16Vec(_)) |
+            (PV::Int32Vec(_),    PT::Int32Vec(_)) |
+            (PV::Int64Vec(_),    PT::Int64Vec(_)) |
+            (PV::TextVec(_),     PT::TextVec(_, _)) |
+            (PV::InternalVec(_), PT::InternalVec(_, _)) => true,
+
             // (PV::External(_), PT::External(_)) => true,
+            // (PV::ExternalVec(_), PT::ExternalVec(_, _)) => true,
             _ => false,
         }
     }

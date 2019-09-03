@@ -147,19 +147,18 @@ pub fn prop_value(index: u16, value: PropertyValue) -> ClassPropertyValue {
 }
 
 pub fn create_class_with_schema_and_entity() -> (ClassId, u16, EntityId) {
-    let class_id_1 = create_class();
-    let class_id_2 = create_class();
+    let class_id = create_class();
     if let Ok(schema_id) = TestModule::add_class_schema(
-        class_id_2,
+        class_id,
         vec![],
         vec![
             good_prop_bool().required(),
             good_prop_u32(),
-            new_internal_class_prop(class_id_1)
+            new_internal_class_prop(class_id)
         ]
     ) {
-        let entity_id = create_entity_of_class(class_id_2);
-        (class_id_2, schema_id, entity_id)
+        let entity_id = create_entity_of_class(class_id);
+        (class_id, schema_id, entity_id)
     } else {
         panic!("This should not happen")
     }
