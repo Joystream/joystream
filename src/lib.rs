@@ -370,8 +370,6 @@ impl<T: Trait> Module<T> {
             Self::ensure_property_description_is_valid(&prop.description)?;
         }
 
-        // TODO validate descriptions of new_properties - can be empty
-
         let class = <ClassById<T>>::get(class_id);
 
         // Check that existing props are valid indices of class properties vector:
@@ -705,7 +703,6 @@ impl<T: Trait> Module<T> {
         value: PropertyValue,
         prop: Property,
     ) -> dispatch::Result {
-        // TODO impl:
         Self::ensure_prop_value_matches_its_type(value.clone(), prop.clone())?;
         Self::ensure_valid_internal_prop(value.clone(), prop.clone())?;
         Self::validate_max_len_if_text_prop(value.clone(), prop.clone())?;
