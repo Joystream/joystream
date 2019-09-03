@@ -673,11 +673,6 @@ impl<T: Trait> Module<T> {
                 Self::ensure_known_class_id(class_id)?;
                 Self::ensure_known_entity_id(entity_id)?;
                 let entity = Self::entity_by_id(entity_id);
-
-                println!("internal class id: {:?}", class_id);
-                println!("internal entity: {:?}", entity);
-
-
                 ensure!(entity.class_id == class_id, ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS);
                 Ok(())
             },
