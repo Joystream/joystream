@@ -727,6 +727,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    #[rustfmt::skip]
     pub fn validate_max_len_if_vec_prop(
         value: PropertyValue,
         prop: Property,
@@ -748,6 +749,7 @@ impl<T: Trait> Module<T> {
             (PV::Int16Vec(vec),    PT::Int16Vec(max_len))  => validate_vec_len(vec, max_len),
             (PV::Int32Vec(vec),    PT::Int32Vec(max_len))  => validate_vec_len(vec, max_len),
             (PV::Int64Vec(vec),    PT::Int64Vec(max_len))  => validate_vec_len(vec, max_len),
+
             (PV::TextVec(vec),     PT::TextVec(vec_max_len, text_max_len)) => {
                 if validate_vec_len_ref(&vec, vec_max_len) {
                     for text_item in vec.iter() {
@@ -758,6 +760,7 @@ impl<T: Trait> Module<T> {
                     false
                 }
             },
+
             (PV::InternalVec(vec), PT::InternalVec(vec_max_len, class_id)) => {
                 Self::ensure_known_class_id(class_id)?;
                 if validate_vec_len_ref(&vec, vec_max_len) {
@@ -771,6 +774,7 @@ impl<T: Trait> Module<T> {
                     false
                 }
             },
+
             _ => true
         };
 
@@ -792,6 +796,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    #[rustfmt::skip]
     pub fn does_prop_value_match_type(
         value: PropertyValue,
         prop: Property,
