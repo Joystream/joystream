@@ -21,6 +21,7 @@ use system;
 
 mod mock;
 mod tests;
+mod example;
 
 // Validation errors
 // --------------------------------------

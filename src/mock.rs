@@ -245,7 +245,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         },
         entity_name_constraint: InputValidationLengthConstraint {
             min: 1,
-            max_min_diff: 49
+            max_min_diff: 99
         },
         _genesis_phantom_data: std::marker::PhantomData {}
     }
