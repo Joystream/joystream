@@ -8,5 +8,5 @@ before_script:
   - ./setup.sh
 script:
   - cargo fmt --all -- --check
-  - cargo build
   - cargo test --verbose --all
+  - cargo build --release

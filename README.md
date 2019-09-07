@@ -18,7 +18,7 @@ The joystream runtime builds on [substrate v1.0](https://docs.substrate.dev/docs
 To compile the runtime you will need some tools such as: Rust, llvm and openssl. You can install most of the dependencies with:
 
 ```bash
-curl https://getsubstrate.io -sSf | bash
+curl https://getsubstrate.io -sSf | bash -s -- --fast
 ```
 
 ## Getting Started - Building the WASM runtime
@@ -27,12 +27,12 @@ curl https://getsubstrate.io -sSf | bash
 git clone https://github.com/Joystream/substrate-runtime-joystream
 cd substrate-runtime-joystream/
 ./setup.sh
-./build.sh
+cargo build --release
 ```
 
 This produces the WASM "blob" output in:
 
-`wasm/target/wasm32-unknown-unknown/release/joystream_node_runtime_wasm.compact.wasm`
+`target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.wasm`
 
 See deployment for notes on how to deploy this runtime on a live system.
 
