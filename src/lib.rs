@@ -36,8 +36,8 @@ pub use balances::Call as BalancesCall;
 pub use runtime_primitives::BuildStorage;
 pub use runtime_primitives::{Perbill, Permill};
 pub use srml_support::{construct_runtime, parameter_types, StorageMap, StorageValue};
-pub use timestamp::Call as TimestampCall;
 pub use staking::StakerStatus;
+pub use timestamp::Call as TimestampCall;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -92,6 +92,8 @@ pub mod opaque {
             pub grandpa: GrandpaId,
             #[id(key_types::BABE)]
             pub babe: BabeId,
+            #[id(key_types::IM_ONLINE)]
+            pub im_online: ImOnlineId,
         }
     }
 }
@@ -723,7 +725,7 @@ impl_runtime_apis! {
     impl substrate_session::SessionKeys<Block> for Runtime {
         fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
             let seed = seed.as_ref().map(|s| rstd::str::from_utf8(&s).expect("Seed is an utf8 string"));
-            SessionKeys::generate(seed)
+            opaque::SessionKeys::generate(seed)
         }
     }
 }
