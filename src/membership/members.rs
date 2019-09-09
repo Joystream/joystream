@@ -1,5 +1,5 @@
 use crate::currency::{BalanceOf, GovernanceCurrency};
-use crate::traits::{Members, Roles};
+use crate::traits::Members;
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
@@ -39,8 +39,6 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Copy
         + MaybeSerializeDebug
         + PartialEq;
-
-    type Roles: Roles<Self>;
 }
 
 const DEFAULT_FIRST_MEMBER_ID: u32 = 1;
@@ -229,8 +227,8 @@ decl_module! {
             // ensure key not associated with an existing membership
             Self::ensure_not_member(&who)?;
 
-            // ensure account is not in a bonded role
-            ensure!(!T::Roles::is_role_account(&who), "role key cannot be used for membership");
+            // TODO: ensure account doesn't have any locks, is not a signing account of another member
+            // what other restrictions should we apply if any at all?
 
             // ensure paid_terms_id is active
             let terms = Self::ensure_active_terms_id(paid_terms_id)?;
@@ -304,8 +302,8 @@ decl_module! {
             // ensure key not associated with an existing membership
             Self::ensure_not_member(&new_member)?;
 
-            // ensure account is not in a bonded role
-            ensure!(!T::Roles::is_role_account(&new_member), "role key cannot be used for membership");
+            // TODO: ensure account doesn't have any locks, is not a signing account of another member
+            // what other restrictions should we apply if any at all?
 
             let user_info = Self::check_user_registration_info(user_info)?;
 
