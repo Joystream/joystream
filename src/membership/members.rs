@@ -10,6 +10,7 @@ use srml_support::{
 };
 use system::{self, ensure_root, ensure_signed};
 use timestamp;
+use rstd::collections::btree_map::BTreeMap;
 
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -56,6 +57,32 @@ const DEFAULT_MAX_HANDLE_LENGTH: u32 = 40;
 const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 
+// There is no impl of Encode/Decode for BTreeMap<enum, ...>
+// So to avoid writing an impl we use a less strongly typed id for the role
+// #[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Debug)]
+// pub enum RoleType {
+//     ForumUser,
+//     Curator,
+//     CurationLead,
+//     CouncilMember,
+//     Publisher
+// }
+pub type RoleId = u32;
+pub type ActorId = u32;
+
+pub const FORUM_USER_ROLE_ID: RoleId = 10;
+pub const COUNCIL_MEMBER_ROLE_ID: RoleId = 20;
+pub const CURATOR_LEAD_ROLE_ID: RoleId = 30;
+pub const CURATOR_ROLE_ID: RoleId = 31;
+pub const PUBLISHER_ROLE_ID: RoleId = 32;
+// pub const STORAGE_PROVIDER_ROLE_ID: RoleId = 32;
+
+#[derive(Encode, Decode, Eq, PartialEq)]
+struct ActorInRole {
+    role_id: RoleId,
+    actor_id: ActorId
+}
+
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode)]
 /// Stored information about a registered user
@@ -69,6 +96,8 @@ pub struct Profile<T: Trait> {
     pub entry: EntryMethod<T>,
     pub suspended: bool,
     pub subscription: Option<T::SubscriptionId>,
+    pub controller_account: T::AccountId,
+    pub roles: BTreeMap<RoleId, Vec<ActorId>>,
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
@@ -121,14 +150,13 @@ decl_storage! {
         /// MemberId to assign to next member that is added to the registry
         pub NextMemberId get(next_member_id) build(|config: &GenesisConfig<T>| config.first_member_id): T::MemberId = T::MemberId::from(DEFAULT_FIRST_MEMBER_ID);
 
-        /// Mapping of member ids to their corresponding primary accountid
+        /// Mapping of member ids to their corresponding primary account_id
         pub AccountIdByMemberId get(account_id_by_member_id) : map T::MemberId => T::AccountId;
 
-        /// Mapping of members' account ids to their member id.
+        /// Mapping of members' primary account ids to their member id.
         pub MemberIdByAccountId get(member_id_by_account_id) : map T::AccountId => Option<T::MemberId>;
 
         /// Mapping of member's id to their membership profile
-        // Value is Option<Profile> because it is not meaningful to have a Default value for Profile
         pub MemberProfile get(member_profile) : map T::MemberId => Option<Profile<T>>;
 
         /// Registered unique handles and their mapping to their owner
@@ -164,6 +192,8 @@ decl_storage! {
         pub MaxHandleLength get(max_handle_length) : u32 = DEFAULT_MAX_HANDLE_LENGTH;
         pub MaxAvatarUriLength get(max_avatar_uri_length) : u32 = DEFAULT_MAX_AVATAR_URI_LENGTH;
         pub MaxAboutTextLength get(max_about_text_length) : u32 = DEFAULT_MAX_ABOUT_TEXT_LENGTH;
+
+        pub MembershipIdByActorInRole get(membership_id_by_actor_in_role): map ActorInRole => T::MemberId;
     }
     add_extra_genesis {
         config(default_paid_membership_fee): BalanceOf<T>;
@@ -453,6 +483,8 @@ impl<T: Trait> Module<T> {
             entry: entry_method,
             suspended: false,
             subscription: None,
+            roles: BTreeMap::new(),
+            controller_account: who.clone(),
         };
 
         <MemberIdByAccountId<T>>::insert(who.clone(), new_member_id);
