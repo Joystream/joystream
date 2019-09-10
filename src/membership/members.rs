@@ -290,31 +290,31 @@ decl_module! {
         }
 
         /// Change member's about text
-        pub fn change_member_about_text(origin, text: Vec<u8>) {
-            let who = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
+        pub fn change_member_about_text(origin, member_id: T::MemberId, text: Vec<u8>) {
+            let controller = ensure_signed(origin)?;
+            Self::ensure_is_member_controller_account(controller.clone(), member_id)?;
             Self::_change_member_about_text(member_id, &text)?;
         }
 
         /// Change member's avatar
-        pub fn change_member_avatar(origin, uri: Vec<u8>) {
-            let who = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
+        pub fn change_member_avatar(origin, member_id: T::MemberId, uri: Vec<u8>) {
+            let controller = ensure_signed(origin)?;
+            Self::ensure_is_member_controller_account(controller.clone(), member_id)?;
             Self::_change_member_avatar(member_id, &uri)?;
         }
 
         /// Change member's handle. Will ensure new handle is unique and old one will be available
         /// for other members to use.
-        pub fn change_member_handle(origin, handle: Vec<u8>) {
-            let who = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
+        pub fn change_member_handle(origin, member_id: T::MemberId, handle: Vec<u8>) {
+            let controller = ensure_signed(origin)?;
+            Self::ensure_is_member_controller_account(controller.clone(), member_id)?;
             Self::_change_member_handle(member_id, handle)?;
         }
 
         /// Update member's all or some of handle, avatar and about text.
-        pub fn update_profile(origin, user_info: UserInfo) {
-            let who = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_primary_account(who.clone())?;
+        pub fn update_profile(origin, member_id: T::MemberId, user_info: UserInfo) {
+            let controller = ensure_signed(origin)?;
+            Self::ensure_is_member_controller_account(controller.clone(), member_id)?;
 
             if let Some(uri) = user_info.avatar_uri {
                 Self::_change_member_avatar(member_id, &uri)?;
@@ -325,6 +325,27 @@ decl_module! {
             if let Some(handle) = user_info.handle {
                 Self::_change_member_handle(member_id, handle)?;
             }
+        }
+
+        pub fn set_controller_key(origin, controller: T::AccountId) {
+            let master = ensure_signed(origin)?;
+            let member_id = Self::ensure_is_member_primary_account(master)?;
+            let mut profile = Self::ensure_profile(member_id)?;
+            profile.controller_account = controller;
+            <MemberProfile<T>>::insert(member_id, profile);
+        }
+
+        pub fn set_master_key(origin, new_master: T::AccountId) {
+            let old_master = ensure_signed(origin)?;
+            let member_id = Self::ensure_is_member_primary_account(old_master.clone())?;
+
+            // ensure new account is not existing member primary account
+            Self::ensure_not_member(&new_master)?;
+
+            // update mappings
+            <AccountIdByMemberId<T>>::insert(member_id, new_master.clone());
+            <MemberIdByAccountId<T>>::remove(&old_master);
+            <MemberIdByAccountId<T>>::insert(&new_master, member_id);
         }
 
         pub fn add_screened_member(origin, new_member: T::AccountId, user_info: UserInfo) {
@@ -395,6 +416,15 @@ impl<T: Trait> Module<T> {
             "not primary account"
         );
         Ok(member_id)
+    }
+
+    fn ensure_is_member_controller_account(controller: T::AccountId, member_id: T::MemberId) -> Result<(), &'static str> {
+        let profile = Self::ensure_profile(member_id)?;
+        ensure!(
+            profile.controller_account == controller,
+            "not controller account of member"
+        );
+        Ok(())
     }
 
     fn ensure_profile(id: T::MemberId) -> Result<Profile<T>, &'static str> {
