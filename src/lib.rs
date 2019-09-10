@@ -382,13 +382,11 @@ impl currency::GovernanceCurrency for Runtime {
 
 impl governance::proposals::Trait for Runtime {
     type Event = Event;
-    type Members = Members;
 }
 
 impl governance::election::Trait for Runtime {
     type Event = Event;
     type CouncilElected = (Council,);
-    type Members = Members;
 }
 
 impl governance::council::Trait for Runtime {
@@ -409,7 +407,6 @@ impl storage::data_directory::Trait for Runtime {
     type Event = Event;
     type ContentId = ContentId;
     type SchemaId = u64;
-    type Members = Members;
     type Roles = LookupRoles;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
 }
@@ -423,7 +420,6 @@ impl storage::downloads::Trait for Runtime {
 impl storage::data_object_storage_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectStorageRelationshipId = u64;
-    type Members = Members;
     type Roles = LookupRoles;
     type ContentIdExists = DataDirectory;
 }
@@ -518,7 +514,6 @@ impl migration::Trait for Runtime {
 
 impl actors::Trait for Runtime {
     type Event = Event;
-    type Members = Members;
     type OnActorRemoved = HandleActorRemoved;
 }
 

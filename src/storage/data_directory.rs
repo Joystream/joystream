@@ -1,6 +1,7 @@
+use crate::membership;
 use crate::roles::actors;
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
-use crate::traits::{ContentIdExists, IsActiveDataObjectType, Members, Roles};
+use crate::traits::{ContentIdExists, IsActiveDataObjectType, Roles};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{
@@ -11,7 +12,9 @@ use srml_support::{
 };
 use system::{self, ensure_root, ensure_signed};
 
-pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
+pub trait Trait:
+    timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug + membership::members::Trait
+{
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type ContentId: Parameter + Member + MaybeSerializeDebug + MaybeDisplay + Copy + Ord + Default;
@@ -25,7 +28,6 @@ pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
         + MaybeSerializeDebug
         + PartialEq;
 
-    type Members: Members<Self>;
     type Roles: Roles<Self>;
     type IsActiveDataObjectType: IsActiveDataObjectType<Self>;
 }
@@ -159,7 +161,7 @@ decl_module! {
             ipfs_content_id: Vec<u8>
         ) {
             let who = ensure_signed(origin)?;
-            ensure!(T::Members::is_active_member(&who), MSG_CREATOR_MUST_BE_MEMBER);
+            ensure!(<membership::members::Module<T>>::is_active_member(&who), MSG_CREATOR_MUST_BE_MEMBER);
 
             ensure!(T::IsActiveDataObjectType::is_active_data_object_type(&type_id),
                 MSG_DO_TYPE_MUST_BE_ACTIVE);
@@ -209,7 +211,7 @@ decl_module! {
             update: ContentMetadataUpdate<T>
         ) {
             let who = ensure_signed(origin)?;
-            ensure!(T::Members::is_active_member(&who),
+            ensure!(<membership::members::Module<T>>::is_active_member(&who),
                 "Only active members can add content metadata");
 
             ensure!(!<MetadataByContentId<T>>::exists(&content_id),
@@ -246,7 +248,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Even if origin is an owner of metadata, they stil need to be an active member.
-            ensure!(T::Members::is_active_member(&who),
+            ensure!(<membership::members::Module<T>>::is_active_member(&who),
                 "Only active members can update content metadata");
 
             let has_updates = update.schema.is_some() || update.json.is_some();
@@ -356,9 +358,15 @@ mod tests {
     #[test]
     fn succeed_adding_content() {
         with_default_mock_builder(|| {
+            let sender = 1 as u64;
             // Register a content with 1234 bytes of type 1, which should be recognized.
-            let res =
-                TestDataDirectory::add_content(Origin::signed(1), 1, 1234, 0, vec![1, 3, 3, 7]);
+            let res = TestDataDirectory::add_content(
+                Origin::signed(sender),
+                1,
+                1234,
+                0,
+                vec![1, 3, 3, 7],
+            );
             assert!(res.is_ok());
         });
     }

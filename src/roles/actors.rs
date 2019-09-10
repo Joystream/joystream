@@ -9,7 +9,7 @@ use srml_support::traits::{
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_root, ensure_signed};
 
-use crate::traits::Members;
+use crate::membership;
 
 const STAKING_ID: LockIdentifier = *b"role_stk";
 
@@ -86,15 +86,15 @@ pub trait ActorRemoved<T: Trait> {
     fn actor_removed(actor: &T::AccountId);
 }
 
-pub trait Trait: system::Trait + GovernanceCurrency + MaybeDebug {
+pub trait Trait:
+    system::Trait + GovernanceCurrency + MaybeDebug + membership::members::Trait
+{
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-
-    type Members: Members<Self>;
 
     type OnActorRemoved: ActorRemoved<Self>;
 }
 
-pub type MemberId<T> = <<T as Trait>::Members as Members<T>>::Id;
+pub type MemberId<T> = <T as membership::members::Trait>::MemberId;
 // actor account, memberid, role, expires
 pub type Request<T> = (
     <T as system::Trait>::AccountId,
@@ -288,7 +288,7 @@ decl_module! {
                                     let _ = T::Currency::deposit_into_existing(&actor.account, params.reward);
                                 } else {
                                     // otherwise it should go the the member account
-                                    if let Ok(member_account) = T::Members::lookup_account_by_member_id(actor.member_id) {
+                                    if let Ok(member_account) = <membership::members::Module<T>>::lookup_account_by_member_id(actor.member_id) {
                                         let _ = T::Currency::deposit_into_existing(&member_account, params.reward);
                                     }
                                 }
@@ -302,7 +302,7 @@ decl_module! {
         pub fn role_entry_request(origin, role: Role, member_id: MemberId<T>) {
             let sender = ensure_signed(origin)?;
 
-            ensure!(T::Members::lookup_member_id(&sender).is_err(), "account is a member");
+            ensure!(<membership::members::Module<T>>::lookup_member_id(&sender).is_err(), "account is a member");
             ensure!(!Self::is_role_account(&sender), "account already used");
 
             ensure!(Self::is_role_available(role), "inactive role");
@@ -324,7 +324,7 @@ decl_module! {
         /// Member activating entry request
         pub fn stake(origin, role: Role, actor_account: T::AccountId) {
             let sender = ensure_signed(origin)?;
-            let member_id = T::Members::lookup_member_id(&sender)?;
+            let member_id = <membership::members::Module<T>>::lookup_member_id(&sender)?;
 
             if !Self::role_entry_requests()
                 .iter()
@@ -333,7 +333,7 @@ decl_module! {
                 return Err("no role entry request matches");
             }
 
-            ensure!(T::Members::lookup_member_id(&actor_account).is_err(), "account is a member");
+            ensure!(<membership::members::Module<T>>::lookup_member_id(&actor_account).is_err(), "account is a member");
             ensure!(!Self::is_role_account(&actor_account), "account already used");
 
             // make sure role is still available
@@ -372,7 +372,7 @@ decl_module! {
 
         pub fn unstake(origin, actor_account: T::AccountId) {
             let sender = ensure_signed(origin)?;
-            let member_id = T::Members::lookup_member_id(&sender)?;
+            let member_id = <membership::members::Module<T>>::lookup_member_id(&sender)?;
 
             let actor = Self::ensure_actor_is_member(&actor_account, member_id)?;
 

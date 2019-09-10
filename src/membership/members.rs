@@ -1,7 +1,8 @@
 use crate::currency::{BalanceOf, GovernanceCurrency};
-use crate::traits::Members;
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
+#[cfg(feature = "std")]
+use runtime_io::with_storage;
 use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::traits::Currency;
 use srml_support::{
@@ -166,6 +167,21 @@ decl_storage! {
     }
     add_extra_genesis {
         config(default_paid_membership_fee): BalanceOf<T>;
+        config(members) : Vec<(T::AccountId, Vec<u8>, Vec<u8>, Vec<u8>)>;
+        build(|
+            storage: &mut (runtime_primitives::StorageOverlay, runtime_primitives::ChildrenStorageOverlay),
+            config: &GenesisConfig<T>
+        | {
+            with_storage(storage, || {
+                for (who, handle, avatar_uri, about) in &config.members {
+                    let user_info = CheckedUserInfo {
+                        handle: handle.clone(), avatar_uri: avatar_uri.clone(), about: about.clone()
+                    };
+                    <Module<T>>::insert_member(&who, &user_info, EntryMethod::Paid(T::PaidTermId::from(DEFAULT_PAID_TERM_ID)));
+                }
+            });
+        });
+
     }
 }
 
@@ -188,23 +204,19 @@ impl<T: Trait> Module<T> {
         let default_terms: PaidMembershipTerms<T> = Default::default();
         <PaidMembershipTermsById<T>>::insert(default_terms.id, default_terms);
     }
-}
 
-impl<T: Trait> Members<T> for Module<T> {
-    type Id = T::MemberId;
-
-    fn is_active_member(who: &T::AccountId) -> bool {
+    pub fn is_active_member(who: &T::AccountId) -> bool {
         match Self::ensure_is_member(who).and_then(|member_id| Self::ensure_profile(member_id)) {
             Ok(profile) => !profile.suspended,
             Err(_err) => false,
         }
     }
 
-    fn lookup_member_id(who: &T::AccountId) -> Result<Self::Id, &'static str> {
+    pub fn lookup_member_id(who: &T::AccountId) -> Result<T::MemberId, &'static str> {
         Self::ensure_is_member(who)
     }
 
-    fn lookup_account_by_member_id(id: Self::Id) -> Result<T::AccountId, &'static str> {
+    pub fn lookup_account_by_member_id(id: T::MemberId) -> Result<T::AccountId, &'static str> {
         if <AccountIdByMemberId<T>>::exists(&id) {
             Ok(Self::account_id_by_member_id(&id))
         } else {

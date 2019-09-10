@@ -1,6 +1,6 @@
 use crate::roles::actors;
 use crate::storage::data_directory::Trait as DDTrait;
-use crate::traits::{ContentHasStorage, ContentIdExists, Members, Roles};
+use crate::traits::{ContentHasStorage, ContentIdExists, Roles};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
@@ -22,7 +22,6 @@ pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
         + MaybeSerializeDebug
         + PartialEq;
 
-    type Members: Members<Self>;
     type Roles: Roles<Self>;
     type ContentIdExists: ContentIdExists<Self>;
 }

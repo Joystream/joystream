@@ -125,6 +125,7 @@ impl ExtBuilder {
         members::GenesisConfig::<Test> {
             first_member_id: self.first_member_id,
             default_paid_membership_fee: self.default_paid_membership_fee,
+            members: vec![],
         }
         .assimilate_storage(&mut t)
         .unwrap();
