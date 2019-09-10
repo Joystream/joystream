@@ -1,5 +1,6 @@
 use crate::currency::{BalanceOf, GovernanceCurrency};
 use codec::{Codec, Decode, Encode};
+use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
 #[cfg(feature = "std")]
 use runtime_io::with_storage;
@@ -10,7 +11,6 @@ use srml_support::{
 };
 use system::{self, ensure_root, ensure_signed};
 use timestamp;
-use rstd::collections::btree_map::BTreeMap;
 
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -80,7 +80,7 @@ pub const PUBLISHER_ROLE_ID: RoleId = 32;
 #[derive(Encode, Decode, Eq, PartialEq)]
 pub struct ActorInRole {
     role_id: RoleId,
-    actor_id: ActorId
+    actor_id: ActorId,
 }
 
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -418,7 +418,10 @@ impl<T: Trait> Module<T> {
         Ok(member_id)
     }
 
-    pub fn ensure_is_member_controller_account(controller: T::AccountId, member_id: T::MemberId) -> Result<(), &'static str> {
+    pub fn ensure_is_member_controller_account(
+        controller: T::AccountId,
+        member_id: T::MemberId,
+    ) -> Result<(), &'static str> {
         let profile = Self::ensure_profile(member_id)?;
         ensure!(
             profile.controller_account == controller,
@@ -559,24 +562,38 @@ impl<T: Trait> Module<T> {
     }
 
     // Member role registraion mutating, called from client modules
-    pub fn can_register_role_on_member(member_id: T::MemberId, role_id: RoleId, actor_id: ActorId) -> Result<(), &'static str> {
+    pub fn can_register_role_on_member(
+        member_id: T::MemberId,
+        role_id: RoleId,
+        actor_id: ActorId,
+    ) -> Result<(), &'static str> {
         // limits - how many roles in total
         //        - single instance of role
 
         // ensure is member
-        ensure!(<AccountIdByMemberId<T>>::exists(&member_id), "member not found");
+        ensure!(
+            <AccountIdByMemberId<T>>::exists(&member_id),
+            "member not found"
+        );
 
-        let actor_in_role = ActorInRole {
-            role_id,
-            actor_id,
-        };
+        let actor_in_role = ActorInRole { role_id, actor_id };
         // ensure actor_id not already set for role
-        ensure!(!<MembershipIdByActorInRole<T>>::exists(&actor_in_role), "role actor already exists");
+        ensure!(
+            !<MembershipIdByActorInRole<T>>::exists(&actor_in_role),
+            "role actor already exists"
+        );
         Ok(())
     }
 
-    pub fn register_role_on_member(member_id: T::MemberId, role_id: RoleId, actor_id: ActorId) -> Result<(), &'static str> {
-        ensure!(Self::can_register_role_on_member(member_id, role_id, actor_id).is_ok(), "registering role not allowed");
+    pub fn register_role_on_member(
+        member_id: T::MemberId,
+        role_id: RoleId,
+        actor_id: ActorId,
+    ) -> Result<(), &'static str> {
+        ensure!(
+            Self::can_register_role_on_member(member_id, role_id, actor_id).is_ok(),
+            "registering role not allowed"
+        );
 
         let mut profile = Self::ensure_profile(member_id)?;
         let mut new_ids = vec![actor_id];
@@ -587,24 +604,36 @@ impl<T: Trait> Module<T> {
             profile.roles.insert(role_id, new_ids);
         }
         <MemberProfile<T>>::insert(member_id, profile);
-        <MembershipIdByActorInRole<T>>::insert(ActorInRole {
-            role_id, actor_id
-        }, member_id);
+        <MembershipIdByActorInRole<T>>::insert(ActorInRole { role_id, actor_id }, member_id);
         Ok(())
     }
 
-    pub fn can_unregister_role_on_member(member_id: T::MemberId, role_id: RoleId, actor_id: ActorId) -> Result<(), &'static str> {
-        let actor_in_role = ActorInRole {
-            role_id,
-            actor_id,
-        };
-        ensure!(<MembershipIdByActorInRole<T>>::exists(&actor_in_role), "role actor not found");
-        ensure!(<MembershipIdByActorInRole<T>>::get(&actor_in_role) == member_id, "role actor not for member");
+    pub fn can_unregister_role_on_member(
+        member_id: T::MemberId,
+        role_id: RoleId,
+        actor_id: ActorId,
+    ) -> Result<(), &'static str> {
+        let actor_in_role = ActorInRole { role_id, actor_id };
+        ensure!(
+            <MembershipIdByActorInRole<T>>::exists(&actor_in_role),
+            "role actor not found"
+        );
+        ensure!(
+            <MembershipIdByActorInRole<T>>::get(&actor_in_role) == member_id,
+            "role actor not for member"
+        );
         Ok(())
     }
 
-    pub fn unregister_role_on_member(member_id: T::MemberId, role_id: RoleId, actor_id: ActorId) -> Result<(), &'static str> {
-        ensure!(Self::can_unregister_role_on_member(member_id, role_id, actor_id).is_ok(), "unregistering role not allowed");
+    pub fn unregister_role_on_member(
+        member_id: T::MemberId,
+        role_id: RoleId,
+        actor_id: ActorId,
+    ) -> Result<(), &'static str> {
+        ensure!(
+            Self::can_unregister_role_on_member(member_id, role_id, actor_id).is_ok(),
+            "unregistering role not allowed"
+        );
 
         let mut profile = Self::ensure_profile(member_id)?;
 
@@ -614,10 +643,7 @@ impl<T: Trait> Module<T> {
             <MemberProfile<T>>::insert(member_id, profile);
         }
 
-        <MembershipIdByActorInRole<T>>::remove(ActorInRole {
-            role_id,
-            actor_id
-        });
+        <MembershipIdByActorInRole<T>>::remove(ActorInRole { role_id, actor_id });
 
         Ok(())
     }
