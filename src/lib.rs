@@ -139,7 +139,6 @@ pub struct Entity {
     /// Length is no more than Class.properties.
     values: Vec<ClassPropertyValue>,
 
-    name: Vec<u8>,
     // deleted: bool,
 }
 
@@ -414,13 +413,10 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn create_entity(
-        class_id: ClassId,
-        name: Vec<u8>
+        class_id: ClassId
     ) -> Result<EntityId, &'static str> {
 
         Self::ensure_known_class_id(class_id)?;
-
-        Self::ensure_entity_name_is_valid(&name)?;
 
         let entity_id = <NextEntityId<T>>::get();
 
@@ -429,7 +425,6 @@ impl<T: Trait> Module<T> {
             class_id,
             in_class_schema_indexes: vec![],
             values: vec![],
-            name,
             // deleted: false,
         };
 
@@ -441,23 +436,6 @@ impl<T: Trait> Module<T> {
 
         Self::deposit_event(RawEvent::EntityCreated(entity_id));
         Ok(entity_id)
-    }
-
-    pub fn update_entity_name(
-        entity_id: EntityId,
-        new_name: Vec<u8>
-    ) -> dispatch::Result {
-
-        Self::ensure_known_entity_id(entity_id)?;
-
-        Self::ensure_entity_name_is_valid(&new_name)?;
-
-        <EntityById<T>>::mutate(entity_id, |entity| {
-            entity.name = new_name;
-        });
-
-        Self::deposit_event(RawEvent::EntityNameUpdated(entity_id));
-        Ok(())
     }
 
     pub fn add_schema_support_to_entity(
@@ -868,14 +846,6 @@ impl<T: Trait> Module<T> {
             text.len(),
             ERROR_CLASS_DESCRIPTION_TOO_SHORT,
             ERROR_CLASS_DESCRIPTION_TOO_LONG
-        )
-    }
-
-    fn ensure_entity_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
-        <EntityNameConstraint<T>>::get().ensure_valid(
-            text.len(),
-            ERROR_ENTITY_NAME_TOO_SHORT,
-            ERROR_ENTITY_NAME_TOO_LONG
         )
     }
 }

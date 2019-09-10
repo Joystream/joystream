@@ -273,7 +273,6 @@ fn create_entity_successfully() {
         assert_ok!(
             TestModule::create_entity(
                 class_id,
-                good_entity_name(),
             ),
             entity_id_1
         );
@@ -290,24 +289,8 @@ fn cannot_create_entity_with_unknown_class_id() {
         assert_err!(
             TestModule::create_entity(
                 UNKNOWN_CLASS_ID,
-                good_entity_name(),
             ),
             ERROR_CLASS_NOT_FOUND
-        );
-    })
-}
-
-#[test]
-fn cannot_create_entity_with_empty_name() {
-    with_test_externalities(|| {
-        let class_id = create_class();
-        let empty_name = vec![];
-        assert_err!(
-            TestModule::create_entity(
-                class_id,
-                empty_name,
-            ),
-            ERROR_ENTITY_NAME_TOO_SHORT
         );
     })
 }

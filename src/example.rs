@@ -439,7 +439,6 @@ fn create_podcast_class_schema() {
         assert_ok!(
             TestModule::create_entity(
                 channel_class_id,
-                b"Staked".to_vec(),
             ),
             channel_entity_id
         );
@@ -512,7 +511,6 @@ fn create_podcast_class_schema() {
         assert_ok!(
             TestModule::create_entity(
                 episode_class_id,
-                b"Implications of the DAO Report for Crypto Governance".to_vec(),
             ),
             episode_2_entity_id
         );
