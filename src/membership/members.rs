@@ -581,7 +581,10 @@ impl<T: Trait> Module<T> {
         // no limit on total number of roles a member can enter
         // Note: Role specific policies, for example "member can only enter council role once at a time"
         // should be enforced by the council module (client modules)
-        ensure!(!Self::member_is_in_role(member_id, role_id), "member already in role");
+        ensure!(
+            !Self::member_is_in_role(member_id, role_id),
+            "member already in role"
+        );
 
         // ensure is active member
         let profile = Self::ensure_profile(member_id)?;
