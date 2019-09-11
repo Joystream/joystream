@@ -1,22 +1,6 @@
 import { getTypeRegistry, u16, u32, u64, AccountId, Text, Bool, BlockNumber, Moment } from '@polkadot/types';
-import { Struct, Option, Vector } from '@polkadot/types/codec';
-import { getTextPropAsString, getBoolPropAsBoolean, getOptionPropOrUndefined } from './';
-import { Codec } from '@polkadot/types/types';
-
-export class JoyStruct<T extends { [K: string]: Codec }> extends Struct {
-
-  getRequired <C extends Codec> (name: keyof T): C {
-    return super.get(name as string) as C;
-  }
-
-  cloneValues (): T {
-    const res: Partial<T> = {};
-    super.forEach((v, k) => {
-      res[k] = v;
-    });
-    return res as T;
-  }
-}
+import { Option, Vector } from '@polkadot/types/codec';
+import { JoyStruct } from './';
 
 // Based on copypasta from joy-media/BlockAndTimeType
 export type BlockchainTimestampType = {
@@ -34,11 +18,11 @@ export class BlockchainTimestamp extends JoyStruct<BlockchainTimestampType> {
   }
 
   get block (): BlockNumber {
-    return this.getRequired('block');
+    return this.getField('block');
   }
 
   get time (): Moment {
-    return this.getRequired('time');
+    return this.getField('time');
   }
 
   static newEmpty (): BlockchainTimestamp {
@@ -62,15 +46,15 @@ export class ModerationAction extends JoyStruct<ModerationActionType> {
   }
 
   get moderated_at (): BlockchainTimestamp {
-    return this.getRequired('moderated_at');
+    return this.getField('moderated_at');
   }
 
   get moderator_id (): AccountId {
-    return this.getRequired('moderator_id');
+    return this.getField('moderator_id');
   }
 
   get rationale (): string {
-    return getTextPropAsString(this, 'rationale');
+    return this.getString('rationale');
   }
 }
 
@@ -88,11 +72,11 @@ export class PostTextChange extends JoyStruct<PostTextChangeType> {
   }
 
   get expired_at (): BlockchainTimestamp {
-    return this.getRequired('expired_at');
+    return this.getField('expired_at');
   }
 
   get text (): string {
-    return getTextPropAsString(this, 'text');
+    return this.getString('text');
   }
 }
 
@@ -128,11 +112,11 @@ export class InputValidationLengthConstraint extends JoyStruct<InputValidationLe
   }
 
   get min (): u16 {
-    return this.getRequired('min');
+    return this.getField('min');
   }
 
   get max_min_diff (): u16 {
-    return this.getRequired('max_min_diff');
+    return this.getField('max_min_diff');
   }
 
   get max (): u16 {
@@ -154,11 +138,11 @@ export class ChildPositionInParentCategory extends JoyStruct<ChildPositionInPare
   }
 
   get parent_id (): CategoryId {
-    return this.getRequired('parent_id');
+    return this.getField('parent_id');
   }
 
   get child_nr_in_parent_category (): u32 {
-    return this.getRequired('child_nr_in_parent_category');
+    return this.getField('child_nr_in_parent_category');
   }
 }
 
@@ -200,39 +184,39 @@ export class Category extends JoyStruct<CategoryType> {
   }
 
   get id (): CategoryId {
-    return this.getRequired('id');
+    return this.getField('id');
   }
 
   get title (): string {
-    return getTextPropAsString(this, 'title');
+    return this.getString('title');
   }
 
   get description (): string {
-    return getTextPropAsString(this, 'description');
+    return this.getString('description');
   }
 
   get created_at (): BlockchainTimestamp {
-    return this.getRequired('created_at');
+    return this.getField('created_at');
   }
 
   get deleted (): boolean {
-    return getBoolPropAsBoolean(this, 'deleted');
+    return this.getBoolean('deleted');
   }
 
   get archived (): boolean {
-    return getBoolPropAsBoolean(this, 'archived');
+    return this.getBoolean('archived');
   }
 
   get num_direct_subcategories (): u32 {
-    return this.getRequired('num_direct_subcategories');
+    return this.getField('num_direct_subcategories');
   }
 
   get num_direct_unmoderated_threads (): u32 {
-    return this.getRequired('num_direct_unmoderated_threads');
+    return this.getField('num_direct_unmoderated_threads');
   }
 
   get num_direct_moderated_threads (): u32 {
-    return this.getRequired('num_direct_moderated_threads');
+    return this.getField('num_direct_moderated_threads');
   }
 
   get num_threads_created (): u32 {
@@ -248,7 +232,7 @@ export class Category extends JoyStruct<CategoryType> {
   }
 
   get position_in_parent_category (): Option<ChildPositionInParentCategory> {
-    return this.getRequired('position_in_parent_category');
+    return this.getField('position_in_parent_category');
   }
 
   get parent_id (): CategoryId | undefined {
@@ -266,7 +250,7 @@ export class Category extends JoyStruct<CategoryType> {
   }
 
   get moderator_id (): AccountId {
-    return this.getRequired('moderator_id');
+    return this.getField('moderator_id');
   }
 }
 
@@ -302,23 +286,23 @@ export class Thread extends JoyStruct<ThreadType> {
   }
 
   get id (): ThreadId {
-    return this.getRequired('id');
+    return this.getField('id');
   }
 
   get title (): string {
-    return getTextPropAsString(this, 'title');
+    return this.getString('title');
   }
 
   get category_id (): CategoryId {
-    return this.getRequired('category_id');
+    return this.getField('category_id');
   }
 
   get nr_in_category (): u32 {
-    return this.getRequired('nr_in_category');
+    return this.getField('nr_in_category');
   }
 
   get moderation (): ModerationAction | undefined {
-    return getOptionPropOrUndefined(this, 'moderation');
+    return this.unwrapOrUndefined('moderation');
   }
 
   get moderated (): boolean {
@@ -326,11 +310,11 @@ export class Thread extends JoyStruct<ThreadType> {
   }
 
   get num_unmoderated_posts (): u32 {
-    return this.getRequired('num_unmoderated_posts');
+    return this.getField('num_unmoderated_posts');
   }
 
   get num_moderated_posts (): u32 {
-    return this.getRequired('num_moderated_posts');
+    return this.getField('num_moderated_posts');
   }
 
   get num_posts_ever_created (): u32 {
@@ -338,11 +322,11 @@ export class Thread extends JoyStruct<ThreadType> {
   }
 
   get created_at (): BlockchainTimestamp {
-    return this.getRequired('created_at');
+    return this.getField('created_at');
   }
 
   get author_id (): AccountId {
-    return this.getRequired('author_id');
+    return this.getField('author_id');
   }
 }
 
@@ -377,23 +361,23 @@ export class Post extends JoyStruct<PostType> {
   }
 
   get id (): PostId {
-    return this.getRequired('id');
+    return this.getField('id');
   }
 
   get thread_id (): ThreadId {
-    return this.getRequired('thread_id');
+    return this.getField('thread_id');
   }
 
   get nr_in_thread (): u32 {
-    return this.getRequired('nr_in_thread');
+    return this.getField('nr_in_thread');
   }
 
   get current_text (): string {
-    return getTextPropAsString(this, 'current_text');
+    return this.getString('current_text');
   }
 
   get moderation (): ModerationAction | undefined {
-    return getOptionPropOrUndefined(this, 'moderation');
+    return this.unwrapOrUndefined('moderation');
   }
 
   get moderated (): boolean {
@@ -401,15 +385,15 @@ export class Post extends JoyStruct<PostType> {
   }
 
   get text_change_history (): VecPostTextChange {
-    return this.getRequired('text_change_history');
+    return this.getField('text_change_history');
   }
 
   get created_at (): BlockchainTimestamp {
-    return this.getRequired('created_at');
+    return this.getField('created_at');
   }
 
   get author_id (): AccountId {
-    return this.getRequired('author_id');
+    return this.getField('author_id');
   }
 }
 
@@ -432,19 +416,19 @@ export class Reply extends JoyStruct<ReplyType> {
   }
 
   get owner (): AccountId {
-    return this.getRequired('owner');
+    return this.getField('owner');
   }
 
   get thread_id (): ThreadId {
-    return this.getRequired('thread_id');
+    return this.getField('thread_id');
   }
 
   get text (): string {
-    return getTextPropAsString(this, 'text');
+    return this.getString('text');
   }
 
   get moderation (): ModerationAction | undefined {
-    return getOptionPropOrUndefined(this, 'moderation');
+    return this.unwrapOrUndefined('moderation');
   }
 
   get moderated (): boolean {

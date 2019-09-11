@@ -6,20 +6,7 @@ import { registerMembershipTypes } from './members';
 import { registerRolesTypes } from './roles';
 import { registerDiscoveryTypes } from './discovery';
 import { Codec } from '@polkadot/types/types';
-
-export function getTextPropAsString (struct: Struct, fieldName: string): string {
-  return (struct.get(fieldName) as Text).toString();
-}
-
-export function getBoolPropAsBoolean (struct: Struct, fieldName: string): boolean {
-  return (struct.get(fieldName) as Bool).valueOf();
-}
-
-export function getOptionPropOrUndefined <T extends Codec>
-  (struct: Struct, fieldName: string): T | undefined {
-
-  return (struct.get(fieldName) as Option<T>).unwrapOr(undefined);
-}
+import { registerVersionedStoreTypes } from './versioned-store';
 
 class Amount extends Balance {}
 
@@ -167,6 +154,33 @@ export class VoteKind extends Enum {
 
 export type ProposalVotes = [AccountId, VoteKind][];
 
+export class JoyStruct<T extends { [K: string]: Codec }> extends Struct {
+
+  getField <C extends Codec> (name: keyof T): C {
+    return super.get(name as string) as C;
+  }
+
+  getString (name: keyof T): string {
+    return this.getField<Text>(name).toString();
+  }
+
+  getBoolean (name: keyof T): boolean {
+    return this.getField<Bool>(name).valueOf();
+  }
+
+  unwrapOrUndefined <C extends Codec> (name: keyof T): C | undefined {
+    return this.getField<Option<C>>(name).unwrapOr(undefined);
+  }
+
+  cloneValues (): T {
+    const res: Partial<T> = {};
+    super.forEach((v, k) => {
+      res[k] = v;
+    });
+    return res as T;
+  }
+}
+
 // TODO Refactor: split this function and move to corresponding modules: election and proposals.
 function registerElectionAndProposalTypes () {
   try {
@@ -243,4 +257,5 @@ export function registerJoystreamTypes () {
   registerForumTypes();
   registerElectionAndProposalTypes();
   registerDiscoveryTypes();
+  registerVersionedStoreTypes();
 }
