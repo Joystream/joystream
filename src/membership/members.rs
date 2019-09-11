@@ -154,6 +154,9 @@ decl_storage! {
         /// Mapping of members' primary account ids to their member id.
         pub MemberIdByAccountId get(member_id_by_account_id) : map T::AccountId => Option<T::MemberId>;
 
+        /// Mapping of members' controller account ids to their member id.
+        pub MemberIdByControllerAccountId get(member_id_by_controller_account_id) : map T::AccountId => Option<T::MemberId>;
+
         /// Mapping of member's id to their membership profile
         pub MemberProfile get(member_profile) : map T::MemberId => Option<Profile<T>>;
 
@@ -305,7 +308,15 @@ decl_module! {
         pub fn set_controller_key(origin, controller: T::AccountId) {
             let master = ensure_signed(origin)?;
             let member_id = Self::ensure_is_member_primary_account(master)?;
+
             let mut profile = Self::ensure_profile(member_id)?;
+
+            // ensure new key is not used by someone else (master or controller)
+            ensure!(!<MemberIdByControllerAccountId<T>>::exists(&controller), "account already paired with member");
+            ensure!(!<MemberIdByAccountId<T>>::exists(&controller), "account already paired with member");
+
+            <MemberIdByControllerAccountId<T>>::remove(&profile.controller_account);
+            <MemberIdByControllerAccountId<T>>::insert(&profile.controller_account, member_id);
             profile.controller_account = controller.clone();
             <MemberProfile<T>>::insert(member_id, profile);
             Self::deposit_event(RawEvent::MemberSetControllerKey(member_id, controller));
@@ -315,8 +326,9 @@ decl_module! {
             let old_primary = ensure_signed(origin)?;
             let member_id = Self::ensure_is_member_primary_account(old_primary.clone())?;
 
-            // ensure new account is not existing member primary account
-            Self::ensure_not_member(&new_primary)?;
+            // ensure new key not is used by someone else (master or controller)
+            ensure!(!<MemberIdByControllerAccountId<T>>::exists(&new_primary), "account already paired with member");
+            ensure!(!<MemberIdByAccountId<T>>::exists(&new_primary), "account already paired with member");
 
             // update mappings
             <AccountIdByMemberId<T>>::insert(member_id, new_primary.clone());
@@ -516,6 +528,7 @@ impl<T: Trait> Module<T> {
         };
 
         <MemberIdByAccountId<T>>::insert(who.clone(), new_member_id);
+        <MemberIdByControllerAccountId<T>>::insert(who.clone(), new_member_id);
         <AccountIdByMemberId<T>>::insert(new_member_id, who.clone());
         <MemberProfile<T>>::insert(new_member_id, profile);
         <Handles<T>>::insert(user_info.handle.clone(), new_member_id);
