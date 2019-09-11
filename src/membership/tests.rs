@@ -207,7 +207,6 @@ fn update_profile() {
             let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
-            let member_id = Members::next_member_id();
             assert_ok!(buy_default_membership_as_alice());
 
             assert_ok!(Members::update_profile(

@@ -552,33 +552,37 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Member role registraion
-    pub fn member_is_in_role(member_id: T::MemberId, role_id: T::RoleId) -> bool {
-        Self::ensure_profile(member_id)
-            .ok()
-            .and_then(|profile| {
-                if let Some(actor_ids) = profile.roles.get(&role_id) {
-                    Some(actor_ids.len() > 0)
-                } else {
-                    None
-                }
-            })
-            .unwrap_or(false)
+    // Checks if a member identified by their controller account occupies a role at least once
+    pub fn member_is_in_role(controller_account: &T::AccountId, role_id: T::RoleId) -> bool {
+        if let Ok(member_id) = Self::ensure_is_member_controller_account(controller_account) {
+            Self::ensure_profile(member_id).ok().map_or_else(
+                || false,
+                |profile| {
+                    if let Some(actor_ids) = profile.roles.get(&role_id) {
+                        actor_ids.len() > 0
+                    } else {
+                        false
+                    }
+                },
+            )
+        } else {
+            false
+        }
     }
 
+    // policy across all roles is:
+    // members can only occupy a role at most once at a time
+    // members can enter any role
+    // no limit on total number of roles a member can enter
+    // ** Note ** Role specific policies should be enforced by the client modules
     pub fn can_register_role_on_member(
-        member_id: T::MemberId,
+        controller_account: &T::AccountId,
         role_id: T::RoleId,
-        actor_id: T::ActorId,
     ) -> Result<(), &'static str> {
-        // For now default policy across all roles is:
-        // members can only have a single actor instance per role
-        // members can enter any roles
-        // no limit on total number of roles a member can enter
-        // Note: Role specific policies, for example "member can only enter council role once at a time"
-        // should be enforced by the council module (client modules)
+        let member_id = Self::ensure_is_member_controller_account(controller_account)?;
+
         ensure!(
-            !Self::member_is_in_role(member_id, role_id),
+            !Self::member_is_in_role(controller_account, role_id),
             "member already in role"
         );
 
@@ -586,23 +590,32 @@ impl<T: Trait> Module<T> {
         let profile = Self::ensure_profile(member_id)?;
         ensure!(!profile.suspended, "suspended members can't enter a role");
 
+        // Other possible checks:
+        // How long the member has been registered
+        // Minimum balance
+        // EntryMethod
+
+        Ok(())
+    }
+
+    pub fn register_role_on_member(
+        controller_account: &T::AccountId,
+        role_id: T::RoleId,
+        actor_id: T::ActorId,
+    ) -> Result<(), &'static str> {
+        let member_id = Self::ensure_is_member_controller_account(controller_account)?;
+
+        // policy check
+        ensure!(
+            Self::can_register_role_on_member(controller_account, role_id).is_ok(),
+            "registering role not allowed"
+        );
+
         // guard against duplicate ActorInRole
         let actor_in_role = ActorInRole { role_id, actor_id };
         ensure!(
             !<MembershipIdByActorInRole<T>>::exists(&actor_in_role),
             "role actor already exists"
-        );
-        Ok(())
-    }
-
-    pub fn register_role_on_member(
-        member_id: T::MemberId,
-        role_id: T::RoleId,
-        actor_id: T::ActorId,
-    ) -> Result<(), &'static str> {
-        ensure!(
-            Self::can_register_role_on_member(member_id, role_id, actor_id).is_ok(),
-            "registering role not allowed"
         );
 
         let mut profile = Self::ensure_profile(member_id)?;
@@ -620,7 +633,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn can_unregister_role_on_member(
-        member_id: T::MemberId,
+        controller_account: &T::AccountId,
         role_id: T::RoleId,
         actor_id: T::ActorId,
     ) -> Result<(), &'static str> {
@@ -629,6 +642,8 @@ impl<T: Trait> Module<T> {
             <MembershipIdByActorInRole<T>>::exists(&actor_in_role),
             "role actor not found"
         );
+
+        let member_id = Self::ensure_is_member_controller_account(controller_account)?;
         ensure!(
             <MembershipIdByActorInRole<T>>::get(&actor_in_role) == member_id,
             "role actor not for member"
@@ -637,15 +652,16 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn unregister_role_on_member(
-        member_id: T::MemberId,
+        controller_account: &T::AccountId,
         role_id: T::RoleId,
         actor_id: T::ActorId,
     ) -> Result<(), &'static str> {
         ensure!(
-            Self::can_unregister_role_on_member(member_id, role_id, actor_id).is_ok(),
+            Self::can_unregister_role_on_member(controller_account, role_id, actor_id).is_ok(),
             "unregistering role not allowed"
         );
 
+        let member_id = Self::ensure_is_member_controller_account(controller_account)?;
         let mut profile = Self::ensure_profile(member_id)?;
 
         if let Some(current_ids) = profile.roles.get_mut(&role_id) {
