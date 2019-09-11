@@ -85,7 +85,6 @@ pub struct ActorInRole<T: Trait> {
 #[derive(Encode, Decode)]
 /// Stored information about a registered user
 pub struct Profile<T: Trait> {
-    pub id: T::MemberId,
     pub handle: Vec<u8>,
     pub avatar_uri: Vec<u8>,
     pub about: Vec<u8>,
@@ -514,7 +513,6 @@ impl<T: Trait> Module<T> {
         let new_member_id = Self::next_member_id();
 
         let profile: Profile<T> = Profile {
-            id: new_member_id,
             handle: user_info.handle.clone(),
             avatar_uri: user_info.avatar_uri.clone(),
             about: user_info.about.clone(),
