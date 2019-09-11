@@ -14,3 +14,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 !patches/**
+
+# Compiled Joystream types:
+packages/joy-types/lib/
