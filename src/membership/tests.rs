@@ -73,7 +73,6 @@ fn initial_state() {
                 "default terms not initialized",
             );
 
-            assert_eq!(default_terms.id, DEFAULT_TERMS_ID);
             assert_eq!(default_terms.fee, DEFAULT_FEE);
         },
     );

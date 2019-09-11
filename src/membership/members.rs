@@ -116,13 +116,12 @@ struct CheckedUserInfo {
 pub enum EntryMethod<T: Trait> {
     Paid(T::PaidTermId),
     Screening(T::AccountId),
+    Genesis,
 }
 
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Eq, PartialEq)]
 pub struct PaidMembershipTerms<T: Trait> {
-    /// Unique identifier - the term id
-    pub id: T::PaidTermId,
     /// Quantity of native tokens which must be provably burned
     pub fee: BalanceOf<T>,
     /// String of capped length describing human readable conditions which are being agreed upon
@@ -132,7 +131,6 @@ pub struct PaidMembershipTerms<T: Trait> {
 impl<T: Trait> Default for PaidMembershipTerms<T> {
     fn default() -> Self {
         PaidMembershipTerms {
-            id: T::PaidTermId::from(DEFAULT_PAID_TERM_ID),
             fee: BalanceOf::<T>::from(DEFAULT_PAID_TERM_FEE),
             text: DEFAULT_PAID_TERM_TEXT.as_bytes().to_vec(),
         }
@@ -175,7 +173,7 @@ decl_storage! {
             // Initialization for updated runtime is done in run_migration()
             let mut terms: PaidMembershipTerms<T> = Default::default();
             terms.fee = config.default_paid_membership_fee;
-            vec![(terms.id, terms)]
+            vec![(T::PaidTermId::from(DEFAULT_PAID_TERM_ID), terms)]
         }) : map T::PaidTermId => Option<PaidMembershipTerms<T>>;
 
         /// Active Paid membership terms
@@ -207,7 +205,7 @@ decl_storage! {
                     let user_info = CheckedUserInfo {
                         handle: handle.clone(), avatar_uri: avatar_uri.clone(), about: about.clone()
                     };
-                    <Module<T>>::insert_member(&who, &user_info, EntryMethod::Paid(T::PaidTermId::from(DEFAULT_PAID_TERM_ID)));
+                    <Module<T>>::insert_member(&who, &user_info, EntryMethod::Genesis);
                 }
             });
         });
