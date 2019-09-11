@@ -41,6 +41,24 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Copy
         + MaybeSerializeDebug
         + PartialEq;
+
+    type RoleId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerializeDebug
+        + PartialEq;
+
+    type ActorId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerializeDebug
+        + PartialEq;
 }
 
 const DEFAULT_FIRST_MEMBER_ID: u32 = 1;
@@ -57,30 +75,10 @@ const DEFAULT_MAX_HANDLE_LENGTH: u32 = 40;
 const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 
-// There is no impl of Encode/Decode for BTreeMap<enum, ...>
-// So to avoid writing an impl we use a less strongly typed id for the role
-// #[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Debug)]
-// pub enum RoleType {
-//     ForumUser,
-//     Curator,
-//     CurationLead,
-//     CouncilMember,
-//     Publisher
-// }
-pub type RoleId = u32;
-pub type ActorId = u32;
-
-pub const FORUM_USER_ROLE_ID: RoleId = 10;
-pub const COUNCIL_MEMBER_ROLE_ID: RoleId = 20;
-pub const CURATOR_LEAD_ROLE_ID: RoleId = 30;
-pub const CURATOR_ROLE_ID: RoleId = 31;
-pub const PUBLISHER_ROLE_ID: RoleId = 32;
-// pub const STORAGE_PROVIDER_ROLE_ID: RoleId = 32;
-
 #[derive(Encode, Decode, Eq, PartialEq)]
-pub struct ActorInRole {
-    role_id: RoleId,
-    actor_id: ActorId,
+pub struct ActorInRole<T: Trait> {
+    role_id: T::RoleId,
+    actor_id: T::ActorId,
 }
 
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -97,7 +95,7 @@ pub struct Profile<T: Trait> {
     pub suspended: bool,
     pub subscription: Option<T::SubscriptionId>,
     pub controller_account: T::AccountId,
-    pub roles: BTreeMap<RoleId, Vec<ActorId>>,
+    pub roles: BTreeMap<T::RoleId, Vec<T::ActorId>>,
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
@@ -193,7 +191,7 @@ decl_storage! {
         pub MaxAvatarUriLength get(max_avatar_uri_length) : u32 = DEFAULT_MAX_AVATAR_URI_LENGTH;
         pub MaxAboutTextLength get(max_about_text_length) : u32 = DEFAULT_MAX_ABOUT_TEXT_LENGTH;
 
-        pub MembershipIdByActorInRole get(membership_id_by_actor_in_role): map ActorInRole => T::MemberId;
+        pub MembershipIdByActorInRole get(membership_id_by_actor_in_role): map ActorInRole<T> => T::MemberId;
     }
     add_extra_genesis {
         config(default_paid_membership_fee): BalanceOf<T>;
@@ -218,7 +216,9 @@ decl_storage! {
 decl_event! {
     pub enum Event<T> where
       <T as system::Trait>::AccountId,
-      <T as Trait>::MemberId {
+      <T as Trait>::MemberId,
+      <T as Trait>::RoleId,
+      <T as Trait>::ActorId, {
         MemberRegistered(MemberId, AccountId),
         MemberUpdatedAboutText(MemberId),
         MemberUpdatedAvatar(MemberId),
@@ -557,7 +557,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Member role registraion
-    pub fn member_is_in_role(member_id: T::MemberId, role_id: RoleId) -> bool {
+    pub fn member_is_in_role(member_id: T::MemberId, role_id: T::RoleId) -> bool {
         Self::ensure_profile(member_id)
             .ok()
             .and_then(|profile| {
@@ -572,8 +572,8 @@ impl<T: Trait> Module<T> {
 
     pub fn can_register_role_on_member(
         member_id: T::MemberId,
-        role_id: RoleId,
-        actor_id: ActorId,
+        role_id: T::RoleId,
+        actor_id: T::ActorId,
     ) -> Result<(), &'static str> {
         // limits - how many roles in total
         //        - single instance of role
@@ -593,8 +593,8 @@ impl<T: Trait> Module<T> {
 
     pub fn register_role_on_member(
         member_id: T::MemberId,
-        role_id: RoleId,
-        actor_id: ActorId,
+        role_id: T::RoleId,
+        actor_id: T::ActorId,
     ) -> Result<(), &'static str> {
         ensure!(
             Self::can_register_role_on_member(member_id, role_id, actor_id).is_ok(),
@@ -617,8 +617,8 @@ impl<T: Trait> Module<T> {
 
     pub fn can_unregister_role_on_member(
         member_id: T::MemberId,
-        role_id: RoleId,
-        actor_id: ActorId,
+        role_id: T::RoleId,
+        actor_id: T::ActorId,
     ) -> Result<(), &'static str> {
         let actor_in_role = ActorInRole { role_id, actor_id };
         ensure!(
@@ -634,8 +634,8 @@ impl<T: Trait> Module<T> {
 
     pub fn unregister_role_on_member(
         member_id: T::MemberId,
-        role_id: RoleId,
-        actor_id: ActorId,
+        role_id: T::RoleId,
+        actor_id: T::ActorId,
     ) -> Result<(), &'static str> {
         ensure!(
             Self::can_unregister_role_on_member(member_id, role_id, actor_id).is_ok(),

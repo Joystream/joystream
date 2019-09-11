@@ -68,8 +68,11 @@ pub type DigestItem = generic::DigestItem<Hash>;
 /// Moment type
 pub type Moment = u64;
 
-/// RoleActorId type
-pub type RoleActorId = u32;
+/// RoleId type
+pub type RoleId = u32;
+
+/// ActorId type
+pub type ActorId = u32;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -473,6 +476,8 @@ impl members::Trait for Runtime {
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
+    type RoleId = RoleId;
+    type ActorId = ActorId;
 }
 
 /*
