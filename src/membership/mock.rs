@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use super::members;
+pub use super::members::{self, DEFAULT_PAID_TERM_ID};
 pub use crate::currency::GovernanceCurrency;
 pub use srml_support::traits::Currency;
 pub use system;
@@ -100,12 +100,14 @@ impl members::Trait for Test {
 pub struct ExtBuilder {
     first_member_id: u32,
     default_paid_membership_fee: u64,
+    members: Vec<(u64)>,
 }
 impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
             first_member_id: 1,
             default_paid_membership_fee: 100,
+            members: vec![],
         }
     }
 }
@@ -119,6 +121,10 @@ impl ExtBuilder {
         self.default_paid_membership_fee = default_paid_membership_fee;
         self
     }
+    pub fn members(mut self, members: Vec<u64>) -> Self {
+        self.members = members;
+        self
+    }
     pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher> {
         let mut t = system::GenesisConfig::default()
             .build_storage::<Test>()
@@ -127,7 +133,11 @@ impl ExtBuilder {
         members::GenesisConfig::<Test> {
             first_member_id: self.first_member_id,
             default_paid_membership_fee: self.default_paid_membership_fee,
-            members: vec![],
+            members: self
+                .members
+                .iter()
+                .map(|account_id| (*account_id, "".into(), "".into(), "".into()))
+                .collect(),
         }
         .assimilate_storage(&mut t)
         .unwrap();

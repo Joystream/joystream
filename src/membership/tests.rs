@@ -40,12 +40,11 @@ fn get_bob_info() -> members::UserInfo {
 }
 
 const ALICE_ACCOUNT_ID: u64 = 1;
-const DEFAULT_TERMS_ID: u32 = 0;
 
 fn buy_default_membership_as_alice() -> dispatch::Result {
     Members::buy_membership(
         Origin::signed(ALICE_ACCOUNT_ID),
-        DEFAULT_TERMS_ID,
+        DEFAULT_PAID_TERM_ID,
         get_alice_info(),
     )
 }
@@ -58,18 +57,23 @@ fn set_alice_free_balance(balance: u64) {
 fn initial_state() {
     const DEFAULT_FEE: u64 = 500;
     const DEFAULT_FIRST_ID: u32 = 1000;
+    let initial_members = [1, 2, 3];
 
     with_externalities(
         &mut ExtBuilder::default()
             .default_paid_membership_fee(DEFAULT_FEE)
             .first_member_id(DEFAULT_FIRST_ID)
+            .members(initial_members.to_vec())
             .build(),
         || {
             assert_eq!(Members::first_member_id(), DEFAULT_FIRST_ID);
-            assert_eq!(Members::next_member_id(), DEFAULT_FIRST_ID);
+            assert_eq!(
+                Members::next_member_id(),
+                DEFAULT_FIRST_ID + initial_members.len() as u32
+            );
 
             let default_terms = assert_ok_unwrap(
-                Members::paid_membership_terms_by_id(DEFAULT_TERMS_ID),
+                Members::paid_membership_terms_by_id(DEFAULT_PAID_TERM_ID),
                 "default terms not initialized",
             );
 

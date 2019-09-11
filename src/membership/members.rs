@@ -65,7 +65,7 @@ const DEFAULT_FIRST_MEMBER_ID: u32 = 1;
 const FIRST_PAID_TERMS_ID: u32 = 1;
 
 // Default paid membership terms
-const DEFAULT_PAID_TERM_ID: u32 = 0;
+pub const DEFAULT_PAID_TERM_ID: u32 = 0;
 const DEFAULT_PAID_TERM_FEE: u32 = 100; // Can be overidden in genesis config
 const DEFAULT_PAID_TERM_TEXT: &str = "Default Paid Term TOS...";
 
