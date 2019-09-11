@@ -223,35 +223,10 @@ decl_event! {
         MemberUpdatedAboutText(MemberId),
         MemberUpdatedAvatar(MemberId),
         MemberUpdatedHandle(MemberId),
-    }
-}
-
-/// Initialization step that runs when the runtime is installed as a runtime upgrade
-/// This will and should ONLY be called from the migration module that keeps track of
-/// the store version!
-impl<T: Trait> Module<T> {
-    pub fn initialize_storage() {
-        let default_terms: PaidMembershipTerms<T> = Default::default();
-        <PaidMembershipTermsById<T>>::insert(default_terms.id, default_terms);
-    }
-
-    pub fn is_active_member(who: &T::AccountId) -> bool {
-        match Self::ensure_is_member(who).and_then(|member_id| Self::ensure_profile(member_id)) {
-            Ok(profile) => !profile.suspended,
-            Err(_err) => false,
-        }
-    }
-
-    pub fn lookup_member_id(who: &T::AccountId) -> Result<T::MemberId, &'static str> {
-        Self::ensure_is_member(who)
-    }
-
-    pub fn lookup_account_by_member_id(id: T::MemberId) -> Result<T::AccountId, &'static str> {
-        if <AccountIdByMemberId<T>>::exists(&id) {
-            Ok(Self::account_id_by_member_id(&id))
-        } else {
-            Err("member id doesn't exist")
-        }
+        MemberSetPrimaryKey(MemberId, AccountId),
+        MemberSetControllerKey(MemberId, AccountId),
+        MemberRegisteredRole(MemberId, RoleId, ActorId),
+        MemberUnregisteredRole(MemberId, RoleId, ActorId),
     }
 }
 
@@ -331,21 +306,23 @@ decl_module! {
             let master = ensure_signed(origin)?;
             let member_id = Self::ensure_is_member_primary_account(master)?;
             let mut profile = Self::ensure_profile(member_id)?;
-            profile.controller_account = controller;
+            profile.controller_account = controller.clone();
             <MemberProfile<T>>::insert(member_id, profile);
+            Self::deposit_event(RawEvent::MemberSetControllerKey(member_id, controller));
         }
 
-        pub fn set_master_key(origin, new_master: T::AccountId) {
-            let old_master = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_primary_account(old_master.clone())?;
+        pub fn set_primary_key(origin, new_primary: T::AccountId) {
+            let old_primary = ensure_signed(origin)?;
+            let member_id = Self::ensure_is_member_primary_account(old_primary.clone())?;
 
             // ensure new account is not existing member primary account
-            Self::ensure_not_member(&new_master)?;
+            Self::ensure_not_member(&new_primary)?;
 
             // update mappings
-            <AccountIdByMemberId<T>>::insert(member_id, new_master.clone());
-            <MemberIdByAccountId<T>>::remove(&old_master);
-            <MemberIdByAccountId<T>>::insert(&new_master, member_id);
+            <AccountIdByMemberId<T>>::insert(member_id, new_primary.clone());
+            <MemberIdByAccountId<T>>::remove(&old_primary);
+            <MemberIdByAccountId<T>>::insert(&new_primary, member_id);
+            Self::deposit_event(RawEvent::MemberSetPrimaryKey(member_id, new_primary));
         }
 
         pub fn add_screened_member(origin, new_member: T::AccountId, user_info: UserInfo) {
@@ -386,6 +363,25 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    pub fn is_active_member(who: &T::AccountId) -> bool {
+        match Self::ensure_is_member(who).and_then(|member_id| Self::ensure_profile(member_id)) {
+            Ok(profile) => !profile.suspended,
+            Err(_err) => false,
+        }
+    }
+
+    pub fn lookup_member_id(who: &T::AccountId) -> Result<T::MemberId, &'static str> {
+        Self::ensure_is_member(who)
+    }
+
+    pub fn lookup_account_by_member_id(id: T::MemberId) -> Result<T::AccountId, &'static str> {
+        if <AccountIdByMemberId<T>>::exists(&id) {
+            Ok(Self::account_id_by_member_id(&id))
+        } else {
+            Err("member id doesn't exist")
+        }
+    }
+
     pub fn get_profile(id: &T::AccountId) -> Option<Profile<T>> {
         if let Some(member_id) = Self::ensure_is_member(id).ok() {
             // This option _must_ be set
@@ -498,7 +494,6 @@ impl<T: Trait> Module<T> {
         })
     }
 
-    // Mutating methods
     fn insert_member(
         who: &T::AccountId,
         user_info: &CheckedUserInfo,
@@ -561,7 +556,20 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Member role registraion mutating, called from client modules
+    // Member role registraion
+    pub fn member_is_in_role(member_id: T::MemberId, role_id: RoleId) -> bool {
+        Self::ensure_profile(member_id)
+            .ok()
+            .and_then(|profile| {
+                if let Some(actor_ids) = profile.roles.get(&role_id) {
+                    Some(actor_ids.len() > 0)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(false)
+    }
+
     pub fn can_register_role_on_member(
         member_id: T::MemberId,
         role_id: RoleId,
@@ -570,11 +578,9 @@ impl<T: Trait> Module<T> {
         // limits - how many roles in total
         //        - single instance of role
 
-        // ensure is member
-        ensure!(
-            <AccountIdByMemberId<T>>::exists(&member_id),
-            "member not found"
-        );
+        // ensure is active member
+        let profile = Self::ensure_profile(member_id)?;
+        ensure!(!profile.suspended, "suspended members can't enter a role");
 
         let actor_in_role = ActorInRole { role_id, actor_id };
         // ensure actor_id not already set for role
@@ -605,6 +611,7 @@ impl<T: Trait> Module<T> {
         }
         <MemberProfile<T>>::insert(member_id, profile);
         <MembershipIdByActorInRole<T>>::insert(ActorInRole { role_id, actor_id }, member_id);
+        Self::deposit_event(RawEvent::MemberRegisteredRole(member_id, role_id, actor_id));
         Ok(())
     }
 
@@ -644,7 +651,9 @@ impl<T: Trait> Module<T> {
         }
 
         <MembershipIdByActorInRole<T>>::remove(ActorInRole { role_id, actor_id });
-
+        Self::deposit_event(RawEvent::MemberUnregisteredRole(
+            member_id, role_id, actor_id,
+        ));
         Ok(())
     }
 }
