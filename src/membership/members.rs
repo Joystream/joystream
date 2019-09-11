@@ -575,15 +575,20 @@ impl<T: Trait> Module<T> {
         role_id: T::RoleId,
         actor_id: T::ActorId,
     ) -> Result<(), &'static str> {
-        // limits - how many roles in total
-        //        - single instance of role
+        // For now default policy across all roles is:
+        // members can only have a single actor instance per role
+        // members can enter any roles
+        // no limit on total number of roles a member can enter
+        // Note: Role specific policies, for example "member can only enter council role once at a time"
+        // should be enforced by the council module (client modules)
+        ensure!(!Self::member_is_in_role(member_id, role_id), "member already in role");
 
         // ensure is active member
         let profile = Self::ensure_profile(member_id)?;
         ensure!(!profile.suspended, "suspended members can't enter a role");
 
+        // guard against duplicate ActorInRole
         let actor_in_role = ActorInRole { role_id, actor_id };
-        // ensure actor_id not already set for role
         ensure!(
             !<MembershipIdByActorInRole<T>>::exists(&actor_in_role),
             "role actor already exists"
