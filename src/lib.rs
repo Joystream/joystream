@@ -496,7 +496,7 @@ pub struct ShimMembershipRegistry {}
 
 impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
     fn get_forum_user(id: &AccountId) -> Option<forum::ForumUser<AccountId>> {
-        if let Some(_profile) = members::Module::<Runtime>::get_profile(id) {
+        if let Some(_profile) = members::Module::<Runtime>::get_profile_by_primary_account(id) {
             // For now the profile is not used for anything,
             // but in the future we may need it to read out more
             // information possibly required to construct a

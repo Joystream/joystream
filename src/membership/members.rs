@@ -265,31 +265,31 @@ decl_module! {
         }
 
         /// Change member's about text
-        pub fn change_member_about_text(origin, member_id: T::MemberId, text: Vec<u8>) {
+        pub fn change_member_about_text(origin, text: Vec<u8>) {
             let controller = ensure_signed(origin)?;
-            Self::ensure_is_member_controller_account(controller.clone(), member_id)?;
+            let member_id = Self::ensure_is_member_controller_account(&controller)?;
             Self::_change_member_about_text(member_id, &text)?;
         }
 
         /// Change member's avatar
-        pub fn change_member_avatar(origin, member_id: T::MemberId, uri: Vec<u8>) {
+        pub fn change_member_avatar(origin, uri: Vec<u8>) {
             let controller = ensure_signed(origin)?;
-            Self::ensure_is_member_controller_account(controller.clone(), member_id)?;
+            let member_id = Self::ensure_is_member_controller_account(&controller)?;
             Self::_change_member_avatar(member_id, &uri)?;
         }
 
         /// Change member's handle. Will ensure new handle is unique and old one will be available
         /// for other members to use.
-        pub fn change_member_handle(origin, member_id: T::MemberId, handle: Vec<u8>) {
+        pub fn change_member_handle(origin, handle: Vec<u8>) {
             let controller = ensure_signed(origin)?;
-            Self::ensure_is_member_controller_account(controller.clone(), member_id)?;
+            let member_id = Self::ensure_is_member_controller_account(&controller)?;
             Self::_change_member_handle(member_id, handle)?;
         }
 
         /// Update member's all or some of handle, avatar and about text.
-        pub fn update_profile(origin, member_id: T::MemberId, user_info: UserInfo) {
+        pub fn update_profile(origin, user_info: UserInfo) {
             let controller = ensure_signed(origin)?;
-            Self::ensure_is_member_controller_account(controller.clone(), member_id)?;
+            let member_id = Self::ensure_is_member_controller_account(&controller)?;
 
             if let Some(uri) = user_info.avatar_uri {
                 Self::_change_member_avatar(member_id, &uri)?;
@@ -304,7 +304,7 @@ decl_module! {
 
         pub fn set_controller_key(origin, controller: T::AccountId) {
             let master = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_primary_account(master)?;
+            let member_id = Self::ensure_is_member_primary_account(&master)?;
 
             let mut profile = Self::ensure_profile(member_id)?;
 
@@ -321,7 +321,7 @@ decl_module! {
 
         pub fn set_primary_key(origin, new_primary: T::AccountId) {
             let old_primary = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_primary_account(old_primary.clone())?;
+            let member_id = Self::ensure_is_member_primary_account(&old_primary)?;
 
             // ensure new key not is used by someone else (master or controller)
             ensure!(!<MemberIdByControllerAccountId<T>>::exists(&new_primary), "account already paired with member");
@@ -373,30 +373,19 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     pub fn is_active_member(who: &T::AccountId) -> bool {
-        match Self::ensure_is_member(who).and_then(|member_id| Self::ensure_profile(member_id)) {
+        match Self::ensure_is_member_primary_account(who)
+            .and_then(|member_id| Self::ensure_profile(member_id))
+        {
             Ok(profile) => !profile.suspended,
             Err(_err) => false,
         }
     }
 
-    pub fn lookup_member_id(who: &T::AccountId) -> Result<T::MemberId, &'static str> {
-        Self::ensure_is_member(who)
-    }
-
-    pub fn lookup_account_by_member_id(id: T::MemberId) -> Result<T::AccountId, &'static str> {
+    pub fn primary_account_by_member_id(id: T::MemberId) -> Result<T::AccountId, &'static str> {
         if <AccountIdByMemberId<T>>::exists(&id) {
             Ok(Self::account_id_by_member_id(&id))
         } else {
             Err("member id doesn't exist")
-        }
-    }
-
-    pub fn get_profile(id: &T::AccountId) -> Option<Profile<T>> {
-        if let Some(member_id) = Self::ensure_is_member(id).ok() {
-            // This option _must_ be set
-            Self::member_profile(&member_id)
-        } else {
-            None
         }
     }
 
@@ -408,36 +397,34 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_is_member(who: &T::AccountId) -> Result<T::MemberId, &'static str> {
+    pub fn ensure_is_member_primary_account(
+        who: &T::AccountId,
+    ) -> Result<T::MemberId, &'static str> {
         let member_id =
             Self::member_id_by_account_id(who).ok_or("no member id found for accountid")?;
         Ok(member_id)
     }
 
-    fn ensure_is_member_primary_account(who: T::AccountId) -> Result<T::MemberId, &'static str> {
-        let member_id = Self::ensure_is_member(&who)?;
-        ensure!(
-            Self::account_id_by_member_id(member_id) == who,
-            "not primary account"
-        );
-        Ok(member_id)
-    }
-
     pub fn ensure_is_member_controller_account(
-        controller: T::AccountId,
-        member_id: T::MemberId,
-    ) -> Result<(), &'static str> {
-        let profile = Self::ensure_profile(member_id)?;
-        ensure!(
-            profile.controller_account == controller,
-            "not controller account of member"
-        );
-        Ok(())
+        who: &T::AccountId,
+    ) -> Result<T::MemberId, &'static str> {
+        let member_id = Self::member_id_by_controller_account_id(who)
+            .ok_or("no member id found for accountid")?;
+        Ok(member_id)
     }
 
     fn ensure_profile(id: T::MemberId) -> Result<Profile<T>, &'static str> {
         let profile = Self::member_profile(&id).ok_or("member profile not found")?;
         Ok(profile)
+    }
+
+    pub fn get_profile_by_primary_account(id: &T::AccountId) -> Option<Profile<T>> {
+        if let Ok(member_id) = Self::ensure_is_member_primary_account(id) {
+            // This option _must_ be set
+            Self::member_profile(&member_id)
+        } else {
+            None
+        }
     }
 
     fn ensure_active_terms_id(

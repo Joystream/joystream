@@ -288,7 +288,7 @@ decl_module! {
                                     let _ = T::Currency::deposit_into_existing(&actor.account, params.reward);
                                 } else {
                                     // otherwise it should go the the member account
-                                    if let Ok(member_account) = <membership::members::Module<T>>::lookup_account_by_member_id(actor.member_id) {
+                                    if let Ok(member_account) = <membership::members::Module<T>>::primary_account_by_member_id(actor.member_id) {
                                         let _ = T::Currency::deposit_into_existing(&member_account, params.reward);
                                     }
                                 }
@@ -302,7 +302,7 @@ decl_module! {
         pub fn role_entry_request(origin, role: Role, member_id: MemberId<T>) {
             let sender = ensure_signed(origin)?;
 
-            ensure!(<membership::members::Module<T>>::lookup_member_id(&sender).is_err(), "account is a member");
+            ensure!(<membership::members::Module<T>>::ensure_is_member_primary_account(&sender).is_err(), "account is a member");
             ensure!(!Self::is_role_account(&sender), "account already used");
 
             ensure!(Self::is_role_available(role), "inactive role");
@@ -324,7 +324,7 @@ decl_module! {
         /// Member activating entry request
         pub fn stake(origin, role: Role, actor_account: T::AccountId) {
             let sender = ensure_signed(origin)?;
-            let member_id = <membership::members::Module<T>>::lookup_member_id(&sender)?;
+            let member_id = <membership::members::Module<T>>::ensure_is_member_primary_account(&sender)?;
 
             if !Self::role_entry_requests()
                 .iter()
@@ -333,7 +333,7 @@ decl_module! {
                 return Err("no role entry request matches");
             }
 
-            ensure!(<membership::members::Module<T>>::lookup_member_id(&actor_account).is_err(), "account is a member");
+            ensure!(<membership::members::Module<T>>::ensure_is_member_primary_account(&actor_account).is_err(), "account is a member");
             ensure!(!Self::is_role_account(&actor_account), "account already used");
 
             // make sure role is still available
@@ -372,7 +372,7 @@ decl_module! {
 
         pub fn unstake(origin, actor_account: T::AccountId) {
             let sender = ensure_signed(origin)?;
-            let member_id = <membership::members::Module<T>>::lookup_member_id(&sender)?;
+            let member_id = <membership::members::Module<T>>::ensure_is_member_primary_account(&sender)?;
 
             let actor = Self::ensure_actor_is_member(&actor_account, member_id)?;
 

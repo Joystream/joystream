@@ -212,7 +212,6 @@ fn update_profile() {
 
             assert_ok!(Members::update_profile(
                 Origin::signed(ALICE_ACCOUNT_ID),
-                member_id,
                 get_bob_info()
             ));
 
