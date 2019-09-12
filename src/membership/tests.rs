@@ -379,31 +379,30 @@ fn registering_and_unregistering_roles_on_member() {
             .members(initial_members.to_vec())
             .build(),
         || {
-            const DUMMY_ROLE: u32 = 50;
             const DUMMY_ACTOR_ID: u32 = 100;
 
             // no initial roles for member
-            assert!(!Members::member_is_in_role(&1, DUMMY_ROLE));
+            assert!(!Members::member_is_in_role(&1, members::Role::Publisher));
 
             // REGISTERING
 
             // successful registration
             assert_ok!(Members::register_role_on_member(
                 &1,
-                DUMMY_ROLE,
+                members::Role::Publisher,
                 DUMMY_ACTOR_ID
             ));
-            assert!(Members::member_is_in_role(&1, DUMMY_ROLE));
+            assert!(Members::member_is_in_role(&1, members::Role::Publisher));
 
             // enter role a second time should fail
             assert_dispatch_error_message(
-                Members::register_role_on_member(&1, DUMMY_ROLE, DUMMY_ACTOR_ID),
+                Members::register_role_on_member(&1, members::Role::Publisher, DUMMY_ACTOR_ID),
                 "member already in role",
             );
 
             // registering another member in same role and actorid combination should fail
             assert_dispatch_error_message(
-                Members::register_role_on_member(&2, DUMMY_ROLE, DUMMY_ACTOR_ID),
+                Members::register_role_on_member(&2, members::Role::Publisher, DUMMY_ACTOR_ID),
                 "role actor already exists",
             );
 
@@ -411,23 +410,23 @@ fn registering_and_unregistering_roles_on_member() {
 
             // trying to unregister non existant actor role should fail
             assert_dispatch_error_message(
-                Members::unregister_role_on_member(&1, 111, 222),
+                Members::unregister_role_on_member(&1, members::Role::Curator, 222),
                 "role actor not found",
             );
 
             // trying to unregister actor role on wrong member should fail
             assert_dispatch_error_message(
-                Members::unregister_role_on_member(&2, DUMMY_ROLE, DUMMY_ACTOR_ID),
+                Members::unregister_role_on_member(&2, members::Role::Publisher, DUMMY_ACTOR_ID),
                 "role actor not for member",
             );
 
             // successfully unregister role
             assert_ok!(Members::unregister_role_on_member(
                 &1,
-                DUMMY_ROLE,
+                members::Role::Publisher,
                 DUMMY_ACTOR_ID
             ));
-            assert!(!Members::member_is_in_role(&1, DUMMY_ROLE));
+            assert!(!Members::member_is_in_role(&1, members::Role::Publisher));
         },
     );
 }

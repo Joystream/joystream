@@ -652,8 +652,6 @@ mod tests {
         type MemberId = u32;
         type PaidTermId = u32;
         type SubscriptionId = u32;
-        type RoleId = u32;
-        type ActorId = u32;
         type InitialMembersBalance = InitialMembersBalance;
     }
 

@@ -42,28 +42,6 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + MaybeSerializeDebug
         + PartialEq;
 
-    type RoleId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerializeDebug
-        + PartialEq;
-
-    type ActorId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerializeDebug
-        + PartialEq;
-
-    // NamedRoles "RoleId"s
-    // type CuratorLead: Get<Self::RoleId>;
-    // type Curator: Get<Self::RoleId>;
-
     /// Initial balance of members created at genesis
     type InitialMembersBalance: Get<BalanceOf<Self>>;
 }
@@ -82,10 +60,30 @@ const DEFAULT_MAX_HANDLE_LENGTH: u32 = 40;
 const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 
+pub type RoleId = u32;
+pub type ActorId = u32;
+
+#[derive(Encode, Decode, Copy, Clone)]
+pub enum Role {
+    Publisher,
+    CuratorLead,
+    Curator,
+}
+
+impl From<Role> for RoleId {
+    fn from(r: Role) -> RoleId {
+        match r {
+            Role::Publisher => 0,
+            Role::CuratorLead => 1,
+            Role::Curator => 2,
+        }
+    }
+}
+
 #[derive(Encode, Decode, Eq, PartialEq)]
-pub struct ActorInRole<T: Trait> {
-    role_id: T::RoleId,
-    actor_id: T::ActorId,
+pub struct ActorInRole {
+    role_id: RoleId,
+    actor_id: ActorId,
 }
 
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -101,7 +99,7 @@ pub struct Profile<T: Trait> {
     pub suspended: bool,
     pub subscription: Option<T::SubscriptionId>,
     pub controller_account: T::AccountId,
-    pub roles: BTreeMap<T::RoleId, Vec<T::ActorId>>,
+    pub roles: BTreeMap<RoleId, Vec<ActorId>>,
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
@@ -198,7 +196,7 @@ decl_storage! {
         pub MaxAvatarUriLength get(max_avatar_uri_length) : u32 = DEFAULT_MAX_AVATAR_URI_LENGTH;
         pub MaxAboutTextLength get(max_about_text_length) : u32 = DEFAULT_MAX_ABOUT_TEXT_LENGTH;
 
-        pub MembershipIdByActorInRole get(membership_id_by_actor_in_role): map ActorInRole<T> => T::MemberId;
+        pub MembershipIdByActorInRole get(membership_id_by_actor_in_role): map ActorInRole => T::MemberId;
     }
     add_extra_genesis {
         config(default_paid_membership_fee): BalanceOf<T>;
@@ -226,9 +224,7 @@ decl_storage! {
 decl_event! {
     pub enum Event<T> where
       <T as system::Trait>::AccountId,
-      <T as Trait>::MemberId,
-      <T as Trait>::RoleId,
-      <T as Trait>::ActorId, {
+      <T as Trait>::MemberId, {
         MemberRegistered(MemberId, AccountId),
         MemberUpdatedAboutText(MemberId),
         MemberUpdatedAvatar(MemberId),
@@ -563,12 +559,12 @@ impl<T: Trait> Module<T> {
     }
 
     // Checks if a member identified by their controller account occupies a role at least once
-    pub fn member_is_in_role(controller_account: &T::AccountId, role_id: T::RoleId) -> bool {
+    pub fn member_is_in_role(controller_account: &T::AccountId, role: Role) -> bool {
         if let Ok(member_id) = Self::ensure_is_member_controller_account(controller_account) {
             Self::ensure_profile(member_id).ok().map_or_else(
                 || false,
                 |profile| {
-                    if let Some(actor_ids) = profile.roles.get(&role_id) {
+                    if let Some(actor_ids) = profile.roles.get(&role.into()) {
                         actor_ids.len() > 0
                     } else {
                         false
@@ -585,14 +581,15 @@ impl<T: Trait> Module<T> {
     // members can enter any role
     // no limit on total number of roles a member can enter
     // ** Note ** Role specific policies should be enforced by the client modules
+    // this method should handle higher level policies
     pub fn can_register_role_on_member(
         controller_account: &T::AccountId,
-        role_id: T::RoleId,
+        role: Role,
     ) -> Result<(), &'static str> {
         let member_id = Self::ensure_is_member_controller_account(controller_account)?;
 
         ensure!(
-            !Self::member_is_in_role(controller_account, role_id),
+            !Self::member_is_in_role(controller_account, role),
             "member already in role"
         );
 
@@ -610,16 +607,19 @@ impl<T: Trait> Module<T> {
 
     pub fn register_role_on_member(
         controller_account: &T::AccountId,
-        role_id: T::RoleId,
-        actor_id: T::ActorId,
+        role: Role,
+        actor_id: ActorId,
     ) -> Result<(), &'static str> {
         let member_id = Self::ensure_is_member_controller_account(controller_account)?;
 
         // policy check
-        Self::can_register_role_on_member(controller_account, role_id)?;
+        Self::can_register_role_on_member(controller_account, role)?;
 
         // guard against duplicate ActorInRole
-        let actor_in_role = ActorInRole { role_id, actor_id };
+        let actor_in_role = ActorInRole {
+            role_id: role.into(),
+            actor_id,
+        };
         ensure!(
             !<MembershipIdByActorInRole<T>>::exists(&actor_in_role),
             "role actor already exists"
@@ -628,23 +628,36 @@ impl<T: Trait> Module<T> {
         let mut profile = Self::ensure_profile(member_id)?;
         let mut new_ids = vec![actor_id];
 
-        if let Some(current_ids) = profile.roles.get_mut(&role_id) {
+        if let Some(current_ids) = profile.roles.get_mut(&role.into()) {
             current_ids.append(&mut new_ids);
         } else {
-            profile.roles.insert(role_id, new_ids);
+            profile.roles.insert(role.into(), new_ids);
         }
         <MemberProfile<T>>::insert(member_id, profile);
-        <MembershipIdByActorInRole<T>>::insert(ActorInRole { role_id, actor_id }, member_id);
-        Self::deposit_event(RawEvent::MemberRegisteredRole(member_id, role_id, actor_id));
+        <MembershipIdByActorInRole<T>>::insert(
+            ActorInRole {
+                role_id: role.into(),
+                actor_id,
+            },
+            member_id,
+        );
+        Self::deposit_event(RawEvent::MemberRegisteredRole(
+            member_id,
+            role.into(),
+            actor_id,
+        ));
         Ok(())
     }
 
     pub fn can_unregister_role_on_member(
         controller_account: &T::AccountId,
-        role_id: T::RoleId,
-        actor_id: T::ActorId,
+        role: Role,
+        actor_id: ActorId,
     ) -> Result<(), &'static str> {
-        let actor_in_role = ActorInRole { role_id, actor_id };
+        let actor_in_role = ActorInRole {
+            role_id: role.into(),
+            actor_id,
+        };
         ensure!(
             <MembershipIdByActorInRole<T>>::exists(&actor_in_role),
             "role actor not found"
@@ -660,23 +673,28 @@ impl<T: Trait> Module<T> {
 
     pub fn unregister_role_on_member(
         controller_account: &T::AccountId,
-        role_id: T::RoleId,
-        actor_id: T::ActorId,
+        role: Role,
+        actor_id: ActorId,
     ) -> Result<(), &'static str> {
-        Self::can_unregister_role_on_member(controller_account, role_id, actor_id)?;
+        Self::can_unregister_role_on_member(controller_account, role, actor_id)?;
 
         let member_id = Self::ensure_is_member_controller_account(controller_account)?;
         let mut profile = Self::ensure_profile(member_id)?;
 
-        if let Some(current_ids) = profile.roles.get_mut(&role_id) {
+        if let Some(current_ids) = profile.roles.get_mut(&role.into()) {
             //current_ids.remove_item(&actor_id); // unstable nightly feature!
             current_ids.retain(|id| *id != actor_id);
             <MemberProfile<T>>::insert(member_id, profile);
         }
 
-        <MembershipIdByActorInRole<T>>::remove(ActorInRole { role_id, actor_id });
+        <MembershipIdByActorInRole<T>>::remove(ActorInRole {
+            role_id: role.into(),
+            actor_id,
+        });
         Self::deposit_event(RawEvent::MemberUnregisteredRole(
-            member_id, role_id, actor_id,
+            member_id,
+            role.into(),
+            actor_id,
         ));
         Ok(())
     }
