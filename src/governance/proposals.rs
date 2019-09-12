@@ -614,6 +614,7 @@ mod tests {
         pub const CreationFee: u32 = 0;
         pub const TransactionBaseFee: u32 = 1;
         pub const TransactionByteFee: u32 = 0;
+        pub const InitialMembersBalance: u32 = 0;
     }
 
     impl balances::Trait for Test {
@@ -653,6 +654,7 @@ mod tests {
         type SubscriptionId = u32;
         type RoleId = u32;
         type ActorId = u32;
+        type InitialMembersBalance = InitialMembersBalance;
     }
 
     impl Trait for Test {

@@ -84,6 +84,12 @@ fn initial_state() {
             );
 
             assert_eq!(default_terms.fee, DEFAULT_FEE);
+
+            // initial balance
+            assert_eq!(
+                Balances::free_balance(initial_members[0]),
+                <Test as members::Trait>::InitialMembersBalance::get()
+            );
         },
     );
 }

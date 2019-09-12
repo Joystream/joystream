@@ -63,6 +63,7 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
+    pub const InitialMembersBalance: u32 = 2000;
 }
 
 impl balances::Trait for Test {
@@ -103,6 +104,7 @@ impl membership::members::Trait for Test {
     type PaidTermId = u32;
     type RoleId = u32;
     type ActorId = u32;
+    type InitialMembersBalance = InitialMembersBalance;
 }
 
 impl actors::Trait for Test {

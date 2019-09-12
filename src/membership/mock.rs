@@ -61,6 +61,7 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
+    pub const InitialMembersBalance: u64 = 2000;
 }
 
 impl balances::Trait for Test {
@@ -95,6 +96,7 @@ impl members::Trait for Test {
     type SubscriptionId = u32;
     type RoleId = u32;
     type ActorId = u32;
+    type InitialMembersBalance = InitialMembersBalance;
 }
 
 pub struct ExtBuilder {

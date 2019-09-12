@@ -242,6 +242,7 @@ parameter_types! {
     pub const CreationFee: u128 = 0;
     pub const TransactionBaseFee: u128 = 1;
     pub const TransactionByteFee: u128 = 0;
+    pub const InitialMembersBalance: u32 = 2000;
 }
 
 impl balances::Trait for Runtime {
@@ -478,6 +479,7 @@ impl members::Trait for Runtime {
     type SubscriptionId = u64;
     type RoleId = RoleId;
     type ActorId = ActorId;
+    type InitialMembersBalance = InitialMembersBalance;
 }
 
 /*

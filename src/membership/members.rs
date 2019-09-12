@@ -5,7 +5,7 @@ use rstd::prelude::*;
 #[cfg(feature = "std")]
 use runtime_io::with_storage;
 use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
-use srml_support::traits::Currency;
+use srml_support::traits::{Currency, Get};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
 };
@@ -59,6 +59,13 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Copy
         + MaybeSerializeDebug
         + PartialEq;
+
+    // NamedRoles "RoleId"s
+    // type CuratorLead: Get<Self::RoleId>;
+    // type Curator: Get<Self::RoleId>;
+
+    /// Initial balance of members created at genesis
+    type InitialMembersBalance: Get<BalanceOf<Self>>;
 }
 
 const DEFAULT_FIRST_MEMBER_ID: u32 = 1;
@@ -206,6 +213,9 @@ decl_storage! {
                         handle: handle.clone(), avatar_uri: avatar_uri.clone(), about: about.clone()
                     };
                     <Module<T>>::insert_member(&who, &user_info, EntryMethod::Genesis);
+
+                    // Give member starting balance
+                    T::Currency::deposit_creating(&who, T::InitialMembersBalance::get());
                 }
             });
         });
