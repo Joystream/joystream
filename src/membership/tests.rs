@@ -304,7 +304,7 @@ fn set_controller_key() {
             .build(),
         || {
             assert_ok!(Members::set_controller_key(
-                Origin::signed(1),
+                Origin::signed(ALICE_ACCOUNT_ID),
                 ALICE_CONTROLLER_ID
             ));
 
@@ -332,12 +332,34 @@ fn set_controller_key() {
 
 #[test]
 fn set_primary_key() {
-    let initial_members = [1];
+    let initial_members = [ALICE_ACCOUNT_ID];
+    const ALICE_NEW_PRIMARY_KEY: u64 = 2;
 
     with_externalities(
         &mut ExtBuilder::default()
             .members(initial_members.to_vec())
             .build(),
-        || {},
+        || {
+            let member_id_1 = assert_ok_unwrap(
+                Members::member_id_by_account_id(&ALICE_ACCOUNT_ID),
+                "member id not found",
+            );
+
+            assert_ok!(Members::set_primary_key(
+                Origin::signed(ALICE_ACCOUNT_ID),
+                ALICE_NEW_PRIMARY_KEY
+            ));
+
+            let member_id_2 = assert_ok_unwrap(
+                Members::member_id_by_account_id(&ALICE_NEW_PRIMARY_KEY),
+                "member id not found",
+            );
+
+            assert_eq!(member_id_1, member_id_2);
+            assert_eq!(
+                Members::account_id_by_member_id(member_id_1),
+                ALICE_NEW_PRIMARY_KEY
+            );
+        },
     );
 }
