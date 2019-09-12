@@ -15,6 +15,12 @@ fn assert_ok_unwrap<T>(value: Option<T>, err: &'static str) -> T {
     }
 }
 
+fn assert_dispatch_error_message(result: Result<(), &'static str>, expected_message: &'static str) {
+    assert!(result.is_err());
+    let message = result.err().unwrap();
+    assert_eq!(message, expected_message);
+}
+
 fn get_alice_info() -> members::UserInfo {
     members::UserInfo {
         handle: Some(String::from("alice").as_bytes().to_vec()),
@@ -114,6 +120,9 @@ fn buy_membership() {
             assert_eq!(Some(profile.about), get_alice_info().about);
 
             assert_eq!(Balances::free_balance(&ALICE_ACCOUNT_ID), SURPLUS_BALANCE);
+
+            // controller account initially set to primary account
+            assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
         },
     );
 }
@@ -130,7 +139,10 @@ fn buy_membership_fails_without_enough_balance() {
             let initial_balance = DEFAULT_FEE - 1;
             set_alice_free_balance(initial_balance);
 
-            assert!(buy_default_membership_as_alice().is_err());
+            assert_dispatch_error_message(
+                buy_default_membership_as_alice(),
+                "not enough balance to buy membership",
+            );
         },
     );
 }
@@ -149,7 +161,10 @@ fn new_memberships_allowed_flag() {
 
             members::NewMembershipsAllowed::put(false);
 
-            assert!(buy_default_membership_as_alice().is_err());
+            assert_dispatch_error_message(
+                buy_default_membership_as_alice(),
+                "new members not allowed",
+            );
         },
     );
 }
@@ -162,16 +177,20 @@ fn account_cannot_create_multiple_memberships() {
     with_externalities(
         &mut ExtBuilder::default()
             .default_paid_membership_fee(DEFAULT_FEE)
+            .members(vec![ALICE_ACCOUNT_ID])
             .build(),
         || {
             let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
-            // First time it works
-            assert_ok!(buy_default_membership_as_alice());
+            // assert alice member exists
+            assert!(Members::member_id_by_account_id(&ALICE_ACCOUNT_ID).is_some());
 
-            // second attempt should fail
-            assert!(buy_default_membership_as_alice().is_err());
+            // buying membership should fail...
+            assert_dispatch_error_message(
+                buy_default_membership_as_alice(),
+                "account already associated with a membership",
+            );
         },
     );
 }
@@ -193,7 +212,10 @@ fn unique_handles() {
             <members::Handles<Test>>::insert(get_alice_info().handle.unwrap(), 1);
 
             // should not be allowed to buy membership with that handle
-            assert!(buy_default_membership_as_alice().is_err());
+            assert_dispatch_error_message(
+                buy_default_membership_as_alice(),
+                "handle already registered",
+            );
         },
     );
 }
@@ -225,7 +247,7 @@ fn update_profile() {
 
             let profile = assert_ok_unwrap(
                 Members::member_profile(&member_id),
-                "member profile created",
+                "member profile not created",
             );
 
             assert_eq!(Some(profile.handle), get_bob_info().handle);
@@ -254,7 +276,7 @@ fn add_screened_member() {
 
         let profile = assert_ok_unwrap(
             Members::member_profile(&member_id),
-            "member profile created",
+            "member profile not created",
         );
 
         assert_eq!(Some(profile.handle), get_alice_info().handle);
