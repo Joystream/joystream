@@ -369,3 +369,65 @@ fn set_primary_key() {
         },
     );
 }
+
+#[test]
+fn registering_and_unregistering_roles_on_member() {
+    let initial_members = [1, 2];
+
+    with_externalities(
+        &mut ExtBuilder::default()
+            .members(initial_members.to_vec())
+            .build(),
+        || {
+            const DUMMY_ROLE: u32 = 50;
+            const DUMMY_ACTOR_ID: u32 = 100;
+
+            // no initial roles for member
+            assert!(!Members::member_is_in_role(&1, DUMMY_ROLE));
+
+            // REGISTERING
+
+            // successful registration
+            assert_ok!(Members::register_role_on_member(
+                &1,
+                DUMMY_ROLE,
+                DUMMY_ACTOR_ID
+            ));
+            assert!(Members::member_is_in_role(&1, DUMMY_ROLE));
+
+            // enter role a second time should fail
+            assert_dispatch_error_message(
+                Members::register_role_on_member(&1, DUMMY_ROLE, DUMMY_ACTOR_ID),
+                "member already in role",
+            );
+
+            // registering another member in same role and actorid combination should fail
+            assert_dispatch_error_message(
+                Members::register_role_on_member(&2, DUMMY_ROLE, DUMMY_ACTOR_ID),
+                "role actor already exists",
+            );
+
+            // UNREGISTERING
+
+            // trying to unregister non existant actor role should fail
+            assert_dispatch_error_message(
+                Members::unregister_role_on_member(&1, 111, 222),
+                "role actor not found",
+            );
+
+            // trying to unregister actor role on wrong member should fail
+            assert_dispatch_error_message(
+                Members::unregister_role_on_member(&2, DUMMY_ROLE, DUMMY_ACTOR_ID),
+                "role actor not for member",
+            );
+
+            // successfully unregister role
+            assert_ok!(Members::unregister_role_on_member(
+                &1,
+                DUMMY_ROLE,
+                DUMMY_ACTOR_ID
+            ));
+            assert!(!Members::member_is_in_role(&1, DUMMY_ROLE));
+        },
+    );
+}

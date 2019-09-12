@@ -616,10 +616,7 @@ impl<T: Trait> Module<T> {
         let member_id = Self::ensure_is_member_controller_account(controller_account)?;
 
         // policy check
-        ensure!(
-            Self::can_register_role_on_member(controller_account, role_id).is_ok(),
-            "registering role not allowed"
-        );
+        Self::can_register_role_on_member(controller_account, role_id)?;
 
         // guard against duplicate ActorInRole
         let actor_in_role = ActorInRole { role_id, actor_id };
@@ -666,10 +663,7 @@ impl<T: Trait> Module<T> {
         role_id: T::RoleId,
         actor_id: T::ActorId,
     ) -> Result<(), &'static str> {
-        ensure!(
-            Self::can_unregister_role_on_member(controller_account, role_id, actor_id).is_ok(),
-            "unregistering role not allowed"
-        );
+        Self::can_unregister_role_on_member(controller_account, role_id, actor_id)?;
 
         let member_id = Self::ensure_is_member_controller_account(controller_account)?;
         let mut profile = Self::ensure_profile(member_id)?;
