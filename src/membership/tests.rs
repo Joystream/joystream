@@ -123,6 +123,10 @@ fn buy_membership() {
 
             // controller account initially set to primary account
             assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
+            assert_eq!(
+                Members::member_id_by_controller_account_id(ALICE_ACCOUNT_ID),
+                Some(member_id)
+            );
         },
     );
 }
@@ -287,4 +291,53 @@ fn add_screened_member() {
             profile.entry
         );
     });
+}
+
+#[test]
+fn set_controller_key() {
+    let initial_members = [ALICE_ACCOUNT_ID];
+    const ALICE_CONTROLLER_ID: u64 = 2;
+
+    with_externalities(
+        &mut ExtBuilder::default()
+            .members(initial_members.to_vec())
+            .build(),
+        || {
+            assert_ok!(Members::set_controller_key(
+                Origin::signed(1),
+                ALICE_CONTROLLER_ID
+            ));
+
+            let member_id = assert_ok_unwrap(
+                Members::member_id_by_account_id(&ALICE_ACCOUNT_ID),
+                "member id not assigned",
+            );
+
+            let profile = assert_ok_unwrap(
+                Members::member_profile(&member_id),
+                "member profile not created",
+            );
+
+            assert_eq!(profile.controller_account, ALICE_CONTROLLER_ID);
+            assert_eq!(
+                Members::member_id_by_controller_account_id(ALICE_CONTROLLER_ID),
+                Some(member_id)
+            );
+            assert!(!<members::MemberIdByControllerAccountId<Test>>::exists(
+                &ALICE_ACCOUNT_ID
+            ));
+        },
+    );
+}
+
+#[test]
+fn set_primary_key() {
+    let initial_members = [1];
+
+    with_externalities(
+        &mut ExtBuilder::default()
+            .members(initial_members.to_vec())
+            .build(),
+        || {},
+    );
 }

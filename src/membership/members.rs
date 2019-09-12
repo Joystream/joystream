@@ -313,7 +313,7 @@ decl_module! {
             ensure!(!<MemberIdByAccountId<T>>::exists(&controller), "account already paired with member");
 
             <MemberIdByControllerAccountId<T>>::remove(&profile.controller_account);
-            <MemberIdByControllerAccountId<T>>::insert(&profile.controller_account, member_id);
+            <MemberIdByControllerAccountId<T>>::insert(&controller, member_id);
             profile.controller_account = controller.clone();
             <MemberProfile<T>>::insert(member_id, profile);
             Self::deposit_event(RawEvent::MemberSetControllerKey(member_id, controller));
