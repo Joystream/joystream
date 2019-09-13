@@ -6,6 +6,7 @@
 use rstd::prelude::*;
 
 use codec::{Decode, Encode};
+use runtime_primitives::traits::Zero;
 use srml_support::traits::Currency;
 use srml_support::{decl_module, decl_storage, ensure, StorageMap, StorageValue};
 
@@ -14,7 +15,8 @@ use srml_support::{decl_module, decl_storage, ensure, StorageMap, StorageValue};
 
 use system;
 
-pub const FIRST_TOKEN_MINT_ID: u64 = 1;
+pub type MintId = u64;
+pub const FIRST_TOKEN_MINT_ID: MintId = 1;
 
 pub trait Trait: system::Trait + Sized {
     /// The currency to mint
@@ -23,8 +25,6 @@ pub trait Trait: system::Trait + Sized {
 
 pub type BalanceOf<T> =
     <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-
-pub type MintId = u64;
 
 #[derive(Encode, Decode, Copy, Clone)]
 pub enum AdjustCapacityBy<Balance> {
@@ -90,7 +90,7 @@ impl<T: Trait> Module<T> {
     /// Updates capacity of all mints where the adjust_capacity_at_block_number value matches the current block number.
     /// For such mints, the value is updated by adding adjustment_on_interval.block_interval.
     fn update_mints(now: T::BlockNumber) {
-        for mint_id in 1..Self::next_token_mint_id() {
+        for mint_id in FIRST_TOKEN_MINT_ID..Self::next_token_mint_id() {
             if !<Mints<T>>::exists(&mint_id) {
                 continue;
             }
@@ -125,7 +125,7 @@ impl<T: Trait> Module<T> {
             AdjustCapacityBy::Setting(amount) => amount,
             AdjustCapacityBy::Reducing(amount) => {
                 if amount > starting_capacity {
-                    BalanceOf::<T>::from(0)
+                    Zero::zero()
                 } else {
                     starting_capacity - amount
                 }
@@ -141,7 +141,7 @@ impl<T: Trait> Module<T> {
         let mint = TokenMint {
             capacity: initial_capacity,
             created_at: <system::Module<T>>::block_number(),
-            total_minted: BalanceOf::<T>::from(0),
+            total_minted: Zero::zero(),
             adjust_capacity_at_block_number: adjustment.as_ref().and_then(|adjustment| {
                 Some(<system::Module<T>>::block_number() + adjustment.block_interval)
             }),
@@ -171,7 +171,7 @@ impl<T: Trait> Module<T> {
         let mut mint = Self::ensure_mint(&mint_id)?;
 
         // Do nothing if amount is zero
-        if requested_amount == BalanceOf::<T>::from(0) {
+        if requested_amount == Zero::zero() {
             return Ok(());
         }
 
@@ -200,8 +200,8 @@ impl<T: Trait> Module<T> {
         let mut mint = Self::ensure_mint(&mint_id)?;
 
         // Do nothing if amount is zero
-        if requested_amount == BalanceOf::<T>::from(0) {
-            return Ok(BalanceOf::<T>::from(0));
+        if requested_amount == Zero::zero() {
+            return Ok(Zero::zero());
         }
 
         let transfer_amount = if mint.capacity >= requested_amount {
