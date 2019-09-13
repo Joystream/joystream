@@ -5,42 +5,26 @@
 // use serde_derive::{Deserialize, Serialize};
 use rstd::prelude::*;
 
-use codec::{Codec, Decode, Encode};
-use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
+use codec::{Decode, Encode};
 use srml_support::traits::Currency;
-use srml_support::{decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue};
+use srml_support::{decl_module, decl_storage, ensure, StorageMap, StorageValue};
 
 // mod mock;
 // mod tests;
 
 use system;
 
-pub const FIRST_TOKEN_MINT_ID: u32 = 1;
+pub const FIRST_TOKEN_MINT_ID: u64 = 1;
 
-pub trait Trait: system::Trait + timestamp::Trait + Sized {
-    //type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-
+pub trait Trait: system::Trait + Sized {
     /// The currency to mint
     type Currency: Currency<Self::AccountId>;
-
-    /// Identifier type for a token mint
-    type MintId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerializeDebug
-        + PartialEq
-        + Into<u32>;
-
-    // We might want to have configurable limits
-    // type MinimumAdjustmentPeriod
-    // type MaxAdjustmentPerInterval
 }
 
 pub type BalanceOf<T> =
     <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+
+pub type MintId = u64;
 
 #[derive(Encode, Decode, Copy, Clone)]
 pub enum AdjustCapacityBy<Balance> {
@@ -87,10 +71,10 @@ pub enum MintOperationError {
 decl_storage! {
     trait Store for Module<T: Trait> as TokenMint {
         /// Mints
-        pub Mints get(mints) : map T::MintId => TokenMint<BalanceOf<T>, T::BlockNumber>;
+        pub Mints get(mints) : map MintId => TokenMint<BalanceOf<T>, T::BlockNumber>;
 
-        /// Id to use for next mint that is created. First mint id is implicitly 1
-        pub NextMintId get(next_token_mint_id): T::MintId = T::MintId::from(FIRST_TOKEN_MINT_ID);
+        /// Id to use for next mint that is created.
+        pub NextMintId get(next_token_mint_id): MintId = FIRST_TOKEN_MINT_ID;
     }
 }
 
@@ -106,8 +90,7 @@ impl<T: Trait> Module<T> {
     /// Updates capacity of all mints where the adjust_capacity_at_block_number value matches the current block number.
     /// For such mints, the value is updated by adding adjustment_on_interval.block_interval.
     fn update_mints(now: T::BlockNumber) {
-        for id in 1..Self::next_token_mint_id().into() {
-            let mint_id = T::MintId::from(id);
+        for mint_id in 1..Self::next_token_mint_id() {
             if !<Mints<T>>::exists(&mint_id) {
                 continue;
             }
@@ -154,7 +137,7 @@ impl<T: Trait> Module<T> {
     pub fn add_mint(
         initial_capacity: BalanceOf<T>,
         adjustment: Option<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>>,
-    ) -> Result<T::MintId, MintOperationError> {
+    ) -> Result<MintId, MintOperationError> {
         let mint = TokenMint {
             capacity: initial_capacity,
             created_at: <system::Module<T>>::block_number(),
@@ -166,22 +149,22 @@ impl<T: Trait> Module<T> {
         };
 
         let mint_id = Self::next_token_mint_id();
-        <NextMintId<T>>::mutate(|n| {
-            *n += T::MintId::from(1);
+        NextMintId::mutate(|n| {
+            *n += 1;
         });
         <Mints<T>>::insert(mint_id, mint);
         Ok(mint_id)
     }
 
     /// Removes a mint. Passing a non existant mint has no affect.
-    pub fn remove_mint(mint_id: T::MintId) {
+    pub fn remove_mint(mint_id: MintId) {
         <Mints<T>>::remove(&mint_id);
     }
 
     /// Tries to transfer exact amount from mint. Returns error if amount exceeds mint capacity
     /// Transfer amount of zero has no affect
     pub fn transfer_exact_tokens(
-        mint_id: T::MintId,
+        mint_id: MintId,
         requested_amount: BalanceOf<T>,
         recipient: T::AccountId,
     ) -> Result<(), MintOperationError> {
@@ -210,7 +193,7 @@ impl<T: Trait> Module<T> {
     /// Tries to transfer upto requested amount from mint, returns actual amount transferred
     /// Transfer amount of zero has no affect
     pub fn transfer_some_tokens(
-        mint_id: T::MintId,
+        mint_id: MintId,
         requested_amount: BalanceOf<T>,
         recipient: T::AccountId,
     ) -> Result<BalanceOf<T>, MintOperationError> {
@@ -238,7 +221,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn set_mint_capacity(
-        mint_id: T::MintId,
+        mint_id: MintId,
         capacity: BalanceOf<T>,
     ) -> Result<(), MintOperationError> {
         let mut mint = Self::ensure_mint(&mint_id)?;
@@ -249,8 +232,8 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn transfer_capacity(
-        source: T::MintId,
-        destination: T::MintId,
+        source: MintId,
+        destination: MintId,
         capacity_to_transfer: BalanceOf<T>,
     ) -> Result<(), MintOperationError> {
         let mut source_mint = if let Ok(source_mint) = Self::ensure_mint(&source) {
@@ -279,18 +262,18 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn mint_has_capacity(mint_id: T::MintId, capacity: BalanceOf<T>) -> bool {
+    pub fn mint_has_capacity(mint_id: MintId, capacity: BalanceOf<T>) -> bool {
         Self::ensure_mint(&mint_id)
             .ok()
             .map_or_else(|| false, |mint| mint.capacity >= capacity)
     }
 
-    pub fn mint_exists(mint_id: T::MintId) -> bool {
+    pub fn mint_exists(mint_id: MintId) -> bool {
         Self::ensure_mint(&mint_id).is_ok()
     }
 
     fn ensure_mint(
-        mint_id: &T::MintId,
+        mint_id: &MintId,
     ) -> Result<TokenMint<BalanceOf<T>, T::BlockNumber>, MintOperationError> {
         ensure!(<Mints<T>>::exists(mint_id), MintOperationError::InvalidMint);
         Ok(Self::mints(mint_id))
