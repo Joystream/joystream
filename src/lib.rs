@@ -36,16 +36,19 @@ pub type BalanceOf<T> =
     <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 #[derive(Encode, Decode, Copy, Clone)]
-pub enum AdjustCapacityBy {
-    Setting,
-    Adding,
-    Reducing,
+pub enum AdjustCapacityBy<Balance: From<u32>> {
+    // Set capacity of mint to specific value
+    Setting(Balance),
+    // Add to the capacity of the mint
+    Adding(Balance),
+    // Reduce capacity of the mint - doesn't go below zero
+    Reducing(Balance),
 }
 
-// Default impl for enum so Default impl can be derived for TokenMint
-impl Default for AdjustCapacityBy {
+// Default impl for enum AdjustCapacityBy so Default impl can be derived for TokenMint
+impl<Balance: From<u32>> Default for AdjustCapacityBy<Balance> {
     fn default() -> Self {
-        AdjustCapacityBy::Setting
+        AdjustCapacityBy::Setting(Balance::from(0))
     }
 }
 
@@ -53,10 +56,10 @@ impl Default for AdjustCapacityBy {
 // Note we don't use TokenMint<T: Trait> it breaks the Default derivation macro with error T doesn't impl Default
 // Which requires manually implementing Default trait.
 // We want Default trait on TokenMint so we can use it as value in StorageMap without needing to wrap it in an Option
-pub struct TokenMint<Balance, BlockNumber> {
+pub struct TokenMint<Balance: From<u32>, BlockNumber> {
     capacity: Balance,
 
-    adjustment_type: AdjustCapacityBy,
+    adjustment_type: AdjustCapacityBy<Balance>,
 
     block_interval: BlockNumber,
 
@@ -68,6 +71,12 @@ pub struct TokenMint<Balance, BlockNumber> {
     created: BlockNumber,
 
     total_minted: Balance,
+}
+
+#[derive(Encode, Decode)]
+pub struct AdjustOnInterval<Balance: From<u32>, BlockNumber> {
+    adjustment_type: AdjustCapacityBy<Balance>,
+    block_interval: BlockNumber,
 }
 
 decl_storage! {
@@ -83,8 +92,14 @@ decl_storage! {
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
-
     }
 }
 
-impl<T: Trait> Module<T> {}
+impl<T: Trait> Module<T> {
+    pub fn add_mint(
+        initial_capacity: BalanceOf<T>,
+        adjustment: AdjustOnInterval<BalanceOf<T>, T::BlockNumber>,
+    ) -> Result<T::TokenMintId, &'static str> {
+        Err("")
+    }
+}
