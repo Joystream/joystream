@@ -31,7 +31,8 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Default
         + Copy
         + MaybeSerializeDebug
-        + PartialEq;
+        + PartialEq
+        + Into<u32>;
 
     // We might want to have configurable limits
     // type MinimumAdjustmentPeriod
@@ -95,11 +96,60 @@ decl_storage! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-
+        fn on_finalize(now: T::BlockNumber) {
+            Self::update_mints(now);
+        }
     }
 }
 
 impl<T: Trait> Module<T> {
+    /// Updates capacity of all mints where the adjust_capacity_at_block_number value matches the current block number.
+    /// For such mints, the value is updated by adding adjustment_on_interval.block_interval.
+    fn update_mints(now: T::BlockNumber) {
+        for id in 1..Self::next_token_mint_id().into() {
+            let mint_id = T::MintId::from(id);
+            if !<Mints<T>>::exists(&mint_id) {
+                continue;
+            }
+            let mut mint = Self::mints(&mint_id);
+            if let Some(when) = mint.adjust_capacity_at_block_number {
+                if when == now {
+                    if let Some(ref adjustment_on_interval) = mint.adjustment_on_interval {
+                        // update mint capacity
+                        mint.capacity = Self::calc_adjusted_capacity(
+                            mint.capacity,
+                            adjustment_on_interval.adjustment_type,
+                        );
+
+                        // set blocknumber for next adjustment
+                        mint.adjust_capacity_at_block_number =
+                            Some(now + adjustment_on_interval.block_interval);
+
+                        // update mint
+                        <Mints<T>>::insert(&mint_id, mint);
+                    }
+                }
+            }
+        }
+    }
+
+    fn calc_adjusted_capacity(
+        starting_capacity: BalanceOf<T>,
+        adjustment: AdjustCapacityBy<BalanceOf<T>>,
+    ) -> BalanceOf<T> {
+        match adjustment {
+            AdjustCapacityBy::Adding(amount) => starting_capacity + amount,
+            AdjustCapacityBy::Setting(amount) => amount,
+            AdjustCapacityBy::Reducing(amount) => {
+                if amount > starting_capacity {
+                    BalanceOf::<T>::from(0)
+                } else {
+                    starting_capacity - amount
+                }
+            }
+        }
+    }
+
     /// Adds a new mint with given settings to mints, and returns new id.
     pub fn add_mint(
         initial_capacity: BalanceOf<T>,
@@ -147,6 +197,7 @@ impl<T: Trait> Module<T> {
             MintOperationError::NotEnoughCapacity
         );
 
+        // Mint tokens and deposit in recipient account
         T::Currency::deposit_creating(&recipient, requested_amount);
 
         // update mint capacity
@@ -176,6 +227,7 @@ impl<T: Trait> Module<T> {
             mint.capacity
         };
 
+        // Mint tokens and deposit in recipient account
         T::Currency::deposit_creating(&recipient, transfer_amount);
 
         // update mint capacity
@@ -225,6 +277,16 @@ impl<T: Trait> Module<T> {
         <Mints<T>>::insert(destination, destination_mint);
 
         Ok(())
+    }
+
+    pub fn mint_has_capacity(mint_id: T::MintId, capacity: BalanceOf<T>) -> bool {
+        Self::ensure_mint(&mint_id)
+            .ok()
+            .map_or_else(|| false, |mint| mint.capacity >= capacity)
+    }
+
+    pub fn mint_exists(mint_id: T::MintId) -> bool {
+        Self::ensure_mint(&mint_id).is_ok()
     }
 
     fn ensure_mint(
