@@ -15,6 +15,8 @@ use srml_support::{decl_module, decl_storage, ensure, Parameter, StorageMap, Sto
 
 use system;
 
+pub const FIRST_TOKEN_MINT_ID: u32 = 1;
+
 pub trait Trait: system::Trait + timestamp::Trait + Sized {
     //type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -22,7 +24,7 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
     type Currency: Currency<Self::AccountId>;
 
     /// Identifier type for a token mint
-    type TokenMintId: Parameter
+    type MintId: Parameter
         + Member
         + SimpleArithmetic
         + Codec
@@ -30,62 +32,64 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Copy
         + MaybeSerializeDebug
         + PartialEq;
+
+    // We might want to have configurable limits
+    // type MinimumAdjustmentPeriod
+    // type MaxAdjustmentPerInterval
 }
 
 pub type BalanceOf<T> =
     <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 #[derive(Encode, Decode, Copy, Clone)]
-pub enum AdjustCapacityBy<Balance: From<u32>> {
+pub enum AdjustCapacityBy<Balance> {
     // Set capacity of mint to specific value
     Setting(Balance),
     // Add to the capacity of the mint
     Adding(Balance),
-    // Reduce capacity of the mint - doesn't go below zero
+    // Reduce capacity of the mint
     Reducing(Balance),
 }
 
-// Default impl for enum AdjustCapacityBy so Default impl can be derived for TokenMint
-impl<Balance: From<u32>> Default for AdjustCapacityBy<Balance> {
-    fn default() -> Self {
-        AdjustCapacityBy::Setting(Balance::from(0))
-    }
+#[derive(Encode, Decode)]
+pub struct AdjustOnInterval<Balance, BlockNumber> {
+    block_interval: BlockNumber,
+    adjustment_type: AdjustCapacityBy<Balance>,
 }
 
 #[derive(Encode, Decode, Default)]
 // Note we don't use TokenMint<T: Trait> it breaks the Default derivation macro with error T doesn't impl Default
 // Which requires manually implementing Default trait.
 // We want Default trait on TokenMint so we can use it as value in StorageMap without needing to wrap it in an Option
-pub struct TokenMint<Balance: From<u32>, BlockNumber> {
+pub struct TokenMint<Balance, BlockNumber> {
     capacity: Balance,
 
-    adjustment_type: AdjustCapacityBy<Balance>,
-
-    block_interval: BlockNumber,
+    adjustment_on_interval: Option<AdjustOnInterval<Balance, BlockNumber>>,
 
     // Whether there is an upcoming block where
     // When this is not set, the mint is effectively paused.
     // There should be invariant check that Some(next_in_block) > now
-    adjust_capacity_in_block_nr: Option<BlockNumber>,
+    adjust_capacity_at_block_number: Option<BlockNumber>,
 
-    created: BlockNumber,
+    created_at: BlockNumber,
 
     total_minted: Balance,
 }
 
-#[derive(Encode, Decode)]
-pub struct AdjustOnInterval<Balance: From<u32>, BlockNumber> {
-    adjustment_type: AdjustCapacityBy<Balance>,
-    block_interval: BlockNumber,
+pub enum MintOperationError {
+    NotEnoughCapacity,
+    InvalidMint,
+    InvalidSourceMint,
+    InvalidDestinationMint,
 }
 
 decl_storage! {
     trait Store for Module<T: Trait> as TokenMint {
         /// Mints
-        pub Mints get(mints) : map T::TokenMintId => TokenMint<BalanceOf<T>, T::BlockNumber>;
+        pub Mints get(mints) : map T::MintId => TokenMint<BalanceOf<T>, T::BlockNumber>;
 
         /// Id to use for next mint that is created. First mint id is implicitly 1
-        pub NextTokenMintId get(next_token_mint_id): T::TokenMintId = T::TokenMintId::from(1);
+        pub NextMintId get(next_token_mint_id): T::MintId = T::MintId::from(FIRST_TOKEN_MINT_ID);
     }
 }
 
@@ -96,10 +100,137 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    /// Adds a new mint with given settings to mints, and returns new id.
     pub fn add_mint(
         initial_capacity: BalanceOf<T>,
-        adjustment: AdjustOnInterval<BalanceOf<T>, T::BlockNumber>,
-    ) -> Result<T::TokenMintId, &'static str> {
-        Err("")
+        adjustment: Option<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>>,
+    ) -> Result<T::MintId, MintOperationError> {
+        let mint = TokenMint {
+            capacity: initial_capacity,
+            created_at: <system::Module<T>>::block_number(),
+            total_minted: BalanceOf::<T>::from(0),
+            adjust_capacity_at_block_number: adjustment.as_ref().and_then(|adjustment| {
+                Some(<system::Module<T>>::block_number() + adjustment.block_interval)
+            }),
+            adjustment_on_interval: adjustment,
+        };
+
+        let mint_id = Self::next_token_mint_id();
+        <NextMintId<T>>::mutate(|n| {
+            *n += T::MintId::from(1);
+        });
+        <Mints<T>>::insert(mint_id, mint);
+        Ok(mint_id)
+    }
+
+    /// Removes a mint. Passing a non existant mint has no affect.
+    pub fn remove_mint(mint_id: T::MintId) {
+        <Mints<T>>::remove(&mint_id);
+    }
+
+    /// Tries to transfer exact amount from mint. Returns error if amount exceeds mint capacity
+    /// Transfer amount of zero has no affect
+    pub fn transfer_exact_tokens(
+        mint_id: T::MintId,
+        requested_amount: BalanceOf<T>,
+        recipient: T::AccountId,
+    ) -> Result<(), MintOperationError> {
+        let mut mint = Self::ensure_mint(&mint_id)?;
+
+        // Do nothing if amount is zero
+        if requested_amount == BalanceOf::<T>::from(0) {
+            return Ok(());
+        }
+
+        ensure!(
+            mint.capacity >= requested_amount,
+            MintOperationError::NotEnoughCapacity
+        );
+
+        T::Currency::deposit_creating(&recipient, requested_amount);
+
+        // update mint capacity
+        mint.capacity = mint.capacity - requested_amount;
+        <Mints<T>>::insert(mint_id, mint);
+
+        Ok(())
+    }
+
+    /// Tries to transfer upto requested amount from mint, returns actual amount transferred
+    /// Transfer amount of zero has no affect
+    pub fn transfer_some_tokens(
+        mint_id: T::MintId,
+        requested_amount: BalanceOf<T>,
+        recipient: T::AccountId,
+    ) -> Result<BalanceOf<T>, MintOperationError> {
+        let mut mint = Self::ensure_mint(&mint_id)?;
+
+        // Do nothing if amount is zero
+        if requested_amount == BalanceOf::<T>::from(0) {
+            return Ok(BalanceOf::<T>::from(0));
+        }
+
+        let transfer_amount = if mint.capacity >= requested_amount {
+            requested_amount
+        } else {
+            mint.capacity
+        };
+
+        T::Currency::deposit_creating(&recipient, transfer_amount);
+
+        // update mint capacity
+        mint.capacity = mint.capacity - transfer_amount;
+        <Mints<T>>::insert(mint_id, mint);
+
+        Ok(transfer_amount)
+    }
+
+    pub fn set_mint_capacity(
+        mint_id: T::MintId,
+        capacity: BalanceOf<T>,
+    ) -> Result<(), MintOperationError> {
+        let mut mint = Self::ensure_mint(&mint_id)?;
+        // update mint capacity
+        mint.capacity = capacity;
+        <Mints<T>>::insert(mint_id, mint);
+        Ok(())
+    }
+
+    pub fn transfer_capacity(
+        source: T::MintId,
+        destination: T::MintId,
+        capacity_to_transfer: BalanceOf<T>,
+    ) -> Result<(), MintOperationError> {
+        let mut source_mint = if let Ok(source_mint) = Self::ensure_mint(&source) {
+            source_mint
+        } else {
+            return Err(MintOperationError::InvalidSourceMint);
+        };
+
+        let mut destination_mint = if let Ok(destination_mint) = Self::ensure_mint(&destination) {
+            destination_mint
+        } else {
+            return Err(MintOperationError::InvalidDestinationMint);
+        };
+
+        ensure!(
+            source_mint.capacity >= capacity_to_transfer,
+            MintOperationError::NotEnoughCapacity
+        );
+
+        source_mint.capacity = source_mint.capacity - capacity_to_transfer;
+        destination_mint.capacity = destination_mint.capacity + capacity_to_transfer;
+
+        <Mints<T>>::insert(source, source_mint);
+        <Mints<T>>::insert(destination, destination_mint);
+
+        Ok(())
+    }
+
+    fn ensure_mint(
+        mint_id: &T::MintId,
+    ) -> Result<TokenMint<BalanceOf<T>, T::BlockNumber>, MintOperationError> {
+        ensure!(<Mints<T>>::exists(mint_id), MintOperationError::InvalidMint);
+        Ok(Self::mints(mint_id))
     }
 }
