@@ -12,7 +12,7 @@ mod mint;
 mod mock;
 mod tests;
 
-pub use mint::{AdjustCapacityBy, AdjustOnInterval, Mint, MintingError};
+pub use mint::{AdjustCapacityBy, AdjustOnInterval, Adjustment, Mint, MintingError};
 
 use system;
 
@@ -61,15 +61,25 @@ impl<T: Trait> Module<T> {
     /// Adds a new mint with given settings to mints, and returns new id.
     pub fn add_mint(
         initial_capacity: BalanceOf<T>,
-        adjustment: Option<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>>,
-        first_adjustment_in: Option<T::BlockNumber>,
+        adjustment: Option<Adjustment<BalanceOf<T>, T::BlockNumber>>,
     ) -> Result<MintId, MintingError> {
-        let mint = Mint::new(
-            initial_capacity,
-            adjustment,
-            <system::Module<T>>::block_number(),
-            first_adjustment_in,
-        );
+        let now = <system::Module<T>>::block_number();
+
+        // Make sure the next adjustment if set, is in the future
+
+        if let Some(adjustment) = adjustment {
+            match adjustment {
+                Adjustment::IntervalAfterFirstAdjustment(_, first_adjustment_in) => {
+                    ensure!(
+                        first_adjustment_in > now,
+                        MintingError::NextAdjustmentInPast
+                    );
+                }
+                _ => (),
+            }
+        }
+
+        let mint = Mint::new(initial_capacity, adjustment, now);
 
         let mint_id = Self::next_token_mint_id();
         NextMintId::mutate(|n| {

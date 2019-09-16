@@ -18,6 +18,12 @@ pub struct AdjustOnInterval<Balance, BlockNumber> {
     pub adjustment_type: AdjustCapacityBy<Balance>,
 }
 
+#[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Adjustment<Balance, BlockNumber> {
+    Interval(AdjustOnInterval<Balance, BlockNumber>),
+    IntervalAfterFirstAdjustment(AdjustOnInterval<Balance, BlockNumber>, BlockNumber),
+}
+
 #[derive(Encode, Decode, Default)]
 // Note we don't use TokenMint<T: Trait> it breaks the Default derivation macro with error T doesn't impl Default
 // Which requires manually implementing Default trait.
@@ -46,6 +52,7 @@ pub enum MintingError {
     InvalidMint,
     InvalidSourceMint,
     InvalidDestinationMint,
+    NextAdjustmentInPast,
 }
 
 impl<Balance, BlockNumber> Mint<Balance, BlockNumber>
@@ -55,18 +62,23 @@ where
 {
     pub fn new(
         initial_capacity: Balance,
-        adjustment: Option<AdjustOnInterval<Balance, BlockNumber>>,
+        adjustment: Option<Adjustment<Balance, BlockNumber>>,
         now: BlockNumber,
-        first_adjustment_in: Option<BlockNumber>,
     ) -> Self {
         Mint {
             capacity: initial_capacity,
             created_at: now,
             total_minted: Zero::zero(),
-            adjust_capacity_at_block_number: adjustment.as_ref().and_then(|adjustment| {
-                Some(now + first_adjustment_in.map_or(adjustment.block_interval, |first| first))
+            adjust_capacity_at_block_number: adjustment.map(|adjustment| match adjustment {
+                Adjustment::Interval(adjust_on_interval) => now + adjust_on_interval.block_interval,
+                Adjustment::IntervalAfterFirstAdjustment(_, first_adjustment) => first_adjustment,
             }),
-            adjustment_on_interval: adjustment,
+            adjustment_on_interval: adjustment.map(|adjustment| match adjustment {
+                Adjustment::Interval(adjust_on_interval) => adjust_on_interval,
+                Adjustment::IntervalAfterFirstAdjustment(adjust_on_interval, _) => {
+                    adjust_on_interval
+                }
+            }),
         }
     }
 
@@ -126,7 +138,7 @@ where
     }
 
     /// Updates capacity mints where the adjust_capacity_at_block_number value matches the current block number.
-    /// At such time the value is updated by adding adjustment_on_interval.block_interval.
+    /// At such time the value is updated by adding adjustment.block_interval.
     pub fn maybe_do_capacity_adjustment(&mut self, now: BlockNumber) -> bool {
         if !self.is_time_for_adjustment(now) {
             return false;

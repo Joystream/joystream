@@ -16,7 +16,7 @@ fn adding_and_removing_mints() {
             block_interval: 100,
         };
 
-        let mint_id = Minting::add_mint(capacity, Some(adjustment), None)
+        let mint_id = Minting::add_mint(capacity, Some(Adjustment::Interval(adjustment)))
             .ok()
             .unwrap();
         assert!(Minting::mint_exists(mint_id));
@@ -35,7 +35,7 @@ fn minting() {
     with_externalities(&mut build_test_externalities(), || {
         let capacity: u64 = 5000;
 
-        let mint_id = Minting::add_mint(capacity, None, None).ok().unwrap();
+        let mint_id = Minting::add_mint(capacity, None).ok().unwrap();
 
         assert!(Minting::transfer_exact_tokens(mint_id, 1000, &1).is_ok());
 
@@ -50,7 +50,7 @@ fn minting_exact() {
     with_externalities(&mut build_test_externalities(), || {
         let capacity: u64 = 1000;
 
-        let mint_id = Minting::add_mint(capacity, None, None).ok().unwrap();
+        let mint_id = Minting::add_mint(capacity, None).ok().unwrap();
 
         assert_eq!(
             Minting::transfer_exact_tokens(mint_id, 2000, &1),
@@ -64,7 +64,7 @@ fn minting_some() {
     with_externalities(&mut build_test_externalities(), || {
         let capacity: u64 = 1000;
 
-        let mint_id = Minting::add_mint(capacity, None, None).ok().unwrap();
+        let mint_id = Minting::add_mint(capacity, None).ok().unwrap();
 
         assert_eq!(Minting::transfer_some_tokens(mint_id, 2000, &1), Ok(1000));
     });
@@ -82,7 +82,7 @@ fn adjustment_adding() {
             block_interval: 100,
         };
 
-        let mint_id = Minting::add_mint(capacity, Some(adjustment), None)
+        let mint_id = Minting::add_mint(capacity, Some(Adjustment::Interval(adjustment)))
             .ok()
             .unwrap();
 
@@ -117,11 +117,13 @@ fn adjustment_reducing() {
             block_interval: 100,
         };
 
-        let mint_id = Minting::add_mint(capacity, Some(adjustment), None)
+        let mint_id = Minting::add_mint(capacity, Some(Adjustment::Interval(adjustment)))
             .ok()
             .unwrap();
 
         Minting::update_mints(100);
+        assert!(!Minting::mint_has_capacity(mint_id, capacity,));
+
         assert!(Minting::mint_has_capacity(
             mint_id,
             capacity - (adjustment_amount * 1)
@@ -152,11 +154,41 @@ fn adjustment_setting() {
             block_interval: 100,
         };
 
-        let mint_id = Minting::add_mint(capacity, Some(adjustment), None)
+        let mint_id = Minting::add_mint(capacity, Some(Adjustment::Interval(adjustment)))
             .ok()
             .unwrap();
 
         Minting::update_mints(100);
         assert!(Minting::mint_has_capacity(mint_id, setting_amount));
+    });
+}
+
+#[test]
+fn adjustment_first_interval() {
+    with_externalities(&mut build_test_externalities(), || {
+        System::set_block_number(0);
+        let capacity: u64 = 2000;
+        let amount: u64 = 500;
+
+        let adjustment = AdjustOnInterval {
+            adjustment_type: AdjustCapacityBy::Adding(amount),
+            block_interval: 100,
+        };
+
+        let mint_id = Minting::add_mint(
+            capacity,
+            Some(Adjustment::IntervalAfterFirstAdjustment(adjustment, 1000)),
+        )
+        .ok()
+        .unwrap();
+
+        Minting::update_mints(100);
+        assert!(!Minting::mint_has_capacity(mint_id, capacity + amount));
+
+        Minting::update_mints(1000);
+        assert!(Minting::mint_has_capacity(mint_id, capacity + amount));
+
+        Minting::update_mints(1100);
+        assert!(Minting::mint_has_capacity(mint_id, capacity + 2 * amount));
     });
 }
