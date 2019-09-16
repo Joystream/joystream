@@ -12,7 +12,7 @@ mod mint;
 mod mock;
 mod tests;
 
-pub use mint::{AdjustCapacityBy, AdjustOnInterval, Mint};
+pub use mint::{AdjustCapacityBy, AdjustOnInterval, Mint, MintingError};
 
 use system;
 
@@ -62,7 +62,7 @@ impl<T: Trait> Module<T> {
     pub fn add_mint(
         initial_capacity: BalanceOf<T>,
         adjustment: Option<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>>,
-    ) -> Result<MintId, mint::MintingError> {
+    ) -> Result<MintId, MintingError> {
         let mint = Mint::new(
             initial_capacity,
             adjustment,
@@ -87,8 +87,8 @@ impl<T: Trait> Module<T> {
     pub fn transfer_exact_tokens(
         mint_id: MintId,
         requested_amount: BalanceOf<T>,
-        recipient: T::AccountId,
-    ) -> Result<(), mint::MintingError> {
+        recipient: &T::AccountId,
+    ) -> Result<(), MintingError> {
         if requested_amount == Zero::zero() {
             return Ok(());
         }
@@ -99,7 +99,7 @@ impl<T: Trait> Module<T> {
         <Mints<T>>::insert(mint_id, mint);
 
         // Deposit into recipient account
-        T::Currency::deposit_creating(&recipient, requested_amount);
+        T::Currency::deposit_creating(recipient, requested_amount);
 
         Ok(())
     }
@@ -109,27 +109,24 @@ impl<T: Trait> Module<T> {
     pub fn transfer_some_tokens(
         mint_id: MintId,
         requested_amount: BalanceOf<T>,
-        recipient: T::AccountId,
-    ) -> Result<BalanceOf<T>, mint::MintingError> {
+        recipient: &T::AccountId,
+    ) -> Result<BalanceOf<T>, MintingError> {
         if requested_amount == Zero::zero() {
             return Ok(Zero::zero());
         }
 
         // Try minting
         let mut mint = Self::ensure_mint(&mint_id)?;
-        let minted_amount = mint.mint_some_tokens(requested_amount)?;
+        let minted_amount = mint.mint_some_tokens(requested_amount);
         <Mints<T>>::insert(mint_id, mint);
 
         // Deposit in recipient account
-        T::Currency::deposit_creating(&recipient, minted_amount);
+        T::Currency::deposit_creating(recipient, minted_amount);
 
         Ok(minted_amount)
     }
 
-    pub fn set_mint_capacity(
-        mint_id: MintId,
-        capacity: BalanceOf<T>,
-    ) -> Result<(), mint::MintingError> {
+    pub fn set_mint_capacity(mint_id: MintId, capacity: BalanceOf<T>) -> Result<(), MintingError> {
         let mut mint = Self::ensure_mint(&mint_id)?;
 
         mint.set_capacity(capacity);
@@ -141,17 +138,17 @@ impl<T: Trait> Module<T> {
         source: MintId,
         destination: MintId,
         capacity_to_transfer: BalanceOf<T>,
-    ) -> Result<(), mint::MintingError> {
+    ) -> Result<(), MintingError> {
         let mut source_mint = if let Ok(source_mint) = Self::ensure_mint(&source) {
             source_mint
         } else {
-            return Err(mint::MintingError::InvalidSourceMint);
+            return Err(MintingError::InvalidSourceMint);
         };
 
         let mut destination_mint = if let Ok(destination_mint) = Self::ensure_mint(&destination) {
             destination_mint
         } else {
-            return Err(mint::MintingError::InvalidDestinationMint);
+            return Err(MintingError::InvalidDestinationMint);
         };
 
         source_mint.transfer_capacity_to(&mut destination_mint, capacity_to_transfer)?;
@@ -168,14 +165,19 @@ impl<T: Trait> Module<T> {
             .map_or_else(|| false, |mint| mint.can_mint(capacity))
     }
 
+    pub fn mint_adjustment(
+        mint_id: MintId,
+    ) -> Result<Option<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>>, MintingError> {
+        let mint = Self::ensure_mint(&mint_id)?;
+        Ok(mint.adjustment())
+    }
+
     pub fn mint_exists(mint_id: MintId) -> bool {
         Self::ensure_mint(&mint_id).is_ok()
     }
 
-    fn ensure_mint(
-        mint_id: &MintId,
-    ) -> Result<Mint<BalanceOf<T>, T::BlockNumber>, mint::MintingError> {
-        ensure!(<Mints<T>>::exists(mint_id), mint::MintingError::InvalidMint);
+    fn ensure_mint(mint_id: &MintId) -> Result<Mint<BalanceOf<T>, T::BlockNumber>, MintingError> {
+        ensure!(<Mints<T>>::exists(mint_id), MintingError::InvalidMint);
         Ok(Self::mints(mint_id))
     }
 }

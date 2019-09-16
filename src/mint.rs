@@ -2,7 +2,7 @@ use codec::{Decode, Encode};
 use runtime_primitives::traits::{SimpleArithmetic, Zero};
 use srml_support::ensure;
 
-#[derive(Encode, Decode, Copy, Clone, Debug)]
+#[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
 pub enum AdjustCapacityBy<Balance> {
     // Set capacity of mint to specific value
     Setting(Balance),
@@ -12,7 +12,7 @@ pub enum AdjustCapacityBy<Balance> {
     Reducing(Balance),
 }
 
-#[derive(Encode, Decode, Copy, Clone, Debug)]
+#[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
 pub struct AdjustOnInterval<Balance, BlockNumber> {
     pub block_interval: BlockNumber,
     pub adjustment_type: AdjustCapacityBy<Balance>,
@@ -79,7 +79,7 @@ where
         Ok(())
     }
 
-    pub fn mint_some_tokens(&mut self, requested_amount: Balance) -> Result<Balance, MintingError> {
+    pub fn mint_some_tokens(&mut self, requested_amount: Balance) -> Balance {
         let minted = if self.capacity >= requested_amount {
             requested_amount
         } else {
@@ -87,7 +87,7 @@ where
         };
         self.capacity -= minted;
         self.total_minted += minted;
-        Ok(minted)
+        minted
     }
 
     pub fn set_capacity(&mut self, new_capacity: Balance) {
@@ -118,6 +118,10 @@ where
         self.capacity -= capacity_to_transfer;
         destination.capacity += capacity_to_transfer;
         Ok(())
+    }
+
+    pub fn adjustment(&self) -> Option<AdjustOnInterval<Balance, BlockNumber>> {
+        self.adjustment_on_interval
     }
 
     /// Updates capacity mints where the adjust_capacity_at_block_number value matches the current block number.
