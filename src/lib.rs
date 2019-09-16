@@ -84,6 +84,8 @@ impl<T: Trait> Module<T> {
         <Mints<T>>::remove(&mint_id);
     }
 
+    // pub fn set_mint_adjustment(mint_id: MintId, adjustment: AdjustOnInterval<BalanceOf<T>, T::BlockNumber>) {}
+
     /// Tries to transfer exact amount from mint. Returns error if amount exceeds mint capacity
     /// Transfer amount of zero has no affect
     pub fn transfer_exact_tokens(

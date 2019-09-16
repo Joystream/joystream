@@ -71,7 +71,7 @@ fn minting_some() {
 }
 
 #[test]
-fn adjustment() {
+fn adjustment_adding() {
     with_externalities(&mut build_test_externalities(), || {
         System::set_block_number(0);
         let capacity: u64 = 5000;
@@ -92,6 +92,7 @@ fn adjustment() {
             capacity + (adjustment_amount * 1)
         ));
 
+        // no adjustments should happen
         Minting::update_mints(100);
         Minting::update_mints(140);
         Minting::update_mints(199);
@@ -101,5 +102,61 @@ fn adjustment() {
             mint_id,
             capacity + (adjustment_amount * 2)
         ));
+    });
+}
+
+#[test]
+fn adjustment_reducing() {
+    with_externalities(&mut build_test_externalities(), || {
+        System::set_block_number(0);
+        let capacity: u64 = 5000;
+        let adjustment_amount: u64 = 500;
+
+        let adjustment = AdjustOnInterval {
+            adjustment_type: AdjustCapacityBy::Reducing(adjustment_amount),
+            block_interval: 100,
+        };
+
+        let mint_id = Minting::add_mint(capacity, Some(adjustment), None)
+            .ok()
+            .unwrap();
+
+        Minting::update_mints(100);
+        assert!(Minting::mint_has_capacity(
+            mint_id,
+            capacity - (adjustment_amount * 1)
+        ));
+
+        // no adjustments should happen
+        Minting::update_mints(100);
+        Minting::update_mints(140);
+        Minting::update_mints(199);
+
+        Minting::update_mints(200);
+        assert!(Minting::mint_has_capacity(
+            mint_id,
+            capacity - (adjustment_amount * 2)
+        ));
+    });
+}
+
+#[test]
+fn adjustment_setting() {
+    with_externalities(&mut build_test_externalities(), || {
+        System::set_block_number(0);
+        let capacity: u64 = 2000;
+        let setting_amount: u64 = 5000;
+
+        let adjustment = AdjustOnInterval {
+            adjustment_type: AdjustCapacityBy::Setting(setting_amount),
+            block_interval: 100,
+        };
+
+        let mint_id = Minting::add_mint(capacity, Some(adjustment), None)
+            .ok()
+            .unwrap();
+
+        Minting::update_mints(100);
+        assert!(Minting::mint_has_capacity(mint_id, setting_amount));
     });
 }
