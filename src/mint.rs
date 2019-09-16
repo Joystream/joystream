@@ -57,14 +57,15 @@ where
         initial_capacity: Balance,
         adjustment: Option<AdjustOnInterval<Balance, BlockNumber>>,
         now: BlockNumber,
+        first_adjustment_in: Option<BlockNumber>,
     ) -> Self {
         Mint {
             capacity: initial_capacity,
             created_at: now,
             total_minted: Zero::zero(),
-            adjust_capacity_at_block_number: adjustment
-                .as_ref()
-                .and_then(|adjustment| Some(now + adjustment.block_interval)),
+            adjust_capacity_at_block_number: adjustment.as_ref().and_then(|adjustment| {
+                Some(now + first_adjustment_in.map_or(adjustment.block_interval, |first| first))
+            }),
             adjustment_on_interval: adjustment,
         }
     }

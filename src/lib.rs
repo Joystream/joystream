@@ -62,11 +62,13 @@ impl<T: Trait> Module<T> {
     pub fn add_mint(
         initial_capacity: BalanceOf<T>,
         adjustment: Option<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>>,
+        first_adjustment_in: Option<T::BlockNumber>,
     ) -> Result<MintId, MintingError> {
         let mint = Mint::new(
             initial_capacity,
             adjustment,
             <system::Module<T>>::block_number(),
+            first_adjustment_in,
         );
 
         let mint_id = Self::next_token_mint_id();
