@@ -10,6 +10,9 @@ use srml_support::{decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use minting::{self, BalanceOf, MintId};
 use system;
 
+mod mock;
+mod tests;
+
 /// Type of identifier for recipients.
 type RecipientId = u64;
 pub const FIRST_RECIPIENT_ID: RecipientId = 1;
@@ -35,6 +38,22 @@ pub trait PayoutStatusHandler<T: Trait> {
         destination_account: &T::AccountId,
         amount: BalanceOf<T>,
     );
+}
+
+impl<T: Trait> PayoutStatusHandler<T> for () {
+    fn payout_succeeded(
+        _id: RewardRelationshipId,
+        _destination_account: &T::AccountId,
+        _amount: BalanceOf<T>,
+    ) {
+    }
+
+    fn payout_failed(
+        _id: RewardRelationshipId,
+        _destination_account: &T::AccountId,
+        _amount: BalanceOf<T>,
+    ) {
+    }
 }
 
 // A recipient of recurring rewards
