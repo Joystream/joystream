@@ -69,7 +69,7 @@ impl<T: Trait> Module<T> {
 
         if let Some(adjustment) = adjustment {
             match adjustment {
-                Adjustment::IntervalAfterFirstAdjustment(_, first_adjustment_in) => {
+                Adjustment::IntervalAfterFirstAdjustmentAbsolute(_, first_adjustment_in) => {
                     ensure!(
                         first_adjustment_in > now,
                         MintingError::NextAdjustmentInPast

@@ -177,7 +177,9 @@ fn adjustment_first_interval() {
 
         let mint_id = Minting::add_mint(
             capacity,
-            Some(Adjustment::IntervalAfterFirstAdjustment(adjustment, 1000)),
+            Some(Adjustment::IntervalAfterFirstAdjustmentAbsolute(
+                adjustment, 1000,
+            )),
         )
         .ok()
         .unwrap();

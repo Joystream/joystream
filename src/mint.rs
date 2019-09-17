@@ -20,8 +20,12 @@ pub struct AdjustOnInterval<Balance, BlockNumber> {
 
 #[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Adjustment<Balance, BlockNumber> {
+    // First adjustment will be after AdjustOnInterval.block_interval
     Interval(AdjustOnInterval<Balance, BlockNumber>),
-    IntervalAfterFirstAdjustment(AdjustOnInterval<Balance, BlockNumber>, BlockNumber),
+    // First Adjustment will be at absolute blocknumber
+    IntervalAfterFirstAdjustmentAbsolute(AdjustOnInterval<Balance, BlockNumber>, BlockNumber),
+    // First Adjustment will be after a specified number of blocks
+    IntervalAfterFirstAdjustmentRelative(AdjustOnInterval<Balance, BlockNumber>, BlockNumber),
 }
 
 #[derive(Encode, Decode, Default)]
@@ -71,11 +75,19 @@ where
             total_minted: Zero::zero(),
             adjust_capacity_at_block_number: adjustment.map(|adjustment| match adjustment {
                 Adjustment::Interval(adjust_on_interval) => now + adjust_on_interval.block_interval,
-                Adjustment::IntervalAfterFirstAdjustment(_, first_adjustment) => first_adjustment,
+                Adjustment::IntervalAfterFirstAdjustmentAbsolute(_, first_adjustment) => {
+                    first_adjustment
+                }
+                Adjustment::IntervalAfterFirstAdjustmentRelative(_, first_adjustment) => {
+                    now + first_adjustment
+                }
             }),
             adjustment_on_interval: adjustment.map(|adjustment| match adjustment {
                 Adjustment::Interval(adjust_on_interval) => adjust_on_interval,
-                Adjustment::IntervalAfterFirstAdjustment(adjust_on_interval, _) => {
+                Adjustment::IntervalAfterFirstAdjustmentAbsolute(adjust_on_interval, _) => {
+                    adjust_on_interval
+                }
+                Adjustment::IntervalAfterFirstAdjustmentRelative(adjust_on_interval, _) => {
                     adjust_on_interval
                 }
             }),
