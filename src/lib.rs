@@ -108,6 +108,7 @@ pub enum RewardsError {
     RecipientNotFound,
     RewardSourceNotFound,
     BlockNumberInPast,
+    RewardRelationshipNotFound,
 }
 
 pub enum NextPaymentSchedule<BlockNumber> {
@@ -187,15 +188,46 @@ impl<T: Trait> Module<T> {
         Ok(relationship_id)
     }
 
-    // Removes a mapping from depenencies based on given identifier.
-    pub fn remove_reward_relationship() {}
+    // Removes a mapping from reward relashionships based on given identifier.
+    pub fn remove_reward_relationship(id: RewardRelationshipId) {
+        <RewardRelationships<T>>::remove(&id);
+    }
 
-    /*
-    For RecievesFromSource found in rewardRelationships with given identifier, new valus for the following can be set
-        account
-        amount_per_payout
-        next_payment_in_block
-        payout_interval
-    */
-    pub fn set_reward_relationship() {}
+    // For reward relationship found with given identifier, new values can be set for
+    // account, payout, block number when next payout will be made and the new interval after
+    // the next scheduled payout. All values are optional, but updating values are combined in this
+    // single method to ensure atomic updates.
+    pub fn set_reward_relationship(
+        id: RewardRelationshipId,
+        account: Option<T::AccountId>,
+        payout: Option<BalanceOf<T>>,
+        next_payment_at: Option<Option<T::BlockNumber>>,
+        payout_interval: Option<Option<T::BlockNumber>>,
+    ) -> Result<(), RewardsError> {
+        ensure!(
+            <RewardRelationships<T>>::exists(&id),
+            RewardsError::RewardRelationshipNotFound
+        );
+        let mut relationship = Self::reward_relationships(&id);
+
+        if let Some(account) = account {
+            relationship.account = account;
+        }
+        if let Some(payout) = payout {
+            relationship.amount_per_payout = payout;
+        }
+        if let Some(next_payout_at_block) = next_payment_at {
+            if let Some(blocknumber) = next_payout_at_block {
+                ensure!(
+                    blocknumber > <system::Module<T>>::block_number(),
+                    RewardsError::BlockNumberInPast
+                );
+            }
+            relationship.next_payment_at_block = next_payout_at_block;
+        }
+        if let Some(payout_interval) = payout_interval {
+            relationship.payout_interval = payout_interval;
+        }
+        Ok(())
+    }
 }
