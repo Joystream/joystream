@@ -26,13 +26,13 @@ pub trait Trait: system::Trait + minting::Trait + Sized {
 pub trait PayoutStatusHandler<T: Trait> {
     fn payout_succeeded(
         id: RewardRelationshipId,
-        destination_account: T::AccountId,
+        destination_account: &T::AccountId,
         amount: BalanceOf<T>,
     );
 
     fn payout_failed(
         id: RewardRelationshipId,
-        destination_account: T::AccountId,
+        destination_account: &T::AccountId,
         amount: BalanceOf<T>,
     );
 }
@@ -80,7 +80,7 @@ pub struct RewardRelationship<AccountId, Balance, BlockNumber> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as RecurringReward {
-        Recipients get(rewards): map RecipientId => Recipient<BalanceOf<T>>;
+        Recipients get(recipients): map RecipientId => Recipient<BalanceOf<T>>;
 
         NextRecipientId get(next_recipient_id): RecipientId = FIRST_RECIPIENT_ID;
 
@@ -94,12 +94,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
         fn on_finalize(now: T::BlockNumber) {
-            /*
-            For all RecievesFromSource found in rewardRelationships where next_payment_in_block is set and matches current block height, a call to pay_reward is made for the suitable amount, recipient and source. The next_payment_in_block is updated based on payout_interval.
-
-            If the call succeeds, total_reward_received is incremented on both
-            recipient and dependency with amount_per_payout, and a call to T::PayoutStatusHandler is made. Otherwise, analogous steps for failure.
-            */
+            Self::do_payouts(now);
         }
     }
 }
@@ -229,5 +224,85 @@ impl<T: Trait> Module<T> {
             relationship.payout_interval = payout_interval;
         }
         Ok(())
+    }
+
+    /*
+    For all relationships where next_payment_at_block is set and matches current block height,
+    a call to pay_reward is made for the suitable amount, recipient and source.
+    The next_payment_in_block is updated based on payout_interval.
+    If the call succeeds, total_reward_received is incremented on both
+    recipient and dependency with amount_per_payout, and a call to T::PayoutStatusHandler is made.
+    Otherwise, analogous steps for failure.
+    */
+    fn do_payouts(now: T::BlockNumber) {
+        for relationship_id in FIRST_REWARD_RELATIONSHIP_ID..Self::next_reward_relationship_id() {
+            if !<RewardRelationships<T>>::exists(&relationship_id) {
+                continue;
+            }
+            let mut relationship = Self::reward_relationships(&relationship_id);
+
+            // recipient can be removed independantly of relationship, so ensure we have a recipient
+            if !<Recipients<T>>::exists(&relationship.recipient) {
+                continue;
+            }
+            let mut recipient = Self::recipients(&relationship.recipient);
+
+            if let Some(blocknumber) = relationship.next_payment_at_block {
+                if blocknumber != now {
+                    return;
+                }
+
+                // Add the missed payout and try to pay those in addition to scheduled payout?
+                // let payout = relationship.total_reward_missed + relationship.amount_per_payout;
+                let payout = relationship.amount_per_payout;
+
+                // try to make payment
+                if <minting::Module<T>>::transfer_exact_tokens(
+                    relationship.mint_id,
+                    payout,
+                    &relationship.account,
+                )
+                .is_err()
+                {
+                    // add only newly scheduled payout to total missed payout
+                    relationship.total_reward_missed += relationship.amount_per_payout;
+
+                    // update recipient stats
+                    recipient.total_reward_missed += relationship.amount_per_payout;
+
+                    T::PayoutStatusHandler::payout_failed(
+                        relationship_id,
+                        &relationship.account,
+                        payout,
+                    );
+                } else {
+                    // update payout received stats
+                    relationship.total_reward_received += payout;
+                    recipient.total_reward_received += payout;
+
+                    // update missed payout stats
+                    // if relationship.total_reward_missed != Zero::zero() {
+                    //     // update recipient stats
+                    //     recipient.total_reward_missed -= relationship.total_reward_missed;
+
+                    //     // clear missed reward on relationship
+                    //     relationship.total_reward_missed = Zero::zero();
+                    // }
+                    T::PayoutStatusHandler::payout_succeeded(
+                        relationship_id,
+                        &relationship.account,
+                        payout,
+                    );
+                }
+
+                // update next payout blocknumber at interval if set
+                if let Some(payout_interval) = relationship.payout_interval {
+                    relationship.next_payment_at_block = Some(now + payout_interval);
+                }
+
+                // update relationship to storage
+                <RewardRelationships<T>>::insert(&relationship_id, relationship);
+            }
+        }
     }
 }
