@@ -243,6 +243,7 @@ impl<T: Trait> Module<T> {
         if let Some(payout_interval) = payout_interval {
             relationship.payout_interval = payout_interval;
         }
+        <RewardRelationships<T>>::insert(&id, relationship);
         Ok(())
     }
 
