@@ -104,11 +104,14 @@ fn one_off_payout() {
         Rewards::do_payouts(expected_payout_at + 1);
         assert_eq!(Balances::free_balance(&recipient_account), starting_balance);
 
+        assert_eq!(MockStatusHandler::successes(), 0);
+
         Rewards::do_payouts(expected_payout_at);
         assert_eq!(
             Balances::free_balance(&recipient_account),
             starting_balance + payout
         );
+        assert_eq!(MockStatusHandler::successes(), 1);
 
         let relationship = Rewards::reward_relationships(&relationship_id);
         assert_eq!(relationship.total_reward_received, payout);
@@ -151,6 +154,7 @@ fn recurring_payout() {
         for i in 0..number_of_payouts {
             Rewards::do_payouts(expected_payout_at + interval * i);
         }
+        assert_eq!(MockStatusHandler::successes(), number_of_payouts as usize);
 
         assert_eq!(
             Balances::free_balance(&recipient_account),
@@ -197,6 +201,8 @@ fn track_missed_payouts() {
 
         Rewards::do_payouts(expected_payout_at);
         assert_eq!(Balances::free_balance(&recipient_account), starting_balance);
+
+        assert_eq!(MockStatusHandler::failures(), 1);
 
         let relationship = Rewards::reward_relationships(&relationship_id);
         assert_eq!(relationship.total_reward_received, 0);

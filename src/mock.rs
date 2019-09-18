@@ -14,8 +14,48 @@ use runtime_primitives::{
 };
 use srml_support::{impl_outer_origin, parameter_types};
 
+use rstd::collections::btree_map::BTreeMap;
+
 impl_outer_origin! {
     pub enum Origin for Test {}
+}
+
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+// Simple variables to track number of invokations made to the status handler trait methods
+// but this is not thread safe so must run tests with single thread: `cargo test -- --test-threads=1`
+static STATUS_HANDLER_SUCCESSES: AtomicUsize = AtomicUsize::new(0);
+static STATUS_HANDLER_FAILURES: AtomicUsize = AtomicUsize::new(0);
+
+pub struct MockStatusHandler {}
+impl MockStatusHandler {
+    pub fn reset() {
+        STATUS_HANDLER_SUCCESSES.store(0, Ordering::SeqCst);
+        STATUS_HANDLER_FAILURES.store(0, Ordering::SeqCst);
+    }
+    pub fn successes() -> usize {
+        STATUS_HANDLER_SUCCESSES.load(Ordering::SeqCst)
+    }
+    pub fn failures() -> usize {
+        STATUS_HANDLER_FAILURES.load(Ordering::SeqCst)
+    }
+}
+impl PayoutStatusHandler<Test> for MockStatusHandler {
+    fn payout_succeeded(
+        _id: RewardRelationshipId,
+        _destination_account: &<Test as system::Trait>::AccountId,
+        _amount: BalanceOf<Test>,
+    ) {
+        STATUS_HANDLER_SUCCESSES.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn payout_failed(
+        _id: RewardRelationshipId,
+        _destination_account: &<Test as system::Trait>::AccountId,
+        _amount: BalanceOf<Test>,
+    ) {
+        STATUS_HANDLER_FAILURES.fetch_add(1, Ordering::SeqCst);
+    }
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -79,7 +119,7 @@ impl balances::Trait for Test {
 }
 
 impl Trait for Test {
-    type PayoutStatusHandler = ();
+    type PayoutStatusHandler = MockStatusHandler;
 }
 
 impl minting::Trait for Test {
@@ -87,6 +127,8 @@ impl minting::Trait for Test {
 }
 
 pub fn build_test_externalities() -> runtime_io::TestExternalities<Blake2Hasher> {
+    MockStatusHandler::reset();
+
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
