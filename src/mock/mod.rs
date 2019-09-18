@@ -15,7 +15,7 @@ use runtime_primitives::{
 use srml_support::{impl_outer_origin, parameter_types};
 
 mod status_handler;
-pub use status_handler::{MockStatusHandler};
+pub use status_handler::MockStatusHandler;
 
 impl_outer_origin! {
     pub enum Origin for Test {}

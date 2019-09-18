@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 // use crate::*;
-use crate::{Trait, RewardRelationshipId, PayoutStatusHandler, BalanceOf};
+use crate::{BalanceOf, PayoutStatusHandler, RewardRelationshipId, Trait};
 
 use std::cell::RefCell;
 
