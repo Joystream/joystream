@@ -14,47 +14,73 @@ use runtime_primitives::{
 };
 use srml_support::{impl_outer_origin, parameter_types};
 
-use rstd::collections::btree_map::BTreeMap;
-
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
+use std::cell::RefCell;
 
-use std::sync::atomic::{AtomicUsize, Ordering};
+struct StatusHandlerState {
+    successes: Vec<RewardRelationshipId>,
+    failures: Vec<RewardRelationshipId>,
+}
+impl StatusHandlerState {
+    pub fn reset(&mut self) {
+        self.successes = vec![];
+        self.failures = vec![];
+    }
+}
+impl Default for StatusHandlerState {
+    fn default() -> Self {
+        Self {
+            successes: vec![],
+            failures: vec![],
+        }
+    }
+}
 
-// Simple variables to track number of invokations made to the status handler trait methods
-// but this is not thread safe so must run tests with single thread: `cargo test -- --test-threads=1`
-static STATUS_HANDLER_SUCCESSES: AtomicUsize = AtomicUsize::new(0);
-static STATUS_HANDLER_FAILURES: AtomicUsize = AtomicUsize::new(0);
+thread_local!(static STATUS_HANDLER_STATE: RefCell<StatusHandlerState> = RefCell::new(Default::default()));
 
 pub struct MockStatusHandler {}
 impl MockStatusHandler {
     pub fn reset() {
-        STATUS_HANDLER_SUCCESSES.store(0, Ordering::SeqCst);
-        STATUS_HANDLER_FAILURES.store(0, Ordering::SeqCst);
+        STATUS_HANDLER_STATE.with(|cell| {
+            cell.borrow_mut().reset();
+        });
     }
     pub fn successes() -> usize {
-        STATUS_HANDLER_SUCCESSES.load(Ordering::SeqCst)
+        let mut value = 0;
+        STATUS_HANDLER_STATE.with(|cell| {
+            value = cell.borrow_mut().successes.len();
+        });
+        value
     }
     pub fn failures() -> usize {
-        STATUS_HANDLER_FAILURES.load(Ordering::SeqCst)
+        let mut value = 0;
+        STATUS_HANDLER_STATE.with(|cell| {
+            value = cell.borrow_mut().failures.len();
+        });
+        value
     }
 }
-impl PayoutStatusHandler<Test> for MockStatusHandler {
+impl<T: Trait> PayoutStatusHandler<T> for MockStatusHandler {
     fn payout_succeeded(
-        _id: RewardRelationshipId,
-        _destination_account: &<Test as system::Trait>::AccountId,
-        _amount: BalanceOf<Test>,
+        id: RewardRelationshipId,
+        _destination_account: &T::AccountId,
+        _amount: BalanceOf<T>,
     ) {
-        STATUS_HANDLER_SUCCESSES.fetch_add(1, Ordering::SeqCst);
+        STATUS_HANDLER_STATE.with(|cell| {
+            cell.borrow_mut().successes.push(id);
+        });
     }
 
     fn payout_failed(
-        _id: RewardRelationshipId,
-        _destination_account: &<Test as system::Trait>::AccountId,
-        _amount: BalanceOf<Test>,
+        id: RewardRelationshipId,
+        _destination_account: &T::AccountId,
+        _amount: BalanceOf<T>,
     ) {
-        STATUS_HANDLER_FAILURES.fetch_add(1, Ordering::SeqCst);
+        STATUS_HANDLER_STATE.with(|cell| {
+            cell.borrow_mut().failures.push(id);
+        });
     }
 }
 
