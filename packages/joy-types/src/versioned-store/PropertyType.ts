@@ -2,34 +2,34 @@ import { u16, Null } from '@polkadot/types';
 import { EnumType, Tuple } from '@polkadot/types/codec';
 import ClassId from './ClassId';
 
-class None extends Null {}
+export class None extends Null {}
 
 // Single values:
 
-class Bool extends Null {}
-class Uint16 extends Null {}
-class Uint32 extends Null {}
-class Uint64 extends Null {}
-class Int16 extends Null {}
-class Int32 extends Null {}
-class Int64 extends Null {}
-class Text extends u16 {}
-class Internal extends ClassId {}
+export class Bool extends Null {}
+export class Uint16 extends Null {}
+export class Uint32 extends Null {}
+export class Uint64 extends Null {}
+export class Int16 extends Null {}
+export class Int32 extends Null {}
+export class Int64 extends Null {}
+export class Text extends u16 {}
+export class Internal extends ClassId {}
 
 // Vectors:
 
-class BoolVec extends u16 {}
-class Uint16Vec extends u16 {}
-class Uint32Vec extends u16 {}
-class Uint64Vec extends u16 {}
-class Int16Vec extends u16 {}
-class Int32Vec extends u16 {}
-class Int64Vec extends u16 {}
+export class BoolVec extends u16 {}
+export class Uint16Vec extends u16 {}
+export class Uint32Vec extends u16 {}
+export class Uint64Vec extends u16 {}
+export class Int16Vec extends u16 {}
+export class Int32Vec extends u16 {}
+export class Int64Vec extends u16 {}
 
-class TextVec extends Tuple.with([u16, u16]) {}
-class InternalVec extends Tuple.with([u16, ClassId]) {}
+export class TextVec extends Tuple.with([u16, u16]) {}
+export class InternalVec extends Tuple.with([u16, ClassId]) {}
 
-type PropertyTypeEnumType =
+export type PropertyTypeEnum =
   None |
 
   // Single values:
@@ -54,8 +54,8 @@ type PropertyTypeEnumType =
   TextVec |
   InternalVec;
 
-export default class PropertyType extends EnumType<PropertyTypeEnumType> {
-  constructor (value?: PropertyTypeEnumType, index?: number) {
+export class PropertyType extends EnumType<PropertyTypeEnum> {
+  constructor (value?: PropertyTypeEnum, index?: number) {
     super({
       None,
 
@@ -83,3 +83,5 @@ export default class PropertyType extends EnumType<PropertyTypeEnumType> {
     }, value, index);
   }
 }
+
+export default PropertyType;

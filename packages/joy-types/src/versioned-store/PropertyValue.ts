@@ -1,35 +1,35 @@
 import { Vector, Text as PolkaText, Bool as PolkaBool, Null, u16, u32, u64, i16, i32, i64 } from '@polkadot/types';
-import { EnumType, Tuple } from '@polkadot/types/codec';
+import { EnumType } from '@polkadot/types/codec';
 import EntityId from './EntityId';
 
-class None extends Null {}
+export class None extends Null {}
 
 // Single values:
 
-class Bool extends PolkaBool {}
-class Uint16 extends u16 {}
-class Uint32 extends u32 {}
-class Uint64 extends u64 {}
-class Int16 extends i16 {}
-class Int32 extends i32 {}
-class Int64 extends i64 {}
-class Text extends PolkaText {}
-class Internal extends EntityId {}
+export class Bool extends PolkaBool {}
+export class Uint16 extends u16 {}
+export class Uint32 extends u32 {}
+export class Uint64 extends u64 {}
+export class Int16 extends i16 {}
+export class Int32 extends i32 {}
+export class Int64 extends i64 {}
+export class Text extends PolkaText {}
+export class Internal extends EntityId {}
 
 // Vectors:
 
-class BoolVec extends Vector.with(PolkaBool) {}
-class Uint16Vec extends Vector.with(u16) {}
-class Uint32Vec extends Vector.with(u32) {}
-class Uint64Vec extends Vector.with(u64) {}
-class Int16Vec extends Vector.with(i16) {}
-class Int32Vec extends Vector.with(i32) {}
-class Int64Vec extends Vector.with(i64) {}
+export class BoolVec extends Vector.with(PolkaBool) {}
+export class Uint16Vec extends Vector.with(u16) {}
+export class Uint32Vec extends Vector.with(u32) {}
+export class Uint64Vec extends Vector.with(u64) {}
+export class Int16Vec extends Vector.with(i16) {}
+export class Int32Vec extends Vector.with(i32) {}
+export class Int64Vec extends Vector.with(i64) {}
 
-class TextVec extends Vector.with(PolkaText) {}
-class InternalVec extends Vector.with(EntityId) {}
+export class TextVec extends Vector.with(PolkaText) {}
+export class InternalVec extends Vector.with(EntityId) {}
 
-type PropertyValueEnumType =
+export type PropertyValueEnum =
   None |
 
   // Single values:
@@ -54,8 +54,8 @@ type PropertyValueEnumType =
   TextVec |
   InternalVec;
 
-export default class PropertyValue extends EnumType<PropertyValueEnumType> {
-  constructor (value?: PropertyValueEnumType, index?: number) {
+export class PropertyValue extends EnumType<PropertyValueEnum> {
+  constructor (value?: PropertyValueEnum, index?: number) {
     super({
       None,
 
@@ -83,3 +83,5 @@ export default class PropertyValue extends EnumType<PropertyValueEnumType> {
     }, value, index);
   }
 }
+
+export default PropertyValue;
