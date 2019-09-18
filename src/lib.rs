@@ -322,7 +322,8 @@ impl<T: Trait> Module<T> {
                     relationship.next_payment_at_block = None;
                 }
 
-                // update relationship to storage
+                // update relationship and recipient to storage
+                <Recipients<T>>::insert(&relationship.recipient, recipient);
                 <RewardRelationships<T>>::insert(&relationship_id, relationship);
             }
         }

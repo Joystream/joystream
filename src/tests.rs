@@ -72,11 +72,11 @@ fn adding_relationships() {
 }
 
 #[test]
-fn rewards_one_off_payout() {
+fn one_off_payout() {
     with_externalities(&mut build_test_externalities(), || {
         System::set_block_number(10000);
         let recipient_account: u64 = 1;
-        Balances::deposit_creating(&recipient_account, 400);
+        let _ = Balances::deposit_creating(&recipient_account, 400);
         let mint_id = create_new_mint_with_capacity(1000000);
         let recipient_id = Rewards::add_recipient();
         let payout: u64 = 1000;
@@ -97,6 +97,13 @@ fn rewards_one_off_payout() {
         assert_eq!(relationship.next_payment_at_block, Some(expected_payout_at));
 
         let starting_balance = Balances::free_balance(&recipient_account);
+
+        // try to catch 'off by one' bugs
+        Rewards::do_payouts(expected_payout_at - 1);
+        assert_eq!(Balances::free_balance(&recipient_account), starting_balance);
+        Rewards::do_payouts(expected_payout_at + 1);
+        assert_eq!(Balances::free_balance(&recipient_account), starting_balance);
+
         Rewards::do_payouts(expected_payout_at);
         assert_eq!(
             Balances::free_balance(&recipient_account),
@@ -106,5 +113,97 @@ fn rewards_one_off_payout() {
         let relationship = Rewards::reward_relationships(&relationship_id);
         assert_eq!(relationship.total_reward_received, payout);
         assert_eq!(relationship.next_payment_at_block, None);
+
+        let recipient = Rewards::recipients(&recipient_id);
+        assert_eq!(recipient.total_reward_received, payout);
+    });
+}
+
+#[test]
+fn recurring_payout() {
+    with_externalities(&mut build_test_externalities(), || {
+        System::set_block_number(10000);
+        let recipient_account: u64 = 1;
+        let _ = Balances::deposit_creating(&recipient_account, 400);
+        let mint_id = create_new_mint_with_capacity(1000000);
+        let recipient_id = Rewards::add_recipient();
+        let payout: u64 = 1000;
+        let payout_after: u64 = 2222;
+        let expected_payout_at = System::block_number() + payout_after;
+        let interval: u64 = 600;
+        let relationship = Rewards::add_reward_relationship(
+            mint_id,
+            recipient_id,
+            recipient_account,
+            payout,
+            Some(NextPaymentSchedule::Relative(payout_after)),
+            Some(interval),
+        );
+        assert!(relationship.is_ok());
+        let relationship_id = relationship.ok().unwrap();
+
+        let relationship = Rewards::reward_relationships(&relationship_id);
+        assert_eq!(relationship.next_payment_at_block, Some(expected_payout_at));
+
+        let starting_balance = Balances::free_balance(&recipient_account);
+
+        let number_of_payouts = 3;
+        for i in 0..number_of_payouts {
+            Rewards::do_payouts(expected_payout_at + interval * i);
+        }
+
+        assert_eq!(
+            Balances::free_balance(&recipient_account),
+            starting_balance + payout * number_of_payouts
+        );
+
+        let relationship = Rewards::reward_relationships(&relationship_id);
+        assert_eq!(
+            relationship.total_reward_received,
+            payout * number_of_payouts
+        );
+
+        let recipient = Rewards::recipients(&recipient_id);
+        assert_eq!(recipient.total_reward_received, payout * number_of_payouts);
+    });
+}
+
+#[test]
+fn track_missed_payouts() {
+    with_externalities(&mut build_test_externalities(), || {
+        System::set_block_number(10000);
+        let recipient_account: u64 = 1;
+        let _ = Balances::deposit_creating(&recipient_account, 400);
+        let mint_id = create_new_mint_with_capacity(0);
+        let recipient_id = Rewards::add_recipient();
+        let payout: u64 = 1000;
+        let payout_after: u64 = 2222;
+        let expected_payout_at = System::block_number() + payout_after;
+        let relationship = Rewards::add_reward_relationship(
+            mint_id,
+            recipient_id,
+            recipient_account,
+            payout,
+            Some(NextPaymentSchedule::Relative(payout_after)),
+            None,
+        );
+        assert!(relationship.is_ok());
+        let relationship_id = relationship.ok().unwrap();
+
+        let relationship = Rewards::reward_relationships(&relationship_id);
+        assert_eq!(relationship.next_payment_at_block, Some(expected_payout_at));
+
+        let starting_balance = Balances::free_balance(&recipient_account);
+
+        Rewards::do_payouts(expected_payout_at);
+        assert_eq!(Balances::free_balance(&recipient_account), starting_balance);
+
+        let relationship = Rewards::reward_relationships(&relationship_id);
+        assert_eq!(relationship.total_reward_received, 0);
+        assert_eq!(relationship.total_reward_missed, payout);
+
+        let recipient = Rewards::recipients(&recipient_id);
+        assert_eq!(recipient.total_reward_received, 0);
+        assert_eq!(recipient.total_reward_missed, payout);
     });
 }
