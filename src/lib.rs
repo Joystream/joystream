@@ -118,6 +118,7 @@ decl_module! {
     }
 }
 
+#[derive(Eq, PartialEq, Debug)]
 pub enum RewardsError {
     RecipientNotFound,
     RewardSourceNotFound,
@@ -317,6 +318,8 @@ impl<T: Trait> Module<T> {
                 // update next payout blocknumber at interval if set
                 if let Some(payout_interval) = relationship.payout_interval {
                     relationship.next_payment_at_block = Some(now + payout_interval);
+                } else {
+                    relationship.next_payment_at_block = None;
                 }
 
                 // update relationship to storage
