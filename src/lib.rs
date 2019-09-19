@@ -7,14 +7,13 @@ use codec::{Decode, Encode};
 use runtime_primitives::traits::{AccountIdConversion, Zero};
 use runtime_primitives::ModuleId;
 use srml_support::traits::{Currency, Get};
-use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
-};
+use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 
 use rstd::collections::btree_map::BTreeMap;
 use system;
 
 mod mock;
+mod tests;
 
 pub type StakeId = u64;
 pub const FIRST_STAKE_ID: u64 = 1;
@@ -65,7 +64,7 @@ impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEv
     }
 }
 
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Debug, Default, Eq, PartialEq)]
 pub struct Slash<BlockNumber, Balance> {
     // rename to SlashingState ?
 
@@ -83,7 +82,7 @@ pub struct Slash<BlockNumber, Balance> {
     slash_amount: Balance,
 }
 
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Debug, Default, Eq, PartialEq)]
 pub struct UnstakingState<BlockNumber> {
     // The block where the unstaking was initiated
     started_in_block: BlockNumber,
@@ -96,7 +95,7 @@ pub struct UnstakingState<BlockNumber> {
     blocks_remaining_in_active_period_for_unstaking: BlockNumber,
 }
 
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Debug, Eq, PartialEq)]
 pub enum StakedStatus<BlockNumber> {
     // Baseline staking status, nothing is happening.
     Normal,
@@ -105,7 +104,13 @@ pub enum StakedStatus<BlockNumber> {
     Unstaking(UnstakingState<BlockNumber>),
 }
 
-#[derive(Encode, Decode)]
+impl<BlockNumber> Default for StakedStatus<BlockNumber> {
+    fn default() -> Self {
+        StakedStatus::Normal
+    }
+}
+
+#[derive(Encode, Decode, Debug, Default, Eq, PartialEq)]
 pub struct StakedState<BlockNumber, Balance> {
     // Total amount of funds at stake
     staked_amount: Balance,
@@ -119,7 +124,7 @@ pub struct StakedState<BlockNumber, Balance> {
     staked_status: StakedStatus<BlockNumber>,
 }
 
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Debug, Eq, PartialEq)]
 pub enum StakingStatus<BlockNumber, Balance> {
     NotStaked,
 
@@ -132,7 +137,7 @@ impl<BlockNumber, Balance> Default for StakingStatus<BlockNumber, Balance> {
     }
 }
 
-#[derive(Encode, Decode, Default)]
+#[derive(Encode, Decode, Default, Debug, Eq, PartialEq)]
 pub struct Stake<BlockNumber, Balance> {
     // When role was created
     created: BlockNumber,
@@ -178,33 +183,40 @@ impl<T: Trait> Module<T> {
         T::Currency::free_balance(&Self::staking_fund_account_id())
     }
 
-    /*
-    Parameters: None
-    Description: Adds a new stake.
-    Side-effect(s): Adds a new stake which is NotStaked, created at given block, into stakes map with id nextStakeId, and increments nextStakeId.
-    Events: None
-    Returns: New StakeId
-    */
-    pub fn add_stake() -> StakeId {
-        0
+    /// Adds a new Stake which is NotStaked, created at given block, into stakes map with id NextStakeId, and increments NextStakeId.
+    pub fn create_stake() -> StakeId {
+        let id = Self::next_stake_id();
+        <Stakes<T>>::insert(
+            &id,
+            Stake {
+                created: <system::Module<T>>::block_number(),
+                staking_status: Default::default(),
+            },
+        );
+        NextStakeId::mutate(|id| *id += 1);
+        id
     }
 
-    /*
-    remove_stake
+    /// Given that stake with id exists in stakes and is NotStaked, remove from stakes.
+    pub fn remove_stake(id: &StakeId) {
+        if !<Stakes<T>>::exists(id) {
+            return;
+        }
 
-    Parameters:
-        id: Identifier of stake to be removed
-    Description: Removes an unstaked stake.
-    Side-effect(s): Given that stake with id id exists in stakes and is NotStaked, remove from stakes.
-    Events: None
-    Returns: None
-    */
-    pub fn remove_stake(id: StakeId) {}
+        match Self::stakes(id).staking_status {
+            StakingStatus::NotStaked => {
+                <Stakes<T>>::remove(id);
+            }
+            _ => (),
+        }
+
+        // do we want to return error on failure or should it be silent?
+    }
 
     /*
     Provided the stake exists and is in state NotStaked and the given account has sufficient free balance to cover the given staking amount, then the amount is transferred to the MODULE_STAKING_FUND_ACCOUNT_ID account, and the corresponding staked_balance is set to this amount in the new Staked state.
     */
-    pub fn state(
+    pub fn stake(
         id: StakeId,
         staker_account_id: T::AccountId,
         amount: BalanceOf<T>,
@@ -262,7 +274,7 @@ impl<T: Trait> Module<T> {
     pub fn pause_unstaking(id: StakeId) {}
 
     // Continue a currently paused ongoing unstaking.
-    pub fn continue_unstaking(id: StakeId) {}
+    pub fn resume_unstaking(id: StakeId) {}
 
     /*
       Handle timers for finalizing unstaking and slashing.
