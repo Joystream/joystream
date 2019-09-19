@@ -48,12 +48,11 @@ impl system::Trait for Test {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
-    pub const TransferFee: u32 = 0;
-    pub const CreationFee: u32 = 0;
-    pub const TransactionBaseFee: u32 = 1;
+    pub const ExistentialDeposit: u32 = 500;
+    pub const TransferFee: u32 = 5;
+    pub const CreationFee: u32 = 5;
+    pub const TransactionBaseFee: u32 = 5;
     pub const TransactionByteFee: u32 = 0;
-    pub const InitialMembersBalance: u64 = 2000;
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 

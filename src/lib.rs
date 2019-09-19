@@ -6,7 +6,7 @@ use rstd::prelude::*;
 use codec::{Decode, Encode};
 use runtime_primitives::traits::{AccountIdConversion, Zero};
 use runtime_primitives::ModuleId;
-use srml_support::traits::{Currency, Get};
+use srml_support::traits::{Currency, ExistenceRequirement, Get, WithdrawReason};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 
 use rstd::collections::btree_map::BTreeMap;
@@ -168,13 +168,17 @@ decl_module! {
     }
 }
 
-pub enum StakingError {}
+pub enum StakingError {
+    StakeNotFound,
+    InsufficientBalance,
+    AlreadyStaking,
+}
 
 impl<T: Trait> Module<T> {
     /// The account ID of the stake pool.
     ///
     /// This actually does computation. If you need to keep using it, then make sure you cache the
-    /// value and only call this once.
+    /// value and only call this once. Is it deterministic?
     pub fn staking_fund_account_id() -> T::AccountId {
         ModuleId(T::StakePoolId::get()).into_account()
     }
@@ -217,11 +221,51 @@ impl<T: Trait> Module<T> {
     Provided the stake exists and is in state NotStaked and the given account has sufficient free balance to cover the given staking amount, then the amount is transferred to the MODULE_STAKING_FUND_ACCOUNT_ID account, and the corresponding staked_balance is set to this amount in the new Staked state.
     */
     pub fn stake(
-        id: StakeId,
-        staker_account_id: T::AccountId,
+        id: &StakeId,
+        staker_account_id: &T::AccountId,
         amount: BalanceOf<T>,
     ) -> Result<(), StakingError> {
+        ensure!(<Stakes<T>>::exists(id), StakingError::StakeNotFound);
+
+        let mut stake = Self::stakes(id);
+
+        ensure!(
+            stake.staking_status == StakingStatus::NotStaked,
+            StakingError::AlreadyStaking
+        );
+
+        Self::move_funds_into_pool(staker_account_id, amount)?;
+
+        stake.staking_status = StakingStatus::Staked(StakedState {
+            staked_amount: amount,
+            ongoing_slashes: BTreeMap::new(),
+            staked_status: StakedStatus::Normal,
+        });
+
+        <Stakes<T>>::insert(id, stake);
+
         Ok(())
+    }
+
+    // Moves funds from specified account into the module's account
+    // We don't use T::Currency::transfer() to prevent fees being incurred on the source account
+    fn move_funds_into_pool(
+        source: &T::AccountId,
+        value: BalanceOf<T>,
+    ) -> Result<(), StakingError> {
+        match T::Currency::withdraw(
+            source,
+            value,
+            WithdrawReason::Transfer,
+            ExistenceRequirement::KeepAlive,
+        ) {
+            Ok(negative_imbalance) => {
+                // move the negative imbalance into the stake pool
+                T::Currency::resolve_creating(&Self::staking_fund_account_id(), negative_imbalance);
+                Ok(())
+            }
+            Err(_) => Err(StakingError::InsufficientBalance),
+        }
     }
 
     /*
