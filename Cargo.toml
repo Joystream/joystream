@@ -1,5 +1,5 @@
 [package]
-name = 'substrate-token-mint-module'
+name = 'substrate-recurring-reward-module'
 version = '1.0.0'
 authors = ['Mokhtar Naamani <mokhtar.naamani@gmail.com>']
 edition = '2018'
