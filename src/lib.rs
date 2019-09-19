@@ -12,6 +12,8 @@ use srml_support::{
 };
 use system;
 
+mod mock;
+
 pub type BalanceOf<T> =
     <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
