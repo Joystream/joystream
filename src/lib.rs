@@ -171,7 +171,9 @@ decl_module! {
 pub enum StakingError {
     StakeNotFound,
     InsufficientBalance,
-    AlreadyStaking,
+    AlreadyStaked,
+    NotStaked,
+    IncreasingStakeWhileUnstaking,
 }
 
 impl<T: Trait> Module<T> {
@@ -217,9 +219,9 @@ impl<T: Trait> Module<T> {
         // do we want to return error on failure or should it be silent?
     }
 
-    /*
-    Provided the stake exists and is in state NotStaked and the given account has sufficient free balance to cover the given staking amount, then the amount is transferred to the MODULE_STAKING_FUND_ACCOUNT_ID account, and the corresponding staked_balance is set to this amount in the new Staked state.
-    */
+    /// Provided the stake exists and is in state NotStaked and the given account has
+    /// sufficient free balance to cover the given staking amount, then the amount is transferred
+    /// to the module's account, and the corresponding staked_balance is set to this amount in the new Staked state.
     pub fn stake(
         id: &StakeId,
         staker_account_id: &T::AccountId,
@@ -231,7 +233,7 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             stake.staking_status == StakingStatus::NotStaked,
-            StakingError::AlreadyStaking
+            StakingError::AlreadyStaked
         );
 
         Self::move_funds_into_pool(staker_account_id, amount)?;
@@ -268,15 +270,34 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /*
-    Provided the stake exists and is in state Staked.Normal, and the given source account covers the amount, then the amount is transferred to the MODULE_STAKING_FUND_ACCOUNT_ID account, and the corresponding staked_balance is increased by the amount. New value of staked_balance is returned.
-    */
+    /// Provided the stake exists and is in state Staked.Normal, and the given source account covers the amount,
+    /// then the amount is transferred to the module's account, and the corresponding staked_balance is increased
+    /// by the amount. New value of staked_amount is returned.
     pub fn increase_stake(
-        id: StakeId,
-        staker_account_id: T::AccountId,
+        id: &StakeId,
+        staker_account_id: &T::AccountId,
         amount: BalanceOf<T>,
-    ) -> Result<(), StakingError> {
-        Ok(())
+    ) -> Result<BalanceOf<T>, StakingError> {
+        ensure!(<Stakes<T>>::exists(id), StakingError::StakeNotFound);
+
+        let mut stake = Self::stakes(id);
+
+        let total_staked_amount = match stake.staking_status {
+            StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
+                StakedStatus::Normal => {
+                    staked_state.staked_amount += amount;
+                    staked_state.staked_amount
+                }
+                _ => return Err(StakingError::IncreasingStakeWhileUnstaking),
+            },
+            _ => return Err(StakingError::NotStaked),
+        };
+
+        Self::move_funds_into_pool(&staker_account_id, amount)?;
+
+        <Stakes<T>>::insert(id, stake);
+
+        Ok(total_staked_amount)
     }
 
     // Decrease stake
