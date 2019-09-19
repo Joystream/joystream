@@ -14,6 +14,9 @@ use system;
 
 mod mock;
 
+pub type StakeId = u64;
+pub type SlashId = u64;
+
 pub type BalanceOf<T> =
     <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
@@ -21,7 +24,40 @@ pub trait Trait: system::Trait + Sized {
     /// The currency that is managed by the module
     type Currency: Currency<Self::AccountId>;
 
+    /// ModuleId for computing deterministic AccountId for the module
     type StakePoolId: Get<[u8; 8]>;
+
+    /// Type that will handle various staking events
+    type StakingEventsHandler: StakingEventsHandler<Self>;
+}
+
+pub trait StakingEventsHandler<T: Trait> {
+    // Type of handler which handles unstaking event.
+    fn unstaked(id: StakeId);
+
+    // Type of handler which handles slashing event.
+    // NB: actually_slashed can be less than amount of the slash itself if the
+    // claim amount on the stake cannot cover it fully.
+    fn slashed(id: StakeId, slash_id: SlashId, actually_slashed: BalanceOf<T>);
+}
+
+impl<T: Trait> StakingEventsHandler<T> for () {
+    fn unstaked(_id: StakeId) {}
+    fn slashed(_id: StakeId, _slash_id: SlashId, _actually_slashed: BalanceOf<T>) {}
+}
+
+// Helper so we can provide multiple handlers
+impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEventsHandler<T>
+    for (X, Y)
+{
+    fn unstaked(id: StakeId) {
+        X::unstaked(id);
+        Y::unstaked(id);
+    }
+    fn slashed(id: StakeId, slash_id: SlashId, actually_slashed: BalanceOf<T>) {
+        X::slashed(id, slash_id, actually_slashed);
+        Y::slashed(id, slash_id, actually_slashed);
+    }
 }
 
 decl_storage! {
@@ -43,7 +79,6 @@ impl<T: Trait> Module<T> {
     /// This actually does computation. If you need to keep using it, then make sure you cache the
     /// value and only call this once.
     pub fn account_id() -> T::AccountId {
-        // MODULE_ID.into_account()
         ModuleId(T::StakePoolId::get()).into_account()
     }
 

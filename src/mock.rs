@@ -81,6 +81,7 @@ impl balances::Trait for Test {
 impl Trait for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;
+    type StakingEventsHandler = ();
 }
 
 pub fn build_test_externalities() -> runtime_io::TestExternalities<Blake2Hasher> {
