@@ -82,9 +82,9 @@ fn enter_staked_state() {
             },
         );
 
-        let starting_balance: u64 = Balances::minimum_balance() * 2;
+        let starting_balance: u64 = Balances::minimum_balance() + 1000;
         let staker_account: u64 = 1;
-        let stake_value: u64 = Balances::minimum_balance();
+        let stake_value: u64 = Balances::minimum_balance() + 100;
 
         let _ = Balances::deposit_creating(&staker_account, starting_balance);
 
