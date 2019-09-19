@@ -1,5 +1,5 @@
 [package]
-name = 'substrate-token-mint-module'
+name = 'substrate-stake-module'
 version = '1.0.0'
 authors = ['Mokhtar Naamani <mokhtar.naamani@gmail.com>']
 edition = '2018'
@@ -27,11 +27,6 @@ default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
 rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
-
-[dependencues.minting]
-default_features = false
-git = 'https://github.com/mnaamani/substrate-token-minting'
-branch = 'token-minting'
 
 [dev-dependencies]
 runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'}
