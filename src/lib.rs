@@ -66,7 +66,7 @@ impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEv
 }
 
 #[derive(Encode, Decode)]
-pub struct Slash<BlockNumber> {
+pub struct Slash<BlockNumber, Balance> {
     // rename to SlashingState ?
 
     // The block slashing was initiated.
@@ -78,6 +78,9 @@ pub struct Slash<BlockNumber> {
 
     // The number blocks which must be finalised while in the active period before the slashing can be executed
     blocks_remaining_in_active_period_for_slashing: BlockNumber,
+
+    // Amount to slash
+    slash_amount: Balance,
 }
 
 #[derive(Encode, Decode)]
@@ -110,7 +113,7 @@ pub struct StakedState<BlockNumber, Balance> {
     // All ongoing slashing process.
     // There may be some issue with BTreeMap for now in Polkadotjs,
     // consider replacing this with Vec<Slash<T>>, and remove nextSlashId from state, for now in that case,
-    ongoing_slashes: BTreeMap<SlashId, Slash<BlockNumber>>,
+    ongoing_slashes: BTreeMap<SlashId, Slash<BlockNumber, Balance>>,
 
     // Status of the staking
     staked_status: StakedStatus<BlockNumber>,
@@ -154,9 +157,13 @@ decl_storage! {
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
-        fn on_finalize(now: T::BlockNumber) {}
+        fn on_finalize(now: T::BlockNumber) {
+            Self::finalize_unstaking_and_slashing(now);
+        }
     }
 }
+
+pub enum StakingError {}
 
 impl<T: Trait> Module<T> {
     /// The account ID of the stake pool.
@@ -170,4 +177,97 @@ impl<T: Trait> Module<T> {
     pub fn staking_fund_balance() -> BalanceOf<T> {
         T::Currency::free_balance(&Self::staking_fund_account_id())
     }
+
+    /*
+    Parameters: None
+    Description: Adds a new stake.
+    Side-effect(s): Adds a new stake which is NotStaked, created at given block, into stakes map with id nextStakeId, and increments nextStakeId.
+    Events: None
+    Returns: New StakeId
+    */
+    pub fn add_stake() -> StakeId {
+        0
+    }
+
+    /*
+    remove_stake
+
+    Parameters:
+        id: Identifier of stake to be removed
+    Description: Removes an unstaked stake.
+    Side-effect(s): Given that stake with id id exists in stakes and is NotStaked, remove from stakes.
+    Events: None
+    Returns: None
+    */
+    pub fn remove_stake(id: StakeId) {}
+
+    /*
+    Provided the stake exists and is in state NotStaked and the given account has sufficient free balance to cover the given staking amount, then the amount is transferred to the MODULE_STAKING_FUND_ACCOUNT_ID account, and the corresponding staked_balance is set to this amount in the new Staked state.
+    */
+    pub fn state(
+        id: StakeId,
+        staker_account_id: T::AccountId,
+        amount: BalanceOf<T>,
+    ) -> Result<(), StakingError> {
+        Ok(())
+    }
+
+    /*
+    Provided the stake exists and is in state Staked.Normal, and the given source account covers the amount, then the amount is transferred to the MODULE_STAKING_FUND_ACCOUNT_ID account, and the corresponding staked_balance is increased by the amount. New value of staked_balance is returned.
+    */
+    pub fn increase_stake(
+        id: StakeId,
+        staker_account_id: T::AccountId,
+        amount: BalanceOf<T>,
+    ) -> Result<(), StakingError> {
+        Ok(())
+    }
+
+    // Decrease stake
+    pub fn decrease_stake(
+        id: StakeId,
+        staker_account_id: T::AccountId,
+        amount: BalanceOf<T>,
+    ) -> Result<(), StakingError> {
+        Ok(())
+    }
+
+    // Initiate a new slashing of a staked stake.
+    pub fn initiate_slashing(
+        id: StakeId,
+        slash: Slash<T::BlockNumber, BalanceOf<T>>,
+    ) -> Result<SlashId, StakingError> {
+        Ok(0)
+    }
+
+    // Pause an ongoing slashing
+    pub fn pause_slashing(id: StakeId, slash_id: SlashId) -> Result<(), StakingError> {
+        Ok(())
+    }
+
+    // Resume a currently paused ongoing slashing.
+    pub fn resume_slashing(id: StakeId, slash_id: SlashId) -> Result<(), StakingError> {
+        Ok(())
+    }
+
+    // Cancel an ongoing slashing (regardless of whether its active or paused).
+    pub fn cancel_slashing(id: StakeId, slash_id: SlashId) -> Result<(), StakingError> {
+        Ok(())
+    }
+
+    // Initiate unstaking of a staked stake.
+    pub fn initiate_unstaking(id: StakeId) {}
+
+    // Pause an ongoing unstaking.
+    pub fn pause_unstaking(id: StakeId) {}
+
+    // Continue a currently paused ongoing unstaking.
+    pub fn continue_unstaking(id: StakeId) {}
+
+    /*
+      Handle timers for finalizing unstaking and slashing.
+      Finalised unstaking results in the staked_balance in the given stake to be transferred.
+      Finalised slashing results in the staked_balance in the given stake being correspondingly reduced.
+    */
+    fn finalize_unstaking_and_slashing(now: T::BlockNumber) {}
 }
