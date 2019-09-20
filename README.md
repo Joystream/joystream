@@ -13,37 +13,22 @@ Downloads are available in [releases](https://github.com/Joystream/substrate-nod
 ## Building from source
 
 ### Initial setup
-If you want to build from source you will need the Rust [toolchain](https://rustup.rs/), openssl and llvm/libclang.
+If you want to build from source you will need the Rust [toolchain](https://rustup.rs/), openssl and llvm/libclang. You can install the required dependencies with:
 
 ```bash
 git clone https://github.com/Joystream/substrate-node-joystream.git
-```
-
-Initialise the WASM build environment:
-
-```bash
 cd substrate-node-joystream/
-./init-wasm.sh
+./setup.sh
 ```
 
 ### Building
-Clone the joystream runtime into the substrate-node-joystream directory:
 
-```bash
-git clone https://github.com/Joystream/substrate-runtime-joystream.git
-```
-
-Build the WASM runtime library:
-```bash
-./build-runtime.sh
-```
-
-Build the node (native code):
 ```bash
 cargo build --release
 ```
 
 ### Running a public node
+
 Run the node and connect to the public testnet
 ```bash
 cargo run --release
