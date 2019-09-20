@@ -224,3 +224,8 @@ fn decreasing_stake() {
         assert!(StakePool::decrease_stake(&100, &staker_account, total_staked + 1).is_err());
     });
 }
+
+#[test]
+fn adding_pausing_resuming_cancelling_slashes() {
+    with_externalities(&mut build_test_externalities(), || {});
+}
