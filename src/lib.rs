@@ -395,6 +395,14 @@ impl<T: Trait> Module<T> {
                     },
                 );
 
+                // pause Unstaking if unstaking is active
+                match staked_state.staked_status {
+                    StakedStatus::Unstaking(ref mut unstaking_state) => {
+                        unstaking_state.is_active = false;
+                    }
+                    _ => (),
+                }
+
                 slash_id
             }
             _ => return Err(StakingError::NotStaked),
@@ -461,6 +469,17 @@ impl<T: Trait> Module<T> {
             StakingStatus::Staked(ref mut staked_state) => {
                 if staked_state.ongoing_slashes.contains_key(slash_id) {
                     staked_state.ongoing_slashes.remove(slash_id);
+
+                    // unpause unstaking on last ongoing slash cancelled
+                    if staked_state.ongoing_slashes.is_empty() {
+                        match staked_state.staked_status {
+                            StakedStatus::Unstaking(ref mut unstaking_state) => {
+                                unstaking_state.is_active = true;
+                            }
+                            _ => (),
+                        }
+                    }
+
                     <Stakes<T>>::insert(stake_id, stake);
                     Ok(())
                 } else {
