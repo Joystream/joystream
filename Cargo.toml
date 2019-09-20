@@ -45,6 +45,6 @@ std = [
 	"runtime-primitives/std",
 	"srml-support/std",
 	"system/std",
-    "balances/std",
+	"balances/std",
 	"timestamp/std",
 ]
