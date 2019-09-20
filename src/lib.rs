@@ -4,10 +4,10 @@
 use rstd::prelude::*;
 
 use codec::{Decode, Encode};
-use runtime_primitives::traits::{AccountIdConversion, Zero};
+use runtime_primitives::traits::AccountIdConversion;
 use runtime_primitives::ModuleId;
 use srml_support::traits::{Currency, ExistenceRequirement, Get, WithdrawReason};
-use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
+use srml_support::{decl_module, decl_storage, ensure, StorageMap, StorageValue};
 
 use rstd::collections::btree_map::BTreeMap;
 use system;
@@ -149,10 +149,10 @@ pub struct Stake<BlockNumber, Balance> {
 decl_storage! {
     trait Store for Module<T: Trait> as StakePool {
         /// Maps identifiers to a stake.
-        Stakes get(stakes) : map StakeId => Stake<T::BlockNumber, BalanceOf<T>>;
+        Stakes get(stakes): map StakeId => Stake<T::BlockNumber, BalanceOf<T>>;
 
         /// Identifier value for next stake.
-        NextStakeId get(next_stake_id):  StakeId = FIRST_STAKE_ID;
+        NextStakeId get(next_stake_id): StakeId = FIRST_STAKE_ID;
 
         /// Identifier value for next slashing.
         NextSlashId get(next_slash_id): SlashId = FIRST_SLASH_ID;
@@ -171,9 +171,12 @@ decl_module! {
 pub enum StakingError {
     StakeNotFound,
     InsufficientBalance,
+    InsufficientStake,
     AlreadyStaked,
     NotStaked,
     IncreasingStakeWhileUnstaking,
+    DecreasingStakeWhileUnstaking,
+    InsufficientBalanceInStakeFund,
 }
 
 impl<T: Trait> Module<T> {
@@ -249,8 +252,8 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Moves funds from specified account into the module's account
-    // We don't use T::Currency::transfer() to prevent fees being incurred on the source account
+    /// Moves funds from specified account into the module's account
+    /// We don't use T::Currency::transfer() to prevent fees being incurred.
     fn move_funds_into_pool(
         source: &T::AccountId,
         value: BalanceOf<T>,
@@ -270,8 +273,29 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    /// Moves funds from the module's account into specified account.
+    /// We don't use T::Currency::transfer() to prevent fees being incurred.
+    fn withdraw_funds_from_pool(
+        destination: &T::AccountId,
+        value: BalanceOf<T>,
+    ) -> Result<(), StakingError> {
+        match T::Currency::withdraw(
+            &Self::staking_fund_account_id(),
+            value,
+            WithdrawReason::Transfer,
+            ExistenceRequirement::KeepAlive,
+        ) {
+            Ok(negative_imbalance) => {
+                // move the negative imbalance into the destination account
+                T::Currency::resolve_creating(destination, negative_imbalance);
+                Ok(())
+            }
+            Err(_) => Err(StakingError::InsufficientBalanceInStakeFund),
+        }
+    }
+
     /// Provided the stake exists and is in state Staked.Normal, and the given source account covers the amount,
-    /// then the amount is transferred to the module's account, and the corresponding staked_balance is increased
+    /// then the amount is transferred to the module's account, and the corresponding staked_amount is increased
     /// by the amount. New value of staked_amount is returned.
     pub fn increase_stake(
         id: &StakeId,
@@ -300,13 +324,38 @@ impl<T: Trait> Module<T> {
         Ok(total_staked_amount)
     }
 
-    // Decrease stake
+    /// Provided the stake exists and is in state Staked.Normal, and the given stake holds at least the amount,
+    /// then the amount is transferred to from the module's account to the staker account, and the corresponding
+    /// staked_amount is decreased by the amount. New value of staked_amount is returned.
     pub fn decrease_stake(
-        id: StakeId,
-        staker_account_id: T::AccountId,
+        id: &StakeId,
+        staker_account_id: &T::AccountId,
         amount: BalanceOf<T>,
-    ) -> Result<(), StakingError> {
-        Ok(())
+    ) -> Result<BalanceOf<T>, StakingError> {
+        ensure!(<Stakes<T>>::exists(id), StakingError::StakeNotFound);
+
+        let mut stake = Self::stakes(id);
+
+        let total_staked_amount = match stake.staking_status {
+            StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
+                StakedStatus::Normal => {
+                    if staked_state.staked_amount >= amount {
+                        staked_state.staked_amount -= amount;
+                        staked_state.staked_amount
+                    } else {
+                        return Err(StakingError::InsufficientStake);
+                    }
+                }
+                _ => return Err(StakingError::DecreasingStakeWhileUnstaking),
+            },
+            _ => return Err(StakingError::NotStaked),
+        };
+
+        Self::withdraw_funds_from_pool(&staker_account_id, amount)?;
+
+        <Stakes<T>>::insert(id, stake);
+
+        Ok(total_staked_amount)
     }
 
     // Initiate a new slashing of a staked stake.

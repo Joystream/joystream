@@ -29,6 +29,11 @@ fn stake_pool_works() {
 
         // no fees were deducted
         assert_eq!(Balances::free_balance(&1), 900);
+
+        assert!(StakePool::withdraw_funds_from_pool(&1, 100).is_ok());
+
+        assert_eq!(Balances::free_balance(&1), 1000);
+        assert_eq!(StakePool::staking_fund_balance(), 1000);
     });
 }
 
@@ -103,7 +108,8 @@ fn enter_staked_state() {
 fn increasing_stake() {
     with_externalities(&mut build_test_externalities(), || {
         let starting_pool_stake = 5000;
-        Balances::deposit_creating(&StakePool::staking_fund_account_id(), starting_pool_stake);
+        let _ =
+            Balances::deposit_creating(&StakePool::staking_fund_account_id(), starting_pool_stake);
 
         let starting_stake = 100;
         <Stakes<Test>>::insert(
@@ -150,5 +156,71 @@ fn increasing_stake() {
                 })
             }
         );
+
+        // cannot increase stake if insufficent balance
+        assert!(StakePool::increase_stake(
+            &100,
+            &staker_account,
+            Balances::free_balance(&staker_account) - Balances::minimum_balance() + 1
+        )
+        .is_err());
+    });
+}
+
+#[test]
+fn decreasing_stake() {
+    with_externalities(&mut build_test_externalities(), || {
+        let starting_pool_stake = 5000;
+        let _ =
+            Balances::deposit_creating(&StakePool::staking_fund_account_id(), starting_pool_stake);
+
+        let starting_stake = 2000;
+        <Stakes<Test>>::insert(
+            &100,
+            Stake {
+                created: 0,
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount: starting_stake,
+                    ongoing_slashes: BTreeMap::new(),
+                    staked_status: StakedStatus::Normal,
+                }),
+            },
+        );
+
+        let starting_balance: u64 = Balances::minimum_balance() + 1000;
+        let staker_account: u64 = 1;
+        let decrease_stake_by: u64 = 200;
+
+        let _ = Balances::deposit_creating(&staker_account, starting_balance);
+
+        let total_staked = StakePool::decrease_stake(&100, &staker_account, decrease_stake_by)
+            .ok()
+            .unwrap();
+        assert_eq!(total_staked, starting_stake - decrease_stake_by);
+
+        assert_eq!(
+            Balances::free_balance(&staker_account),
+            starting_balance + decrease_stake_by
+        );
+
+        assert_eq!(
+            StakePool::staking_fund_balance(),
+            starting_pool_stake - decrease_stake_by
+        );
+
+        assert_eq!(
+            StakePool::stakes(&100),
+            Stake {
+                created: 0,
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount: starting_stake - decrease_stake_by,
+                    ongoing_slashes: BTreeMap::new(),
+                    staked_status: StakedStatus::Normal,
+                })
+            }
+        );
+
+        // cannot unstake more than total at stake
+        assert!(StakePool::decrease_stake(&100, &staker_account, total_staked + 1).is_err());
     });
 }
