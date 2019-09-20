@@ -176,6 +176,7 @@ pub enum StakingError {
     AlreadyStaked,
     AlreadyUnstaking,
     NotStaked,
+    NotUnstaking,
     IncreasingStakeWhileUnstaking,
     DecreasingStakeWhileUnstaking,
     InsufficientBalanceInStakeFund,
@@ -480,7 +481,7 @@ impl<T: Trait> Module<T> {
 
         match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
-                if staked_state.ongoing_slashes.len() > 0 {
+                if staked_state.ongoing_slashes.is_empty() {
                     Err(StakingError::InitiatingUnstakingWhileSlashesOngoing)
                 } else {
                     match staked_state.staked_status {
@@ -502,10 +503,44 @@ impl<T: Trait> Module<T> {
     }
 
     // Pause an ongoing unstaking.
-    pub fn pause_unstaking(id: StakeId) {}
+    pub fn pause_unstaking(stake_id: &StakeId) -> Result<(), StakingError> {
+        ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
+        let mut stake = Self::stakes(stake_id);
+
+        match stake.staking_status {
+            StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
+                StakedStatus::Unstaking(ref mut unstaking_state) => {
+                    if unstaking_state.is_active {
+                        unstaking_state.is_active = false;
+                        <Stakes<T>>::insert(stake_id, stake);
+                    }
+                    Ok(())
+                }
+                _ => Err(StakingError::NotUnstaking),
+            },
+            _ => Err(StakingError::NotStaked),
+        }
+    }
 
     // Continue a currently paused ongoing unstaking.
-    pub fn resume_unstaking(id: StakeId) {}
+    pub fn resume_unstaking(stake_id: &StakeId) -> Result<(), StakingError> {
+        ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
+        let mut stake = Self::stakes(stake_id);
+
+        match stake.staking_status {
+            StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
+                StakedStatus::Unstaking(ref mut unstaking_state) => {
+                    if !unstaking_state.is_active {
+                        unstaking_state.is_active = true;
+                        <Stakes<T>>::insert(stake_id, stake);
+                    }
+                    Ok(())
+                }
+                _ => Err(StakingError::NotUnstaking),
+            },
+            _ => Err(StakingError::NotStaked),
+        }
+    }
 
     /*
       Handle timers for finalizing unstaking and slashing.
