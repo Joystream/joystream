@@ -1,5 +1,5 @@
-import { EnumType, Option, Struct } from '@polkadot/types/codec';
-import { getTypeRegistry, Bool, BlockNumber, Moment, AccountId, BalanceOf, u64, Text } from '@polkadot/types';
+import { Enum, getTypeRegistry, Option, Struct, bool as Bool, u64, u128, Text, GenericAccountId } from '@polkadot/types';
+import { BlockNumber, Moment, BalanceOf } from '@polkadot/types/interfaces';
 import { OptionText } from './index';
 
 export class MemberId extends u64 {}
@@ -7,13 +7,13 @@ export class PaidTermId extends u64 {}
 export class SubscriptionId extends u64 {}
 
 export class Paid extends PaidTermId {}
-export class Screening extends AccountId {}
-export class EntryMethod extends EnumType<Paid | Screening> {
+export class Screening extends GenericAccountId {}
+export class EntryMethod extends Enum {
   constructor (value?: any, index?: number) {
-    super({
-      Paid,
-      Screening
-    }, value, index);
+    super([
+      'Paid',
+      'Screening'
+    ], value, index);
   }
 }
 
@@ -49,7 +49,7 @@ export class PaidMembershipTerms extends Struct {
   constructor (value?: any) {
     super({
       id: PaidTermId,
-      fee: BalanceOf,
+      fee: u128, // BalanceOf
       text: Text
     }, value);
   }

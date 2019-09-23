@@ -1,5 +1,5 @@
 import React from 'react';
-import { BareProps } from '@polkadot/ui-app/types';
+import { BareProps } from '@polkadot/react-components/types';
 
 type Props = BareProps & {
   className?: string,

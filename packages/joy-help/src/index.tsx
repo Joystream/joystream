@@ -2,8 +2,8 @@
 import React from 'react';
 import { Route, Switch } from 'react-router';
 
-import { AppProps, I18nProps } from '@polkadot/ui-app/types';
-import Tabs, { TabItem } from '@polkadot/ui-app/Tabs';
+import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
 
 // our app-specific styles
 import './index.css';

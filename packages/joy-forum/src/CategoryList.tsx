@@ -6,7 +6,8 @@ import { History } from 'history';
 import orderBy from 'lodash/orderBy';
 import BN from 'bn.js';
 
-import { Bool, Option } from '@polkadot/types';
+import { Option, bool as Bool } from '@polkadot/types';
+// import { Bool } from '@polkadot/types/primitive';
 import { CategoryId, Category, ThreadId, Thread } from '@joystream/types/forum';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
@@ -14,8 +15,8 @@ import { UrlHasIdProps, CategoryCrumbs, Pagination, ThreadsPerPage } from './uti
 import Section from '@polkadot/joy-utils/Section';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import { withForumCalls } from './calls';
-import { withMulti, withApi } from '@polkadot/ui-api';
-import { ApiProps } from '@polkadot/ui-api/types';
+import { withMulti, withApi } from '@polkadot/react-api';
+import { ApiProps } from '@polkadot/react-api/types';
 import { bnToStr, isEmptyArr } from '@polkadot/joy-utils/';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { IfIAmForumSudo } from './ForumSudo';

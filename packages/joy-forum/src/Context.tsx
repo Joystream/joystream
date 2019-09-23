@@ -3,7 +3,8 @@
 
 import React, { useReducer, createContext, useContext } from 'react';
 import { Category, Thread, Reply, ModerationAction, BlockchainTimestamp } from '@joystream/types/forum';
-import { Option, AccountId, Text } from '@polkadot/types';
+import { Option, Text } from '@polkadot/types';
+import { GenericAccountId } from '@polkadot/types';
 
 type CategoryId = number;
 type ThreadId = number;
@@ -223,7 +224,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       const thread = threadById.get(id) as Thread;
       const moderation = new ModerationAction({
         moderated_at: BlockchainTimestamp.newEmpty(),
-        moderator_id: new AccountId(moderator),
+        moderator_id: new GenericAccountId(moderator),
         rationale: new Text(rationale)
       });
       const threadUpd = new Thread(Object.assign(
@@ -288,7 +289,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       const reply = replyById.get(id) as Reply;
       const moderation = new ModerationAction({
         moderated_at: BlockchainTimestamp.newEmpty(),
-        moderator_id: new AccountId(moderator),
+        moderator_id: new GenericAccountId(moderator),
         rationale: new Text(rationale)
       });
       const replyUpd = new Reply(Object.assign(

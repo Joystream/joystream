@@ -1,10 +1,10 @@
 import React from 'react';
 
-import { AppProps, I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
-import { AccountId } from '@polkadot/types';
-import { Input, Labelled, InputAddress } from '@polkadot/ui-app/index';
+import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { withCalls, withMulti } from '@polkadot/react-api/with';
+import { AccountId } from '@polkadot/types/interfaces';
+import { Input, Labelled, InputAddress } from '@polkadot/react-components/index';
 
 import translate from './translate';
 import { nonEmptyStr, queryToProp, getUrlParam } from '@polkadot/joy-utils/index';
@@ -15,8 +15,9 @@ import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 
 // AppsProps is needed to get a location from the route.
 type Props = AppProps & ApiProps & I18nProps & {
-  applicantId?: string,
-  applicants?: AccountId[]
+  applicantId?: string;
+  applicants?: AccountId[];
+  location: any;
 };
 
 type State = {

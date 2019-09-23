@@ -2,30 +2,30 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { I18nProps } from '@polkadot/ui-app/types';
+import { I18nProps } from '@polkadot/react-components/types';
 import { ComponentProps } from '../types';
 
 import React from 'react';
-import { Button, Input } from '@polkadot/ui-app';
+import { Button, Input, TxComponent } from '@polkadot/react-components';
 
 import translate from '../translate';
 import { u8aToU8a } from '@polkadot/util';
 import { Compact } from '@polkadot/types';
 
-type Props = ComponentProps & I18nProps;
+interface Props extends ComponentProps, I18nProps {}
 
-type State = {
-  isValid: boolean,
-  key: Uint8Array
-};
+interface State {
+  isValid: boolean;
+  key: Uint8Array;
+}
 
-class Raw extends React.PureComponent<Props, State> {
-  state: State = {
+class Raw extends TxComponent<Props, State> {
+  public state: State = {
     isValid: false,
     key: new Uint8Array([])
   };
 
-  render () {
+  public render (): React.ReactNode {
     const { t } = this.props;
     const { isValid } = this.state;
 
@@ -36,6 +36,7 @@ class Raw extends React.PureComponent<Props, State> {
             autoFocus
             label={t('hex-encoded storage key')}
             onChange={this.onChangeKey}
+            onEnter={this.submit}
           />
         </div>
         <div className='storage--actionrow-buttons'>
@@ -44,6 +45,7 @@ class Raw extends React.PureComponent<Props, State> {
             isDisabled={!isValid}
             isPrimary
             onClick={this.onAdd}
+            ref={this.button}
           />
         </div>
       </section>
@@ -54,7 +56,7 @@ class Raw extends React.PureComponent<Props, State> {
     const { onAdd } = this.props;
     const { key } = this.state;
 
-    onAdd({ key });
+    onAdd({ isConst: false, key });
   }
 
   private onChangeKey = (key: string): void => {

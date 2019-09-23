@@ -7,7 +7,7 @@ import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
+import { withCalls, withMulti } from '@polkadot/react-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Option } from '@polkadot/types/codec';

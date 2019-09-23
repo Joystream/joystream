@@ -3,10 +3,10 @@ import BN from 'bn.js';
 import React from 'react';
 import { Route, Switch } from 'react-router';
 
-import { AppProps, I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import Tabs, { TabItem } from '@polkadot/ui-app/Tabs';
+import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { withCalls } from '@polkadot/react-api/with';
+import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
 
 // our app-specific styles
 import './index.css';

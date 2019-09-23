@@ -2,16 +2,16 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { BareProps } from '@polkadot/ui-app/types';
+import { BareProps } from '@polkadot/react-components/types';
 import { Log } from './types';
 
 import React from 'react';
 import { isError, isNull, isUndefined } from '@polkadot/util';
 
-type Props = BareProps & {
-  children?: React.ReactNode,
-  logs: Array<Log>
-};
+interface Props extends BareProps {
+  children?: React.ReactNode;
+  logs: Log[];
+}
 
 const format = (value: any): string => {
   if (isError(value)) {
@@ -21,9 +21,9 @@ const format = (value: any): string => {
   } else if (isNull(value)) {
     return 'null';
   } else if (Array.isArray(value)) {
-    return `[${value.map((value) => format(value)).join(', ')}]`;
+    return `[${value.map((value): string => format(value)).join(', ')}]`;
   } else if (value instanceof Map) {
-    return `{${[...value.entries()].map(([key, value]) => key + ': ' + format(value)).join(', ')}}`;
+    return `{${[...value.entries()].map(([key, value]): string => key + ': ' + format(value)).join(', ')}}`;
   }
 
   return value.toString();
@@ -31,21 +31,21 @@ const format = (value: any): string => {
 
 const renderEntry = ({ args, type }: Log, index: number): React.ReactNode => (
   <div className={`js--Log ${type}`} key={index}>
-    {args.map((arg) => format(arg)).join(' ')}
+    {args.map((arg): string => format(arg)).join(' ')}
   </div>
 );
 
-export default (props: Props) => {
+export default function Output ({ children, logs }: Props): React.ReactElement<Props> {
   return (
     <article className='container js--Output'>
       <div className='logs-wrapper'>
         <div className='logs-container'>
           <pre className='logs-content'>
-            {props.logs.map(renderEntry)}
+            {logs.map(renderEntry)}
           </pre>
         </div>
       </div>
-      {props.children}
+      {children}
     </article>
   );
-};
+}

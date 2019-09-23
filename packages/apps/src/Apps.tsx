@@ -2,52 +2,35 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { BareProps } from '@polkadot/ui-app/types';
-import { SideBarTransition, SIDEBAR_TRANSITION_DURATION, SIDEBAR_MENU_THRESHOLD } from './constants';
+import { BareProps as Props } from '@polkadot/react-components/types';
+
+// this is disabled, Chrome + WASM memory leak makes it slow & laggy. If enabled
+// we also need to export the default as hot(Apps) (last line)
+// import { hot } from 'react-hot-loader/root';
 
 import React from 'react';
 import store from 'store';
-import styled, { ThemeProvider } from 'styled-components';
-import { media } from '@polkadot/ui-app';
-import { classes } from '@polkadot/ui-app/util';
-import Signer from '@polkadot/ui-signer';
-import settings from '@polkadot/joy-settings/';
+import styled from 'styled-components';
+import GlobalStyle from '@polkadot/react-components/styles';
+import Signer from '@polkadot/react-signer';
 
-import { hot } from 'react-hot-loader/root';
-
-import Connecting from './Connecting';
+import ConnectingOverlay from './overlays/Connecting';
+import AccountsOverlay from './overlays/Accounts';
+import { SideBarTransition, SIDEBAR_TRANSITION_DURATION, SIDEBAR_MENU_THRESHOLD } from './constants';
 import Content from './Content';
 import SideBar from './SideBar';
 
-type Props = BareProps & {};
-
-type State = {
-  isCollapsed: boolean,
-  isMenu: boolean,
-  menuOpen: boolean,
-  transition: SideBarTransition
-};
-
-const Wrapper = styled.div`
-  align-items: stretch;
-  box-sizing: border-box;
-  display: flex;
-  min-height: 100vh;
-
-  header {
-    margin-bottom: 0.8rem;
-    text-align: center;
-
-    ${media.TABLET`
-      margin-bottom: 1.1rem;
-   `}
-  }
-`;
+interface State {
+  isCollapsed: boolean;
+  isMenu: boolean;
+  menuOpen: boolean;
+  transition: SideBarTransition;
+}
 
 class Apps extends React.Component<Props, State> {
-  state: State;
+  public state: State;
 
-  constructor (props: Props) {
+  public constructor (props: Props) {
     super(props);
 
     const state = store.get('sidebar') || {};
@@ -60,33 +43,25 @@ class Apps extends React.Component<Props, State> {
     };
   }
 
-  componentDidMount () {
+  public componentDidMount (): void {
     this.setState({
       menuOpen: false,
-      isMenu: window.innerWidth >= SIDEBAR_MENU_THRESHOLD ? false : true
+      isMenu: window.innerWidth < SIDEBAR_MENU_THRESHOLD
     });
   }
 
-  componentDidUpdate () {
+  public componentDidUpdate (): void {
     this.handleMenuTransition();
   }
 
-  render () {
-
+  public render (): React.ReactNode {
+    const { className } = this.props;
     const { isCollapsed, isMenu, menuOpen } = this.state;
+
     return (
-      <ThemeProvider
-        theme={{ theme: settings.uiTheme }}
-      >
-        <Wrapper
-          className={
-            classes('apps-Wrapper',
-                     !isCollapsed ? 'expanded' : 'collapsed',
-                     isMenu ? 'fixed' : '',
-                     menuOpen ? 'menu-open' : '',
-                     `theme--${settings.uiTheme}`)
-          }
-        >
+      <>
+        <GlobalStyle />
+        <div className={`apps-Wrapper ${isCollapsed ? 'collapsed' : 'expanded'} ${isMenu && 'fixed'} ${menuOpen && 'menu-open'} theme--default ${className}`}>
           {this.renderMenuBg()}
           <SideBar
             collapse={this.collapse}
@@ -98,16 +73,17 @@ class Apps extends React.Component<Props, State> {
           <Signer>
             <Content />
           </Signer>
-          <Connecting />
-        </Wrapper>
-      </ThemeProvider>
+          <ConnectingOverlay />
+          <AccountsOverlay />
+        </div>
+      </>
     );
   }
 
   private collapse = (): void => {
-    this.setState(({ isCollapsed }: State) => ({
+    this.setState(({ isCollapsed }: State): Pick<State, never> => ({
       isCollapsed: !isCollapsed
-    }), () => {
+    }), (): void => {
       store.set('sidebar', this.state);
     });
   }
@@ -134,7 +110,7 @@ class Apps extends React.Component<Props, State> {
 
     switch (transition) {
       case SideBarTransition.MINIMISED_AND_EXPANDED:
-        setTimeout(() => {
+        setTimeout((): void => {
           this.setState({
             isMenu: true,
             isCollapsed: false,
@@ -144,7 +120,7 @@ class Apps extends React.Component<Props, State> {
         break;
 
       case SideBarTransition.EXPANDED_AND_MAXIMISED:
-        setTimeout(() => {
+        setTimeout((): void => {
           this.setState({
             isMenu: false,
             isCollapsed: store.get('sidebar').isCollapsed,
@@ -158,14 +134,10 @@ class Apps extends React.Component<Props, State> {
     }
   }
 
-  private renderMenuBg = () => {
+  private renderMenuBg = (): React.ReactNode => {
     return (
       <div
-        className={
-          classes(
-            'apps-Menu-bg',
-            this.state.menuOpen ? 'open' : 'closed')
-          }
+        className={`apps-Menu-bg ${this.state.menuOpen ? 'open' : 'closed'}`}
         onClick={this.handleResize}
       >
       </div>
@@ -197,7 +169,7 @@ class Apps extends React.Component<Props, State> {
         break;
 
       default:
-        this.setState(({ isCollapsed }: State) => ({
+        this.setState(({ isCollapsed }: State): Pick<State, never> => ({
           isCollapsed: !isCollapsed
         }));
         break;
@@ -205,4 +177,9 @@ class Apps extends React.Component<Props, State> {
   }
 }
 
-export default hot(Apps);
+export default styled(Apps)`
+  align-items: stretch;
+  box-sizing: border-box;
+  display: flex;
+  min-height: 100vh;
+`;

@@ -1,15 +1,15 @@
-import { AppProps, I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
+import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ComponentProps } from './props';
 import { Request, Role } from '@joystream/types/roles';
 
 import React from 'react';
 import { Route, Switch } from 'react-router';
-import { AccountId } from '@polkadot/types';
-import Tabs, { TabItem } from '@polkadot/ui-app/Tabs';
+import { AccountId } from '@polkadot/types/interfaces';
+import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
 import accountObservable from '@polkadot/ui-keyring/observable/accounts';
-import { withCalls, withMulti, withObservable } from '@polkadot/ui-api/index';
+import { withCalls, withMulti, withObservable } from '@polkadot/react-api/index';
 
 import ActorsList from './ActorsList';
 import MyRequests from './MyRequests';

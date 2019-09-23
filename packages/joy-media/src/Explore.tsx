@@ -1,9 +1,9 @@
 import React from 'react';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { Vector } from '@polkadot/types/codec';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
+import { Vec as Vector } from '@polkadot/types';
 
 import translate from './translate';
 import { ContentId } from '@joystream/types/media';

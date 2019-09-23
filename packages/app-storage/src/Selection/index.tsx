@@ -2,31 +2,34 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { I18nProps } from '@polkadot/ui-app/types';
-import { TabItem } from '@polkadot/ui-app/Tabs';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { TabItem } from '@polkadot/react-components/Tabs';
 import { ComponentProps, QueryTypes, ParitalQueryTypes } from '../types';
 
 import React from 'react';
 import { Route, Switch } from 'react-router';
-import { Tabs } from '@polkadot/ui-app';
+import { Tabs } from '@polkadot/react-components';
+import { withApi } from '@polkadot/react-api';
 
+import Consts from './Consts';
 import Modules from './Modules';
 import Raw from './Raw';
 import translate from '../translate';
 
-type Props = I18nProps & {
-  basePath: string,
-  onAdd: (query: QueryTypes) => void
-};
+interface Props extends ApiProps, I18nProps {
+  basePath: string;
+  onAdd: (query: QueryTypes) => void;
+}
 
-type State = {
-  items: Array<TabItem>
-};
+interface State {
+  items: TabItem[];
+}
 
 let id = -1;
 
 class Selection extends React.PureComponent<Props, State> {
-  constructor (props: Props) {
+  public constructor (props: Props) {
     super(props);
 
     const { t } = this.props;
@@ -34,30 +37,38 @@ class Selection extends React.PureComponent<Props, State> {
     this.state = {
       items: [
         {
+          isRoot: true,
           name: 'modules',
-          text: t('Modules')
+          text: t('Storage')
+        },
+        {
+          name: 'constants',
+          text: t('Constants')
         },
         {
           name: 'raw',
-          text: t('Raw key')
+          text: t('Raw storage')
         }
       ]
     };
   }
 
-  render () {
-    const { basePath } = this.props;
+  public render (): React.ReactNode {
+    const { basePath, isSubstrateV2 } = this.props;
     const { items } = this.state;
+    const hidden = isSubstrateV2 ? [] : ['constants'];
 
     return (
       <>
         <header>
           <Tabs
             basePath={basePath}
+            hidden={hidden}
             items={items}
           />
         </header>
         <Switch>
+          <Route path={`${basePath}/constants`} render={this.renderComponent(Consts)} />
           <Route path={`${basePath}/raw`} render={this.renderComponent(Raw)} />
           <Route render={this.renderComponent(Modules)} />
         </Switch>
@@ -65,7 +76,7 @@ class Selection extends React.PureComponent<Props, State> {
     );
   }
 
-  private renderComponent (Component: React.ComponentType<ComponentProps>) {
+  private renderComponent (Component: React.ComponentType<ComponentProps>): () => React.ReactNode {
     return (): React.ReactNode => {
       return (
         <Component onAdd={this.onAdd} />
@@ -73,7 +84,7 @@ class Selection extends React.PureComponent<Props, State> {
     };
   }
 
-  private onAdd = (query: ParitalQueryTypes) => {
+  private onAdd = (query: ParitalQueryTypes): void => {
     const { onAdd } = this.props;
 
     onAdd({
@@ -83,4 +94,4 @@ class Selection extends React.PureComponent<Props, State> {
   }
 }
 
-export default translate(Selection);
+export default translate(withApi(Selection));

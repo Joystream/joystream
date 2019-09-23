@@ -3,71 +3,136 @@
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import uiSettings from '@polkadot/joy-settings/';
-import { AppProps, BareProps, I18nProps } from '@polkadot/ui-app/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { AppProps, BareProps, I18nProps } from '@polkadot/react-components/types';
+import { EventRecord } from '@polkadot/types/interfaces';
+import { KeyedEvent } from './types';
 
 import './index.css';
 
-import React from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Route, Switch } from 'react-router';
-import Tabs, { TabItem } from '@polkadot/ui-app/Tabs';
-import translate from './translate';
+import styled from 'styled-components';
+import { HeaderExtended } from '@polkadot/api-derive';
+import { ApiContext, withCalls, withMulti } from '@polkadot/react-api';
+import Tabs from '@polkadot/react-components/Tabs';
 
-import BlockQuery from './BlockQuery';
+import { stringToU8a } from '@polkadot/util';
+import { xxhashAsHex } from '@polkadot/util-crypto';
+
+import BlockInfo from './BlockInfo';
+import Forks from './Forks';
 import Main from './Main';
 import NodeInfo from './NodeInfo';
+import translate from './translate';
 
-type Props = AppProps & BareProps & I18nProps;
-
-type State = {
-  items: Array<TabItem>
-};
-
-class ExplorerApp extends React.Component<Props, State> {
-  constructor (props: Props) {
-    super(props);
-
-    const { t } = this.props;
-
-    this.state = {
-      items: [
-        {
-          name: 'chain',
-          text: t('Chain info')
-        },
-        uiSettings.isBasicMode ? null : {
-          hasParams: true,
-          name: 'query',
-          text: t('Block details')
-        },
-        {
-          name: 'node',
-          text: t('Node info')
-        }
-      ].filter(x => x !== null) as TabItem[]
-    };
-  }
-
-  render () {
-    const { basePath } = this.props;
-    const { items } = this.state;
-
-    return (
-      <main className='explorer--App'>
-        <header>
-          <Tabs
-            basePath={basePath}
-            items={items}
-          />
-        </header>
-        <Switch>
-          <Route path={`${basePath}/query/:value`} component={BlockQuery} />
-          <Route path={`${basePath}/query`} component={BlockQuery} />
-          <Route path={`${basePath}/node`} component={NodeInfo} />
-          <Route component={Main} />
-        </Switch>
-      </main>
-    );
-  }
+interface Props extends ApiProps, AppProps, BareProps, I18nProps {
+  newHeader?: HeaderExtended;
+  newEvents?: KeyedEvent[];
 }
 
-export default translate(ExplorerApp);
+const MAX_ITEMS = 15;
+
+function ExplorerApp ({ basePath, className, newEvents, newHeader, t }: Props): React.ReactElement<Props> {
+  const [headers, setHeaders] = useState<HeaderExtended[]>([]);
+  const [{ prevEventHash, events }, setEvents] = useState<{ prevEventHash: string; events: KeyedEvent[] }>({ prevEventHash: '', events: [] });
+  const { api } = useContext(ApiContext);
+
+  useEffect((): void => {
+    const newEventHash = xxhashAsHex(stringToU8a(JSON.stringify(newEvents)));
+
+    if (newEventHash === prevEventHash || !newEvents) {
+      return;
+    }
+
+    setEvents({
+      prevEventHash: newEventHash,
+      events: newEvents.concat(events).filter((_, index): boolean => index < MAX_ITEMS)
+    });
+  }, [newEvents]);
+
+  useEffect((): void => {
+    if (!newHeader) {
+      return;
+    }
+
+    setHeaders(
+      headers
+        .filter((old, index): boolean => index < MAX_ITEMS && old.number.unwrap().lt(newHeader.number.unwrap()))
+        .reduce((next, header): HeaderExtended[] => {
+          next.push(header);
+
+          return next;
+        }, [newHeader])
+        .sort((a, b): number => b.number.unwrap().cmp(a.number.unwrap()))
+    );
+  }, [newHeader]);
+
+  return (
+    <main className={className}>
+      <header>
+        <Tabs
+          basePath={basePath}
+          hidden={
+            uiSettings.uiMode === 'full'
+              ? api.query.babe ? [] : ['forks']
+              : ['node', 'forks']
+          }
+          items={[
+            {
+              isRoot: true,
+              name: 'chain',
+              text: t('Chain info')
+            },
+            {
+              hasParams: true,
+              name: 'query',
+              text: t('Block details')
+            },
+            {
+              name: 'forks',
+              text: t('Forks')
+            },
+            {
+              name: 'node',
+              text: t('Node info')
+            }
+          ]}
+        />
+      </header>
+      <Switch>
+        <Route path={`${basePath}/forks`} component={Forks} />
+        <Route path={`${basePath}/query/:value`} component={BlockInfo} />
+        <Route path={`${basePath}/query`} component={BlockInfo} />
+        <Route path={`${basePath}/node`} component={NodeInfo} />
+        <Route
+          render={(): React.ReactElement<{}> =>
+            <Main
+              events={events}
+              headers={headers}
+            />
+          }
+        />
+      </Switch>
+    </main>
+  );
+}
+
+export default withMulti(
+  styled(ExplorerApp)`
+    .rx--updated {
+      background: transparent !important;
+    }
+  `,
+  translate,
+  withCalls<Props>(
+    ['query.system.events', {
+      propName: 'newEvents',
+      transform: (records: EventRecord[]): KeyedEvent[] =>
+        records
+          .filter(({ event }): boolean => event.section !== 'system')
+          .map((record, index): KeyedEvent => ({ key: `${Date.now()}-${index}`, record }))
+    }],
+    ['derive.chain.subscribeNewHeads', { propName: 'newHeader' }]
+  )
+);

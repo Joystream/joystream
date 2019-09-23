@@ -1,0 +1,17 @@
+{
+  "name": "@polkadot/app-council",
+  "version": "0.36.0-beta.24",
+  "description": "Council",
+  "main": "index.js",
+  "scripts": {},
+  "author": "Jaco Greeff <jacogr@gmail.com>",
+  "maintainers": [
+    "Jaco Greeff <jacogr@gmail.com>"
+  ],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@babel/runtime": "^7.6.0",
+    "@polkadot/react-components": "^0.36.0-beta.24",
+    "@polkadot/react-query": "^0.36.0-beta.24"
+  }
+}

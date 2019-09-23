@@ -1,4 +1,4 @@
-import { AccountId } from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
 
 export type HashedVote = {
   applicantId: string,

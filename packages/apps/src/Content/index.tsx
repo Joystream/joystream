@@ -2,26 +2,24 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { QueueProps } from '@polkadot/ui-app/Status/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { QueueProps } from '@polkadot/react-components/Status/types';
 
 import React from 'react';
-import { withRouter } from 'react-router';
+import { withRouter, RouteComponentProps } from 'react-router';
 import styled from 'styled-components';
-import { withCalls, withMulti } from '@polkadot/ui-api';
-import { QueueConsumer } from '@polkadot/ui-app/Status/Context';
+import routing from '@polkadot/apps-routing';
+import { withCalls, withMulti } from '@polkadot/react-api';
+import { QueueConsumer } from '@polkadot/react-components/Status/Context';
 
 import Status from './Status';
-import routing from '../routing';
 import translate from '../translate';
 import NotFound from './NotFound';
 import TopBar from '../TopBar';
 import { MyAccountProvider } from '@polkadot/joy-utils/MyAccountContext';
 
-type Props = I18nProps & ApiProps & {
-  location: Location
-};
+interface Props extends I18nProps, ApiProps, RouteComponentProps {}
 
 const Wrapper = styled.div`
   background: #fafafa;
@@ -34,14 +32,9 @@ const Wrapper = styled.div`
   overflow-y: auto;
   width: 100%;
   padding: 0 2rem;
-
   @media(max-width: 768px) {
     padding: 0 0.5rem;
   }
-`;
-
-const Connecting = styled.div`
-  padding: 1rem 0;
 `;
 
 const unknown = {
@@ -52,60 +45,79 @@ const unknown = {
   name: ''
 };
 
-class Content extends React.Component<Props> {
-  render () {
-    const { isApiConnected, isApiReady, location, t } = this.props;
-    const app = location.pathname.slice(1) || '';
-    const { Component, display: { needsApi }, name } = routing.routes.find((route) =>
-      !!(route && app.indexOf(route.name) === 0)
-    ) || unknown;
+function Content ({ isApiConnected, isApiReady, className, location, t }: Props): React.ReactElement<Props> {
+  const app = location.pathname.slice(1) || '';
+  const { Component, display: { needsApi }, name } = routing.routes.find((route): boolean =>
+    !!(route && app.startsWith(route.name))
+  ) || unknown;
 
-    if (needsApi && (!isApiReady || !isApiConnected)) {
-      return (
-        <Wrapper>
-          <Connecting>{t('Waiting for API to be connected and ready.')}</Connecting>
-        </Wrapper>
-      );
-    }
-
-    return (
-      <Wrapper>
-        <MyAccountProvider>
-        <QueueConsumer>
-          {({ queueAction, stqueue, txqueue }: QueueProps) => (
-            <>
-              <TopBar />
-              <Component
-                basePath={`/${name}`}
-                location={location}
-                onStatusChange={queueAction}
-              />
-              <Status
-                queueAction={queueAction}
-                stqueue={stqueue}
-                txqueue={txqueue}
-              />
-            </>
-          )}
-        </QueueConsumer>
-        </MyAccountProvider>
-      </Wrapper>
-    );
-  }
+  return (
+    <div className={className}>
+      {needsApi && (!isApiReady || !isApiConnected)
+        ? <div className='connecting'>{t('Waiting for API to be connected and ready.')}</div>
+        : (
+          <Wrapper>
+          <MyAccountProvider>
+          <QueueConsumer>
+            {({ queueAction, stqueue, txqueue }: QueueProps): React.ReactNode => (
+              <>
+                <TopBar />
+                <Component
+                  basePath={`/${name}`}
+                  location={location}
+                  onStatusChange={queueAction}
+                />
+                <Status
+                  queueAction={queueAction}
+                  stqueue={stqueue}
+                  txqueue={txqueue}
+                />
+              </>
+            )}
+          </QueueConsumer>
+          </MyAccountProvider>
+          </Wrapper>
+        )
+      }
+    </div>
+  );
 }
 
 // React-router needs to be first, otherwise we have blocked updates
 export default withMulti(
-  Content,
-  withRouter,
+  withRouter(
+    styled(Content)`
+      background: #fafafa;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      height: 100%;
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      width: 100%;
+      padding: 0 2rem;
+
+      @media(max-width: 768px) {
+        padding: 0 0.5rem;
+      }
+
+      .connecting {
+        padding: 1rem 0;
+      }
+    `
+  ),
   translate,
   // These API queries are used in a number of places, warm them up
   // to avoid constant un-/re-subscribe on these
   withCalls<Props>(
     'derive.accounts.indexes',
     'derive.balances.fees',
-    'derive.staking.controllers',
-    'query.staking.nominators',
     'query.session.validators'
+    // This are very ineffective queries that
+    //   (a) adds load to the RPC node when activated globally
+    //   (b) is used in additional information (next-up)
+    // 'derive.staking.controllers'
+    // 'query.staking.nominators'
   )
 );

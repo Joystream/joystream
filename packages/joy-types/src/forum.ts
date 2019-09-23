@@ -1,5 +1,7 @@
-import { getTypeRegistry, u16, u32, u64, AccountId, Text, Bool, BlockNumber, Moment } from '@polkadot/types';
-import { Struct, Option, Vector } from '@polkadot/types/codec';
+import { getTypeRegistry, bool as Bool, u16, u32, u64, Text, Struct, Option, Vec as Vector} from '@polkadot/types';
+import { AccountId, Moment, BlockNumber } from '@polkadot/types/interfaces';
+import { GenericAccountId } from '@polkadot/types';
+
 import { getTextPropAsString, getBoolPropAsBoolean, getOptionPropOrUndefined } from './';
 import { Codec } from '@polkadot/types/types';
 
@@ -10,11 +12,13 @@ export class JoyStruct<T extends { [K: string]: Codec }> extends Struct {
   }
 
   cloneValues (): T {
-    const res: Partial<T> = {};
+    const objectClone = {} as { [K: string]: Codec };
+
     super.forEach((v, k) => {
-      res[k] = v;
+      objectClone[k] = v; // shallow copy acceptable ?
     });
-    return res as T;
+
+    return objectClone as T;
   }
 }
 
@@ -28,8 +32,8 @@ export type BlockchainTimestampType = {
 export class BlockchainTimestamp extends JoyStruct<BlockchainTimestampType> {
   constructor (value?: BlockchainTimestampType) {
     super({
-      block: BlockNumber,
-      time: Moment
+      block: u32, // BlockNumber
+      time: u64, // Moment
     }, value);
   }
 
@@ -56,7 +60,7 @@ export class ModerationAction extends JoyStruct<ModerationActionType> {
   constructor (value: ModerationActionType) {
     super({
       moderated_at: BlockchainTimestamp,
-      moderator_id: AccountId,
+      moderator_id: GenericAccountId,
       rationale: Text
     }, value);
   }
@@ -191,7 +195,7 @@ export class Category extends JoyStruct<CategoryType> {
       num_direct_unmoderated_threads: u32,
       num_direct_moderated_threads: u32,
       position_in_parent_category: OptionChildPositionInParentCategory,
-      moderator_id: AccountId
+      moderator_id: GenericAccountId
     }, value);
   }
 
@@ -293,7 +297,7 @@ export class Thread extends JoyStruct<ThreadType> {
       num_unmoderated_posts: u32,
       num_moderated_posts: u32,
       created_at: BlockchainTimestamp,
-      author_id: AccountId
+      author_id: GenericAccountId
     }, value);
   }
 
@@ -368,7 +372,7 @@ export class Post extends JoyStruct<PostType> {
       moderation: OptionModerationAction,
       text_change_history: VecPostTextChange,
       created_at: BlockchainTimestamp,
-      author_id: AccountId
+      author_id: GenericAccountId
     }, value);
   }
 
@@ -424,7 +428,7 @@ export type ReplyType = {
 export class Reply extends JoyStruct<ReplyType> {
   constructor (value: ReplyType) {
     super({
-      owner: AccountId,
+      owner: GenericAccountId,
       thread_id: ThreadId,
       text: Text,
       moderation: OptionModerationAction

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Labelled } from '@polkadot/ui-app/index';
+import { Labelled } from '@polkadot/react-components/index';
 
 import MemoEdit from '@polkadot/joy-utils/memo/MemoEdit';
 import TxButton from '@polkadot/joy-utils/TxButton';

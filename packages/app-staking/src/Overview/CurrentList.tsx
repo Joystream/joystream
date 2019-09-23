@@ -2,90 +2,103 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
+import { BlockNumber } from '@polkadot/types/interfaces';
 import { DerivedBalancesMap } from '@polkadot/api-derive/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { RecentlyOfflineMap } from '../types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { ValidatorFilter } from '../types';
 
 import React from 'react';
+import { Columar, Column, Dropdown, FilterOverlay } from '@polkadot/react-components';
 
 import translate from '../translate';
 import Address from './Address';
 
-type Props = I18nProps & {
-  balances: DerivedBalancesMap,
-  current: Array<string>,
-  lastAuthor?: string,
-  lastBlock: string,
-  next: Array<string>,
-  recentlyOffline: RecentlyOfflineMap
-};
+interface Props extends I18nProps {
+  balances?: DerivedBalancesMap;
+  currentValidatorsControllersV1OrStashesV2: string[];
+  lastAuthor?: string;
+  lastBlock: string;
+  next: string[];
+  recentlyOnline: Record<string, BlockNumber>;
+}
 
-class CurrentList extends React.PureComponent<Props> {
-  render () {
-    return (
-      <div className='validator--ValidatorsList ui--flex-medium'>
-        <div className='validator--current'>
-          {this.renderCurrent()}
-        </div>
-        <div className='validator--next'>
-          {this.renderNext()}
-        </div>
-      </div>
-    );
+interface State {
+  filter: ValidatorFilter;
+  filterOptions: { text: React.ReactNode; value: ValidatorFilter }[];
+}
+
+class CurrentList extends React.PureComponent<Props, State> {
+  public state: State;
+
+  public constructor (props: Props) {
+    super(props);
+
+    const { t } = props;
+
+    this.state = {
+      filter: 'all',
+      filterOptions: [
+        { text: t('Show all validators and intentions'), value: 'all' },
+        { text: t('Show only my nominations'), value: 'iNominated' },
+        { text: t('Show only with nominators'), value: 'hasNominators' },
+        { text: t('Show only without nominators'), value: 'noNominators' },
+        { text: t('Show only with warnings'), value: 'hasWarnings' },
+        { text: t('Show only without warnings'), value: 'noWarnings' }
+      ]
+    };
   }
 
-  private renderCurrent () {
-    const { current, t } = this.props;
-
-    return (
-      <>
-        <h1>
-          {t('validators', {
-            replace: {
-              count: current.length
-            }
-          })}
-        </h1>
-        {this.renderColumn(current, t('validator (stash)'))}
-      </>
-    );
-  }
-
-  private renderNext () {
-    const { next, t } = this.props;
-
-    return (
-      <>
-        <h1>{t('next up')}</h1>
-        {this.renderColumn(next, t('intention (stash)'))}
-      </>
-    );
-  }
-
-  private renderColumn (addresses: Array<string>, defaultName: string) {
-    const { balances, lastAuthor, lastBlock, recentlyOffline, t } = this.props;
-
-    if (addresses.length === 0) {
-      return (
-        <div>{t('no addresses found')}</div>
-      );
-    }
-
+  public render (): React.ReactNode {
+    const { currentValidatorsControllersV1OrStashesV2, next, t } = this.props;
+    const { filter, filterOptions } = this.state;
     return (
       <div>
-        {addresses.map((address) => (
-          <Address
-            address={address}
-            balances={balances}
-            defaultName={defaultName}
-            key={address}
-            lastAuthor={lastAuthor}
-            lastBlock={lastBlock}
-            recentlyOffline={recentlyOffline}
+        <FilterOverlay>
+          <Dropdown
+            onChange={this.onChangeFilter}
+            options={filterOptions}
+            value={filter}
+            withLabel={false}
           />
-        ))}
+        </FilterOverlay>
+        <Columar className='validator--ValidatorsList'>
+          <Column
+            emptyText={t('No addresses found')}
+            headerText={t('validators')}
+          >
+            {this.renderColumn(currentValidatorsControllersV1OrStashesV2, t('validator'))}
+          </Column>
+          <Column
+            emptyText={t('No addresses found')}
+            headerText={t('next up')}
+          >
+            {this.renderColumn(next, t('intention'))}
+          </Column>
+        </Columar>
       </div>
     );
+  }
+
+  private renderColumn (addresses: string[], defaultName: string): React.ReactNode {
+    const { balances, lastAuthor, lastBlock, recentlyOnline } = this.props;
+    const { filter } = this.state;
+
+    return addresses.map((address): React.ReactNode => (
+      <Address
+        address={address}
+        balances={balances}
+        defaultName={defaultName}
+        key={address}
+        filter={filter}
+        lastAuthor={lastAuthor}
+        lastBlock={lastBlock}
+        recentlyOnline={recentlyOnline}
+      />
+    ));
+  }
+
+  private onChangeFilter = (filter: ValidatorFilter): void => {
+    this.setState({ filter });
   }
 }
 

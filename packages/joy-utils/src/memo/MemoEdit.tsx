@@ -1,7 +1,7 @@
 import BN from 'bn.js';
 import React from 'react';
 
-import { withCalls } from '@polkadot/ui-api/with';
+import { withCalls } from '@polkadot/react-api/with';
 
 import { nonEmptyStr } from '../index';
 import TextArea from '../TextArea';

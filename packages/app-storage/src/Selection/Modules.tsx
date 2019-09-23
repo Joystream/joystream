@@ -2,35 +2,38 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { TypeDef, getTypeDef } from '@polkadot/types';
-import { StorageFunction } from '@polkadot/types/primitive/StorageKey';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { RawParams } from '@polkadot/ui-params/types';
-import { ApiProps } from '@polkadot/ui-api/types';
+import { StorageEntryPromise } from '@polkadot/api/types';
+import { TypeDef } from '@polkadot/types/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { RawParams } from '@polkadot/react-params/types';
+import { ApiProps } from '@polkadot/react-api/types';
 import { ComponentProps } from '../types';
 
 import React from 'react';
-import { Button, InputStorage } from '@polkadot/ui-app';
-import Params from '@polkadot/ui-params';
-import { withApi, withMulti } from '@polkadot/ui-api';
+import { getTypeDef } from '@polkadot/types';
+import { Button, InputStorage, TxComponent } from '@polkadot/react-components';
+import Params from '@polkadot/react-params';
+import { withApi, withMulti } from '@polkadot/react-api';
 import { isUndefined } from '@polkadot/util';
 
 import translate from '../translate';
 
-type Props = ComponentProps & ApiProps & I18nProps;
+interface Props extends ComponentProps, ApiProps, I18nProps {}
 
-type State = {
-  isValid: boolean,
-  key: StorageFunction,
-  values: RawParams,
-  params: Array<{ type: TypeDef }>
-};
+interface State {
+  isValid: boolean;
+  key: StorageEntryPromise;
+  defaultValues?: RawParams | null;
+  values: RawParams;
+  params: { type: TypeDef }[];
+}
 
-class Modules extends React.PureComponent<Props, State> {
+class Modules extends TxComponent<Props, State> {
   private defaultValue: any;
-  state: State;
 
-  constructor (props: Props) {
+  public state: State;
+
+  public constructor (props: Props) {
     super(props);
 
     const { api } = this.props;
@@ -44,9 +47,9 @@ class Modules extends React.PureComponent<Props, State> {
     };
   }
 
-  render () {
+  public render (): React.ReactNode {
     const { t } = this.props;
-    const { isValid, key: { method, section }, params } = this.state;
+    const { isValid, key: { creator: { method, section, meta } }, defaultValues, params } = this.state;
 
     return (
       <section className='storage--actionrow'>
@@ -55,11 +58,14 @@ class Modules extends React.PureComponent<Props, State> {
             defaultValue={this.defaultValue}
             label={t('selected state query')}
             onChange={this.onChangeKey}
+            help={meta && meta.documentation && meta.documentation.join(' ')}
           />
           <Params
             key={`${section}.${method}:params` /* force re-render on change */}
             onChange={this.onChangeParams}
+            onEnter={this.submit}
             params={params}
+            values={defaultValues}
           />
         </div>
         <div className='storage--actionrow-buttons'>
@@ -68,36 +74,74 @@ class Modules extends React.PureComponent<Props, State> {
             isDisabled={!isValid}
             isPrimary
             onClick={this.onAdd}
+            ref={this.button}
           />
         </div>
       </section>
     );
   }
 
-  private nextState (newState: State): void {
+  private nextState (newState: Partial<State>): void {
     this.setState(
-      (prevState: State) => {
+      (prevState: State): Pick<State, never> => {
         const { key = prevState.key, values = prevState.values } = newState;
-        const hasParam = key.meta.type.isMap;
-        const isValid = values.length === (hasParam ? 1 : 0) &&
-          values.reduce((isValid, value) =>
-            isValid &&
-            !isUndefined(value) &&
-            !isUndefined(value.value) &&
-            value.isValid,
+
+        const areParamsValid = (): boolean => {
+          return values.reduce(
+            (isValid: boolean, value): boolean => (
+              isValid &&
+              !isUndefined(value) &&
+              !isUndefined(value.value) &&
+              value.isValid),
             true
           );
+        };
+
+        if (key.creator.meta.type.isDoubleMap) {
+          const key1 = key.creator.meta.type.asDoubleMap.key1.toString();
+          const key2 = key.creator.meta.type.asDoubleMap.key2.toString();
+
+          return {
+            defaultValues: this.getDefaultValues(),
+            isValid: values.length === 2 && areParamsValid(),
+            key,
+            params: [
+              { type: getTypeDef(key1) },
+              { type: getTypeDef(key2) }
+            ],
+            values
+          };
+        }
+
+        const hasParam = key.creator.meta.type.isMap;
+        const isValid = values.length === (hasParam ? 1 : 0) && areParamsValid();
 
         return {
+          defaultValues: null,
           isValid,
           key,
-          values,
           params: hasParam
-            ? [{ type: getTypeDef(key.meta.type.asMap.key.toString()) }]
-            : []
+            ? [{ type: getTypeDef(key.creator.meta.type.asMap.key.toString()) }]
+            : [],
+          values
         };
       }
     );
+  }
+
+  private getDefaultValues = (): RawParams | null => {
+    const { api } = this.props;
+    const { key } = this.state;
+
+    if (key.creator.section === 'session') {
+      return [
+        {
+          isValid: true,
+          value: api.consts.session.dedupKeyPrefix.toHex()
+        }
+      ];
+    }
+    return null;
   }
 
   private onAdd = (): void => {
@@ -105,12 +149,13 @@ class Modules extends React.PureComponent<Props, State> {
     const { key, values } = this.state;
 
     onAdd({
+      isConst: false,
       key,
       params: values
     });
   }
 
-  private onChangeKey = (key: StorageFunction): void => {
+  private onChangeKey = (key: StorageEntryPromise): void => {
     this.nextState({
       isValid: false,
       key,
@@ -120,7 +165,7 @@ class Modules extends React.PureComponent<Props, State> {
   }
 
   private onChangeParams = (values: RawParams = []): void => {
-    this.nextState({ values } as State);
+    this.nextState({ values });
   }
 }
 

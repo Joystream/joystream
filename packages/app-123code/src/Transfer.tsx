@@ -4,20 +4,22 @@
 
 import BN from 'bn.js';
 import React from 'react';
-import { Button, InputAddress, InputBalance, TxButton } from '@polkadot/ui-app';
+import { Button, InputAddress, InputBalance, TxButton, TxComponent } from '@polkadot/react-components';
 
-type Props = {
-  accountId?: string
-};
-type State = {
+import Summary from './Summary';
+
+interface Props {
+  accountId?: string;
+}
+interface State {
   amount?: BN;
   recipientId?: string;
-};
+}
 
-export default class Transfer extends React.PureComponent<Props> {
-  state: State = {};
+export default class Transfer extends TxComponent<Props, State> {
+  public state: State = {};
 
-  render () {
+  public render (): React.ReactNode {
     const { accountId } = this.props;
     const { amount, recipientId } = this.state;
 
@@ -29,22 +31,26 @@ export default class Transfer extends React.PureComponent<Props> {
             <InputAddress
               label='recipient address for this transfer'
               onChange={this.onChangeRecipient}
+              onEnter={this.sendTx}
               type='all'
             />
             <InputBalance
               label='amount to transfer'
               onChange={this.onChangeAmount}
+              onEnter={this.sendTx}
             />
             <Button.Group>
               <TxButton
                 accountId={accountId}
                 label='make transfer'
+                labelIcon='send'
                 params={[recipientId, amount]}
                 tx='balances.transfer'
+                ref={this.button}
               />
             </Button.Group>
           </div>
-          <div className='template--summary small'>Make a transfer from any account you control to another account. Transfer fees and per-transaction fees apply and will be calculated upon submission.</div>
+          <Summary className='small'>Make a transfer from any account you control to another account. Transfer fees and per-transaction fees apply and will be calculated upon submission.</Summary>
         </div>
       </section>
     );

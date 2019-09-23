@@ -1,12 +1,12 @@
 import React from 'react';
 import BN from 'bn.js';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { Bubble } from '@polkadot/ui-app/index';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
+import { Bubble } from '@polkadot/react-components/index';
 import { formatNumber } from '@polkadot/util';
-import { Bool } from '@polkadot/types';
+import { bool as Bool } from '@polkadot/types';
 
 import Section from '@polkadot/joy-utils/Section';
 import translate from './translate';
