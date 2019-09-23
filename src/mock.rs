@@ -61,10 +61,6 @@ pub fn good_class_description() -> Vec<u8> {
     b"Description of a class".to_vec()
 }
 
-pub fn good_entity_name() -> Vec<u8> {
-    b"Name of an entity".to_vec()
-}
-
 impl Property {
     fn required(&self) -> Property {
         let mut new_self = self.clone();
@@ -236,10 +232,6 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         class_description_constraint: InputValidationLengthConstraint {
             min: 0,
             max_min_diff: 500
-        },
-        entity_name_constraint: InputValidationLengthConstraint {
-            min: 1,
-            max_min_diff: 99
         },
         _genesis_phantom_data: std::marker::PhantomData {}
     }
