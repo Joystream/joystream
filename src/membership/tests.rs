@@ -50,13 +50,13 @@ fn buy_default_membership_as_alice() -> dispatch::Result {
     )
 }
 
-fn set_alice_free_balance(balance: u32) {
+fn set_alice_free_balance(balance: u64) {
     let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, balance);
 }
 
 #[test]
 fn initial_state() {
-    const DEFAULT_FEE: u32 = 500;
+    const DEFAULT_FEE: u64 = 500;
     const DEFAULT_FIRST_ID: u32 = 1000;
 
     with_externalities(
@@ -81,9 +81,9 @@ fn initial_state() {
 
 #[test]
 fn buy_membership() {
-    const DEFAULT_FEE: u32 = 500;
+    const DEFAULT_FEE: u64 = 500;
     const DEFAULT_FIRST_ID: u32 = 1000;
-    const SURPLUS_BALANCE: u32 = 500;
+    const SURPLUS_BALANCE: u64 = 500;
 
     with_externalities(
         &mut ExtBuilder::default()
@@ -117,7 +117,7 @@ fn buy_membership() {
 
 #[test]
 fn buy_membership_fails_without_enough_balance() {
-    const DEFAULT_FEE: u32 = 500;
+    const DEFAULT_FEE: u64 = 500;
 
     with_externalities(
         &mut ExtBuilder::default()
@@ -134,7 +134,7 @@ fn buy_membership_fails_without_enough_balance() {
 
 #[test]
 fn new_memberships_allowed_flag() {
-    const DEFAULT_FEE: u32 = 500;
+    const DEFAULT_FEE: u64 = 500;
 
     with_externalities(
         &mut ExtBuilder::default()
@@ -144,7 +144,7 @@ fn new_memberships_allowed_flag() {
             let initial_balance = DEFAULT_FEE + 1;
             set_alice_free_balance(initial_balance);
 
-            <members::NewMembershipsAllowed<Test>>::put(false);
+            members::NewMembershipsAllowed::put(false);
 
             assert!(buy_default_membership_as_alice().is_err());
         },
@@ -153,8 +153,8 @@ fn new_memberships_allowed_flag() {
 
 #[test]
 fn account_cannot_create_multiple_memberships() {
-    const DEFAULT_FEE: u32 = 500;
-    const SURPLUS_BALANCE: u32 = 500;
+    const DEFAULT_FEE: u64 = 500;
+    const SURPLUS_BALANCE: u64 = 500;
 
     with_externalities(
         &mut ExtBuilder::default()
@@ -175,8 +175,8 @@ fn account_cannot_create_multiple_memberships() {
 
 #[test]
 fn unique_handles() {
-    const DEFAULT_FEE: u32 = 500;
-    const SURPLUS_BALANCE: u32 = 500;
+    const DEFAULT_FEE: u64 = 500;
+    const SURPLUS_BALANCE: u64 = 500;
 
     with_externalities(
         &mut ExtBuilder::default()
@@ -197,8 +197,8 @@ fn unique_handles() {
 
 #[test]
 fn update_profile() {
-    const DEFAULT_FEE: u32 = 500;
-    const SURPLUS_BALANCE: u32 = 500;
+    const DEFAULT_FEE: u64 = 500;
+    const SURPLUS_BALANCE: u64 = 500;
 
     with_externalities(
         &mut ExtBuilder::default()

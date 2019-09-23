@@ -1,16 +1,15 @@
 use crate::roles::actors;
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
 use crate::traits::{ContentIdExists, IsActiveDataObjectType, Members, Roles};
-use parity_codec::Codec;
-use parity_codec_derive::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{
-    As, MaybeDebug, MaybeDisplay, MaybeSerializeDebug, Member, SimpleArithmetic,
+    MaybeDebug, MaybeDisplay, MaybeSerializeDebug, Member, SimpleArithmetic,
 };
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
 };
-use system::{self, ensure_signed};
+use system::{self, ensure_root, ensure_signed};
 
 pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -23,8 +22,6 @@ pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
         + Codec
         + Default
         + Copy
-        + As<usize>
-        + As<u64>
         + MaybeSerializeDebug
         + PartialEq;
 
@@ -278,15 +275,18 @@ decl_module! {
 
         // Sudo methods
 
-        fn set_primary_liaison_account_id(account: T::AccountId) {
+        fn set_primary_liaison_account_id(origin, account: T::AccountId) {
+            ensure_root(origin)?;
             <PrimaryLiaisonAccountId<T>>::put(account);
         }
 
-        fn unset_primary_liaison_account_id() {
+        fn unset_primary_liaison_account_id(origin) {
+            ensure_root(origin)?;
             <PrimaryLiaisonAccountId<T>>::take();
         }
 
-        fn remove_known_content_id(content_id: T::ContentId) {
+        fn remove_known_content_id(origin, content_id: T::ContentId) {
+            ensure_root(origin)?;
             let upd_content_ids: Vec<T::ContentId> = Self::known_content_ids()
                 .into_iter()
                 .filter(|&id| id != content_id)
@@ -294,7 +294,8 @@ decl_module! {
             <KnownContentIds<T>>::put(upd_content_ids);
         }
 
-        fn set_known_content_id(content_ids: Vec<T::ContentId>) {
+        fn set_known_content_id(origin, content_ids: Vec<T::ContentId>) {
+            ensure_root(origin)?;
             <KnownContentIds<T>>::put(content_ids);
         }
     }

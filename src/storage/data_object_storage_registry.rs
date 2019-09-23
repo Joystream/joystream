@@ -1,10 +1,9 @@
 use crate::roles::actors;
 use crate::storage::data_directory::Trait as DDTrait;
 use crate::traits::{ContentHasStorage, ContentIdExists, Members, Roles};
-use parity_codec::Codec;
-use parity_codec_derive::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{As, MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::{
     decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
 };
@@ -20,8 +19,6 @@ pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
         + Codec
         + Default
         + Copy
-        + As<usize>
-        + As<u64>
         + MaybeSerializeDebug
         + PartialEq;
 
@@ -38,7 +35,7 @@ static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str =
     "Only the storage provider in a DOSR can decide whether they're ready.";
 
 // TODO deprecated
-const DEFAULT_FIRST_RELATIONSHIP_ID: u64 = 1;
+const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
 
 // TODO deprecated
 #[derive(Clone, Encode, Decode, PartialEq)]
@@ -54,11 +51,11 @@ decl_storage! {
 
         // TODO deprecated
         // Start at this value
-        pub FirstRelationshipId get(first_relationship_id) config(first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::sa(DEFAULT_FIRST_RELATIONSHIP_ID);
+        pub FirstRelationshipId get(first_relationship_id) config(first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
 
         // TODO deprecated
         // Increment
-        pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>| config.first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::sa(DEFAULT_FIRST_RELATIONSHIP_ID);
+        pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>| config.first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
 
         // TODO deprecated
         // Mapping of Data object types
@@ -150,7 +147,7 @@ decl_module! {
             };
 
             <Relationships<T>>::insert(new_id, dosr);
-            <NextRelationshipId<T>>::mutate(|n| { *n += T::DataObjectStorageRelationshipId::sa(1); });
+            <NextRelationshipId<T>>::mutate(|n| { *n += T::DataObjectStorageRelationshipId::from(1); });
 
             // Also add the DOSR to the list of DOSRs for the CID. Uniqueness is guaranteed
             // by the map, so we can just append the new_id to the list.

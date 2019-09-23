@@ -1,6 +1,8 @@
 use crate::traits::Roles;
+use codec::{Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::As;
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
 use system::{self, ensure_root, ensure_signed};
@@ -23,8 +25,8 @@ pub type IPNSIdentity = Vec<u8>;
 /// HTTP Url string to a discovery service endpoint
 pub type Url = Vec<u8>;
 
-pub const MINIMUM_LIFETIME: u64 = 600; // 1hr assuming 6s block times
-pub const DEFAULT_LIFETIME: u64 = MINIMUM_LIFETIME * 24; // 24hr
+pub const MINIMUM_LIFETIME: u32 = 600; // 1hr assuming 6s block times
+pub const DEFAULT_LIFETIME: u32 = MINIMUM_LIFETIME * 24; // 24hr
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
@@ -48,7 +50,7 @@ decl_storage! {
         /// Mapping of service providers' AccountIds to their AccountInfo
         pub AccountInfoByAccountId get(account_info_by_account_id): map T::AccountId => AccountInfo<T::BlockNumber>;
         /// Lifetime of an AccountInfo record in AccountInfoByAccountId map
-        pub DefaultLifetime get(default_lifetime) config(): T::BlockNumber = T::BlockNumber::sa(DEFAULT_LIFETIME);
+        pub DefaultLifetime get(default_lifetime) config(): T::BlockNumber = T::BlockNumber::from(DEFAULT_LIFETIME);
     }
 }
 
@@ -78,17 +80,17 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event<T>() = default;
 
-        pub fn set_ipns_id(origin, id: Vec<u8>, lifetime: Option<u64>) {
+        pub fn set_ipns_id(origin, id: Vec<u8>, lifetime: Option<T::BlockNumber>) {
             let sender = ensure_signed(origin)?;
             ensure!(T::Roles::is_role_account(&sender), "only role accounts can set ipns id");
 
             // TODO: ensure id is a valid base58 encoded IPNS identity
 
             let ttl = match lifetime {
-                Some(value) => if value >= MINIMUM_LIFETIME {
-                    T::BlockNumber::sa(value)
+                Some(value) => if value >= T::BlockNumber::from(MINIMUM_LIFETIME) {
+                    value
                 } else {
-                    T::BlockNumber::sa(MINIMUM_LIFETIME)
+                    T::BlockNumber::from(MINIMUM_LIFETIME)
                 },
                 _ => Self::default_lifetime()
             };
@@ -113,13 +115,13 @@ decl_module! {
             // decl_module! macro takes care of it.. its required for unit tests to work correctly
             // otherwise it complains the method
             ensure_root(origin)?;
-            ensure!(lifetime >= T::BlockNumber::sa(MINIMUM_LIFETIME), "discovery: default lifetime must be gte minimum lifetime");
+            ensure!(lifetime >= T::BlockNumber::from(MINIMUM_LIFETIME), "discovery: default lifetime must be gte minimum lifetime");
             <DefaultLifetime<T>>::put(lifetime);
         }
 
         pub fn set_bootstrap_endpoints(origin, endpoints: Vec<Vec<u8>>) {
             ensure_root(origin)?;
-            <BootstrapEndpoints<T>>::put(endpoints);
+            BootstrapEndpoints::put(endpoints);
         }
     }
 }

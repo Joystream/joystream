@@ -1,4 +1,4 @@
-use parity_codec::Encode;
+use codec::{Decode, Encode};
 use rstd::vec::Vec;
 use srml_support::ensure;
 

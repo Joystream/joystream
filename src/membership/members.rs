@@ -1,14 +1,13 @@
 use crate::currency::{BalanceOf, GovernanceCurrency};
 use crate::traits::{Members, Roles};
-use parity_codec::Codec;
-use parity_codec_derive::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{As, MaybeSerializeDebug, Member, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::traits::Currency;
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
 };
-use system::{self, ensure_signed};
+use system::{self, ensure_root, ensure_signed};
 use timestamp;
 
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
@@ -20,8 +19,6 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Codec
         + Default
         + Copy
-        + As<usize>
-        + As<u64>
         + MaybeSerializeDebug
         + PartialEq;
 
@@ -31,8 +28,6 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Codec
         + Default
         + Copy
-        + As<usize>
-        + As<u64>
         + MaybeSerializeDebug
         + PartialEq;
 
@@ -42,20 +37,18 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Codec
         + Default
         + Copy
-        + As<usize>
-        + As<u64>
         + MaybeSerializeDebug
         + PartialEq;
 
     type Roles: Roles<Self>;
 }
 
-const DEFAULT_FIRST_MEMBER_ID: u64 = 1;
-const FIRST_PAID_TERMS_ID: u64 = 1;
+const DEFAULT_FIRST_MEMBER_ID: u32 = 1;
+const FIRST_PAID_TERMS_ID: u32 = 1;
 
 // Default paid membership terms
-const DEFAULT_PAID_TERM_ID: u64 = 0;
-const DEFAULT_PAID_TERM_FEE: u64 = 100; // Can be overidden in genesis config
+const DEFAULT_PAID_TERM_ID: u32 = 0;
+const DEFAULT_PAID_TERM_FEE: u32 = 100; // Can be overidden in genesis config
 const DEFAULT_PAID_TERM_TEXT: &str = "Default Paid Term TOS...";
 
 // Default user info constraints
@@ -114,8 +107,8 @@ pub struct PaidMembershipTerms<T: Trait> {
 impl<T: Trait> Default for PaidMembershipTerms<T> {
     fn default() -> Self {
         PaidMembershipTerms {
-            id: T::PaidTermId::sa(DEFAULT_PAID_TERM_ID),
-            fee: BalanceOf::<T>::sa(DEFAULT_PAID_TERM_FEE),
+            id: T::PaidTermId::from(DEFAULT_PAID_TERM_ID),
+            fee: BalanceOf::<T>::from(DEFAULT_PAID_TERM_FEE),
             text: DEFAULT_PAID_TERM_TEXT.as_bytes().to_vec(),
         }
     }
@@ -124,10 +117,10 @@ impl<T: Trait> Default for PaidMembershipTerms<T> {
 decl_storage! {
     trait Store for Module<T: Trait> as Membership {
         /// MemberId's start at this value
-        pub FirstMemberId get(first_member_id) config(first_member_id): T::MemberId = T::MemberId::sa(DEFAULT_FIRST_MEMBER_ID);
+        pub FirstMemberId get(first_member_id) config(first_member_id): T::MemberId = T::MemberId::from(DEFAULT_FIRST_MEMBER_ID);
 
         /// MemberId to assign to next member that is added to the registry
-        pub NextMemberId get(next_member_id) build(|config: &GenesisConfig<T>| config.first_member_id): T::MemberId = T::MemberId::sa(DEFAULT_FIRST_MEMBER_ID);
+        pub NextMemberId get(next_member_id) build(|config: &GenesisConfig<T>| config.first_member_id): T::MemberId = T::MemberId::from(DEFAULT_FIRST_MEMBER_ID);
 
         /// Mapping of member ids to their corresponding primary accountid
         pub AccountIdByMemberId get(account_id_by_member_id) : map T::MemberId => T::AccountId;
@@ -143,7 +136,7 @@ decl_storage! {
         pub Handles get(handles) : map Vec<u8> => Option<T::MemberId>;
 
         /// Next paid membership terms id
-        pub NextPaidMembershipTermsId get(next_paid_membership_terms_id) : T::PaidTermId = T::PaidTermId::sa(FIRST_PAID_TERMS_ID);
+        pub NextPaidMembershipTermsId get(next_paid_membership_terms_id) : T::PaidTermId = T::PaidTermId::from(FIRST_PAID_TERMS_ID);
 
         /// Paid membership terms record
         // Remember to add _genesis_phantom_data: std::marker::PhantomData{} to membership
@@ -159,7 +152,7 @@ decl_storage! {
         }) : map T::PaidTermId => Option<PaidMembershipTerms<T>>;
 
         /// Active Paid membership terms
-        pub ActivePaidMembershipTerms get(active_paid_membership_terms) : Vec<T::PaidTermId> = vec![T::PaidTermId::sa(DEFAULT_PAID_TERM_ID)];
+        pub ActivePaidMembershipTerms get(active_paid_membership_terms) : Vec<T::PaidTermId> = vec![T::PaidTermId::from(DEFAULT_PAID_TERM_ID)];
 
         /// Is the platform is accepting new members or not
         pub NewMembershipsAllowed get(new_memberships_allowed) : bool = true;
@@ -324,7 +317,8 @@ decl_module! {
             Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member.clone()));
         }
 
-        pub fn set_screening_authority(authority: T::AccountId) {
+        pub fn set_screening_authority(origin, authority: T::AccountId) {
+            ensure_root(origin)?;
             <ScreeningAuthority<T>>::put(authority);
         }
     }
@@ -456,7 +450,7 @@ impl<T: Trait> Module<T> {
         <MemberProfile<T>>::insert(new_member_id, profile);
         <Handles<T>>::insert(user_info.handle.clone(), new_member_id);
         <NextMemberId<T>>::mutate(|n| {
-            *n += T::MemberId::sa(1);
+            *n += T::MemberId::from(1);
         });
 
         new_member_id

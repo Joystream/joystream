@@ -1,7 +1,7 @@
 use crate::roles::actors;
 use crate::storage::{data_directory, data_object_storage_registry, data_object_type_registry};
-use parity_codec::Codec;
-use runtime_primitives::traits::{As, MaybeSerializeDebug, Member, SimpleArithmetic};
+use codec::Codec;
+use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::Parameter;
 use system;
 
@@ -13,8 +13,6 @@ pub trait Members<T: system::Trait> {
         + Codec
         + Default
         + Copy
-        + As<usize>
-        + As<u64>
         + MaybeSerializeDebug
         + PartialEq;
 

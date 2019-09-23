@@ -7,25 +7,33 @@ use srml_support::*;
 
 fn init_storage_role() {
     let roles: Vec<actors::Role> = vec![actors::Role::Storage];
-    assert!(Actors::set_available_roles(roles).is_ok(), "");
+    assert!(
+        Actors::set_available_roles(system::RawOrigin::Root.into(), roles).is_ok(),
+        ""
+    );
 }
 
 fn init_storage_parmeters() -> actors::RoleParameters<Test> {
     let params = actors::RoleParameters {
         // minium balance required to stake to enter a role
-        min_stake: 100 as u32,
+        min_stake: 100 as u64,
         min_actors: 1 as u32,
         max_actors: 2 as u32,
-        reward: 100 as u32,
+        reward: 100 as u64,
         reward_period: 100 as u64,
         bonding_period: 100 as u64,
         unbonding_period: 100 as u64,
         min_service_period: 100 as u64,
         startup_grace_period: 100 as u64,
-        entry_request_fee: 10 as u32,
+        entry_request_fee: 10 as u64,
     };
     assert!(
-        Actors::set_role_parameters(actors::Role::Storage, params.clone()).is_ok(),
+        Actors::set_role_parameters(
+            system::RawOrigin::Root.into(),
+            actors::Role::Storage,
+            params.clone()
+        )
+        .is_ok(),
         ""
     );
     params
@@ -96,7 +104,11 @@ fn make_entry_request() {
         assert_eq!(request.0, actor_account);
         assert_eq!(request.1, MockMembers::alice_id());
         assert_eq!(request.2, actors::Role::Storage);
-        assert_eq!(request.3, starting_block + Actors::request_life_time());
+        assert_eq!(
+            request.3,
+            starting_block
+                + <Test as system::Trait>::BlockNumber::from(Actors::request_life_time())
+        );
     });
 }
 

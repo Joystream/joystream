@@ -1,14 +1,15 @@
+use codec::{Decode, Encode};
 use rstd::prelude::*;
 use runtime_io::print;
-use runtime_primitives::traits::{As, Hash, Zero};
-use srml_support::traits::{Currency, ReservableCurrency};
+use runtime_primitives::traits::{Hash, SaturatedConversion, Zero};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+use srml_support::traits::{Currency, Get, ReservableCurrency};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
 };
-use {
-    consensus,
-    system::{self, ensure_signed},
-};
+
+use system::{self, ensure_root, ensure_signed};
 
 #[cfg(test)]
 use primitives::storage::well_known_keys;
@@ -18,12 +19,12 @@ pub use crate::currency::{BalanceOf, GovernanceCurrency};
 use crate::traits::Members;
 
 const DEFAULT_APPROVAL_QUORUM: u32 = 60;
-const DEFAULT_MIN_STAKE: u64 = 100;
-const DEFAULT_CANCELLATION_FEE: u64 = 5;
-const DEFAULT_REJECTION_FEE: u64 = 10;
+const DEFAULT_MIN_STAKE: u32 = 100;
+const DEFAULT_CANCELLATION_FEE: u32 = 5;
+const DEFAULT_REJECTION_FEE: u32 = 10;
 
-const DEFAULT_VOTING_PERIOD_IN_DAYS: u64 = 10;
-const DEFAULT_VOTING_PERIOD_IN_SECS: u64 = DEFAULT_VOTING_PERIOD_IN_DAYS * 24 * 60 * 60;
+const DEFAULT_VOTING_PERIOD_IN_DAYS: u32 = 10;
+const DEFAULT_VOTING_PERIOD_IN_SECS: u32 = DEFAULT_VOTING_PERIOD_IN_DAYS * 24 * 60 * 60;
 
 const DEFAULT_NAME_MAX_LEN: u32 = 100;
 const DEFAULT_DESCRIPTION_MAX_LEN: u32 = 10_000;
@@ -120,7 +121,7 @@ pub struct TallyResult<BlockNumber> {
     finalized_at: BlockNumber,
 }
 
-pub trait Trait: timestamp::Trait + council::Trait + consensus::Trait + GovernanceCurrency {
+pub trait Trait: timestamp::Trait + council::Trait + GovernanceCurrency {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -171,20 +172,20 @@ decl_storage! {
 
         /// Minimum amount of a balance to be staked in order to make a proposal.
         MinStake get(min_stake) config(): BalanceOf<T> =
-            BalanceOf::<T>::sa(DEFAULT_MIN_STAKE);
+            BalanceOf::<T>::from(DEFAULT_MIN_STAKE);
 
         /// A fee to be slashed (burn) in case a proposer decides to cancel a proposal.
         CancellationFee get(cancellation_fee) config(): BalanceOf<T> =
-            BalanceOf::<T>::sa(DEFAULT_CANCELLATION_FEE);
+            BalanceOf::<T>::from(DEFAULT_CANCELLATION_FEE);
 
         /// A fee to be slashed (burn) in case a proposal was rejected.
         RejectionFee get(rejection_fee) config(): BalanceOf<T> =
-            BalanceOf::<T>::sa(DEFAULT_REJECTION_FEE);
+            BalanceOf::<T>::from(DEFAULT_REJECTION_FEE);
 
         /// Max duration of proposal in blocks until it will be expired if not enough votes.
         VotingPeriod get(voting_period) config(): T::BlockNumber =
-            T::BlockNumber::sa(DEFAULT_VOTING_PERIOD_IN_SECS /
-            (<timestamp::Module<T>>::minimum_period().as_() * 2));
+            T::BlockNumber::from(DEFAULT_VOTING_PERIOD_IN_SECS /
+            (<T as timestamp::Trait>::MinimumPeriod::get().saturated_into::<u32>() * 2));
 
         NameMaxLen get(name_max_len) config(): u32 = DEFAULT_NAME_MAX_LEN;
         DescriptionMaxLen get(description_max_len) config(): u32 = DEFAULT_DESCRIPTION_MAX_LEN;
@@ -248,7 +249,7 @@ decl_module! {
                 .map_err(|_| MSG_STAKE_IS_GREATER_THAN_BALANCE)?;
 
             let proposal_id = Self::proposal_count() + 1;
-            <ProposalCount<T>>::put(proposal_id);
+            ProposalCount::put(proposal_id);
 
             // See in substrate repo @ srml/contract/src/wasm/code_cache.rs:73
             let wasm_hash = T::Hashing::hash(&wasm_code);
@@ -268,7 +269,7 @@ decl_module! {
               <WasmCodeByHash<T>>::insert(wasm_hash, wasm_code);
             }
             <Proposals<T>>::insert(proposal_id, new_proposal);
-            <ActiveProposalIds<T>>::mutate(|ids| ids.push(proposal_id));
+            ActiveProposalIds::mutate(|ids| ids.push(proposal_id));
             Self::deposit_event(RawEvent::ProposalCreated(proposer.clone(), proposal_id));
 
             // Auto-vote with Approve if proposer is a councilor:
@@ -330,7 +331,8 @@ decl_module! {
         }
 
         /// Cancel a proposal and return stake without slashing
-        fn veto_proposal(proposal_id: u32) {
+        fn veto_proposal(origin, proposal_id: u32) {
+            ensure_root(origin)?;
             ensure!(<Proposals<T>>::exists(proposal_id), MSG_PROPOSAL_NOT_FOUND);
             let proposal = Self::proposals(proposal_id);
             ensure!(proposal.status == Active, MSG_PROPOSAL_FINALIZED);
@@ -342,9 +344,10 @@ decl_module! {
             Self::deposit_event(RawEvent::ProposalVetoed(proposal_id));
         }
 
-        fn set_approval_quorum(new_value: u32) {
+        fn set_approval_quorum(origin, new_value: u32) {
+            ensure_root(origin)?;
             ensure!(new_value > 0, "approval quorom must be greater than zero");
-            <ApprovalQuorum<T>>::put(new_value);
+            ApprovalQuorum::put(new_value);
         }
     }
 }
@@ -498,7 +501,7 @@ impl<T: Trait> Module<T> {
                 Approved => Self::_approve_proposal(pid)?,
                 Active | Cancelled => { /* nothing */ }
             }
-            <ActiveProposalIds<T>>::put(other_active_ids);
+            ActiveProposalIds::put(other_active_ids);
             <Proposals<T>>::mutate(proposal_id, |p| p.status = new_status.clone());
             Self::deposit_event(RawEvent::ProposalStatusUpdated(proposal_id, new_status));
             Ok(())
@@ -540,7 +543,7 @@ impl<T: Trait> Module<T> {
         let _ = T::Currency::unreserve(&proposal.proposer, proposal.stake);
 
         // Update wasm code of node's runtime:
-        <consensus::Module<T>>::set_code(wasm_code)?;
+        <system::Module<T>>::set_code(system::RawOrigin::Root.into(), wasm_code)?;
 
         Self::deposit_event(RawEvent::RuntimeUpdated(proposal_id, proposal.wasm_hash));
 
@@ -557,9 +560,9 @@ mod tests {
     // The testing primitives are very useful for avoiding having to work with signatures
     // or public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
     use runtime_primitives::{
-        testing::{Digest, DigestItem, Header, UintAuthorityId},
+        testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
-        BuildStorage,
+        Perbill,
     };
     use srml_support::*;
 
@@ -567,45 +570,70 @@ mod tests {
         pub enum Origin for Test {}
     }
 
-    // For testing the module, we construct most of a mock runtime. This means
-    // first constructing a configuration type (`Test`) which `impl`s each of the
-    // configuration traits of modules we want to use.
-    #[derive(Clone, Eq, PartialEq)]
+    // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
+    #[derive(Clone, PartialEq, Eq, Debug)]
     pub struct Test;
 
-    impl consensus::Trait for Test {
-        type SessionKey = UintAuthorityId;
-        type InherentOfflineReport = ();
-        type Log = DigestItem;
+    parameter_types! {
+        pub const BlockHashCount: u64 = 250;
+        pub const MaximumBlockWeight: u32 = 1024;
+        pub const MaximumBlockLength: u32 = 2 * 1024;
+        pub const AvailableBlockRatio: Perbill = Perbill::one();
+        pub const MinimumPeriod: u64 = 5;
     }
 
     impl system::Trait for Test {
         type Origin = Origin;
         type Index = u64;
         type BlockNumber = u64;
+        type Call = ();
         type Hash = H256;
         type Hashing = BlakeTwo256;
-        type Digest = Digest;
         type AccountId = u64;
-        type Lookup = IdentityLookup<u64>;
+        type Lookup = IdentityLookup<Self::AccountId>;
         type Header = Header;
+        type WeightMultiplierUpdate = ();
         type Event = ();
-        type Log = DigestItem;
-    }
-
-    impl balances::Trait for Test {
-        type Balance = u64;
-        type OnFreeBalanceZero = ();
-        type OnNewAccount = ();
-        type Event = ();
-        type TransactionPayment = ();
-        type DustRemoval = ();
-        type TransferPayment = ();
+        type BlockHashCount = BlockHashCount;
+        type MaximumBlockWeight = MaximumBlockWeight;
+        type MaximumBlockLength = MaximumBlockLength;
+        type AvailableBlockRatio = AvailableBlockRatio;
+        type Version = ();
     }
 
     impl timestamp::Trait for Test {
         type Moment = u64;
         type OnTimestampSet = ();
+        type MinimumPeriod = MinimumPeriod;
+    }
+
+    parameter_types! {
+        pub const ExistentialDeposit: u32 = 0;
+        pub const TransferFee: u32 = 0;
+        pub const CreationFee: u32 = 0;
+        pub const TransactionBaseFee: u32 = 1;
+        pub const TransactionByteFee: u32 = 0;
+    }
+
+    impl balances::Trait for Test {
+        /// The type for recording an account's balance.
+        type Balance = u64;
+        /// What to do if an account's free balance gets zeroed.
+        type OnFreeBalanceZero = ();
+        /// What to do if a new account is created.
+        type OnNewAccount = ();
+        /// The ubiquitous event type.
+        type Event = ();
+
+        type TransactionPayment = ();
+        type DustRemoval = ();
+        type TransferPayment = ();
+        type ExistentialDeposit = ExistentialDeposit;
+        type TransferFee = TransferFee;
+        type CreationFee = CreationFee;
+        type TransactionBaseFee = TransactionBaseFee;
+        type TransactionByteFee = TransactionByteFee;
+        type WeightToFee = ();
     }
 
     impl council::Trait for Test {
@@ -669,17 +697,14 @@ mod tests {
     // This function basically just builds a genesis storage key/value store according to
     // our desired mockup.
     fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-        let mut t = system::GenesisConfig::<Test>::default()
-            .build_storage()
-            .unwrap()
-            .0;
+        let mut t = system::GenesisConfig::default()
+            .build_storage::<Test>()
+            .unwrap();
+
         // We use default for brevity, but you can configure as desired if needed.
-        t.extend(
-            balances::GenesisConfig::<Test>::default()
-                .build_storage()
-                .unwrap()
-                .0,
-        );
+        balances::GenesisConfig::<Test>::default()
+            .assimilate_storage(&mut t)
+            .unwrap();
 
         let council_mock: council::Seats<u64, u64> = ALL_COUNCILORS
             .iter()
@@ -690,15 +715,12 @@ mod tests {
             })
             .collect();
 
-        t.extend(
-            council::GenesisConfig::<Test> {
-                active_council: council_mock,
-                term_ends_at: 0,
-            }
-            .build_storage()
-            .unwrap()
-            .0,
-        );
+        council::GenesisConfig::<Test> {
+            active_council: council_mock,
+            term_ends_at: 0,
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
         // t.extend(GenesisConfig::<Test>{
         //     // Here we can override defaults.
@@ -765,7 +787,7 @@ mod tests {
 
     macro_rules! assert_runtime_code_empty {
         () => {
-            assert_eq!(get_runtime_code(), None)
+            assert_eq!(get_runtime_code(), Some(vec![]))
         };
     }
 
@@ -779,9 +801,18 @@ mod tests {
     fn check_default_values() {
         with_externalities(&mut new_test_ext(), || {
             assert_eq!(Proposals::approval_quorum(), DEFAULT_APPROVAL_QUORUM);
-            assert_eq!(Proposals::min_stake(), DEFAULT_MIN_STAKE);
-            assert_eq!(Proposals::cancellation_fee(), DEFAULT_CANCELLATION_FEE);
-            assert_eq!(Proposals::rejection_fee(), DEFAULT_REJECTION_FEE);
+            assert_eq!(
+                Proposals::min_stake(),
+                BalanceOf::<Test>::from(DEFAULT_MIN_STAKE)
+            );
+            assert_eq!(
+                Proposals::cancellation_fee(),
+                BalanceOf::<Test>::from(DEFAULT_CANCELLATION_FEE)
+            );
+            assert_eq!(
+                Proposals::rejection_fee(),
+                BalanceOf::<Test>::from(DEFAULT_REJECTION_FEE)
+            );
             assert_eq!(Proposals::name_max_len(), DEFAULT_NAME_MAX_LEN);
             assert_eq!(
                 Proposals::description_max_len(),

@@ -8,62 +8,80 @@ pub use system;
 pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
-    traits::{BlakeTwo256, IdentityLookup, OnFinalize},
-    BuildStorage,
+    traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
+    weights::Weight,
+    BuildStorage, Perbill,
 };
 
-use srml_support::impl_outer_origin;
+use srml_support::{impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
 
-// For testing the module, we construct most of a mock runtime. This means
-// first constructing a configuration type (`Test`) which `impl`s each of the
-// configuration traits of modules we want to use.
-#[derive(Clone, Eq, PartialEq, Debug)]
+// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
+parameter_types! {
+    pub const BlockHashCount: u64 = 250;
+    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockLength: u32 = 2 * 1024;
+    pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const MinimumPeriod: u64 = 5;
+}
+
 impl system::Trait for Test {
     type Origin = Origin;
     type Index = u64;
     type BlockNumber = u64;
+    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type Digest = Digest;
     type AccountId = u64;
+    type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
+    type WeightMultiplierUpdate = ();
     type Event = ();
-    type Log = DigestItem;
-    type Lookup = IdentityLookup<u64>;
+    type BlockHashCount = BlockHashCount;
+    type MaximumBlockWeight = MaximumBlockWeight;
+    type MaximumBlockLength = MaximumBlockLength;
+    type AvailableBlockRatio = AvailableBlockRatio;
+    type Version = ();
 }
+
 impl timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
 }
-impl consensus::Trait for Test {
-    type SessionKey = UintAuthorityId;
-    type InherentOfflineReport = ();
-    type Log = DigestItem;
+
+parameter_types! {
+    pub const ExistentialDeposit: u32 = 0;
+    pub const TransferFee: u32 = 0;
+    pub const CreationFee: u32 = 0;
+    pub const TransactionBaseFee: u32 = 1;
+    pub const TransactionByteFee: u32 = 0;
 }
 
 impl balances::Trait for Test {
-    type Event = ();
-
-    /// The balance of an account.
-    type Balance = u32;
-
-    /// A function which is invoked when the free-balance has fallen below the existential deposit and
-    /// has been reduced to zero.
-    ///
-    /// Gives a chance to clean up resources associated with the given account.
+    /// The type for recording an account's balance.
+    type Balance = u64;
+    /// What to do if an account's free balance gets zeroed.
     type OnFreeBalanceZero = ();
-
-    /// Handler for when a new account is created.
+    /// What to do if a new account is created.
     type OnNewAccount = ();
+    /// The ubiquitous event type.
+    type Event = ();
 
     type TransactionPayment = ();
     type DustRemoval = ();
     type TransferPayment = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type TransferFee = TransferFee;
+    type CreationFee = CreationFee;
+    type TransactionBaseFee = TransactionBaseFee;
+    type TransactionByteFee = TransactionByteFee;
+    type WeightToFee = ();
 }
 
 impl GovernanceCurrency for Test {
@@ -80,7 +98,7 @@ impl members::Trait for Test {
 
 pub struct ExtBuilder {
     first_member_id: u32,
-    default_paid_membership_fee: u32,
+    default_paid_membership_fee: u64,
 }
 impl Default for ExtBuilder {
     fn default() -> Self {
@@ -96,25 +114,21 @@ impl ExtBuilder {
         self.first_member_id = first_member_id;
         self
     }
-    pub fn default_paid_membership_fee(mut self, default_paid_membership_fee: u32) -> Self {
+    pub fn default_paid_membership_fee(mut self, default_paid_membership_fee: u64) -> Self {
         self.default_paid_membership_fee = default_paid_membership_fee;
         self
     }
     pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher> {
-        let mut t = system::GenesisConfig::<Test>::default()
-            .build_storage()
-            .unwrap()
-            .0;
+        let mut t = system::GenesisConfig::default()
+            .build_storage::<Test>()
+            .unwrap();
 
-        t.extend(
-            members::GenesisConfig::<Test> {
-                first_member_id: self.first_member_id,
-                default_paid_membership_fee: self.default_paid_membership_fee,
-            }
-            .build_storage()
-            .unwrap()
-            .0,
-        );
+        members::GenesisConfig::<Test> {
+            first_member_id: self.first_member_id,
+            default_paid_membership_fee: self.default_paid_membership_fee,
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
         t.into()
     }

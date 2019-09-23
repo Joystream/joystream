@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 pub use super::{data_directory, data_object_storage_registry, data_object_type_registry};
-use crate::currency::GovernanceCurrency;
+pub use crate::currency::GovernanceCurrency;
 use crate::roles::actors;
 use crate::traits;
 use runtime_io::with_externalities;
@@ -10,11 +10,12 @@ pub use system;
 pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
-    traits::{BlakeTwo256, IdentityLookup, OnFinalize},
-    BuildStorage,
+    traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
+    weights::Weight,
+    BuildStorage, Perbill,
 };
 
-use srml_support::{impl_outer_event, impl_outer_origin};
+use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -112,23 +113,73 @@ impl traits::ContentIdExists<Test> for MockContent {
     }
 }
 
-// For testing the module, we construct most of a mock runtime. This means
-// first constructing a configuration type (`Test`) which `impl`s each of the
-// configuration traits of modules we want to use.
-#[derive(Clone, Eq, PartialEq, Debug)]
+// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
+parameter_types! {
+    pub const BlockHashCount: u64 = 250;
+    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockLength: u32 = 2 * 1024;
+    pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const MinimumPeriod: u64 = 5;
+}
+
 impl system::Trait for Test {
     type Origin = Origin;
     type Index = u64;
     type BlockNumber = u64;
+    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type Digest = Digest;
     type AccountId = u64;
+    type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
+    type WeightMultiplierUpdate = ();
     type Event = MetaEvent;
-    type Log = DigestItem;
-    type Lookup = IdentityLookup<u64>;
+    type BlockHashCount = BlockHashCount;
+    type MaximumBlockWeight = MaximumBlockWeight;
+    type MaximumBlockLength = MaximumBlockLength;
+    type AvailableBlockRatio = AvailableBlockRatio;
+    type Version = ();
+}
+
+impl timestamp::Trait for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+}
+
+parameter_types! {
+    pub const ExistentialDeposit: u32 = 0;
+    pub const TransferFee: u32 = 0;
+    pub const CreationFee: u32 = 0;
+    pub const TransactionBaseFee: u32 = 1;
+    pub const TransactionByteFee: u32 = 0;
+}
+
+impl balances::Trait for Test {
+    /// The type for recording an account's balance.
+    type Balance = u64;
+    /// What to do if an account's free balance gets zeroed.
+    type OnFreeBalanceZero = ();
+    /// What to do if a new account is created.
+    type OnNewAccount = ();
+    /// The ubiquitous event type.
+    type Event = MetaEvent;
+
+    type TransactionPayment = ();
+    type DustRemoval = ();
+    type TransferPayment = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type TransferFee = TransferFee;
+    type CreationFee = CreationFee;
+    type TransactionBaseFee = TransactionBaseFee;
+    type TransactionByteFee = TransactionByteFee;
+    type WeightToFee = ();
+}
+
+impl GovernanceCurrency for Test {
+    type Currency = balances::Module<Self>;
 }
 
 impl data_object_type_registry::Trait for Test {
@@ -161,41 +212,6 @@ impl actors::Trait for Test {
 
 impl actors::ActorRemoved<Test> for () {
     fn actor_removed(_: &u64) {}
-}
-
-impl timestamp::Trait for Test {
-    type Moment = u64;
-    type OnTimestampSet = ();
-}
-
-impl consensus::Trait for Test {
-    type SessionKey = UintAuthorityId;
-    type InherentOfflineReport = ();
-    type Log = DigestItem;
-}
-
-impl balances::Trait for Test {
-    type Event = MetaEvent;
-
-    /// The balance of an account.
-    type Balance = u32;
-
-    /// A function which is invoked when the free-balance has fallen below the existential deposit and
-    /// has been reduced to zero.
-    ///
-    /// Gives a chance to clean up resources associated with the given account.
-    type OnFreeBalanceZero = ();
-
-    /// Handler for when a new account is created.
-    type OnNewAccount = ();
-
-    type TransactionPayment = ();
-    type DustRemoval = ();
-    type TransferPayment = ();
-}
-
-impl GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
 }
 
 pub struct ExtBuilder {
@@ -234,28 +250,21 @@ impl ExtBuilder {
         self
     }
     pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher> {
-        let mut t = system::GenesisConfig::<Test>::default()
-            .build_storage()
-            .unwrap()
-            .0;
+        let mut t = system::GenesisConfig::default()
+            .build_storage::<Test>()
+            .unwrap();
 
-        t.extend(
-            data_object_type_registry::GenesisConfig::<Test> {
-                first_data_object_type_id: self.first_data_object_type_id,
-            }
-            .build_storage()
-            .unwrap()
-            .0,
-        );
+        data_object_type_registry::GenesisConfig::<Test> {
+            first_data_object_type_id: self.first_data_object_type_id,
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
-        t.extend(
-            data_object_storage_registry::GenesisConfig::<Test> {
-                first_relationship_id: self.first_relationship_id,
-            }
-            .build_storage()
-            .unwrap()
-            .0,
-        );
+        data_object_storage_registry::GenesisConfig::<Test> {
+            first_relationship_id: self.first_relationship_id,
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
         t.into()
     }
@@ -279,7 +288,10 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
             .build(),
         || {
             let roles: Vec<actors::Role> = vec![actors::Role::Storage];
-            assert!(TestActors::set_available_roles(roles).is_ok(), "");
+            assert!(
+                TestActors::set_available_roles(system::RawOrigin::Root.into(), roles).is_ok(),
+                ""
+            );
 
             f()
         },

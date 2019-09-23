@@ -14,7 +14,7 @@ fn set_ipns_id() {
 
         let alice = alice_account();
         let identity = "alice".as_bytes().to_vec();
-        let ttl = discovery::MINIMUM_LIFETIME + 100;
+        let ttl = <Test as system::Trait>::BlockNumber::from(discovery::MINIMUM_LIFETIME + 100);
         assert!(Discovery::set_ipns_id(Origin::signed(alice), identity.clone(), Some(ttl)).is_ok());
 
         assert!(<discovery::AccountInfoByAccountId<Test>>::exists(&alice));
@@ -35,6 +35,7 @@ fn set_ipns_id() {
                     alice,
                     identity.clone()
                 )),
+                topics: vec![]
             }
         );
 
@@ -68,6 +69,7 @@ fn unset_ipns_id() {
             EventRecord {
                 phase: Phase::ApplyExtrinsic(0),
                 event: MetaEvent::discovery(discovery::RawEvent::AccountInfoRemoved(alice)),
+                topics: vec![]
             }
         );
     });
@@ -98,7 +100,8 @@ fn is_account_info_expired() {
 #[test]
 fn set_default_lifetime() {
     with_externalities(&mut initial_test_ext(), || {
-        let lifetime = discovery::MINIMUM_LIFETIME + 2000;
+        let lifetime =
+            <Test as system::Trait>::BlockNumber::from(discovery::MINIMUM_LIFETIME + 2000);
         // priviliged method should fail if not from root origin
         assert!(
             Discovery::set_default_lifetime(Origin::signed(1), lifetime).is_err(),
@@ -111,8 +114,10 @@ fn set_default_lifetime() {
         assert_eq!(Discovery::default_lifetime(), lifetime, "");
 
         // cannot set default lifetime to less than minimum
+        let less_than_min_liftime =
+            <Test as system::Trait>::BlockNumber::from(discovery::MINIMUM_LIFETIME - 1);
         assert!(
-            Discovery::set_default_lifetime(Origin::ROOT, discovery::MINIMUM_LIFETIME - 1).is_err(),
+            Discovery::set_default_lifetime(Origin::ROOT, less_than_min_liftime).is_err(),
             ""
         );
     });
