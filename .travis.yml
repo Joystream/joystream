@@ -10,4 +10,3 @@ script:
   - cargo fmt --all -- --check
   - cargo test --verbose --all
   - cargo build
-
