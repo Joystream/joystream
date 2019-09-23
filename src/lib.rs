@@ -36,9 +36,6 @@ const ERROR_CLASS_NAME_TOO_LONG: &str = "Class name is too long";
 const ERROR_CLASS_DESCRIPTION_TOO_SHORT: &str = "Class description is too long";
 const ERROR_CLASS_DESCRIPTION_TOO_LONG: &str = "Class description is too long";
 
-const ERROR_ENTITY_NAME_TOO_SHORT: &str = "Entity name is too short";
-const ERROR_ENTITY_NAME_TOO_LONG: &str = "Entity name is too long";
-
 // Main logic errors
 // --------------------------------------
 
@@ -279,9 +276,6 @@ decl_storage! {
             config(): InputValidationLengthConstraint;
 
         pub ClassDescriptionConstraint get(class_description_constraint)
-            config(): InputValidationLengthConstraint;
-
-        pub EntityNameConstraint get(entity_name_constraint)
             config(): InputValidationLengthConstraint;
     }
 }
