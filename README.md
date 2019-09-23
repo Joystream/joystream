@@ -12,21 +12,20 @@ The joystream runtime builds on [substrate v1.0](https://docs.substrate.dev/docs
 - [User membership system](src/membership/)
 - [Staked Roles](src/roles)
    - [Storage Provider](src/storage/)
-
-### Prerequisites
-
-To compile the runtime you will need some tools such as: Rust, llvm and openssl. You can install most of the dependencies with:
-
-```bash
-curl https://getsubstrate.io -sSf | bash
-```
+- [Forum](https://github.com/Joystream/substrate-forum-module)
+- [Discovery](src/discovery_service)
 
 ## Getting Started - Building the WASM runtime
 
 ```bash
+# Clone repository
 git clone https://github.com/Joystream/substrate-runtime-joystream
 cd substrate-runtime-joystream/
+
+# Install Pre-requisits
 ./setup.sh
+
+# Compile runtime
 ./build.sh
 ```
 
@@ -50,7 +49,7 @@ Deploying the compiled runtime on a live system can be done in one of two ways:
 cargo test
 ```
 
-### Coding style
+## Coding style
 
 We use `rustfmt` to format the source code for consistency.
 
@@ -66,13 +65,17 @@ Running rustfmt can be applied to all source files recursing subfolders:
 rustfmt src/*.*
 ```
 
+## Reproducible Builds
+
+In an attempt to have a reproducuble version of the runtime that can be verified independantly (by council members for example when deciding wether to vote in a runtime upgrade proposal) there is a `build-with-docker.sh` script which can be run to generate a `joystream_runtime.wasm` file to the current directory.
+
 ## Built With
 
 * [Substrate](https://github.com/paritytech/substrate)
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
+Please see our [contributing guidlines](https://github.com/Joystream/joystream#contribute) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
