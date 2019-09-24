@@ -18,7 +18,7 @@ import { getTypeRegistry } from '@polkadot/types';
 import { Api } from '@polkadot/react-api';
 import { QueueConsumer } from '@polkadot/react-components/Status/Context';
 import Queue from '@polkadot/react-components/Status/Queue';
-
+import { MyAccountProvider } from '@polkadot/joy-utils/MyAccountContext';
 import Apps from './Apps';
 
 const rootId = 'root';
@@ -60,6 +60,7 @@ const theme = {
 
 ReactDOM.render(
   <Suspense fallback='...'>
+    <MyAccountProvider>
     <Queue>
       <QueueConsumer>
         {({ queuePayload, queueSetTxStatus }): React.ReactNode => (
@@ -77,6 +78,7 @@ ReactDOM.render(
         )}
       </QueueConsumer>
     </Queue>
+    </MyAccountProvider>
   </Suspense>,
   rootElement
 );

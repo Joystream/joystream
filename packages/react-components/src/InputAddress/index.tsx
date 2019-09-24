@@ -20,6 +20,8 @@ import Dropdown from '../Dropdown';
 import createHeader from './createHeader';
 import createItem from './createItem';
 
+import { MyAccountContext } from '@polkadot/joy-utils/MyAccountContext';
+
 interface Props extends BareProps {
   defaultValue?: string | null;
   help?: React.ReactNode;
@@ -93,6 +95,8 @@ const createOption = (address: string): KeyringSectionOption => {
 
 class InputAddress extends React.PureComponent<Props, State> {
   public state: State = {};
+
+  static contextType = MyAccountContext;
 
   public static getDerivedStateFromProps ({ value }: Props): Pick<State, never> | null {
     try {
@@ -232,6 +236,11 @@ class InputAddress extends React.PureComponent<Props, State> {
     const { onChange, type } = this.props;
 
     InputAddress.setLastValue(type, address);
+
+    if (type === 'account') {
+      const { set } = this.context;
+      set(address);
+    }
 
     onChange && onChange(transformToAccountId(address));
   }
