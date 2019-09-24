@@ -52,10 +52,15 @@ export type PropertyValueEnum =
   Int32Vec |
   Int64Vec |
   TextVec |
-  InternalVec;
+  InternalVec
+;
 
-export class PropertyValue extends EnumType<PropertyValueEnum> {
-  constructor (value?: PropertyValueEnum, index?: number) {
+type PropertyValueEnumValue = {
+  [typeName: string]: PropertyValueEnum;
+};
+
+export class PropertyValue extends EnumType<PropertyValueEnumValue> {
+  constructor (value?: PropertyValueEnumValue, index?: number) {
     super({
       None,
 

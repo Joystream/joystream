@@ -1,6 +1,6 @@
 import { getTypeRegistry, u16, Text, Bool, U16 } from '@polkadot/types';
 import { Vector } from '@polkadot/types/codec';
-import { JoyStruct } from '..';
+import { JoyStruct } from '../JoyStruct';
 import PropertyType from './PropertyType';
 import PropertyValue from './PropertyValue';
 import ClassId from './ClassId';

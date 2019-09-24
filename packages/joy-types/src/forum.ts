@@ -1,6 +1,6 @@
 import { getTypeRegistry, u16, u32, u64, AccountId, Text, Bool, BlockNumber, Moment } from '@polkadot/types';
 import { Option, Vector } from '@polkadot/types/codec';
-import { JoyStruct } from './';
+import { JoyStruct } from './JoyStruct';
 
 // Based on copypasta from joy-media/BlockAndTimeType
 export type BlockchainTimestampType = {
