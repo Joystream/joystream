@@ -31,6 +31,7 @@ class TxButtonInner extends React.PureComponent<Props & InjectedProps> {
     return (
       <Button
         {...this.props}
+        icon=''
         isDisabled={isDisabled || !origin}
         isPrimary={isPrimary}
         label={label}

@@ -106,6 +106,7 @@ class Component extends React.PureComponent<Props, State> {
             size='large'
             label='Submit another vote'
             onClick={this.resetForm}
+            icon=''
           />
         </Labelled>
       </div>
@@ -136,7 +137,7 @@ class Component extends React.PureComponent<Props, State> {
             onChange={this.onChangeSalt}
           />
           <div className='medium' style={{ margin: '.5rem' }}>
-            <Button onClick={this.newRandomSalt}>Generate</Button>
+            <Button onClick={this.newRandomSalt} icon=''>Generate</Button>
             <Message compact warning size='tiny' content='You need to remember this salt!' />
           </div>
         </div>
