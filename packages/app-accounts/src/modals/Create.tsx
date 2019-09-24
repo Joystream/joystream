@@ -56,7 +56,7 @@ interface State extends AddressState {
   tags: string[];
 }
 
-const DEFAULT_TYPE = 'sr25519';
+const DEFAULT_TYPE = 'ed25519'; // 'sr25519';
 
 function deriveValidate (seed: string, derivePath: string, pairType: KeypairType): string | null {
   try {
