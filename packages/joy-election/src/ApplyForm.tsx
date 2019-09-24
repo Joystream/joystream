@@ -86,9 +86,9 @@ export default withMulti(
   translate,
   withOnlyMembers,
   withCalls<Props>(
-    ['query.election.minCouncilStake',
+    ['query.councilElection.minCouncilStake',
       { propName: 'minStake' }],
-    ['query.election.applicantStakes',
+    ['query.councilElection.applicantStakes',
       { paramName: 'myAddress', propName: 'alreadyStaked' }],
     ['query.balances.freeBalance',
       { paramName: 'myAddress', propName: 'myBalance' }]

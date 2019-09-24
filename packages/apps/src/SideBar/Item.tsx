@@ -174,7 +174,7 @@ export default withMulti(
   Item,
   translate,
   withApi,
-  withCalls(queryToProp('query.election.stage', { propName: 'electionStage' })),
+  withCalls(queryToProp('query.councilElection.stage', { propName: 'electionStage' })),
   withCalls<Props>(
     ['query.sudo.key', {
       transform: (key): string =>

@@ -102,7 +102,7 @@ export function calcBackersStake (backers: Backer[]): BN {
 
 import { Options as QueryOptions } from '@polkadot/react-api/with/types';
 
-/** Example of apiQuery: 'query.election.round' */
+/** Example of apiQuery: 'query.councilElection.round' */
 export function queryToProp (
   apiQuery: string,
   paramNameOrOpts?: string | QueryOptions

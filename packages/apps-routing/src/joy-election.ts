@@ -11,7 +11,7 @@ export default ([
       needsAccounts: true,
       needsApi: [
         'query.council.activeCouncil',
-        'query.election.stage',
+        'query.councilElection.stage',
       ]
     },
     i18n: {
