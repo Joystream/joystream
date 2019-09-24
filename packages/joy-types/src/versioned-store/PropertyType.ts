@@ -26,8 +26,17 @@ export class Int16Vec extends u16 {}
 export class Int32Vec extends u16 {}
 export class Int64Vec extends u16 {}
 
-export class TextVec extends Tuple.with([u16, u16]) {}
-export class InternalVec extends Tuple.with([u16, ClassId]) {}
+export class TextVec extends Tuple.with([u16, u16]) {
+  constructor (maxItems: u16 | number, maxTextLength: u16 | number) {
+    super([ maxItems, maxTextLength ]);
+  }
+}
+
+export class InternalVec extends Tuple.with([u16, ClassId]) {
+  constructor (maxItems: u16 | number, classId: ClassId | number) {
+    super([ maxItems, classId ]);
+  }
+}
 
 export type PropertyTypeEnum =
   None |
