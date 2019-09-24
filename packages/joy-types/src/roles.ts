@@ -43,7 +43,7 @@ export type Requests = Array<Request>;
 export class RoleParameters extends Struct {
   constructor (value?: any) {
     super({
-      min_stake: u128, // Balance,
+      min_stake:  u128, // Balance,
       min_actors: u32,
       max_actors: u32,
       reward: u128, // Balance,

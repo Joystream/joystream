@@ -93,14 +93,18 @@ export type TallyResult = {
   finalized_at: BlockNumber
 };
 
-export type Announcing = BlockNumber;
-export type Voting = BlockNumber;
-export type Revealing = BlockNumber;
+export class Announcing extends u32 {};
+export class Voting extends u32 {};
+export class Revealing extends u32 {};
 
 export class ElectionStage extends Enum {
   constructor (value?: any, index?: number) {
     super(
-      ['Announcing', 'Voting', 'Revealing'],
+      {
+        Announcing,
+        Voting,
+        Revealing
+      },
       value, index);
   }
 
@@ -175,9 +179,9 @@ function registerElectionAndProposalTypes () {
 
     // Register parametrized enum ElectionStage:
     typeRegistry.register({
-      Announcing: 'BlockNumber',
-      Voting: 'BlockNumber',
-      Revealing: 'BlockNumber',
+      // Announcing: 'BlockNumber',
+      // Voting: 'BlockNumber',
+      // Revealing: 'BlockNumber',
       ElectionStage
     });
     typeRegistry.register({

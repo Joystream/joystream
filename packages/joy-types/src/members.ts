@@ -10,10 +10,10 @@ export class Paid extends PaidTermId {}
 export class Screening extends GenericAccountId {}
 export class EntryMethod extends Enum {
   constructor (value?: any, index?: number) {
-    super([
-      'Paid',
-      'Screening'
-    ], value, index);
+    super({
+      Paid,
+      Screening
+    }, value, index);
   }
 }
 
@@ -72,8 +72,8 @@ export function registerMembershipTypes () {
     const typeRegistry = getTypeRegistry();
     // Register enum EntryMethod and its options:
     typeRegistry.register({
-      Paid,
-      Screening,
+      // Paid,
+      // Screening,
       EntryMethod
     });
     typeRegistry.register({
