@@ -88,7 +88,7 @@ class RevealVoteForm extends React.PureComponent<Props, State> {
             isDisabled={!isVoteRevealed}
             label='Reveal this vote'
             params={[hashedVote, applicantId, salt]}
-            tx='election.reveal'
+            tx='councilElection.reveal'
           />
         </Labelled>
       </div>

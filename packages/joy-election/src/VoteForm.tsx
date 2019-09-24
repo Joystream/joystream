@@ -153,7 +153,7 @@ class Component extends React.PureComponent<Props, State> {
             isDisabled={!isFormValid}
             label='Submit my vote'
             params={[hashedVote, stake]}
-            tx='election.vote'
+            tx='councilElection.vote'
             txSentCb={this.onFormSubmitted}
             txFailedCb={this.onTxFailed}
             txSuccessCb={(txResult: SubmittableResult) => this.onTxSuccess(buildNewVote() as NewVote, txResult)}

@@ -55,7 +55,7 @@ class ApplyForm extends React.PureComponent<Props, State> {
             isDisabled={!isStakeValid}
             label={buttonLabel}
             params={[stake]}
-            tx='election.apply'
+            tx='councilElection.apply'
           />
         </Labelled>
       </div>
