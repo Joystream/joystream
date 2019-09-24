@@ -47,6 +47,7 @@ class App extends React.PureComponent<Props, State> {
       roles: [],
       tabs: [
         {
+          isRoot: true,
           name: 'actors',
           text: t('Actors')
         },

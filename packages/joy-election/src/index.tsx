@@ -37,6 +37,7 @@ class App extends React.PureComponent<Props, State> {
     const { t, activeCouncil = [], applicants = [], commitments = [] } = this.props;
     return [
       {
+        isRoot: true,
         name: 'council',
         text: t('Dashboard')
       },

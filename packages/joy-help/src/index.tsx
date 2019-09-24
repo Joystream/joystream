@@ -25,6 +25,7 @@ class App extends React.PureComponent<Props, State> {
     const { t } = this.props;
     return [
       {
+        isRoot: true,
         name: 'help',
         text: t('Help and News')
       }

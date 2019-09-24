@@ -33,6 +33,7 @@ class App extends React.PureComponent<Props> {
     const finalizedCount = proposalCount.sub(new BN(activeCount)).toNumber();
     return [
       {
+        isRoot: true,
         name: 'proposals',
         text: t('Dashboard')
       },

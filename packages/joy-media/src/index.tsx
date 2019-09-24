@@ -24,6 +24,7 @@ class App extends React.PureComponent<Props> {
     const { t } = this.props;
     return [
       {
+        isRoot: true,
         name: 'media',
         text: t('Explore')
       },

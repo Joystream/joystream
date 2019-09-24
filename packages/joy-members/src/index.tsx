@@ -34,6 +34,7 @@ class App extends React.PureComponent<Props> {
     }
     return [
       {
+        isRoot: true,
         name: 'members',
         text: t('All members') + ` (${memberCount})`
       },
