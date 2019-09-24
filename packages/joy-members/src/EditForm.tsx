@@ -78,11 +78,14 @@ const InnerForm = (props: FormProps) => {
   };
 
   const onTxCancelled = () => {
-    setSubmitting(false);
+
   };
 
-  const onTxFailed = (_txResult: SubmittableResult) => {
+  const onTxFailed = (txResult: SubmittableResult) => {
     setSubmitting(false);
+    if (txResult == null) {
+      return onTxCancelled();
+    }
   };
 
   const onTxSuccess = (_txResult: SubmittableResult) => {
@@ -154,7 +157,6 @@ const InnerForm = (props: FormProps) => {
             : 'members.buyMembership'
           }
           onClick={onSubmit}
-          txCancelledCb={onTxCancelled} // update ui-signer app to include a txCancelledCb
           txFailedCb={onTxFailed}
           txSuccessCb={onTxSuccess}
         />

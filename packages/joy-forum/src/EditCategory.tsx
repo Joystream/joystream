@@ -90,11 +90,14 @@ const InnerForm = (props: FormProps) => {
   };
 
   const onTxCancelled = () => {
-    setSubmitting(false);
+
   };
 
-  const onTxFailed = (_txResult: SubmittableResult) => {
+  const onTxFailed = (txResult: SubmittableResult) => {
     setSubmitting(false);
+    if (txResult == null) {
+      return onTxCancelled();
+    }
   };
 
   const onTxSuccess = (_txResult: SubmittableResult) => {
@@ -163,7 +166,6 @@ const InnerForm = (props: FormProps) => {
             : 'forum.updateCategory'
           }
           onClick={onSubmit}
-          txCancelledCb={onTxCancelled}
           txFailedCb={onTxFailed}
           txSuccessCb={onTxSuccess}
         />
