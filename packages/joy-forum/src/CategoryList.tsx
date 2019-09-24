@@ -6,8 +6,7 @@ import { History } from 'history';
 import orderBy from 'lodash/orderBy';
 import BN from 'bn.js';
 
-import { Option, bool as Bool } from '@polkadot/types';
-// import { Bool } from '@polkadot/types/primitive';
+import { Option, bool } from '@polkadot/types';
 import { CategoryId, Category, ThreadId, Thread } from '@joystream/types/forum';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
@@ -43,7 +42,7 @@ function CategoryActions (props: CategoryActionsProps) {
       className='item'
       isPrimary={false}
       label={<><i className={`${btnProps.icon} icon`} />{btnProps.label}</>}
-      params={[id, new Option(Bool, btnProps.archive), new Option(Bool, btnProps.delete)]}
+      params={[id, new Option(bool, btnProps.archive), new Option(bool, btnProps.delete)]}
       tx={'forum.updateCategory'}
     />;
   };
