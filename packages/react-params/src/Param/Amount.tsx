@@ -6,9 +6,9 @@ import { Props } from '../types';
 
 import BN from 'bn.js';
 import React from 'react';
-import { ClassOf } from '@polkadot/types';
+// import { ClassOf } from '@polkadot/types';
 import { Input } from '@polkadot/react-components';
-import { bnToBn, formatNumber } from '@polkadot/util';
+// import { bnToBn, formatNumber } from '@polkadot/util';
 
 import Bare from './Bare';
 
@@ -22,14 +22,9 @@ function onChange ({ onChange }: Props): (_: string) => void {
 }
 
 export default function Amount (props: Props): React.ReactElement<Props> {
-  const { className, defaultValue: { value }, isDisabled, isError, label, onEnter, style, withLabel } = props;
-  const defaultValue = isDisabled
-    ? (
-      value instanceof ClassOf('AccountIndex')
-        ? value.toString()
-        : formatNumber(value)
-    )
-    : bnToBn((value as number) || 0).toString();
+  const { className, defaultValue: {value}, isDisabled, isError, label, onEnter, style, withLabel } = props;
+
+  const defaultValue = value.toString();
 
   return (
     <Bare
