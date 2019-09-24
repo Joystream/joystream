@@ -154,7 +154,7 @@ const InnerForm = (props: FormProps) => {
             : 'members.buyMembership'
           }
           onClick={onSubmit}
-          txCancelledCb={onTxCancelled}
+          txCancelledCb={onTxCancelled} // update ui-signer app to include a txCancelledCb
           txFailedCb={onTxFailed}
           txSuccessCb={onTxSuccess}
         />

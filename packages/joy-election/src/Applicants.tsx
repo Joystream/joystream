@@ -59,7 +59,7 @@ class Applicants extends React.PureComponent<Props> {
 // inject the actual API calls automatically into props
 export default translate(
   withCalls<Props>(
-    queryToProp('query.councilElection.candidacyLimit'),
-    queryToProp('query.councilElection.applicants')
+    queryToProp('query.election.candidacyLimit'),
+    queryToProp('query.election.applicants')
   )(withMyAccount(Applicants))
 );

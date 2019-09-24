@@ -55,6 +55,6 @@ class Comp extends React.PureComponent<Props> {
 // inject the actual API calls automatically into props
 export default translate(
   withCalls<Props>(
-    queryToProp('query.councilElection.commitments')
+    queryToProp('query.election.commitments')
   )(Comp)
 );

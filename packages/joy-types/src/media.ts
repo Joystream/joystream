@@ -1,5 +1,5 @@
 import { Enum, Struct, Option, Vec as Vector, H256 } from '@polkadot/types';
-import { getTypeRegistry, u32, u64, bool as Bool, Text, GenericAccountId } from '@polkadot/types';
+import { getTypeRegistry, u32, u64, bool, Text, GenericAccountId } from '@polkadot/types';
 import { BlockNumber, Moment, AccountId } from '@polkadot/types/interfaces';
 import { OptionText } from './';
 
@@ -198,7 +198,7 @@ export class DataObjectStorageRelationship extends Struct {
     super({
       content_id: ContentId,
       storage_provider: GenericAccountId,
-      ready: Bool
+      ready: bool
     }, value);
   }
 
@@ -210,8 +210,8 @@ export class DataObjectStorageRelationship extends Struct {
     return this.get('storage_provider') as AccountId;
   }
 
-  get ready (): Bool {
-    return this.get('ready') as Bool;
+  get ready (): bool {
+    return this.get('ready') as bool;
   }
 }
 
@@ -219,7 +219,7 @@ export class DataObjectType extends Struct {
   constructor (value?: any) {
     super({
       description: Text,
-      active: Bool
+      active: bool
     }, value);
   }
 
@@ -227,8 +227,8 @@ export class DataObjectType extends Struct {
     return this.get('description') as Text;
   }
 
-  get active (): Bool {
-    return this.get('active') as Bool;
+  get active (): bool {
+    return this.get('active') as bool;
   }
 }
 

@@ -45,7 +45,7 @@ class Applicant extends React.PureComponent<Props> {
 // inject the actual API calls automatically into props
 export default translate(
   withCalls<Props>(
-    ['query.councilElection.applicantStakes',
+    ['query.election.applicantStakes',
       { paramName: 'accountId', propName: 'stake' }]
   )(Applicant)
 );

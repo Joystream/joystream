@@ -1,4 +1,4 @@
-import { getTypeRegistry, bool as Bool, u16, u32, u64, Text, Struct, Option, Vec as Vector} from '@polkadot/types';
+import { getTypeRegistry, bool, u16, u32, u64, Text, Struct, Option, Vec as Vector} from '@polkadot/types';
 import { AccountId, Moment, BlockNumber } from '@polkadot/types/interfaces';
 import { GenericAccountId } from '@polkadot/types';
 
@@ -173,8 +173,8 @@ export type CategoryType = {
   title: Text,
   description: Text,
   created_at: BlockchainTimestamp,
-  deleted: Bool,
-  archived: Bool,
+  deleted: bool,
+  archived: bool,
   num_direct_subcategories: u32,
   num_direct_unmoderated_threads: u32,
   num_direct_moderated_threads: u32,
@@ -189,8 +189,8 @@ export class Category extends JoyStruct<CategoryType> {
       title: Text,
       description: Text,
       created_at: BlockchainTimestamp,
-      deleted: Bool,
-      archived: Bool,
+      deleted: bool,
+      archived: bool,
       num_direct_subcategories: u32,
       num_direct_unmoderated_threads: u32,
       num_direct_moderated_threads: u32,

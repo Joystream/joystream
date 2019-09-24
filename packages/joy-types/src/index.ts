@@ -1,7 +1,7 @@
 import { Enum, Option, Struct } from '@polkadot/types/codec';
 import { getTypeRegistry, Text } from '@polkadot/types';
 import { BlockNumber, AccountId, Balance, Hash } from '@polkadot/types/interfaces';
-import { u32, bool as Bool } from '@polkadot/types/primitive';
+import { u32, bool } from '@polkadot/types/primitive';
 import { registerForumTypes } from './forum';
 import { registerMediaTypes } from './media';
 import { registerMembershipTypes } from './members';
@@ -14,7 +14,7 @@ export function getTextPropAsString (struct: Struct, fieldName: string): string 
 }
 
 export function getBoolPropAsBoolean (struct: Struct, fieldName: string): boolean {
-  return (struct.get(fieldName) as Bool).valueOf();
+  return (struct.get(fieldName) as bool).valueOf();
 }
 
 export function getOptionPropOrUndefined <T extends Codec>

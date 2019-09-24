@@ -113,6 +113,6 @@ export default withMulti(
   translate,
   withOnlyMembers,
   withCalls<Props>(
-    queryToProp('query.councilElection.applicants')
+    queryToProp('query.election.applicants')
   )
 );

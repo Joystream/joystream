@@ -220,7 +220,7 @@ export default withMulti(
   translate,
   withOnlyMembers,
   withCalls<Props>(
-    queryToProp('query.councilElection.minVotingStake'),
-    queryToProp('query.councilElection.applicants')
+    queryToProp('query.election.minVotingStake'),
+    queryToProp('query.election.applicants')
   )
 );

@@ -82,7 +82,7 @@ class App extends React.PureComponent<Props, State> {
 export default translate(
   withCalls<Props>(
     queryToProp('query.council.activeCouncil'),
-    queryToProp('query.councilElection.applicants'),
-    queryToProp('query.councilElection.commitments')
+    queryToProp('query.election.applicants'),
+    queryToProp('query.election.commitments')
   )(App)
 );

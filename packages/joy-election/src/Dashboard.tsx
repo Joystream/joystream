@@ -148,19 +148,19 @@ export default translate(
     queryToProp('query.council.activeCouncil'),
     queryToProp('query.council.termEndsAt'),
 
-    queryToProp('query.councilElection.autoStart'),
-    queryToProp('query.councilElection.newTermDuration'),
-    queryToProp('query.councilElection.candidacyLimit'),
-    queryToProp('query.councilElection.councilSize'),
+    queryToProp('query.election.autoStart'),
+    queryToProp('query.election.newTermDuration'),
+    queryToProp('query.election.candidacyLimit'),
+    queryToProp('query.election.councilSize'),
 
-    queryToProp('query.councilElection.minCouncilStake'),
-    queryToProp('query.councilElection.minVotingStake'),
+    queryToProp('query.election.minCouncilStake'),
+    queryToProp('query.election.minVotingStake'),
 
-    queryToProp('query.councilElection.announcingPeriod'),
-    queryToProp('query.councilElection.votingPeriod'),
-    queryToProp('query.councilElection.revealingPeriod'),
+    queryToProp('query.election.announcingPeriod'),
+    queryToProp('query.election.votingPeriod'),
+    queryToProp('query.election.revealingPeriod'),
 
-    queryToProp('query.councilElection.stage'),
-    queryToProp('query.councilElection.round')
+    queryToProp('query.election.stage'),
+    queryToProp('query.election.round')
   )(Dashboard)
 );

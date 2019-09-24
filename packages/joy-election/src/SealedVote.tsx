@@ -76,7 +76,7 @@ class Comp extends React.PureComponent<Props> {
 // inject the actual API calls automatically into props
 export default translate(
   withCalls<Props>(
-    ['query.councilElection.votes',
+    ['query.election.votes',
       { paramName: 'hash', propName: 'sealedVote' }]
   )(Comp)
 );

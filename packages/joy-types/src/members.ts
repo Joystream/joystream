@@ -1,4 +1,4 @@
-import { Enum, getTypeRegistry, Option, Struct, bool as Bool, u64, u128, Text, GenericAccountId } from '@polkadot/types';
+import { Enum, getTypeRegistry, Option, Struct, bool, u64, u128, Text, GenericAccountId } from '@polkadot/types';
 import { BlockNumber, Moment, BalanceOf } from '@polkadot/types/interfaces';
 import { OptionText } from './index';
 
@@ -25,7 +25,7 @@ export type Profile = {
   registered_at_block: BlockNumber,
   registered_at_time: Moment,
   entry: EntryMethod,
-  suspended: Bool,
+  suspended: bool,
   subscription: Option<SubscriptionId>
 };
 
@@ -88,7 +88,7 @@ export function registerMembershipTypes () {
         registered_at_block: 'BlockNumber',
         registered_at_time: 'Moment',
         entry: 'EntryMethod',
-        suspended: 'Bool',
+        suspended: 'bool',
         subscription: 'Option<SubscriptionId>'
       },
       UserInfo,
