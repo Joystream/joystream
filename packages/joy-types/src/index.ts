@@ -23,9 +23,6 @@ export function getOptionPropOrUndefined <T extends Codec>
   return (struct.get(fieldName) as Option<T>).unwrapOr(undefined);
 }
 
-// class Amount extends Balance {}
-export type Amount = Balance;
-
 export class OptionText extends Option.with(Text) {
 
   static none (): OptionText {
@@ -179,13 +176,7 @@ function registerElectionAndProposalTypes () {
 
     // Register parametrized enum ElectionStage:
     typeRegistry.register({
-      // Announcing: 'BlockNumber',
-      // Voting: 'BlockNumber',
-      // Revealing: 'BlockNumber',
       ElectionStage
-    });
-    typeRegistry.register({
-      Amount: 'BlockNumber'
     });
     typeRegistry.register({
       ProposalStatus,
