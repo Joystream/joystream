@@ -149,6 +149,7 @@ class InputNumber extends React.PureComponent<Props, State> {
     return (
       <Button
         className='ui--MaxButton'
+        icon=''
         onClick={this.setToMaxValue}
       >
         Max
