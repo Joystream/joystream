@@ -15,11 +15,11 @@ fn stake_pool_works() {
         assert_eq!(Balances::total_issuance(), 1000);
         assert_eq!(StakePool::staking_fund_balance(), 1000);
 
-        // using move_funds_into_pool()
+        // using move_funds_into_pool_from_account()
         let _ = Balances::deposit_creating(&1, 1000);
         assert_eq!(Balances::total_issuance(), 2000);
 
-        assert!(StakePool::move_funds_into_pool(&1, 100).is_ok());
+        assert!(StakePool::move_funds_into_pool_from_account(&1, 100).is_ok());
 
         // total issuance unchanged after movement of funds
         assert_eq!(Balances::total_issuance(), 2000);
@@ -30,7 +30,7 @@ fn stake_pool_works() {
         // no fees were deducted
         assert_eq!(Balances::free_balance(&1), 900);
 
-        assert!(StakePool::withdraw_funds_from_pool(&1, 100).is_ok());
+        assert!(StakePool::withdraw_funds_from_pool_into_account(&1, 100).is_ok());
 
         assert_eq!(Balances::free_balance(&1), 1000);
         assert_eq!(StakePool::staking_fund_balance(), 1000);
@@ -226,6 +226,21 @@ fn decreasing_stake() {
 }
 
 #[test]
-fn adding_pausing_resuming_cancelling_slashes() {
+fn initiating_pausing_resuming_cancelling_slashes() {
+    with_externalities(&mut build_test_externalities(), || {});
+}
+
+#[test]
+fn initiating_pausing_resuming_unstaking() {
+    with_externalities(&mut build_test_externalities(), || {});
+}
+
+#[test]
+fn slashing_finalization() {
+    with_externalities(&mut build_test_externalities(), || {});
+}
+
+#[test]
+fn unstaking_finalization() {
     with_externalities(&mut build_test_externalities(), || {});
 }

@@ -4,7 +4,7 @@
 use rstd::prelude::*;
 
 use codec::{Decode, Encode};
-use runtime_primitives::traits::AccountIdConversion;
+use runtime_primitives::traits::{AccountIdConversion, Zero};
 use runtime_primitives::ModuleId;
 use srml_support::traits::{Currency, ExistenceRequirement, Get, WithdrawReason};
 use srml_support::{decl_module, decl_storage, ensure, StorageMap, StorageValue};
@@ -24,6 +24,9 @@ pub const FIRST_SLASH_ID: u64 = 1;
 pub type BalanceOf<T> =
     <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
+pub type NegativeImbalance<T> =
+    <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+
 pub trait Trait: system::Trait + Sized {
     /// The currency that is managed by the module
     type Currency: Currency<Self::AccountId>;
@@ -37,37 +40,52 @@ pub trait Trait: system::Trait + Sized {
 
 pub trait StakingEventsHandler<T: Trait> {
     // Type of handler which handles unstaking event.
-    fn unstaked(id: StakeId);
+    fn unstaked(id: &StakeId, unstaked_amount: NegativeImbalance<T>) -> NegativeImbalance<T>;
 
     // Type of handler which handles slashing event.
     // NB: actually_slashed can be less than amount of the slash itself if the
     // claim amount on the stake cannot cover it fully.
-    fn slashed(id: StakeId, slash_id: SlashId, actually_slashed: BalanceOf<T>);
+    fn slashed(
+        id: &StakeId,
+        slash_id: &SlashId,
+        actually_slashed: NegativeImbalance<T>,
+    ) -> NegativeImbalance<T>;
 }
 
+// Default implementation just destroys the unstaked or slashed
 impl<T: Trait> StakingEventsHandler<T> for () {
-    fn unstaked(_id: StakeId) {}
-    fn slashed(_id: StakeId, _slash_id: SlashId, _actually_slashed: BalanceOf<T>) {}
+    fn unstaked(_id: &StakeId, amount: NegativeImbalance<T>) -> NegativeImbalance<T> {
+        amount
+    }
+    fn slashed(
+        _id: &StakeId,
+        _slash_id: &SlashId,
+        amount: NegativeImbalance<T>,
+    ) -> NegativeImbalance<T> {
+        amount
+    }
 }
 
 // Helper so we can provide multiple handlers
 impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEventsHandler<T>
     for (X, Y)
 {
-    fn unstaked(id: StakeId) {
-        X::unstaked(id);
-        Y::unstaked(id);
+    fn unstaked(id: &StakeId, amount: NegativeImbalance<T>) -> NegativeImbalance<T> {
+        let remaining = X::unstaked(id, amount);
+        Y::unstaked(id, remaining)
     }
-    fn slashed(id: StakeId, slash_id: SlashId, actually_slashed: BalanceOf<T>) {
-        X::slashed(id, slash_id, actually_slashed);
-        Y::slashed(id, slash_id, actually_slashed);
+    fn slashed(
+        id: &StakeId,
+        slash_id: &SlashId,
+        amount: NegativeImbalance<T>,
+    ) -> NegativeImbalance<T> {
+        let remaining = X::slashed(id, slash_id, amount);
+        Y::slashed(id, slash_id, remaining)
     }
 }
 
 #[derive(Encode, Decode, Debug, Default, Eq, PartialEq)]
 pub struct Slash<BlockNumber, Balance> {
-    // rename to SlashingState ?
-
     // The block slashing was initiated.
     started_at_block: BlockNumber,
 
@@ -243,7 +261,7 @@ impl<T: Trait> Module<T> {
             StakingError::AlreadyStaked
         );
 
-        Self::move_funds_into_pool(staker_account_id, amount)?;
+        Self::move_funds_into_pool_from_account(staker_account_id, amount)?;
 
         stake.staking_status = StakingStatus::Staked(StakedState {
             staked_amount: amount,
@@ -258,7 +276,7 @@ impl<T: Trait> Module<T> {
 
     /// Moves funds from specified account into the module's account
     /// We don't use T::Currency::transfer() to prevent fees being incurred.
-    fn move_funds_into_pool(
+    fn move_funds_into_pool_from_account(
         source: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<(), StakingError> {
@@ -269,31 +287,42 @@ impl<T: Trait> Module<T> {
             ExistenceRequirement::KeepAlive,
         ) {
             Ok(negative_imbalance) => {
-                // move the negative imbalance into the stake pool
-                T::Currency::resolve_creating(&Self::staking_fund_account_id(), negative_imbalance);
+                Self::deposit_funds_into_pool(negative_imbalance);
                 Ok(())
             }
             Err(_) => Err(StakingError::InsufficientBalance),
         }
     }
 
+    fn deposit_funds_into_pool(value: NegativeImbalance<T>) {
+        // move the negative imbalance into the stake pool
+        T::Currency::resolve_creating(&Self::staking_fund_account_id(), value);
+    }
+
     /// Moves funds from the module's account into specified account.
     /// We don't use T::Currency::transfer() to prevent fees being incurred.
-    fn withdraw_funds_from_pool(
+    fn withdraw_funds_from_pool_into_account(
         destination: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<(), StakingError> {
-        match T::Currency::withdraw(
-            &Self::staking_fund_account_id(),
-            value,
-            WithdrawReason::Transfer,
-            ExistenceRequirement::KeepAlive,
-        ) {
+        match Self::withdraw_funds_from_pool(value) {
             Ok(negative_imbalance) => {
                 // move the negative imbalance into the destination account
                 T::Currency::resolve_creating(destination, negative_imbalance);
                 Ok(())
             }
+            Err(err) => Err(err),
+        }
+    }
+
+    fn withdraw_funds_from_pool(value: BalanceOf<T>) -> Result<NegativeImbalance<T>, StakingError> {
+        match T::Currency::withdraw(
+            &Self::staking_fund_account_id(),
+            value,
+            WithdrawReason::Transfer,
+            ExistenceRequirement::AllowDeath,
+        ) {
+            Ok(negative_imbalance) => Ok(negative_imbalance),
             Err(_) => Err(StakingError::InsufficientBalanceInStakeFund),
         }
     }
@@ -321,7 +350,7 @@ impl<T: Trait> Module<T> {
             _ => return Err(StakingError::NotStaked),
         };
 
-        Self::move_funds_into_pool(&staker_account_id, amount)?;
+        Self::move_funds_into_pool_from_account(&staker_account_id, amount)?;
 
         <Stakes<T>>::insert(id, stake);
 
@@ -356,7 +385,7 @@ impl<T: Trait> Module<T> {
             _ => return Err(StakingError::NotStaked),
         };
 
-        Self::withdraw_funds_from_pool(&staker_account_id, amount)?;
+        Self::withdraw_funds_from_pool_into_account(&staker_account_id, amount)?;
 
         <Stakes<T>>::insert(id, stake);
 
@@ -566,5 +595,94 @@ impl<T: Trait> Module<T> {
       Finalised unstaking results in the staked_balance in the given stake to be transferred.
       Finalised slashing results in the staked_balance in the given stake being correspondingly reduced.
     */
-    fn finalize_unstaking_and_slashing(now: T::BlockNumber) {}
+    fn finalize_unstaking_and_slashing(_now: T::BlockNumber) {
+        for stake_id in FIRST_STAKE_ID..Self::next_stake_id() {
+            if !<Stakes<T>>::exists(stake_id) {
+                continue;
+            }
+
+            let mut stake = Self::stakes(stake_id);
+
+            if let StakingStatus::Staked(ref mut staked_state) = stake.staking_status {
+                // tick the slashing timer and find slashes to be finalized
+                let slashes_to_finalize: Vec<SlashId> = staked_state
+                    .ongoing_slashes
+                    .iter_mut()
+                    .map(|(slash_id, slash)| {
+                        if slash.is_active
+                            && slash.blocks_remaining_in_active_period_for_slashing > Zero::zero()
+                        {
+                            slash.blocks_remaining_in_active_period_for_slashing -=
+                                T::BlockNumber::from(1);
+                        }
+                        (slash_id, slash)
+                    })
+                    .filter(|(_slash_id, slash)| {
+                        slash.is_active
+                            && slash.blocks_remaining_in_active_period_for_slashing == Zero::zero()
+                    })
+                    .map(|(slash_id, _slash)| *slash_id)
+                    .collect();
+                // didn't find a way to remove a value from btreemap while iterating over it :(
+
+                // slash
+                for slash_id in slashes_to_finalize.iter() {
+                    assert!(staked_state.ongoing_slashes.contains_key(slash_id));
+                    let slash = staked_state.ongoing_slashes.remove(slash_id).unwrap();
+
+                    let slash_amount = if slash.slash_amount > staked_state.staked_amount {
+                        staked_state.staked_amount
+                    } else {
+                        slash.slash_amount
+                    };
+
+                    // withdraw from stake pool
+                    // we never slash more than what is at stake so there should always be
+                    // funds in the pool to match the slashing amount
+                    // TODO: Deal with ExistentialDeposit > 0
+                    let imbalance = Self::withdraw_funds_from_pool(slash_amount).ok().unwrap();
+
+                    T::StakingEventsHandler::slashed(&stake_id, slash_id, imbalance);
+
+                    staked_state.staked_amount -= slash_amount;
+
+                    // should there be a event handler for stake going to Zero ?
+                }
+
+                if let StakedStatus::Unstaking(ref mut unstaking_state) = staked_state.staked_status
+                {
+                    // if all slashes were processed and there are no more active slashes
+                    // resume unstaking
+                    if staked_state.ongoing_slashes.is_empty() {
+                        unstaking_state.is_active = true;
+                    }
+
+                    if unstaking_state.is_active
+                        && unstaking_state.blocks_remaining_in_active_period_for_unstaking
+                            > Zero::zero()
+                    {
+                        // tick the timer
+                        unstaking_state.blocks_remaining_in_active_period_for_unstaking -=
+                            T::BlockNumber::from(1);
+                    }
+
+                    if unstaking_state.blocks_remaining_in_active_period_for_unstaking
+                        == Zero::zero()
+                    {
+                        // withdraw from stake pool - the staked amounts and stake pool should always be in sync
+                        // so this should never fail, with the exception when existential deposit > 0 ?
+                        // TODO: Deal with ExistentialDeposit > 0
+                        let imbalance = Self::withdraw_funds_from_pool(staked_state.staked_amount)
+                            .ok()
+                            .unwrap();
+                        T::StakingEventsHandler::unstaked(&stake_id, imbalance);
+
+                        stake.staking_status = StakingStatus::NotStaked;
+                    }
+                }
+            }
+
+            <Stakes<T>>::insert(&stake_id, stake);
+        }
+    }
 }
