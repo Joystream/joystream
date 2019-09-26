@@ -5,6 +5,8 @@
 #![recursion_limit = "256"]
 
 // Make the WASM binary available.
+// This is required only by the node build.
+// A dummy wasm_binary.rs will be built for the IDE.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
