@@ -93,7 +93,7 @@ fn enter_staked_state() {
 
         let _ = Balances::deposit_creating(&staker_account, starting_balance);
 
-        assert!(StakePool::stake(&100, &staker_account, stake_value).is_ok());
+        assert!(StakePool::stake_from_account(&100, &staker_account, stake_value).is_ok());
 
         assert_eq!(
             Balances::free_balance(&staker_account),

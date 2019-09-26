@@ -6,7 +6,7 @@ use rstd::prelude::*;
 use codec::{Decode, Encode};
 use runtime_primitives::traits::{AccountIdConversion, Zero};
 use runtime_primitives::ModuleId;
-use srml_support::traits::{Currency, ExistenceRequirement, Get, WithdrawReason};
+use srml_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReason};
 use srml_support::{decl_module, decl_storage, ensure, StorageMap, StorageValue};
 
 use rstd::collections::btree_map::BTreeMap;
@@ -244,34 +244,57 @@ impl<T: Trait> Module<T> {
         // do we want to return error on failure or should it be silent?
     }
 
-    /// Provided the stake exists and is in state NotStaked and the given account has
-    /// sufficient free balance to cover the given staking amount, then the amount is transferred
+    /// Dry run to see if staking can be initiated for the specified stake id. This should
+    /// be called before stake() to make sure staking is possible before withdrawing funds.
+    pub fn can_stake(id: &StakeId) -> bool {
+        <Stakes<T>>::exists(id) && Self::stakes(id).staking_status == StakingStatus::NotStaked
+    }
+
+    /// Provided the stake exists and is in state NotStaked the value is transferred
     /// to the module's account, and the corresponding staked_balance is set to this amount in the new Staked state.
-    pub fn stake(
-        id: &StakeId,
+    /// If staking fails the value is lost, make sure to call can_stake() prior to ensure this doesn't happen.
+    pub fn stake(stake_id: &StakeId, value: NegativeImbalance<T>) -> Result<(), StakingError> {
+        ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
+        ensure!(
+            Self::stakes(stake_id).staking_status == StakingStatus::NotStaked,
+            StakingError::AlreadyStaked
+        );
+
+        let amount = value.peek();
+        Self::deposit_funds_into_pool(value);
+
+        Self::set_normal_staked_state(stake_id, amount);
+
+        Ok(())
+    }
+
+    pub fn stake_from_account(
+        stake_id: &StakeId,
         staker_account_id: &T::AccountId,
         amount: BalanceOf<T>,
     ) -> Result<(), StakingError> {
-        ensure!(<Stakes<T>>::exists(id), StakingError::StakeNotFound);
-
-        let mut stake = Self::stakes(id);
-
+        ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
         ensure!(
-            stake.staking_status == StakingStatus::NotStaked,
+            Self::stakes(stake_id).staking_status == StakingStatus::NotStaked,
             StakingError::AlreadyStaked
         );
 
         Self::move_funds_into_pool_from_account(staker_account_id, amount)?;
 
-        stake.staking_status = StakingStatus::Staked(StakedState {
-            staked_amount: amount,
-            ongoing_slashes: BTreeMap::new(),
-            staked_status: StakedStatus::Normal,
-        });
-
-        <Stakes<T>>::insert(id, stake);
+        Self::set_normal_staked_state(stake_id, amount);
 
         Ok(())
+    }
+
+    fn set_normal_staked_state(stake_id: &StakeId, amount: BalanceOf<T>) {
+        assert!(Self::can_stake(stake_id));
+        <Stakes<T>>::mutate(stake_id, |stake| {
+            stake.staking_status = StakingStatus::Staked(StakedState {
+                staked_amount: amount,
+                ongoing_slashes: BTreeMap::new(),
+                staked_status: StakedStatus::Normal,
+            });
+        });
     }
 
     /// Moves funds from specified account into the module's account
