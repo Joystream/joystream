@@ -189,6 +189,7 @@ decl_module! {
 pub enum StakingError {
     StakeNotFound,
     SlashNotFound,
+    AmountTooLow,
     InsufficientBalance,
     InsufficientStake,
     AlreadyStaked,
@@ -246,21 +247,27 @@ impl<T: Trait> Module<T> {
 
     /// Dry run to see if staking can be initiated for the specified stake id. This should
     /// be called before stake() to make sure staking is possible before withdrawing funds.
-    pub fn can_stake(id: &StakeId) -> bool {
-        <Stakes<T>>::exists(id) && Self::stakes(id).staking_status == StakingStatus::NotStaked
+    pub fn ensure_can_stake(id: &StakeId, amount: BalanceOf<T>) -> Result<(), StakingError> {
+        ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
+        ensure!(
+            Self::stakes(stake_id).staking_status == StakingStatus::NotStaked,
+            StakingError::AlreadyStaked
+        );
+        ensure!(
+            amount > BalanceOf::<T>::minimum_balance(),
+            StakingError::AmountTooLow
+        );
+        Ok(())
     }
 
     /// Provided the stake exists and is in state NotStaked the value is transferred
     /// to the module's account, and the corresponding staked_balance is set to this amount in the new Staked state.
     /// If staking fails the value is lost, make sure to call can_stake() prior to ensure this doesn't happen.
     pub fn stake(stake_id: &StakeId, value: NegativeImbalance<T>) -> Result<(), StakingError> {
-        ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
-        ensure!(
-            Self::stakes(stake_id).staking_status == StakingStatus::NotStaked,
-            StakingError::AlreadyStaked
-        );
-
         let amount = value.peek();
+
+        Self::ensure_can_stake(stake_id, amount)?;
+
         Self::deposit_funds_into_pool(value);
 
         Self::set_normal_staked_state(stake_id, amount);
@@ -273,11 +280,7 @@ impl<T: Trait> Module<T> {
         staker_account_id: &T::AccountId,
         amount: BalanceOf<T>,
     ) -> Result<(), StakingError> {
-        ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
-        ensure!(
-            Self::stakes(stake_id).staking_status == StakingStatus::NotStaked,
-            StakingError::AlreadyStaked
-        );
+        Self::ensure_can_stake(stake_id, amount)?;
 
         Self::move_funds_into_pool_from_account(staker_account_id, amount)?;
 
@@ -287,7 +290,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn set_normal_staked_state(stake_id: &StakeId, amount: BalanceOf<T>) {
-        assert!(Self::can_stake(stake_id));
+        assert!(Self::ensure_can_stake(stake_id, amount).is_ok());
         <Stakes<T>>::mutate(stake_id, |stake| {
             stake.staking_status = StakingStatus::Staked(StakedState {
                 staked_amount: amount,
