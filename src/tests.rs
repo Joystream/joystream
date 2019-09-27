@@ -30,7 +30,7 @@ fn stake_pool_works() {
         // no fees were deducted
         assert_eq!(Balances::free_balance(&1), 900);
 
-        assert!(StakePool::withdraw_funds_from_pool_into_account(&1, 100).is_ok());
+        StakePool::withdraw_funds_from_pool_into_account(&1, 100);
 
         assert_eq!(Balances::free_balance(&1), 1000);
         assert_eq!(StakePool::staking_fund_balance(), 1000);

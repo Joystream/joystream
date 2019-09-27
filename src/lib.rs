@@ -201,7 +201,6 @@ pub enum StakingError {
     NotUnstaking,
     IncreasingStakeWhileUnstaking,
     DecreasingStakeWhileUnstaking,
-    InsufficientBalanceInStakeFund,
     InitiatingUnstakingWhileSlashesOngoing,
 }
 
@@ -323,30 +322,20 @@ impl<T: Trait> Module<T> {
 
     /// Moves funds from the module's account into specified account.
     /// We don't use T::Currency::transfer() to prevent fees being incurred.
-    fn withdraw_funds_from_pool_into_account(
-        destination: &T::AccountId,
-        value: BalanceOf<T>,
-    ) -> Result<(), StakingError> {
-        match Self::withdraw_funds_from_pool(value) {
-            Ok(negative_imbalance) => {
-                // move the negative imbalance into the destination account
-                T::Currency::resolve_creating(destination, negative_imbalance);
-                Ok(())
-            }
-            Err(err) => Err(err),
-        }
+    fn withdraw_funds_from_pool_into_account(destination: &T::AccountId, value: BalanceOf<T>) {
+        let imbalance = Self::withdraw_funds_from_pool(value);
+        T::Currency::resolve_creating(destination, imbalance);
     }
 
-    fn withdraw_funds_from_pool(value: BalanceOf<T>) -> Result<NegativeImbalance<T>, StakingError> {
-        match T::Currency::withdraw(
+    fn withdraw_funds_from_pool(value: BalanceOf<T>) -> NegativeImbalance<T> {
+        T::Currency::withdraw(
             &Self::staking_fund_account_id(),
             value,
             WithdrawReason::Transfer,
             ExistenceRequirement::AllowDeath,
-        ) {
-            Ok(negative_imbalance) => Ok(negative_imbalance),
-            Err(_) => Err(StakingError::InsufficientBalanceInStakeFund),
-        }
+        )
+        .ok()
+        .unwrap() // cannot fail
     }
 
     /// Provided the stake exists and is in state Staked.Normal, and the given source account covers the amount,
@@ -422,7 +411,7 @@ impl<T: Trait> Module<T> {
             _ => return Err(StakingError::NotStaked),
         };
 
-        Self::withdraw_funds_from_pool_into_account(&staker_account_id, deduct_from_pool)?;
+        Self::withdraw_funds_from_pool_into_account(&staker_account_id, deduct_from_pool);
 
         <Stakes<T>>::insert(id, stake);
 
@@ -681,10 +670,8 @@ impl<T: Trait> Module<T> {
                         staked_state.staked_amount = Zero::zero();
                     }
 
-                    // withdraw from stake pool
-                    // we never slash more than what is at stake so there should always be
-                    // funds in the pool to match the slashing amount
-                    let imbalance = Self::withdraw_funds_from_pool(slash_amount).ok().unwrap();
+                    // remove the slashed amount from the pool
+                    let imbalance = Self::withdraw_funds_from_pool(slash_amount);
                     assert_eq!(imbalance.peek(), slash_amount);
 
                     T::StakingEventsHandler::slashed(
@@ -715,11 +702,8 @@ impl<T: Trait> Module<T> {
                     if unstaking_state.blocks_remaining_in_active_period_for_unstaking
                         == Zero::zero()
                     {
-                        // withdraw from stake pool - the staked amounts and stake pool should always be in sync
-                        // so this should never fail
-                        let imbalance = Self::withdraw_funds_from_pool(staked_state.staked_amount)
-                            .ok()
-                            .unwrap();
+                        // withdraw the stake from the pool
+                        let imbalance = Self::withdraw_funds_from_pool(staked_state.staked_amount);
                         assert_eq!(imbalance.peek(), staked_state.staked_amount);
 
                         T::StakingEventsHandler::unstaked(&stake_id, imbalance);
