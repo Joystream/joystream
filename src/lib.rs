@@ -230,31 +230,24 @@ impl<T: Trait> Module<T> {
     }
 
     /// Given that stake with id exists in stakes and is NotStaked, remove from stakes.
-    pub fn remove_stake(id: &StakeId) {
-        if !<Stakes<T>>::exists(id) {
-            return;
+    pub fn remove_stake(stake_id: &StakeId) {
+        if <Stakes<T>>::exists(stake_id)
+            && StakingStatus::NotStaked == Self::stakes(stake_id).staking_status
+        {
+            <Stakes<T>>::remove(stake_id);
         }
-
-        match Self::stakes(id).staking_status {
-            StakingStatus::NotStaked => {
-                <Stakes<T>>::remove(id);
-            }
-            _ => (),
-        }
-
-        // do we want to return error on failure or should it be silent?
     }
 
     /// Dry run to see if staking can be initiated for the specified stake id. This should
     /// be called before stake() to make sure staking is possible before withdrawing funds.
-    pub fn ensure_can_stake(id: &StakeId, amount: BalanceOf<T>) -> Result<(), StakingError> {
+    pub fn ensure_can_stake(stake_id: &StakeId, amount: BalanceOf<T>) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
         ensure!(
             Self::stakes(stake_id).staking_status == StakingStatus::NotStaked,
             StakingError::AlreadyStaked
         );
         ensure!(
-            amount > BalanceOf::<T>::minimum_balance(),
+            amount > T::Currency::minimum_balance(),
             StakingError::AmountTooLow
         );
         Ok(())
