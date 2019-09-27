@@ -55,16 +55,16 @@ pub trait StakingEventsHandler<T: Trait> {
 
 // Default implementation just destroys the unstaked or slashed
 impl<T: Trait> StakingEventsHandler<T> for () {
-    fn unstaked(_id: &StakeId, amount: NegativeImbalance<T>) -> NegativeImbalance<T> {
-        amount
+    fn unstaked(_id: &StakeId, _amount: NegativeImbalance<T>) -> NegativeImbalance<T> {
+        NegativeImbalance::<T>::zero()
     }
     fn slashed(
         _id: &StakeId,
         _slash_id: &SlashId,
-        amount: NegativeImbalance<T>,
+        _amount: NegativeImbalance<T>,
         _remaining_stake: BalanceOf<T>,
     ) -> NegativeImbalance<T> {
-        amount
+        NegativeImbalance::<T>::zero()
     }
 }
 
