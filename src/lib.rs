@@ -201,6 +201,7 @@ pub enum StakingError {
     NotUnstaking,
     IncreasingStakeWhileUnstaking,
     DecreasingStakeWhileUnstaking,
+    DecreasingStakeWhileOngoingSlahes,
     InitiatingUnstakingWhileSlashesOngoing,
 }
 
@@ -306,7 +307,8 @@ impl<T: Trait> Module<T> {
             value,
             WithdrawReason::Transfer,
             ExistenceRequirement::AllowDeath,
-        ).map_err(|_err| StakingError::InsufficientBalance)?;
+        )
+        .map_err(|_err| StakingError::InsufficientBalance)?;
 
         Self::deposit_funds_into_pool(negative_imbalance);
         Ok(())
@@ -363,6 +365,17 @@ impl<T: Trait> Module<T> {
         <Stakes<T>>::insert(id, stake);
 
         Ok(total_staked_amount)
+
+        /* ... why we can't use mutate..
+
+        let stake = <Stakes<T>>::mutate(stake_id, |stake| {
+            if let StakingStatus::Staked(staked_state) = stake.staking_status {
+                // how to return Ok ?
+            } else {
+                // how to return Err ??
+            }
+        });
+        */
     }
 
     /*
@@ -373,7 +386,6 @@ impl<T: Trait> Module<T> {
         }
     */
 
-    // !! SHOULD WE ALLOW DECREASING STAKE IF THERE ARE ACTIVE SLASHINGs ? !!
     /// Provided the stake exists and is in state Staked.Normal, and the given stake holds at least the amount,
     /// then the amount is transferred to from the module's account to the staker account, and the corresponding
     /// staked_amount is decreased by the amount. New value of staked_amount is returned.
@@ -389,6 +401,11 @@ impl<T: Trait> Module<T> {
         let (deduct_from_pool, staked_amount) = match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
                 StakedStatus::Normal => {
+                    for (_id, slash) in staked_state.ongoing_slashes.iter() {
+                        if slash.is_active {
+                            return Err(StakingError::DecreasingStakeWhileOngoingSlahes);
+                        }
+                    }
                     if staked_state.staked_amount >= amount {
                         staked_state.staked_amount -= amount;
                         // If staked amount drops below minimum balance, deduct the entire stake
@@ -550,26 +567,28 @@ impl<T: Trait> Module<T> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
         let mut stake = Self::stakes(stake_id);
 
-        match stake.staking_status {
-            StakingStatus::Staked(ref mut staked_state) => {
-                if staked_state.ongoing_slashes.is_empty() {
-                    Err(StakingError::InitiatingUnstakingWhileSlashesOngoing)
-                } else {
-                    match staked_state.staked_status {
-                        StakedStatus::Normal => {
-                            staked_state.staked_status = StakedStatus::Unstaking(UnstakingState {
-                                started_in_block: <system::Module<T>>::block_number(),
-                                is_active: true,
-                                blocks_remaining_in_active_period_for_unstaking: unstaking_period,
-                            });
-                            <Stakes<T>>::insert(stake_id, stake);
-                            Ok(())
-                        }
-                        _ => Err(StakingError::AlreadyUnstaking),
-                    }
+        if let StakingStatus::Staked(ref mut staked_state) = stake.staking_status {
+            for (_id, slash) in staked_state.ongoing_slashes.iter() {
+                if slash.is_active {
+                    return Err(StakingError::InitiatingUnstakingWhileSlashesOngoing);
                 }
             }
-            _ => Err(StakingError::NotStaked),
+
+            if StakedStatus::Normal == staked_state.staked_status {
+                return Err(StakingError::AlreadyUnstaking);
+            }
+
+            staked_state.staked_status = StakedStatus::Unstaking(UnstakingState {
+                started_in_block: <system::Module<T>>::block_number(),
+                is_active: true,
+                blocks_remaining_in_active_period_for_unstaking: unstaking_period,
+            });
+
+            <Stakes<T>>::insert(stake_id, stake);
+
+            return Ok(());
+        } else {
+            return Err(StakingError::NotStaked);
         }
     }
 
