@@ -72,6 +72,8 @@ fn create_stake() {
         assert_eq!(stake_id, FIRST_STAKE_ID);
         assert!(<Stakes<Test>>::exists(&stake_id));
 
+        assert_eq!(StakePool::next_stake_id(), stake_id + 1);
+
         // Should be NotStaked
         let stake = StakePool::stakes(&stake_id);
         assert_eq!(stake.staking_status, StakingStatus::NotStaked);
@@ -333,8 +335,9 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             StakingError::StakeNotFound
         );
 
+        let stake_id = StakePool::create_stake();
         <Stakes<Test>>::insert(
-            &100,
+            &stake_id,
             Stake {
                 created: System::block_number(),
                 staking_status: StakingStatus::NotStaked,
@@ -342,12 +345,12 @@ fn initiating_pausing_resuming_cancelling_slashes() {
         );
 
         assert_err!(
-            StakePool::initiate_slashing(&100, 5000, 0),
+            StakePool::initiate_slashing(&stake_id, 5000, 0),
             StakingError::NotStaked
         );
 
         <Stakes<Test>>::insert(
-            &100,
+            &stake_id,
             Stake {
                 created: System::block_number(),
                 staking_status: StakingStatus::Staked(StakedState {
@@ -358,10 +361,10 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             },
         );
 
-        // assert_err!(StakePool::initiate_slashing(&100, 0, 0), StakingError::ZeroSlashing);
+        // assert_err!(StakePool::initiate_slashing(&stake_id, 0, 0), StakingError::ZeroSlashing);
 
-        let slash_id = StakePool::next_slash_id();
-        assert!(StakePool::initiate_slashing(&100, 5000, 10).is_ok());
+        let mut slash_id = StakePool::next_slash_id();
+        assert!(StakePool::initiate_slashing(&stake_id, 5000, 10).is_ok());
 
         let mut expected_ongoing_slashes: fixtures::OngoingSlashes = BTreeMap::new();
 
@@ -376,7 +379,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
         );
 
         assert_eq!(
-            StakePool::stakes(&100),
+            StakePool::stakes(&stake_id),
             Stake {
                 created: System::block_number(),
                 staking_status: StakingStatus::Staked(StakedState {
@@ -388,7 +391,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
         );
 
         assert_err!(
-            StakePool::pause_slashing(&100, &0),
+            StakePool::pause_slashing(&stake_id, &0),
             StakingError::SlashNotFound
         );
         assert_err!(
@@ -396,7 +399,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             StakingError::StakeNotFound
         );
 
-        assert_ok!(StakePool::pause_slashing(&100, &slash_id));
+        assert_ok!(StakePool::pause_slashing(&stake_id, &slash_id));
         expected_ongoing_slashes.insert(
             slash_id,
             Slash {
@@ -407,7 +410,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             },
         );
         assert_eq!(
-            StakePool::stakes(&100),
+            StakePool::stakes(&stake_id),
             Stake {
                 created: System::block_number(),
                 staking_status: StakingStatus::Staked(StakedState {
@@ -419,7 +422,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
         );
 
         assert_err!(
-            StakePool::resume_slashing(&100, &0),
+            StakePool::resume_slashing(&stake_id, &0),
             StakingError::SlashNotFound
         );
         assert_err!(
@@ -427,7 +430,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             StakingError::StakeNotFound
         );
 
-        assert_ok!(StakePool::resume_slashing(&100, &slash_id));
+        assert_ok!(StakePool::resume_slashing(&stake_id, &slash_id));
         expected_ongoing_slashes.insert(
             slash_id,
             Slash {
@@ -438,7 +441,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             },
         );
         assert_eq!(
-            StakePool::stakes(&100),
+            StakePool::stakes(&stake_id),
             Stake {
                 created: System::block_number(),
                 staking_status: StakingStatus::Staked(StakedState {
@@ -450,7 +453,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
         );
 
         assert_err!(
-            StakePool::cancel_slashing(&100, &0),
+            StakePool::cancel_slashing(&stake_id, &0),
             StakingError::SlashNotFound
         );
         assert_err!(
@@ -458,9 +461,9 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             StakingError::StakeNotFound
         );
 
-        assert_ok!(StakePool::cancel_slashing(&100, &slash_id));
+        assert_ok!(StakePool::cancel_slashing(&stake_id, &slash_id));
         assert_eq!(
-            StakePool::stakes(&100),
+            StakePool::stakes(&stake_id),
             Stake {
                 created: System::block_number(),
                 staking_status: StakingStatus::Staked(StakedState {
@@ -469,6 +472,51 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                     staked_status: StakedStatus::Normal,
                 })
             }
+        );
+
+        expected_ongoing_slashes = BTreeMap::new();
+        let slashing_amount = 5000;
+        slash_id = StakePool::next_slash_id();
+        assert!(StakePool::initiate_slashing(&stake_id, slashing_amount, 2).is_ok());
+
+        StakePool::finalize_unstaking_and_slashing();
+        expected_ongoing_slashes.insert(
+            slash_id,
+            Slash {
+                started_at_block: System::block_number(),
+                is_active: true,
+                blocks_remaining_in_active_period_for_slashing: 1,
+                slash_amount: slashing_amount,
+            },
+        );
+        assert_eq!(
+            StakePool::stakes(&stake_id),
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount: staked_amount,
+                    ongoing_slashes: expected_ongoing_slashes.clone(),
+                    staked_status: StakedStatus::Normal,
+                })
+            }
+        );
+
+        StakePool::finalize_unstaking_and_slashing();
+        assert_eq!(
+            StakePool::stakes(&stake_id),
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount: staked_amount - slashing_amount,
+                    ongoing_slashes: BTreeMap::new(),
+                    staked_status: StakedStatus::Normal,
+                })
+            }
+        );
+
+        assert_eq!(
+            StakePool::staking_fund_balance(),
+            staked_amount - slashing_amount
         );
     });
 }

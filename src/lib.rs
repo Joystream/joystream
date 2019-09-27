@@ -183,8 +183,8 @@ decl_storage! {
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
-        fn on_finalize(now: T::BlockNumber) {
-            Self::finalize_unstaking_and_slashing(now);
+        fn on_finalize(_now: T::BlockNumber) {
+            Self::finalize_unstaking_and_slashing();
         }
     }
 }
@@ -677,7 +677,7 @@ impl<T: Trait> Module<T> {
       Finalised unstaking results in the staked_balance in the given stake to be transferred.
       Finalised slashing results in the staked_balance in the given stake being correspondingly reduced.
     */
-    fn finalize_unstaking_and_slashing(_now: T::BlockNumber) {
+    fn finalize_unstaking_and_slashing() {
         for stake_id in FIRST_STAKE_ID..Self::next_stake_id() {
             if !<Stakes<T>>::exists(stake_id) {
                 continue;
@@ -694,6 +694,7 @@ impl<T: Trait> Module<T> {
                         if slash.is_active
                             && slash.blocks_remaining_in_active_period_for_slashing > Zero::zero()
                         {
+                            println!("ticking");
                             slash.blocks_remaining_in_active_period_for_slashing -=
                                 T::BlockNumber::from(1);
                         }
@@ -767,9 +768,9 @@ impl<T: Trait> Module<T> {
                         stake.staking_status = StakingStatus::NotStaked;
                     }
                 }
-            }
 
-            <Stakes<T>>::insert(&stake_id, stake);
+                <Stakes<T>>::insert(&stake_id, stake);
+            }
         }
     }
 }
