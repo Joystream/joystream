@@ -91,6 +91,5 @@ pub fn build_test_externalities() -> runtime_io::TestExternalities<Blake2Hasher>
     t.into()
 }
 
-pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type StakePool = Module<Test>;

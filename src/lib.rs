@@ -49,6 +49,7 @@ pub trait StakingEventsHandler<T: Trait> {
         id: &StakeId,
         slash_id: &SlashId,
         actually_slashed: NegativeImbalance<T>,
+        remaining_stake: BalanceOf<T>,
     ) -> NegativeImbalance<T>;
 }
 
@@ -61,6 +62,7 @@ impl<T: Trait> StakingEventsHandler<T> for () {
         _id: &StakeId,
         _slash_id: &SlashId,
         amount: NegativeImbalance<T>,
+        _remaining_stake: BalanceOf<T>,
     ) -> NegativeImbalance<T> {
         amount
     }
@@ -78,9 +80,10 @@ impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEv
         id: &StakeId,
         slash_id: &SlashId,
         amount: NegativeImbalance<T>,
+        remaining_stake: BalanceOf<T>,
     ) -> NegativeImbalance<T> {
-        let remaining = X::slashed(id, slash_id, amount);
-        Y::slashed(id, slash_id, remaining)
+        let remaining = X::slashed(id, slash_id, amount, remaining_stake);
+        Y::slashed(id, slash_id, remaining, remaining_stake)
     }
 }
 
@@ -397,12 +400,19 @@ impl<T: Trait> Module<T> {
 
         let mut stake = Self::stakes(id);
 
-        let total_staked_amount = match stake.staking_status {
+        let (deduct_from_pool, staked_amount) = match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
                 StakedStatus::Normal => {
                     if staked_state.staked_amount >= amount {
                         staked_state.staked_amount -= amount;
-                        staked_state.staked_amount
+                        // If staked amount drops below minimum balance, deduct the entire stake
+                        if staked_state.staked_amount < T::Currency::minimum_balance() {
+                            let deduct = staked_state.staked_amount + amount;
+                            staked_state.staked_amount = Zero::zero();
+                            (deduct, Zero::zero())
+                        } else {
+                            (amount, staked_state.staked_amount)
+                        }
                     } else {
                         return Err(StakingError::InsufficientStake);
                     }
@@ -412,11 +422,11 @@ impl<T: Trait> Module<T> {
             _ => return Err(StakingError::NotStaked),
         };
 
-        Self::withdraw_funds_from_pool_into_account(&staker_account_id, amount)?;
+        Self::withdraw_funds_from_pool_into_account(&staker_account_id, deduct_from_pool)?;
 
         <Stakes<T>>::insert(id, stake);
 
-        Ok(total_staked_amount)
+        Ok(staked_amount)
     }
 
     // Initiate a new slashing of a staked stake.
@@ -657,23 +667,32 @@ impl<T: Trait> Module<T> {
                     assert!(staked_state.ongoing_slashes.contains_key(slash_id));
                     let slash = staked_state.ongoing_slashes.remove(slash_id).unwrap();
 
-                    let slash_amount = if slash.slash_amount > staked_state.staked_amount {
+                    let mut slash_amount = if slash.slash_amount > staked_state.staked_amount {
                         staked_state.staked_amount
                     } else {
                         slash.slash_amount
                     };
 
+                    staked_state.staked_amount -= slash_amount;
+
+                    // don't leave less than minimum balance at stake
+                    if staked_state.staked_amount < T::Currency::minimum_balance() {
+                        slash_amount += staked_state.staked_amount;
+                        staked_state.staked_amount = Zero::zero();
+                    }
+
                     // withdraw from stake pool
                     // we never slash more than what is at stake so there should always be
                     // funds in the pool to match the slashing amount
-                    // TODO: Deal with ExistentialDeposit > 0
                     let imbalance = Self::withdraw_funds_from_pool(slash_amount).ok().unwrap();
+                    assert_eq!(imbalance.peek(), slash_amount);
 
-                    T::StakingEventsHandler::slashed(&stake_id, slash_id, imbalance);
-
-                    staked_state.staked_amount -= slash_amount;
-
-                    // should there be a event handler for stake going to Zero ?
+                    T::StakingEventsHandler::slashed(
+                        &stake_id,
+                        slash_id,
+                        imbalance,
+                        staked_state.staked_amount,
+                    );
                 }
 
                 if let StakedStatus::Unstaking(ref mut unstaking_state) = staked_state.staked_status
@@ -697,11 +716,12 @@ impl<T: Trait> Module<T> {
                         == Zero::zero()
                     {
                         // withdraw from stake pool - the staked amounts and stake pool should always be in sync
-                        // so this should never fail, with the exception when existential deposit > 0 ?
-                        // TODO: Deal with ExistentialDeposit > 0
+                        // so this should never fail
                         let imbalance = Self::withdraw_funds_from_pool(staked_state.staked_amount)
                             .ok()
                             .unwrap();
+                        assert_eq!(imbalance.peek(), staked_state.staked_amount);
+
                         T::StakingEventsHandler::unstaked(&stake_id, imbalance);
 
                         stake.staking_status = StakingStatus::NotStaked;

@@ -168,7 +168,7 @@ fn increasing_stake() {
         );
 
         // cannot increase stake if insufficent balance
-        assert!(StakePool::increase_stake(
+        assert!(StakePool::increase_stake_from_account(
             &100,
             &staker_account,
             Balances::free_balance(&staker_account) + 1
