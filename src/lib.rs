@@ -301,18 +301,15 @@ impl<T: Trait> Module<T> {
         source: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<(), StakingError> {
-        match T::Currency::withdraw(
+        let negative_imbalance = T::Currency::withdraw(
             source,
             value,
             WithdrawReason::Transfer,
             ExistenceRequirement::AllowDeath,
-        ) {
-            Ok(negative_imbalance) => {
-                Self::deposit_funds_into_pool(negative_imbalance);
-                Ok(())
-            }
-            Err(_) => Err(StakingError::InsufficientBalance),
-        }
+        ).map_err(|_err| StakingError::InsufficientBalance)?;
+
+        Self::deposit_funds_into_pool(negative_imbalance);
+        Ok(())
     }
 
     fn deposit_funds_into_pool(value: NegativeImbalance<T>) {
@@ -674,7 +671,7 @@ impl<T: Trait> Module<T> {
                     let imbalance = Self::withdraw_funds_from_pool(slash_amount);
                     assert_eq!(imbalance.peek(), slash_amount);
 
-                    T::StakingEventsHandler::slashed(
+                    let _ = T::StakingEventsHandler::slashed(
                         &stake_id,
                         slash_id,
                         imbalance,
@@ -706,7 +703,7 @@ impl<T: Trait> Module<T> {
                         let imbalance = Self::withdraw_funds_from_pool(staked_state.staked_amount);
                         assert_eq!(imbalance.peek(), staked_state.staked_amount);
 
-                        T::StakingEventsHandler::unstaked(&stake_id, imbalance);
+                        let _ = T::StakingEventsHandler::unstaked(&stake_id, imbalance);
 
                         stake.staking_status = StakingStatus::NotStaked;
                     }
