@@ -196,6 +196,7 @@ pub enum StakingError {
     StakingLessThanMinimumBalance,
     InsufficientBalance,
     InsufficientStake,
+    ChangingStakeByZero,
     AlreadyStaked,
     AlreadyUnstaking,
     NotStaked,
@@ -250,6 +251,7 @@ impl<T: Trait> Module<T> {
             Self::stakes(stake_id).staking_status == StakingStatus::NotStaked,
             StakingError::AlreadyStaked
         );
+        ensure!(value > Zero::zero(), StakingError::ChangingStakeByZero);
         ensure!(
             value > T::Currency::minimum_balance(),
             StakingError::StakingLessThanMinimumBalance
@@ -346,7 +348,7 @@ impl<T: Trait> Module<T> {
         staker_account_id: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<BalanceOf<T>, StakingError> {
-        Self::ensure_can_increase_stake(stake_id)?;
+        Self::ensure_can_increase_stake(stake_id, value)?;
 
         let mut stake = Self::stakes(stake_id);
 
@@ -362,8 +364,12 @@ impl<T: Trait> Module<T> {
     /// Checks the state of stake to ensure that increasing stake is possible. This should be called
     /// before attempting to increase stake with an imbalance to avoid the value from the imbalance
     /// from being lost
-    pub fn ensure_can_increase_stake(stake_id: &StakeId) -> Result<(), StakingError> {
+    pub fn ensure_can_increase_stake(
+        stake_id: &StakeId,
+        value: BalanceOf<T>,
+    ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
+        ensure!(value > Zero::zero(), StakingError::ChangingStakeByZero);
         match Self::stakes(stake_id).staking_status {
             StakingStatus::NotStaked => Err(StakingError::NotStaked),
             StakingStatus::Staked(staked_state) => match staked_state.staked_status {
@@ -380,7 +386,7 @@ impl<T: Trait> Module<T> {
         stake_id: &StakeId,
         value: NegativeImbalance<T>,
     ) -> Result<BalanceOf<T>, StakingError> {
-        Self::ensure_can_increase_stake(stake_id)?;
+        Self::ensure_can_increase_stake(stake_id, value.peek())?;
 
         let mut stake = Self::stakes(stake_id);
 
@@ -422,6 +428,8 @@ impl<T: Trait> Module<T> {
         value: BalanceOf<T>,
     ) -> Result<BalanceOf<T>, StakingError> {
         ensure!(<Stakes<T>>::exists(id), StakingError::StakeNotFound);
+
+        ensure!(value > Zero::zero(), StakingError::ChangingStakeByZero);
 
         let mut stake = Self::stakes(id);
 
@@ -477,8 +485,6 @@ impl<T: Trait> Module<T> {
 
         let slash_id = match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
-                // ensure!(staked_state.staked_amount >= slash_amount, StakingError::XXXX);
-
                 let slash_id = NextSlashId::mutate(|next_id| {
                     let id = *next_id;
                     *next_id += 1;

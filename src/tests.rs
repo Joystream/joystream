@@ -122,6 +122,12 @@ fn enter_staked_state() {
 
         let _ = Balances::deposit_creating(&staker_account, starting_balance);
 
+        // can't stake zero
+        assert_err!(
+            StakePool::stake_from_account(&100, &staker_account, 0),
+            StakingError::ChangingStakeByZero
+        );
+
         // must stake more than minimum balance
         assert_err!(
             StakePool::stake_from_account(&100, &staker_account, Balances::minimum_balance()),
@@ -170,6 +176,11 @@ fn increasing_stake() {
         let staker_account: u64 = 1;
 
         let _ = Balances::deposit_creating(&staker_account, starting_balance);
+
+        assert_err!(
+            StakePool::increase_stake_from_account(&100, &staker_account, 0),
+            StakingError::ChangingStakeByZero
+        );
 
         let total_staked =
             StakePool::increase_stake_from_account(&100, &staker_account, additional_stake)
@@ -234,6 +245,11 @@ fn decreasing_stake() {
         let decrease_stake_by: u64 = 200;
 
         let _ = Balances::deposit_creating(&staker_account, starting_balance);
+
+        assert_err!(
+            StakePool::decrease_stake(&100, &staker_account, 0),
+            StakingError::ChangingStakeByZero
+        );
 
         let total_staked = StakePool::decrease_stake(&100, &staker_account, decrease_stake_by)
             .ok()
