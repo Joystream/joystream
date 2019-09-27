@@ -3,7 +3,7 @@
 use super::*;
 use crate::mock::*;
 use runtime_io::with_externalities;
-use srml_support::assert_err;
+use srml_support::{assert_err, assert_ok};
 
 #[test]
 fn stake_pool_works() {
@@ -41,7 +41,7 @@ fn stake_pool_works() {
 
         let funds = 100;
 
-        assert!(StakePool::move_funds_into_pool_from_account(&1, funds).is_ok());
+        assert_ok!(StakePool::move_funds_into_pool_from_account(&1, funds));
 
         // total issuance unchanged after movement of funds
         assert_eq!(
@@ -143,7 +143,11 @@ fn enter_staked_state() {
         // deposit exact amount to stake
         let _ = Balances::deposit_creating(&staker_account, stake_value);
 
-        assert!(StakePool::stake_from_account(&100, &staker_account, stake_value).is_ok());
+        assert_ok!(StakePool::stake_from_account(
+            &100,
+            &staker_account,
+            stake_value
+        ));
 
         assert_eq!(Balances::free_balance(&staker_account), starting_balance);
 
@@ -320,7 +324,153 @@ fn decreasing_stake() {
 
 #[test]
 fn initiating_pausing_resuming_cancelling_slashes() {
-    with_externalities(&mut build_test_externalities(), || {});
+    with_externalities(&mut build_test_externalities(), || {
+        let staked_amount = Balances::minimum_balance() + 10000;
+        let _ = Balances::deposit_creating(&StakePool::staking_fund_account_id(), staked_amount);
+
+        assert_err!(
+            StakePool::initiate_slashing(&100, 5000, 0),
+            StakingError::StakeNotFound
+        );
+
+        <Stakes<Test>>::insert(
+            &100,
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::NotStaked,
+            },
+        );
+
+        assert_err!(
+            StakePool::initiate_slashing(&100, 5000, 0),
+            StakingError::NotStaked
+        );
+
+        <Stakes<Test>>::insert(
+            &100,
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount: staked_amount,
+                    ongoing_slashes: BTreeMap::new(),
+                    staked_status: StakedStatus::Normal,
+                }),
+            },
+        );
+
+        // assert_err!(StakePool::initiate_slashing(&100, 0, 0), StakingError::ZeroSlashing);
+
+        let slash_id = StakePool::next_slash_id();
+        assert!(StakePool::initiate_slashing(&100, 5000, 10).is_ok());
+
+        let mut expected_ongoing_slashes: fixtures::OngoingSlashes = BTreeMap::new();
+
+        expected_ongoing_slashes.insert(
+            slash_id,
+            Slash {
+                started_at_block: System::block_number(),
+                is_active: true,
+                blocks_remaining_in_active_period_for_slashing: 10,
+                slash_amount: 5000,
+            },
+        );
+
+        assert_eq!(
+            StakePool::stakes(&100),
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount: staked_amount,
+                    ongoing_slashes: expected_ongoing_slashes.clone(),
+                    staked_status: StakedStatus::Normal,
+                })
+            }
+        );
+
+        assert_err!(
+            StakePool::pause_slashing(&100, &0),
+            StakingError::SlashNotFound
+        );
+        assert_err!(
+            StakePool::pause_slashing(&0, &slash_id),
+            StakingError::StakeNotFound
+        );
+
+        assert_ok!(StakePool::pause_slashing(&100, &slash_id));
+        expected_ongoing_slashes.insert(
+            slash_id,
+            Slash {
+                started_at_block: System::block_number(),
+                is_active: false,
+                blocks_remaining_in_active_period_for_slashing: 10,
+                slash_amount: 5000,
+            },
+        );
+        assert_eq!(
+            StakePool::stakes(&100),
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount: staked_amount,
+                    ongoing_slashes: expected_ongoing_slashes.clone(),
+                    staked_status: StakedStatus::Normal,
+                })
+            }
+        );
+
+        assert_err!(
+            StakePool::resume_slashing(&100, &0),
+            StakingError::SlashNotFound
+        );
+        assert_err!(
+            StakePool::resume_slashing(&0, &slash_id),
+            StakingError::StakeNotFound
+        );
+
+        assert_ok!(StakePool::resume_slashing(&100, &slash_id));
+        expected_ongoing_slashes.insert(
+            slash_id,
+            Slash {
+                started_at_block: System::block_number(),
+                is_active: true,
+                blocks_remaining_in_active_period_for_slashing: 10,
+                slash_amount: 5000,
+            },
+        );
+        assert_eq!(
+            StakePool::stakes(&100),
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount: staked_amount,
+                    ongoing_slashes: expected_ongoing_slashes.clone(),
+                    staked_status: StakedStatus::Normal,
+                })
+            }
+        );
+
+        assert_err!(
+            StakePool::cancel_slashing(&100, &0),
+            StakingError::SlashNotFound
+        );
+        assert_err!(
+            StakePool::cancel_slashing(&0, &slash_id),
+            StakingError::StakeNotFound
+        );
+
+        assert_ok!(StakePool::cancel_slashing(&100, &slash_id));
+        assert_eq!(
+            StakePool::stakes(&100),
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount: staked_amount,
+                    ongoing_slashes: BTreeMap::new(),
+                    staked_status: StakedStatus::Normal,
+                })
+            }
+        );
+    });
 }
 
 #[test]

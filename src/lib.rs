@@ -87,7 +87,7 @@ impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEv
     }
 }
 
-#[derive(Encode, Decode, Debug, Default, Eq, PartialEq)]
+#[derive(Encode, Decode, Debug, Default, Eq, PartialEq, Clone)]
 pub struct Slash<BlockNumber, Balance> {
     // The block slashing was initiated.
     started_at_block: BlockNumber,

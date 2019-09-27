@@ -91,5 +91,26 @@ pub fn build_test_externalities() -> runtime_io::TestExternalities<Blake2Hasher>
     t.into()
 }
 
+pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type StakePool = Module<Test>;
+
+// Some helper methods for creating Stake states
+pub mod fixtures {
+    use super::*;
+    pub type OngoingSlashes =
+        BTreeMap<SlashId, Slash<<Test as system::Trait>::BlockNumber, BalanceOf<Test>>>;
+    // pub enum StakeInState {
+    //     NotStaked,
+    //     StakedNormal(BalanceOf<Test>, OngoingSlashes),
+    //     StakedUnstaking(BalanceOf<Test>, OngoingSlashes, <Test as system::Trait>::BlockNumber),
+    // }
+    // fn get_next_slash_id() -> SlashId {
+    // }
+    // pub fn make_stake(state: StakeInState) -> StakeId {
+    //     let id = StakePool::create_stake();
+    //     <Stakes<Test>>::mutate(id, |stake| {});
+    //     id
+    // }
+    // fn stake_in_state_to_stake(StakeInState) -> StakedState {}
+}
