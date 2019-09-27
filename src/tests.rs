@@ -356,7 +356,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount,
                     ongoing_slashes: BTreeMap::new(),
-                    staked_status: StakedStatus::Normal,
+                    staked_status: StakedStatus::Unstaking(UnstakingState {
+                        started_in_block: 0,
+                        blocks_remaining_in_active_period_for_unstaking: 100,
+                        is_active: true,
+                    }),
                 }),
             },
         );
@@ -385,7 +389,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
-                    staked_status: StakedStatus::Normal,
+                    staked_status: StakedStatus::Unstaking(UnstakingState {
+                        started_in_block: 0,
+                        blocks_remaining_in_active_period_for_unstaking: 100,
+                        is_active: false,
+                    }),
                 })
             }
         );
@@ -416,7 +424,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
-                    staked_status: StakedStatus::Normal,
+                    staked_status: StakedStatus::Unstaking(UnstakingState {
+                        started_in_block: 0,
+                        blocks_remaining_in_active_period_for_unstaking: 100,
+                        is_active: false,
+                    }),
                 })
             }
         );
@@ -447,7 +459,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
-                    staked_status: StakedStatus::Normal,
+                    staked_status: StakedStatus::Unstaking(UnstakingState {
+                        started_in_block: 0,
+                        blocks_remaining_in_active_period_for_unstaking: 100,
+                        is_active: false,
+                    }),
                 })
             }
         );
@@ -469,7 +485,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount,
                     ongoing_slashes: BTreeMap::new(),
-                    staked_status: StakedStatus::Normal,
+                    staked_status: StakedStatus::Unstaking(UnstakingState {
+                        started_in_block: 0,
+                        blocks_remaining_in_active_period_for_unstaking: 100,
+                        is_active: true,
+                    }),
                 })
             }
         );
@@ -496,7 +516,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
-                    staked_status: StakedStatus::Normal,
+                    staked_status: StakedStatus::Unstaking(UnstakingState {
+                        started_in_block: 0,
+                        blocks_remaining_in_active_period_for_unstaking: 100,
+                        is_active: false,
+                    }),
                 })
             }
         );
@@ -509,7 +533,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount - slashing_amount,
                     ongoing_slashes: BTreeMap::new(),
-                    staked_status: StakedStatus::Normal,
+                    staked_status: StakedStatus::Unstaking(UnstakingState {
+                        started_in_block: 0,
+                        blocks_remaining_in_active_period_for_unstaking: 99,
+                        is_active: true
+                    })
                 })
             }
         );
@@ -523,15 +551,5 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
 #[test]
 fn initiating_pausing_resuming_unstaking() {
-    with_externalities(&mut build_test_externalities(), || {});
-}
-
-#[test]
-fn slashing_finalization() {
-    with_externalities(&mut build_test_externalities(), || {});
-}
-
-#[test]
-fn unstaking_finalization() {
     with_externalities(&mut build_test_externalities(), || {});
 }
