@@ -303,7 +303,7 @@ impl<T: Trait> Module<T> {
             source,
             value,
             WithdrawReason::Transfer,
-            ExistenceRequirement::KeepAlive,
+            ExistenceRequirement::AllowDeath,
         ) {
             Ok(negative_imbalance) => {
                 Self::deposit_funds_into_pool(negative_imbalance);
@@ -349,7 +349,7 @@ impl<T: Trait> Module<T> {
     /// Provided the stake exists and is in state Staked.Normal, and the given source account covers the amount,
     /// then the amount is transferred to the module's account, and the corresponding staked_amount is increased
     /// by the amount. New value of staked_amount is returned.
-    pub fn increase_stake(
+    pub fn increase_stake_from_account(
         id: &StakeId,
         staker_account_id: &T::AccountId,
         amount: BalanceOf<T>,
@@ -375,6 +375,14 @@ impl<T: Trait> Module<T> {
 
         Ok(total_staked_amount)
     }
+
+    /*
+        add methods to increase stake using an imbalance
+        pub fn ensure_can_increase_stake(stake_id, balance) -> Result {}
+        pub fn increase_stake(stake_id, imbalance) -> Result {
+
+        }
+    */
 
     // !! SHOULD WE ALLOW DECREASING STAKE IF THERE ARE ACTIVE SLASHINGs ? !!
     /// Provided the stake exists and is in state Staked.Normal, and the given stake holds at least the amount,

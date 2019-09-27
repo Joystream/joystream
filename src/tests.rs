@@ -87,18 +87,27 @@ fn enter_staked_state() {
             },
         );
 
-        let starting_balance: u64 = Balances::minimum_balance() + 1000;
+        let starting_balance: u64 = Balances::minimum_balance();
         let staker_account: u64 = 1;
         let stake_value: u64 = Balances::minimum_balance() + 100;
 
         let _ = Balances::deposit_creating(&staker_account, starting_balance);
 
+        // must stake more than minimum balance
+        assert!(
+            StakePool::stake_from_account(&100, &staker_account, Balances::minimum_balance())
+                .is_err()
+        );
+
+        // cannot stake with insufficient funds
+        assert!(StakePool::stake_from_account(&100, &staker_account, stake_value).is_err());
+
+        // deposit exact amount to stake
+        let _ = Balances::deposit_creating(&staker_account, stake_value);
+
         assert!(StakePool::stake_from_account(&100, &staker_account, stake_value).is_ok());
 
-        assert_eq!(
-            Balances::free_balance(&staker_account),
-            starting_balance - stake_value
-        );
+        assert_eq!(Balances::free_balance(&staker_account), starting_balance);
 
         assert_eq!(StakePool::staking_fund_balance(), stake_value);
     });
@@ -107,11 +116,11 @@ fn enter_staked_state() {
 #[test]
 fn increasing_stake() {
     with_externalities(&mut build_test_externalities(), || {
-        let starting_pool_stake = 5000;
+        let starting_pool_stake = Balances::minimum_balance() + 5000;
         let _ =
             Balances::deposit_creating(&StakePool::staking_fund_account_id(), starting_pool_stake);
 
-        let starting_stake = 100;
+        let starting_stake = Balances::minimum_balance() + 100;
         <Stakes<Test>>::insert(
             &100,
             Stake {
@@ -124,15 +133,16 @@ fn increasing_stake() {
             },
         );
 
-        let starting_balance: u64 = Balances::minimum_balance() + 1000;
+        let additional_stake: u64 = 500;
+        let starting_balance: u64 = Balances::minimum_balance() + additional_stake;
         let staker_account: u64 = 1;
-        let additional_stake: u64 = Balances::minimum_balance() + 100;
 
         let _ = Balances::deposit_creating(&staker_account, starting_balance);
 
-        let total_staked = StakePool::increase_stake(&100, &staker_account, additional_stake)
-            .ok()
-            .unwrap();
+        let total_staked =
+            StakePool::increase_stake_from_account(&100, &staker_account, additional_stake)
+                .ok()
+                .unwrap();
         assert_eq!(total_staked, starting_stake + additional_stake);
 
         assert_eq!(
@@ -161,7 +171,7 @@ fn increasing_stake() {
         assert!(StakePool::increase_stake(
             &100,
             &staker_account,
-            Balances::free_balance(&staker_account) - Balances::minimum_balance() + 1
+            Balances::free_balance(&staker_account) + 1
         )
         .is_err());
     });
