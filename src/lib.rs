@@ -192,7 +192,7 @@ decl_module! {
 pub enum StakingError {
     StakeNotFound,
     SlashNotFound,
-    AmountTooLow,
+    StakingLessThanMinimumBalance,
     InsufficientBalance,
     InsufficientStake,
     AlreadyStaked,
@@ -250,7 +250,7 @@ impl<T: Trait> Module<T> {
         );
         ensure!(
             amount > T::Currency::minimum_balance(),
-            StakingError::AmountTooLow
+            StakingError::StakingLessThanMinimumBalance
         );
         Ok(())
     }
