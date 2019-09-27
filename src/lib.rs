@@ -189,6 +189,7 @@ decl_module! {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum StakingError {
     StakeNotFound,
     SlashNotFound,

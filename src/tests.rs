@@ -2,8 +2,8 @@
 
 use super::*;
 use crate::mock::*;
-
 use runtime_io::with_externalities;
+use srml_support::assert_err;
 
 #[test]
 fn stake_pool_works() {
@@ -11,29 +11,57 @@ fn stake_pool_works() {
         // using deposit_creating
         assert_eq!(Balances::total_issuance(), 0);
         assert_eq!(StakePool::staking_fund_balance(), 0);
-        let _ = Balances::deposit_creating(&StakePool::staking_fund_account_id(), 1000);
-        assert_eq!(Balances::total_issuance(), 1000);
-        assert_eq!(StakePool::staking_fund_balance(), 1000);
 
+        // minimum balance (existential deposit) feature applies to stake pool
+        if Balances::minimum_balance() > 0 {
+            let pos_imbalance = Balances::deposit_creating(
+                &StakePool::staking_fund_account_id(),
+                Balances::minimum_balance() - 1,
+            );
+            assert_eq!(pos_imbalance.peek(), 0);
+            assert_eq!(Balances::total_issuance(), 0);
+            assert_eq!(StakePool::staking_fund_balance(), 0);
+        }
+
+        let starting_pool_balance = Balances::minimum_balance() + 1000;
+        let _ = Balances::deposit_creating(
+            &StakePool::staking_fund_account_id(),
+            starting_pool_balance,
+        );
+        assert_eq!(Balances::total_issuance(), starting_pool_balance);
+        assert_eq!(StakePool::staking_fund_balance(), starting_pool_balance);
+
+        let staker_starting_balance = Balances::minimum_balance() + 1000;
         // using move_funds_into_pool_from_account()
-        let _ = Balances::deposit_creating(&1, 1000);
-        assert_eq!(Balances::total_issuance(), 2000);
+        let _ = Balances::deposit_creating(&1, staker_starting_balance);
+        assert_eq!(
+            Balances::total_issuance(),
+            starting_pool_balance + staker_starting_balance
+        );
 
-        assert!(StakePool::move_funds_into_pool_from_account(&1, 100).is_ok());
+        let funds = 100;
+
+        assert!(StakePool::move_funds_into_pool_from_account(&1, funds).is_ok());
 
         // total issuance unchanged after movement of funds
-        assert_eq!(Balances::total_issuance(), 2000);
+        assert_eq!(
+            Balances::total_issuance(),
+            starting_pool_balance + staker_starting_balance
+        );
 
         // funds moved into stake pool
-        assert_eq!(StakePool::staking_fund_balance(), 1100);
+        assert_eq!(
+            StakePool::staking_fund_balance(),
+            starting_pool_balance + funds
+        );
 
         // no fees were deducted
-        assert_eq!(Balances::free_balance(&1), 900);
+        assert_eq!(Balances::free_balance(&1), staker_starting_balance - funds);
 
-        StakePool::withdraw_funds_from_pool_into_account(&1, 100);
+        StakePool::withdraw_funds_from_pool_into_account(&1, funds);
 
-        assert_eq!(Balances::free_balance(&1), 1000);
-        assert_eq!(StakePool::staking_fund_balance(), 1000);
+        assert_eq!(Balances::free_balance(&1), staker_starting_balance);
+        assert_eq!(StakePool::staking_fund_balance(), starting_pool_balance);
     });
 }
 
@@ -71,6 +99,7 @@ fn remove_stake_in_not_staked_state() {
                 staking_status: StakingStatus::Staked(Default::default()),
             },
         );
+
         StakePool::remove_stake(&200);
         assert!(<Stakes<Test>>::exists(&200));
     });
@@ -94,13 +123,16 @@ fn enter_staked_state() {
         let _ = Balances::deposit_creating(&staker_account, starting_balance);
 
         // must stake more than minimum balance
-        assert!(
-            StakePool::stake_from_account(&100, &staker_account, Balances::minimum_balance())
-                .is_err()
+        assert_err!(
+            StakePool::stake_from_account(&100, &staker_account, Balances::minimum_balance()),
+            StakingError::StakingLessThanMinimumBalance
         );
 
         // cannot stake with insufficient funds
-        assert!(StakePool::stake_from_account(&100, &staker_account, stake_value).is_err());
+        assert_err!(
+            StakePool::stake_from_account(&100, &staker_account, stake_value),
+            StakingError::InsufficientBalance
+        );
 
         // deposit exact amount to stake
         let _ = Balances::deposit_creating(&staker_account, stake_value);
@@ -184,7 +216,7 @@ fn decreasing_stake() {
         let _ =
             Balances::deposit_creating(&StakePool::staking_fund_account_id(), starting_pool_stake);
 
-        let starting_stake = 2000;
+        let starting_stake = Balances::minimum_balance() + 2000;
         <Stakes<Test>>::insert(
             &100,
             Stake {
@@ -197,7 +229,7 @@ fn decreasing_stake() {
             },
         );
 
-        let starting_balance: u64 = Balances::minimum_balance() + 1000;
+        let starting_balance: u64 = Balances::minimum_balance();
         let staker_account: u64 = 1;
         let decrease_stake_by: u64 = 200;
 
@@ -231,7 +263,42 @@ fn decreasing_stake() {
         );
 
         // cannot unstake more than total at stake
-        assert!(StakePool::decrease_stake(&100, &staker_account, total_staked + 1).is_err());
+        assert_err!(
+            StakePool::decrease_stake(&100, &staker_account, total_staked + 1),
+            StakingError::InsufficientStake
+        );
+
+        // decreasing stake to value less than minimum_balance should reduce entire stake
+        if Balances::minimum_balance() > 0 {
+            let over_minimum = 50;
+            let staked_amount = Balances::minimum_balance() + over_minimum;
+
+            let _ =
+                Balances::deposit_creating(&StakePool::staking_fund_account_id(), staked_amount);
+            <Stakes<Test>>::insert(
+                &200,
+                Stake {
+                    created: 0,
+                    staking_status: StakingStatus::Staked(StakedState {
+                        staked_amount: staked_amount,
+                        ongoing_slashes: BTreeMap::new(),
+                        staked_status: StakedStatus::Normal,
+                    }),
+                },
+            );
+
+            assert_eq!(Balances::free_balance(&2), 0);
+            let starting_pool_balance = StakePool::staking_fund_balance();
+            let remaining_stake = StakePool::decrease_stake(&200, &2, over_minimum + 1)
+                .ok()
+                .unwrap();
+            assert_eq!(remaining_stake, 0);
+            assert_eq!(Balances::free_balance(&2), staked_amount);
+            assert_eq!(
+                StakePool::staking_fund_balance(),
+                starting_pool_balance - staked_amount
+            );
+        }
     });
 }
 
