@@ -106,7 +106,7 @@ pub struct Slash<BlockNumber, Balance> {
 #[derive(Encode, Decode, Debug, Default, Eq, PartialEq)]
 pub struct UnstakingState<BlockNumber> {
     // The block where the unstaking was initiated
-    started_in_block: BlockNumber,
+    started_at_block: BlockNumber,
 
     // Whether unstaking is in active, or conversely paused state
     // Blocks are only counted towards unstaking period when active.
@@ -204,7 +204,7 @@ pub enum StakingError {
     IncreasingStakeWhileUnstaking,
     DecreasingStakeWhileUnstaking,
     DecreasingStakeWhileOngoingSlahes,
-    InitiatingUnstakingWhileSlashesOngoing,
+    UnstakingWhileSlashesOngoing,
 }
 
 impl<T: Trait> Module<T> {
@@ -610,15 +610,15 @@ impl<T: Trait> Module<T> {
                 .values()
                 .any(|slash| slash.is_active)
             {
-                return Err(StakingError::InitiatingUnstakingWhileSlashesOngoing);
+                return Err(StakingError::UnstakingWhileSlashesOngoing);
             }
 
-            if StakedStatus::Normal == staked_state.staked_status {
+            if StakedStatus::Normal != staked_state.staked_status {
                 return Err(StakingError::AlreadyUnstaking);
             }
 
             staked_state.staked_status = StakedStatus::Unstaking(UnstakingState {
-                started_in_block: <system::Module<T>>::block_number(),
+                started_at_block: <system::Module<T>>::block_number(),
                 is_active: true,
                 blocks_remaining_in_active_period_for_unstaking: unstaking_period,
             });

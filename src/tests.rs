@@ -357,7 +357,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                     staked_amount: staked_amount,
                     ongoing_slashes: BTreeMap::new(),
                     staked_status: StakedStatus::Unstaking(UnstakingState {
-                        started_in_block: 0,
+                        started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 100,
                         is_active: true,
                     }),
@@ -390,7 +390,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                     staked_amount: staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
                     staked_status: StakedStatus::Unstaking(UnstakingState {
-                        started_in_block: 0,
+                        started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 100,
                         is_active: false,
                     }),
@@ -425,7 +425,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                     staked_amount: staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
                     staked_status: StakedStatus::Unstaking(UnstakingState {
-                        started_in_block: 0,
+                        started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 100,
                         is_active: false,
                     }),
@@ -460,7 +460,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                     staked_amount: staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
                     staked_status: StakedStatus::Unstaking(UnstakingState {
-                        started_in_block: 0,
+                        started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 100,
                         is_active: false,
                     }),
@@ -486,7 +486,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                     staked_amount: staked_amount,
                     ongoing_slashes: BTreeMap::new(),
                     staked_status: StakedStatus::Unstaking(UnstakingState {
-                        started_in_block: 0,
+                        started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 100,
                         is_active: true,
                     }),
@@ -517,7 +517,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                     staked_amount: staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
                     staked_status: StakedStatus::Unstaking(UnstakingState {
-                        started_in_block: 0,
+                        started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 100,
                         is_active: false,
                     }),
@@ -534,7 +534,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                     staked_amount: staked_amount - slashing_amount,
                     ongoing_slashes: BTreeMap::new(),
                     staked_status: StakedStatus::Unstaking(UnstakingState {
-                        started_in_block: 0,
+                        started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 99,
                         is_active: true
                     })
@@ -551,5 +551,112 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
 #[test]
 fn initiating_pausing_resuming_unstaking() {
-    with_externalities(&mut build_test_externalities(), || {});
+    with_externalities(&mut build_test_externalities(), || {
+        let staked_amount = Balances::minimum_balance() + 10000;
+        let starting_stake_fund_balance = Balances::minimum_balance() + 3333;
+
+        let _ = Balances::deposit_creating(
+            &StakePool::staking_fund_account_id(),
+            starting_stake_fund_balance + staked_amount,
+        );
+
+        assert_err!(
+            StakePool::initiate_unstaking(&100, 0),
+            StakingError::StakeNotFound
+        );
+
+        let stake_id = StakePool::create_stake();
+        <Stakes<Test>>::insert(
+            &stake_id,
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::NotStaked,
+            },
+        );
+
+        assert_err!(
+            StakePool::initiate_unstaking(&stake_id, 0),
+            StakingError::NotStaked
+        );
+
+        let mut ongoing_slashes = BTreeMap::new();
+        ongoing_slashes.insert(
+            1,
+            Slash {
+                started_at_block: System::block_number(),
+                is_active: true,
+                blocks_remaining_in_active_period_for_slashing: 100,
+                slash_amount: 100,
+            },
+        );
+
+        <Stakes<Test>>::insert(
+            &stake_id,
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount,
+                    ongoing_slashes,
+                    staked_status: StakedStatus::Normal,
+                }),
+            },
+        );
+
+        assert_err!(
+            StakePool::initiate_unstaking(&stake_id, 0),
+            StakingError::UnstakingWhileSlashesOngoing
+        );
+
+        assert_ok!(StakePool::cancel_slashing(&stake_id, &1));
+
+        assert_ok!(StakePool::initiate_unstaking(&stake_id, 2));
+
+        assert_eq!(
+            StakePool::stakes(&stake_id),
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount,
+                    ongoing_slashes: BTreeMap::new(),
+                    staked_status: StakedStatus::Unstaking(UnstakingState {
+                        started_at_block: System::block_number(),
+                        blocks_remaining_in_active_period_for_unstaking: 2,
+                        is_active: true
+                    })
+                })
+            }
+        );
+
+        StakePool::finalize_unstaking_and_slashing();
+        assert_eq!(
+            StakePool::stakes(&stake_id),
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount,
+                    ongoing_slashes: BTreeMap::new(),
+                    staked_status: StakedStatus::Unstaking(UnstakingState {
+                        started_at_block: System::block_number(),
+                        blocks_remaining_in_active_period_for_unstaking: 1,
+                        is_active: true
+                    })
+                })
+            }
+        );
+
+        StakePool::finalize_unstaking_and_slashing();
+        assert_eq!(
+            StakePool::stakes(&stake_id),
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::NotStaked
+            }
+        );
+
+        assert_eq!(
+            StakePool::staking_fund_balance(),
+            starting_stake_fund_balance
+        );
+        assert_eq!(Balances::total_issuance(), starting_stake_fund_balance);
+    });
 }
