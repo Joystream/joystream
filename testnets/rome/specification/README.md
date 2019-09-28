@@ -115,7 +115,7 @@ These are the Joystream specific modules, for each module, there is either a lin
 
 An integrated explanation of the modules constituting the storage system is found [here](runtime/storage-modules.md).
 
-#### TokenMint
+#### TokenMint
 
 - **Description**: Transferrable capacity constrained token minting.
 - **Specification**: [**READ HERE**](runtime/token-mint-module.md)
