@@ -18,23 +18,6 @@ impl<Balance: Zero> Default for AdjustCapacityBy<Balance> {
     }
 }
 
-fn adjusted_capacity<Balance: Copy + SimpleArithmetic + Zero>(
-    capacity: Balance,
-    adjustment_type: AdjustCapacityBy<Balance>,
-) -> Balance {
-    match adjustment_type {
-        AdjustCapacityBy::Adding(amount) => capacity + amount,
-        AdjustCapacityBy::Setting(amount) => amount,
-        AdjustCapacityBy::Reducing(amount) => {
-            if amount > capacity {
-                Zero::zero()
-            } else {
-                capacity - amount
-            }
-        }
-    }
-}
-
 #[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
 pub struct AdjustOnInterval<Balance: Zero, BlockNumber: Zero> {
     pub block_interval: BlockNumber,
@@ -181,7 +164,7 @@ where
 
         // update mint capacity
         self.capacity =
-            adjusted_capacity(self.capacity, self.adjustment_on_interval.adjustment_type);
+            Self::adjusted_capacity(self.capacity, self.adjustment_on_interval.adjustment_type);
 
         // set blocknumber for next adjustment
         self.adjust_capacity_at_block_number =
@@ -193,5 +176,19 @@ where
     fn is_time_for_adjustment(&self, now: BlockNumber) -> bool {
         self.adjust_capacity_at_block_number
             .map_or(false, |block_number| block_number == now)
+    }
+
+    fn adjusted_capacity(capacity: Balance, adjustment_type: AdjustCapacityBy<Balance>) -> Balance {
+        match adjustment_type {
+            AdjustCapacityBy::Adding(amount) => capacity + amount,
+            AdjustCapacityBy::Setting(amount) => amount,
+            AdjustCapacityBy::Reducing(amount) => {
+                if amount > capacity {
+                    Zero::zero()
+                } else {
+                    capacity - amount
+                }
+            }
+        }
     }
 }
