@@ -4,9 +4,13 @@
 #[cfg(feature = "std")]
 use rstd::prelude::*;
 
-use runtime_primitives::traits::Zero;
+use codec::Codec;
+use runtime_primitives::traits::{MaybeSerializeDebug, Member, One, SimpleArithmetic, Zero};
 use srml_support::traits::Currency;
-use srml_support::{decl_module, decl_storage, ensure, StorageMap, StorageValue};
+use srml_support::{
+    decl_module, decl_storage, ensure, AppendableStorageMap, EnumerableStorageMap, Parameter,
+    StorageMap, StorageValue,
+};
 
 mod mint;
 mod mock;
@@ -16,12 +20,19 @@ pub use mint::{AdjustCapacityBy, AdjustOnInterval, Adjustment, Mint, MintingErro
 
 use system;
 
-pub type MintId = u64;
-pub const FIRST_TOKEN_MINT_ID: MintId = 1;
-
-pub trait Trait: system::Trait + Sized {
-    /// The currency to mint
+pub trait Trait: system::Trait {
+    /// The currency to mint.
     type Currency: Currency<Self::AccountId>;
+
+    /// The type used as a mint identifier.
+    type MintId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerializeDebug
+        + PartialEq;
 }
 
 pub type BalanceOf<T> =
@@ -30,10 +41,10 @@ pub type BalanceOf<T> =
 decl_storage! {
     trait Store for Module<T: Trait> as Minting {
         /// Mints
-        pub Mints get(mints) : map MintId => Mint<BalanceOf<T>, T::BlockNumber>;
+        pub Mints get(mints) : linked_map T::MintId => Mint<BalanceOf<T>, T::BlockNumber>;
 
-        /// Id to use for next mint that is created.
-        pub NextMintId get(next_token_mint_id): MintId = FIRST_TOKEN_MINT_ID;
+        /// The number of mints created.
+        pub MintsCreated get(mints_created): T::MintId;
     }
 }
 
@@ -47,22 +58,20 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     fn update_mints(now: T::BlockNumber) {
-        for mint_id in FIRST_TOKEN_MINT_ID..Self::next_token_mint_id() {
-            if <Mints<T>>::exists(&mint_id) {
-                let mut mint = Self::mints(&mint_id);
-                let did_adjust = mint.maybe_do_capacity_adjustment(now);
-                if did_adjust {
-                    <Mints<T>>::insert(&mint_id, mint);
-                }
-            }
-        }
+        <Mints<T>>::enumerate().for_each(|(mint_id, ref mut _mint)| {
+            <Mints<T>>::mutate(mint_id, |mint| {
+                mint.maybe_do_capacity_adjustment(now);
+            });
+            // even with ref mut mint storage value isn't updated
+            // _mint.maybe_do_capacity_adjustment(now);
+        });
     }
 
     /// Adds a new mint with given settings to mints, and returns new id.
     pub fn add_mint(
         initial_capacity: BalanceOf<T>,
         adjustment: Option<Adjustment<BalanceOf<T>, T::BlockNumber>>,
-    ) -> Result<MintId, MintingError> {
+    ) -> Result<T::MintId, MintingError> {
         let now = <system::Module<T>>::block_number();
 
         // Make sure the next adjustment if set, is in the future
@@ -81,25 +90,26 @@ impl<T: Trait> Module<T> {
 
         let mint = Mint::new(initial_capacity, adjustment, now);
 
-        let mint_id = Self::next_token_mint_id();
-        NextMintId::mutate(|n| {
-            *n += 1;
+        // get next mint_id and increment total number of mints created
+        let mint_id = Self::mints_created();
+        <MintsCreated<T>>::mutate(|n| {
+            *n += One::one();
         });
         <Mints<T>>::insert(mint_id, mint);
         Ok(mint_id)
     }
 
     /// Removes a mint. Passing a non existant mint has no affect.
-    pub fn remove_mint(mint_id: MintId) {
+    pub fn remove_mint(mint_id: T::MintId) {
         <Mints<T>>::remove(&mint_id);
     }
 
-    // pub fn set_mint_adjustment(mint_id: MintId, adjustment: AdjustOnInterval<BalanceOf<T>, T::BlockNumber>) {}
+    // pub fn set_mint_adjustment(mint_id: T::MintId, adjustment: AdjustOnInterval<BalanceOf<T>, T::BlockNumber>) {}
 
     /// Tries to transfer exact amount from mint. Returns error if amount exceeds mint capacity
     /// Transfer amount of zero has no affect
     pub fn transfer_exact_tokens(
-        mint_id: MintId,
+        mint_id: T::MintId,
         requested_amount: BalanceOf<T>,
         recipient: &T::AccountId,
     ) -> Result<(), MintingError> {
@@ -121,7 +131,7 @@ impl<T: Trait> Module<T> {
     /// Tries to transfer upto requested amount from mint, returns actual amount transferred
     /// Transfer amount of zero has no affect
     pub fn transfer_some_tokens(
-        mint_id: MintId,
+        mint_id: T::MintId,
         requested_amount: BalanceOf<T>,
         recipient: &T::AccountId,
     ) -> Result<BalanceOf<T>, MintingError> {
@@ -140,7 +150,10 @@ impl<T: Trait> Module<T> {
         Ok(minted_amount)
     }
 
-    pub fn set_mint_capacity(mint_id: MintId, capacity: BalanceOf<T>) -> Result<(), MintingError> {
+    pub fn set_mint_capacity(
+        mint_id: T::MintId,
+        capacity: BalanceOf<T>,
+    ) -> Result<(), MintingError> {
         let mut mint = Self::ensure_mint(&mint_id)?;
 
         mint.set_capacity(capacity);
@@ -149,8 +162,8 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn transfer_capacity(
-        source: MintId,
-        destination: MintId,
+        source: T::MintId,
+        destination: T::MintId,
         capacity_to_transfer: BalanceOf<T>,
     ) -> Result<(), MintingError> {
         let mut source_mint = if let Ok(source_mint) = Self::ensure_mint(&source) {
@@ -173,24 +186,26 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn mint_has_capacity(mint_id: MintId, capacity: BalanceOf<T>) -> bool {
+    pub fn mint_has_capacity(mint_id: T::MintId, capacity: BalanceOf<T>) -> bool {
         Self::ensure_mint(&mint_id)
             .ok()
             .map_or_else(|| false, |mint| mint.can_mint(capacity))
     }
 
     pub fn mint_adjustment(
-        mint_id: MintId,
+        mint_id: T::MintId,
     ) -> Result<Option<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>>, MintingError> {
         let mint = Self::ensure_mint(&mint_id)?;
         Ok(mint.adjustment())
     }
 
-    pub fn mint_exists(mint_id: MintId) -> bool {
+    pub fn mint_exists(mint_id: T::MintId) -> bool {
         Self::ensure_mint(&mint_id).is_ok()
     }
 
-    fn ensure_mint(mint_id: &MintId) -> Result<Mint<BalanceOf<T>, T::BlockNumber>, MintingError> {
+    fn ensure_mint(
+        mint_id: &T::MintId,
+    ) -> Result<Mint<BalanceOf<T>, T::BlockNumber>, MintingError> {
         ensure!(<Mints<T>>::exists(mint_id), MintingError::InvalidMint);
         Ok(Self::mints(mint_id))
     }
