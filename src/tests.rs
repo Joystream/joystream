@@ -23,7 +23,7 @@ fn adding_and_removing_mints() {
 
         assert!(Minting::mint_has_capacity(mint_id, capacity));
 
-        assert_eq!(Minting::mint_adjustment(mint_id), Ok(Some(adjustment)));
+        assert_eq!(Minting::mint_adjustment(mint_id), Ok(adjustment));
 
         Minting::remove_mint(mint_id);
         assert!(!Minting::mint_exists(mint_id));

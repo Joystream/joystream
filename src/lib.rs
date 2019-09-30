@@ -194,7 +194,7 @@ impl<T: Trait> Module<T> {
 
     pub fn mint_adjustment(
         mint_id: T::MintId,
-    ) -> Result<Option<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>>, MintingError> {
+    ) -> Result<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>, MintingError> {
         let mint = Self::ensure_mint(&mint_id)?;
         Ok(mint.adjustment())
     }

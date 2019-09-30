@@ -3,23 +3,38 @@ use runtime_primitives::traits::{SimpleArithmetic, Zero};
 use srml_support::ensure;
 
 #[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
-pub enum AdjustCapacityBy<Balance> {
-    // Set capacity of mint to specific value
+pub enum AdjustCapacityBy<Balance: Zero> {
+    /// Set capacity of mint to specific value
     Setting(Balance),
-    // Add to the capacity of the mint
+    /// Add to the capacity of the mint
     Adding(Balance),
-    // Reduce capacity of the mint
+    /// Reduce capacity of the mint
     Reducing(Balance),
 }
 
+impl<Balance: Zero> Default for AdjustCapacityBy<Balance> {
+    fn default() -> Self {
+        AdjustCapacityBy::Adding(Zero::zero())
+    }
+}
+
 #[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
-pub struct AdjustOnInterval<Balance, BlockNumber> {
+pub struct AdjustOnInterval<Balance: Zero, BlockNumber: Zero> {
     pub block_interval: BlockNumber,
     pub adjustment_type: AdjustCapacityBy<Balance>,
 }
 
+impl<Balance: Zero, BlockNumber: Zero> Default for AdjustOnInterval<Balance, BlockNumber> {
+    fn default() -> Self {
+        AdjustOnInterval {
+            block_interval: Zero::zero(),
+            adjustment_type: Default::default(),
+        }
+    }
+}
+
 #[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Adjustment<Balance, BlockNumber> {
+pub enum Adjustment<Balance: Zero, BlockNumber: Zero> {
     // First adjustment will be after AdjustOnInterval.block_interval
     Interval(AdjustOnInterval<Balance, BlockNumber>),
     // First Adjustment will be at absolute blocknumber
@@ -34,14 +49,14 @@ pub enum Adjustment<Balance, BlockNumber> {
 // We want Default trait on TokenMint so we can use it as value in StorageMap without needing to wrap it in an Option
 pub struct Mint<Balance, BlockNumber>
 where
-    Balance: Copy + SimpleArithmetic,
-    BlockNumber: Copy + SimpleArithmetic,
+    Balance: Copy + SimpleArithmetic + Zero,
+    BlockNumber: Copy + SimpleArithmetic + Zero,
 {
     capacity: Balance,
 
-    adjustment_on_interval: Option<AdjustOnInterval<Balance, BlockNumber>>,
+    adjustment_on_interval: AdjustOnInterval<Balance, BlockNumber>,
 
-    // Whether there is an upcoming block where
+    // Whether there is an upcoming block where an adjustment to the mint will be made
     // When this is not set, the mint is effectively paused.
     adjust_capacity_at_block_number: Option<BlockNumber>,
 
@@ -61,8 +76,8 @@ pub enum MintingError {
 
 impl<Balance, BlockNumber> Mint<Balance, BlockNumber>
 where
-    Balance: Copy + SimpleArithmetic,
-    BlockNumber: Copy + SimpleArithmetic,
+    Balance: Copy + SimpleArithmetic + Zero,
+    BlockNumber: Copy + SimpleArithmetic + Zero,
 {
     pub fn new(
         initial_capacity: Balance,
@@ -82,15 +97,17 @@ where
                     now + first_adjustment
                 }
             }),
-            adjustment_on_interval: adjustment.map(|adjustment| match adjustment {
-                Adjustment::Interval(adjust_on_interval) => adjust_on_interval,
-                Adjustment::IntervalAfterFirstAdjustmentAbsolute(adjust_on_interval, _) => {
-                    adjust_on_interval
-                }
-                Adjustment::IntervalAfterFirstAdjustmentRelative(adjust_on_interval, _) => {
-                    adjust_on_interval
-                }
-            }),
+            adjustment_on_interval: adjustment
+                .map(|adjustment| match adjustment {
+                    Adjustment::Interval(adjust_on_interval) => adjust_on_interval,
+                    Adjustment::IntervalAfterFirstAdjustmentAbsolute(adjust_on_interval, _) => {
+                        adjust_on_interval
+                    }
+                    Adjustment::IntervalAfterFirstAdjustmentRelative(adjust_on_interval, _) => {
+                        adjust_on_interval
+                    }
+                })
+                .unwrap_or(Default::default()),
         }
     }
 
@@ -145,7 +162,7 @@ where
         Ok(())
     }
 
-    pub fn adjustment(&self) -> Option<AdjustOnInterval<Balance, BlockNumber>> {
+    pub fn adjustment(&self) -> AdjustOnInterval<Balance, BlockNumber> {
         self.adjustment_on_interval
     }
 
@@ -156,15 +173,12 @@ where
             return false;
         }
 
-        assert!(self.adjustment_on_interval.is_some());
-
-        let adjustment = self.adjustment_on_interval.unwrap();
-
         // update mint capacity
-        self.adjust_capacity(adjustment.adjustment_type);
+        self.adjust_capacity(self.adjustment_on_interval.adjustment_type);
 
         // set blocknumber for next adjustment
-        self.adjust_capacity_at_block_number = Some(now + adjustment.block_interval);
+        self.adjust_capacity_at_block_number =
+            Some(now + self.adjustment_on_interval.block_interval);
 
         true
     }
