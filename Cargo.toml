@@ -30,7 +30,7 @@ rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
 [dependencies.minting]
 default_features = false
-git = 'https://github.com/mnaamani/substrate-token-minting'
+git = 'https://github.com/mnaamani/substrate-token-minting-module'
 package = 'substrate-token-mint-module'
 branch = 'token-minting'
 
