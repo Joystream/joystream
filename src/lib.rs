@@ -125,14 +125,14 @@ impl<T: Trait> Module<T> {
             }
         }
 
-        let mint = Mint::new(initial_capacity, adjustment, now);
-
         // get next mint_id and increment total number of mints created
         let mint_id = Self::mints_created();
         <MintsCreated<T>>::mutate(|n| {
             *n += One::one();
         });
-        <Mints<T>>::insert(mint_id, mint);
+
+        <Mints<T>>::insert(mint_id, Mint::new(initial_capacity, adjustment, now));
+
         Ok(mint_id)
     }
 
@@ -140,8 +140,6 @@ impl<T: Trait> Module<T> {
     pub fn remove_mint(mint_id: T::MintId) {
         <Mints<T>>::remove(&mint_id);
     }
-
-    // pub fn set_mint_adjustment(mint_id: T::MintId, adjustment: AdjustOnInterval<BalanceOf<T>, T::BlockNumber>) {}
 
     /// Tries to transfer exact amount from mint. Returns error if amount exceeds mint capacity
     /// Transfer amount of zero has no affect
@@ -170,9 +168,11 @@ impl<T: Trait> Module<T> {
         capacity: BalanceOf<T>,
     ) -> Result<(), GeneralError> {
         ensure!(<Mints<T>>::exists(&mint_id), GeneralError::MintNotFound);
-        let mut mint = Self::mints(&mint_id);
-        mint.set_capacity(capacity);
-        <Mints<T>>::insert(mint_id, mint);
+
+        <Mints<T>>::mutate(&mint_id, |mint| {
+            mint.set_capacity(capacity);
+        });
+
         Ok(())
     }
 
@@ -190,27 +190,19 @@ impl<T: Trait> Module<T> {
             CapacityTransferError::DestinationMintNotFound
         );
 
-        let mut source_mint = Self::mints(&source);
-        let mut destination_mint = Self::mints(&destination);
-
-        source_mint.transfer_capacity_to(&mut destination_mint, capacity_to_transfer)?;
-
-        <Mints<T>>::insert(source, source_mint);
-        <Mints<T>>::insert(destination, destination_mint);
+        <Mints<T>>::mutate(&source, |source_mint| {
+            <Mints<T>>::mutate(&destination, |destination_mint| {
+                source_mint.transfer_capacity_to(destination_mint, capacity_to_transfer)
+            })
+        })?;
 
         Ok(())
-    }
-
-    pub fn mint_has_capacity(mint_id: T::MintId, capacity: BalanceOf<T>) -> bool {
-        if !<Mints<T>>::exists(&mint_id) {
-            return false;
-        }
-        Self::mints(&mint_id).can_mint(capacity)
     }
 
     pub fn mint_capacity(mint_id: T::MintId) -> Result<BalanceOf<T>, GeneralError> {
         ensure!(<Mints<T>>::exists(&mint_id), GeneralError::MintNotFound);
         let mint = Self::mints(&mint_id);
+
         Ok(mint.capacity())
     }
 
@@ -218,7 +210,9 @@ impl<T: Trait> Module<T> {
         mint_id: T::MintId,
     ) -> Result<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>, GeneralError> {
         ensure!(<Mints<T>>::exists(&mint_id), GeneralError::MintNotFound);
+
         let mint = Self::mints(&mint_id);
+
         Ok(mint.adjustment())
     }
 
