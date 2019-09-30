@@ -43,7 +43,7 @@ pub enum Adjustment<Balance: Zero, BlockNumber: Zero> {
     IntervalAfterFirstAdjustmentRelative(AdjustOnInterval<Balance, BlockNumber>, BlockNumber),
 }
 
-#[derive(Encode, Decode, Default)]
+#[derive(Encode, Decode, Default, Copy, Clone)]
 // Note we don't use TokenMint<T: Trait> it breaks the Default derivation macro with error T doesn't impl Default
 // Which requires manually implementing Default trait.
 // We want Default trait on TokenMint so we can use it as value in StorageMap without needing to wrap it in an Option
@@ -171,6 +171,26 @@ where
             Some(now + self.adjustment_on_interval.block_interval);
 
         true
+    }
+
+    pub fn adjust_on_tick(&self, now: BlockNumber) -> Self {
+        if self.is_time_for_adjustment(now) {
+            let mut clone = self.clone();
+
+            // update mint capacity
+            clone.capacity = Self::adjusted_capacity(
+                clone.capacity,
+                clone.adjustment_on_interval.adjustment_type,
+            );
+
+            // set blocknumber for next adjustment
+            clone.adjust_capacity_at_block_number =
+                Some(now + clone.adjustment_on_interval.block_interval);
+
+            clone
+        } else {
+            *self
+        }
     }
 
     fn is_time_for_adjustment(&self, now: BlockNumber) -> bool {

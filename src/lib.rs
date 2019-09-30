@@ -95,13 +95,12 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     fn update_mints(now: T::BlockNumber) {
-        <Mints<T>>::enumerate().for_each(|(mint_id, ref mut _mint)| {
-            <Mints<T>>::mutate(mint_id, |mint| {
+        // Are we reading value from storage twice?
+        for (mint_id, _) in <Mints<T>>::enumerate() {
+            <Mints<T>>::mutate(&mint_id, |mint| {
                 mint.maybe_do_capacity_adjustment(now);
             });
-            // even with ref mut mint storage value isn't updated
-            // _mint.maybe_do_capacity_adjustment(now);
-        });
+        }
     }
 
     /// Adds a new mint with given settings to mints, and returns new MintId.
