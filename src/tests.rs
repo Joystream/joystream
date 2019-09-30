@@ -6,10 +6,10 @@ use srml_support::traits::Currency;
 
 use runtime_io::with_externalities;
 
-fn create_new_mint_with_capacity(capacity: u64) -> MintId {
+fn create_new_mint_with_capacity(capacity: u64) -> u64 {
     let mint_id = Minting::add_mint(capacity, None).ok().unwrap();
     assert!(Minting::mint_exists(mint_id));
-    assert!(Minting::mint_has_capacity(mint_id, capacity));
+    assert_eq!(Minting::mint_capacity(mint_id).ok().unwrap(), capacity);
     mint_id
 }
 

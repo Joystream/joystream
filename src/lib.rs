@@ -7,7 +7,7 @@ use codec::{Decode, Encode};
 use runtime_primitives::traits::Zero;
 use srml_support::{decl_module, decl_storage, ensure, StorageMap, StorageValue};
 
-use minting::{self, BalanceOf, MintId};
+use minting::{self, BalanceOf};
 use system;
 
 mod mock;
@@ -21,7 +21,7 @@ pub const FIRST_RECIPIENT_ID: RecipientId = 1;
 type RewardRelationshipId = u64;
 pub const FIRST_REWARD_RELATIONSHIP_ID: RewardRelationshipId = 1;
 
-pub trait Trait: system::Trait + minting::Trait + Sized {
+pub trait Trait: system::Trait + minting::Trait + minting::Trait {
     type PayoutStatusHandler: PayoutStatusHandler<Self>;
 }
 
@@ -68,7 +68,7 @@ pub struct Recipient<Balance> {
 }
 
 #[derive(Encode, Decode, Copy, Clone, Debug, Default)]
-pub struct RewardRelationship<AccountId, Balance, BlockNumber> {
+pub struct RewardRelationship<AccountId, Balance, BlockNumber, MintId> {
     // Identifier for receiver
     recipient: RecipientId,
 
@@ -103,7 +103,7 @@ decl_storage! {
 
         NextRecipientId get(next_recipient_id): RecipientId = FIRST_RECIPIENT_ID;
 
-        RewardRelationships get(reward_relationships): map RewardRelationshipId => RewardRelationship<T::AccountId, BalanceOf<T>, T::BlockNumber>;
+        RewardRelationships get(reward_relationships): map RewardRelationshipId => RewardRelationship<T::AccountId, BalanceOf<T>, T::BlockNumber, T::MintId>;
 
         NextRewardRelationshipId get(next_reward_relationship_id): RewardRelationshipId = FIRST_REWARD_RELATIONSHIP_ID;
     }
@@ -149,7 +149,7 @@ impl<T: Trait> Module<T> {
 
     // Adds a new RewardRelationship to rewardRelationships, for a given source, recipient, account, etc., with identifier equal to current nextRewardRelationshipId. Also increments nextRewardRelationshipId.
     pub fn add_reward_relationship(
-        mint_id: MintId,
+        mint_id: T::MintId,
         recipient: RecipientId,
         account: T::AccountId,
         amount_per_payout: BalanceOf<T>,
@@ -278,7 +278,7 @@ impl<T: Trait> Module<T> {
                 let payout = relationship.amount_per_payout;
 
                 // try to make payment
-                if <minting::Module<T>>::transfer_exact_tokens(
+                if <minting::Module<T>>::transfer_tokens(
                     relationship.mint_id,
                     payout,
                     &relationship.account,

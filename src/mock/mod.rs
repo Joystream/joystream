@@ -87,6 +87,7 @@ impl Trait for Test {
 
 impl minting::Trait for Test {
     type Currency = Balances;
+    type MintId = u64;
 }
 
 pub fn build_test_externalities() -> runtime_io::TestExternalities<Blake2Hasher> {
