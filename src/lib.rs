@@ -147,7 +147,7 @@ pub enum NextPaymentSchedule<BlockNumber> {
 }
 
 impl<T: Trait> Module<T> {
-    /* Adds a new Recipient recipient to recipients, with identifier equal to nextRecipientId, which is also incremented, and returns the new recipient identifier. */
+    /// Adds a new Recipient and returns new recipient identifier.
     pub fn add_recipient() -> T::RecipientId {
         let next_id = Self::recipients_created();
         <RecipientsCreated<T>>::put(next_id + One::one());
@@ -155,7 +155,7 @@ impl<T: Trait> Module<T> {
         next_id
     }
 
-    // Adds a new RewardRelationship to rewardRelationships, for a given source, recipient, account, etc., with identifier equal to current nextRewardRelationshipId. Also increments nextRewardRelationshipId.
+    /// Adds a new RewardRelationship, for a given source mint, recipient, account.
     pub fn add_reward_relationship(
         mint_id: T::MintId,
         recipient: T::RecipientId,
@@ -220,37 +220,37 @@ impl<T: Trait> Module<T> {
     // single method to ensure atomic updates.
     pub fn set_reward_relationship(
         id: T::RewardRelationshipId,
-        account: Option<T::AccountId>,
-        payout: Option<BalanceOf<T>>,
-        next_payment_at: Option<Option<T::BlockNumber>>,
-        payout_interval: Option<Option<T::BlockNumber>>,
+        new_account: Option<T::AccountId>,
+        new_payout: Option<BalanceOf<T>>,
+        new_next_payment_at: Option<Option<T::BlockNumber>>,
+        new_payout_interval: Option<Option<T::BlockNumber>>,
     ) -> Result<(), RewardsError> {
         ensure!(
             <RewardRelationships<T>>::exists(&id),
             RewardsError::RewardRelationshipNotFound
         );
-        let mut relationship = Self::reward_relationships(&id);
 
-        if let Some(account) = account {
-            relationship.account = account;
-        }
-        if let Some(payout) = payout {
-            relationship.amount_per_payout = payout;
-        }
-        if let Some(next_payout_at_block) = next_payment_at {
-            if let Some(blocknumber) = next_payout_at_block {
-                ensure!(
-                    blocknumber > <system::Module<T>>::block_number(),
-                    RewardsError::BlockNumberInPast
-                );
+        <RewardRelationships<T>>::mutate(&id, |relationship| {
+            if let Some(account) = new_account {
+                relationship.account = account;
             }
-            relationship.next_payment_at_block = next_payout_at_block;
-        }
-        if let Some(payout_interval) = payout_interval {
-            relationship.payout_interval = payout_interval;
-        }
-        <RewardRelationships<T>>::insert(&id, relationship);
-        Ok(())
+            if let Some(payout) = new_payout {
+                relationship.amount_per_payout = payout;
+            }
+            if let Some(next_payout_at_block) = new_next_payment_at {
+                if let Some(blocknumber) = next_payout_at_block {
+                    ensure!(
+                        blocknumber > <system::Module<T>>::block_number(),
+                        RewardsError::BlockNumberInPast
+                    );
+                }
+                relationship.next_payment_at_block = next_payout_at_block;
+            }
+            if let Some(payout_interval) = new_payout_interval {
+                relationship.payout_interval = payout_interval;
+            }
+            Ok(())
+        })
     }
 
     /*
@@ -263,10 +263,7 @@ impl<T: Trait> Module<T> {
     */
     fn do_payouts(now: T::BlockNumber) {
         for (relationship_id, relationship) in <RewardRelationships<T>>::enumerate() {
-            // recipient can be removed independantly of relationship, so ensure we have a recipient
-            if !<Recipients<T>>::exists(&relationship.recipient) {
-                continue;
-            }
+            assert!(<Recipients<T>>::exists(&relationship.recipient));
 
             <RewardRelationships<T>>::mutate(relationship_id, |relationship| {
                 <Recipients<T>>::mutate(relationship.recipient, |recipient| {

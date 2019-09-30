@@ -2,7 +2,7 @@
 
 // use crate::*;
 use super::Test;
-use crate::{BalanceOf, PayoutStatusHandler, Trait};
+use crate::{PayoutStatusHandler, Trait};
 use std::cell::RefCell;
 
 struct StatusHandlerState<T: Trait> {
