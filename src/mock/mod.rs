@@ -83,6 +83,8 @@ impl balances::Trait for Test {
 
 impl Trait for Test {
     type PayoutStatusHandler = MockStatusHandler;
+    type RecipientId = u64;
+    type RewardRelationshipId = u64;
 }
 
 impl minting::Trait for Test {

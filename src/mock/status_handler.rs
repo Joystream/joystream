@@ -1,23 +1,23 @@
 #![cfg(test)]
 
 // use crate::*;
-use crate::{BalanceOf, PayoutStatusHandler, RewardRelationshipId, Trait};
-
+use super::Test;
+use crate::{BalanceOf, PayoutStatusHandler, Trait};
 use std::cell::RefCell;
 
-struct StatusHandlerState {
-    successes: Vec<RewardRelationshipId>,
-    failures: Vec<RewardRelationshipId>,
+struct StatusHandlerState<T: Trait> {
+    successes: Vec<T::RewardRelationshipId>,
+    failures: Vec<T::RewardRelationshipId>,
 }
 
-impl StatusHandlerState {
+impl<T: Trait> StatusHandlerState<T> {
     pub fn reset(&mut self) {
         self.successes = vec![];
         self.failures = vec![];
     }
 }
 
-impl Default for StatusHandlerState {
+impl<T: Trait> Default for StatusHandlerState<T> {
     fn default() -> Self {
         Self {
             successes: vec![],
@@ -26,7 +26,7 @@ impl Default for StatusHandlerState {
     }
 }
 
-thread_local!(static STATUS_HANDLER_STATE: RefCell<StatusHandlerState> = RefCell::new(Default::default()));
+thread_local!(static STATUS_HANDLER_STATE: RefCell<StatusHandlerState<Test>> = RefCell::new(Default::default()));
 
 pub struct MockStatusHandler {}
 impl MockStatusHandler {
@@ -50,22 +50,14 @@ impl MockStatusHandler {
         value
     }
 }
-impl<T: Trait> PayoutStatusHandler<T> for MockStatusHandler {
-    fn payout_succeeded(
-        id: RewardRelationshipId,
-        _destination_account: &T::AccountId,
-        _amount: BalanceOf<T>,
-    ) {
+impl PayoutStatusHandler<Test> for MockStatusHandler {
+    fn payout_succeeded(id: u64, _destination_account: &u64, _amount: u64) {
         STATUS_HANDLER_STATE.with(|cell| {
             cell.borrow_mut().successes.push(id);
         });
     }
 
-    fn payout_failed(
-        id: RewardRelationshipId,
-        _destination_account: &T::AccountId,
-        _amount: BalanceOf<T>,
-    ) {
+    fn payout_failed(id: u64, _destination_account: &u64, _amount: u64) {
         STATUS_HANDLER_STATE.with(|cell| {
             cell.borrow_mut().failures.push(id);
         });

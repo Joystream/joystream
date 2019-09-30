@@ -16,12 +16,12 @@ fn create_new_mint_with_capacity(capacity: u64) -> u64 {
 #[test]
 fn adding_recipients() {
     with_externalities(&mut build_test_externalities(), || {
-        let next_id = Rewards::next_recipient_id();
+        let next_id = Rewards::recipients_created();
         assert!(!<Recipients<Test>>::exists(&next_id));
         let recipient_id = Rewards::add_recipient();
         assert!(<Recipients<Test>>::exists(&next_id));
         assert_eq!(recipient_id, next_id);
-        assert_eq!(Rewards::next_recipient_id(), next_id + 1);
+        assert_eq!(Rewards::recipients_created(), next_id + 1);
     });
 }
 
@@ -35,7 +35,7 @@ fn adding_relationships() {
         let next_payment_at: u64 = 2222;
         let payout = 100;
 
-        let next_relationship_id = Rewards::next_reward_relationship_id();
+        let next_relationship_id = Rewards::reward_relationships_created();
         let relationship = Rewards::add_reward_relationship(
             mint_id,
             recipient_id,
@@ -48,7 +48,7 @@ fn adding_relationships() {
         let relationship_id = relationship.ok().unwrap();
         assert_eq!(relationship_id, next_relationship_id);
         assert_eq!(
-            Rewards::next_reward_relationship_id(),
+            Rewards::reward_relationships_created(),
             next_relationship_id + 1
         );
         assert!(<RewardRelationships<Test>>::exists(&relationship_id));
