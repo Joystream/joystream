@@ -85,10 +85,6 @@ where
 #[derive(PartialEq, Eq, Debug)]
 pub enum MintingError {
     NotEnoughCapacity,
-    InvalidMint,
-    InvalidSourceMint,
-    InvalidDestinationMint,
-    NextAdjustmentInPast,
 }
 
 impl<Balance, BlockNumber> Mint<Balance, BlockNumber>
@@ -128,7 +124,7 @@ where
         }
     }
 
-    pub fn mint_exact_tokens(&mut self, requested_amount: Balance) -> Result<(), MintingError> {
+    pub fn mint_tokens(&mut self, requested_amount: Balance) -> Result<(), MintingError> {
         ensure!(
             self.capacity >= requested_amount,
             MintingError::NotEnoughCapacity
@@ -136,17 +132,6 @@ where
         self.capacity -= requested_amount;
         self.total_minted += requested_amount;
         Ok(())
-    }
-
-    pub fn mint_some_tokens(&mut self, requested_amount: Balance) -> Balance {
-        let minted = if self.capacity >= requested_amount {
-            requested_amount
-        } else {
-            self.capacity
-        };
-        self.capacity -= minted;
-        self.total_minted += minted;
-        minted
     }
 
     pub fn set_capacity(&mut self, new_capacity: Balance) {

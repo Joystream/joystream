@@ -37,7 +37,7 @@ fn minting() {
 
         let mint_id = Minting::add_mint(capacity, None).ok().unwrap();
 
-        assert!(Minting::transfer_exact_tokens(mint_id, 1000, &1).is_ok());
+        assert!(Minting::transfer_tokens(mint_id, 1000, &1).is_ok());
 
         assert_eq!(Balances::free_balance(&1), 1000);
 
@@ -53,20 +53,9 @@ fn minting_exact() {
         let mint_id = Minting::add_mint(capacity, None).ok().unwrap();
 
         assert_eq!(
-            Minting::transfer_exact_tokens(mint_id, 2000, &1),
-            Err(MintingError::NotEnoughCapacity)
+            Minting::transfer_tokens(mint_id, 2000, &1),
+            Err(TransferError::NotEnoughCapacity)
         );
-    });
-}
-
-#[test]
-fn minting_some() {
-    with_externalities(&mut build_test_externalities(), || {
-        let capacity: u64 = 1000;
-
-        let mint_id = Minting::add_mint(capacity, None).ok().unwrap();
-
-        assert_eq!(Minting::transfer_some_tokens(mint_id, 2000, &1), Ok(1000));
     });
 }
 
