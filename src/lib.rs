@@ -154,12 +154,10 @@ impl<T: Trait> Module<T> {
             return Ok(());
         }
 
-        // Try minting
         ensure!(<Mints<T>>::exists(&mint_id), TransferError::MintNotFound);
-        let mut mint = Self::mints(&mint_id);
 
-        mint.mint_tokens(requested_amount)?;
-        <Mints<T>>::insert(mint_id, mint);
+        // Try minting
+        <Mints<T>>::mutate(&mint_id, |mint| mint.mint_tokens(requested_amount))?;
 
         // Deposit into recipient account
         T::Currency::deposit_creating(recipient, requested_amount);
