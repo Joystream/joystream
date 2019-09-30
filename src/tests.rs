@@ -21,7 +21,7 @@ fn adding_and_removing_mints() {
             .unwrap();
         assert!(Minting::mint_exists(mint_id));
 
-        assert!(Minting::mint_has_capacity(mint_id, capacity));
+        assert_eq!(Minting::mint_capacity(mint_id).ok().unwrap(), capacity);
 
         assert_eq!(Minting::mint_adjustment(mint_id), Ok(adjustment));
 
@@ -41,7 +41,7 @@ fn minting() {
 
         assert_eq!(Balances::free_balance(&1), 1000);
 
-        assert!(Minting::mint_has_capacity(mint_id, 4000));
+        assert_eq!(Minting::mint_capacity(mint_id).ok().unwrap(), 4000);
     });
 }
 
@@ -76,10 +76,10 @@ fn adjustment_adding() {
             .unwrap();
 
         Minting::update_mints(100);
-        assert!(Minting::mint_has_capacity(
-            mint_id,
+        assert_eq!(
+            Minting::mint_capacity(mint_id).ok().unwrap(),
             capacity + (adjustment_amount * 1)
-        ));
+        );
 
         // no adjustments should happen
         Minting::update_mints(100);
@@ -87,10 +87,10 @@ fn adjustment_adding() {
         Minting::update_mints(199);
 
         Minting::update_mints(200);
-        assert!(Minting::mint_has_capacity(
-            mint_id,
+        assert_eq!(
+            Minting::mint_capacity(mint_id).ok().unwrap(),
             capacity + (adjustment_amount * 2)
-        ));
+        );
     });
 }
 
@@ -111,12 +111,15 @@ fn adjustment_reducing() {
             .unwrap();
 
         Minting::update_mints(100);
-        assert!(!Minting::mint_has_capacity(mint_id, capacity,));
+        assert_eq!(
+            Minting::mint_capacity(mint_id).ok().unwrap(),
+            capacity - adjustment_amount
+        );
 
-        assert!(Minting::mint_has_capacity(
-            mint_id,
+        assert_eq!(
+            Minting::mint_capacity(mint_id).ok().unwrap(),
             capacity - (adjustment_amount * 1)
-        ));
+        );
 
         // no adjustments should happen
         Minting::update_mints(100);
@@ -124,10 +127,10 @@ fn adjustment_reducing() {
         Minting::update_mints(199);
 
         Minting::update_mints(200);
-        assert!(Minting::mint_has_capacity(
-            mint_id,
+        assert_eq!(
+            Minting::mint_capacity(mint_id).ok().unwrap(),
             capacity - (adjustment_amount * 2)
-        ));
+        );
     });
 }
 
@@ -148,7 +151,10 @@ fn adjustment_setting() {
             .unwrap();
 
         Minting::update_mints(100);
-        assert!(Minting::mint_has_capacity(mint_id, setting_amount));
+        assert_eq!(
+            Minting::mint_capacity(mint_id).ok().unwrap(),
+            setting_amount
+        );
     });
 }
 
@@ -174,12 +180,18 @@ fn adjustment_first_interval() {
         .unwrap();
 
         Minting::update_mints(100);
-        assert!(!Minting::mint_has_capacity(mint_id, capacity + amount));
+        assert_eq!(Minting::mint_capacity(mint_id).ok().unwrap(), capacity);
 
         Minting::update_mints(1000);
-        assert!(Minting::mint_has_capacity(mint_id, capacity + amount));
+        assert_eq!(
+            Minting::mint_capacity(mint_id).ok().unwrap(),
+            capacity + amount
+        );
 
         Minting::update_mints(1100);
-        assert!(Minting::mint_has_capacity(mint_id, capacity + 2 * amount));
+        assert_eq!(
+            Minting::mint_capacity(mint_id).ok().unwrap(),
+            capacity + 2 * amount
+        );
     });
 }
