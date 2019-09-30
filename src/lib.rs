@@ -141,11 +141,6 @@ pub enum RewardsError {
     RewardRelationshipNotFound,
 }
 
-pub enum NextPaymentSchedule<BlockNumber> {
-    Absolute(BlockNumber),
-    Relative(BlockNumber),
-}
-
 impl<T: Trait> Module<T> {
     /// Adds a new Recipient and returns new recipient identifier.
     pub fn add_recipient() -> T::RecipientId {
@@ -161,51 +156,33 @@ impl<T: Trait> Module<T> {
         recipient: T::RecipientId,
         account: T::AccountId,
         amount_per_payout: BalanceOf<T>,
-        next_payment_schedule: Option<NextPaymentSchedule<T::BlockNumber>>,
+        next_payment_at_block: T::BlockNumber,
         payout_interval: Option<T::BlockNumber>,
     ) -> Result<T::RewardRelationshipId, RewardsError> {
         ensure!(
             <minting::Module<T>>::mint_exists(mint_id),
             RewardsError::RewardSourceNotFound
         );
-
-        let next_payment_at_block = match next_payment_schedule {
-            Some(schedule) => match schedule {
-                NextPaymentSchedule::Absolute(blocknumber) => {
-                    ensure!(
-                        blocknumber > <system::Module<T>>::block_number(),
-                        RewardsError::BlockNumberInPast
-                    );
-                    Some(blocknumber)
-                }
-                NextPaymentSchedule::Relative(blocknumber) => {
-                    Some(<system::Module<T>>::block_number() + blocknumber)
-                }
-            },
-            None => match payout_interval {
-                Some(interval) => Some(<system::Module<T>>::block_number() + interval),
-                None => {
-                    // No payouts will be made unless relationship is updated in future and next_payment_in_block
-                    // is set! should this be allowed?
-                    None
-                }
-            },
-        };
-
-        let relationship = RewardRelationship {
-            mint_id,
-            recipient,
-            account,
-            amount_per_payout,
-            next_payment_at_block,
-            payout_interval,
-            total_reward_received: Zero::zero(),
-            total_reward_missed: Zero::zero(),
-        };
+        ensure!(
+            <Recipients<T>>::exists(recipient),
+            RewardsError::RecipientNotFound
+        );
 
         let relationship_id = Self::reward_relationships_created();
         <RewardRelationshipsCreated<T>>::put(relationship_id + One::one());
-        <RewardRelationships<T>>::insert(relationship_id, relationship);
+        <RewardRelationships<T>>::insert(
+            relationship_id,
+            RewardRelationship {
+                mint_id,
+                recipient,
+                account,
+                amount_per_payout,
+                next_payment_at_block: Some(next_payment_at_block),
+                payout_interval,
+                total_reward_received: Zero::zero(),
+                total_reward_missed: Zero::zero(),
+            },
+        );
         Ok(relationship_id)
     }
 
