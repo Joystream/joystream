@@ -192,6 +192,11 @@ impl<T: Trait> Module<T> {
             .map_or_else(|| false, |mint| mint.can_mint(capacity))
     }
 
+    pub fn mint_capacity(mint_id: T::MintId) -> Result<BalanceOf<T>, MintingError> {
+        let mint = Self::ensure_mint(&mint_id)?;
+        Ok(mint.capacity())
+    }
+
     pub fn mint_adjustment(
         mint_id: T::MintId,
     ) -> Result<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>, MintingError> {

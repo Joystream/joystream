@@ -136,6 +136,10 @@ where
         self.capacity = new_capacity;
     }
 
+    pub fn capacity(&self) -> Balance {
+        self.capacity
+    }
+
     pub fn can_mint(&self, amount: Balance) -> bool {
         self.capacity >= amount
     }
