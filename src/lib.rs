@@ -104,7 +104,7 @@ impl<T: Trait> Module<T> {
         });
     }
 
-    /// Adds a new mint with given settings to mints, and returns new id.
+    /// Adds a new mint with given settings to mints, and returns new MintId.
     pub fn add_mint(
         initial_capacity: BalanceOf<T>,
         adjustment: Option<Adjustment<BalanceOf<T>, T::BlockNumber>>,
@@ -136,13 +136,14 @@ impl<T: Trait> Module<T> {
         Ok(mint_id)
     }
 
-    /// Removes a mint. Passing a non existant mint has no affect.
+    /// Removes a mint. Passing a non existent mint has no side effects.
     pub fn remove_mint(mint_id: T::MintId) {
         <Mints<T>>::remove(&mint_id);
     }
 
-    /// Tries to transfer exact amount from mint. Returns error if amount exceeds mint capacity
-    /// Transfer amount of zero has no affect
+    /// Tries to transfer exact requested amount from mint to a recipient account id.
+    /// Returns error if amount exceeds mint capacity or the specified mint doesn't exist.
+    /// Transfering amount of zero has no side effects. Return nothing on success.
     pub fn transfer_tokens(
         mint_id: T::MintId,
         requested_amount: BalanceOf<T>,
@@ -163,6 +164,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Provided mint exists, sets its capacity to specied value, return error otherwise.
     pub fn set_mint_capacity(
         mint_id: T::MintId,
         capacity: BalanceOf<T>,
@@ -176,6 +178,9 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Provided source and destination mints exist, will attempt to transfer capacity from the source mint
+    /// to the destination mint. Will return errors on non-existence of
+    /// mints or capacity_to_transfer exceeds the source mint's capacity.
     pub fn transfer_capacity(
         source: T::MintId,
         destination: T::MintId,
@@ -199,6 +204,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Returns a mint's capacity if it exists, error otherwise.
     pub fn mint_capacity(mint_id: T::MintId) -> Result<BalanceOf<T>, GeneralError> {
         ensure!(<Mints<T>>::exists(&mint_id), GeneralError::MintNotFound);
         let mint = Self::mints(&mint_id);
@@ -206,6 +212,7 @@ impl<T: Trait> Module<T> {
         Ok(mint.capacity())
     }
 
+    /// Returns a mint's adjustment policy if it exists, error otherwise.
     pub fn mint_adjustment(
         mint_id: T::MintId,
     ) -> Result<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>, GeneralError> {
@@ -216,6 +223,7 @@ impl<T: Trait> Module<T> {
         Ok(mint.adjustment())
     }
 
+    /// Returns true if a mint exists.
     pub fn mint_exists(mint_id: T::MintId) -> bool {
         <Mints<T>>::exists(&mint_id)
     }
