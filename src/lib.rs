@@ -190,22 +190,58 @@ pub struct Stake<BlockNumber, Balance, SlashId: Ord> {
 impl<BlockNumber, Balance: Copy + SimpleArithmetic, SlashId: Ord>
     Stake<BlockNumber, Balance, SlashId>
 {
-    /// Should only be called internally, will increase the staked amount by value only
-    /// if state if staking status is staked and normal. Will panic! otherwise.
-    fn increase_stake_or_panic(&mut self, value: Balance) -> Balance {
+    /// If staking status is staked and normal it will increase the staked amount by value.
+    /// Returns error otherwise.
+    fn try_increase_stake(&mut self, value: Balance) -> Result<Balance, StakingError> {
+        ensure!(value > Zero::zero(), StakingError::ChangingStakeByZero);
         match self.staking_status {
             StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
                 StakedStatus::Normal => {
                     staked_state.staked_amount += value;
-                    staked_state.staked_amount
+                    Ok(staked_state.staked_amount)
                 }
-                _ => {
-                    panic!();
-                }
+                _ => Err(StakingError::IncreasingStakeWhileUnstaking),
             },
-            _ => {
-                panic!();
-            }
+            _ => Err(StakingError::NotStaked),
+        }
+    }
+
+    fn try_decrease_stake(
+        &mut self,
+        value: Balance,
+        minimum_balance: Balance,
+    ) -> Result<(Balance, Balance), StakingError> {
+        ensure!(value > Zero::zero(), StakingError::ChangingStakeByZero);
+        match self.staking_status {
+            StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
+                StakedStatus::Normal => {
+                    // prevent decreasing stake if there is at least one onging slash
+                    if staked_state
+                        .ongoing_slashes
+                        .values()
+                        .any(|slash| slash.is_active)
+                    {
+                        return Err(StakingError::DecreasingStakeWhileOngoingSlahes);
+                    }
+
+                    if value > staked_state.staked_amount {
+                        return Err(StakingError::InsufficientStake);
+                    }
+
+                    let stake_to_reduce = if staked_state.staked_amount - value < minimum_balance {
+                        // If staked amount would drop below minimum balance, deduct the entire stake
+                        staked_state.staked_amount
+                    } else {
+                        value
+                    };
+
+                    staked_state.staked_amount -= stake_to_reduce;
+
+                    Ok((stake_to_reduce, staked_state.staked_amount))
+                }
+                _ => return Err(StakingError::DecreasingStakeWhileUnstaking),
+            },
+            _ => return Err(StakingError::NotStaked),
         }
     }
 }
@@ -389,27 +425,6 @@ impl<T: Trait> Module<T> {
         .expect("pool had less than expected funds!")
     }
 
-    /// Provided the stake exists and is in state Staked.Normal, and the given source account covers the amount,
-    /// then the amount is transferred to the module's account, and the corresponding staked_amount is increased
-    /// by the amount. New value of staked_amount is returned.
-    pub fn increase_stake_from_account(
-        stake_id: &T::StakeId,
-        staker_account_id: &T::AccountId,
-        value: BalanceOf<T>,
-    ) -> Result<BalanceOf<T>, StakingError> {
-        Self::ensure_can_increase_stake(stake_id, value)?;
-
-        let mut stake = Self::stakes(stake_id);
-
-        Self::move_funds_into_pool_from_account(&staker_account_id, value)?;
-
-        let total_staked_amount = stake.increase_stake_or_panic(value);
-
-        <Stakes<T>>::insert(stake_id, stake);
-
-        Ok(total_staked_amount)
-    }
-
     /// Checks the state of stake to ensure that increasing stake is possible. This should be called
     /// before attempting to increase stake with an imbalance to avoid the value from the imbalance
     /// from being lost
@@ -418,84 +433,96 @@ impl<T: Trait> Module<T> {
         value: BalanceOf<T>,
     ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
-        ensure!(value > Zero::zero(), StakingError::ChangingStakeByZero);
-        match Self::stakes(stake_id).staking_status {
-            StakingStatus::NotStaked => Err(StakingError::NotStaked),
-            StakingStatus::Staked(staked_state) => match staked_state.staked_status {
-                StakedStatus::Normal => Ok(()),
-                StakedStatus::Unstaking(_) => Err(StakingError::IncreasingStakeWhileUnstaking),
-            },
-        }
+        Self::stakes(stake_id)
+            .try_increase_stake(value)
+            .err()
+            .map_or(Ok(()), |err| Err(err))
+    }
+
+    fn try_increase_stake(
+        stake_id: &T::StakeId,
+        value: BalanceOf<T>,
+    ) -> Result<BalanceOf<T>, StakingError> {
+        ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
+        <Stakes<T>>::mutate(stake_id, |ref mut stake| stake.try_increase_stake(value))
     }
 
     /// Provided the stake exists and is in state Staked.Normal, then the amount is transferred to the module's account,
-    /// and the corresponding staked_amount is increased
-    /// by the value. New value of staked_amount is returned.
+    /// and the corresponding staked_amount is increased by the value. New value of staked_amount is returned.
+    /// Caller MUST make sure to check ensure_can_increase_stake() before calling this method to prevent loss of the
+    /// value because the negative imbalance is not returned to caller on failure.
     pub fn increase_stake(
         stake_id: &T::StakeId,
         value: NegativeImbalance<T>,
     ) -> Result<BalanceOf<T>, StakingError> {
-        Self::ensure_can_increase_stake(stake_id, value.peek())?;
+        let total_staked_amount = Self::try_increase_stake(stake_id, value.peek())?;
 
-        <Stakes<T>>::mutate(stake_id, |ref mut stake| {
-            let total_staked_amount = stake.increase_stake_or_panic(value.peek());
+        Self::deposit_funds_into_pool(value);
 
-            Self::deposit_funds_into_pool(value);
+        Ok(total_staked_amount)
+    }
 
-            Ok(total_staked_amount)
+    /// Provided the stake exists and is in state Staked.Normal, and the given source account covers the amount,
+    /// then the amount is transferred to the module's account, and the corresponding staked_amount is increased
+    /// by the amount. New value of staked_amount is returned.
+    pub fn increase_stake_from_account(
+        stake_id: &T::StakeId,
+        source_account_id: &T::AccountId,
+        value: BalanceOf<T>,
+    ) -> Result<BalanceOf<T>, StakingError> {
+        // ensure state of stake allows increasing stake before withdrawing from source account
+        Self::ensure_can_increase_stake(stake_id, value)?;
+
+        Self::move_funds_into_pool_from_account(&source_account_id, value)?;
+
+        let total_staked_amount = Self::try_increase_stake(stake_id, value)?;
+
+        Ok(total_staked_amount)
+    }
+
+    pub fn ensure_can_decrease_stake(
+        stake_id: &T::StakeId,
+        value: BalanceOf<T>,
+    ) -> Result<(), StakingError> {
+        ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
+        Self::stakes(stake_id)
+            .try_decrease_stake(value, T::Currency::minimum_balance())
+            .err()
+            .map_or(Ok(()), |err| Err(err))
+    }
+
+    fn try_decrease_stake(
+        stake_id: &T::StakeId,
+        value: BalanceOf<T>,
+    ) -> Result<(BalanceOf<T>, BalanceOf<T>), StakingError> {
+        ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
+        <Stakes<T>>::mutate(stake_id, |stake| {
+            stake.try_decrease_stake(value, T::Currency::minimum_balance())
         })
+    }
+
+    pub fn decrease_stake(
+        stake_id: &T::StakeId,
+        value: BalanceOf<T>,
+    ) -> Result<(BalanceOf<T>, NegativeImbalance<T>), StakingError> {
+        let (deduct_from_pool, staked_amount) = Self::try_decrease_stake(stake_id, value)?;
+        Ok((
+            staked_amount,
+            Self::withdraw_funds_from_pool(deduct_from_pool),
+        ))
     }
 
     /// Provided the stake exists and is in state Staked.Normal, and the given stake holds at least the amount,
     /// then the amount is transferred to from the module's account to the staker account, and the corresponding
     /// staked_amount is decreased by the amount. New value of staked_amount is returned.
     pub fn decrease_stake_to_account(
-        id: &T::StakeId,
+        stake_id: &T::StakeId,
         destination_account_id: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<BalanceOf<T>, StakingError> {
-        ensure!(<Stakes<T>>::exists(id), StakingError::StakeNotFound);
-
-        ensure!(value > Zero::zero(), StakingError::ChangingStakeByZero);
-
-        let mut stake = Self::stakes(id);
-
-        let (deduct_from_pool, staked_amount) = match stake.staking_status {
-            StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
-                StakedStatus::Normal => {
-                    // prevent decreasing stake if there is at least one onging slash
-                    if staked_state
-                        .ongoing_slashes
-                        .values()
-                        .any(|slash| slash.is_active)
-                    {
-                        return Err(StakingError::DecreasingStakeWhileOngoingSlahes);
-                    }
-
-                    if value > staked_state.staked_amount {
-                        return Err(StakingError::InsufficientStake);
-                    }
-
-                    let stake_to_reduce =
-                        if staked_state.staked_amount - value < T::Currency::minimum_balance() {
-                            // If staked amount would drop below minimum balance, deduct the entire stake
-                            staked_state.staked_amount
-                        } else {
-                            value
-                        };
-
-                    staked_state.staked_amount -= stake_to_reduce;
-
-                    (stake_to_reduce, staked_state.staked_amount)
-                }
-                _ => return Err(StakingError::DecreasingStakeWhileUnstaking),
-            },
-            _ => return Err(StakingError::NotStaked),
-        };
+        let (deduct_from_pool, staked_amount) = Self::try_decrease_stake(stake_id, value)?;
 
         Self::withdraw_funds_from_pool_into_account(&destination_account_id, deduct_from_pool);
-
-        <Stakes<T>>::insert(id, stake);
 
         Ok(staked_amount)
     }
