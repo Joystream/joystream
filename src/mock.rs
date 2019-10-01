@@ -81,6 +81,8 @@ impl Trait for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = ();
+    type StakeId = u64;
+    type SlashId = u64;
 }
 
 pub fn build_test_externalities() -> runtime_io::TestExternalities<Blake2Hasher> {
@@ -98,8 +100,10 @@ pub type StakePool = Module<Test>;
 // Some helper methods for creating Stake states
 pub mod fixtures {
     use super::*;
-    pub type OngoingSlashes =
-        BTreeMap<SlashId, Slash<<Test as system::Trait>::BlockNumber, BalanceOf<Test>>>;
+    pub type OngoingSlashes = BTreeMap<
+        <Test as Trait>::SlashId,
+        Slash<<Test as system::Trait>::BlockNumber, BalanceOf<Test>>,
+    >;
     // pub enum StakeInState {
     //     NotStaked,
     //     StakedNormal(BalanceOf<Test>, OngoingSlashes),

@@ -69,7 +69,7 @@ fn stake_pool_works() {
 fn create_stake() {
     with_externalities(&mut build_test_externalities(), || {
         let stake_id = StakePool::create_stake();
-        assert_eq!(stake_id, FIRST_STAKE_ID);
+        assert_eq!(stake_id, 0);
         assert!(<Stakes<Test>>::exists(&stake_id));
 
         assert_eq!(StakePool::next_stake_id(), stake_id + 1);
@@ -399,11 +399,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
         );
 
         assert_err!(
-            StakePool::pause_slashing(&stake_id, &0),
+            StakePool::pause_slashing(&stake_id, &999),
             StakingError::SlashNotFound
         );
         assert_err!(
-            StakePool::pause_slashing(&0, &slash_id),
+            StakePool::pause_slashing(&999, &slash_id),
             StakingError::StakeNotFound
         );
 
@@ -434,11 +434,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
         );
 
         assert_err!(
-            StakePool::resume_slashing(&stake_id, &0),
+            StakePool::resume_slashing(&stake_id, &999),
             StakingError::SlashNotFound
         );
         assert_err!(
-            StakePool::resume_slashing(&0, &slash_id),
+            StakePool::resume_slashing(&999, &slash_id),
             StakingError::StakeNotFound
         );
 
@@ -469,11 +469,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
         );
 
         assert_err!(
-            StakePool::cancel_slashing(&stake_id, &0),
+            StakePool::cancel_slashing(&stake_id, &999),
             StakingError::SlashNotFound
         );
         assert_err!(
-            StakePool::cancel_slashing(&0, &slash_id),
+            StakePool::cancel_slashing(&999, &slash_id),
             StakingError::StakeNotFound
         );
 

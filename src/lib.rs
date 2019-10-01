@@ -3,23 +3,21 @@
 
 use rstd::prelude::*;
 
-use codec::{Decode, Encode};
-use runtime_primitives::traits::{AccountIdConversion, Zero};
+use codec::{Codec, Decode, Encode};
+use runtime_primitives::traits::{
+    AccountIdConversion, MaybeSerializeDebug, Member, One, SimpleArithmetic, Zero,
+};
 use runtime_primitives::ModuleId;
 use srml_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReason};
-use srml_support::{decl_module, decl_storage, ensure, StorageMap, StorageValue};
+use srml_support::{
+    decl_module, decl_storage, ensure, EnumerableStorageMap, Parameter, StorageMap, StorageValue,
+};
 
 use rstd::collections::btree_map::BTreeMap;
 use system;
 
 mod mock;
 mod tests;
-
-pub type StakeId = u64;
-pub const FIRST_STAKE_ID: u64 = 1;
-
-pub type SlashId = u64;
-pub const FIRST_SLASH_ID: u64 = 1;
 
 pub type BalanceOf<T> =
     <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
@@ -36,18 +34,39 @@ pub trait Trait: system::Trait + Sized {
 
     /// Type that will handle various staking events
     type StakingEventsHandler: StakingEventsHandler<Self>;
+
+    /// The type used as a stake identifier.
+    type StakeId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerializeDebug
+        + PartialEq;
+
+    /// The type used as slash identifier.
+    type SlashId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerializeDebug
+        + PartialEq
+        + Ord; //required to be a key in BTreeMap
 }
 
 pub trait StakingEventsHandler<T: Trait> {
     // Type of handler which handles unstaking event.
-    fn unstaked(id: &StakeId, unstaked_amount: NegativeImbalance<T>) -> NegativeImbalance<T>;
+    fn unstaked(id: &T::StakeId, unstaked_amount: NegativeImbalance<T>) -> NegativeImbalance<T>;
 
     // Type of handler which handles slashing event.
     // NB: actually_slashed can be less than amount of the slash itself if the
     // claim amount on the stake cannot cover it fully.
     fn slashed(
-        id: &StakeId,
-        slash_id: &SlashId,
+        id: &T::StakeId,
+        slash_id: &T::SlashId,
         actually_slashed: NegativeImbalance<T>,
         remaining_stake: BalanceOf<T>,
     ) -> NegativeImbalance<T>;
@@ -55,12 +74,12 @@ pub trait StakingEventsHandler<T: Trait> {
 
 // Default implementation just destroys the unstaked or slashed
 impl<T: Trait> StakingEventsHandler<T> for () {
-    fn unstaked(_id: &StakeId, _amount: NegativeImbalance<T>) -> NegativeImbalance<T> {
+    fn unstaked(_id: &T::StakeId, _amount: NegativeImbalance<T>) -> NegativeImbalance<T> {
         NegativeImbalance::<T>::zero()
     }
     fn slashed(
-        _id: &StakeId,
-        _slash_id: &SlashId,
+        _id: &T::StakeId,
+        _slash_id: &T::SlashId,
         _amount: NegativeImbalance<T>,
         _remaining_stake: BalanceOf<T>,
     ) -> NegativeImbalance<T> {
@@ -72,13 +91,13 @@ impl<T: Trait> StakingEventsHandler<T> for () {
 impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEventsHandler<T>
     for (X, Y)
 {
-    fn unstaked(id: &StakeId, amount: NegativeImbalance<T>) -> NegativeImbalance<T> {
+    fn unstaked(id: &T::StakeId, amount: NegativeImbalance<T>) -> NegativeImbalance<T> {
         let remaining = X::unstaked(id, amount);
         Y::unstaked(id, remaining)
     }
     fn slashed(
-        id: &StakeId,
-        slash_id: &SlashId,
+        id: &T::StakeId,
+        slash_id: &T::SlashId,
         amount: NegativeImbalance<T>,
         remaining_stake: BalanceOf<T>,
     ) -> NegativeImbalance<T> {
@@ -132,7 +151,7 @@ impl<BlockNumber> Default for StakedStatus<BlockNumber> {
 }
 
 #[derive(Encode, Decode, Debug, Default, Eq, PartialEq)]
-pub struct StakedState<BlockNumber, Balance> {
+pub struct StakedState<BlockNumber, Balance, SlashId: Ord> {
     // Total amount of funds at stake
     staked_amount: Balance,
 
@@ -146,37 +165,37 @@ pub struct StakedState<BlockNumber, Balance> {
 }
 
 #[derive(Encode, Decode, Debug, Eq, PartialEq)]
-pub enum StakingStatus<BlockNumber, Balance> {
+pub enum StakingStatus<BlockNumber, Balance, SlashId: Ord> {
     NotStaked,
 
-    Staked(StakedState<BlockNumber, Balance>),
+    Staked(StakedState<BlockNumber, Balance, SlashId>),
 }
 
-impl<BlockNumber, Balance> Default for StakingStatus<BlockNumber, Balance> {
+impl<BlockNumber, Balance, SlashId: Ord> Default for StakingStatus<BlockNumber, Balance, SlashId> {
     fn default() -> Self {
         StakingStatus::NotStaked
     }
 }
 
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq)]
-pub struct Stake<BlockNumber, Balance> {
+pub struct Stake<BlockNumber, Balance, SlashId: Ord> {
     // When role was created
     created: BlockNumber,
 
     // Status of any possible ongoing staking
-    staking_status: StakingStatus<BlockNumber, Balance>,
+    staking_status: StakingStatus<BlockNumber, Balance, SlashId>,
 }
 
 decl_storage! {
     trait Store for Module<T: Trait> as StakePool {
         /// Maps identifiers to a stake.
-        Stakes get(stakes): map StakeId => Stake<T::BlockNumber, BalanceOf<T>>;
+        Stakes get(stakes): linked_map T::StakeId => Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>;
 
         /// Identifier value for next stake.
-        NextStakeId get(next_stake_id): StakeId = FIRST_STAKE_ID;
+        NextStakeId get(next_stake_id): T::StakeId;
 
         /// Identifier value for next slashing.
-        NextSlashId get(next_slash_id): SlashId = FIRST_SLASH_ID;
+        NextSlashId get(next_slash_id): T::SlashId;
     }
 }
 
@@ -221,7 +240,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Adds a new Stake which is NotStaked, created at given block, into stakes map with id NextStakeId, and increments NextStakeId.
-    pub fn create_stake() -> StakeId {
+    pub fn create_stake() -> T::StakeId {
         let id = Self::next_stake_id();
         <Stakes<T>>::insert(
             &id,
@@ -230,12 +249,12 @@ impl<T: Trait> Module<T> {
                 staking_status: Default::default(),
             },
         );
-        NextStakeId::mutate(|id| *id += 1);
+        <NextStakeId<T>>::mutate(|id| *id += One::one());
         id
     }
 
     /// Given that stake with id exists in stakes and is NotStaked, remove from stakes.
-    pub fn remove_stake(stake_id: &StakeId) {
+    pub fn remove_stake(stake_id: &T::StakeId) {
         if <Stakes<T>>::exists(stake_id)
             && StakingStatus::NotStaked == Self::stakes(stake_id).staking_status
         {
@@ -245,7 +264,10 @@ impl<T: Trait> Module<T> {
 
     /// Dry run to see if staking can be initiated for the specified stake id. This should
     /// be called before stake() to make sure staking is possible before withdrawing funds.
-    pub fn ensure_can_stake(stake_id: &StakeId, value: BalanceOf<T>) -> Result<(), StakingError> {
+    pub fn ensure_can_stake(
+        stake_id: &T::StakeId,
+        value: BalanceOf<T>,
+    ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
         ensure!(
             Self::stakes(stake_id).staking_status == StakingStatus::NotStaked,
@@ -262,7 +284,7 @@ impl<T: Trait> Module<T> {
     /// Provided the stake exists and is in state NotStaked the value is transferred
     /// to the module's account, and the corresponding staked_balance is set to this amount in the new Staked state.
     /// If staking fails the value is lost, make sure to call can_stake() prior to ensure this doesn't happen.
-    pub fn stake(stake_id: &StakeId, value: NegativeImbalance<T>) -> Result<(), StakingError> {
+    pub fn stake(stake_id: &T::StakeId, value: NegativeImbalance<T>) -> Result<(), StakingError> {
         let amount = value.peek();
 
         Self::ensure_can_stake(stake_id, amount)?;
@@ -275,7 +297,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn stake_from_account(
-        stake_id: &StakeId,
+        stake_id: &T::StakeId,
         source_account_id: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<(), StakingError> {
@@ -288,7 +310,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn set_normal_staked_state(stake_id: &StakeId, value: BalanceOf<T>) {
+    fn set_normal_staked_state(stake_id: &T::StakeId, value: BalanceOf<T>) {
         assert!(Self::ensure_can_stake(stake_id, value).is_ok());
         <Stakes<T>>::mutate(stake_id, |stake| {
             stake.staking_status = StakingStatus::Staked(StakedState {
@@ -344,7 +366,7 @@ impl<T: Trait> Module<T> {
     /// then the amount is transferred to the module's account, and the corresponding staked_amount is increased
     /// by the amount. New value of staked_amount is returned.
     pub fn increase_stake_from_account(
-        stake_id: &StakeId,
+        stake_id: &T::StakeId,
         staker_account_id: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<BalanceOf<T>, StakingError> {
@@ -365,7 +387,7 @@ impl<T: Trait> Module<T> {
     /// before attempting to increase stake with an imbalance to avoid the value from the imbalance
     /// from being lost
     pub fn ensure_can_increase_stake(
-        stake_id: &StakeId,
+        stake_id: &T::StakeId,
         value: BalanceOf<T>,
     ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
@@ -383,7 +405,7 @@ impl<T: Trait> Module<T> {
     /// and the corresponding staked_amount is increased
     /// by the value. New value of staked_amount is returned.
     pub fn increase_stake(
-        stake_id: &StakeId,
+        stake_id: &T::StakeId,
         value: NegativeImbalance<T>,
     ) -> Result<BalanceOf<T>, StakingError> {
         Self::ensure_can_increase_stake(stake_id, value.peek())?;
@@ -400,7 +422,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn _increase_stake(
-        stake: &mut Stake<T::BlockNumber, BalanceOf<T>>,
+        stake: &mut Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>,
         value: BalanceOf<T>,
     ) -> BalanceOf<T> {
         match stake.staking_status {
@@ -423,7 +445,7 @@ impl<T: Trait> Module<T> {
     /// then the amount is transferred to from the module's account to the staker account, and the corresponding
     /// staked_amount is decreased by the amount. New value of staked_amount is returned.
     pub fn decrease_stake(
-        id: &StakeId,
+        id: &T::StakeId,
         destination_account_id: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<BalanceOf<T>, StakingError> {
@@ -475,19 +497,19 @@ impl<T: Trait> Module<T> {
 
     // Initiate a new slashing of a staked stake.
     pub fn initiate_slashing(
-        stake_id: &StakeId,
+        stake_id: &T::StakeId,
         slash_amount: BalanceOf<T>,
         slash_period: T::BlockNumber,
-    ) -> Result<SlashId, StakingError> {
+    ) -> Result<T::SlashId, StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
 
         let mut stake = Self::stakes(stake_id);
 
         let slash_id = match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
-                let slash_id = NextSlashId::mutate(|next_id| {
+                let slash_id = <NextSlashId<T>>::mutate(|next_id| {
                     let id = *next_id;
-                    *next_id += 1;
+                    *next_id += One::one();
                     id
                 });
 
@@ -520,7 +542,10 @@ impl<T: Trait> Module<T> {
     }
 
     // Pause an ongoing slashing
-    pub fn pause_slashing(stake_id: &StakeId, slash_id: &SlashId) -> Result<(), StakingError> {
+    pub fn pause_slashing(
+        stake_id: &T::StakeId,
+        slash_id: &T::SlashId,
+    ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
 
         let mut stake = Self::stakes(stake_id);
@@ -543,7 +568,10 @@ impl<T: Trait> Module<T> {
     }
 
     // Resume a currently paused ongoing slashing.
-    pub fn resume_slashing(stake_id: &StakeId, slash_id: &SlashId) -> Result<(), StakingError> {
+    pub fn resume_slashing(
+        stake_id: &T::StakeId,
+        slash_id: &T::SlashId,
+    ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
 
         let mut stake = Self::stakes(stake_id);
@@ -566,7 +594,10 @@ impl<T: Trait> Module<T> {
     }
 
     // Cancel an ongoing slashing (regardless of whether its active or paused).
-    pub fn cancel_slashing(stake_id: &StakeId, slash_id: &SlashId) -> Result<(), StakingError> {
+    pub fn cancel_slashing(
+        stake_id: &T::StakeId,
+        slash_id: &T::SlashId,
+    ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
 
         let mut stake = Self::stakes(stake_id);
@@ -596,7 +627,7 @@ impl<T: Trait> Module<T> {
 
     // Initiate unstaking of a staked stake.
     pub fn initiate_unstaking(
-        stake_id: &StakeId,
+        stake_id: &T::StakeId,
         unstaking_period: T::BlockNumber,
     ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
@@ -632,7 +663,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Pause an ongoing unstaking.
-    pub fn pause_unstaking(stake_id: &StakeId) -> Result<(), StakingError> {
+    pub fn pause_unstaking(stake_id: &T::StakeId) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
 
         let mut stake = Self::stakes(stake_id);
@@ -653,7 +684,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Continue a currently paused ongoing unstaking.
-    pub fn resume_unstaking(stake_id: &StakeId) -> Result<(), StakingError> {
+    pub fn resume_unstaking(stake_id: &T::StakeId) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
         let mut stake = Self::stakes(stake_id);
 
@@ -678,99 +709,97 @@ impl<T: Trait> Module<T> {
       Finalised slashing results in the staked_balance in the given stake being correspondingly reduced.
     */
     fn finalize_unstaking_and_slashing() {
-        for stake_id in FIRST_STAKE_ID..Self::next_stake_id() {
-            if !<Stakes<T>>::exists(stake_id) {
-                continue;
-            }
+        for (stake_id, _) in <Stakes<T>>::enumerate() {
+            <Stakes<T>>::mutate(stake_id, |stake| {
+                if let StakingStatus::Staked(ref mut staked_state) = stake.staking_status {
+                    // tick the slashing timer and find slashes to be finalized
+                    let slashes_to_finalize: Vec<T::SlashId> = staked_state
+                        .ongoing_slashes
+                        .iter_mut()
+                        .map(|(slash_id, slash)| {
+                            if slash.is_active
+                                && slash.blocks_remaining_in_active_period_for_slashing
+                                    > Zero::zero()
+                            {
+                                println!("ticking");
+                                slash.blocks_remaining_in_active_period_for_slashing -=
+                                    T::BlockNumber::from(1);
+                            }
+                            (slash_id, slash)
+                        })
+                        .filter(|(_slash_id, slash)| {
+                            slash.is_active
+                                && slash.blocks_remaining_in_active_period_for_slashing
+                                    == Zero::zero()
+                        })
+                        .map(|(slash_id, _slash)| *slash_id)
+                        .collect();
+                    // didn't find a way to remove a value from btreemap while iterating over it :(
 
-            let mut stake = Self::stakes(stake_id);
+                    // slash
+                    for slash_id in slashes_to_finalize.iter() {
+                        assert!(staked_state.ongoing_slashes.contains_key(slash_id));
+                        let slash = staked_state.ongoing_slashes.remove(slash_id).unwrap();
 
-            if let StakingStatus::Staked(ref mut staked_state) = stake.staking_status {
-                // tick the slashing timer and find slashes to be finalized
-                let slashes_to_finalize: Vec<SlashId> = staked_state
-                    .ongoing_slashes
-                    .iter_mut()
-                    .map(|(slash_id, slash)| {
-                        if slash.is_active
-                            && slash.blocks_remaining_in_active_period_for_slashing > Zero::zero()
+                        let mut slash_amount = if slash.slash_amount > staked_state.staked_amount {
+                            staked_state.staked_amount
+                        } else {
+                            slash.slash_amount
+                        };
+
+                        staked_state.staked_amount -= slash_amount;
+
+                        // don't leave less than minimum balance at stake
+                        if staked_state.staked_amount < T::Currency::minimum_balance() {
+                            slash_amount += staked_state.staked_amount;
+                            staked_state.staked_amount = Zero::zero();
+                        }
+
+                        // remove the slashed amount from the pool
+                        let imbalance = Self::withdraw_funds_from_pool(slash_amount);
+                        assert_eq!(imbalance.peek(), slash_amount);
+
+                        let _ = T::StakingEventsHandler::slashed(
+                            &stake_id,
+                            slash_id,
+                            imbalance,
+                            staked_state.staked_amount,
+                        );
+                    }
+
+                    if let StakedStatus::Unstaking(ref mut unstaking_state) =
+                        staked_state.staked_status
+                    {
+                        // if all slashes were processed and there are no more active slashes
+                        // resume unstaking
+                        if staked_state.ongoing_slashes.is_empty() {
+                            unstaking_state.is_active = true;
+                        }
+
+                        if unstaking_state.is_active
+                            && unstaking_state.blocks_remaining_in_active_period_for_unstaking
+                                > Zero::zero()
                         {
-                            println!("ticking");
-                            slash.blocks_remaining_in_active_period_for_slashing -=
+                            // tick the timer
+                            unstaking_state.blocks_remaining_in_active_period_for_unstaking -=
                                 T::BlockNumber::from(1);
                         }
-                        (slash_id, slash)
-                    })
-                    .filter(|(_slash_id, slash)| {
-                        slash.is_active
-                            && slash.blocks_remaining_in_active_period_for_slashing == Zero::zero()
-                    })
-                    .map(|(slash_id, _slash)| *slash_id)
-                    .collect();
-                // didn't find a way to remove a value from btreemap while iterating over it :(
 
-                // slash
-                for slash_id in slashes_to_finalize.iter() {
-                    assert!(staked_state.ongoing_slashes.contains_key(slash_id));
-                    let slash = staked_state.ongoing_slashes.remove(slash_id).unwrap();
+                        if unstaking_state.blocks_remaining_in_active_period_for_unstaking
+                            == Zero::zero()
+                        {
+                            // withdraw the stake from the pool
+                            let imbalance =
+                                Self::withdraw_funds_from_pool(staked_state.staked_amount);
+                            assert_eq!(imbalance.peek(), staked_state.staked_amount);
 
-                    let mut slash_amount = if slash.slash_amount > staked_state.staked_amount {
-                        staked_state.staked_amount
-                    } else {
-                        slash.slash_amount
-                    };
+                            let _ = T::StakingEventsHandler::unstaked(&stake_id, imbalance);
 
-                    staked_state.staked_amount -= slash_amount;
-
-                    // don't leave less than minimum balance at stake
-                    if staked_state.staked_amount < T::Currency::minimum_balance() {
-                        slash_amount += staked_state.staked_amount;
-                        staked_state.staked_amount = Zero::zero();
-                    }
-
-                    // remove the slashed amount from the pool
-                    let imbalance = Self::withdraw_funds_from_pool(slash_amount);
-                    assert_eq!(imbalance.peek(), slash_amount);
-
-                    let _ = T::StakingEventsHandler::slashed(
-                        &stake_id,
-                        slash_id,
-                        imbalance,
-                        staked_state.staked_amount,
-                    );
-                }
-
-                if let StakedStatus::Unstaking(ref mut unstaking_state) = staked_state.staked_status
-                {
-                    // if all slashes were processed and there are no more active slashes
-                    // resume unstaking
-                    if staked_state.ongoing_slashes.is_empty() {
-                        unstaking_state.is_active = true;
-                    }
-
-                    if unstaking_state.is_active
-                        && unstaking_state.blocks_remaining_in_active_period_for_unstaking
-                            > Zero::zero()
-                    {
-                        // tick the timer
-                        unstaking_state.blocks_remaining_in_active_period_for_unstaking -=
-                            T::BlockNumber::from(1);
-                    }
-
-                    if unstaking_state.blocks_remaining_in_active_period_for_unstaking
-                        == Zero::zero()
-                    {
-                        // withdraw the stake from the pool
-                        let imbalance = Self::withdraw_funds_from_pool(staked_state.staked_amount);
-                        assert_eq!(imbalance.peek(), staked_state.staked_amount);
-
-                        let _ = T::StakingEventsHandler::unstaked(&stake_id, imbalance);
-
-                        stake.staking_status = StakingStatus::NotStaked;
+                            stake.staking_status = StakingStatus::NotStaked;
+                        }
                     }
                 }
-
-                <Stakes<T>>::insert(&stake_id, stake);
-            }
+            });
         }
     }
 }
