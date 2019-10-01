@@ -446,7 +446,7 @@ impl<T: Trait> Module<T> {
     /// Provided the stake exists and is in state Staked.Normal, and the given stake holds at least the amount,
     /// then the amount is transferred to from the module's account to the staker account, and the corresponding
     /// staked_amount is decreased by the amount. New value of staked_amount is returned.
-    pub fn decrease_stake(
+    pub fn decrease_stake_to_account(
         id: &T::StakeId,
         destination_account_id: &T::AccountId,
         value: BalanceOf<T>,

@@ -253,13 +253,14 @@ fn decreasing_stake() {
         let _ = Balances::deposit_creating(&staker_account, starting_balance);
 
         assert_err!(
-            StakePool::decrease_stake(&100, &staker_account, 0),
+            StakePool::decrease_stake_to_account(&100, &staker_account, 0),
             StakingError::ChangingStakeByZero
         );
 
-        let total_staked = StakePool::decrease_stake(&100, &staker_account, decrease_stake_by)
-            .ok()
-            .unwrap();
+        let total_staked =
+            StakePool::decrease_stake_to_account(&100, &staker_account, decrease_stake_by)
+                .ok()
+                .unwrap();
         assert_eq!(total_staked, starting_stake - decrease_stake_by);
 
         assert_eq!(
@@ -286,7 +287,7 @@ fn decreasing_stake() {
 
         // cannot unstake more than total at stake
         assert_err!(
-            StakePool::decrease_stake(&100, &staker_account, total_staked + 1),
+            StakePool::decrease_stake_to_account(&100, &staker_account, total_staked + 1),
             StakingError::InsufficientStake
         );
 
@@ -311,7 +312,7 @@ fn decreasing_stake() {
 
             assert_eq!(Balances::free_balance(&2), 0);
             let starting_pool_balance = StakePool::staking_fund_balance();
-            let remaining_stake = StakePool::decrease_stake(&200, &2, over_minimum + 1)
+            let remaining_stake = StakePool::decrease_stake_to_account(&200, &2, over_minimum + 1)
                 .ok()
                 .unwrap();
             assert_eq!(remaining_stake, 0);
