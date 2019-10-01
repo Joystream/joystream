@@ -366,7 +366,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<(), StakingError> {
         Self::ensure_can_stake(stake_id, value)?;
 
-        Self::move_funds_into_pool_from_account(source_account_id, value)?;
+        Self::transfer_funds_from_account_into_pool(source_account_id, value)?;
 
         Self::set_normal_staked_state(stake_id, value);
 
@@ -386,7 +386,7 @@ impl<T: Trait> Module<T> {
 
     /// Moves funds from specified account into the module's account
     /// We don't use T::Currency::transfer() to prevent fees being incurred.
-    fn move_funds_into_pool_from_account(
+    fn transfer_funds_from_account_into_pool(
         source: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<(), StakingError> {
@@ -409,7 +409,7 @@ impl<T: Trait> Module<T> {
 
     /// Moves funds from the module's account into specified account.
     /// We don't use T::Currency::transfer() to prevent fees being incurred.
-    fn withdraw_funds_from_pool_into_account(destination: &T::AccountId, value: BalanceOf<T>) {
+    fn transfer_funds_from_pool_into_account(destination: &T::AccountId, value: BalanceOf<T>) {
         let imbalance = Self::withdraw_funds_from_pool(value);
         T::Currency::resolve_creating(destination, imbalance);
     }
@@ -473,7 +473,7 @@ impl<T: Trait> Module<T> {
         // ensure state of stake allows increasing stake before withdrawing from source account
         Self::ensure_can_increase_stake(stake_id, value)?;
 
-        Self::move_funds_into_pool_from_account(&source_account_id, value)?;
+        Self::transfer_funds_from_account_into_pool(&source_account_id, value)?;
 
         let total_staked_amount = Self::try_increase_stake(stake_id, value)?;
 
@@ -522,7 +522,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<BalanceOf<T>, StakingError> {
         let (deduct_from_pool, staked_amount) = Self::try_decrease_stake(stake_id, value)?;
 
-        Self::withdraw_funds_from_pool_into_account(&destination_account_id, deduct_from_pool);
+        Self::transfer_funds_from_pool_into_account(&destination_account_id, deduct_from_pool);
 
         Ok(staked_amount)
     }

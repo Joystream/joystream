@@ -32,7 +32,7 @@ fn stake_pool_works() {
         assert_eq!(StakePool::staking_fund_balance(), starting_pool_balance);
 
         let staker_starting_balance = Balances::minimum_balance() + 1000;
-        // using move_funds_into_pool_from_account()
+        // using transfer_funds_from_account_into_pool()
         let _ = Balances::deposit_creating(&1, staker_starting_balance);
         assert_eq!(
             Balances::total_issuance(),
@@ -41,7 +41,7 @@ fn stake_pool_works() {
 
         let funds = 100;
 
-        assert_ok!(StakePool::move_funds_into_pool_from_account(&1, funds));
+        assert_ok!(StakePool::transfer_funds_from_account_into_pool(&1, funds));
 
         // total issuance unchanged after movement of funds
         assert_eq!(
@@ -58,7 +58,7 @@ fn stake_pool_works() {
         // no fees were deducted
         assert_eq!(Balances::free_balance(&1), staker_starting_balance - funds);
 
-        StakePool::withdraw_funds_from_pool_into_account(&1, funds);
+        StakePool::transfer_funds_from_pool_into_account(&1, funds);
 
         assert_eq!(Balances::free_balance(&1), staker_starting_balance);
         assert_eq!(StakePool::staking_fund_balance(), starting_pool_balance);
