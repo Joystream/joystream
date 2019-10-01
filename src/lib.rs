@@ -224,6 +224,7 @@ pub enum StakingError {
     DecreasingStakeWhileUnstaking,
     DecreasingStakeWhileOngoingSlahes,
     UnstakingWhileSlashesOngoing,
+    ZeroUnstakingPeriod,
 }
 
 impl<T: Trait> Module<T> {
@@ -632,6 +633,10 @@ impl<T: Trait> Module<T> {
         unstaking_period: T::BlockNumber,
     ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
+        ensure!(
+            unstaking_period > Zero::zero(),
+            StakingError::ZeroUnstakingPeriod
+        );
 
         let mut stake = Self::stakes(stake_id);
 

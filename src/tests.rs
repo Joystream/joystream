@@ -562,7 +562,7 @@ fn initiating_pausing_resuming_unstaking() {
         );
 
         assert_err!(
-            StakePool::initiate_unstaking(&100, 0),
+            StakePool::initiate_unstaking(&100, 1),
             StakingError::StakeNotFound
         );
 
@@ -577,6 +577,11 @@ fn initiating_pausing_resuming_unstaking() {
 
         assert_err!(
             StakePool::initiate_unstaking(&stake_id, 0),
+            StakingError::ZeroUnstakingPeriod
+        );
+
+        assert_err!(
+            StakePool::initiate_unstaking(&stake_id, 1),
             StakingError::NotStaked
         );
 
@@ -604,7 +609,7 @@ fn initiating_pausing_resuming_unstaking() {
         );
 
         assert_err!(
-            StakePool::initiate_unstaking(&stake_id, 0),
+            StakePool::initiate_unstaking(&stake_id, 1),
             StakingError::UnstakingWhileSlashesOngoing
         );
 
