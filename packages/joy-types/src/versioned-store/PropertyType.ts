@@ -27,14 +27,14 @@ export class Int32Vec extends u16 {}
 export class Int64Vec extends u16 {}
 
 export class TextVec extends Tuple.with([u16, u16]) {
-  constructor (maxItems: u16 | number, maxTextLength: u16 | number) {
-    super([ maxItems, maxTextLength ]);
+  static newTypesafe (maxItems: u16 | number, maxTextLength: u16 | number) {
+    return new this([ maxItems, maxTextLength ]);
   }
 }
 
 export class InternalVec extends Tuple.with([u16, ClassId]) {
-  constructor (maxItems: u16 | number, classId: ClassId | number) {
-    super([ maxItems, classId ]);
+  static newTypesafe (maxItems: u16 | number, classId: ClassId | number) {
+    return new this([ maxItems, classId ]);
   }
 }
 
