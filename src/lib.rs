@@ -10,7 +10,8 @@ use runtime_primitives::traits::{
 use runtime_primitives::ModuleId;
 use srml_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReason};
 use srml_support::{
-    decl_module, decl_storage, ensure, EnumerableStorageMap, Parameter, StorageMap, StorageValue,
+    assert_ok, decl_module, decl_storage, ensure, EnumerableStorageMap, Parameter, StorageMap,
+    StorageValue,
 };
 
 use rstd::collections::btree_map::BTreeMap;
@@ -186,6 +187,29 @@ pub struct Stake<BlockNumber, Balance, SlashId: Ord> {
     staking_status: StakingStatus<BlockNumber, Balance, SlashId>,
 }
 
+impl<BlockNumber, Balance: Copy + SimpleArithmetic, SlashId: Ord>
+    Stake<BlockNumber, Balance, SlashId>
+{
+    /// Should only be called internally, will increase the staked amount by value only
+    /// if state if staking status is staked and normal. Will panic! otherwise.
+    fn increase_stake_or_panic(&mut self, value: Balance) -> Balance {
+        match self.staking_status {
+            StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
+                StakedStatus::Normal => {
+                    staked_state.staked_amount += value;
+                    staked_state.staked_amount
+                }
+                _ => {
+                    panic!();
+                }
+            },
+            _ => {
+                panic!();
+            }
+        }
+    }
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as StakePool {
         /// Maps identifiers to a stake.
@@ -314,7 +338,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn set_normal_staked_state(stake_id: &T::StakeId, value: BalanceOf<T>) {
-        assert!(Self::ensure_can_stake(stake_id, value).is_ok());
+        assert_ok!(Self::ensure_can_stake(stake_id, value));
         <Stakes<T>>::mutate(stake_id, |stake| {
             stake.staking_status = StakingStatus::Staked(StakedState {
                 staked_amount: value,
@@ -379,7 +403,7 @@ impl<T: Trait> Module<T> {
 
         Self::move_funds_into_pool_from_account(&staker_account_id, value)?;
 
-        let total_staked_amount = Self::_increase_stake(&mut stake, value);
+        let total_staked_amount = stake.increase_stake_or_panic(value);
 
         <Stakes<T>>::insert(stake_id, stake);
 
@@ -413,35 +437,13 @@ impl<T: Trait> Module<T> {
     ) -> Result<BalanceOf<T>, StakingError> {
         Self::ensure_can_increase_stake(stake_id, value.peek())?;
 
-        let mut stake = Self::stakes(stake_id);
+        <Stakes<T>>::mutate(stake_id, |ref mut stake| {
+            let total_staked_amount = stake.increase_stake_or_panic(value.peek());
 
-        let total_staked_amount = Self::_increase_stake(&mut stake, value.peek());
+            Self::deposit_funds_into_pool(value);
 
-        Self::deposit_funds_into_pool(value);
-
-        <Stakes<T>>::insert(stake_id, stake);
-
-        Ok(total_staked_amount)
-    }
-
-    fn _increase_stake(
-        stake: &mut Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>,
-        value: BalanceOf<T>,
-    ) -> BalanceOf<T> {
-        match stake.staking_status {
-            StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
-                StakedStatus::Normal => {
-                    staked_state.staked_amount += value;
-                    staked_state.staked_amount
-                }
-                _ => {
-                    panic!();
-                }
-            },
-            _ => {
-                panic!();
-            }
-        }
+            Ok(total_staked_amount)
+        })
     }
 
     /// Provided the stake exists and is in state Staked.Normal, and the given stake holds at least the amount,
