@@ -272,6 +272,8 @@ decl_module! {
 pub enum StakingError {
     StakeNotFound,
     SlashNotFound,
+    SlashNotPaused,
+    SlashAlreadyPaused,
     StakingLessThanMinimumBalance,
     InsufficientBalance,
     InsufficientStake,
@@ -535,9 +537,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::SlashId, StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
 
-        let mut stake = Self::stakes(stake_id);
-
-        let slash_id = match stake.staking_status {
+        <Stakes<T>>::mutate(stake_id, |stake| match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
                 <SlashesCreated<T>>::mutate(|id| {
                     let slash_id = *id;
@@ -561,15 +561,11 @@ impl<T: Trait> Module<T> {
                         _ => (),
                     }
 
-                    slash_id
+                    Ok(slash_id)
                 })
             }
             _ => return Err(StakingError::NotStaked),
-        };
-
-        <Stakes<T>>::insert(stake_id, stake);
-
-        Ok(slash_id)
+        })
     }
 
     // Pause an ongoing slashing
@@ -579,23 +575,22 @@ impl<T: Trait> Module<T> {
     ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
 
-        let mut stake = Self::stakes(stake_id);
-
-        match stake.staking_status {
+        <Stakes<T>>::mutate(stake_id, |stake| match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
                 match staked_state.ongoing_slashes.get_mut(slash_id) {
                     Some(ref mut slash) => {
                         if slash.is_active {
                             slash.is_active = false;
-                            <Stakes<T>>::insert(stake_id, stake);
+                            Ok(())
+                        } else {
+                            Err(StakingError::SlashAlreadyPaused)
                         }
-                        Ok(())
                     }
                     _ => Err(StakingError::SlashNotFound),
                 }
             }
             _ => Err(StakingError::NotStaked),
-        }
+        })
     }
 
     // Resume a currently paused ongoing slashing.
@@ -605,23 +600,22 @@ impl<T: Trait> Module<T> {
     ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
 
-        let mut stake = Self::stakes(stake_id);
-
-        match stake.staking_status {
+        <Stakes<T>>::mutate(stake_id, |stake| match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
                 match staked_state.ongoing_slashes.get_mut(slash_id) {
                     Some(ref mut slash) => {
-                        if !slash.is_active {
+                        if slash.is_active {
+                            Err(StakingError::SlashNotPaused)
+                        } else {
                             slash.is_active = true;
-                            <Stakes<T>>::insert(stake_id, stake);
+                            Ok(())
                         }
-                        Ok(())
                     }
                     _ => Err(StakingError::SlashNotFound),
                 }
             }
             _ => Err(StakingError::NotStaked),
-        }
+        })
     }
 
     // Cancel an ongoing slashing (regardless of whether its active or paused).
@@ -631,9 +625,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
 
-        let mut stake = Self::stakes(stake_id);
-
-        match stake.staking_status {
+        <Stakes<T>>::mutate(stake_id, |stake| match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
                 if staked_state.ongoing_slashes.remove(slash_id).is_none() {
                     return Err(StakingError::SlashNotFound);
@@ -649,11 +641,10 @@ impl<T: Trait> Module<T> {
                     }
                 }
 
-                <Stakes<T>>::insert(stake_id, stake);
                 Ok(())
             }
             _ => Err(StakingError::NotStaked),
-        }
+        })
     }
 
     // Initiate unstaking of a staked stake.
@@ -667,75 +658,67 @@ impl<T: Trait> Module<T> {
             StakingError::ZeroUnstakingPeriod
         );
 
-        let mut stake = Self::stakes(stake_id);
+        <Stakes<T>>::mutate(stake_id, |stake| match stake.staking_status {
+            StakingStatus::Staked(ref mut staked_state) => {
+                // prevent unstaking if there is at least one active slashing
+                if staked_state
+                    .ongoing_slashes
+                    .values()
+                    .any(|slash| slash.is_active)
+                {
+                    return Err(StakingError::UnstakingWhileSlashesOngoing);
+                }
 
-        if let StakingStatus::Staked(ref mut staked_state) = stake.staking_status {
-            // prevent unstaking if there is at least one active slashing
-            if staked_state
-                .ongoing_slashes
-                .values()
-                .any(|slash| slash.is_active)
-            {
-                return Err(StakingError::UnstakingWhileSlashesOngoing);
+                if StakedStatus::Normal != staked_state.staked_status {
+                    return Err(StakingError::AlreadyUnstaking);
+                }
+
+                staked_state.staked_status = StakedStatus::Unstaking(UnstakingState {
+                    started_at_block: <system::Module<T>>::block_number(),
+                    is_active: true,
+                    blocks_remaining_in_active_period_for_unstaking: unstaking_period,
+                });
+
+                Ok(())
             }
-
-            if StakedStatus::Normal != staked_state.staked_status {
-                return Err(StakingError::AlreadyUnstaking);
-            }
-
-            staked_state.staked_status = StakedStatus::Unstaking(UnstakingState {
-                started_at_block: <system::Module<T>>::block_number(),
-                is_active: true,
-                blocks_remaining_in_active_period_for_unstaking: unstaking_period,
-            });
-
-            <Stakes<T>>::insert(stake_id, stake);
-
-            return Ok(());
-        } else {
-            return Err(StakingError::NotStaked);
-        }
+            _ => Err(StakingError::NotStaked),
+        })
     }
 
     // Pause an ongoing unstaking.
     pub fn pause_unstaking(stake_id: &T::StakeId) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
 
-        let mut stake = Self::stakes(stake_id);
-
-        match stake.staking_status {
+        <Stakes<T>>::mutate(stake_id, |stake| match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
                 StakedStatus::Unstaking(ref mut unstaking_state) => {
                     if unstaking_state.is_active {
                         unstaking_state.is_active = false;
-                        <Stakes<T>>::insert(stake_id, stake);
                     }
                     Ok(())
                 }
                 _ => Err(StakingError::NotUnstaking),
             },
             _ => Err(StakingError::NotStaked),
-        }
+        })
     }
 
     // Continue a currently paused ongoing unstaking.
     pub fn resume_unstaking(stake_id: &T::StakeId) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
-        let mut stake = Self::stakes(stake_id);
 
-        match stake.staking_status {
+        <Stakes<T>>::mutate(stake_id, |stake| match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
                 StakedStatus::Unstaking(ref mut unstaking_state) => {
                     if !unstaking_state.is_active {
                         unstaking_state.is_active = true;
-                        <Stakes<T>>::insert(stake_id, stake);
                     }
                     Ok(())
                 }
                 _ => Err(StakingError::NotUnstaking),
             },
             _ => Err(StakingError::NotStaked),
-        }
+        })
     }
 
     /*
@@ -756,9 +739,7 @@ impl<T: Trait> Module<T> {
                                 && slash.blocks_remaining_in_active_period_for_slashing
                                     > Zero::zero()
                             {
-                                println!("ticking");
-                                slash.blocks_remaining_in_active_period_for_slashing -=
-                                    T::BlockNumber::from(1);
+                                slash.blocks_remaining_in_active_period_for_slashing -= One::one();
                             }
                             (slash_id, slash)
                         })
@@ -817,7 +798,7 @@ impl<T: Trait> Module<T> {
                         {
                             // tick the timer
                             unstaking_state.blocks_remaining_in_active_period_for_unstaking -=
-                                T::BlockNumber::from(1);
+                                One::one();
                         }
 
                         if unstaking_state.blocks_remaining_in_active_period_for_unstaking
