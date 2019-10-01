@@ -72,7 +72,7 @@ fn create_stake() {
         assert_eq!(stake_id, 0);
         assert!(<Stakes<Test>>::exists(&stake_id));
 
-        assert_eq!(StakePool::next_stake_id(), stake_id + 1);
+        assert_eq!(StakePool::stakes_created(), stake_id + 1);
 
         // Should be NotStaked
         let stake = StakePool::stakes(&stake_id);
@@ -367,7 +367,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
         // assert_err!(StakePool::initiate_slashing(&stake_id, 0, 0), StakingError::ZeroSlashing);
 
-        let mut slash_id = StakePool::next_slash_id();
+        let mut slash_id = StakePool::slashes_created();
         assert!(StakePool::initiate_slashing(&stake_id, 5000, 10).is_ok());
 
         let mut expected_ongoing_slashes: fixtures::OngoingSlashes = BTreeMap::new();
@@ -496,7 +496,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
         expected_ongoing_slashes = BTreeMap::new();
         let slashing_amount = 5000;
-        slash_id = StakePool::next_slash_id();
+        slash_id = StakePool::slashes_created();
         assert!(StakePool::initiate_slashing(&stake_id, slashing_amount, 2).is_ok());
 
         StakePool::finalize_unstaking_and_slashing();

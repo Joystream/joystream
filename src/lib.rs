@@ -192,10 +192,10 @@ decl_storage! {
         Stakes get(stakes): linked_map T::StakeId => Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>;
 
         /// Identifier value for next stake.
-        NextStakeId get(next_stake_id): T::StakeId;
+        StakesCreated get(stakes_created): T::StakeId;
 
         /// Identifier value for next slashing.
-        NextSlashId get(next_slash_id): T::SlashId;
+        SlashesCreated get(slashes_created): T::SlashId;
     }
 }
 
@@ -241,16 +241,18 @@ impl<T: Trait> Module<T> {
 
     /// Adds a new Stake which is NotStaked, created at given block, into stakes map with id NextStakeId, and increments NextStakeId.
     pub fn create_stake() -> T::StakeId {
-        let id = Self::next_stake_id();
-        <Stakes<T>>::insert(
-            &id,
-            Stake {
-                created: <system::Module<T>>::block_number(),
-                staking_status: Default::default(),
-            },
-        );
-        <NextStakeId<T>>::mutate(|id| *id += One::one());
-        id
+        <StakesCreated<T>>::mutate(|id| {
+            let stake_id = *id;
+            *id += One::one();
+            <Stakes<T>>::insert(
+                &stake_id,
+                Stake {
+                    created: <system::Module<T>>::block_number(),
+                    staking_status: Default::default(),
+                },
+            );
+            stake_id
+        })
     }
 
     /// Given that stake with id exists in stakes and is NotStaked, remove from stakes.
@@ -507,31 +509,30 @@ impl<T: Trait> Module<T> {
 
         let slash_id = match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
-                let slash_id = <NextSlashId<T>>::mutate(|next_id| {
-                    let id = *next_id;
-                    *next_id += One::one();
-                    id
-                });
+                <SlashesCreated<T>>::mutate(|id| {
+                    let slash_id = *id;
+                    *id += One::one();
 
-                staked_state.ongoing_slashes.insert(
-                    slash_id,
-                    Slash {
-                        is_active: true,
-                        blocks_remaining_in_active_period_for_slashing: slash_period,
-                        slash_amount,
-                        started_at_block: <system::Module<T>>::block_number(),
-                    },
-                );
+                    staked_state.ongoing_slashes.insert(
+                        slash_id,
+                        Slash {
+                            is_active: true,
+                            blocks_remaining_in_active_period_for_slashing: slash_period,
+                            slash_amount,
+                            started_at_block: <system::Module<T>>::block_number(),
+                        },
+                    );
 
-                // pause Unstaking if unstaking is active
-                match staked_state.staked_status {
-                    StakedStatus::Unstaking(ref mut unstaking_state) => {
-                        unstaking_state.is_active = false;
+                    // pause Unstaking if unstaking is active
+                    match staked_state.staked_status {
+                        StakedStatus::Unstaking(ref mut unstaking_state) => {
+                            unstaking_state.is_active = false;
+                        }
+                        _ => (),
                     }
-                    _ => (),
-                }
 
-                slash_id
+                    slash_id
+                })
             }
             _ => return Err(StakingError::NotStaked),
         };
