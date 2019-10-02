@@ -96,10 +96,10 @@ decl_module! {
 impl<T: Trait> Module<T> {
     fn update_mints(now: T::BlockNumber) {
         // Are we reading value from storage twice?
-        for (mint_id, _) in <Mints<T>>::enumerate() {
-            <Mints<T>>::mutate(&mint_id, |mint| {
-                mint.maybe_do_capacity_adjustment(now);
-            });
+        for (mint_id, ref mut mint) in <Mints<T>>::enumerate() {
+            if mint.maybe_do_capacity_adjustment(now) {
+                <Mints<T>>::insert(&mint_id, mint);
+            }
         }
     }
 
@@ -126,9 +126,7 @@ impl<T: Trait> Module<T> {
 
         // get next mint_id and increment total number of mints created
         let mint_id = Self::mints_created();
-        <MintsCreated<T>>::mutate(|n| {
-            *n += One::one();
-        });
+        <MintsCreated<T>>::put(mint_id + One::one());
 
         <Mints<T>>::insert(mint_id, Mint::new(initial_capacity, adjustment, now));
 
@@ -154,8 +152,12 @@ impl<T: Trait> Module<T> {
 
         ensure!(<Mints<T>>::exists(&mint_id), TransferError::MintNotFound);
 
+        let mut mint = Self::mints(&mint_id);
+
         // Try minting
-        <Mints<T>>::mutate(&mint_id, |mint| mint.mint_tokens(requested_amount))?;
+        mint.mint_tokens(requested_amount)?;
+
+        <Mints<T>>::insert(&mint_id, mint);
 
         // Deposit into recipient account
         T::Currency::deposit_creating(recipient, requested_amount);
