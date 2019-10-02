@@ -1,38 +1,49 @@
-# Rome Testnet Specification
+Rome Testnet Specification
+==========================
 
-## Table Of Contents
-
-- [Document](#document)
-- [Caveat](#caveat)
-- [Glossary](#glossary)
-- [Overview](#overview)
-- [Substrate Runtime](#substrate-runtime)
-  - [Runtime Version](#runtime-version)
-  - [Native Version](#native-version)
-  - [Substrate Version](#substrate-version)
-  - [Modules](#modules)
-    - [TokenMint](#tokenmint)
-    - [RecurringReward](#recurringreward)
-    - [Staking](#staking)
-    - [Hiring](#hiring)
-    - [VersionedStore](#versionedstore)
-    - [VersionedStorePermissions](#versionedstorepermissions)
-    - [ContentDirectoryWorkingGroup](#contentdirectoryworkinggroup)
-    - [Forum](#forum)
-    - [Proposals](#proposals)
-    - [CouncilElection](#councilelection)
-    - [Council](#council)
-    - [Memo](#memo)
-    - [Membership](#membership)
-    - [Migration](#migration)
-    - [Actors](#actors)
-    - [DataObjectTypeRegistry](#dataobjecttyperegistry)
-    - [DataDirectory](#datadirectory)
-    - [DataObjectStorageRegistry](#dataobjectstorageregistry)
-    - [DownloadSessions](#downloadsessions)
-  - [SRML Modules](#srml-modules)
-  - [Runtime API](#runtime-apis)
-<!-- - [Communication Protocols](#communication-protocols) -->
+Table Of Contents
+-----------------
+<!-- TOC START min:1 max:4 link:true asterisk:false update:true -->
+  - [Document](#document)
+  - [Caveat](#caveat)
+  - [Glossary](#glossary)
+  - [Overview](#overview)
+  - [Substrate Runtime](#substrate-runtime)
+    - [Runtime Version](#runtime-version)
+    - [Native Version](#native-version)
+    - [Substrate Version](#substrate-version)
+    - [Modules](#modules)
+      - [TokenMint](#tokenmint)
+      - [RecurringReward](#recurringreward)
+      - [Staking](#staking)
+      - [Hiring](#hiring)
+      - [VersionedStore](#versionedstore)
+      - [VersionedStorePermissions](#versionedstorepermissions)
+      - [ContentDirectoryWorkingGroup](#contentdirectoryworkinggroup)
+      - [Forum](#forum)
+      - [Proposals](#proposals)
+      - [CouncilElection](#councilelection)
+      - [Council](#council)
+      - [Memo](#memo)
+      - [Membership](#membership)
+      - [Discovery](#discovery)
+      - [Migration](#migration)
+      - [Actors](#actors)
+      - [DataObjectTypeRegistry](#dataobjecttyperegistry)
+      - [DataDirectory](#datadirectory)
+      - [DataObjectStorageRegistry](#dataobjectstorageregistry)
+      - [DownloadSessions](#downloadsessions)
+    - [SRML Modules](#srml-modules)
+    - [Runtime APIs](#runtime-apis)
+      - [Core](#core)
+      - [Metadata](#metadata)
+      - [BlockBuilder](#blockbuilder)
+      - [TaggedTransactionQueue](#taggedtransactionqueue)
+      - [OffchainWorkerApi](#offchainworkerapi)
+      - [GrandpaApi](#grandpaapi)
+      - [AuraApi](#auraapi)
+      - [AuthoritiesApi](#authoritiesapi)
+<!-- TOC END -->
 
 ## Document
 
@@ -104,7 +115,7 @@ These are the Joystream specific modules, for each module, there is either a lin
 
 An integrated explanation of the modules constituting the storage system is found [here](runtime/storage-modules.md).
 
-#### TokenMint
+#### TokenMint
 
 - **Description**: Transferrable capacity constrained token minting.
 - **Specification**: [**READ HERE**](runtime/token-mint-module.md)
