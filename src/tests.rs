@@ -172,6 +172,7 @@ fn increasing_stake() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: starting_stake,
                     ongoing_slashes: BTreeMap::new(),
+                    next_slash_id: 0,
                     staked_status: StakedStatus::Normal,
                 }),
             },
@@ -211,6 +212,7 @@ fn increasing_stake() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: starting_stake + additional_stake,
                     ongoing_slashes: BTreeMap::new(),
+                    next_slash_id: 0,
                     staked_status: StakedStatus::Normal,
                 })
             }
@@ -241,6 +243,7 @@ fn decreasing_stake() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: starting_stake,
                     ongoing_slashes: BTreeMap::new(),
+                    next_slash_id: 0,
                     staked_status: StakedStatus::Normal,
                 }),
             },
@@ -280,6 +283,7 @@ fn decreasing_stake() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: starting_stake - decrease_stake_by,
                     ongoing_slashes: BTreeMap::new(),
+                    next_slash_id: 0,
                     staked_status: StakedStatus::Normal,
                 })
             }
@@ -305,6 +309,7 @@ fn decreasing_stake() {
                     staking_status: StakingStatus::Staked(StakedState {
                         staked_amount: staked_amount,
                         ongoing_slashes: BTreeMap::new(),
+                        next_slash_id: 0,
                         staked_status: StakedStatus::Normal,
                     }),
                 },
@@ -357,6 +362,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount,
                     ongoing_slashes: BTreeMap::new(),
+                    next_slash_id: 0,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
                         started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 100,
@@ -368,7 +374,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
         // assert_err!(StakePool::initiate_slashing(&stake_id, 0, 0), StakingError::ZeroSlashing);
 
-        let mut slash_id = StakePool::slashes_created();
+        let mut slash_id = 0;
         assert!(StakePool::initiate_slashing(&stake_id, 5000, 10).is_ok());
 
         let mut expected_ongoing_slashes: fixtures::OngoingSlashes = BTreeMap::new();
@@ -390,6 +396,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
+                    next_slash_id: slash_id + 1,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
                         started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 100,
@@ -425,6 +432,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
+                    next_slash_id: slash_id + 1,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
                         started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 100,
@@ -460,6 +468,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
+                    next_slash_id: slash_id + 1,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
                         started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 100,
@@ -486,6 +495,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount,
                     ongoing_slashes: BTreeMap::new(),
+                    next_slash_id: slash_id + 1,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
                         started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 100,
@@ -497,7 +507,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
         expected_ongoing_slashes = BTreeMap::new();
         let slashing_amount = 5000;
-        slash_id = StakePool::slashes_created();
+        slash_id += 1;
         assert!(StakePool::initiate_slashing(&stake_id, slashing_amount, 2).is_ok());
 
         StakePool::finalize_unstaking_and_slashing();
@@ -517,6 +527,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
+                    next_slash_id: slash_id + 1,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
                         started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 100,
@@ -534,6 +545,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount: staked_amount - slashing_amount,
                     ongoing_slashes: BTreeMap::new(),
+                    next_slash_id: slash_id + 1,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
                         started_at_block: 0,
                         blocks_remaining_in_active_period_for_unstaking: 99,
@@ -603,6 +615,7 @@ fn initiating_pausing_resuming_unstaking() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount,
                     ongoing_slashes,
+                    next_slash_id: 2,
                     staked_status: StakedStatus::Normal,
                 }),
             },
@@ -624,6 +637,7 @@ fn initiating_pausing_resuming_unstaking() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount,
                     ongoing_slashes: BTreeMap::new(),
+                    next_slash_id: 2,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
                         started_at_block: System::block_number(),
                         blocks_remaining_in_active_period_for_unstaking: 2,
@@ -641,6 +655,7 @@ fn initiating_pausing_resuming_unstaking() {
                 staking_status: StakingStatus::Staked(StakedState {
                     staked_amount,
                     ongoing_slashes: BTreeMap::new(),
+                    next_slash_id: 2,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
                         started_at_block: System::block_number(),
                         blocks_remaining_in_active_period_for_unstaking: 1,

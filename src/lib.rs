@@ -153,16 +153,17 @@ impl<BlockNumber> Default for StakedStatus<BlockNumber> {
 
 #[derive(Encode, Decode, Debug, Default, Eq, PartialEq)]
 pub struct StakedState<BlockNumber, Balance, SlashId: Ord> {
-    // Total amount of funds at stake
+    /// Total amount of funds at stake
     staked_amount: Balance,
 
-    // All ongoing slashing process.
-    // There may be some issue with BTreeMap for now in Polkadotjs,
-    // consider replacing this with Vec<Slash<T>>, and remove nextSlashId from state, for now in that case,
-    ongoing_slashes: BTreeMap<SlashId, Slash<BlockNumber, Balance>>,
-
-    // Status of the staking
+    /// Status of the staking
     staked_status: StakedStatus<BlockNumber>,
+
+    /// SlashId to use for next Slash that is initiated.
+    next_slash_id: SlashId,
+
+    /// All ongoing slashing process.
+    ongoing_slashes: BTreeMap<SlashId, Slash<BlockNumber, Balance>>,
 }
 
 #[derive(Encode, Decode, Debug, Eq, PartialEq)]
@@ -253,9 +254,6 @@ decl_storage! {
 
         /// Identifier value for next stake.
         StakesCreated get(stakes_created): T::StakeId;
-
-        /// Identifier value for next slashing.
-        SlashesCreated get(slashes_created): T::SlashId;
     }
 }
 
@@ -380,6 +378,7 @@ impl<T: Trait> Module<T> {
         <Stakes<T>>::mutate(stake_id, |stake| {
             stake.staking_status = StakingStatus::Staked(StakedState {
                 staked_amount: value,
+                next_slash_id: Zero::zero(),
                 ongoing_slashes: BTreeMap::new(),
                 staked_status: StakedStatus::Normal,
             });
@@ -539,30 +538,28 @@ impl<T: Trait> Module<T> {
 
         <Stakes<T>>::mutate(stake_id, |stake| match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
-                <SlashesCreated<T>>::mutate(|id| {
-                    let slash_id = *id;
-                    *id += One::one();
+                let slash_id = staked_state.next_slash_id;
+                staked_state.next_slash_id = slash_id + One::one();
 
-                    staked_state.ongoing_slashes.insert(
-                        slash_id,
-                        Slash {
-                            is_active: true,
-                            blocks_remaining_in_active_period_for_slashing: slash_period,
-                            slash_amount,
-                            started_at_block: <system::Module<T>>::block_number(),
-                        },
-                    );
+                staked_state.ongoing_slashes.insert(
+                    slash_id,
+                    Slash {
+                        is_active: true,
+                        blocks_remaining_in_active_period_for_slashing: slash_period,
+                        slash_amount,
+                        started_at_block: <system::Module<T>>::block_number(),
+                    },
+                );
 
-                    // pause Unstaking if unstaking is active
-                    match staked_state.staked_status {
-                        StakedStatus::Unstaking(ref mut unstaking_state) => {
-                            unstaking_state.is_active = false;
-                        }
-                        _ => (),
+                // pause Unstaking if unstaking is active
+                match staked_state.staked_status {
+                    StakedStatus::Unstaking(ref mut unstaking_state) => {
+                        unstaking_state.is_active = false;
                     }
+                    _ => (),
+                }
 
-                    Ok(slash_id)
-                })
+                Ok(slash_id)
             }
             _ => return Err(StakingError::NotStaked),
         })
