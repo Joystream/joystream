@@ -245,68 +245,69 @@ impl<T: Trait> Module<T> {
     Otherwise, analogous steps for failure.
     */
     fn do_payouts(now: T::BlockNumber) {
-        for (relationship_id, relationship) in <RewardRelationships<T>>::enumerate() {
+        for (relationship_id, ref mut relationship) in <RewardRelationships<T>>::enumerate() {
             assert!(<Recipients<T>>::exists(&relationship.recipient));
 
-            <RewardRelationships<T>>::mutate(relationship_id, |relationship| {
-                <Recipients<T>>::mutate(relationship.recipient, |recipient| {
-                    if let Some(blocknumber) = relationship.next_payment_at_block {
-                        if blocknumber != now {
-                            return;
-                        }
+            let mut recipient = Self::recipients(relationship.recipient);
 
-                        // Add the missed payout and try to pay those in addition to scheduled payout?
-                        // let payout = relationship.total_reward_missed + relationship.amount_per_payout;
-                        let payout = relationship.amount_per_payout;
+            if let Some(next_payment_at_block) = relationship.next_payment_at_block {
+                if next_payment_at_block != now {
+                    continue;
+                }
 
-                        // try to make payment
-                        if <minting::Module<T>>::transfer_tokens(
-                            relationship.mint_id,
-                            payout,
-                            &relationship.account,
-                        )
-                        .is_err()
-                        {
-                            // add only newly scheduled payout to total missed payout
-                            relationship.total_reward_missed += relationship.amount_per_payout;
+                // Add the missed payout and try to pay those in addition to scheduled payout?
+                // let payout = relationship.total_reward_missed + relationship.amount_per_payout;
+                let payout = relationship.amount_per_payout;
 
-                            // update recipient stats
-                            recipient.total_reward_missed += relationship.amount_per_payout;
+                // try to make payment
+                if <minting::Module<T>>::transfer_tokens(
+                    relationship.mint_id,
+                    payout,
+                    &relationship.account,
+                )
+                .is_err()
+                {
+                    // add only newly scheduled payout to total missed payout
+                    relationship.total_reward_missed += relationship.amount_per_payout;
 
-                            T::PayoutStatusHandler::payout_failed(
-                                relationship_id,
-                                &relationship.account,
-                                payout,
-                            );
-                        } else {
-                            // update payout received stats
-                            relationship.total_reward_received += payout;
-                            recipient.total_reward_received += payout;
+                    // update recipient stats
+                    recipient.total_reward_missed += relationship.amount_per_payout;
 
-                            // update missed payout stats
-                            // if relationship.total_reward_missed != Zero::zero() {
-                            //     // update recipient stats
-                            //     recipient.total_reward_missed -= relationship.total_reward_missed;
+                    T::PayoutStatusHandler::payout_failed(
+                        relationship_id,
+                        &relationship.account,
+                        payout,
+                    );
+                } else {
+                    // update payout received stats
+                    relationship.total_reward_received += payout;
+                    recipient.total_reward_received += payout;
 
-                            //     // clear missed reward on relationship
-                            //     relationship.total_reward_missed = Zero::zero();
-                            // }
-                            T::PayoutStatusHandler::payout_succeeded(
-                                relationship_id,
-                                &relationship.account,
-                                payout,
-                            );
-                        }
+                    // update missed payout stats
+                    // if relationship.total_reward_missed != Zero::zero() {
+                    //     // update recipient stats
+                    //     recipient.total_reward_missed -= relationship.total_reward_missed;
 
-                        // update next payout blocknumber at interval if set
-                        if let Some(payout_interval) = relationship.payout_interval {
-                            relationship.next_payment_at_block = Some(now + payout_interval);
-                        } else {
-                            relationship.next_payment_at_block = None;
-                        }
-                    }
-                });
-            });
+                    //     // clear missed reward on relationship
+                    //     relationship.total_reward_missed = Zero::zero();
+                    // }
+                    T::PayoutStatusHandler::payout_succeeded(
+                        relationship_id,
+                        &relationship.account,
+                        payout,
+                    );
+                }
+
+                // update next payout blocknumber at interval if set
+                if let Some(payout_interval) = relationship.payout_interval {
+                    relationship.next_payment_at_block = Some(now + payout_interval);
+                } else {
+                    relationship.next_payment_at_block = None;
+                }
+
+                <Recipients<T>>::insert(relationship.recipient, recipient);
+                <RewardRelationships<T>>::insert(relationship_id, relationship);
+            }
         }
     }
 }
