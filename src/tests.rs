@@ -521,7 +521,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
         slash_id += 1;
         assert!(StakePool::initiate_slashing(&stake_id, slashing_amount, 2).is_ok());
 
-        StakePool::finalize_unstaking_and_slashing();
+        StakePool::finalize_slashing_and_unstaking();
         expected_ongoing_slashes.insert(
             slash_id,
             Slash {
@@ -548,7 +548,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             }
         );
 
-        StakePool::finalize_unstaking_and_slashing();
+        StakePool::finalize_slashing_and_unstaking();
         assert_eq!(
             StakePool::stakes(&stake_id),
             Stake {
@@ -658,7 +658,7 @@ fn initiating_pausing_resuming_unstaking() {
             }
         );
 
-        StakePool::finalize_unstaking_and_slashing();
+        StakePool::finalize_slashing_and_unstaking();
         assert_eq!(
             StakePool::stakes(&stake_id),
             Stake {
@@ -676,7 +676,7 @@ fn initiating_pausing_resuming_unstaking() {
             }
         );
 
-        StakePool::finalize_unstaking_and_slashing();
+        StakePool::finalize_slashing_and_unstaking();
         assert_eq!(
             StakePool::stakes(&stake_id),
             Stake {
