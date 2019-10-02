@@ -166,6 +166,55 @@ pub struct StakedState<BlockNumber, Balance, SlashId: Ord> {
     ongoing_slashes: BTreeMap<SlashId, Slash<BlockNumber, Balance>>,
 }
 
+impl<BlockNumber: SimpleArithmetic, Balance: SimpleArithmetic + Copy, SlashId: Ord + Copy>
+    StakedState<BlockNumber, Balance, SlashId>
+{
+    fn advance_slashing_timer(&mut self) {
+        for (_, slash) in self.ongoing_slashes.iter_mut() {
+            if slash.is_active
+                && slash.blocks_remaining_in_active_period_for_slashing > Zero::zero()
+            {
+                slash.blocks_remaining_in_active_period_for_slashing -= One::one();
+            }
+        }
+    }
+
+    fn get_slashes_to_finalize(&self) -> Vec<SlashId> {
+        self.ongoing_slashes
+            .iter()
+            .filter(|(_, slash)| {
+                slash.is_active
+                    && slash.blocks_remaining_in_active_period_for_slashing == Zero::zero()
+            })
+            .map(|(slash_id, _)| *slash_id)
+            .collect()
+    }
+
+    fn apply_slash(
+        &mut self,
+        slash: &Slash<BlockNumber, Balance>,
+        minimum_balance: Balance,
+    ) -> Balance {
+        // calculate how much to slash
+        let mut slash_amount = if slash.slash_amount > self.staked_amount {
+            self.staked_amount
+        } else {
+            slash.slash_amount
+        };
+
+        // apply the slashing
+        self.staked_amount -= slash_amount;
+
+        // don't leave less than minimum_balance at stake
+        if self.staked_amount < minimum_balance {
+            slash_amount += self.staked_amount;
+            self.staked_amount = Zero::zero();
+        }
+
+        slash_amount
+    }
+}
+
 #[derive(Encode, Decode, Debug, Eq, PartialEq)]
 pub enum StakingStatus<BlockNumber, Balance, SlashId: Ord> {
     NotStaked,
@@ -535,7 +584,7 @@ impl<T: Trait> Module<T> {
         slash_period: T::BlockNumber,
     ) -> Result<T::SlashId, StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
-
+        // ensure slash_period > 0
         <Stakes<T>>::mutate(stake_id, |stake| match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
                 let slash_id = staked_state.next_slash_id;
@@ -727,50 +776,21 @@ impl<T: Trait> Module<T> {
         for (stake_id, _) in <Stakes<T>>::enumerate() {
             <Stakes<T>>::mutate(stake_id, |stake| {
                 if let StakingStatus::Staked(ref mut staked_state) = stake.staking_status {
-                    // tick the slashing timer and find slashes to be finalized
-                    let slashes_to_finalize: Vec<T::SlashId> = staked_state
-                        .ongoing_slashes
-                        .iter_mut()
-                        .map(|(slash_id, slash)| {
-                            if slash.is_active
-                                && slash.blocks_remaining_in_active_period_for_slashing
-                                    > Zero::zero()
-                            {
-                                slash.blocks_remaining_in_active_period_for_slashing -= One::one();
-                            }
-                            (slash_id, slash)
-                        })
-                        .filter(|(_slash_id, slash)| {
-                            slash.is_active
-                                && slash.blocks_remaining_in_active_period_for_slashing
-                                    == Zero::zero()
-                        })
-                        .map(|(slash_id, _slash)| *slash_id)
-                        .collect();
-                    // didn't find a way to remove a value from btreemap while iterating over it :(
+                    // tick the slashing timer
+                    staked_state.advance_slashing_timer();
 
                     // slash
-                    for slash_id in slashes_to_finalize.iter() {
+                    for slash_id in staked_state.get_slashes_to_finalize().iter() {
                         assert!(staked_state.ongoing_slashes.contains_key(slash_id));
                         let slash = staked_state.ongoing_slashes.remove(slash_id).unwrap();
 
-                        let mut slash_amount = if slash.slash_amount > staked_state.staked_amount {
-                            staked_state.staked_amount
-                        } else {
-                            slash.slash_amount
-                        };
-
-                        staked_state.staked_amount -= slash_amount;
-
-                        // don't leave less than minimum balance at stake
-                        if staked_state.staked_amount < T::Currency::minimum_balance() {
-                            slash_amount += staked_state.staked_amount;
-                            staked_state.staked_amount = Zero::zero();
-                        }
+                        // apply the slashing and get back actual amount slashed
+                        let slashed_amount =
+                            staked_state.apply_slash(&slash, T::Currency::minimum_balance());
 
                         // remove the slashed amount from the pool
-                        let imbalance = Self::withdraw_funds_from_pool(slash_amount);
-                        assert_eq!(imbalance.peek(), slash_amount);
+                        let imbalance = Self::withdraw_funds_from_pool(slashed_amount);
+                        assert_eq!(imbalance.peek(), slashed_amount);
 
                         let _ = T::StakingEventsHandler::slashed(
                             &stake_id,
