@@ -262,6 +262,17 @@ impl<
         SlashId: Copy + Ord + Zero + One,
     > Stake<BlockNumber, Balance, SlashId>
 {
+    fn new(created_at: BlockNumber) -> Self {
+        Self {
+            created: created_at,
+            staking_status: StakingStatus::NotStaked,
+        }
+    }
+
+    fn is_not_staked(&self) -> bool {
+        self.staking_status == StakingStatus::NotStaked
+    }
+
     /// If staking status is staked and normal it will increase the staked amount by value.
     /// Returns error otherwise.
     fn increase_stake(&mut self, value: Balance) -> Result<Balance, StakingError> {
@@ -317,13 +328,18 @@ impl<
         }
     }
 
-    fn set_normal_staked_state(&mut self, value: Balance) {
-        self.staking_status = StakingStatus::Staked(StakedState {
-            staked_amount: value,
-            next_slash_id: Zero::zero(),
-            ongoing_slashes: BTreeMap::new(),
-            staked_status: StakedStatus::Normal,
-        });
+    fn start_staking(&mut self, value: Balance) -> Result<(), StakingError> {
+        if self.is_not_staked() {
+            self.staking_status = StakingStatus::Staked(StakedState {
+                staked_amount: value,
+                next_slash_id: Zero::zero(),
+                ongoing_slashes: BTreeMap::new(),
+                staked_status: StakedStatus::Normal,
+            });
+            Ok(())
+        } else {
+            Err(StakingError::AlreadyStaked)
+        }
     }
 
     fn initiate_slashing(
@@ -631,22 +647,14 @@ impl<T: Trait> Module<T> {
         let stake_id = Self::stakes_created();
         <StakesCreated<T>>::put(stake_id + One::one());
 
-        <Stakes<T>>::insert(
-            &stake_id,
-            Stake {
-                created: <system::Module<T>>::block_number(),
-                staking_status: Default::default(),
-            },
-        );
+        <Stakes<T>>::insert(&stake_id, Stake::new(<system::Module<T>>::block_number()));
 
         stake_id
     }
 
     /// Given that stake with id exists in stakes and is NotStaked, remove from stakes.
     pub fn remove_stake(stake_id: &T::StakeId) {
-        if <Stakes<T>>::exists(stake_id)
-            && StakingStatus::NotStaked == Self::stakes(stake_id).staking_status
-        {
+        if <Stakes<T>>::exists(stake_id) && Self::stakes(stake_id).is_not_staked() {
             <Stakes<T>>::remove(stake_id);
         }
     }
@@ -659,7 +667,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
         ensure!(
-            Self::stakes(stake_id).staking_status == StakingStatus::NotStaked,
+            Self::stakes(stake_id).is_not_staked(),
             StakingError::AlreadyStaked
         );
         ensure!(value > Zero::zero(), StakingError::ChangingStakeByZero);
@@ -680,7 +688,7 @@ impl<T: Trait> Module<T> {
 
         let mut stake = Self::stakes(stake_id);
 
-        stake.set_normal_staked_state(amount);
+        stake.start_staking(amount)?;
 
         <Stakes<T>>::insert(stake_id, stake);
 
@@ -700,7 +708,7 @@ impl<T: Trait> Module<T> {
 
         let mut stake = Self::stakes(stake_id);
 
-        stake.set_normal_staked_state(value);
+        stake.start_staking(value);
 
         <Stakes<T>>::insert(stake_id, stake);
 
