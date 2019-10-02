@@ -388,7 +388,7 @@ impl<T: Trait> Module<T> {
         );
         ensure!(value > Zero::zero(), StakingError::ChangingStakeByZero);
         ensure!(
-            value > T::Currency::minimum_balance(),
+            value >= T::Currency::minimum_balance(),
             StakingError::StakingLessThanMinimumBalance
         );
         Ok(())
