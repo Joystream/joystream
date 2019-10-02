@@ -334,6 +334,7 @@ pub enum StakingError {
     DecreasingStakeWhileOngoingSlahes,
     UnstakingWhileSlashesOngoing,
     ZeroUnstakingPeriod,
+    ZeroSlashPeriod,
 }
 
 impl<T: Trait> Module<T> {
@@ -584,7 +585,8 @@ impl<T: Trait> Module<T> {
         slash_period: T::BlockNumber,
     ) -> Result<T::SlashId, StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
-        // ensure slash_period > 0
+        ensure!(slash_period > Zero::zero(), StakingError::ZeroSlashPeriod);
+
         <Stakes<T>>::mutate(stake_id, |stake| match stake.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
                 let slash_id = staked_state.next_slash_id;

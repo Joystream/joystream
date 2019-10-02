@@ -352,6 +352,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
         assert_err!(
             StakePool::initiate_slashing(&stake_id, 5000, 0),
+            StakingError::ZeroSlashPeriod
+        );
+
+        assert_err!(
+            StakePool::initiate_slashing(&stake_id, 5000, 1),
             StakingError::NotStaked
         );
 
