@@ -222,6 +222,34 @@ fn should_add_class_schema_when_only_prop_ids_passed() {
 }
 
 #[test]
+fn cannot_add_class_schema_when_new_props_have_duplicate_names() {
+    with_test_externalities(|| {
+        let class_id = create_class();
+
+        // Add first schema with new props.
+        // No other props on the class at this time.
+        assert_eq!(
+            TestModule::add_class_schema(
+                class_id,
+                vec![],
+                good_props()
+            ),
+            Ok(SCHEMA_ID_0)
+        );
+
+        // Add a new schema with not unique property names:
+        assert_err!(
+            TestModule::add_class_schema(
+                class_id,
+                vec![],
+                good_props()
+            ),
+            ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
+        );
+    })
+}
+
+#[test]
 fn should_add_class_schema_when_both_prop_ids_and_new_props_passed() {
     with_test_externalities(|| {
         let class_id = create_class();
@@ -276,6 +304,7 @@ fn create_entity_successfully() {
             ),
             entity_id_1
         );
+        // TODO assert entity from storage
         assert_eq!(
             TestModule::next_entity_id(),
             entity_id_1 + 1

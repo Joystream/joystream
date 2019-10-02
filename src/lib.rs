@@ -15,6 +15,7 @@
 use serde_derive::{Serialize, Deserialize};
 
 use rstd::prelude::*;
+use rstd::collections::btree_map::BTreeMap;
 use parity_codec_derive::{Decode, Encode};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, StorageValue, StorageMap};
 use system;
@@ -49,6 +50,7 @@ const ERROR_ENTITY_NOT_FOUND: &str = "Entity was not found by id";
 const ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY: &str = "Cannot add a schema that is already added to this entity";
 const ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS : &str = "Provided property id was not found in schema properties";
 const ERROR_PROP_VALUE_DONT_MATCH_TYPE: &str = "Some of the provided property values don't match the expected property type";
+const ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS: &str = "Property name is not unique within its class";
 const ERROR_MISSING_REQUIRED_PROP: &str = "Some required property was not found when adding schema support to entity";
 const ERROR_ENTITY_DOES_NOT_SUPPORT_SCHEMAS_YET: &str = "Cannot update entity properties because entity does not support any schemas yet";
 const ERROR_UNKNOWN_ENTITY_PROP_ID: &str = "Some of the provided property ids cannot be found on the current list of propery values of this entity";
@@ -359,12 +361,27 @@ impl<T: Trait> Module<T> {
         
         ensure!(non_empty_schema, ERROR_NO_PROPS_IN_CLASS_SCHEMA);
 
+        let class = <ClassById<T>>::get(class_id);
+
+        // TODO Use BTreeSet for prop unique names when switched to Substrate 2.
+        // There is no support for BTreeSet in Substrate 1 runtime.
+        // use rstd::collections::btree_set::BTreeSet;
+        let mut unique_prop_names = BTreeMap::new();
+        for prop in class.properties.iter() {
+            unique_prop_names.insert(prop.name.clone(), true);
+        }
+
         for prop in new_properties.iter() {
             Self::ensure_property_name_is_valid(&prop.name)?;
             Self::ensure_property_description_is_valid(&prop.description)?;
-        }
 
-        let class = <ClassById<T>>::get(class_id);
+            // Check that the name of a new property is unique within its class.
+            ensure!(
+                !unique_prop_names.contains_key(&prop.name),
+                ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
+            );
+            unique_prop_names.insert(prop.name.clone(), true);
+        }
 
         // Check that existing props are valid indices of class properties vector:
         let has_unknown_props = existing_properties.iter().any(|&prop_id| {
@@ -390,15 +407,15 @@ impl<T: Trait> Module<T> {
             properties: existing_properties
         };
 
-        let mut new_class_props = class.properties;
+        let mut updated_class_props = class.properties;
         new_properties.into_iter().for_each(|prop| {
-            let prop_id = new_class_props.len() as u16;
-            new_class_props.push(prop);
+            let prop_id = updated_class_props.len() as u16;
+            updated_class_props.push(prop);
             schema.properties.push(prop_id);
         });
 
         <ClassById<T>>::mutate(class_id, |class| {
-            class.properties = new_class_props;
+            class.properties = updated_class_props;
             class.schemas.push(schema);
         });
 
