@@ -213,27 +213,29 @@ impl<T: Trait> Module<T> {
             RewardsError::RewardRelationshipNotFound
         );
 
-        <RewardRelationships<T>>::mutate(&id, |relationship| {
-            if let Some(account) = new_account {
-                relationship.account = account;
+        let mut relationship = Self::reward_relationships(&id);
+
+        if let Some(account) = new_account {
+            relationship.account = account;
+        }
+        if let Some(payout) = new_payout {
+            relationship.amount_per_payout = payout;
+        }
+        if let Some(next_payout_at_block) = new_next_payment_at {
+            if let Some(blocknumber) = next_payout_at_block {
+                ensure!(
+                    blocknumber > <system::Module<T>>::block_number(),
+                    RewardsError::NextPaymentNotInFuture
+                );
             }
-            if let Some(payout) = new_payout {
-                relationship.amount_per_payout = payout;
-            }
-            if let Some(next_payout_at_block) = new_next_payment_at {
-                if let Some(blocknumber) = next_payout_at_block {
-                    ensure!(
-                        blocknumber > <system::Module<T>>::block_number(),
-                        RewardsError::NextPaymentNotInFuture
-                    );
-                }
-                relationship.next_payment_at_block = next_payout_at_block;
-            }
-            if let Some(payout_interval) = new_payout_interval {
-                relationship.payout_interval = payout_interval;
-            }
-            Ok(())
-        })
+            relationship.next_payment_at_block = next_payout_at_block;
+        }
+        if let Some(payout_interval) = new_payout_interval {
+            relationship.payout_interval = payout_interval;
+        }
+
+        <RewardRelationships<T>>::insert(&id, relationship);
+        Ok(())
     }
 
     /*
