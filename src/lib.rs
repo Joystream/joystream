@@ -137,7 +137,7 @@ decl_module! {
 pub enum RewardsError {
     RecipientNotFound,
     RewardSourceNotFound,
-    BlockNumberInPast,
+    NextPaymentNotInFuture,
     RewardRelationshipNotFound,
 }
 
@@ -167,6 +167,10 @@ impl<T: Trait> Module<T> {
             <Recipients<T>>::exists(recipient),
             RewardsError::RecipientNotFound
         );
+        ensure!(
+            next_payment_at_block > <system::Module<T>>::block_number(),
+            RewardsError::NextPaymentNotInFuture
+        );
 
         let relationship_id = Self::reward_relationships_created();
         <RewardRelationshipsCreated<T>>::put(relationship_id + One::one());
@@ -186,9 +190,11 @@ impl<T: Trait> Module<T> {
         Ok(relationship_id)
     }
 
-    // Removes a mapping from reward relashionships based on given identifier.
+    /// Removes a relationship from RewardRelashionships and its recipient.
     pub fn remove_reward_relationship(id: T::RewardRelationshipId) {
-        <RewardRelationships<T>>::remove(&id);
+        if <RewardRelationships<T>>::exists(&id) {
+            <Recipients<T>>::remove(<RewardRelationships<T>>::take(&id).recipient);
+        }
     }
 
     // For reward relationship found with given identifier, new values can be set for
@@ -218,7 +224,7 @@ impl<T: Trait> Module<T> {
                 if let Some(blocknumber) = next_payout_at_block {
                     ensure!(
                         blocknumber > <system::Module<T>>::block_number(),
-                        RewardsError::BlockNumberInPast
+                        RewardsError::NextPaymentNotInFuture
                     );
                 }
                 relationship.next_payment_at_block = next_payout_at_block;
