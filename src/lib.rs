@@ -350,20 +350,20 @@ impl<T: Trait> Module<T> {
         T::Currency::free_balance(&Self::staking_fund_account_id())
     }
 
-    /// Adds a new Stake which is NotStaked, created at given block, into stakes map with id NextStakeId, and increments NextStakeId.
+    /// Adds a new Stake which is NotStaked, created at given block, into stakes map.
     pub fn create_stake() -> T::StakeId {
-        <StakesCreated<T>>::mutate(|id| {
-            let stake_id = *id;
-            *id += One::one();
-            <Stakes<T>>::insert(
-                &stake_id,
-                Stake {
-                    created: <system::Module<T>>::block_number(),
-                    staking_status: Default::default(),
-                },
-            );
-            stake_id
-        })
+        let stake_id = Self::stakes_created();
+        <StakesCreated<T>>::put(stake_id + One::one());
+
+        <Stakes<T>>::insert(
+            &stake_id,
+            Stake {
+                created: <system::Module<T>>::block_number(),
+                staking_status: Default::default(),
+            },
+        );
+
+        stake_id
     }
 
     /// Given that stake with id exists in stakes and is NotStaked, remove from stakes.
