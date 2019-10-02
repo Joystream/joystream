@@ -76,7 +76,7 @@ impl From<MintingError> for TransferError {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Minting {
+    trait Store for Module<T: Trait> as TokenMint {
         /// Mints
         pub Mints get(mints) : linked_map T::MintId => Mint<BalanceOf<T>, T::BlockNumber>;
 
