@@ -130,11 +130,17 @@ fn enter_staked_state() {
             StakingError::ChangingStakeByZero
         );
 
-        // must stake more than minimum balance
-        assert_err!(
-            StakePool::stake_from_account(&100, &staker_account, Balances::minimum_balance()),
-            StakingError::StakingLessThanMinimumBalance
-        );
+        // must stake at least the minimum balance
+        if Balances::minimum_balance() > 0 {
+            assert_err!(
+                StakePool::stake_from_account(
+                    &100,
+                    &staker_account,
+                    Balances::minimum_balance() - 1
+                ),
+                StakingError::StakingLessThanMinimumBalance
+            );
+        }
 
         // cannot stake with insufficient funds
         assert_err!(
