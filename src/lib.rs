@@ -702,7 +702,7 @@ impl<T: Trait> Module<T> {
         stake_id: &T::StakeId,
         source_account_id: &T::AccountId,
         value: BalanceOf<T>,
-    ) -> Result<(), StakeActionError<StakingError>> {
+    ) -> Result<(), StakeActionError<StakingFromAccountError>> {
         ensure!(
             <Stakes<T>>::exists(stake_id),
             StakeActionError::StakeNotFound
@@ -806,7 +806,7 @@ impl<T: Trait> Module<T> {
         stake_id: &T::StakeId,
         source_account_id: &T::AccountId,
         value: BalanceOf<T>,
-    ) -> Result<BalanceOf<T>, StakeActionError<IncreasingStakeError>> {
+    ) -> Result<BalanceOf<T>, StakeActionError<IncreasingStakeFromAccountError>> {
         // ensure state of stake allows increasing stake before withdrawing from source account
         Self::ensure_can_increase_stake(stake_id, value)?;
 
