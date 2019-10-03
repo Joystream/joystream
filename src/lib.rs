@@ -624,14 +624,14 @@ decl_storage! {
         /// Maps identifiers to a stake.
         Stakes get(stakes): linked_map T::StakeId => Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>;
 
-        /// Identifier value for next stake.
+        /// Identifier value for next stake, and count of total stakes created (not necessarily the number of current
+        /// stakes in the Stakes map as stakes can be removed.)
         StakesCreated get(stakes_created): T::StakeId;
     }
 }
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-
         fn on_finalize(_now: T::BlockNumber) {
             Self::finalize_slashing_and_unstaking();
         }
@@ -639,16 +639,16 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    /// The account ID of the stake pool.
+    /// The account ID of theis module which holds all the staked balance. (referred to as the stake pool)
     ///
     /// This actually does computation. If you need to keep using it, then make sure you cache the
     /// value and only call this once. Is it deterministic?
-    pub fn staking_fund_account_id() -> T::AccountId {
+    pub fn stake_pool_account_id() -> T::AccountId {
         ModuleId(T::StakePoolId::get()).into_account()
     }
 
-    pub fn staking_fund_balance() -> BalanceOf<T> {
-        T::Currency::free_balance(&Self::staking_fund_account_id())
+    pub fn stake_pool_balance() -> BalanceOf<T> {
+        T::Currency::free_balance(&Self::stake_pool_account_id())
     }
 
     /// Adds a new Stake which is NotStaked, created at given block, into stakes map.
@@ -704,7 +704,7 @@ impl<T: Trait> Module<T> {
 
         <Stakes<T>>::insert(stake_id, stake);
 
-        Self::deposit_funds_into_pool(value);
+        Self::deposit_funds_into_stake_pool(value);
 
         Ok(())
     }
@@ -723,7 +723,7 @@ impl<T: Trait> Module<T> {
 
         stake.start_staking(value, T::Currency::minimum_balance())?;
 
-        Self::transfer_funds_from_account_into_pool(source_account_id, value)?;
+        Self::transfer_funds_from_account_into_stake_pool(source_account_id, value)?;
 
         <Stakes<T>>::insert(stake_id, stake);
 
@@ -732,7 +732,7 @@ impl<T: Trait> Module<T> {
 
     /// Moves funds from specified account into the module's account
     /// We don't use T::Currency::transfer() to prevent fees being incurred.
-    fn transfer_funds_from_account_into_pool(
+    fn transfer_funds_from_account_into_stake_pool(
         source: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<(), TransferFromAccountError> {
@@ -744,26 +744,28 @@ impl<T: Trait> Module<T> {
         )
         .map_err(|_err| TransferFromAccountError::InsufficientBalance)?;
 
-        Self::deposit_funds_into_pool(negative_imbalance);
+        Self::deposit_funds_into_stake_pool(negative_imbalance);
         Ok(())
     }
 
-    fn deposit_funds_into_pool(value: NegativeImbalance<T>) {
+    fn deposit_funds_into_stake_pool(value: NegativeImbalance<T>) {
         // move the negative imbalance into the stake pool
-        T::Currency::resolve_creating(&Self::staking_fund_account_id(), value);
+        T::Currency::resolve_creating(&Self::stake_pool_account_id(), value);
     }
 
     /// Moves funds from the module's account into specified account.
-    /// We don't use T::Currency::transfer() to prevent fees being incurred.
     fn transfer_funds_from_pool_into_account(destination: &T::AccountId, value: BalanceOf<T>) {
-        let imbalance = Self::withdraw_funds_from_pool(value);
+        let imbalance = Self::withdraw_funds_from_stake_pool(value);
         T::Currency::resolve_creating(destination, imbalance);
     }
 
-    fn withdraw_funds_from_pool(value: BalanceOf<T>) -> NegativeImbalance<T> {
-        assert!(Self::staking_fund_balance() >= value);
+    /// Withdraws
+    /// We don't use T::Currency::transfer() to prevent fees being incurred.
+    fn withdraw_funds_from_stake_pool(value: BalanceOf<T>) -> NegativeImbalance<T> {
+        // As long as it is only called internally when executing slashes and unstaking, it
+        // should never fail as the pool balance is always in sync with total amount at stake.
         T::Currency::withdraw(
-            &Self::staking_fund_account_id(),
+            &Self::stake_pool_account_id(),
             value,
             WithdrawReason::Transfer,
             ExistenceRequirement::AllowDeath,
@@ -806,7 +808,7 @@ impl<T: Trait> Module<T> {
         let total_staked_amount = stake.increase_stake(value.peek())?;
         <Stakes<T>>::insert(stake_id, stake);
 
-        Self::deposit_funds_into_pool(value);
+        Self::deposit_funds_into_stake_pool(value);
 
         Ok(total_staked_amount)
     }
@@ -828,7 +830,7 @@ impl<T: Trait> Module<T> {
 
         let total_staked_amount = stake.increase_stake(value)?;
 
-        Self::transfer_funds_from_account_into_pool(&source_account_id, value)?;
+        Self::transfer_funds_from_account_into_stake_pool(&source_account_id, value)?;
 
         <Stakes<T>>::insert(stake_id, stake);
 
@@ -867,7 +869,7 @@ impl<T: Trait> Module<T> {
 
         Ok((
             staked_amount,
-            Self::withdraw_funds_from_pool(deduct_from_pool),
+            Self::withdraw_funds_from_stake_pool(deduct_from_pool),
         ))
     }
 
