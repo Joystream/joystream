@@ -985,16 +985,16 @@ impl<T: Trait> Module<T> {
             let (updated, slashed, unstaked) =
                 stake.finalize_slashing_and_unstaking(T::Currency::minimum_balance());
 
-            for (slash_id, slashed_amount, staked_amount) in slashed.iter() {
+            for (slash_id, slashed_amount, staked_amount) in slashed.into_iter() {
                 // remove the slashed amount from the pool
-                let imbalance = Self::withdraw_funds_from_pool(*slashed_amount);
-                assert_eq!(imbalance.peek(), *slashed_amount);
+                let imbalance = Self::withdraw_funds_from_pool(slashed_amount);
+                assert_eq!(imbalance.peek(), slashed_amount);
 
                 let _ = T::StakingEventsHandler::slashed(
                     &stake_id,
-                    slash_id,
+                    &slash_id,
                     imbalance,
-                    *staked_amount,
+                    staked_amount,
                 );
             }
 
