@@ -173,26 +173,6 @@ where
         true
     }
 
-    pub fn adjust_on_tick(&self, now: BlockNumber) -> Self {
-        if self.is_time_for_adjustment(now) {
-            let mut clone = self.clone();
-
-            // update mint capacity
-            clone.capacity = Self::adjusted_capacity(
-                clone.capacity,
-                clone.adjustment_on_interval.adjustment_type,
-            );
-
-            // set blocknumber for next adjustment
-            clone.adjust_capacity_at_block_number =
-                Some(now + clone.adjustment_on_interval.block_interval);
-
-            clone
-        } else {
-            *self
-        }
-    }
-
     fn is_time_for_adjustment(&self, now: BlockNumber) -> bool {
         self.adjust_capacity_at_block_number
             .map_or(false, |block_number| block_number == now)
