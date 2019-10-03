@@ -328,7 +328,16 @@ impl<
         }
     }
 
-    fn start_staking(&mut self, value: Balance) -> Result<(), StakingError> {
+    fn start_staking(
+        &mut self,
+        value: Balance,
+        minimum_balance: Balance,
+    ) -> Result<(), StakingError> {
+        ensure!(value > Zero::zero(), StakingError::ChangingStakeByZero);
+        ensure!(
+            value >= minimum_balance,
+            StakingError::StakingLessThanMinimumBalance
+        );
         if self.is_not_staked() {
             self.staking_status = StakingStatus::Staked(StakedState {
                 staked_amount: value,
@@ -666,29 +675,23 @@ impl<T: Trait> Module<T> {
         value: BalanceOf<T>,
     ) -> Result<(), StakingError> {
         ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
-        ensure!(
-            Self::stakes(stake_id).is_not_staked(),
-            StakingError::AlreadyStaked
-        );
-        ensure!(value > Zero::zero(), StakingError::ChangingStakeByZero);
-        ensure!(
-            value >= T::Currency::minimum_balance(),
-            StakingError::StakingLessThanMinimumBalance
-        );
-        Ok(())
+        Self::stakes(stake_id)
+            .start_staking(value, T::Currency::minimum_balance())
+            .err()
+            .map_or(Ok(()), |err| Err(err))
     }
 
     /// Provided the stake exists and is in state NotStaked the value is transferred
     /// to the module's account, and the corresponding staked_balance is set to this amount in the new Staked state.
     /// If staking fails the value is lost, make sure to call can_stake() prior to ensure this doesn't happen.
     pub fn stake(stake_id: &T::StakeId, value: NegativeImbalance<T>) -> Result<(), StakingError> {
-        let amount = value.peek();
+        ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
 
-        Self::ensure_can_stake(stake_id, amount)?;
+        let amount = value.peek();
 
         let mut stake = Self::stakes(stake_id);
 
-        stake.start_staking(amount)?;
+        stake.start_staking(amount, T::Currency::minimum_balance())?;
 
         <Stakes<T>>::insert(stake_id, stake);
 
@@ -702,13 +705,13 @@ impl<T: Trait> Module<T> {
         source_account_id: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<(), StakingError> {
-        Self::ensure_can_stake(stake_id, value)?;
-
-        Self::transfer_funds_from_account_into_pool(source_account_id, value)?;
+        ensure!(<Stakes<T>>::exists(stake_id), StakingError::StakeNotFound);
 
         let mut stake = Self::stakes(stake_id);
 
-        stake.start_staking(value);
+        stake.start_staking(value, T::Currency::minimum_balance())?;
+
+        Self::transfer_funds_from_account_into_pool(source_account_id, value)?;
 
         <Stakes<T>>::insert(stake_id, stake);
 
