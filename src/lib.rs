@@ -459,13 +459,13 @@ impl<T: Trait> Module<T> {
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
-        // Check that schema id is not yet added to this entity:
-        let schema_not_added = entity.in_class_schema_indexes.iter().position(|x| *x == schema_id).is_none();
-        ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
-
         // Check that schema_id is a valid index of class schemas vector:
         let known_schema_id = schema_id < class.schemas.len() as u16;
         ensure!(known_schema_id, ERROR_UNKNOWN_CLASS_SCHEMA_ID);
+
+        // Check that schema id is not yet added to this entity:
+        let schema_not_added = entity.in_class_schema_indexes.iter().position(|x| *x == schema_id).is_none();
+        ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
 
         let class_schema_opt = class.schemas.get(schema_id as usize);
         let schema_prop_ids = class_schema_opt.unwrap().properties.clone();
