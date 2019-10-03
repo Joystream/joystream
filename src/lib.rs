@@ -1042,9 +1042,14 @@ impl<T: Trait> Module<T> {
             let (updated, slashed, unstaked) =
                 stake.finalize_slashing_and_unstaking(T::Currency::minimum_balance());
 
+            // update the state before making external calls to StakingEventsHandler
+            if updated {
+                <Stakes<T>>::insert(stake_id, stake)
+            }
+
             for (slash_id, slashed_amount, staked_amount) in slashed.into_iter() {
                 // remove the slashed amount from the pool
-                let imbalance = Self::withdraw_funds_from_pool(slashed_amount);
+                let imbalance = Self::withdraw_funds_from_stake_pool(slashed_amount);
                 assert_eq!(imbalance.peek(), slashed_amount);
 
                 let _ = T::StakingEventsHandler::slashed(
@@ -1057,14 +1062,10 @@ impl<T: Trait> Module<T> {
 
             if let Some(staked_amount) = unstaked {
                 // withdraw the stake from the pool
-                let imbalance = Self::withdraw_funds_from_pool(staked_amount);
+                let imbalance = Self::withdraw_funds_from_stake_pool(staked_amount);
                 assert_eq!(imbalance.peek(), staked_amount);
 
                 let _ = T::StakingEventsHandler::unstaked(&stake_id, imbalance);
-            }
-
-            if updated {
-                <Stakes<T>>::insert(stake_id, stake)
             }
         }
     }
