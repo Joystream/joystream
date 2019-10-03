@@ -791,6 +791,7 @@ impl<T: Trait> Module<T> {
             <Stakes<T>>::exists(stake_id),
             StakeActionError::StakeNotFound
         );
+
         let mut stake = Self::stakes(stake_id);
 
         let total_staked_amount = stake.increase_stake(value.peek())?;
@@ -809,14 +810,16 @@ impl<T: Trait> Module<T> {
         source_account_id: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<BalanceOf<T>, StakeActionError<IncreasingStakeFromAccountError>> {
-        // ensure state of stake allows increasing stake before withdrawing from source account
-        Self::ensure_can_increase_stake(stake_id, value)?;
-
-        Self::transfer_funds_from_account_into_pool(&source_account_id, value)?;
+        ensure!(
+            <Stakes<T>>::exists(stake_id),
+            StakeActionError::StakeNotFound
+        );
 
         let mut stake = Self::stakes(stake_id);
 
         let total_staked_amount = stake.increase_stake(value)?;
+
+        Self::transfer_funds_from_account_into_pool(&source_account_id, value)?;
 
         <Stakes<T>>::insert(stake_id, stake);
 
