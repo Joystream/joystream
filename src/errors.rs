@@ -101,6 +101,7 @@ pub enum DecreasingStakeError {
 pub enum InitiateSlashingError {
     NotStaked,
     SlashPeriodShouldBeGreaterThanZero,
+    SlashAmountShouldBeGreaterThanZero,
 }
 
 #[derive(Debug, Eq, PartialEq)]

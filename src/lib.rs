@@ -369,8 +369,10 @@ impl<
             slash_period > Zero::zero(),
             InitiateSlashingError::SlashPeriodShouldBeGreaterThanZero
         );
-
-        // TODO: ensure slash_amount > 0 ?
+        ensure!(
+            slash_amount > Zero::zero(),
+            InitiateSlashingError::SlashAmountShouldBeGreaterThanZero
+        );
 
         match self.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
