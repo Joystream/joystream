@@ -60,10 +60,10 @@ pub trait Trait: system::Trait + Sized {
 }
 
 pub trait StakingEventsHandler<T: Trait> {
-    // Type of handler which handles unstaking event.
+    /// Handler for unstaking event.
     fn unstaked(id: &T::StakeId, unstaked_amount: NegativeImbalance<T>) -> NegativeImbalance<T>;
 
-    // Type of handler which handles slashing event.
+    // Handler for slashing event.
     // NB: actually_slashed can be less than amount of the slash itself if the
     // claim amount on the stake cannot cover it fully.
     fn slashed(
@@ -74,7 +74,7 @@ pub trait StakingEventsHandler<T: Trait> {
     ) -> NegativeImbalance<T>;
 }
 
-// Default implementation just destroys the unstaked or slashed
+/// Default implementation just destroys the unstaked or slashed value
 impl<T: Trait> StakingEventsHandler<T> for () {
     fn unstaked(_id: &T::StakeId, _amount: NegativeImbalance<T>) -> NegativeImbalance<T> {
         NegativeImbalance::<T>::zero()
@@ -89,7 +89,9 @@ impl<T: Trait> StakingEventsHandler<T> for () {
     }
 }
 
-// Helper so we can provide multiple handlers
+/// Helper implementation so we can provide multiple handlers by grouping handlers in tuple pairs.
+/// For example for three handlers, A, B and C we can set the StakingEventHandler type on the trait to:
+/// type StakingEventHandler = ((A, B), C)
 impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEventsHandler<T>
     for (X, Y)
 {
@@ -110,39 +112,39 @@ impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEv
 
 #[derive(Encode, Decode, Debug, Default, Eq, PartialEq, Clone)]
 pub struct Slash<BlockNumber, Balance> {
-    // The block slashing was initiated.
+    /// The block where slashing was initiated.
     started_at_block: BlockNumber,
 
-    // Whether slashing is in active, or conversley paused state
-    // Blocks are only counted towards slashing execution delay when active.
+    /// Whether slashing is in active, or conversley paused state.
+    /// Blocks are only counted towards slashing execution delay when active.
     is_active: bool,
 
-    // The number blocks which must be finalised while in the active period before the slashing can be executed
+    /// The number blocks which must be finalised while in the active period before the slashing can be executed
     blocks_remaining_in_active_period_for_slashing: BlockNumber,
 
-    // Amount to slash
+    /// Amount to slash
     slash_amount: Balance,
 }
 
 #[derive(Encode, Decode, Debug, Default, Eq, PartialEq)]
 pub struct UnstakingState<BlockNumber> {
-    // The block where the unstaking was initiated
+    /// The block where the unstaking was initiated
     started_at_block: BlockNumber,
 
-    // Whether unstaking is in active, or conversely paused state
-    // Blocks are only counted towards unstaking period when active.
+    /// Whether unstaking is in active, or conversely paused state.
+    /// Blocks are only counted towards unstaking period when active.
     is_active: bool,
 
-    // The number blocks which must be finalised while in the active period before the unstaking is finished
+    /// The number blocks which must be finalised while in the active period before the unstaking is finished
     blocks_remaining_in_active_period_for_unstaking: BlockNumber,
 }
 
 #[derive(Encode, Decode, Debug, Eq, PartialEq)]
 pub enum StakedStatus<BlockNumber> {
-    // Baseline staking status, nothing is happening.
+    /// Baseline staking status, nothing is happening.
     Normal,
 
-    // Unstaking is under way
+    /// Unstaking is under way.
     Unstaking(UnstakingState<BlockNumber>),
 }
 
@@ -154,22 +156,28 @@ impl<BlockNumber> Default for StakedStatus<BlockNumber> {
 
 #[derive(Encode, Decode, Debug, Default, Eq, PartialEq)]
 pub struct StakedState<BlockNumber, Balance, SlashId: Ord> {
-    /// Total amount of funds at stake
+    /// Total amount of funds at stake.
     staked_amount: Balance,
 
-    /// Status of the staking
+    /// Status of the staking.
     staked_status: StakedStatus<BlockNumber>,
 
     /// SlashId to use for next Slash that is initiated.
+    /// Will be incremented by one after adding a new Slash.
     next_slash_id: SlashId,
 
-    /// All ongoing slashing process.
+    /// All ongoing slashing.
     ongoing_slashes: BTreeMap<SlashId, Slash<BlockNumber, Balance>>,
 }
 
-impl<BlockNumber: SimpleArithmetic, Balance: SimpleArithmetic + Copy, SlashId: Ord + Copy>
-    StakedState<BlockNumber, Balance, SlashId>
+impl<BlockNumber, Balance, SlashId> StakedState<BlockNumber, Balance, SlashId>
+where
+    BlockNumber: SimpleArithmetic,
+    Balance: SimpleArithmetic + Copy,
+    SlashId: Ord + Copy,
 {
+    /// Iterates over all ongoing slashes and decrements blocks_remaining_in_active_period_for_slashing of active slashes (advancing the timer).
+    /// Returns the the number of slashes that were found to be active and had their timer advanced.
     fn advance_slashing_timer(&mut self) -> usize {
         self.ongoing_slashes
             .iter_mut()
@@ -185,20 +193,22 @@ impl<BlockNumber: SimpleArithmetic, Balance: SimpleArithmetic + Copy, SlashId: O
             })
     }
 
+    /// Returns identifiers of slashes that should be executed
     fn get_slashes_to_finalize(&self) -> Vec<SlashId> {
         self.ongoing_slashes
             .iter()
             .filter(|(_, slash)| {
-                slash.is_active
-                    && slash.blocks_remaining_in_active_period_for_slashing == Zero::zero()
+                slash.blocks_remaining_in_active_period_for_slashing == Zero::zero()
             })
             .map(|(slash_id, _)| *slash_id)
             .collect()
     }
 
+    /// Executes a Slash. If remaining at stake drops below the minimum_balance, it will slash the entire staked amount.
+    /// Returns the actual slashed amount.
     fn apply_slash(
         &mut self,
-        slash: &Slash<BlockNumber, Balance>,
+        slash: Slash<BlockNumber, Balance>,
         minimum_balance: Balance,
     ) -> Balance {
         // calculate how much to slash
@@ -220,6 +230,8 @@ impl<BlockNumber: SimpleArithmetic, Balance: SimpleArithmetic + Copy, SlashId: O
         slash_amount
     }
 
+    /// For all slahes that should be executed, will apply the Slash to the staked amount, and drop it from the ongoing slashes map.
+    /// Returns a vector of the executed slashes outcome: (SlashId, Slashed Amount, Remaining Staked Amount)
     fn finalize_slashes(&mut self, minimum_balance: Balance) -> Vec<(SlashId, Balance, Balance)> {
         self.get_slashes_to_finalize()
             .iter()
@@ -228,7 +240,7 @@ impl<BlockNumber: SimpleArithmetic, Balance: SimpleArithmetic + Copy, SlashId: O
                 let slash = self.ongoing_slashes.remove(slash_id).unwrap();
 
                 // apply the slashing and get back actual amount slashed
-                let slashed_amount = self.apply_slash(&slash, minimum_balance);
+                let slashed_amount = self.apply_slash(slash, minimum_balance);
 
                 (*slash_id, slashed_amount, self.staked_amount)
             })
@@ -251,18 +263,18 @@ impl<BlockNumber, Balance, SlashId: Ord> Default for StakingStatus<BlockNumber, 
 
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq)]
 pub struct Stake<BlockNumber, Balance, SlashId: Ord> {
-    // When role was created
+    /// When role was created
     created: BlockNumber,
 
-    // Status of any possible ongoing staking
+    /// Status of any possible ongoing staking
     staking_status: StakingStatus<BlockNumber, Balance, SlashId>,
 }
 
-impl<
-        BlockNumber: Copy + SimpleArithmetic,
-        Balance: Copy + SimpleArithmetic,
-        SlashId: Copy + Ord + Zero + One,
-    > Stake<BlockNumber, Balance, SlashId>
+impl<BlockNumber, Balance, SlashId> Stake<BlockNumber, Balance, SlashId>
+where
+    BlockNumber: Copy + SimpleArithmetic,
+    Balance: Copy + SimpleArithmetic,
+    SlashId: Copy + Ord + Zero + One,
 {
     fn new(created_at: BlockNumber) -> Self {
         Self {
@@ -275,8 +287,9 @@ impl<
         self.staking_status == StakingStatus::NotStaked
     }
 
-    /// If staking status is staked and normal it will increase the staked amount by value and return new total staked value.
-    /// Returns error otherwise.
+    /// If staking status is Staked and not currently Unstaking it will increase the staked amount by value.
+    /// On success returns new total staked value.
+    /// Increasing stake by zero is an error.
     fn increase_stake(&mut self, value: Balance) -> Result<Balance, IncreasingStakeError> {
         ensure!(
             value > Zero::zero(),
@@ -294,6 +307,10 @@ impl<
         }
     }
 
+    /// If staking status is Staked and not currently Unstaking, and no ongoing slashes exist, it will decrease the amount at stake
+    /// by provided value. If remaining at stake drops below the minimum_balance it will decrease the stake to zero.
+    /// On success returns (the actual amount of stake decreased, the remaining amount at stake).
+    /// Decreasing stake by zero is an error.
     fn decrease_stake(
         &mut self,
         value: Balance,
@@ -306,12 +323,8 @@ impl<
         match self.staking_status {
             StakingStatus::Staked(ref mut staked_state) => match staked_state.staked_status {
                 StakedStatus::Normal => {
-                    // prevent decreasing stake if there is at least one onging slash
-                    if staked_state
-                        .ongoing_slashes
-                        .values()
-                        .any(|slash| slash.is_active)
-                    {
+                    // prevent decreasing stake if there are any ongoing slashes (irrespective if active or not)
+                    if !staked_state.ongoing_slashes.is_empty() {
                         return Err(DecreasingStakeError::CannotDecreaseStakeWhileOngoingSlahes);
                     }
 
@@ -475,12 +488,8 @@ impl<
         );
         match self.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
-                // prevent unstaking if there is at least one active slashing
-                if staked_state
-                    .ongoing_slashes
-                    .values()
-                    .any(|slash| slash.is_active)
-                {
+                // prevent unstaking if there are any ongonig slashes (irrespective if active or not)
+                if !staked_state.ongoing_slashes.is_empty() {
                     return Err(InitiateUnstakingError::CannotUnstakeWhileSlashesOngoing);
                 }
 
