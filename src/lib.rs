@@ -686,7 +686,8 @@ impl<T: Trait> Module<T> {
 
     /// Provided the stake exists and is in state NotStaked the value is transferred
     /// to the module's account, and the corresponding staked_balance is set to this amount in the new Staked state.
-    /// If staking fails the value is lost, make sure to call can_stake() prior to ensure this doesn't happen.
+    /// On error, as the negative imbalance is not returned to the caller, it is the caller's responsibility to return the funds
+    /// back to the source (by creating a new positive imbalance)
     pub fn stake(
         stake_id: &T::StakeId,
         value: NegativeImbalance<T>,
@@ -731,11 +732,11 @@ impl<T: Trait> Module<T> {
     }
 
     /// Moves funds from specified account into the module's account
-    /// We don't use T::Currency::transfer() to prevent fees being incurred.
     fn transfer_funds_from_account_into_stake_pool(
         source: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<(), TransferFromAccountError> {
+        // We don't use T::Currency::transfer() to prevent fees being incurred.
         let negative_imbalance = T::Currency::withdraw(
             source,
             value,
@@ -753,17 +754,18 @@ impl<T: Trait> Module<T> {
         T::Currency::resolve_creating(&Self::stake_pool_account_id(), value);
     }
 
-    /// Moves funds from the module's account into specified account.
+    /// Moves funds from the module's account into specified account. Should never fail if used internally.
+    /// Will panic! if value exceeds balance in the pool.
     fn transfer_funds_from_pool_into_account(destination: &T::AccountId, value: BalanceOf<T>) {
         let imbalance = Self::withdraw_funds_from_stake_pool(value);
         T::Currency::resolve_creating(destination, imbalance);
     }
 
-    /// Withdraws
-    /// We don't use T::Currency::transfer() to prevent fees being incurred.
+    /// Withdraws value from the pool and returns a NegativeImbalance.
+    /// As long as it is only called internally when executing slashes and unstaking, it
+    /// should never fail as the pool balance is always in sync with total amount at stake.
     fn withdraw_funds_from_stake_pool(value: BalanceOf<T>) -> NegativeImbalance<T> {
-        // As long as it is only called internally when executing slashes and unstaking, it
-        // should never fail as the pool balance is always in sync with total amount at stake.
+        // We don't use T::Currency::transfer() to prevent fees being incurred.
         T::Currency::withdraw(
             &Self::stake_pool_account_id(),
             value,
@@ -773,9 +775,8 @@ impl<T: Trait> Module<T> {
         .expect("pool had less than expected funds!")
     }
 
-    /// Checks the state of stake to ensure that increasing stake is possible. This should be called
-    /// before attempting to increase stake with an imbalance to avoid the value from the imbalance
-    /// from being lost
+    /// Dry run to see if the state of stake allows for increasing stake. This should be called
+    /// to make sure increasing stake is possible before withdrawing funds.
     pub fn ensure_can_increase_stake(
         stake_id: &T::StakeId,
         value: BalanceOf<T>,
@@ -792,8 +793,8 @@ impl<T: Trait> Module<T> {
 
     /// Provided the stake exists and is in state Staked.Normal, then the amount is transferred to the module's account,
     /// and the corresponding staked_amount is increased by the value. New value of staked_amount is returned.
-    /// Caller MUST make sure to check ensure_can_increase_stake() before calling this method to prevent loss of the
-    /// value because the negative imbalance is not returned to caller on failure.
+    /// Caller should call check ensure_can_increase_stake() prior to avoid getting back an error. On error, as the negative imbalance
+    /// is not returned to the caller, it is the caller's responsibility to return the funds back to the source (by creating a new positive imbalance)
     pub fn increase_stake(
         stake_id: &T::StakeId,
         value: NegativeImbalance<T>,
@@ -898,7 +899,7 @@ impl<T: Trait> Module<T> {
         Ok(staked_amount)
     }
 
-    // Initiate a new slashing of a staked stake.
+    /// Initiate a new slashing of a staked stake.
     pub fn initiate_slashing(
         stake_id: &T::StakeId,
         slash_amount: BalanceOf<T>,
@@ -921,7 +922,7 @@ impl<T: Trait> Module<T> {
         Ok(slash_id)
     }
 
-    // Pause an ongoing slashing
+    /// Pause an ongoing slashing
     pub fn pause_slashing(
         stake_id: &T::StakeId,
         slash_id: &T::SlashId,
@@ -940,7 +941,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Resume a currently paused ongoing slashing.
+    /// Resume a currently paused ongoing slashing.
     pub fn resume_slashing(
         stake_id: &T::StakeId,
         slash_id: &T::SlashId,
@@ -958,7 +959,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Cancel an ongoing slashing (regardless of whether its active or paused).
+    /// Cancel an ongoing slashing (regardless of whether its active or paused).
     pub fn cancel_slashing(
         stake_id: &T::StakeId,
         slash_id: &T::SlashId,
@@ -977,7 +978,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Initiate unstaking of a staked stake.
+    /// Initiate unstaking of a Staked stake.
     pub fn initiate_unstaking(
         stake_id: &T::StakeId,
         unstaking_period: T::BlockNumber,
@@ -996,7 +997,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Pause an ongoing unstaking.
+    /// Pause an ongoing Unstaking.
     pub fn pause_unstaking(
         stake_id: &T::StakeId,
     ) -> Result<(), StakeActionError<PauseUnstakingError>> {
@@ -1014,7 +1015,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Continue a currently paused ongoing unstaking.
+    /// Resume a currently paused ongoing unstaking.
     pub fn resume_unstaking(
         stake_id: &T::StakeId,
     ) -> Result<(), StakeActionError<ResumeUnstakingError>> {
@@ -1032,11 +1033,11 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /*
-      Handle timers for finalizing unstaking and slashing.
-      Finalised unstaking results in the staked_balance in the given stake to be transferred.
-      Finalised slashing results in the staked_balance in the given stake being correspondingly reduced.
-    */
+    /// Handle timers for finalizing unstaking and slashing.
+    /// Finalised unstaking results in the staked_balance in the given stake to removed from the pool, the corresponding
+    /// imbalance is provided to the unstaked() hook in the StakingEventsHandler.
+    /// Finalised slashing results in the staked_balance in the given stake being correspondingly reduced, and the imbalance
+    /// is provided to the slashed() hook in the StakingEventsHandler.
     fn finalize_slashing_and_unstaking() {
         for (stake_id, ref mut stake) in <Stakes<T>>::enumerate() {
             let (updated, slashed, unstaked) =
@@ -1061,7 +1062,7 @@ impl<T: Trait> Module<T> {
             }
 
             if let Some(staked_amount) = unstaked {
-                // withdraw the stake from the pool
+                // remove the unstaked amount from the pool
                 let imbalance = Self::withdraw_funds_from_stake_pool(staked_amount);
                 assert_eq!(imbalance.peek(), staked_amount);
 
