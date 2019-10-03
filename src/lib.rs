@@ -555,24 +555,42 @@ impl<T: Trait> Module<T> {
 
         ensure!(!entity.in_class_schema_indexes.is_empty(), ERROR_ENTITY_DOES_NOT_SUPPORT_SCHEMAS_YET);
 
+        // Get current property values of an entity as a mutable vector,
+        // so we can update them if new values provided present in new_property_values.
         let mut updated_values = entity.values;
 
+        // Iterate over a vector of new values and update corresponding properties
+        // of this entity if new values are valid.
         for new_prop_value in new_property_values.iter() {
+
             let ClassPropertyValue {
                 in_class_index: id,
                 value: new_value
             } = new_prop_value;
-            if let Some(prop) = updated_values.iter_mut().find(|prop| *id == prop.in_class_index) {
+
+            // Try to find a current property value of an entity
+            // by matching its id to the id of a property with a new value.
+            if let Some(current_prop_value) = updated_values.iter_mut()
+                .find(|prop| *id == prop.in_class_index) {
+
                 let ClassPropertyValue {
                     in_class_index: valid_id,
                     value: current_value
-                } = prop;
+                } = current_prop_value;
+
+                // Get class-level information about this property
                 let class_prop = class.properties.get(*valid_id as usize).unwrap();
 
+                // Validate a new property value against the type of this property
+                // and check any additional constraints like the length of a vector
+                // if it's a vector property or the length of a text if it's a text property.
                 Self::ensure_property_value_is_valid(new_value.clone(), class_prop.clone())?;
 
+                // Update a current prop value in a mutable vector, if a new value is valid. 
                 *current_value = new_value.clone();
             } else {
+                // Throw an error if a property was not found on entity
+                // by an in-class index of a property update.
                 return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
             }
         }
