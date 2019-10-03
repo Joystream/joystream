@@ -1,7 +1,7 @@
 #[derive(Debug, Eq, PartialEq)]
-pub enum StakeActionError<ActionError> {
+pub enum StakeActionError<ErrorType> {
     StakeNotFound,
-    Error(ActionError),
+    Error(ErrorType),
 }
 
 impl<ErrorType> From<ErrorType> for StakeActionError<ErrorType> {
