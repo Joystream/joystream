@@ -109,7 +109,7 @@ pub type EntityId = u64;
 pub struct Class {
     id: ClassId,
 
-    /// All properties that has been used on this class across different class schemas.
+    /// All properties that have been used on this class across different class schemas.
     /// Unlikely to be more than roughly 20 properties per class, often less.
     /// For Person, think "height", "weight", etc.
     properties: Vec<Property>,
@@ -297,7 +297,7 @@ decl_event!(
         // EntityDeleted(EntityId),
         EntityNameUpdated(EntityId),
         EntityPropertiesUpdated(EntityId),
-        EntitySchemaAdded(EntityId),
+        EntitySchemaAdded(EntityId, u16),
 
         /// This is a fake event that uses AccountId type just to make Rust compiler happy to compile this module.
         FixCompilation(AccountId),
@@ -540,7 +540,7 @@ impl<T: Trait> Module<T> {
             entity.values = updated_values_with_nones;
         });
 
-        Self::deposit_event(RawEvent::EntitySchemaAdded(entity_id));
+        Self::deposit_event(RawEvent::EntitySchemaAdded(entity_id, schema_id));
         Ok(())
     }
 
