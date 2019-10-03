@@ -127,7 +127,7 @@ fn enter_staked_state() {
         // can't stake zero
         assert_err!(
             StakePool::stake_from_account(&100, &staker_account, 0),
-            StakingError::ChangingStakeByZero
+            errors::StakeActionError::Error(StakingError::CannotStakeZero)
         );
 
         // must stake at least the minimum balance
@@ -138,14 +138,14 @@ fn enter_staked_state() {
                     &staker_account,
                     Balances::minimum_balance() - 1
                 ),
-                StakingError::StakingLessThanMinimumBalance
+                errors::StakeActionError::Error(StakingError::CannotStakeLessThanMinimumBalance)
             );
         }
 
         // cannot stake with insufficient funds
         assert_err!(
             StakePool::stake_from_account(&100, &staker_account, stake_value),
-            StakingError::InsufficientBalance
+            errors::StakeActionError::Error(StakingError::InsufficientBalanceInSourceAccount)
         );
 
         // deposit exact amount to stake
@@ -192,7 +192,7 @@ fn increasing_stake() {
 
         assert_err!(
             StakePool::increase_stake_from_account(&100, &staker_account, 0),
-            StakingError::ChangingStakeByZero
+            errors::StakeActionError::Error(IncreasingStakeError::CannotChangeStakeByZero)
         );
 
         let total_staked =
@@ -263,7 +263,7 @@ fn decreasing_stake() {
 
         assert_err!(
             StakePool::decrease_stake_to_account(&100, &staker_account, 0),
-            StakingError::ChangingStakeByZero
+            errors::StakeActionError::Error(DecreasingStakeError::CannotChangeStakeByZero)
         );
 
         let total_staked =
@@ -298,7 +298,7 @@ fn decreasing_stake() {
         // cannot unstake more than total at stake
         assert_err!(
             StakePool::decrease_stake_to_account(&100, &staker_account, total_staked + 1),
-            StakingError::InsufficientStake
+            errors::StakeActionError::Error(DecreasingStakeError::InsufficientStake)
         );
 
         // decreasing stake to value less than minimum_balance should reduce entire stake
@@ -344,7 +344,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
         assert_err!(
             StakePool::initiate_slashing(&100, 5000, 0),
-            StakingError::StakeNotFound
+            errors::StakeActionError::StakeNotFound
         );
 
         let stake_id = StakePool::create_stake();
@@ -358,12 +358,14 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
         assert_err!(
             StakePool::initiate_slashing(&stake_id, 5000, 0),
-            StakingError::ZeroSlashPeriod
+            errors::StakeActionError::Error(
+                InitiateSlashingError::SlashPeriodShouldBeGreaterThanZero
+            )
         );
 
         assert_err!(
             StakePool::initiate_slashing(&stake_id, 5000, 1),
-            StakingError::NotStaked
+            errors::StakeActionError::Error(InitiateSlashingError::NotStaked)
         );
 
         <Stakes<Test>>::insert(
@@ -419,11 +421,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
         assert_err!(
             StakePool::pause_slashing(&stake_id, &999),
-            StakingError::SlashNotFound
+            errors::StakeActionError::Error(PauseSlashingError::SlashNotFound)
         );
         assert_err!(
             StakePool::pause_slashing(&999, &slash_id),
-            StakingError::StakeNotFound
+            StakeActionError::StakeNotFound
         );
 
         assert_ok!(StakePool::pause_slashing(&stake_id, &slash_id));
@@ -455,11 +457,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
         assert_err!(
             StakePool::resume_slashing(&stake_id, &999),
-            StakingError::SlashNotFound
+            errors::StakeActionError::Error(ResumeSlashingError::SlashNotFound)
         );
         assert_err!(
             StakePool::resume_slashing(&999, &slash_id),
-            StakingError::StakeNotFound
+            errors::StakeActionError::StakeNotFound
         );
 
         assert_ok!(StakePool::resume_slashing(&stake_id, &slash_id));
@@ -491,11 +493,11 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
         assert_err!(
             StakePool::cancel_slashing(&stake_id, &999),
-            StakingError::SlashNotFound
+            errors::StakeActionError::Error(CancelSlashingError::SlashNotFound)
         );
         assert_err!(
             StakePool::cancel_slashing(&999, &slash_id),
-            StakingError::StakeNotFound
+            errors::StakeActionError::StakeNotFound
         );
 
         assert_ok!(StakePool::cancel_slashing(&stake_id, &slash_id));
@@ -586,7 +588,7 @@ fn initiating_pausing_resuming_unstaking() {
 
         assert_err!(
             StakePool::initiate_unstaking(&100, 1),
-            StakingError::StakeNotFound
+            errors::StakeActionError::StakeNotFound
         );
 
         let stake_id = StakePool::create_stake();
@@ -600,12 +602,14 @@ fn initiating_pausing_resuming_unstaking() {
 
         assert_err!(
             StakePool::initiate_unstaking(&stake_id, 0),
-            StakingError::ZeroUnstakingPeriod
+            errors::StakeActionError::Error(
+                InitiateUnstakingError::UnstakingPeriodShouldBeGreaterThanZero
+            )
         );
 
         assert_err!(
             StakePool::initiate_unstaking(&stake_id, 1),
-            StakingError::NotStaked
+            errors::StakeActionError::Error(InitiateUnstakingError::NotStaked)
         );
 
         let mut ongoing_slashes = BTreeMap::new();
@@ -634,7 +638,9 @@ fn initiating_pausing_resuming_unstaking() {
 
         assert_err!(
             StakePool::initiate_unstaking(&stake_id, 1),
-            StakingError::UnstakingWhileSlashesOngoing
+            errors::StakeActionError::Error(
+                InitiateUnstakingError::CannotUnstakeWhileSlashesOngoing
+            )
         );
 
         assert_ok!(StakePool::cancel_slashing(&stake_id, &1));
