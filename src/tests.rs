@@ -8,6 +8,7 @@ use runtime_io::with_externalities;
 #[test]
 fn adding_and_removing_mints() {
     with_externalities(&mut build_test_externalities(), || {
+        System::set_block_number(1);
         let capacity: u64 = 5000;
         let adjustment_amount: u64 = 500;
 
@@ -21,9 +22,15 @@ fn adding_and_removing_mints() {
             .unwrap();
         assert!(Minting::mint_exists(mint_id));
 
-        assert_eq!(Minting::mint_capacity(mint_id).ok().unwrap(), capacity);
+        assert_eq!(Minting::get_mint_capacity(mint_id).ok().unwrap(), capacity);
 
-        assert_eq!(Minting::mint_adjustment(mint_id), Ok(adjustment));
+        assert_eq!(
+            Minting::get_mint_next_adjustment(mint_id),
+            Ok(Some(NextAdjustment {
+                adjustment,
+                at_block: 1 + 100,
+            }))
+        );
 
         Minting::remove_mint(mint_id);
         assert!(!Minting::mint_exists(mint_id));
@@ -41,7 +48,7 @@ fn minting() {
 
         assert_eq!(Balances::free_balance(&1), 1000);
 
-        assert_eq!(Minting::mint_capacity(mint_id).ok().unwrap(), 4000);
+        assert_eq!(Minting::get_mint_capacity(mint_id).ok().unwrap(), 4000);
     });
 }
 
@@ -77,7 +84,7 @@ fn adjustment_adding() {
 
         Minting::update_mints(100);
         assert_eq!(
-            Minting::mint_capacity(mint_id).ok().unwrap(),
+            Minting::get_mint_capacity(mint_id).ok().unwrap(),
             capacity + (adjustment_amount * 1)
         );
 
@@ -88,7 +95,7 @@ fn adjustment_adding() {
 
         Minting::update_mints(200);
         assert_eq!(
-            Minting::mint_capacity(mint_id).ok().unwrap(),
+            Minting::get_mint_capacity(mint_id).ok().unwrap(),
             capacity + (adjustment_amount * 2)
         );
     });
@@ -112,12 +119,12 @@ fn adjustment_reducing() {
 
         Minting::update_mints(100);
         assert_eq!(
-            Minting::mint_capacity(mint_id).ok().unwrap(),
+            Minting::get_mint_capacity(mint_id).ok().unwrap(),
             capacity - adjustment_amount
         );
 
         assert_eq!(
-            Minting::mint_capacity(mint_id).ok().unwrap(),
+            Minting::get_mint_capacity(mint_id).ok().unwrap(),
             capacity - (adjustment_amount * 1)
         );
 
@@ -128,7 +135,7 @@ fn adjustment_reducing() {
 
         Minting::update_mints(200);
         assert_eq!(
-            Minting::mint_capacity(mint_id).ok().unwrap(),
+            Minting::get_mint_capacity(mint_id).ok().unwrap(),
             capacity - (adjustment_amount * 2)
         );
     });
@@ -152,7 +159,7 @@ fn adjustment_setting() {
 
         Minting::update_mints(100);
         assert_eq!(
-            Minting::mint_capacity(mint_id).ok().unwrap(),
+            Minting::get_mint_capacity(mint_id).ok().unwrap(),
             setting_amount
         );
     });
@@ -180,17 +187,17 @@ fn adjustment_first_interval() {
         .unwrap();
 
         Minting::update_mints(100);
-        assert_eq!(Minting::mint_capacity(mint_id).ok().unwrap(), capacity);
+        assert_eq!(Minting::get_mint_capacity(mint_id).ok().unwrap(), capacity);
 
         Minting::update_mints(1000);
         assert_eq!(
-            Minting::mint_capacity(mint_id).ok().unwrap(),
+            Minting::get_mint_capacity(mint_id).ok().unwrap(),
             capacity + amount
         );
 
         Minting::update_mints(1100);
         assert_eq!(
-            Minting::mint_capacity(mint_id).ok().unwrap(),
+            Minting::get_mint_capacity(mint_id).ok().unwrap(),
             capacity + 2 * amount
         );
     });

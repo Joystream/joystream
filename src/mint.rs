@@ -12,35 +12,26 @@ pub enum AdjustCapacityBy<Balance: Zero> {
     Reducing(Balance),
 }
 
-impl<Balance: Zero> Default for AdjustCapacityBy<Balance> {
-    fn default() -> Self {
-        AdjustCapacityBy::Adding(Zero::zero())
-    }
-}
-
 #[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
-pub struct AdjustOnInterval<Balance: Zero, BlockNumber: Zero> {
+pub struct AdjustOnInterval<Balance: Zero, BlockNumber> {
     pub block_interval: BlockNumber,
     pub adjustment_type: AdjustCapacityBy<Balance>,
 }
 
-impl<Balance: Zero, BlockNumber: Zero> Default for AdjustOnInterval<Balance, BlockNumber> {
-    fn default() -> Self {
-        AdjustOnInterval {
-            block_interval: Zero::zero(),
-            adjustment_type: Default::default(),
-        }
-    }
-}
-
 #[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Adjustment<Balance: Zero, BlockNumber: Zero> {
+pub enum Adjustment<Balance: Zero, BlockNumber> {
     // First adjustment will be after AdjustOnInterval.block_interval
     Interval(AdjustOnInterval<Balance, BlockNumber>),
     // First Adjustment will be at absolute blocknumber
     IntervalAfterFirstAdjustmentAbsolute(AdjustOnInterval<Balance, BlockNumber>, BlockNumber),
     // First Adjustment will be after a specified number of blocks
     IntervalAfterFirstAdjustmentRelative(AdjustOnInterval<Balance, BlockNumber>, BlockNumber),
+}
+
+#[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
+pub struct NextAdjustment<Balance: Zero, BlockNumber> {
+    pub adjustment: AdjustOnInterval<Balance, BlockNumber>,
+    pub at_block: BlockNumber,
 }
 
 #[derive(Encode, Decode, Default, Copy, Clone)]
@@ -50,15 +41,13 @@ pub enum Adjustment<Balance: Zero, BlockNumber: Zero> {
 pub struct Mint<Balance, BlockNumber>
 where
     Balance: Copy + SimpleArithmetic + Zero,
-    BlockNumber: Copy + SimpleArithmetic + Zero,
+    BlockNumber: Copy + SimpleArithmetic,
 {
     capacity: Balance,
 
-    adjustment_on_interval: AdjustOnInterval<Balance, BlockNumber>,
-
     // Whether there is an upcoming block where an adjustment to the mint will be made
     // When this is not set, the mint is effectively paused.
-    adjust_capacity_at_block_number: Option<BlockNumber>,
+    next_adjustment: Option<NextAdjustment<Balance, BlockNumber>>,
 
     created_at: BlockNumber,
 
@@ -73,7 +62,7 @@ pub enum MintingError {
 impl<Balance, BlockNumber> Mint<Balance, BlockNumber>
 where
     Balance: Copy + SimpleArithmetic + Zero,
-    BlockNumber: Copy + SimpleArithmetic + Zero,
+    BlockNumber: Copy + SimpleArithmetic,
 {
     pub fn new(
         initial_capacity: Balance,
@@ -84,26 +73,26 @@ where
             capacity: initial_capacity,
             created_at: now,
             total_minted: Zero::zero(),
-            adjust_capacity_at_block_number: adjustment.map(|adjustment| match adjustment {
-                Adjustment::Interval(adjust_on_interval) => now + adjust_on_interval.block_interval,
-                Adjustment::IntervalAfterFirstAdjustmentAbsolute(_, first_adjustment) => {
-                    first_adjustment
-                }
-                Adjustment::IntervalAfterFirstAdjustmentRelative(_, first_adjustment) => {
-                    now + first_adjustment
-                }
+            next_adjustment: adjustment.map(|adjustment| match adjustment {
+                Adjustment::Interval(adjust_on_interval) => NextAdjustment {
+                    at_block: now + adjust_on_interval.block_interval,
+                    adjustment: adjust_on_interval,
+                },
+                Adjustment::IntervalAfterFirstAdjustmentAbsolute(
+                    adjust_on_interval,
+                    first_adjustment,
+                ) => NextAdjustment {
+                    adjustment: adjust_on_interval,
+                    at_block: first_adjustment,
+                },
+                Adjustment::IntervalAfterFirstAdjustmentRelative(
+                    adjust_on_interval,
+                    first_adjustment,
+                ) => NextAdjustment {
+                    adjustment: adjust_on_interval,
+                    at_block: now + first_adjustment,
+                },
             }),
-            adjustment_on_interval: adjustment
-                .map(|adjustment| match adjustment {
-                    Adjustment::Interval(adjust_on_interval) => adjust_on_interval,
-                    Adjustment::IntervalAfterFirstAdjustmentAbsolute(adjust_on_interval, _) => {
-                        adjust_on_interval
-                    }
-                    Adjustment::IntervalAfterFirstAdjustmentRelative(adjust_on_interval, _) => {
-                        adjust_on_interval
-                    }
-                })
-                .unwrap_or(Default::default()),
         }
     }
 
@@ -151,31 +140,30 @@ where
         Ok(())
     }
 
-    pub fn adjustment(&self) -> AdjustOnInterval<Balance, BlockNumber> {
-        self.adjustment_on_interval
+    pub fn next_adjustment(&self) -> Option<NextAdjustment<Balance, BlockNumber>> {
+        self.next_adjustment
     }
 
-    /// Updates capacity mints where the adjust_capacity_at_block_number value matches the current block number.
-    /// At such time the value is updated by adding adjustment.block_interval.
     pub fn maybe_do_capacity_adjustment(&mut self, now: BlockNumber) -> bool {
-        if !self.is_time_for_adjustment(now) {
-            return false;
-        }
+        self.next_adjustment.map_or(false, |next_adjustment| {
+            if now != next_adjustment.at_block {
+                false
+            } else {
+                // update mint capacity
+                self.capacity = Self::adjusted_capacity(
+                    self.capacity,
+                    next_adjustment.adjustment.adjustment_type,
+                );
 
-        // update mint capacity
-        self.capacity =
-            Self::adjusted_capacity(self.capacity, self.adjustment_on_interval.adjustment_type);
+                // set next adjustment
+                self.next_adjustment = Some(NextAdjustment {
+                    adjustment: next_adjustment.adjustment,
+                    at_block: now + next_adjustment.adjustment.block_interval,
+                });
 
-        // set blocknumber for next adjustment
-        self.adjust_capacity_at_block_number =
-            Some(now + self.adjustment_on_interval.block_interval);
-
-        true
-    }
-
-    fn is_time_for_adjustment(&self, now: BlockNumber) -> bool {
-        self.adjust_capacity_at_block_number
-            .map_or(false, |block_number| block_number == now)
+                true
+            }
+        })
     }
 
     fn adjusted_capacity(capacity: Balance, adjustment_type: AdjustCapacityBy<Balance>) -> Balance {

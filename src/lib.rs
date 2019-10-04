@@ -15,7 +15,7 @@ mod mint;
 mod mock;
 mod tests;
 
-pub use mint::{AdjustCapacityBy, AdjustOnInterval, Adjustment, Mint, MintingError};
+pub use mint::*;
 
 use system;
 
@@ -111,7 +111,6 @@ impl<T: Trait> Module<T> {
         let now = <system::Module<T>>::block_number();
 
         // Make sure the next adjustment if set, is in the future
-
         if let Some(adjustment) = adjustment {
             match adjustment {
                 Adjustment::IntervalAfterFirstAdjustmentAbsolute(_, first_adjustment_in) => {
@@ -206,7 +205,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Returns a mint's capacity if it exists, error otherwise.
-    pub fn mint_capacity(mint_id: T::MintId) -> Result<BalanceOf<T>, GeneralError> {
+    pub fn get_mint_capacity(mint_id: T::MintId) -> Result<BalanceOf<T>, GeneralError> {
         ensure!(<Mints<T>>::exists(&mint_id), GeneralError::MintNotFound);
         let mint = Self::mints(&mint_id);
 
@@ -214,14 +213,14 @@ impl<T: Trait> Module<T> {
     }
 
     /// Returns a mint's adjustment policy if it exists, error otherwise.
-    pub fn mint_adjustment(
+    pub fn get_mint_next_adjustment(
         mint_id: T::MintId,
-    ) -> Result<AdjustOnInterval<BalanceOf<T>, T::BlockNumber>, GeneralError> {
+    ) -> Result<Option<NextAdjustment<BalanceOf<T>, T::BlockNumber>>, GeneralError> {
         ensure!(<Mints<T>>::exists(&mint_id), GeneralError::MintNotFound);
 
         let mint = Self::mints(&mint_id);
 
-        Ok(mint.adjustment())
+        Ok(mint.next_adjustment())
     }
 
     /// Returns true if a mint exists.
