@@ -21,7 +21,7 @@ impl_outer_origin! {
 }
 
 pub fn alice_id() -> u32 {
-    1
+    Members::member_id_by_account_id(alice_account()).unwrap()
 }
 pub fn alice_account() -> u64 {
     1
@@ -120,7 +120,6 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
         .unwrap();
 
     membership::members::GenesisConfig::<Test> {
-        first_member_id: 1,
         default_paid_membership_fee: 0,
         members: vec![(alice_account(), "alice".into(), "".into(), "".into())],
     }
@@ -133,3 +132,4 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
 pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Actors = actors::Module<Test>;
+pub type Members = membership::members::Module<Test>;

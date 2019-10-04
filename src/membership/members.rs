@@ -4,7 +4,7 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
 #[cfg(feature = "std")]
 use runtime_io::with_storage;
-use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeSerializeDebug, Member, One, SimpleArithmetic};
 use srml_support::traits::{Currency, Get};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
@@ -46,7 +46,6 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
     type InitialMembersBalance: Get<BalanceOf<Self>>;
 }
 
-const DEFAULT_FIRST_MEMBER_ID: u32 = 1;
 const FIRST_PAID_TERMS_ID: u32 = 1;
 
 // Default paid membership terms
@@ -144,11 +143,9 @@ impl<T: Trait> Default for PaidMembershipTerms<T> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Membership {
-        /// MemberId's start at this value
-        pub FirstMemberId get(first_member_id) config(first_member_id): T::MemberId = T::MemberId::from(DEFAULT_FIRST_MEMBER_ID);
-
-        /// MemberId to assign to next member that is added to the registry
-        pub NextMemberId get(next_member_id) build(|config: &GenesisConfig<T>| config.first_member_id): T::MemberId = T::MemberId::from(DEFAULT_FIRST_MEMBER_ID);
+        /// MemberId to assign to next member that is added to the registry, and is also the
+        /// total number of members created. MemberIds start at Zero.
+        pub MembersCreated get(members_created) : T::MemberId;
 
         /// Mapping of member ids to their corresponding primary account_id
         pub AccountIdByMemberId get(account_id_by_member_id) : map T::MemberId => T::AccountId;
@@ -215,9 +212,9 @@ decl_storage! {
                     // Give member starting balance
                     T::Currency::deposit_creating(&who, T::InitialMembersBalance::get());
                 }
+                <MembersCreated<T>>::put(T::MemberId::from(config.members.len() as u32));
             });
         });
-
     }
 }
 
@@ -501,7 +498,7 @@ impl<T: Trait> Module<T> {
         user_info: &CheckedUserInfo,
         entry_method: EntryMethod<T>,
     ) -> T::MemberId {
-        let new_member_id = Self::next_member_id();
+        let new_member_id = Self::members_created();
 
         let profile: Profile<T> = Profile {
             handle: user_info.handle.clone(),
@@ -521,9 +518,7 @@ impl<T: Trait> Module<T> {
         <AccountIdByMemberId<T>>::insert(new_member_id, who.clone());
         <MemberProfile<T>>::insert(new_member_id, profile);
         <Handles<T>>::insert(user_info.handle.clone(), new_member_id);
-        <NextMemberId<T>>::mutate(|n| {
-            *n += T::MemberId::from(1);
-        });
+        <MembersCreated<T>>::put(new_member_id + One::one());
 
         new_member_id
     }

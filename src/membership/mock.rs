@@ -98,14 +98,12 @@ impl members::Trait for Test {
 }
 
 pub struct ExtBuilder {
-    first_member_id: u32,
     default_paid_membership_fee: u64,
     members: Vec<(u64)>,
 }
 impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
-            first_member_id: 1,
             default_paid_membership_fee: 100,
             members: vec![],
         }
@@ -113,10 +111,6 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
-    pub fn first_member_id(mut self, first_member_id: u32) -> Self {
-        self.first_member_id = first_member_id;
-        self
-    }
     pub fn default_paid_membership_fee(mut self, default_paid_membership_fee: u64) -> Self {
         self.default_paid_membership_fee = default_paid_membership_fee;
         self
@@ -131,7 +125,6 @@ impl ExtBuilder {
             .unwrap();
 
         members::GenesisConfig::<Test> {
-            first_member_id: self.first_member_id,
             default_paid_membership_fee: self.default_paid_membership_fee,
             members: self
                 .members

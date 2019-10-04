@@ -116,7 +116,6 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
         .unwrap();
 
     membership::members::GenesisConfig::<Test> {
-        first_member_id: 1,
         default_paid_membership_fee: 0,
         members: vec![
             (1, "member1".into(), "".into(), "".into()),

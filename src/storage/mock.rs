@@ -259,7 +259,6 @@ impl ExtBuilder {
         .unwrap();
 
         membership::members::GenesisConfig::<Test> {
-            first_member_id: 1,
             default_paid_membership_fee: 0,
             members: vec![(1, "alice".into(), "".into(), "".into())],
         }

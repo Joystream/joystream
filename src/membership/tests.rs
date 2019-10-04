@@ -62,22 +62,14 @@ fn set_alice_free_balance(balance: u64) {
 #[test]
 fn initial_state() {
     const DEFAULT_FEE: u64 = 500;
-    const DEFAULT_FIRST_ID: u32 = 1000;
     let initial_members = [1, 2, 3];
 
     with_externalities(
         &mut ExtBuilder::default()
             .default_paid_membership_fee(DEFAULT_FEE)
-            .first_member_id(DEFAULT_FIRST_ID)
             .members(initial_members.to_vec())
             .build(),
         || {
-            assert_eq!(Members::first_member_id(), DEFAULT_FIRST_ID);
-            assert_eq!(
-                Members::next_member_id(),
-                DEFAULT_FIRST_ID + initial_members.len() as u32
-            );
-
             let default_terms = assert_ok_unwrap(
                 Members::paid_membership_terms_by_id(DEFAULT_PAID_TERM_ID),
                 "default terms not initialized",
@@ -97,13 +89,11 @@ fn initial_state() {
 #[test]
 fn buy_membership() {
     const DEFAULT_FEE: u64 = 500;
-    const DEFAULT_FIRST_ID: u32 = 1000;
     const SURPLUS_BALANCE: u64 = 500;
 
     with_externalities(
         &mut ExtBuilder::default()
             .default_paid_membership_fee(DEFAULT_FEE)
-            .first_member_id(DEFAULT_FIRST_ID)
             .build(),
         || {
             let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
