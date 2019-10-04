@@ -1,6 +1,6 @@
 use crate::currency::{BalanceOf, GovernanceCurrency};
 use codec::{Codec, Decode, Encode};
-use rstd::collections::btree_map::BTreeMap;
+
 use rstd::prelude::*;
 #[cfg(feature = "std")]
 use runtime_io::with_storage;
@@ -11,6 +11,8 @@ use srml_support::{
 };
 use system::{self, ensure_root, ensure_signed};
 use timestamp;
+
+pub use super::role_types::*;
 
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -59,32 +61,6 @@ const DEFAULT_MAX_HANDLE_LENGTH: u32 = 40;
 const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 
-pub type RoleId = u32;
-pub type ActorId = u32;
-
-#[derive(Encode, Decode, Copy, Clone)]
-pub enum Role {
-    Publisher,
-    CuratorLead,
-    Curator,
-}
-
-impl From<Role> for RoleId {
-    fn from(r: Role) -> RoleId {
-        match r {
-            Role::Publisher => 0,
-            Role::CuratorLead => 1,
-            Role::Curator => 2,
-        }
-    }
-}
-
-#[derive(Encode, Decode, Eq, PartialEq)]
-pub struct ActorInRole {
-    role_id: RoleId,
-    actor_id: ActorId,
-}
-
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode)]
 /// Stored information about a registered user
@@ -98,7 +74,7 @@ pub struct Profile<T: Trait> {
     pub suspended: bool,
     pub subscription: Option<T::SubscriptionId>,
     pub controller_account: T::AccountId,
-    pub roles: BTreeMap<RoleId, Vec<ActorId>>,
+    pub roles: ActorInRoleSet,
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
@@ -509,7 +485,7 @@ impl<T: Trait> Module<T> {
             entry: entry_method,
             suspended: false,
             subscription: None,
-            roles: BTreeMap::new(),
+            roles: ActorInRoleSet::new(),
             controller_account: who.clone(),
         };
 
@@ -556,16 +532,9 @@ impl<T: Trait> Module<T> {
     // Checks if a member identified by their controller account occupies a role at least once
     pub fn member_is_in_role(controller_account: &T::AccountId, role: Role) -> bool {
         if let Ok(member_id) = Self::ensure_is_member_controller_account(controller_account) {
-            Self::ensure_profile(member_id).ok().map_or_else(
-                || false,
-                |profile| {
-                    if let Some(actor_ids) = profile.roles.get(&role.into()) {
-                        actor_ids.len() > 0
-                    } else {
-                        false
-                    }
-                },
-            )
+            Self::ensure_profile(member_id)
+                .ok()
+                .map_or(false, |profile| profile.roles.has_role(role))
         } else {
             false
         }
@@ -621,21 +590,10 @@ impl<T: Trait> Module<T> {
         );
 
         let mut profile = Self::ensure_profile(member_id)?;
-        let mut new_ids = vec![actor_id];
+        assert!(profile.roles.register_role(&actor_in_role));
 
-        if let Some(current_ids) = profile.roles.get_mut(&role.into()) {
-            current_ids.append(&mut new_ids);
-        } else {
-            profile.roles.insert(role.into(), new_ids);
-        }
         <MemberProfile<T>>::insert(member_id, profile);
-        <MembershipIdByActorInRole<T>>::insert(
-            ActorInRole {
-                role_id: role.into(),
-                actor_id,
-            },
-            member_id,
-        );
+        <MembershipIdByActorInRole<T>>::insert(&actor_in_role, member_id);
         Self::deposit_event(RawEvent::MemberRegisteredRole(
             member_id,
             role.into(),
@@ -676,21 +634,26 @@ impl<T: Trait> Module<T> {
         let member_id = Self::ensure_is_member_controller_account(controller_account)?;
         let mut profile = Self::ensure_profile(member_id)?;
 
-        if let Some(current_ids) = profile.roles.get_mut(&role.into()) {
-            //current_ids.remove_item(&actor_id); // unstable nightly feature!
-            current_ids.retain(|id| *id != actor_id);
-            <MemberProfile<T>>::insert(member_id, profile);
-        }
+        let actor_in_role = ActorInRole {
+            role_id: role.into(),
+            actor_id,
+        };
+
+        assert!(profile.roles.unregister_role(&actor_in_role));
+
+        <MemberProfile<T>>::insert(member_id, profile);
 
         <MembershipIdByActorInRole<T>>::remove(ActorInRole {
             role_id: role.into(),
             actor_id,
         });
+
         Self::deposit_event(RawEvent::MemberUnregisteredRole(
             member_id,
             role.into(),
             actor_id,
         ));
+
         Ok(())
     }
 }
