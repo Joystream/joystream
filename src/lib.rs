@@ -4,7 +4,7 @@
 #[cfg(feature = "std")]
 use rstd::prelude::*;
 
-use codec::Codec;
+use codec::{Codec, Decode, Encode};
 use runtime_primitives::traits::{MaybeSerializeDebug, Member, One, SimpleArithmetic, Zero};
 use srml_support::traits::Currency;
 use srml_support::{
@@ -75,6 +75,16 @@ impl From<MintingError> for TransferError {
     }
 }
 
+#[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Adjustment<Balance: Zero, BlockNumber> {
+    // First adjustment will be after AdjustOnInterval.block_interval
+    Interval(AdjustOnInterval<Balance, BlockNumber>),
+    // First Adjustment will be at absolute blocknumber
+    IntervalAfterFirstAdjustmentAbsolute(AdjustOnInterval<Balance, BlockNumber>, BlockNumber),
+    // First Adjustment will be after a specified number of blocks
+    IntervalAfterFirstAdjustmentRelative(AdjustOnInterval<Balance, BlockNumber>, BlockNumber),
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as TokenMint {
         /// Mints
@@ -110,7 +120,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::MintId, GeneralError> {
         let now = <system::Module<T>>::block_number();
 
-        // Make sure the next adjustment if set, is in the future
+        // Ensure the next adjustment if set, is in the future
         if let Some(adjustment) = adjustment {
             match adjustment {
                 Adjustment::IntervalAfterFirstAdjustmentAbsolute(_, first_adjustment_in) => {
@@ -123,11 +133,33 @@ impl<T: Trait> Module<T> {
             }
         }
 
+        // Determine next adjutment
+        let next_adjustment = adjustment.map(|adjustment| match adjustment {
+            Adjustment::Interval(adjust_on_interval) => NextAdjustment {
+                at_block: now + adjust_on_interval.block_interval,
+                adjustment: adjust_on_interval,
+            },
+            Adjustment::IntervalAfterFirstAdjustmentAbsolute(
+                adjust_on_interval,
+                first_adjustment_at,
+            ) => NextAdjustment {
+                adjustment: adjust_on_interval,
+                at_block: first_adjustment_at,
+            },
+            Adjustment::IntervalAfterFirstAdjustmentRelative(
+                adjust_on_interval,
+                first_adjustment_after,
+            ) => NextAdjustment {
+                adjustment: adjust_on_interval,
+                at_block: now + first_adjustment_after,
+            },
+        });
+
         // get next mint_id and increment total number of mints created
         let mint_id = Self::mints_created();
         <MintsCreated<T>>::put(mint_id + One::one());
 
-        <Mints<T>>::insert(mint_id, Mint::new(initial_capacity, adjustment, now));
+        <Mints<T>>::insert(mint_id, Mint::new(initial_capacity, next_adjustment, now));
 
         Ok(mint_id)
     }

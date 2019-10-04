@@ -19,16 +19,6 @@ pub struct AdjustOnInterval<Balance: Zero, BlockNumber> {
 }
 
 #[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Adjustment<Balance: Zero, BlockNumber> {
-    // First adjustment will be after AdjustOnInterval.block_interval
-    Interval(AdjustOnInterval<Balance, BlockNumber>),
-    // First Adjustment will be at absolute blocknumber
-    IntervalAfterFirstAdjustmentAbsolute(AdjustOnInterval<Balance, BlockNumber>, BlockNumber),
-    // First Adjustment will be after a specified number of blocks
-    IntervalAfterFirstAdjustmentRelative(AdjustOnInterval<Balance, BlockNumber>, BlockNumber),
-}
-
-#[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
 pub struct NextAdjustment<Balance: Zero, BlockNumber> {
     pub adjustment: AdjustOnInterval<Balance, BlockNumber>,
     pub at_block: BlockNumber,
@@ -66,33 +56,14 @@ where
 {
     pub fn new(
         initial_capacity: Balance,
-        adjustment: Option<Adjustment<Balance, BlockNumber>>,
+        next_adjustment: Option<NextAdjustment<Balance, BlockNumber>>,
         now: BlockNumber,
     ) -> Self {
         Mint {
             capacity: initial_capacity,
             created_at: now,
             total_minted: Zero::zero(),
-            next_adjustment: adjustment.map(|adjustment| match adjustment {
-                Adjustment::Interval(adjust_on_interval) => NextAdjustment {
-                    at_block: now + adjust_on_interval.block_interval,
-                    adjustment: adjust_on_interval,
-                },
-                Adjustment::IntervalAfterFirstAdjustmentAbsolute(
-                    adjust_on_interval,
-                    first_adjustment,
-                ) => NextAdjustment {
-                    adjustment: adjust_on_interval,
-                    at_block: first_adjustment,
-                },
-                Adjustment::IntervalAfterFirstAdjustmentRelative(
-                    adjust_on_interval,
-                    first_adjustment,
-                ) => NextAdjustment {
-                    adjustment: adjust_on_interval,
-                    at_block: now + first_adjustment,
-                },
-            }),
+            next_adjustment: next_adjustment,
         }
     }
 
