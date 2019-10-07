@@ -232,7 +232,7 @@ decl_module! {
         ) {
 
             let proposer = ensure_signed(origin)?;
-            ensure!(Self::can_participate(proposer.clone()), MSG_ONLY_MEMBERS_CAN_PROPOSE);
+            ensure!(Self::can_participate(&proposer), MSG_ONLY_MEMBERS_CAN_PROPOSE);
             ensure!(stake >= Self::min_stake(), MSG_STAKE_IS_TOO_LOW);
 
             ensure!(!name.is_empty(), MSG_EMPTY_NAME_PROVIDED);
@@ -357,9 +357,9 @@ impl<T: Trait> Module<T> {
         <system::Module<T>>::block_number()
     }
 
-    fn can_participate(sender: T::AccountId) -> bool {
-        !T::Currency::free_balance(&sender).is_zero()
-            && <membership::members::Module<T>>::is_active_member(&sender)
+    fn can_participate(sender: &T::AccountId) -> bool {
+        !T::Currency::free_balance(sender).is_zero()
+            && <membership::members::Module<T>>::is_member_account(sender)
     }
 
     fn is_councilor(sender: &T::AccountId) -> bool {

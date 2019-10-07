@@ -161,7 +161,7 @@ decl_module! {
             ipfs_content_id: Vec<u8>
         ) {
             let who = ensure_signed(origin)?;
-            ensure!(<membership::members::Module<T>>::is_active_member(&who), MSG_CREATOR_MUST_BE_MEMBER);
+            ensure!(<membership::members::Module<T>>::is_member_account(&who), MSG_CREATOR_MUST_BE_MEMBER);
 
             ensure!(T::IsActiveDataObjectType::is_active_data_object_type(&type_id),
                 MSG_DO_TYPE_MUST_BE_ACTIVE);
@@ -211,7 +211,7 @@ decl_module! {
             update: ContentMetadataUpdate<T>
         ) {
             let who = ensure_signed(origin)?;
-            ensure!(<membership::members::Module<T>>::is_active_member(&who),
+            ensure!(<membership::members::Module<T>>::is_member_account(&who),
                 "Only active members can add content metadata");
 
             ensure!(!<MetadataByContentId<T>>::exists(&content_id),
@@ -248,7 +248,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Even if origin is an owner of metadata, they stil need to be an active member.
-            ensure!(<membership::members::Module<T>>::is_active_member(&who),
+            ensure!(<membership::members::Module<T>>::is_member_account(&who),
                 "Only active members can update content metadata");
 
             let has_updates = update.schema.is_some() || update.json.is_some();

@@ -73,6 +73,7 @@ pub struct Profile<T: Trait> {
     pub entry: EntryMethod<T>,
     pub suspended: bool,
     pub subscription: Option<T::SubscriptionId>,
+    pub root_account: T::AccountId,
     pub controller_account: T::AccountId,
     pub roles: ActorInRoleSet,
 }
@@ -123,20 +124,17 @@ decl_storage! {
         /// total number of members created. MemberIds start at Zero.
         pub MembersCreated get(members_created) : T::MemberId;
 
-        /// Mapping of member ids to their corresponding primary account_id
-        pub AccountIdByMemberId get(account_id_by_member_id) : map T::MemberId => T::AccountId;
-
-        /// Mapping of members' primary account ids to their member id.
-        pub MemberIdByAccountId get(member_id_by_account_id) : map T::AccountId => Option<T::MemberId>;
-
-        /// Mapping of members' controller account ids to their member id.
-        pub MemberIdByControllerAccountId get(member_id_by_controller_account_id) : map T::AccountId => Option<T::MemberId>;
-
         /// Mapping of member's id to their membership profile
         pub MemberProfile get(member_profile) : map T::MemberId => Option<Profile<T>>;
 
+        /// Mapping of a root account id to vector of member ids it controls
+        pub MemberIdsByRootAccountId get(member_ids_by_root_account_id) : map T::AccountId => Vec<T::MemberId>;
+
+        /// Mapping of a controller account id to vector of member ids it controls
+        pub MemberIdsByControllerAccountId get(member_ids_by_controller_account_id) : map T::AccountId => Vec<T::MemberId>;
+
         /// Registered unique handles and their mapping to their owner
-        pub Handles get(handles) : map Vec<u8> => Option<T::MemberId>;
+        pub Handles get(handles) : map Vec<u8> => T::MemberId;
 
         /// Next paid membership terms id
         pub NextPaidMembershipTermsId get(next_paid_membership_terms_id) : T::PaidTermId = T::PaidTermId::from(FIRST_PAID_TERMS_ID);
@@ -202,8 +200,8 @@ decl_event! {
         MemberUpdatedAboutText(MemberId),
         MemberUpdatedAvatar(MemberId),
         MemberUpdatedHandle(MemberId),
-        MemberSetPrimaryKey(MemberId, AccountId),
-        MemberSetControllerKey(MemberId, AccountId),
+        MemberSetRootAccount(MemberId, AccountId),
+        MemberSetControllerAccount(MemberId, AccountId),
         MemberRegisteredRole(MemberId, RoleId, ActorId),
         MemberUnregisteredRole(MemberId, RoleId, ActorId),
     }
@@ -219,12 +217,6 @@ decl_module! {
 
             // make sure we are accepting new memberships
             ensure!(Self::new_memberships_allowed(), "new members not allowed");
-
-            // ensure key not associated with an existing membership
-            Self::ensure_not_member(&who)?;
-
-            // TODO: ensure account doesn't have any locks, is not a signing account of another member
-            // what other restrictions should we apply if any at all?
 
             // ensure paid_terms_id is active
             let terms = Self::ensure_active_terms_id(paid_terms_id)?;
@@ -244,31 +236,46 @@ decl_module! {
         }
 
         /// Change member's about text
-        pub fn change_member_about_text(origin, text: Vec<u8>) {
-            let controller = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_controller_account(&controller)?;
+        pub fn change_member_about_text(origin, member_id: T::MemberId, text: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+
+            let profile = Self::ensure_profile(member_id)?;
+
+            ensure!(profile.controller_account == sender, "only controller account can update member about text");
+
             Self::_change_member_about_text(member_id, &text)?;
         }
 
         /// Change member's avatar
-        pub fn change_member_avatar(origin, uri: Vec<u8>) {
-            let controller = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_controller_account(&controller)?;
+        pub fn change_member_avatar(origin, member_id: T::MemberId, uri: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+
+            let profile = Self::ensure_profile(member_id)?;
+
+            ensure!(profile.controller_account == sender, "only controller account can update member avatar");
+
             Self::_change_member_avatar(member_id, &uri)?;
         }
 
         /// Change member's handle. Will ensure new handle is unique and old one will be available
         /// for other members to use.
-        pub fn change_member_handle(origin, handle: Vec<u8>) {
-            let controller = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_controller_account(&controller)?;
+        pub fn change_member_handle(origin, member_id: T::MemberId, handle: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+
+            let profile = Self::ensure_profile(member_id)?;
+
+            ensure!(profile.controller_account == sender, "only controller account can update member handle");
+
             Self::_change_member_handle(member_id, handle)?;
         }
 
         /// Update member's all or some of handle, avatar and about text.
-        pub fn update_profile(origin, user_info: UserInfo) {
-            let controller = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_controller_account(&controller)?;
+        pub fn update_profile(origin, member_id: T::MemberId, user_info: UserInfo) {
+            let sender = ensure_signed(origin)?;
+
+            let profile = Self::ensure_profile(member_id)?;
+
+            ensure!(profile.controller_account == sender, "only controller account can update member info");
 
             if let Some(uri) = user_info.avatar_uri {
                 Self::_change_member_avatar(member_id, &uri)?;
@@ -281,39 +288,52 @@ decl_module! {
             }
         }
 
-        pub fn set_controller_key(origin, controller: T::AccountId) {
-            let master = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_primary_account(&master)?;
+        pub fn set_controller_account(origin, member_id: T::MemberId, new_controller_account: T::AccountId) {
+            let sender = ensure_signed(origin)?;
 
             let mut profile = Self::ensure_profile(member_id)?;
 
-            // ensure new key is not used by someone else (master or controller)
-            ensure!(!<MemberIdByControllerAccountId<T>>::exists(&controller), "account already paired with member");
-            ensure!(!<MemberIdByAccountId<T>>::exists(&controller), "account already paired with member");
+            ensure!(profile.root_account == sender, "only root account can set new controller account");
 
-            <MemberIdByControllerAccountId<T>>::remove(&profile.controller_account);
-            <MemberIdByControllerAccountId<T>>::insert(&controller, member_id);
-            profile.controller_account = controller.clone();
-            <MemberProfile<T>>::insert(member_id, profile);
-            Self::deposit_event(RawEvent::MemberSetControllerKey(member_id, controller));
+            // only update if new_controller_account is different than current one
+            if profile.controller_account != new_controller_account {
+                <MemberIdsByControllerAccountId<T>>::mutate(&profile.controller_account, |ids| {
+                    ids.retain(|id| *id != member_id);
+                });
+
+                <MemberIdsByControllerAccountId<T>>::mutate(&new_controller_account, |ids| {
+                    ids.push(member_id);
+                });
+
+                profile.controller_account = new_controller_account.clone();
+                <MemberProfile<T>>::insert(member_id, profile);
+                Self::deposit_event(RawEvent::MemberSetControllerAccount(member_id, new_controller_account));
+            }
         }
 
-        pub fn set_primary_key(origin, new_primary: T::AccountId) {
-            let old_primary = ensure_signed(origin)?;
-            let member_id = Self::ensure_is_member_primary_account(&old_primary)?;
+        pub fn set_root_account(origin, member_id: T::MemberId, new_root_account: T::AccountId) {
+            let sender = ensure_signed(origin)?;
 
-            // ensure new key not is used by someone else (master or controller)
-            ensure!(!<MemberIdByControllerAccountId<T>>::exists(&new_primary), "account already paired with member");
-            ensure!(!<MemberIdByAccountId<T>>::exists(&new_primary), "account already paired with member");
+            let mut profile = Self::ensure_profile(member_id)?;
 
-            // update mappings
-            <AccountIdByMemberId<T>>::insert(member_id, new_primary.clone());
-            <MemberIdByAccountId<T>>::remove(&old_primary);
-            <MemberIdByAccountId<T>>::insert(&new_primary, member_id);
-            Self::deposit_event(RawEvent::MemberSetPrimaryKey(member_id, new_primary));
+            ensure!(profile.root_account == sender, "only root account can set new root account");
+
+            // only update if new root account is different than current one
+            if profile.root_account != new_root_account {
+                <MemberIdsByRootAccountId<T>>::mutate(&profile.root_account, |ids| {
+                    ids.retain(|id| *id != member_id);
+                });
+
+                <MemberIdsByRootAccountId<T>>::mutate(&new_root_account, |ids| {
+                    ids.push(member_id);
+                });
+
+                profile.root_account = new_root_account.clone();
+                Self::deposit_event(RawEvent::MemberSetRootAccount(member_id, new_root_account));
+            }
         }
 
-        pub fn add_screened_member(origin, new_member: T::AccountId, user_info: UserInfo) {
+        pub fn add_screened_member(origin, new_member_account: T::AccountId, user_info: UserInfo) {
             // ensure sender is screening authority
             let sender = ensure_signed(origin)?;
 
@@ -327,20 +347,14 @@ decl_module! {
             // make sure we are accepting new memberships
             ensure!(Self::new_memberships_allowed(), "new members not allowed");
 
-            // ensure key not associated with an existing membership
-            Self::ensure_not_member(&new_member)?;
-
-            // TODO: ensure account doesn't have any locks, is not a signing account of another member
-            // what other restrictions should we apply if any at all?
-
             let user_info = Self::check_user_registration_info(user_info)?;
 
             // ensure handle is not already registered
             Self::ensure_unique_handle(&user_info.handle)?;
 
-            let member_id = Self::insert_member(&new_member, &user_info, EntryMethod::Screening(sender));
+            let member_id = Self::insert_member(&new_member_account, &user_info, EntryMethod::Screening(sender));
 
-            Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member.clone()));
+            Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member_account));
         }
 
         pub fn set_screening_authority(origin, authority: T::AccountId) {
@@ -351,60 +365,49 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    pub fn is_active_member(who: &T::AccountId) -> bool {
-        match Self::ensure_is_member_primary_account(who)
-            .and_then(|member_id| Self::ensure_profile(member_id))
-        {
-            Ok(profile) => !profile.suspended,
-            Err(_err) => false,
-        }
+    /// Provided that the memberid exists return its profile. Returns error otherwise.
+    pub fn ensure_profile(id: T::MemberId) -> Result<Profile<T>, &'static str> {
+        Self::member_profile(&id).ok_or("member profile not found")
     }
 
-    pub fn primary_account_by_member_id(id: T::MemberId) -> Result<T::AccountId, &'static str> {
-        if <AccountIdByMemberId<T>>::exists(&id) {
-            Ok(Self::account_id_by_member_id(&id))
-        } else {
-            Err("member id doesn't exist")
-        }
+    /// Returns true if account is either a mmeber's root or controller account
+    pub fn is_member_account(who: &T::AccountId) -> bool {
+        <MemberIdsByRootAccountId<T>>::exists(who)
+            || <MemberIdsByControllerAccountId<T>>::exists(who)
     }
 
-    fn ensure_not_member(who: &T::AccountId) -> dispatch::Result {
-        ensure!(
-            !<MemberIdByAccountId<T>>::exists(who),
-            "account already associated with a membership"
-        );
-        Ok(())
-    }
+    // pub fn primary_account_by_member_id(id: T::MemberId) -> Result<T::AccountId, &'static str> {
+    //     if <AccountIdByMemberId<T>>::exists(&id) {
+    //         Ok(Self::account_id_by_member_id(&id))
+    //     } else {
+    //         Err("member id doesn't exist")
+    //     }
+    // }
 
-    pub fn ensure_is_member_primary_account(
-        who: &T::AccountId,
-    ) -> Result<T::MemberId, &'static str> {
-        let member_id =
-            Self::member_id_by_account_id(who).ok_or("no member id found for accountid")?;
-        Ok(member_id)
-    }
+    // pub fn ensure_is_member_primary_account(
+    //     who: &T::AccountId,
+    // ) -> Result<T::MemberId, &'static str> {
+    //     let member_id =
+    //         Self::member_id_by_account_id(who).ok_or("no member id found for accountid")?;
+    //     Ok(member_id)
+    // }
 
-    pub fn ensure_is_member_controller_account(
-        who: &T::AccountId,
-    ) -> Result<T::MemberId, &'static str> {
-        let member_id = Self::member_id_by_controller_account_id(who)
-            .ok_or("no member id found for accountid")?;
-        Ok(member_id)
-    }
+    // pub fn ensure_is_member_controller_account(
+    //     who: &T::AccountId,
+    // ) -> Result<T::MemberId, &'static str> {
+    //     let member_id = Self::member_id_by_controller_account_id(who)
+    //         .ok_or("no member id found for accountid")?;
+    //     Ok(member_id)
+    // }
 
-    fn ensure_profile(id: T::MemberId) -> Result<Profile<T>, &'static str> {
-        let profile = Self::member_profile(&id).ok_or("member profile not found")?;
-        Ok(profile)
-    }
-
-    pub fn get_profile_by_primary_account(id: &T::AccountId) -> Option<Profile<T>> {
-        if let Ok(member_id) = Self::ensure_is_member_primary_account(id) {
-            // This option _must_ be set
-            Self::member_profile(&member_id)
-        } else {
-            None
-        }
-    }
+    // pub fn get_profile_by_primary_account(id: &T::AccountId) -> Option<Profile<T>> {
+    //     if let Ok(member_id) = Self::ensure_is_member_primary_account(id) {
+    //         // This option _must_ be set
+    //         Self::member_profile(&member_id)
+    //     } else {
+    //         None
+    //     }
+    // }
 
     fn ensure_active_terms_id(
         terms_id: T::PaidTermId,
@@ -485,13 +488,18 @@ impl<T: Trait> Module<T> {
             entry: entry_method,
             suspended: false,
             subscription: None,
-            roles: ActorInRoleSet::new(),
+            root_account: who.clone(),
             controller_account: who.clone(),
+            roles: ActorInRoleSet::new(),
         };
 
-        <MemberIdByAccountId<T>>::insert(who.clone(), new_member_id);
-        <MemberIdByControllerAccountId<T>>::insert(who.clone(), new_member_id);
-        <AccountIdByMemberId<T>>::insert(new_member_id, who.clone());
+        <MemberIdsByRootAccountId<T>>::mutate(who, |ids| {
+            ids.push(new_member_id);
+        });
+        <MemberIdsByControllerAccountId<T>>::mutate(who, |ids| {
+            ids.push(new_member_id);
+        });
+
         <MemberProfile<T>>::insert(new_member_id, profile);
         <Handles<T>>::insert(user_info.handle.clone(), new_member_id);
         <MembersCreated<T>>::put(new_member_id + One::one());
@@ -529,15 +537,11 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Checks if a member identified by their controller account occupies a role at least once
-    pub fn member_is_in_role(controller_account: &T::AccountId, role: Role) -> bool {
-        if let Ok(member_id) = Self::ensure_is_member_controller_account(controller_account) {
-            Self::ensure_profile(member_id)
-                .ok()
-                .map_or(false, |profile| profile.roles.has_role(role))
-        } else {
-            false
-        }
+    // Checks if a member identified by their member id occupies a role at least once
+    pub fn member_is_in_role(member_id: T::MemberId, role: Role) -> bool {
+        Self::ensure_profile(member_id)
+            .ok()
+            .map_or(false, |profile| profile.roles.has_role(role))
     }
 
     // policy across all roles is:
@@ -547,19 +551,21 @@ impl<T: Trait> Module<T> {
     // ** Note ** Role specific policies should be enforced by the client modules
     // this method should handle higher level policies
     pub fn can_register_role_on_member(
-        controller_account: &T::AccountId,
+        signing_account: &T::AccountId,
+        member_id: T::MemberId,
         role: Role,
     ) -> Result<(), &'static str> {
-        let member_id = Self::ensure_is_member_controller_account(controller_account)?;
+        let profile = Self::ensure_profile(member_id)?;
 
         ensure!(
-            !Self::member_is_in_role(controller_account, role),
-            "member already in role"
+            profile.controller_account == *signing_account,
+            "only member controller account can register role"
         );
 
         // ensure is active member
-        let profile = Self::ensure_profile(member_id)?;
         ensure!(!profile.suspended, "suspended members can't enter a role");
+
+        ensure!(!profile.roles.has_role(role), "member already in role");
 
         // Other possible checks:
         // How long the member has been registered
@@ -570,14 +576,13 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn register_role_on_member(
-        controller_account: &T::AccountId,
+        signing_account: &T::AccountId,
+        member_id: T::MemberId,
         role: Role,
         actor_id: ActorId,
     ) -> Result<(), &'static str> {
-        let member_id = Self::ensure_is_member_controller_account(controller_account)?;
-
         // policy check
-        Self::can_register_role_on_member(controller_account, role)?;
+        Self::can_register_role_on_member(signing_account, member_id, role)?;
 
         // guard against duplicate ActorInRole
         let actor_in_role = ActorInRole {
@@ -603,10 +608,18 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn can_unregister_role_on_member(
-        controller_account: &T::AccountId,
+        signing_account: &T::AccountId,
+        member_id: T::MemberId,
         role: Role,
         actor_id: ActorId,
     ) -> Result<(), &'static str> {
+        let profile = Self::ensure_profile(member_id)?;
+
+        ensure!(
+            profile.controller_account == *signing_account,
+            "only member controller account can un-register role"
+        );
+
         let actor_in_role = ActorInRole {
             role_id: role.into(),
             actor_id,
@@ -615,8 +628,6 @@ impl<T: Trait> Module<T> {
             <MembershipIdByActorInRole<T>>::exists(&actor_in_role),
             "role actor not found"
         );
-
-        let member_id = Self::ensure_is_member_controller_account(controller_account)?;
         ensure!(
             <MembershipIdByActorInRole<T>>::get(&actor_in_role) == member_id,
             "role actor not for member"
@@ -625,13 +636,13 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn unregister_role_on_member(
-        controller_account: &T::AccountId,
+        signing_account: &T::AccountId,
+        member_id: T::MemberId,
         role: Role,
         actor_id: ActorId,
     ) -> Result<(), &'static str> {
-        Self::can_unregister_role_on_member(controller_account, role, actor_id)?;
+        Self::can_unregister_role_on_member(signing_account, member_id, role, actor_id)?;
 
-        let member_id = Self::ensure_is_member_controller_account(controller_account)?;
         let mut profile = Self::ensure_profile(member_id)?;
 
         let actor_in_role = ActorInRole {

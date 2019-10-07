@@ -21,7 +21,7 @@ impl_outer_origin! {
 }
 
 pub fn alice_id() -> u32 {
-    Members::member_id_by_account_id(alice_account()).unwrap()
+    Members::member_ids_by_root_account_id(alice_account())[0]
 }
 pub fn alice_account() -> u64 {
     1

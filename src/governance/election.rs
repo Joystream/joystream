@@ -158,7 +158,7 @@ impl<T: Trait> Module<T> {
 
     fn can_participate(sender: &T::AccountId) -> bool {
         !T::Currency::free_balance(sender).is_zero()
-            && <membership::members::Module<T>>::is_active_member(sender)
+            && <membership::members::Module<T>>::is_member_account(sender)
     }
 
     // PUBLIC IMMUTABLES

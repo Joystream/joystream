@@ -492,14 +492,13 @@ pub struct ShimMembershipRegistry {}
 
 impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
     fn get_forum_user(id: &AccountId) -> Option<forum::ForumUser<AccountId>> {
-        if let Some(_profile) = members::Module::<Runtime>::get_profile_by_primary_account(id) {
-            // For now the profile is not used for anything,
+        if members::Module::<Runtime>::is_member_account(id) {
+            // For now we don't retreive the members profile since it is not used for anything,
             // but in the future we may need it to read out more
             // information possibly required to construct a
             // ForumUser.
 
             // Now convert member profile to a forum user
-
             Some(forum::ForumUser { id: id.clone() })
         } else {
             None
