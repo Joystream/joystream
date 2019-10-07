@@ -558,6 +558,7 @@ impl<T: Trait> Module<T> {
         // Get current property values of an entity as a mutable vector,
         // so we can update them if new values provided present in new_property_values.
         let mut updated_values = entity.values;
+        let mut updates_count = 0;
 
         // Iterate over a vector of new values and update corresponding properties
         // of this entity if new values are valid.
@@ -588,6 +589,7 @@ impl<T: Trait> Module<T> {
 
                 // Update a current prop value in a mutable vector, if a new value is valid. 
                 *current_value = new_value.clone();
+                updates_count += 1;
             } else {
                 // Throw an error if a property was not found on entity
                 // by an in-class index of a property update.
@@ -595,52 +597,14 @@ impl<T: Trait> Module<T> {
             }
         }
 
-        <EntityById<T>>::mutate(entity_id, |entity| {
-            entity.values = updated_values;
-        });
-
-        Self::deposit_event(RawEvent::EntityPropertiesUpdated(entity_id));
-        Ok(())
-    }
-    
-    /// Only non required property values can be removed.
-    /// In fact when removing a property value, it is replaced with PropertyValue::None.
-    pub fn remove_entity_properties(
-        entity_id: EntityId,
-        property_ids: Vec<u16>
-    ) -> dispatch::Result {
-
-        Self::ensure_known_entity_id(entity_id)?;
-
-        ensure!(!property_ids.is_empty(), ERROR_NO_ENTITY_PROP_IDS_ON_REMOVE);
-
-        let (entity, class) = Self::get_entity_and_class(entity_id);
-
-        let mut updates_count = 0;
-        let mut updated_values = entity.values;
-
-        property_ids.into_iter().for_each(|prop_id| {
-            if let Some(prop) = class.properties.get(prop_id as usize) {
-                // Only non required property values can be removed:
-                if !prop.required {
-                    for prop in updated_values.iter_mut() {
-                        if prop.in_class_index == prop_id {
-                            prop.value = PropertyValue::None;
-                            updates_count += 1;
-                            break
-                        }
-                    }
-                }
-            }
-        });
-
+        // If at least one of the entity property values should be update:
         if updates_count > 0 {
             <EntityById<T>>::mutate(entity_id, |entity| {
                 entity.values = updated_values;
             });
             Self::deposit_event(RawEvent::EntityPropertiesUpdated(entity_id));
         }
-        
+
         Ok(())
     }
 
@@ -810,7 +774,7 @@ impl<T: Trait> Module<T> {
         prop: Property,
     ) -> bool {
 
-        // Not required property can be None:
+        // A non required property can be updated to None:
         if !prop.required && value == PV::None {
             return true
         }
