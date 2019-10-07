@@ -1,50 +1,6 @@
 Rome Testnet Specification
 ==========================
 
-Table Of Contents
------------------
-<!-- TOC START min:1 max:4 link:true asterisk:false update:true -->
-  - [Document](#document)
-  - [Caveat](#caveat)
-  - [Glossary](#glossary)
-  - [Overview](#overview)
-  - [Substrate Runtime](#substrate-runtime)
-    - [Runtime Version](#runtime-version)
-    - [Native Version](#native-version)
-    - [Substrate Version](#substrate-version)
-    - [Modules](#modules)
-      - [TokenMint](#tokenmint)
-      - [RecurringReward](#recurringreward)
-      - [Staking](#staking)
-      - [Hiring](#hiring)
-      - [VersionedStore](#versionedstore)
-      - [VersionedStorePermissions](#versionedstorepermissions)
-      - [ContentDirectoryWorkingGroup](#contentdirectoryworkinggroup)
-      - [Forum](#forum)
-      - [Proposals](#proposals)
-      - [CouncilElection](#councilelection)
-      - [Council](#council)
-      - [Memo](#memo)
-      - [Membership](#membership)
-      - [Discovery](#discovery)
-      - [Migration](#migration)
-      - [Actors](#actors)
-      - [DataObjectTypeRegistry](#dataobjecttyperegistry)
-      - [DataDirectory](#datadirectory)
-      - [DataObjectStorageRegistry](#dataobjectstorageregistry)
-      - [DownloadSessions](#downloadsessions)
-    - [SRML Modules](#srml-modules)
-    - [Runtime APIs](#runtime-apis)
-      - [Core](#core)
-      - [Metadata](#metadata)
-      - [BlockBuilder](#blockbuilder)
-      - [TaggedTransactionQueue](#taggedtransactionqueue)
-      - [OffchainWorkerApi](#offchainworkerapi)
-      - [GrandpaApi](#grandpaapi)
-      - [AuraApi](#auraapi)
-      - [AuthoritiesApi](#authoritiesapi)
-<!-- TOC END -->
-
 ## Document
 
 The purpose of this document is to serve as a starting point for the implementation phase of the given testnet. It is only a starting point in the sense that the implementation effort will always depart from the up front specification to some, possibly substantial, extent, but no effort is made to synchronise the specification at any time. Instead, the any such synchronisation would be done in the specification of a future network. The value of such a specification is primarily to establish a relatively precise shared understanding among all contributors to a testnet release.
@@ -76,27 +32,50 @@ Parts of the specification are not well harmonised with the rest, in particular 
 
 ## Overview
 
-The Acropolis testnet features the following roles
+### Roles
 
-- **Validator**: Block producer and validator.
-- **Council Member:** Council participant, currently only involved in voting on runtime upgrades.
-- **Storage Provider**: Does storage and distribution of content, peer provider synchronisation, as well as upload liaison.
-- **Forum Moderator**: A single actor role for managing the new on-chain forum.
+This testnet includes the following roles
 
-This release also sees the introduction of a new storage infrastructure based on IPFS for distribution and synchronisation, and IPNS for host resolution. A generalised host resolution module is also introduced as part of making the latter functionality possible, and it will be reused for host resolution across the platform.
+1. **Curator (NEW)**: A worker role, which is open, staked and rewarded, which gives administrative access to the new content directory being launched.
+2. **Curator Lead (NEW)**: A worker role which gives responsibility to hire, fire and administrate the current set of curators. Currently set to be occupied by Core team trusted actor in this release, hence not staked or rewarded.
+3. **Validator**: Block producer and validator.
+4. **Council Member:** Council participant, currently only involved in voting on runtime upgrades.
+5. **Storage Provider**: Does storage and distribution of content, peer provider synchronisation, as well as upload liaison.
+6. **Forum Moderator**: A single actor role for managing the new on-chain forum.
 
-A full featured hierarchical topic based, and single moderator, membership forum is also introduced.
+### Functionality
+
+#### Content Directory
+
+A new model for the organisation and operation of the content directory is introduced. The underlying representation is made into a type safe, versioned, linked structured data object store. A new permission system is introduced to model basic write control that mirrors the sort of objects and relationships we expect to capture. Lastly, the first working group is introduced, for organising the collaboration of the curators for the content directory.
+
+Read the relevant module specifications for more information.
+
+### Working Group Runtime Modules
+
+A set of new modules, as well as some changes to the existing membership module, are introduced, and these lay the foundations for how we see us organising the runtime side of our working groups in the future. A first working group is also deployed, namely the curation working group. These modules are written to be very general purpose, hopefully useful in other runtimes in the future. They are
+
+1. **Minting:** Transferrable capacity constrained token minting.
+2. **Recurring Rewards:** Recurring periodic minting of rewards for recipients.
+3. **Staking:** Managed staking, unstaking and slashing.
+4. **Hiring:** Hiring lifecycle management.
+
+We hope that experience will show us how to factor out a reusable working group module itself in the future.
+
+### Blockhain
+
+A new chain is launched, where we will use a genesis state that transfers memberships, accounts and the forum, from the Acropolis testnet at some announced block height.
+
+We also move to use the Substrate 2.0 framework.
 
 ## Substrate Runtime
 
 ### Runtime Version
 
-**TODO: Update**
-
 - **spec_name:** `joystream-node`
 - **impl_name:** `joystream-node`
-- **authoring_version:** `5`
-- **spec_version:** `4`
+- **authoring_version:** `6`
+- **spec_version:** `5`
 - **impl_version:** `0`
 - **apis:** `RUNTIME_API_VERSIONS`
 
