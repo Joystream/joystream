@@ -113,30 +113,30 @@ impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEv
 #[derive(Encode, Decode, Debug, Default, Eq, PartialEq, Clone)]
 pub struct Slash<BlockNumber, Balance> {
     /// The block where slashing was initiated.
-    started_at_block: BlockNumber,
+    pub started_at_block: BlockNumber,
 
     /// Whether slashing is in active, or conversley paused state.
     /// Blocks are only counted towards slashing execution delay when active.
-    is_active: bool,
+    pub is_active: bool,
 
     /// The number blocks which must be finalised while in the active period before the slashing can be executed
-    blocks_remaining_in_active_period_for_slashing: BlockNumber,
+    pub blocks_remaining_in_active_period_for_slashing: BlockNumber,
 
     /// Amount to slash
-    slash_amount: Balance,
+    pub slash_amount: Balance,
 }
 
 #[derive(Encode, Decode, Debug, Default, Eq, PartialEq)]
 pub struct UnstakingState<BlockNumber> {
     /// The block where the unstaking was initiated
-    started_at_block: BlockNumber,
+    pub started_at_block: BlockNumber,
 
     /// Whether unstaking is in active, or conversely paused state.
     /// Blocks are only counted towards unstaking period when active.
-    is_active: bool,
+    pub is_active: bool,
 
     /// The number blocks which must be finalised while in the active period before the unstaking is finished
-    blocks_remaining_in_active_period_for_unstaking: BlockNumber,
+    pub blocks_remaining_in_active_period_for_unstaking: BlockNumber,
 }
 
 #[derive(Encode, Decode, Debug, Eq, PartialEq)]
@@ -157,17 +157,17 @@ impl<BlockNumber> Default for StakedStatus<BlockNumber> {
 #[derive(Encode, Decode, Debug, Default, Eq, PartialEq)]
 pub struct StakedState<BlockNumber, Balance, SlashId: Ord> {
     /// Total amount of funds at stake.
-    staked_amount: Balance,
+    pub staked_amount: Balance,
 
     /// Status of the staking.
-    staked_status: StakedStatus<BlockNumber>,
+    pub staked_status: StakedStatus<BlockNumber>,
 
     /// SlashId to use for next Slash that is initiated.
     /// Will be incremented by one after adding a new Slash.
-    next_slash_id: SlashId,
+    pub next_slash_id: SlashId,
 
     /// All ongoing slashing.
-    ongoing_slashes: BTreeMap<SlashId, Slash<BlockNumber, Balance>>,
+    pub ongoing_slashes: BTreeMap<SlashId, Slash<BlockNumber, Balance>>,
 }
 
 impl<BlockNumber, Balance, SlashId> StakedState<BlockNumber, Balance, SlashId>
@@ -264,10 +264,10 @@ impl<BlockNumber, Balance, SlashId: Ord> Default for StakingStatus<BlockNumber, 
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq)]
 pub struct Stake<BlockNumber, Balance, SlashId: Ord> {
     /// When role was created
-    created: BlockNumber,
+    pub created: BlockNumber,
 
     /// Status of any possible ongoing staking
-    staking_status: StakingStatus<BlockNumber, Balance, SlashId>,
+    pub staking_status: StakingStatus<BlockNumber, Balance, SlashId>,
 }
 
 impl<BlockNumber, Balance, SlashId> Stake<BlockNumber, Balance, SlashId>
@@ -316,6 +316,7 @@ where
         value: Balance,
         minimum_balance: Balance,
     ) -> Result<(Balance, Balance), DecreasingStakeError> {
+        // maybe StakeDecrease
         ensure!(
             value > Zero::zero(),
             DecreasingStakeError::CannotChangeStakeByZero
