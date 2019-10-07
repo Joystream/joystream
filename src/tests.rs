@@ -475,7 +475,7 @@ fn should_add_schema_to_entity_when_some_optional_props_provided() {
 fn cannot_update_entity_props_when_entity_not_found() {
     with_test_externalities(|| {
         assert_entity_not_found(
-            TestModule::update_entity_properties(
+            TestModule::update_entity_property_values(
                 UNKNOWN_ENTITY_ID,
                 vec![]
             )
@@ -488,7 +488,7 @@ fn cannot_update_entity_props_when_entity_does_not_support_schemas_yet() {
     with_test_externalities(|| {
         let (_, _, entity_id) = create_class_with_schema_and_entity();
         assert_err!(
-            TestModule::update_entity_properties(
+            TestModule::update_entity_property_values(
                 entity_id,
                 vec![]
             ),
@@ -502,7 +502,7 @@ fn cannot_update_entity_props_when_prop_value_dont_match_type() {
     with_test_externalities(|| {
         let entity_id = create_entity_with_schema_support();
         assert_err!(
-            TestModule::update_entity_properties(
+            TestModule::update_entity_property_values(
                 entity_id,
                 vec![ prop_value(PROP_ID_BOOL, PropertyValue::Uint32(1)) ]
             ),
@@ -516,7 +516,7 @@ fn cannot_update_entity_props_when_unknown_internal_entity_id() {
     with_test_externalities(|| {
         let entity_id = create_entity_with_schema_support();
         assert_err!(
-            TestModule::update_entity_properties(
+            TestModule::update_entity_property_values(
                 entity_id,
                 vec![ prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(UNKNOWN_ENTITY_ID)) ]
             ),
@@ -530,7 +530,7 @@ fn cannot_update_entity_props_when_unknown_entity_prop_id() {
     with_test_externalities(|| {
         let entity_id = create_entity_with_schema_support();
         assert_err!(
-            TestModule::update_entity_properties(
+            TestModule::update_entity_property_values(
                 entity_id,
                 vec![ prop_value(UNKNOWN_PROP_ID, PropertyValue::Bool(true)) ]
             ),
@@ -551,7 +551,7 @@ fn update_entity_props_successfully() {
                 prop_value(PROP_ID_INTERNAL, PropertyValue::None),
             ]
         );
-        assert_ok!(TestModule::update_entity_properties(
+        assert_ok!(TestModule::update_entity_property_values(
             entity_id,
             vec![
                 prop_value(PROP_ID_BOOL,     PropertyValue::Bool(false)),

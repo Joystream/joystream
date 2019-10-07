@@ -544,7 +544,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn update_entity_properties(
+    pub fn update_entity_property_values(
         entity_id: EntityId,
         new_property_values: Vec<ClassPropertyValue>
     ) -> dispatch::Result {
