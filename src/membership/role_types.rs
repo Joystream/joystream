@@ -22,10 +22,19 @@ impl From<Role> for RoleId {
     }
 }
 
-#[derive(Encode, Decode, Eq, PartialEq, PartialOrd, Ord, Copy, Clone)]
+#[derive(Encode, Decode, Eq, PartialEq, PartialOrd, Ord, Copy, Clone, Debug)]
 pub struct ActorInRole {
-    pub role_id: RoleId,
-    pub actor_id: ActorId,
+    role_id: RoleId,
+    actor_id: ActorId,
+}
+
+impl ActorInRole {
+    pub fn new(role: Role, actor_id: ActorId) -> Self {
+        ActorInRole {
+            role_id: role.into(),
+            actor_id,
+        }
+    }
 }
 
 #[derive(Encode, Decode)]
@@ -36,9 +45,8 @@ impl ActorInRoleSet {
         ActorInRoleSet(BTreeSet::new())
     }
 
-    pub fn role_instance_count(&self, role: Role) -> usize {
+    fn role_id_instance_count(&self, role_id: RoleId) -> usize {
         self.0.iter().fold(0, |count, actor_in_role| {
-            let role_id: RoleId = role.into();
             if actor_in_role.role_id == role_id {
                 count + 1
             } else {
@@ -47,8 +55,8 @@ impl ActorInRoleSet {
         })
     }
 
-    pub fn has_role(&self, role: Role) -> bool {
-        self.role_instance_count(role) > 0
+    pub fn occupies_role(&self, actor_in_role: ActorInRole) -> bool {
+        self.role_id_instance_count(actor_in_role.role_id) > 0
     }
 
     pub fn register_role(&mut self, actor_in_role: &ActorInRole) -> bool {

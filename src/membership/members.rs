@@ -202,8 +202,8 @@ decl_event! {
         MemberUpdatedHandle(MemberId),
         MemberSetRootAccount(MemberId, AccountId),
         MemberSetControllerAccount(MemberId, AccountId),
-        MemberRegisteredRole(MemberId, RoleId, ActorId),
-        MemberUnregisteredRole(MemberId, RoleId, ActorId),
+        MemberRegisteredRole(MemberId, ActorInRole),
+        MemberUnregisteredRole(MemberId, ActorInRole),
     }
 }
 
@@ -376,39 +376,6 @@ impl<T: Trait> Module<T> {
             || <MemberIdsByControllerAccountId<T>>::exists(who)
     }
 
-    // pub fn primary_account_by_member_id(id: T::MemberId) -> Result<T::AccountId, &'static str> {
-    //     if <AccountIdByMemberId<T>>::exists(&id) {
-    //         Ok(Self::account_id_by_member_id(&id))
-    //     } else {
-    //         Err("member id doesn't exist")
-    //     }
-    // }
-
-    // pub fn ensure_is_member_primary_account(
-    //     who: &T::AccountId,
-    // ) -> Result<T::MemberId, &'static str> {
-    //     let member_id =
-    //         Self::member_id_by_account_id(who).ok_or("no member id found for accountid")?;
-    //     Ok(member_id)
-    // }
-
-    // pub fn ensure_is_member_controller_account(
-    //     who: &T::AccountId,
-    // ) -> Result<T::MemberId, &'static str> {
-    //     let member_id = Self::member_id_by_controller_account_id(who)
-    //         .ok_or("no member id found for accountid")?;
-    //     Ok(member_id)
-    // }
-
-    // pub fn get_profile_by_primary_account(id: &T::AccountId) -> Option<Profile<T>> {
-    //     if let Ok(member_id) = Self::ensure_is_member_primary_account(id) {
-    //         // This option _must_ be set
-    //         Self::member_profile(&member_id)
-    //     } else {
-    //         None
-    //     }
-    // }
-
     fn ensure_active_terms_id(
         terms_id: T::PaidTermId,
     ) -> Result<PaidMembershipTerms<T>, &'static str> {
@@ -541,7 +508,9 @@ impl<T: Trait> Module<T> {
     pub fn member_is_in_role(member_id: T::MemberId, role: Role) -> bool {
         Self::ensure_profile(member_id)
             .ok()
-            .map_or(false, |profile| profile.roles.has_role(role))
+            .map_or(false, |profile| {
+                profile.roles.occupies_role(ActorInRole::new(role, 0))
+            })
     }
 
     // policy across all roles is:
@@ -553,19 +522,28 @@ impl<T: Trait> Module<T> {
     pub fn can_register_role_on_member(
         signing_account: &T::AccountId,
         member_id: T::MemberId,
-        role: Role,
+        actor_in_role: ActorInRole,
     ) -> Result<(), &'static str> {
         let profile = Self::ensure_profile(member_id)?;
 
         ensure!(
             profile.controller_account == *signing_account,
-            "only member controller account can register role"
+            "OnlyMemberControllerCanRegisterRole"
         );
 
         // ensure is active member
-        ensure!(!profile.suspended, "suspended members can't enter a role");
+        ensure!(!profile.suspended, "SuspendedMemberCannotEnterRole");
 
-        ensure!(!profile.roles.has_role(role), "member already in role");
+        // guard against duplicate ActorInRole
+        ensure!(
+            !<MembershipIdByActorInRole<T>>::exists(&actor_in_role),
+            "ActorInRoleAlreadyExists"
+        );
+
+        ensure!(
+            !profile.roles.occupies_role(actor_in_role),
+            "MemberAlreadyInRole"
+        );
 
         // Other possible checks:
         // How long the member has been registered
@@ -578,59 +556,39 @@ impl<T: Trait> Module<T> {
     pub fn register_role_on_member(
         signing_account: &T::AccountId,
         member_id: T::MemberId,
-        role: Role,
-        actor_id: ActorId,
+        actor_in_role: ActorInRole,
     ) -> Result<(), &'static str> {
         // policy check
-        Self::can_register_role_on_member(signing_account, member_id, role)?;
+        Self::can_register_role_on_member(signing_account, member_id, actor_in_role)?;
 
-        // guard against duplicate ActorInRole
-        let actor_in_role = ActorInRole {
-            role_id: role.into(),
-            actor_id,
-        };
-        ensure!(
-            !<MembershipIdByActorInRole<T>>::exists(&actor_in_role),
-            "role actor already exists"
-        );
-
-        let mut profile = Self::ensure_profile(member_id)?;
+        let mut profile = Self::ensure_profile(member_id)?; // .expect().. ?
         assert!(profile.roles.register_role(&actor_in_role));
 
         <MemberProfile<T>>::insert(member_id, profile);
         <MembershipIdByActorInRole<T>>::insert(&actor_in_role, member_id);
-        Self::deposit_event(RawEvent::MemberRegisteredRole(
-            member_id,
-            role.into(),
-            actor_id,
-        ));
+        Self::deposit_event(RawEvent::MemberRegisteredRole(member_id, actor_in_role));
         Ok(())
     }
 
     pub fn can_unregister_role_on_member(
         signing_account: &T::AccountId,
         member_id: T::MemberId,
-        role: Role,
-        actor_id: ActorId,
+        actor_in_role: ActorInRole,
     ) -> Result<(), &'static str> {
         let profile = Self::ensure_profile(member_id)?;
 
         ensure!(
             profile.controller_account == *signing_account,
-            "only member controller account can un-register role"
+            "OnlyMemberControllerCanUnregisterRole"
         );
 
-        let actor_in_role = ActorInRole {
-            role_id: role.into(),
-            actor_id,
-        };
         ensure!(
             <MembershipIdByActorInRole<T>>::exists(&actor_in_role),
-            "role actor not found"
+            "ActorInRoleNotFound"
         );
         ensure!(
             <MembershipIdByActorInRole<T>>::get(&actor_in_role) == member_id,
-            "role actor not for member"
+            "ActorInRoleNotRegisteredForMember"
         );
         Ok(())
     }
@@ -638,27 +596,17 @@ impl<T: Trait> Module<T> {
     pub fn unregister_role_on_member(
         signing_account: &T::AccountId,
         member_id: T::MemberId,
-        role: Role,
-        actor_id: ActorId,
+        actor_in_role: ActorInRole,
     ) -> Result<(), &'static str> {
-        Self::can_unregister_role_on_member(signing_account, member_id, role, actor_id)?;
+        Self::can_unregister_role_on_member(signing_account, member_id, actor_in_role)?;
 
-        let mut profile = Self::ensure_profile(member_id)?;
-
-        let actor_in_role = ActorInRole {
-            role_id: role.into(),
-            actor_id,
-        };
+        let mut profile = Self::ensure_profile(member_id)?; // .expect().. ?
 
         assert!(profile.roles.unregister_role(&actor_in_role));
 
         <MemberProfile<T>>::insert(member_id, profile);
 
-        Self::deposit_event(RawEvent::MemberUnregisteredRole(
-            member_id,
-            role.into(),
-            actor_id,
-        ));
+        Self::deposit_event(RawEvent::MemberUnregisteredRole(member_id, actor_in_role));
 
         Ok(())
     }

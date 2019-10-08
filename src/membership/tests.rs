@@ -346,8 +346,7 @@ fn registering_and_unregistering_roles_on_member() {
             assert_ok!(Members::register_role_on_member(
                 &1,
                 member_id_1,
-                members::Role::Publisher,
-                DUMMY_ACTOR_ID
+                members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID)
             ));
             assert!(Members::member_is_in_role(
                 member_id_1,
@@ -359,10 +358,9 @@ fn registering_and_unregistering_roles_on_member() {
                 Members::register_role_on_member(
                     &1,
                     member_id_1,
-                    members::Role::Publisher,
-                    DUMMY_ACTOR_ID,
+                    members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID + 1),
                 ),
-                "member already in role",
+                "MemberAlreadyInRole",
             );
 
             // registering another member in same role and actorid combination should fail
@@ -370,18 +368,21 @@ fn registering_and_unregistering_roles_on_member() {
                 Members::register_role_on_member(
                     &2,
                     member_id_2,
-                    members::Role::Publisher,
-                    DUMMY_ACTOR_ID,
+                    members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID),
                 ),
-                "role actor already exists",
+                "ActorInRoleAlreadyExists",
             );
 
             // UNREGISTERING
 
             // trying to unregister non existant actor role should fail
             assert_dispatch_error_message(
-                Members::unregister_role_on_member(&1, member_id_1, members::Role::Curator, 222),
-                "role actor not found",
+                Members::unregister_role_on_member(
+                    &1,
+                    member_id_1,
+                    members::ActorInRole::new(members::Role::Curator, 222),
+                ),
+                "ActorInRoleNotFound",
             );
 
             // trying to unregister actor role on wrong member should fail
@@ -389,18 +390,16 @@ fn registering_and_unregistering_roles_on_member() {
                 Members::unregister_role_on_member(
                     &2,
                     member_id_2,
-                    members::Role::Publisher,
-                    DUMMY_ACTOR_ID,
+                    members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID),
                 ),
-                "role actor not for member",
+                "ActorInRoleNotRegisteredForMember",
             );
 
             // successfully unregister role
             assert_ok!(Members::unregister_role_on_member(
                 &1,
                 member_id_1,
-                members::Role::Publisher,
-                DUMMY_ACTOR_ID
+                members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID)
             ));
             assert!(!Members::member_is_in_role(
                 member_id_1,
