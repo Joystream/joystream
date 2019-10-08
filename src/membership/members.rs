@@ -654,11 +654,6 @@ impl<T: Trait> Module<T> {
 
         <MemberProfile<T>>::insert(member_id, profile);
 
-        <MembershipIdByActorInRole<T>>::remove(ActorInRole {
-            role_id: role.into(),
-            actor_id,
-        });
-
         Self::deposit_event(RawEvent::MemberUnregisteredRole(
             member_id,
             role.into(),
