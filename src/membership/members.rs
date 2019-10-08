@@ -504,7 +504,21 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Checks if a member identified by their member id occupies a role at least once
+    /// Determines if the signing account is a controller account of a member that has the registered
+    /// actor_in_role.
+    pub fn key_can_sign_for_role(
+        signing_account: &T::AccountId,
+        actor_in_role: ActorInRole,
+    ) -> bool {
+        Self::member_ids_by_controller_account_id(signing_account)
+            .iter()
+            .any(|member_id| {
+                let profile = Self::member_profile(member_id).unwrap(); // must exist
+                profile.roles.has_registered_role(&actor_in_role)
+            })
+    }
+
+    /// Returns true if member identified by their member id occupies a Role at least once
     pub fn member_is_in_role(member_id: T::MemberId, role: Role) -> bool {
         Self::ensure_profile(member_id)
             .ok()

@@ -52,4 +52,8 @@ impl ActorInRoleSet {
     pub fn unregister_role(&mut self, actor_in_role: &ActorInRole) -> bool {
         self.0.remove(actor_in_role)
     }
+
+    pub fn has_registered_role(&self, actor_in_role: &ActorInRole) -> bool {
+        self.0.contains(actor_in_role)
+    }
 }
