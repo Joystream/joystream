@@ -508,9 +508,7 @@ impl<T: Trait> Module<T> {
     pub fn member_is_in_role(member_id: T::MemberId, role: Role) -> bool {
         Self::ensure_profile(member_id)
             .ok()
-            .map_or(false, |profile| {
-                profile.roles.occupies_role(ActorInRole::new(role, 0))
-            })
+            .map_or(false, |profile| profile.roles.occupies_role(role))
     }
 
     // policy across all roles is:
@@ -541,7 +539,7 @@ impl<T: Trait> Module<T> {
         );
 
         ensure!(
-            !profile.roles.occupies_role(actor_in_role),
+            !profile.roles.occupies_role(actor_in_role.role),
             "MemberAlreadyInRole"
         );
 

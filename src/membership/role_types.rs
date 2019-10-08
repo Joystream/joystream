@@ -2,38 +2,24 @@ use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 
-pub type RoleId = u32;
 pub type ActorId = u32;
 
-#[derive(Encode, Decode, Copy, Clone)]
+#[derive(Encode, Decode, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub enum Role {
     Publisher,
     CuratorLead,
     Curator,
 }
 
-impl From<Role> for RoleId {
-    fn from(r: Role) -> RoleId {
-        match r {
-            Role::Publisher => 0,
-            Role::CuratorLead => 1,
-            Role::Curator => 2,
-        }
-    }
-}
-
-#[derive(Encode, Decode, Eq, PartialEq, PartialOrd, Ord, Copy, Clone, Debug)]
+#[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub struct ActorInRole {
-    role_id: RoleId,
-    actor_id: ActorId,
+    pub role: Role,
+    pub actor_id: ActorId,
 }
 
 impl ActorInRole {
     pub fn new(role: Role, actor_id: ActorId) -> Self {
-        ActorInRole {
-            role_id: role.into(),
-            actor_id,
-        }
+        ActorInRole { role, actor_id }
     }
 }
 
@@ -45,9 +31,9 @@ impl ActorInRoleSet {
         ActorInRoleSet(BTreeSet::new())
     }
 
-    fn role_id_instance_count(&self, role_id: RoleId) -> usize {
+    fn role_instance_count(&self, role: Role) -> usize {
         self.0.iter().fold(0, |count, actor_in_role| {
-            if actor_in_role.role_id == role_id {
+            if actor_in_role.role == role {
                 count + 1
             } else {
                 count
@@ -55,8 +41,8 @@ impl ActorInRoleSet {
         })
     }
 
-    pub fn occupies_role(&self, actor_in_role: ActorInRole) -> bool {
-        self.role_id_instance_count(actor_in_role.role_id) > 0
+    pub fn occupies_role(&self, role: Role) -> bool {
+        self.role_instance_count(role) > 0
     }
 
     pub fn register_role(&mut self, actor_in_role: &ActorInRole) -> bool {
