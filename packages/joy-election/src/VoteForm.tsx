@@ -28,14 +28,14 @@ function randomSalt () {
 
 // AppsProps is needed to get a location from the route.
 type Props = AppProps & ApiProps & I18nProps & MyAccountProps & {
-  applicantId?: string,
+  applicantId?: string | null,
   minVotingStake?: Balance,
   applicants?: AccountId[],
   location?: any,
 };
 
 type State = {
-  applicantId?: string,
+  applicantId?: string | null,
   stake?: BN,
   salt?: string,
   isStakeValid?: boolean,
@@ -67,10 +67,10 @@ class Component extends React.PureComponent<Props, State> {
 
     const buildNewVote = (): Partial<NewVote> => ({
       voterId: myAddress,
-      applicantId,
+      applicantId: applicantId || undefined,
       stake: (stake || ZERO).toString(),
       salt: salt,
-      hash: hashedVote
+      hash: hashedVote || undefined
     });
 
     return (
@@ -206,7 +206,7 @@ class Component extends React.PureComponent<Props, State> {
     this.setState({ stake, isStakeValid });
   }
 
-  private onChangeApplicant = (applicantId?: string) => {
+  private onChangeApplicant = (applicantId?: string | null) => {
     this.setState({ applicantId });
   }
 

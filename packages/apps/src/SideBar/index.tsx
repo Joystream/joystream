@@ -1,23 +1,20 @@
-/* eslint-disable @typescript-eslint/camelcase */
 // Copyright 2017-2019 @polkadot/apps authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { Route } from '@polkadot/apps-routing/types';
-import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { SIDEBAR_MENU_THRESHOLD } from '../constants';
 
 import './SideBar.css';
 
-import React from 'react';
+import React, { useContext, useState } from 'react';
 import styled from 'styled-components';
 import { Responsive } from 'semantic-ui-react';
 import routing from '@polkadot/apps-routing';
-import { withApi, withMulti } from '@polkadot/react-api';
+import { ApiContext } from '@polkadot/react-api';
 import { Button, ChainImg, Icon, Menu, media } from '@polkadot/react-components';
 import { classes } from '@polkadot/react-components/util';
-// import { BestNumber, Chain } from '@polkadot/react-query';
+import { BestNumber, Chain } from '@polkadot/react-query';
 
 import translate from '../translate';
 import Item from './Item';
@@ -26,7 +23,7 @@ import NetworkModal from '../modals/Network';
 
 import { SemanticICONS } from 'semantic-ui-react';
 
-interface Props extends ApiProps, I18nProps {
+interface Props extends I18nProps /*ApiProps,*/ {
   className?: string;
   collapse: () => void;
   handleResize: () => void;
@@ -52,6 +49,7 @@ function OuterLink ({ url, title, icon = 'external alternate' }: OuterLinkProps)
   );
 }
 
+/*
 interface State {
   modals: Record<string, boolean>;
 }
@@ -112,182 +110,121 @@ class SideBar extends React.PureComponent<Props, State> {
             {this.renderCollapse()}
           </Menu>
           <Responsive minWidth={SIDEBAR_MENU_THRESHOLD}>
+*/
+function SideBar ({ className, collapse, handleResize, isCollapsed, toggleMenu, menuOpen }: Props): React.ReactElement<Props> {
+  const { api, isApiReady } = useContext(ApiContext);
+  const [modals, setModals] = useState<Record<string, boolean>>(
+    routing.routes.reduce((result: Record<string, boolean>, route): Record<string, boolean> => {
+      if (route && route.Modal) {
+        result[route.name] = false;
+      }
+
+      return result;
+    }, { network: false })
+  );
+
+  const _toggleModal = (name: string): () => void =>
+    (): void => setModals({ ...modals, [name]: !modals[name] });
+
+  return (
+    <Responsive
+      onUpdate={handleResize}
+      className={classes(className, 'apps-SideBar-Wrapper', isCollapsed ? 'collapsed' : 'expanded')}
+    >
+      <ChainImg
+        className={`toggleImg ${menuOpen ? 'closed' : 'open delayed'}`}
+        onClick={toggleMenu}
+      />
+      {routing.routes.map((route): React.ReactNode => (
+        route && route.Modal
+          ? route.Modal && modals[route.name]
+            ? (
+              <route.Modal
+                key={route.name}
+                onClose={_toggleModal(route.name)}
+              />
+            )
+            : <div key={route.name} />
+          : null
+      ))}
+      {modals.network && (
+        <NetworkModal onClose={_toggleModal('network')}/>
+      )}
+      <div className='apps--SideBar'>
+        <Menu
+          secondary
+          vertical
+        >
+          <div className='apps-SideBar-Scroll'>
+          {JoystreamLogo(isCollapsed)}
             <div
-              className='apps--SideBar-toggle'
-              onClick={this.props.collapse}
+              className='apps--SideBar-logo'
+              onClick={_toggleModal('network')}
+            >
+              <ChainImg />
+              <div className='info'>
+                <Chain className='chain' />
+                {isApiReady && (
+                  <div className='runtimeVersion'>version {api.runtimeVersion.specVersion.toNumber()}</div>
+                )}
+                <BestNumber label='#' />
+              </div>
+            </div>
+            {routing.routes.map((route, index): React.ReactNode => (
+              route
+                ? (
+                  <Item
+                    isCollapsed={isCollapsed}
+                    key={route.name}
+                    route={route}
+                    onClick={
+                      route.Modal
+                        ? _toggleModal(route.name)
+                        : handleResize
+                    }
+                  />
+                )
+                : (
+                  <Menu.Divider
+                    hidden
+                    key={index}
+                  />
+                )
+            ))}
+            <Menu.Divider hidden />
+            <OuterLink url='https://testnet.joystream.org/faucet' title='Free Tokens' />
+            <OuterLink url='https://blog.joystream.org/acropolis-incentives/' title='Earn Monero' />
+            <Menu.Divider hidden />
+            {
+              isCollapsed
+                ? undefined
+                : <NodeInfo />
+            }
+          </div>
+          <Responsive
+            minWidth={SIDEBAR_MENU_THRESHOLD}
+            className={`apps--SideBar-collapse ${isCollapsed ? 'collapsed' : 'expanded'}`}
+          >
+            <Button
+              icon={`angle double ${isCollapsed ? 'right' : 'left'}`}
+              isBasic
+              isCircular
+              onClick={collapse}
             />
           </Responsive>
-        </div>
-      </Responsive>
-    );
-  }
-
-  private renderCollapse (): React.ReactNode {
-    const { isCollapsed } = this.props;
-
-    return (
-      <Responsive
-        minWidth={SIDEBAR_MENU_THRESHOLD}
-        className={`apps--SideBar-collapse ${isCollapsed ? 'collapsed' : 'expanded'}`}
-      >
-        <Button
-          icon={`angle double ${isCollapsed ? 'right' : 'left'}`}
-          isBasic
-          isCircular
-          onClick={this.props.collapse}
-        />
-      </Responsive>
-    );
-  }
-
-  /*
-  private renderLogo (): React.ReactNode {
-    const { api, isApiReady } = this.props;
-
-    return (
-      <div
-        className='apps--SideBar-logo'
-        onClick={this.toggleNetworkModal}
-      >
-        <ChainImg />
-        <div className='info'>
-          <Chain className='chain' />
-          {isApiReady &&
-            <div className='runtimeVersion'>version {api.runtimeVersion.specVersion.toNumber()}</div>
-          }
-          <BestNumber label='#' />
-        </div>
+        </Menu>
+        <Responsive minWidth={SIDEBAR_MENU_THRESHOLD}>
+          <div
+            className='apps--SideBar-toggle'
+            onClick={collapse}
+          />
+        </Responsive>
       </div>
-    );
-  }
-  */
-
-  private renderJoystreamLogo () {
-    const { isCollapsed } = this.props;
-    const logo = isCollapsed
-      ? 'images/logo-j.svg'
-      : 'images/logo-joytream.svg';
-
-    return (
-      <img
-        alt='Joystream'
-        className='apps--SideBar-logo'
-        src={logo}
-      />
-    );
-  }
-
-  private renderModals (): React.ReactNode {
-    const { modals } = this.state;
-    const filtered = routing.routes.filter((route): any => route && route.Modal) as Route[];
-
-    return filtered.map(({ name, Modal }): React.ReactNode => (
-      Modal && modals[name]
-        ? (
-          <Modal
-            key={name}
-            onClose={this.closeModal(name)}
-          />
-        )
-        : <div key={name} />
-    ));
-  }
-
-  private renderRoutes (): React.ReactNode {
-    const { handleResize, isCollapsed } = this.props;
-
-    return routing.routes.map((route, index): React.ReactNode => (
-      route
-        ? (
-          <Item
-            isCollapsed={isCollapsed}
-            key={route.name}
-            route={route}
-            onClick={
-              route.Modal
-                ? this.openModal(route.name)
-                : handleResize
-            }
-          />
-        )
-        : (
-          <Menu.Divider
-            hidden
-            key={index}
-          />
-        )
-    ));
-  }
-
-  /*
-  private renderGithub (): React.ReactNode {
-    return (
-      <Menu.Item className='apps--SideBar-Item'>
-        <a
-          className='apps--SideBar-Item-NavLink'
-          href='https://github.com/polkadot-js/apps'
-          rel='noopener noreferrer'
-          target='_blank'
-        >
-          <Icon name='github' /><span className='text'>GitHub</span>
-        </a>
-      </Menu.Item>
-    );
-  }
-
-  private renderWiki (): React.ReactNode {
-    return (
-      <Menu.Item className='apps--SideBar-Item'>
-        <a
-          className='apps--SideBar-Item-NavLink'
-          href='https://wiki.polkadot.network'
-          rel='noopener noreferrer'
-          target='_blank'
-        >
-          <Icon name='book' /><span className='text'>Wiki</span>
-        </a>
-      </Menu.Item>
-    );
-  }
-  */
-
-  private closeModal = (name: string): () => void => {
-    return (): void => {
-      this.setState(({ modals }): State => ({
-        modals: {
-          ...modals,
-          [name]: false
-        }
-      }));
-    };
-  }
-
-  private openModal = (name: string): () => void => {
-    return (): void => {
-      this.setState(({ modals }): State => {
-        return {
-          modals: {
-            ...modals,
-            [name]: true
-          }
-        };
-      });
-    };
-  }
-
-  private toggleNetworkModal = (): void => {
-    this.setState(({ modals }): State => {
-      return {
-        modals: {
-          ...modals,
-          network: !modals.network
-        }
-      };
-    });
-  }
+    </Responsive>
+  );
 }
 
-export default withMulti(
+export default translate(
   styled(SideBar)`
     .toggleImg {
       cursor: pointer;
@@ -313,7 +250,19 @@ export default withMulti(
         top: -2.9rem !important;
       `}
     }
-  `,
-  translate,
-  withApi
+  `
 );
+
+
+function JoystreamLogo (isCollapsed: boolean) {
+  const logo = isCollapsed
+  ? 'images/logo-j.svg'
+  : 'images/logo-joytream.svg';
+  return (
+  <img
+    alt='Joystream'
+    className='apps--SideBar-logo'
+    src={logo}
+  />
+  );
+}

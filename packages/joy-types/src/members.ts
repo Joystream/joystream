@@ -101,7 +101,9 @@ export function registerMembershipTypes () {
         id: 'PaidTermId',
         fee: 'BalanceOf',
         text: 'Text'
-      }
+      },
+      RoleId: 'u64',
+      ActorId: 'u64',
     });
   } catch (err) {
     console.error('Failed to register custom types of membership module', err);

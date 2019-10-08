@@ -4,11 +4,11 @@ import { Balance, Nonce } from '@polkadot/react-components/index';
 
 type Props = {
   label?: string,
-  onChange: (accountId?: string) => void
+  onChange: (accountId?: string | null) => void
 };
 
 type State = {
-  accountId?: string
+  accountId?: string | null
 };
 
 export default class AccountSelector extends React.PureComponent<Props, State> {
@@ -36,7 +36,7 @@ export default class AccountSelector extends React.PureComponent<Props, State> {
     </section>;
   }
 
-  private onChange = (accountId?: string): void => {
+  private onChange = (accountId: string | null): void => {
     const { onChange } = this.props;
     this.setState({ accountId }, () => onChange(accountId));
   }

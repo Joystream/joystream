@@ -131,7 +131,7 @@ export function queryToProp (
 
 import queryString from 'query-string';
 
-export function getUrlParam (location: Location, paramName: string, deflt: string | undefined = undefined): string | undefined {
+export function getUrlParam (location: Location, paramName: string, deflt: string | null = null): string | null {
   const params = queryString.parse(location.search);
   return params[paramName] ? params[paramName] as string : deflt;
 }

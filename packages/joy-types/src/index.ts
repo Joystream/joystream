@@ -217,7 +217,7 @@ function registerElectionAndProposalTypes () {
         'proposed_at': 'BlockNumber',
         'status': 'ProposalStatus'
       },
-      'TallyResult': {
+      'TallyResult<BlockNumber>': {
         'proposal_id': 'u32',
         'abstentions': 'u32',
         'approvals': 'u32',

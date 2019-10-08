@@ -15,15 +15,15 @@ import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 
 // AppsProps is needed to get a location from the route.
 type Props = AppProps & ApiProps & I18nProps & {
-  applicantId?: string;
+  applicantId?: string | null;
   applicants?: AccountId[];
   location: any;
 };
 
 type State = {
-  applicantId?: string,
+  applicantId?: string | null,
   salt?: string,
-  hashedVote?: string
+  hashedVote?: string | null
 };
 
 class RevealVoteForm extends React.PureComponent<Props, State> {
@@ -95,7 +95,7 @@ class RevealVoteForm extends React.PureComponent<Props, State> {
     );
   }
 
-  private onChangeApplicant = (applicantId?: string) => {
+  private onChangeApplicant = (applicantId: string | null) => {
     this.setState({ applicantId });
   }
 

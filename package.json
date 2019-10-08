@@ -1,5 +1,5 @@
 {
-  "version": "0.36.0-beta.30",
+  "version": "0.36.0-beta.65",
   "private": true,
   "engines": {
     "node": ">=10.13.0",
@@ -10,12 +10,12 @@
     "packages/*"
   ],
   "resolutions": {
-    "@polkadot/api": "^0.93.0-beta.7",
-    "@polkadot/api-contract": "^0.93.0-beta.7",
-    "@polkadot/keyring": "^1.4.1",
-    "@polkadot/types": "^0.93.0-beta.7",
-    "@polkadot/util": "^1.4.1",
-    "@polkadot/util-crypto": "^1.4.1",
+    "@polkadot/api": "^0.94.0-beta.11",
+    "@polkadot/api-contract": "^0.94.0-beta.11",
+    "@polkadot/keyring": "^1.5.1",
+    "@polkadot/types": "^0.94.0-beta.11",
+    "@polkadot/util": "^1.5.1",
+    "@polkadot/util-crypto": "^1.5.1",
     "@types/styled-components": "4.1.8",
     "babel-core": "^7.0.0-bridge.0",
     "rxjs": "^6.4.0",
@@ -33,10 +33,10 @@
     "start": "cd packages/apps && webpack --config webpack.config.js"
   },
   "devDependencies": {
-    "@babel/core": "^7.6.0",
-    "@babel/runtime": "^7.6.0",
-    "@polkadot/dev-react": "^0.31.0-beta.8",
-    "@polkadot/ts": "^0.1.72",
+    "@babel/core": "^7.6.2",
+    "@babel/runtime": "^7.6.2",
+    "@polkadot/dev-react": "^0.31.1",
+    "@polkadot/ts": "^0.1.73",
     "autoprefixer": "^9.6.1",
     "empty": "^0.10.1",
     "gh-pages": "^2.1.1",

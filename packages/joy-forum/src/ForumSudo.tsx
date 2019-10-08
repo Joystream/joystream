@@ -86,14 +86,14 @@ const InnerForm = (props: FormProps) => {
   const SudoInputAddress = ({ field, form, ...props }: SudoInputAddressProps) => {
     const { name, value } = field;
 
-    const onChange = (address: string) => {
+    const onChange = (address: string | null) => {
       address !== value && form.setFieldValue(name, address);
     };
 
     return (
       <InputAddress
         {...props}
-        name={name}
+        // name={name}
         value={value}
         onChange={onChange}
         withLabel={false}
