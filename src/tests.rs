@@ -590,7 +590,7 @@ fn initiating_pausing_resuming_unstaking() {
         );
 
         assert_err!(
-            StakePool::initiate_unstaking(&100, 1),
+            StakePool::initiate_unstaking(&100, Some(1)),
             StakeActionError::StakeNotFound
         );
 
@@ -604,13 +604,15 @@ fn initiating_pausing_resuming_unstaking() {
         );
 
         assert_err!(
-            StakePool::initiate_unstaking(&stake_id, 0),
+            StakePool::initiate_unstaking(&stake_id, Some(0)),
             StakeActionError::Error(InitiateUnstakingError::UnstakingPeriodShouldBeGreaterThanZero)
         );
 
         assert_err!(
-            StakePool::initiate_unstaking(&stake_id, 1),
-            StakeActionError::Error(InitiateUnstakingError::NotStaked)
+            StakePool::initiate_unstaking(&stake_id, Some(1)),
+            StakeActionError::Error(InitiateUnstakingError::UnstakingError(
+                UnstakingError::NotStaked
+            ))
         );
 
         let mut ongoing_slashes = BTreeMap::new();
@@ -638,13 +640,15 @@ fn initiating_pausing_resuming_unstaking() {
         );
 
         assert_err!(
-            StakePool::initiate_unstaking(&stake_id, 1),
-            StakeActionError::Error(InitiateUnstakingError::CannotUnstakeWhileSlashesOngoing)
+            StakePool::initiate_unstaking(&stake_id, Some(1)),
+            StakeActionError::Error(InitiateUnstakingError::UnstakingError(
+                UnstakingError::CannotUnstakeWhileSlashesOngoing
+            ))
         );
 
         assert_ok!(StakePool::cancel_slashing(&stake_id, &1));
 
-        assert_ok!(StakePool::initiate_unstaking(&stake_id, 2));
+        assert_ok!(StakePool::initiate_unstaking(&stake_id, Some(2)));
 
         assert_eq!(
             StakePool::stakes(&stake_id),
@@ -691,6 +695,106 @@ fn initiating_pausing_resuming_unstaking() {
         );
 
         assert_eq!(StakePool::stake_pool_balance(), starting_stake_fund_balance);
+
+        // unstaked amount is destroyed by StakingEventsHandler
         assert_eq!(Balances::total_issuance(), starting_stake_fund_balance);
+    });
+}
+
+#[test]
+fn unstake() {
+    with_externalities(&mut build_test_externalities(), || {
+        assert_err!(
+            StakePool::initiate_unstaking(&0, None),
+            StakeActionError::StakeNotFound
+        );
+
+        let staked_amount = Balances::minimum_balance() + 10000;
+        let starting_stake_fund_balance = Balances::minimum_balance() + 3333;
+
+        let _ = Balances::deposit_creating(
+            &StakePool::stake_pool_account_id(),
+            starting_stake_fund_balance + staked_amount,
+        );
+
+        let stake_id = StakePool::create_stake();
+
+        assert_err!(
+            StakePool::initiate_unstaking(&stake_id, None),
+            StakeActionError::Error(InitiateUnstakingError::UnstakingError(
+                UnstakingError::NotStaked
+            ))
+        );
+
+        let mut ongoing_slashes = BTreeMap::new();
+        ongoing_slashes.insert(
+            1,
+            Slash {
+                started_at_block: System::block_number(),
+                is_active: true,
+                blocks_remaining_in_active_period_for_slashing: 100,
+                slash_amount: 100,
+            },
+        );
+
+        <Stakes<Test>>::insert(
+            &stake_id,
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount,
+                    ongoing_slashes,
+                    next_slash_id: 0,
+                    staked_status: StakedStatus::Normal,
+                }),
+            },
+        );
+
+        assert_err!(
+            StakePool::initiate_unstaking(&stake_id, None),
+            StakeActionError::Error(InitiateUnstakingError::UnstakingError(
+                UnstakingError::CannotUnstakeWhileSlashesOngoing
+            ))
+        );
+
+        <Stakes<Test>>::insert(
+            &stake_id,
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount,
+                    ongoing_slashes: BTreeMap::new(),
+                    next_slash_id: 0,
+                    staked_status: StakedStatus::Unstaking(UnstakingState {
+                        started_at_block: 0,
+                        blocks_remaining_in_active_period_for_unstaking: 100,
+                        is_active: true,
+                    }),
+                }),
+            },
+        );
+
+        assert_err!(
+            StakePool::initiate_unstaking(&stake_id, None),
+            StakeActionError::Error(InitiateUnstakingError::UnstakingError(
+                UnstakingError::AlreadyUnstaking
+            ))
+        );
+
+        <Stakes<Test>>::insert(
+            &stake_id,
+            Stake {
+                created: System::block_number(),
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount,
+                    ongoing_slashes: BTreeMap::new(),
+                    next_slash_id: 0,
+                    staked_status: StakedStatus::Normal,
+                }),
+            },
+        );
+
+        assert_ok!(StakePool::initiate_unstaking(&stake_id, None));
+        assert_eq!(StakePool::stake_pool_balance(), starting_stake_fund_balance);
     });
 }

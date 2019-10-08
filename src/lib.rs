@@ -478,6 +478,25 @@ where
         }
     }
 
+    fn unstake(&mut self) -> Result<Balance, UnstakingError> {
+        let staked_amount = match self.staking_status {
+            StakingStatus::Staked(ref staked_state) => {
+                // prevent unstaking if there are any ongonig slashes (irrespective if active or not)
+                if !staked_state.ongoing_slashes.is_empty() {
+                    return Err(UnstakingError::CannotUnstakeWhileSlashesOngoing);
+                }
+                if StakedStatus::Normal != staked_state.staked_status {
+                    return Err(UnstakingError::AlreadyUnstaking);
+                }
+                Ok(staked_state.staked_amount)
+            }
+            _ => Err(UnstakingError::NotStaked),
+        }?;
+
+        self.staking_status = StakingStatus::NotStaked;
+        Ok(staked_amount)
+    }
+
     fn initiate_unstaking(
         &mut self,
         unstaking_period: BlockNumber,
@@ -491,11 +510,15 @@ where
             StakingStatus::Staked(ref mut staked_state) => {
                 // prevent unstaking if there are any ongonig slashes (irrespective if active or not)
                 if !staked_state.ongoing_slashes.is_empty() {
-                    return Err(InitiateUnstakingError::CannotUnstakeWhileSlashesOngoing);
+                    return Err(InitiateUnstakingError::UnstakingError(
+                        UnstakingError::CannotUnstakeWhileSlashesOngoing,
+                    ));
                 }
 
                 if StakedStatus::Normal != staked_state.staked_status {
-                    return Err(InitiateUnstakingError::AlreadyUnstaking);
+                    return Err(InitiateUnstakingError::UnstakingError(
+                        UnstakingError::AlreadyUnstaking,
+                    ));
                 }
 
                 staked_state.staked_status = StakedStatus::Unstaking(UnstakingState {
@@ -506,7 +529,9 @@ where
 
                 Ok(())
             }
-            _ => Err(InitiateUnstakingError::NotStaked),
+            _ => Err(InitiateUnstakingError::UnstakingError(
+                UnstakingError::NotStaked,
+            )),
         }
     }
 
@@ -982,7 +1007,7 @@ impl<T: Trait> Module<T> {
     /// Initiate unstaking of a Staked stake.
     pub fn initiate_unstaking(
         stake_id: &T::StakeId,
-        unstaking_period: T::BlockNumber,
+        unstaking_period: Option<T::BlockNumber>,
     ) -> Result<(), StakeActionError<InitiateUnstakingError>> {
         ensure!(
             <Stakes<T>>::exists(stake_id),
@@ -991,7 +1016,14 @@ impl<T: Trait> Module<T> {
 
         let mut stake = Self::stakes(stake_id);
 
-        stake.initiate_unstaking(unstaking_period, <system::Module<T>>::block_number())?;
+        if let Some(unstaking_period) = unstaking_period {
+            stake.initiate_unstaking(unstaking_period, <system::Module<T>>::block_number())?;
+        } else {
+            let staked_amount = stake.unstake()?;
+            let imbalance = Self::withdraw_funds_from_stake_pool(staked_amount);
+            assert_eq!(imbalance.peek(), staked_amount);
+            let _ = T::StakingEventsHandler::unstaked(stake_id, imbalance);
+        }
 
         <Stakes<T>>::insert(stake_id, stake);
 

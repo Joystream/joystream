@@ -72,11 +72,16 @@ pub enum CancelSlashingError {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub enum InitiateUnstakingError {
+pub enum UnstakingError {
     NotStaked,
     AlreadyUnstaking,
-    UnstakingPeriodShouldBeGreaterThanZero,
     CannotUnstakeWhileSlashesOngoing,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum InitiateUnstakingError {
+    UnstakingError(UnstakingError),
+    UnstakingPeriodShouldBeGreaterThanZero,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -84,7 +89,6 @@ pub enum PauseUnstakingError {
     NotStaked,
     NotUnstaking,
     AlreadyPaused,
-    SlashPeriodShouldBeGreaterThanZero,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -92,7 +96,6 @@ pub enum ResumeUnstakingError {
     NotStaked,
     NotUnstaking,
     NotPaused,
-    SlashPeriodShouldBeGreaterThanZero,
 }
 
 impl<ErrorType> From<ErrorType> for StakeActionError<ErrorType> {
@@ -145,5 +148,11 @@ impl From<StakeActionError<IncreasingStakeError>>
                 IncreasingStakeFromAccountError::IncreasingStakeError(increasing_stake_error),
             ),
         }
+    }
+}
+
+impl From<UnstakingError> for StakeActionError<InitiateUnstakingError> {
+    fn from(e: UnstakingError) -> StakeActionError<InitiateUnstakingError> {
+        StakeActionError::Error(InitiateUnstakingError::UnstakingError(e))
     }
 }
