@@ -1018,14 +1018,15 @@ impl<T: Trait> Module<T> {
 
         if let Some(unstaking_period) = unstaking_period {
             stake.initiate_unstaking(unstaking_period, <system::Module<T>>::block_number())?;
+            <Stakes<T>>::insert(stake_id, stake);
         } else {
             let staked_amount = stake.unstake()?;
+            <Stakes<T>>::insert(stake_id, stake);
+
             let imbalance = Self::withdraw_funds_from_stake_pool(staked_amount);
             assert_eq!(imbalance.peek(), staked_amount);
             let _ = T::StakingEventsHandler::unstaked(stake_id, imbalance);
         }
-
-        <Stakes<T>>::insert(stake_id, stake);
 
         Ok(())
     }
