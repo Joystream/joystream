@@ -174,7 +174,7 @@ decl_module! {
                 Some(primary_liaison) => primary_liaison,
 
                 // Select liaison from staked roles if available
-                _ => T::Roles::random_account_for_role(actors::Role::Storage)?
+                _ => T::Roles::random_account_for_role(actors::Role::StorageProvider)?
             };
 
             // Let's create the entry then

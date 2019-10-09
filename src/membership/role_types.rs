@@ -6,6 +6,7 @@ pub type ActorId = u32;
 
 #[derive(Encode, Decode, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub enum Role {
+    StorageProvider,
     Publisher,
     CuratorLead,
     Curator,

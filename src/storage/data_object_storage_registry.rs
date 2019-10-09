@@ -132,7 +132,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Check that the origin is a storage provider
-            ensure!(<T as Trait>::Roles::account_has_role(&who, actors::Role::Storage), MSG_ONLY_STORAGE_PROVIDER_MAY_CREATE_DOSR);
+            ensure!(<T as Trait>::Roles::account_has_role(&who, actors::Role::StorageProvider), MSG_ONLY_STORAGE_PROVIDER_MAY_CREATE_DOSR);
 
             // Content ID must exist
             ensure!(T::ContentIdExists::has_content(&cid), MSG_CID_NOT_FOUND);

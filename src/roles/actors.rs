@@ -10,13 +10,9 @@ use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, St
 use system::{self, ensure_root, ensure_signed};
 
 use crate::membership;
+pub use membership::members::Role;
 
 const STAKING_ID: LockIdentifier = *b"role_stk";
-
-#[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Debug)]
-pub enum Role {
-    Storage,
-}
 
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, Copy, Clone, Eq, PartialEq)]
@@ -113,7 +109,7 @@ decl_storage! {
         pub Parameters get(parameters) build(|config: &GenesisConfig| {
             if config.enable_storage_role {
                 let storage_params: RoleParameters<T> = Default::default();
-                vec![(Role::Storage, storage_params)]
+                vec![(Role::StorageProvider, storage_params)]
             } else {
                 vec![]
             }
@@ -122,7 +118,7 @@ decl_storage! {
         /// the roles members can enter into
         pub AvailableRoles get(available_roles) build(|config: &GenesisConfig| {
             if config.enable_storage_role {
-                vec![(Role::Storage)]
+                vec![(Role::StorageProvider)]
             } else {
                 vec![]
             }

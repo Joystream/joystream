@@ -286,7 +286,7 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
             .first_metadata_id(TEST_FIRST_METADATA_ID)
             .build(),
         || {
-            let roles: Vec<actors::Role> = vec![actors::Role::Storage];
+            let roles: Vec<actors::Role> = vec![actors::Role::StorageProvider];
             assert!(
                 TestActors::set_available_roles(system::RawOrigin::Root.into(), roles).is_ok(),
                 ""
