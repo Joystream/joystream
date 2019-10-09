@@ -65,21 +65,47 @@ const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 #[derive(Encode, Decode)]
 /// Stored information about a registered user
 pub struct Profile<T: Trait> {
+    /// The unique handle chosen by member
     pub handle: Vec<u8>,
+
+    /// A Url to member's Avatar image
     pub avatar_uri: Vec<u8>,
+
+    /// Short text chosen by member to share information about themselves
     pub about: Vec<u8>,
+
+    /// Blocknumber when member was registered
     pub registered_at_block: T::BlockNumber,
+
+    /// Timestamp when member was registered
     pub registered_at_time: T::Moment,
+
+    /// How the member was registered
     pub entry: EntryMethod<T>,
+
+    /// Wether the member is suspended or not.
     pub suspended: bool,
+
+    /// The type of subsction the member has purchased if any.
     pub subscription: Option<T::SubscriptionId>,
+
+    /// Member's root account id. Only the root account is permitted to set a new root account
+    /// and update the controller account. Other modules may only allow certain actions if
+    /// signed with root account. It is intended to be an account that can remain offline and
+    /// potentially hold a member's funds, and be a source for staking roles.
     pub root_account: T::AccountId,
+
+    /// Member's controller account id. This account is intended to be used by
+    /// a member to act under their identity in other modules. It will usually be used more
+    /// online and will have less funds in its balance.
     pub controller_account: T::AccountId,
+
+    /// The set of registered roles the member has enrolled in.
     pub roles: ActorInRoleSet,
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
-/// Structure used to batch user configurable profile information when registering or updating info
+/// A "Partial" struct used to batch user configurable profile information when registering or updating info
 pub struct UserInfo {
     pub handle: Option<Vec<u8>>,
     pub avatar_uri: Option<Vec<u8>>,
@@ -370,7 +396,7 @@ impl<T: Trait> Module<T> {
         Self::member_profile(&id).ok_or("member profile not found")
     }
 
-    /// Returns true if account is either a mmeber's root or controller account
+    /// Returns true if account is either a member's root or controller account
     pub fn is_member_account(who: &T::AccountId) -> bool {
         <MemberIdsByRootAccountId<T>>::exists(who)
             || <MemberIdsByControllerAccountId<T>>::exists(who)
