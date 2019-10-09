@@ -383,21 +383,6 @@ fn cannot_add_schema_to_entity_when_schema_id_is_unknown() {
 }
 
 #[test]
-fn cannot_add_schema_to_entity_when_error_prop_id_not_found_in_schema_props() {
-    with_test_externalities(|| {
-        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
-        assert_err!(
-            TestModule::add_schema_support_to_entity(
-                entity_id,
-                schema_id,
-                vec![ prop_value(UNKNOWN_PROP_ID, PropertyValue::None) ]
-            ),
-            ERROR_PROP_ID_NOT_FOUND_IN_SCHEMA_PROPS
-        );
-    })
-}
-
-#[test]
 fn cannot_add_schema_to_entity_when_prop_value_dont_match_type() {
     with_test_externalities(|| {
         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
@@ -405,7 +390,10 @@ fn cannot_add_schema_to_entity_when_prop_value_dont_match_type() {
             TestModule::add_schema_support_to_entity(
                 entity_id,
                 schema_id,
-                vec![ prop_value(PROP_ID_U32, PropertyValue::Bool(true)) ]
+                vec![
+                    bool_prop_value(),
+                    prop_value(PROP_ID_U32, PropertyValue::Bool(true))
+                ]
             ),
             ERROR_PROP_VALUE_DONT_MATCH_TYPE
         );
@@ -420,7 +408,10 @@ fn cannot_add_schema_to_entity_when_unknown_internal_entity_id() {
             TestModule::add_schema_support_to_entity(
                 entity_id,
                 schema_id,
-                vec![ prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(UNKNOWN_ENTITY_ID)) ]
+                vec![
+                    bool_prop_value(),
+                    prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(UNKNOWN_ENTITY_ID))
+                ]
             ),
             ERROR_ENTITY_NOT_FOUND
         );
