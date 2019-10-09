@@ -51,7 +51,6 @@ const ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY: &str = "Cannot add a schema that is 
 const ERROR_PROP_VALUE_DONT_MATCH_TYPE: &str = "Some of the provided property values don't match the expected property type";
 const ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS: &str = "Property name is not unique within its class";
 const ERROR_MISSING_REQUIRED_PROP: &str = "Some required property was not found when adding schema support to entity";
-const ERROR_ENTITY_DOES_NOT_SUPPORT_SCHEMAS_YET: &str = "Cannot update entity properties because entity does not support any schemas yet";
 const ERROR_UNKNOWN_ENTITY_PROP_ID: &str = "Some of the provided property ids cannot be found on the current list of propery values of this entity";
 const ERROR_TEXT_PROP_IS_TOO_LONG: &str = "Text propery is too long";
 const ERROR_VEC_PROP_IS_TOO_LONG: &str = "Vector propery is too long";
@@ -539,8 +538,6 @@ impl<T: Trait> Module<T> {
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
-        ensure!(!entity.in_class_schema_indexes.is_empty(), ERROR_ENTITY_DOES_NOT_SUPPORT_SCHEMAS_YET);
-
         // Get current property values of an entity as a mutable vector,
         // so we can update them if new values provided present in new_property_values.
         let mut updated_values = entity.values;
@@ -555,8 +552,8 @@ impl<T: Trait> Module<T> {
                 value: new_value
             } = new_prop_value;
 
-            // Try to find a current property value of an entity
-            // by matching its id to the id of a property with a new value.
+            // Try to find a current property value in the entity
+            // by matching its id to the id of a property with an updated value.
             if let Some(current_prop_value) = updated_values.iter_mut()
                 .find(|prop| *id == prop.in_class_index) {
 

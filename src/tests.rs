@@ -475,20 +475,6 @@ fn cannot_update_entity_props_when_entity_not_found() {
 }
 
 #[test]
-fn cannot_update_entity_props_when_entity_does_not_support_schemas_yet() {
-    with_test_externalities(|| {
-        let (_, _, entity_id) = create_class_with_schema_and_entity();
-        assert_err!(
-            TestModule::update_entity_property_values(
-                entity_id,
-                vec![]
-            ),
-            ERROR_ENTITY_DOES_NOT_SUPPORT_SCHEMAS_YET
-        );
-    })
-}
-
-#[test]
 fn cannot_update_entity_props_when_prop_value_dont_match_type() {
     with_test_externalities(|| {
         let entity_id = create_entity_with_schema_support();
