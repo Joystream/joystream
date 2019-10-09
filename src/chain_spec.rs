@@ -174,8 +174,8 @@ pub fn staging_testnet_config() -> ChainSpec {
             0,
         )])),
         Some(&*"joy"), // protocol_id
-        None, // consensus engine
-        None, // properties
+        None,          // consensus engine
+        None,          // properties
     )
 }
 

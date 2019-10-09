@@ -27,13 +27,11 @@ use node_template_runtime::{self, opaque::Block, GenesisConfig, RuntimeApi};
 use std::sync::Arc;
 use std::time::Duration;
 use substrate_client::LongestChain;
-use substrate_executor::native_executor_instance;
-pub use substrate_executor::NativeExecutor;
+pub use substrate_executor::{native_executor_instance, NativeExecutor};
 use substrate_service::{
     error::Error as ServiceError, AbstractService, Configuration, ServiceBuilder,
 };
 use transaction_pool::{self, txpool::Pool as TransactionPool};
-pub use substrate_executor::NativeExecutor;
 
 // Our native executor instance.
 native_executor_instance!(
