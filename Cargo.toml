@@ -54,8 +54,12 @@ rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
 [dependencies.node-template-runtime]
 package = "joystream-node-runtime"
+git = 'https://github.com/joystream/substrate-runtime-joystream'
+rev = '8414869a87fb9f9011f381e24c3d874fb250e6a6'  # development branch with just substrate-v2 update
+# branch = 'development'
+# for local development...
 # clone https://github.com/joystream/substrate-runtime-joystream to this path:
-path = 'substrate-runtime-joystream'
+# path = 'substrate-runtime-joystream'
 
 [dependencies.primitives]
 git = 'https://github.com/paritytech/substrate.git'
