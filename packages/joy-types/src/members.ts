@@ -1,6 +1,7 @@
-import { Enum, getTypeRegistry, Option, Struct, bool, u64, u128, Text, GenericAccountId } from '@polkadot/types';
+import { Enum, getTypeRegistry, Option, Struct, Null, bool, u64, u128, Text, GenericAccountId } from '@polkadot/types';
 import { BlockNumber, Moment, BalanceOf } from '@polkadot/types/interfaces';
 import { OptionText } from './index';
+import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
 export class MemberId extends u64 {}
 export class PaidTermId extends u64 {}
@@ -8,17 +9,26 @@ export class SubscriptionId extends u64 {}
 
 export class Paid extends PaidTermId {}
 export class Screening extends GenericAccountId {}
+export class Genesis extends Null {} // Works for enum variant that doesn't encapsulate any value?
 export class EntryMethod extends Enum {
   constructor (value?: any, index?: number) {
     super({
       Paid,
-      Screening
+      Screening,
+      Genesis,
     }, value, index);
   }
 }
 
+export class Role extends Enum {
+  constructor (value?: any) {
+    super([
+      'Storage'
+    ], value);
+  }
+}
+
 export type Profile = {
-  id: MemberId,
   handle: Text,
   avatar_uri: Text,
   about: Text,
@@ -26,7 +36,10 @@ export type Profile = {
   registered_at_time: Moment,
   entry: EntryMethod,
   suspended: bool,
-  subscription: Option<SubscriptionId>
+  subscription: Option<SubscriptionId>,
+  root_account: AccountId,
+  controller_account: AccountId,
+  // roles: BTreeSet<ActorInRole>
 };
 
 export class UserInfo extends Struct {
@@ -70,7 +83,7 @@ export class PaidMembershipTerms extends Struct {
 export function registerMembershipTypes () {
   try {
     const typeRegistry = getTypeRegistry();
-    // Register enum EntryMethod and its options:
+    // Register enum EntryMethod
     typeRegistry.register({
       // Paid,
       // Screening,
@@ -81,7 +94,6 @@ export function registerMembershipTypes () {
       PaidTermId,
       SubscriptionId,
       Profile: {
-        id: 'MemberId',
         handle: 'Text',
         avatar_uri: 'Text',
         about: 'Text',
@@ -89,7 +101,10 @@ export function registerMembershipTypes () {
         registered_at_time: 'Moment',
         entry: 'EntryMethod',
         suspended: 'bool',
-        subscription: 'Option<SubscriptionId>'
+        subscription: 'Option<SubscriptionId>',
+        root_account: 'AccountId',
+        controller_account: 'AccountId',
+        // roles: 'BTreeSet<ActorInRole>'
       },
       UserInfo,
       CheckedUserInfo: {
@@ -102,8 +117,12 @@ export function registerMembershipTypes () {
         fee: 'BalanceOf',
         text: 'Text'
       },
-      RoleId: 'u64',
+      Role,
       ActorId: 'u64',
+      ActorInRole: {
+        role: 'Role',
+        actor_id: 'ActorId'
+      },
     });
   } catch (err) {
     console.error('Failed to register custom types of membership module', err);
