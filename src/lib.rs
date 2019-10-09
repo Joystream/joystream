@@ -110,7 +110,7 @@ impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEv
     }
 }
 
-#[derive(Encode, Decode, Debug, Default, Eq, PartialEq, Clone)]
+#[derive(Encode, Decode, Copy, Clone, Debug, Default, Eq, PartialEq)]
 pub struct Slash<BlockNumber, Balance> {
     /// The block where slashing was initiated.
     pub started_at_block: BlockNumber,
@@ -172,7 +172,7 @@ pub struct StakedState<BlockNumber, Balance, SlashId: Ord> {
 
 impl<BlockNumber, Balance, SlashId> StakedState<BlockNumber, Balance, SlashId>
 where
-    BlockNumber: SimpleArithmetic,
+    BlockNumber: SimpleArithmetic + Copy,
     Balance: SimpleArithmetic + Copy,
     SlashId: Ord + Copy,
 {
@@ -193,14 +193,24 @@ where
             })
     }
 
-    /// Returns identifiers of slashes that should be executed
-    fn get_slashes_to_finalize(&self) -> Vec<SlashId> {
-        self.ongoing_slashes
+    /// Returns pair of slash_id and slashes that should be executed
+    fn get_slashes_to_finalize(&mut self) -> Vec<(SlashId, Slash<BlockNumber, Balance>)> {
+        let slashes_to_finalize = self
+            .ongoing_slashes
             .iter()
             .filter(|(_, slash)| {
                 slash.blocks_remaining_in_active_period_for_slashing == Zero::zero()
             })
             .map(|(slash_id, _)| *slash_id)
+            .collect::<Vec<_>>();
+
+        // remove and return the slashes
+        slashes_to_finalize
+            .iter()
+            .map(|slash_id| {
+                // assert!(self.ongoing_slashes.contains_key(slash_id))
+                (*slash_id, self.ongoing_slashes.remove(slash_id).unwrap())
+            })
             .collect()
     }
 
@@ -235,12 +245,9 @@ where
     fn finalize_slashes(&mut self, minimum_balance: Balance) -> Vec<(SlashId, Balance, Balance)> {
         self.get_slashes_to_finalize()
             .iter()
-            .map(|slash_id| {
-                assert!(self.ongoing_slashes.contains_key(slash_id));
-                let slash = self.ongoing_slashes.remove(slash_id).unwrap();
-
+            .map(|(slash_id, slash)| {
                 // apply the slashing and get back actual amount slashed
-                let slashed_amount = self.apply_slash(slash, minimum_balance);
+                let slashed_amount = self.apply_slash(*slash, minimum_balance);
 
                 (*slash_id, slashed_amount, self.staked_amount)
             })
