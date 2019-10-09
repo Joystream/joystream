@@ -1024,7 +1024,6 @@ impl<T: Trait> Module<T> {
             <Stakes<T>>::insert(stake_id, stake);
 
             let imbalance = Self::withdraw_funds_from_stake_pool(staked_amount);
-            assert_eq!(imbalance.peek(), staked_amount);
             let _ = T::StakingEventsHandler::unstaked(stake_id, imbalance);
         }
 
@@ -1085,7 +1084,6 @@ impl<T: Trait> Module<T> {
             for (slash_id, slashed_amount, staked_amount) in slashed.into_iter() {
                 // remove the slashed amount from the pool
                 let imbalance = Self::withdraw_funds_from_stake_pool(slashed_amount);
-                assert_eq!(imbalance.peek(), slashed_amount);
 
                 let _ = T::StakingEventsHandler::slashed(
                     &stake_id,
@@ -1098,7 +1096,6 @@ impl<T: Trait> Module<T> {
             if let Some(staked_amount) = unstaked {
                 // remove the unstaked amount from the pool
                 let imbalance = Self::withdraw_funds_from_stake_pool(staked_amount);
-                assert_eq!(imbalance.peek(), staked_amount);
 
                 let _ = T::StakingEventsHandler::unstaked(&stake_id, imbalance);
             }
