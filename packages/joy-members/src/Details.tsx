@@ -7,7 +7,6 @@ import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { withCalls } from '@polkadot/react-api/with';
 import { Option } from '@polkadot/types';
-import IdentityIcon from '@polkadot/react-components/IdentityIcon';
 import BalanceDisplay from '@polkadot/react-components/Balance';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { formatNumber } from '@polkadot/util';
