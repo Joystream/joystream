@@ -277,7 +277,7 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
         }),
         members: Some(MembersConfig {
             default_paid_membership_fee: 100u128,
-            first_member_id: 1,
+            members: vec![],
         }),
         forum: Some(ForumConfig {
             category_by_id: vec![],
@@ -395,7 +395,7 @@ pub fn testnet_genesis(
         }),
         members: Some(MembersConfig {
             default_paid_membership_fee: 100u128,
-            first_member_id: 1,
+            members: vec![],
         }),
         forum: Some(ForumConfig {
             category_by_id: vec![],
