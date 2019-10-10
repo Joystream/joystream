@@ -7,7 +7,6 @@ import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { withCalls } from '@polkadot/react-api/with';
 import { Option } from '@polkadot/types';
-import { AccountId } from '@polkadot/types/interfaces';
 import IdentityIcon from '@polkadot/react-components/IdentityIcon';
 import BalanceDisplay from '@polkadot/react-components/Balance';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
@@ -24,7 +23,6 @@ type Props = ApiProps & I18nProps & MyAccountProps & {
   preview?: boolean,
   memberId: MemberId,
   memberProfile?: Option<any>, // TODO refactor to Option<Profile>
-  accountIdByMemberId?: AccountId,
   activeCouncil?: Seat[]
 };
 
@@ -42,24 +40,29 @@ class Component extends React.PureComponent<Props> {
       preview = false,
       myAddress,
       activeCouncil = [],
-      accountIdByMemberId: accountId
     } = this.props;
 
     const {
       handle,
-      avatar_uri
+      avatar_uri,
+      root_account,
+      controller_account,
     } = memberProfile;
 
     const hasAvatar = avatar_uri && nonEmptyStr(avatar_uri.toString());
-    const isMyProfile = myAddress && accountId && myAddress === accountId.toString();
-    const isCouncilor: boolean = accountId !== undefined && activeCouncil.find(x => accountId.eq(x.member)) !== undefined;
+    const isMyProfile = myAddress && (myAddress === root_account.toString() || myAddress === controller_account.toString());
+    const isCouncilor: boolean = (
+      (activeCouncil.find(x => root_account.eq(x.member)) !== undefined) ||
+      (activeCouncil.find(x => controller_account.eq(x.member)) !== undefined)
+    );
 
     return (
       <>
       <div className={`item ProfileDetails ${isMyProfile && 'MyProfile'}`}>
+        <div>{this.props.memberId.toString()}</div>
         {hasAvatar
           ? <img className='ui avatar image' src={avatar_uri.toString()} />
-          : <IdentityIcon className='image' value={accountId} size={40} />
+          : null
         }
         <div className='content'>
           <div className='header'>
@@ -72,7 +75,7 @@ class Component extends React.PureComponent<Props> {
                 <i className='university icon'></i>
                 Council member
               </b>}
-            <BalanceDisplay label='Balance: ' params={accountId} />
+            <BalanceDisplay label='Balance: ' params={myAddress} />
           </div>
         </div>
       </div>
@@ -83,29 +86,33 @@ class Component extends React.PureComponent<Props> {
 
   private renderDetails (memberProfile: Profile, isCouncilor: boolean) {
     const {
-      accountIdByMemberId: accountId
-    } = this.props;
-
-    const {
-      id,
       about,
       registered_at_block,
       registered_at_time,
       entry,
       suspended,
-      subscription
+      subscription,
+      root_account,
+      controller_account,
+
     } = memberProfile;
+
+    const { memberId } = this.props;
 
     return (
       <Table celled selectable compact definition className='ProfileDetailsTable'>
       <Table.Body>
       <Table.Row>
         <Table.Cell>Membership ID</Table.Cell>
-        <Table.Cell>{id.toNumber()}</Table.Cell>
+        <Table.Cell>{memberId.toNumber()}</Table.Cell>
       </Table.Row>
       <Table.Row>
-        <Table.Cell>Primary account</Table.Cell>
-        <Table.Cell><AddressMini value={accountId} isShort={false} isPadded={false} size={36} withName withBalance /></Table.Cell>
+        <Table.Cell>Root account</Table.Cell>
+        <Table.Cell><AddressMini value={root_account} isShort={false} isPadded={false} size={36} withName withBalance /></Table.Cell>
+      </Table.Row>
+      <Table.Row>
+        <Table.Cell>Controller account</Table.Cell>
+        <Table.Cell><AddressMini value={controller_account} isShort={false} isPadded={false} size={36} withName withBalance /></Table.Cell>
       </Table.Row>
       <Table.Row>
         <Table.Cell>Registered on</Table.Cell>
@@ -160,6 +167,5 @@ export default translate(withMyAccount(
   withCalls<Props>(
     queryToProp('query.council.activeCouncil'),
     queryMembershipToProp('memberProfile', 'memberId'),
-    queryMembershipToProp('accountIdByMemberId', 'memberId')
   )(Component)
 ));

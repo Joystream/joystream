@@ -23,7 +23,10 @@ export class EntryMethod extends Enum {
 export class Role extends Enum {
   constructor (value?: any) {
     super([
-      'Storage'
+      'StorageProvider',
+      'Publisher',
+      'CuratorLead',
+      'Curator',
     ], value);
   }
 }
@@ -61,14 +64,9 @@ export type CheckedUserInfo = {
 export class PaidMembershipTerms extends Struct {
   constructor (value?: any) {
     super({
-      id: PaidTermId,
       fee: u128, // BalanceOf
       text: Text
     }, value);
-  }
-
-  get id (): PaidTermId {
-    return this.get('id') as PaidTermId;
   }
 
   get fee (): BalanceOf {

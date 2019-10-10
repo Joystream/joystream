@@ -3,6 +3,9 @@ import { getTypeRegistry, u32, u128, GenericAccountId } from '@polkadot/types';
 import { BlockNumber, AccountId, Balance } from '@polkadot/types/interfaces';
 import { MemberId, Role } from './members';
 
+// re-export Role
+export { Role } from './members';
+
 export class Actor extends Struct {
   constructor (value?: any) {
     super({
