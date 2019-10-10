@@ -655,11 +655,11 @@ where
 decl_storage! {
     trait Store for Module<T: Trait> as StakePool {
         /// Maps identifiers to a stake.
-        Stakes get(stakes): linked_map T::StakeId => Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>;
+        pub Stakes get(stakes): linked_map T::StakeId => Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>;
 
         /// Identifier value for next stake, and count of total stakes created (not necessarily the number of current
         /// stakes in the Stakes map as stakes can be removed.)
-        StakesCreated get(stakes_created): T::StakeId;
+        pub StakesCreated get(stakes_created): T::StakeId;
     }
 }
 
