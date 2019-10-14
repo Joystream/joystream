@@ -14,7 +14,7 @@ use system::{self, ensure_root, ensure_signed};
 pub use versioned_store::*; // EntityId, ClassId -> should be configured on versioned_store::Trait
 pub type PropertyIndex = u16; // should really be configured on versioned_store::Trait
 
-#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
 pub struct PropertyOfClass<ClassId, PropertyIndex> {
     class: ClassId,
     property: PropertyIndex,
@@ -82,7 +82,7 @@ impl<AccountId, GroupId> Default for EntityPrincipal<AccountId, GroupId> {
 }
 
 /// The type of constraint on what entities can reference instances of a class through an Internal property type.
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum ReferenceConstraint<ClassId: Ord, PropertyIndex: Ord> {
     /// No Entity can reference the class.
     NoReferencingAllowed,
@@ -129,7 +129,7 @@ where
     /// The type of constraint on referencing the class from other entities.
     reference_constraint: ReferenceConstraint<ClassId, PropertyIndex>,
 
-    /// admins who can update all concrete permissions. The admins can only be set by the root
+    /// Who can update all concrete permissions. The admins can only be set by the root
     /// origin, "System".
     admins: BasePrincipalSet<AccountId, GroupId>,
 
@@ -153,8 +153,12 @@ where
     GroupId: Ord + Clone,
     PropertyIndex: Ord,
 {
-    fn is_admin(&self, base_principal: &BasePrincipal<AccountId, GroupId>) -> bool {
-        self.admins.contains(base_principal)
+    /// Returns true if base_principal is in admins acl group
+    fn in_admins(
+        class_permissions: &Self,
+        base_principal: &BasePrincipal<AccountId, GroupId>,
+    ) -> bool {
+        class_permissions.admins.contains(base_principal)
     }
 }
 
@@ -194,27 +198,111 @@ decl_module! {
 
         }
 
+        // Method for setting the admins group
+
+        fn set_class_admins(
+            origin,
+            class_id: ClassId,
+            admins: BasePrincipalSet<T::AccountId, GroupId<T>>
+        ) -> dispatch::Result {
+            Self::mutate_class_permissions_if(
+                origin,
+                None,
+                |_, principal| *principal == BasePrincipal::System, // root origin
+                class_id,
+                |class_permissions| {
+                    class_permissions.admins = admins.clone();
+                }
+            )
+        }
+
         // Methods for updating concrete permissions
 
         fn set_class_entity_permissions(
-            origin, claimed_group_id: Option<GroupId<T>>,
+            origin,
+            claimed_group_id: Option<GroupId<T>>,
             class_id: ClassId,
             entity_permissions: EntityPermissions<T::AccountId, GroupId<T>>
         ) -> dispatch::Result {
-            // construct a BasePrincipal from origin and group_id
-            let base_principal = Self::ensure_base_principal(origin, claimed_group_id)?;
-
-            let mut class_permissions = Self::ensure_class_permissions(class_id)?;
-
-            // Only admins can set entity permissions on class
-            if class_permissions.is_admin(&base_principal) {
-                class_permissions.entity_permissions = entity_permissions;
-                <ClassPermissionsByClassId<T>>::insert(class_id, class_permissions);
-                Ok(())
-            } else {
-                Err("NotAdmin")
-            }
+            Self::mutate_class_permissions_if(
+                origin,
+                claimed_group_id,
+                ClassPermissions::in_admins,
+                class_id,
+                |class_permissions| {
+                    class_permissions.entity_permissions = entity_permissions.clone();
+                }
+            )
         }
+
+        fn set_class_entities_can_be_created(
+            origin,
+            claimed_group_id: Option<GroupId<T>>,
+            class_id: ClassId,
+            can_be_created: bool
+        ) -> dispatch::Result {
+            Self::mutate_class_permissions_if(
+                origin,
+                claimed_group_id,
+                ClassPermissions::in_admins,
+                class_id,
+                |class_permissions| {
+                    class_permissions.entities_can_be_created = can_be_created;
+                }
+            )
+        }
+
+        fn set_class_add_schemas_acl(
+            origin,
+            claimed_group_id: Option<GroupId<T>>,
+            class_id: ClassId,
+            acl: BasePrincipalSet<T::AccountId, GroupId<T>>
+        ) -> dispatch::Result {
+            Self::mutate_class_permissions_if(
+                origin,
+                claimed_group_id,
+                ClassPermissions::in_admins,
+                class_id,
+                |class_permissions| {
+                    class_permissions.add_schemas = acl.clone();
+                }
+            )
+        }
+
+        fn set_class_create_entities_acl(
+            origin,
+            claimed_group_id: Option<GroupId<T>>,
+            class_id: ClassId,
+            acl: BasePrincipalSet<T::AccountId, GroupId<T>>
+        ) -> dispatch::Result {
+            Self::mutate_class_permissions_if(
+                origin,
+                claimed_group_id,
+                ClassPermissions::in_admins,
+                class_id,
+                |class_permissions| {
+                    class_permissions.create_entities = acl.clone();
+                }
+            )
+        }
+
+        fn set_class_reference_constraint(
+            origin,
+            claimed_group_id: Option<GroupId<T>>,
+            class_id: ClassId,
+            constraint: ReferenceConstraint<ClassId, PropertyIndex>
+        ) -> dispatch::Result {
+            Self::mutate_class_permissions_if(
+                origin,
+                claimed_group_id,
+                ClassPermissions::in_admins,
+                class_id,
+                |class_permissions| {
+                    class_permissions.reference_constraint = constraint.clone();
+                }
+            )
+        }
+
     }
 }
 
@@ -252,5 +340,35 @@ impl<T: Trait> Module<T> {
             "ClassIdDoesNotExist"
         );
         Ok(Self::class_permissions_by_class_id(class_id))
+    }
+
+    /// Constructs a base principal from the origin and claimed group id and uses it to
+    /// test a predicate before mutating a ClassPermissions if it exists with supplied
+    /// mutate function.
+    fn mutate_class_permissions_if<Predicate, Mutate>(
+        origin: T::Origin,
+        claimed_group_id: Option<GroupId<T>>,
+        // predicate to test if actor has permission to perform mutation.
+        predicate: Predicate,
+        // class permissions to perform mutation on if it exists
+        class_id: ClassId,
+        // actual mutation to apply.
+        mutate: Mutate,
+    ) -> dispatch::Result
+    where
+        Predicate: Fn(&ClassPermissionsType<T>, &BasePrincipal<T::AccountId, GroupId<T>>) -> bool,
+        Mutate: Fn(&mut ClassPermissionsType<T>),
+    {
+        // construct a BasePrincipal from origin and group_id
+        let base_principal = Self::ensure_base_principal(origin, claimed_group_id)?;
+        let mut class_permissions = Self::ensure_class_permissions(class_id)?;
+
+        if predicate(&class_permissions, &base_principal) {
+            mutate(&mut class_permissions);
+            class_permissions.last_permissions_update = <system::Module<T>>::block_number();
+            Ok(())
+        } else {
+            Err("NotAdmin")
+        }
     }
 }
