@@ -7,9 +7,9 @@ use codec::{Codec, Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::{
-    decl_module, decl_storage, ensure, EnumerableStorageMap, Parameter, StorageMap,
+    decl_module, decl_storage, dispatch, ensure, EnumerableStorageMap, Parameter, StorageMap,
 };
-use system;
+use system::{self, ensure_root, ensure_signed};
 
 pub use versioned_store::*; // EntityId, ClassId -> should be configured on versioned_store::Trait
 pub type PropertyIndex = u16; // should really be configured on versioned_store::Trait
@@ -30,7 +30,9 @@ pub trait GroupMembershipChecker<AccountId> {
         + Codec
         + Default
         + Copy
+        + Clone
         + MaybeSerializeDebug
+        + Eq
         + PartialEq
         + Ord;
 
@@ -49,7 +51,7 @@ pub trait CreateClassPermissionsChecker<AccountId> {
 }
 
 /// Identifies a princial to whom a permission can be assigned on Classes.
-#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
 pub enum BasePrincipal<AccountId, GroupId> {
     System,
     Account(AccountId),
@@ -65,7 +67,7 @@ impl<AccountId, GroupId> Default for BasePrincipal<AccountId, GroupId> {
 }
 
 /// Identifies a principal to whom a permission can be assigned on Entities.
-#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
 pub enum EntityPrincipal<AccountId, GroupId> {
     Base(BasePrincipal<AccountId, GroupId>),
     Owner,
@@ -106,8 +108,8 @@ pub type BasePrincipalSet<AccountId, GroupId> = BTreeSet<BasePrincipal<AccountId
 #[derive(Encode, Decode, Default)]
 pub struct ClassPermissions<
     ClassId: Ord,
-    AccountId: Ord,
-    GroupId: Ord,
+    AccountId: Ord + Clone,
+    GroupId: Ord + Clone,
     PropertyIndex: Ord,
     BlockNumber,
 > {
@@ -135,7 +137,28 @@ pub struct ClassPermissions<
     last_permissions_update: BlockNumber,
 }
 
-#[derive(Encode, Decode, Default)]
+pub type ClassPermissionsType<T> = ClassPermissions<
+    ClassId,
+    <T as system::Trait>::AccountId,
+    GroupId<T>,
+    PropertyIndex,
+    <T as system::Trait>::BlockNumber,
+>;
+
+impl<
+        ClassId: Ord,
+        AccountId: Ord + Clone,
+        GroupId: Ord + Clone,
+        PropertyIndex: Ord,
+        BlockNumber,
+    > ClassPermissions<ClassId, AccountId, GroupId, PropertyIndex, BlockNumber>
+{
+    fn is_admin(&self, base_principal: &BasePrincipal<AccountId, GroupId>) -> bool {
+        self.admins.contains(base_principal)
+    }
+}
+
+#[derive(Encode, Decode, Default, Clone, Debug, Eq, PartialEq)]
 pub struct EntityPermissions<AccountId: Ord, GroupId: Ord> {
     update: BTreeSet<EntityPrincipal<AccountId, GroupId>>,
     delete: BTreeSet<EntityPrincipal<AccountId, GroupId>>,
@@ -159,8 +182,8 @@ pub trait Trait: system::Trait
 
 decl_storage! {
     trait Store for Module<T: Trait> as VersionedStorePermissions {
-      pub ClassPermissionsByClassId get(class_permission): linked_map ClassId => ClassPermissions<ClassId, T::AccountId, GroupId<T>, PropertyIndex, T::BlockNumber>;
-      pub EntityOwnerByEntityId get(entity_owner): linked_map EntityId => BasePrincipal<T::AccountId, GroupId<T>>;
+      pub ClassPermissionsByClassId get(class_permissions_by_class_id): linked_map ClassId => ClassPermissionsType<T>;
+      pub EntityOwnerByEntityId get(entity_owner_by_entity_id): linked_map EntityId => BasePrincipal<T::AccountId, GroupId<T>>;
     }
 }
 
@@ -169,7 +192,60 @@ decl_module! {
         fn on_finalize(_now: T::BlockNumber) {
 
         }
+
+        // Methods for updating concrete permissions
+
+        fn set_class_entity_permissions(origin, claimed_group_id: Option<GroupId<T>>, class_id: ClassId, entity_permissions: EntityPermissions<T::AccountId, GroupId<T>>) -> dispatch::Result  {
+            // construct a BasePrincipal from origin and group_id
+            let base_principal = Self::ensure_base_principal(origin, claimed_group_id)?;
+
+            let mut class_permissions = Self::ensure_class_permissions(class_id)?;
+
+            // Only admins can set entity permissions on class
+            if class_permissions.is_admin(&base_principal) {
+                class_permissions.entity_permissions = entity_permissions;
+                <ClassPermissionsByClassId<T>>::insert(class_id, class_permissions);
+                Ok(())
+            } else {
+                Err("NotAdmin")
+            }
+        }
     }
 }
 
-impl<T: Trait> Module<T> {}
+impl<T: Trait> Module<T> {
+    /// Converts the origin and claimed group into a base principal.
+    /// It expects only signed or root origins.
+    /// If the signed origin is not a member of the claimed group an error is returned.
+    fn ensure_base_principal(
+        origin: T::Origin,
+        claimed_group_id: Option<GroupId<T>>,
+    ) -> Result<BasePrincipal<T::AccountId, GroupId<T>>, &'static str> {
+        match origin.into() {
+            Ok(system::RawOrigin::Root) => Ok(BasePrincipal::System),
+            Ok(system::RawOrigin::Signed(account_id)) => {
+                if let Some(group_id) = claimed_group_id {
+                    if T::GroupMembershipChecker::account_is_in_group(account_id, group_id) {
+                        Ok(BasePrincipal::GroupMember(group_id))
+                    } else {
+                        Err("OriginNotMemberOfClaimedGroup")
+                    }
+                } else {
+                    Ok(BasePrincipal::Account(account_id))
+                }
+            }
+            _ => Err("BadOrigin:ExpectedRootOrSigned"),
+        }
+    }
+
+    /// Returns the stored class permissions if exist, error otherwise.
+    fn ensure_class_permissions(
+        class_id: ClassId,
+    ) -> Result<ClassPermissionsType<T>, &'static str> {
+        ensure!(
+            <ClassPermissionsByClassId<T>>::exists(class_id),
+            "ClassIdDoesNotExist"
+        );
+        Ok(Self::class_permissions_by_class_id(class_id))
+    }
+}
