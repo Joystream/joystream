@@ -15,7 +15,7 @@
 use serde_derive::{Serialize, Deserialize};
 
 use rstd::prelude::*;
-use rstd::collections::btree_map::BTreeMap;
+use rstd::collections::btree_set::BTreeSet;
 use codec::{Decode, Encode};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, StorageValue, StorageMap};
 use system;
@@ -359,9 +359,9 @@ impl<T: Trait> Module<T> {
         // TODO Use BTreeSet for prop unique names when switched to Substrate 2.
         // There is no support for BTreeSet in Substrate 1 runtime.
         // use rstd::collections::btree_set::BTreeSet;
-        let mut unique_prop_names = BTreeMap::new();
+        let mut unique_prop_names = BTreeSet::new();
         for prop in class.properties.iter() {
-            unique_prop_names.insert(prop.name.clone(), true);
+            unique_prop_names.insert(prop.name.clone());
         }
 
         for prop in new_properties.iter() {
@@ -370,10 +370,10 @@ impl<T: Trait> Module<T> {
 
             // Check that the name of a new property is unique within its class.
             ensure!(
-                !unique_prop_names.contains_key(&prop.name),
+                !unique_prop_names.contains(&prop.name),
                 ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
             );
-            unique_prop_names.insert(prop.name.clone(), true);
+            unique_prop_names.insert(prop.name.clone());
         }
 
         // Check that existing props are valid indices of class properties vector:
