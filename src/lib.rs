@@ -285,14 +285,10 @@ decl_event!(
         <T as system::Trait>::AccountId,
     {
         ClassCreated(ClassId),
-        ClassPropertyAdded(ClassId, u16),
-        ClassPropertyUpdated(ClassId, u16),
         ClassSchemaAdded(ClassId, u16),
 
         EntityCreated(EntityId),
-        EntityUpdated(EntityId),
         // EntityDeleted(EntityId),
-        EntityNameUpdated(EntityId),
         EntityPropertiesUpdated(EntityId),
         EntitySchemaAdded(EntityId, u16),
 
