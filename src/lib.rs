@@ -53,16 +53,15 @@ pub trait CreateClassPermissionsChecker<AccountId> {
 /// Identifies a princial to whom a permission can be assigned on Classes.
 #[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
 pub enum BasePrincipal<AccountId, GroupId> {
-    System,
     Account(AccountId),
     GroupMember(GroupId),
 }
 
-/// Default trait only for the requirement to have storage values not wrapped in Option
-/// Should NOT be used explicitly.
-impl<AccountId, GroupId> Default for BasePrincipal<AccountId, GroupId> {
+// maybe we can get rid of this, by allowing None owner for entities -> ie. owned by System
+// then allow transfer_ownership permission on entities.
+impl<AccountId: Ord + Default, GroupId: Ord> Default for BasePrincipal<AccountId, GroupId> {
     fn default() -> Self {
-        BasePrincipal::System
+        BasePrincipal::Account(AccountId::default())
     }
 }
 
@@ -73,12 +72,15 @@ pub enum EntityPrincipal<AccountId, GroupId> {
     Owner,
 }
 
-/// Default trait only for the requirement to have storage values not wrapped in Option
-/// Should NOT be used explicitly.
-impl<AccountId, GroupId> Default for EntityPrincipal<AccountId, GroupId> {
-    fn default() -> Self {
-        EntityPrincipal::Owner
-    }
+/// Internal type, derived from dispatchable call, identifies the caller
+#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
+enum DerivedPrincipal<AccountId, GroupId> {
+    /// ROOT origin
+    System,
+    /// Caller correctly identified as entity owner
+    EntityOwner,
+    /// Plain signed origin, or additionally identified as beloging to specific group
+    Base(BasePrincipal<AccountId, GroupId>),
 }
 
 /// The type of constraint on what entities can reference instances of a class through an Internal property type.
@@ -100,11 +102,28 @@ impl<ClassId: Ord, PropertyIndex: Ord> Default for ReferenceConstraint<ClassId, 
     }
 }
 
-pub type BasePrincipalSet<AccountId, GroupId> = BTreeSet<BasePrincipal<AccountId, GroupId>>;
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+pub struct BasePrincipalSet<AccountId, GroupId>(BTreeSet<BasePrincipal<AccountId, GroupId>>);
 
-/// Permissions for an instance of a Class in the versioned store
-/// Default trait is derived but should NOT be used explicitly, it is only
-/// for purpose of storing it in state storage without need to wrap it in an Option.
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+pub struct EntityPrincipalSet<AccountId, GroupId>(BTreeSet<EntityPrincipal<AccountId, GroupId>>);
+
+impl<AccountId: Ord, GroupId: Ord> Default for BasePrincipalSet<AccountId, GroupId> {
+    fn default() -> Self {
+        BasePrincipalSet(BTreeSet::new())
+    }
+}
+
+impl<AccountId: Ord, GroupId: Ord> Default for EntityPrincipalSet<AccountId, GroupId> {
+    /// Default set gives entity owner permissions on the entity
+    fn default() -> Self {
+        let mut owner = BTreeSet::new();
+        owner.insert(EntityPrincipal::Owner);
+        EntityPrincipalSet(owner)
+    }
+}
+
+/// Permissions for an instance of a Class in the versioned store.
 #[derive(Encode, Decode, Default)]
 pub struct ClassPermissions<ClassId, AccountId, GroupId, PropertyIndex, BlockNumber>
 where
@@ -114,10 +133,11 @@ where
     PropertyIndex: Ord,
 {
     // concrete permissions
-    /// Permissions that are applied to entities of this class
+    /// Permissions that are applied to entities of this class, defines who in addition to
+    /// root origin can update and delete entities of this class.
     entity_permissions: EntityPermissions<AccountId, GroupId>,
 
-    /// Wether new entities of this class be created or not
+    /// Wether new entities of this class be created or not. Is not enforced for root origin.
     entities_can_be_created: bool,
 
     /// Who can add new schemas in the versioned store for this class
@@ -129,8 +149,8 @@ where
     /// The type of constraint on referencing the class from other entities.
     reference_constraint: ReferenceConstraint<ClassId, PropertyIndex>,
 
-    /// Who can update all concrete permissions. The admins can only be set by the root
-    /// origin, "System".
+    /// Who (in addition to root origin) can update all concrete permissions.
+    /// The admins can only be set by the root origin, "System".
     admins: BasePrincipalSet<AccountId, GroupId>,
 
     // Block where permissions were changed
@@ -153,23 +173,56 @@ where
     GroupId: Ord + Clone,
     PropertyIndex: Ord,
 {
-    /// Returns true if base_principal is in admins acl group
-    fn in_admins(
+    /// Returns true if principal is root origin or base_principal is in admins acl group
+    fn is_admin(
         class_permissions: &Self,
-        base_principal: &BasePrincipal<AccountId, GroupId>,
+        derived_principal: &DerivedPrincipal<AccountId, GroupId>,
     ) -> bool {
-        class_permissions.admins.contains(base_principal)
+        match derived_principal {
+            DerivedPrincipal::System => true,
+            DerivedPrincipal::Base(base_principal) => {
+                class_permissions.admins.0.contains(base_principal)
+            }
+            _ => false,
+        }
+    }
+
+    fn can_add_schema(
+        class_permissions: &Self,
+        derived_principal: &DerivedPrincipal<AccountId, GroupId>,
+    ) -> bool {
+        match derived_principal {
+            DerivedPrincipal::System => true,
+            DerivedPrincipal::Base(base_principal) => {
+                class_permissions.add_schemas.0.contains(base_principal)
+            }
+            _ => false,
+        }
+    }
+
+    fn can_create_entity(
+        class_permissions: &Self,
+        derived_principal: &DerivedPrincipal<AccountId, GroupId>,
+    ) -> bool {
+        match derived_principal {
+            DerivedPrincipal::System => true,
+            DerivedPrincipal::Base(base_principal) => {
+                class_permissions.entities_can_be_created
+                    && class_permissions.create_entities.0.contains(base_principal)
+            }
+            _ => false,
+        }
     }
 }
 
-#[derive(Encode, Decode, Default, Clone, Debug, Eq, PartialEq)]
+#[derive(Encode, Decode, Clone, Debug, Default, Eq, PartialEq)]
 pub struct EntityPermissions<AccountId, GroupId>
 where
     AccountId: Ord,
     GroupId: Ord,
 {
-    update: BTreeSet<EntityPrincipal<AccountId, GroupId>>,
-    delete: BTreeSet<EntityPrincipal<AccountId, GroupId>>,
+    update: EntityPrincipalSet<AccountId, GroupId>,
+    delete: EntityPrincipalSet<AccountId, GroupId>,
 }
 
 pub trait Trait: system::Trait + versioned_store::Trait {
@@ -187,7 +240,10 @@ pub trait Trait: system::Trait + versioned_store::Trait {
 
 decl_storage! {
     trait Store for Module<T: Trait> as VersionedStorePermissions {
+      /// ClassPermissions of corresponding Classes in the versioned store
       pub ClassPermissionsByClassId get(class_permissions_by_class_id): linked_map ClassId => ClassPermissionsType<T>;
+
+      /// Owner of an entity in the versioned store.
       pub EntityOwnerByEntityId get(entity_owner_by_entity_id): linked_map EntityId => BasePrincipal<T::AccountId, GroupId<T>>;
     }
 }
@@ -205,13 +261,13 @@ decl_module! {
             class_id: ClassId,
             admins: BasePrincipalSet<T::AccountId, GroupId<T>>
         ) -> dispatch::Result {
-            Self::mutate_class_permissions_if(
+            Self::mutate_class_permissions(
                 origin,
                 None,
-                |_, principal| *principal == BasePrincipal::System, // root origin
+                Self::is_system_principal, // root origin
                 class_id,
                 |class_permissions| {
-                    class_permissions.admins = admins.clone();
+                    class_permissions.admins = admins;
                 }
             )
         }
@@ -224,13 +280,13 @@ decl_module! {
             class_id: ClassId,
             entity_permissions: EntityPermissions<T::AccountId, GroupId<T>>
         ) -> dispatch::Result {
-            Self::mutate_class_permissions_if(
+            Self::mutate_class_permissions(
                 origin,
                 claimed_group_id,
-                ClassPermissions::in_admins,
+                ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
-                    class_permissions.entity_permissions = entity_permissions.clone();
+                    class_permissions.entity_permissions = entity_permissions;
                 }
             )
         }
@@ -241,10 +297,10 @@ decl_module! {
             class_id: ClassId,
             can_be_created: bool
         ) -> dispatch::Result {
-            Self::mutate_class_permissions_if(
+            Self::mutate_class_permissions(
                 origin,
                 claimed_group_id,
-                ClassPermissions::in_admins,
+                ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
                     class_permissions.entities_can_be_created = can_be_created;
@@ -258,13 +314,13 @@ decl_module! {
             class_id: ClassId,
             acl: BasePrincipalSet<T::AccountId, GroupId<T>>
         ) -> dispatch::Result {
-            Self::mutate_class_permissions_if(
+            Self::mutate_class_permissions(
                 origin,
                 claimed_group_id,
-                ClassPermissions::in_admins,
+                ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
-                    class_permissions.add_schemas = acl.clone();
+                    class_permissions.add_schemas = acl;
                 }
             )
         }
@@ -275,13 +331,13 @@ decl_module! {
             class_id: ClassId,
             acl: BasePrincipalSet<T::AccountId, GroupId<T>>
         ) -> dispatch::Result {
-            Self::mutate_class_permissions_if(
+            Self::mutate_class_permissions(
                 origin,
                 claimed_group_id,
-                ClassPermissions::in_admins,
+                ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
-                    class_permissions.create_entities = acl.clone();
+                    class_permissions.create_entities = acl;
                 }
             )
         }
@@ -292,39 +348,178 @@ decl_module! {
             class_id: ClassId,
             constraint: ReferenceConstraint<ClassId, PropertyIndex>
         ) -> dispatch::Result {
-            Self::mutate_class_permissions_if(
+            Self::mutate_class_permissions(
                 origin,
                 claimed_group_id,
-                ClassPermissions::in_admins,
+                ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
-                    class_permissions.reference_constraint = constraint.clone();
+                    class_permissions.reference_constraint = constraint;
                 }
             )
+        }
+
+        // Permissioned proxy calls to versioned store
+
+        pub fn create_class(
+            origin,
+            name: Vec<u8>,
+            description: Vec<u8>
+        ) -> dispatch::Result {
+
+            let can_create_class = match origin.into() {
+                Ok(system::RawOrigin::Root) => true,
+                Ok(system::RawOrigin::Signed(sender)) => {
+                    T::CreateClassPermissionsChecker::account_can_create_class_permissions(sender)
+                },
+                _ => false
+            };
+
+            if can_create_class {
+                let class_id = <versioned_store::Module<T>>::create_class(name, description)?;
+
+                // is there a need to assert class_id is unique?
+
+                <ClassPermissionsByClassId<T>>::insert(&class_id, ClassPermissions::default());
+
+                Ok(())
+            } else {
+                Err("NotPermittedToCreateClass")
+            }
+        }
+
+        pub fn add_class_schema(
+            origin,
+            claimed_group_id: Option<GroupId<T>>,
+            class_id: ClassId,
+            existing_properties: Vec<PropertyIndex>,
+            new_properties: Vec<Property>
+        ) -> dispatch::Result {
+            Self::if_class_permissions_satisfied(
+                origin,
+                claimed_group_id,
+                None,
+                ClassPermissions::can_add_schema,
+                class_id,
+                |_class_permissions, _principal| {
+                    // If a new property points at another class,
+                    // at this point we don't enforce anything about reference constraints
+                    // because of the chicken and egg problem. Instead enforcement is done
+                    // at the time of creating an entity.
+                    let _schema_index = <versioned_store::Module<T>>::add_class_schema(class_id, existing_properties, new_properties)?;
+                    Ok(())
+                }
+            )
+        }
+
+        pub fn create_entity(
+            origin,
+            claimed_group_id: Option<GroupId<T>>,
+            class_id: ClassId,
+            owner: BasePrincipal<T::AccountId, GroupId<T>>
+        ) -> dispatch::Result {
+            Self::if_class_permissions_satisfied(
+                origin,
+                claimed_group_id,
+                None,
+                ClassPermissions::can_create_entity,
+                class_id,
+                |_class_permissions, _principal| {
+                    let entity_id = <versioned_store::Module<T>>::create_entity(class_id)?;
+                    // let owner = match principal {
+                    //     DerivedPrincipal::System => None,
+                    //     DerivedPrincipal::Base(base_principal) => Some(*base_principal),
+                    //     _ => None
+                    // };
+                    <EntityOwnerByEntityId<T>>::insert(entity_id, owner);
+                    Ok(())
+                }
+            )
+        }
+
+        pub fn add_schema_support_to_entity(
+            origin,
+            claimed_group_id: Option<GroupId<T>>,
+            as_entity_owner: bool,
+            entity_id: EntityId,
+            schema_id: u16,
+            property_values: Vec<ClassPropertyValue>
+        ) -> dispatch::Result {
+            // permissions checks..
+
+            // make proxy call
+            <versioned_store::Module<T>>::add_schema_support_to_entity(entity_id, schema_id, property_values)?;
+            Ok(())
+        }
+
+        pub fn update_entity_property_values(
+            origin,
+            claimed_group_id: Option<GroupId<T>>,
+            as_entity_owner: bool,
+            entity_id: EntityId,
+            new_property_values: Vec<ClassPropertyValue>
+        ) -> dispatch::Result {
+            // permissions checks..
+
+            // make proxy call
+            <versioned_store::Module<T>>::update_entity_property_values(entity_id, new_property_values)?;
+            Ok(())
         }
 
     }
 }
 
 impl<T: Trait> Module<T> {
-    /// Converts the origin and claimed group into a base principal.
-    /// It expects only signed or root origins.
-    /// If the signed origin is not a member of the claimed group an error is returned.
-    fn ensure_base_principal(
+    /// Attempts to derives the principal a caller is claiming.
+    /// It expects only signed or root origin.
+    fn derive_principal(
         origin: T::Origin,
         claimed_group_id: Option<GroupId<T>>,
-    ) -> Result<BasePrincipal<T::AccountId, GroupId<T>>, &'static str> {
+        as_entity_owner: Option<EntityId>,
+    ) -> Result<DerivedPrincipal<T::AccountId, GroupId<T>>, &'static str> {
         match origin.into() {
-            Ok(system::RawOrigin::Root) => Ok(BasePrincipal::System),
+            Ok(system::RawOrigin::Root) => Ok(DerivedPrincipal::System),
             Ok(system::RawOrigin::Signed(account_id)) => {
                 if let Some(group_id) = claimed_group_id {
                     if T::GroupMembershipChecker::account_is_in_group(account_id, group_id) {
-                        Ok(BasePrincipal::GroupMember(group_id))
+                        if let Some(entity_id) = as_entity_owner {
+                            // ensure entity owner is GroupMember
+                            ensure!(
+                                <EntityOwnerByEntityId<T>>::exists(entity_id),
+                                "InvalidEntityId"
+                            );
+                            match Self::entity_owner_by_entity_id(entity_id) {
+                                BasePrincipal::GroupMember(owner_group_id)
+                                    if group_id == owner_group_id =>
+                                {
+                                    Ok(DerivedPrincipal::EntityOwner)
+                                }
+                                _ => Err("NotEnityOwner"),
+                            }
+                        } else {
+                            Ok(DerivedPrincipal::Base(BasePrincipal::GroupMember(group_id)))
+                        }
                     } else {
                         Err("OriginNotMemberOfClaimedGroup")
                     }
                 } else {
-                    Ok(BasePrincipal::Account(account_id))
+                    if let Some(entity_id) = as_entity_owner {
+                        // ensure entity owner is Account
+                        ensure!(
+                            <EntityOwnerByEntityId<T>>::exists(entity_id),
+                            "InvalidEntityId"
+                        );
+                        match Self::entity_owner_by_entity_id(entity_id) {
+                            BasePrincipal::Account(ref owner_account_id)
+                                if account_id == *owner_account_id =>
+                            {
+                                Ok(DerivedPrincipal::EntityOwner)
+                            }
+                            _ => Err("NotEnityOwner"),
+                        }
+                    } else {
+                        Ok(DerivedPrincipal::Base(BasePrincipal::Account(account_id)))
+                    }
                 }
             }
             _ => Err("BadOrigin:ExpectedRootOrSigned"),
@@ -342,13 +537,12 @@ impl<T: Trait> Module<T> {
         Ok(Self::class_permissions_by_class_id(class_id))
     }
 
-    /// Constructs a base principal from the origin and claimed group id and uses it to
-    /// test a predicate before mutating a ClassPermissions if it exists with supplied
-    /// mutate function.
-    fn mutate_class_permissions_if<Predicate, Mutate>(
+    /// Constructs a derived principal from the origin and claimed group id.
+    /// The supplied predicate, is used to check if permission is granted to perform a mutation.
+    fn mutate_class_permissions<Predicate, Mutate>(
         origin: T::Origin,
         claimed_group_id: Option<GroupId<T>>,
-        // predicate to test if actor has permission to perform mutation.
+        // predicate to test when origin is not root.
         predicate: Predicate,
         // class permissions to perform mutation on if it exists
         class_id: ClassId,
@@ -356,19 +550,58 @@ impl<T: Trait> Module<T> {
         mutate: Mutate,
     ) -> dispatch::Result
     where
-        Predicate: Fn(&ClassPermissionsType<T>, &BasePrincipal<T::AccountId, GroupId<T>>) -> bool,
-        Mutate: Fn(&mut ClassPermissionsType<T>),
+        Predicate:
+            FnOnce(&ClassPermissionsType<T>, &DerivedPrincipal<T::AccountId, GroupId<T>>) -> bool,
+        Mutate: FnOnce(&mut ClassPermissionsType<T>),
     {
-        // construct a BasePrincipal from origin and group_id
-        let base_principal = Self::ensure_base_principal(origin, claimed_group_id)?;
+        let principal = Self::derive_principal(origin, claimed_group_id, None)?;
         let mut class_permissions = Self::ensure_class_permissions(class_id)?;
 
-        if predicate(&class_permissions, &base_principal) {
+        if predicate(&class_permissions, &principal) {
             mutate(&mut class_permissions);
             class_permissions.last_permissions_update = <system::Module<T>>::block_number();
             Ok(())
         } else {
-            Err("NotAdmin")
+            Err("ClassPermissionsMutationDenied")
+        }
+    }
+
+    fn is_system_principal(
+        _: &ClassPermissionsType<T>,
+        principal: &DerivedPrincipal<T::AccountId, GroupId<T>>,
+    ) -> bool {
+        *principal == DerivedPrincipal::System
+    }
+
+    /// Constructs a base principal from the origin and claimed group id and uses it to
+    /// test a predicate.
+    fn if_class_permissions_satisfied<Predicate, Callback>(
+        origin: T::Origin,
+        claimed_group_id: Option<GroupId<T>>,
+        as_entity_owner: Option<EntityId>,
+        // predicate used for testing
+        predicate: Predicate,
+        // class permissions to test
+        class_id: ClassId,
+        // actual mutation to apply.
+        callback: Callback,
+    ) -> dispatch::Result
+    where
+        Predicate:
+            FnOnce(&ClassPermissionsType<T>, &DerivedPrincipal<T::AccountId, GroupId<T>>) -> bool,
+        Callback: FnOnce(
+            &ClassPermissionsType<T>,
+            &DerivedPrincipal<T::AccountId, GroupId<T>>,
+        ) -> dispatch::Result,
+    {
+        // construct a BasePrincipal from origin and group_id
+        let principal = Self::derive_principal(origin, claimed_group_id, as_entity_owner)?;
+        let class_permissions = Self::ensure_class_permissions(class_id)?;
+
+        if predicate(&class_permissions, &principal) {
+            callback(&class_permissions, &principal)
+        } else {
+            Err("ClassPermissionNotSatisfied")
         }
     }
 }
