@@ -106,13 +106,13 @@ pub type BasePrincipalSet<AccountId, GroupId> = BTreeSet<BasePrincipal<AccountId
 /// Default trait is derived but should NOT be used explicitly, it is only
 /// for purpose of storing it in state storage without need to wrap it in an Option.
 #[derive(Encode, Decode, Default)]
-pub struct ClassPermissions<
+pub struct ClassPermissions<ClassId, AccountId, GroupId, PropertyIndex, BlockNumber>
+where
     ClassId: Ord,
     AccountId: Ord + Clone,
     GroupId: Ord + Clone,
     PropertyIndex: Ord,
-    BlockNumber,
-> {
+{
     // concrete permissions
     /// Permissions that are applied to entities of this class
     entity_permissions: EntityPermissions<AccountId, GroupId>,
@@ -145,13 +145,13 @@ pub type ClassPermissionsType<T> = ClassPermissions<
     <T as system::Trait>::BlockNumber,
 >;
 
-impl<
-        ClassId: Ord,
-        AccountId: Ord + Clone,
-        GroupId: Ord + Clone,
-        PropertyIndex: Ord,
-        BlockNumber,
-    > ClassPermissions<ClassId, AccountId, GroupId, PropertyIndex, BlockNumber>
+impl<ClassId, AccountId, GroupId, PropertyIndex, BlockNumber>
+    ClassPermissions<ClassId, AccountId, GroupId, PropertyIndex, BlockNumber>
+where
+    ClassId: Ord,
+    AccountId: Ord + Clone,
+    GroupId: Ord + Clone,
+    PropertyIndex: Ord,
 {
     fn is_admin(&self, base_principal: &BasePrincipal<AccountId, GroupId>) -> bool {
         self.admins.contains(base_principal)
@@ -196,7 +196,11 @@ decl_module! {
 
         // Methods for updating concrete permissions
 
-        fn set_class_entity_permissions(origin, claimed_group_id: Option<GroupId<T>>, class_id: ClassId, entity_permissions: EntityPermissions<T::AccountId, GroupId<T>>) -> dispatch::Result  {
+        fn set_class_entity_permissions(
+            origin, claimed_group_id: Option<GroupId<T>>,
+            class_id: ClassId,
+            entity_permissions: EntityPermissions<T::AccountId, GroupId<T>>
+        ) -> dispatch::Result {
             // construct a BasePrincipal from origin and group_id
             let base_principal = Self::ensure_base_principal(origin, claimed_group_id)?;
 
