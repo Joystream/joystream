@@ -159,15 +159,16 @@ impl<
 }
 
 #[derive(Encode, Decode, Default, Clone, Debug, Eq, PartialEq)]
-pub struct EntityPermissions<AccountId: Ord, GroupId: Ord> {
+pub struct EntityPermissions<AccountId, GroupId>
+where
+    AccountId: Ord,
+    GroupId: Ord,
+{
     update: BTreeSet<EntityPrincipal<AccountId, GroupId>>,
     delete: BTreeSet<EntityPrincipal<AccountId, GroupId>>,
 }
 
-pub trait Trait: system::Trait
-// uncomment when its updated to v2. Its resulting in ambigious associated type errors on T
-// + versioned_store::Trait
-{
+pub trait Trait: system::Trait + versioned_store::Trait {
     // type Event: ...
     // Do we need Events?
 
