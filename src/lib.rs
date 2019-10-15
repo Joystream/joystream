@@ -16,8 +16,8 @@ pub type PropertyIndex = u16; // should really be configured on versioned_store:
 
 #[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
 pub struct PropertyOfClass<ClassId, PropertyIndex> {
-    class: ClassId,
-    property: PropertyIndex,
+    class_id: ClassId,
+    property_index: PropertyIndex,
 }
 
 /// Trait that provides an abstraction for the concept of group membership and a way
@@ -469,11 +469,15 @@ decl_module! {
             origin,
             claimed_group_id: Option<GroupId<T>>,
             as_entity_owner: bool,
-            class_id: ClassId, // we should be able to get class_id through Entity.class_id
             entity_id: EntityId,
             schema_id: u16,
             property_values: Vec<ClassPropertyValue>
         ) -> dispatch::Result {
+            // class id of the entity being updated
+            let class_id = Self::get_class_id_by_entity_id(&entity_id)?;
+
+            Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
+
             let as_entity_owner = if as_entity_owner {
                 Some(entity_id)
             } else {
@@ -496,10 +500,13 @@ decl_module! {
             origin,
             claimed_group_id: Option<GroupId<T>>,
             as_entity_owner: bool,
-            class_id: ClassId, // we should be able to get class_id through Entity.class_id
             entity_id: EntityId,
-            new_property_values: Vec<ClassPropertyValue>
+            property_values: Vec<ClassPropertyValue>
         ) -> dispatch::Result {
+            let class_id = Self::get_class_id_by_entity_id(&entity_id)?;
+
+            Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
+
             let as_entity_owner = if as_entity_owner {
                 Some(entity_id)
             } else {
@@ -513,7 +520,7 @@ decl_module! {
                 ClassPermissions::can_update_entity,
                 class_id,
                 |_class_permissions, _principal| {
-                    <versioned_store::Module<T>>::update_entity_property_values(entity_id, new_property_values)
+                    <versioned_store::Module<T>>::update_entity_property_values(entity_id, property_values)
                 }
             )
         }
@@ -654,5 +661,53 @@ impl<T: Trait> Module<T> {
         } else {
             Err("ClassPermissionNotSatisfied")
         }
+    }
+
+    fn get_class_id_by_entity_id(entity_id: &EntityId) -> Result<ClassId, &'static str> {
+        // use a utility method on versioned_store module
+        ensure!(
+            versioned_store::EntityById::exists(entity_id),
+            "EntityNotFound"
+        );
+        let entity = <versioned_store::Module<T>>::entity_by_id(entity_id);
+        Ok(entity.class_id) // blocker! Entity.class_id field is private
+    }
+
+    // Ensures property_values of type Internal that point to a class,
+    // the target entity and class exists and constraint allows it.
+    fn ensure_internal_property_values_permitted(
+        source_class_id: ClassId,
+        property_values: &Vec<ClassPropertyValue>,
+    ) -> dispatch::Result {
+        for property_value in property_values.iter() {
+            // blocker! - PropertyValue.value if private
+            if let PropertyValue::Internal(ref target_entity_id) = property_value.value {
+                // get the class permissions for target class
+                let target_class_id = Self::get_class_id_by_entity_id(target_entity_id)?;
+                // assert class permissions exists for target class
+                let class_permissions = Self::class_permissions_by_class_id(target_class_id);
+
+                // ensure internal reference is permitted
+                match class_permissions.reference_constraint {
+                    ReferenceConstraint::NoConstraint => Ok(()),
+                    ReferenceConstraint::NoReferencingAllowed => {
+                        Err("EntityCannotReferenceTargetEntity")
+                    }
+                    ReferenceConstraint::Restricted(permitted_properties) => {
+                        if permitted_properties.contains(&PropertyOfClass {
+                            class_id: source_class_id,
+                            property_index: property_value.in_class_index, // blocker! - private field
+                        }) {
+                            Ok(())
+                        } else {
+                            Err("EntityCannotReferenceTargetEntity")
+                        }
+                    }
+                }?;
+            }
+        }
+
+        // if we reach here all Internal properties have passed the constraint check
+        Ok(())
     }
 }
