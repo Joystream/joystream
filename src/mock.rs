@@ -59,8 +59,52 @@ impl versioned_store::Trait for Runtime {
 
 impl Trait for Runtime {
     type GroupId = u64;
-    type GroupMembershipChecker = ();
-    type CreateClassPermissionsChecker = ();
+    type GroupMembershipChecker = MockGroupMembershipChecker;
+    type CreateClassPermissionsChecker = MockCreateClassPermissionsChecker;
+}
+
+pub const MEMBER_ONE_OF_GROUP_ZERO: u64 = 1;
+pub const MEMBER_TWO_OF_GROUP_ZERO: u64 = 2;
+pub const MEMBER_ONE_OF_GROUP_ONE: u64 = 3;
+pub const MEMBER_TWO_OF_GROUP_ONE: u64 = 4;
+
+pub const GROUP_MEMBERS: [[u64; 2]; 2] = [
+    [MEMBER_ONE_OF_GROUP_ZERO, MEMBER_TWO_OF_GROUP_ZERO],
+    [MEMBER_ONE_OF_GROUP_ONE, MEMBER_TWO_OF_GROUP_ONE],
+];
+
+pub struct MockGroupMembershipChecker {}
+
+impl GroupMembershipChecker<Runtime> for MockGroupMembershipChecker {
+    fn account_is_in_group(
+        account_id: &<Runtime as system::Trait>::AccountId,
+        group_id: <Runtime as Trait>::GroupId,
+    ) -> bool {
+        let group = group_id as usize;
+        if group < GROUP_MEMBERS.len() {
+            GROUP_MEMBERS[group].iter().any(|id| *id == *account_id)
+        } else {
+            false
+        }
+    }
+}
+
+pub const CLASS_PERMISSIONS_CREATOR1: u64 = 100;
+pub const CLASS_PERMISSIONS_CREATOR2: u64 = 200;
+
+const CLASS_PERMISSIONS_CREATORS: [u64; 2] =
+    [CLASS_PERMISSIONS_CREATOR1, CLASS_PERMISSIONS_CREATOR2];
+
+pub struct MockCreateClassPermissionsChecker {}
+
+impl CreateClassPermissionsChecker<Runtime> for MockCreateClassPermissionsChecker {
+    fn account_can_create_class_permissions(
+        account_id: &<Runtime as system::Trait>::AccountId,
+    ) -> bool {
+        CLASS_PERMISSIONS_CREATORS
+            .iter()
+            .any(|id| *id == *account_id)
+    }
 }
 
 // This function basically just builds a genesis storage key/value store according to

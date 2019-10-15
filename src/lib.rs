@@ -13,7 +13,7 @@ use system;
 pub use versioned_store::{ClassId, ClassPropertyValue, EntityId, Property, PropertyValue};
 pub type PropertyIndex = u16; // should really be configured on versioned_store::Trait
 
-pub mod mock;
+mod mock;
 mod tests;
 
 #[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
