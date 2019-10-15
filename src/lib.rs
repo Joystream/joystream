@@ -6,10 +6,8 @@ use rstd::prelude::*;
 use codec::{Codec, Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
-use srml_support::{
-    decl_module, decl_storage, dispatch, ensure, EnumerableStorageMap, Parameter, StorageMap,
-};
-use system::{self, ensure_root, ensure_signed};
+use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap};
+use system;
 
 pub use versioned_store::*; // EntityId, ClassId -> should be configured on versioned_store::Trait
 pub type PropertyIndex = u16; // should really be configured on versioned_store::Trait
@@ -23,31 +21,37 @@ pub struct PropertyOfClass<ClassId, PropertyIndex> {
 /// Trait that provides an abstraction for the concept of group membership and a way
 /// to check the inclusion of an account id in a specific group. Groups are identified by the
 /// type GroupId.
-pub trait GroupMembershipChecker<AccountId> {
-    type GroupId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + Clone
-        + MaybeSerializeDebug
-        + Eq
-        + PartialEq
-        + Ord;
-
-    fn account_is_in_group(account: AccountId, group: Self::GroupId) -> bool;
+pub trait GroupMembershipChecker<T: Trait> {
+    fn account_is_in_group(account: &T::AccountId, group: T::GroupId) -> bool;
 }
 
-// impl for () -> least priviledge
-// impl for (A, B) -> to allow multiple checkers ?
+/// An implementation that disables group membership feature.
+impl<T: Trait> GroupMembershipChecker<T> for () {
+    fn account_is_in_group(_account: &T::AccountId, _group: T::GroupId) -> bool {
+        false
+    }
+}
 
-pub type GroupId<T> = <<T as Trait>::GroupMembershipChecker as GroupMembershipChecker<
-    <T as system::Trait>::AccountId,
->>::GroupId;
+/// An implementation that calls into multiple checkers. This allows for multiple modules
+/// to support group membership concept.
+impl<T: Trait, X: GroupMembershipChecker<T>, Y: GroupMembershipChecker<T>> GroupMembershipChecker<T>
+    for (X, Y)
+{
+    fn account_is_in_group(account: &T::AccountId, group: T::GroupId) -> bool {
+        X::account_is_in_group(account, group) || Y::account_is_in_group(account, group)
+    }
+}
 
-pub trait CreateClassPermissionsChecker<AccountId> {
-    fn account_can_create_class_permissions(account: AccountId) -> bool;
+/// Trait for externally checking if an account can create new classes in the versioned store.
+pub trait CreateClassPermissionsChecker<T: Trait> {
+    fn account_can_create_class_permissions(account: &T::AccountId) -> bool;
+}
+
+/// An implementation that only permits system to create classes.
+impl<T: Trait> CreateClassPermissionsChecker<T> for () {
+    fn account_can_create_class_permissions(account: &T::AccountId) -> bool {
+        false
+    }
 }
 
 /// Identifies a princial to whom a permission can be assigned on Classes.
@@ -56,14 +60,6 @@ pub enum BasePrincipal<AccountId, GroupId> {
     Account(AccountId),
     GroupMember(GroupId),
 }
-
-// maybe we can get rid of this, by allowing None owner for entities -> ie. owned by System
-// then allow transfer_ownership permission on entities.
-// impl<AccountId: Ord + Default, GroupId: Ord> Default for BasePrincipal<AccountId, GroupId> {
-//     fn default() -> Self {
-//         BasePrincipal::Account(AccountId::default())
-//     }
-// }
 
 /// Identifies a principal to whom a permission can be assigned on Entities.
 #[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
@@ -160,7 +156,7 @@ where
 pub type ClassPermissionsType<T> = ClassPermissions<
     ClassId,
     <T as system::Trait>::AccountId,
-    GroupId<T>,
+    <T as Trait>::GroupId,
     PropertyIndex,
     <T as system::Trait>::BlockNumber,
 >;
@@ -248,13 +244,23 @@ pub trait Trait: system::Trait + versioned_store::Trait {
     // type Event: ...
     // Do we need Events?
 
+    type GroupId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + Clone
+        + MaybeSerializeDebug
+        + Eq
+        + PartialEq
+        + Ord;
+
     /// External type used to check if an account is part of a specific group.
-    type GroupMembershipChecker: GroupMembershipChecker<<Self as system::Trait>::AccountId>;
+    type GroupMembershipChecker: GroupMembershipChecker<Self>;
 
     /// External type used to check if an account id has permission to create new class permissions.
-    type CreateClassPermissionsChecker: CreateClassPermissionsChecker<
-        <Self as system::Trait>::AccountId,
-    >;
+    type CreateClassPermissionsChecker: CreateClassPermissionsChecker<Self>;
 }
 
 decl_storage! {
@@ -262,8 +268,8 @@ decl_storage! {
       /// ClassPermissions of corresponding Classes in the versioned store
       pub ClassPermissionsByClassId get(class_permissions_by_class_id): linked_map ClassId => ClassPermissionsType<T>;
 
-      /// Owner of an entity in the versioned store.
-      pub EntityOwnerByEntityId get(entity_owner_by_entity_id): linked_map EntityId => Option<BasePrincipal<T::AccountId, GroupId<T>>>;
+      /// Owner of an entity in the versioned store. If it is None then it is owned by the system.
+      pub EntityOwnerByEntityId get(entity_owner_by_entity_id): linked_map EntityId => Option<BasePrincipal<T::AccountId, T::GroupId>>;
     }
 }
 
@@ -278,7 +284,7 @@ decl_module! {
         fn set_class_admins(
             origin,
             class_id: ClassId,
-            admins: BasePrincipalSet<T::AccountId, GroupId<T>>
+            admins: BasePrincipalSet<T::AccountId, T::GroupId>
         ) -> dispatch::Result {
             Self::mutate_class_permissions(
                 origin,
@@ -295,9 +301,9 @@ decl_module! {
 
         fn set_class_entity_permissions(
             origin,
-            claimed_group_id: Option<GroupId<T>>,
+            claimed_group_id: Option<T::GroupId>,
             class_id: ClassId,
-            entity_permissions: EntityPermissions<T::AccountId, GroupId<T>>
+            entity_permissions: EntityPermissions<T::AccountId, T::GroupId>
         ) -> dispatch::Result {
             Self::mutate_class_permissions(
                 origin,
@@ -312,7 +318,7 @@ decl_module! {
 
         fn set_class_entities_can_be_created(
             origin,
-            claimed_group_id: Option<GroupId<T>>,
+            claimed_group_id: Option<T::GroupId>,
             class_id: ClassId,
             can_be_created: bool
         ) -> dispatch::Result {
@@ -329,9 +335,9 @@ decl_module! {
 
         fn set_class_add_schemas_acl(
             origin,
-            claimed_group_id: Option<GroupId<T>>,
+            claimed_group_id: Option<T::GroupId>,
             class_id: ClassId,
-            acl: BasePrincipalSet<T::AccountId, GroupId<T>>
+            acl: BasePrincipalSet<T::AccountId, T::GroupId>
         ) -> dispatch::Result {
             Self::mutate_class_permissions(
                 origin,
@@ -346,9 +352,9 @@ decl_module! {
 
         fn set_class_create_entities_acl(
             origin,
-            claimed_group_id: Option<GroupId<T>>,
+            claimed_group_id: Option<T::GroupId>,
             class_id: ClassId,
-            acl: BasePrincipalSet<T::AccountId, GroupId<T>>
+            acl: BasePrincipalSet<T::AccountId, T::GroupId>
         ) -> dispatch::Result {
             Self::mutate_class_permissions(
                 origin,
@@ -363,7 +369,7 @@ decl_module! {
 
         fn set_class_reference_constraint(
             origin,
-            claimed_group_id: Option<GroupId<T>>,
+            claimed_group_id: Option<T::GroupId>,
             class_id: ClassId,
             constraint: ReferenceConstraint<ClassId, PropertyIndex>
         ) -> dispatch::Result {
@@ -389,7 +395,7 @@ decl_module! {
             let can_create_class = match origin.into() {
                 Ok(system::RawOrigin::Root) => true,
                 Ok(system::RawOrigin::Signed(sender)) => {
-                    T::CreateClassPermissionsChecker::account_can_create_class_permissions(sender)
+                    T::CreateClassPermissionsChecker::account_can_create_class_permissions(&sender)
                 },
                 _ => false
             };
@@ -409,7 +415,7 @@ decl_module! {
 
         pub fn add_class_schema(
             origin,
-            claimed_group_id: Option<GroupId<T>>,
+            claimed_group_id: Option<T::GroupId>,
             class_id: ClassId,
             existing_properties: Vec<PropertyIndex>,
             new_properties: Vec<Property>
@@ -433,9 +439,9 @@ decl_module! {
 
         pub fn create_entity(
             origin,
-            claimed_group_id: Option<GroupId<T>>,
+            claimed_group_id: Option<T::GroupId>,
             class_id: ClassId
-            //, owner: BasePrincipal<T::AccountId, GroupId<T>>
+            //, owner: BasePrincipal<T::AccountId, T::GroupId>
         ) -> dispatch::Result {
             Self::if_class_permissions_satisfied(
                 origin,
@@ -467,7 +473,7 @@ decl_module! {
 
         pub fn add_schema_support_to_entity(
             origin,
-            claimed_group_id: Option<GroupId<T>>,
+            claimed_group_id: Option<T::GroupId>,
             as_entity_owner: bool,
             entity_id: EntityId,
             schema_id: u16,
@@ -498,7 +504,7 @@ decl_module! {
 
         pub fn update_entity_property_values(
             origin,
-            claimed_group_id: Option<GroupId<T>>,
+            claimed_group_id: Option<T::GroupId>,
             as_entity_owner: bool,
             entity_id: EntityId,
             property_values: Vec<ClassPropertyValue>
@@ -532,14 +538,14 @@ impl<T: Trait> Module<T> {
     /// It expects only signed or root origin.
     fn derive_principal(
         origin: T::Origin,
-        claimed_group_id: Option<GroupId<T>>,
+        claimed_group_id: Option<T::GroupId>,
         as_entity_owner: Option<EntityId>,
-    ) -> Result<DerivedPrincipal<T::AccountId, GroupId<T>>, &'static str> {
+    ) -> Result<DerivedPrincipal<T::AccountId, T::GroupId>, &'static str> {
         match origin.into() {
             Ok(system::RawOrigin::Root) => Ok(DerivedPrincipal::System),
             Ok(system::RawOrigin::Signed(account_id)) => {
                 if let Some(group_id) = claimed_group_id {
-                    if T::GroupMembershipChecker::account_is_in_group(account_id, group_id) {
+                    if T::GroupMembershipChecker::account_is_in_group(&account_id, group_id) {
                         if let Some(entity_id) = as_entity_owner {
                             // ensure entity owner is GroupMember
                             ensure!(
@@ -599,7 +605,7 @@ impl<T: Trait> Module<T> {
     /// The supplied predicate, is used to check if permission is granted to perform a mutation.
     fn mutate_class_permissions<Predicate, Mutate>(
         origin: T::Origin,
-        claimed_group_id: Option<GroupId<T>>,
+        claimed_group_id: Option<T::GroupId>,
         // predicate to test when origin is not root.
         predicate: Predicate,
         // class permissions to perform mutation on if it exists
@@ -609,7 +615,7 @@ impl<T: Trait> Module<T> {
     ) -> dispatch::Result
     where
         Predicate:
-            FnOnce(&ClassPermissionsType<T>, &DerivedPrincipal<T::AccountId, GroupId<T>>) -> bool,
+            FnOnce(&ClassPermissionsType<T>, &DerivedPrincipal<T::AccountId, T::GroupId>) -> bool,
         Mutate: FnOnce(&mut ClassPermissionsType<T>),
     {
         let principal = Self::derive_principal(origin, claimed_group_id, None)?;
@@ -626,7 +632,7 @@ impl<T: Trait> Module<T> {
 
     fn is_system_principal(
         _: &ClassPermissionsType<T>,
-        principal: &DerivedPrincipal<T::AccountId, GroupId<T>>,
+        principal: &DerivedPrincipal<T::AccountId, T::GroupId>,
     ) -> bool {
         *principal == DerivedPrincipal::System
     }
@@ -635,7 +641,7 @@ impl<T: Trait> Module<T> {
     /// test a predicate.
     fn if_class_permissions_satisfied<Predicate, Callback>(
         origin: T::Origin,
-        claimed_group_id: Option<GroupId<T>>,
+        claimed_group_id: Option<T::GroupId>,
         as_entity_owner: Option<EntityId>,
         // predicate used for testing
         predicate: Predicate,
@@ -646,10 +652,10 @@ impl<T: Trait> Module<T> {
     ) -> dispatch::Result
     where
         Predicate:
-            FnOnce(&ClassPermissionsType<T>, &DerivedPrincipal<T::AccountId, GroupId<T>>) -> bool,
+            FnOnce(&ClassPermissionsType<T>, &DerivedPrincipal<T::AccountId, T::GroupId>) -> bool,
         Callback: FnOnce(
             &ClassPermissionsType<T>,
-            &DerivedPrincipal<T::AccountId, GroupId<T>>,
+            &DerivedPrincipal<T::AccountId, T::GroupId>,
         ) -> dispatch::Result,
     {
         // construct a BasePrincipal from origin and group_id
