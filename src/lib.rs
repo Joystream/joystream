@@ -213,6 +213,25 @@ where
             _ => false,
         }
     }
+
+    fn can_update_entity(
+        class_permissions: &Self,
+        derived_principal: &DerivedPrincipal<AccountId, GroupId>,
+    ) -> bool {
+        match derived_principal {
+            DerivedPrincipal::System => true,
+            DerivedPrincipal::Base(base_principal) => class_permissions
+                .entity_permissions
+                .update
+                .0
+                .contains(&EntityPrincipal::Base(base_principal.clone())),
+            EntityOwner => class_permissions
+                .entity_permissions
+                .update
+                .0
+                .contains(&EntityPrincipal::Owner),
+        }
+    }
 }
 
 #[derive(Encode, Decode, Clone, Debug, Default, Eq, PartialEq)]
@@ -450,36 +469,59 @@ decl_module! {
             origin,
             claimed_group_id: Option<GroupId<T>>,
             as_entity_owner: bool,
+            class_id: ClassId, // we should be able to get class_id through Entity.class_id
             entity_id: EntityId,
             schema_id: u16,
             property_values: Vec<ClassPropertyValue>
         ) -> dispatch::Result {
-            // permissions checks..
+            let as_entity_owner = if as_entity_owner {
+                Some(entity_id)
+            } else {
+                None
+            };
 
-            // make proxy call
-            <versioned_store::Module<T>>::add_schema_support_to_entity(entity_id, schema_id, property_values)?;
-            Ok(())
+            Self::if_class_permissions_satisfied(
+                origin,
+                claimed_group_id,
+                as_entity_owner,
+                ClassPermissions::can_update_entity,
+                class_id,
+                |_class_permissions, _principal| {
+                    <versioned_store::Module<T>>::add_schema_support_to_entity(entity_id, schema_id, property_values)
+                }
+            )
         }
 
         pub fn update_entity_property_values(
             origin,
             claimed_group_id: Option<GroupId<T>>,
             as_entity_owner: bool,
+            class_id: ClassId, // we should be able to get class_id through Entity.class_id
             entity_id: EntityId,
             new_property_values: Vec<ClassPropertyValue>
         ) -> dispatch::Result {
-            // permissions checks..
+            let as_entity_owner = if as_entity_owner {
+                Some(entity_id)
+            } else {
+                None
+            };
 
-            // make proxy call
-            <versioned_store::Module<T>>::update_entity_property_values(entity_id, new_property_values)?;
-            Ok(())
+            Self::if_class_permissions_satisfied(
+                origin,
+                claimed_group_id,
+                as_entity_owner,
+                ClassPermissions::can_update_entity,
+                class_id,
+                |_class_permissions, _principal| {
+                    <versioned_store::Module<T>>::update_entity_property_values(entity_id, new_property_values)
+                }
+            )
         }
-
     }
 }
 
 impl<T: Trait> Module<T> {
-    /// Attempts to derives the principal a caller is claiming.
+    /// Attempts to derive the principal a caller is claiming.
     /// It expects only signed or root origin.
     fn derive_principal(
         origin: T::Origin,
