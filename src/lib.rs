@@ -104,38 +104,38 @@ pub type EntityId = u64;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Class {
-    id: ClassId,
+    pub id: ClassId,
 
     /// All properties that have been used on this class across different class schemas.
     /// Unlikely to be more than roughly 20 properties per class, often less.
     /// For Person, think "height", "weight", etc.
-    properties: Vec<Property>,
+    pub properties: Vec<Property>,
 
     /// All scehmas that are available for this class, think v0.0 Person, v.1.0 Person, etc.
-    schemas: Vec<ClassSchema>,
+    pub schemas: Vec<ClassSchema>,
 
-    name: Vec<u8>,
-    description: Vec<u8>,
+    pub name: Vec<u8>,
+    pub description: Vec<u8>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Entity {
-    id: EntityId,
+    pub id: EntityId,
 
     /// The class id of this entity.
-    class_id: ClassId,
+    pub class_id: ClassId,
 
     /// What schemas under which this entity of a class is available, think
     /// v.2.0 Person schema for John, v3.0 Person schema for John
     /// Unlikely to be more than roughly 20ish, assuming schemas for a given class eventually stableize, or that very old schema are eventually removed.
-    in_class_schema_indexes: Vec<u16>, // indices of schema in corresponding class
+    pub in_class_schema_indexes: Vec<u16>, // indices of schema in corresponding class
 
     /// Values for properties on class that are used by some schema used by this entity!
     /// Length is no more than Class.properties.
-    values: Vec<ClassPropertyValue>,
+    pub values: Vec<ClassPropertyValue>,
 
-    // deleted: bool,
+    // pub deleted: bool,
 }
 
 /// A schema defines what properties describe an entity
@@ -143,16 +143,16 @@ pub struct Entity {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct ClassSchema {
     /// Indices into properties vector for the corresponding class.
-    properties: Vec<u16>,
+    pub properties: Vec<u16>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Property {
-    prop_type: PropertyType,
-    required: bool,
-    name: Vec<u8>,
-    description: Vec<u8>,
+    pub prop_type: PropertyType,
+    pub required: bool,
+    pub name: Vec<u8>,
+    pub description: Vec<u8>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -243,10 +243,10 @@ impl Default for PropertyValue {
 pub struct ClassPropertyValue {
 
   /// Index is into properties vector of class.
-  in_class_index: u16,
+  pub in_class_index: u16,
 
   /// Value of property with index `in_class_index` in a given class.
-  value: PropertyValue
+  pub value: PropertyValue
 }
 
 pub trait Trait: system::Trait + Sized {
