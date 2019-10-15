@@ -120,7 +120,7 @@ impl<AccountId: Ord, GroupId: Ord> Default for EntityPrincipalSet<AccountId, Gro
 }
 
 /// Permissions for an instance of a Class in the versioned store.
-#[derive(Encode, Decode, Default)]
+#[derive(Encode, Decode, Default, Eq, PartialEq, Clone, Debug)]
 pub struct ClassPermissions<ClassId, AccountId, GroupId, PropertyIndex, BlockNumber>
 where
     ClassId: Ord,
@@ -275,12 +275,8 @@ decl_storage! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn on_finalize(_now: T::BlockNumber) {
 
-        }
-
-        // Method for setting the admins group
-
+        /// Sets the admins for a class
         fn set_class_admins(
             origin,
             class_id: ClassId,
@@ -389,7 +385,8 @@ decl_module! {
         pub fn create_class(
             origin,
             name: Vec<u8>,
-            description: Vec<u8>
+            description: Vec<u8>,
+            class_permissions: ClassPermissionsType<T>
         ) -> dispatch::Result {
 
             let can_create_class = match origin.into() {
@@ -405,12 +402,20 @@ decl_module! {
 
                 // is there a need to assert class_id is unique?
 
-                <ClassPermissionsByClassId<T>>::insert(&class_id, ClassPermissions::default());
+                <ClassPermissionsByClassId<T>>::insert(&class_id, class_permissions);
 
                 Ok(())
             } else {
                 Err("NotPermittedToCreateClass")
             }
+        }
+
+        pub fn create_class_with_default_permissions(
+            origin,
+            name: Vec<u8>,
+            description: Vec<u8>
+        ) -> dispatch::Result {
+            Self::create_class(origin, name, description, ClassPermissions::default())
         }
 
         pub fn add_class_schema(
