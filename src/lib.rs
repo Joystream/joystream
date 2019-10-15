@@ -9,8 +9,12 @@ use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap};
 use system;
 
-pub use versioned_store::*; // EntityId, ClassId -> should be configured on versioned_store::Trait
+// EntityId, ClassId -> should be configured on versioned_store::Trait
+pub use versioned_store::{ClassId, ClassPropertyValue, EntityId, Property, PropertyValue};
 pub type PropertyIndex = u16; // should really be configured on versioned_store::Trait
+
+pub mod mock;
+mod tests;
 
 #[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
 pub struct PropertyOfClass<ClassId, PropertyIndex> {
