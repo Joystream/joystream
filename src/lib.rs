@@ -59,11 +59,11 @@ pub enum BasePrincipal<AccountId, GroupId> {
 
 // maybe we can get rid of this, by allowing None owner for entities -> ie. owned by System
 // then allow transfer_ownership permission on entities.
-impl<AccountId: Ord + Default, GroupId: Ord> Default for BasePrincipal<AccountId, GroupId> {
-    fn default() -> Self {
-        BasePrincipal::Account(AccountId::default())
-    }
-}
+// impl<AccountId: Ord + Default, GroupId: Ord> Default for BasePrincipal<AccountId, GroupId> {
+//     fn default() -> Self {
+//         BasePrincipal::Account(AccountId::default())
+//     }
+// }
 
 /// Identifies a principal to whom a permission can be assigned on Entities.
 #[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
@@ -244,7 +244,7 @@ decl_storage! {
       pub ClassPermissionsByClassId get(class_permissions_by_class_id): linked_map ClassId => ClassPermissionsType<T>;
 
       /// Owner of an entity in the versioned store.
-      pub EntityOwnerByEntityId get(entity_owner_by_entity_id): linked_map EntityId => BasePrincipal<T::AccountId, GroupId<T>>;
+      pub EntityOwnerByEntityId get(entity_owner_by_entity_id): linked_map EntityId => Option<BasePrincipal<T::AccountId, GroupId<T>>>;
     }
 }
 
@@ -415,8 +415,8 @@ decl_module! {
         pub fn create_entity(
             origin,
             claimed_group_id: Option<GroupId<T>>,
-            class_id: ClassId,
-            owner: BasePrincipal<T::AccountId, GroupId<T>>
+            class_id: ClassId
+            //, owner: BasePrincipal<T::AccountId, GroupId<T>>
         ) -> dispatch::Result {
             Self::if_class_permissions_satisfied(
                 origin,
@@ -424,14 +424,23 @@ decl_module! {
                 None,
                 ClassPermissions::can_create_entity,
                 class_id,
-                |_class_permissions, _principal| {
+                |_class_permissions, principal| {
                     let entity_id = <versioned_store::Module<T>>::create_entity(class_id)?;
                     // let owner = match principal {
                     //     DerivedPrincipal::System => None,
                     //     DerivedPrincipal::Base(base_principal) => Some(*base_principal),
                     //     _ => None
                     // };
-                    <EntityOwnerByEntityId<T>>::insert(entity_id, owner);
+                    // <EntityOwnerByEntityId<T>>::insert(entity_id, Some(owner));
+
+                    // Does mutate on non-existent value work as expected?
+                    <EntityOwnerByEntityId<T>>::mutate(entity_id, |owner| {
+                        match principal {
+                            DerivedPrincipal::System => *owner = None,
+                            DerivedPrincipal::Base(base_principal) => *owner = Some(base_principal.clone()),
+                            _ => *owner = None
+                        }
+                    });
                     Ok(())
                 }
             )
@@ -489,7 +498,7 @@ impl<T: Trait> Module<T> {
                                 "InvalidEntityId"
                             );
                             match Self::entity_owner_by_entity_id(entity_id) {
-                                BasePrincipal::GroupMember(owner_group_id)
+                                Some(BasePrincipal::GroupMember(owner_group_id))
                                     if group_id == owner_group_id =>
                                 {
                                     Ok(DerivedPrincipal::EntityOwner)
@@ -510,7 +519,7 @@ impl<T: Trait> Module<T> {
                             "InvalidEntityId"
                         );
                         match Self::entity_owner_by_entity_id(entity_id) {
-                            BasePrincipal::Account(ref owner_account_id)
+                            Some(BasePrincipal::Account(ref owner_account_id))
                                 if account_id == *owner_account_id =>
                             {
                                 Ok(DerivedPrincipal::EntityOwner)
