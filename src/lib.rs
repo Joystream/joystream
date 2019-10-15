@@ -49,7 +49,7 @@ pub trait CreateClassPermissionsChecker<T: Trait> {
 
 /// An implementation that only permits system to create classes.
 impl<T: Trait> CreateClassPermissionsChecker<T> for () {
-    fn account_can_create_class_permissions(account: &T::AccountId) -> bool {
+    fn account_can_create_class_permissions(_account: &T::AccountId) -> bool {
         false
     }
 }
@@ -221,7 +221,7 @@ where
                 .update
                 .0
                 .contains(&EntityPrincipal::Base(base_principal.clone())),
-            EntityOwner => class_permissions
+            DerivedPrincipal::EntityOwner => class_permissions
                 .entity_permissions
                 .update
                 .0
