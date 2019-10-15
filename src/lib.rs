@@ -605,12 +605,12 @@ impl<T: Trait> Module<T> {
     // Helper functions:
     // ----------------------------------------------------------------
 
-    fn ensure_known_class_id(class_id: ClassId) -> dispatch::Result {
+    pub fn ensure_known_class_id(class_id: ClassId) -> dispatch::Result {
         ensure!(ClassById::exists(class_id), ERROR_CLASS_NOT_FOUND);
         Ok(())
     }
 
-    fn ensure_known_entity_id(entity_id: EntityId) -> dispatch::Result {
+    pub fn ensure_known_entity_id(entity_id: EntityId) -> dispatch::Result {
         ensure!(EntityById::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
         Ok(())
     }
@@ -639,7 +639,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn get_entity_and_class(entity_id: EntityId) -> (Entity, Class) {
+    pub fn get_entity_and_class(entity_id: EntityId) -> (Entity, Class) {
         let entity = EntityById::get(entity_id);
         let class = ClassById::get(entity.class_id);
         (entity, class)
@@ -789,7 +789,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_property_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    pub fn ensure_property_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
         PropertyNameConstraint::get().ensure_valid(
             text.len(),
             ERROR_PROPERTY_NAME_TOO_SHORT,
@@ -797,7 +797,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_property_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    pub fn ensure_property_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
         PropertyDescriptionConstraint::get().ensure_valid(
             text.len(),
             ERROR_PROPERTY_DESCRIPTION_TOO_SHORT,
@@ -805,7 +805,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_class_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    pub fn ensure_class_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
         ClassNameConstraint::get().ensure_valid(
             text.len(),
             ERROR_CLASS_NAME_TOO_SHORT,
@@ -813,7 +813,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_class_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    pub fn ensure_class_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
         ClassDescriptionConstraint::get().ensure_valid(
             text.len(),
             ERROR_CLASS_DESCRIPTION_TOO_SHORT,
