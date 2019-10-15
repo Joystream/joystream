@@ -1,5 +1,7 @@
-import { Enum, EnumType, Option, Struct } from '@polkadot/types/codec';
-import { getTypeRegistry, BlockNumber, AccountId, Balance, Hash, u32, Text, Bool } from '@polkadot/types';
+import { Enum, Option, Struct } from '@polkadot/types/codec';
+import { getTypeRegistry, Text } from '@polkadot/types';
+import { BlockNumber, AccountId, Balance, Hash } from '@polkadot/types/interfaces';
+import { u32, bool } from '@polkadot/types/primitive';
 import { registerForumTypes } from './forum';
 import { registerMediaTypes } from './media';
 import { registerMembershipTypes } from './members';
@@ -12,7 +14,7 @@ export function getTextPropAsString (struct: Struct, fieldName: string): string 
 }
 
 export function getBoolPropAsBoolean (struct: Struct, fieldName: string): boolean {
-  return (struct.get(fieldName) as Bool).valueOf();
+  return (struct.get(fieldName) as bool).valueOf();
 }
 
 export function getOptionPropOrUndefined <T extends Codec>
@@ -20,8 +22,6 @@ export function getOptionPropOrUndefined <T extends Codec>
 
   return (struct.get(fieldName) as Option<T>).unwrapOr(undefined);
 }
-
-class Amount extends Balance {}
 
 export class OptionText extends Option.with(Text) {
 
@@ -90,32 +90,34 @@ export type TallyResult = {
   finalized_at: BlockNumber
 };
 
-export class Announcing extends BlockNumber { }
-export class Voting extends BlockNumber { }
-export class Revealing extends BlockNumber { }
+export class Announcing extends u32 {};
+export class Voting extends u32 {};
+export class Revealing extends u32 {};
 
-export class ElectionStage extends EnumType<Announcing | Voting | Revealing> {
+export class ElectionStage extends Enum {
   constructor (value?: any, index?: number) {
-    super({
-      Announcing,
-      Voting,
-      Revealing
-    }, value, index);
+    super(
+      {
+        Announcing,
+        Voting,
+        Revealing
+      },
+      value, index);
   }
 
   /** Create a new Announcing stage. */
   static Announcing (endsAt: BlockNumber | number): ElectionStage {
-    return this.newElectionStage(Announcing.name, endsAt);
+    return this.newElectionStage('Announcing', endsAt);
   }
 
   /** Create a new Voting stage. */
   static Voting (endsAt: BlockNumber | number): ElectionStage {
-    return this.newElectionStage(Voting.name, endsAt);
+    return this.newElectionStage('Voting', endsAt);
   }
 
   /** Create a new Revealing stage. */
   static Revealing (endsAt: BlockNumber | number): ElectionStage {
-    return this.newElectionStage(Revealing.name, endsAt);
+    return this.newElectionStage('Revealing', endsAt);
   }
 
   static newElectionStage (stageName: string, endsAt: BlockNumber | number) {
@@ -171,16 +173,12 @@ export type ProposalVotes = [AccountId, VoteKind][];
 function registerElectionAndProposalTypes () {
   try {
     const typeRegistry = getTypeRegistry();
-
+    typeRegistry.register({
+      MemoText: 'Text'
+    });
     // Register parametrized enum ElectionStage:
     typeRegistry.register({
-      Announcing,
-      Voting,
-      Revealing,
       ElectionStage
-    });
-    typeRegistry.register({
-      Amount
     });
     typeRegistry.register({
       ProposalStatus,
@@ -221,7 +219,7 @@ function registerElectionAndProposalTypes () {
         'proposed_at': 'BlockNumber',
         'status': 'ProposalStatus'
       },
-      'TallyResult': {
+      'TallyResult<BlockNumber>': {
         'proposal_id': 'u32',
         'abstentions': 'u32',
         'approvals': 'u32',

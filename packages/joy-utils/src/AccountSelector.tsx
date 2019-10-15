@@ -1,14 +1,14 @@
 import React from 'react';
-import { Bubble, InputAddress, Labelled } from '@polkadot/ui-app/index';
-import { AccountIndex, Balance, Nonce } from '@polkadot/ui-reactive/index';
+import { Bubble, InputAddress, Labelled } from '@polkadot/react-components/index';
+import { Balance, Nonce } from '@polkadot/react-components/index';
 
 type Props = {
   label?: string,
-  onChange: (accountId?: string) => void
+  onChange: (accountId?: string | null) => void
 };
 
 type State = {
-  accountId?: string
+  accountId?: string | null
 };
 
 export default class AccountSelector extends React.PureComponent<Props, State> {
@@ -27,19 +27,16 @@ export default class AccountSelector extends React.PureComponent<Props, State> {
       />
       <Labelled>
         <Bubble label='Balance'>
-          <Balance params={[accountId]} />
+          <Balance params={accountId} />
         </Bubble>
         <Bubble label='Transactions'>
-          <Nonce params={[accountId]} />
-        </Bubble>
-        <Bubble icon='address card' label='Index'>
-          <AccountIndex value={accountId} />
+          <Nonce params={accountId} />
         </Bubble>
       </Labelled>
     </section>;
   }
 
-  private onChange = (accountId?: string): void => {
+  private onChange = (accountId: string | null): void => {
     const { onChange } = this.props;
     this.setState({ accountId }, () => onChange(accountId));
   }

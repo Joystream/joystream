@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
-import { Option, Vector } from '@polkadot/types';
+import { Option, Vec as Vector } from '@polkadot/types';
 import Section from '@polkadot/joy-utils/Section';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import * as JoyForms from '@polkadot/joy-utils/forms';
@@ -13,7 +13,7 @@ import { MemberId, UserInfo, Profile, PaidTermId, PaidMembershipTerms } from '@j
 import { OptionText } from '@joystream/types/';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
 import { queryMembershipToProp } from './utils';
-import { withCalls } from '@polkadot/ui-api/index';
+import { withCalls } from '@polkadot/react-api/index';
 import { Button, Message } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 
@@ -78,11 +78,14 @@ const InnerForm = (props: FormProps) => {
   };
 
   const onTxCancelled = () => {
-    setSubmitting(false);
+
   };
 
-  const onTxFailed = (_txResult: SubmittableResult) => {
+  const onTxFailed = (txResult: SubmittableResult) => {
     setSubmitting(false);
+    if (txResult == null) {
+      return onTxCancelled();
+    }
   };
 
   const onTxSuccess = (_txResult: SubmittableResult) => {
@@ -154,7 +157,6 @@ const InnerForm = (props: FormProps) => {
             : 'members.buyMembership'
           }
           onClick={onSubmit}
-          txCancelledCb={onTxCancelled}
           txFailedCb={onTxFailed}
           txSuccessCb={onTxSuccess}
         />

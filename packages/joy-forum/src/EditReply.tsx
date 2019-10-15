@@ -6,7 +6,7 @@ import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
-import { withMulti } from '@polkadot/ui-api/with';
+import { withMulti } from '@polkadot/react-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Text } from '@polkadot/types';
@@ -76,11 +76,14 @@ const InnerForm = (props: FormProps) => {
   };
 
   const onTxCancelled = () => {
-    setSubmitting(false);
+
   };
 
-  const onTxFailed = (_txResult: SubmittableResult) => {
+  const onTxFailed = (txResult: SubmittableResult) => {
     setSubmitting(false);
+    if (txResult == null) {
+      return onTxCancelled();
+    }
   };
 
   const onTxSuccess = (_txResult: SubmittableResult) => {
@@ -129,7 +132,6 @@ const InnerForm = (props: FormProps) => {
             : 'forum.editPostText'
           }
           onClick={onSubmit}
-          txCancelledCb={onTxCancelled}
           txFailedCb={onTxFailed}
           txSuccessCb={onTxSuccess}
         />

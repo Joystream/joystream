@@ -7,9 +7,10 @@
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@babel/runtime": "^7.4.3",
+    "@babel/runtime": "^7.6.0",
+    "@polkadot/react-components": "^0.36.0-beta.65",
+    "@polkadot/react-query": "^0.36.0-beta.65",
     "@polkadot/joy-utils": "^0.1.1",
-    "@polkadot/ui-app": "^0.32.0-beta.6",
     "@types/mime-types": "^2.1.0",
     "aplayer": "^1.10.1",
     "dplayer": "^1.25.0",

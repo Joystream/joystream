@@ -3,61 +3,60 @@
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { RpcMethod } from '@polkadot/jsonrpc/types';
-import { RawParam } from '@polkadot/ui-params/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { QueueTx$RpcAdd } from '@polkadot/ui-app/Status/types';
-
-import './index.css';
+import { ParamDef, RawParam } from '@polkadot/react-params/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { QueueTxRpcAdd } from '@polkadot/react-components/Status/types';
 
 import React from 'react';
 import rpc from '@polkadot/jsonrpc';
+import { Button, InputRpc, TxComponent } from '@polkadot/react-components';
+import Params from '@polkadot/react-params';
 import { getTypeDef } from '@polkadot/types';
-import { Button, InputRpc } from '@polkadot/ui-app';
-import Params from '@polkadot/ui-params';
+import { isNull } from '@polkadot/util';
 
-// import Account from './Account';
 import translate from './translate';
 
-type Props = I18nProps & {
-  queueRpc: QueueTx$RpcAdd
-};
+interface Props extends I18nProps {
+  queueRpc: QueueTxRpcAdd;
+}
 
-type State = {
-  isValid: boolean,
-  accountId?: string | null,
-  rpc: RpcMethod,
-  values: Array<RawParam>
-};
+interface State {
+  isValid: boolean;
+  accountId?: string | null;
+  rpc: RpcMethod;
+  values: RawParam[];
+}
 
 const defaultMethod = rpc.author.methods.submitExtrinsic;
 
-class Selection extends React.PureComponent<Props, State> {
-  state: State = {
+class Selection extends TxComponent<Props, State> {
+  public state: State = {
     isValid: false,
     accountId: null,
     rpc: defaultMethod,
     values: []
   };
 
-  render () {
+  public render (): React.ReactNode {
     const { t } = this.props;
     const { isValid, rpc } = this.state;
-    const params = rpc.params.map(({ name, type }) => ({
+    const params = rpc.params.map(({ isOptional, name, type }): ParamDef => ({
       name,
-      type: getTypeDef(type)
+      type: getTypeDef(isOptional ? `Option<${type}>` : type)
     }));
 
     return (
       <section className='rpc--Selection'>
         <InputRpc
           defaultValue={defaultMethod}
+          help={t('The actual JSONRPC module and function to make a call to.')}
           label={t('call the selected endpoint')}
           onChange={this.onChangeMethod}
         />
-        {this.renderAccount()}
         <Params
           key={`${rpc.section}.${rpc.method}:params` /* force re-render on change */}
           onChange={this.onChangeValues}
+          onEnter={this.submit}
           params={params}
         />
         <Button.Group>
@@ -66,38 +65,22 @@ class Selection extends React.PureComponent<Props, State> {
             isPrimary
             onClick={this.onSubmit}
             label={t('Submit RPC call')}
+            icon='sign-in'
+            ref={this.button}
           />
         </Button.Group>
       </section>
     );
   }
 
-  // FICME Currently the UI doesn't support signing for rpc-submitted calls
-  private renderAccount () {
-    // const { rpc: { isSigned = false }, publicKey } = this.state;
-
-    return null;
-
-    // if (!isSigned) {
-    //   return null;
-    // }
-
-    // return (
-    //   <Account
-    //     defaultValue={publicKey}
-    //     onChange={this.onChangeAccount}
-    //   />
-    // );
-  }
-
-  private nextState (newState: State): void {
+  private nextState (newState: Partial<State>): void {
     this.setState(
       (prevState: State): State => {
         const { rpc = prevState.rpc, accountId = prevState.accountId, values = prevState.values } = newState;
-        const hasNeededKey = true; // rpc.isSigned !== true || (!!publicKey && publicKey.length === 32);
-        const isValid = values.reduce((isValid, value) => {
+        const reqCount = rpc.params.reduce((count, { isOptional }): number => count + (isOptional ? 0 : 1), 0);
+        const isValid = values.reduce((isValid, value): boolean => {
           return isValid && value.isValid === true;
-        }, rpc.params.length === values.length && hasNeededKey);
+        }, reqCount <= values.length);
 
         return {
           isValid,
@@ -109,22 +92,15 @@ class Selection extends React.PureComponent<Props, State> {
     );
   }
 
-  // private onChangeAccount = (publicKey: Uint8Array | undefined | null, accountNonce: BN): void => {
-  //   this.nextState({
-  //     accountNonce,
-  //     publicKey
-  //   } as State);
-  // }
-
   private onChangeMethod = (rpc: RpcMethod): void => {
     this.nextState({
       rpc,
-      values: [] as Array<RawParam>
-    } as State);
+      values: [] as RawParam[]
+    });
   }
 
-  private onChangeValues = (values: Array<RawParam>): void => {
-    this.nextState({ values } as State);
+  private onChangeValues = (values: RawParam[]): void => {
+    this.nextState({ values });
   }
 
   private onSubmit = (): void => {
@@ -134,9 +110,9 @@ class Selection extends React.PureComponent<Props, State> {
     queueRpc({
       accountId,
       rpc,
-      values: values.map(({ value }) =>
-        value
-      )
+      values: values
+        .filter(({ value }): boolean => !isNull(value))
+        .map(({ value }): any => value)
     });
   }
 }

@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
-import { Option,AccountId } from '@polkadot/types';
-import IdentityIcon from '@polkadot/ui-app/IdentityIcon';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls, withMulti } from '@polkadot/react-api/with';
+import { Option } from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
+import IdentityIcon from '@polkadot/react-components/IdentityIcon';
 
 import translate from './translate';
 import { MemberId, Profile } from '@joystream/types/members';

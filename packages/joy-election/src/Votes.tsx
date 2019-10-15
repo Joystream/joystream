@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { AppProps, I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
+import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
 
 import translate from './translate';
 import SealedVotes from './SealedVotes';

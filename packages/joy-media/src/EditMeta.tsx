@@ -7,7 +7,7 @@ import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
+import { withCalls, withMulti } from '@polkadot/react-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Option } from '@polkadot/types/codec';
@@ -89,11 +89,14 @@ const InnerForm = (props: FormProps) => {
   };
 
   const onTxCancelled = () => {
-    setSubmitting(false);
+
   };
 
-  const onTxFailed = (_txResult: SubmittableResult) => {
+  const onTxFailed = (txResult: SubmittableResult) => {
     setSubmitting(false);
+    if (txResult == null) {
+      return onTxCancelled();
+    }
   };
 
   const onTxSuccess = (_txResult: SubmittableResult) => {
@@ -161,7 +164,6 @@ const InnerForm = (props: FormProps) => {
             : 'dataDirectory.updateMetadata'
           }
           onClick={onSubmit}
-          txCancelledCb={onTxCancelled}
           txFailedCb={onTxFailed}
           txSuccessCb={onTxSuccess}
         />

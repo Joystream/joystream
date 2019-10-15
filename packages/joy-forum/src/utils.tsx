@@ -4,7 +4,7 @@ import { Pagination as SuiPagination } from 'semantic-ui-react';
 
 import { Category, CategoryId, Thread, ThreadId } from '@joystream/types/forum';
 import { withForumCalls } from './calls';
-import { withMulti } from '@polkadot/ui-api';
+import { withMulti } from '@polkadot/react-api';
 
 export const ThreadsPerPage = 10;
 export const RepliesPerPage = 10;

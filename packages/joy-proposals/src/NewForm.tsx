@@ -1,12 +1,12 @@
 import BN from 'bn.js';
 import React from 'react';
 
-import { I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
+import { I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { withCalls, withMulti } from '@polkadot/react-api/with';
 import { u8aToHex, formatNumber } from '@polkadot/util';
-import { Input, InputFile, Labelled } from '@polkadot/ui-app/index';
-import { Balance } from '@polkadot/types';
+import { Input, InputFile, Labelled } from '@polkadot/react-components/index';
+import { Balance } from '@polkadot/types/interfaces';
 
 import translate from './translate';
 import { nonEmptyStr } from '@polkadot/joy-utils/index';

@@ -1,11 +1,11 @@
 import BN from 'bn.js';
 import React from 'react';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { BlockNumber, Balance } from '@polkadot/types';
-import { Bubble } from '@polkadot/ui-app/index';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
+import { BlockNumber, Balance } from '@polkadot/types/interfaces';
+import { Bubble } from '@polkadot/react-components/index';
 import { formatNumber, formatBalance } from '@polkadot/util';
 
 import { queryToProp, ZERO } from '@polkadot/joy-utils/index';

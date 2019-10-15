@@ -1,18 +1,18 @@
-import { BareProps, ApiProps } from '@polkadot/ui-api/types';
-import { QueueTx$ExtrinsicAdd, PartialQueueTx$Extrinsic } from '@polkadot/ui-app/Status/types';
+import { BareProps, ApiProps } from '@polkadot/react-api/types';
+import { QueueTxExtrinsicAdd, PartialQueueTxExtrinsic } from '@polkadot/react-components/Status/types';
 
 import React from 'react';
-import { Button } from '@polkadot/ui-app/index';
-import { QueueConsumer } from '@polkadot/ui-app/Status/Context';
-import { withApi } from '@polkadot/ui-api/index';
+import { Button } from '@polkadot/react-components/index';
+import { QueueConsumer } from '@polkadot/react-components/Status/Context';
+import { withApi } from '@polkadot/react-api/index';
 import { assert } from '@polkadot/util';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
 
 type InjectedProps = {
-  queueExtrinsic: QueueTx$ExtrinsicAdd;
+  queueExtrinsic: QueueTxExtrinsicAdd;
 };
 
-type Props = BareProps & ApiProps & MyAccountProps & PartialQueueTx$Extrinsic & {
+type Props = BareProps & ApiProps & MyAccountProps & PartialQueueTxExtrinsic & {
   accountId?: string,
   type?: 'submit' | 'button',
   isPrimary?: boolean,
@@ -31,6 +31,7 @@ class TxButtonInner extends React.PureComponent<Props & InjectedProps> {
     return (
       <Button
         {...this.props}
+        icon=''
         isDisabled={isDisabled || !origin}
         isPrimary={isPrimary}
         label={label}
@@ -45,7 +46,7 @@ class TxButtonInner extends React.PureComponent<Props & InjectedProps> {
   private send = (): void => {
     const {
       myAddress, accountId, api, params, queueExtrinsic, tx,
-      txFailedCb, txSuccessCb, txSentCb, txCancelledCb,
+      txFailedCb, txSuccessCb, txStartCb, txUpdateCb,
     } = this.props;
     const origin = accountId || myAddress;
     const [section, method] = tx.split('.');
@@ -57,8 +58,8 @@ class TxButtonInner extends React.PureComponent<Props & InjectedProps> {
       extrinsic: api.tx[section][method](...params) as any, // ???
       txFailedCb,
       txSuccessCb,
-      txSentCb,
-      txCancelledCb,
+      txStartCb,
+      txUpdateCb,
     });
   }
 }

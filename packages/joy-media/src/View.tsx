@@ -5,12 +5,12 @@ import axios, { CancelTokenSource } from 'axios';
 import DPlayer from 'react-dplayer';
 import APlayer from 'react-aplayer';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls, withMulti } from '@polkadot/react-api/with';
 import { Option } from '@polkadot/types/codec';
 import { formatNumber } from '@polkadot/util';
-import { AccountId } from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
 
 import translate from './translate';
 import { DiscoveryProviderProps } from './DiscoveryProvider';
@@ -105,7 +105,7 @@ class InnerView extends React.PureComponent<ViewProps> {
           }
           <div><h3>{name}</h3></div>
           <MemberPreview accountId={meta.owner} style={{ marginBottom: '.5rem' }} />
-          <MutedDiv smaller>{new Date(added_at.time).toLocaleString()}</MutedDiv>
+          <MutedDiv smaller>{new Date(added_at.time.toNumber()).toLocaleString()}</MutedDiv>
           <MutedDiv smaller>{formatNumber(data.size_in_bytes)} bytes</MutedDiv>
         </div>
       </Link>
@@ -170,7 +170,7 @@ class InnerView extends React.PureComponent<ViewProps> {
           <h1>{name}</h1>
         </div>
         <MemberPreview accountId={meta.owner} style={{ marginBottom: '.5rem' }} />
-        <div className='smaller grey text'>Published on {new Date(added_at.time).toLocaleString()}</div>
+        <div className='smaller grey text'>Published on {new Date(added_at.time.toNumber()).toLocaleString()}</div>
         {description &&
           <ReactMarkdown className='JoyMemo--full ContentDesc' source={description.toString()} linkTarget='_blank' />
         }

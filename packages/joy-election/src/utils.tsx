@@ -1,4 +1,4 @@
-import { AccountId } from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
 
 export type HashedVote = {
   applicantId: string,
@@ -35,10 +35,10 @@ import { stringToU8a } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 
 /** hash(accountId + salt) */
-export const hashVote = (accountId?: string, salt?: string): string | undefined => {
+export const hashVote = (accountId?: string | null, salt?: string): string | null => {
   if (!accountId || !salt) {
     // console.log('Cannot hash a vote: either accountId or salt is undefined', { accountId, salt });
-    return undefined;
+    return null;
   }
 
   const accountU8a = decodeAddress(accountId);

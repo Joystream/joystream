@@ -15,12 +15,19 @@ import {
   storageGetInfo,
   storageSystemEvents,
   storageListenToBalanceChange,
- storageRetrieveInfoOnQueryKeys
+  storageListenToMultipleBalancesChange,
+  storageRetrieveInfoOnQueryKeys
 } from './storage-examples';
 
-import { extrinsicMakeTransfer } from './extrinsics-examples';
+import {
+  constsStakingParameters
+} from './consts-examples';
 
-const snippets: Array<Snippet> = [
+import {
+  extrinsicMakeTransfer
+} from './extrinsics-examples';
+
+const snippets: Snippet[] = [
   rpcNetworkAuthoring,
   rpcNewHead,
   rpcQueryState,
@@ -28,7 +35,9 @@ const snippets: Array<Snippet> = [
   storageGetInfo,
   storageSystemEvents,
   storageListenToBalanceChange,
+  storageListenToMultipleBalancesChange,
   storageRetrieveInfoOnQueryKeys,
+  constsStakingParameters,
   extrinsicMakeTransfer
 ];
 

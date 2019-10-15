@@ -3,8 +3,8 @@ import { Message } from 'semantic-ui-react';
 
 import axios, { CancelToken } from 'axios';
 
-import { AccountId } from '@polkadot/types';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
+import { AccountId } from '@polkadot/types/interfaces';
+import { withCalls, withMulti } from '@polkadot/react-api/with';
 
 import { queryToProp } from '@polkadot/joy-utils/index';
 import { Url } from '@joystream/types/discovery'

@@ -2,37 +2,32 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import { Route } from '../types';
+import { Route } from '@polkadot/apps-routing/types';
 
-import React from 'react';
-// import { withRouter } from 'react-router';
+import React, { useContext } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Icon, Menu } from '@polkadot/ui-app';
+import { Icon, Menu, Tooltip } from '@polkadot/react-components';
 import accountObservable from '@polkadot/ui-keyring/observable/accounts';
-import { withApi, withCalls, withMulti, withObservable } from '@polkadot/ui-api';
+import { ApiContext, withCalls, withMulti, withObservable } from '@polkadot/react-api';
 import { isFunction } from '@polkadot/util';
 import { Option } from '@polkadot/types';
 
-import ReactTooltip from 'react-tooltip';
+import translate from '../translate';
+
 import { queryToProp } from '@polkadot/joy-utils/index';
 import { ElectionStage } from '@joystream/types/';
-import { councilSidebarName } from '../routing/joy-election';
+import { councilSidebarName } from '@polkadot/apps-routing/joy-election';
 
-type Props = I18nProps & ApiProps & {
-  isCollapsed: boolean,
-  onClick: () => void,
-  allAccounts?: SubjectInfo,
-  electionStage: Option<ElectionStage>,
-  route: Route
-};
 
-interface Tooltip {
-  'data-tip': boolean;
-  'data-for': string;
-  'data-tip-disable'?: boolean;
+interface Props extends I18nProps {
+  isCollapsed: boolean;
+  onClick: () => void;
+  allAccounts?: SubjectInfo;
+  route: Route;
+  sudoKey: string;
+  electionStage: Option<ElectionStage>;
 }
 
 type Subtitle = {
@@ -40,64 +35,27 @@ type Subtitle = {
   classes: string[]
 };
 
-class Item extends React.PureComponent<Props> {
-  componentWillUpdate () {
-    ReactTooltip.rebuild();
+
+const disabledLog: Map<string, string> = new Map();
+
+function logDisabled (route: string, message: string): void {
+  if (!disabledLog.get(route)) {
+    disabledLog.set(route, message);
+
+    console.warn(`Disabling ${route}: ${message}`);
   }
+}
 
-  render () {
+function Item ({ allAccounts, route: { Modal, display: { isHidden, needsAccounts, needsApi, needsSudo }, i18n, icon, name }, t, isCollapsed, onClick, sudoKey, electionStage }: Props): React.ReactElement<Props> | null {
+  const { api, isApiConnected, isApiReady } = useContext(ApiContext);
 
-    const { route: { i18n, icon, name }, t, isCollapsed } = this.props;
-
-    if (!this.isVisible()) {
-      return null;
-    }
-
-    const subtitle = this.getSubtitle(name);
-
-    const tooltip: Tooltip = {
-      'data-for': `nav-${name}`,
-      'data-tip': true,
-      'data-tip-disable': !isCollapsed
-    };
-
-    return (
-      <Menu.Item className='apps--SideBar-Item'>
-        <NavLink
-          activeClassName='apps--SideBar-Item-NavLink-active'
-          className='apps--SideBar-Item-NavLink'
-          onClick={this.props.onClick}
-          to={`/${name}`}
-          {...tooltip}
-        >
-          <Icon name={icon} />
-          <div className='text SidebarItem'>
-            <div>{t(`sidebar.${name}`, i18n)}</div>
-            {subtitle && <div className={`SidebarSubtitle ${subtitle.classes.join(' ')}`}>{subtitle.text}</div>}
-          </div>
-          <ReactTooltip
-           delayShow={750}
-           effect='solid'
-           id={`nav-${name}`}
-           offset={ { right: -4 } }
-           place='right'
-          >
-            <span>{t(`sidebar.${name}`, i18n)}
-          </span>
-          </ReactTooltip>
-        </NavLink>
-      </Menu.Item>
-    );
-  }
-
-  private getSubtitle (name: string): Subtitle | undefined {
+  const _getSubtitle = (name: string): Subtitle | undefined => {
     if (name === councilSidebarName) {
-      const { electionStage: stage } = this.props;
-      if (stage && stage.isSome) {
+      if (electionStage && electionStage.isSome) {
         const classes: string[] = [];
         let text = 'No active election';
-        if (stage.isSome) {
-          const stageValue = stage.value as ElectionStage;
+        if (electionStage.isSome) {
+          const stageValue = electionStage.value as ElectionStage;
           const stageName = stageValue.type;
           text = `${stageName} stage`;
           classes.push(stageName);
@@ -108,8 +66,7 @@ class Item extends React.PureComponent<Props> {
     return undefined;
   }
 
-  private hasApi (endpoint: string): boolean {
-    const { api } = this.props;
+  const _hasApi = (endpoint: string): boolean => {
     const [area, section, method] = endpoint.split('.');
 
     try {
@@ -117,11 +74,10 @@ class Item extends React.PureComponent<Props> {
     } catch (error) {
       return false;
     }
-  }
-
-  private isVisible () {
-    const { allAccounts = {}, isApiConnected, isApiReady, route: { display: { isHidden, needsAccounts, needsApi }, name } } = this.props;
-    const hasAccounts = Object.keys(allAccounts).length !== 0;
+  };
+  const _isVisible = (): boolean => {
+    const hasAccounts = !!allAccounts && Object.keys(allAccounts).length !== 0;
+    const hasSudo = !!allAccounts && Object.keys(allAccounts).some((address): boolean => address === sudoKey);
 
     if (isHidden) {
       return false;
@@ -131,27 +87,92 @@ class Item extends React.PureComponent<Props> {
       return true;
     } else if (!isApiReady || !isApiConnected) {
       return false;
+    } else if (needsSudo) {
+      if (!hasSudo) {
+        logDisabled(name, 'Sudo key not available');
+        return false;
+      }
     }
 
-    const notFound = needsApi.filter((endpoint: string | Array<string>) => {
+    const notFound = needsApi.filter((endpoint: string | string[]): boolean => {
       const hasApi = Array.isArray(endpoint)
-        ? endpoint.reduce((hasApi, endpoint) => hasApi || this.hasApi(endpoint), false)
-        : this.hasApi(endpoint);
+        ? endpoint.reduce((hasApi, endpoint): boolean => hasApi || _hasApi(endpoint), false)
+        : _hasApi(endpoint);
 
       return !hasApi;
     });
 
     if (notFound.length !== 0) {
-      console.info(`Disabling route ${name}, API ${notFound} not available`);
+      logDisabled(name, `API not available: ${notFound}`);
     }
 
     return notFound.length === 0;
+  };
+
+  if (!_isVisible()) {
+    return null;
   }
+
+  const subtitle = _getSubtitle(name);
+
+  const body = (
+    <>
+      <Icon name={icon} />
+      <div className='text SidebarItem'>
+            <div>{t(`sidebar.${name}`, i18n)}</div>
+            {subtitle && <div className={`SidebarSubtitle ${subtitle.classes.join(' ')}`}>{subtitle.text}</div>}
+      </div>
+      <Tooltip
+        offset={{ right: -4 }}
+        place='right'
+        text={t(`sidebar.${name}`, i18n)}
+        trigger={`nav-${name}`}
+      />
+    </>
+  );
+
+  return (
+    <Menu.Item className='apps--SideBar-Item'>
+      {Modal
+        ? (
+          <a
+            className='apps--SideBar-Item-NavLink'
+            data-for={`nav-${name}`}
+            data-tip
+            data-tip-disable={!isCollapsed}
+            onClick={onClick}
+          >
+            {body}
+          </a>
+        )
+        : (
+          <NavLink
+            activeClassName='apps--SideBar-Item-NavLink-active'
+            className='apps--SideBar-Item-NavLink'
+            data-for={`nav-${name}`}
+            data-tip
+            data-tip-disable={!isCollapsed}
+            onClick={onClick}
+            to={`/${name}`}
+          >
+            {body}
+          </NavLink>
+        )
+      }
+    </Menu.Item>
+  );
 }
 
 export default withMulti(
   Item,
-  withApi,
+  translate,
   withCalls(queryToProp('query.councilElection.stage', { propName: 'electionStage' })),
+  withCalls<Props>(
+    ['query.sudo.key', {
+      propName: 'sudoKey',
+      transform: (key): string =>
+        key.toString()
+    }]
+  ),
   withObservable(accountObservable.subject, { propName: 'allAccounts' })
 );

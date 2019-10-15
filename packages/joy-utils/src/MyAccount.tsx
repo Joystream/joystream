@@ -3,7 +3,7 @@ import { Message } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
 import { Option } from '@polkadot/types';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
+import { withCalls, withMulti } from '@polkadot/react-api/with';
 
 import { MemberId } from '@joystream/types/members';
 import { queryMembershipToProp } from '@polkadot/joy-members/utils';

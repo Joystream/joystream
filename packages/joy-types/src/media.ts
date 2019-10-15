@@ -1,12 +1,13 @@
-import { Enum, Struct, Option, Vector } from '@polkadot/types/codec';
-import { getTypeRegistry, u64, Bool, Text, BlockNumber, Moment, AccountId, Hash } from '@polkadot/types';
+import { Enum, Struct, Option, Vec as Vector, H256 } from '@polkadot/types';
+import { getTypeRegistry, u32, u64, bool, Text, GenericAccountId } from '@polkadot/types';
+import { BlockNumber, Moment, AccountId } from '@polkadot/types/interfaces';
 import { OptionText } from './';
 
 import { randomAsU8a } from '@polkadot/util-crypto';
 import { encodeAddress, decodeAddress } from '@polkadot/keyring';
 // import { u8aToString, stringToU8a } from '@polkadot/util';
 
-export class ContentId extends Hash {
+export class ContentId extends H256 {
   static generate (): ContentId {
     // randomAsU8a uses https://www.npmjs.com/package/tweetnacl#random-bytes-generation
     return new ContentId(randomAsU8a());
@@ -39,8 +40,8 @@ export type BlockAndTimeType = {
 export class BlockAndTime extends Struct {
   constructor (value?: BlockAndTimeType) {
     super({
-      block: BlockNumber,
-      time: Moment
+      block: u32, // BlockNumber
+      time: u64, // Moment
     }, value);
   }
 
@@ -77,7 +78,7 @@ export type ContentMetadataJsonV1 = {
 export class ContentMetadata extends Struct {
   constructor (value?: any) {
     super({
-      owner: AccountId,
+      owner: GenericAccountId,
       added_at: BlockAndTime,
       children_ids: VecContentId,
       visibility: ContentVisibility,
@@ -152,11 +153,11 @@ export class LiaisonJudgement extends Enum {
 export class DataObject extends Struct {
   constructor (value?: any) {
     super({
-      owner: AccountId,
+      owner: GenericAccountId,
       added_at: BlockAndTime,
       type_id: DataObjectTypeId,
       size: u64,
-      liaison: AccountId,
+      liaison: GenericAccountId,
       liaison_judgement: LiaisonJudgement,
       ipfs_content_id: Text,
     }, value);
@@ -196,8 +197,8 @@ export class DataObjectStorageRelationship extends Struct {
   constructor (value?: any) {
     super({
       content_id: ContentId,
-      storage_provider: AccountId,
-      ready: Bool
+      storage_provider: GenericAccountId,
+      ready: bool
     }, value);
   }
 
@@ -209,8 +210,8 @@ export class DataObjectStorageRelationship extends Struct {
     return this.get('storage_provider') as AccountId;
   }
 
-  get ready (): Bool {
-    return this.get('ready') as Bool;
+  get ready (): bool {
+    return this.get('ready') as bool;
   }
 }
 
@@ -218,7 +219,7 @@ export class DataObjectType extends Struct {
   constructor (value?: any) {
     super({
       description: Text,
-      active: Bool
+      active: bool
     }, value);
   }
 
@@ -226,8 +227,8 @@ export class DataObjectType extends Struct {
     return this.get('description') as Text;
   }
 
-  get active (): Bool {
-    return this.get('active') as Bool;
+  get active (): bool {
+    return this.get('active') as bool;
   }
 }
 
@@ -246,10 +247,10 @@ export class DownloadSession extends Struct {
   constructor (value?: any) {
     super({
       content_id: ContentId,
-      consumer: AccountId,
-      distributor: AccountId,
-      initiated_at_block: BlockNumber,
-      initiated_at_time: Moment,
+      consumer: GenericAccountId,
+      distributor: GenericAccountId,
+      initiated_at_block: u32, // BlockNumber,
+      initiated_at_time: u64, // Moment
       state: DownloadState,
       transmitted_bytes: u64
     }, value);

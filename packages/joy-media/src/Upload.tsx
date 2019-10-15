@@ -4,14 +4,14 @@ import axios, { CancelTokenSource } from 'axios';
 import { History } from 'history';
 import { Progress, Message } from 'semantic-ui-react';
 
-import { InputFile } from '@polkadot/ui-app/index';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
+import { InputFile } from '@polkadot/react-components/index';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
 import { SubmittableResult } from '@polkadot/api';
 import { Option } from '@polkadot/types/codec';
-import { withMulti } from '@polkadot/ui-api';
+import { withMulti } from '@polkadot/react-api';
 import { formatNumber } from '@polkadot/util';
-import { AccountId } from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
 
 import translate from './translate';
 import { fileNameWoExt } from './utils';
@@ -31,7 +31,8 @@ type Props = ApiProps & I18nProps & MyAccountProps & DiscoveryProviderProps & {
 
 type State = {
   error?: any,
-  file?: File,
+  file_name?: string,
+  file_data?: Uint8Array,
   ipfs_cid?: string,
   newContentId: ContentId,
   discovering: boolean,
@@ -42,7 +43,8 @@ type State = {
 
 const defaultState = (): State => ({
   error: undefined,
-  file: undefined,
+  file_name: undefined,
+  file_data: undefined,
   newContentId: ContentId.generate(),
   discovering: false,
   uploading: false,
@@ -100,14 +102,14 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private renderUploading () {
-    const { file, newContentId, progress, error } = this.state;
-    if (!file) return <em>Loading...</em>;
+    const { file_name, newContentId, progress, error } = this.state;
+    if (!file_name) return <em>Loading...</em>;
 
     const success = !error && progress >= 100;
 
     return <div style={{ width: '100%' }}>
       {this.renderProgress()}
-      {success && <EditMeta contentId={newContentId} fileName={fileNameWoExt(file.name)} history={this.props.history} />}
+      {success && <EditMeta contentId={newContentId} fileName={fileNameWoExt(file_name)} history={this.props.history} />}
     </div>;
   }
 
@@ -138,17 +140,19 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private renderFileInput () {
-    const { file } = this.state;
+    const { file_name, file_data } = this.state;
+    const file_size = file_data ? file_data.length : 0;
 
     return <div className='UploadSelectForm'>
       <InputFile
+        label=""
         withLabel={false}
-        className={`UploadInputFile ${file ? 'FileSelected' : ''}`}
+        className={`UploadInputFile ${file_name ? 'FileSelected' : ''}`}
         placeholder={
           <div>
             <div><i className='cloud upload icon'></i></div>
-            <div>{file
-              ? `${file.name} (${formatNumber(file.size)} bytes)`
+            <div>{file_name
+              ? `${file_name} (${formatNumber(file_size)} bytes)`
               : <>
                 <div>Drag and drop either video or audio file here.</div>
                 <div>Your file should not be more than {MAX_FILE_SIZE_MB} MB.</div>
@@ -156,13 +160,13 @@ class Component extends React.PureComponent<Props, State> {
             }</div>
           </div>
         }
-        onFileSelected={this.onFileSelected}
+        onChange={this.onFileSelected}
       />
-      {file && <div className='UploadButtonBox'>
+      {file_name && <div className='UploadButtonBox'>
         <TxButton
           size='large'
           label={'Upload'}
-          isDisabled={!file}
+          isDisabled={!file_name}
           tx={'dataDirectory.addContent'}
           params={this.buildTxParams()}
           txSuccessCb={this.onDataObjectCreated}
@@ -171,7 +175,7 @@ class Component extends React.PureComponent<Props, State> {
     </div>;
   }
 
-  private onFileSelected = async (data: Uint8Array, file: File) => {
+  private onFileSelected = async (data: Uint8Array, file_name: string) => {
     if (!data || data.length === 0) {
       this.setState({ error: `You cannot upload an empty file.` });
     } else if (data.length > MAX_FILE_SIZE_BYTES) {
@@ -182,18 +186,18 @@ class Component extends React.PureComponent<Props, State> {
       const ipfs_cid = await IpfsHash.of(Buffer.from(data));
       console.log('computed IPFS hash:', ipfs_cid)
       // File size is valid and can be uploaded:
-      this.setState({ file, ipfs_cid });
+      this.setState({ file_name, file_data: data, ipfs_cid });
     }
   }
 
   private buildTxParams = () => {
-    const { file, newContentId, ipfs_cid } = this.state;
-    if (!file || !ipfs_cid) return [];
+    const { file_name, file_data, newContentId, ipfs_cid } = this.state;
+    if (!file_name || !file_data || !ipfs_cid) return [];
 
     // TODO get corresponding data type id based on file content
     const dataObjectTypeId = new BN(1);
 
-    return [ newContentId, dataObjectTypeId, new BN(file.size), ipfs_cid];
+    return [ newContentId, dataObjectTypeId, new BN(file_data.length), ipfs_cid];
   }
 
   private onDataObjectCreated = async (_txResult: SubmittableResult) => {
@@ -229,8 +233,8 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private uploadFileTo = async (storageProvider: AccountId) => {
-    const { file, newContentId, cancelSource } = this.state;
-    if (!file) {
+    const { file_data, newContentId, cancelSource } = this.state;
+    if (!file_data || !file_data.length) {
       this.setState({
         error: new Error('No file to upload!'),
         discovering: false,
@@ -277,7 +281,7 @@ class Component extends React.PureComponent<Props, State> {
     this.setState({ discovering: false, uploading: true, progress: 0 });
 
     try {
-      await axios.put<{ message: string }>(url, file, config);
+      await axios.put<{ message: string }>(url, file_data, config);
     } catch(err) {
       this.setState({ progress: 0, error: err, uploading: false });
       if (axios.isCancel) {
