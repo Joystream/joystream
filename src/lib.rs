@@ -105,6 +105,21 @@ impl<ClassId: Ord, PropertyIndex: Ord> Default for ReferenceConstraint<ClassId, 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct BasePrincipalSet<AccountId, GroupId>(BTreeSet<BasePrincipal<AccountId, GroupId>>);
 
+impl<AccountId, GroupId> From<Vec<BasePrincipal<AccountId, GroupId>>>
+    for BasePrincipalSet<AccountId, GroupId>
+where
+    AccountId: Ord,
+    GroupId: Ord,
+{
+    fn from(v: Vec<BasePrincipal<AccountId, GroupId>>) -> BasePrincipalSet<AccountId, GroupId> {
+        let mut set = BasePrincipalSet(BTreeSet::new());
+        for base_principal in v.into_iter() {
+            set.0.insert(base_principal);
+        }
+        set
+    }
+}
+
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct EntityPrincipalSet<AccountId, GroupId>(BTreeSet<EntityPrincipal<AccountId, GroupId>>);
 
@@ -174,7 +189,7 @@ where
     GroupId: Ord + Clone,
     PropertyIndex: Ord,
 {
-    /// Returns true if principal is root origin or base_principal is in admins acl group
+    /// Returns Ok if principal is root origin or base_principal is in admins set, Err otherwise
     fn is_admin(
         class_permissions: &Self,
         derived_principal: &DerivedPrincipal<AccountId, GroupId>,
@@ -322,7 +337,7 @@ pub trait Trait: system::Trait + versioned_store::Trait {
         + PartialEq
         + Ord;
 
-    /// External type used to check if an account is part of a specific group.
+    /// External type used to check if an account is a member of a specific group.
     type GroupMembershipChecker: GroupMembershipChecker<Self>;
 
     /// External type used to check if an account id has permission to create new class permissions.
@@ -402,7 +417,7 @@ decl_module! {
             origin,
             claimed_group_id: Option<T::GroupId>,
             class_id: ClassId,
-            acl: BasePrincipalSet<T::AccountId, T::GroupId>
+            base_principal_set: BasePrincipalSet<T::AccountId, T::GroupId>
         ) -> dispatch::Result {
             Self::mutate_class_permissions(
                 origin,
@@ -410,7 +425,7 @@ decl_module! {
                 ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
-                    class_permissions.add_schemas = acl;
+                    class_permissions.add_schemas = base_principal_set;
                     Ok(())
                 }
             )
@@ -420,7 +435,7 @@ decl_module! {
             origin,
             claimed_group_id: Option<T::GroupId>,
             class_id: ClassId,
-            acl: BasePrincipalSet<T::AccountId, T::GroupId>
+            base_principal_set: BasePrincipalSet<T::AccountId, T::GroupId>
         ) -> dispatch::Result {
             Self::mutate_class_permissions(
                 origin,
@@ -428,7 +443,7 @@ decl_module! {
                 ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
-                    class_permissions.create_entities = acl;
+                    class_permissions.create_entities = base_principal_set;
                     Ok(())
                 }
             )
