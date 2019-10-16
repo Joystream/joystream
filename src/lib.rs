@@ -115,7 +115,7 @@ impl<AccountId: Ord, GroupId: Ord> Default for BasePrincipalSet<AccountId, Group
     }
 }
 
-/// Default set gives entity owner permissions on the entity
+/// Default set gives entity owner permission on the entity
 impl<AccountId: Ord, GroupId: Ord> Default for EntityPrincipalSet<AccountId, GroupId> {
     fn default() -> Self {
         let mut owner = BTreeSet::new();
@@ -260,6 +260,39 @@ where
             }
         }
     }
+
+    fn can_transfer_entity_ownership(
+        class_permissions: &Self,
+        derived_principal: &DerivedPrincipal<AccountId, GroupId>,
+    ) -> dispatch::Result {
+        match derived_principal {
+            DerivedPrincipal::System => Ok(()),
+            DerivedPrincipal::Base(base_principal) => {
+                if class_permissions
+                    .entity_permissions
+                    .transfer_ownership
+                    .0
+                    .contains(&EntityPrincipal::Base(base_principal.clone()))
+                {
+                    Ok(())
+                } else {
+                    Err("NotInEntityPermissionsTransferOwnershipSet")
+                }
+            }
+            DerivedPrincipal::EntityOwner => {
+                if class_permissions
+                    .entity_permissions
+                    .transfer_ownership
+                    .0
+                    .contains(&EntityPrincipal::Owner)
+                {
+                    Ok(())
+                } else {
+                    Err("NotInEntityPermissionsTransferOwnershipSet")
+                }
+            }
+        }
+    }
 }
 
 #[derive(Encode, Decode, Clone, Debug, Default, Eq, PartialEq)]
@@ -270,6 +303,7 @@ where
 {
     update: EntityPrincipalSet<AccountId, GroupId>,
     delete: EntityPrincipalSet<AccountId, GroupId>,
+    transfer_ownership: EntityPrincipalSet<AccountId, GroupId>,
 }
 
 pub trait Trait: system::Trait + versioned_store::Trait {
@@ -570,6 +604,39 @@ decl_module! {
                 class_id,
                 |_class_permissions, _principal| {
                     <versioned_store::Module<T>>::update_entity_property_values(entity_id, property_values)
+                }
+            )
+        }
+
+        pub fn set_entity_owner(
+            origin,
+            claimed_group_id: Option<T::GroupId>,
+            as_entity_owner: bool,
+            entity_id: EntityId,
+            new_owner: Option<BasePrincipal<T::AccountId, T::GroupId>>
+        ) -> dispatch::Result {
+            let class_id = Self::get_class_id_by_entity_id(&entity_id)?;
+            let as_entity_owner = if as_entity_owner {
+                Some(entity_id)
+            } else {
+                None
+            };
+            Self::if_class_permissions_satisfied(
+                origin,
+                claimed_group_id,
+                as_entity_owner,
+                ClassPermissions::can_transfer_entity_ownership,
+                class_id,
+                |_class_permissions, _principal| {
+                    if let Some(base_principal) = new_owner {
+                        <EntityOwnerByEntityId<T>>::mutate(entity_id, |owner| {
+                            *owner = Some(base_principal.clone());
+                        });
+                    } else {
+                        // transfer ownership to System
+                        <EntityOwnerByEntityId<T>>::remove(entity_id);
+                    }
+                    Ok(())
                 }
             )
         }
