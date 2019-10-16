@@ -611,7 +611,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Constructs a derived principal from the origin and claimed group id.
-    /// The supplied predicate, is used to check if permission is granted to perform a mutation.
+    /// If the predicate passes, the mutate method is invoked.
     fn mutate_class_permissions<Predicate, Mutate>(
         origin: T::Origin,
         claimed_group_id: Option<T::GroupId>,
@@ -630,9 +630,15 @@ impl<T: Trait> Module<T> {
         let principal = Self::derive_principal(origin, claimed_group_id, None)?;
         let mut class_permissions = Self::ensure_class_permissions(class_id)?;
 
+        // change this to
+        // predicate(..)?; // change Predicate and Mutate signature to return dispatch::Result
+        // mutate(..)?;
+        // update permissions
+        // Ok(())
         if predicate(&class_permissions, &principal) {
             mutate(&mut class_permissions);
             class_permissions.last_permissions_update = <system::Module<T>>::block_number();
+            <ClassPermissionsByClassId<T>>::insert(class_id, class_permissions);
             Ok(())
         } else {
             Err("ClassPermissionsMutationDenied")
@@ -646,8 +652,8 @@ impl<T: Trait> Module<T> {
         *principal == DerivedPrincipal::System
     }
 
-    /// Constructs a base principal from the origin and claimed group id and uses it to
-    /// test a predicate.
+    /// Constructs a derived principal from the origin and claimed group id.
+    /// If the peridcate passes the callback is invoked.
     fn if_class_permissions_satisfied<Predicate, Callback>(
         origin: T::Origin,
         claimed_group_id: Option<T::GroupId>,
@@ -667,14 +673,16 @@ impl<T: Trait> Module<T> {
             &DerivedPrincipal<T::AccountId, T::GroupId>,
         ) -> dispatch::Result,
     {
-        // construct a BasePrincipal from origin and group_id
         let principal = Self::derive_principal(origin, claimed_group_id, as_entity_owner)?;
         let class_permissions = Self::ensure_class_permissions(class_id)?;
 
+        // change this to
+        // predicate(..)?; // change Predicate signature to return dispatch::Result
+        // callback(..)
         if predicate(&class_permissions, &principal) {
             callback(&class_permissions, &principal)
         } else {
-            Err("ClassPermissionNotSatisfied")
+            Err("ClassPermissionsNotSatisfied")
         }
     }
 

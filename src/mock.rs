@@ -10,7 +10,7 @@ use runtime_primitives::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{assert_err, assert_ok, impl_outer_origin, parameter_types};
+use srml_support::{impl_outer_origin, parameter_types};
 use versioned_store::InputValidationLengthConstraint;
 
 impl_outer_origin! {
@@ -63,10 +63,10 @@ impl Trait for Runtime {
     type CreateClassPermissionsChecker = MockCreateClassPermissionsChecker;
 }
 
-pub const MEMBER_ONE_OF_GROUP_ZERO: u64 = 1;
-pub const MEMBER_TWO_OF_GROUP_ZERO: u64 = 2;
-pub const MEMBER_ONE_OF_GROUP_ONE: u64 = 3;
-pub const MEMBER_TWO_OF_GROUP_ONE: u64 = 4;
+pub const MEMBER_ONE_OF_GROUP_ZERO: u64 = 100;
+pub const MEMBER_TWO_OF_GROUP_ZERO: u64 = 101;
+pub const MEMBER_ONE_OF_GROUP_ONE: u64 = 102;
+pub const MEMBER_TWO_OF_GROUP_ONE: u64 = 103;
 
 pub const GROUP_MEMBERS: [[u64; 2]; 2] = [
     [MEMBER_ONE_OF_GROUP_ZERO, MEMBER_TWO_OF_GROUP_ZERO],
@@ -89,8 +89,9 @@ impl GroupMembershipChecker<Runtime> for MockGroupMembershipChecker {
     }
 }
 
-pub const CLASS_PERMISSIONS_CREATOR1: u64 = 100;
-pub const CLASS_PERMISSIONS_CREATOR2: u64 = 200;
+pub const CLASS_PERMISSIONS_CREATOR1: u64 = 200;
+pub const CLASS_PERMISSIONS_CREATOR2: u64 = 300;
+pub const UNAUTHORIZED_CLASS_PERMISSIONS_CREATOR: u64 = 50;
 
 const CLASS_PERMISSIONS_CREATORS: [u64; 2] =
     [CLASS_PERMISSIONS_CREATOR1, CLASS_PERMISSIONS_CREATOR2];
