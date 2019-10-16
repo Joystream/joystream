@@ -108,14 +108,15 @@ pub struct BasePrincipalSet<AccountId, GroupId>(BTreeSet<BasePrincipal<AccountId
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct EntityPrincipalSet<AccountId, GroupId>(BTreeSet<EntityPrincipal<AccountId, GroupId>>);
 
+/// Default Base principal set is just an empty set.
 impl<AccountId: Ord, GroupId: Ord> Default for BasePrincipalSet<AccountId, GroupId> {
     fn default() -> Self {
         BasePrincipalSet(BTreeSet::new())
     }
 }
 
+/// Default set gives entity owner permissions on the entity
 impl<AccountId: Ord, GroupId: Ord> Default for EntityPrincipalSet<AccountId, GroupId> {
-    /// Default set gives entity owner permissions on the entity
     fn default() -> Self {
         let mut owner = BTreeSet::new();
         owner.insert(EntityPrincipal::Owner);
@@ -177,59 +178,86 @@ where
     fn is_admin(
         class_permissions: &Self,
         derived_principal: &DerivedPrincipal<AccountId, GroupId>,
-    ) -> bool {
+    ) -> dispatch::Result {
         match derived_principal {
-            DerivedPrincipal::System => true,
+            DerivedPrincipal::System => Ok(()),
             DerivedPrincipal::Base(base_principal) => {
-                class_permissions.admins.0.contains(base_principal)
+                if class_permissions.admins.0.contains(base_principal) {
+                    Ok(())
+                } else {
+                    Err("NotInAdminsSet")
+                }
             }
-            _ => false,
+            _ => Err("DerivedPrincipal::EntityOwner-UsedOutOfPlace"),
         }
     }
 
     fn can_add_schema(
         class_permissions: &Self,
         derived_principal: &DerivedPrincipal<AccountId, GroupId>,
-    ) -> bool {
+    ) -> dispatch::Result {
         match derived_principal {
-            DerivedPrincipal::System => true,
+            DerivedPrincipal::System => Ok(()),
             DerivedPrincipal::Base(base_principal) => {
-                class_permissions.add_schemas.0.contains(base_principal)
+                if class_permissions.add_schemas.0.contains(base_principal) {
+                    Ok(())
+                } else {
+                    Err("NotInAddSchemasSet")
+                }
             }
-            _ => false,
+            _ => Err("DerivedPrincipal::EntityOwner-UsedOutOfPlace"),
         }
     }
 
     fn can_create_entity(
         class_permissions: &Self,
         derived_principal: &DerivedPrincipal<AccountId, GroupId>,
-    ) -> bool {
+    ) -> dispatch::Result {
         match derived_principal {
-            DerivedPrincipal::System => true,
+            DerivedPrincipal::System => Ok(()),
             DerivedPrincipal::Base(base_principal) => {
-                class_permissions.entities_can_be_created
-                    && class_permissions.create_entities.0.contains(base_principal)
+                if !class_permissions.entities_can_be_created {
+                    Err("EntitiesCannotBeCreated")
+                } else if class_permissions.create_entities.0.contains(base_principal) {
+                    Ok(())
+                } else {
+                    Err("NotInCreateEntitiesSet")
+                }
             }
-            _ => false,
+            _ => Err("DerivedPrincipal::EntityOwner-UsedOutOfPlace"),
         }
     }
 
     fn can_update_entity(
         class_permissions: &Self,
         derived_principal: &DerivedPrincipal<AccountId, GroupId>,
-    ) -> bool {
+    ) -> dispatch::Result {
         match derived_principal {
-            DerivedPrincipal::System => true,
-            DerivedPrincipal::Base(base_principal) => class_permissions
-                .entity_permissions
-                .update
-                .0
-                .contains(&EntityPrincipal::Base(base_principal.clone())),
-            DerivedPrincipal::EntityOwner => class_permissions
-                .entity_permissions
-                .update
-                .0
-                .contains(&EntityPrincipal::Owner),
+            DerivedPrincipal::System => Ok(()),
+            DerivedPrincipal::Base(base_principal) => {
+                if class_permissions
+                    .entity_permissions
+                    .update
+                    .0
+                    .contains(&EntityPrincipal::Base(base_principal.clone()))
+                {
+                    Ok(())
+                } else {
+                    Err("NotInEntityPermissionsUpdateSet")
+                }
+            }
+            DerivedPrincipal::EntityOwner => {
+                if class_permissions
+                    .entity_permissions
+                    .update
+                    .0
+                    .contains(&EntityPrincipal::Owner)
+                {
+                    Ok(())
+                } else {
+                    Err("NotInEntityPermissionsUpdateSet")
+                }
+            }
         }
     }
 }
@@ -293,6 +321,7 @@ decl_module! {
                 class_id,
                 |class_permissions| {
                     class_permissions.admins = admins;
+                    Ok(())
                 }
             )
         }
@@ -312,6 +341,7 @@ decl_module! {
                 class_id,
                 |class_permissions| {
                     class_permissions.entity_permissions = entity_permissions;
+                    Ok(())
                 }
             )
         }
@@ -329,11 +359,12 @@ decl_module! {
                 class_id,
                 |class_permissions| {
                     class_permissions.entities_can_be_created = can_be_created;
+                    Ok(())
                 }
             )
         }
 
-        fn set_class_add_schemas_acl(
+        fn set_class_add_schemas_set(
             origin,
             claimed_group_id: Option<T::GroupId>,
             class_id: ClassId,
@@ -346,11 +377,12 @@ decl_module! {
                 class_id,
                 |class_permissions| {
                     class_permissions.add_schemas = acl;
+                    Ok(())
                 }
             )
         }
 
-        fn set_class_create_entities_acl(
+        fn set_class_create_entities_set(
             origin,
             claimed_group_id: Option<T::GroupId>,
             class_id: ClassId,
@@ -363,6 +395,7 @@ decl_module! {
                 class_id,
                 |class_permissions| {
                     class_permissions.create_entities = acl;
+                    Ok(())
                 }
             )
         }
@@ -380,6 +413,7 @@ decl_module! {
                 class_id,
                 |class_permissions| {
                     class_permissions.reference_constraint = constraint;
+                    Ok(())
                 }
             )
         }
@@ -615,7 +649,7 @@ impl<T: Trait> Module<T> {
     fn mutate_class_permissions<Predicate, Mutate>(
         origin: T::Origin,
         claimed_group_id: Option<T::GroupId>,
-        // predicate to test when origin is not root.
+        // predicate to test
         predicate: Predicate,
         // class permissions to perform mutation on if it exists
         class_id: ClassId,
@@ -623,51 +657,52 @@ impl<T: Trait> Module<T> {
         mutate: Mutate,
     ) -> dispatch::Result
     where
-        Predicate:
-            FnOnce(&ClassPermissionsType<T>, &DerivedPrincipal<T::AccountId, T::GroupId>) -> bool,
-        Mutate: FnOnce(&mut ClassPermissionsType<T>),
+        Predicate: FnOnce(
+            &ClassPermissionsType<T>,
+            &DerivedPrincipal<T::AccountId, T::GroupId>,
+        ) -> dispatch::Result,
+        Mutate: FnOnce(&mut ClassPermissionsType<T>) -> dispatch::Result,
     {
         let principal = Self::derive_principal(origin, claimed_group_id, None)?;
         let mut class_permissions = Self::ensure_class_permissions(class_id)?;
 
-        // change this to
-        // predicate(..)?; // change Predicate and Mutate signature to return dispatch::Result
-        // mutate(..)?;
-        // update permissions
-        // Ok(())
-        if predicate(&class_permissions, &principal) {
-            mutate(&mut class_permissions);
-            class_permissions.last_permissions_update = <system::Module<T>>::block_number();
-            <ClassPermissionsByClassId<T>>::insert(class_id, class_permissions);
-            Ok(())
-        } else {
-            Err("ClassPermissionsMutationDenied")
-        }
+        predicate(&class_permissions, &principal)?;
+        mutate(&mut class_permissions)?;
+        class_permissions.last_permissions_update = <system::Module<T>>::block_number();
+        <ClassPermissionsByClassId<T>>::insert(class_id, class_permissions);
+        Ok(())
     }
 
     fn is_system_principal(
         _: &ClassPermissionsType<T>,
         principal: &DerivedPrincipal<T::AccountId, T::GroupId>,
-    ) -> bool {
-        *principal == DerivedPrincipal::System
+    ) -> dispatch::Result {
+        if *principal == DerivedPrincipal::System {
+            Ok(())
+        } else {
+            Err("NotRootOrigin")
+        }
     }
 
     /// Constructs a derived principal from the origin and claimed group id.
-    /// If the peridcate passes the callback is invoked.
+    /// If the peridcate passes the callback is invoked. Returns result of the callback
+    /// or error from failed predicate.
     fn if_class_permissions_satisfied<Predicate, Callback>(
         origin: T::Origin,
         claimed_group_id: Option<T::GroupId>,
         as_entity_owner: Option<EntityId>,
-        // predicate used for testing
+        // predicate to test
         predicate: Predicate,
         // class permissions to test
         class_id: ClassId,
-        // actual mutation to apply.
+        // callback to invoke if predicate passes
         callback: Callback,
     ) -> dispatch::Result
     where
-        Predicate:
-            FnOnce(&ClassPermissionsType<T>, &DerivedPrincipal<T::AccountId, T::GroupId>) -> bool,
+        Predicate: FnOnce(
+            &ClassPermissionsType<T>,
+            &DerivedPrincipal<T::AccountId, T::GroupId>,
+        ) -> dispatch::Result,
         Callback: FnOnce(
             &ClassPermissionsType<T>,
             &DerivedPrincipal<T::AccountId, T::GroupId>,
@@ -676,14 +711,8 @@ impl<T: Trait> Module<T> {
         let principal = Self::derive_principal(origin, claimed_group_id, as_entity_owner)?;
         let class_permissions = Self::ensure_class_permissions(class_id)?;
 
-        // change this to
-        // predicate(..)?; // change Predicate signature to return dispatch::Result
-        // callback(..)
-        if predicate(&class_permissions, &principal) {
-            callback(&class_permissions, &principal)
-        } else {
-            Err("ClassPermissionsNotSatisfied")
-        }
+        predicate(&class_permissions, &principal)?;
+        callback(&class_permissions, &principal)
     }
 
     fn get_class_id_by_entity_id(entity_id: &EntityId) -> Result<ClassId, &'static str> {
@@ -693,7 +722,7 @@ impl<T: Trait> Module<T> {
             "EntityNotFound"
         );
         let entity = <versioned_store::Module<T>>::entity_by_id(entity_id);
-        Ok(entity.class_id) // blocker! Entity.class_id field is private
+        Ok(entity.class_id)
     }
 
     // Ensures property_values of type Internal that point to a class,
@@ -703,7 +732,6 @@ impl<T: Trait> Module<T> {
         property_values: &Vec<ClassPropertyValue>,
     ) -> dispatch::Result {
         for property_value in property_values.iter() {
-            // blocker! - PropertyValue.value if private
             if let PropertyValue::Internal(ref target_entity_id) = property_value.value {
                 // get the class permissions for target class
                 let target_class_id = Self::get_class_id_by_entity_id(target_entity_id)?;
@@ -719,7 +747,7 @@ impl<T: Trait> Module<T> {
                     ReferenceConstraint::Restricted(permitted_properties) => {
                         if permitted_properties.contains(&PropertyOfClass {
                             class_id: source_class_id,
-                            property_index: property_value.in_class_index, // blocker! - private field
+                            property_index: property_value.in_class_index,
                         }) {
                             Ok(())
                         } else {

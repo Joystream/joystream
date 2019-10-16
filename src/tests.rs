@@ -54,17 +54,17 @@ fn create_class_then_entity_with_default_class_permissions() {
                 vec![],
                 simple_test_schema()
             ),
-            "ClassPermissionsNotSatisfied"
+            "NotInAddSchemasSet"
         );
 
         // give members of GROUP_ZERO permission to add schemas
-        let mut add_schema_acl = BasePrincipalSet::default();
-        add_schema_acl.0.insert(BasePrincipal::GroupMember(0));
-        assert_ok!(Permissions::set_class_add_schemas_acl(
+        let mut add_schema_set = BasePrincipalSet::default();
+        add_schema_set.0.insert(BasePrincipal::GroupMember(0));
+        assert_ok!(Permissions::set_class_add_schemas_set(
             Origin::ROOT,
             None,
             class_id,
-            add_schema_acl
+            add_schema_set
         ));
 
         // successfully add a new schema
@@ -83,26 +83,10 @@ fn create_class_then_entity_with_default_class_permissions() {
         assert!(!<EntityOwnerByEntityId<Runtime>>::exists(entity_id_1));
         assert_eq!(Permissions::entity_owner_by_entity_id(entity_id_1), None);
 
-        // default permissions have empty create_entities and by default no entities can be created
+        // default permissions have empty create_entities set and by default no entities can be created
         assert_err!(
             Permissions::create_entity(Origin::signed(MEMBER_ONE_OF_GROUP_ONE), Some(1), class_id,),
-            "ClassPermissionsNotSatisfied"
-        );
-
-        // give members of GROUP_ONE permission to create entities
-        let mut create_entities_acl = BasePrincipalSet::default();
-        create_entities_acl.0.insert(BasePrincipal::GroupMember(1));
-        assert_ok!(Permissions::set_class_create_entities_acl(
-            Origin::ROOT,
-            None,
-            class_id,
-            create_entities_acl
-        ));
-
-        // still not enough, creating entities not enabled on class
-        assert_err!(
-            Permissions::create_entity(Origin::signed(MEMBER_ONE_OF_GROUP_ONE), Some(1), class_id,),
-            "ClassPermissionsNotSatisfied" // update to error specific about permission to create entities
+            "EntitiesCannotBeCreated"
         );
 
         assert_ok!(Permissions::set_class_entities_can_be_created(
@@ -110,6 +94,21 @@ fn create_class_then_entity_with_default_class_permissions() {
             None,
             class_id,
             true
+        ));
+
+        assert_err!(
+            Permissions::create_entity(Origin::signed(MEMBER_ONE_OF_GROUP_ONE), Some(1), class_id,),
+            "NotInCreateEntitiesSet"
+        );
+
+        // give members of GROUP_ONE permission to create entities
+        let mut create_entities_set = BasePrincipalSet::default();
+        create_entities_set.0.insert(BasePrincipal::GroupMember(1));
+        assert_ok!(Permissions::set_class_create_entities_set(
+            Origin::ROOT,
+            None,
+            class_id,
+            create_entities_set
         ));
 
         let entity_id_2 = <versioned_store::Module<Runtime>>::next_entity_id();
@@ -134,7 +133,7 @@ fn create_class_then_entity_with_default_class_permissions() {
                 0, // first schema created
                 simple_test_entity_property_values()
             ),
-            "ClassPermissionsNotSatisfied"
+            "NotInEntityPermissionsUpdateSet"
         );
 
         // default permissions give entity owner permission to update and delete
