@@ -220,7 +220,7 @@ decl_module! {
             entity_id: EntityId,
             new_owner: Option<BasePrincipal<T::AccountId, T::GroupId>>
         ) -> dispatch::Result {
-            let class_id = Self::get_class_id_by_entity_id(&entity_id)?;
+            let class_id = Self::get_class_id_by_entity_id(entity_id)?;
             let as_entity_owner = if as_entity_owner {
                 Some(entity_id)
             } else {
@@ -345,7 +345,7 @@ decl_module! {
             property_values: Vec<ClassPropertyValue>
         ) -> dispatch::Result {
             // class id of the entity being updated
-            let class_id = Self::get_class_id_by_entity_id(&entity_id)?;
+            let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
             Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
 
@@ -374,7 +374,7 @@ decl_module! {
             entity_id: EntityId,
             property_values: Vec<ClassPropertyValue>
         ) -> dispatch::Result {
-            let class_id = Self::get_class_id_by_entity_id(&entity_id)?;
+            let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
             Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
 
@@ -432,25 +432,23 @@ impl<T: Trait> Module<T> {
                     } else {
                         Err("OriginNotMemberOfClaimedGroup")
                     }
-                } else {
-                    if let Some(entity_id) = as_entity_owner {
-                        // is entity owned by system?
-                        ensure!(
-                            <EntityOwnerByEntityId<T>>::exists(entity_id),
-                            "NotEnityOwner"
-                        );
-                        // ensure entity owner is Account
-                        match Self::entity_owner_by_entity_id(entity_id) {
-                            Some(BasePrincipal::Account(ref owner_account_id))
-                                if account_id == *owner_account_id =>
-                            {
-                                Ok(DerivedPrincipal::EntityOwner)
-                            }
-                            _ => Err("NotEnityOwner"),
+                } else if let Some(entity_id) = as_entity_owner {
+                    // is entity owned by system?
+                    ensure!(
+                        <EntityOwnerByEntityId<T>>::exists(entity_id),
+                        "NotEnityOwner"
+                    );
+                    // ensure entity owner is Account
+                    match Self::entity_owner_by_entity_id(entity_id) {
+                        Some(BasePrincipal::Account(ref owner_account_id))
+                            if account_id == *owner_account_id =>
+                        {
+                            Ok(DerivedPrincipal::EntityOwner)
                         }
-                    } else {
-                        Ok(DerivedPrincipal::Base(BasePrincipal::Account(account_id)))
+                        _ => Err("NotEnityOwner"),
                     }
+                } else {
+                    Ok(DerivedPrincipal::Base(BasePrincipal::Account(account_id)))
                 }
             }
             _ => Err("BadOrigin:ExpectedRootOrSigned"),
@@ -539,7 +537,7 @@ impl<T: Trait> Module<T> {
         callback(&class_permissions, &principal)
     }
 
-    fn get_class_id_by_entity_id(entity_id: &EntityId) -> Result<ClassId, &'static str> {
+    fn get_class_id_by_entity_id(entity_id: EntityId) -> Result<ClassId, &'static str> {
         // use a utility method on versioned_store module
         ensure!(
             versioned_store::EntityById::exists(entity_id),
@@ -553,12 +551,12 @@ impl<T: Trait> Module<T> {
     // the target entity and class exists and constraint allows it.
     fn ensure_internal_property_values_permitted(
         source_class_id: ClassId,
-        property_values: &Vec<ClassPropertyValue>,
+        property_values: &[ClassPropertyValue],
     ) -> dispatch::Result {
         for property_value in property_values.iter() {
             if let PropertyValue::Internal(ref target_entity_id) = property_value.value {
                 // get the class permissions for target class
-                let target_class_id = Self::get_class_id_by_entity_id(target_entity_id)?;
+                let target_class_id = Self::get_class_id_by_entity_id(*target_entity_id)?;
                 // assert class permissions exists for target class
                 let class_permissions = Self::class_permissions_by_class_id(target_class_id);
 
