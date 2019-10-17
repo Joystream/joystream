@@ -271,3 +271,240 @@ fn class_permissions_set_add_schemas_set() {
         );
     })
 }
+
+#[test]
+fn class_permissions_set_class_create_entities_set() {
+    with_test_externalities(|| {
+        const ADMIN_ACCOUNT: u64 = 1;
+        // create a class where all permission sets are empty
+        let class_id = create_simple_class(class_permissions_minimal_with_admins(vec![
+            BasePrincipal::Account(ADMIN_ACCOUNT),
+        ]));
+        let class_permissions = Permissions::class_permissions_by_class_id(class_id);
+
+        assert!(class_permissions.create_entities.0.is_empty());
+
+        let base_principal_set1 =
+            BasePrincipalSet::from(vec![BasePrincipal::Account(1), BasePrincipal::Account(2)]);
+        let base_principal_set2 =
+            BasePrincipalSet::from(vec![BasePrincipal::Account(3), BasePrincipal::Account(4)]);
+
+        // root
+        assert_ok!(Permissions::set_class_create_entities_set(
+            Origin::ROOT,
+            None,
+            class_id,
+            base_principal_set1.clone()
+        ));
+        let class_permissions = Permissions::class_permissions_by_class_id(class_id);
+        assert_eq!(class_permissions.create_entities, base_principal_set1);
+
+        // admins
+        assert_ok!(Permissions::set_class_create_entities_set(
+            Origin::signed(ADMIN_ACCOUNT),
+            None,
+            class_id,
+            base_principal_set2.clone()
+        ));
+        let class_permissions = Permissions::class_permissions_by_class_id(class_id);
+        assert_eq!(class_permissions.create_entities, base_principal_set2);
+
+        // non-admins
+        assert_err!(
+            Permissions::set_class_create_entities_set(
+                Origin::signed(ADMIN_ACCOUNT + 1),
+                None,
+                class_id,
+                base_principal_set2.clone()
+            ),
+            "NotInAdminsSet"
+        );
+    })
+}
+
+#[test]
+fn class_permissions_set_class_entities_can_be_created() {
+    with_test_externalities(|| {
+        const ADMIN_ACCOUNT: u64 = 1;
+        // create a class where all permission sets are empty
+        let class_id = create_simple_class(class_permissions_minimal_with_admins(vec![
+            BasePrincipal::Account(ADMIN_ACCOUNT),
+        ]));
+        let class_permissions = Permissions::class_permissions_by_class_id(class_id);
+
+        assert_eq!(class_permissions.entities_can_be_created, false);
+
+        // root
+        assert_ok!(Permissions::set_class_entities_can_be_created(
+            Origin::ROOT,
+            None,
+            class_id,
+            true
+        ));
+        let class_permissions = Permissions::class_permissions_by_class_id(class_id);
+        assert_eq!(class_permissions.entities_can_be_created, true);
+
+        // admins
+        assert_ok!(Permissions::set_class_entities_can_be_created(
+            Origin::signed(ADMIN_ACCOUNT),
+            None,
+            class_id,
+            false
+        ));
+        let class_permissions = Permissions::class_permissions_by_class_id(class_id);
+        assert_eq!(class_permissions.entities_can_be_created, false);
+
+        // non-admins
+        assert_err!(
+            Permissions::set_class_entities_can_be_created(
+                Origin::signed(ADMIN_ACCOUNT + 1),
+                None,
+                class_id,
+                true
+            ),
+            "NotInAdminsSet"
+        );
+    })
+}
+
+#[test]
+fn class_permissions_set_class_entity_permissions() {
+    with_test_externalities(|| {
+        const ADMIN_ACCOUNT: u64 = 1;
+        // create a class where all permission sets are empty
+        let class_id = create_simple_class(class_permissions_minimal_with_admins(vec![
+            BasePrincipal::Account(ADMIN_ACCOUNT),
+        ]));
+        let class_permissions = Permissions::class_permissions_by_class_id(class_id);
+
+        assert!(class_permissions.entity_permissions.update.0.is_empty());
+        assert!(class_permissions.entity_permissions.delete.0.is_empty());
+        assert!(class_permissions
+            .entity_permissions
+            .transfer_ownership
+            .0
+            .is_empty());
+
+        let entity_permissions1 = EntityPermissions {
+            update: EntityPrincipalSet::from(vec![EntityPrincipal::Base(BasePrincipal::Account(
+                1,
+            ))]),
+            delete: EntityPrincipalSet::from(vec![EntityPrincipal::Base(BasePrincipal::Account(
+                2,
+            ))]),
+            transfer_ownership: EntityPrincipalSet::from(vec![EntityPrincipal::Base(
+                BasePrincipal::Account(3),
+            )]),
+        };
+
+        //root
+        assert_ok!(Permissions::set_class_entity_permissions(
+            Origin::ROOT,
+            None,
+            class_id,
+            entity_permissions1.clone()
+        ));
+        let class_permissions = Permissions::class_permissions_by_class_id(class_id);
+        assert_eq!(class_permissions.entity_permissions, entity_permissions1);
+
+        let entity_permissions2 = EntityPermissions {
+            update: EntityPrincipalSet::from(vec![EntityPrincipal::Base(BasePrincipal::Account(
+                4,
+            ))]),
+            delete: EntityPrincipalSet::from(vec![EntityPrincipal::Base(BasePrincipal::Account(
+                5,
+            ))]),
+            transfer_ownership: EntityPrincipalSet::from(vec![EntityPrincipal::Base(
+                BasePrincipal::Account(6),
+            )]),
+        };
+        //admins
+        assert_ok!(Permissions::set_class_entity_permissions(
+            Origin::signed(ADMIN_ACCOUNT),
+            None,
+            class_id,
+            entity_permissions2.clone()
+        ));
+        let class_permissions = Permissions::class_permissions_by_class_id(class_id);
+        assert_eq!(class_permissions.entity_permissions, entity_permissions2);
+
+        // non admins
+        assert_err!(
+            Permissions::set_class_entity_permissions(
+                Origin::signed(ADMIN_ACCOUNT + 1),
+                None,
+                class_id,
+                entity_permissions2.clone()
+            ),
+            "NotInAdminsSet"
+        );
+    })
+}
+
+#[test]
+fn class_permissions_set_class_reference_constraint() {
+    with_test_externalities(|| {
+        const ADMIN_ACCOUNT: u64 = 1;
+        // create a class where all permission sets are empty
+        let class_id = create_simple_class(class_permissions_minimal_with_admins(vec![
+            BasePrincipal::Account(ADMIN_ACCOUNT),
+        ]));
+        let class_permissions = Permissions::class_permissions_by_class_id(class_id);
+
+        assert_eq!(class_permissions.reference_constraint, Default::default());
+
+        let mut constraints_set = BTreeSet::new();
+        constraints_set.insert(PropertyOfClass {
+            class_id: 1,
+            property_index: 0,
+        });
+        let reference_constraint1 = ReferenceConstraint::Restricted(constraints_set);
+
+        //root
+        assert_ok!(Permissions::set_class_reference_constraint(
+            Origin::ROOT,
+            None,
+            class_id,
+            reference_constraint1.clone()
+        ));
+        let class_permissions = Permissions::class_permissions_by_class_id(class_id);
+        assert_eq!(
+            class_permissions.reference_constraint,
+            reference_constraint1
+        );
+
+        let mut constraints_set = BTreeSet::new();
+        constraints_set.insert(PropertyOfClass {
+            class_id: 2,
+            property_index: 2,
+        });
+        let reference_constraint2 = ReferenceConstraint::Restricted(constraints_set);
+
+        //admins
+        assert_ok!(Permissions::set_class_reference_constraint(
+            Origin::signed(ADMIN_ACCOUNT),
+            None,
+            class_id,
+            reference_constraint2.clone()
+        ));
+        let class_permissions = Permissions::class_permissions_by_class_id(class_id);
+        assert_eq!(
+            class_permissions.reference_constraint,
+            reference_constraint2
+        );
+
+        // non admins
+        assert_err!(
+            Permissions::set_class_reference_constraint(
+                Origin::signed(ADMIN_ACCOUNT + 1),
+                None,
+                class_id,
+                reference_constraint2.clone()
+            ),
+            "NotInAdminsSet"
+        );
+    })
+}
+
+// derive_principal()
+// ensure_internal_property_values_permitted() -> refactor to be testable
