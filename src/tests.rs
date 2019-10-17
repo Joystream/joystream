@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::mock::*;
+use rstd::collections::btree_set::BTreeSet;
 use versioned_store::PropertyType;
 
 use srml_support::{assert_err, assert_ok};

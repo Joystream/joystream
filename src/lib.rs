@@ -4,7 +4,6 @@
 use rstd::prelude::*;
 
 use codec::{Codec, Decode, Encode};
-use rstd::collections::btree_set::BTreeSet;
 use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap};
 use system;
@@ -13,10 +12,14 @@ use system;
 pub use versioned_store::{ClassId, ClassPropertyValue, EntityId, Property, PropertyValue};
 pub type PropertyIndex = u16; // should really be configured on versioned_store::Trait
 
+mod constraint;
 mod mock;
+mod permissions;
 mod principles;
 mod tests;
 
+pub use constraint::*;
+pub use permissions::*;
 pub use principles::*;
 
 /// Trait that provides an abstraction for the concept of group membership and a way
@@ -58,73 +61,13 @@ impl<T: Trait> CreateClassPermissionsChecker<T> for () {
 
 /// Internal type, derived from dispatchable call, identifies the caller
 #[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
-enum DerivedPrincipal<AccountId, GroupId> {
+pub enum DerivedPrincipal<AccountId, GroupId> {
     /// ROOT origin
     System,
     /// Caller correctly identified as entity owner
     EntityOwner, // Maybe enclose EntityId?
     /// Plain signed origin, or additionally identified as beloging to specific group
     Base(BasePrincipal<AccountId, GroupId>),
-}
-
-/// Pointer to a specific property of entities of a specfic class.
-#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
-pub struct PropertyOfClass<ClassId, PropertyIndex> {
-    class_id: ClassId,
-    property_index: PropertyIndex,
-}
-
-/// The type of constraint on what entities can reference instances of a class through an Internal property type.
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub enum ReferenceConstraint<ClassId: Ord, PropertyIndex: Ord> {
-    /// No Entity can reference the class.
-    NoReferencingAllowed,
-
-    /// Any entity may reference the class.
-    NoConstraint,
-
-    /// Only a set of entities of type ClassId and from the specified property index can reference the class.
-    Restricted(BTreeSet<PropertyOfClass<ClassId, PropertyIndex>>),
-}
-
-impl<ClassId: Ord, PropertyIndex: Ord> Default for ReferenceConstraint<ClassId, PropertyIndex> {
-    fn default() -> Self {
-        ReferenceConstraint::NoReferencingAllowed
-    }
-}
-
-/// Permissions for an instance of a Class in the versioned store.
-#[derive(Encode, Decode, Default, Eq, PartialEq, Clone, Debug)]
-pub struct ClassPermissions<ClassId, AccountId, GroupId, PropertyIndex, BlockNumber>
-where
-    ClassId: Ord,
-    AccountId: Ord + Clone,
-    GroupId: Ord + Clone,
-    PropertyIndex: Ord,
-{
-    // concrete permissions
-    /// Permissions that are applied to entities of this class, defines who in addition to
-    /// root origin can update and delete entities of this class.
-    entity_permissions: EntityPermissions<AccountId, GroupId>,
-
-    /// Wether new entities of this class be created or not. Is not enforced for root origin.
-    entities_can_be_created: bool,
-
-    /// Who can add new schemas in the versioned store for this class
-    add_schemas: BasePrincipalSet<AccountId, GroupId>,
-
-    /// Who can create new entities in the versioned store of this class
-    create_entities: BasePrincipalSet<AccountId, GroupId>,
-
-    /// The type of constraint on referencing the class from other entities.
-    reference_constraint: ReferenceConstraint<ClassId, PropertyIndex>,
-
-    /// Who (in addition to root origin) can update all concrete permissions.
-    /// The admins can only be set by the root origin, "System".
-    admins: BasePrincipalSet<AccountId, GroupId>,
-
-    // Block where permissions were changed
-    last_permissions_update: BlockNumber,
 }
 
 pub type ClassPermissionsType<T> = ClassPermissions<
@@ -134,142 +77,6 @@ pub type ClassPermissionsType<T> = ClassPermissions<
     PropertyIndex,
     <T as system::Trait>::BlockNumber,
 >;
-
-impl<ClassId, AccountId, GroupId, PropertyIndex, BlockNumber>
-    ClassPermissions<ClassId, AccountId, GroupId, PropertyIndex, BlockNumber>
-where
-    ClassId: Ord,
-    AccountId: Ord + Clone,
-    GroupId: Ord + Clone,
-    PropertyIndex: Ord,
-{
-    /// Returns Ok if principal is root origin or base_principal is in admins set, Err otherwise
-    fn is_admin(
-        class_permissions: &Self,
-        derived_principal: &DerivedPrincipal<AccountId, GroupId>,
-    ) -> dispatch::Result {
-        match derived_principal {
-            DerivedPrincipal::System => Ok(()),
-            DerivedPrincipal::Base(base_principal) => {
-                if class_permissions.admins.contains(base_principal) {
-                    Ok(())
-                } else {
-                    Err("NotInAdminsSet")
-                }
-            }
-            _ => Err("DerivedPrincipal::EntityOwner-UsedOutOfPlace"),
-        }
-    }
-
-    fn can_add_schema(
-        class_permissions: &Self,
-        derived_principal: &DerivedPrincipal<AccountId, GroupId>,
-    ) -> dispatch::Result {
-        match derived_principal {
-            DerivedPrincipal::System => Ok(()),
-            DerivedPrincipal::Base(base_principal) => {
-                if class_permissions.add_schemas.contains(base_principal) {
-                    Ok(())
-                } else {
-                    Err("NotInAddSchemasSet")
-                }
-            }
-            _ => Err("DerivedPrincipal::EntityOwner-UsedOutOfPlace"),
-        }
-    }
-
-    fn can_create_entity(
-        class_permissions: &Self,
-        derived_principal: &DerivedPrincipal<AccountId, GroupId>,
-    ) -> dispatch::Result {
-        match derived_principal {
-            DerivedPrincipal::System => Ok(()),
-            DerivedPrincipal::Base(base_principal) => {
-                if !class_permissions.entities_can_be_created {
-                    Err("EntitiesCannotBeCreated")
-                } else if class_permissions.create_entities.contains(base_principal) {
-                    Ok(())
-                } else {
-                    Err("NotInCreateEntitiesSet")
-                }
-            }
-            _ => Err("DerivedPrincipal::EntityOwner-UsedOutOfPlace"),
-        }
-    }
-
-    fn can_update_entity(
-        class_permissions: &Self,
-        derived_principal: &DerivedPrincipal<AccountId, GroupId>,
-    ) -> dispatch::Result {
-        match derived_principal {
-            DerivedPrincipal::System => Ok(()),
-            DerivedPrincipal::Base(base_principal) => {
-                if class_permissions
-                    .entity_permissions
-                    .update
-                    .contains(&EntityPrincipal::Base(base_principal.clone()))
-                {
-                    Ok(())
-                } else {
-                    Err("NotInEntityPermissionsUpdateSet")
-                }
-            }
-            DerivedPrincipal::EntityOwner => {
-                if class_permissions
-                    .entity_permissions
-                    .update
-                    .contains(&EntityPrincipal::Owner)
-                {
-                    Ok(())
-                } else {
-                    Err("NotInEntityPermissionsUpdateSet")
-                }
-            }
-        }
-    }
-
-    fn can_transfer_entity_ownership(
-        class_permissions: &Self,
-        derived_principal: &DerivedPrincipal<AccountId, GroupId>,
-    ) -> dispatch::Result {
-        match derived_principal {
-            DerivedPrincipal::System => Ok(()),
-            DerivedPrincipal::Base(base_principal) => {
-                if class_permissions
-                    .entity_permissions
-                    .transfer_ownership
-                    .contains(&EntityPrincipal::Base(base_principal.clone()))
-                {
-                    Ok(())
-                } else {
-                    Err("NotInEntityPermissionsTransferOwnershipSet")
-                }
-            }
-            DerivedPrincipal::EntityOwner => {
-                if class_permissions
-                    .entity_permissions
-                    .transfer_ownership
-                    .contains(&EntityPrincipal::Owner)
-                {
-                    Ok(())
-                } else {
-                    Err("NotInEntityPermissionsTransferOwnershipSet")
-                }
-            }
-        }
-    }
-}
-
-#[derive(Encode, Decode, Clone, Debug, Default, Eq, PartialEq)]
-pub struct EntityPermissions<AccountId, GroupId>
-where
-    AccountId: Ord,
-    GroupId: Ord,
-{
-    update: EntityPrincipalSet<AccountId, GroupId>,
-    delete: EntityPrincipalSet<AccountId, GroupId>,
-    transfer_ownership: EntityPrincipalSet<AccountId, GroupId>,
-}
 
 pub trait Trait: system::Trait + versioned_store::Trait {
     // type Event: ...
