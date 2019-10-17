@@ -78,7 +78,7 @@ enum DerivedPrincipal<AccountId, GroupId> {
     /// ROOT origin
     System,
     /// Caller correctly identified as entity owner
-    EntityOwner,
+    EntityOwner, // Maybe enclose EntityId?
     /// Plain signed origin, or additionally identified as beloging to specific group
     Base(BasePrincipal<AccountId, GroupId>),
 }
@@ -113,15 +113,12 @@ where
 {
     fn from(v: Vec<BasePrincipal<AccountId, GroupId>>) -> BasePrincipalSet<AccountId, GroupId> {
         let mut set = BasePrincipalSet(BTreeSet::new());
-        for base_principal in v.into_iter() {
-            set.0.insert(base_principal);
+        for principal in v.into_iter() {
+            set.0.insert(principal);
         }
         set
     }
 }
-
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct EntityPrincipalSet<AccountId, GroupId>(BTreeSet<EntityPrincipal<AccountId, GroupId>>);
 
 /// Default Base principal set is just an empty set.
 impl<AccountId: Ord, GroupId: Ord> Default for BasePrincipalSet<AccountId, GroupId> {
@@ -130,12 +127,30 @@ impl<AccountId: Ord, GroupId: Ord> Default for BasePrincipalSet<AccountId, Group
     }
 }
 
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+pub struct EntityPrincipalSet<AccountId, GroupId>(BTreeSet<EntityPrincipal<AccountId, GroupId>>);
+
 /// Default set gives entity owner permission on the entity
 impl<AccountId: Ord, GroupId: Ord> Default for EntityPrincipalSet<AccountId, GroupId> {
     fn default() -> Self {
         let mut owner = BTreeSet::new();
         owner.insert(EntityPrincipal::Owner);
         EntityPrincipalSet(owner)
+    }
+}
+
+impl<AccountId, GroupId> From<Vec<EntityPrincipal<AccountId, GroupId>>>
+    for EntityPrincipalSet<AccountId, GroupId>
+where
+    AccountId: Ord,
+    GroupId: Ord,
+{
+    fn from(v: Vec<EntityPrincipal<AccountId, GroupId>>) -> EntityPrincipalSet<AccountId, GroupId> {
+        let mut set = EntityPrincipalSet(BTreeSet::new());
+        for principal in v.into_iter() {
+            set.0.insert(principal);
+        }
+        set
     }
 }
 
@@ -543,14 +558,8 @@ decl_module! {
                 class_id,
                 |_class_permissions, principal| {
                     let entity_id = <versioned_store::Module<T>>::create_entity(class_id)?;
-                    // let owner = match principal {
-                    //     DerivedPrincipal::System => None,
-                    //     DerivedPrincipal::Base(base_principal) => Some(*base_principal),
-                    //     _ => None
-                    // };
-                    // <EntityOwnerByEntityId<T>>::insert(entity_id, Some(owner));
 
-                    // Does mutate on non-existent value work as expected?
+                    // Note: mutating value to None is equivalient to removing the value from storage map
                     <EntityOwnerByEntityId<T>>::mutate(entity_id, |owner| {
                         match principal {
                             DerivedPrincipal::System => *owner = None,
