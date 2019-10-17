@@ -3,7 +3,7 @@
 
 use rstd::prelude::*;
 
-use codec::{Codec, Decode, Encode};
+use codec::Codec;
 use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap};
 use system;
@@ -57,17 +57,6 @@ impl<T: Trait> CreateClassPermissionsChecker<T> for () {
     fn account_can_create_class_permissions(_account: &T::AccountId) -> bool {
         false
     }
-}
-
-/// Internal type, derived from dispatchable call, identifies the caller
-#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
-pub enum DerivedPrincipal<AccountId, GroupId> {
-    /// ROOT origin
-    System,
-    /// Caller correctly identified as entity owner
-    EntityOwner, // Maybe enclose EntityId?
-    /// Plain signed origin, or additionally identified as beloging to specific group
-    Base(BasePrincipal<AccountId, GroupId>),
 }
 
 pub type ClassPermissionsType<T> = ClassPermissions<

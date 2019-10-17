@@ -104,3 +104,14 @@ impl<AccountId: Ord, GroupId: Ord> EntityPrincipalSet<AccountId, GroupId> {
         self.0.is_empty()
     }
 }
+
+/// Type, derived from dispatchable call, identifies the caller
+#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
+pub enum DerivedPrincipal<AccountId, GroupId> {
+    /// ROOT origin
+    System,
+    /// Caller correctly identified as entity owner
+    EntityOwner, // Maybe enclose EntityId?
+    /// Plain signed origin, or additionally identified as beloging to specific group
+    Base(BasePrincipal<AccountId, GroupId>),
+}
