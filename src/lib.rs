@@ -473,6 +473,7 @@ impl members::Trait for Runtime {
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
+    type ActorId = u64;
     type InitialMembersBalance = InitialMembersBalance;
 }
 

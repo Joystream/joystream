@@ -44,6 +44,16 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + MaybeSerializeDebug
         + PartialEq;
 
+    type ActorId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerializeDebug
+        + PartialEq
+        + Ord;
+
     /// Initial balance of members created at genesis
     type InitialMembersBalance: Get<BalanceOf<Self>>;
 }
@@ -101,7 +111,7 @@ pub struct Profile<T: Trait> {
     pub controller_account: T::AccountId,
 
     /// The set of registered roles the member has enrolled in.
-    pub roles: ActorInRoleSet,
+    pub roles: ActorInRoleSet<T::ActorId>,
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
@@ -193,7 +203,7 @@ decl_storage! {
         pub MaxAvatarUriLength get(max_avatar_uri_length) : u32 = DEFAULT_MAX_AVATAR_URI_LENGTH;
         pub MaxAboutTextLength get(max_about_text_length) : u32 = DEFAULT_MAX_ABOUT_TEXT_LENGTH;
 
-        pub MembershipIdByActorInRole get(membership_id_by_actor_in_role): map ActorInRole => T::MemberId;
+        pub MembershipIdByActorInRole get(membership_id_by_actor_in_role): map ActorInRole<T::ActorId> => T::MemberId;
     }
     add_extra_genesis {
         config(default_paid_membership_fee): BalanceOf<T>;
@@ -221,15 +231,16 @@ decl_storage! {
 decl_event! {
     pub enum Event<T> where
       <T as system::Trait>::AccountId,
-      <T as Trait>::MemberId, {
+      <T as Trait>::MemberId,
+      <T as Trait>::ActorId, {
         MemberRegistered(MemberId, AccountId),
         MemberUpdatedAboutText(MemberId),
         MemberUpdatedAvatar(MemberId),
         MemberUpdatedHandle(MemberId),
         MemberSetRootAccount(MemberId, AccountId),
         MemberSetControllerAccount(MemberId, AccountId),
-        MemberRegisteredRole(MemberId, ActorInRole),
-        MemberUnregisteredRole(MemberId, ActorInRole),
+        MemberRegisteredRole(MemberId, ActorInRole<ActorId>),
+        MemberUnregisteredRole(MemberId, ActorInRole<ActorId>),
     }
 }
 
@@ -534,7 +545,7 @@ impl<T: Trait> Module<T> {
     /// actor_in_role.
     pub fn key_can_sign_for_role(
         signing_account: &T::AccountId,
-        actor_in_role: ActorInRole,
+        actor_in_role: ActorInRole<T::ActorId>,
     ) -> bool {
         Self::member_ids_by_controller_account_id(signing_account)
             .iter()
@@ -560,7 +571,7 @@ impl<T: Trait> Module<T> {
     pub fn can_register_role_on_member(
         signing_account: &T::AccountId,
         member_id: T::MemberId,
-        actor_in_role: ActorInRole,
+        actor_in_role: ActorInRole<T::ActorId>,
     ) -> Result<(), &'static str> {
         let profile = Self::ensure_profile(member_id)?;
 
@@ -594,7 +605,7 @@ impl<T: Trait> Module<T> {
     pub fn register_role_on_member(
         signing_account: &T::AccountId,
         member_id: T::MemberId,
-        actor_in_role: ActorInRole,
+        actor_in_role: ActorInRole<T::ActorId>,
     ) -> Result<(), &'static str> {
         // policy check
         Self::can_register_role_on_member(signing_account, member_id, actor_in_role)?;
@@ -611,7 +622,7 @@ impl<T: Trait> Module<T> {
     pub fn can_unregister_role_on_member(
         signing_account: &T::AccountId,
         member_id: T::MemberId,
-        actor_in_role: ActorInRole,
+        actor_in_role: ActorInRole<T::ActorId>,
     ) -> Result<(), &'static str> {
         let profile = Self::ensure_profile(member_id)?;
 
@@ -634,7 +645,7 @@ impl<T: Trait> Module<T> {
     pub fn unregister_role_on_member(
         signing_account: &T::AccountId,
         member_id: T::MemberId,
-        actor_in_role: ActorInRole,
+        actor_in_role: ActorInRole<T::ActorId>,
     ) -> Result<(), &'static str> {
         Self::can_unregister_role_on_member(signing_account, member_id, actor_in_role)?;
 
