@@ -41,9 +41,9 @@ fn class_permissions_minimal() -> ClassPermissionsType<Runtime> {
     ClassPermissions {
         // remove special permissions for entity owners
         entity_permissions: EntityPermissions {
-            update: EntityPrincipalSet(BTreeSet::new()),
-            delete: EntityPrincipalSet(BTreeSet::new()),
-            transfer_ownership: EntityPrincipalSet(BTreeSet::new()),
+            update: EntityPrincipalSet::new(),
+            delete: EntityPrincipalSet::new(),
+            transfer_ownership: EntityPrincipalSet::new(),
         },
         ..Default::default()
     }
@@ -192,7 +192,7 @@ fn class_permissions_set_admins() {
         let class_id = create_simple_class(class_permissions_minimal());
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
 
-        assert!(class_permissions.admins.0.is_empty());
+        assert!(class_permissions.admins.is_empty());
 
         let base_principal_set = BasePrincipalSet::from(vec![BasePrincipal::Account(1)]);
 
@@ -232,7 +232,7 @@ fn class_permissions_set_add_schemas_set() {
         ]));
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
 
-        assert!(class_permissions.add_schemas.0.is_empty());
+        assert!(class_permissions.add_schemas.is_empty());
 
         let base_principal_set1 =
             BasePrincipalSet::from(vec![BasePrincipal::Account(1), BasePrincipal::Account(2)]);
@@ -282,7 +282,7 @@ fn class_permissions_set_class_create_entities_set() {
         ]));
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
 
-        assert!(class_permissions.create_entities.0.is_empty());
+        assert!(class_permissions.create_entities.is_empty());
 
         let base_principal_set1 =
             BasePrincipalSet::from(vec![BasePrincipal::Account(1), BasePrincipal::Account(2)]);
@@ -377,12 +377,11 @@ fn class_permissions_set_class_entity_permissions() {
         ]));
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
 
-        assert!(class_permissions.entity_permissions.update.0.is_empty());
-        assert!(class_permissions.entity_permissions.delete.0.is_empty());
+        assert!(class_permissions.entity_permissions.update.is_empty());
+        assert!(class_permissions.entity_permissions.delete.is_empty());
         assert!(class_permissions
             .entity_permissions
             .transfer_ownership
-            .0
             .is_empty());
 
         let entity_permissions1 = EntityPermissions {

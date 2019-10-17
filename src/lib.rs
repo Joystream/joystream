@@ -14,22 +14,19 @@ pub use versioned_store::{ClassId, ClassPropertyValue, EntityId, Property, Prope
 pub type PropertyIndex = u16; // should really be configured on versioned_store::Trait
 
 mod mock;
+mod principles;
 mod tests;
 
-#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
-pub struct PropertyOfClass<ClassId, PropertyIndex> {
-    class_id: ClassId,
-    property_index: PropertyIndex,
-}
+pub use principles::*;
 
 /// Trait that provides an abstraction for the concept of group membership and a way
-/// to check the inclusion of an account id in a specific group. Groups are identified by the
-/// type GroupId.
+/// to check the inclusion of an account id in a specific group.
 pub trait GroupMembershipChecker<T: Trait> {
     fn account_is_in_group(account: &T::AccountId, group: T::GroupId) -> bool;
 }
 
-/// An implementation that disables group membership feature.
+/// An implementation where groups are effectively disabled. No account will ever
+/// be reported to be a member of any group.
 impl<T: Trait> GroupMembershipChecker<T> for () {
     fn account_is_in_group(_account: &T::AccountId, _group: T::GroupId) -> bool {
         false
@@ -37,7 +34,7 @@ impl<T: Trait> GroupMembershipChecker<T> for () {
 }
 
 /// An implementation that calls into multiple checkers. This allows for multiple modules
-/// to support group membership concept.
+/// to maintain different group membership information.
 impl<T: Trait, X: GroupMembershipChecker<T>, Y: GroupMembershipChecker<T>> GroupMembershipChecker<T>
     for (X, Y)
 {
@@ -51,25 +48,12 @@ pub trait CreateClassPermissionsChecker<T: Trait> {
     fn account_can_create_class_permissions(account: &T::AccountId) -> bool;
 }
 
-/// An implementation that only permits system to create classes.
+/// An implementation that does not permit any account to create classes. Effectively leaving
+/// only permission for the system.
 impl<T: Trait> CreateClassPermissionsChecker<T> for () {
     fn account_can_create_class_permissions(_account: &T::AccountId) -> bool {
         false
     }
-}
-
-/// Identifies a princial to whom a permission can be assigned on Classes.
-#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
-pub enum BasePrincipal<AccountId, GroupId> {
-    Account(AccountId),
-    GroupMember(GroupId),
-}
-
-/// Identifies a principal to whom a permission can be assigned on Entities.
-#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
-pub enum EntityPrincipal<AccountId, GroupId> {
-    Base(BasePrincipal<AccountId, GroupId>),
-    Owner,
 }
 
 /// Internal type, derived from dispatchable call, identifies the caller
@@ -81,6 +65,13 @@ enum DerivedPrincipal<AccountId, GroupId> {
     EntityOwner, // Maybe enclose EntityId?
     /// Plain signed origin, or additionally identified as beloging to specific group
     Base(BasePrincipal<AccountId, GroupId>),
+}
+
+/// Pointer to a specific property of entities of a specfic class.
+#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
+pub struct PropertyOfClass<ClassId, PropertyIndex> {
+    class_id: ClassId,
+    property_index: PropertyIndex,
 }
 
 /// The type of constraint on what entities can reference instances of a class through an Internal property type.
@@ -99,58 +90,6 @@ pub enum ReferenceConstraint<ClassId: Ord, PropertyIndex: Ord> {
 impl<ClassId: Ord, PropertyIndex: Ord> Default for ReferenceConstraint<ClassId, PropertyIndex> {
     fn default() -> Self {
         ReferenceConstraint::NoReferencingAllowed
-    }
-}
-
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct BasePrincipalSet<AccountId, GroupId>(BTreeSet<BasePrincipal<AccountId, GroupId>>);
-
-impl<AccountId, GroupId> From<Vec<BasePrincipal<AccountId, GroupId>>>
-    for BasePrincipalSet<AccountId, GroupId>
-where
-    AccountId: Ord,
-    GroupId: Ord,
-{
-    fn from(v: Vec<BasePrincipal<AccountId, GroupId>>) -> BasePrincipalSet<AccountId, GroupId> {
-        let mut set = BasePrincipalSet(BTreeSet::new());
-        for principal in v.into_iter() {
-            set.0.insert(principal);
-        }
-        set
-    }
-}
-
-/// Default Base principal set is just an empty set.
-impl<AccountId: Ord, GroupId: Ord> Default for BasePrincipalSet<AccountId, GroupId> {
-    fn default() -> Self {
-        BasePrincipalSet(BTreeSet::new())
-    }
-}
-
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct EntityPrincipalSet<AccountId, GroupId>(BTreeSet<EntityPrincipal<AccountId, GroupId>>);
-
-/// Default set gives entity owner permission on the entity
-impl<AccountId: Ord, GroupId: Ord> Default for EntityPrincipalSet<AccountId, GroupId> {
-    fn default() -> Self {
-        let mut owner = BTreeSet::new();
-        owner.insert(EntityPrincipal::Owner);
-        EntityPrincipalSet(owner)
-    }
-}
-
-impl<AccountId, GroupId> From<Vec<EntityPrincipal<AccountId, GroupId>>>
-    for EntityPrincipalSet<AccountId, GroupId>
-where
-    AccountId: Ord,
-    GroupId: Ord,
-{
-    fn from(v: Vec<EntityPrincipal<AccountId, GroupId>>) -> EntityPrincipalSet<AccountId, GroupId> {
-        let mut set = EntityPrincipalSet(BTreeSet::new());
-        for principal in v.into_iter() {
-            set.0.insert(principal);
-        }
-        set
     }
 }
 
@@ -212,7 +151,7 @@ where
         match derived_principal {
             DerivedPrincipal::System => Ok(()),
             DerivedPrincipal::Base(base_principal) => {
-                if class_permissions.admins.0.contains(base_principal) {
+                if class_permissions.admins.contains(base_principal) {
                     Ok(())
                 } else {
                     Err("NotInAdminsSet")
@@ -229,7 +168,7 @@ where
         match derived_principal {
             DerivedPrincipal::System => Ok(()),
             DerivedPrincipal::Base(base_principal) => {
-                if class_permissions.add_schemas.0.contains(base_principal) {
+                if class_permissions.add_schemas.contains(base_principal) {
                     Ok(())
                 } else {
                     Err("NotInAddSchemasSet")
@@ -248,7 +187,7 @@ where
             DerivedPrincipal::Base(base_principal) => {
                 if !class_permissions.entities_can_be_created {
                     Err("EntitiesCannotBeCreated")
-                } else if class_permissions.create_entities.0.contains(base_principal) {
+                } else if class_permissions.create_entities.contains(base_principal) {
                     Ok(())
                 } else {
                     Err("NotInCreateEntitiesSet")
@@ -268,7 +207,6 @@ where
                 if class_permissions
                     .entity_permissions
                     .update
-                    .0
                     .contains(&EntityPrincipal::Base(base_principal.clone()))
                 {
                     Ok(())
@@ -280,7 +218,6 @@ where
                 if class_permissions
                     .entity_permissions
                     .update
-                    .0
                     .contains(&EntityPrincipal::Owner)
                 {
                     Ok(())
@@ -301,7 +238,6 @@ where
                 if class_permissions
                     .entity_permissions
                     .transfer_ownership
-                    .0
                     .contains(&EntityPrincipal::Base(base_principal.clone()))
                 {
                     Ok(())
@@ -313,7 +249,6 @@ where
                 if class_permissions
                     .entity_permissions
                     .transfer_ownership
-                    .0
                     .contains(&EntityPrincipal::Owner)
                 {
                     Ok(())
@@ -482,6 +417,39 @@ decl_module! {
             )
         }
 
+        pub fn set_entity_owner(
+            origin,
+            claimed_group_id: Option<T::GroupId>,
+            as_entity_owner: bool,
+            entity_id: EntityId,
+            new_owner: Option<BasePrincipal<T::AccountId, T::GroupId>>
+        ) -> dispatch::Result {
+            let class_id = Self::get_class_id_by_entity_id(&entity_id)?;
+            let as_entity_owner = if as_entity_owner {
+                Some(entity_id)
+            } else {
+                None
+            };
+            Self::if_class_permissions_satisfied(
+                origin,
+                claimed_group_id,
+                as_entity_owner,
+                ClassPermissions::can_transfer_entity_ownership,
+                class_id,
+                |_class_permissions, _principal| {
+                    if let Some(base_principal) = new_owner {
+                        <EntityOwnerByEntityId<T>>::mutate(entity_id, |owner| {
+                            *owner = Some(base_principal.clone());
+                        });
+                    } else {
+                        // transfer ownership to System
+                        <EntityOwnerByEntityId<T>>::remove(entity_id);
+                    }
+                    Ok(())
+                }
+            )
+        }
+
         // Permissioned proxy calls to versioned store
 
         pub fn create_class(
@@ -631,39 +599,6 @@ decl_module! {
                 }
             )
         }
-
-        pub fn set_entity_owner(
-            origin,
-            claimed_group_id: Option<T::GroupId>,
-            as_entity_owner: bool,
-            entity_id: EntityId,
-            new_owner: Option<BasePrincipal<T::AccountId, T::GroupId>>
-        ) -> dispatch::Result {
-            let class_id = Self::get_class_id_by_entity_id(&entity_id)?;
-            let as_entity_owner = if as_entity_owner {
-                Some(entity_id)
-            } else {
-                None
-            };
-            Self::if_class_permissions_satisfied(
-                origin,
-                claimed_group_id,
-                as_entity_owner,
-                ClassPermissions::can_transfer_entity_ownership,
-                class_id,
-                |_class_permissions, _principal| {
-                    if let Some(base_principal) = new_owner {
-                        <EntityOwnerByEntityId<T>>::mutate(entity_id, |owner| {
-                            *owner = Some(base_principal.clone());
-                        });
-                    } else {
-                        // transfer ownership to System
-                        <EntityOwnerByEntityId<T>>::remove(entity_id);
-                    }
-                    Ok(())
-                }
-            )
-        }
     }
 }
 
@@ -681,11 +616,12 @@ impl<T: Trait> Module<T> {
                 if let Some(group_id) = claimed_group_id {
                     if T::GroupMembershipChecker::account_is_in_group(&account_id, group_id) {
                         if let Some(entity_id) = as_entity_owner {
-                            // ensure entity owner is GroupMember
+                            // is entity owned by system
                             ensure!(
                                 <EntityOwnerByEntityId<T>>::exists(entity_id),
-                                "InvalidEntityId"
+                                "NotEnityOwner"
                             );
+                            // ensure entity owner is GroupMember
                             match Self::entity_owner_by_entity_id(entity_id) {
                                 Some(BasePrincipal::GroupMember(owner_group_id))
                                     if group_id == owner_group_id =>
@@ -702,11 +638,12 @@ impl<T: Trait> Module<T> {
                     }
                 } else {
                     if let Some(entity_id) = as_entity_owner {
-                        // ensure entity owner is Account
+                        // is entity owned by system?
                         ensure!(
                             <EntityOwnerByEntityId<T>>::exists(entity_id),
-                            "InvalidEntityId"
+                            "NotEnityOwner"
                         );
+                        // ensure entity owner is Account
                         match Self::entity_owner_by_entity_id(entity_id) {
                             Some(BasePrincipal::Account(ref owner_account_id))
                                 if account_id == *owner_account_id =>
