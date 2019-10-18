@@ -3,12 +3,12 @@ Agenda for London
 
 Table of Contents
 -----
-<!-- TOC START min:1 max:3 link:true asterisk:false update:true -->
+<!-- TOC START min:1 max:2 link:true asterisk:false update:true -->
 - [Arrivals and Departures](#arrivals-and-departures)
-  - [## Sunday 20.10](#-sunday-2010)
-    - [Agenda](#agenda)
+  - [General Notes](#general-notes)
+- [Daily Agenda](#daily-agenda)
+  - [Sunday 20.10](#sunday-2010)
   - [Monday 21.10](#monday-2110)
-    - [Agenda](#agenda-1)
   - [Tuesday 22.10](#tuesday-2210)
   - [Wednesday 23.10](#wednesday-2310)
   - [Thursday 24.10](#thursday-2410)
@@ -20,7 +20,6 @@ Table of Contents
 # Arrivals and Departures
 
 At Location estimates (sorted by arrival time)
-
 | Name       |  Date-Time  |  Date-Time  |
 |------------|-------------|-------------|
 |**Ben**     |20.10-1500   |26.10-1330   |
@@ -39,6 +38,8 @@ At Location estimates (sorted by arrival time)
 - The **end** times of each are more flexible. If we finalize earlier -> "Autonomous work"
 - If *member* has an errand, or something they want to in a block denoted "Autonomous work", feel free to ask.
 - The blocks which includes "fun" is your own time. After **2100**, there is no pressure to work.
+
+# Daily Agenda
 
 ## Sunday 20.10
 
@@ -187,7 +188,7 @@ At Location estimates (sorted by arrival time)
   - Summary of weekly achievements
     - Count and evaluate quantity and quality of checked off boxes vs. goals set on Monday
     - Revisit the [Rome Live Milestones](https://github.com/Joystream/joystream/issues/103), and revise
-  - Discussions regarding the value of such an "accelerator" trip, vs. working as usual will be done the following weeks [all-hands meeting](/README.md#tuesday-all-hands). We can do a brief round, time permitting.
+  - Discussions regarding the value of such a sprint, vs. working as usual will be done the following weeks [all-hands meeting](/README.md#tuesday-all-hands). We can do a brief round, time permitting.
 - **1600-1830**
   - Autonomous work
 - **1830-2000**

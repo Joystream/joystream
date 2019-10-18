@@ -3,7 +3,7 @@ Table of contents
 
 <!-- TOC START min:1 max:3 link:true asterisk:false update:true -->
 - [Planned Meetings](#planned-meetings)
-  - [Accelerator in London](#accelerator-in-london)
+  - [Sprint in London](#sprint-in-london)
     - [Agenda](#agenda)
     - [Minutes](#minutes)
   - [Release Checklist Meeting](#release-checklist-meeting)
@@ -26,9 +26,9 @@ Table of contents
 
 # Planned Meetings
 
-## Accelerator in London
+## Sprint in London
 
-- **ID:** `Rome Accelerator in London`
+- **ID:** `Rome Sprint in London`
 - **Date:** `21.10.19-25.10.19`
 - **Venue:** `London`
 - **Lead**: `NA`
