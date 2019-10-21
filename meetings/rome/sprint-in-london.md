@@ -20,17 +20,17 @@ Table of Contents
 # Arrivals and Departures
 
 At Location estimates (sorted by arrival time)
+
 | Name       |  Date-Time  |  Date-Time  |
 |------------|-------------|-------------|
 |**Ben**     |20.10-1500   |26.10-1330   |
-|**Mokhtar** |20.10-1500`*`|26.10-1330`*`|
-|**Martin**  |20.10-1545`*`|26.10-1330   |
+|**Mokhtar** |    `*`      |    `*`      |
+|**Martin**  |20.10-1545   |26.10-1330   |
 |**Paul**    |21.10-1000   |25.10-1700   |
 |**Bedeho**  |21.10-1000   |26.10-0730   |
 |**Alex**    |21.10-1200   |26.10-1330   |
 
-- `*` *Mokhtar* is having logistics issues, and may not make it
-- `*` *Martin* may still book an earlier flight
+- `*` *Mokhtar* is having logistics issues, and will not make it
 
 ## General Notes
 - **All times in London Time (UTC/GMT+0100)**
@@ -46,7 +46,6 @@ At Location estimates (sorted by arrival time)
 - **Present:**
   - `Ben`
   - `Martin ~1545`
-  - `Mokthar ???`
 
 ### Agenda
 - **1500**
