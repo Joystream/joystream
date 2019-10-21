@@ -3,25 +3,51 @@ Table of contents
 
 <!-- TOC START min:1 max:3 link:true asterisk:false update:true -->
 - [Planned Meetings](#planned-meetings)
-  - [Release Checklist Meeting](#release-checklist-meeting)
+  - [Sprint in London](#sprint-in-london)
     - [Agenda](#agenda)
     - [Minutes](#minutes)
-  - [Lessons Learned](#lessons-learned)
+  - [Release Checklist Meeting](#release-checklist-meeting)
     - [Agenda](#agenda-1)
     - [Minutes](#minutes-1)
-- [Conducted Meetings](#conducted-meetings)
-  - [Launch Meeting](#launch-meeting)
+  - [Lessons Learned](#lessons-learned)
     - [Agenda](#agenda-2)
     - [Minutes](#minutes-2)
-  - [User Stories Meeting](#user-stories-meeting)
+- [Conducted Meetings](#conducted-meetings)
+  - [Launch Meeting](#launch-meeting)
     - [Agenda](#agenda-3)
     - [Minutes](#minutes-3)
-  - [Release Plan Finalization Meeting](#release-plan-finalization-meeting)
+  - [User Stories Meeting](#user-stories-meeting)
     - [Agenda](#agenda-4)
     - [Minutes](#minutes-4)
+  - [Release Plan Finalization Meeting](#release-plan-finalization-meeting)
+    - [Agenda](#agenda-5)
+    - [Minutes](#minutes-5)
 <!-- TOC END -->
 
 # Planned Meetings
+
+## Sprint in London
+
+- **ID:** `Rome Sprint in London`
+- **Date:** `21.10.19-25.10.19`
+- **Venue:** `London`
+- **Lead**: `NA`
+- **Minutes**: `NA`
+- **Participants**:
+  - `Alex`
+  - `Bedeho`
+  - `Ben`
+  - `Martin`
+  - `Mokthar??`
+  - `Paul`  
+
+### Agenda
+The overall agenda is for the Jsgenesis team to get together under roof, and focus on getting `Rome` shipped.
+
+See separate [document](accelerator-in-london.md) for specifics.
+
+### Minutes
+
 
 ## Release Checklist Meeting
 
