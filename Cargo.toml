@@ -38,33 +38,36 @@ std = [
     'safe-mix/std',
     'offchain-primitives/std',
     'substrate-session/std',
+    'transaction-payment/std',
+    'node-primitives/std',
+    'randomness-collective-flip/std',
+    'system-rpc-runtime-api/std',
     'forum/std',
-    'node-primitives/std'
 ]
 
 [dependencies.babe]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-babe'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.babe-primitives]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-consensus-babe-primitives'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.balances]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-balances'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.substrate-client]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-client'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.codec]
 default-features = false
@@ -76,43 +79,43 @@ version = '1.0.0'
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-executive'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.grandpa]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-grandpa'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.indices]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-indices'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.offchain-primitives]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-offchain-primitives'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-primitives'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.rstd]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-std'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.runtime-io]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.safe-mix]
 default-features = false
@@ -121,108 +124,132 @@ version = '1.0'
 [dependencies.serde]
 features = ['derive']
 optional = true
-version = '1.0'
+version = '1.0.101'
 
 [dependencies.runtime-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-primitives'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.substrate-session]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.sudo]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-sudo'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.srml-support]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-support'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.system]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-system'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.timestamp]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-timestamp'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.version]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-version'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.authority-discovery-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-authority-discovery-primitives'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.authority-discovery]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-authority-discovery'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.authorship]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-authorship'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.finality-tracker]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-finality-tracker'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.im-online]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-im-online'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.session]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-session'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.offences]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-offences'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.sr-staking-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-staking-primitives'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.staking]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-staking'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
 
 [dependencies.node-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'node-primitives'
-rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
+rev = 'polkadot-master'
+
+[dependencies.transaction-payment]
+package = "srml-transaction-payment"
+git = 'https://github.com/paritytech/substrate.git'
+default_features = false
+rev = 'polkadot-master'
+
+[dependencies.randomness-collective-flip]
+package = "srml-randomness-collective-flip"
+git = 'https://github.com/paritytech/substrate.git'
+default_features = false
+rev = 'polkadot-master'
+
+[dependencies.system-rpc-runtime-api]
+package = "srml-system-rpc-runtime-api"
+git = 'https://github.com/paritytech/substrate.git'
+default_features = false
+rev = 'polkadot-master'
+
+[dependencies.staking-reward-curve]
+package = 'srml-staking-reward-curve'
+git = 'https://github.com/paritytech/substrate.git'
+default_features = false
+rev = 'polkadot-master'
 
 [build-dependencies.wasm-builder-runner]
 package = 'substrate-wasm-builder-runner'
@@ -232,6 +259,6 @@ version = '1.0.2'
 default_features = false
 git = 'https://github.com/mnaamani/substrate-forum-module'
 package = 'substrate-forum-module'
-branch = 'substrate-v2'
+branch = 'use-polkadot-master-substrate-version'
 # Before releasing Rome - finalize and tag release new forum and update this
 # tag = 'v1.0.0'

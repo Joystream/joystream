@@ -4,7 +4,6 @@ pub use super::{data_directory, data_object_storage_registry, data_object_type_r
 pub use crate::currency::GovernanceCurrency;
 use crate::roles::actors;
 use crate::traits;
-use runtime_io::with_externalities;
 pub use system;
 
 pub use primitives::{Blake2Hasher, H256};
@@ -134,7 +133,6 @@ impl system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type WeightMultiplierUpdate = ();
     type Event = MetaEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
@@ -167,15 +165,11 @@ impl balances::Trait for Test {
     /// The ubiquitous event type.
     type Event = MetaEvent;
 
-    type TransactionPayment = ();
     type DustRemoval = ();
     type TransferPayment = ();
     type ExistentialDeposit = ExistentialDeposit;
     type TransferFee = TransferFee;
     type CreationFee = CreationFee;
-    type TransactionBaseFee = TransactionBaseFee;
-    type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = ();
 }
 
 impl GovernanceCurrency for Test {
@@ -249,7 +243,7 @@ impl ExtBuilder {
         self.first_metadata_id = first_metadata_id;
         self
     }
-    pub fn build(self) -> runtime_io::TestExternalities<Blake2Hasher> {
+    pub fn build(self) -> runtime_io::TestExternalities {
         let mut t = system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
@@ -279,14 +273,13 @@ pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Te
 pub type TestActors = actors::Module<Test>;
 
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
-    with_externalities(
-        &mut ExtBuilder::default()
-            .first_data_object_type_id(TEST_FIRST_DATA_OBJECT_TYPE_ID)
-            .first_content_id(TEST_FIRST_CONTENT_ID)
-            .first_relationship_id(TEST_FIRST_RELATIONSHIP_ID)
-            .first_metadata_id(TEST_FIRST_METADATA_ID)
-            .build(),
-        || {
+    ExtBuilder::default()
+        .first_data_object_type_id(TEST_FIRST_DATA_OBJECT_TYPE_ID)
+        .first_content_id(TEST_FIRST_CONTENT_ID)
+        .first_relationship_id(TEST_FIRST_RELATIONSHIP_ID)
+        .first_metadata_id(TEST_FIRST_METADATA_ID)
+        .build()
+        .execute_with(|| {
             let roles: Vec<actors::Role> = vec![actors::Role::Storage];
             assert!(
                 TestActors::set_available_roles(system::RawOrigin::Root.into(), roles).is_ok(),
@@ -294,6 +287,5 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
             );
 
             f()
-        },
-    )
+        })
 }

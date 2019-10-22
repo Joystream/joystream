@@ -2,7 +2,6 @@
 
 use super::mock::*;
 
-use runtime_io::with_externalities;
 use srml_support::*;
 
 fn init_storage_role() {
@@ -41,7 +40,7 @@ fn init_storage_parmeters() -> actors::RoleParameters<Test> {
 
 #[test]
 fn adding_roles() {
-    with_externalities(&mut initial_test_ext(), || {
+    initial_test_ext().execute_with(|| {
         init_storage_role();
         assert_eq!(Actors::available_roles(), vec![actors::Role::Storage]);
     });
@@ -49,7 +48,7 @@ fn adding_roles() {
 
 #[test]
 fn adding_role_parameters() {
-    with_externalities(&mut initial_test_ext(), || {
+    initial_test_ext().execute_with(|| {
         init_storage_role();
         let params = init_storage_parmeters();
         assert_eq!(Actors::parameters(actors::Role::Storage), Some(params));
@@ -58,7 +57,7 @@ fn adding_role_parameters() {
 
 #[test]
 fn make_entry_request() {
-    with_externalities(&mut initial_test_ext(), || {
+    initial_test_ext().execute_with(|| {
         init_storage_role();
         let storage_params = init_storage_parmeters();
 
@@ -114,7 +113,7 @@ fn make_entry_request() {
 
 #[test]
 fn staking() {
-    with_externalities(&mut initial_test_ext(), || {
+    initial_test_ext().execute_with(|| {
         init_storage_role();
         let storage_params = init_storage_parmeters();
         let actor_account = 5;
@@ -156,7 +155,7 @@ fn staking() {
 
 #[test]
 fn unstaking() {
-    with_externalities(&mut initial_test_ext(), || {
+    initial_test_ext().execute_with(|| {
         init_storage_role();
         let storage_params = init_storage_parmeters();
         let actor_account = 5;

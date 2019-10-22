@@ -1,7 +1,6 @@
 use crate::currency::{BalanceOf, GovernanceCurrency};
 use codec::{Decode, Encode};
 use rstd::prelude::*;
-use runtime_io::print;
 use runtime_primitives::traits::{Bounded, MaybeDebug, Zero};
 use srml_support::traits::{
     Currency, LockIdentifier, LockableCurrency, WithdrawReason, WithdrawReasons,
@@ -256,7 +255,7 @@ impl<T: Trait> Module<T> {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         fn on_initialize(now: T::BlockNumber) {
             // clear expired requests
@@ -420,7 +419,6 @@ decl_module! {
             let actor = Self::actor_by_account_id(&actor_account).unwrap();
             let role_parameters = Self::ensure_role_parameters(actor.role)?;
             Self::apply_unstake(actor_account, actor.role, actor.member_id, role_parameters.unbonding_period, role_parameters.min_stake);
-            print("sudo removed actor");
         }
     }
 }

@@ -95,7 +95,7 @@ decl_event! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         // Origin starts a download from distributor. It's the origin's responsibility to
         // start this, and hand the session ID to the distributor as proof they did.

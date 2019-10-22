@@ -1,7 +1,9 @@
 use codec::{Decode, Encode};
 use rstd::prelude::*;
-use runtime_io::print;
-use runtime_primitives::traits::{Hash, SaturatedConversion, Zero};
+use runtime_primitives::{
+    print,
+    traits::{Hash, SaturatedConversion, Zero},
+};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use srml_support::traits::{Currency, Get, ReservableCurrency};
@@ -217,7 +219,7 @@ decl_storage! {
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         /// Use next code to create a proposal from Substrate UI's web console:
         /// ```js
@@ -556,7 +558,6 @@ mod tests {
 
     use super::*;
     use primitives::{Blake2Hasher, H256};
-    use runtime_io::with_externalities;
     // The testing primitives are very useful for avoiding having to work with signatures
     // or public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
     use runtime_primitives::{
@@ -592,7 +593,6 @@ mod tests {
         type AccountId = u64;
         type Lookup = IdentityLookup<Self::AccountId>;
         type Header = Header;
-        type WeightMultiplierUpdate = ();
         type Event = ();
         type BlockHashCount = BlockHashCount;
         type MaximumBlockWeight = MaximumBlockWeight;
@@ -625,15 +625,11 @@ mod tests {
         /// The ubiquitous event type.
         type Event = ();
 
-        type TransactionPayment = ();
         type DustRemoval = ();
         type TransferPayment = ();
         type ExistentialDeposit = ExistentialDeposit;
         type TransferFee = TransferFee;
         type CreationFee = CreationFee;
-        type TransactionBaseFee = TransactionBaseFee;
-        type TransactionByteFee = TransactionByteFee;
-        type WeightToFee = ();
     }
 
     impl council::Trait for Test {
@@ -696,7 +692,7 @@ mod tests {
 
     // This function basically just builds a genesis storage key/value store according to
     // our desired mockup.
-    fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
+    fn new_test_ext() -> runtime_io::TestExternalities {
         let mut t = system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
@@ -799,7 +795,7 @@ mod tests {
 
     #[test]
     fn check_default_values() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             assert_eq!(Proposals::approval_quorum(), DEFAULT_APPROVAL_QUORUM);
             assert_eq!(
                 Proposals::min_stake(),
@@ -826,7 +822,7 @@ mod tests {
 
     #[test]
     fn member_create_proposal() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -859,7 +855,7 @@ mod tests {
 
     #[test]
     fn not_member_cannot_create_proposal() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             // In this test a proposer has an empty balance
             // thus he is not considered as a member.
             assert_eq!(
@@ -871,7 +867,7 @@ mod tests {
 
     #[test]
     fn cannot_create_proposal_with_small_stake() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_eq!(
@@ -887,7 +883,7 @@ mod tests {
 
     #[test]
     fn cannot_create_proposal_when_stake_is_greater_than_balance() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_eq!(
@@ -903,7 +899,7 @@ mod tests {
 
     #[test]
     fn cannot_create_proposal_with_empty_values() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             // Empty name:
@@ -928,7 +924,7 @@ mod tests {
 
     #[test]
     fn cannot_create_proposal_with_too_long_values() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             // Too long name:
@@ -968,7 +964,7 @@ mod tests {
 
     #[test]
     fn owner_cancel_proposal() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -989,7 +985,7 @@ mod tests {
 
     #[test]
     fn owner_cannot_cancel_proposal_if_its_finalized() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -1016,7 +1012,7 @@ mod tests {
 
     #[test]
     fn not_owner_cannot_cancel_proposal() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
             let _ = Balances::deposit_creating(&PROPOSER2, initial_balance());
             assert_ok!(_create_default_proposal());
@@ -1032,7 +1028,7 @@ mod tests {
 
     #[test]
     fn councilor_vote_on_proposal() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -1056,7 +1052,7 @@ mod tests {
 
     #[test]
     fn councilor_cannot_vote_on_proposal_twice() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -1075,7 +1071,7 @@ mod tests {
 
     #[test]
     fn autovote_with_approve_when_councilor_creates_proposal() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&COUNCILOR1, initial_balance());
 
             assert_ok!(_create_proposal(Some(COUNCILOR1), None, None, None, None));
@@ -1092,7 +1088,7 @@ mod tests {
 
     #[test]
     fn not_councilor_cannot_vote_on_proposal() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -1105,7 +1101,7 @@ mod tests {
 
     #[test]
     fn councilor_cannot_vote_on_proposal_if_it_has_been_cancelled() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -1119,7 +1115,7 @@ mod tests {
 
     #[test]
     fn councilor_cannot_vote_on_proposal_if_tally_has_been_finalized() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -1159,7 +1155,7 @@ mod tests {
 
     #[test]
     fn approve_proposal_when_all_councilors_approved_it() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -1213,7 +1209,7 @@ mod tests {
 
     #[test]
     fn approve_proposal_when_all_councilors_voted_and_only_quorum_approved() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -1269,7 +1265,7 @@ mod tests {
 
     #[test]
     fn approve_proposal_when_voting_period_expired_if_only_quorum_voted() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -1331,7 +1327,7 @@ mod tests {
 
     #[test]
     fn reject_proposal_when_all_councilors_voted_and_quorum_not_reached() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -1390,7 +1386,7 @@ mod tests {
 
     #[test]
     fn reject_proposal_when_all_councilors_rejected_it() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -1447,7 +1443,7 @@ mod tests {
 
     #[test]
     fn slash_proposal_when_all_councilors_slashed_it() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());
@@ -1513,7 +1509,7 @@ mod tests {
     // and it will be processed in the same way as if it has been rejected.
     #[test]
     fn expire_proposal_when_not_all_councilors_voted_and_quorum_not_reached() {
-        with_externalities(&mut new_test_ext(), || {
+        new_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&PROPOSER1, initial_balance());
 
             assert_ok!(_create_default_proposal());

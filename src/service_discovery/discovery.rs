@@ -78,7 +78,7 @@ impl<T: Trait> Module<T> {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         pub fn set_ipns_id(origin, id: Vec<u8>, lifetime: Option<T::BlockNumber>) {
             let sender = ensure_signed(origin)?;

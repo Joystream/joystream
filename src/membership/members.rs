@@ -217,7 +217,7 @@ impl<T: Trait> Members<T> for Module<T> {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         /// Non-members can buy membership
         pub fn buy_membership(origin, paid_terms_id: T::PaidTermId, user_info: UserInfo) {

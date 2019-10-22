@@ -126,7 +126,7 @@ impl<T: Trait> ContentHasStorage<T> for Module<T> {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         pub fn add_relationship(origin, cid: T::ContentId) {
             // Origin has to be a storage provider

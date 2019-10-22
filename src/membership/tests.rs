@@ -2,7 +2,6 @@
 
 use super::mock::*;
 
-use runtime_io::with_externalities;
 use srml_support::*;
 
 fn assert_ok_unwrap<T>(value: Option<T>, err: &'static str) -> T {
@@ -59,12 +58,11 @@ fn initial_state() {
     const DEFAULT_FEE: u64 = 500;
     const DEFAULT_FIRST_ID: u32 = 1000;
 
-    with_externalities(
-        &mut ExtBuilder::default()
-            .default_paid_membership_fee(DEFAULT_FEE)
-            .first_member_id(DEFAULT_FIRST_ID)
-            .build(),
-        || {
+    ExtBuilder::default()
+        .default_paid_membership_fee(DEFAULT_FEE)
+        .first_member_id(DEFAULT_FIRST_ID)
+        .build()
+        .execute_with(|| {
             assert_eq!(Members::first_member_id(), DEFAULT_FIRST_ID);
             assert_eq!(Members::next_member_id(), DEFAULT_FIRST_ID);
 
@@ -75,8 +73,7 @@ fn initial_state() {
 
             assert_eq!(default_terms.id, DEFAULT_TERMS_ID);
             assert_eq!(default_terms.fee, DEFAULT_FEE);
-        },
-    );
+        });
 }
 
 #[test]
@@ -85,12 +82,11 @@ fn buy_membership() {
     const DEFAULT_FIRST_ID: u32 = 1000;
     const SURPLUS_BALANCE: u64 = 500;
 
-    with_externalities(
-        &mut ExtBuilder::default()
-            .default_paid_membership_fee(DEFAULT_FEE)
-            .first_member_id(DEFAULT_FIRST_ID)
-            .build(),
-        || {
+    ExtBuilder::default()
+        .default_paid_membership_fee(DEFAULT_FEE)
+        .first_member_id(DEFAULT_FIRST_ID)
+        .build()
+        .execute_with(|| {
             let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
@@ -111,44 +107,39 @@ fn buy_membership() {
             assert_eq!(Some(profile.about), get_alice_info().about);
 
             assert_eq!(Balances::free_balance(&ALICE_ACCOUNT_ID), SURPLUS_BALANCE);
-        },
-    );
+        });
 }
 
 #[test]
 fn buy_membership_fails_without_enough_balance() {
     const DEFAULT_FEE: u64 = 500;
 
-    with_externalities(
-        &mut ExtBuilder::default()
-            .default_paid_membership_fee(DEFAULT_FEE)
-            .build(),
-        || {
+    ExtBuilder::default()
+        .default_paid_membership_fee(DEFAULT_FEE)
+        .build()
+        .execute_with(|| {
             let initial_balance = DEFAULT_FEE - 1;
             set_alice_free_balance(initial_balance);
 
             assert!(buy_default_membership_as_alice().is_err());
-        },
-    );
+        });
 }
 
 #[test]
 fn new_memberships_allowed_flag() {
     const DEFAULT_FEE: u64 = 500;
 
-    with_externalities(
-        &mut ExtBuilder::default()
-            .default_paid_membership_fee(DEFAULT_FEE)
-            .build(),
-        || {
+    ExtBuilder::default()
+        .default_paid_membership_fee(DEFAULT_FEE)
+        .build()
+        .execute_with(|| {
             let initial_balance = DEFAULT_FEE + 1;
             set_alice_free_balance(initial_balance);
 
             members::NewMembershipsAllowed::put(false);
 
             assert!(buy_default_membership_as_alice().is_err());
-        },
-    );
+        });
 }
 
 #[test]
@@ -156,11 +147,10 @@ fn account_cannot_create_multiple_memberships() {
     const DEFAULT_FEE: u64 = 500;
     const SURPLUS_BALANCE: u64 = 500;
 
-    with_externalities(
-        &mut ExtBuilder::default()
-            .default_paid_membership_fee(DEFAULT_FEE)
-            .build(),
-        || {
+    ExtBuilder::default()
+        .default_paid_membership_fee(DEFAULT_FEE)
+        .build()
+        .execute_with(|| {
             let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
@@ -169,8 +159,7 @@ fn account_cannot_create_multiple_memberships() {
 
             // second attempt should fail
             assert!(buy_default_membership_as_alice().is_err());
-        },
-    );
+        });
 }
 
 #[test]
@@ -178,11 +167,10 @@ fn unique_handles() {
     const DEFAULT_FEE: u64 = 500;
     const SURPLUS_BALANCE: u64 = 500;
 
-    with_externalities(
-        &mut ExtBuilder::default()
-            .default_paid_membership_fee(DEFAULT_FEE)
-            .build(),
-        || {
+    ExtBuilder::default()
+        .default_paid_membership_fee(DEFAULT_FEE)
+        .build()
+        .execute_with(|| {
             let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
@@ -191,8 +179,7 @@ fn unique_handles() {
 
             // should not be allowed to buy membership with that handle
             assert!(buy_default_membership_as_alice().is_err());
-        },
-    );
+        });
 }
 
 #[test]
@@ -200,11 +187,10 @@ fn update_profile() {
     const DEFAULT_FEE: u64 = 500;
     const SURPLUS_BALANCE: u64 = 500;
 
-    with_externalities(
-        &mut ExtBuilder::default()
-            .default_paid_membership_fee(DEFAULT_FEE)
-            .build(),
-        || {
+    ExtBuilder::default()
+        .default_paid_membership_fee(DEFAULT_FEE)
+        .build()
+        .execute_with(|| {
             let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
@@ -228,13 +214,12 @@ fn update_profile() {
             assert_eq!(Some(profile.handle), get_bob_info().handle);
             assert_eq!(Some(profile.avatar_uri), get_bob_info().avatar_uri);
             assert_eq!(Some(profile.about), get_bob_info().about);
-        },
-    );
+        });
 }
 
 #[test]
 fn add_screened_member() {
-    with_externalities(&mut ExtBuilder::default().build(), || {
+    ExtBuilder::default().build().execute_with(|| {
         let screening_authority = 5;
         <members::ScreeningAuthority<Test>>::put(&screening_authority);
 

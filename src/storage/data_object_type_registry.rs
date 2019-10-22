@@ -81,7 +81,7 @@ impl<T: Trait> traits::IsActiveDataObjectType<T> for Module<T> {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         fn on_initialize() {
             // Create a default data object type if it was not created yet.

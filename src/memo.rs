@@ -24,7 +24,7 @@ decl_event! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         fn update_memo(origin, memo: Vec<u8>) {
             let sender = ensure_signed(origin)?;
