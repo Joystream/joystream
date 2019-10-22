@@ -2,7 +2,7 @@
 
 pub use super::{council, election, proposals};
 pub use crate::currency::GovernanceCurrency;
-use crate::traits::Members;
+use crate::membership;
 pub use system;
 
 pub use primitives::{Blake2Hasher, H256};
@@ -17,23 +17,6 @@ use srml_support::{impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
-}
-
-pub struct MockMembership {}
-impl<T: system::Trait> Members<T> for MockMembership {
-    type Id = u32;
-    fn is_active_member(_who: &T::AccountId) -> bool {
-        // all accounts are considered members.
-        // There is currently no test coverage for non-members.
-        // Should add some coverage, and update this method to reflect which accounts are or are not members
-        true
-    }
-    fn lookup_member_id(_account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
-        Err("not implemented!")
-    }
-    fn lookup_account_by_member_id(_id: Self::Id) -> Result<T::AccountId, &'static str> {
-        Err("not implemented!")
-    }
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -80,8 +63,14 @@ impl election::Trait for Test {
     type Event = ();
 
     type CouncilElected = (Council,);
-
-    type Members = MockMembership;
+}
+impl membership::members::Trait for Test {
+    type Event = ();
+    type MemberId = u32;
+    type SubscriptionId = u32;
+    type PaidTermId = u32;
+    type ActorId = u32;
+    type InitialMembersBalance = InitialMembersBalance;
 }
 
 parameter_types! {
@@ -90,6 +79,7 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
+    pub const InitialMembersBalance: u32 = 0;
 }
 
 impl balances::Trait for Test {
@@ -122,9 +112,37 @@ impl GovernanceCurrency for Test {
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-    let t = system::GenesisConfig::default()
+    let mut t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
+
+    membership::members::GenesisConfig::<Test> {
+        default_paid_membership_fee: 0,
+        members: vec![
+            (1, "member1".into(), "".into(), "".into()),
+            (2, "member2".into(), "".into(), "".into()),
+            (3, "member3".into(), "".into(), "".into()),
+            (4, "member4".into(), "".into(), "".into()),
+            (5, "member5".into(), "".into(), "".into()),
+            (6, "member6".into(), "".into(), "".into()),
+            (7, "member7".into(), "".into(), "".into()),
+            (8, "member8".into(), "".into(), "".into()),
+            (9, "member9".into(), "".into(), "".into()),
+            (10, "member10".into(), "".into(), "".into()),
+            (11, "member11".into(), "".into(), "".into()),
+            (12, "member12".into(), "".into(), "".into()),
+            (13, "member13".into(), "".into(), "".into()),
+            (14, "member14".into(), "".into(), "".into()),
+            (15, "member15".into(), "".into(), "".into()),
+            (16, "member16".into(), "".into(), "".into()),
+            (17, "member17".into(), "".into(), "".into()),
+            (18, "member18".into(), "".into(), "".into()),
+            (19, "member19".into(), "".into(), "".into()),
+            (20, "member20".into(), "".into(), "".into()),
+        ],
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
 
     t.into()
 }

@@ -1,40 +1,6 @@
 use crate::roles::actors;
 use crate::storage::{data_directory, data_object_storage_registry, data_object_type_registry};
-use codec::Codec;
-use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
-use srml_support::Parameter;
 use system;
-
-// Members
-pub trait Members<T: system::Trait> {
-    type Id: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerializeDebug
-        + PartialEq;
-
-    fn is_active_member(account_id: &T::AccountId) -> bool;
-
-    fn lookup_member_id(account_id: &T::AccountId) -> Result<Self::Id, &'static str>;
-
-    fn lookup_account_by_member_id(member_id: Self::Id) -> Result<T::AccountId, &'static str>;
-}
-
-impl<T: system::Trait> Members<T> for () {
-    type Id = u32;
-    fn is_active_member(_account_id: &T::AccountId) -> bool {
-        false
-    }
-    fn lookup_member_id(_account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
-        Err("member not found")
-    }
-    fn lookup_account_by_member_id(_member_id: Self::Id) -> Result<T::AccountId, &'static str> {
-        Err("account not found")
-    }
-}
 
 // Roles
 pub trait Roles<T: system::Trait> {

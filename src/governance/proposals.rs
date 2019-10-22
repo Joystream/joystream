@@ -16,7 +16,7 @@ use primitives::storage::well_known_keys;
 
 use super::council;
 pub use crate::currency::{BalanceOf, GovernanceCurrency};
-use crate::traits::Members;
+use crate::membership;
 
 const DEFAULT_APPROVAL_QUORUM: u32 = 60;
 const DEFAULT_MIN_STAKE: u32 = 100;
@@ -121,11 +121,11 @@ pub struct TallyResult<BlockNumber> {
     finalized_at: BlockNumber,
 }
 
-pub trait Trait: timestamp::Trait + council::Trait + GovernanceCurrency {
+pub trait Trait:
+    timestamp::Trait + council::Trait + GovernanceCurrency + membership::members::Trait
+{
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-
-    type Members: Members<Self>;
 }
 
 decl_event!(
@@ -232,7 +232,7 @@ decl_module! {
         ) {
 
             let proposer = ensure_signed(origin)?;
-            ensure!(Self::can_participate(proposer.clone()), MSG_ONLY_MEMBERS_CAN_PROPOSE);
+            ensure!(Self::can_participate(&proposer), MSG_ONLY_MEMBERS_CAN_PROPOSE);
             ensure!(stake >= Self::min_stake(), MSG_STAKE_IS_TOO_LOW);
 
             ensure!(!name.is_empty(), MSG_EMPTY_NAME_PROVIDED);
@@ -357,8 +357,9 @@ impl<T: Trait> Module<T> {
         <system::Module<T>>::block_number()
     }
 
-    fn can_participate(sender: T::AccountId) -> bool {
-        !T::Currency::free_balance(&sender).is_zero() && T::Members::is_active_member(&sender)
+    fn can_participate(sender: &T::AccountId) -> bool {
+        !T::Currency::free_balance(sender).is_zero()
+            && <membership::members::Module<T>>::is_member_account(sender)
     }
 
     fn is_councilor(sender: &T::AccountId) -> bool {
@@ -613,6 +614,7 @@ mod tests {
         pub const CreationFee: u32 = 0;
         pub const TransactionBaseFee: u32 = 1;
         pub const TransactionByteFee: u32 = 0;
+        pub const InitialMembersBalance: u32 = 0;
     }
 
     impl balances::Trait for Test {
@@ -645,26 +647,17 @@ mod tests {
         type Currency = balances::Module<Self>;
     }
 
-    impl Trait for Test {
+    impl membership::members::Trait for Test {
         type Event = ();
-        type Members = MockMembership;
+        type MemberId = u32;
+        type PaidTermId = u32;
+        type SubscriptionId = u32;
+        type ActorId = u32;
+        type InitialMembersBalance = InitialMembersBalance;
     }
 
-    pub struct MockMembership {}
-    impl<T: system::Trait> Members<T> for MockMembership {
-        type Id = u32;
-        fn is_active_member(_who: &T::AccountId) -> bool {
-            // all accounts are considered members.
-            // There is currently no test coverage for non-members.
-            // Should add some coverage, and update this method to reflect which accounts are or are not members
-            true
-        }
-        fn lookup_member_id(_account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
-            Err("not implemented!")
-        }
-        fn lookup_account_by_member_id(_id: Self::Id) -> Result<T::AccountId, &'static str> {
-            Err("not implemented!")
-        }
+    impl Trait for Test {
+        type Event = ();
     }
 
     type System = system::Module<Test>;
@@ -722,6 +715,20 @@ mod tests {
         .assimilate_storage(&mut t)
         .unwrap();
 
+        membership::members::GenesisConfig::<Test> {
+            default_paid_membership_fee: 0,
+            members: vec![
+                (PROPOSER1, "alice".into(), "".into(), "".into()),
+                (PROPOSER2, "bobby".into(), "".into(), "".into()),
+                (COUNCILOR1, "councilor1".into(), "".into(), "".into()),
+                (COUNCILOR2, "councilor2".into(), "".into(), "".into()),
+                (COUNCILOR3, "councilor3".into(), "".into(), "".into()),
+                (COUNCILOR4, "councilor4".into(), "".into(), "".into()),
+                (COUNCILOR5, "councilor5".into(), "".into(), "".into()),
+            ],
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
         // t.extend(GenesisConfig::<Test>{
         //     // Here we can override defaults.
         // }.build_storage().unwrap().0);

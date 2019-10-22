@@ -18,14 +18,14 @@ use super::stake::Stake;
 use super::council;
 pub use crate::currency::{BalanceOf, GovernanceCurrency};
 
-use crate::traits::Members;
+use crate::membership;
 
-pub trait Trait: system::Trait + council::Trait + GovernanceCurrency {
+pub trait Trait:
+    system::Trait + council::Trait + GovernanceCurrency + membership::members::Trait
+{
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type CouncilElected: CouncilElected<Seats<Self::AccountId, BalanceOf<Self>>, Self::BlockNumber>;
-
-    type Members: Members<Self>;
 }
 
 #[derive(Clone, Copy, Encode, Decode)]
@@ -157,7 +157,8 @@ impl<T: Trait> Module<T> {
     }
 
     fn can_participate(sender: &T::AccountId) -> bool {
-        !T::Currency::free_balance(sender).is_zero() && T::Members::is_active_member(sender)
+        !T::Currency::free_balance(sender).is_zero()
+            && <membership::members::Module<T>>::is_member_account(sender)
     }
 
     // PUBLIC IMMUTABLES

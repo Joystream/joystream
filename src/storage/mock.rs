@@ -2,6 +2,8 @@
 
 pub use super::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use crate::currency::GovernanceCurrency;
+use crate::membership;
+use crate::membership::members;
 use crate::roles::actors;
 use crate::traits;
 use runtime_io::with_externalities;
@@ -28,6 +30,7 @@ impl_outer_event! {
         data_object_storage_registry<T>,
         actors<T>,
         balances<T>,
+        members<T>,
     }
 }
 
@@ -38,23 +41,6 @@ pub const TEST_FIRST_METADATA_ID: u64 = 4000;
 
 pub const TEST_MOCK_LIAISON: u64 = 0xd00du64;
 pub const TEST_MOCK_EXISTING_CID: u64 = 42;
-
-pub struct MockMembers {}
-impl<T: system::Trait> traits::Members<T> for MockMembers {
-    type Id = u64;
-
-    fn is_active_member(_who: &T::AccountId) -> bool {
-        true
-    }
-
-    fn lookup_member_id(_account_id: &T::AccountId) -> Result<Self::Id, &'static str> {
-        Err("not implemented for tests")
-    }
-
-    fn lookup_account_by_member_id(_member_id: Self::Id) -> Result<T::AccountId, &'static str> {
-        Err("not implemented for tests")
-    }
-}
 
 pub struct MockRoles {}
 impl traits::Roles<Test> for MockRoles {
@@ -155,6 +141,7 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
+    pub const InitialMembersBalance: u32 = 2000;
 }
 
 impl balances::Trait for Test {
@@ -190,7 +177,6 @@ impl data_object_type_registry::Trait for Test {
 impl data_directory::Trait for Test {
     type Event = MetaEvent;
     type ContentId = u64;
-    type Members = MockMembers;
     type Roles = MockRoles;
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type SchemaId = u64;
@@ -199,14 +185,21 @@ impl data_directory::Trait for Test {
 impl data_object_storage_registry::Trait for Test {
     type Event = MetaEvent;
     type DataObjectStorageRelationshipId = u64;
-    type Members = MockMembers;
     type Roles = MockRoles;
     type ContentIdExists = MockContent;
 }
 
+impl members::Trait for Test {
+    type Event = MetaEvent;
+    type MemberId = u32;
+    type SubscriptionId = u32;
+    type PaidTermId = u32;
+    type ActorId = u32;
+    type InitialMembersBalance = InitialMembersBalance;
+}
+
 impl actors::Trait for Test {
     type Event = MetaEvent;
-    type Members = MockMembers;
     type OnActorRemoved = ();
 }
 
@@ -266,6 +259,13 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
+        membership::members::GenesisConfig::<Test> {
+            default_paid_membership_fee: 0,
+            members: vec![(1, "alice".into(), "".into(), "".into())],
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
         t.into()
     }
 }
@@ -287,7 +287,7 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
             .first_metadata_id(TEST_FIRST_METADATA_ID)
             .build(),
         || {
-            let roles: Vec<actors::Role> = vec![actors::Role::Storage];
+            let roles: Vec<actors::Role> = vec![actors::Role::StorageProvider];
             assert!(
                 TestActors::set_available_roles(system::RawOrigin::Root.into(), roles).is_ok(),
                 ""

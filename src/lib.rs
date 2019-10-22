@@ -5,6 +5,8 @@
 #![recursion_limit = "256"]
 
 // Make the WASM binary available.
+// This is required only by the node build.
+// A dummy wasm_binary.rs will be built for the IDE.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
@@ -102,8 +104,8 @@ pub mod opaque {
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
-    authoring_version: 0,
-    spec_version: 6,
+    authoring_version: 6,
+    spec_version: 0,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
@@ -236,6 +238,7 @@ parameter_types! {
     pub const CreationFee: u128 = 0;
     pub const TransactionBaseFee: u128 = 1;
     pub const TransactionByteFee: u128 = 0;
+    pub const InitialMembersBalance: u32 = 2000;
 }
 
 impl balances::Trait for Runtime {
@@ -382,13 +385,11 @@ impl currency::GovernanceCurrency for Runtime {
 
 impl governance::proposals::Trait for Runtime {
     type Event = Event;
-    type Members = Members;
 }
 
 impl governance::election::Trait for Runtime {
     type Event = Event;
     type CouncilElected = (Council,);
-    type Members = Members;
 }
 
 impl governance::council::Trait for Runtime {
@@ -409,7 +410,6 @@ impl storage::data_directory::Trait for Runtime {
     type Event = Event;
     type ContentId = ContentId;
     type SchemaId = u64;
-    type Members = Members;
     type Roles = LookupRoles;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
 }
@@ -423,7 +423,6 @@ impl storage::downloads::Trait for Runtime {
 impl storage::data_object_storage_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectStorageRelationshipId = u64;
-    type Members = Members;
     type Roles = LookupRoles;
     type ContentIdExists = DataDirectory;
 }
@@ -474,7 +473,8 @@ impl members::Trait for Runtime {
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type Roles = LookupRoles;
+    type ActorId = u64;
+    type InitialMembersBalance = InitialMembersBalance;
 }
 
 /*
@@ -493,14 +493,13 @@ pub struct ShimMembershipRegistry {}
 
 impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
     fn get_forum_user(id: &AccountId) -> Option<forum::ForumUser<AccountId>> {
-        if let Some(_profile) = members::Module::<Runtime>::get_profile(id) {
-            // For now the profile is not used for anything,
+        if members::Module::<Runtime>::is_member_account(id) {
+            // For now we don't retreive the members profile since it is not used for anything,
             // but in the future we may need it to read out more
             // information possibly required to construct a
             // ForumUser.
 
             // Now convert member profile to a forum user
-
             Some(forum::ForumUser { id: id.clone() })
         } else {
             None
@@ -519,7 +518,6 @@ impl migration::Trait for Runtime {
 
 impl actors::Trait for Runtime {
     type Event = Event;
-    type Members = Members;
     type OnActorRemoved = HandleActorRemoved;
 }
 
