@@ -11,9 +11,7 @@ use crate::traits::{ContentHasStorage, ContentIdExists};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
-use srml_support::{
-    decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
-};
+use srml_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
 use system::{self, ensure_signed};
 
 pub trait Trait: timestamp::Trait + system::Trait + DOSRTrait + DDTrait {

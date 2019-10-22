@@ -4,7 +4,7 @@ use rstd::prelude::*;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
+use srml_support::{decl_event, decl_module, decl_storage, ensure};
 use system::{self, ensure_root, ensure_signed};
 /*
   Although there is support for ed25519 keys as the IPNS identity key and we could potentially

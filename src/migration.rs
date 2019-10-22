@@ -2,7 +2,7 @@ use crate::forum;
 use crate::storage;
 use crate::VERSION;
 use runtime_primitives::print;
-use srml_support::{decl_event, decl_module, decl_storage, StorageValue};
+use srml_support::{decl_event, decl_module, decl_storage};
 use sudo;
 use system;
 

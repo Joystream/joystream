@@ -7,9 +7,7 @@ use runtime_primitives::{
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use srml_support::traits::{Currency, Get, ReservableCurrency};
-use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
-};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
 
 use system::{self, ensure_root, ensure_signed};
 
@@ -557,7 +555,7 @@ impl<T: Trait> Module<T> {
 mod tests {
 
     use super::*;
-    use primitives::{Blake2Hasher, H256};
+    use primitives::H256;
     // The testing primitives are very useful for avoiding having to work with signatures
     // or public keys. `u64` is used as the `AccountId` and no `Signature`s are requried.
     use runtime_primitives::{

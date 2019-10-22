@@ -1,6 +1,6 @@
 use rstd::prelude::*;
 use runtime_primitives::traits::Zero;
-use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
+use srml_support::{decl_event, decl_module, decl_storage, ensure};
 use system::{self, ensure_root};
 
 pub use super::election::{self, CouncilElected, Seat, Seats};

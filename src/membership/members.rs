@@ -4,9 +4,7 @@ use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::traits::Currency;
-use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
-};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 use system::{self, ensure_root, ensure_signed};
 use timestamp;
 

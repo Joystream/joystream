@@ -1,8 +1,6 @@
 use rstd::prelude::*;
 use srml_support::traits::{Currency, ReservableCurrency};
-use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch::Result, ensure, StorageMap, StorageValue,
-};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch::Result, ensure};
 use system::{self, ensure_root, ensure_signed};
 
 use codec::{Decode, Encode};

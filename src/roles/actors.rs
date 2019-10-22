@@ -5,7 +5,7 @@ use runtime_primitives::traits::{Bounded, MaybeDebug, Zero};
 use srml_support::traits::{
     Currency, LockIdentifier, LockableCurrency, WithdrawReason, WithdrawReasons,
 };
-use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
+use srml_support::{decl_event, decl_module, decl_storage, ensure};
 use system::{self, ensure_root, ensure_signed};
 
 use crate::traits::Members;
