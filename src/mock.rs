@@ -4,12 +4,12 @@ use crate::*;
 use crate::{GenesisConfig, Module, Trait};
 
 use primitives::{Blake2Hasher, H256};
-use srml_support::{impl_outer_origin, assert_ok, assert_err};
+use srml_support::{impl_outer_origin, parameter_types, assert_ok, assert_err};
 use runtime_io::with_externalities;
 use runtime_primitives::{
-    testing::{Digest, DigestItem, Header},
+    testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    BuildStorage,
+    Perbill,
 };
 
 impl_outer_origin! {
@@ -19,19 +19,37 @@ impl_outer_origin! {
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Runtime;
+parameter_types! {
+    pub const BlockHashCount: u64 = 250;
+    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockLength: u32 = 2 * 1024;
+    pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const MinimumPeriod: u64 = 5;
+}
 
 impl system::Trait for Runtime {
     type Origin = Origin;
     type Index = u64;
     type BlockNumber = u64;
+    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type Digest = Digest;
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
+    type WeightMultiplierUpdate = ();
     type Event = ();
-    type Log = DigestItem;
+    type BlockHashCount = BlockHashCount;
+    type MaximumBlockWeight = MaximumBlockWeight;
+    type MaximumBlockLength = MaximumBlockLength;
+    type AvailableBlockRatio = AvailableBlockRatio;
+    type Version = ();
+}
+
+impl timestamp::Trait for Runtime {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
 }
 
 impl Trait for Runtime {
@@ -187,7 +205,6 @@ pub fn create_entity_of_class(class_id: ClassId) -> EntityId {
     entity_id
 }
 
-
 pub fn assert_class_props(class_id: ClassId, expected_props: Vec<Property>) {
     let class = TestModule::class_by_id(class_id);
     assert_eq!(class.properties, expected_props);
@@ -211,8 +228,8 @@ pub fn assert_entity_not_found(result: dispatch::Result) {
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 
-pub fn default_genesis_config() -> GenesisConfig<Runtime> {
-    GenesisConfig::<Runtime> {
+pub fn default_genesis_config() -> GenesisConfig {
+    GenesisConfig {
         class_by_id: vec![],
         entity_by_id: vec![],
         next_class_id: 1,
@@ -232,17 +249,18 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         class_description_constraint: InputValidationLengthConstraint {
             min: 0,
             max_min_diff: 500
-        },
-        _genesis_phantom_data: std::marker::PhantomData {}
+        }
     }
 }
 
-fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities<Blake2Hasher> {
-    config
-        .build_storage()
-        .unwrap()
-        .0
-        .into()
+fn build_test_externalities(config: GenesisConfig) -> runtime_io::TestExternalities<Blake2Hasher> {
+    let mut t = system::GenesisConfig::default()
+        .build_storage::<Runtime>()
+        .unwrap();
+
+    config.assimilate_storage(&mut t).unwrap();
+
+    t.into()
 }
 
 pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
@@ -253,7 +271,7 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
     )
 }
 
-// pub type System = system::Module<Runtime>;
+// pub type System = system::Module;
 
 /// Export module on a test runtime
 pub type TestModule = Module<Runtime>;
