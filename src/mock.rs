@@ -2,7 +2,7 @@
 
 use crate::*;
 
-use primitives::{Blake2Hasher, H256};
+use primitives::H256;
 
 use crate::{GenesisConfig, Module, Trait};
 use runtime_primitives::{
@@ -12,14 +12,12 @@ use runtime_primitives::{
 };
 use srml_support::{impl_outer_origin, parameter_types};
 
-use runtime_io::with_externalities;
-
 /// Module which has a full Substrate module for
 /// mocking behaviour of MembershipRegistry
 pub mod registry {
 
     use super::*;
-    use srml_support::*;
+    // use srml_support::*;
 
     #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
     pub struct Member<AccountId> {
@@ -57,7 +55,6 @@ pub mod registry {
     }
 
     pub type TestMembershipRegistryModule = Module<Runtime>;
-
 }
 
 impl_outer_origin! {
@@ -85,7 +82,7 @@ impl system::Trait for Runtime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type WeightMultiplierUpdate = ();
+    // type WeightMultiplierUpdate = ();
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
@@ -387,7 +384,7 @@ pub fn assert_not_forum_sudo_cannot_update_category(
     let config = default_genesis_config();
     let origin = OriginType::Signed(config.forum_sudo);
 
-    with_externalities(&mut build_test_externalities(config), || {
+    build_test_externalities(config).execute_with(|| {
         let category_id = create_root_category(origin.clone());
         assert_eq!(
             update_operation(NOT_FORUM_SUDO_ORIGIN, category_id),
@@ -512,9 +509,7 @@ pub fn default_mock_forum_user_registry_genesis_config() -> registry::GenesisCon
 // NB!:
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
-pub fn build_test_externalities(
-    config: GenesisConfig<Runtime>,
-) -> runtime_io::TestExternalities<Blake2Hasher> {
+pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
