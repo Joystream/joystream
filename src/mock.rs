@@ -58,31 +58,38 @@ impl versioned_store::Trait for Runtime {
 }
 
 impl Trait for Runtime {
-    type GroupId = u64;
-    type GroupMembershipChecker = MockGroupMembershipChecker;
+    type PrincipalId = u64;
+    type PrincipalIdChecker = MockPrincipalIdChecker;
     type CreateClassPermissionsChecker = MockCreateClassPermissionsChecker;
 }
 
-pub const MEMBER_ONE_OF_GROUP_ZERO: u64 = 100;
-pub const MEMBER_TWO_OF_GROUP_ZERO: u64 = 101;
-pub const MEMBER_ONE_OF_GROUP_ONE: u64 = 102;
-pub const MEMBER_TWO_OF_GROUP_ONE: u64 = 103;
+pub const MEMBER_ONE_OF_PRINCIPAL_GROUP_ZERO: u64 = 100;
+pub const MEMBER_TWO_OF_PRINCIPAL_GROUP_ZERO: u64 = 101;
+pub const MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE: u64 = 102;
+pub const MEMBER_TWO_OF_PRINCIPAL_GROUP_ONE: u64 = 103;
 
-pub const GROUP_MEMBERS: [[u64; 2]; 2] = [
-    [MEMBER_ONE_OF_GROUP_ZERO, MEMBER_TWO_OF_GROUP_ZERO],
-    [MEMBER_ONE_OF_GROUP_ONE, MEMBER_TWO_OF_GROUP_ONE],
+pub const PRINCIPAL_GROUP_MEMBERS: [[u64; 2]; 2] = [
+    [
+        MEMBER_ONE_OF_PRINCIPAL_GROUP_ZERO,
+        MEMBER_TWO_OF_PRINCIPAL_GROUP_ZERO,
+    ],
+    [
+        MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE,
+        MEMBER_TWO_OF_PRINCIPAL_GROUP_ONE,
+    ],
 ];
 
-pub struct MockGroupMembershipChecker {}
+pub struct MockPrincipalIdChecker {}
 
-impl GroupMembershipChecker<Runtime> for MockGroupMembershipChecker {
-    fn account_is_in_group(
+impl PrincipalIdChecker<Runtime> for MockPrincipalIdChecker {
+    fn account_can_act_as_principal(
         account_id: &<Runtime as system::Trait>::AccountId,
-        group_id: <Runtime as Trait>::GroupId,
+        principal_id: <Runtime as Trait>::PrincipalId,
     ) -> bool {
-        let group = group_id as usize;
-        if group < GROUP_MEMBERS.len() {
-            GROUP_MEMBERS[group].iter().any(|id| *id == *account_id)
+        if (principal_id as usize) < PRINCIPAL_GROUP_MEMBERS.len() {
+            PRINCIPAL_GROUP_MEMBERS[principal_id as usize]
+                .iter()
+                .any(|id| *id == *account_id)
         } else {
             false
         }
