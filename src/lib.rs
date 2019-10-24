@@ -215,7 +215,7 @@ use rstd::prelude::*;
 
 use codec::{Decode, Encode};
 use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, StorageMap, StorageValue,
+    decl_event, decl_module, decl_storage, dispatch, ensure,
 };
 
 mod mock;
