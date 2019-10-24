@@ -6,7 +6,7 @@ use rstd::prelude::*;
 use codec::Codec;
 use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
 use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap};
-use system::{self, ensure_root};
+use system;
 
 // EntityId, ClassId -> should be configured on versioned_store::Trait
 pub use versioned_store::{ClassId, ClassPropertyValue, EntityId, Property, PropertyValue};
@@ -213,22 +213,24 @@ decl_module! {
             )
         }
 
-        pub fn set_entity_maintainer(
-            origin,
-            entity_id: EntityId,
-            new_maintainer: Option<T::PrincipalId>
-        ) -> dispatch::Result {
-            ensure_root(origin)?;
+        // Setting a new maintainer for an entity may require having additional constraints.
+        // So for now it is disabled.
+        // pub fn set_entity_maintainer(
+        //     origin,
+        //     entity_id: EntityId,
+        //     new_maintainer: Option<T::PrincipalId>
+        // ) -> dispatch::Result {
+        //     ensure_root(origin)?;
 
-            // ensure entity exists in the versioned store
-            let _ = Self::get_class_id_by_entity_id(entity_id)?;
+        //     // ensure entity exists in the versioned store
+        //     let _ = Self::get_class_id_by_entity_id(entity_id)?;
 
-            <EntityMaintainerByEntityId<T>>::mutate(entity_id, |maintainer| {
-                *maintainer = new_maintainer;
-            });
+        //     <EntityMaintainerByEntityId<T>>::mutate(entity_id, |maintainer| {
+        //         *maintainer = new_maintainer;
+        //     });
 
-            Ok(())
-        }
+        //     Ok(())
+        // }
 
         // Permissioned proxy calls to versioned store
 
@@ -292,6 +294,8 @@ decl_module! {
             )
         }
 
+        /// Creates a new entity of type class_id. The maintainer is set to be either None if the origin is root, or the principal id
+        /// if determined to be associated with signer.
         pub fn create_entity(
             origin,
             as_principal_id: Option<T::PrincipalId>,
