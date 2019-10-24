@@ -59,7 +59,7 @@ where
                 }
             }
             ActingAs::Unspecified => Err("UnspecifiedActor"),
-            ActingAs::EntityOwner => Err("ActingAs::EntityOwner-UsedOutOfPlace"),
+            ActingAs::EntityMaintainer => Err("ActingAs::EntityMaintainer-UsedOutOfPlace"),
         }
     }
 
@@ -77,7 +77,7 @@ where
                 }
             }
             ActingAs::Unspecified => Err("UnspecifiedActor"),
-            ActingAs::EntityOwner => Err("ActingAs::EntityOwner-UsedOutOfPlace"),
+            ActingAs::EntityMaintainer => Err("ActingAs::EntityMaintainer-UsedOutOfPlace"),
         }
     }
 
@@ -97,7 +97,7 @@ where
                 }
             }
             ActingAs::Unspecified => Err("UnspecifiedActor"),
-            ActingAs::EntityOwner => Err("ActingAs::EntityOwner-UsedOutOfPlace"),
+            ActingAs::EntityMaintainer => Err("ActingAs::EntityMaintainer-UsedOutOfPlace"),
         }
     }
 
@@ -118,10 +118,10 @@ where
                     Err("NotInEntityPermissionsUpdateSet")
                 }
             }
-            ActingAs::EntityOwner => {
+            ActingAs::EntityMaintainer => {
                 if class_permissions
                     .entity_permissions
-                    .owner_has_all_permissions
+                    .maintainer_has_all_permissions
                 {
                     Ok(())
                 } else {
@@ -131,16 +131,6 @@ where
             _ => Err("UnknownActor"),
         }
     }
-
-    pub fn can_transfer_entity_ownership(
-        _class_permissions: &Self,
-        derived_principal: &ActingAs<PrincipalId>,
-    ) -> dispatch::Result {
-        match derived_principal {
-            ActingAs::System => Ok(()),
-            _ => Err("OnlyRootCanTransferEntityOwnership"),
-        }
-    }
 }
 
 #[derive(Encode, Decode, Clone, Debug, Eq, PartialEq)]
@@ -148,19 +138,16 @@ pub struct EntityPermissions<PrincipalId>
 where
     PrincipalId: Ord,
 {
-    // Principals permitted to update an entity
+    // Principals permitted to update any entity of the class which this permission is associated with.
     pub update: PrincipalSet<PrincipalId>,
-    // pub delete: PrincipalSet<PrincipalId>,
-    // pub transfer_ownership: PrincipalSet<PrincipalId>,
-    /// Wether the entity owner has permission to update, delete and transfer_ownership
-    pub owner_has_all_permissions: bool,
+    /// Wether the designated maintainer (if set) of an entity has permission to update it.
+    pub maintainer_has_all_permissions: bool,
 }
 
-// impl default entity permissions giving owner all permissions = true
 impl<PrincipalId: Ord> Default for EntityPermissions<PrincipalId> {
     fn default() -> Self {
         EntityPermissions {
-            owner_has_all_permissions: true,
+            maintainer_has_all_permissions: true,
             update: PrincipalSet::new(),
         }
     }

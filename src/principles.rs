@@ -47,8 +47,8 @@ impl<PrincipalId: Ord> PrincipalSet<PrincipalId> {
 pub enum ActingAs<PrincipalId> {
     /// ROOT origin
     System,
-    /// Caller identified as entity owner
-    EntityOwner, // Maybe enclose EntityId?
+    /// Caller identified as the entity maintainer
+    EntityMaintainer, // Maybe enclose EntityId?
     /// Verified PrincipalId
     Principal(PrincipalId),
     /// In cases where a signed extrinsic doesn't provide a PrincipalId

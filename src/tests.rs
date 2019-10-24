@@ -40,12 +40,10 @@ fn create_simple_class_with_default_permissions() -> ClassId {
 
 fn class_permissions_minimal() -> ClassPermissionsType<Runtime> {
     ClassPermissions {
-        // remove special permissions for entity owners
+        // remove special permissions for entity maintainers
         entity_permissions: EntityPermissions {
-            update: PrincipalSet::new(),
-            // delete: PrincipalSet::new(),
-            // transfer_ownership: PrincipalSet::new(),
-            owner_has_all_permissions: true,
+            maintainer_has_all_permissions: false,
+            ..Default::default()
         },
         ..Default::default()
     }
@@ -111,8 +109,11 @@ fn create_class_then_entity_with_default_class_permissions() {
         let entity_id_1 = <versioned_store::Module<Runtime>>::next_entity_id();
         assert_ok!(Permissions::create_entity(Origin::ROOT, None, class_id,));
         // entities created by system are "un-owned"
-        assert!(!<EntityOwnerByEntityId<Runtime>>::exists(entity_id_1));
-        assert_eq!(Permissions::entity_owner_by_entity_id(entity_id_1), None);
+        assert!(!<EntityMaintainerByEntityId<Runtime>>::exists(entity_id_1));
+        assert_eq!(
+            Permissions::entity_maintainer_by_entity_id(entity_id_1),
+            None
+        );
 
         // default permissions have empty create_entities set and by default no entities can be created
         assert_err!(
@@ -155,15 +156,18 @@ fn create_class_then_entity_with_default_class_permissions() {
             Some(1),
             class_id,
         ));
-        assert!(<EntityOwnerByEntityId<Runtime>>::exists(entity_id_2));
-        assert_eq!(Permissions::entity_owner_by_entity_id(entity_id_2), Some(1));
+        assert!(<EntityMaintainerByEntityId<Runtime>>::exists(entity_id_2));
+        assert_eq!(
+            Permissions::entity_maintainer_by_entity_id(entity_id_2),
+            Some(1)
+        );
 
         // Updating entity must be authorized
         assert_err!(
             Permissions::add_schema_support_to_entity(
                 Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ZERO),
                 Some(0),
-                false, // not claiming to be entity owner
+                false, // not claiming to be entity maintainer
                 entity_id_2,
                 0, // first schema created
                 simple_test_entity_property_values()
@@ -171,11 +175,11 @@ fn create_class_then_entity_with_default_class_permissions() {
             "NotInEntityPermissionsUpdateSet"
         );
 
-        // default permissions give entity owner permission to update and delete
+        // default permissions give entity maintainer permission to update and delete
         assert_ok!(Permissions::add_schema_support_to_entity(
             Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
             Some(1),
-            true, // we are claiming to be the entity owner
+            true, // we are claiming to be the entity maintainer
             entity_id_2,
             0,
             simple_test_entity_property_values()
@@ -183,12 +187,10 @@ fn create_class_then_entity_with_default_class_permissions() {
         assert_ok!(Permissions::update_entity_property_values(
             Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
             Some(1),
-            true, // we are claiming to be the entity owner
+            true, // we are claiming to be the entity maintainer
             entity_id_2,
             simple_test_entity_property_values()
         ));
-
-        // final test - transfer ownership to system
     })
 }
 
@@ -373,17 +375,10 @@ fn class_permissions_set_class_entity_permissions() {
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
 
         assert!(class_permissions.entity_permissions.update.is_empty());
-        // assert!(class_permissions.entity_permissions.delete.is_empty());
-        // assert!(class_permissions
-        //     .entity_permissions
-        //     .transfer_ownership
-        //     .is_empty());
 
         let entity_permissions1 = EntityPermissions {
             update: PrincipalSet::from(vec![1]),
-            // delete: PrincipalSet::from(vec![2]),
-            // transfer_ownership: PrincipalSet::from(vec![3]),
-            owner_has_all_permissions: true,
+            maintainer_has_all_permissions: true,
         };
 
         //root
@@ -398,9 +393,7 @@ fn class_permissions_set_class_entity_permissions() {
 
         let entity_permissions2 = EntityPermissions {
             update: PrincipalSet::from(vec![4]),
-            // delete: PrincipalSet::from(vec![5]),
-            // transfer_ownership: PrincipalSet::from(vec![6]),
-            owner_has_all_permissions: true,
+            maintainer_has_all_permissions: true,
         };
         //admins
         assert_ok!(Permissions::set_class_entity_permissions(

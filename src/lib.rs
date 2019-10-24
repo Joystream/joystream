@@ -96,7 +96,7 @@ decl_storage! {
       pub ClassPermissionsByClassId get(class_permissions_by_class_id): linked_map ClassId => ClassPermissionsType<T>;
 
       /// Owner of an entity in the versioned store. If it is None then it is owned by the system.
-      pub EntityOwnerByEntityId get(entity_owner_by_entity_id): linked_map EntityId => Option<T::PrincipalId>;
+      pub EntityMaintainerByEntityId get(entity_maintainer_by_entity_id): linked_map EntityId => Option<T::PrincipalId>;
     }
 }
 
@@ -213,18 +213,18 @@ decl_module! {
             )
         }
 
-        pub fn set_entity_owner(
+        pub fn set_entity_maintainer(
             origin,
             entity_id: EntityId,
-            new_owner: Option<T::PrincipalId>
+            new_maintainer: Option<T::PrincipalId>
         ) -> dispatch::Result {
             ensure_root(origin)?;
 
             // ensure entity exists in the versioned store
             let _ = Self::get_class_id_by_entity_id(entity_id)?;
 
-            <EntityOwnerByEntityId<T>>::mutate(entity_id, |owner| {
-                *owner = new_owner;
+            <EntityMaintainerByEntityId<T>>::mutate(entity_id, |maintainer| {
+                *maintainer = new_maintainer;
             });
 
             Ok(())
@@ -296,7 +296,6 @@ decl_module! {
             origin,
             as_principal_id: Option<T::PrincipalId>,
             class_id: ClassId
-            //, owner: T::PrincipalId
         ) -> dispatch::Result {
             Self::if_class_permissions_satisfied(
                 origin,
@@ -308,11 +307,11 @@ decl_module! {
                     let entity_id = <versioned_store::Module<T>>::create_entity(class_id)?;
 
                     // Note: mutating value to None is equivalient to removing the value from storage map
-                    <EntityOwnerByEntityId<T>>::mutate(entity_id, |owner| {
+                    <EntityMaintainerByEntityId<T>>::mutate(entity_id, |maintainer| {
                         match principal {
-                            ActingAs::System => *owner = None,
-                            ActingAs::Principal(principal_id) => *owner = Some(*principal_id),
-                            _ => *owner = None
+                            ActingAs::System => *maintainer = None,
+                            ActingAs::Principal(principal_id) => *maintainer = Some(*principal_id),
+                            _ => *maintainer = None
                         }
                     });
                     Ok(())
@@ -323,7 +322,7 @@ decl_module! {
         pub fn add_schema_support_to_entity(
             origin,
             as_principal_id: Option<T::PrincipalId>,
-            as_entity_owner: bool,
+            as_entity_maintainer: bool,
             entity_id: EntityId,
             schema_id: u16,
             property_values: Vec<ClassPropertyValue>
@@ -333,7 +332,7 @@ decl_module! {
 
             Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
 
-            let as_entity_owner = if as_entity_owner {
+            let as_entity_maintainer = if as_entity_maintainer {
                 Some(entity_id)
             } else {
                 None
@@ -342,7 +341,7 @@ decl_module! {
             Self::if_class_permissions_satisfied(
                 origin,
                 as_principal_id,
-                as_entity_owner,
+                as_entity_maintainer,
                 ClassPermissions::can_update_entity,
                 class_id,
                 |_class_permissions, _principal| {
@@ -354,7 +353,7 @@ decl_module! {
         pub fn update_entity_property_values(
             origin,
             as_principal_id: Option<T::PrincipalId>,
-            as_entity_owner: bool,
+            as_entity_maintainer: bool,
             entity_id: EntityId,
             property_values: Vec<ClassPropertyValue>
         ) -> dispatch::Result {
@@ -362,7 +361,7 @@ decl_module! {
 
             Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
 
-            let as_entity_owner = if as_entity_owner {
+            let as_entity_maintainer = if as_entity_maintainer {
                 Some(entity_id)
             } else {
                 None
@@ -371,7 +370,7 @@ decl_module! {
             Self::if_class_permissions_satisfied(
                 origin,
                 as_principal_id,
-                as_entity_owner,
+                as_entity_maintainer,
                 ClassPermissions::can_update_entity,
                 class_id,
                 |_class_permissions, _principal| {
@@ -388,7 +387,7 @@ impl<T: Trait> Module<T> {
     fn derive_principal(
         origin: T::Origin,
         as_principal_id: Option<T::PrincipalId>,
-        as_entity_owner: Option<EntityId>,
+        as_entity_maintainer: Option<EntityId>,
     ) -> Result<ActingAs<T::PrincipalId>, &'static str> {
         match origin.into() {
             Ok(system::RawOrigin::Root) => Ok(ActingAs::System),
@@ -398,24 +397,26 @@ impl<T: Trait> Module<T> {
                         &account_id,
                         principal_id,
                     ) {
-                        if let Some(entity_id) = as_entity_owner {
-                            // is entity owned by system
+                        if let Some(entity_id) = as_entity_maintainer {
+                            // is entity maintained by system
                             ensure!(
-                                <EntityOwnerByEntityId<T>>::exists(entity_id),
-                                "NotEnityOwner"
+                                <EntityMaintainerByEntityId<T>>::exists(entity_id),
+                                "NotEnityMaintainer"
                             );
-                            // ensure entity owner is GroupMember
-                            match Self::entity_owner_by_entity_id(entity_id) {
-                                Some(owner_principal_id) if principal_id == owner_principal_id => {
-                                    Ok(ActingAs::EntityOwner)
+                            // ensure entity maintainer matches
+                            match Self::entity_maintainer_by_entity_id(entity_id) {
+                                Some(maintainer_principal_id)
+                                    if principal_id == maintainer_principal_id =>
+                                {
+                                    Ok(ActingAs::EntityMaintainer)
                                 }
-                                _ => Err("NotEnityOwner"),
+                                _ => Err("NotEnityMaintainer"),
                             }
                         } else {
                             Ok(ActingAs::Principal(principal_id))
                         }
                     } else {
-                        Err("OriginNotMemberOfClaimedGroup")
+                        Err("OriginCannotActWithRequestedPrincipalId")
                     }
                 } else {
                     Ok(ActingAs::Unspecified)
@@ -479,7 +480,7 @@ impl<T: Trait> Module<T> {
     fn if_class_permissions_satisfied<Predicate, Callback>(
         origin: T::Origin,
         as_principal_id: Option<T::PrincipalId>,
-        as_entity_owner: Option<EntityId>,
+        as_entity_maintainer: Option<EntityId>,
         // predicate to test
         predicate: Predicate,
         // class permissions to test
@@ -491,7 +492,7 @@ impl<T: Trait> Module<T> {
         Predicate: FnOnce(&ClassPermissionsType<T>, &ActingAs<T::PrincipalId>) -> dispatch::Result,
         Callback: FnOnce(&ClassPermissionsType<T>, &ActingAs<T::PrincipalId>) -> dispatch::Result,
     {
-        let principal = Self::derive_principal(origin, as_principal_id, as_entity_owner)?;
+        let principal = Self::derive_principal(origin, as_principal_id, as_entity_maintainer)?;
         let class_permissions = Self::ensure_class_permissions(class_id)?;
 
         predicate(&class_permissions, &principal)?;
