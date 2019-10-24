@@ -328,7 +328,7 @@ impl session::historical::Trait for Runtime {
     type FullIdentificationOf = staking::ExposureOf<Runtime>;
 }
 
-staking_reward_curve::build! {
+srml_staking_reward_curve::build! {
     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_025_000,
         max_inflation: 0_100_000,

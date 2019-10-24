@@ -32,15 +32,13 @@ static MSG_CREATOR_MUST_BE_MEMBER: &str = "Only active members may create conten
 static MSG_DO_TYPE_MUST_BE_ACTIVE: &str =
     "Cannot create content for inactive or missing data object type.";
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct BlockAndTime<T: Trait> {
     pub block: T::BlockNumber,
     pub time: T::Moment,
 }
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub enum LiaisonJudgement {
     Pending,
     Accepted,
@@ -53,8 +51,7 @@ impl Default for LiaisonJudgement {
     }
 }
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObject<T: Trait> {
     pub owner: T::AccountId,
     pub added_at: BlockAndTime<T>,
@@ -70,9 +67,7 @@ pub struct DataObject<T: Trait> {
                                   // pub rejection_reason: Option<Vec<u8>>,
 }
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
-// TODO ContentVisibility
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub enum ContentVisibility {
     Draft, // TODO rename to Unlisted?
     Public,
@@ -84,8 +79,7 @@ impl Default for ContentVisibility {
     }
 }
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct ContentMetadata<T: Trait> {
     pub owner: T::AccountId,
     pub added_at: BlockAndTime<T>,
@@ -95,8 +89,7 @@ pub struct ContentMetadata<T: Trait> {
     pub json: Vec<u8>,
 }
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct ContentMetadataUpdate<ContentId, SchemaId> {
     pub children_ids: Option<Vec<ContentId>>,
     pub visibility: Option<ContentVisibility>,

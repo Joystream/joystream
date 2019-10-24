@@ -4,12 +4,12 @@ use runtime_primitives::{
     print,
     traits::{Hash, SaturatedConversion, Zero},
 };
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
 use srml_support::traits::{Currency, Get, ReservableCurrency};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
-
 use system::{self, ensure_root, ensure_signed};
+
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
 use primitives::storage::well_known_keys;
@@ -73,8 +73,8 @@ impl Default for ProposalStatus {
 
 use self::ProposalStatus::*;
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum VoteKind {
     /// Signals presence, but unwillingness to cast judgment on substance of vote.
     Abstain,

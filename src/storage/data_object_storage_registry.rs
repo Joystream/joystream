@@ -35,8 +35,7 @@ static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str =
 const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
 
 // TODO deprecated
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectStorageRelationship<T: Trait> {
     pub content_id: <T as DDTrait>::ContentId,
     pub storage_provider: T::AccountId,

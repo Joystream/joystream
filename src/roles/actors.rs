@@ -13,8 +13,7 @@ pub use membership::members::Role;
 
 const STAKING_ID: LockIdentifier = *b"role_stk";
 
-#[cfg_attr(feature = "std", derive(Debug))]
-#[derive(Encode, Decode, Copy, Clone, Eq, PartialEq)]
+#[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Debug)]
 pub struct RoleParameters<Balance, BlockNumber> {
     // minium balance required to stake to enter a role
     pub min_stake: Balance,

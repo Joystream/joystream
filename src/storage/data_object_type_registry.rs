@@ -26,8 +26,7 @@ const CREATE_DETAULT_TYPE: bool = true;
 
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u32 = 1;
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectType {
     pub description: Vec<u8>,
     pub active: bool,

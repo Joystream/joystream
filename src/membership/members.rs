@@ -2,7 +2,6 @@ use crate::currency::{BalanceOf, GovernanceCurrency};
 use codec::{Codec, Decode, Encode};
 
 use rstd::prelude::*;
-#[cfg(feature = "std")]
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::traits::{Currency, Get};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};

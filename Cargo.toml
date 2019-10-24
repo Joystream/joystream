@@ -245,7 +245,9 @@ git = 'https://github.com/paritytech/substrate.git'
 default_features = false
 rev = 'polkadot-master'
 
-[dependencies.staking-reward-curve]
+# don't rename the dependency it is causing some strange compiler error:
+# https://github.com/rust-lang/rust/issues/64450
+[dependencies.srml-staking-reward-curve]
 package = 'srml-staking-reward-curve'
 git = 'https://github.com/paritytech/substrate.git'
 default_features = false
@@ -253,7 +255,7 @@ rev = 'polkadot-master'
 
 [build-dependencies.wasm-builder-runner]
 package = 'substrate-wasm-builder-runner'
-version = '1.0.2'
+version = '1.0.4'
 
 [dependencies.forum]
 default_features = false
