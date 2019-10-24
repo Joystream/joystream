@@ -8,10 +8,19 @@ fn assert_ok_unwrap<T>(value: Option<T>, err: &'static str) -> T {
     match value {
         None => {
             assert!(false, err);
+            // although this code path is not reached, we need to return correct type
+            // in match arm. Using panic! would remove this need, but assert! gives us better error in
+            // console output
             value.unwrap()
         }
         Some(v) => v,
     }
+}
+
+fn assert_dispatch_error_message(result: Result<(), &'static str>, expected_message: &'static str) {
+    assert!(result.is_err());
+    let message = result.err().unwrap();
+    assert_eq!(message, expected_message);
 }
 
 fn get_alice_info() -> members::UserInfo {
@@ -39,12 +48,11 @@ fn get_bob_info() -> members::UserInfo {
 }
 
 const ALICE_ACCOUNT_ID: u64 = 1;
-const DEFAULT_TERMS_ID: u32 = 0;
 
 fn buy_default_membership_as_alice() -> dispatch::Result {
     Members::buy_membership(
         Origin::signed(ALICE_ACCOUNT_ID),
-        DEFAULT_TERMS_ID,
+        DEFAULT_PAID_TERM_ID,
         get_alice_info(),
     )
 }
@@ -56,49 +64,49 @@ fn set_alice_free_balance(balance: u64) {
 #[test]
 fn initial_state() {
     const DEFAULT_FEE: u64 = 500;
-    const DEFAULT_FIRST_ID: u32 = 1000;
+    let initial_members = [1, 2, 3];
 
     ExtBuilder::default()
         .default_paid_membership_fee(DEFAULT_FEE)
-        .first_member_id(DEFAULT_FIRST_ID)
+        .members(initial_members.to_vec())
         .build()
         .execute_with(|| {
-            assert_eq!(Members::first_member_id(), DEFAULT_FIRST_ID);
-            assert_eq!(Members::next_member_id(), DEFAULT_FIRST_ID);
-
             let default_terms = assert_ok_unwrap(
-                Members::paid_membership_terms_by_id(DEFAULT_TERMS_ID),
+                Members::paid_membership_terms_by_id(DEFAULT_PAID_TERM_ID),
                 "default terms not initialized",
             );
 
-            assert_eq!(default_terms.id, DEFAULT_TERMS_ID);
             assert_eq!(default_terms.fee, DEFAULT_FEE);
+
+            // initial balance
+            assert_eq!(
+                Balances::free_balance(initial_members[0]),
+                <Test as members::Trait>::InitialMembersBalance::get()
+            );
         });
 }
 
 #[test]
 fn buy_membership() {
     const DEFAULT_FEE: u64 = 500;
-    const DEFAULT_FIRST_ID: u32 = 1000;
     const SURPLUS_BALANCE: u64 = 500;
 
     ExtBuilder::default()
         .default_paid_membership_fee(DEFAULT_FEE)
-        .first_member_id(DEFAULT_FIRST_ID)
         .build()
         .execute_with(|| {
             let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
+            let next_member_id = Members::members_created();
+
             assert_ok!(buy_default_membership_as_alice());
 
-            let member_id = assert_ok_unwrap(
-                Members::member_id_by_account_id(&ALICE_ACCOUNT_ID),
-                "member id not assigned",
-            );
+            let member_ids = Members::member_ids_by_root_account_id(&ALICE_ACCOUNT_ID);
+            assert_eq!(member_ids, vec![next_member_id]);
 
             let profile = assert_ok_unwrap(
-                Members::member_profile(&member_id),
+                Members::member_profile(&next_member_id),
                 "member profile not created",
             );
 
@@ -107,6 +115,13 @@ fn buy_membership() {
             assert_eq!(Some(profile.about), get_alice_info().about);
 
             assert_eq!(Balances::free_balance(&ALICE_ACCOUNT_ID), SURPLUS_BALANCE);
+
+            // controller account initially set to primary account
+            assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
+            assert_eq!(
+                Members::member_ids_by_controller_account_id(ALICE_ACCOUNT_ID),
+                vec![next_member_id]
+            );
         });
 }
 
@@ -121,7 +136,10 @@ fn buy_membership_fails_without_enough_balance() {
             let initial_balance = DEFAULT_FEE - 1;
             set_alice_free_balance(initial_balance);
 
-            assert!(buy_default_membership_as_alice().is_err());
+            assert_dispatch_error_message(
+                buy_default_membership_as_alice(),
+                "not enough balance to buy membership",
+            );
         });
 }
 
@@ -138,27 +156,10 @@ fn new_memberships_allowed_flag() {
 
             members::NewMembershipsAllowed::put(false);
 
-            assert!(buy_default_membership_as_alice().is_err());
-        });
-}
-
-#[test]
-fn account_cannot_create_multiple_memberships() {
-    const DEFAULT_FEE: u64 = 500;
-    const SURPLUS_BALANCE: u64 = 500;
-
-    ExtBuilder::default()
-        .default_paid_membership_fee(DEFAULT_FEE)
-        .build()
-        .execute_with(|| {
-            let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
-            set_alice_free_balance(initial_balance);
-
-            // First time it works
-            assert_ok!(buy_default_membership_as_alice());
-
-            // second attempt should fail
-            assert!(buy_default_membership_as_alice().is_err());
+            assert_dispatch_error_message(
+                buy_default_membership_as_alice(),
+                "new members not allowed",
+            );
         });
 }
 
@@ -178,7 +179,10 @@ fn unique_handles() {
             <members::Handles<Test>>::insert(get_alice_info().handle.unwrap(), 1);
 
             // should not be allowed to buy membership with that handle
-            assert!(buy_default_membership_as_alice().is_err());
+            assert_dispatch_error_message(
+                buy_default_membership_as_alice(),
+                "handle already registered",
+            );
         });
 }
 
@@ -194,21 +198,19 @@ fn update_profile() {
             let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
             set_alice_free_balance(initial_balance);
 
+            let next_member_id = Members::members_created();
+
             assert_ok!(buy_default_membership_as_alice());
 
             assert_ok!(Members::update_profile(
                 Origin::signed(ALICE_ACCOUNT_ID),
+                next_member_id,
                 get_bob_info()
             ));
 
-            let member_id = assert_ok_unwrap(
-                Members::member_id_by_account_id(&ALICE_ACCOUNT_ID),
-                "member id not assigned",
-            );
-
             let profile = assert_ok_unwrap(
-                Members::member_profile(&member_id),
-                "member profile created",
+                Members::member_profile(&next_member_id),
+                "member profile not created",
             );
 
             assert_eq!(Some(profile.handle), get_bob_info().handle);
@@ -223,20 +225,17 @@ fn add_screened_member() {
         let screening_authority = 5;
         <members::ScreeningAuthority<Test>>::put(&screening_authority);
 
+        let next_member_id = Members::members_created();
+
         assert_ok!(Members::add_screened_member(
             Origin::signed(screening_authority),
             ALICE_ACCOUNT_ID,
             get_alice_info()
         ));
 
-        let member_id = assert_ok_unwrap(
-            Members::member_id_by_account_id(&ALICE_ACCOUNT_ID),
-            "member id not assigned",
-        );
-
         let profile = assert_ok_unwrap(
-            Members::member_profile(&member_id),
-            "member profile created",
+            Members::member_profile(&next_member_id),
+            "member profile not created",
         );
 
         assert_eq!(Some(profile.handle), get_alice_info().handle);
@@ -247,4 +246,146 @@ fn add_screened_member() {
             profile.entry
         );
     });
+}
+
+#[test]
+fn set_controller_key() {
+    let initial_members = [ALICE_ACCOUNT_ID];
+    const ALICE_CONTROLLER_ID: u64 = 2;
+
+    ExtBuilder::default()
+        .members(initial_members.to_vec())
+        .build()
+        .execute_with(|| {
+            let member_id = Members::member_ids_by_root_account_id(&ALICE_ACCOUNT_ID)[0];
+
+            assert_ok!(Members::set_controller_account(
+                Origin::signed(ALICE_ACCOUNT_ID),
+                member_id,
+                ALICE_CONTROLLER_ID
+            ));
+
+            let profile = assert_ok_unwrap(
+                Members::member_profile(&member_id),
+                "member profile not created",
+            );
+
+            assert_eq!(profile.controller_account, ALICE_CONTROLLER_ID);
+            assert_eq!(
+                Members::member_ids_by_controller_account_id(&ALICE_CONTROLLER_ID),
+                vec![member_id]
+            );
+            assert!(Members::member_ids_by_controller_account_id(&ALICE_ACCOUNT_ID).is_empty());
+        });
+}
+
+#[test]
+fn set_root_account() {
+    let initial_members = [ALICE_ACCOUNT_ID];
+    const ALICE_NEW_ROOT_ACCOUNT: u64 = 2;
+
+    ExtBuilder::default()
+        .members(initial_members.to_vec())
+        .build()
+        .execute_with(|| {
+            let member_id_1 = Members::member_ids_by_root_account_id(&ALICE_ACCOUNT_ID)[0];
+
+            assert_ok!(Members::set_root_account(
+                Origin::signed(ALICE_ACCOUNT_ID),
+                member_id_1,
+                ALICE_NEW_ROOT_ACCOUNT
+            ));
+
+            let member_id_2 = Members::member_ids_by_root_account_id(&ALICE_NEW_ROOT_ACCOUNT)[0];
+
+            assert_eq!(member_id_1, member_id_2);
+
+            assert!(Members::member_ids_by_root_account_id(&ALICE_ACCOUNT_ID).is_empty());
+        });
+}
+
+#[test]
+fn registering_and_unregistering_roles_on_member() {
+    let initial_members = [1, 2];
+
+    ExtBuilder::default()
+        .members(initial_members.to_vec())
+        .build()
+        .execute_with(|| {
+            const DUMMY_ACTOR_ID: u32 = 100;
+            let member_id_1 = Members::member_ids_by_root_account_id(&1)[0];
+            let member_id_2 = Members::member_ids_by_root_account_id(&2)[0];
+
+            // no initial roles for member
+            assert!(!Members::member_is_in_role(
+                member_id_1,
+                members::Role::Publisher
+            ));
+
+            // REGISTERING
+
+            // successful registration
+            assert_ok!(Members::register_role_on_member(
+                &1,
+                member_id_1,
+                members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID)
+            ));
+            assert!(Members::member_is_in_role(
+                member_id_1,
+                members::Role::Publisher
+            ));
+
+            // enter role a second time should fail
+            assert_dispatch_error_message(
+                Members::register_role_on_member(
+                    &1,
+                    member_id_1,
+                    members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID + 1),
+                ),
+                "MemberAlreadyInRole",
+            );
+
+            // registering another member in same role and actorid combination should fail
+            assert_dispatch_error_message(
+                Members::register_role_on_member(
+                    &2,
+                    member_id_2,
+                    members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID),
+                ),
+                "ActorInRoleAlreadyExists",
+            );
+
+            // UNREGISTERING
+
+            // trying to unregister non existant actor role should fail
+            assert_dispatch_error_message(
+                Members::unregister_role_on_member(
+                    &1,
+                    member_id_1,
+                    members::ActorInRole::new(members::Role::Curator, 222),
+                ),
+                "ActorInRoleNotFound",
+            );
+
+            // trying to unregister actor role on wrong member should fail
+            assert_dispatch_error_message(
+                Members::unregister_role_on_member(
+                    &2,
+                    member_id_2,
+                    members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID),
+                ),
+                "ActorInRoleNotRegisteredForMember",
+            );
+
+            // successfully unregister role
+            assert_ok!(Members::unregister_role_on_member(
+                &1,
+                member_id_1,
+                members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID)
+            ));
+            assert!(!Members::member_is_in_role(
+                member_id_1,
+                members::Role::Publisher
+            ));
+        });
 }

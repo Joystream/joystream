@@ -1,13 +1,13 @@
 use crate::roles::actors;
 use crate::storage::data_directory::Trait as DDTrait;
-use crate::traits::{ContentHasStorage, ContentIdExists, Members, Roles};
+use crate::traits::{ContentHasStorage, ContentIdExists, Roles};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
 use system::{self, ensure_signed};
 
-pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
+pub trait Trait: timestamp::Trait + system::Trait + DDTrait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     // TODO deprecated
@@ -17,10 +17,9 @@ pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 
-    type Members: Members<Self>;
     type Roles: Roles<Self>;
     type ContentIdExists: ContentIdExists<Self>;
 }
@@ -131,7 +130,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Check that the origin is a storage provider
-            ensure!(<T as Trait>::Roles::account_has_role(&who, actors::Role::Storage), MSG_ONLY_STORAGE_PROVIDER_MAY_CREATE_DOSR);
+            ensure!(<T as Trait>::Roles::account_has_role(&who, actors::Role::StorageProvider), MSG_ONLY_STORAGE_PROVIDER_MAY_CREATE_DOSR);
 
             // Content ID must exist
             ensure!(T::ContentIdExists::has_content(&cid), MSG_CID_NOT_FOUND);

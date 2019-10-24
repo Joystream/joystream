@@ -1,11 +1,11 @@
 use crate::traits;
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, Parameter};
 use system::ensure_root;
 
-pub trait Trait: system::Trait + MaybeDebug {
+pub trait Trait: system::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type DataObjectTypeId: Parameter
@@ -14,7 +14,7 @@ pub trait Trait: system::Trait + MaybeDebug {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 }
 

@@ -1,27 +1,23 @@
 use crate::currency::{BalanceOf, GovernanceCurrency};
 use codec::{Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{Bounded, MaybeDebug, Zero};
+use runtime_primitives::traits::{Bounded, Zero};
 use srml_support::traits::{
     Currency, LockIdentifier, LockableCurrency, WithdrawReason, WithdrawReasons,
 };
 use srml_support::{decl_event, decl_module, decl_storage, ensure};
 use system::{self, ensure_root, ensure_signed};
 
-use crate::traits::Members;
+use crate::membership;
+pub use membership::members::Role;
 
 const STAKING_ID: LockIdentifier = *b"role_stk";
 
-#[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Debug)]
-pub enum Role {
-    Storage,
-}
-
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, Copy, Clone, Eq, PartialEq)]
-pub struct RoleParameters<T: Trait> {
+pub struct RoleParameters<Balance, BlockNumber> {
     // minium balance required to stake to enter a role
-    pub min_stake: BalanceOf<T>,
+    pub min_stake: Balance,
 
     // minimum actors to maintain - if role is unstaking
     // and remaining actors would be less that this value - prevent or punish for unstaking
@@ -31,44 +27,44 @@ pub struct RoleParameters<T: Trait> {
     pub max_actors: u32,
 
     // fixed amount of tokens paid to actors' primary account
-    pub reward: BalanceOf<T>,
+    pub reward: Balance,
 
     // payouts are made at this block interval
-    pub reward_period: T::BlockNumber,
+    pub reward_period: BlockNumber,
 
     // minimum amount of time before being able to unstake
-    pub bonding_period: T::BlockNumber,
+    pub bonding_period: BlockNumber,
 
     // how long tokens remain locked for after unstaking
-    pub unbonding_period: T::BlockNumber,
+    pub unbonding_period: BlockNumber,
 
     // minimum period required to be in service. unbonding before this time is highly penalized
-    pub min_service_period: T::BlockNumber,
+    pub min_service_period: BlockNumber,
 
     // "startup" time allowed for roles that need to sync their infrastructure
     // with other providers before they are considered in service and punishable for
     // not delivering required level of service.
-    pub startup_grace_period: T::BlockNumber,
+    pub startup_grace_period: BlockNumber,
 
     // small fee burned to make a request to enter role
-    pub entry_request_fee: BalanceOf<T>,
+    pub entry_request_fee: Balance,
 }
 
-impl<T: Trait> Default for RoleParameters<T> {
+impl<Balance: From<u32>, BlockNumber: From<u32>> Default for RoleParameters<Balance, BlockNumber> {
     fn default() -> Self {
         Self {
-            min_stake: BalanceOf::<T>::from(3000),
+            min_stake: Balance::from(3000),
             max_actors: 10,
-            reward: BalanceOf::<T>::from(10),
-            reward_period: T::BlockNumber::from(600),
-            unbonding_period: T::BlockNumber::from(600),
-            entry_request_fee: BalanceOf::<T>::from(50),
+            reward: Balance::from(10),
+            reward_period: BlockNumber::from(600),
+            unbonding_period: BlockNumber::from(600),
+            entry_request_fee: Balance::from(50),
 
             // not currently used
             min_actors: 5,
-            bonding_period: T::BlockNumber::from(600),
-            min_service_period: T::BlockNumber::from(600),
-            startup_grace_period: T::BlockNumber::from(600),
+            bonding_period: BlockNumber::from(600),
+            min_service_period: BlockNumber::from(600),
+            startup_grace_period: BlockNumber::from(600),
         }
     }
 }
@@ -85,15 +81,13 @@ pub trait ActorRemoved<T: Trait> {
     fn actor_removed(actor: &T::AccountId);
 }
 
-pub trait Trait: system::Trait + GovernanceCurrency + MaybeDebug {
+pub trait Trait: system::Trait + GovernanceCurrency + membership::members::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-
-    type Members: Members<Self>;
 
     type OnActorRemoved: ActorRemoved<Self>;
 }
 
-pub type MemberId<T> = <<T as Trait>::Members as Members<T>>::Id;
+pub type MemberId<T> = <T as membership::members::Trait>::MemberId;
 // actor account, memberid, role, expires
 pub type Request<T> = (
     <T as system::Trait>::AccountId,
@@ -111,17 +105,17 @@ decl_storage! {
         /// requirements to enter and maintain status in roles
         pub Parameters get(parameters) build(|config: &GenesisConfig| {
             if config.enable_storage_role {
-                let storage_params: RoleParameters<T> = Default::default();
-                vec![(Role::Storage, storage_params)]
+                let storage_params: RoleParameters<BalanceOf<T>, T::BlockNumber> = Default::default();
+                vec![(Role::StorageProvider, storage_params)]
             } else {
                 vec![]
             }
-        }): map Role => Option<RoleParameters<T>>;
+        }): map Role => Option<RoleParameters<BalanceOf<T>, T::BlockNumber>>;
 
         /// the roles members can enter into
         pub AvailableRoles get(available_roles) build(|config: &GenesisConfig| {
             if config.enable_storage_role {
-                vec![(Role::Storage)]
+                vec![(Role::StorageProvider)]
             } else {
                 vec![]
             }
@@ -173,19 +167,9 @@ impl<T: Trait> Module<T> {
         Self::actor_by_account_id(role_key).ok_or("not role key")
     }
 
-    fn ensure_actor_is_member(
-        role_key: &T::AccountId,
-        member_id: MemberId<T>,
-    ) -> Result<Actor<T>, &'static str> {
-        let actor = Self::ensure_actor(role_key)?;
-        if actor.member_id == member_id {
-            Ok(actor)
-        } else {
-            Err("actor not owned by member")
-        }
-    }
-
-    fn ensure_role_parameters(role: Role) -> Result<RoleParameters<T>, &'static str> {
+    fn ensure_role_parameters(
+        role: Role,
+    ) -> Result<RoleParameters<BalanceOf<T>, T::BlockNumber>, &'static str> {
         Self::parameters(role).ok_or("no parameters for role")
     }
 
@@ -286,9 +270,9 @@ decl_module! {
                                 if balance < params.min_stake {
                                     let _ = T::Currency::deposit_into_existing(&actor.account, params.reward);
                                 } else {
-                                    // otherwise it should go the the member account
-                                    if let Ok(member_account) = T::Members::lookup_account_by_member_id(actor.member_id) {
-                                        let _ = T::Currency::deposit_into_existing(&member_account, params.reward);
+                                    // otherwise it should go the the member's root account
+                                    if let Some(profile) = <membership::members::Module<T>>::member_profile(&actor.member_id) {
+                                        let _ = T::Currency::deposit_into_existing(&profile.root_account, params.reward);
                                     }
                                 }
                             }
@@ -301,12 +285,13 @@ decl_module! {
         pub fn role_entry_request(origin, role: Role, member_id: MemberId<T>) {
             let sender = ensure_signed(origin)?;
 
-            ensure!(T::Members::lookup_member_id(&sender).is_err(), "account is a member");
             ensure!(!Self::is_role_account(&sender), "account already used");
 
             ensure!(Self::is_role_available(role), "inactive role");
 
             let role_parameters = Self::ensure_role_parameters(role)?;
+
+            <membership::members::Module<T>>::ensure_profile(member_id)?;
 
             // pay (burn) entry fee - spam filter
             let fee = role_parameters.entry_request_fee;
@@ -323,16 +308,25 @@ decl_module! {
         /// Member activating entry request
         pub fn stake(origin, role: Role, actor_account: T::AccountId) {
             let sender = ensure_signed(origin)?;
-            let member_id = T::Members::lookup_member_id(&sender)?;
+            ensure!(<membership::members::Module<T>>::is_member_account(&sender), "members only can accept storage entry request");
 
-            if !Self::role_entry_requests()
+            // get member ids from requests that are controller by origin
+            let ids = Self::role_entry_requests()
                 .iter()
-                .any(|request| request.0 == actor_account && request.1 == member_id && request.2 == role)
-            {
-                return Err("no role entry request matches");
-            }
+                .filter(|request| request.0 == actor_account && request.2 == role)
+                .map(|request| request.1)
+                .filter(|member_id|
+                    <membership::members::Module<T>>::ensure_profile(*member_id)
+                        .ok()
+                        .map_or(false, |profile| profile.root_account == sender || profile.controller_account == sender)
+                )
+                .collect::<Vec<_>>();
 
-            ensure!(T::Members::lookup_member_id(&actor_account).is_err(), "account is a member");
+            ensure!(!ids.is_empty(), "no role entry request matches");
+
+            // take first matching id
+            let member_id = ids[0];
+
             ensure!(!Self::is_role_account(&actor_account), "account already used");
 
             // make sure role is still available
@@ -371,9 +365,10 @@ decl_module! {
 
         pub fn unstake(origin, actor_account: T::AccountId) {
             let sender = ensure_signed(origin)?;
-            let member_id = T::Members::lookup_member_id(&sender)?;
+            let actor = Self::ensure_actor(&actor_account)?;
 
-            let actor = Self::ensure_actor_is_member(&actor_account, member_id)?;
+            let profile = <membership::members::Module<T>>::ensure_profile(actor.member_id)?;
+            ensure!(profile.root_account == sender || profile.controller_account == sender, "only member can unstake storage provider");
 
             let role_parameters = Self::ensure_role_parameters(actor.role)?;
 
@@ -382,7 +377,7 @@ decl_module! {
             Self::deposit_event(RawEvent::Unstaked(actor.account, actor.role));
         }
 
-        pub fn set_role_parameters(origin, role: Role, params: RoleParameters<T>) {
+        pub fn set_role_parameters(origin, role: Role, params: RoleParameters<BalanceOf<T>, T::BlockNumber>) {
             ensure_root(origin)?;
             let new_stake = params.min_stake.clone();
             <Parameters<T>>::insert(role, params);

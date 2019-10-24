@@ -14,30 +14,33 @@
 // You should have received a copy of the GNU General Public License
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::{env, process::Command, string::String};
 use wasm_builder_runner::{build_current_project_with_rustflags, WasmBuilderSource};
 
-/*
-Error appears in Cargo.toml in VisualStudio Code
-
-failed to run custom build command for `joystream-node-runtime v6.0.0 (/Users/mokhtar/joystream/runtime)`
-process didn't exit successfully: `/Users/mokhtar/joystream/runtime/target/rls/debug/build/joystream-node-runtime-c5155b3ff357b0c8/build-script-build` (exit code: 1)
---- stdout
-Unknown argument 'run'. Supported arguments:
-
-    --version or -V to print the version and commit info
-    --help or -h for this message
-    --cli starts the RLS in command line mode
-    No input starts the RLS as a language server
-
-seems `rls run ...` is being run instead of `rustup run ...`
-*/
-
 fn main() {
+    if !in_real_cargo_environment() {
+        env::set_var("BUILD_DUMMY_WASM_BINARY", "1");
+        println!("Building DUMMY Wasm binary");
+    }
+
     build_current_project_with_rustflags(
         "wasm_binary.rs",
-        WasmBuilderSource::Crates("1.0.4"),
+        WasmBuilderSource::Crates("1.0.8"),
         // This instructs LLD to export __heap_base as a global variable, which is used by the
         // external memory allocator.
         "-Clink-arg=--export=__heap_base",
     );
+}
+
+fn in_real_cargo_environment() -> bool {
+    let cargo =
+        env::var("CARGO").expect("`CARGO` env variable is always set when executing `build.rs`.");
+    let mut cmd = Command::new(cargo);
+    cmd.arg("--version");
+    let output = cmd.output().expect("failed to get cargo version");
+    let version = String::from_utf8(output.stdout).unwrap();
+    println!("{}", version);
+    // if we are building in an IDE (Code or Atom) with RLS extension the version
+    // would start with "rls"
+    version.starts_with("cargo")
 }

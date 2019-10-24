@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use super::members;
+pub use super::members::{self, DEFAULT_PAID_TERM_ID};
 pub use crate::currency::GovernanceCurrency;
 pub use srml_support::traits::Currency;
 pub use system;
@@ -60,6 +60,7 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
+    pub const InitialMembersBalance: u64 = 2000;
 }
 
 impl balances::Trait for Test {
@@ -88,29 +89,30 @@ impl members::Trait for Test {
     type MemberId = u32;
     type PaidTermId = u32;
     type SubscriptionId = u32;
-    type Roles = ();
+    type ActorId = u32;
+    type InitialMembersBalance = InitialMembersBalance;
 }
 
 pub struct ExtBuilder {
-    first_member_id: u32,
     default_paid_membership_fee: u64,
+    members: Vec<(u64)>,
 }
 impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
-            first_member_id: 1,
             default_paid_membership_fee: 100,
+            members: vec![],
         }
     }
 }
 
 impl ExtBuilder {
-    pub fn first_member_id(mut self, first_member_id: u32) -> Self {
-        self.first_member_id = first_member_id;
-        self
-    }
     pub fn default_paid_membership_fee(mut self, default_paid_membership_fee: u64) -> Self {
         self.default_paid_membership_fee = default_paid_membership_fee;
+        self
+    }
+    pub fn members(mut self, members: Vec<u64>) -> Self {
+        self.members = members;
         self
     }
     pub fn build(self) -> runtime_io::TestExternalities {
@@ -119,8 +121,12 @@ impl ExtBuilder {
             .unwrap();
 
         members::GenesisConfig::<Test> {
-            first_member_id: self.first_member_id,
             default_paid_membership_fee: self.default_paid_membership_fee,
+            members: self
+                .members
+                .iter()
+                .map(|account_id| (*account_id, "".into(), "".into(), "".into()))
+                .collect(),
         }
         .assimilate_storage(&mut t)
         .unwrap();

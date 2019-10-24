@@ -2,7 +2,7 @@
 
 pub use super::actors;
 pub use crate::currency::GovernanceCurrency;
-use crate::traits::Members;
+use crate::membership;
 pub use srml_support::traits::Currency;
 pub use system;
 
@@ -20,6 +20,13 @@ impl_outer_origin! {
     pub enum Origin for Test {}
 }
 
+pub fn alice_id() -> u32 {
+    Members::member_ids_by_root_account_id(alice_account())[0]
+}
+pub fn alice_account() -> u64 {
+    1
+}
+
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
@@ -28,6 +35,7 @@ parameter_types! {
     pub const MaximumBlockWeight: u32 = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const MinimumPeriod: u64 = 5;
 }
 
 impl system::Trait for Test {
@@ -54,6 +62,7 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
+    pub const InitialMembersBalance: u32 = 2000;
 }
 
 impl balances::Trait for Test {
@@ -77,57 +86,23 @@ impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-pub struct MockMembers {}
-
-impl MockMembers {
-    pub fn alice_id() -> u32 {
-        1
-    }
-    pub fn alice_account() -> u64 {
-        1
-    }
-    pub fn bob_id() -> u32 {
-        2
-    }
-    pub fn bob_account() -> u64 {
-        2
-    }
+impl timestamp::Trait for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
 }
 
-impl Members<Test> for MockMembers {
-    type Id = u32;
-    fn is_active_member(who: &u64) -> bool {
-        if *who == Self::alice_account() {
-            return true;
-        }
-        if *who == Self::bob_account() {
-            return true;
-        }
-        false
-    }
-    fn lookup_member_id(who: &u64) -> Result<u32, &'static str> {
-        if *who == Self::alice_account() {
-            return Ok(Self::alice_id());
-        }
-        if *who == Self::bob_account() {
-            return Ok(Self::bob_id());
-        }
-        Err("member not found")
-    }
-    fn lookup_account_by_member_id(id: Self::Id) -> Result<u64, &'static str> {
-        if id == Self::alice_id() {
-            return Ok(Self::alice_account());
-        }
-        if id == Self::bob_id() {
-            return Ok(Self::bob_account());
-        }
-        Err("account not found")
-    }
+impl membership::members::Trait for Test {
+    type Event = ();
+    type MemberId = u32;
+    type SubscriptionId = u32;
+    type PaidTermId = u32;
+    type ActorId = u32;
+    type InitialMembersBalance = InitialMembersBalance;
 }
 
 impl actors::Trait for Test {
     type Event = ();
-    type Members = MockMembers;
     type OnActorRemoved = ();
 }
 
@@ -136,9 +111,16 @@ impl actors::ActorRemoved<Test> for () {
 }
 
 pub fn initial_test_ext() -> runtime_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let mut t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
+
+    membership::members::GenesisConfig::<Test> {
+        default_paid_membership_fee: 0,
+        members: vec![(alice_account(), "alice".into(), "".into(), "".into())],
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
 
     t.into()
 }
@@ -146,3 +128,4 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
 pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Actors = actors::Module<Test>;
+pub type Members = membership::members::Module<Test>;

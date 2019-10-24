@@ -1,18 +1,17 @@
+use crate::membership;
 use crate::roles::actors;
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
-use crate::traits::{ContentIdExists, IsActiveDataObjectType, Members, Roles};
+use crate::traits::{ContentIdExists, IsActiveDataObjectType, Roles};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{
-    MaybeDebug, MaybeDisplay, MaybeSerializeDebug, Member, SimpleArithmetic,
-};
+use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 use system::{self, ensure_root, ensure_signed};
 
-pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
+pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + membership::members::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type ContentId: Parameter + Member + MaybeSerializeDebug + MaybeDisplay + Copy + Ord + Default;
+    type ContentId: Parameter + Member + MaybeSerialize + Copy + Ord + Default;
 
     type SchemaId: Parameter
         + Member
@@ -20,10 +19,9 @@ pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 
-    type Members: Members<Self>;
     type Roles: Roles<Self>;
     type IsActiveDataObjectType: IsActiveDataObjectType<Self>;
 }
@@ -99,10 +97,10 @@ pub struct ContentMetadata<T: Trait> {
 
 #[derive(Clone, Encode, Decode, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct ContentMetadataUpdate<T: Trait> {
-    pub children_ids: Option<Vec<T::ContentId>>,
+pub struct ContentMetadataUpdate<ContentId, SchemaId> {
+    pub children_ids: Option<Vec<ContentId>>,
     pub visibility: Option<ContentVisibility>,
-    pub schema: Option<T::SchemaId>,
+    pub schema: Option<SchemaId>,
     pub json: Option<Vec<u8>>,
 }
 
@@ -157,7 +155,7 @@ decl_module! {
             ipfs_content_id: Vec<u8>
         ) {
             let who = ensure_signed(origin)?;
-            ensure!(T::Members::is_active_member(&who), MSG_CREATOR_MUST_BE_MEMBER);
+            ensure!(<membership::members::Module<T>>::is_member_account(&who), MSG_CREATOR_MUST_BE_MEMBER);
 
             ensure!(T::IsActiveDataObjectType::is_active_data_object_type(&type_id),
                 MSG_DO_TYPE_MUST_BE_ACTIVE);
@@ -170,7 +168,7 @@ decl_module! {
                 Some(primary_liaison) => primary_liaison,
 
                 // Select liaison from staked roles if available
-                _ => T::Roles::random_account_for_role(actors::Role::Storage)?
+                _ => T::Roles::random_account_for_role(actors::Role::StorageProvider)?
             };
 
             // Let's create the entry then
@@ -204,10 +202,10 @@ decl_module! {
         fn add_metadata(
             origin,
             content_id: T::ContentId,
-            update: ContentMetadataUpdate<T>
+            update: ContentMetadataUpdate<T::ContentId, T::SchemaId>
         ) {
             let who = ensure_signed(origin)?;
-            ensure!(T::Members::is_active_member(&who),
+            ensure!(<membership::members::Module<T>>::is_member_account(&who),
                 "Only active members can add content metadata");
 
             ensure!(!<MetadataByContentId<T>>::exists(&content_id),
@@ -239,12 +237,12 @@ decl_module! {
         fn update_metadata(
             origin,
             content_id: T::ContentId,
-            update: ContentMetadataUpdate<T>
+            update: ContentMetadataUpdate<T::ContentId, T::SchemaId>
         ) {
             let who = ensure_signed(origin)?;
 
             // Even if origin is an owner of metadata, they stil need to be an active member.
-            ensure!(T::Members::is_active_member(&who),
+            ensure!(<membership::members::Module<T>>::is_member_account(&who),
                 "Only active members can update content metadata");
 
             let has_updates = update.schema.is_some() || update.json.is_some();
@@ -354,9 +352,15 @@ mod tests {
     #[test]
     fn succeed_adding_content() {
         with_default_mock_builder(|| {
+            let sender = 1 as u64;
             // Register a content with 1234 bytes of type 1, which should be recognized.
-            let res =
-                TestDataDirectory::add_content(Origin::signed(1), 1, 1234, 0, vec![1, 3, 3, 7]);
+            let res = TestDataDirectory::add_content(
+                Origin::signed(sender),
+                1,
+                1234,
+                0,
+                vec![1, 3, 3, 7],
+            );
             assert!(res.is_ok());
         });
     }
