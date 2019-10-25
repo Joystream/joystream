@@ -142,11 +142,7 @@ function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type:
       setAddress(generateSeed(null, derivePath, newSeedType, pairType));
     }
   };
-  const _onChangeName = (_name: string): void => {
-    const name = _name.trim();
-
-    setName({ isNameValid: !!name, name });
-  };
+  const _onChangeName = (name: string): void => setName({ isNameValid: !!name.trim(), name });
   const _toggleConfirmation = (): void => setIsConfirmationOpen(!isConfirmationOpen);
 
   const _onCommit = (): void => {
@@ -158,7 +154,7 @@ function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type:
     const status = { action: 'create' } as ActionStatus;
 
     try {
-      const { json, pair } = keyring.addUri(`${seed}${derivePath}`, password, { name, tags: [] }, pairType);
+      const { json, pair } = keyring.addUri(`${seed}${derivePath}`, password, { name: name.trim(), tags: [] }, pairType);
       const blob = new Blob([JSON.stringify(json)], { type: 'application/json; charset=utf-8' });
       const { address } = pair;
 
@@ -265,11 +261,12 @@ function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type:
             />
             <Input
               className='full'
-              help={t('You can set a custom derivation path for this account using the following syntax "/<soft-key>//<hard-key>". The "/<soft-key>" and "//<hard-key>" may be repeated and mixed`.')}
+              help={t('You can set a custom derivation path for this account using the following syntax "/<soft-key>//<hard-key>///<password>". The "/<soft-key>" and "//<hard-key>" may be repeated and mixed`. The "///password" is optional and should only occur once.')}
               isError={!!deriveError}
               label={t('secret derivation path')}
               onChange={_onChangeDerive}
               onEnter={_onCommit}
+              placeholder={t('//hard/soft///password')}
               value={derivePath}
             />
             {deriveError && (

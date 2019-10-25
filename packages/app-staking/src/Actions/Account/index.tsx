@@ -20,7 +20,7 @@ import InjectKeys from './InjectKeys';
 import Nominate from './Nominate';
 import SetControllerAccount from './SetControllerAccount';
 import SetRewardDestination from './SetRewardDestination';
-import SetSessionAccount from './SetSessionAccount';
+import SetSessionKey from './SetSessionKey';
 import translate from '../../translate';
 import Unbond from './Unbond';
 import Validate from './Validate';
@@ -62,6 +62,14 @@ interface State {
   validatorPrefs?: ValidatorPrefs;
 }
 
+const DEFAULT_BALANCES = {
+  available: true,
+  bonded: false,
+  total: false,
+  redeemable: false,
+  unlocking: false
+};
+
 function toIdString (id?: AccountId | null): string | null {
   return id
     ? id.toString()
@@ -95,7 +103,7 @@ class Account extends React.PureComponent<Props, State> {
     }
 
     const { controllerId, nextSessionIds, nominators, online, offline, rewardDestination, sessionIds, stakers, stakingLedger, stashId, validatorPrefs } = staking_info;
-    const isStashNominating = nominators && nominators.length !== 0;
+    const isStashNominating = nominators && !!nominators.length;
     const _stashId = toIdString(stashId);
     const isStashValidating = !!allStashes && !!_stashId && allStashes.includes(_stashId);
 
@@ -143,13 +151,7 @@ class Account extends React.PureComponent<Props, State> {
         type='account'
         value={stashId}
         withAddressOrName
-        withBalance={{
-          available: true,
-          bonded: false,
-          free: false,
-          redeemable: false,
-          unlocking: false
-        }}
+        withBalance={DEFAULT_BALANCES}
       >
         <BondExtra
           controllerId={controllerId}
@@ -175,7 +177,7 @@ class Account extends React.PureComponent<Props, State> {
         <div className={className}>
           <div className='staking--Accounts'>
             {this.renderControllerAccount()}
-            {!isSubstrateV2 && sessionIds.length && (
+            {!isSubstrateV2 && !!sessionIds.length && (
               <div className='staking--Account-detail actions'>
                 <AddressRow
                   label={t('session')}
@@ -208,7 +210,7 @@ class Account extends React.PureComponent<Props, State> {
                 withValidatorPrefs={isStashValidating}
               />
             </div>
-            {nominees && nominees.length !== 0 && (
+            {nominees && !!nominees.length && (
               <div className='staking--Account-Nominee'>
                 <label className='staking--label'>{t('nominating')}</label>
                 {nominees.map((nomineeId, index): React.ReactNode => (
@@ -502,7 +504,7 @@ class Account extends React.PureComponent<Props, State> {
     }
 
     return (
-      <SetSessionAccount
+      <SetSessionKey
         controllerId={controllerId}
         isOpen={isSetSessionAccountOpen}
         onClose={this.toggleSetSessionAccount}

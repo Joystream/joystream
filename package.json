@@ -1,5 +1,5 @@
 {
-  "version": "0.36.0-beta.65",
+  "version": "0.36.0-beta.101",
   "private": true,
   "engines": {
     "node": ">=10.13.0",
@@ -10,22 +10,23 @@
     "packages/*"
   ],
   "resolutions": {
-    "@polkadot/api": "^0.94.0-beta.11",
-    "@polkadot/api-contract": "^0.94.0-beta.11",
-    "@polkadot/keyring": "^1.5.1",
-    "@polkadot/types": "^0.94.0-beta.11",
-    "@polkadot/util": "^1.5.1",
-    "@polkadot/util-crypto": "^1.5.1",
-    "@types/styled-components": "4.1.8",
+    "@polkadot/api": "^0.95.0-beta.36",
+    "@polkadot/api-contract": "^0.95.0-beta.36",
+    "@polkadot/keyring": "^1.6.1",
+    "@polkadot/types": "^0.95.0-beta.36",
+    "@polkadot/util": "^1.6.1",
+    "@polkadot/util-crypto": "^1.6.1",
     "babel-core": "^7.0.0-bridge.0",
-    "rxjs": "^6.4.0",
-    "typescript": "^3.6.3"
+    "typescript": "^3.6.4"
   },
   "scripts": {
     "analyze": "yarn run build && cd packages/apps && yarn run source-map-explorer build/main.*.js",
-    "build": "NODE_ENV=production polkadot-dev-build-ts",
-    "check": "yarn lint",
+    "build": "yarn run build:code && yarn run build:i18n",
+    "build:code": "NODE_ENV=production polkadot-dev-build-ts",
+    "build:i18n": "i18next-scanner --config i18next-scanner.config.js",
+    "docs": "echo \"skipping docs\"",
     "clean": "polkadot-dev-clean-build",
+    "clean:i18n": "rm -rf packages/apps/public/locales/en && mkdir -p packages/apps/public/locales/en",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx . && tsc --noEmit --pretty",
     "postinstall": "polkadot-dev-yarn-only",
     "test": "echo \"skipping tests\"",
@@ -33,14 +34,14 @@
     "start": "cd packages/apps && webpack --config webpack.config.js"
   },
   "devDependencies": {
-    "@babel/core": "^7.6.2",
-    "@babel/runtime": "^7.6.2",
-    "@polkadot/dev-react": "^0.31.1",
-    "@polkadot/ts": "^0.1.73",
-    "autoprefixer": "^9.6.1",
+    "@babel/core": "^7.6.4",
+    "@babel/runtime": "^7.6.3",
+    "@polkadot/dev-react": "^0.32.0-beta.11",
+    "@polkadot/ts": "^0.1.82",
+    "autoprefixer": "^9.6.5",
     "empty": "^0.10.1",
-    "gh-pages": "^2.1.1",
     "html-loader": "^0.5.5",
+    "i18next-scanner": "^2.10.3",
     "markdown-loader": "^5.1.0",
     "postcss": "^7.0.18",
     "postcss-clean": "^1.1.0",

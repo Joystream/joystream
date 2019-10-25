@@ -9,10 +9,11 @@ import { Option } from './types';
 import React from 'react';
 import store from 'store';
 import styled from 'styled-components';
+import { withMulti, withObservable } from '@polkadot/react-api';
 import keyring from '@polkadot/ui-keyring';
 import keyringOption from '@polkadot/ui-keyring/options';
 import createKeyringItem from '@polkadot/ui-keyring/options/item';
-import { withMulti, withObservable } from '@polkadot/react-api';
+import { isUndefined } from '@polkadot/util';
 
 import { classes, getAddressName } from '../util';
 import addressToAddress from '../util/toAddress';
@@ -49,11 +50,12 @@ type ExportedType = React.ComponentType<Props> & {
 };
 
 interface State {
-  value?: string;
+  value?: string | string[];
 }
 
 const STORAGE_KEY = 'options:InputAddress';
 const DEFAULT_TYPE = 'all';
+const MULTI_DEFAULT: string[] = [];
 
 function transformToAddress (value: string | Uint8Array): string | null {
   try {
@@ -126,7 +128,6 @@ class InputAddress extends React.PureComponent<Props, State> {
         value: Array.isArray(value)
           ? value.map(addressToAddress)
           : (addressToAddress(value) || undefined)
-
       };
     } catch (error) {
       return null;
@@ -162,7 +163,7 @@ class InputAddress extends React.PureComponent<Props, State> {
             ? optionsAll[type]
             : []
       );
-    const _defaultValue = (isMultiple || value !== undefined)
+    const _defaultValue = (isMultiple || !isUndefined(value))
       ? undefined
       : actualValue;
 
@@ -191,8 +192,8 @@ class InputAddress extends React.PureComponent<Props, State> {
         }
         style={style}
         value={
-          isMultiple
-            ? undefined
+          isMultiple && !value
+            ? MULTI_DEFAULT
             : value
         }
         withEllipsis={withEllipsis}
