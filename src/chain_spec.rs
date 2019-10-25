@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
-use hex_literal::{hex, hex_impl};
-use node_template_runtime::{
+use hex_literal::hex;
+use node_runtime::{
     forum::InputValidationLengthConstraint, AccountId, ActorsConfig, AuthorityDiscoveryConfig,
     BabeConfig, Balance, BalancesConfig, CouncilConfig, CouncilElectionConfig,
-    DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, DownloadSessionsConfig,
-    ForumConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig, MembersConfig,
-    Perbill, ProposalsConfig, SessionConfig, SessionKeys, StakerStatus, StakingConfig, SudoConfig,
-    SystemConfig, DAYS, WASM_BINARY,
+    DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ForumConfig, GenesisConfig,
+    GrandpaConfig, ImOnlineConfig, IndicesConfig, MembersConfig, Perbill, ProposalsConfig,
+    SessionConfig, SessionKeys, StakerStatus, StakingConfig, SudoConfig, SystemConfig, DAYS,
+    WASM_BINARY,
 };
 use primitives::{crypto::UncheckedInto, Pair, Public};
 
@@ -300,9 +300,6 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
         }),
-        downloads: Some(DownloadSessionsConfig {
-            first_download_session_id: 1,
-        }),
         actors: Some(ActorsConfig {
             enable_storage_role: true,
             request_life_time: 300,
@@ -417,9 +414,6 @@ pub fn testnet_genesis(
         }),
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
-        }),
-        downloads: Some(DownloadSessionsConfig {
-            first_download_session_id: 1,
         }),
         actors: Some(ActorsConfig {
             enable_storage_role: true,

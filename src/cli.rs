@@ -6,7 +6,7 @@ use log::info;
 use std::cell::RefCell;
 pub use substrate_cli::{error, IntoExit, VersionInfo};
 use substrate_cli::{informant, parse_and_prepare, NoCustom, ParseAndPrepare};
-use substrate_service::{AbstractService, Roles as ServiceRoles};
+use substrate_service::{AbstractService, Configuration, Roles as ServiceRoles};
 use tokio::runtime::Runtime;
 
 /// Parse command line arguments into service configuration.
@@ -16,9 +16,12 @@ where
     T: Into<std::ffi::OsString> + Clone,
     E: IntoExit,
 {
+    type Config<T> = Configuration<(), T>;
     match parse_and_prepare::<NoCustom, NoCustom, _>(&version, "joystream-node", args) {
-        ParseAndPrepare::Run(cmd) => {
-            cmd.run::<(), _, _, _, _>(load_spec, exit, |exit, _cli_args, _custom_args, config| {
+        ParseAndPrepare::Run(cmd) => cmd.run(
+            load_spec,
+            exit,
+            |exit, _cli_args, _custom_args, config: Config<_>| {
                 info!("{}", version.name);
                 info!("  version {}", config.full_version());
                 info!("  by {}, 2019", version.author);
@@ -39,22 +42,23 @@ where
                     ),
                 }
                 .map_err(|e| format!("{:?}", e))
-            })
-        }
+            },
+        ),
         ParseAndPrepare::BuildSpec(cmd) => cmd.run(load_spec),
-        ParseAndPrepare::ExportBlocks(cmd) => cmd.run_with_builder::<(), _, _, _, _, _>(
-            |config| Ok(new_full_start!(config).0),
+        ParseAndPrepare::ExportBlocks(cmd) => cmd.run_with_builder(
+            |config: Config<_>| Ok(new_full_start!(config).0),
             load_spec,
             exit,
         ),
-        ParseAndPrepare::ImportBlocks(cmd) => cmd.run_with_builder::<(), _, _, _, _, _>(
-            |config| Ok(new_full_start!(config).0),
+        ParseAndPrepare::ImportBlocks(cmd) => cmd.run_with_builder(
+            |config: Config<_>| Ok(new_full_start!(config).0),
             load_spec,
             exit,
         ),
         ParseAndPrepare::PurgeChain(cmd) => cmd.run(load_spec),
-        ParseAndPrepare::RevertChain(cmd) => cmd
-            .run_with_builder::<(), _, _, _, _>(|config| Ok(new_full_start!(config).0), load_spec),
+        ParseAndPrepare::RevertChain(cmd) => {
+            cmd.run_with_builder(|config: Config<_>| Ok(new_full_start!(config).0), load_spec)
+        }
         ParseAndPrepare::CustomCommand(_) => Ok(()),
     }?;
 
