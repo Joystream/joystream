@@ -30,7 +30,7 @@ use std::sync::Arc;
 use substrate_client::{Client, LocalCallExecutor, LongestChain};
 pub use substrate_executor::{native_executor_instance, NativeExecutor};
 use substrate_service::{
-    error::Error as ServiceError, AbstractService, Configuration, NetworkStatus, NewService,
+    error::Error as ServiceError, AbstractService, Configuration, NetworkStatus, Service,
     ServiceBuilder,
 };
 use transaction_pool::{self, txpool::Pool as TransactionPool};
@@ -255,7 +255,7 @@ pub type NodeConfiguration<C> =
 /// Builds a new service for a full client.
 pub fn new_full<C: Send + Default + 'static>(config: NodeConfiguration<C>)
 -> Result<
-	NewService<
+	Service<
 		ConcreteBlock,
 		ConcreteClient,
 		LongestChain<ConcreteBackend, ConcreteBlock>,
