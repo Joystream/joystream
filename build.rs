@@ -25,7 +25,7 @@ fn main() {
 
     build_current_project_with_rustflags(
         "wasm_binary.rs",
-        WasmBuilderSource::Crates("1.0.7"),
+        WasmBuilderSource::Crates("1.0.8"),
         // This instructs LLD to export __heap_base as a global variable, which is used by the
         // external memory allocator.
         "-Clink-arg=--export=__heap_base",

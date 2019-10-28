@@ -4,20 +4,14 @@ use crate::storage::data_object_type_registry::Trait as DOTRTrait;
 use crate::traits::{ContentIdExists, IsActiveDataObjectType, Roles};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{
-    MaybeDebug, MaybeDisplay, MaybeSerializeDebug, Member, SimpleArithmetic,
-};
-use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
-};
+use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 use system::{self, ensure_root, ensure_signed};
 
-pub trait Trait:
-    timestamp::Trait + system::Trait + DOTRTrait + MaybeDebug + membership::members::Trait
-{
+pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + membership::members::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type ContentId: Parameter + Member + MaybeSerializeDebug + MaybeDisplay + Copy + Ord + Default;
+    type ContentId: Parameter + Member + MaybeSerialize + Copy + Ord + Default;
 
     type SchemaId: Parameter
         + Member
@@ -25,7 +19,7 @@ pub trait Trait:
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 
     type Roles: Roles<Self>;
@@ -38,15 +32,13 @@ static MSG_CREATOR_MUST_BE_MEMBER: &str = "Only active members may create conten
 static MSG_DO_TYPE_MUST_BE_ACTIVE: &str =
     "Cannot create content for inactive or missing data object type.";
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct BlockAndTime<T: Trait> {
     pub block: T::BlockNumber,
     pub time: T::Moment,
 }
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub enum LiaisonJudgement {
     Pending,
     Accepted,
@@ -59,8 +51,7 @@ impl Default for LiaisonJudgement {
     }
 }
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObject<T: Trait> {
     pub owner: T::AccountId,
     pub added_at: BlockAndTime<T>,
@@ -76,9 +67,7 @@ pub struct DataObject<T: Trait> {
                                   // pub rejection_reason: Option<Vec<u8>>,
 }
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
-// TODO ContentVisibility
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub enum ContentVisibility {
     Draft, // TODO rename to Unlisted?
     Public,
@@ -90,8 +79,7 @@ impl Default for ContentVisibility {
     }
 }
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct ContentMetadata<T: Trait> {
     pub owner: T::AccountId,
     pub added_at: BlockAndTime<T>,
@@ -101,12 +89,11 @@ pub struct ContentMetadata<T: Trait> {
     pub json: Vec<u8>,
 }
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub struct ContentMetadataUpdate<T: Trait> {
-    pub children_ids: Option<Vec<T::ContentId>>,
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
+pub struct ContentMetadataUpdate<ContentId, SchemaId> {
+    pub children_ids: Option<Vec<ContentId>>,
     pub visibility: Option<ContentVisibility>,
-    pub schema: Option<T::SchemaId>,
+    pub schema: Option<SchemaId>,
     pub json: Option<Vec<u8>>,
 }
 
@@ -150,7 +137,7 @@ decl_event! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         // TODO send file_name as param so we could create a Draft metadata in this fn
         pub fn add_content(
@@ -208,7 +195,7 @@ decl_module! {
         fn add_metadata(
             origin,
             content_id: T::ContentId,
-            update: ContentMetadataUpdate<T>
+            update: ContentMetadataUpdate<T::ContentId, T::SchemaId>
         ) {
             let who = ensure_signed(origin)?;
             ensure!(<membership::members::Module<T>>::is_member_account(&who),
@@ -243,7 +230,7 @@ decl_module! {
         fn update_metadata(
             origin,
             content_id: T::ContentId,
-            update: ContentMetadataUpdate<T>
+            update: ContentMetadataUpdate<T::ContentId, T::SchemaId>
         ) {
             let who = ensure_signed(origin)?;
 

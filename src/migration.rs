@@ -1,8 +1,8 @@
 use crate::forum;
 use crate::storage;
 use crate::VERSION;
-use runtime_io::print;
-use srml_support::{decl_event, decl_module, decl_storage, StorageValue};
+use runtime_primitives::print;
+use srml_support::{decl_event, decl_module, decl_storage};
 use sudo;
 use system;
 
@@ -58,7 +58,7 @@ decl_event! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         fn on_initialize(_now: T::BlockNumber) {
             if Self::spec_version().map_or(true, |spec_version| VERSION.spec_version > spec_version) {

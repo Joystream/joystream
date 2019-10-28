@@ -2,7 +2,7 @@ use crate::currency::GovernanceCurrency;
 use rstd::prelude::*;
 use runtime_primitives::traits::Zero;
 use srml_support::traits::Currency;
-use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap};
+use srml_support::{decl_event, decl_module, decl_storage, ensure};
 use system::{self, ensure_signed};
 
 pub trait Trait: system::Trait + GovernanceCurrency {
@@ -24,7 +24,7 @@ decl_event! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         fn update_memo(origin, memo: Vec<u8>) {
             let sender = ensure_signed(origin)?;

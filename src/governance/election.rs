@@ -1,8 +1,6 @@
 use rstd::prelude::*;
 use srml_support::traits::{Currency, ReservableCurrency};
-use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch::Result, ensure, StorageMap, StorageValue,
-};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch::Result, ensure};
 use system::{self, ensure_root, ensure_signed};
 
 use codec::{Decode, Encode};
@@ -718,7 +716,7 @@ impl<T: Trait> Module<T> {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         // No origin so this is a priviledged call
         fn on_finalize(now: T::BlockNumber) {
@@ -901,12 +899,11 @@ mod tests {
     use super::*;
     use crate::governance::mock::*;
     use codec::Encode;
-    use runtime_io::with_externalities;
     use srml_support::*;
 
     #[test]
     fn election_starts_when_council_term_ends() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             System::set_block_number(1);
 
             assert!(Council::is_term_ended());
@@ -954,7 +951,7 @@ mod tests {
 
     #[test]
     fn should_not_start_new_election_if_already_started() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             assert_ok!(Election::start_election(vec![]));
             assert_err!(
                 Election::start_election(vec![]),
@@ -981,7 +978,7 @@ mod tests {
 
     #[test]
     fn start_election_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             System::set_block_number(1);
             <AnnouncingPeriod<Test>>::put(20);
             let prev_round = Election::round();
@@ -998,7 +995,7 @@ mod tests {
 
     #[test]
     fn init_transferable_stake_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let existing_council = vec![
                 Seat {
                     member: 1,
@@ -1076,7 +1073,7 @@ mod tests {
 
     #[test]
     fn try_add_applicant_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             assert!(Election::applicants().len() == 0);
 
             let applicant = 20 as u64;
@@ -1098,7 +1095,7 @@ mod tests {
 
     #[test]
     fn increasing_applicant_stake_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let applicant = 20 as u64;
             let starting_stake = 100 as u64;
 
@@ -1125,7 +1122,7 @@ mod tests {
 
     #[test]
     fn using_transferable_seat_stake_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let applicant = 20 as u64;
             let _ = Balances::deposit_creating(&applicant, 5000);
 
@@ -1169,7 +1166,7 @@ mod tests {
 
     #[test]
     fn moving_to_voting_without_enough_applicants_should_not_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             System::set_block_number(1);
             <AnnouncingPeriod<Test>>::put(20);
             CouncilSize::put(10);
@@ -1210,7 +1207,7 @@ mod tests {
 
     #[test]
     fn top_applicants_move_to_voting_stage() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             <Applicants<Test>>::put(vec![10, 20, 30, 40]);
             let mut applicants = Election::applicants();
 
@@ -1248,7 +1245,7 @@ mod tests {
 
     #[test]
     fn refunding_applicant_stakes_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&1, 1000);
             let _ = Balances::deposit_creating(&2, 7000);
             let _ = Balances::reserve(&2, 5000);
@@ -1326,7 +1323,7 @@ mod tests {
 
     #[test]
     fn voting_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&20, 1000);
             let payload = vec![10u8];
             let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
@@ -1353,7 +1350,7 @@ mod tests {
 
     #[test]
     fn votes_can_be_covered_by_transferable_stake() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&20, 1000);
 
             save_transferable_stake(
@@ -1385,7 +1382,7 @@ mod tests {
 
     #[test]
     fn voting_without_enough_balance_should_not_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&20, 100);
 
             save_transferable_stake(
@@ -1408,7 +1405,7 @@ mod tests {
 
     #[test]
     fn voting_with_existing_commitment_should_not_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&20, 1000);
 
             save_transferable_stake(
@@ -1451,7 +1448,7 @@ mod tests {
 
     #[test]
     fn revealing_vote_works() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let applicant = 20 as u64;
             let salt = vec![128u8];
             let commitment = make_commitment_for_applicant(applicant, &mut salt.clone());
@@ -1488,7 +1485,7 @@ mod tests {
 
     #[test]
     fn revealing_with_bad_salt_should_not_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let applicant = 20 as u64;
             let salt = vec![128u8];
             let commitment = make_commitment_for_applicant(applicant, &mut salt.clone());
@@ -1522,7 +1519,7 @@ mod tests {
 
     #[test]
     fn revealing_non_matching_commitment_should_not_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let applicant = 20 as u64;
             let salt = vec![128u8];
             let commitment = make_commitment_for_applicant(100, &mut salt.clone());
@@ -1542,7 +1539,7 @@ mod tests {
 
     #[test]
     fn revealing_for_non_applicant_should_not_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let applicant = 20 as u64;
             let salt = vec![128u8];
             let commitment = make_commitment_for_applicant(applicant, &mut salt.clone());
@@ -1568,7 +1565,7 @@ mod tests {
 
     #[test]
     fn revealing_by_non_committer_should_not_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let applicant = 20 as u64;
             let salt = vec![128u8];
             let commitment = make_commitment_for_applicant(applicant, &mut salt.clone());
@@ -1623,7 +1620,7 @@ mod tests {
 
     #[test]
     fn vote_tallying_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let votes = mock_votes(vec![
                 //  (voter, stake[new], stake[transferred], applicant)
                 (10, 100, 0, 100),
@@ -1687,7 +1684,7 @@ mod tests {
 
     #[test]
     fn filter_top_staked_applicants_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             // filter_top_staked depends on order of applicants
             <Applicants<Test>>::put(vec![100, 200, 300]);
 
@@ -1731,7 +1728,7 @@ mod tests {
 
     #[test]
     fn drop_unelected_applicants_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             <Applicants<Test>>::put(vec![100, 200, 300]);
 
             let _ = Balances::deposit_creating(&100, 2000);
@@ -1786,7 +1783,7 @@ mod tests {
 
     #[test]
     fn refunding_voting_stakes_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             // voters' balances
             let _ = Balances::deposit_creating(&10, 6000);
             let _ = Balances::reserve(&10, 5000);
@@ -1865,7 +1862,7 @@ mod tests {
 
     #[test]
     fn unlock_transferable_stakes_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             <ExistingStakeHolders<Test>>::put(vec![10, 20, 30]);
 
             let _ = Balances::deposit_creating(&10, 6000);
@@ -1908,7 +1905,7 @@ mod tests {
 
     #[test]
     fn council_elected_hook_should_work() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             let mut new_council: BTreeMap<u64, Seat<u64, u64>> = BTreeMap::new();
             new_council.insert(
                 200 as u64,
@@ -1941,7 +1938,7 @@ mod tests {
 
     #[test]
     fn simulation() {
-        with_externalities(&mut initial_test_ext(), || {
+        initial_test_ext().execute_with(|| {
             assert_eq!(Council::active_council().len(), 0);
             assert!(Election::stage().is_none());
 

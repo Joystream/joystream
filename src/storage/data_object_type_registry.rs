@@ -1,11 +1,11 @@
 use crate::traits;
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
-use srml_support::{decl_event, decl_module, decl_storage, Parameter, StorageMap, StorageValue};
+use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
+use srml_support::{decl_event, decl_module, decl_storage, Parameter};
 use system::ensure_root;
 
-pub trait Trait: system::Trait + MaybeDebug {
+pub trait Trait: system::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type DataObjectTypeId: Parameter
@@ -14,7 +14,7 @@ pub trait Trait: system::Trait + MaybeDebug {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 }
 
@@ -26,8 +26,7 @@ const CREATE_DETAULT_TYPE: bool = true;
 
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u32 = 1;
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectType {
     pub description: Vec<u8>,
     pub active: bool,
@@ -81,7 +80,7 @@ impl<T: Trait> traits::IsActiveDataObjectType<T> for Module<T> {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         fn on_initialize() {
             // Create a default data object type if it was not created yet.

@@ -2,13 +2,10 @@ use crate::currency::{BalanceOf, GovernanceCurrency};
 use codec::{Codec, Decode, Encode};
 
 use rstd::prelude::*;
-#[cfg(feature = "std")]
-use runtime_io::with_storage;
-use runtime_primitives::traits::{MaybeSerializeDebug, Member, One, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::traits::{Currency, Get};
-use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap, StorageValue,
-};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
+
 use system::{self, ensure_root, ensure_signed};
 use timestamp;
 
@@ -23,7 +20,7 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 
     type PaidTermId: Parameter
@@ -32,7 +29,7 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 
     type SubscriptionId: Parameter
@@ -41,7 +38,7 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 
     type ActorId: Parameter
@@ -50,7 +47,7 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq
         + Ord;
 
@@ -208,22 +205,18 @@ decl_storage! {
     add_extra_genesis {
         config(default_paid_membership_fee): BalanceOf<T>;
         config(members) : Vec<(T::AccountId, Vec<u8>, Vec<u8>, Vec<u8>)>;
-        build(|
-            storage: &mut (runtime_primitives::StorageOverlay, runtime_primitives::ChildrenStorageOverlay),
-            config: &GenesisConfig<T>
-        | {
-            with_storage(storage, || {
-                for (who, handle, avatar_uri, about) in &config.members {
-                    let user_info = CheckedUserInfo {
-                        handle: handle.clone(), avatar_uri: avatar_uri.clone(), about: about.clone()
-                    };
-                    <Module<T>>::insert_member(&who, &user_info, EntryMethod::Genesis);
+        build(|config: &GenesisConfig<T>| {
+            for (who, handle, avatar_uri, about) in &config.members {
+                let user_info = CheckedUserInfo {
+                    handle: handle.clone(), avatar_uri: avatar_uri.clone(), about: about.clone()
+                };
+                <Module<T>>::insert_member(&who, &user_info, EntryMethod::Genesis);
 
-                    // Give member starting balance
-                    T::Currency::deposit_creating(&who, T::InitialMembersBalance::get());
-                }
-                <MembersCreated<T>>::put(T::MemberId::from(config.members.len() as u32));
-            });
+                // Give member starting balance
+                T::Currency::deposit_creating(&who, T::InitialMembersBalance::get());
+            }
+
+            <MembersCreated<T>>::put(T::MemberId::from(config.members.len() as u32));
         });
     }
 }
@@ -246,7 +239,7 @@ decl_event! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         /// Non-members can buy membership
         pub fn buy_membership(origin, paid_terms_id: T::PaidTermId, user_info: UserInfo) {

@@ -4,7 +4,7 @@ use rstd::prelude::*;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use srml_support::{decl_event, decl_module, decl_storage, ensure, StorageMap, StorageValue};
+use srml_support::{decl_event, decl_module, decl_storage, ensure};
 use system::{self, ensure_root, ensure_signed};
 /*
   Although there is support for ed25519 keys as the IPNS identity key and we could potentially
@@ -78,7 +78,7 @@ impl<T: Trait> Module<T> {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         pub fn set_ipns_id(origin, id: Vec<u8>, lifetime: Option<T::BlockNumber>) {
             let sender = ensure_signed(origin)?;

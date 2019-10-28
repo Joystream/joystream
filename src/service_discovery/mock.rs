@@ -43,7 +43,6 @@ impl system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type WeightMultiplierUpdate = ();
     type Event = MetaEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
@@ -79,7 +78,7 @@ impl Roles<Test> for MockRoles {
     }
 }
 
-pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
+pub fn initial_test_ext() -> runtime_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();

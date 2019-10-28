@@ -2,13 +2,12 @@
 
 use super::mock::*;
 
-use runtime_io::with_externalities;
 use srml_support::*;
 use system::{self, EventRecord, Phase};
 
 #[test]
 fn set_ipns_id() {
-    with_externalities(&mut initial_test_ext(), || {
+    initial_test_ext().execute_with(|| {
         let current_block_number = 1000;
         System::set_block_number(current_block_number);
 
@@ -48,7 +47,7 @@ fn set_ipns_id() {
 
 #[test]
 fn unset_ipns_id() {
-    with_externalities(&mut initial_test_ext(), || {
+    initial_test_ext().execute_with(|| {
         let alice = alice_account();
 
         <discovery::AccountInfoByAccountId<Test>>::insert(
@@ -77,7 +76,7 @@ fn unset_ipns_id() {
 
 #[test]
 fn is_account_info_expired() {
-    with_externalities(&mut initial_test_ext(), || {
+    initial_test_ext().execute_with(|| {
         let alice = alice_account();
         let expires_at = 1000;
         let id = "alice".as_bytes().to_vec();
@@ -99,7 +98,7 @@ fn is_account_info_expired() {
 
 #[test]
 fn set_default_lifetime() {
-    with_externalities(&mut initial_test_ext(), || {
+    initial_test_ext().execute_with(|| {
         let lifetime =
             <Test as system::Trait>::BlockNumber::from(discovery::MINIMUM_LIFETIME + 2000);
         // priviliged method should fail if not from root origin
@@ -125,7 +124,7 @@ fn set_default_lifetime() {
 
 #[test]
 fn set_bootstrap_endpoints() {
-    with_externalities(&mut initial_test_ext(), || {
+    initial_test_ext().execute_with(|| {
         let endpoints = vec!["endpoint1".as_bytes().to_vec()];
         // priviliged method should fail if not from root origin
         assert!(

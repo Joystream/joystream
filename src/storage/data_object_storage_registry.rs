@@ -3,13 +3,11 @@ use crate::storage::data_directory::Trait as DDTrait;
 use crate::traits::{ContentHasStorage, ContentIdExists, Roles};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{MaybeDebug, MaybeSerializeDebug, Member, SimpleArithmetic};
-use srml_support::{
-    decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
-};
+use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
+use srml_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
 use system::{self, ensure_signed};
 
-pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
+pub trait Trait: timestamp::Trait + system::Trait + DDTrait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     // TODO deprecated
@@ -19,7 +17,7 @@ pub trait Trait: timestamp::Trait + system::Trait + DDTrait + MaybeDebug {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 
     type Roles: Roles<Self>;
@@ -37,8 +35,7 @@ static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str =
 const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
 
 // TODO deprecated
-#[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectStorageRelationship<T: Trait> {
     pub content_id: <T as DDTrait>::ContentId,
     pub storage_provider: T::AccountId,
@@ -125,7 +122,7 @@ impl<T: Trait> ContentHasStorage<T> for Module<T> {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event<T>() = default;
+        fn deposit_event() = default;
 
         pub fn add_relationship(origin, cid: T::ContentId) {
             // Origin has to be a storage provider

@@ -40,7 +40,6 @@ impl system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type WeightMultiplierUpdate = ();
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
@@ -92,15 +91,11 @@ impl balances::Trait for Test {
     /// The ubiquitous event type.
     type Event = ();
 
-    type TransactionPayment = ();
     type DustRemoval = ();
     type TransferPayment = ();
     type ExistentialDeposit = ExistentialDeposit;
     type TransferFee = TransferFee;
     type CreationFee = CreationFee;
-    type TransactionBaseFee = TransactionBaseFee;
-    type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = ();
 }
 
 impl GovernanceCurrency for Test {
@@ -111,7 +106,7 @@ impl GovernanceCurrency for Test {
 
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
-pub fn initial_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
+pub fn initial_test_ext() -> runtime_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
