@@ -48,25 +48,25 @@ std = [
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-babe'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.babe-primitives]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-consensus-babe-primitives'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.balances]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-balances'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.substrate-client]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-client'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.codec]
 default-features = false
@@ -78,43 +78,43 @@ version = '1.0.0'
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-executive'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.grandpa]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-grandpa'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.indices]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-indices'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.offchain-primitives]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-offchain-primitives'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-primitives'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.rstd]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-std'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.runtime-io]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.safe-mix]
 default-features = false
@@ -129,114 +129,114 @@ version = '1.0.101'
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-primitives'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.substrate-session]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.sudo]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-sudo'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.srml-support]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-support'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.system]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-system'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.timestamp]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-timestamp'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.version]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-version'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.authority-discovery-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-authority-discovery-primitives'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.authority-discovery]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-authority-discovery'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.authorship]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-authorship'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.finality-tracker]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-finality-tracker'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.im-online]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-im-online'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.session]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-session'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.offences]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-offences'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.sr-staking-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-staking-primitives'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.staking]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-staking'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.transaction-payment]
 package = "srml-transaction-payment"
 git = 'https://github.com/paritytech/substrate.git'
 default_features = false
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.randomness-collective-flip]
 package = "srml-randomness-collective-flip"
 git = 'https://github.com/paritytech/substrate.git'
 default_features = false
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.system-rpc-runtime-api]
 package = "srml-system-rpc-runtime-api"
 git = 'https://github.com/paritytech/substrate.git'
 default_features = false
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 # don't rename the dependency it is causing some strange compiler error:
 # https://github.com/rust-lang/rust/issues/64450
@@ -244,7 +244,7 @@ rev = 'polkadot-master'
 package = 'srml-staking-reward-curve'
 git = 'https://github.com/paritytech/substrate.git'
 default_features = false
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [build-dependencies.wasm-builder-runner]
 package = 'substrate-wasm-builder-runner'
