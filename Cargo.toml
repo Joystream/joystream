@@ -39,7 +39,6 @@ std = [
     'offchain-primitives/std',
     'substrate-session/std',
     'transaction-payment/std',
-    'node-primitives/std',
     'randomness-collective-flip/std',
     'system-rpc-runtime-api/std',
     'forum/std',
@@ -219,12 +218,6 @@ rev = 'polkadot-master'
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-staking'
-rev = 'polkadot-master'
-
-[dependencies.node-primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'node-primitives'
 rev = 'polkadot-master'
 
 [dependencies.transaction-payment]
