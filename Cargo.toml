@@ -42,6 +42,11 @@ std = [
     'randomness-collective-flip/std',
     'system-rpc-runtime-api/std',
     'forum/std',
+    'minting/std',
+    'recurringrewards/std',
+    'stake/std',
+    'hiring/std',
+    'versioned-store-permissions/std'
 ]
 
 [dependencies.babe]
@@ -257,3 +262,36 @@ package = 'substrate-forum-module'
 branch = 'use-polkadot-master-substrate-version'
 # Before releasing Rome - finalize and tag release new forum and update this
 # tag = 'v1.0.0'
+
+[dependencies.minting]
+default_features = false
+git = 'https://github.com/Joystream/substrate-token-minting-module/'
+package = 'substrate-token-mint-module'
+rev = '2a0e49537a8919610be84652ee3fb96f1f185de5'
+
+[dependencies.recurringrewards]
+default_features = false
+git = 'https://github.com/Joystream/substrate-recurring-reward-module'
+package = 'substrate-recurring-reward-module'
+rev = '5dcf286b2c45b6ee5393b71b4a176f3174a71c7f'
+
+[dependencies.stake]
+default_features = false
+git = 'https://github.com/mnaamani/substrate-stake/'
+package = 'substrate-stake-module'
+rev = 'eb4ef9711f1c375cc59f55b74b8a4e725335f4f0'
+
+[dependencies.hiring]
+default_features = false
+git = 'https://github.com/bedeho/substrate-hiring-module'
+package = 'substrate-hiring-module'
+rev = '0e12cee6e992ff664020be08c6264d0cde8227f8'
+
+[dependencies.versioned-store-permissions]
+default_features = false
+git = 'https://github.com/mnaamani/substrate-versioned-store-permissions-module'
+package = 'substrate-versioned-store-permissions-module'
+rev = 'f2450af5f7f9a8989bc68b2ccbe42a462ccf93cd'
+
+
+
