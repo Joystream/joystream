@@ -108,8 +108,13 @@ This is the set of key repos to which this document refers:
 | [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)             | The storage node application.                         | @mnaamani   |
 | [whitepaper](https://github.com/Joystream/whitepaper)                                     | The Joystream whitepaper.                             | @bedeho         |
 | [communications](https://github.com/Joystream/communications)                             | The Joystream communications workspace and archive.   | @bwhm           |
-| [helpdesk](https://github.com/Joystream/helpdesk)                             | Information and guides for users and contributors    | @bwhm           |
-| [bounties](https://github.com/Joystream/bounties)                             | Bounties and testnet payout overview    | @bwhm           |
+| [helpdesk](https://github.com/Joystream/helpdesk)                             | Information and guides for users and contributors.    | @bwhm           |
+| [bounties](https://github.com/Joystream/bounties)                             | Bounties and testnet payout overview.    | @bwhm           |
+| [design](https://github.com/Joystream/design)                             | Joystream brand guide and assets.    | @bwhm           |
+| [substrate-forum-module](https://github.com/Joystream/substrate-forum-module)                             | The on-chain Joystream community forum.    | @mnaamani           |
+| [jsgenesis-frontend](https://github.com/Joystream/jsgenesis-frontend)                             | The new Joystream website    | @bwhm           |
+| [joystream](https://github.com/Joystream/joystream)                             | The Joystream landing repo.    | @bedeho           |
+| [query-node-joystream](https://github.com/Joystream/query-node-joystream)                             | Query node for the Joystream Platform.    | @bwhm           |
 
 <br />
 <img src="img/testnet-releases.svg" id="testnet-releases"/>
