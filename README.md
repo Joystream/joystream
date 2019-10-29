@@ -117,7 +117,7 @@ This is the set of key repos to which this document refers:
 | [query-node-joystream](https://github.com/Joystream/query-node-joystream)                             | Query node for the Joystream Platform.    | @bwhm           |
 | [manifesto](https://github.com/Joystream/manifesto)                             | The Joystream manifesto.    | @bwhm           |
 | [substrate-content-directory-working-group-module](https://github.com/Joystream/substrate-content-directory-working-group-module)                             | A working group module for the Joystream content directory.    | @bedeho           |
-| [substrate-versioned-store-permissions-module](https://github.com/Joystream/substrate-versioned-store-permissions-module)                             | Permissioned access to the versioned store.    | @bedeho           |
+| [substrate-versioned-store-permissions-module](https://github.com/Joystream/substrate-versioned-store-permissions-module)                             | Permissioned access to the versioned store.    | @mnaamani           |
 | [substrate-versioned-store-module](https://github.com/Joystream/substrate-versioned-store-module)                             | A versioned data store Substrate module.    | @bedeho           |
 | [substrate-recurring-reward-module](https://github.com/Joystream/substrate-recurring-reward-module)                             | Recurring periodic minting of rewards for recipients.    | @bedeho           |
 | [substrate-token-minting-module](https://github.com/Joystream/substrate-token-minting-module)                             | Transferrable capacity constrained token minting.    | @mnaamani           |
