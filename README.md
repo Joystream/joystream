@@ -115,6 +115,22 @@ This is the set of key repos to which this document refers:
 | [jsgenesis-frontend](https://github.com/Joystream/jsgenesis-frontend)                             | The new Joystream website.    | @bwhm           |
 | [joystream](https://github.com/Joystream/joystream)                             | The Joystream landing repo.    | @bedeho           |
 | [query-node-joystream](https://github.com/Joystream/query-node-joystream)                             | Query node for the Joystream Platform.    | @bwhm           |
+| [manifesto](https://github.com/Joystream/manifesto)                             | The Joystream manifesto.    | @bwhm           |
+| [substrate-content-directory-working-group-module](https://github.com/Joystream/substrate-content-directory-working-group-module)                             | A working group module for the Joystream content directory.    | @bedeho           |
+| [substrate-versioned-store-permissions-module](https://github.com/Joystream/substrate-versioned-store-permissions-module)                             | Permissioned access to the versioned store.    | @bedeho           |
+| [substrate-versioned-store-module](https://github.com/Joystream/substrate-versioned-store-module)                             | A versioned data store Substrate module.    | @bedeho           |
+| [substrate-recurring-reward-module](https://github.com/Joystream/substrate-recurring-reward-module)                             | Recurring periodic minting of rewards for recipients.    | @bedeho           |
+| [substrate-token-minting-module](https://github.com/Joystream/substrate-token-minting-module)                             | Transferrable capacity constrained token minting.    | @mnaamani           |
+| [substrate-hiring-module](https://github.com/Joystream/substrate-hiring-module)                             | Hiring for on-chain organisations.    | @bedeho           |
+| [substrate-stake-module](https://github.com/Joystream/substrate-stake-module)                             | Managed staking, unstaking and slashing.    | @mnaamani           |
+| [versioned-store-js](https://github.com/Joystream/versioned-store-js)                             | A typescript library for versioned object store.    | @bwhm           |
+| [query-resolver-toolkit](https://github.com/Joystream/query-resolver-toolkit)                             | A toolkit for query resolution.    | @bwhm           |
+| [storage-benchmarking-tool](https://github.com/Joystream/storage-benchmarking-tool)                             | A storage benchmarking tool for Joystream.    | @siman           |
+| [status-endpoint-joystream](https://github.com/Joystream/status-endpoint-joystream)                             | The status endpoint for the Joystream network.    | @bwhm           |
+| [pioneer-endpoint-selector](https://github.com/Joystream/pioneer-endpoint-selector)                             | Endpoint selector for Pioneer.    | @bwhm           |
+| [substrate-utils](https://github.com/Joystream/substrate-utils)                             | Utilities for working with Substrate framework    | @bedeho           |
+| [runtime-api](https://github.com/Joystream/runtime-api)                             | Client library for interacting with Joystream runtime.    | @mnaamani           |
+| [substrate-module-template](https://github.com/Joystream/substrate-module-template)                             | Substrate runtime module template.    | @mnaamani           |
 
 <br />
 <img src="img/testnet-releases.svg" id="testnet-releases"/>
