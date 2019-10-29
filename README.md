@@ -112,7 +112,7 @@ This is the set of key repos to which this document refers:
 | [bounties](https://github.com/Joystream/bounties)                             | Bounties and testnet payout overview.    | @bwhm           |
 | [design](https://github.com/Joystream/design)                             | Joystream brand guide and assets.    | @bwhm           |
 | [substrate-forum-module](https://github.com/Joystream/substrate-forum-module)                             | The on-chain Joystream community forum.    | @mnaamani           |
-| [jsgenesis-frontend](https://github.com/Joystream/jsgenesis-frontend)                             | The new Joystream website    | @bwhm           |
+| [jsgenesis-frontend](https://github.com/Joystream/jsgenesis-frontend)                             | The new Joystream website.    | @bwhm           |
 | [joystream](https://github.com/Joystream/joystream)                             | The Joystream landing repo.    | @bedeho           |
 | [query-node-joystream](https://github.com/Joystream/query-node-joystream)                             | Query node for the Joystream Platform.    | @bwhm           |
 
