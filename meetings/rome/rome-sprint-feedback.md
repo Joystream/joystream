@@ -64,9 +64,10 @@ of a shared screen/whiteboard discussing design and data models.
 - Would have been nice to have a clearer idea of what exactly makes sense to do when we are physically 
 together. This avoid wasteful focus (e.g. writing tests), and also lots of time on planning.
 - We should have avoided excessive focus on tracking progress, no fun, adds little value.
-- We should have had daily "standup" at a specific time to help efficiently starting collabration each day.
-- Best time for a sprint is perhaps super early in a release, or with more RnD/experimental focus, rather 
-than tied to shipping.
+- We should have had daily "standup" at a specific time to help efficiently starting collabration each 
+day.
+- Best time for a sprint is perhaps super early in a release, or with more RnD/experimental focus, 
+rather than tied to shipping.
 ```
 
 #### Ben
