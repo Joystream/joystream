@@ -147,11 +147,6 @@ This is the set of key repos to which this document refers:
 | :-------------                                                                            | :-------------                                        | :-----------:   |
 | [versioned-store-js](https://github.com/Joystream/versioned-store-js)                             | A typescript library for versioned object store.    | @siman           |
 | [query-resolver-toolkit](https://github.com/Joystream/query-resolver-toolkit)                             | A toolkit for query resolution.    | @yourheropaul           |
-<!--
-| [substrate-utils](https://github.com/Joystream/substrate-utils)                             | Utilities for working with Substrate framework    | @bedeho           |
-| [pioneer-endpoint-selector](https://github.com/Joystream/pioneer-endpoint-selector)                             | Endpoint selector for Pioneer.    | @bwhm           |
-| [storage-benchmarking-tool](https://github.com/Joystream/storage-benchmarking-tool)                             | A storage benchmarking tool for Joystream.    | @siman           |
---!>
 
 <br />
 <img src="img/testnet-releases.svg" id="testnet-releases"/>
