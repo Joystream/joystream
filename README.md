@@ -147,6 +147,7 @@ This is the set of active repos to which this document refers:
 | :-------------                                                                            | :-------------                                        | :-----------:   |
 | [versioned-store-js](https://github.com/Joystream/versioned-store-js)                             | A typescript library for versioned object store.    | @siman           |
 | [query-resolver-toolkit](https://github.com/Joystream/query-resolver-toolkit)                             | A toolkit for query resolution.    | @yourheropaul           |
+| [status-endpoint-joystream](https://github.com/Joystream/status-endpoint-joystream)                             | The status endpoint for the Joystream network.    | @bwhm           |
 
 <br />
 <img src="img/testnet-releases.svg" id="testnet-releases"/>
