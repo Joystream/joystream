@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls } from '@polkadot/ui-api/with';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
 import { Option } from '@polkadot/types';
 import { stringToU8a, u8aToHex } from '@polkadot/util';
 

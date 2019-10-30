@@ -1,10 +1,11 @@
 import React from 'react'
-import { BareProps } from '@polkadot/ui-app/types';
+import { BareProps } from '@polkadot/react-components/types';
 import { ComponentProps } from '../props';
-import { withCalls } from '@polkadot/ui-api/index';
+import { withCalls } from '@polkadot/react-api/index';
 import { Table } from 'semantic-ui-react';
-import { Option, AccountId} from '@polkadot/types';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
+import { Option} from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
+import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { Actor } from '@joystream/types/roles';
 import { MemberId } from '@joystream/types/members';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';

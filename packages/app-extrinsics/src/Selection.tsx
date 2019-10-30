@@ -2,47 +2,44 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import BN from 'bn.js';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { QueueTx$ExtrinsicAdd } from '@polkadot/ui-app/Status/types';
-import { ApiProps } from '@polkadot/ui-api/types';
+import { Call } from '@polkadot/types/interfaces';
+import { I18nProps } from '@polkadot/react-components/types';
+import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { SubmittableExtrinsic } from '@polkadot/api/promise/types';
 
+import BN from 'bn.js';
 import React from 'react';
-import { Method } from '@polkadot/types';
-import { Button, InputAddress, Labelled } from '@polkadot/ui-app';
-import { withApi, withMulti } from '@polkadot/ui-api';
-import { Nonce } from '@polkadot/ui-reactive';
+import { Button, Extrinsic, InputAddress, Labelled, TxButton, TxComponent } from '@polkadot/react-components';
+import { withApi, withMulti } from '@polkadot/react-api';
+import { Nonce } from '@polkadot/react-query';
 
 import Balance from './Balance';
-import Extrinsic from './Extrinsic';
 import translate from './translate';
 
-type Props = ApiProps & I18nProps & {
-  queueExtrinsic: QueueTx$ExtrinsicAdd
-};
+interface Props extends ApiProps, I18nProps {
+  queueExtrinsic: QueueTxExtrinsicAdd;
+}
 
-type State = {
-  isValid: boolean,
-  method: Method | null,
-  accountNonce: BN,
-  accountId: string
-};
+interface State {
+  isValid: boolean;
+  isValidUnsigned: boolean;
+  method: Call | null;
+  accountNonce?: BN;
+  accountId?: string | null;
+}
 
-class Selection extends React.PureComponent<Props, State> {
-  state: State = {
-    isValid: false
-  } as State;
+class Selection extends TxComponent<Props, State> {
+  public state: State = {
+    isValid: false,
+    isValidUnsigned: false,
+    method: null
+  };
 
-  render () {
-    const { apiDefaultTx, api, t } = this.props;
-    const { isValid, accountId } = this.state;
-    const defaultExtrinsic = (() => {
-      try {
-        return api.tx.balances.transfer;
-      } catch (error) {
-        return apiDefaultTx;
-      }
-    })();
+  public render (): React.ReactNode {
+    const { apiDefaultTxSudo, t } = this.props;
+    const { isValid, isValidUnsigned, accountId } = this.state;
+    const extrinsic = this.getExtrinsic() || apiDefaultTxSudo;
 
     return (
       <div className='extrinsics--Selection'>
@@ -70,30 +67,37 @@ class Selection extends React.PureComponent<Props, State> {
         </div>
         <br></br>
         <Extrinsic
-          defaultValue={defaultExtrinsic}
+          defaultValue={apiDefaultTxSudo}
           label={t('submit the following extrinsic')}
           onChange={this.onChangeExtrinsic}
+          onEnter={this.sendTx}
         />
         <br></br>
         <Button.Group>
-          <Button
-            isDisabled={!isValid}
-            onClick={this.onQueueInherent}
-            label={t('Submit Inherent')}
+          <TxButton
+            isBasic
+            isDisabled={!isValidUnsigned}
+            isUnsigned
+            label={t('Submit Unsigned')}
+            icon='sign-in'
+            extrinsic={extrinsic}
           />
           <Button.Or />
-          <Button
+          <TxButton
+            accountId={accountId}
             isDisabled={!isValid}
             isPrimary
-            onClick={this.onQueueExtrinsic}
             label={t('Submit Transaction')}
+            icon='sign-in'
+            extrinsic={extrinsic}
+            ref={this.button}
           />
         </Button.Group>
       </div>
     );
   }
 
-  private nextState (newState: State): void {
+  private nextState (newState: Partial<State>): void {
     this.setState(
       (prevState: State): State => {
         const { method = prevState.method, accountNonce = prevState.accountNonce, accountId = prevState.accountId } = newState;
@@ -106,6 +110,7 @@ class Selection extends React.PureComponent<Props, State> {
         return {
           method,
           isValid,
+          isValidUnsigned: !!method,
           accountNonce,
           accountId
         };
@@ -113,44 +118,29 @@ class Selection extends React.PureComponent<Props, State> {
     );
   }
 
-  private onChangeExtrinsic = (method: Method | null = null): void => {
-    this.nextState({ method } as State);
+  private onChangeExtrinsic = (method: Call | null = null): void => {
+    this.nextState({ method });
   }
 
   private onChangeNonce = (accountNonce: BN = new BN(0)): void => {
-    this.nextState({ accountNonce } as State);
+    this.nextState({ accountNonce });
   }
 
-  private onChangeSender = (accountId: string): void => {
-    this.nextState({ accountId, accountNonce: new BN(0) } as State);
+  private onChangeSender = (accountId: string | null): void => {
+    this.nextState({ accountId, accountNonce: new BN(0) });
   }
 
-  private onQueue (isUnsigned: boolean): void {
-    const { api, queueExtrinsic } = this.props;
-    const { method, isValid, accountId } = this.state;
+  private getExtrinsic (): SubmittableExtrinsic | null {
+    const { api } = this.props;
+    const { method } = this.state;
 
-    if (!isValid || !method) {
-      return;
+    if (!method) {
+      return null;
     }
 
-    const fn = Method.findFunction(method.callIndex);
-    const extrinsic = api.tx[fn.section][fn.method](...method.args);
+    const fn = api.findCall(method.callIndex);
 
-    queueExtrinsic({
-      accountId: isUnsigned
-        ? undefined
-        : accountId,
-      extrinsic,
-      isUnsigned
-    });
-  }
-
-  private onQueueExtrinsic = (): void => {
-    this.onQueue(false);
-  }
-
-  private onQueueInherent = (): void => {
-    this.onQueue(true);
+    return api.tx[fn.section][fn.method](...method.args);
   }
 }
 

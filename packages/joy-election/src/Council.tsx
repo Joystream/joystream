@@ -1,11 +1,11 @@
 import React from 'react';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls } from '@polkadot/ui-api/with';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
 import { Table } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
+import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 
 import { calcBackersStake } from '@polkadot/joy-utils/index';
 import { Seat } from '@joystream/types/';

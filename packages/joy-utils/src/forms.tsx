@@ -1,7 +1,7 @@
 import React from 'react';
 import { Field, ErrorMessage, FormikErrors, FormikTouched } from 'formik';
 
-import { BareProps } from '@polkadot/ui-app/types';
+import { BareProps } from '@polkadot/react-components/types';
 import { nonEmptyStr } from '@polkadot/joy-utils/index';
 
 type FormValuesType = {

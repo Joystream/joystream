@@ -9,15 +9,16 @@ export const storageGetInfo: Snippet = {
   text: 'Get chain state information',
   label: { color: 'blue', children: 'Storage', size: 'tiny' },
   code: `// Get chain state information
-// Make our basic chain state/storage queries, all in one go
-const [blockPeriod, validators, transferFee] = await Promise.all([
-  api.query.timestamp.blockPeriod(),
-  api.query.session.validators(),
-  api.query.balances.transferFee()
+// Make our basic chain state / storage queries, all in one go
+
+const [now, minimumValidatorCount, validators] = await Promise.all([
+  api.query.timestamp.now(),
+  api.query.staking.minimumValidatorCount(),
+  api.query.session.validators()
 ]);
 
-console.log('blockPeriod in seconds: ' + blockPeriod.toNumber());
-console.log('transferFee: ', transferFee);
+console.log('The current date is: ' + now);
+console.log('The minimum validator count: ' + minimumValidatorCount);
 
 if (validators && validators.length > 0) {
   // Retrieve the balances for all validators
@@ -84,12 +85,29 @@ api.query.balances.freeBalance(ALICE, (balance) => {
 });`
 };
 
+export const storageListenToMultipleBalancesChange: Snippet = {
+  value: 'storageListenToMultipleBalancesChange',
+  text: 'Listen to multiple balances changes',
+  label: { color: 'blue', children: 'Storage', size: 'tiny' },
+  code: `// You may leave this example running and make a transfer
+// of any value from or to Alice/Bob address in the 'Transfer' App
+const ALICE = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
+const BOB = '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty';
+
+console.log('Tracking balances for:', [ALICE, BOB])
+
+// Subscribe and listen to several balance changes
+api.query.balances.freeBalance.multi([ALICE, BOB], (balances) => {
+  console.log('Change detected, new balances: ', balances)
+});`
+};
+
 export const storageRetrieveInfoOnQueryKeys: Snippet = {
   value: 'storageRetrieveInfoOnQueryKeys',
   text: 'Retrieve Info on query keys',
   label: { color: 'blue', children: 'Storage', size: 'tiny' },
   code: `// This example set shows how to make queries and retrieve info on query keys
-const ALICE = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKv3gB';
+const ALICE = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
 
 // retrieve the balance, once-off at the latest block
 const currBalance = await api.query.balances.freeBalance(ALICE);

@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { Table } from 'semantic-ui-react';
 import ReactMarkdown from 'react-markdown';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { Option, AccountId } from '@polkadot/types';
-import IdentityIcon from '@polkadot/ui-app/IdentityIcon';
-import BalanceDisplay from '@polkadot/ui-app/Balance';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
+import { Option } from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
+import IdentityIcon from '@polkadot/react-components/IdentityIcon';
+import BalanceDisplay from '@polkadot/react-components/Balance';
+import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
@@ -108,7 +109,7 @@ class Component extends React.PureComponent<Props> {
       </Table.Row>
       <Table.Row>
         <Table.Cell>Registered on</Table.Cell>
-        <Table.Cell>{new Date(registered_at_time).toLocaleString()} at block #{formatNumber(registered_at_block)}</Table.Cell>
+        <Table.Cell>{new Date(registered_at_time.toNumber()).toLocaleString()} at block #{formatNumber(registered_at_block)}</Table.Cell>
       </Table.Row>
       <Table.Row>
         <Table.Cell>Suspended?</Table.Cell>

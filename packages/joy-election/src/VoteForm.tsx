@@ -4,12 +4,12 @@ import uuid from 'uuid/v4';
 import React from 'react';
 import { Message, Table } from 'semantic-ui-react';
 
-import { AppProps, I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
-import { AccountId, Balance } from '@polkadot/types';
-import { Button, Input, Labelled, InputAddress } from '@polkadot/ui-app/index';
-import { SubmittableResult } from '@polkadot/api/SubmittableExtrinsic';
+import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { withCalls, withMulti } from '@polkadot/react-api/with';
+import { AccountId, Balance } from '@polkadot/types/interfaces';
+import { Button, Input, Labelled, InputAddress } from '@polkadot/react-components/index';
+import { SubmittableResult } from '@polkadot/api';
 import { formatBalance } from '@polkadot/util';
 
 import translate from './translate';
@@ -17,7 +17,7 @@ import { accountIdsToOptions, hashVote } from './utils';
 import { queryToProp, ZERO, getUrlParam, nonEmptyStr } from '@polkadot/joy-utils/index';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import InputStake from '@polkadot/joy-utils/InputStake';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
+import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import { saveVote, NewVote } from './myVotesStore';
 
@@ -28,13 +28,14 @@ function randomSalt () {
 
 // AppsProps is needed to get a location from the route.
 type Props = AppProps & ApiProps & I18nProps & MyAccountProps & {
-  applicantId?: string,
+  applicantId?: string | null,
   minVotingStake?: Balance,
-  applicants?: AccountId[]
+  applicants?: AccountId[],
+  location?: any,
 };
 
 type State = {
-  applicantId?: string,
+  applicantId?: string | null,
   stake?: BN,
   salt?: string,
   isStakeValid?: boolean,
@@ -66,10 +67,10 @@ class Component extends React.PureComponent<Props, State> {
 
     const buildNewVote = (): Partial<NewVote> => ({
       voterId: myAddress,
-      applicantId,
+      applicantId: applicantId || undefined,
       stake: (stake || ZERO).toString(),
       salt: salt,
-      hash: hashedVote
+      hash: hashedVote || undefined
     });
 
     return (
@@ -105,6 +106,7 @@ class Component extends React.PureComponent<Props, State> {
             size='large'
             label='Submit another vote'
             onClick={this.resetForm}
+            icon=''
           />
         </Labelled>
       </div>
@@ -135,7 +137,7 @@ class Component extends React.PureComponent<Props, State> {
             onChange={this.onChangeSalt}
           />
           <div className='medium' style={{ margin: '.5rem' }}>
-            <Button onClick={this.newRandomSalt}>Generate</Button>
+            <Button onClick={this.newRandomSalt} icon=''>Generate</Button>
             <Message compact warning size='tiny' content='You need to remember this salt!' />
           </div>
         </div>
@@ -152,7 +154,7 @@ class Component extends React.PureComponent<Props, State> {
             isDisabled={!isFormValid}
             label='Submit my vote'
             params={[hashedVote, stake]}
-            tx='election.vote'
+            tx='councilElection.vote'
             txSentCb={this.onFormSubmitted}
             txFailedCb={this.onTxFailed}
             txSuccessCb={(txResult: SubmittableResult) => this.onTxSuccess(buildNewVote() as NewVote, txResult)}
@@ -204,7 +206,7 @@ class Component extends React.PureComponent<Props, State> {
     this.setState({ stake, isStakeValid });
   }
 
-  private onChangeApplicant = (applicantId?: string) => {
+  private onChangeApplicant = (applicantId?: string | null) => {
     this.setState({ applicantId });
   }
 

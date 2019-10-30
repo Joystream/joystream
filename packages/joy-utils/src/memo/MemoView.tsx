@@ -4,7 +4,7 @@ import { truncate } from 'lodash';
 
 import { Bytes } from '@polkadot/types';
 import { u8aToString } from '@polkadot/util';
-import { withCalls } from '@polkadot/ui-api/index';
+import { withCalls } from '@polkadot/react-api/index';
 
 import { nonEmptyStr } from '../index';
 import './Memo.css';

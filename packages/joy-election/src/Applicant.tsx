@@ -2,12 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Table } from 'semantic-ui-react';
 
-import { I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { AccountId } from '@polkadot/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { withCalls } from '@polkadot/react-api/with';
+import { AccountId } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
+import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 
 import translate from './translate';
 import { calcTotalStake } from '@polkadot/joy-utils/index';
