@@ -104,7 +104,7 @@ Documentation, project management and other or non-code repositories should try 
 
 This is the set of key repos to which this document refers:
 
-## Products And Nodes
+## Products and Nodes
 
 | Repo                                                                                      | Description                                           | Maintainer      |
 | :-------------                                                                            | :-------------                                        | :-----------:   |
@@ -114,7 +114,7 @@ This is the set of key repos to which this document refers:
 | [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)             | The storage node application.                         | @mnaamani   |
 | [query-node-joystream](https://github.com/Joystream/query-node-joystream)                             | Query node for the Joystream Platform.    | @paul           |
 
-## Documentation And Communication
+## Documentation and Communication
 
 | Repo                                                                                      | Description                                           | Maintainer      |
 | :-------------                                                                            | :-------------                                        | :-----------:   |
@@ -141,7 +141,7 @@ This is the set of key repos to which this document refers:
 | [substrate-forum-module](https://github.com/Joystream/substrate-forum-module)                             | The on-chain Joystream community forum.    | @bedeho           |
 | [substrate-module-template](https://github.com/Joystream/substrate-module-template)                             | Substrate runtime module template.    | @mnaamani           |
 
-## Libraries And Tools
+## Libraries and Tools
 
 | Repo                                                                                      | Description                                           | Maintainer      |
 | :-------------                                                                            | :-------------                                        | :-----------:   |
