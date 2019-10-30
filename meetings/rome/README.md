@@ -26,29 +26,6 @@ Table of contents
 
 # Planned Meetings
 
-## Sprint in London
-
-- **ID:** `Rome Sprint in London`
-- **Date:** `21.10.19-25.10.19`
-- **Venue:** `London`
-- **Lead**: `NA`
-- **Minutes**: `NA`
-- **Participants**:
-  - `Alex`
-  - `Bedeho`
-  - `Ben`
-  - `Martin`
-  - `Mokthar??`
-  - `Paul`  
-
-### Agenda
-The overall agenda is for the Jsgenesis team to get together under roof, and focus on getting `Rome` shipped.
-
-See separate [document](accelerator-in-london.md) for specifics.
-
-### Minutes
-
-
 ## Release Checklist Meeting
 
 - **ID:** `Rome Release Checklist Meeting`
@@ -629,3 +606,61 @@ Started with a brief introduction of the Tracking Issues.
 NA
 
 **Ended at:** `12:50 GMT+2`
+
+## Sprint in London
+
+- **ID:** `Rome Sprint in London`
+- **Date:** `21.10.19-25.10.19`
+- **Venue:** `London`
+- **Lead**: `NA`
+- **Minutes**: `NA`
+- **Participants**:
+  - `Alex`
+  - `Bedeho`
+  - `Ben`
+  - `Martin`
+  - `Mokthar??`
+  - `Paul`  
+
+### Agenda
+The overall agenda is for the Jsgenesis team to get together under roof, and focus on getting `Rome` shipped.
+
+See separate [document](sprint-in-london.md) for specifics.
+
+### Minutes
+
+#### Brief Summary
+The Rome Sprint officially began on Monday morning. However, the collaborative part of the trip was only able to get going in the afternoon when we were able to go through Tracking Issues 1-8 in order to decide which would be the top priority task for each team member. Going through this together was helpful in understanding which tasks would be more useful to work on while all in the same room and was also useful in allowing members to decide which tasks to embark on without the risk of blocking or being blocked by other people. 
+
+On many occasions, it was possible for smaller groups or pairs of team members to go off and work on or discuss particular topics. This took the form of presentations (e.g. on the membership module) as well as informal discussions on subjects such as mockups and the "hiring flow" for actors on the platform. Work during the sprint was typically spread over two rooms, with one being dedicated to discussions and the other intended for quiet computer work.
+
+We kept relatively strictly to the schedule [here](sprint-in-london.md) for the first two to three days, after which it seemed unnecessary to formally review everyone's priorities on a daily basis. It was also not considered important to formally discuss Constantinople, the testnet which will follow Rome, nor spend time evaluating the success or usefulness of the trip on Friday evening. We did discuss the benefits and drawbacks of such a sprint in the Tuesday all-hands following the sprint with the points being made highlighted below in the consensus section.
+
+#### Consensus
+- Mostly satisfied with the progress made during the sprint.
+- There was a lot of value in lots of the work conducted in smaller groups and one-on-one.
+- Cross-communication was also very useful and was enabled by the physical nature of the meeting.
+- Suggested that smaller gatherings are often better than larger ones (i.e. sprint) for productivity.
+- Time spent programming etc. was not useful. Time should have been focussed on team/pair stuff only 
+possible or made considerably easier by being together in the same room.
+- Whiteboard time was very useful and could not be easily replicated using video conference etc.
+- Wondered whether the trip was cost-effective.
+- Most limited resource for Jsgenesis is "together time". This resource needs to be used effectively!
+- Itinerary could have been better organized e.g. mealtimes.
+- It would have been nicer to have a more comprehensive plan for the sprint.
+- The above would have allowed for preparing in advance the things which could be shared with others.
+- We (eventually) got to spend valuable time on problems that are easier solved toget: standing in front 
+of a shared screen/whiteboard discussing design and data models.
+- Would have been nice to have a clearer idea of what exactly makes sense to do when we are physically 
+together. This avoid wasteful focus (e.g. writing tests), and also lots of time on planning.
+- We should have avoided excessive focus on tracking progress, no fun, adds little value.
+- We should have had daily "standup" at a specific time to help efficiently starting collabration each 
+day.
+- Best time for a sprint is perhaps super early in a release, or with more RnD/experimental focus, 
+rather than tied to shipping.
+- We didn't always stick to schedule.
+- It was very good for morale for everyone to meet each other.
+- Difficult to determine when is the best time to hold a meeting during a release cycle.
+- Overall agendas should be flexible in order to accomodate changes.
+- Really appreciated one-on-one teaching from Martin.
+- Some conversations involved people who were not relevant to the topics discussed, wasting time.
