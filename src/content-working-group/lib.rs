@@ -197,6 +197,10 @@ impl<T: Trait> Module<T> {
 
     fn get_credential_from_id(credential_id: VersionedStorePermissions::Trait::CredentialId) -> GetCredentialFromIdResult {
 
+        let  = credential_id_to_built_in_credential_holder(credential_id);
+
+        // 2. 
+
         
 
     }
