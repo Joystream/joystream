@@ -29,10 +29,10 @@ decl_storage! {
         pub Mint get(mint) config(): T::TokenMintId; 
 
         /// The current lead.
-        pub CurrentLead get(current_lead) config(): Option<T::LeadId>;
+        pub CurrentLeadId get(current_lead_id) config(): Option<T::LeadId>;
 
         /// Maps identifier to corresponding lead.
-        pub LeadById get(lead_by_id) config(): linked_map T::LeadId => Lead<T::AccountId, RewardRelationshipId, T::BlockNumber>;
+        pub LeadById get(lead_by_id) config(): linked_map T::LeadId => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
 
         /// Next identifier for new current lead.
         pub NextLeadId get(next_lead_id) config(): T::LeadId;
@@ -117,8 +117,6 @@ decl_module! {
 
         fn deposit_event() = default;
 
-
-
         /// ...
         pub fn create_channel(type: ChannelType, owner: Trait::MemberId) {
 
@@ -135,7 +133,7 @@ decl_module! {
 
         // perhaps curation can be done here in one go.
 
-        
+
 
         /// ...
         pub fn update_channel_as_owner() {

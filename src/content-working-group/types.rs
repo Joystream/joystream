@@ -11,6 +11,16 @@ use versioned-store-permissions;
 /// Module configuration trait for this Substrate module.
 pub trait Trait: system::Trait + minting::Trait + RecurringReward::Trait + stake::Trait + Hiring::Trait + VersionedStorePermissions::Trait + Membership::Trait + Sized {
 
+    /// Type for identifier for lead.
+    type LeadId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerializeDebug
+        + PartialEq;
+
     /// Type for identifier for curators.
     type CuratorId: Parameter
         + Member
@@ -301,7 +311,7 @@ pub struct AnyMemberCredential {
 /// Represents credential to be referenced from the version store.
 /// It is dynamic in the sense that these can be created on the fly.
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone, PartialOrd)]
-pub struct DynamicCredential<CuratorId, ChannelIdt> {
+pub struct DynamicCredential<CuratorId, ChannelId> {
 
     /// Who holds this credential, meaning they can successfully authenticate with this credential.
     pub holder: DynamicCredentialHolder<CuratorId, ChannelId>,
