@@ -40,3 +40,13 @@ To get started -
 4. Install the dependencies by running `yarn`
 5. Ready! Now you can launch the UI (assuming you have a local Polkadot Node running), via `yarn run start`
 6. Access the UI via [http://localhost:3000](http://localhost:3000)
+
+### Storybook
+
+There is a [StoryBook](https://storybook.js.org) implementation, the UI for which can be started with `yarn storybook` and then accessed in a browser via http://localhost:3001 (and the server will open a new browser tab by default when it starts).
+
+Story code can be placed anywhere in the `packages` directory, and will be detected as long as the file name ends in `.stories.tsx. Stories should be defined in the [Component Story Format (CSF)](https://storybook.js.org/docs/formats/component-story-format) for consistency.
+
+There are several StoryBook addons available, the most useful of which is [Knobs](https://www.npmjs.com/package/@storybook/addon-knobs), which allows props to be altered in real time.
+
+Note that currently StoryBook only allows for stateless components; it has no connection to polkadot.js or any Substrate node. This means that existing components, which are often tightly coupled with the Polkadot API, cannot be used in storybook.
