@@ -102,7 +102,7 @@ Documentation, project management and other or non-code repositories should try 
 
 # Repository Index
 
-This is the set of key repos to which this document refers:
+This is the set of active repos to which this document refers:
 
 ## Products and Nodes
 
