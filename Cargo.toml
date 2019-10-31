@@ -46,7 +46,7 @@ std = [
     'recurringrewards/std',
     'stake/std',
     'hiring/std',
-    'versioned-store-permissions/std'
+    'versioned_store_permissions/std'
 ]
 
 [dependencies.babe]
@@ -285,13 +285,10 @@ rev = 'eb4ef9711f1c375cc59f55b74b8a4e725335f4f0'
 default_features = false
 git = 'https://github.com/bedeho/substrate-hiring-module'
 package = 'substrate-hiring-module'
-rev = '0e12cee6e992ff664020be08c6264d0cde8227f8'
+rev = 'c030ae8305ef81e59934125c0927c92c4cb77ef9'
 
-[dependencies.versioned-store-permissions]
+[dependencies.versioned_store_permissions]
 default_features = false
-git = 'https://github.com/mnaamani/substrate-versioned-store-permissions-module'
+git = 'https://github.com/bedeho/substrate-versioned-store-permissions-module'
 package = 'substrate-versioned-store-permissions-module'
-rev = 'f2450af5f7f9a8989bc68b2ccbe42a462ccf93cd'
-
-
-
+rev = 'ddff0791de3774d10f79483f6609340fede35551'

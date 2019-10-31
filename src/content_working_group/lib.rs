@@ -2,23 +2,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use rstd::prelude::*;
-use codec::{Codec, Decode, Encode};
-use runtime_primitives::traits::{MaybeSerializeDebug, Member, One, SimpleArithmetic};
-use srml_support::traits::Currency;
 use srml_support::{
-    decl_module, decl_storage, ensure, EnumerableStorageMap, Parameter, StorageMap, StorageValue,
+    decl_module, decl_storage, ensure, StorageMap, StorageValue,
 };
-use std::iter::Iterator;
-
-use rstd::collections::btree_map::BTreeMap;
+//use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 
-mod types;
-mod macroes;
-mod mock;
-mod test;
+use versioned_store_permissions;
 
-pub use types;
+pub use super::types::{*};
 
 use system;
 
@@ -41,8 +33,10 @@ decl_storage! {
         /// Using map to model a set.
         pub Openings get(openings) config(): linked_map T::OpeningId => ();
 
+        pub ChannelById get(channel_by_id) config(): linked_map T::ChannelId => Channel<T::MemberId, T::AccountId, T::BlockNumber>;
+
         /// Maps identifier to corresponding curator.
-        pub CuratorById get(curator_by_id) config(): linked_map T::CuratorId => Curator<T>;
+        pub CuratorById get(curator_by_id) config(): linked_map T::CuratorId => Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, T::LeadId, T::ApplicationId>;
         
         /// Next identifier for new curator.
         pub NextCuratorId get(next_curator_id) config(): T::CuratorId;
@@ -61,7 +55,7 @@ decl_storage! {
         pub AnyMemberCredential get(any_member_credential) config(): AnyMemberCredential;
 
         /// Maps dynamic credential by
-        pub DynamicCredentialById get(dynamic_credential_by_id) config(): linked_map DynamicCredentialId => DynamicCredential<T::CuratorId, T::ChannelId>;
+        pub DynamicCredentialById get(dynamic_credential_by_id) config(): linked_map DynamicCredentialId => DynamicCredential<T::CuratorId, T::ChannelId, T::BlockNumber>;
 
         /// ...
         pub NextDynamicCredentialId get(next_dynamic_credential_id) config(): T::DynamicCredentialId;
@@ -118,14 +112,14 @@ decl_module! {
         fn deposit_event() = default;
 
         /// ...
-        pub fn create_channel(type: ChannelType, owner: Trait::MemberId) {
+        pub fn create_channel(origin, channel_type: ChannelType, owner: T::MemberId) {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn transfer_channel_ownerhsip(channel_id: T::ChannelId) {
+        pub fn transfer_channel_ownerhsip(origin, channel_id: T::ChannelId) {
 
             // DONE
             Ok(())
@@ -136,112 +130,112 @@ decl_module! {
 
 
         /// ...
-        pub fn update_channel_as_owner() {
+        pub fn update_channel_as_owner(origin) {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn update_channel_as_curator() {
+        pub fn update_channel_as_curator(origin) {
 
             // DONE
             Ok(())
         }
 
         /// ..
-        pub fn create_version_store_credential()  {
+        pub fn create_version_store_credential(origin)  {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn update_lead_role_account() {
+        pub fn update_lead_role_account(origin) {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn update_lead_reward_account()  {
+        pub fn update_lead_reward_account(origin)  {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn add_curator_opening()  {
+        pub fn add_curator_opening(origin)  {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn accept_curator_applications()  {
+        pub fn accept_curator_applications(origin)  {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn begin_curator_applicant_review() {
+        pub fn begin_curator_applicant_review(origin) {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn fill_curator_opening() {
+        pub fn fill_curator_opening(origin) {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn update_curator_reward() {
+        pub fn update_curator_reward(origin) {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn slash_curator() {
+        pub fn slash_curator(origin) {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn terminate_curator() {
+        pub fn terminate_curator(origin) {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn apply_on_curator_opening() {
+        pub fn apply_on_curator_opening(origin) {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn update_curator_role_account() {
+        pub fn update_curator_role_account(origin) {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn update_curator_reward_account() {
+        pub fn update_curator_reward_account(origin) {
 
             // DONE
             Ok(())
         }
 
         /// ...
-        pub fn exit_curator_role() {
+        pub fn exit_curator_role(origin) {
 
             // DONE
             Ok(())
@@ -280,24 +274,67 @@ impl<T: Trait> Module<T> {
  */
 
 /// ...
-enum Credential {
+enum Credential<CuratorId, ChannelId, BlockNumber> {
     Lead(LeadCredential),
     AnyCurator(AnyCuratorCredential),
-    AnyMember(AnyMemberCredential)
-    Dynamic(DynamicVersionedStoreCredential)
+    AnyMember(AnyMemberCredential),
+    Dynamic(DynamicCredential<CuratorId, ChannelId, BlockNumber>)
+}
+
+/// Holder of a credential.
+enum CredentialHolder<DynamicCredentialId> {
+
+    /// Built in credential holder.
+    BuiltInCredentialHolder(BuiltInCredentialHolder),
+
+    /// A possible dynamic credendtial holder.
+    CandidateDynamicCredentialId(DynamicCredentialId)
 }
 
 impl<T: Trait> Module<T> {
+
+    /// Maps a permission module credential identifier to a credential holder.
+    /// 
+    /// **CRITICAL**: 
+    /// 
+    /// Credential identifiers are stored in the permissions module, this means that
+    /// the mapping in this function _must_ not disturb how it maps any id that is actually in use
+    /// across runtime upgrades, _unless_ one is also prepared to make the corresponding migrations
+    /// in the permissions module. Best to keep mapping stable.
+    /// 
+    /// In practice the only way one may want augment this map is to support new
+    /// built in credentials. In this case, the mapping has to be written and deployed while
+    /// no new dynamic credentials are created, and a new case of the form below must be introcued
+    /// in the match: CandidateDynamicCredentialId(credential_id - X), where X = #ChannelIds mapped so far.
+    fn credential_id_to_holder(credential_id: T::PrincipalId) -> CredentialHolder<DynamicCredentialId<T>> {
+
+        // Credential identifiers for built in credential holder types.
+        let LEAD_CREDENTIAL_ID = T::PrincipalId::from(0);
+        let ANY_CURATOR_CREDENTIAL_ID = T::PrincipalId::from(1);
+        let ANY_MEMBER_CREDENTIAL_ID = T::PrincipalId::from(2);
+
+        match credential_id {
+
+            LEAD_CREDENTIAL_ID => CredentialHolder(BuiltInCredentialHolder(BuiltInCredentialHolder::Lead)),
+            ANY_CURATOR_CREDENTIAL_ID => CredentialHolder(BuiltInCredentialHolder(BuiltInCredentialHolder::AnyCurator)),
+            ANY_MEMBER_CREDENTIAL_ID => CredentialHolder(BuiltInCredentialHolder(BuiltInCredentialHolder::AnyMember)),
+            _ => CredentialHolder(CandidateDynamicCredentialId(credential_id - 3)) // will map first dynamic id to 0
+
+            /*
+            Add new built in credentials here below
+            */
+        }
+    }
     
     /// .
-    fn credential_from_id(credential_id: VersionedStorePermissions::Trait::CredentialId) -> Option<Credential> {
+    fn credential_from_id(credential_id: T::PrincipalId) -> Option<DynamicCredential<T::CuratorId, T::ChannelId, T::BlockNumber>> {
 
-        let  = credential_id_to_built_in_credential_holder(credential_id);
+        //let  = credential_id_to_built_in_credential_holder(credential_id);
 
         // 2. 
 
 
-
+        None
     }
     
 }
