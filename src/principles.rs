@@ -1,5 +1,6 @@
 use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
+use rstd::prelude::*;
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct PrincipalSet<PrincipalId>(BTreeSet<PrincipalId>);
