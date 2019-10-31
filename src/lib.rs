@@ -11,7 +11,8 @@ use srml_support::traits::Currency;
 use srml_support::{
     decl_module, decl_storage, ensure, EnumerableStorageMap, Parameter, StorageMap, StorageValue,
 };
-use std::iter::Iterator;
+
+use rstd::iter::Iterator;
 
 use runtime_primitives::traits::Zero;
 
