@@ -24,7 +24,7 @@ mod macroes;
 mod mock;
 mod test;
 
-use hiring::*;
+pub use hiring::*;
 use system;
 
 use stake;
