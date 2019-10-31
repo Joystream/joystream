@@ -24,17 +24,17 @@ structopt = "0.3.3"
 [dependencies.substrate-basic-authorship]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-basic-authorship'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.babe]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-consensus-babe'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.babe-primitives]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-consensus-babe-primitives'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.codec]
 package = 'parity-scale-codec'
@@ -47,17 +47,17 @@ version = '3.0'
 [dependencies.inherents]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-inherents'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.network]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-network'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.node-runtime]
 package = "joystream-node-runtime"
-git = 'https://github.com/mnaamani/substrate-runtime-joystream'
-branch = 'use-polkadot-master-substrate-version'
+git = 'https://github.com/joystream/substrate-runtime-joystream'
+branch = 'development'
 # for local development...
 # clone https://github.com/joystream/substrate-runtime-joystream to this path:
 # path = 'substrate-runtime-joystream'
@@ -65,83 +65,83 @@ branch = 'use-polkadot-master-substrate-version'
 [dependencies.primitives]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-primitives'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.sr-io]
 git = 'https://github.com/paritytech/substrate.git'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.substrate-cli]
 git = 'https://github.com/paritytech/substrate.git'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.substrate-client]
 git = 'https://github.com/paritytech/substrate.git'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.substrate-executor]
 git = 'https://github.com/paritytech/substrate.git'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.substrate-service]
 git = 'https://github.com/paritytech/substrate.git'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.transaction-pool]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-transaction-pool'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.substrate-telemetry]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-telemetry'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.grandpa]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-finality-grandpa'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.grandpa-primitives]
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-finality-grandpa-primitives'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.im-online]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-im-online'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.substrate-rpc]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-rpc'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.authority-discovery]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-authority-discovery'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.client-db]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-client-db'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.runtime-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-primitives'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.offchain]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-offchain'
-rev = 'polkadot-master'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [profile.release]
 panic = 'unwind'
