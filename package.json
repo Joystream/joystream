@@ -55,6 +55,7 @@
     "postcss-simple-vars": "^5.0.0",
     "precss": "^4.0.0",
     "source-map-explorer": "^2.0.1",
+    "storybook-react-router": "^1.0.8",
     "tsconfig-paths-webpack-plugin": "^3.2.0"
   },
   "dependencies": {
