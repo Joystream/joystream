@@ -48,16 +48,16 @@ class App extends React.PureComponent<Props, State> {
       tabs: [
         {
           isRoot: true,
-          name: 'actors',
-          text: t('Actors')
+          name: 'working-groups',
+          text: t('Working groups')
         },
         {
-          name: 'roles',
-          text: t('Available Roles')
+          name: 'opportunities',
+          text: t('Opportunities')
         },
         {
-          name: 'requests',
-          text: t('My Requests')
+          name: 'my-roles',
+          text: t('My roles')
         },
       ],
     };
@@ -97,8 +97,8 @@ class App extends React.PureComponent<Props, State> {
           />
         </header>
         <Switch>
-          <Route path={`${basePath}/requests`} render={this.renderComponent(MyRequests)} />
-          <Route path={`${basePath}/roles`} render={this.renderComponent(AvailableRoles)} />
+          <Route path={`${basePath}/opportunities`} render={this.renderComponent(MyRequests)} />
+          <Route path={`${basePath}/my-roles`} render={this.renderComponent(AvailableRoles)} />
           <Route render={this.renderComponent(ActorsList)} />
         </Switch>
       </main>

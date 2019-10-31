@@ -1,8 +1,32 @@
-#storage-providers {
-    padding: 1em
+#storage-providers .container{
+	margin-right: 1em;
 }
 
-#storage-providers::after {
-    color: #dd6655;
-    content: "This text was added by @polkadot/joy-roles/index.css!";
+#storage-providers .balance span,
+#storage-providers .memo span {
+	font-weight: bold;
+}
+
+#storage-providers .balance {
+	font-size: 0.8em;
+}
+
+#content-curators .staked-card {
+  margin-right: 1.2em !important;
+}
+
+#content-curators .cards {
+	margin-top: 1em;
+	margin-bottom: 1em;
+}
+
+.container.outer {
+	margin-bottom: 3em;
+}
+
+
+.ui.avatar.image {
+	width: 50px !important;
+	height: 50px !important;
+	margin-bottom: 5px;
 }

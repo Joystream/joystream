@@ -18,7 +18,7 @@ type MemberIdProps = {
 
 type Props = BareProps & ComponentProps & MyAccountProps & MemberIdProps;
 
-class ActorsList extends React.PureComponent<Props> {
+export class ActorsList extends React.PureComponent<Props> {
     render() {
         const { actorAccountIds, memberIdByAccountId } = this.props;
 
@@ -40,7 +40,6 @@ class ActorsList extends React.PureComponent<Props> {
         )
     }
 }
-
 
 type ActorProps = BareProps & MemberIdProps & {
     account: string,
@@ -76,8 +75,7 @@ class ActorInner extends React.PureComponent<ActorProps> {
 
 const ActorDisplay = withCalls<ActorProps>(
     ['query.actors.actorByAccountId', {propName: 'actor', paramName: 'account'}]
-)(ActorInner)
-
+)(ActorInner);
 
 const ActionableActorsList = withMyAccount(withCalls<Props>(
     queryMembershipToProp('memberIdByAccountId', 'myAddress')
