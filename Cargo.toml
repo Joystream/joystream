@@ -1,5 +1,5 @@
 [package]
-name = 'substrate-token-mint-module'
+name = 'substrate-recurring-reward-module'
 version = '1.0.0'
 authors = ['Mokhtar Naamani <mokhtar.naamani@gmail.com>']
 edition = '2018'
@@ -28,9 +28,10 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
 rev = 'a2a0eb5398d6223e531455b4c155ef053a4a3a2b'
 
-[dependencues.minting]
+[dependencies.minting]
 default_features = false
-git = 'https://github.com/mnaamani/substrate-token-minting'
+git = 'https://github.com/mnaamani/substrate-token-minting-module'
+package = 'substrate-token-mint-module'
 branch = 'token-minting'
 
 [dev-dependencies]
@@ -50,4 +51,5 @@ std = [
 	'system/std',
   	'balances/std',
 	'timestamp/std',
+	'minting/std',
 ]
