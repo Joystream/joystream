@@ -10,13 +10,13 @@ export default {
 
 export const WorkingGroup = () => {
 	return (
-		<div>
-		<Container className="outer">
-			<ContentCuratorsSection />
-		</Container>
 		<Container>
-			<StorageProvidersSection />
+			<Container className="outer">
+				<ContentCuratorsSection />
+			</Container>
+			<Container>
+				<StorageProvidersSection />
+			</Container>
 		</Container>
-			</div>
 	)
 }

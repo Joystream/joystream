@@ -44,7 +44,7 @@ export function ContentCurators(props: WorkingGroupProps) {
 	)
 }
 
-type StorageAndDistributionProps = BareProps & {
+type StorageAndDistributionProps = {
     actors: Actor[]
     balances: Map<string, Balance>
     memos: Map<string, Text>

@@ -6,7 +6,12 @@ import { Balance } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 import Identicon from '@polkadot/react-identicon';
 import { Actor } from '@joystream/types/roles';
+import { Profile } from '@joystream/types/members';
 import { Text } from '@polkadot/types';
+
+type ActorProps = {
+    actor: Actor
+}
 
 type BalanceProps = {
     balance?: Balance
@@ -20,8 +25,7 @@ export function BalanceView(props: BalanceProps) {
     )
 }
 
-type MemoProps = {
-    actor: Actor
+type MemoProps = ActorProps & {
     memo?: Text
 }
 
@@ -39,7 +43,7 @@ export function MemoView(props: MemoProps) {
 }
 
 type ProfileProps = {
-
+	profile: Profile
 }
 
 export function HandleView(props: ProfileProps) {
@@ -52,9 +56,7 @@ export function HandleView(props: ProfileProps) {
     )
 }
 
-type MemberProps = BalanceProps & ProfileProps & {
-    actor: Actor
-}
+type MemberProps = ActorProps & BalanceProps & ProfileProps
 
 export function MemberView(props: MemberProps) {
 	let avatar = <Identicon value={props.actor.account.toString()} size="50"  />
@@ -73,7 +75,9 @@ export function MemberView(props: MemberProps) {
     )
 }
 
-export function ActorDetailsView(props: MemoProps & BalanceProps) {
+type ActorDetailsProps = MemoProps & BalanceProps
+
+export function ActorDetailsView(props: ActorDetailsProps) {
     return (
         <div className="actor-summary" id={props.actor.account.toString()}>
             {props.actor.account.toString()}
@@ -93,7 +97,7 @@ export type GroupMemberProps = {
 
 export function GroupMemberView(props: GroupMemberProps) {
 	let stake = null
-	if (typeof props.stake !== "undefined") {
+	if (typeof props.stake !== "undefined" && props.stake.toNumber() !== 0) {
 	    stake = <Label color={props.lead ? 'teal' : 'green'} ribbon><Icon name="check circle" /> Staked <Label.Detail>{formatBalance(props.stake)}</Label.Detail></Label>
 	}
 
