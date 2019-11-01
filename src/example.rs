@@ -3,7 +3,7 @@
 use super::*;
 use crate::mock::*;
 
-use srml_support::{assert_ok};
+use srml_support::assert_ok;
 
 /// This example uses Class, Properties, Schema and Entity structures
 /// to describe the Staked podcast channel and its second episode.
@@ -12,7 +12,6 @@ use srml_support::{assert_ok};
 #[test]
 fn create_podcast_class_schema() {
     with_test_externalities(|| {
-
         fn common_text_prop() -> PropertyType {
             PropertyType::Text(200)
         }
@@ -25,7 +24,6 @@ fn create_podcast_class_schema() {
         // ------------------------------------------
 
         let channel_props = vec![
-
             // 0
             Property {
                 prop_type: common_text_prop(),
@@ -33,7 +31,6 @@ fn create_podcast_class_schema() {
                 name: b"atom:link".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 1
             Property {
                 prop_type: common_text_prop(),
@@ -41,7 +38,6 @@ fn create_podcast_class_schema() {
                 name: b"title".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 2
             Property {
                 prop_type: common_text_prop(),
@@ -49,7 +45,6 @@ fn create_podcast_class_schema() {
                 name: b"pubDate".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 3
             Property {
                 prop_type: common_text_prop(),
@@ -57,7 +52,6 @@ fn create_podcast_class_schema() {
                 name: b"lastBuildDate".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 4
             Property {
                 prop_type: common_text_prop(),
@@ -65,7 +59,6 @@ fn create_podcast_class_schema() {
                 name: b"generator".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 5
             Property {
                 prop_type: common_text_prop(),
@@ -73,7 +66,6 @@ fn create_podcast_class_schema() {
                 name: b"link".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 6
             // Example: en-us
             Property {
@@ -82,7 +74,6 @@ fn create_podcast_class_schema() {
                 name: b"language".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 7
             Property {
                 prop_type: common_text_prop(),
@@ -90,7 +81,6 @@ fn create_podcast_class_schema() {
                 name: b"copyright".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 8
             Property {
                 prop_type: common_text_prop(),
@@ -98,7 +88,6 @@ fn create_podcast_class_schema() {
                 name: b"docs".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 9
             Property {
                 prop_type: common_text_prop(),
@@ -106,7 +95,6 @@ fn create_podcast_class_schema() {
                 name: b"managingEditor".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 10
             Property {
                 prop_type: common_text_prop(),
@@ -114,7 +102,6 @@ fn create_podcast_class_schema() {
                 name: b"image/url".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 11
             Property {
                 prop_type: common_text_prop(),
@@ -122,7 +109,6 @@ fn create_podcast_class_schema() {
                 name: b"image/title".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 12
             Property {
                 prop_type: common_text_prop(),
@@ -130,7 +116,6 @@ fn create_podcast_class_schema() {
                 name: b"image/link".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 13
             Property {
                 prop_type: common_text_prop(),
@@ -138,7 +123,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:summary".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 14
             // TODO this could be Internal prop.
             Property {
@@ -147,7 +131,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:author".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 15
             // TODO make this as a text vec?
             Property {
@@ -156,7 +139,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:keywords".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 16
             Property {
                 prop_type: PropertyType::TextVec(10, 100),
@@ -164,7 +146,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:category".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 17
             Property {
                 prop_type: common_text_prop(),
@@ -172,7 +153,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:image".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 18
             Property {
                 prop_type: common_text_prop(),
@@ -180,7 +160,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:explicit".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 19
             Property {
                 prop_type: common_text_prop(),
@@ -188,7 +167,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:owner/itunes:name".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 20
             Property {
                 prop_type: common_text_prop(),
@@ -196,7 +174,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:owner/itunes:email".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 21
             Property {
                 prop_type: PropertyType::Text(4000),
@@ -204,7 +181,6 @@ fn create_podcast_class_schema() {
                 name: b"description".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 22
             Property {
                 prop_type: common_text_prop(),
@@ -212,7 +188,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:subtitle".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 23
             Property {
                 prop_type: common_text_prop(),
@@ -233,7 +208,6 @@ fn create_podcast_class_schema() {
                 name: b"title".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 1
             Property {
                 prop_type: common_text_prop(),
@@ -241,7 +215,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:title".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 2
             Property {
                 prop_type: common_text_prop(),
@@ -249,7 +222,6 @@ fn create_podcast_class_schema() {
                 name: b"pubDate".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 3
             Property {
                 prop_type: common_text_prop(),
@@ -257,7 +229,6 @@ fn create_podcast_class_schema() {
                 name: b"guid".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 4
             Property {
                 prop_type: common_text_prop(),
@@ -265,7 +236,6 @@ fn create_podcast_class_schema() {
                 name: b"link".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 5
             Property {
                 prop_type: common_text_prop(),
@@ -273,7 +243,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:image".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 6
             Property {
                 prop_type: long_text_prop(),
@@ -281,7 +250,6 @@ fn create_podcast_class_schema() {
                 name: b"description".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 7
             Property {
                 prop_type: long_text_prop(),
@@ -289,7 +257,6 @@ fn create_podcast_class_schema() {
                 name: b"content:encoded".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 8
             Property {
                 prop_type: PropertyType::Text(50),
@@ -297,7 +264,6 @@ fn create_podcast_class_schema() {
                 name: b"enclosure/length".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 9
             Property {
                 prop_type: PropertyType::Text(50),
@@ -305,7 +271,6 @@ fn create_podcast_class_schema() {
                 name: b"enclosure/type".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 10
             Property {
                 prop_type: common_text_prop(),
@@ -313,7 +278,6 @@ fn create_podcast_class_schema() {
                 name: b"enclosure/url".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 11
             Property {
                 prop_type: common_text_prop(),
@@ -321,7 +285,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:duration".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 12
             Property {
                 prop_type: common_text_prop(),
@@ -329,7 +292,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:explicit".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 13
             // TODO make this as a text vec?
             Property {
@@ -338,7 +300,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:keywords".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 14
             Property {
                 prop_type: common_text_prop(),
@@ -346,7 +307,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:subtitle".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 15
             Property {
                 prop_type: long_text_prop(),
@@ -354,7 +314,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:summary".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 16
             Property {
                 prop_type: PropertyType::Uint16,
@@ -362,7 +321,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:season".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 17
             Property {
                 prop_type: PropertyType::Uint16,
@@ -370,7 +328,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:episode".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 18
             Property {
                 prop_type: common_text_prop(),
@@ -378,7 +335,6 @@ fn create_podcast_class_schema() {
                 name: b"itunes:episodeType".to_vec(),
                 description: b"".to_vec(),
             },
-
             // 19
             // TODO this could be Internal prop.
             Property {
@@ -393,21 +349,14 @@ fn create_podcast_class_schema() {
 
         let channel_class_id = TestModule::next_class_id();
         assert_ok!(
-            TestModule::create_class(
-                b"PodcastChannel".to_vec(),
-                b"A podcast channel".to_vec(),
-            ),
+            TestModule::create_class(b"PodcastChannel".to_vec(), b"A podcast channel".to_vec(),),
             channel_class_id
         );
 
         let channel_schema_id: u16 = 0;
 
         assert_ok!(
-            TestModule::add_class_schema(
-                channel_class_id,
-                vec![],
-                channel_props,
-            ),
+            TestModule::add_class_schema(channel_class_id, vec![], channel_props,),
             channel_schema_id
         );
 
@@ -415,21 +364,14 @@ fn create_podcast_class_schema() {
 
         let episode_class_id = TestModule::next_class_id();
         assert_ok!(
-            TestModule::create_class(
-                b"PodcastEpisode".to_vec(),
-                b"A podcast episode".to_vec(),
-            ),
+            TestModule::create_class(b"PodcastEpisode".to_vec(), b"A podcast episode".to_vec(),),
             episode_class_id
         );
 
         let episode_schema_id: u16 = 0;
 
         assert_ok!(
-            TestModule::add_class_schema(
-                episode_class_id,
-                vec![],
-                episode_props,
-            ),
+            TestModule::add_class_schema(episode_class_id, vec![], episode_props,),
             episode_schema_id
         );
 
@@ -437,9 +379,7 @@ fn create_podcast_class_schema() {
         let channel_entity_id = TestModule::next_entity_id();
 
         assert_ok!(
-            TestModule::create_entity(
-                channel_class_id,
-            ),
+            TestModule::create_entity(channel_class_id,),
             channel_entity_id
         );
 
@@ -507,11 +447,9 @@ fn create_podcast_class_schema() {
 
         p = PropHelper::new();
         let episode_2_entity_id = TestModule::next_entity_id();
-        
+
         assert_ok!(
-            TestModule::create_entity(
-                episode_class_id,
-            ),
+            TestModule::create_entity(episode_class_id,),
             episode_2_entity_id
         );
 
@@ -571,7 +509,6 @@ struct PropHelper {
 }
 
 impl PropHelper {
-
     fn new() -> PropHelper {
         PropHelper { prop_idx: 0 }
     }
@@ -579,7 +516,7 @@ impl PropHelper {
     fn next_value(&mut self, value: PropertyValue) -> ClassPropertyValue {
         let value = ClassPropertyValue {
             in_class_index: self.prop_idx,
-            value: value
+            value: value,
         };
         self.prop_idx += 1;
         value
