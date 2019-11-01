@@ -7,6 +7,7 @@ import { registerMediaTypes } from './media';
 import { registerMembershipTypes } from './members';
 import { registerRolesTypes } from './roles';
 import { registerDiscoveryTypes } from './discovery';
+import { registerHiringTypes } from './hiring';
 import { Codec } from '@polkadot/types/types';
 
 export function getTextPropAsString (struct: Struct, fieldName: string): string {
@@ -241,4 +242,5 @@ export function registerJoystreamTypes () {
   registerForumTypes();
   registerElectionAndProposalTypes();
   registerDiscoveryTypes();
+  registerHiringTypes();
 }

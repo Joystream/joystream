@@ -1,0 +1,131 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://joystream.org/schemas/hiring/role.json",
+  "type": "object",
+  "title": "Generic JoyStream role schema",
+  "required": [
+    "version",
+    "headline",
+    "job",
+    "reward",
+    "creator"
+  ],
+  "properties": {
+    "version": {
+      "$id": "#/properties/version",
+      "type": "integer",
+      "title": "Schema version",
+      "default": 0,
+      "examples": [
+        1
+      ]
+    },
+    "headline": {
+      "$id": "#/properties/headline",
+      "type": "string",
+      "title": "Headline",
+      "default": "",
+      "examples": [
+        "help us curate awesome content"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "job": {
+      "$id": "#/properties/job",
+      "type": "object",
+      "title": "Job specifics",
+      "required": [
+        "title",
+        "description"
+      ],
+      "properties": {
+        "title": {
+          "$id": "#/properties/job/properties/title",
+          "type": "string",
+          "title": "Job title",
+          "default": "",
+          "examples": [
+            "Content curator"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "description": {
+          "$id": "#/properties/job/properties/description",
+          "type": "string",
+          "title": "Job description; expects HTML",
+          "default": "",
+          "examples": [
+            "<p>Lorem ipsum</p>"
+          ],
+          "pattern": "^(.*)$"
+        }
+      }
+    },
+    "reward": {
+      "$id": "#/properties/reward",
+      "type": "string",
+      "title": "The Reward Schema",
+      "default": "",
+      "examples": [
+        "10 JOY per block"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "creator": {
+      "$id": "#/properties/creator",
+      "type": "object",
+      "title": "Creator details",
+      "required": [
+        "membership"
+      ],
+      "properties": {
+        "membership": {
+          "$id": "#/properties/creator/properties/membership",
+          "type": "object",
+          "title": "Entry in membership moduke",
+          "required": [
+            "handle"
+          ],
+          "properties": {
+            "handle": {
+              "$id": "#/properties/creator/properties/membership/properties/handle",
+              "type": "string",
+              "title": "Handle or username",
+              "default": "",
+              "examples": [
+                "5EV1NJUMouHKdNSXsArFyrryQDCixL7N1RTSivKM3rVJkwi5"
+              ],
+              "pattern": "^(.*)$"
+            }
+          }
+        }
+      }
+    },
+    "process": {
+      "$id": "#/properties/process",
+      "type": "object",
+      "title": "Hiring process",
+      "required": [
+        "details"
+      ],
+      "properties": {
+        "details": {
+          "$id": "#/properties/process/properties/details",
+          "type": "array",
+          "title": "Additional rolehiring process details",
+          "items": {
+            "$id": "#/properties/process/properties/details/items",
+            "type": "string",
+            "title": "The Items Schema",
+            "default": "",
+            "examples": [
+              "A"
+            ],
+            "pattern": "^(.*)$"
+          }
+        }
+      }
+    }
+  }
+}

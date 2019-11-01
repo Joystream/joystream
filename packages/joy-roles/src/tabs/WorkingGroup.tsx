@@ -2,7 +2,6 @@ import React from 'react'
 import { Button, Card, Message, Table } from 'semantic-ui-react';
 
 import { Balance } from '@polkadot/types/interfaces';
-import { BareProps } from '@polkadot/react-components/types';
 import { Actor } from '@joystream/types/roles';
 import { Profile } from '@joystream/types/members';
 import { Text } from '@polkadot/types';

@@ -6,7 +6,7 @@ import StoryRouter from 'storybook-react-router';
 addDecorator(StoryRouter());
 
 addDecorator(story => (
-  <div style={{padding: '1em'}}>{story()}</div>
+  <div style={{padding: '0.5em 2em'}}>{story()}</div>
 ));
 
 configure(require.context('../packages', true, /\.stories\.tsx?$/), module)
