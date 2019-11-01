@@ -4,11 +4,9 @@
 use rstd::prelude::*;
 
 use codec::{Codec, Decode, Encode};
-use runtime_primitives::traits::{MaybeSerializeDebug, Member, One, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::traits::Currency;
-use srml_support::{
-    decl_module, decl_storage, ensure, EnumerableStorageMap, Parameter, StorageMap, StorageValue,
-};
+use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
 use rstd::iter::Iterator;
 
@@ -43,7 +41,7 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 
     type ApplicationId: Parameter
@@ -52,7 +50,7 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 
     /// Type that will handle various staking events
