@@ -3,14 +3,13 @@
 use crate::*;
 use crate::{GenesisConfig, Module, Trait};
 
-use primitives::{Blake2Hasher, H256};
-use srml_support::{impl_outer_origin, parameter_types, assert_ok, assert_err};
-use runtime_io::with_externalities;
+use primitives::H256;
 use runtime_primitives::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
+use srml_support::{assert_err, assert_ok, impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
@@ -37,7 +36,6 @@ impl system::Trait for Runtime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type WeightMultiplierUpdate = ();
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
@@ -124,23 +122,17 @@ pub fn new_internal_class_prop(class_id: ClassId) -> Property {
 }
 
 pub fn good_props() -> Vec<Property> {
-    vec![
-        good_prop_bool(),
-        good_prop_u32(),
-    ]
+    vec![good_prop_bool(), good_prop_u32()]
 }
 
 pub fn good_prop_ids() -> Vec<u16> {
-    vec![ 0, 1 ]
+    vec![0, 1]
 }
 
 pub fn create_class() -> ClassId {
     let class_id = TestModule::next_class_id();
     assert_ok!(
-        TestModule::create_class(
-            good_class_name(),
-            good_class_description(),
-        ),
+        TestModule::create_class(good_class_name(), good_class_description(),),
         class_id
     );
     class_id
@@ -149,14 +141,14 @@ pub fn create_class() -> ClassId {
 pub fn bool_prop_value() -> ClassPropertyValue {
     ClassPropertyValue {
         in_class_index: 0,
-        value: PropertyValue::Bool(true)
+        value: PropertyValue::Bool(true),
     }
 }
 
 pub fn prop_value(index: u16, value: PropertyValue) -> ClassPropertyValue {
     ClassPropertyValue {
         in_class_index: index,
-        value: value
+        value: value,
     }
 }
 
@@ -168,8 +160,8 @@ pub fn create_class_with_schema_and_entity() -> (ClassId, u16, EntityId) {
         vec![
             good_prop_bool().required(),
             good_prop_u32(),
-            new_internal_class_prop(class_id)
-        ]
+            new_internal_class_prop(class_id),
+        ],
     ) {
         let entity_id = create_entity_of_class(class_id);
         (class_id, schema_id, entity_id)
@@ -178,30 +170,23 @@ pub fn create_class_with_schema_and_entity() -> (ClassId, u16, EntityId) {
     }
 }
 
-pub const PROP_ID_BOOL: u16     = 0;
-pub const PROP_ID_U32: u16      = 1;
+pub const PROP_ID_BOOL: u16 = 0;
+pub const PROP_ID_U32: u16 = 1;
 pub const PROP_ID_INTERNAL: u16 = 2;
 
 pub fn create_entity_with_schema_support() -> EntityId {
     let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
-    assert_ok!(
-        TestModule::add_schema_support_to_entity(
-            entity_id,
-            schema_id,
-            vec![ prop_value(PROP_ID_BOOL, PropertyValue::Bool(true)) ]
-        )
-    );
+    assert_ok!(TestModule::add_schema_support_to_entity(
+        entity_id,
+        schema_id,
+        vec![prop_value(PROP_ID_BOOL, PropertyValue::Bool(true))]
+    ));
     entity_id
 }
 
 pub fn create_entity_of_class(class_id: ClassId) -> EntityId {
     let entity_id = TestModule::next_entity_id();
-    assert_ok!(
-        TestModule::create_entity(
-            class_id,
-        ),
-        entity_id
-    );
+    assert_ok!(TestModule::create_entity(class_id,), entity_id);
     entity_id
 }
 
@@ -212,17 +197,17 @@ pub fn assert_class_props(class_id: ClassId, expected_props: Vec<Property>) {
 
 pub fn assert_class_schemas(class_id: ClassId, expected_schema_prop_ids: Vec<Vec<u16>>) {
     let class = TestModule::class_by_id(class_id);
-    let schemas: Vec<_> = expected_schema_prop_ids.iter().map(|prop_ids|
-        ClassSchema { properties: prop_ids.clone() }
-    ).collect();
+    let schemas: Vec<_> = expected_schema_prop_ids
+        .iter()
+        .map(|prop_ids| ClassSchema {
+            properties: prop_ids.clone(),
+        })
+        .collect();
     assert_eq!(class.schemas, schemas);
 }
 
 pub fn assert_entity_not_found(result: dispatch::Result) {
-    assert_err!(
-        result,
-        ERROR_ENTITY_NOT_FOUND
-    );
+    assert_err!(result, ERROR_ENTITY_NOT_FOUND);
 }
 
 // This function basically just builds a genesis storage key/value store according to
@@ -236,24 +221,24 @@ pub fn default_genesis_config() -> GenesisConfig {
         next_entity_id: 1,
         property_name_constraint: InputValidationLengthConstraint {
             min: 1,
-            max_min_diff: 49
+            max_min_diff: 49,
         },
         property_description_constraint: InputValidationLengthConstraint {
             min: 0,
-            max_min_diff: 500
+            max_min_diff: 500,
         },
         class_name_constraint: InputValidationLengthConstraint {
             min: 1,
-            max_min_diff: 49
+            max_min_diff: 49,
         },
         class_description_constraint: InputValidationLengthConstraint {
             min: 0,
-            max_min_diff: 500
-        }
+            max_min_diff: 500,
+        },
     }
 }
 
-fn build_test_externalities(config: GenesisConfig) -> runtime_io::TestExternalities<Blake2Hasher> {
+fn build_test_externalities(config: GenesisConfig) -> runtime_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -265,10 +250,7 @@ fn build_test_externalities(config: GenesisConfig) -> runtime_io::TestExternalit
 
 pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
     let config = default_genesis_config();
-    with_externalities(
-        &mut build_test_externalities(config),
-        f
-    )
+    build_test_externalities(config).execute_with(f)
 }
 
 // pub type System = system::Module;
