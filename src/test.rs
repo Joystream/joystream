@@ -3,8 +3,6 @@
 use super::*;
 use crate::mock::*;
 
-use runtime_io::with_externalities;
-
 static FIRST_BLOCK_HEIGHT: <Test as system::Trait>::BlockNumber = 1;
 
 use rstd::collections::btree_set::BTreeSet;
@@ -13,7 +11,7 @@ use rstd::collections::btree_set::BTreeSet;
 
 #[test]
 fn add_opening_success_waiting_to_begin() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         // FIXTURES
 
         let expected_opening_id = 0;
@@ -71,7 +69,7 @@ fn add_opening_success_waiting_to_begin() {
 
 #[test]
 fn add_opening_fails_due_to_activation_in_the_past() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         // FIXTURES
 
         let expected_opening_id = 0;
@@ -108,22 +106,22 @@ fn add_opening_fails_due_to_activation_in_the_past() {
 
 #[test]
 fn cancel_opening_success() {
-    with_externalities(&mut build_test_externalities(), || {});
+    build_test_externalities().execute_with(|| {});
 }
 
 #[test]
 fn cancel_opening_fails_due_to_too_short_application_unstaking_period() {
-    with_externalities(&mut build_test_externalities(), || {});
+    build_test_externalities().execute_with(|| {});
 }
 
 #[test]
 fn cancel_opening_fails_due_to_too_short_role_unstaking_period() {
-    with_externalities(&mut build_test_externalities(), || {});
+    build_test_externalities().execute_with(|| {});
 }
 
 #[test]
 fn cancel_opening_fails_due_to_opening_not_existing() {
-    with_externalities(&mut build_test_externalities(), || {});
+    build_test_externalities().execute_with(|| {});
 }
 
 //
@@ -180,5 +178,5 @@ fn cancel_opening_fails_due_to_opening_not_existing() {
 
 #[test]
 fn foo() {
-    with_externalities(&mut build_test_externalities(), || {});
+    build_test_externalities().execute_with(|| {});
 }
