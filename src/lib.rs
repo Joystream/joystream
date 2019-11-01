@@ -5,11 +5,9 @@
 use rstd::prelude::*;
 
 use codec::{Codec, Decode, Encode};
-use runtime_primitives::traits::{MaybeSerializeDebug, Member, One, SimpleArithmetic, Zero};
+use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic, Zero};
 use srml_support::traits::Currency;
-use srml_support::{
-    decl_module, decl_storage, ensure, EnumerableStorageMap, Parameter, StorageMap, StorageValue,
-};
+use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
 mod mint;
 mod mock;
@@ -30,7 +28,7 @@ pub trait Trait: system::Trait {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 }
 

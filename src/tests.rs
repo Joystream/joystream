@@ -3,11 +3,9 @@
 use super::*;
 use crate::mock::*;
 
-use runtime_io::with_externalities;
-
 #[test]
 fn adding_and_removing_mints() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         System::set_block_number(1);
         let capacity: u64 = 5000;
         let adjustment_amount: u64 = 500;
@@ -39,7 +37,7 @@ fn adding_and_removing_mints() {
 
 #[test]
 fn minting() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         let capacity: u64 = 5000;
 
         let mint_id = Minting::add_mint(capacity, None).ok().unwrap();
@@ -54,7 +52,7 @@ fn minting() {
 
 #[test]
 fn minting_exact() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         let capacity: u64 = 1000;
 
         let mint_id = Minting::add_mint(capacity, None).ok().unwrap();
@@ -68,7 +66,7 @@ fn minting_exact() {
 
 #[test]
 fn adjustment_adding() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         System::set_block_number(0);
         let capacity: u64 = 5000;
         let adjustment_amount: u64 = 500;
@@ -103,7 +101,7 @@ fn adjustment_adding() {
 
 #[test]
 fn adjustment_reducing() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         System::set_block_number(0);
         let capacity: u64 = 5000;
         let adjustment_amount: u64 = 500;
@@ -143,7 +141,7 @@ fn adjustment_reducing() {
 
 #[test]
 fn adjustment_setting() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         System::set_block_number(0);
         let capacity: u64 = 2000;
         let setting_amount: u64 = 5000;
@@ -167,7 +165,7 @@ fn adjustment_setting() {
 
 #[test]
 fn adjustment_first_interval() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         System::set_block_number(0);
         let capacity: u64 = 2000;
         let amount: u64 = 500;
