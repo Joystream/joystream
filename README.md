@@ -109,7 +109,6 @@ This is the set of active repos to which this document refers:
 | Repo                                                                                      | Description                                           | Maintainer      |
 | :-------------                                                                            | :-------------                                        | :-----------:   |
 | [apps](https://github.com/Joystream/apps)                                                 | The Pioneer application.                              | @siman          |
-| [jsgenesis-frontend](https://github.com/Joystream/jsgenesis-frontend)                             | The new Joystream website.    | @bwhm           |
 | [substrate-node-joystream](https://github.com/Joystream/substrate-node-joystream)         | The Joystream substrate node.                         | @mnaamani       |
 | [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)             | The storage node application.                         | @mnaamani   |
 | [query-node-joystream](https://github.com/Joystream/query-node-joystream)                             | Query node for the Joystream Platform.    | @paul           |
@@ -119,10 +118,11 @@ This is the set of active repos to which this document refers:
 | Repo                                                                                      | Description                                           | Maintainer      |
 | :-------------                                                                            | :-------------                                        | :-----------:   |
 | [joystream](https://github.com/Joystream/joystream)                             | The Joystream landing repo.    | @bedeho           |
+| [joystream-website](https://github.com/Joystream/joystream-website)                       | The Joystream website.    | @bwhm           |
 | [whitepaper](https://github.com/Joystream/whitepaper)                                     | The Joystream whitepaper.                             | @bedeho         |
 | [communications](https://github.com/Joystream/communications)                             | The Joystream communications workspace and archive.   | @bwhm           |
 | [helpdesk](https://github.com/Joystream/helpdesk)                             | Information and guides for users and contributors.    | @bwhm           |
-| [bounties](https://github.com/Joystream/bounties)                             | Bounties and testnet payout overview.    | @bwhm           |
+| [bounties](https://github.com/Joystream/bounties)                             | Bounties and testnet payout overview.    | @blrhc           |
 | [design](https://github.com/Joystream/design)                             | Joystream brand guide and assets.    | @bwhm           |
 | [manifesto](https://github.com/Joystream/manifesto)                             | The Joystream manifesto.    | @bedeho           |
 
