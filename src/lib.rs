@@ -4,8 +4,8 @@
 use rstd::prelude::*;
 
 use codec::Codec;
-use runtime_primitives::traits::{MaybeSerializeDebug, Member, SimpleArithmetic};
-use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter, StorageMap};
+use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
+use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter};
 use system;
 
 // EntityId, ClassId -> should be configured on versioned_store::Trait
@@ -78,7 +78,7 @@ pub trait Trait: system::Trait + versioned_store::Trait {
         + Default
         + Copy
         + Clone
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + Eq
         + PartialEq
         + Ord;

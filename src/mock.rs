@@ -3,8 +3,7 @@
 use crate::*;
 use crate::{Module, Trait};
 
-use primitives::{Blake2Hasher, H256};
-use runtime_io::with_externalities;
+use primitives::H256;
 use runtime_primitives::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
@@ -38,7 +37,6 @@ impl system::Trait for Runtime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type WeightMultiplierUpdate = ();
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
@@ -145,7 +143,7 @@ fn default_versioned_store_genesis_config() -> versioned_store::GenesisConfig {
 
 fn build_test_externalities(
     config: versioned_store::GenesisConfig,
-) -> runtime_io::TestExternalities<Blake2Hasher> {
+) -> runtime_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -157,7 +155,7 @@ fn build_test_externalities(
 
 pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
     let versioned_store_config = default_versioned_store_genesis_config();
-    with_externalities(&mut build_test_externalities(versioned_store_config), f)
+    build_test_externalities(versioned_store_config).execute_with(f)
 }
 
 // pub type System = system::Module;
