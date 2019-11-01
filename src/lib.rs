@@ -1,13 +1,10 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-
 use rstd::prelude::*;
 
 use codec::{Codec, Decode, Encode};
-use runtime_primitives::traits::{MaybeSerializeDebug, Member, One, SimpleArithmetic, Zero};
-use srml_support::{
-    decl_module, decl_storage, ensure, EnumerableStorageMap, Parameter, StorageMap, StorageValue,
-};
+use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic, Zero};
+use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
 use minting::{self, BalanceOf};
 use system;
@@ -25,7 +22,7 @@ pub trait Trait: system::Trait + minting::Trait + minting::Trait {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 
     /// Type for identifier for relationship representing that a recipient recieves recurring reward from a token mint
@@ -35,7 +32,7 @@ pub trait Trait: system::Trait + minting::Trait + minting::Trait {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 }
 
