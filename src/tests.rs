@@ -2,12 +2,11 @@
 
 use super::*;
 use crate::mock::*;
-use runtime_io::with_externalities;
 use srml_support::{assert_err, assert_ok};
 
 #[test]
 fn stake_pool_works() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         // using deposit_creating
         assert_eq!(Balances::total_issuance(), 0);
         assert_eq!(StakePool::stake_pool_balance(), 0);
@@ -67,7 +66,7 @@ fn stake_pool_works() {
 
 #[test]
 fn create_stake() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         let stake_id = StakePool::create_stake();
         assert_eq!(stake_id, 0);
         assert!(<Stakes<Test>>::exists(&stake_id));
@@ -82,7 +81,7 @@ fn create_stake() {
 
 #[test]
 fn remove_stake_in_not_staked_state() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         <Stakes<Test>>::insert(
             &100,
             Stake {
@@ -109,7 +108,7 @@ fn remove_stake_in_not_staked_state() {
 
 #[test]
 fn enter_staked_state() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         <Stakes<Test>>::insert(
             &100,
             Stake {
@@ -169,7 +168,7 @@ fn enter_staked_state() {
 
 #[test]
 fn increasing_stake() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         let starting_pool_stake = Balances::minimum_balance() + 5000;
         let _ =
             Balances::deposit_creating(&StakePool::stake_pool_account_id(), starting_pool_stake);
@@ -242,7 +241,7 @@ fn increasing_stake() {
 
 #[test]
 fn decreasing_stake() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         let starting_pool_stake = 5000;
         let _ =
             Balances::deposit_creating(&StakePool::stake_pool_account_id(), starting_pool_stake);
@@ -343,7 +342,7 @@ fn decreasing_stake() {
 
 #[test]
 fn initiating_pausing_resuming_cancelling_slashes() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         let staked_amount = Balances::minimum_balance() + 10000;
         let _ = Balances::deposit_creating(&StakePool::stake_pool_account_id(), staked_amount);
 
@@ -580,7 +579,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
 
 #[test]
 fn initiating_pausing_resuming_unstaking() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         let staked_amount = Balances::minimum_balance() + 10000;
         let starting_stake_fund_balance = Balances::minimum_balance() + 3333;
 
@@ -703,7 +702,7 @@ fn initiating_pausing_resuming_unstaking() {
 
 #[test]
 fn unstake() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         assert_err!(
             StakePool::initiate_unstaking(&0, None),
             StakeActionError::StakeNotFound

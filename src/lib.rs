@@ -5,12 +5,12 @@ use rstd::prelude::*;
 
 use codec::{Codec, Decode, Encode};
 use runtime_primitives::traits::{
-    AccountIdConversion, MaybeSerializeDebug, Member, One, SimpleArithmetic, Zero,
+    AccountIdConversion, MaybeSerialize, Member, One, SimpleArithmetic, Zero,
 };
 use runtime_primitives::ModuleId;
-use srml_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReason};
+use srml_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
 use srml_support::{
-    decl_module, decl_storage, ensure, EnumerableStorageMap, Parameter, StorageMap, StorageValue,
+    decl_module, decl_storage, ensure, Parameter,
 };
 
 use rstd::collections::btree_map::BTreeMap;
@@ -44,7 +44,7 @@ pub trait Trait: system::Trait + Sized {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 
     /// The type used as slash identifier.
@@ -54,7 +54,7 @@ pub trait Trait: system::Trait + Sized {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq
         + Ord; //required to be a key in BTreeMap
 }
@@ -773,7 +773,7 @@ impl<T: Trait> Module<T> {
         let negative_imbalance = T::Currency::withdraw(
             source,
             value,
-            WithdrawReason::Transfer,
+            WithdrawReasons::all(),
             ExistenceRequirement::AllowDeath,
         )
         .map_err(|_err| TransferFromAccountError::InsufficientBalance)?;
@@ -802,7 +802,7 @@ impl<T: Trait> Module<T> {
         T::Currency::withdraw(
             &Self::stake_pool_account_id(),
             value,
-            WithdrawReason::Transfer,
+            WithdrawReasons::all(),
             ExistenceRequirement::AllowDeath,
         )
         .expect("pool had less than expected funds!")
