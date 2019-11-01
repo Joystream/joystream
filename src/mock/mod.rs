@@ -3,7 +3,7 @@
 // use crate::*;
 use crate::{Module, Trait};
 
-use primitives::{Blake2Hasher, H256};
+use primitives::H256;
 
 use balances;
 use minting;
@@ -42,7 +42,6 @@ impl system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type WeightMultiplierUpdate = ();
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
@@ -70,15 +69,11 @@ impl balances::Trait for Test {
     /// The ubiquitous event type.
     type Event = ();
 
-    type TransactionPayment = ();
     type DustRemoval = ();
     type TransferPayment = ();
     type ExistentialDeposit = ExistentialDeposit;
     type TransferFee = TransferFee;
     type CreationFee = CreationFee;
-    type TransactionBaseFee = TransactionBaseFee;
-    type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = ();
 }
 
 impl Trait for Test {
@@ -92,7 +87,7 @@ impl minting::Trait for Test {
     type MintId = u64;
 }
 
-pub fn build_test_externalities() -> runtime_io::TestExternalities<Blake2Hasher> {
+pub fn build_test_externalities() -> runtime_io::TestExternalities {
     MockStatusHandler::reset();
 
     let t = system::GenesisConfig::default()
