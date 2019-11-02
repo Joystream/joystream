@@ -190,6 +190,9 @@ pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId
 
     /// How the curator was inducted into the working group.
     pub induction: CuratorInduction<LeadId, ApplicationId, BlockNumber>
+
+    /// Whether this curator can unilaterally alter the curation status of a  channel.
+    pub can_update_channel_curation_status: bool
 }
 
 /// Type of channel content.
@@ -383,3 +386,22 @@ pub struct OpeningPolicy<BlockNumber, StakingPolicy> {
     pub role_staking_policy: Option<StakingPolicy>
 }
 
+/// Represents 
+#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
+pub enum WorkingGroupActor<T: Trait> {
+
+    ///
+    Lead(T::LeadId),
+
+    ///
+    Curator(T::CuratorId),
+}
+
+pub enum ChannelActor<T: Trait> {
+
+    ///
+    WorkingGroupActor(WorkingGroupActor<T>),
+
+    ///
+    Owner
+}

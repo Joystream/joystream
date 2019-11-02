@@ -33,7 +33,16 @@ decl_storage! {
         /// Using map to model a set.
         pub Openings get(openings) config(): linked_map T::OpeningId => ();
 
+        /// Maps identifier to corresponding channel.
         pub ChannelById get(channel_by_id) config(): linked_map T::ChannelId => Channel<T::MemberId, T::AccountId, T::BlockNumber>;
+
+        /// Identifier to be used by the next channel introduced.
+        pub NextChannelId get(next_channel_id) config(): T::ChannelId;
+
+        /// Maps (unique+immutable) channel handle to the corresponding identifier for the channel.
+        /// Mapping is required to allow efficient (O(log N)) on-chain verification that a proposed handle is indeed unique 
+        /// at the time it is being proposed.
+        pub ChannelIdByHandle get(channel_id_by_handle) config(): linked_map Vec<u8> => T::ChannelId;
 
         /// Maps identifier to corresponding curator.
         pub CuratorById get(curator_by_id) config(): linked_map T::CuratorId => Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, T::LeadId, T::ApplicationId>;
@@ -59,6 +68,9 @@ decl_storage! {
 
         /// ...
         pub NextDynamicCredentialId get(next_dynamic_credential_id) config(): T::DynamicCredentialId;
+
+        /// Whether it is currently possible to create a channel via `create_channel` extrinsic.
+        pub ChannelCreationEnabled get(channel_creation_enabled) config(): bool;
 
 
         // Input guards
@@ -111,134 +123,193 @@ decl_module! {
 
         fn deposit_event() = default;
 
-        /// ...
-        pub fn create_channel(origin, channel_type: ChannelType, owner: T::MemberId) {
+        /*
+         * Channel management
+         */
 
-            // DONE
-            Ok(())
+        /// Create a new channel.
+        pub fn create_channel(origin, handle: Vec<u8>, description: Vec<u8>, content: ChannelContentType, owner: T::MemberId, role_account: T::AccountId) {
+
+            // Ensure is signed by "who".
+
+            // Ensure it is currently possible to create channels (ChannelCreationEnabled).
+
+            // Ensure handle is acceptable length
+
+            // Ensure description is acceptable length
+
+            // Ensure tx signer "who" is allowed to do this under owner id by dialing out to
+            // membership module and asking.
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Get id of new channel 
+
+            // Construct channel
+
+            // Add channel to ChannelById under id
+
+            // Add id to ChannelIdByHandle under handle
+
+            // Increment NextChannelId
+
+            // Dial out to membership module and inform about new role as channe owner.
+
+            // event?
+
         }
 
-        /// ...
-        pub fn transfer_channel_ownerhsip(origin, channel_id: T::ChannelId) {
+        /// An owner transfers channel ownership to a new owner.
+        /// 
+        /// Notice that working group participants cannot do this.
+        /// Notice that censored or unpublished channel may still be transferred.
+        pub fn transfer_channel_ownership(origin, channel_id: T::ChannelId, new_owner: T::MemberId, new_role_account: T::AccountId) {
 
-            // DONE
-            Ok(())
+            // Ensure extrinsic is signed by "who"
+
+            // Ensure channel id is valid
+
+            // Ensure "who" matches role account of channel
+
+            // Ensure new owner is allowed to do this under new owner id by dialing out to
+            // membership module and asking
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Construct new channel with altered properties
+
+            // Overwrite entry in ChannelById
+
+            // Dial out to membership module and inform about removal of role as channle owner for old owner.
+
+            // Dial out to membership module and inform about new role as channe owner for new owner.
+
+            // event?
+    
         }
 
         // perhaps curation can be done here in one go.
+
+        /// Update channel curation status of a channel.
+        /// 
+        /// Can 
+        pub fn update_channel_curation_status(origin, WorkingGroupActor) {
+
+
+
+        }
+
+        /*
+         * Credential management for versioned store permissions.
+         * 
+         * Lead credential is managed as non-dispatchable.
+         */
+
+        pub fn update_any_member_credential() {
+            
+        }
+
+        pub fn update_any_curator_credential() {
+            
+        }
+
+        pub fn create_dynamic_credential() {
+
+        }
+
+        pub fn update_dynamic_credential() {
+            
+        }
+
+
 
 
 
         /// ...
         pub fn update_channel_as_owner(origin) {
 
-            // DONE
-            Ok(())
         }
 
         /// ...
         pub fn update_channel_as_curator(origin) {
 
-            // DONE
-            Ok(())
         }
+
+
 
         /// ..
         pub fn create_version_store_credential(origin)  {
 
-            // DONE
-            Ok(())
+
         }
 
         /// ...
         pub fn update_lead_role_account(origin) {
 
-            // DONE
-            Ok(())
         }
 
         /// ...
         pub fn update_lead_reward_account(origin)  {
 
-            // DONE
-            Ok(())
         }
 
         /// ...
         pub fn add_curator_opening(origin)  {
 
-            // DONE
-            Ok(())
         }
 
         /// ...
         pub fn accept_curator_applications(origin)  {
 
-            // DONE
-            Ok(())
         }
 
         /// ...
         pub fn begin_curator_applicant_review(origin) {
-
-            // DONE
-            Ok(())
         }
 
         /// ...
         pub fn fill_curator_opening(origin) {
 
-            // DONE
-            Ok(())
         }
 
         /// ...
         pub fn update_curator_reward(origin) {
 
-            // DONE
-            Ok(())
         }
 
         /// ...
         pub fn slash_curator(origin) {
 
-            // DONE
-            Ok(())
         }
 
         /// ...
         pub fn terminate_curator(origin) {
 
-            // DONE
-            Ok(())
         }
 
         /// ...
         pub fn apply_on_curator_opening(origin) {
 
-            // DONE
-            Ok(())
         }
 
         /// ...
         pub fn update_curator_role_account(origin) {
 
-            // DONE
-            Ok(())
+
         }
 
         /// ...
         pub fn update_curator_reward_account(origin) {
 
-            // DONE
-            Ok(())
         }
 
         /// ...
         pub fn exit_curator_role(origin) {
 
-            // DONE
-            Ok(())
         }
 
         fn on_finalize(now: T::BlockNumber) {
@@ -264,8 +335,10 @@ impl<T: Trait> Module<T> {
     
     /// ...
     pub fn account_is_in_group();
+
+    pub fn update_lead_credential();
     */
-}
+} 
 
 /*
  *  ======== ======== ======== ======== =======
