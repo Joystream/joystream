@@ -257,38 +257,36 @@ version = '1.0.4'
 
 [dependencies.forum]
 default_features = false
-git = 'https://github.com/mnaamani/substrate-forum-module'
+git = 'https://github.com/Joystream/substrate-forum-module'
 package = 'substrate-forum-module'
-branch = 'use-polkadot-master-substrate-version'
-# Before releasing Rome - finalize and tag release new forum and update this
-# tag = 'v1.0.0'
+rev = '4bdeadaadfcca1fd6e822c520f429d4beacc4c8a'
 
 [dependencies.minting]
 default_features = false
 git = 'https://github.com/Joystream/substrate-token-minting-module/'
 package = 'substrate-token-mint-module'
-rev = '2a0e49537a8919610be84652ee3fb96f1f185de5'
+rev = '5570e3b56e9caffa7df1dbede6308b2e6ce18217'
 
 [dependencies.recurringrewards]
 default_features = false
 git = 'https://github.com/Joystream/substrate-recurring-reward-module'
 package = 'substrate-recurring-reward-module'
-rev = '5dcf286b2c45b6ee5393b71b4a176f3174a71c7f'
+rev = 'dfdadb22c6acf317aed3558224c154f4b4b1dfb1'
 
 [dependencies.stake]
 default_features = false
 git = 'https://github.com/mnaamani/substrate-stake/'
 package = 'substrate-stake-module'
-rev = 'eb4ef9711f1c375cc59f55b74b8a4e725335f4f0'
+rev = '28f4815a7d020fdcd450095cc8a8d7076f8899a6'
 
 [dependencies.hiring]
 default_features = false
 git = 'https://github.com/bedeho/substrate-hiring-module'
 package = 'substrate-hiring-module'
-rev = 'c030ae8305ef81e59934125c0927c92c4cb77ef9'
+rev = '21efbf1b9535c5c18dc36e9e42e192f3c9c7515b'
 
 [dependencies.versioned_store_permissions]
 default_features = false
-git = 'https://github.com/bedeho/substrate-versioned-store-permissions-module'
+git = 'https://github.com/mnaamani/substrate-versioned-store-permissions-module'
 package = 'substrate-versioned-store-permissions-module'
-rev = 'ddff0791de3774d10f79483f6609340fede35551'
+rev = '694a50420b9ffd37a396489ca82f700b54009363'
