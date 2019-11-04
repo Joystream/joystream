@@ -55,7 +55,7 @@ export default styled(HelpOverlay)`
   > .help-button {
     position: absolute;
     right: 0rem;
-    top: 3.75rem;
+    top: 5.25rem;
   }
 
   .help-slideout {

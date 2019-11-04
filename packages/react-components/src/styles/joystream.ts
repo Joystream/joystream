@@ -96,10 +96,10 @@ export default css`
 
   .apps--SideBar-logo {
     max-height: 26px !important;
-    margin: 1rem 1.5rem 1rem .75rem !important;
+    margin: 1rem 1.5rem 2.5rem .75rem !important;
   }
   .collapsed .apps--SideBar-logo {
-    margin: 1rem .75rem 1rem .5rem !important
+    margin: 1rem .75rem 2.5rem .5rem !important
   }
 
   .JoyForm .ui--Labelled {
