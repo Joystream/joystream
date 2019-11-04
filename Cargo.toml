@@ -289,4 +289,4 @@ rev = '21efbf1b9535c5c18dc36e9e42e192f3c9c7515b'
 default_features = false
 git = 'https://github.com/mnaamani/substrate-versioned-store-permissions-module'
 package = 'substrate-versioned-store-permissions-module'
-rev = '694a50420b9ffd37a396489ca82f700b54009363'
+rev = 'a6f60058ce8cc1123e90172807abb22459916727'

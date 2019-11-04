@@ -1,16 +1,17 @@
 #![cfg(test)]
 
-use crate::*;
+pub use super::lib::{self, Module, Trait};
+pub use srml_support::traits::Currency;
+pub use system;
 
-use primitives::{Blake2Hasher, H256};
-
-use crate::{Module, Trait};
-use balances;
-use runtime_primitives::{
-    testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+pub use primitives::{Blake2Hasher, H256};
+pub use runtime_primitives::{
+    testing::{Digest, DigestItem, Header, UintAuthorityId},
+    traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
+    weights::Weight,
+    BuildStorage, Perbill,
 };
+
 use srml_support::{impl_outer_origin, parameter_types};
 
 use stake;
@@ -40,7 +41,6 @@ impl system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type WeightMultiplierUpdate = ();
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
@@ -59,6 +59,15 @@ parameter_types! {
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
+// system::Trait + 
+// minting::Trait +
+// recurringrewards::Trait +
+// stake::Trait +
+// hiring::Trait +
+// versioned_store_permissions::Trait +
+// membership::Trait +
+// Sized
+
 impl balances::Trait for Test {
     /// The type for recording an account's balance.
     type Balance = u64;
@@ -69,25 +78,18 @@ impl balances::Trait for Test {
     /// The ubiquitous event type.
     type Event = ();
 
-    type TransactionPayment = ();
     type DustRemoval = ();
     type TransferPayment = ();
     type ExistentialDeposit = ExistentialDeposit;
     type TransferFee = TransferFee;
     type CreationFee = CreationFee;
-    type TransactionBaseFee = TransactionBaseFee;
-    type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = ();
 }
 
 impl Trait for Test {
-    //type Event = ();
-
-    type OpeningId = u64;
-
-    type ApplicationId = u64;
-
-    
+    type Event = ();
+    type LeadId = u64;
+    type CuratorId = u64;
+    type ChannelId = u64;   
 }
 
 impl stake::Trait for Test {
@@ -98,7 +100,7 @@ impl stake::Trait for Test {
     type SlashId = u64;
 }
 
-pub fn build_test_externalities() -> runtime_io::TestExternalities<Blake2Hasher> {
+pub fn build_test_externalities() -> runtime_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
@@ -108,4 +110,4 @@ pub fn build_test_externalities() -> runtime_io::TestExternalities<Blake2Hasher>
 
 //pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
-pub type Hiring = Module<Test>;
+pub type ContentWorkingGroup = Module<Test>;
