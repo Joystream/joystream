@@ -11,6 +11,7 @@ import cssMedia from './media';
 import cssRx from './rx';
 import cssSemantic from './semantic';
 import cssTheme from './theme';
+import cssJoystream from './joystream';
 
 export default createGlobalStyle`
   #root {
@@ -169,4 +170,5 @@ export default createGlobalStyle`
   ${cssMedia}
   ${cssRx}
   ${cssComponents}
+  ${cssJoystream}
 `;
