@@ -14,7 +14,13 @@ type WorkingGroupProps = {
 }
 
 export function ContentCurators(props: WorkingGroupProps) {
-	let message = null
+	let message = (
+		<Message>
+			<Message.Header>No open roles at the moment</Message.Header>
+			<p>The team is full at the moment, but we intend to expand. Check back for open roles soon!</p>
+		</Message>
+	)
+
 	if (props.rolesAvailable) {
 		message = (
 			<Message positive>
