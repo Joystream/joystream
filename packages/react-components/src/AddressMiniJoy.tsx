@@ -2,145 +2,177 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
+import { AccountId, AccountIndex, Address } from '@polkadot/types/interfaces';
 import { BareProps } from './types';
 
 import BN from 'bn.js';
 import React from 'react';
-import { AccountId, AccountIndex, Address, Balance } from '@polkadot/types/interfaces';
-import { withCall, withMulti } from '@polkadot/react-api/index';
+import styled from 'styled-components';
+import { KeyringItemType } from '@polkadot/ui-keyring/types';
 
-import classes from './util/classes';
-import toShortAddress from './util/toShortAddress';
+import { classes, getAddressName, toShortAddress } from './util';
 import BalanceDisplay from './Balance';
+import BondedDisplay from './Bonded';
 import IdentityIcon from './IdentityIcon';
-import { findNameByAddress, nonEmptyStr } from '@polkadot/joy-utils/index';
-import MemoView from '@polkadot/joy-utils/memo/MemoView';
 
-type Props = BareProps & {
-  balance?: Balance | Array<Balance> | BN,
-  children?: React.ReactNode,
-  isPadded?: boolean,
-  isShort?: boolean,
-  session_validators?: Array<AccountId>,
-  value?: AccountId | AccountIndex | Address | string,
-  name?: string,
-  size?: number,
-  withAddress?: boolean,
-  withBalance?: boolean,
-  withName?: boolean,
-  withMemo?: boolean
-};
+interface Props extends BareProps {
+  balance?: BN | BN[];
+  bonded?: BN | BN[];
+  children?: React.ReactNode;
+  iconInfo?: React.ReactNode;
+  isPadded?: boolean;
+  isShort?: boolean;
+  type?: KeyringItemType;
+  value?: AccountId | AccountIndex | Address | string;
+  withAddress?: boolean;
+  withBalance?: boolean;
+  withBonded?: boolean;
+}
 
-class AddressMini extends React.PureComponent<Props> {
-  render () {
-    const { children, className, isPadded = true, session_validators, style, size, value } = this.props;
+function renderAddressOrName ({ isShort = false, withAddress = true, type }: Props, address: string): React.ReactNode {
+  if (!withAddress) {
+    return null;
+  }
 
-    if (!value) {
-      return null;
-    }
+  const name = getAddressName(address, type);
 
-    const address = value.toString();
-    const isValidator = (session_validators || []).find((validator) =>
-      validator.toString() === address
-    );
+  return (
+    <div className={`ui--AddressMini-address ${name ? 'withName' : 'withAddr'}`}>{
+      name || (
+        isShort
+          ? toShortAddress(address)
+          : address
+      )
+    }</div>
+  );
+}
 
-    return (
-      <div
-        className={classes('ui--AddressMini', isPadded ? 'padded' : '', className)}
-        style={style}
-      >
-        <div className='ui--AddressMini-info'>
-          <IdentityIcon
-            isHighlight={!!isValidator}
-            size={size || 36}
-            value={address}
-          />
-          <div>
-            {this.renderAddress(address)}
-            <div className='ui--AddressMini-details'>
-              {this.renderName(address)}
-              {this.renderBalance()}
-              {this.renderMemo(address)}
-            </div>
+function renderBalance ({ balance, value, withBalance = false }: Props): React.ReactNode {
+  if (!withBalance || !value) {
+    return null;
+  }
+
+  return (
+    <BalanceDisplay
+      balance={balance}
+      params={value}
+    />
+  );
+}
+
+function renderBonded ({ bonded, value, withBonded = false }: Props): React.ReactNode {
+  if (!withBonded || !value) {
+    return null;
+  }
+
+  return (
+    <BondedDisplay
+      bonded={bonded}
+      label=''
+      params={value}
+    />
+  );
+}
+
+function AddressMini (props: Props): React.ReactElement<Props> | null {
+  const { children, className, iconInfo, isPadded = true, style, value } = props;
+
+  if (!value) {
+    return null;
+  }
+
+  const address = value.toString();
+
+  return (
+    <div
+      className={classes('ui--AddressMini', isPadded ? 'padded' : '', className)}
+      style={style}
+    >
+      <div className='ui--AddressMini-info'>
+        {renderAddressOrName(props, address)}
+        {children}
+      </div>
+      <div className='ui--AddressMini-icon'>
+        <IdentityIcon
+          size={24}
+          value={address}
+        />
+        {iconInfo && (
+          <div className='ui--AddressMini-icon-info'>
+            {iconInfo}
           </div>
-          {children}
-        </div>
+        )}
       </div>
-    );
-  }
-
-  private renderAddress (address: string) {
-    const { isShort = true, withAddress = true } = this.props;
-    if (!withAddress) {
-      return null;
-    }
-
-    return (
-      <div className='ui--AddressMini-address'>
-        {isShort ? toShortAddress(address) : address}
+      <div className='ui--AddressMini-balances'>
+        {renderBalance(props)}
+        {renderBonded(props)}
       </div>
-    );
-  }
-
-  private renderName (address: string) {
-    let { name, withName = false } = this.props;
-    if (!withName) {
-      return null;
-    }
-
-    name = name ? name : findNameByAddress(address);
-    return (nonEmptyStr(name) ?
-      <div className='ui--AddressSummary-name'>
-        Name: <b style={{ textTransform: 'uppercase' }}>{name}</b>
-      </div> : null
-    );
-  }
-
-  private renderBalance () {
-    const { balance, value, withBalance = false } = this.props;
-    if (!withBalance || !value) {
-      return null;
-    }
-
-    return (
-      <BalanceDisplay
-        label='Balance: '
-        balance={balance}
-        className='ui--AddressSummary-balance'
-        params={value}
-      />
-    );
-  }
-
-  private renderMemo (address: string) {
-    let { withMemo = false } = this.props;
-    if (!withMemo) {
-      return null;
-    }
-
-    return <div className='ui--AddressSummary-memo'>
-      Memo: <b><MemoView accountId={address} preview={true} showEmpty={true} /></b>
-    </div>;
-  }
+    </div>
+  );
 }
 
-export default withMulti(
-  AddressMini,
-  withCall('query.session.validators')
-);
+export default styled(AddressMini)`
+  display: inline-block;
+  padding: 0 0.25rem 0 1rem;
+  white-space: nowrap;
 
-type AddressPreviewProps = {
-  address: AccountId | AccountIndex | Address | string
-};
+  &.padded {
+    display: inline-block;
+    padding: 0.25rem 0 0 1rem;
+  }
 
-export function AddressPreview ({ address }: AddressPreviewProps) {
-  return <AddressMini
-    value={address}
-    isShort={false}
-    isPadded={false}
-    withBalance={true}
-    withName={true}
-    withMemo={false}
-    size={36}
-  />;
-}
+  &.summary {
+    position: relative;
+    top: -0.2rem;
+  }
+
+  .ui--AddressMini-address {
+    &.withAddr,
+    &.withName {
+      font-family: monospace;
+      max-width: 9rem;
+      min-width: 4em;
+      overflow: hidden;
+      text-align: right;
+      text-overflow: ellipsis;
+    }
+
+    &.withName {
+      text-transform: uppercase;
+    }
+  }
+
+  .ui--AddressMini-balances {
+    display: grid;
+
+    .ui--Bonded {
+      font-size: 0.75rem;
+      margin-right: 2.25rem;
+      margin-top: -0.5rem;
+      text-align: right;
+    }
+  }
+
+  .ui--AddressMini-icon {
+    margin: 0 0 0 0.5rem;
+
+    .ui--AddressMini-icon-info {
+      position: absolute;
+      right: -0.5rem;
+      top: -0.5rem;
+      z-index: 1;
+    }
+
+    .ui--IdentityIcon {
+      margin: 0;
+      vertical-align: middle;
+    }
+  }
+
+  .ui--AddressMini-icon,
+  .ui--AddressMini-info {
+    display: inline-block;
+    position: relative;
+    vertical-align: middle;
+  }
+`;
