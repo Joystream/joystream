@@ -64,8 +64,8 @@ const ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS: &str =
     "Internal property does not match its class";
 
 /// Length constraint for input validation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct InputValidationLengthConstraint {
     /// Minimum length
     pub min: u16,
@@ -103,8 +103,8 @@ impl InputValidationLengthConstraint {
 pub type ClassId = u64;
 pub type EntityId = u64;
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Class {
     pub id: ClassId,
 
@@ -120,8 +120,8 @@ pub struct Class {
     pub description: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Entity {
     pub id: EntityId,
 
@@ -140,15 +140,15 @@ pub struct Entity {
 }
 
 /// A schema defines what properties describe an entity
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ClassSchema {
     /// Indices into properties vector for the corresponding class.
     pub properties: Vec<u16>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Property {
     pub prop_type: PropertyType,
     pub required: bool,
@@ -156,8 +156,8 @@ pub struct Property {
     pub description: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PropertyType {
     None,
 
@@ -200,8 +200,8 @@ impl Default for PropertyType {
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PropertyValue {
     None,
 
@@ -236,8 +236,8 @@ impl Default for PropertyValue {
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ClassPropertyValue {
     /// Index is into properties vector of class.
     pub in_class_index: u16,
