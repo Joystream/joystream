@@ -9,9 +9,7 @@ use runtime_primitives::traits::{
 };
 use runtime_primitives::ModuleId;
 use srml_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
-use srml_support::{
-    decl_module, decl_storage, ensure, Parameter,
-};
+use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
 use rstd::collections::btree_map::BTreeMap;
 use system;
@@ -61,7 +59,14 @@ pub trait Trait: system::Trait + Sized {
 
 pub trait StakingEventsHandler<T: Trait> {
     /// Handler for unstaking event.
-    fn unstaked(id: &T::StakeId, unstaked_amount: NegativeImbalance<T>) -> NegativeImbalance<T>;
+    /// The handler is informed of the amount that was unstaked, and the value removed from stake is passed as a negative imbalance.
+    /// The handler is responsible to consume part or all of the value (for example by moving it into an account). The remainder
+    /// of the value that is not consumed should be returned as a negative imbalance.
+    fn unstaked(
+        id: &T::StakeId,
+        unstaked_amount: BalanceOf<T>,
+        staking_imbalance: NegativeImbalance<T>,
+    ) -> NegativeImbalance<T>;
 
     // Handler for slashing event.
     // NB: actually_slashed can be less than amount of the slash itself if the
@@ -76,13 +81,18 @@ pub trait StakingEventsHandler<T: Trait> {
 
 /// Default implementation just destroys the unstaked or slashed value
 impl<T: Trait> StakingEventsHandler<T> for () {
-    fn unstaked(_id: &T::StakeId, _amount: NegativeImbalance<T>) -> NegativeImbalance<T> {
+    fn unstaked(
+        _id: &T::StakeId,
+        _unstaked_amount: BalanceOf<T>,
+        _imbalance: NegativeImbalance<T>,
+    ) -> NegativeImbalance<T> {
         NegativeImbalance::<T>::zero()
     }
+
     fn slashed(
         _id: &T::StakeId,
         _slash_id: &T::SlashId,
-        _amount: NegativeImbalance<T>,
+        _actually_slashed: NegativeImbalance<T>,
         _remaining_stake: BalanceOf<T>,
     ) -> NegativeImbalance<T> {
         NegativeImbalance::<T>::zero()
@@ -95,9 +105,13 @@ impl<T: Trait> StakingEventsHandler<T> for () {
 impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEventsHandler<T>
     for (X, Y)
 {
-    fn unstaked(id: &T::StakeId, amount: NegativeImbalance<T>) -> NegativeImbalance<T> {
-        let remaining = X::unstaked(id, amount);
-        Y::unstaked(id, remaining)
+    fn unstaked(
+        id: &T::StakeId,
+        unstaked_amount: BalanceOf<T>,
+        imbalance: NegativeImbalance<T>,
+    ) -> NegativeImbalance<T> {
+        let remaining_imbalance = X::unstaked(id, unstaked_amount, imbalance);
+        Y::unstaked(id, unstaked_amount, remaining_imbalance)
     }
     fn slashed(
         id: &T::StakeId,
@@ -1031,7 +1045,7 @@ impl<T: Trait> Module<T> {
             <Stakes<T>>::insert(stake_id, stake);
 
             let imbalance = Self::withdraw_funds_from_stake_pool(staked_amount);
-            let _ = T::StakingEventsHandler::unstaked(stake_id, imbalance);
+            let _ = T::StakingEventsHandler::unstaked(stake_id, staked_amount, imbalance);
         }
 
         Ok(())
@@ -1104,7 +1118,7 @@ impl<T: Trait> Module<T> {
                 // remove the unstaked amount from the pool
                 let imbalance = Self::withdraw_funds_from_stake_pool(staked_amount);
 
-                let _ = T::StakingEventsHandler::unstaked(&stake_id, imbalance);
+                let _ = T::StakingEventsHandler::unstaked(&stake_id, staked_amount, imbalance);
             }
         }
     }
