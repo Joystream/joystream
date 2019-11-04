@@ -21,7 +21,7 @@ runtime-io = { package = 'sr-io', default-features = false, git = 'https://githu
 default_features = false
 package ='substrate-versioned-store'
 git = 'https://github.com/joystream/substrate-versioned-store-module'
-rev = '0df42054d634823dd1df28a204952d3d4cca947c'
+rev = 'd0c68722405355404840512edf3064d5ced3e1fe'
 
 [dev-dependencies]
 runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
