@@ -118,10 +118,10 @@ function Item ({ allAccounts, route: { Modal, display: { isHidden, needsAccounts
   const body = (
     <>
       <Icon name={icon} />
-      <div className='text SidebarItem'>
+      <span className='text SidebarItem'>
             <div>{t(`sidebar.${name}`, i18n)}</div>
             {subtitle && <div className={`SidebarSubtitle ${subtitle.classes.join(' ')}`}>{subtitle.text}</div>}
-      </div>
+      </span>
       <Tooltip
         offset={{ right: -4 }}
         place='right'
