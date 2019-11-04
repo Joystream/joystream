@@ -46,6 +46,7 @@ function HelpOverlay ({ className, md }: Props): React.ReactElement<Props> {
 
 export default styled(HelpOverlay)`
   .help-button {
+    color: #2196f3;
     cursor: pointer;
     font-size: 2rem;
     padding: 1.25rem 1.5rem 0 0;
@@ -54,7 +55,7 @@ export default styled(HelpOverlay)`
   > .help-button {
     position: absolute;
     right: 0rem;
-    top: 0rem;
+    top: 3.75rem;
   }
 
   .help-slideout {
