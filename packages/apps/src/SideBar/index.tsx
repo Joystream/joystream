@@ -156,20 +156,7 @@ function SideBar ({ className, collapse, handleResize, isCollapsed, toggleMenu, 
           vertical
         >
           <div className='apps-SideBar-Scroll'>
-          {JoystreamLogo(isCollapsed)}
-            <div
-              className='apps--SideBar-logo'
-              onClick={_toggleModal('network')}
-            >
-              <ChainImg />
-              <div className='info'>
-                <Chain className='chain' />
-                {isApiReady && (
-                  <div className='runtimeVersion'>version {api.runtimeVersion.specVersion.toNumber()}</div>
-                )}
-                <BestNumber label='#' />
-              </div>
-            </div>
+            {JoystreamLogo(isCollapsed)}
             {routing.routes.map((route, index): React.ReactNode => (
               route
                 ? (
