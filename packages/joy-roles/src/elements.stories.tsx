@@ -9,7 +9,7 @@ import { Actor } from '@joystream/types/roles'
 import { BalanceView, GroupMemberView, HandleView, MemberView, MemoView } from './elements'
 
 import 'semantic-ui-css/semantic.min.css'
-import '@polkadot/joy-roles/index.css'
+import '@polkadot/joy-roles/index.sass'
 
 export default { 
 	title: 'Roles / Elements',

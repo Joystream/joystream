@@ -11,7 +11,7 @@ import { ContentCurators, StorageAndDistribution } from "@polkadot/joy-roles/tab
 import { GroupMemberProps } from "@polkadot/joy-roles/elements"
 
 import 'semantic-ui-css/semantic.min.css'
-import '@polkadot/joy-roles/index.css'
+import '@polkadot/joy-roles/index.sass'
 
 export default { 
 	title: 'Roles / Working groups tab',

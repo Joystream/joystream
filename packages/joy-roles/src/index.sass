@@ -1,0 +1,75 @@
+$green: #21ba45
+
+#storage-providers 
+  .container
+    margin-right: 1em
+
+  .balance span, .memo span
+    font-weight: bold
+
+  .balance
+    font-size: 0.8em
+
+#content-curators 
+  .staked-card
+    margin-right: 1.2em !important
+
+  .cards
+    margin-top: 1em
+    margin-bottom: 1em
+
+.container.outer
+  margin-bottom: 3em
+
+.ui.avatar.image
+  width: 50px !important
+  height: 50px !important
+  margin-bottom: 5px
+
+$opening-states: ( active: $green )
+
+.ui.container.opening
+  @each $name, $colour in $opening-states 
+    .status-#{$name}
+      background-color: rgba($colour,0.15)
+      .column
+        &.reward
+          .label
+            color: white
+            font-weight: bold
+        &.status
+          .icon
+            animation: 6s infinite heartbeat
+        &.meta
+          .label 
+            background-color: rgba($colour, 0.2) !important
+            color: darken($colour, 20%) 
+
+            a
+              color: darken($colour, 20%)
+              border-bottom: 1px dotted $colour
+
+              &:hover
+                color: darken($colour, 10%)
+                border-color: darken($colour, 10%)
+
+  .reward
+    h4
+      font-size: 1.5em
+
+@keyframes heartbeat 
+  0% 
+    transform: scale(1)
+  
+  4% 
+    transform: scale(1.2)
+  
+  8% 
+    transform: scale(1)
+  
+  12% 
+    transform: scale(1.2)
+  
+  16% 
+    transform: scale(1)
+  

@@ -15,7 +15,7 @@ import ActorsList from './ActorsList';
 import MyRequests from './MyRequests';
 import AvailableRoles from './AvailableRoles';
 
-import './index.css';
+import './index.sass';
 
 import translate from './translate';
 

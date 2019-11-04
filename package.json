@@ -33,7 +33,7 @@
     "start": "cd packages/apps && webpack --config webpack.config.js",
     "storybook": "start-storybook -p 3001",
     "generate-schemas": "json2ts -i packages/joy-types/src/schemas/role.schema.json -o packages/joy-types/src/schemas/role.schema.ts",
-	"build-storybook": "build-storybook -c .storybook"
+    "build-storybook": "build-storybook -c .storybook"
   },
   "devDependencies": {
     "@babel/core": "^7.6.2",
@@ -67,6 +67,12 @@
     "@storybook/react": "^5.2.5",
     "@types/lodash": "^4.14.138",
     "ajv": "^6.10.2",
-    "lodash": "^4.17.15"
+    "css-loader": "^3.2.0",
+    "less": "^3.10.3",
+    "less-loader": "^5.0.0",
+    "lodash": "^4.17.15",
+    "node-sass": "^4.13.0",
+    "sass-loader": "^8.0.0",
+    "style-loader": "^1.0.0"
   }
 }

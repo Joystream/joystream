@@ -57,8 +57,7 @@
           "default": "",
           "examples": [
             "<p>Lorem ipsum</p>"
-          ],
-          "pattern": "^(.*)$"
+          ]
         }
       }
     },
