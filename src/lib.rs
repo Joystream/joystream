@@ -99,9 +99,11 @@ impl<T: Trait> StakingEventsHandler<T> for () {
     }
 }
 
-/// Helper implementation so we can provide multiple handlers by grouping handlers in tuple pairs.
+/// Helper implementation so we can chain multiple handlers by grouping handlers in tuple pairs.
 /// For example for three handlers, A, B and C we can set the StakingEventHandler type on the trait to:
 /// type StakingEventHandler = ((A, B), C)
+/// Individual handlers are expected consume in full or in part the negative imbalance and return any unconsumed value.
+/// The unconsumed value is then passed to the next handler in the chain.
 impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEventsHandler<T>
     for (X, Y)
 {
