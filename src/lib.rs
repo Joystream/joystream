@@ -204,20 +204,20 @@ where
     SlashId: Ord + Copy,
 {
     /// Iterates over all ongoing slashes and decrements blocks_remaining_in_active_period_for_slashing of active slashes (advancing the timer).
-    /// Returns the the number of slashes that were found to be active and had their timer advanced.
-    fn advance_slashing_timer(&mut self) -> usize {
-        self.ongoing_slashes
-            .iter_mut()
-            .fold(0, |slashes_updated, (_slash_id, slash)| {
-                if slash.is_active
-                    && slash.blocks_remaining_in_active_period_for_slashing > Zero::zero()
-                {
-                    slash.blocks_remaining_in_active_period_for_slashing -= One::one();
-                    slashes_updated + 1
-                } else {
-                    slashes_updated
-                }
-            })
+    /// Returns true if there was at least one slashe that was active and had its timer advanced.
+    fn advance_slashing_timer(&mut self) -> bool {
+        let mut did_advance_timers = false;
+
+        for (_slash_id, slash) in self.ongoing_slashes.iter_mut() {
+            if slash.is_active
+                && slash.blocks_remaining_in_active_period_for_slashing > Zero::zero()
+            {
+                slash.blocks_remaining_in_active_period_for_slashing -= One::one();
+                did_advance_timers = true;
+            }
+        }
+
+        did_advance_timers
     }
 
     /// Returns pair of slash_id and slashes that should be executed
@@ -610,12 +610,12 @@ where
         match self.staking_status {
             StakingStatus::Staked(ref mut staked_state) => {
                 // tick the slashing timer
-                let update_count = staked_state.advance_slashing_timer();
+                let did_update = staked_state.advance_slashing_timer();
 
                 // finalize and apply slashes
                 let slashed = staked_state.finalize_slashes(minimum_balance);
 
-                (update_count > 0, slashed)
+                (did_update, slashed)
             }
             _ => (false, vec![]),
         }
