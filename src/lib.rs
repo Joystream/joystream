@@ -912,10 +912,9 @@ impl<T: Trait> Module<T> {
 
         <Stakes<T>>::insert(stake_id, stake);
 
-        Ok((
-            staked_amount,
-            Self::withdraw_funds_from_stake_pool(deduct_from_pool),
-        ))
+        let imbalance = Self::withdraw_funds_from_stake_pool(deduct_from_pool);
+
+        Ok((staked_amount, imbalance))
     }
 
     /// Provided the stake exists and is in state Staked.Normal, and the given stake holds at least the value,
