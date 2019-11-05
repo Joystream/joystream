@@ -59,7 +59,7 @@ pub trait Trait: system::Trait + minting::Trait + recurringrewards::Trait + stak
 }
 
 /// Type for identifier for dynamic version store credential.
-pub type DynamicCredentialId<T: Trait> = <T as versioned_store_permissions::Trait>::PrincipalId;
+pub type DynamicCredentialId<T> = <T as versioned_store_permissions::Trait>::PrincipalId;
 
 /// Balance type of runtime
 pub type BalanceOf<T> =
@@ -427,6 +427,7 @@ pub enum WorkingGroupActor<T: Trait> {
     Curator(T::CuratorId),
 }
 
+/*
 pub enum ChannelActor<T: Trait> {
 
     ///
@@ -435,6 +436,7 @@ pub enum ChannelActor<T: Trait> {
     ///
     Owner
 }
+*/
 
 decl_storage! {
     trait Store for Module<T: Trait> as ContentWorkingGroup {
@@ -560,7 +562,7 @@ decl_module! {
          */
 
         /// Create a new channel.
-        pub fn create_channel(origin, handle: Vec<u8>, description: Vec<u8>, content: ChannelContentType, owner: T::MemberId, role_account: T::AccountId) {
+        pub fn create_channel(_origin, _handle: Vec<u8>, _description: Vec<u8>, _content: ChannelContentType, _owner: T::MemberId, _role_account: T::AccountId) {
 
             // Ensure is signed by "who".
 
@@ -597,7 +599,7 @@ decl_module! {
         /// 
         /// Notice that working group participants cannot do this.
         /// Notice that censored or unpublished channel may still be transferred.
-        pub fn transfer_channel_ownership(origin, channel_id: T::ChannelId, new_owner: T::MemberId, new_role_account: T::AccountId) {
+        pub fn transfer_channel_ownership(_origin, _channel_id: T::ChannelId, _new_owner: T::MemberId, _new_role_account: T::AccountId) {
 
             // Ensure extrinsic is signed by "who"
 
@@ -629,7 +631,7 @@ decl_module! {
         /// Update channel curation status of a channel.
         /// 
         /// Can 
-        pub fn update_channel_curation_status(origin) {
+        pub fn update_channel_curation_status(_origin) {
 
             // WorkingGroupActor
 
@@ -641,106 +643,106 @@ decl_module! {
          * Lead credential is managed as non-dispatchable.
          */
 
-        pub fn update_any_member_credential(origin) {
+        pub fn update_any_member_credential(_origin) {
             
         }
 
-        pub fn update_any_curator_credential(origin) {
+        pub fn update_any_curator_credential(_origin) {
             
         }
 
-        pub fn create_dynamic_credential(origin) {
+        pub fn create_dynamic_credential(_origin) {
 
         }
 
-        pub fn update_dynamic_credential(origin) {
+        pub fn update_dynamic_credential(_origin) {
 
         }
 
         /// ...
-        pub fn update_channel_as_owner(origin) {
+        pub fn update_channel_as_owner(_origin) {
 
         }
 
         /// ...
-        pub fn update_channel_as_curator(origin) {
+        pub fn update_channel_as_curator(_origin) {
 
         }
 
 
 
         /// ..
-        pub fn create_version_store_credential(origin)  {
+        pub fn create_version_store_credential(_origin)  {
 
 
         }
 
         /// ...
-        pub fn update_lead_role_account(origin) {
+        pub fn update_lead_role_account(_origin) {
 
         }
 
         /// ...
-        pub fn update_lead_reward_account(origin)  {
+        pub fn update_lead_reward_account(_origin)  {
 
         }
 
         /// ...
-        pub fn add_curator_opening(origin)  {
+        pub fn add_curator_opening(_origin)  {
 
         }
 
         /// ...
-        pub fn accept_curator_applications(origin)  {
+        pub fn accept_curator_applications(_origin)  {
 
         }
 
         /// ...
-        pub fn begin_curator_applicant_review(origin) {
+        pub fn begin_curator_applicant_review(_origin) {
         }
 
         /// ...
-        pub fn fill_curator_opening(origin) {
-
-        }
-
-        /// ...
-        pub fn update_curator_reward(origin) {
+        pub fn fill_curator_opening(_origin) {
 
         }
 
         /// ...
-        pub fn slash_curator(origin) {
+        pub fn update_curator_reward(_origin) {
 
         }
 
         /// ...
-        pub fn terminate_curator(origin) {
+        pub fn slash_curator(_origin) {
 
         }
 
         /// ...
-        pub fn apply_on_curator_opening(origin) {
+        pub fn terminate_curator(_origin) {
 
         }
 
         /// ...
-        pub fn update_curator_role_account(origin) {
+        pub fn apply_on_curator_opening(_origin) {
+
+        }
+
+        /// ...
+        pub fn update_curator_role_account(_origin) {
 
 
         }
 
         /// ...
-        pub fn update_curator_reward_account(origin) {
+        pub fn update_curator_reward_account(_origin) {
 
         }
 
         /// ...
-        pub fn exit_curator_role(origin) {
+        pub fn exit_curator_role(_origin) {
 
         }
 
-        fn on_finalize(now: T::BlockNumber) {
+        fn on_finalize(_now: T::BlockNumber) {
 
         }
     }
@@ -772,7 +774,6 @@ impl<T: Trait> Module<T> {
  *  ======== ======== ======== ======== =======
  *  ======== PRIVATE TYPES AND METHODS ========
  *  ======== ======== ======== ======== =======
- */
 
 /// ...
 enum Credential<CuratorId: Ord, ChannelId, BlockNumber> {
@@ -839,3 +840,4 @@ impl<T: Trait> Module<T> {
     }
     
 }
+*/

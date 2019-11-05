@@ -155,14 +155,6 @@ impl Trait for Test {
     type ChannelId = u64;   
 }
 
-pub fn build_test_externalities() -> runtime_io::TestExternalities {
-    let t = system::GenesisConfig::default()
-        .build_storage::<Test>()
-        .unwrap();
-
-    t.into()
-}
-
 //pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
-pub type ContentWorkingGroup = Module<Test>;
+//pub type ContentWorkingGroup = Module<Test>;
