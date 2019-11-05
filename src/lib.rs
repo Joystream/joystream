@@ -65,7 +65,7 @@ pub trait StakingEventsHandler<T: Trait> {
     fn unstaked(
         id: &T::StakeId,
         unstaked_amount: BalanceOf<T>,
-        staking_imbalance: NegativeImbalance<T>,
+        remaining_imbalance: NegativeImbalance<T>,
     ) -> NegativeImbalance<T>;
 
     // Handler for slashing event.
@@ -74,8 +74,9 @@ pub trait StakingEventsHandler<T: Trait> {
     fn slashed(
         id: &T::StakeId,
         slash_id: &T::SlashId,
-        actually_slashed: NegativeImbalance<T>,
+        slashed_amount: BalanceOf<T>,
         remaining_stake: BalanceOf<T>,
+        remaining_imbalance: NegativeImbalance<T>,
     ) -> NegativeImbalance<T>;
 }
 
@@ -84,7 +85,7 @@ impl<T: Trait> StakingEventsHandler<T> for () {
     fn unstaked(
         _id: &T::StakeId,
         _unstaked_amount: BalanceOf<T>,
-        _imbalance: NegativeImbalance<T>,
+        _remaining_imbalance: NegativeImbalance<T>,
     ) -> NegativeImbalance<T> {
         NegativeImbalance::<T>::zero()
     }
@@ -92,8 +93,9 @@ impl<T: Trait> StakingEventsHandler<T> for () {
     fn slashed(
         _id: &T::StakeId,
         _slash_id: &T::SlashId,
-        _actually_slashed: NegativeImbalance<T>,
+        _slahed_amount: BalanceOf<T>,
         _remaining_stake: BalanceOf<T>,
+        _remaining_imbalance: NegativeImbalance<T>,
     ) -> NegativeImbalance<T> {
         NegativeImbalance::<T>::zero()
     }
@@ -112,17 +114,25 @@ impl<T: Trait, X: StakingEventsHandler<T>, Y: StakingEventsHandler<T>> StakingEv
         unstaked_amount: BalanceOf<T>,
         imbalance: NegativeImbalance<T>,
     ) -> NegativeImbalance<T> {
-        let remaining_imbalance = X::unstaked(id, unstaked_amount, imbalance);
-        Y::unstaked(id, unstaked_amount, remaining_imbalance)
+        let unused_imbalance = X::unstaked(id, unstaked_amount, imbalance);
+        Y::unstaked(id, unstaked_amount, unused_imbalance)
     }
+
     fn slashed(
         id: &T::StakeId,
         slash_id: &T::SlashId,
-        amount: NegativeImbalance<T>,
+        slashed_amount: BalanceOf<T>,
         remaining_stake: BalanceOf<T>,
+        imbalance: NegativeImbalance<T>,
     ) -> NegativeImbalance<T> {
-        let remaining = X::slashed(id, slash_id, amount, remaining_stake);
-        Y::slashed(id, slash_id, remaining, remaining_stake)
+        let unused_imbalance = X::slashed(id, slash_id, slashed_amount, remaining_stake, imbalance);
+        Y::slashed(
+            id,
+            slash_id,
+            slashed_amount,
+            remaining_stake,
+            unused_imbalance,
+        )
     }
 }
 
@@ -749,22 +759,22 @@ impl<T: Trait> Module<T> {
     /// back to the source (by creating a new positive imbalance)
     pub fn stake(
         stake_id: &T::StakeId,
-        value: NegativeImbalance<T>,
+        imbalance: NegativeImbalance<T>,
     ) -> Result<(), StakeActionError<StakingError>> {
         ensure!(
             <Stakes<T>>::exists(stake_id),
             StakeActionError::StakeNotFound
         );
 
-        let amount = value.peek();
+        let value = imbalance.peek();
 
         let mut stake = Self::stakes(stake_id);
 
-        stake.start_staking(amount, T::Currency::minimum_balance())?;
+        stake.start_staking(value, T::Currency::minimum_balance())?;
 
         <Stakes<T>>::insert(stake_id, stake);
 
-        Self::deposit_funds_into_stake_pool(value);
+        Self::deposit_funds_into_stake_pool(imbalance);
 
         Ok(())
     }
@@ -808,9 +818,9 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn deposit_funds_into_stake_pool(value: NegativeImbalance<T>) {
+    fn deposit_funds_into_stake_pool(imbalance: NegativeImbalance<T>) {
         // move the negative imbalance into the stake pool
-        T::Currency::resolve_creating(&Self::stake_pool_account_id(), value);
+        T::Currency::resolve_creating(&Self::stake_pool_account_id(), imbalance);
     }
 
     /// Moves funds from the module's account into specified account. Should never fail if used internally.
@@ -856,7 +866,7 @@ impl<T: Trait> Module<T> {
     /// is not returned to the caller, it is the caller's responsibility to return the funds back to the source (by creating a new positive imbalance)
     pub fn increase_stake(
         stake_id: &T::StakeId,
-        value: NegativeImbalance<T>,
+        imbalance: NegativeImbalance<T>,
     ) -> Result<BalanceOf<T>, StakeActionError<IncreasingStakeError>> {
         ensure!(
             <Stakes<T>>::exists(stake_id),
@@ -865,10 +875,10 @@ impl<T: Trait> Module<T> {
 
         let mut stake = Self::stakes(stake_id);
 
-        let total_staked_amount = stake.increase_stake(value.peek())?;
+        let total_staked_amount = stake.increase_stake(imbalance.peek())?;
         <Stakes<T>>::insert(stake_id, stake);
 
-        Self::deposit_funds_into_stake_pool(value);
+        Self::deposit_funds_into_stake_pool(imbalance);
 
         Ok(total_staked_amount)
     }
@@ -1121,8 +1131,9 @@ impl<T: Trait> Module<T> {
                 let _ = T::StakingEventsHandler::slashed(
                     &stake_id,
                     &slash_id,
-                    imbalance,
+                    slashed_amount,
                     staked_amount,
+                    imbalance,
                 );
             }
 
