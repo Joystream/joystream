@@ -106,7 +106,7 @@ export function GroupMemberView(props: GroupMemberProps) {
 	if (typeof props.stake !== "undefined" && props.stake.toNumber() !== 0) {
     stake = (
       <Label color={props.lead ? 'teal' : 'green'} ribbon={fluid ? 'right' : 'left'}>
-        <Icon name="check circle" /> 
+        <Icon name="shield" /> 
         Staked 
         <Label.Detail>{formatBalance(props.stake)}</Label.Detail>
       </Label>

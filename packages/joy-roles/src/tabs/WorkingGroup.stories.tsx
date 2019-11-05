@@ -14,7 +14,7 @@ import 'semantic-ui-css/semantic.min.css'
 import '@polkadot/joy-roles/index.sass'
 
 export default { 
-	title: 'Roles / Working groups tab',
+  title: 'Roles / Components / Working groups tab',
     decorators: [withKnobs],
 }
 

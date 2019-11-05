@@ -50,10 +50,20 @@ $opening-states: ( active: $green )
                 color: darken($colour, 10%)
                 border-color: darken($colour, 10%)
 
+        .ribbon
+          background-color: $colour !important
+
+          &:after
+            color: darken($colour, 25%) !important
+
   .main 
     .statistic
       .label, .value
         text-align: left
+
+    .summary
+      .statistic
+        .value
 
     .column
       &.summary
@@ -62,44 +72,32 @@ $opening-states: ( active: $green )
 
       &.details
         .ribbon
-          left: calc(100% + 1rem + 2.3em + 1px);
-          padding-right: calc(1rem + 2.3em + 1px);
+          left: calc(100% + 1rem + 2.3em + 1px)
+          padding-right: calc(1rem + 2.3em + 1px)
 
         .button 
           margin-top: 2em
           position: relative
-          animation: 10s infinite glint
           &:after
-            animation: 10s infinite shine
             content: ''
-            display: block
             position: absolute
-            background: rgba(255,255,255,0.2)
-            width: 20%
-            height: 100%
-            left: -100px
             top: 0
-            opacity: 0
-            filter: blur(3px)
+            left: -20%
+            width: 0
+            height: 100%
+            background-color: rgba(255,255,255,0.4)
+            -webkit-transition: none
+            -moz-transition: none
+            transition: none
+            transform: skew(-15deg)
 
-@keyframes shine
-  95% 
-    transform: translateX(-0px) skewX(-15deg)
-    opacity: 0.1
+          &:hover:after
+            width: 140%
+            background-color: rgba(255,255,255,0)
+            -webkit-transition: all 0.5s ease-in-out
+            -moz-transition: all 0.5s ease-in-out
+            transition: all 0.5s ease-in-out
 
-  100% 
-    transform: translateX(calc(500% + 100px)) skewX(-15deg)
-    opacity: 1
-
-@keyframes glint
-  90%
-    background-color: $green
-  95%
-    background-color: lighten($green, 2%)
-  100% 
-    background-color: $green
-
- 
 .icon.heart
   animation: 6s infinite heartbeat
 

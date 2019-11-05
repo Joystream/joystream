@@ -12,7 +12,7 @@ import 'semantic-ui-css/semantic.min.css'
 import '@polkadot/joy-roles/index.sass'
 
 export default { 
-	title: 'Roles / Opportunities groups tab',
+	title: 'Roles / Components / Opportunities groups tab',
 	decorators: [withKnobs],
 }
 
@@ -27,7 +27,7 @@ export function OpenStakelessUnrestricted(){
 			headline: text("Headline", "Help us curate awesome content", "Role"),
 			job: {
 				title: text("Job title", "Content curator", "Role"),
-				description: text("Job description", faker.lorem.paragraphs(3), "Role")
+				description: text("Job description", faker.lorem.paragraphs(4), "Role")
 			},
 			reward: text("Reward", "10 JOY per block", "Role"),
 			creator: {
