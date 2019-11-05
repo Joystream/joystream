@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::mock::*;
+use runtime_primitives::traits::OnFinalize;
 use srml_support::{assert_err, assert_ok};
 
 #[test]
@@ -528,7 +529,8 @@ fn initiating_pausing_resuming_cancelling_slashes() {
         slash_id += 1;
         assert!(StakePool::initiate_slashing(&stake_id, slashing_amount, 2).is_ok());
 
-        StakePool::finalize_slashing_and_unstaking();
+        StakePool::on_finalize(System::block_number());
+
         expected_ongoing_slashes.insert(
             slash_id,
             Slash {
@@ -555,7 +557,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             }
         );
 
-        StakePool::finalize_slashing_and_unstaking();
+        StakePool::on_finalize(System::block_number());
         assert_eq!(
             StakePool::stakes(&stake_id),
             Stake {
@@ -669,7 +671,7 @@ fn initiating_pausing_resuming_unstaking() {
             }
         );
 
-        StakePool::finalize_slashing_and_unstaking();
+        StakePool::on_finalize(System::block_number());
         assert_eq!(
             StakePool::stakes(&stake_id),
             Stake {
