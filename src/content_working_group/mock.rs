@@ -101,11 +101,11 @@ pub trait CreateClassPermissionsChecker<T: Trait> {
 */
 
 impl GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
+    type Currency = Balances;
 }
 
 impl minting::Trait for Test {
-    type Currency = balances::Module<Self>; // Balances;
+    type Currency = Balances;
     type MintId = u64;
 }
 
@@ -116,7 +116,7 @@ impl recurringrewards::Trait for Test {
 }
 
 impl stake::Trait for Test {
-    type Currency = balances::Module<Self>; // Balances;
+    type Currency = Balances;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = ();
     type StakeId = u64;
