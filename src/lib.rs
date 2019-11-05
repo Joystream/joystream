@@ -270,15 +270,16 @@ where
     /// For all slahes that should be executed, will apply the Slash to the staked amount, and drop it from the ongoing slashes map.
     /// Returns a vector of the executed slashes outcome: (SlashId, Slashed Amount, Remaining Staked Amount)
     fn finalize_slashes(&mut self, minimum_balance: Balance) -> Vec<(SlashId, Balance, Balance)> {
-        self.get_slashes_to_finalize()
-            .iter()
-            .map(|(slash_id, slash)| {
-                // apply the slashing and get back actual amount slashed
-                let slashed_amount = self.apply_slash(*slash, minimum_balance);
+        let mut finalized_slashes: Vec<(SlashId, Balance, Balance)> = vec![];
 
-                (*slash_id, slashed_amount, self.staked_amount)
-            })
-            .collect::<Vec<_>>()
+        for (slash_id, slash) in self.get_slashes_to_finalize().iter() {
+            // apply the slashing and get back actual amount slashed
+            let slashed_amount = self.apply_slash(*slash, minimum_balance);
+
+            finalized_slashes.push((*slash_id, slashed_amount, self.staked_amount));
+        }
+
+        finalized_slashes
     }
 }
 
