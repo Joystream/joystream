@@ -12,7 +12,7 @@ use system;
 mod mock;
 mod tests;
 
-pub trait Trait: system::Trait + minting::Trait + minting::Trait {
+pub trait Trait: system::Trait + minting::Trait {
     type PayoutStatusHandler: PayoutStatusHandler<Self>;
 
     /// Type of identifier for recipients.
