@@ -16,6 +16,7 @@ use system;
 
 mod errors;
 pub use errors::*;
+mod macroes;
 mod mock;
 mod tests;
 
@@ -722,13 +723,10 @@ impl<T: Trait> Module<T> {
 
     /// Given that stake with id exists in stakes and is NotStaked, remove from stakes.
     pub fn remove_stake(stake_id: &T::StakeId) -> Result<(), StakeActionError<StakingError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
+        let stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         ensure!(
-            Self::stakes(stake_id).is_not_staked(),
+            stake.is_not_staked(),
             StakeActionError::Error(StakingError::AlreadyStaked)
         );
 
@@ -743,11 +741,9 @@ impl<T: Trait> Module<T> {
         stake_id: &T::StakeId,
         value: BalanceOf<T>,
     ) -> Result<(), StakeActionError<StakingError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-        Self::stakes(stake_id)
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
+
+        stake
             .start_staking(value, T::Currency::minimum_balance())
             .err()
             .map_or(Ok(()), |err| Err(StakeActionError::Error(err)))
@@ -761,14 +757,9 @@ impl<T: Trait> Module<T> {
         stake_id: &T::StakeId,
         imbalance: NegativeImbalance<T>,
     ) -> Result<(), StakeActionError<StakingError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         let value = imbalance.peek();
-
-        let mut stake = Self::stakes(stake_id);
 
         stake.start_staking(value, T::Currency::minimum_balance())?;
 
@@ -784,12 +775,7 @@ impl<T: Trait> Module<T> {
         source_account_id: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<(), StakeActionError<StakingFromAccountError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-
-        let mut stake = Self::stakes(stake_id);
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         stake.start_staking(value, T::Currency::minimum_balance())?;
 
@@ -850,11 +836,9 @@ impl<T: Trait> Module<T> {
         stake_id: &T::StakeId,
         value: BalanceOf<T>,
     ) -> Result<(), StakeActionError<IncreasingStakeError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-        Self::stakes(stake_id)
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
+
+        stake
             .increase_stake(value)
             .err()
             .map_or(Ok(()), |err| Err(StakeActionError::Error(err)))
@@ -868,12 +852,7 @@ impl<T: Trait> Module<T> {
         stake_id: &T::StakeId,
         imbalance: NegativeImbalance<T>,
     ) -> Result<BalanceOf<T>, StakeActionError<IncreasingStakeError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-
-        let mut stake = Self::stakes(stake_id);
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         let total_staked_amount = stake.increase_stake(imbalance.peek())?;
         <Stakes<T>>::insert(stake_id, stake);
@@ -891,6 +870,8 @@ impl<T: Trait> Module<T> {
         source_account_id: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<BalanceOf<T>, StakeActionError<IncreasingStakeFromAccountError>> {
+        // Compiler error when using macro: cannot infer type for `ErrorType`
+        // let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
         ensure!(
             <Stakes<T>>::exists(stake_id),
             StakeActionError::StakeNotFound
@@ -911,11 +892,9 @@ impl<T: Trait> Module<T> {
         stake_id: &T::StakeId,
         value: BalanceOf<T>,
     ) -> Result<(), StakeActionError<DecreasingStakeError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-        Self::stakes(stake_id)
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
+
+        stake
             .decrease_stake(value, T::Currency::minimum_balance())
             .err()
             .map_or(Ok(()), |err| Err(StakeActionError::Error(err)))
@@ -925,12 +904,7 @@ impl<T: Trait> Module<T> {
         stake_id: &T::StakeId,
         value: BalanceOf<T>,
     ) -> Result<(BalanceOf<T>, NegativeImbalance<T>), StakeActionError<DecreasingStakeError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-
-        let mut stake = Self::stakes(stake_id);
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         let (deduct_from_pool, staked_amount) =
             stake.decrease_stake(value, T::Currency::minimum_balance())?;
@@ -951,12 +925,7 @@ impl<T: Trait> Module<T> {
         destination_account_id: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<BalanceOf<T>, StakeActionError<DecreasingStakeError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-
-        let mut stake = Self::stakes(stake_id);
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         let (deduct_from_pool, staked_amount) =
             stake.decrease_stake(value, T::Currency::minimum_balance())?;
@@ -974,12 +943,7 @@ impl<T: Trait> Module<T> {
         slash_amount: BalanceOf<T>,
         slash_period: T::BlockNumber,
     ) -> Result<T::SlashId, StakeActionError<InitiateSlashingError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-
-        let mut stake = Self::stakes(stake_id);
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         let slash_id = stake.initiate_slashing(
             slash_amount,
@@ -996,12 +960,7 @@ impl<T: Trait> Module<T> {
         stake_id: &T::StakeId,
         slash_id: &T::SlashId,
     ) -> Result<(), StakeActionError<PauseSlashingError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-
-        let mut stake = Self::stakes(stake_id);
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         stake.pause_slashing(slash_id)?;
 
@@ -1015,12 +974,7 @@ impl<T: Trait> Module<T> {
         stake_id: &T::StakeId,
         slash_id: &T::SlashId,
     ) -> Result<(), StakeActionError<ResumeSlashingError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-
-        let mut stake = Self::stakes(stake_id);
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         stake.resume_slashing(slash_id)?;
 
@@ -1033,12 +987,7 @@ impl<T: Trait> Module<T> {
         stake_id: &T::StakeId,
         slash_id: &T::SlashId,
     ) -> Result<(), StakeActionError<CancelSlashingError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-
-        let mut stake = Self::stakes(stake_id);
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         stake.cancel_slashing(slash_id)?;
 
@@ -1052,12 +1001,7 @@ impl<T: Trait> Module<T> {
         stake_id: &T::StakeId,
         unstaking_period: Option<T::BlockNumber>,
     ) -> Result<(), StakeActionError<InitiateUnstakingError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-
-        let mut stake = Self::stakes(stake_id);
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         if let Some(unstaking_period) = unstaking_period {
             stake.initiate_unstaking(unstaking_period, <system::Module<T>>::block_number())?;
@@ -1077,12 +1021,7 @@ impl<T: Trait> Module<T> {
     pub fn pause_unstaking(
         stake_id: &T::StakeId,
     ) -> Result<(), StakeActionError<PauseUnstakingError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-
-        let mut stake = Self::stakes(stake_id);
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         stake.pause_unstaking()?;
 
@@ -1095,12 +1034,7 @@ impl<T: Trait> Module<T> {
     pub fn resume_unstaking(
         stake_id: &T::StakeId,
     ) -> Result<(), StakeActionError<ResumeUnstakingError>> {
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-
-        let mut stake = Self::stakes(stake_id);
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         stake.resume_unstaking()?;
 
