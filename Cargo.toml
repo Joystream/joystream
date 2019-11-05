@@ -46,6 +46,7 @@ std = [
     'recurringrewards/std',
     'stake/std',
     'hiring/std',
+    'versioned_store/std',
     'versioned_store_permissions/std'
 ]
 
@@ -271,7 +272,7 @@ rev = '5570e3b56e9caffa7df1dbede6308b2e6ce18217'
 default_features = false
 git = 'https://github.com/Joystream/substrate-recurring-reward-module'
 package = 'substrate-recurring-reward-module'
-rev = 'dfdadb22c6acf317aed3558224c154f4b4b1dfb1'
+rev = '56add2132ab2957006988fb862cfdc3d734ed3d3'
 
 [dependencies.stake]
 default_features = false
@@ -284,6 +285,12 @@ default_features = false
 git = 'https://github.com/bedeho/substrate-hiring-module'
 package = 'substrate-hiring-module'
 rev = '21efbf1b9535c5c18dc36e9e42e192f3c9c7515b'
+
+[dependencies.versioned_store]
+default_features = false
+package ='substrate-versioned-store'
+git = 'https://github.com/joystream/substrate-versioned-store-module'
+rev = 'd0c68722405355404840512edf3064d5ced3e1fe'
 
 [dependencies.versioned_store_permissions]
 default_features = false

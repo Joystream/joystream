@@ -10,9 +10,9 @@ use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use srml_support::traits::Currency;
 use srml_support::{
-    decl_module, decl_storage, decl_event, ensure, StorageMap, StorageValue, Parameter
+    decl_module, decl_storage, decl_event, Parameter // ensure, StorageMap, StorageValue,
 };
-use runtime_primitives::traits::{Member, One, SimpleArithmetic, MaybeSerialize};
+use runtime_primitives::traits::{Member, SimpleArithmetic, MaybeSerialize};
 use minting;
 use recurringrewards;
 use stake;
@@ -21,7 +21,7 @@ use versioned_store_permissions;
 use super::super::membership::members as membership;
 
 /// Module configuration trait for this Substrate module.
-pub trait Trait: system::Trait + minting::Trait + recurringrewards::Trait + stake::Trait + hiring::Trait + versioned_store_permissions::Trait + membership::Trait + Sized {
+pub trait Trait: system::Trait + minting::Trait + recurringrewards::Trait + stake::Trait + hiring::Trait + versioned_store_permissions::Trait + membership::Trait { // + Sized
 
     /// The event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -59,18 +59,18 @@ pub trait Trait: system::Trait + minting::Trait + recurringrewards::Trait + stak
 }
 
 /// Type for identifier for dynamic version store credential.
-pub type DynamicCredentialId<T: Trait> = T::PrincipalId;
+pub type DynamicCredentialId<T: Trait> = <T as versioned_store_permissions::Trait>::PrincipalId;
 
 /// Balance type of runtime
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 /// Negative imbalance of runtime.
-pub type NegativeImbalance<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+// pub type NegativeImbalance<T> =
+//    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
 /// The exit stage of a lead involvement in the working group.
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Debug, Clone)]
 pub struct ExitedLeadRole<BlockNumber> {
 
     /// When exit was initiated.
@@ -78,7 +78,7 @@ pub struct ExitedLeadRole<BlockNumber> {
 }
 
 /// The stage of the involvement of a lead in the working group.
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Debug, Clone)]
 pub enum LeadRoleState<BlockNumber> {
 
     /// Currently active.
@@ -100,7 +100,7 @@ impl<BlockNumber> Default for LeadRoleState<BlockNumber> {
 /// Working group lead: curator lead
 /// For now this role is not staked or inducted through an structured process, like the hiring module,
 /// hence information about this is missing. Recurring rewards is included, somewhat arbitrarily!
-#[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Default, Debug, Clone)]
 pub struct Lead<AccountId, RewardRelationshipId, BlockNumber> {
 
     /// Account used to authenticate in this role,
@@ -118,7 +118,7 @@ pub struct Lead<AccountId, RewardRelationshipId, BlockNumber> {
 }
 
 /// Origin of exit initiation on behalf of a curator.'
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Debug, Clone)]
 pub enum CuratorExitInitiationOrigin {
 
     /// Lead is origin.
@@ -129,7 +129,7 @@ pub enum CuratorExitInitiationOrigin {
 }
 
 /// The exit stage of a curators involvement in the working group.
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Debug, Clone)]
 pub struct ExitedCuratorRoleStage<BlockNumber> {
 
     /// Origin for exit.
@@ -143,7 +143,7 @@ pub struct ExitedCuratorRoleStage<BlockNumber> {
 }
 
 /// The stage of the involvement of a curator in the working group.
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Debug, Clone)]
 pub enum CuratorRoleStage<BlockNumber> {
 
     /// Currently active.
@@ -163,7 +163,7 @@ impl<BlockNumber> Default for CuratorRoleStage<BlockNumber> {
 }
 
 /// The induction of a curator in the working group.
-#[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Default, Debug, Clone)]
 pub struct CuratorInduction<LeadId, ApplicationId, BlockNumber> {
 
     /// Lead responsible
@@ -178,7 +178,7 @@ pub struct CuratorInduction<LeadId, ApplicationId, BlockNumber> {
 
 /// Working group participant: curator
 /// This role can be staked, have reward and be inducted through the hiring module.
-#[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Default, Debug, Clone)]
 pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId, ApplicationId> {
 
     /// Account used to authenticate in this role,
@@ -200,8 +200,13 @@ pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId
     pub can_update_channel_curation_status: bool
 }
 
+/*
+ * BEGIN: =========================================================
+ * Channel stuff
+ */
+
 /// Type of channel content.
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum ChannelContentType {
     Video,
     Music,
@@ -220,7 +225,7 @@ impl Default for ChannelContentType {
 /// Status of channel, as set by the owner.
 /// Is only meant to affect visibility, mutation of channel and child content
 /// is unaffected on runtime.
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum ChannelPublishingStatus {
 
     /// Compliant UIs should render.
@@ -243,7 +248,7 @@ impl Default for ChannelPublishingStatus {
 /// Is only meant to affect visibility currently, but in the future
 /// it will also gate publication of new child content,
 /// editing properties, revenue flows, etc. 
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum ChannelCurationStatus {
     Normal,
     Censored
@@ -259,7 +264,7 @@ impl Default for ChannelCurationStatus {
 }
 
 /// A channel for publishing content.
-#[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Channel<MemberId, AccountId, BlockNumber> {
 
     /// Unique human readble channel handle.
@@ -292,8 +297,13 @@ pub struct Channel<MemberId, AccountId, BlockNumber> {
 
 }
 
+/*
+ * END: =========================================================
+ * Channel stuff
+ */
+
 /// The types of built in credential holders.
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Debug, Clone)]
 pub enum BuiltInCredentialHolder {
 
     /// Cyrrent working group lead.
@@ -307,7 +317,7 @@ pub enum BuiltInCredentialHolder {
 }
 
 /// Holder of dynamic credential.
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Debug, Clone)]
 pub enum DynamicCredentialHolder<CuratorId: Ord, ChannelId> {
 
     /// Sets of curators.
@@ -328,7 +338,7 @@ impl<CuratorId: Ord, ChannelId> Default for DynamicCredentialHolder<CuratorId, C
 
 /// Represents credential for authenticating as "the current lead".
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd, Default)]
+#[derive(Encode, Decode, Debug, Clone, Default)]
 pub struct LeadCredential {
 
     /// Whether it is currently possible to authenticate with this credential.
@@ -337,7 +347,7 @@ pub struct LeadCredential {
 
 /// Represents credential for authenticating as "any curator".
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd, Default)]
+#[derive(Encode, Decode, Debug, Clone, Default)]
 pub struct AnyCuratorCredential {
 
     /// Whether it is currently possible to authenticate with this credential.
@@ -346,7 +356,7 @@ pub struct AnyCuratorCredential {
 
 /// Represents credential for authenticating as "any member".
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd, Default)]
+#[derive(Encode, Decode, Debug, Clone, Default)]
 pub struct AnyMemberCredential {
 
     /// Whether it is currently possible to authenticate with this credential.
@@ -355,7 +365,7 @@ pub struct AnyMemberCredential {
 
 /// Represents credential to be referenced from the version store.
 /// It is dynamic in the sense that these can be created on the fly.
-#[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Encode, Decode, Default, Debug, Clone)]
 pub struct DynamicCredential<CuratorId: Ord, ChannelId, BlockNumber> {
 
     /// Who holds this credential, meaning they can successfully authenticate with this credential.
@@ -374,8 +384,8 @@ pub struct DynamicCredential<CuratorId: Ord, ChannelId, BlockNumber> {
 /// Policy governing any curator opening which can be made by lead.
 /// Be aware that all limits are forward looking in constrainign future extrinsics or method calls.
 /// Updating them has no side-effects beyond changing the limit.
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
-pub struct OpeningPolicy<BlockNumber, StakingPolicy> {
+#[derive(Encode, Decode, Debug, Clone, Default)]
+pub struct OpeningPolicy<BlockNumber: Default, Balance> {
 
     /// Limits the total number of curators which can be active, or possibly active through an active opening. 
     /// The contribution of an active opening is counted by looking at the rationing policy of the opening.
@@ -388,11 +398,23 @@ pub struct OpeningPolicy<BlockNumber, StakingPolicy> {
     pub max_review_period_length: BlockNumber,
 
     /// Staking policy for application
-    pub application_staking_policy: Option<StakingPolicy>,
+    pub application_staking_policy: Option<hiring::StakingPolicy<Balance, BlockNumber>>,
 
     /// Staking policy for role itself
-    pub role_staking_policy: Option<StakingPolicy>
+    pub role_staking_policy: Option<hiring::StakingPolicy<Balance, BlockNumber>>
 }
+
+/*
+impl<BlockNumber, StakingPolicy> Default for OpeningPolicy<BlockNumber, StakingPolicy> {
+
+    return OpeningPolicy {
+        curator_limit: Option<u16>,
+        max_review_period_length: BlockNumber,
+        application_staking_policy: Option<StakingPolicy>,
+        role_staking_policy: Option<StakingPolicy>
+    }
+}
+*/
 
 /// Represents 
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
@@ -452,7 +474,7 @@ decl_storage! {
 
         /// The constraints lead must respect when creating a new curator opening.
         /// Lack of policy is interpreted as blocking any new openings at all.
-        pub OptOpeningPolicy get(opening_policy) config(): Option<OpeningPolicy<T::BlockNumber, hiring::StakingPolicy<BalanceOf<T>, T::BlockNumber>>>;
+        pub OptOpeningPolicy get(opening_policy) config(): Option<OpeningPolicy<T::BlockNumber, BalanceOf<T>>>;
 
         /// Credentials for built in roles.
         pub CredentialOfLead get(credential_of_lead) config(): LeadCredential;
