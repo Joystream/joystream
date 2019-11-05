@@ -779,6 +779,7 @@ impl<T: Trait> Module<T> {
 
         stake.start_staking(value, T::Currency::minimum_balance())?;
 
+        // Its important to only do the transfer as the last step to ensure starting staking was possible.
         Self::transfer_funds_from_account_into_stake_pool(source_account_id, value)?;
 
         <Stakes<T>>::insert(stake_id, stake);
