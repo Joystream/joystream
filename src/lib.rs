@@ -711,10 +711,20 @@ impl<T: Trait> Module<T> {
     }
 
     /// Given that stake with id exists in stakes and is NotStaked, remove from stakes.
-    pub fn remove_stake(stake_id: &T::StakeId) {
-        if <Stakes<T>>::exists(stake_id) && Self::stakes(stake_id).is_not_staked() {
-            <Stakes<T>>::remove(stake_id);
-        }
+    pub fn remove_stake(stake_id: &T::StakeId) -> Result<(), StakeActionError<StakingError>> {
+        ensure!(
+            <Stakes<T>>::exists(stake_id),
+            StakeActionError::StakeNotFound
+        );
+
+        ensure!(
+            Self::stakes(stake_id).is_not_staked(),
+            StakeActionError::Error(StakingError::AlreadyStaked)
+        );
+
+        <Stakes<T>>::remove(stake_id);
+
+        Ok(())
     }
 
     /// Dry run to see if staking can be initiated for the specified stake id. This should

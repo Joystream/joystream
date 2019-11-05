@@ -89,7 +89,7 @@ fn remove_stake_in_not_staked_state() {
                 staking_status: StakingStatus::NotStaked,
             },
         );
-        StakePool::remove_stake(&100);
+        assert_ok!(StakePool::remove_stake(&100));
         assert!(!<Stakes<Test>>::exists(&100));
 
         // when status is Staked, removing should fail
@@ -101,7 +101,10 @@ fn remove_stake_in_not_staked_state() {
             },
         );
 
-        StakePool::remove_stake(&200);
+        assert_err!(
+            StakePool::remove_stake(&200),
+            StakeActionError::Error(StakingError::AlreadyStaked)
+        );
         assert!(<Stakes<Test>>::exists(&200));
     });
 }
