@@ -37,9 +37,6 @@ $opening-states: ( active: $green )
           .label
             color: white
             font-weight: bold
-        &.status
-          .icon
-            animation: 6s infinite heartbeat
         &.meta
           .label 
             background-color: rgba($colour, 0.2) !important
@@ -53,9 +50,58 @@ $opening-states: ( active: $green )
                 color: darken($colour, 10%)
                 border-color: darken($colour, 10%)
 
-  .reward
-    h4
-      font-size: 1.5em
+  .main 
+    .statistic
+      .label, .value
+        text-align: left
+
+    .column
+      &.summary
+        h4.headline
+          font-size: 1.5em
+
+      &.details
+        .ribbon
+          left: calc(100% + 1rem + 2.3em + 1px);
+          padding-right: calc(1rem + 2.3em + 1px);
+
+        .button 
+          margin-top: 2em
+          position: relative
+          animation: 10s infinite glint
+          &:after
+            animation: 10s infinite shine
+            content: ''
+            display: block
+            position: absolute
+            background: rgba(255,255,255,0.2)
+            width: 20%
+            height: 100%
+            left: -100px
+            top: 0
+            opacity: 0
+            filter: blur(3px)
+
+@keyframes shine
+  95% 
+    transform: translateX(-0px) skewX(-15deg)
+    opacity: 0.1
+
+  100% 
+    transform: translateX(calc(500% + 100px)) skewX(-15deg)
+    opacity: 1
+
+@keyframes glint
+  90%
+    background-color: $green
+  95%
+    background-color: lighten($green, 2%)
+  100% 
+    background-color: $green
+
+ 
+.icon.heart
+  animation: 6s infinite heartbeat
 
 @keyframes heartbeat 
   0% 

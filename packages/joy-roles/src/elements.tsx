@@ -91,14 +91,26 @@ export type GroupMemberProps = {
 	profile: Profile
 	title: string
 	lead: boolean
-    stake?: Balance 	
+  stake?: Balance 	
 	earned?: Balance
+  inset?: boolean
 }
 
 export function GroupMemberView(props: GroupMemberProps) {
+  let fluid = false
+	if (typeof props.inset !== "undefined") {
+    fluid = props.inset
+  }
+
 	let stake = null
 	if (typeof props.stake !== "undefined" && props.stake.toNumber() !== 0) {
-	    stake = <Label color={props.lead ? 'teal' : 'green'} ribbon><Icon name="check circle" /> Staked <Label.Detail>{formatBalance(props.stake)}</Label.Detail></Label>
+    stake = (
+      <Label color={props.lead ? 'teal' : 'green'} ribbon={fluid ? 'right' : 'left'}>
+        <Icon name="check circle" /> 
+        Staked 
+        <Label.Detail>{formatBalance(props.stake)}</Label.Detail>
+      </Label>
+    )
 	}
 
 	let avatar = <Identicon value={props.actor.account.toString()} size="50"  />
@@ -106,8 +118,19 @@ export function GroupMemberView(props: GroupMemberProps) {
 		avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
 	}
 
+  let earned = null
+  if (typeof props.earned !== "undefined" && 
+      props.earned.toNumber() > 0 &&
+      !fluid) {
+    earned = (
+      <Card.Content extra>
+        <Label>Earned <Label.Detail>{formatBalance(props.earned)}</Label.Detail></Label>
+      </Card.Content>
+    )
+  }
+
 	return (
-    <Card color={props.lead ? 'teal' : 'grey'} className="staked-card">
+    <Card color={props.lead ? 'teal' : 'grey'} className="staked-card" fluid={fluid}>
       <Card.Content>
 		<Image floated='right'>
 			{avatar}
@@ -118,9 +141,7 @@ export function GroupMemberView(props: GroupMemberProps) {
 			 {stake}
         </Card.Description>
       </Card.Content>
-      <Card.Content extra>
-		  <Label>Earned <Label.Detail>{formatBalance(props.earned)}</Label.Detail></Label>
-      </Card.Content>
+      {earned}
     </Card>
 	)
 }

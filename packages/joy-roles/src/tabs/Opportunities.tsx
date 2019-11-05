@@ -3,11 +3,13 @@ import marked from 'marked';
 
 import { Button, Card, Container, Grid, Icon, Label, Statistic } from 'semantic-ui-react'
 
+import { GroupMemberProps, GroupMemberView } from '../elements'
 import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
 import { Opening } from "@joystream/types/hiring"
 
 type Props = {
 	opening: Opening
+	creator: GroupMemberProps
 }
 
 export function OpeningView(props: Props) {
@@ -50,25 +52,31 @@ export function OpeningView(props: Props) {
 						</Grid.Column>
 					</Grid>
 				</Card.Content>
-				<Card.Content>
+				<Card.Content className="main">
 					<Grid columns="equal">
-						<Grid.Column width={12} className="reward">
+						<Grid.Column width={10} className="summary">
 							<Card.Header>
-								<h4>Reward: {text.reward}</h4>
+								<Statistic size="small">
+									<Statistic.Label>Reward</Statistic.Label>
+									<Statistic.Value>{text.reward}</Statistic.Value> 
+								</Statistic>
 							</Card.Header>
-							<p>{text.headline}</p>
+							<h4 class="headline">{text.headline}</h4>
 							<h5>Role description</h5>
 							<div dangerouslySetInnerHTML={{__html: jobDesc}} /> 
 							<h5>Hiring process details</h5>
 							<p>The maximum review period for this opening is 43,200 blocks (approximately 3 days).</p>
 						</Grid.Column>
-						<Grid.Column width={4}>
-							<Statistic size="mini">
-								<Statistic.Value>15</Statistic.Value> 
+						<Grid.Column width={6} className="details">
+							<Statistic size="small">
 								<Statistic.Label>Applications</Statistic.Label>
+								<Statistic.Value>15</Statistic.Value> 
 							</Statistic>
+
+							<h5>Group lead</h5>
+							<GroupMemberView {...props.creator} inset={true} />
 							<Container>
-								<Button fluid positive>
+								<Button fluid positive size="large">
 									Apply
 								</Button>
 							</Container>
