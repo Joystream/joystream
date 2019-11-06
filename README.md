@@ -42,6 +42,10 @@ Table of Contents
 - [Overview](#overview)
 - [Contribute](#contribute)
 - [Repository Index](#repository-index)
+    - [Products and Nodes](#products-and-nodes)
+    - [Documentation and Communication](#documentation-and-communication)
+    - [Runtime Repos](#runtime-repos)
+    - [Libraries and Tools](#libraries-and-tools)
 - [Testnet Releases](#testnet-releases)
     - [Live Testnet](#live-testnet)
     - [Next Testnet](#next-testnet)
@@ -98,18 +102,52 @@ Documentation, project management and other or non-code repositories should try 
 
 # Repository Index
 
-This is the set of key repos to which this document refers:
+This is the set of active repos to which this document refers:
+
+## Products and Nodes
+
+| Repo                                                                                      | Description                                           | Maintainer      |
+| :-------------                                                                            | :-------------                                        | :-----------:   |
+| [apps](https://github.com/Joystream/apps)                                                 | The Pioneer application.                              | @siman          |
+| [substrate-node-joystream](https://github.com/Joystream/substrate-node-joystream)         | The Joystream substrate node.                         | @mnaamani       |
+| [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)             | The storage node application.                         | @mnaamani   |
+| [query-node-joystream](https://github.com/Joystream/query-node-joystream)                             | Query node for the Joystream Platform.    | @paul           |
+
+## Documentation and Communication
+
+| Repo                                                                                      | Description                                           | Maintainer      |
+| :-------------                                                                            | :-------------                                        | :-----------:   |
+| [joystream](https://github.com/Joystream/joystream)                             | The Joystream landing repo.    | @bedeho           |
+| [joystream-website](https://github.com/Joystream/joystream-website)                       | The Joystream website.    | @bwhm           |
+| [whitepaper](https://github.com/Joystream/whitepaper)                                     | The Joystream whitepaper.                             | @bedeho         |
+| [communications](https://github.com/Joystream/communications)                             | The Joystream communications workspace and archive.   | @bwhm           |
+| [helpdesk](https://github.com/Joystream/helpdesk)                             | Information and guides for users and contributors.    | @bwhm           |
+| [bounties](https://github.com/Joystream/bounties)                             | Bounties and testnet payout overview.    | @blrhc           |
+| [design](https://github.com/Joystream/design)                             | Joystream brand guide and assets.    | @bwhm           |
+| [manifesto](https://github.com/Joystream/manifesto)                             | The Joystream manifesto.    | @bedeho           |
+
+## Runtime Repos
 
 | Repo                                                                                      | Description                                           | Maintainer      |
 | :-------------                                                                            | :-------------                                        | :-----------:   |
 | [substrate-runtime-joystream](https://github.com/Joystream/substrate-runtime-joystream)   | The Joystream substrate runtime.                      | @mnaamani       |
-| [substrate-node-joystream](https://github.com/Joystream/substrate-node-joystream)         | The Joystream substrate node.                         | @mnaamani       |
-| [apps](https://github.com/Joystream/apps)                                                 | The Pioneer application.                              | @siman          |
-| [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)             | The storage node application.                         | @mnaamani   |
-| [whitepaper](https://github.com/Joystream/whitepaper)                                     | The Joystream whitepaper.                             | @bedeho         |
-| [communications](https://github.com/Joystream/communications)                             | The Joystream communications workspace and archive.   | @bwhm           |
-| [helpdesk](https://github.com/Joystream/helpdesk)                             | Information and guides for users and contributors    | @bwhm           |
-| [bounties](https://github.com/Joystream/bounties)                             | Bounties and testnet payout overview    | @bwhm           |
+| [substrate-content-directory-working-group-module](https://github.com/Joystream/substrate-content-directory-working-group-module)                             | A working group module for the Joystream content directory.    | @bedeho           |
+| [substrate-versioned-store-permissions-module](https://github.com/Joystream/substrate-versioned-store-permissions-module)                             | Permissioned access to the versioned store.    | @mnaamani           |
+| [substrate-versioned-store-module](https://github.com/Joystream/substrate-versioned-store-module)                             | A versioned data store Substrate module.    | @siman           |
+| [substrate-recurring-reward-module](https://github.com/Joystream/substrate-recurring-reward-module)                             | Recurring periodic minting of rewards for recipients.    | @mnaamani           |
+| [substrate-token-minting-module](https://github.com/Joystream/substrate-token-minting-module)                             | Transferrable capacity constrained token minting.    | @mnaamani           |
+| [substrate-hiring-module](https://github.com/Joystream/substrate-hiring-module)                             | Hiring for on-chain organisations.    | @bedeho           |
+| [substrate-stake-module](https://github.com/Joystream/substrate-stake-module)                             | Managed staking, unstaking and slashing.    | @mnaamani           |
+| [substrate-forum-module](https://github.com/Joystream/substrate-forum-module)                             | The on-chain Joystream community forum.    | @bedeho           |
+| [substrate-module-template](https://github.com/Joystream/substrate-module-template)                             | Substrate runtime module template.    | @mnaamani           |
+
+## Libraries and Tools
+
+| Repo                                                                                      | Description                                           | Maintainer      |
+| :-------------                                                                            | :-------------                                        | :-----------:   |
+| [versioned-store-js](https://github.com/Joystream/versioned-store-js)                             | A typescript library for versioned object store.    | @siman           |
+| [query-resolver-toolkit](https://github.com/Joystream/query-resolver-toolkit)                             | A toolkit for query resolution.    | @yourheropaul           |
+| [status-endpoint-joystream](https://github.com/Joystream/status-endpoint-joystream)                             | The status endpoint for the Joystream network.    | @bwhm           |
 
 <br />
 <img src="img/testnet-releases.svg" id="testnet-releases"/>
