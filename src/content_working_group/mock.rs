@@ -152,7 +152,6 @@ impl Trait for Test {
     type Event = ();
     type LeadId = u64;
     type CuratorId = u64;
-    type ChannelId = u64;   
 }
 
 //pub type System = system::Module<Test>;

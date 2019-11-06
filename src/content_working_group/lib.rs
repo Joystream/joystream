@@ -10,18 +10,35 @@ use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use srml_support::traits::Currency;
 use srml_support::{
-    decl_module, decl_storage, decl_event, Parameter // ensure, StorageMap, StorageValue,
+    decl_module, decl_storage, decl_event, Parameter, ensure, dispatch // , StorageMap, StorageValue,
 };
-use runtime_primitives::traits::{Member, SimpleArithmetic, MaybeSerialize};
+use system::{self, ensure_signed};
+use runtime_primitives::traits::{Member, SimpleArithmetic, One, MaybeSerialize};
 use minting;
 use recurringrewards;
 use stake;
 use hiring;
 use versioned_store_permissions;
-use super::super::membership::members as membership;
+use crate::membership::{members, role_types};
+
+/// DIRTY IMPORT BECAUSE
+/// InputValidationLengthConstraint has not been factored out yet!!!
+use forum::InputValidationLengthConstraint;
+
+/*
+ * Permissions model.
+ * 
+ * New channels are created, and the corresponding member
+ * is set as owner, and a new dynamic credential is created.
+ * 
+ * 
+ *
+ * 
+ * 
+ */
 
 /// Module configuration trait for this Substrate module.
-pub trait Trait: system::Trait + minting::Trait + recurringrewards::Trait + stake::Trait + hiring::Trait + versioned_store_permissions::Trait + membership::Trait { // + Sized
+pub trait Trait: system::Trait + minting::Trait + recurringrewards::Trait + stake::Trait + hiring::Trait + versioned_store_permissions::Trait + members::Trait { // + Sized
 
     /// The event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -46,17 +63,12 @@ pub trait Trait: system::Trait + minting::Trait + recurringrewards::Trait + stak
         + MaybeSerialize
         + PartialEq
         + Ord;
-
-    /// Type for identifier for channels.
-    type ChannelId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
 }
+
+/// Type for identifier for channels.
+/// The ChannelId must be capable of behaving like an actor id for membership module,
+/// since publishers are identified by their channel id.
+pub type ChannelId<T> = <T as members::Trait>::ActorId;
 
 /// Type for identifier for dynamic version store credential.
 pub type DynamicCredentialId<T> = <T as versioned_store_permissions::Trait>::PrincipalId;
@@ -68,6 +80,24 @@ pub type BalanceOf<T> =
 /// Negative imbalance of runtime.
 // pub type NegativeImbalance<T> =
 //    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+
+/*
+ * MOVE ALL OF THESE OUT TO COMMON LATER
+ */
+
+static MSG_CHANNEL_CREATION_DISABLED: &str =
+    "Channel creation currently disabled.";
+static MSG_CHANNEL_HANDLE_TOO_SHORT: &str = 
+    "Channel handle too short.";
+static MSG_CHANNEL_HANDLE_TOO_LONG: &str = 
+    "Channel handle too long.";
+static MSG_CHANNEL_DESCRIPTION_TOO_SHORT: &str = 
+    "Channel description too short";
+static MSG_CHANNEL_DESCRIPTION_TOO_LONG: &str = 
+    "Channel description too long";
+static MSG_MEMBER_CANNOT_ACT_AS_PUBLISHER: &str =
+    "Member cannot act as publisher";
+
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -458,15 +488,15 @@ decl_storage! {
         pub Openings get(openings) config(): linked_map T::OpeningId => ();
 
         /// Maps identifier to corresponding channel.
-        pub ChannelById get(channel_by_id) config(): linked_map T::ChannelId => Channel<T::MemberId, T::AccountId, T::BlockNumber>;
+        pub ChannelById get(channel_by_id) config(): linked_map ChannelId<T> => Channel<T::MemberId, T::AccountId, T::BlockNumber>;
 
         /// Identifier to be used by the next channel introduced.
-        pub NextChannelId get(next_channel_id) config(): T::ChannelId;
+        pub NextChannelId get(next_channel_id) config(): ChannelId<T>;
 
         /// Maps (unique+immutable) channel handle to the corresponding identifier for the channel.
         /// Mapping is required to allow efficient (O(log N)) on-chain verification that a proposed handle is indeed unique 
         /// at the time it is being proposed.
-        pub ChannelIdByHandle get(channel_id_by_handle) config(): linked_map Vec<u8> => T::ChannelId;
+        pub ChannelIdByHandle get(channel_id_by_handle) config(): linked_map Vec<u8> => ChannelId<T>;
 
         /// Maps identifier to corresponding curator.
         pub CuratorById get(curator_by_id) config(): linked_map T::CuratorId => Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, T::LeadId, T::ApplicationId>;
@@ -488,7 +518,7 @@ decl_storage! {
         pub CredentialOfAnyMember get(credential_of_anymember) config(): AnyMemberCredential;
 
         /// Maps dynamic credential by
-        pub DynamicCredentialById get(dynamic_credential_by_id) config(): linked_map DynamicCredentialId<T> => DynamicCredential<T::CuratorId, T::ChannelId, T::BlockNumber>;
+        pub DynamicCredentialById get(dynamic_credential_by_id) config(): linked_map DynamicCredentialId<T> => DynamicCredential<T::CuratorId, ChannelId<T>, T::BlockNumber>;
 
         /// ...
         pub NextDynamicCredentialId get(next_dynamic_credential_id) config(): DynamicCredentialId<T>;
@@ -499,6 +529,11 @@ decl_storage! {
 
         // Input guards
 
+        /// 
+        pub ChannelHandleConstraint get(channel_handle_constraint) config(): InputValidationLengthConstraint;
+        pub ChannelDescriptionConstraint get(channel_description_constraint) config(): InputValidationLengthConstraint;
+
+/*
         // TODO: use proper input constraint types
 
         /// Upper bound for character length of description field of any new or updated PermissionGroup 
@@ -506,51 +541,38 @@ decl_storage! {
 
         /// Upper bound for character length of the rationale_text field of any new CuratorRoleStage.
         pub MaxCuratorExitRationaleTextLength get(max_curator_exit_rationale_text_length) config(): u16;
+        */
 
     }
 }
 
-/*
-/// Substrate module events.
 decl_event! {
     pub enum Event<T> where
-      <T as system::Trait>::AccountId,
-      <T as Trait>::MemberId,
-      <T as Trait>::ActorId, 
-      {
-
-        LeadSet
-        LeadUnset
-        OpeningPolicySet
-        LeadRewardUpdated
-        LeadRoleAccountUpdated
-        LeadRewardAccountUpdated
-        PermissionGroupAdded
-        PermissionGroupUpdated
-        CuratorOpeningAdded
-        AcceptedCuratorApplications
-        BeganCuratorApplicationReview
-        CuratorOpeningFilled
-        CuratorSlashed
-        TerminatedCurator
-        AppliedOnCuratorOpening
-        CuratorRewardUpdated
-        CuratorRoleAccountUpdated
-        CuratorRewardAccountUpdated
-        CuratorExited
-        
+        <T as system::Trait>::AccountId,
+        ChannelId = ChannelId<T>,
+    {
+        ChannelCreated(ChannelId),
+        //LeadSet(AccountId),
+        //LeadUnset
+        //OpeningPolicySet
+        //LeadRewardUpdated
+        //LeadRoleAccountUpdated
+        //LeadRewardAccountUpdated
+        //PermissionGroupAdded
+        //PermissionGroupUpdated
+        //CuratorOpeningAdded
+        //AcceptedCuratorApplications
+        //BeganCuratorApplicationReview
+        //CuratorOpeningFilled
+        //CuratorSlashed
+        //TerminatedCurator
+        //AppliedOnCuratorOpening
+        //CuratorRewardUpdated
+        //CuratorRoleAccountUpdated
+        //CuratorRewardAccountUpdated
+        //CuratorExited
     }
 }
-*/
-
-decl_event!(
-    pub enum Event<T>
-    where
-        <T as system::Trait>::AccountId,
-    {
-        MyOtherEvent(AccountId),
-    }
-);
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -562,36 +584,85 @@ decl_module! {
          */
 
         /// Create a new channel.
-        pub fn create_channel(_origin, _handle: Vec<u8>, _description: Vec<u8>, _content: ChannelContentType, _owner: T::MemberId, _role_account: T::AccountId) {
+        pub fn create_channel(origin, handle: Vec<u8>, description: Vec<u8>, content: ChannelContentType, owner: T::MemberId, role_account: T::AccountId) {
 
-            // Ensure is signed by "who".
+            // Ensure that it is signed
+            let signer_account = ensure_signed(origin)?;
+
+            // Ensure prospective owner member is currently allowed to act in the publisher role
+            let next_channel_id = NextChannelId::<T>::get();
+
+            // publisher is identified by the id of the owned channel
+            let new_actor_id = next_channel_id;
+
+            let member_as_publisher = role_types::ActorInRole{
+                role: role_types::Role::Publisher,
+                actor_id: new_actor_id
+            };
+
+            let can_register_as_publisher = <members::Module<T>>::can_register_role_on_member(
+                &signer_account, 
+                owner, 
+                member_as_publisher)
+                .is_ok();
+            
+            ensure!(
+                can_register_as_publisher,
+                MSG_MEMBER_CANNOT_ACT_AS_PUBLISHER
+            );
 
             // Ensure it is currently possible to create channels (ChannelCreationEnabled).
+            ensure!(
+                ChannelCreationEnabled::get(),
+                MSG_CHANNEL_CREATION_DISABLED
+            );
 
             // Ensure handle is acceptable length
+            Self::ensure_channel_handle_is_valid(&handle)?;
 
             // Ensure description is acceptable length
+            Self::ensure_channel_description_is_valid(&description)?;
 
-            // Ensure tx signer "who" is allowed to do this under owner id by dialing out to
-            // membership module and asking.
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Get id of new channel 
-
             // Construct channel
+            let new_channel = Channel {
+                handle: handle.clone(), 
+                verified: false,
+                description: description,
+                content: content,
+                owner: owner,
+                role_account: role_account,
+                publishing_status: ChannelPublishingStatus::NotPublished,
+                curation_status: ChannelCurationStatus::Normal,
+                created: <system::Module<T>>::block_number()
+            };
 
             // Add channel to ChannelById under id
+            ChannelById::<T>::insert(next_channel_id, new_channel);
 
             // Add id to ChannelIdByHandle under handle
+            ChannelIdByHandle::<T>::insert(handle.clone(), next_channel_id);
 
             // Increment NextChannelId
+            NextChannelId::<T>::mutate(|id| *id += <ChannelId<T> as One>::one());
+
+            /// CREDENTIAL STUFF ///
 
             // Dial out to membership module and inform about new role as channe owner.
+            let registered_role = <members::Module<T>>::register_role_on_member(
+                &signer_account, 
+                owner, 
+                member_as_publisher)
+                .is_ok();
 
-            // event?
+            assert!(registered_role);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::ChannelCreated(next_channel_id));
 
         }
 
@@ -599,7 +670,7 @@ decl_module! {
         /// 
         /// Notice that working group participants cannot do this.
         /// Notice that censored or unpublished channel may still be transferred.
-        pub fn transfer_channel_ownership(_origin, _channel_id: T::ChannelId, _new_owner: T::MemberId, _new_role_account: T::AccountId) {
+        pub fn transfer_channel_ownership(_origin, _channel_id: ChannelId<T>, _new_owner: T::MemberId, _new_role_account: T::AccountId) {
 
             // Ensure extrinsic is signed by "who"
 
@@ -829,7 +900,7 @@ impl<T: Trait> Module<T> {
     }
     
     /// .
-    fn credential_from_id(credential_id: T::PrincipalId) -> Option<DynamicCredential<T::CuratorId, T::ChannelId, T::BlockNumber>> {
+    fn credential_from_id(credential_id: T::PrincipalId) -> Option<DynamicCredential<T::CuratorId, ChannelId, T::BlockNumber>> {
 
         //let  = credential_id_to_built_in_credential_holder(credential_id);
 
@@ -841,3 +912,26 @@ impl<T: Trait> Module<T> {
     
 }
 */
+
+impl<T: Trait> Module<T> {
+
+    // TODO: convert into macroes
+
+    fn ensure_channel_handle_is_valid(handle: &Vec<u8>) -> dispatch::Result {
+        ChannelHandleConstraint::get().ensure_valid(
+            handle.len(),
+            MSG_CHANNEL_HANDLE_TOO_SHORT,
+            MSG_CHANNEL_HANDLE_TOO_LONG,
+        )
+    }
+
+    fn ensure_channel_description_is_valid(description: &Vec<u8>) -> dispatch::Result {
+        ChannelDescriptionConstraint::get().ensure_valid(
+            description.len(),
+            MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
+            MSG_CHANNEL_DESCRIPTION_TOO_LONG,
+        )
+    }
+
+
+}
