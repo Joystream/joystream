@@ -10,17 +10,20 @@ use system;
 
 // EntityId, ClassId -> should be configured on versioned_store::Trait
 pub use versioned_store::{ClassId, ClassPropertyValue, EntityId, Property, PropertyValue};
-pub type PropertyIndex = u16; // should really be configured on versioned_store::Trait
 
 mod constraint;
 mod credentials;
 mod mock;
+mod operations;
 mod permissions;
 mod tests;
+mod versioned_store_types;
 
 pub use constraint::*;
 pub use credentials::*;
+pub use operations::*;
 pub use permissions::*;
+pub use versioned_store_types::{PropertyIndex, SchemaId};
 
 /// Trait for checking if an account has specified Credential
 pub trait CredentialChecker<T: Trait> {
@@ -106,8 +109,10 @@ decl_module! {
             class_id: ClassId,
             admins: CredentialSet<T::Credential>
         ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+
             Self::mutate_class_permissions(
-                origin,
+                &raw_origin,
                 None,
                 Self::is_system, // root origin
                 class_id,
@@ -126,8 +131,10 @@ decl_module! {
             class_id: ClassId,
             entity_permissions: EntityPermissions<T::Credential>
         ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+
             Self::mutate_class_permissions(
-                origin,
+                &raw_origin,
                 with_credential,
                 ClassPermissions::is_admin,
                 class_id,
@@ -144,8 +151,10 @@ decl_module! {
             class_id: ClassId,
             can_be_created: bool
         ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+
             Self::mutate_class_permissions(
-                origin,
+                &raw_origin,
                 with_credential,
                 ClassPermissions::is_admin,
                 class_id,
@@ -162,8 +171,10 @@ decl_module! {
             class_id: ClassId,
             credential_set: CredentialSet<T::Credential>
         ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+
             Self::mutate_class_permissions(
-                origin,
+                &raw_origin,
                 with_credential,
                 ClassPermissions::is_admin,
                 class_id,
@@ -180,8 +191,10 @@ decl_module! {
             class_id: ClassId,
             credential_set: CredentialSet<T::Credential>
         ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+
             Self::mutate_class_permissions(
-                origin,
+                &raw_origin,
                 with_credential,
                 ClassPermissions::is_admin,
                 class_id,
@@ -198,8 +211,10 @@ decl_module! {
             class_id: ClassId,
             constraint: ReferenceConstraint<ClassId, PropertyIndex>
         ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+
             Self::mutate_class_permissions(
-                origin,
+                &raw_origin,
                 with_credential,
                 ClassPermissions::is_admin,
                 class_id,
@@ -237,10 +252,11 @@ decl_module! {
             description: Vec<u8>,
             class_permissions: ClassPermissionsType<T>
         ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
 
-            let can_create_class = match origin.into() {
-                Ok(system::RawOrigin::Root) => true,
-                Ok(system::RawOrigin::Signed(sender)) => {
+            let can_create_class = match raw_origin {
+                system::RawOrigin::Root => true,
+                system::RawOrigin::Signed(sender) => {
                     T::CreateClassPermissionsChecker::account_can_create_class_permissions(&sender)
                 },
                 _ => false
@@ -274,8 +290,10 @@ decl_module! {
             existing_properties: Vec<PropertyIndex>,
             new_properties: Vec<Property>
         ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+
             Self::if_class_permissions_satisfied(
-                origin,
+                &raw_origin,
                 with_credential,
                 None,
                 ClassPermissions::can_add_schema,
@@ -298,26 +316,9 @@ decl_module! {
             with_credential: Option<T::Credential>,
             class_id: ClassId
         ) -> dispatch::Result {
-            Self::if_class_permissions_satisfied(
-                origin,
-                with_credential,
-                None,
-                ClassPermissions::can_create_entity,
-                class_id,
-                |_class_permissions, access_level| {
-                    let entity_id = <versioned_store::Module<T>>::create_entity(class_id)?;
-
-                    // Note: mutating value to None is equivalient to removing the value from storage map
-                    <EntityMaintainerByEntityId<T>>::mutate(entity_id, |maintainer| {
-                        match access_level {
-                            AccessLevel::System => *maintainer = None,
-                            AccessLevel::Credential(credential) => *maintainer = Some(*credential),
-                            _ => *maintainer = None
-                        }
-                    });
-                    Ok(())
-                }
-            )
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+            let _entity_id = Self::do_create_entity(&raw_origin, with_credential, class_id)?;
+            Ok(())
         }
 
         pub fn add_schema_support_to_entity(
@@ -325,9 +326,11 @@ decl_module! {
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
-            schema_id: u16,
+            schema_id: SchemaId,
             property_values: Vec<ClassPropertyValue>
         ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+
             // class id of the entity being updated
             let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
@@ -340,7 +343,7 @@ decl_module! {
             };
 
             Self::if_class_permissions_satisfied(
-                origin,
+                &raw_origin,
                 with_credential,
                 as_entity_maintainer,
                 ClassPermissions::can_update_entity,
@@ -358,6 +361,8 @@ decl_module! {
             entity_id: EntityId,
             property_values: Vec<ClassPropertyValue>
         ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+
             let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
             Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
@@ -369,7 +374,7 @@ decl_module! {
             };
 
             Self::if_class_permissions_satisfied(
-                origin,
+                &raw_origin,
                 with_credential,
                 as_entity_maintainer,
                 ClassPermissions::can_update_entity,
@@ -379,20 +384,81 @@ decl_module! {
                 }
             )
         }
+
+        pub fn transaction(origin, operations: Vec<Operation<T::Credential>>) -> dispatch::Result {
+            let mut entity_created_in_operation: Vec<Option<EntityId>> = vec![];
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+
+            for operation in operations.into_iter() {
+                match operation.operation_type {
+                    OperationType::CreateEntity(create_entity_operation) => {
+                        let entity_id = Self::do_create_entity(&raw_origin, operation.with_credential, create_entity_operation.class_id)?;
+
+                    },
+                    OperationType::UpdatePropertyValues(UpdatePropertyValuesOperation) => {
+
+                    },
+                    OperationType::AddSchemaSupportToEntity(AddSchemaSupportToEntityOperation) => {
+
+                    }
+                }
+            }
+
+            Ok(())
+        }
     }
 }
 
 impl<T: Trait> Module<T> {
+    fn ensure_root_or_signed(
+        origin: T::Origin,
+    ) -> Result<system::RawOrigin<T::AccountId>, &'static str> {
+        match origin.into() {
+            Ok(system::RawOrigin::Root) => Ok(system::RawOrigin::Root),
+            Ok(system::RawOrigin::Signed(account_id)) => Ok(system::RawOrigin::Signed(account_id)),
+            _ => Err("BadOrigin:ExpectedRootOrSigned"),
+        }
+    }
+
+    fn do_create_entity(
+        raw_origin: &system::RawOrigin<T::AccountId>,
+        with_credential: Option<T::Credential>,
+        class_id: ClassId,
+    ) -> Result<EntityId, &'static str> {
+        Self::if_class_permissions_satisfied(
+            raw_origin,
+            with_credential,
+            None,
+            ClassPermissions::can_create_entity,
+            class_id,
+            |_class_permissions, access_level| {
+                let entity_id = <versioned_store::Module<T>>::create_entity(class_id)?;
+
+                // Note: mutating value to None is equivalient to removing the value from storage map
+                <EntityMaintainerByEntityId<T>>::mutate(
+                    entity_id,
+                    |maintainer| match access_level {
+                        AccessLevel::System => *maintainer = None,
+                        AccessLevel::Credential(credential) => *maintainer = Some(*credential),
+                        _ => *maintainer = None,
+                    },
+                );
+
+                Ok(entity_id)
+            },
+        )
+    }
+
     /// Derives the AccessLevel the caller is attempting to act with.
     /// It expects only signed or root origin.
     fn derive_access_level(
-        origin: T::Origin,
+        raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         as_entity_maintainer: Option<EntityId>,
     ) -> Result<AccessLevel<T::Credential>, &'static str> {
-        match origin.into() {
-            Ok(system::RawOrigin::Root) => Ok(AccessLevel::System),
-            Ok(system::RawOrigin::Signed(account_id)) => {
+        match raw_origin {
+            system::RawOrigin::Root => Ok(AccessLevel::System),
+            system::RawOrigin::Signed(account_id) => {
                 if let Some(credential) = with_credential {
                     if T::CredentialChecker::account_has_credential(&account_id, credential) {
                         if let Some(entity_id) = as_entity_maintainer {
@@ -438,7 +504,7 @@ impl<T: Trait> Module<T> {
     /// Derives the access level of the caller.
     /// If the predicate passes, the mutate method is invoked.
     fn mutate_class_permissions<Predicate, Mutate>(
-        origin: T::Origin,
+        raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         // predicate to test
         predicate: Predicate,
@@ -452,7 +518,7 @@ impl<T: Trait> Module<T> {
             FnOnce(&ClassPermissionsType<T>, &AccessLevel<T::Credential>) -> dispatch::Result,
         Mutate: FnOnce(&mut ClassPermissionsType<T>) -> dispatch::Result,
     {
-        let access_level = Self::derive_access_level(origin, with_credential, None)?;
+        let access_level = Self::derive_access_level(raw_origin, with_credential, None)?;
         let mut class_permissions = Self::ensure_class_permissions(class_id)?;
 
         predicate(&class_permissions, &access_level)?;
@@ -476,8 +542,8 @@ impl<T: Trait> Module<T> {
     /// Derives the access level of the caller.
     /// If the peridcate passes the callback is invoked. Returns result of the callback
     /// or error from failed predicate.
-    fn if_class_permissions_satisfied<Predicate, Callback>(
-        origin: T::Origin,
+    fn if_class_permissions_satisfied<Predicate, Callback, R>(
+        raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         as_entity_maintainer: Option<EntityId>,
         // predicate to test
@@ -486,14 +552,17 @@ impl<T: Trait> Module<T> {
         class_id: ClassId,
         // callback to invoke if predicate passes
         callback: Callback,
-    ) -> dispatch::Result
+    ) -> Result<R, &'static str>
     where
         Predicate:
             FnOnce(&ClassPermissionsType<T>, &AccessLevel<T::Credential>) -> dispatch::Result,
-        Callback: FnOnce(&ClassPermissionsType<T>, &AccessLevel<T::Credential>) -> dispatch::Result,
+        Callback: FnOnce(
+            &ClassPermissionsType<T>,
+            &AccessLevel<T::Credential>,
+        ) -> Result<R, &'static str>,
     {
         let access_level =
-            Self::derive_access_level(origin, with_credential, as_entity_maintainer)?;
+            Self::derive_access_level(raw_origin, with_credential, as_entity_maintainer)?;
         let class_permissions = Self::ensure_class_permissions(class_id)?;
 
         predicate(&class_permissions, &access_level)?;
