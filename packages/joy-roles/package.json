@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "description": "Staked roles module for Joystream node",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "jest"
+  },
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {

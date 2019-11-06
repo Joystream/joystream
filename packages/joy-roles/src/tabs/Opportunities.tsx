@@ -5,14 +5,18 @@ import { Button, Card, Container, Grid, Icon, Label, List, Message, Statistic } 
 
 import { GroupMemberProps, GroupMemberView } from '../elements'
 import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
-import { Opening } from "@joystream/types/hiring"
+import { OpeningStage, Opening } from "@joystream/types/hiring"
 
 type Props = {
 	opening: Opening
 	creator: GroupMemberProps
 }
 
-export function OpeningHeader(props: {}) {
+type OpeningHeaderProps = {
+	stage: OpeningStage
+}
+
+export function OpeningHeader(props: OpeningHeaderProps) {
 	return (
 		<Grid columns="equal">
 			<Grid.Column className="status">
@@ -119,9 +123,9 @@ export function OpeningView(props: Props) {
 	return (
 		<Container className="opening status-active">
 			<h3>{text.job.title}</h3>
-			<Card fluid color="green">
+			<Card fluid className="container">
 				<Card.Content className="header">
-					<OpeningHeader {...props} />
+					<OpeningHeader stage={props.opening.stage} />
 				</Card.Content>
 				<Card.Content className="main">
 					<OpeningBody text={text} creator={props.creator} />

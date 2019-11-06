@@ -2,32 +2,36 @@ $opening-states: ( active: green )
 
 .ui.container.opening
   @each $name, $colour in $opening-states 
-    &.status-#{$name} .content.header
-      background-color: colour($colour, trans)
-      .column
-        &.reward
-          .label
+    &.status-#{$name} 
+      .card.container
+        box-shadow: 0 0 0 1px #d4d4d5, 0 2px 0 0 colour($colour), 0 1px 3px 0 #d4d4d5
+
+      .content.header
+        background-color: colour($colour, trans)
+        .column
+          &.reward
+            .label
+              color: white
+              font-weight: bold
+          &.meta
+            .label 
+              background-color: colour($colour, trans) !important
+              color: colour($colour, darker) 
+
+              a
+                color: colour($colour, darker)
+                border-bottom: 1px dotted colour($colour)
+
+                &:hover
+                  color: colour($colour, dark)
+                  border-color: colour($colour, dark)
+
+          .ribbon
+            background-color: colour($colour) !important
             color: white
-            font-weight: bold
-        &.meta
-          .label 
-            background-color: colour($colour, trans) !important
-            color: colour($colour, darker) 
 
-            a
-              color: colour($colour, darker)
-              border-bottom: 1px dotted colour($colour)
-
-              &:hover
-                color: colour($colour, dark)
-                border-color: colour($colour, dark)
-
-        .ribbon
-          background-color: colour($colour) !important
-          color: white
-
-          &:after
-            border-right-color: colour($colour, darker) !important
+            &:after
+              border-right-color: colour($colour, darker) !important
 
   .main 
     .statistic
