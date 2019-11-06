@@ -7,13 +7,15 @@ import { GroupMemberProps, GroupMemberView } from '../elements'
 import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
 import { OpeningStage, Opening } from "@joystream/types/hiring"
 
+import { OpeningStageClassification } from "../classifiers"
+
 type Props = {
 	opening: Opening
 	creator: GroupMemberProps
 }
 
 type OpeningHeaderProps = {
-	stage: OpeningStage
+	stage: OpeningStageClassification
 }
 
 export function OpeningHeader(props: OpeningHeaderProps) {
@@ -22,7 +24,7 @@ export function OpeningHeader(props: OpeningHeaderProps) {
 			<Grid.Column className="status">
 				<Label ribbon size="large">
 					<Icon name="heart" />
-					Accepting applications
+					{props.stage.description}
 				</Label>
 			</Grid.Column>
 			<Grid.Column className="meta" textAlign="right">
@@ -30,7 +32,7 @@ export function OpeningHeader(props: OpeningHeaderProps) {
 					<Icon name="history" /> Created
 						10/05/2019, 16:29:54 
 					<Label.Detail>
-						<a href=""><Icon name="cube" />122</a>
+						<a href=""><Icon name="cube" />{props.stage.starting_block}</a>
 					</Label.Detail>
 				</Label>
 				<a href="">
