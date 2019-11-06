@@ -12,11 +12,11 @@ type Props = {
 	creator: GroupMemberProps
 }
 
-function OpeningHeader(props: Props) {
+export function OpeningHeader(props: {}) {
 	return (
 		<Grid columns="equal">
 			<Grid.Column className="status">
-				<Label color="green" ribbon size="large">
+				<Label ribbon size="large">
 					<Icon name="heart" />
 					Accepting applications
 				</Label>
@@ -117,10 +117,10 @@ export function OpeningView(props: Props) {
 	const text = hrt as GenericJoyStreamRoleSchema
 
 	return (
-		<Container className="opening">
+		<Container className="opening status-active">
 			<h3>{text.job.title}</h3>
 			<Card fluid color="green">
-				<Card.Content className="status-active">
+				<Card.Content className="header">
 					<OpeningHeader {...props} />
 				</Card.Content>
 				<Card.Content className="main">

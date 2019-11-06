@@ -1,0 +1,18 @@
+$colour-green: #21ba45;
+
+$colour-shade-amount: 10%;
+
+$colours: (
+  green: (
+  	base: $colour-green,
+    light: lighten($colour-green, $colour-shade-amount),
+    dark: darken($colour-green, $colour-shade-amount),
+    darker: darken($colour-green, $colour-shade-amount * 2),
+    darkest: darken($colour-green, $colour-shade-amount * 3),
+	trans: rgba($colour-green, 0.15),
+  ),
+);
+
+@function colour($name, $tone: 'base') {
+    @return map-get(map-get($colours, $name), $tone);
+}
