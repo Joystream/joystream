@@ -2,123 +2,123 @@ use codec::{Decode, Encode};
 use srml_support::dispatch;
 
 use crate::constraint::*;
-use crate::principles::*;
+use crate::credentials::*;
 
 /// Permissions for an instance of a Class in the versioned store.
 #[derive(Encode, Decode, Default, Eq, PartialEq, Clone, Debug)]
-pub struct ClassPermissions<ClassId, PrincipalId, PropertyIndex, BlockNumber>
+pub struct ClassPermissions<ClassId, Credential, PropertyIndex, BlockNumber>
 where
     ClassId: Ord,
-    PrincipalId: Ord + Clone,
+    Credential: Ord + Clone,
     PropertyIndex: Ord,
 {
     // concrete permissions
     /// Permissions that are applied to entities of this class, defines who in addition to
     /// root origin can update and delete entities of this class.
-    pub entity_permissions: EntityPermissions<PrincipalId>,
+    pub entity_permissions: EntityPermissions<Credential>,
 
     /// Wether new entities of this class be created or not. Is not enforced for root origin.
     pub entities_can_be_created: bool,
 
     /// Who can add new schemas in the versioned store for this class
-    pub add_schemas: PrincipalSet<PrincipalId>,
+    pub add_schemas: CredentialSet<Credential>,
 
     /// Who can create new entities in the versioned store of this class
-    pub create_entities: PrincipalSet<PrincipalId>,
+    pub create_entities: CredentialSet<Credential>,
 
     /// The type of constraint on referencing the class from other entities.
     pub reference_constraint: ReferenceConstraint<ClassId, PropertyIndex>,
 
     /// Who (in addition to root origin) can update all concrete permissions.
     /// The admins can only be set by the root origin, "System".
-    pub admins: PrincipalSet<PrincipalId>,
+    pub admins: CredentialSet<Credential>,
 
     // Block where permissions were changed
     pub last_permissions_update: BlockNumber,
 }
 
-impl<ClassId, PrincipalId, PropertyIndex, BlockNumber>
-    ClassPermissions<ClassId, PrincipalId, PropertyIndex, BlockNumber>
+impl<ClassId, Credential, PropertyIndex, BlockNumber>
+    ClassPermissions<ClassId, Credential, PropertyIndex, BlockNumber>
 where
     ClassId: Ord,
-    PrincipalId: Ord + Clone,
+    Credential: Ord + Clone,
     PropertyIndex: Ord,
 {
-    /// Returns Ok if principal is root origin or principal_id is in admins set, Err otherwise
+    /// Returns Ok if access_level is root origin or credential is in admins set, Err otherwise
     pub fn is_admin(
         class_permissions: &Self,
-        derived_principal: &ActingAs<PrincipalId>,
+        access_level: &AccessLevel<Credential>,
     ) -> dispatch::Result {
-        match derived_principal {
-            ActingAs::System => Ok(()),
-            ActingAs::Principal(principal_id) => {
-                if class_permissions.admins.contains(principal_id) {
+        match access_level {
+            AccessLevel::System => Ok(()),
+            AccessLevel::Credential(credential) => {
+                if class_permissions.admins.contains(credential) {
                     Ok(())
                 } else {
                     Err("NotInAdminsSet")
                 }
             }
-            ActingAs::Unspecified => Err("UnspecifiedActor"),
-            ActingAs::EntityMaintainer => Err("ActingAs::EntityMaintainer-UsedOutOfPlace"),
+            AccessLevel::Unspecified => Err("UnspecifiedActor"),
+            AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
         }
     }
 
     pub fn can_add_schema(
         class_permissions: &Self,
-        derived_principal: &ActingAs<PrincipalId>,
+        access_level: &AccessLevel<Credential>,
     ) -> dispatch::Result {
-        match derived_principal {
-            ActingAs::System => Ok(()),
-            ActingAs::Principal(principal_id) => {
-                if class_permissions.add_schemas.contains(principal_id) {
+        match access_level {
+            AccessLevel::System => Ok(()),
+            AccessLevel::Credential(credential) => {
+                if class_permissions.add_schemas.contains(credential) {
                     Ok(())
                 } else {
                     Err("NotInAddSchemasSet")
                 }
             }
-            ActingAs::Unspecified => Err("UnspecifiedActor"),
-            ActingAs::EntityMaintainer => Err("ActingAs::EntityMaintainer-UsedOutOfPlace"),
+            AccessLevel::Unspecified => Err("UnspecifiedActor"),
+            AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
         }
     }
 
     pub fn can_create_entity(
         class_permissions: &Self,
-        derived_principal: &ActingAs<PrincipalId>,
+        access_level: &AccessLevel<Credential>,
     ) -> dispatch::Result {
-        match derived_principal {
-            ActingAs::System => Ok(()),
-            ActingAs::Principal(principal_id) => {
+        match access_level {
+            AccessLevel::System => Ok(()),
+            AccessLevel::Credential(credential) => {
                 if !class_permissions.entities_can_be_created {
                     Err("EntitiesCannotBeCreated")
-                } else if class_permissions.create_entities.contains(principal_id) {
+                } else if class_permissions.create_entities.contains(credential) {
                     Ok(())
                 } else {
                     Err("NotInCreateEntitiesSet")
                 }
             }
-            ActingAs::Unspecified => Err("UnspecifiedActor"),
-            ActingAs::EntityMaintainer => Err("ActingAs::EntityMaintainer-UsedOutOfPlace"),
+            AccessLevel::Unspecified => Err("UnspecifiedActor"),
+            AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
         }
     }
 
     pub fn can_update_entity(
         class_permissions: &Self,
-        derived_principal: &ActingAs<PrincipalId>,
+        access_level: &AccessLevel<Credential>,
     ) -> dispatch::Result {
-        match derived_principal {
-            ActingAs::System => Ok(()),
-            ActingAs::Principal(principal_id) => {
+        match access_level {
+            AccessLevel::System => Ok(()),
+            AccessLevel::Credential(credential) => {
                 if class_permissions
                     .entity_permissions
                     .update
-                    .contains(principal_id)
+                    .contains(credential)
                 {
                     Ok(())
                 } else {
                     Err("NotInEntityPermissionsUpdateSet")
                 }
             }
-            ActingAs::EntityMaintainer => {
+            AccessLevel::EntityMaintainer => {
                 if class_permissions
                     .entity_permissions
                     .maintainer_has_all_permissions
@@ -134,21 +134,21 @@ where
 }
 
 #[derive(Encode, Decode, Clone, Debug, Eq, PartialEq)]
-pub struct EntityPermissions<PrincipalId>
+pub struct EntityPermissions<Credential>
 where
-    PrincipalId: Ord,
+    Credential: Ord,
 {
     // Principals permitted to update any entity of the class which this permission is associated with.
-    pub update: PrincipalSet<PrincipalId>,
+    pub update: CredentialSet<Credential>,
     /// Wether the designated maintainer (if set) of an entity has permission to update it.
     pub maintainer_has_all_permissions: bool,
 }
 
-impl<PrincipalId: Ord> Default for EntityPermissions<PrincipalId> {
+impl<Credential: Ord> Default for EntityPermissions<Credential> {
     fn default() -> Self {
         EntityPermissions {
             maintainer_has_all_permissions: true,
-            update: PrincipalSet::new(),
+            update: CredentialSet::new(),
         }
     }
 }

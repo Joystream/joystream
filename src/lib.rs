@@ -13,36 +13,33 @@ pub use versioned_store::{ClassId, ClassPropertyValue, EntityId, Property, Prope
 pub type PropertyIndex = u16; // should really be configured on versioned_store::Trait
 
 mod constraint;
+mod credentials;
 mod mock;
 mod permissions;
-mod principles;
 mod tests;
 
 pub use constraint::*;
+pub use credentials::*;
 pub use permissions::*;
-pub use principles::*;
 
-/// Trait for checking if an account can act as a specific principal identified by a PrincipalId
-pub trait PrincipalIdChecker<T: Trait> {
-    fn account_can_act_as_principal(account: &T::AccountId, group: T::PrincipalId) -> bool;
+/// Trait for checking if an account has specified Credential
+pub trait CredentialChecker<T: Trait> {
+    fn account_has_credential(account: &T::AccountId, credential: T::Credential) -> bool;
 }
 
-/// An implementation where no account will ever be allowed to act as a principal. Effectively
+/// An implementation where no account has any credential. Effectively
 /// only the system will be able to perform any action on the versioned store.
-impl<T: Trait> PrincipalIdChecker<T> for () {
-    fn account_can_act_as_principal(_account: &T::AccountId, _group: T::PrincipalId) -> bool {
+impl<T: Trait> CredentialChecker<T> for () {
+    fn account_has_credential(_account: &T::AccountId, _credential: T::Credential) -> bool {
         false
     }
 }
 
 /// An implementation that calls into multiple checkers. This allows for multiple modules
-/// to maintain AccountId to PrincipalId mappings.
-impl<T: Trait, X: PrincipalIdChecker<T>, Y: PrincipalIdChecker<T>> PrincipalIdChecker<T>
-    for (X, Y)
-{
-    fn account_can_act_as_principal(account: &T::AccountId, group: T::PrincipalId) -> bool {
-        X::account_can_act_as_principal(account, group)
-            || Y::account_can_act_as_principal(account, group)
+/// to maintain AccountId to Credential mappings.
+impl<T: Trait, X: CredentialChecker<T>, Y: CredentialChecker<T>> CredentialChecker<T> for (X, Y) {
+    fn account_has_credential(account: &T::AccountId, group: T::Credential) -> bool {
+        X::account_has_credential(account, group) || Y::account_has_credential(account, group)
     }
 }
 
@@ -61,7 +58,7 @@ impl<T: Trait> CreateClassPermissionsChecker<T> for () {
 
 pub type ClassPermissionsType<T> = ClassPermissions<
     ClassId,
-    <T as Trait>::PrincipalId,
+    <T as Trait>::Credential,
     PropertyIndex,
     <T as system::Trait>::BlockNumber,
 >;
@@ -71,7 +68,7 @@ pub trait Trait: system::Trait + versioned_store::Trait {
     // Do we need Events?
 
     /// Type that represents an actor or group of actors in the system.
-    type PrincipalId: Parameter
+    type Credential: Parameter
         + Member
         + SimpleArithmetic
         + Codec
@@ -83,8 +80,8 @@ pub trait Trait: system::Trait + versioned_store::Trait {
         + PartialEq
         + Ord;
 
-    /// External type for checking if an account can act in a capacity of a principal.
-    type PrincipalIdChecker: PrincipalIdChecker<Self>;
+    /// External type for checking if an account has specified credential.
+    type CredentialChecker: CredentialChecker<Self>;
 
     /// External type used to check if an account has permission to create new Classes.
     type CreateClassPermissionsChecker: CreateClassPermissionsChecker<Self>;
@@ -96,7 +93,7 @@ decl_storage! {
       pub ClassPermissionsByClassId get(class_permissions_by_class_id): linked_map ClassId => ClassPermissionsType<T>;
 
       /// Owner of an entity in the versioned store. If it is None then it is owned by the system.
-      pub EntityMaintainerByEntityId get(entity_maintainer_by_entity_id): linked_map EntityId => Option<T::PrincipalId>;
+      pub EntityMaintainerByEntityId get(entity_maintainer_by_entity_id): linked_map EntityId => Option<T::Credential>;
     }
 }
 
@@ -107,7 +104,7 @@ decl_module! {
         fn set_class_admins(
             origin,
             class_id: ClassId,
-            admins: PrincipalSet<T::PrincipalId>
+            admins: CredentialSet<T::Credential>
         ) -> dispatch::Result {
             Self::mutate_class_permissions(
                 origin,
@@ -125,13 +122,13 @@ decl_module! {
 
         fn set_class_entity_permissions(
             origin,
-            as_principal_id: Option<T::PrincipalId>,
+            with_credential: Option<T::Credential>,
             class_id: ClassId,
-            entity_permissions: EntityPermissions<T::PrincipalId>
+            entity_permissions: EntityPermissions<T::Credential>
         ) -> dispatch::Result {
             Self::mutate_class_permissions(
                 origin,
-                as_principal_id,
+                with_credential,
                 ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
@@ -143,13 +140,13 @@ decl_module! {
 
         fn set_class_entities_can_be_created(
             origin,
-            as_principal_id: Option<T::PrincipalId>,
+            with_credential: Option<T::Credential>,
             class_id: ClassId,
             can_be_created: bool
         ) -> dispatch::Result {
             Self::mutate_class_permissions(
                 origin,
-                as_principal_id,
+                with_credential,
                 ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
@@ -161,17 +158,17 @@ decl_module! {
 
         fn set_class_add_schemas_set(
             origin,
-            as_principal_id: Option<T::PrincipalId>,
+            with_credential: Option<T::Credential>,
             class_id: ClassId,
-            principal_set: PrincipalSet<T::PrincipalId>
+            credential_set: CredentialSet<T::Credential>
         ) -> dispatch::Result {
             Self::mutate_class_permissions(
                 origin,
-                as_principal_id,
+                with_credential,
                 ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
-                    class_permissions.add_schemas = principal_set;
+                    class_permissions.add_schemas = credential_set;
                     Ok(())
                 }
             )
@@ -179,17 +176,17 @@ decl_module! {
 
         fn set_class_create_entities_set(
             origin,
-            as_principal_id: Option<T::PrincipalId>,
+            with_credential: Option<T::Credential>,
             class_id: ClassId,
-            principal_set: PrincipalSet<T::PrincipalId>
+            credential_set: CredentialSet<T::Credential>
         ) -> dispatch::Result {
             Self::mutate_class_permissions(
                 origin,
-                as_principal_id,
+                with_credential,
                 ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
-                    class_permissions.create_entities = principal_set;
+                    class_permissions.create_entities = credential_set;
                     Ok(())
                 }
             )
@@ -197,13 +194,13 @@ decl_module! {
 
         fn set_class_reference_constraint(
             origin,
-            as_principal_id: Option<T::PrincipalId>,
+            with_credential: Option<T::Credential>,
             class_id: ClassId,
             constraint: ReferenceConstraint<ClassId, PropertyIndex>
         ) -> dispatch::Result {
             Self::mutate_class_permissions(
                 origin,
-                as_principal_id,
+                with_credential,
                 ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
@@ -218,7 +215,7 @@ decl_module! {
         // pub fn set_entity_maintainer(
         //     origin,
         //     entity_id: EntityId,
-        //     new_maintainer: Option<T::PrincipalId>
+        //     new_maintainer: Option<T::Credential>
         // ) -> dispatch::Result {
         //     ensure_root(origin)?;
 
@@ -272,18 +269,18 @@ decl_module! {
 
         pub fn add_class_schema(
             origin,
-            as_principal_id: Option<T::PrincipalId>,
+            with_credential: Option<T::Credential>,
             class_id: ClassId,
             existing_properties: Vec<PropertyIndex>,
             new_properties: Vec<Property>
         ) -> dispatch::Result {
             Self::if_class_permissions_satisfied(
                 origin,
-                as_principal_id,
+                with_credential,
                 None,
                 ClassPermissions::can_add_schema,
                 class_id,
-                |_class_permissions, _principal| {
+                |_class_permissions, _access_level| {
                     // If a new property points at another class,
                     // at this point we don't enforce anything about reference constraints
                     // because of the chicken and egg problem. Instead enforcement is done
@@ -294,27 +291,27 @@ decl_module! {
             )
         }
 
-        /// Creates a new entity of type class_id. The maintainer is set to be either None if the origin is root, or the principal id
-        /// if determined to be associated with signer.
+        /// Creates a new entity of type class_id. The maintainer is set to be either None if the origin is root, or the provided credential
+        /// associated with signer.
         pub fn create_entity(
             origin,
-            as_principal_id: Option<T::PrincipalId>,
+            with_credential: Option<T::Credential>,
             class_id: ClassId
         ) -> dispatch::Result {
             Self::if_class_permissions_satisfied(
                 origin,
-                as_principal_id,
+                with_credential,
                 None,
                 ClassPermissions::can_create_entity,
                 class_id,
-                |_class_permissions, principal| {
+                |_class_permissions, access_level| {
                     let entity_id = <versioned_store::Module<T>>::create_entity(class_id)?;
 
                     // Note: mutating value to None is equivalient to removing the value from storage map
                     <EntityMaintainerByEntityId<T>>::mutate(entity_id, |maintainer| {
-                        match principal {
-                            ActingAs::System => *maintainer = None,
-                            ActingAs::Principal(principal_id) => *maintainer = Some(*principal_id),
+                        match access_level {
+                            AccessLevel::System => *maintainer = None,
+                            AccessLevel::Credential(credential) => *maintainer = Some(*credential),
                             _ => *maintainer = None
                         }
                     });
@@ -325,7 +322,7 @@ decl_module! {
 
         pub fn add_schema_support_to_entity(
             origin,
-            as_principal_id: Option<T::PrincipalId>,
+            with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
             schema_id: u16,
@@ -344,11 +341,11 @@ decl_module! {
 
             Self::if_class_permissions_satisfied(
                 origin,
-                as_principal_id,
+                with_credential,
                 as_entity_maintainer,
                 ClassPermissions::can_update_entity,
                 class_id,
-                |_class_permissions, _principal| {
+                |_class_permissions, _access_level| {
                     <versioned_store::Module<T>>::add_schema_support_to_entity(entity_id, schema_id, property_values)
                 }
             )
@@ -356,7 +353,7 @@ decl_module! {
 
         pub fn update_entity_property_values(
             origin,
-            as_principal_id: Option<T::PrincipalId>,
+            with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
             property_values: Vec<ClassPropertyValue>
@@ -373,11 +370,11 @@ decl_module! {
 
             Self::if_class_permissions_satisfied(
                 origin,
-                as_principal_id,
+                with_credential,
                 as_entity_maintainer,
                 ClassPermissions::can_update_entity,
                 class_id,
-                |_class_permissions, _principal| {
+                |_class_permissions, _access_level| {
                     <versioned_store::Module<T>>::update_entity_property_values(entity_id, property_values)
                 }
             )
@@ -386,21 +383,18 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    /// Attempts to derive the principal a caller is claiming.
+    /// Derives the AccessLevel the caller is attempting to act with.
     /// It expects only signed or root origin.
-    fn derive_principal(
+    fn derive_access_level(
         origin: T::Origin,
-        as_principal_id: Option<T::PrincipalId>,
+        with_credential: Option<T::Credential>,
         as_entity_maintainer: Option<EntityId>,
-    ) -> Result<ActingAs<T::PrincipalId>, &'static str> {
+    ) -> Result<AccessLevel<T::Credential>, &'static str> {
         match origin.into() {
-            Ok(system::RawOrigin::Root) => Ok(ActingAs::System),
+            Ok(system::RawOrigin::Root) => Ok(AccessLevel::System),
             Ok(system::RawOrigin::Signed(account_id)) => {
-                if let Some(principal_id) = as_principal_id {
-                    if T::PrincipalIdChecker::account_can_act_as_principal(
-                        &account_id,
-                        principal_id,
-                    ) {
+                if let Some(credential) = with_credential {
+                    if T::CredentialChecker::account_has_credential(&account_id, credential) {
                         if let Some(entity_id) = as_entity_maintainer {
                             // is entity maintained by system
                             ensure!(
@@ -409,21 +403,21 @@ impl<T: Trait> Module<T> {
                             );
                             // ensure entity maintainer matches
                             match Self::entity_maintainer_by_entity_id(entity_id) {
-                                Some(maintainer_principal_id)
-                                    if principal_id == maintainer_principal_id =>
+                                Some(maintainer_credential)
+                                    if credential == maintainer_credential =>
                                 {
-                                    Ok(ActingAs::EntityMaintainer)
+                                    Ok(AccessLevel::EntityMaintainer)
                                 }
                                 _ => Err("NotEnityMaintainer"),
                             }
                         } else {
-                            Ok(ActingAs::Principal(principal_id))
+                            Ok(AccessLevel::Credential(credential))
                         }
                     } else {
-                        Err("OriginCannotActWithRequestedPrincipalId")
+                        Err("OriginCannotActWithRequestedCredential")
                     }
                 } else {
-                    Ok(ActingAs::Unspecified)
+                    Ok(AccessLevel::Unspecified)
                 }
             }
             _ => Err("BadOrigin:ExpectedRootOrSigned"),
@@ -441,11 +435,11 @@ impl<T: Trait> Module<T> {
         Ok(Self::class_permissions_by_class_id(class_id))
     }
 
-    /// Constructs a derived principal from the origin and claimed group id.
+    /// Derives the access level of the caller.
     /// If the predicate passes, the mutate method is invoked.
     fn mutate_class_permissions<Predicate, Mutate>(
         origin: T::Origin,
-        as_principal_id: Option<T::PrincipalId>,
+        with_credential: Option<T::Credential>,
         // predicate to test
         predicate: Predicate,
         // class permissions to perform mutation on if it exists
@@ -454,13 +448,14 @@ impl<T: Trait> Module<T> {
         mutate: Mutate,
     ) -> dispatch::Result
     where
-        Predicate: FnOnce(&ClassPermissionsType<T>, &ActingAs<T::PrincipalId>) -> dispatch::Result,
+        Predicate:
+            FnOnce(&ClassPermissionsType<T>, &AccessLevel<T::Credential>) -> dispatch::Result,
         Mutate: FnOnce(&mut ClassPermissionsType<T>) -> dispatch::Result,
     {
-        let principal = Self::derive_principal(origin, as_principal_id, None)?;
+        let access_level = Self::derive_access_level(origin, with_credential, None)?;
         let mut class_permissions = Self::ensure_class_permissions(class_id)?;
 
-        predicate(&class_permissions, &principal)?;
+        predicate(&class_permissions, &access_level)?;
         mutate(&mut class_permissions)?;
         class_permissions.last_permissions_update = <system::Module<T>>::block_number();
         <ClassPermissionsByClassId<T>>::insert(class_id, class_permissions);
@@ -469,21 +464,21 @@ impl<T: Trait> Module<T> {
 
     fn is_system(
         _: &ClassPermissionsType<T>,
-        principal: &ActingAs<T::PrincipalId>,
+        access_level: &AccessLevel<T::Credential>,
     ) -> dispatch::Result {
-        if *principal == ActingAs::System {
+        if *access_level == AccessLevel::System {
             Ok(())
         } else {
             Err("NotRootOrigin")
         }
     }
 
-    /// Constructs a derived principal from the origin and claimed group id.
+    /// Derives the access level of the caller.
     /// If the peridcate passes the callback is invoked. Returns result of the callback
     /// or error from failed predicate.
     fn if_class_permissions_satisfied<Predicate, Callback>(
         origin: T::Origin,
-        as_principal_id: Option<T::PrincipalId>,
+        with_credential: Option<T::Credential>,
         as_entity_maintainer: Option<EntityId>,
         // predicate to test
         predicate: Predicate,
@@ -493,14 +488,16 @@ impl<T: Trait> Module<T> {
         callback: Callback,
     ) -> dispatch::Result
     where
-        Predicate: FnOnce(&ClassPermissionsType<T>, &ActingAs<T::PrincipalId>) -> dispatch::Result,
-        Callback: FnOnce(&ClassPermissionsType<T>, &ActingAs<T::PrincipalId>) -> dispatch::Result,
+        Predicate:
+            FnOnce(&ClassPermissionsType<T>, &AccessLevel<T::Credential>) -> dispatch::Result,
+        Callback: FnOnce(&ClassPermissionsType<T>, &AccessLevel<T::Credential>) -> dispatch::Result,
     {
-        let principal = Self::derive_principal(origin, as_principal_id, as_entity_maintainer)?;
+        let access_level =
+            Self::derive_access_level(origin, with_credential, as_entity_maintainer)?;
         let class_permissions = Self::ensure_class_permissions(class_id)?;
 
-        predicate(&class_permissions, &principal)?;
-        callback(&class_permissions, &principal)
+        predicate(&class_permissions, &access_level)?;
+        callback(&class_permissions, &access_level)
     }
 
     fn get_class_id_by_entity_id(entity_id: EntityId) -> Result<ClassId, &'static str> {

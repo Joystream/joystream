@@ -50,7 +50,7 @@ fn class_permissions_minimal() -> ClassPermissionsType<Runtime> {
 }
 
 fn class_permissions_minimal_with_admins(
-    admins: Vec<<Runtime as Trait>::PrincipalId>,
+    admins: Vec<<Runtime as Trait>::Credential>,
 ) -> ClassPermissionsType<Runtime> {
     ClassPermissions {
         admins: admins.into(),
@@ -88,7 +88,7 @@ fn create_class_then_entity_with_default_class_permissions() {
         );
 
         // give members of GROUP_ZERO permission to add schemas
-        let add_schema_set = PrincipalSet::from(vec![0]);
+        let add_schema_set = CredentialSet::from(vec![0]);
         assert_ok!(Permissions::set_class_add_schemas_set(
             Origin::ROOT,
             None,
@@ -142,7 +142,7 @@ fn create_class_then_entity_with_default_class_permissions() {
         );
 
         // give members of GROUP_ONE permission to create entities
-        let create_entities_set = PrincipalSet::from(vec![1]);
+        let create_entities_set = CredentialSet::from(vec![1]);
         assert_ok!(Permissions::set_class_create_entities_set(
             Origin::ROOT,
             None,
@@ -203,18 +203,18 @@ fn class_permissions_set_admins() {
 
         assert!(class_permissions.admins.is_empty());
 
-        let principal_set = PrincipalSet::from(vec![1]);
+        let credential_set = CredentialSet::from(vec![1]);
 
         // only root should be able to set admins
         assert_err!(
-            Permissions::set_class_admins(Origin::signed(1), class_id, principal_set.clone()),
+            Permissions::set_class_admins(Origin::signed(1), class_id, credential_set.clone()),
             "NotRootOrigin"
         );
         assert_err!(
             Permissions::set_class_admins(
                 Origin::NONE, //unsigned inherent?
                 class_id,
-                principal_set.clone()
+                credential_set.clone()
             ),
             "BadOrigin:ExpectedRootOrSigned"
         );
@@ -223,11 +223,11 @@ fn class_permissions_set_admins() {
         assert_ok!(Permissions::set_class_admins(
             Origin::ROOT,
             class_id,
-            principal_set.clone()
+            credential_set.clone()
         ));
 
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
-        assert_eq!(class_permissions.admins, principal_set);
+        assert_eq!(class_permissions.admins, credential_set);
     })
 }
 
@@ -241,28 +241,28 @@ fn class_permissions_set_add_schemas_set() {
 
         assert!(class_permissions.add_schemas.is_empty());
 
-        let principal_set1 = PrincipalSet::from(vec![1, 2]);
-        let principal_set2 = PrincipalSet::from(vec![3, 4]);
+        let credential_set1 = CredentialSet::from(vec![1, 2]);
+        let credential_set2 = CredentialSet::from(vec![3, 4]);
 
         // root
         assert_ok!(Permissions::set_class_add_schemas_set(
             Origin::ROOT,
             None,
             class_id,
-            principal_set1.clone()
+            credential_set1.clone()
         ));
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
-        assert_eq!(class_permissions.add_schemas, principal_set1);
+        assert_eq!(class_permissions.add_schemas, credential_set1);
 
         // admins
         assert_ok!(Permissions::set_class_add_schemas_set(
             Origin::signed(ADMIN_ACCOUNT),
             Some(0),
             class_id,
-            principal_set2.clone()
+            credential_set2.clone()
         ));
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
-        assert_eq!(class_permissions.add_schemas, principal_set2);
+        assert_eq!(class_permissions.add_schemas, credential_set2);
 
         // non-admins
         assert_err!(
@@ -270,7 +270,7 @@ fn class_permissions_set_add_schemas_set() {
                 Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
                 Some(1),
                 class_id,
-                principal_set2.clone()
+                credential_set2.clone()
             ),
             "NotInAdminsSet"
         );
@@ -287,28 +287,28 @@ fn class_permissions_set_class_create_entities_set() {
 
         assert!(class_permissions.create_entities.is_empty());
 
-        let principal_set1 = PrincipalSet::from(vec![1, 2]);
-        let principal_set2 = PrincipalSet::from(vec![3, 4]);
+        let credential_set1 = CredentialSet::from(vec![1, 2]);
+        let credential_set2 = CredentialSet::from(vec![3, 4]);
 
         // root
         assert_ok!(Permissions::set_class_create_entities_set(
             Origin::ROOT,
             None,
             class_id,
-            principal_set1.clone()
+            credential_set1.clone()
         ));
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
-        assert_eq!(class_permissions.create_entities, principal_set1);
+        assert_eq!(class_permissions.create_entities, credential_set1);
 
         // admins
         assert_ok!(Permissions::set_class_create_entities_set(
             Origin::signed(ADMIN_ACCOUNT),
             Some(0),
             class_id,
-            principal_set2.clone()
+            credential_set2.clone()
         ));
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
-        assert_eq!(class_permissions.create_entities, principal_set2);
+        assert_eq!(class_permissions.create_entities, credential_set2);
 
         // non-admins
         assert_err!(
@@ -316,7 +316,7 @@ fn class_permissions_set_class_create_entities_set() {
                 Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
                 Some(1),
                 class_id,
-                principal_set2.clone()
+                credential_set2.clone()
             ),
             "NotInAdminsSet"
         );
@@ -377,7 +377,7 @@ fn class_permissions_set_class_entity_permissions() {
         assert!(class_permissions.entity_permissions.update.is_empty());
 
         let entity_permissions1 = EntityPermissions {
-            update: PrincipalSet::from(vec![1]),
+            update: CredentialSet::from(vec![1]),
             maintainer_has_all_permissions: true,
         };
 
@@ -392,7 +392,7 @@ fn class_permissions_set_class_entity_permissions() {
         assert_eq!(class_permissions.entity_permissions, entity_permissions1);
 
         let entity_permissions2 = EntityPermissions {
-            update: PrincipalSet::from(vec![4]),
+            update: CredentialSet::from(vec![4]),
             maintainer_has_all_permissions: true,
         };
         //admins

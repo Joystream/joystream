@@ -56,8 +56,8 @@ impl versioned_store::Trait for Runtime {
 }
 
 impl Trait for Runtime {
-    type PrincipalId = u64;
-    type PrincipalIdChecker = MockPrincipalIdChecker;
+    type Credential = u64;
+    type CredentialChecker = MockCredentialChecker;
     type CreateClassPermissionsChecker = MockCreateClassPermissionsChecker;
 }
 
@@ -77,15 +77,15 @@ pub const PRINCIPAL_GROUP_MEMBERS: [[u64; 2]; 2] = [
     ],
 ];
 
-pub struct MockPrincipalIdChecker {}
+pub struct MockCredentialChecker {}
 
-impl PrincipalIdChecker<Runtime> for MockPrincipalIdChecker {
-    fn account_can_act_as_principal(
+impl CredentialChecker<Runtime> for MockCredentialChecker {
+    fn account_has_credential(
         account_id: &<Runtime as system::Trait>::AccountId,
-        principal_id: <Runtime as Trait>::PrincipalId,
+        credential_id: <Runtime as Trait>::Credential,
     ) -> bool {
-        if (principal_id as usize) < PRINCIPAL_GROUP_MEMBERS.len() {
-            PRINCIPAL_GROUP_MEMBERS[principal_id as usize]
+        if (credential_id as usize) < PRINCIPAL_GROUP_MEMBERS.len() {
+            PRINCIPAL_GROUP_MEMBERS[credential_id as usize]
                 .iter()
                 .any(|id| *id == *account_id)
         } else {
