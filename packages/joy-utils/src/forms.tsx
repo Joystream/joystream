@@ -13,6 +13,7 @@ type LabelledProps<FormValues = FormValuesType> = BareProps & {
   label?: React.ReactNode,
   invisibleLabel?: boolean,
   placeholder?: string,
+  style?: React.CSSProperties,
   children?: JSX.Element | JSX.Element[],
   errors: FormikErrors<FormValues>,
   touched: FormikTouched<FormValues>,
@@ -21,20 +22,22 @@ type LabelledProps<FormValues = FormValuesType> = BareProps & {
 
 export function LabelledField<FormValues = FormValuesType> () {
   return (props: LabelledProps<FormValues>) => {
-    const { name, label, invisibleLabel = false, touched, errors, children } = props;
+    const { name, label, invisibleLabel = false, touched, errors, children, style } = props;
     const hasError = name && touched[name] && errors[name];
+
     const fieldWithError = <>
       <div>{children}</div>
       {name && <ErrorMessage name={name as string} component='div' className='ui pointing red label' />}
     </>;
+    
     return (label || invisibleLabel)
-      ? <div className={`ui--Labelled field ${hasError ? 'error' : ''}`}>
+      ? <div style={style} className={`ui--Labelled field ${hasError ? 'error' : ''}`}>
           <label htmlFor={name as string}>{nonEmptyStr(label) && label + ':'}</label>
           <div className='ui--Labelled-content'>
             {fieldWithError}
           </div>
         </div>
-      : <div className={`field ${hasError ? 'error' : ''}`}>
+      : <div style={style} className={`field ${hasError ? 'error' : ''}`}>
           {fieldWithError}
         </div>;
   };
