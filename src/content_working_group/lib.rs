@@ -97,7 +97,10 @@ static MSG_CHANNEL_DESCRIPTION_TOO_LONG: &str =
     "Channel description too long";
 static MSG_MEMBER_CANNOT_ACT_AS_PUBLISHER: &str =
     "Member cannot act as publisher";
-
+static MSG_CHANNEL_ID_INVALID: &str = 
+    "Channel id invalid";
+static MSG_ORIGIN_DOES_NOT_MATCH_CHANNEL_ROLE_ACCOUNT: &str =
+    "Origin does not match channel role account";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -548,10 +551,10 @@ decl_storage! {
 
 decl_event! {
     pub enum Event<T> where
-        <T as system::Trait>::AccountId,
         ChannelId = ChannelId<T>,
     {
         ChannelCreated(ChannelId),
+        ChannelOwnershipTransferred(ChannelId),
         //LeadSet(AccountId),
         //LeadUnset
         //OpeningPolicySet
@@ -592,7 +595,7 @@ decl_module! {
             // Ensure prospective owner member is currently allowed to act in the publisher role
             let next_channel_id = NextChannelId::<T>::get();
 
-            // publisher is identified by the id of the owned channel
+            // Publisher is identified by the id of the owned channel
             let new_actor_id = next_channel_id;
 
             let member_as_publisher = role_types::ActorInRole{
@@ -670,34 +673,86 @@ decl_module! {
         /// 
         /// Notice that working group participants cannot do this.
         /// Notice that censored or unpublished channel may still be transferred.
-        pub fn transfer_channel_ownership(_origin, _channel_id: ChannelId<T>, _new_owner: T::MemberId, _new_role_account: T::AccountId) {
+        pub fn transfer_channel_ownership(origin, channel_id: ChannelId<T>, new_owner: T::MemberId, new_role_account: T::AccountId) {
 
-            // Ensure extrinsic is signed by "who"
+            // Ensure that it is signed
+            let signer_account = ensure_signed(origin)?;
 
             // Ensure channel id is valid
+            let channel = Self::ensure_channel_id_is_valid(channel_id)?;
 
-            // Ensure "who" matches role account of channel
+            // Ensure origin matches channel role account
+            ensure!(
+                signer_account == channel.role_account,
+                MSG_ORIGIN_DOES_NOT_MATCH_CHANNEL_ROLE_ACCOUNT
+            );
 
             // Ensure new owner is allowed to do this under new owner id by dialing out to
             // membership module and asking
+
+
+            // Publisher is identified by the id of the owned channel
+            let new_actor_id = channel_id;
+
+            let new_member_as_publisher = role_types::ActorInRole{
+                role: role_types::Role::Publisher,
+                actor_id: new_actor_id
+            };
+
+            let can_register_as_publisher = <members::Module<T>>::can_register_role_on_member(
+                &new_role_account, 
+                new_owner, 
+                new_member_as_publisher)
+                .is_ok();
+            
+            ensure!(
+                can_register_as_publisher,
+                MSG_MEMBER_CANNOT_ACT_AS_PUBLISHER
+            );
 
             //
             // == MUTATION SAFE ==
             //
 
             // Construct new channel with altered properties
+            let new_channel = Channel {
+                owner: new_owner,
+                role_account: new_role_account.clone(),
+                ..channel
+            };
 
             // Overwrite entry in ChannelById
+            ChannelById::<T>::insert(channel_id, new_channel);
 
             // Dial out to membership module and inform about removal of role as channle owner for old owner.
+            let old_actor_id = channel_id;
 
-            // Dial out to membership module and inform about new role as channe owner for new owner.
+            let old_member_as_publisher = role_types::ActorInRole{
+                role: role_types::Role::Publisher,
+                actor_id: old_actor_id
+            };
 
-            // event?
-    
+            let unregistered_role = <members::Module<T>>::unregister_role_on_member(
+                &signer_account,
+                channel.owner,
+                old_member_as_publisher
+                )
+                .is_ok();
+
+            assert!(unregistered_role);
+
+            // Dial out to membership module and inform about new role as channe owner.
+            let registered_role = <members::Module<T>>::register_role_on_member(
+                &new_role_account, 
+                new_owner, 
+                new_member_as_publisher)
+                .is_ok();
+
+            assert!(registered_role);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::ChannelOwnershipTransferred(channel_id));
         }
-
-        // perhaps curation can be done here in one go.
 
         /// Update channel curation status of a channel.
         /// 
@@ -931,6 +986,18 @@ impl<T: Trait> Module<T> {
             MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
             MSG_CHANNEL_DESCRIPTION_TOO_LONG,
         )
+    }
+
+    fn ensure_channel_id_is_valid(channel_id: ChannelId<T>) -> Result<Channel<T::MemberId, T::AccountId, T::BlockNumber>,&'static str> {
+
+        if ChannelById::<T>::exists(channel_id) {
+
+            let channel = ChannelById::<T>::get(channel_id);
+
+            Ok(channel)
+        } else {
+            Err(MSG_CHANNEL_ID_INVALID)
+        }
     }
 
 
