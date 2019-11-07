@@ -11,7 +11,7 @@ import { SubmittableResult } from '@polkadot/api';
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Text } from '@polkadot/types';
 import { Option } from '@polkadot/types/codec';
-import { ContentId, ContentMetadata, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from '@joystream/types/media';
+import { ContentId, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from '@joystream/types/media';
 import { onImageError } from '../utils';
 
 // TODO get from verstore
@@ -23,32 +23,27 @@ const visibilityOptions = [
 }));
 
 // TODO get from verstore
-const languageOptions = [
-  'English',
-  'Chinese (Mandarin)',
-  'Hindi',
-  'Spanish',
-  'Portuguese',
-  'German',
-  'Russian',
-  'Japanese',
-  'Norwegian'
+const genreOptions = [
+  'Classical Music',
+  'Metal',
+  'Rock',
+  'Rap',
+  'Techno',
 ].map(x => ({
   key: x, text: x, value: x,
 }));
 
 // TODO get from verstore
-const categoryOptions = [
-  'Film & Animation',
-  'Autos & Vehicles',
-  'Music',
-  'Pets & Animals',
-  'Sports',
-  'Travel & Events',
-  'Gaming',
-  'People & Blogs',
-  'Comedy',
-  'News & Politics'
+const moodOptions = [
+  'Relaxing',
+].map(x => ({
+  key: x, text: x, value: x,
+}));
+
+// TODO get from verstore
+const themeOptions = [
+  'Dark',
+  'Light',
 ].map(x => ({
   key: x, text: x, value: x,
 }));
@@ -75,9 +70,7 @@ const buildSchema = () => Yup.object().shape({
   thumbnail: Yup.string()
     // .max(p.maxThumbLen, `Name is too long. Maximum length is ${p.maxThumbLen} chars.`)
     .url('Thumbnail must be a valid URL of an image.')
-    .required('Thumbnail is required'),
-  keywords: Yup.string()
-    // .max(p.maxKeywordsLen, `Keywords are too long. Maximum length is ${p.maxKeywordsLen} chars.`)
+    .required('Thumbnail is required')
 });
 
 type ValidationProps = {
@@ -86,7 +79,6 @@ type ValidationProps = {
   // minDescLen: number,
   // maxDescLen: number,
   // maxThumbLen: number,
-  // maxKeywordsLen: number
 };
 
 type OuterProps = ValidationProps & {
@@ -94,27 +86,29 @@ type OuterProps = ValidationProps & {
   history?: History,
   contentId: ContentId,
   fileName?: string,
-  metadataOpt?: Option<ContentMetadata>
+  entity?: AudioTrackEntity
 };
 
-type FormValues = {
+export type AudioTrackEntity = {
 
   // Basic:
   name: string,
-  description: string,
-  thumbnail: string,
-  keywords: string, // TODO need?
-  visibility: string,
-  playlist: string,
+  description?: string,
+  thumbnail?: string,
+  visibility?: string,
+  album?: string,
 
   // Additional:
-  synopsis: string,
-  creator: string,
-  category: string,
-  language: string,
-  explicit: string,
-  license: string,
+  artist?: string,
+  composer?: string,
+  genre?: string,
+  mood?: string,
+  theme?: string,
+  explicit?: boolean,
+  license?: string,
 };
+
+type FormValues = AudioTrackEntity;
 
 type FormProps = OuterProps & FormikProps<FormValues>;
 
@@ -127,7 +121,7 @@ const InnerForm = (props: FormProps) => {
     isStorybook = false,
     history,
     contentId,
-    metadataOpt,
+    entity,
     values,
     dirty,
     isValid,
@@ -139,8 +133,7 @@ const InnerForm = (props: FormProps) => {
   const {
     name,
     description,
-    thumbnail,
-    keywords
+    thumbnail
   } = values;
 
   const onSubmit = (sendTx: () => void) => {
@@ -169,7 +162,7 @@ const InnerForm = (props: FormProps) => {
     }
   };
 
-  const isNew = !metadataOpt || metadataOpt.isNone;
+  const isNew = !entity;
 
   const buildTxParams = () => {
     if (!isValid) return [];
@@ -177,8 +170,7 @@ const InnerForm = (props: FormProps) => {
     const json = JSON.stringify({
       name,
       description,
-      thumbnail,
-      keywords
+      thumbnail
     });
 
     // TODO set Option.some only on changed fields && if json has changed fields
@@ -193,15 +185,13 @@ const InnerForm = (props: FormProps) => {
   };
 
   const basicInfoTab = () => <Tab.Pane as='div'>
-    <LabelledText name='name' label={`Name`} {...props} />
+    <LabelledText name='name' label={`Title`} {...props} />
     
     <LabelledText name='thumbnail' label={`Thumbnail image URL`} {...props} />
     
-    <LabelledField name='description' label={`Description`} {...props}>
+    <LabelledField name='description' label={`About this track`} {...props}>
       <Field component='textarea' id='description' name='description' disabled={isSubmitting} rows={3} />
     </LabelledField>
-
-    {/* <LabelledText name='keywords' label={`Keywords`} placeholder={`Comma-separated keywords`} {...props} /> */}
 
     <LabelledField name='visibility' label={`Visibility`} {...props}>
       <Field component={Dropdown} id='visibility' name='visibility' disabled={isSubmitting} selection options={visibilityOptions} />
@@ -210,18 +200,19 @@ const InnerForm = (props: FormProps) => {
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <LabelledField name='synopsis' label={`Synopsis`} {...props}>
-      <Field component='textarea' id='synopsis' name='synopsis' disabled={isSubmitting} rows={3} />
+    <LabelledText name='artist' label={`Artist`} {...props} />
+    <LabelledText name='composer' label={`Composer`} {...props} />
+
+    <LabelledField name='genre' label={`Genre`} {...props}>
+      <Field component={Dropdown} id='genre' name='genre' disabled={isSubmitting} search selection options={genreOptions} />
     </LabelledField>
 
-    <LabelledText name='creator' label={`Creator`} {...props} />
-
-    <LabelledField name='category' label={`Category`} {...props}>
-      <Field component={Dropdown} id='category' name='category' disabled={isSubmitting} search selection options={categoryOptions} />
+    <LabelledField name='mood' label={`Mood`} {...props}>
+      <Field component={Dropdown} id='mood' name='mood' disabled={isSubmitting} search selection options={moodOptions} />
     </LabelledField>
 
-    <LabelledField name='language' label={`Language`} {...props}>
-      <Field component={Dropdown} id='language' name='language' disabled={isSubmitting} search selection options={languageOptions} />
+    <LabelledField name='theme' label={`Theme`} {...props}>
+      <Field component={Dropdown} id='theme' name='theme' disabled={isSubmitting} search selection options={themeOptions} />
     </LabelledField>
 
     <LabelledField name='license' label={`License`} {...props}>
@@ -301,26 +292,24 @@ export const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
   mapPropsToValues: props => {
-    const { metadataOpt, fileName } = props;
-    const meta = metadataOpt ? metadataOpt.unwrapOr(undefined) : undefined;
-    const json = meta ? meta.parseJson() : undefined;
+    const { entity, fileName } = props;
 
     return {
       // Basic:
-      name: json && json.name || fileName || '',
-      description: json && json.description || '',
-      thumbnail: json && json.thumbnail || '',
-      keywords: json && json.keywords || '',
-      visibility: visibilityOptions[0].value,
-      playlist: '',
+      name: entity && entity.name || fileName || '',
+      description: entity && entity.description || '',
+      thumbnail: entity && entity.thumbnail || '',
+      visibility: entity && entity.visibility || visibilityOptions[0].value,
+      album: entity && entity.album || '',
 
       // Additional:
-      synopsis: '',
-      creator: '',
-      category: categoryOptions[0].value,
-      language: languageOptions[0].value,
-      explicit: '',// TODO explicitOptions[0].value,
-      license: licenseOptions[0].value,
+      artist: entity && entity.artist || '',
+      composer: entity && entity.composer || '',
+      genre: entity && entity.genre || genreOptions[0].value,
+      mood: entity && entity.mood || moodOptions[0].value,
+      theme: entity && entity.theme || themeOptions[0].value,
+      explicit: entity && entity.explicit || false, // TODO explicitOptions[0].value,
+      license: entity && entity.license || licenseOptions[0].value,
     };
   },
 
