@@ -1,9 +1,9 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::prelude::*;
-
 use codec::Codec;
+use rstd::collections::btree_map::BTreeMap;
+use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter};
 use system;
@@ -362,43 +362,28 @@ decl_module! {
             property_values: Vec<ClassPropertyValue>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
-
-            let class_id = Self::get_class_id_by_entity_id(entity_id)?;
-
-            Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
-
-            let as_entity_maintainer = if as_entity_maintainer {
-                Some(entity_id)
-            } else {
-                None
-            };
-
-            Self::if_class_permissions_satisfied(
-                &raw_origin,
-                with_credential,
-                as_entity_maintainer,
-                ClassPermissions::can_update_entity,
-                class_id,
-                |_class_permissions, _access_level| {
-                    <versioned_store::Module<T>>::update_entity_property_values(entity_id, property_values)
-                }
-            )
+            Self::do_update_entity_property_values(&raw_origin, with_credential, as_entity_maintainer, entity_id, property_values)
         }
 
         pub fn transaction(origin, operations: Vec<Operation<T::Credential>>) -> dispatch::Result {
-            let mut entity_created_in_operation: Vec<Option<EntityId>> = vec![];
+            // This map holds the EntityId of the entity created as a result of executing a CreateEntity Operation
+            // keyed by the indexed of the operation, in the operations vector.
+            let mut entity_created_in_operation: BTreeMap<usize, EntityId> = BTreeMap::new();
+
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
-            for operation in operations.into_iter() {
+            for (op_index, operation) in operations.into_iter().enumerate() {
                 match operation.operation_type {
                     OperationType::CreateEntity(create_entity_operation) => {
                         let entity_id = Self::do_create_entity(&raw_origin, operation.with_credential, create_entity_operation.class_id)?;
-
+                        entity_created_in_operation.insert(op_index, entity_id);
                     },
-                    OperationType::UpdatePropertyValues(UpdatePropertyValuesOperation) => {
-
+                    OperationType::UpdatePropertyValues(update_property_values_operation) => {
+                        let entity_id = update_property_values_operation.entity_id;
+                        let property_values = operations::parametrised_property_values_to_property_values(&entity_created_in_operation, update_property_values_operation.new_parametrised_property_values)?;
+                        Self::do_update_entity_property_values(&raw_origin, operation.with_credential, operation.as_entity_maintainer, entity_id, property_values)?;
                     },
-                    OperationType::AddSchemaSupportToEntity(AddSchemaSupportToEntityOperation) => {
+                    OperationType::AddSchemaSupportToEntity(add_schema_support_to_entity_operation) => {
 
                     }
                 }
@@ -445,6 +430,38 @@ impl<T: Trait> Module<T> {
                 );
 
                 Ok(entity_id)
+            },
+        )
+    }
+
+    fn do_update_entity_property_values(
+        raw_origin: &system::RawOrigin<T::AccountId>,
+        with_credential: Option<T::Credential>,
+        as_entity_maintainer: bool,
+        entity_id: EntityId,
+        property_values: Vec<ClassPropertyValue>,
+    ) -> dispatch::Result {
+        let class_id = Self::get_class_id_by_entity_id(entity_id)?;
+
+        Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
+
+        let as_entity_maintainer = if as_entity_maintainer {
+            Some(entity_id)
+        } else {
+            None
+        };
+
+        Self::if_class_permissions_satisfied(
+            raw_origin,
+            with_credential,
+            as_entity_maintainer,
+            ClassPermissions::can_update_entity,
+            class_id,
+            |_class_permissions, _access_level| {
+                <versioned_store::Module<T>>::update_entity_property_values(
+                    entity_id,
+                    property_values,
+                )
             },
         )
     }
