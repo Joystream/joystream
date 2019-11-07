@@ -358,14 +358,14 @@ decl_module! {
                         entity_created_in_operation.insert(op_index, entity_id);
                     },
                     OperationType::UpdatePropertyValues(update_property_values_operation) => {
-                        let entity_id = update_property_values_operation.entity_id;
-                        let property_values = operations::parametrised_property_values_to_property_values(&entity_created_in_operation, update_property_values_operation.new_parametrised_property_values)?;
+                        let entity_id = operations::parametrized_entity_to_entity_id(&entity_created_in_operation, update_property_values_operation.entity_id)?;
+                        let property_values = operations::parametrized_property_values_to_property_values(&entity_created_in_operation, update_property_values_operation.new_parametrized_property_values)?;
                         Self::do_update_entity_property_values(&raw_origin, operation.with_credential, operation.as_entity_maintainer, entity_id, property_values)?;
                     },
                     OperationType::AddSchemaSupportToEntity(add_schema_support_to_entity_operation) => {
-                        let entity_id = add_schema_support_to_entity_operation.entity_id;
+                        let entity_id = operations::parametrized_entity_to_entity_id(&entity_created_in_operation, add_schema_support_to_entity_operation.entity_id)?;
                         let schema_id = add_schema_support_to_entity_operation.schema_id;
-                        let property_values = operations::parametrised_property_values_to_property_values(&entity_created_in_operation, add_schema_support_to_entity_operation.parametrised_property_values)?;
+                        let property_values = operations::parametrized_property_values_to_property_values(&entity_created_in_operation, add_schema_support_to_entity_operation.parametrized_property_values)?;
                         Self::do_add_schema_support_to_entity(&raw_origin, operation.with_credential, operation.as_entity_maintainer, entity_id, schema_id, property_values)?;
                     }
                 }

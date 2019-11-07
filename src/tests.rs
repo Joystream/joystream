@@ -58,6 +58,10 @@ fn class_permissions_minimal_with_admins(
     }
 }
 
+fn next_entity_id() -> EntityId {
+    <versioned_store::Module<Runtime>>::next_entity_id()
+}
+
 #[test]
 fn create_class_then_entity_with_default_class_permissions() {
     with_test_externalities(|| {
@@ -78,7 +82,7 @@ fn create_class_then_entity_with_default_class_permissions() {
         // default class permissions have empty add_schema acl
         assert_err!(
             Permissions::add_class_schema(
-                Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ZERO),
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
                 Some(0),
                 class_id,
                 vec![],
@@ -98,7 +102,7 @@ fn create_class_then_entity_with_default_class_permissions() {
 
         // successfully add a new schema
         assert_ok!(Permissions::add_class_schema(
-            Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ZERO),
+            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
             Some(0),
             class_id,
             vec![],
@@ -106,7 +110,7 @@ fn create_class_then_entity_with_default_class_permissions() {
         ));
 
         // System can always create entities (provided class exists) bypassing any permissions
-        let entity_id_1 = <versioned_store::Module<Runtime>>::next_entity_id();
+        let entity_id_1 = next_entity_id();
         assert_ok!(Permissions::create_entity(Origin::ROOT, None, class_id,));
         // entities created by system are "un-owned"
         assert!(!<EntityMaintainerByEntityId<Runtime>>::exists(entity_id_1));
@@ -118,7 +122,7 @@ fn create_class_then_entity_with_default_class_permissions() {
         // default permissions have empty create_entities set and by default no entities can be created
         assert_err!(
             Permissions::create_entity(
-                Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
             ),
@@ -134,7 +138,7 @@ fn create_class_then_entity_with_default_class_permissions() {
 
         assert_err!(
             Permissions::create_entity(
-                Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
             ),
@@ -150,9 +154,9 @@ fn create_class_then_entity_with_default_class_permissions() {
             create_entities_set
         ));
 
-        let entity_id_2 = <versioned_store::Module<Runtime>>::next_entity_id();
+        let entity_id_2 = next_entity_id();
         assert_ok!(Permissions::create_entity(
-            Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
+            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
             Some(1),
             class_id,
         ));
@@ -165,7 +169,7 @@ fn create_class_then_entity_with_default_class_permissions() {
         // Updating entity must be authorized
         assert_err!(
             Permissions::add_schema_support_to_entity(
-                Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ZERO),
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
                 Some(0),
                 false, // not claiming to be entity maintainer
                 entity_id_2,
@@ -177,7 +181,7 @@ fn create_class_then_entity_with_default_class_permissions() {
 
         // default permissions give entity maintainer permission to update and delete
         assert_ok!(Permissions::add_schema_support_to_entity(
-            Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
+            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
             Some(1),
             true, // we are claiming to be the entity maintainer
             entity_id_2,
@@ -185,7 +189,7 @@ fn create_class_then_entity_with_default_class_permissions() {
             simple_test_entity_property_values()
         ));
         assert_ok!(Permissions::update_entity_property_values(
-            Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
+            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
             Some(1),
             true, // we are claiming to be the entity maintainer
             entity_id_2,
@@ -234,7 +238,7 @@ fn class_permissions_set_admins() {
 #[test]
 fn class_permissions_set_add_schemas_set() {
     with_test_externalities(|| {
-        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_OF_PRINCIPAL_GROUP_ZERO;
+        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
         // create a class where all permission sets are empty
         let class_id = create_simple_class(class_permissions_minimal_with_admins(vec![0]));
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
@@ -267,7 +271,7 @@ fn class_permissions_set_add_schemas_set() {
         // non-admins
         assert_err!(
             Permissions::set_class_add_schemas_set(
-                Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
                 credential_set2.clone()
@@ -280,7 +284,7 @@ fn class_permissions_set_add_schemas_set() {
 #[test]
 fn class_permissions_set_class_create_entities_set() {
     with_test_externalities(|| {
-        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_OF_PRINCIPAL_GROUP_ZERO;
+        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
         // create a class where all permission sets are empty
         let class_id = create_simple_class(class_permissions_minimal_with_admins(vec![0]));
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
@@ -313,7 +317,7 @@ fn class_permissions_set_class_create_entities_set() {
         // non-admins
         assert_err!(
             Permissions::set_class_create_entities_set(
-                Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
                 credential_set2.clone()
@@ -326,7 +330,7 @@ fn class_permissions_set_class_create_entities_set() {
 #[test]
 fn class_permissions_set_class_entities_can_be_created() {
     with_test_externalities(|| {
-        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_OF_PRINCIPAL_GROUP_ZERO;
+        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
         // create a class where all permission sets are empty
         let class_id = create_simple_class(class_permissions_minimal_with_admins(vec![0]));
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
@@ -356,7 +360,7 @@ fn class_permissions_set_class_entities_can_be_created() {
         // non-admins
         assert_err!(
             Permissions::set_class_entities_can_be_created(
-                Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
                 true
@@ -369,7 +373,7 @@ fn class_permissions_set_class_entities_can_be_created() {
 #[test]
 fn class_permissions_set_class_entity_permissions() {
     with_test_externalities(|| {
-        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_OF_PRINCIPAL_GROUP_ZERO;
+        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
         // create a class where all permission sets are empty
         let class_id = create_simple_class(class_permissions_minimal_with_admins(vec![0]));
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
@@ -408,7 +412,7 @@ fn class_permissions_set_class_entity_permissions() {
         // non admins
         assert_err!(
             Permissions::set_class_entity_permissions(
-                Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
                 entity_permissions2.clone()
@@ -421,7 +425,7 @@ fn class_permissions_set_class_entity_permissions() {
 #[test]
 fn class_permissions_set_class_reference_constraint() {
     with_test_externalities(|| {
-        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_OF_PRINCIPAL_GROUP_ZERO;
+        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
         // create a class where all permission sets are empty
         let class_id = create_simple_class(class_permissions_minimal_with_admins(vec![0]));
         let class_permissions = Permissions::class_permissions_by_class_id(class_id);
@@ -471,7 +475,7 @@ fn class_permissions_set_class_reference_constraint() {
         // non admins
         assert_err!(
             Permissions::set_class_reference_constraint(
-                Origin::signed(MEMBER_ONE_OF_PRINCIPAL_GROUP_ONE),
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
                 reference_constraint2.clone()
@@ -481,5 +485,44 @@ fn class_permissions_set_class_reference_constraint() {
     })
 }
 
-// derive_principal()
-// ensure_internal_property_values_permitted() -> refactor to be testable
+#[test]
+fn batch_transaction_simple() {
+    with_test_externalities(|| {
+        const CREDENTIAL_ONE: u64 = 1;
+
+        let new_class_id = create_simple_class(ClassPermissions {
+            entities_can_be_created: true,
+            create_entities: vec![CREDENTIAL_ONE].into(),
+            reference_constraint: ReferenceConstraint::NoConstraint,
+            ..Default::default()
+        });
+
+        let operations = vec![
+            Operation {
+                with_credential: Some(CREDENTIAL_ONE),
+                as_entity_maintainer: false,
+                operation_type: OperationType::CreateEntity(CreateEntityOperation {
+                    class_id: new_class_id,
+                }),
+            },
+            // Operation {
+            //     with_credential: Some(CREDENTIAL_ONE),
+            //     as_entity_maintainer: true, // in prior operation CREDENTIAL_ONE became the maintainer
+            //     operation_type: OperationType::AddSchemaSupportToEntity(AddSchemaSupportToEntityOperation {
+            //         entity_id: ParameterizedEntity::InternalEntityJustAdded(0), // index 0 (prior operation)
+            //         schema_id: 0,
+            //         parametrized_property_values: vec![],
+            //     }),
+            // }
+        ];
+
+        let entity_id = next_entity_id();
+
+        assert_ok!(Permissions::transaction(
+            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+            operations
+        ));
+
+        assert!(versioned_store::EntityById::exists(entity_id));
+    })
+}
