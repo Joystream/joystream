@@ -330,28 +330,7 @@ decl_module! {
             property_values: Vec<ClassPropertyValue>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
-
-            // class id of the entity being updated
-            let class_id = Self::get_class_id_by_entity_id(entity_id)?;
-
-            Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
-
-            let as_entity_maintainer = if as_entity_maintainer {
-                Some(entity_id)
-            } else {
-                None
-            };
-
-            Self::if_class_permissions_satisfied(
-                &raw_origin,
-                with_credential,
-                as_entity_maintainer,
-                ClassPermissions::can_update_entity,
-                class_id,
-                |_class_permissions, _access_level| {
-                    <versioned_store::Module<T>>::add_schema_support_to_entity(entity_id, schema_id, property_values)
-                }
-            )
+            Self::do_add_schema_support_to_entity(&raw_origin, with_credential, as_entity_maintainer, entity_id, schema_id, property_values)
         }
 
         pub fn update_entity_property_values(
@@ -384,7 +363,10 @@ decl_module! {
                         Self::do_update_entity_property_values(&raw_origin, operation.with_credential, operation.as_entity_maintainer, entity_id, property_values)?;
                     },
                     OperationType::AddSchemaSupportToEntity(add_schema_support_to_entity_operation) => {
-
+                        let entity_id = add_schema_support_to_entity_operation.entity_id;
+                        let schema_id = add_schema_support_to_entity_operation.schema_id;
+                        let property_values = operations::parametrised_property_values_to_property_values(&entity_created_in_operation, add_schema_support_to_entity_operation.parametrised_property_values)?;
+                        Self::do_add_schema_support_to_entity(&raw_origin, operation.with_credential, operation.as_entity_maintainer, entity_id, schema_id, property_values)?;
                     }
                 }
             }
@@ -460,6 +442,41 @@ impl<T: Trait> Module<T> {
             |_class_permissions, _access_level| {
                 <versioned_store::Module<T>>::update_entity_property_values(
                     entity_id,
+                    property_values,
+                )
+            },
+        )
+    }
+
+    fn do_add_schema_support_to_entity(
+        raw_origin: &system::RawOrigin<T::AccountId>,
+        with_credential: Option<T::Credential>,
+        as_entity_maintainer: bool,
+        entity_id: EntityId,
+        schema_id: SchemaId,
+        property_values: Vec<ClassPropertyValue>,
+    ) -> dispatch::Result {
+        // class id of the entity being updated
+        let class_id = Self::get_class_id_by_entity_id(entity_id)?;
+
+        Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
+
+        let as_entity_maintainer = if as_entity_maintainer {
+            Some(entity_id)
+        } else {
+            None
+        };
+
+        Self::if_class_permissions_satisfied(
+            raw_origin,
+            with_credential,
+            as_entity_maintainer,
+            ClassPermissions::can_update_entity,
+            class_id,
+            |_class_permissions, _access_level| {
+                <versioned_store::Module<T>>::add_schema_support_to_entity(
+                    entity_id,
+                    schema_id,
                     property_values,
                 )
             },
