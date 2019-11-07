@@ -1,17 +1,82 @@
 import React from 'react'
+import Moment from 'react-moment';
+import NumberFormat from 'react-number-format';
 import marked from 'marked';
+import CopyToClipboard from 'react-copy-to-clipboard';
 
-import { Button, Card, Container, Grid, Icon, Label, List, Message, Statistic } from 'semantic-ui-react'
+import { Link } from 'react-router-dom';
+import { Button, Card, Container, Grid, Icon, Label, List, Message, Statistic, SemanticICONS } from 'semantic-ui-react'
 
 import { GroupMemberProps, GroupMemberView } from '../elements'
 import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
-import { OpeningStage, Opening } from "@joystream/types/hiring"
+import { Opening } from "@joystream/types/hiring"
 
-import { OpeningStageClassification } from "../classifiers"
+import { OpeningStageClassification, OpeningState } from "../classifiers"
 
 type Props = {
 	opening: Opening
 	creator: GroupMemberProps
+}
+
+type headerMarkup = {
+	class: string
+	description: string
+	icon: SemanticICONS
+	iconSpin?: boolean
+}
+
+const stateMarkup = new Map<OpeningState, headerMarkup>([
+	[OpeningState.WaitingToBegin, { 
+		class: "waiting-to-begin", 
+		description: "Waiting to begin",
+		icon: "spinner", 
+		iconSpin: true,
+	}],
+	[OpeningState.AcceptingApplications, { 
+		class: "active", 
+		description: "Accepting applications",
+		icon: "heart",
+	}],
+	[OpeningState.InReview, { 
+		class: "in-review", 
+		description: "Applications in review",
+		icon: "hourglass half",
+	}],
+	[OpeningState.Complete, { 
+		class: "complete", 
+		description: "Hiring complete",
+		icon: "thumbs up",
+	}],
+	[OpeningState.Cancelled, { 
+		class: "cancelled", 
+		description: "Cancelled",
+		icon: "ban",
+	}],
+])
+
+function openingStateMarkup<T>( state: OpeningState, key: string ): T {
+	const markup = stateMarkup.get(state)
+
+	if (typeof markup === "undefined") {
+		return null as unknown as T
+	}
+	
+	return (markup as any)[key]
+}
+
+export function openingClass( state: OpeningState ): string {
+	return "status-" + openingStateMarkup<string>(state, "class")
+}
+
+export function openingDescription( state: OpeningState ): string {
+	return openingStateMarkup<string>(state, "description")
+}
+
+function openingIcon( state: OpeningState ) {
+	const icon = openingStateMarkup<SemanticICONS>(state, "icon")
+	const spin = openingStateMarkup<boolean>(state, "iconSpin")
+
+	return <Icon name={icon} loading={spin} />
 }
 
 type OpeningHeaderProps = {
@@ -19,26 +84,39 @@ type OpeningHeaderProps = {
 }
 
 export function OpeningHeader(props: OpeningHeaderProps) {
+
+	const onCopy = () => {
+		return false
+	}
+
 	return (
 		<Grid columns="equal">
 			<Grid.Column className="status">
 				<Label ribbon size="large">
-					<Icon name="heart" />
-					{props.stage.description}
+					{openingIcon(props.stage.state)}
+					{openingDescription(props.stage.state)}
 				</Label>
 			</Grid.Column>
 			<Grid.Column className="meta" textAlign="right">
 				<Label>
-					<Icon name="history" /> Created
-						10/05/2019, 16:29:54 
+					<Icon name="history" /> Created&nbsp;
+						<Moment unix format="DD/MM/YYYY, HH:MM:SS">{props.stage.created_time.getTime()/1000}</Moment>
 					<Label.Detail>
-						<a href=""><Icon name="cube" />{props.stage.starting_block}</a>
+						<Link to={`#/explorer/query/${props.stage.starting_block_hash}`}>
+							<Icon name="cube" /> 
+								<NumberFormat value={props.stage.starting_block}
+									          displayType="text" 
+									          thousandSeparator={true} 
+								/>
+						</Link>
 					</Label.Detail>
 				</Label>
-				<a href="">
-					<Label>
-						<Icon name="linkify" /> Copy link
-					</Label>
+				<a>
+					<CopyToClipboard text={props.stage.uri}>
+						<Label>
+							<Icon name="copy" /> Copy link
+						</Label>
+					</CopyToClipboard>
 				</a>
 			</Grid.Column>
 		</Grid>

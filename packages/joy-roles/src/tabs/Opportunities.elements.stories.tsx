@@ -1,11 +1,10 @@
 import React from 'react'
-import { boolean, number, text, withKnobs } from '@storybook/addon-knobs'
+import { withKnobs } from '@storybook/addon-knobs'
 import { Card, Container } from 'semantic-ui-react'
 
-import { OpeningHeader } from "./Opportunities"
-import { AcceptingApplications, ActiveOpeningStage, OpeningStage, OpeningStageActive } from "@joystream/types/hiring"
+import { openingClass, OpeningHeader } from "./Opportunities"
 
-import { OpeningStageClassification } from "../classifiers"
+import { OpeningStageClassification, OpeningState } from "../classifiers"
 
 import 'semantic-ui-css/semantic.min.css'
 import '@polkadot/joy-roles/index.sass'
@@ -15,34 +14,55 @@ export default {
 	decorators: [withKnobs],
 }
 
+function yesterday(): Date {
+	const d = new Date()
+	d.setDate(d.getDate() - 1)
+	return d
+}
+
 export function OpeningHeaderFragment(){
 	const stages:OpeningStageClassification[] = [
-    {
-      description: "Waiting to begin",
-      class: "waiting-to-begin",
-      starting_block: 100,
+		{
+			uri: "https://some.url/#1",
+			state: OpeningState.WaitingToBegin,
+			starting_block: 2956498,
+			starting_block_hash: "somehash",
+			created_time: yesterday(),
 		},
 		{
-			description: "Accepting applications",
-			class: "active",
-			starting_block: 100,
+			uri: "https://some.url/#1",
+			state: OpeningState.AcceptingApplications,
+			starting_block: 2956498,
+			starting_block_hash: "somehash",
+			created_time: yesterday(),
 		},
 		{
-			description: "Applications in review",
-			class: "in-review",
-			starting_block: 100,
-    },
-    {
-      description: "Cancelled",
-      class: "cancelled",
-      starting_block: 100,
+			uri: "https://some.url/#1",
+			state: OpeningState.InReview,
+			starting_block: 102456,
+			starting_block_hash: "somehash",
+			created_time: yesterday(),
+		},
+		{
+			uri: "https://some.url/#1",
+			state: OpeningState.Complete,
+			starting_block: 10345,
+			starting_block_hash: "somehash",
+			created_time: yesterday(),
+		},
+		{
+			uri: "https://some.url/#1",
+			state: OpeningState.Cancelled,
+			starting_block: 104,
+			starting_block_hash: "somehash",
+			created_time: yesterday(),
 		},
 	]
 
 	return (
 		<Container>
 			{stages.map((stage, key) => (
-				<Container className={"inner opening status-"+stage.class} key={key}>
+				<Container className={"inner opening "+openingClass(stage.state)} key={key}>
 					<Card fluid className="container">
 						<Card.Content className="header">
 							<OpeningHeader stage={stage} />
