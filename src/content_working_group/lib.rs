@@ -542,10 +542,11 @@ decl_storage! {
 decl_event! {
     pub enum Event<T> where
         ChannelId = ChannelId<T>,
+        LeadId = LeadId<T>,
     {
         ChannelCreated(ChannelId),
         ChannelOwnershipTransferred(ChannelId),
-        //LeadSet(AccountId),
+        LeadSet(LeadId),
         //LeadUnset
         //OpeningPolicySet
         //LeadRewardUpdated
@@ -905,9 +906,14 @@ decl_module! {
             // Store lead
             <LeadById<T>>::insert(new_lead_id, new_lead);
 
-            // Uodate next lead counter
+            // Update current lead
+            <CurrentLeadId<T>>::put(Some(new_lead_id));
+
+            // Update next lead counter
             <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
 
+            // Trigger event
+            Self::deposit_event(RawEvent::LeadSet(new_lead_id));
         }
 
         /// ..
