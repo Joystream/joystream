@@ -150,8 +150,6 @@ impl membership::Trait for Test {
 
 impl Trait for Test {
     type Event = ();
-    type LeadId = u64;
-    type CuratorId = u64;
 }
 
 //pub type System = system::Module<Test>;

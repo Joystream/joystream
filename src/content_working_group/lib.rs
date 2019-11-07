@@ -4,16 +4,16 @@
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use codec::{Codec, Decode, Encode};
+use codec::{Decode, Encode}; // Codec
 //use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use srml_support::traits::Currency;
 use srml_support::{
-    decl_module, decl_storage, decl_event, Parameter, ensure, dispatch // , StorageMap, StorageValue,
+    decl_module, decl_storage, decl_event, ensure, dispatch // , StorageMap, StorageValue, Parameter
 };
-use system::{self, ensure_signed};
-use runtime_primitives::traits::{Member, SimpleArithmetic, One, MaybeSerialize};
+use system::{self, ensure_signed, ensure_root};
+use runtime_primitives::traits::{One}; // Member, SimpleArithmetic, MaybeSerialize
 use minting;
 use recurringrewards;
 use stake;
@@ -43,32 +43,18 @@ pub trait Trait: system::Trait + minting::Trait + recurringrewards::Trait + stak
     /// The event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    /// Type for identifier for lead.
-    type LeadId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
-    /// Type for identifier for curators.
-    type CuratorId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq
-        + Ord;
 }
 
 /// Type for identifier for channels.
 /// The ChannelId must be capable of behaving like an actor id for membership module,
 /// since publishers are identified by their channel id.
 pub type ChannelId<T> = <T as members::Trait>::ActorId;
+
+/// Type identifier for lead role, which must be same as membership actor identifeir
+pub type LeadId<T> = <T as members::Trait>::ActorId;
+
+/// Type identifier for curator role, which must be same as membership actor identifeir
+pub type CuratorId<T> = <T as members::Trait>::ActorId;
 
 /// Type for identifier for dynamic version store credential.
 pub type DynamicCredentialId<T> = <T as versioned_store_permissions::Trait>::PrincipalId;
@@ -95,12 +81,16 @@ static MSG_CHANNEL_DESCRIPTION_TOO_SHORT: &str =
     "Channel description too short";
 static MSG_CHANNEL_DESCRIPTION_TOO_LONG: &str = 
     "Channel description too long";
-static MSG_MEMBER_CANNOT_ACT_AS_PUBLISHER: &str =
-    "Member cannot act as publisher";
+static MSG_MEMBER_CANNOT_BECOME_PUBLISHER: &str =
+    "Member cannot become a publisher";
 static MSG_CHANNEL_ID_INVALID: &str = 
     "Channel id invalid";
 static MSG_ORIGIN_DOES_NOT_MATCH_CHANNEL_ROLE_ACCOUNT: &str =
     "Origin does not match channel role account";
+static MSG_CURRENT_LEAD_ALREADY_SET: &str = 
+    "Current lead is already set";
+static MSG_MEMBER_CANNOT_BECOME_CURATOR_LEAD: &str =
+    "The member cannot become curator lead";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -454,10 +444,10 @@ impl<BlockNumber, StakingPolicy> Default for OpeningPolicy<BlockNumber, StakingP
 pub enum WorkingGroupActor<T: Trait> {
 
     ///
-    Lead(T::LeadId),
+    Lead(LeadId<T>),
 
     ///
-    Curator(T::CuratorId),
+    Curator(CuratorId<T>),
 }
 
 /*
@@ -478,13 +468,13 @@ decl_storage! {
         pub Mint get(mint) config(): <T as minting::Trait>::MintId; 
 
         /// The current lead.
-        pub CurrentLeadId get(current_lead_id) config(): Option<T::LeadId>;
+        pub CurrentLeadId get(current_lead_id) config(): Option<LeadId<T>>;
 
         /// Maps identifier to corresponding lead.
-        pub LeadById get(lead_by_id) config(): linked_map T::LeadId => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
+        pub LeadById get(lead_by_id) config(): linked_map LeadId<T> => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
 
         /// Next identifier for new current lead.
-        pub NextLeadId get(next_lead_id) config(): T::LeadId;
+        pub NextLeadId get(next_lead_id) config(): LeadId<T>;
 
         /// Set of identifiers for all openings originated from this group.
         /// Using map to model a set.
@@ -502,10 +492,10 @@ decl_storage! {
         pub ChannelIdByHandle get(channel_id_by_handle) config(): linked_map Vec<u8> => ChannelId<T>;
 
         /// Maps identifier to corresponding curator.
-        pub CuratorById get(curator_by_id) config(): linked_map T::CuratorId => Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, T::LeadId, T::ApplicationId>;
+        pub CuratorById get(curator_by_id) config(): linked_map CuratorId<T> => Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId>;
         
         /// Next identifier for new curator.
-        pub NextCuratorId get(next_curator_id) config(): T::CuratorId;
+        pub NextCuratorId get(next_curator_id) config(): CuratorId<T>;
 
         /// The constraints lead must respect when creating a new curator opening.
         /// Lack of policy is interpreted as blocking any new openings at all.
@@ -521,7 +511,7 @@ decl_storage! {
         pub CredentialOfAnyMember get(credential_of_anymember) config(): AnyMemberCredential;
 
         /// Maps dynamic credential by
-        pub DynamicCredentialById get(dynamic_credential_by_id) config(): linked_map DynamicCredentialId<T> => DynamicCredential<T::CuratorId, ChannelId<T>, T::BlockNumber>;
+        pub DynamicCredentialById get(dynamic_credential_by_id) config(): linked_map DynamicCredentialId<T> => DynamicCredential<CuratorId<T>, ChannelId<T>, T::BlockNumber>;
 
         /// ...
         pub NextDynamicCredentialId get(next_dynamic_credential_id) config(): DynamicCredentialId<T>;
@@ -587,7 +577,7 @@ decl_module! {
          */
 
         /// Create a new channel.
-        pub fn create_channel(origin, handle: Vec<u8>, description: Vec<u8>, content: ChannelContentType, owner: T::MemberId, role_account: T::AccountId) {
+        pub fn create_channel(origin, owner: T::MemberId, role_account: T::AccountId, handle: Vec<u8>, description: Vec<u8>, content: ChannelContentType) {
 
             // Ensure that it is signed
             let signer_account = ensure_signed(origin)?;
@@ -611,7 +601,7 @@ decl_module! {
             
             ensure!(
                 can_register_as_publisher,
-                MSG_MEMBER_CANNOT_ACT_AS_PUBLISHER
+                MSG_MEMBER_CANNOT_BECOME_PUBLISHER
             );
 
             // Ensure it is currently possible to create channels (ChannelCreationEnabled).
@@ -687,11 +677,7 @@ decl_module! {
                 MSG_ORIGIN_DOES_NOT_MATCH_CHANNEL_ROLE_ACCOUNT
             );
 
-            // Ensure new owner is allowed to do this under new owner id by dialing out to
-            // membership module and asking
-
-
-            // Publisher is identified by the id of the owned channel
+            // Ensure new owner can actually become a publisher
             let new_actor_id = channel_id;
 
             let new_member_as_publisher = role_types::ActorInRole{
@@ -707,7 +693,7 @@ decl_module! {
             
             ensure!(
                 can_register_as_publisher,
-                MSG_MEMBER_CANNOT_ACT_AS_PUBLISHER
+                MSG_MEMBER_CANNOT_BECOME_PUBLISHER
             );
 
             //
@@ -868,33 +854,94 @@ decl_module! {
 
         }
 
+        /*
+         * Root origin routines for managing lead.
+         */
+
+
+        /// Introduce a lead when one is not currently set.
+        pub fn set_lead(origin, member: T::MemberId, role_account: T::AccountId) {
+
+            // Ensure root is origin
+            ensure_root(origin)?;
+
+            // Ensure there is no current lead
+            ensure!(
+                <CurrentLeadId<T>>::get().is_none(),
+                MSG_CURRENT_LEAD_ALREADY_SET
+            );
+
+            // Ensure that member can actually become lead
+            let new_lead_id = <NextLeadId<T>>::get();
+
+            let new_member_as_lead = role_types::ActorInRole{
+                role: role_types::Role::CuratorLead,
+                actor_id: new_lead_id
+            };
+
+            let can_register_as_lead = <members::Module<T>>::can_register_role_on_member(
+                &role_account, 
+                member, 
+                new_member_as_lead)
+                .is_ok();
+            
+            ensure!(
+                can_register_as_lead,
+                MSG_MEMBER_CANNOT_BECOME_CURATOR_LEAD
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Construct lead
+            let new_lead = Lead{
+                role_account: role_account.clone(),
+                reward_relationship: None,
+                inducted: <system::Module<T>>::block_number(),
+                stage: LeadRoleState::Active
+            };
+
+            // Store lead
+            <LeadById<T>>::insert(new_lead_id, new_lead);
+
+            // Uodate next lead counter
+            <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
+
+        }
+
+        /// ..
+        pub fn unset_lead(origin) {
+
+            
+
+        }
+    
+        /// ...
+        pub fn set_opening_policy(_origin) {
+
+        }
+
+        /// ...
+        pub fn update_lead_reward(_origin) {
+
+        }
+        
+        /// ...
+        pub fn account_is_in_group(_origin) {
+
+        }
+
+        /// ..
+        pub fn update_lead_credential(_origin) {
+
+        }
+
         fn on_finalize(_now: T::BlockNumber) {
 
         }
     }
 }
-
-impl<T: Trait> Module<T> {
-
-    /*  
-    /// ...
-    pub fn set_lead();
-
-    /// ...
-    pub fn unset_lead();
-    
-    /// ...
-    pub fn set_opening_policy();
-
-    /// ...
-    pub fn update_lead_reward();
-    
-    /// ...
-    pub fn account_is_in_group();
-
-    pub fn update_lead_credential();
-    */
-} 
 
 /*
  *  ======== ======== ======== ======== =======
