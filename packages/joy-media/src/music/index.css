@@ -1,0 +1,26 @@
+
+.JoyMusicAlbumActionBar {
+  margin: 1rem 0;
+}
+.JoyMusicAlbumPreview {
+  display: flex;
+  border-top: 1px solid #ddd;
+  padding: .5rem 0;
+
+  .AlbumCover {
+    margin-right: 1rem;
+    text-align: right;
+
+    img {
+      max-width: 150px;
+      max-height: 150px;
+    }
+  }
+  .AlbumTitle {
+    margin-bottom: 0.25rem;
+  }
+  .AlbumTracksCount {
+    color: #999;
+    margin-top: .5rem;
+  }
+}
