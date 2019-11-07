@@ -497,6 +497,21 @@ fn batch_transaction_simple() {
             ..Default::default()
         });
 
+        let new_properties = vec![Property {
+            prop_type: PropertyType::Internal(new_class_id),
+            required: true,
+            name: b"entity".to_vec(),
+            description: b"another entity of same class".to_vec(),
+        }];
+
+        assert_ok!(Permissions::add_class_schema(
+            Origin::ROOT,
+            None,
+            new_class_id,
+            vec![],
+            new_properties
+        ));
+
         let operations = vec![
             Operation {
                 with_credential: Some(CREDENTIAL_ONE),
@@ -505,15 +520,40 @@ fn batch_transaction_simple() {
                     class_id: new_class_id,
                 }),
             },
-            // Operation {
-            //     with_credential: Some(CREDENTIAL_ONE),
-            //     as_entity_maintainer: true, // in prior operation CREDENTIAL_ONE became the maintainer
-            //     operation_type: OperationType::AddSchemaSupportToEntity(AddSchemaSupportToEntityOperation {
-            //         entity_id: ParameterizedEntity::InternalEntityJustAdded(0), // index 0 (prior operation)
-            //         schema_id: 0,
-            //         parametrized_property_values: vec![],
-            //     }),
-            // }
+            Operation {
+                with_credential: Some(CREDENTIAL_ONE),
+                as_entity_maintainer: true, // in prior operation CREDENTIAL_ONE became the maintainer
+                operation_type: OperationType::AddSchemaSupportToEntity(
+                    AddSchemaSupportToEntityOperation {
+                        entity_id: ParameterizedEntity::InternalEntityJustAdded(0), // index 0 (prior operation)
+                        schema_id: 0,
+                        parametrized_property_values: vec![ParametrizedClassPropertyValue {
+                            in_class_index: 0,
+                            value: ParametrizedPropertyValue::InternalEntityJustAdded(0),
+                        }],
+                    },
+                ),
+            },
+            Operation {
+                with_credential: Some(CREDENTIAL_ONE),
+                as_entity_maintainer: false,
+                operation_type: OperationType::CreateEntity(CreateEntityOperation {
+                    class_id: new_class_id,
+                }),
+            },
+            Operation {
+                with_credential: Some(CREDENTIAL_ONE),
+                as_entity_maintainer: true, // in prior operation CREDENTIAL_ONE became the maintainer
+                operation_type: OperationType::UpdatePropertyValues(
+                    UpdatePropertyValuesOperation {
+                        entity_id: ParameterizedEntity::InternalEntityJustAdded(0), // index 0 (prior operation)
+                        new_parametrized_property_values: vec![ParametrizedClassPropertyValue {
+                            in_class_index: 0,
+                            value: ParametrizedPropertyValue::InternalEntityJustAdded(2),
+                        }],
+                    },
+                ),
+            },
         ];
 
         let entity_id = next_entity_id();
