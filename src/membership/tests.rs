@@ -361,15 +361,7 @@ fn registering_and_unregistering_roles_on_member() {
                 ),
                 "ActorInRoleNotFound",
             );
-/*
-            // trying to unregister actor role on wrong member should fail
-            assert_dispatch_error_message(
-                Members::unregister_role(
-                    members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID),
-                ),
-                "ActorInRoleNotRegisteredForMember",
-            );
-*/
+            
             // successfully unregister role
             assert_ok!(Members::unregister_role(
                 members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID)
