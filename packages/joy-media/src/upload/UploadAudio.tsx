@@ -13,6 +13,7 @@ import { Text } from '@polkadot/types';
 import { Option } from '@polkadot/types/codec';
 import { ContentId, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from '@joystream/types/media';
 import { onImageError } from '../utils';
+import { MusicTrackEntity } from '../entities/MusicTrackEntity';
 
 // TODO get from verstore
 const visibilityOptions = [
@@ -86,29 +87,10 @@ type OuterProps = ValidationProps & {
   history?: History,
   contentId: ContentId,
   fileName?: string,
-  entity?: AudioTrackEntity
+  entity?: MusicTrackEntity
 };
 
-export type AudioTrackEntity = {
-
-  // Basic:
-  name: string,
-  description?: string,
-  thumbnail?: string,
-  visibility?: string,
-  album?: string,
-
-  // Additional:
-  artist?: string,
-  composer?: string,
-  genre?: string,
-  mood?: string,
-  theme?: string,
-  explicit?: boolean,
-  license?: string,
-};
-
-type FormValues = AudioTrackEntity;
+type FormValues = MusicTrackEntity;
 
 type FormProps = OuterProps & FormikProps<FormValues>;
 
