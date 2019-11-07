@@ -563,6 +563,103 @@ fn batch_transaction_simple() {
             operations
         ));
 
+        // two entities created
         assert!(versioned_store::EntityById::exists(entity_id));
+        assert!(versioned_store::EntityById::exists(entity_id + 1));
+    })
+}
+
+#[test]
+fn batch_transaction_vector_of_entities() {
+    with_test_externalities(|| {
+        const CREDENTIAL_ONE: u64 = 1;
+
+        let new_class_id = create_simple_class(ClassPermissions {
+            entities_can_be_created: true,
+            create_entities: vec![CREDENTIAL_ONE].into(),
+            reference_constraint: ReferenceConstraint::NoConstraint,
+            ..Default::default()
+        });
+
+        let new_properties = vec![Property {
+            prop_type: PropertyType::InternalVec(10, new_class_id),
+            required: true,
+            name: b"entities".to_vec(),
+            description: b"vector of entities of same class".to_vec(),
+        }];
+
+        assert_ok!(Permissions::add_class_schema(
+            Origin::ROOT,
+            None,
+            new_class_id,
+            vec![],
+            new_properties
+        ));
+
+        let operations = vec![
+            Operation {
+                with_credential: Some(CREDENTIAL_ONE),
+                as_entity_maintainer: false,
+                operation_type: OperationType::CreateEntity(CreateEntityOperation {
+                    class_id: new_class_id,
+                }),
+            },
+            Operation {
+                with_credential: Some(CREDENTIAL_ONE),
+                as_entity_maintainer: false,
+                operation_type: OperationType::CreateEntity(CreateEntityOperation {
+                    class_id: new_class_id,
+                }),
+            },
+            Operation {
+                with_credential: Some(CREDENTIAL_ONE),
+                as_entity_maintainer: false,
+                operation_type: OperationType::CreateEntity(CreateEntityOperation {
+                    class_id: new_class_id,
+                }),
+            },
+            Operation {
+                with_credential: Some(CREDENTIAL_ONE),
+                as_entity_maintainer: true, // in prior operation CREDENTIAL_ONE became the maintainer
+                operation_type: OperationType::AddSchemaSupportToEntity(
+                    AddSchemaSupportToEntityOperation {
+                        entity_id: ParameterizedEntity::InternalEntityJustAdded(0),
+                        schema_id: 0,
+                        parametrized_property_values: vec![ParametrizedClassPropertyValue {
+                            in_class_index: 0,
+                            value: ParametrizedPropertyValue::InternalEntityVec(vec![
+                                ParameterizedEntity::InternalEntityJustAdded(1),
+                                ParameterizedEntity::InternalEntityJustAdded(2),
+                            ]),
+                        }],
+                    },
+                ),
+            },
+        ];
+
+        let entity_id = next_entity_id();
+
+        assert_ok!(Permissions::transaction(
+            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+            operations
+        ));
+
+        // three entities created
+        assert!(versioned_store::EntityById::exists(entity_id));
+        assert!(versioned_store::EntityById::exists(entity_id + 1));
+        assert!(versioned_store::EntityById::exists(entity_id + 2));
+
+        assert_eq!(
+            versioned_store::EntityById::get(entity_id),
+            versioned_store::Entity {
+                class_id: new_class_id,
+                id: entity_id,
+                in_class_schema_indexes: vec![0],
+                values: vec![ClassPropertyValue {
+                    in_class_index: 0,
+                    value: PropertyValue::InternalVec(vec![entity_id + 1, entity_id + 2,])
+                }]
+            }
+        );
     })
 }

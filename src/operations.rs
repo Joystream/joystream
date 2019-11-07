@@ -12,7 +12,8 @@ pub enum ParametrizedPropertyValue {
     /// This is the index of an operation creating an entity in the transaction/batch operations
     InternalEntityJustAdded(u32), // should really be usize but it doesn't have Encode/Decode support
 
-                                  // InternalVec(Vec<DualType>),  // DualType -> enum EntityJustAdded, EntityId
+    /// Vector of mix of Entities already existing and just added in a recent operation
+    InternalEntityVec(Vec<ParameterizedEntity>),
 }
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
@@ -74,7 +75,7 @@ pub fn parametrized_entity_to_entity_id(
                 let entity_id = created_entities.get(&op_index).unwrap();
                 Ok(*entity_id)
             } else {
-                Err("EntityDoesNotExist")
+                Err("EntityNotCreatedByOperation")
             }
         }
     }
@@ -98,8 +99,30 @@ pub fn parametrized_property_values_to_property_values(
                     let entity_id = created_entities.get(&op_index).unwrap();
                     PropertyValue::Internal(*entity_id)
                 } else {
-                    return Err("EntityDoesNotExist");
+                    return Err("EntityNotCreatedByOperation");
                 }
+            }
+            ParametrizedPropertyValue::InternalEntityVec(parametrized_entities) => {
+                let mut entities: Vec<EntityId> = vec![];
+
+                for parametrized_entity in parametrized_entities.into_iter() {
+                    match parametrized_entity {
+                        ParameterizedEntity::ExistingEntity(id) => entities.push(id),
+                        ParameterizedEntity::InternalEntityJustAdded(
+                            entity_created_in_operation_index,
+                        ) => {
+                            let op_index = entity_created_in_operation_index as usize;
+                            if created_entities.contains_key(&op_index) {
+                                let entity_id = created_entities.get(&op_index).unwrap();
+                                entities.push(*entity_id);
+                            } else {
+                                return Err("EntityNotCreatedByOperation");
+                            }
+                        }
+                    }
+                }
+
+                PropertyValue::InternalVec(entities)
             }
         };
 
