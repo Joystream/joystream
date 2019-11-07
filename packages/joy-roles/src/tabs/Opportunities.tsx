@@ -13,19 +13,14 @@ import { Opening } from "@joystream/types/hiring"
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
 
-type Props = {
-	opening: Opening
-	creator: GroupMemberProps
-}
-
-type headerMarkup = {
+export type headerMarkup = {
 	class: string
 	description: string
 	icon: SemanticICONS
 	iconSpin?: boolean
 }
 
-const stateMarkup = new Map<OpeningState, headerMarkup>([
+export const stateMarkup = new Map<OpeningState, headerMarkup>([
 	[OpeningState.WaitingToBegin, { 
 		class: "waiting-to-begin", 
 		description: "Waiting to begin",
@@ -123,12 +118,31 @@ export function OpeningHeader(props: OpeningHeaderProps) {
 	)
 }
 
-type OpeningBodyProps = {
+export type OpeningBodyProps = {
 	text: GenericJoyStreamRoleSchema
 	creator: GroupMemberProps
+	stage: OpeningStageClassification
 }
 
-function OpeningBody(props: OpeningBodyProps) {
+function OpeningBodyCTAView(props: OpeningHeaderProps) {
+	if (props.stage.state != OpeningState.AcceptingApplications) {
+		return null
+	}
+
+	return (
+		<Container>
+			<Button icon fluid positive size="huge">
+				APPLY NOW
+				<Icon name="angle right" /> 
+			</Button>
+			<Message positive>
+				<Icon name="check circle" /> No stake required
+			</Message>
+		</Container>
+	)
+}
+
+export function OpeningBody(props: OpeningBodyProps) {
 	const jobDesc = marked(props.text.job.description || '')
 	return (
 		<Grid columns="equal">
@@ -161,15 +175,7 @@ function OpeningBody(props: OpeningBodyProps) {
 				</Message>
 				<h5>Group lead</h5>
 				<GroupMemberView {...props.creator} inset={true} />
-				<Container>
-					<Button icon fluid positive size="huge">
-						APPLY NOW
-						<Icon name="angle right" /> 
-					</Button>
-					<Message positive>
-						<Icon name="check circle" /> No stake required
-					</Message>
-				</Container>
+				<OpeningBodyCTAView {...props} />
 			</Grid.Column>
 		</Grid>
 	)
@@ -188,6 +194,11 @@ function OpeningReward(props: OpeningRewardProps) {
 	)
 }
 
+type Props = OpeningHeaderProps & {
+	opening: Opening
+	creator: GroupMemberProps
+}
+
 export function OpeningView(props: Props) {
 	const hrt = props.opening.human_readable_text
 
@@ -201,14 +212,14 @@ export function OpeningView(props: Props) {
 	const text = hrt as GenericJoyStreamRoleSchema
 
 	return (
-		<Container className="opening status-active">
+		<Container className={"opening "+openingClass(props.stage.state)}>
 			<h3>{text.job.title}</h3>
 			<Card fluid className="container">
 				<Card.Content className="header">
-					<OpeningHeader stage={props.opening.stage} />
+					<OpeningHeader stage={props.stage} />
 				</Card.Content>
 				<Card.Content className="main">
-					<OpeningBody text={text} creator={props.creator} />
+					<OpeningBody text={text} creator={props.creator} stage={props.stage} />
 				</Card.Content>
 			</Card>
 		</Container>

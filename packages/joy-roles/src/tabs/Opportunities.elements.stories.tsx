@@ -1,8 +1,9 @@
 import React from 'react'
-import { withKnobs } from '@storybook/addon-knobs'
+import { number,  text, withKnobs } from '@storybook/addon-knobs'
 import { Card, Container } from 'semantic-ui-react'
 
-import { openingClass, OpeningHeader } from "./Opportunities"
+import { openingClass, OpeningBody, OpeningBodyProps, OpeningHeader } from "./Opportunities"
+import { opening, creator, yesterday } from "./Opportunities.stories"
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
 
@@ -14,13 +15,7 @@ export default {
 	decorators: [withKnobs],
 }
 
-function yesterday(): Date {
-	const d = new Date()
-	d.setDate(d.getDate() - 1)
-	return d
-}
-
-export function OpeningHeaderFragment(){
+export function OpeningHeaderByState(){
 	const stages:OpeningStageClassification[] = [
 		{
 			uri: "https://some.url/#1",
@@ -73,3 +68,51 @@ export function OpeningHeaderFragment(){
 		</Container>
 	)
 }	
+
+type fixtureProps = OpeningBodyProps & {
+	_description:string
+}
+
+export function OpeningBodyFragment(){
+	const permutations:OpeningBodyProps[] = [
+		{
+			_description: "Waiting to start; no limit; no stakes",
+			text: opening.human_readable_text,
+			creator: creator,
+			stage: {
+				uri: text("URL (to copy)", "https://some.url/#1", "Opening"),
+				state: OpeningState.WaitingToBegin,
+				starting_block: number("Created block", 2956498, {}, "Opening"),
+				starting_block_hash: "somehash",
+				created_time: yesterday(),
+			},
+		},
+		{
+			_description: "Accepting applications; no limit; no stakes",
+			text: opening.human_readable_text,
+			creator: creator,
+			stage: {
+				uri: text("URL (to copy)", "https://some.url/#1", "Opening"),
+				state: OpeningState.AcceptingApplications,
+				starting_block: number("Created block", 2956498, {}, "Opening"),
+				starting_block_hash: "somehash",
+				created_time: yesterday(),
+			},
+		},
+	]
+
+	return (
+		<Container>
+			{permutations.map((permutation, key) => (
+				<Container className={"outer opening "+openingClass(permutation.stage.state)} key={key}>
+					<h4>{permutation._description}</h4>
+					<Card fluid className="container">
+						<Card.Content className="main">
+							<OpeningBody {...permutation} />
+						</Card.Content>
+					</Card>
+				</Container>
+			))}
+		</Container>
+	)
+}
