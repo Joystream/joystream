@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button } from 'semantic-ui-react';
 
-import Section from '@polkadot/joy-utils/Section';
 import { Pluralize } from '@polkadot/joy-utils/Pluralize';
 
 export type MusicAlbumPreviewProps = {
@@ -24,6 +23,7 @@ export function MusicAlbumPreview (props: MusicAlbumPreviewProps) {
     </div>
     <div className='AlbumActions'>
       <Button content='Edit' icon='pencil' />
+      <Button content='Add track' icon='plus' />
     </div>
   </div>;
 }

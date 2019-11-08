@@ -1,9 +1,17 @@
 
+.SelectedItem {
+  background-color: #dff0ff;
+}
 .JoyMusicAlbumActionBar {
   margin: 1rem 0;
 
   .button {
     margin-right: .5rem;
+  }
+}
+.JoyListOfPreviews {
+  .CheckboxCell {
+    padding-left: 1rem;
   }
 }
 .JoyMusicAlbumPreview,
@@ -14,10 +22,10 @@
     border-top: 1px solid #ddd;
     padding: .5rem 0;
   }
-  
+
   .AlbumNumber {
     color: #999;
-    width: 3rem;
+    width: 3.5rem;
     text-align: right;
     padding-right: 1rem;
   }
@@ -69,6 +77,10 @@
       max-width: 60px;
       max-height: 60px;
     }
+  }
+
+  .AlbumArtist {
+    color: #999;
   }
 
   .AlbumActions {
