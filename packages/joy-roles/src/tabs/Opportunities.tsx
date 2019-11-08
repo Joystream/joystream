@@ -125,17 +125,36 @@ type DynamicMinimumProps = {
 	dynamic_minimum: Balance
 }
 
-export type OpeningBodyProps = DynamicMinimumProps & {
+export type OpeningBodyProps = DynamicMinimumProps & StakeRequirementProps & {
 	text: GenericJoyStreamRoleSchema
 	creator: GroupMemberProps
 	stage: OpeningStageClassification
 	applications: OpeningBodyApplicationsStatusProps
 }
 
-function OpeningBodyCTAView(props: OpeningHeaderProps) {
-	if (props.stage.state != OpeningState.AcceptingApplications) {
+type OpeningBodyCTAProps = OpeningBodyApplicationsStatusProps & OpeningHeaderProps & OpeningBodyProps
+
+function OpeningBodyCTAView(props: OpeningBodyCTAProps) {
+	if (props.stage.state != OpeningState.AcceptingApplications || applicationImpossible(props.applications)) {
 		return null
 	}
+
+	let message = (
+		<Message positive>
+			<Icon name="check circle" /> No stake required
+		</Message>
+	)
+
+	if (hasAnyStake(props)) {
+		console.log(props)
+		const balance = !props.dynamic_minimum.isZero() ? props.dynamic_minimum : props.application_stake.hard.add(props.role_stake.hard)
+		const plural = (props.application_stake.anyRequirement() && props.role_stake.anyRequirement()) ? "s totalling" : " of"
+		message = (
+			<Message warning>
+				<Icon name="warning sign" /> Stake{plural} at least <strong>{formatBalance(balance)}</strong> required!
+			</Message>
+			)
+		}
 
 	return (
 		<Container>
@@ -143,9 +162,7 @@ function OpeningBodyCTAView(props: OpeningHeaderProps) {
 				APPLY NOW
 				<Icon name="angle right" /> 
 			</Button>
-			<Message positive>
-				<Icon name="check circle" /> No stake required
-			</Message>
+			{message}
 		</Container>
 	)
 }
@@ -245,10 +262,10 @@ export function OpeningBodyStakeRequirement(props: StakeRequirementProps) {
 	}
 
 	const plural = (props.application_stake.anyRequirement() && props.role_stake.anyRequirement()) ? "s" : null
-	let title = <Message.Header color="orange" as='h5'>Stake{plural} required!</Message.Header>
+	let title = <Message.Header color="orange" as='h5'><Icon name="shield" /> Stake{plural} required!</Message.Header>
 	let explanation = null
 	if (!props.dynamic_minimum.isZero()) {
-		title = <Message.Header color="orange" as='h5'>Increased stake{plural} required!</Message.Header>
+		title = <Message.Header color="orange" as='h5'><Icon name="shield" /> Increased stake{plural} required!</Message.Header>
 		explanation = (
 			<p>
 				However, in order to be in the top {props.application_max} candidates, you wil need to stake at least <strong>{formatBalance(props.dynamic_minimum)} in total</strong>.
@@ -364,7 +381,7 @@ export function OpeningBody(props: OpeningBodyProps) {
 				<OpeningBodyStakeRequirement {...props.applications} dynamic_minimum={props.dynamic_minimum} />
 				<h5>Group lead</h5>
 				<GroupMemberView {...props.creator} inset={true} />
-				<OpeningBodyCTAView {...props} />
+				<OpeningBodyCTAView {...props} {...props.applications} />
 			</Grid.Column>
 		</Grid>
 	)
