@@ -8,7 +8,7 @@ export type MusicAlbumPreviewProps = {
   title: string,
   artist: string,
   cover: string,
-  numberOfTracks: number
+  tracksCount: number
 };
 
 export function MusicAlbumPreview (props: MusicAlbumPreviewProps) {
@@ -20,7 +20,7 @@ export function MusicAlbumPreview (props: MusicAlbumPreviewProps) {
     <div className='AlbumDescription'>
       <h3 className='AlbumTitle'>{props.title}</h3>
       <div className='AlbumArtist'>{props.artist}</div>
-      <div className='AlbumTracksCount'><Pluralize count={props.numberOfTracks} singularText='track' /></div>
+      <div className='AlbumTracksCount'><Pluralize count={props.tracksCount} singularText='track' /></div>
     </div>
     <div className='AlbumActions'>
       <Button content='Edit' icon='pencil' />
@@ -37,16 +37,17 @@ export function MyMusicAlbums (props: MyMusicAlbumsProps) {
   const albumCount = albums && albums.length || 0;
 
   return <>
-    <Section title={`My music albums (${albumCount})`}>
-      <div className='JoyMusicAlbumActionBar'>
-        <Button content='New album' icon='plus' />
-      </div>
+    <h2>{`My music albums (${albumCount})`}</h2>
+    <div className='JoyMusicAlbumActionBar'>
+      <Button content='New album' icon='plus' />
+    </div>
+    <div className='JoyListOfPreviews'>
       {albumCount === 0
         ? <em>You don't have music albums yet</em>
         : albums.map((album, i) =>
           <MusicAlbumPreview key={i} {...album} />
         )
       }
-    </Section>
+    </div>
   </>;
 }

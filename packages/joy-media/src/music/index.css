@@ -9,9 +9,12 @@
 .JoyMusicAlbumPreview,
 .JoyMusicTrackPreview {
   display: flex;
-  border-top: 1px solid #ddd;
-  padding: .5rem 0;
 
+  .JoyListOfPreviews & {
+    border-top: 1px solid #ddd;
+    padding: .5rem 0;
+  }
+  
   .AlbumNumber {
     color: #999;
     width: 3rem;
