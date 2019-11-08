@@ -394,8 +394,6 @@ decl_module! {
     }
 }
 
-
-
 impl<T: Trait> Module<T> {
     /// Provided that the memberid exists return its profile. Returns error otherwise.
     pub fn ensure_profile(id: T::MemberId) -> Result<Profile<T>, &'static str> {
@@ -567,7 +565,6 @@ impl<T: Trait> Module<T> {
         member_id: T::MemberId,
         actor_in_role: ActorInRole<T::ActorId>,
     ) -> Result<(), &'static str> {
-
         let profile = Self::ensure_profile(member_id)?;
 
         // ensure is active member
@@ -596,7 +593,6 @@ impl<T: Trait> Module<T> {
         member_id: T::MemberId,
         actor_in_role: ActorInRole<T::ActorId>,
     ) -> Result<(), &'static str> {
-
         // policy check
         Self::can_register_role_on_member(member_id, actor_in_role)?;
 
@@ -609,10 +605,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn can_unregister_role(
-        actor_in_role: ActorInRole<T::ActorId>,
-    ) -> Result<(), &'static str> {
-
+    pub fn can_unregister_role(actor_in_role: ActorInRole<T::ActorId>) -> Result<(), &'static str> {
         ensure!(
             <MembershipIdByActorInRole<T>>::exists(&actor_in_role),
             "ActorInRoleNotFound"
@@ -621,10 +614,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn unregister_role(
-        actor_in_role: ActorInRole<T::ActorId>,
-    ) -> Result<(), &'static str> {
-
+    pub fn unregister_role(actor_in_role: ActorInRole<T::ActorId>) -> Result<(), &'static str> {
         Self::can_unregister_role(actor_in_role)?;
 
         let member_id = <MembershipIdByActorInRole<T>>::get(actor_in_role);

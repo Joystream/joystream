@@ -356,16 +356,15 @@ fn registering_and_unregistering_roles_on_member() {
 
             // trying to unregister non existant actor role should fail
             assert_dispatch_error_message(
-                Members::unregister_role(
-                    members::ActorInRole::new(members::Role::Curator, 222),
-                ),
+                Members::unregister_role(members::ActorInRole::new(members::Role::Curator, 222)),
                 "ActorInRoleNotFound",
             );
-            
+
             // successfully unregister role
-            assert_ok!(Members::unregister_role(
-                members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID)
-            ));
+            assert_ok!(Members::unregister_role(members::ActorInRole::new(
+                members::Role::Publisher,
+                DUMMY_ACTOR_ID
+            )));
             assert!(!Members::member_is_in_role(
                 member_id_1,
                 members::Role::Publisher
