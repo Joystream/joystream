@@ -5,7 +5,10 @@ import marked from 'marked';
 import CopyToClipboard from 'react-copy-to-clipboard';
 
 import { Link } from 'react-router-dom';
-import { Button, Card, Container, Grid, Icon, Label, List, Message, Statistic, SemanticICONS } from 'semantic-ui-react'
+import { Button, Card, Container, Grid, Header, Icon, Label, List, Message, Statistic, SemanticICONS } from 'semantic-ui-react'
+
+import { formatBalance } from '@polkadot/util';
+import { Balance } from '@polkadot/types/interfaces';
 
 import { GroupMemberProps, GroupMemberView } from '../elements'
 import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
@@ -118,10 +121,15 @@ export function OpeningHeader(props: OpeningHeaderProps) {
 	)
 }
 
-export type OpeningBodyProps = {
+type DynamicMinimumProps = {
+	dynamic_minimum: Balance
+}
+
+export type OpeningBodyProps = DynamicMinimumProps & {
 	text: GenericJoyStreamRoleSchema
 	creator: GroupMemberProps
 	stage: OpeningStageClassification
+	applications: OpeningBodyApplicationsStatusProps
 }
 
 function OpeningBodyCTAView(props: OpeningHeaderProps) {
@@ -142,6 +150,194 @@ function OpeningBodyCTAView(props: OpeningHeaderProps) {
 	)
 }
 
+export enum StakeType {
+	Fixed = 0,
+	AtLeast,
+}
+
+abstract class StakeRequirement {
+	hard: Balance
+	type: StakeType
+
+	constructor(hard: Balance, stakeType: StakeType = StakeType.Fixed) {
+		this.hard = hard
+		this.type = stakeType
+	}
+
+	anyRequirement(): boolean {
+		return !this.hard.isZero()
+	}
+
+	qualifier(): string | null {
+		if (this.type == StakeType.AtLeast) {
+			return "at least"
+		}
+		return null
+	}
+}
+
+export class ApplicationStakeRequirement extends StakeRequirement {
+	describe(name:string) {
+		if (!this.anyRequirement()) {
+			return null
+		}
+
+		return (
+			<p>
+				You must stake {this.qualifier()} <strong>{formatBalance(this.hard)}</strong> to apply for this role. This stake will be returned to you when the hiring process is complete, whether or not you are hired, and will also be used to rank applications.
+			</p>
+		)
+	}
+}
+
+export class RoleStakeRequirement extends StakeRequirement {
+	describe(name:string) {
+		if (!this.anyRequirement()) {
+			return null
+		}
+
+		return (
+			<p>
+				 You must stake {this.qualifier()} <strong>{formatBalance(this.hard)}</strong> to be eligible for this role. You may lose this stake if you're hired and then dismised from this role. This stake will be returned if your application is unsuccessful, and will also be used to rank applications. 
+			</p>
+		)
+	}
+}
+
+export type StakeRequirementProps = DynamicMinimumProps & {
+	application_stake: ApplicationStakeRequirement
+	role_stake: RoleStakeRequirement
+	application_max: number
+}
+
+function hasAnyStake(props: StakeRequirementProps): boolean {
+	return props.application_stake.anyRequirement() || props.role_stake.anyRequirement()
+}
+
+
+class messageState {
+	positive: boolean = true
+	warning: boolean = false
+	negative: boolean = false
+
+	setPositive():void {
+		this.positive = true
+		this.warning = false
+		this.negative = false
+	}
+
+	setWarning():void {
+		this.positive = false
+		this.warning = true
+		this.negative = false
+	}
+
+	setNegative():void {
+		this.positive = false
+		this.warning = false
+		this.negative = true
+	}
+}
+
+export function OpeningBodyStakeRequirement(props: StakeRequirementProps) {
+	if (!hasAnyStake(props)) {
+		return null
+	}
+
+	const plural = (props.application_stake.anyRequirement() && props.role_stake.anyRequirement()) ? "s" : null
+	let title = <Message.Header color="orange" as='h5'>Stake{plural} required!</Message.Header>
+	let explanation = null
+	if (!props.dynamic_minimum.isZero()) {
+		title = <Message.Header color="orange" as='h5'>Increased stake{plural} required!</Message.Header>
+		explanation = (
+			<p>
+				However, in order to be in the top {props.application_max} candidates, you wil need to stake at least <strong>{formatBalance(props.dynamic_minimum)} in total</strong>.
+			</p>
+		)
+	}
+
+	return (
+		<Message className="stake-requirements" warning>
+			{title}
+			{props.application_stake.describe()}
+			{props.role_stake.describe()}
+			{explanation}
+		</Message>
+	)
+}
+
+export type OpeningBodyApplicationsStatusProps = StakeRequirementProps & {
+	application_count: number
+	application_max: number
+}
+
+function applicationImpossible(props: OpeningBodyApplicationsStatusProps): boolean {
+	return props.application_max > 0 && 
+		   (props.application_count >= props.application_max) && 
+		   !hasAnyStake(props)
+}
+
+function applicationPossibleWithIncresedStake(props: OpeningBodyApplicationsStatusProps): boolean {
+	return props.application_max > 0 && 
+		   (props.application_count >= props.application_max) && 
+		   hasAnyStake(props)
+}
+
+export function OpeningBodyApplicationsStatus(props: OpeningBodyApplicationsStatusProps) {
+	const impossible = applicationImpossible(props)
+	const msg = new messageState()
+	if (impossible) {
+		msg.setNegative()
+	} else if (applicationPossibleWithIncresedStake(props)) {
+		msg.setWarning()
+	}
+
+	let order = null
+	if (hasAnyStake(props)) {
+		order = ", ordered by total stake,"
+	}
+
+	let max_applications = null
+	let message = <p>All applications{order} will be considered during the review period.</p>
+
+	if (props.application_max > 0) {
+		max_applications = (
+			<span>
+				/
+				<NumberFormat value={props.application_max}
+							  displayType="text" 
+							  thousandSeparator={true} 
+				/>
+			</span>
+		)
+
+		let disclaimer = null
+		if (impossible) {
+			disclaimer = "No futher applications will be considered."
+		}
+
+		message = (
+			<p>Only the top {props.application_max} applications{order} will be considered for this role. {disclaimer}</p>
+		)
+	}
+
+	return (
+		<Message positive={msg.positive} warning={msg.warning} negative={msg.negative}>
+			<Statistic size="small">
+				<Statistic.Value>
+					<NumberFormat value={props.application_count}
+								  displayType="text" 
+								  thousandSeparator={true} 
+					/>
+					{max_applications}
+				</Statistic.Value> 
+				<Statistic.Label>Applications</Statistic.Label>
+			</Statistic>
+			{message}
+		</Message>
+	)
+}
+
 export function OpeningBody(props: OpeningBodyProps) {
 	const jobDesc = marked(props.text.job.description || '')
 	return (
@@ -159,20 +355,13 @@ export function OpeningBody(props: OpeningBodyProps) {
 						<List.Icon name="clock" />
 							<List.Content>
 								The maximum review period for this opening is <strong>43,200 blocks</strong> (approximately <strong>3 days</strong>).
-								</List.Content>
+						</List.Content>
 					</List.Item>
 				</List>
 			</Grid.Column>
 			<Grid.Column width={6} className="details">
-				<Message positive>
-					<Statistic size="small">
-						<Statistic.Value>15</Statistic.Value> 
-						<Statistic.Label>Applications</Statistic.Label>
-					</Statistic>
-					<p>
-						All applications will be considered during the review period.
-					</p>
-				</Message>
+				<OpeningBodyApplicationsStatus {...props.applications} />
+				<OpeningBodyStakeRequirement {...props.applications} dynamic_minimum={props.dynamic_minimum} />
 				<h5>Group lead</h5>
 				<GroupMemberView {...props.creator} inset={true} />
 				<OpeningBodyCTAView {...props} />
@@ -194,9 +383,10 @@ function OpeningReward(props: OpeningRewardProps) {
 	)
 }
 
-type Props = OpeningHeaderProps & {
+type Props = OpeningHeaderProps & DynamicMinimumProps & {
 	opening: Opening
 	creator: GroupMemberProps
+	applications: OpeningBodyApplicationsStatusProps
 }
 
 export function OpeningView(props: Props) {
@@ -219,7 +409,11 @@ export function OpeningView(props: Props) {
 					<OpeningHeader stage={props.stage} />
 				</Card.Content>
 				<Card.Content className="main">
-					<OpeningBody text={text} creator={props.creator} stage={props.stage} />
+					<OpeningBody text={text} 
+						         creator={props.creator} 
+						         stage={props.stage} 
+								applications={props.applications}
+								dynamic_minimum={props.dynamic_minimum}/>
 				</Card.Content>
 			</Card>
 		</Container>

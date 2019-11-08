@@ -2,7 +2,14 @@ import React from 'react'
 import { number,  text, withKnobs } from '@storybook/addon-knobs'
 import { Card, Container } from 'semantic-ui-react'
 
-import { openingClass, OpeningBody, OpeningBodyProps, OpeningHeader } from "./Opportunities"
+import { u128 } from '@polkadot/types'
+
+import { openingClass, 
+		 OpeningBodyApplicationsStatus, OpeningBodyApplicationsStatusProps, 
+		 OpeningBodyStakeRequirement, StakeRequirementProps,
+		 OpeningHeader,
+		 ApplicationStakeRequirement, RoleStakeRequirement, StakeType,
+       } from "./Opportunities"
 import { opening, creator, yesterday } from "./Opportunities.stories"
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
@@ -13,6 +20,10 @@ import '@polkadot/joy-roles/index.sass'
 export default { 
 	title: 'Roles / Components / Opportunities groups tab / Elements',
 	decorators: [withKnobs],
+}
+
+type TestProps = {
+	_description: string
 }
 
 export function OpeningHeaderByState(){
@@ -69,46 +80,167 @@ export function OpeningHeaderByState(){
 	)
 }	
 
-type fixtureProps = OpeningBodyProps & {
-	_description:string
-}
-
-export function OpeningBodyFragment(){
-	const permutations:OpeningBodyProps[] = [
+export function OpeningApplicationsStatusByState() {
+	const permutations:(OpeningBodyApplicationsStatusProps & TestProps)[] = [
 		{
-			_description: "Waiting to start; no limit; no stakes",
-			text: opening.human_readable_text,
-			creator: creator,
-			stage: {
-				uri: text("URL (to copy)", "https://some.url/#1", "Opening"),
-				state: OpeningState.WaitingToBegin,
-				starting_block: number("Created block", 2956498, {}, "Opening"),
-				starting_block_hash: "somehash",
-				created_time: yesterday(),
-			},
+			_description: "No limit, no applications, no stake",
+			application_count: 0,
+			application_max: 0,
+			application_stake: new ApplicationStakeRequirement(new u128(0)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
 		},
 		{
-			_description: "Accepting applications; no limit; no stakes",
-			text: opening.human_readable_text,
-			creator: creator,
-			stage: {
-				uri: text("URL (to copy)", "https://some.url/#1", "Opening"),
-				state: OpeningState.AcceptingApplications,
-				starting_block: number("Created block", 2956498, {}, "Opening"),
-				starting_block_hash: "somehash",
-				created_time: yesterday(),
-			},
+			_description: "No limit, some applications, no stake",
+			application_count: 15,
+			application_max: 0,
+			application_stake: new ApplicationStakeRequirement(new u128(0)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
+		},
+		{
+			_description: "Limit, no applications, no stake",
+			application_count: 0,
+			application_max: 20,
+			application_stake: new ApplicationStakeRequirement(new u128(0)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
+		},
+		{
+			_description: "Limit, some applications, no stake",
+			application_count: 10,
+			application_max: 20,
+			application_stake: new ApplicationStakeRequirement(new u128(0)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
+		},
+		{
+			_description: "Limit, full applications, no stake (application impossible)",
+			application_count: 20,
+			application_max: 20,
+			application_stake: new ApplicationStakeRequirement(new u128(0)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
+		},
+		{
+			_description: "No limit, no applications, some stake",
+			application_count: 0,
+			application_max: 0,
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
+		},
+		{
+			_description: "No limit, some applications, some stake",
+			application_count: 15,
+			application_max: 0,
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
+		},
+		{
+			_description: "Limit, no applications, some stake",
+			application_count: 0,
+			application_max: 20,
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
+		},
+		{
+			_description: "Limit, some applications, some stake",
+			application_count: 10,
+			application_max: 20,
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
+		},
+		{
+			_description: "Limit, full applications, some stake",
+			application_count: 20,
+			application_max: 20,
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
 		},
 	]
 
 	return (
 		<Container>
 			{permutations.map((permutation, key) => (
-				<Container className={"outer opening "+openingClass(permutation.stage.state)} key={key}>
+				<Container className="outer opening" key={key}>
 					<h4>{permutation._description}</h4>
-					<Card fluid className="container">
-						<Card.Content className="main">
-							<OpeningBody {...permutation} />
+					<Container className="main">
+						<OpeningBodyApplicationsStatus {...permutation} />
+					</Container>
+				</Container>
+			))}
+		</Container>
+	)
+}
+
+export function OpeningApplicationsStakeRequirementByStake() {
+	const permutations:(StakeRequirementProps & TestProps)[] = [
+		{
+			_description: "No stakes required (should be empty)",
+			application_stake: new ApplicationStakeRequirement(new u128(0)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
+			application_max: 0,
+		},
+		{
+			_description: "App stake required; no role stake required",
+			application_stake: new ApplicationStakeRequirement(new u128(500)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
+			application_max: 0,
+		},
+		{
+			_description: "App stake required >; no role stake required",
+			application_stake: new ApplicationStakeRequirement(new u128(500), StakeType.AtLeast),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(0),
+			application_max: 0,
+		},
+		{
+			_description: "No app stake required; role stake required",
+			application_stake: new ApplicationStakeRequirement(new u128(0)),
+			role_stake: new RoleStakeRequirement(new u128(101)),
+			dynamic_minimum: new u128(0),
+			application_max: 0,
+		},
+		{
+			_description: "No app stake required; role stake required",
+			application_stake: new ApplicationStakeRequirement(new u128(0), StakeType.AtLeast),
+			role_stake: new RoleStakeRequirement(new u128(102)),
+			dynamic_minimum: new u128(0),
+			application_max: 0,
+		},
+		{
+			_description: ">= App stake required; role stake required",
+			application_stake: new ApplicationStakeRequirement(new u128(101), StakeType.AtLeast),
+			role_stake: new RoleStakeRequirement(new u128(102)),
+			dynamic_minimum: new u128(0),
+			application_max: 0,
+		},
+		{
+			_description: "App stake required; no role stake required; dynamic minimum > 0",
+			application_stake: new ApplicationStakeRequirement(new u128(500)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			dynamic_minimum: new u128(1000),
+			application_max: 20,
+		},
+	]
+
+	return (
+		<Container>
+			{permutations.map((permutation, key) => (
+				<Container className="outer opening" key={key}>
+					<h4>{permutation._description}</h4>
+					<Card fluid>
+						<Card.Content>
+							<Container className="main">
+								<OpeningBodyStakeRequirement {...permutation} />
+							</Container>
 						</Card.Content>
 					</Card>
 				</Container>

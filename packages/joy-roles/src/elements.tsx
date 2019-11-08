@@ -91,9 +91,9 @@ export type GroupMemberProps = {
 	profile: Profile
 	title: string
 	lead: boolean
-  stake?: Balance 	
+	stake?: Balance 	
 	earned?: Balance
-  inset?: boolean
+	inset?: boolean
 }
 
 export function GroupMemberView(props: GroupMemberProps) {
