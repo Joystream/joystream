@@ -2,7 +2,7 @@ import React from 'react'
 import { withKnobs } from '@storybook/addon-knobs'
 import { Container, Tab } from 'semantic-ui-react';
 import { ContentCuratorsSection, StorageProvidersSection } from './tabs/WorkingGroup.stories'
-import { OpenStakelessUnrestricted } from './tabs/Opportunities.stories'
+import { OpportunitySandbox } from './tabs/Opportunities.stories'
 
 export default { 
   title: 'Roles / Pages',
@@ -23,7 +23,7 @@ export const RolesPage = () => {
 
   const panes = [
     { menuItem: 'Working groups', render: () => tab},
-    { menuItem: 'Opportunities', render: () => <OpenStakelessUnrestricted />},
+    { menuItem: 'Opportunities', render: () => <OpportunitySandbox />},
     { menuItem: 'My roles', render: () => null},
 ]
 
