@@ -8,19 +8,34 @@
   padding: .5rem 0;
 
   .AlbumCover {
-    margin-right: 1rem;
     text-align: right;
+    width: 150px;
+    white-space: nowrap;
 
     img {
       max-width: 150px;
       max-height: 150px;
     }
   }
-  .AlbumTitle {
-    margin-bottom: 0.25rem;
+
+  .AlbumDescription {
+    margin: 0 1rem;
+    width: 100%;
+
+    .AlbumTitle {
+      margin-bottom: 0.25rem;
+    }
+    .AlbumTracksCount {
+      color: #999;
+      margin-top: .5rem;
+    }
   }
-  .AlbumTracksCount {
-    color: #999;
-    margin-top: .5rem;
+  
+  .AlbumActions {
+    white-space: nowrap;
+    opacity: 0;
+  }
+  &:hover .AlbumActions {
+    opacity: 1;
   }
 }

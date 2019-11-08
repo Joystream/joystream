@@ -22,6 +22,9 @@ export function MusicAlbumPreview (props: MusicAlbumPreviewProps) {
       <div className='AlbumArtist'>{props.artist}</div>
       <div className='AlbumTracksCount'><Pluralize count={props.numberOfTracks} singularText='track' /></div>
     </div>
+    <div className='AlbumActions'>
+      <Button content='Edit' icon='pencil' />
+    </div>
   </div>;
 }
 
