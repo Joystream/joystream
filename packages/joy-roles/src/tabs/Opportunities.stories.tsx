@@ -32,6 +32,7 @@ function newMockHumanReadableText(obj: any) {
 }
 
 export const opening = new Opening({
+	max_review_period_length: 50000,
     human_readable_text: newMockHumanReadableText({
         version: 1,
         headline: text("Headline", "Help us curate awesome content", "Role"),
@@ -47,7 +48,7 @@ export const opening = new Opening({
         },
         process: {
             details: [
-                "A"
+                "Some custom detail"
             ]
         }
     }),
@@ -113,6 +114,7 @@ export function OpportunitySandbox(){
 			stage={stage} 
 			applications={applications} 
 			dynamic_minimum={dynamic_minimum} 
+			block_time_in_seconds={3}
 		/>
     )
 }   

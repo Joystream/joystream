@@ -17,422 +17,445 @@ import { Opening } from "@joystream/types/hiring"
 import { OpeningStageClassification, OpeningState } from "../classifiers"
 
 export type headerMarkup = {
-	class: string
-	description: string
-	icon: SemanticICONS
-	iconSpin?: boolean
+    class: string
+    description: string
+    icon: SemanticICONS
+    iconSpin?: boolean
 }
 
 export const stateMarkup = new Map<OpeningState, headerMarkup>([
-	[OpeningState.WaitingToBegin, { 
-		class: "waiting-to-begin", 
-		description: "Waiting to begin",
-		icon: "spinner", 
-		iconSpin: true,
-	}],
-	[OpeningState.AcceptingApplications, { 
-		class: "active", 
-		description: "Accepting applications",
-		icon: "heart",
-	}],
-	[OpeningState.InReview, { 
-		class: "in-review", 
-		description: "Applications in review",
-		icon: "hourglass half",
-	}],
-	[OpeningState.Complete, { 
-		class: "complete", 
-		description: "Hiring complete",
-		icon: "thumbs up",
-	}],
-	[OpeningState.Cancelled, { 
-		class: "cancelled", 
-		description: "Cancelled",
-		icon: "ban",
-	}],
+    [OpeningState.WaitingToBegin, { 
+        class: "waiting-to-begin", 
+        description: "Waiting to begin",
+        icon: "spinner", 
+        iconSpin: true,
+    }],
+    [OpeningState.AcceptingApplications, { 
+        class: "active", 
+        description: "Accepting applications",
+        icon: "heart",
+    }],
+    [OpeningState.InReview, { 
+        class: "in-review", 
+        description: "Applications in review",
+        icon: "hourglass half",
+    }],
+    [OpeningState.Complete, { 
+        class: "complete", 
+        description: "Hiring complete",
+        icon: "thumbs up",
+    }],
+    [OpeningState.Cancelled, { 
+        class: "cancelled", 
+        description: "Cancelled",
+        icon: "ban",
+    }],
 ])
 
 function openingStateMarkup<T>( state: OpeningState, key: string ): T {
-	const markup = stateMarkup.get(state)
+    const markup = stateMarkup.get(state)
 
-	if (typeof markup === "undefined") {
-		return null as unknown as T
-	}
-	
-	return (markup as any)[key]
+    if (typeof markup === "undefined") {
+        return null as unknown as T
+    }
+    
+    return (markup as any)[key]
 }
 
 export function openingClass( state: OpeningState ): string {
-	return "status-" + openingStateMarkup<string>(state, "class")
+    return "status-" + openingStateMarkup<string>(state, "class")
 }
 
 export function openingDescription( state: OpeningState ): string {
-	return openingStateMarkup<string>(state, "description")
+    return openingStateMarkup<string>(state, "description")
 }
 
 function openingIcon( state: OpeningState ) {
-	const icon = openingStateMarkup<SemanticICONS>(state, "icon")
-	const spin = openingStateMarkup<boolean>(state, "iconSpin")
+    const icon = openingStateMarkup<SemanticICONS>(state, "icon")
+    const spin = openingStateMarkup<boolean>(state, "iconSpin")
 
-	return <Icon name={icon} loading={spin} />
+    return <Icon name={icon} loading={spin} />
 }
 
 type OpeningHeaderProps = {
-	stage: OpeningStageClassification
+    stage: OpeningStageClassification
 }
 
 export function OpeningHeader(props: OpeningHeaderProps) {
 
-	const onCopy = () => {
-		return false
-	}
+    const onCopy = () => {
+        return false
+    }
 
-	return (
-		<Grid columns="equal">
-			<Grid.Column className="status">
-				<Label ribbon size="large">
-					{openingIcon(props.stage.state)}
-					{openingDescription(props.stage.state)}
-				</Label>
-			</Grid.Column>
-			<Grid.Column className="meta" textAlign="right">
-				<Label>
-					<Icon name="history" /> Created&nbsp;
-						<Moment unix format="DD/MM/YYYY, HH:MM:SS">{props.stage.created_time.getTime()/1000}</Moment>
-					<Label.Detail>
-						<Link to={`#/explorer/query/${props.stage.starting_block_hash}`}>
-							<Icon name="cube" /> 
-								<NumberFormat value={props.stage.starting_block}
-									          displayType="text" 
-									          thousandSeparator={true} 
-								/>
-						</Link>
-					</Label.Detail>
-				</Label>
-				<a>
-					<CopyToClipboard text={props.stage.uri}>
-						<Label>
-							<Icon name="copy" /> Copy link
-						</Label>
-					</CopyToClipboard>
-				</a>
-			</Grid.Column>
-		</Grid>
-	)
+    return (
+        <Grid columns="equal">
+            <Grid.Column className="status">
+                <Label ribbon size="large">
+                    {openingIcon(props.stage.state)}
+                    {openingDescription(props.stage.state)}
+                </Label>
+            </Grid.Column>
+            <Grid.Column className="meta" textAlign="right">
+                <Label>
+                    <Icon name="history" /> Created&nbsp;
+                        <Moment unix format="DD/MM/YYYY, HH:MM:SS">{props.stage.created_time.getTime()/1000}</Moment>
+                    <Label.Detail>
+                        <Link to={`#/explorer/query/${props.stage.starting_block_hash}`}>
+                            <Icon name="cube" /> 
+                                <NumberFormat value={props.stage.starting_block}
+                                              displayType="text" 
+                                              thousandSeparator={true} 
+                                />
+                        </Link>
+                    </Label.Detail>
+                </Label>
+                <a>
+                    <CopyToClipboard text={props.stage.uri}>
+                        <Label>
+                            <Icon name="copy" /> Copy link
+                        </Label>
+                    </CopyToClipboard>
+                </a>
+            </Grid.Column>
+        </Grid>
+    )
 }
 
 type DynamicMinimumProps = {
-	dynamic_minimum: Balance
-}
-
-export type OpeningBodyProps = DynamicMinimumProps & StakeRequirementProps & {
-	text: GenericJoyStreamRoleSchema
-	creator: GroupMemberProps
-	stage: OpeningStageClassification
-	applications: OpeningBodyApplicationsStatusProps
+    dynamic_minimum: Balance
 }
 
 type OpeningBodyCTAProps = OpeningBodyApplicationsStatusProps & OpeningHeaderProps & OpeningBodyProps
 
 function OpeningBodyCTAView(props: OpeningBodyCTAProps) {
-	if (props.stage.state != OpeningState.AcceptingApplications || applicationImpossible(props.applications)) {
-		return null
-	}
+    if (props.stage.state != OpeningState.AcceptingApplications || applicationImpossible(props.applications)) {
+        return null
+    }
 
-	let message = (
-		<Message positive>
-			<Icon name="check circle" /> No stake required
-		</Message>
-	)
+    let message = (
+        <Message positive>
+            <Icon name="check circle" /> No stake required
+        </Message>
+    )
 
-	if (hasAnyStake(props)) {
-		console.log(props)
-		const balance = !props.dynamic_minimum.isZero() ? props.dynamic_minimum : props.application_stake.hard.add(props.role_stake.hard)
-		const plural = (props.application_stake.anyRequirement() && props.role_stake.anyRequirement()) ? "s totalling" : " of"
-		message = (
-			<Message warning>
-				<Icon name="warning sign" /> Stake{plural} at least <strong>{formatBalance(balance)}</strong> required!
-			</Message>
-			)
-		}
+    if (hasAnyStake(props)) {
+        const balance = !props.dynamic_minimum.isZero() ? props.dynamic_minimum : props.application_stake.hard.add(props.role_stake.hard)
+        const plural = (props.application_stake.anyRequirement() && props.role_stake.anyRequirement()) ? "s totalling" : " of"
+        message = (
+            <Message warning>
+                <Icon name="warning sign" /> Stake{plural} at least <strong>{formatBalance(balance)}</strong> required!
+            </Message>
+            )
+        }
 
-	return (
-		<Container>
-			<Button icon fluid positive size="huge">
-				APPLY NOW
-				<Icon name="angle right" /> 
-			</Button>
-			{message}
-		</Container>
-	)
+    return (
+        <Container>
+            <Button icon fluid positive size="huge">
+                APPLY NOW
+                <Icon name="angle right" /> 
+            </Button>
+            {message}
+        </Container>
+    )
 }
 
 export enum StakeType {
-	Fixed = 0,
-	AtLeast,
+    Fixed = 0,
+    AtLeast,
 }
 
 abstract class StakeRequirement {
-	hard: Balance
-	type: StakeType
+    hard: Balance
+    type: StakeType
 
-	constructor(hard: Balance, stakeType: StakeType = StakeType.Fixed) {
-		this.hard = hard
-		this.type = stakeType
-	}
+    constructor(hard: Balance, stakeType: StakeType = StakeType.Fixed) {
+        this.hard = hard
+        this.type = stakeType
+    }
 
-	anyRequirement(): boolean {
-		return !this.hard.isZero()
-	}
+    anyRequirement(): boolean {
+        return !this.hard.isZero()
+    }
 
-	qualifier(): string | null {
-		if (this.type == StakeType.AtLeast) {
-			return "at least"
-		}
-		return null
-	}
+    qualifier(): string | null {
+        if (this.type == StakeType.AtLeast) {
+            return "at least"
+        }
+        return null
+    }
 }
 
 export class ApplicationStakeRequirement extends StakeRequirement {
-	describe(name:string) {
-		if (!this.anyRequirement()) {
-			return null
-		}
+    describe(name:string) {
+        if (!this.anyRequirement()) {
+            return null
+        }
 
-		return (
-			<p>
-				You must stake {this.qualifier()} <strong>{formatBalance(this.hard)}</strong> to apply for this role. This stake will be returned to you when the hiring process is complete, whether or not you are hired, and will also be used to rank applications.
-			</p>
-		)
-	}
+        return (
+            <p>
+                You must stake {this.qualifier()} <strong>{formatBalance(this.hard)}</strong> to apply for this role. This stake will be returned to you when the hiring process is complete, whether or not you are hired, and will also be used to rank applications.
+            </p>
+        )
+    }
 }
 
 export class RoleStakeRequirement extends StakeRequirement {
-	describe(name:string) {
-		if (!this.anyRequirement()) {
-			return null
-		}
+    describe(name:string) {
+        if (!this.anyRequirement()) {
+            return null
+        }
 
-		return (
-			<p>
-				 You must stake {this.qualifier()} <strong>{formatBalance(this.hard)}</strong> to be eligible for this role. You may lose this stake if you're hired and then dismised from this role. This stake will be returned if your application is unsuccessful, and will also be used to rank applications. 
-			</p>
-		)
-	}
+        return (
+            <p>
+                 You must stake {this.qualifier()} <strong>{formatBalance(this.hard)}</strong> to be eligible for this role. You may lose this stake if you're hired and then dismised from this role. This stake will be returned if your application is unsuccessful, and will also be used to rank applications. 
+            </p>
+        )
+    }
 }
 
 export type StakeRequirementProps = DynamicMinimumProps & {
-	application_stake: ApplicationStakeRequirement
-	role_stake: RoleStakeRequirement
-	application_max: number
+    application_stake: ApplicationStakeRequirement
+    role_stake: RoleStakeRequirement
+    application_max: number
 }
 
 function hasAnyStake(props: StakeRequirementProps): boolean {
-	return props.application_stake.anyRequirement() || props.role_stake.anyRequirement()
+    return props.application_stake.anyRequirement() || props.role_stake.anyRequirement()
 }
 
 
 class messageState {
-	positive: boolean = true
-	warning: boolean = false
-	negative: boolean = false
+    positive: boolean = true
+    warning: boolean = false
+    negative: boolean = false
 
-	setPositive():void {
-		this.positive = true
-		this.warning = false
-		this.negative = false
-	}
+    setPositive():void {
+        this.positive = true
+        this.warning = false
+        this.negative = false
+    }
 
-	setWarning():void {
-		this.positive = false
-		this.warning = true
-		this.negative = false
-	}
+    setWarning():void {
+        this.positive = false
+        this.warning = true
+        this.negative = false
+    }
 
-	setNegative():void {
-		this.positive = false
-		this.warning = false
-		this.negative = true
-	}
+    setNegative():void {
+        this.positive = false
+        this.warning = false
+        this.negative = true
+    }
 }
 
 export function OpeningBodyStakeRequirement(props: StakeRequirementProps) {
-	if (!hasAnyStake(props)) {
-		return null
-	}
+    if (!hasAnyStake(props)) {
+        return null
+    }
 
-	const plural = (props.application_stake.anyRequirement() && props.role_stake.anyRequirement()) ? "s" : null
-	let title = <Message.Header color="orange" as='h5'><Icon name="shield" /> Stake{plural} required!</Message.Header>
-	let explanation = null
-	if (!props.dynamic_minimum.isZero()) {
-		title = <Message.Header color="orange" as='h5'><Icon name="shield" /> Increased stake{plural} required!</Message.Header>
-		explanation = (
-			<p>
-				However, in order to be in the top {props.application_max} candidates, you wil need to stake at least <strong>{formatBalance(props.dynamic_minimum)} in total</strong>.
-			</p>
-		)
-	}
+    const plural = (props.application_stake.anyRequirement() && props.role_stake.anyRequirement()) ? "s" : null
+    let title = <Message.Header color="orange" as='h5'><Icon name="shield" /> Stake{plural} required!</Message.Header>
+    let explanation = null
+    if (!props.dynamic_minimum.isZero()) {
+        title = <Message.Header color="orange" as='h5'><Icon name="shield" /> Increased stake{plural} required!</Message.Header>
+        explanation = (
+            <p>
+                However, in order to be in the top {props.application_max} candidates, you wil need to stake at least <strong>{formatBalance(props.dynamic_minimum)} in total</strong>.
+            </p>
+        )
+    }
 
-	return (
-		<Message className="stake-requirements" warning>
-			{title}
-			{props.application_stake.describe()}
-			{props.role_stake.describe()}
-			{explanation}
-		</Message>
-	)
+    return (
+        <Message className="stake-requirements" warning>
+            {title}
+            {props.application_stake.describe()}
+            {props.role_stake.describe()}
+            {explanation}
+        </Message>
+    )
 }
 
 export type OpeningBodyApplicationsStatusProps = StakeRequirementProps & {
-	application_count: number
-	application_max: number
+    application_count: number
+    application_max: number
 }
 
 function applicationImpossible(props: OpeningBodyApplicationsStatusProps): boolean {
-	return props.application_max > 0 && 
-		   (props.application_count >= props.application_max) && 
-		   !hasAnyStake(props)
+    return props.application_max > 0 && 
+           (props.application_count >= props.application_max) && 
+           !hasAnyStake(props)
 }
 
 function applicationPossibleWithIncresedStake(props: OpeningBodyApplicationsStatusProps): boolean {
-	return props.application_max > 0 && 
-		   (props.application_count >= props.application_max) && 
-		   hasAnyStake(props)
+    return props.application_max > 0 && 
+           (props.application_count >= props.application_max) && 
+           hasAnyStake(props)
 }
 
 export function OpeningBodyApplicationsStatus(props: OpeningBodyApplicationsStatusProps) {
-	const impossible = applicationImpossible(props)
-	const msg = new messageState()
-	if (impossible) {
-		msg.setNegative()
-	} else if (applicationPossibleWithIncresedStake(props)) {
-		msg.setWarning()
-	}
+    const impossible = applicationImpossible(props)
+    const msg = new messageState()
+    if (impossible) {
+        msg.setNegative()
+    } else if (applicationPossibleWithIncresedStake(props)) {
+        msg.setWarning()
+    }
 
-	let order = null
-	if (hasAnyStake(props)) {
-		order = ", ordered by total stake,"
-	}
+    let order = null
+    if (hasAnyStake(props)) {
+        order = ", ordered by total stake,"
+    }
 
-	let max_applications = null
-	let message = <p>All applications{order} will be considered during the review period.</p>
+    let max_applications = null
+    let message = <p>All applications{order} will be considered during the review period.</p>
 
-	if (props.application_max > 0) {
-		max_applications = (
-			<span>
-				/
-				<NumberFormat value={props.application_max}
-							  displayType="text" 
-							  thousandSeparator={true} 
-				/>
-			</span>
-		)
+    if (props.application_max > 0) {
+        max_applications = (
+            <span>
+                /
+                <NumberFormat value={props.application_max}
+                              displayType="text" 
+                              thousandSeparator={true} 
+                />
+            </span>
+        )
 
-		let disclaimer = null
-		if (impossible) {
-			disclaimer = "No futher applications will be considered."
-		}
+        let disclaimer = null
+        if (impossible) {
+            disclaimer = "No futher applications will be considered."
+        }
 
-		message = (
-			<p>Only the top {props.application_max} applications{order} will be considered for this role. {disclaimer}</p>
-		)
-	}
+        message = (
+            <p>Only the top {props.application_max} applications{order} will be considered for this role. {disclaimer}</p>
+        )
+    }
 
-	return (
-		<Message positive={msg.positive} warning={msg.warning} negative={msg.negative}>
-			<Statistic size="small">
-				<Statistic.Value>
-					<NumberFormat value={props.application_count}
-								  displayType="text" 
-								  thousandSeparator={true} 
-					/>
-					{max_applications}
-				</Statistic.Value> 
-				<Statistic.Label>Applications</Statistic.Label>
-			</Statistic>
-			{message}
-		</Message>
-	)
+    return (
+        <Message positive={msg.positive} warning={msg.warning} negative={msg.negative}>
+            <Statistic size="small">
+                <Statistic.Value>
+                    <NumberFormat value={props.application_count}
+                                  displayType="text" 
+                                  thousandSeparator={true} 
+                    />
+                    {max_applications}
+                </Statistic.Value> 
+                <Statistic.Label>Applications</Statistic.Label>
+            </Statistic>
+            {message}
+        </Message>
+    )
+}
+
+type BlockTimeProps = {
+    block_time_in_seconds: number
+}
+
+function timeInHumanFormat(block_time_in_seconds: number, blocks: number) {
+    const d1 = new Date()
+    const d2 = new Date(d1.getTime())
+    d2.setSeconds(d2.getSeconds() + (block_time_in_seconds * blocks))
+    return <Moment duration={d1} date={d2} interval={0}/>
+}
+
+
+export type OpeningBodyProps = DynamicMinimumProps & StakeRequirementProps & BlockTimeProps & {
+    opening: Opening
+    text: GenericJoyStreamRoleSchema
+    creator: GroupMemberProps
+    stage: OpeningStageClassification
+    applications: OpeningBodyApplicationsStatusProps
 }
 
 export function OpeningBody(props: OpeningBodyProps) {
-	const jobDesc = marked(props.text.job.description || '')
-	return (
-		<Grid columns="equal">
-			<Grid.Column width={10} className="summary">
-				<Card.Header>
-					<OpeningReward text={props.text.reward} />
-				</Card.Header>
-				<h4 className="headline">{props.text.headline}</h4>
-				<h5>Role description</h5>
-				<div dangerouslySetInnerHTML={{__html: jobDesc}} /> 
-				<h5>Hiring process details</h5>
-				<List>
-					<List.Item>
-						<List.Icon name="clock" />
-							<List.Content>
-								The maximum review period for this opening is <strong>43,200 blocks</strong> (approximately <strong>3 days</strong>).
-						</List.Content>
-					</List.Item>
-				</List>
-			</Grid.Column>
-			<Grid.Column width={6} className="details">
-				<OpeningBodyApplicationsStatus {...props.applications} />
-				<OpeningBodyStakeRequirement {...props.applications} dynamic_minimum={props.dynamic_minimum} />
-				<h5>Group lead</h5>
-				<GroupMemberView {...props.creator} inset={true} />
-				<OpeningBodyCTAView {...props} {...props.applications} />
-			</Grid.Column>
-		</Grid>
-	)
+    const jobDesc = marked(props.text.job.description || '')
+    const blockNumber = <NumberFormat value={props.opening.max_review_period_length.toNumber()}
+                                      displayType="text" 
+                                      thousandSeparator={true} />
+    return (
+        <Grid columns="equal">
+            <Grid.Column width={10} className="summary">
+                <Card.Header>
+                    <OpeningReward text={props.text.reward} />
+                </Card.Header>
+                <h4 className="headline">{props.text.headline}</h4>
+                <h5>Role description</h5>
+                <div dangerouslySetInnerHTML={{__html: jobDesc}} /> 
+                <h5>Hiring process details</h5>
+                <List>
+                    <List.Item>
+                        <List.Icon name="clock" />
+                            <List.Content>
+                                The maximum review period for this opening is <strong>{blockNumber} blocks</strong> (approximately <strong>{timeInHumanFormat(props.block_time_in_seconds, props.opening.max_review_period_length.toNumber())}</strong>).
+                        </List.Content>
+                    </List.Item>
+                    {props.text.process.details.map((detail,key) => (
+                        <List.Item key={key}>
+                            <List.Icon name="info circle" />
+                            <List.Content>{detail}</List.Content>
+                        </List.Item>
+                    ))}
+                </List>
+            </Grid.Column>
+            <Grid.Column width={6} className="details">
+                <OpeningBodyApplicationsStatus {...props.applications} />
+                <OpeningBodyStakeRequirement {...props.applications} dynamic_minimum={props.dynamic_minimum} />
+                <h5>Group lead</h5>
+                <GroupMemberView {...props.creator} inset={true} />
+                <OpeningBodyCTAView {...props} {...props.applications} />
+            </Grid.Column>
+        </Grid>
+    )
 }
 
 type OpeningRewardProps = {
-	text: string
+    text: string
 }
 
 function OpeningReward(props: OpeningRewardProps) {
-	return (
-		<Statistic size="small">
-			<Statistic.Label>Reward</Statistic.Label>
-			<Statistic.Value>{props.text}</Statistic.Value> 
-		</Statistic>
-	)
+    return (
+        <Statistic size="small">
+            <Statistic.Label>Reward</Statistic.Label>
+            <Statistic.Value>{props.text}</Statistic.Value> 
+        </Statistic>
+    )
 }
 
-type Props = OpeningHeaderProps & DynamicMinimumProps & {
-	opening: Opening
-	creator: GroupMemberProps
-	applications: OpeningBodyApplicationsStatusProps
+type Props = OpeningHeaderProps & DynamicMinimumProps & BlockTimeProps & {
+    opening: Opening
+    creator: GroupMemberProps
+    applications: OpeningBodyApplicationsStatusProps
 }
 
 export function OpeningView(props: Props) {
-	const hrt = props.opening.human_readable_text
+    const hrt = props.opening.human_readable_text
 
-	if (typeof hrt === "undefined") {
-		return null
-	} else if (typeof hrt === "string") {
-		console.log(hrt)
-		return "FIXME: what do we do?"
-	}
+    if (typeof hrt === "undefined") {
+        return null
+    } else if (typeof hrt === "string") {
+        return "FIXME: what do we do?"
+    }
 
-	const text = hrt as GenericJoyStreamRoleSchema
+    const text = hrt as GenericJoyStreamRoleSchema
 
-	return (
-		<Container className={"opening "+openingClass(props.stage.state)}>
-			<h3>{text.job.title}</h3>
-			<Card fluid className="container">
-				<Card.Content className="header">
-					<OpeningHeader stage={props.stage} />
-				</Card.Content>
-				<Card.Content className="main">
-					<OpeningBody text={text} 
-						         creator={props.creator} 
-						         stage={props.stage} 
-								applications={props.applications}
-								dynamic_minimum={props.dynamic_minimum}/>
-				</Card.Content>
-			</Card>
-		</Container>
-	)
+    return (
+        <Container className={"opening "+openingClass(props.stage.state)}>
+            <h3>{text.job.title}</h3>
+            <Card fluid className="container">
+                <Card.Content className="header">
+                    <OpeningHeader stage={props.stage} />
+                </Card.Content>
+                <Card.Content className="main">
+                    <OpeningBody text={text} 
+                                 opening={props.opening}
+                                 creator={props.creator} 
+                                 stage={props.stage} 
+                                 applications={props.applications}
+                                 dynamic_minimum={props.dynamic_minimum}
+                                 block_time_in_seconds={props.block_time_in_seconds}
+                    />
+                </Card.Content>
+            </Card>
+        </Container>
+    )
 }

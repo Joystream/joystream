@@ -11,6 +11,7 @@ export class Opening extends Struct {
   constructor (value?: any) {
     super({
       created: BlockNumber,
+      max_review_period_length: BlockNumber,
       stage: OpeningStage,
       // missing fields. See https://github.com/bedeho/substrate-hiring-module/blob/initial_work/src/hiring.rs#L264
       human_readable_text: Text,
@@ -39,7 +40,11 @@ export class Opening extends Struct {
   }
 
   get stage(): OpeningStage {
-    return this.get('stage') as OpeningStage;
+    return this.get('stage') as OpeningStage
+  }
+
+  get max_review_period_length(): BlockNumber {
+      return this.get('max_review_period_length') as BlockNumber
   }
 }
 
