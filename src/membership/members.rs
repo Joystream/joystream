@@ -562,16 +562,10 @@ impl<T: Trait> Module<T> {
     // ** Note ** Role specific policies should be enforced by the client modules
     // this method should handle higher level policies
     pub fn can_register_role_on_member(
-        signing_account: &T::AccountId,
         member_id: T::MemberId,
         actor_in_role: ActorInRole<T::ActorId>,
     ) -> Result<(), &'static str> {
         let profile = Self::ensure_profile(member_id)?;
-
-        ensure!(
-            profile.controller_account == *signing_account,
-            "OnlyMemberControllerCanRegisterRole"
-        );
 
         // ensure is active member
         ensure!(!profile.suspended, "SuspendedMemberCannotEnterRole");
@@ -596,12 +590,11 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn register_role_on_member(
-        signing_account: &T::AccountId,
         member_id: T::MemberId,
         actor_in_role: ActorInRole<T::ActorId>,
     ) -> Result<(), &'static str> {
         // policy check
-        Self::can_register_role_on_member(signing_account, member_id, actor_in_role)?;
+        Self::can_register_role_on_member(member_id, actor_in_role)?;
 
         let mut profile = Self::ensure_profile(member_id)?; // .expect().. ?
         assert!(profile.roles.register_role(&actor_in_role));
@@ -612,35 +605,19 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn can_unregister_role_on_member(
-        signing_account: &T::AccountId,
-        member_id: T::MemberId,
-        actor_in_role: ActorInRole<T::ActorId>,
-    ) -> Result<(), &'static str> {
-        let profile = Self::ensure_profile(member_id)?;
-
-        ensure!(
-            profile.controller_account == *signing_account,
-            "OnlyMemberControllerCanUnregisterRole"
-        );
-
+    pub fn can_unregister_role(actor_in_role: ActorInRole<T::ActorId>) -> Result<(), &'static str> {
         ensure!(
             <MembershipIdByActorInRole<T>>::exists(&actor_in_role),
             "ActorInRoleNotFound"
         );
-        ensure!(
-            <MembershipIdByActorInRole<T>>::get(&actor_in_role) == member_id,
-            "ActorInRoleNotRegisteredForMember"
-        );
+
         Ok(())
     }
 
-    pub fn unregister_role_on_member(
-        signing_account: &T::AccountId,
-        member_id: T::MemberId,
-        actor_in_role: ActorInRole<T::ActorId>,
-    ) -> Result<(), &'static str> {
-        Self::can_unregister_role_on_member(signing_account, member_id, actor_in_role)?;
+    pub fn unregister_role(actor_in_role: ActorInRole<T::ActorId>) -> Result<(), &'static str> {
+        Self::can_unregister_role(actor_in_role)?;
+
+        let member_id = <MembershipIdByActorInRole<T>>::get(actor_in_role);
 
         let mut profile = Self::ensure_profile(member_id)?; // .expect().. ?
 
