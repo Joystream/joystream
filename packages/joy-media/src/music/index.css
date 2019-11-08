@@ -1,16 +1,28 @@
 
 .JoyMusicAlbumActionBar {
   margin: 1rem 0;
+
+  .button {
+    margin-right: .5rem;
+  }
 }
-.JoyMusicAlbumPreview {
+.JoyMusicAlbumPreview,
+.JoyMusicTrackPreview {
   display: flex;
   border-top: 1px solid #ddd;
   padding: .5rem 0;
 
+  .AlbumNumber {
+    color: #999;
+    width: 3rem;
+    text-align: right;
+    padding-right: 1rem;
+  }
+
   .AlbumCover {
     text-align: right;
-    width: 150px;
     white-space: nowrap;
+    width: 150px;
 
     img {
       max-width: 150px;
@@ -19,7 +31,7 @@
   }
 
   .AlbumDescription {
-    margin: 0 1rem;
+    padding: 0 1rem;
     width: 100%;
 
     .AlbumTitle {
@@ -30,12 +42,33 @@
       margin-top: .5rem;
     }
   }
-  
+
   .AlbumActions {
     white-space: nowrap;
     opacity: 0;
+
+    .button {
+      margin-right: .5rem;
+    }
   }
   &:hover .AlbumActions {
+    opacity: 1;
+  }
+}
+
+.JoyMusicTrackPreview {
+  .AlbumCover {
+    text-align: right;
+    white-space: nowrap;
+    width: 60px;
+
+    img {
+      max-width: 60px;
+      max-height: 60px;
+    }
+  }
+
+  .AlbumActions {
     opacity: 1;
   }
 }
