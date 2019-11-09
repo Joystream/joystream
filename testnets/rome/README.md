@@ -110,7 +110,7 @@ This Release Plan is considered "final" once merged to master, and anything belo
 ##### General
 * For previous testnet, we have tried making each KR be a mix of pure technical implementation, and community engagement in one single release OKR. This lead to:
   * confusion during tracking
-  * unclear responsibilities and and primary focus (ie. make it work, or make it user friendly)
+  * unclear responsibilities and primary focus (ie. make it work, or make it user friendly)
   * ambiguity around time and deadlines
   * disappointment when the technical work has been completed, but "marketing" failed due to time or unrealistic numbers
   * subjective/changing final grading to counter above point

@@ -390,7 +390,7 @@ NB2: These stories are kind of hand wavy. Many of the stories may be better suit
 - get notified if evicted *(email in node config was considered, or just wait for the chat system)*
 - get in touch with a provider out of band *(email in node config was considered, or just wait for the chat system)*
 
-*These stories were removed from the the "must haves" to "nice to haves"*
+*These stories were removed from the "must haves" to "nice to haves"*
 
 ---
 
@@ -430,7 +430,7 @@ NB2: These stories are kind of hand wavy. Many of the stories may be better suit
 - Get status of my node:
   - Total storage consumed...
 
-*These stories were removed from the the "must haves" to "nice to haves"*
+*These stories were removed from the "must haves" to "nice to haves"*
 
 ---
 

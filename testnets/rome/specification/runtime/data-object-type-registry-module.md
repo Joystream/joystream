@@ -47,7 +47,7 @@ the `constraints_version` field is 1, and the corresponding `constraints`
 field is expected to be valid JSON with the following structure:
 
 1. The top-level entry of the JSON is an Object, not an Array.
-1. Each property key corresponds to to a [IANA Media Type](https://www.iana.org/assignments/media-types/media-types.xhtml).
+1. Each property key corresponds to a [IANA Media Type](https://www.iana.org/assignments/media-types/media-types.xhtml).
    Wildcard keys such as `image/*` are allowed. The wildcard `*/*` matches any
    file, and therefore becomes the default entry (see below).
 1. Each property value is itself a JSON Object, specifying further constraints

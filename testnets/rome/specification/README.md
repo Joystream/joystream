@@ -62,7 +62,7 @@ A set of new modules, as well as some changes to the existing membership module,
 
 We hope that experience will show us how to factor out a reusable working group module itself in the future.
 
-### Blockhain
+### Blockchain
 
 A new chain is launched, where we will use a genesis state that transfers memberships, accounts and the forum, from the Acropolis testnet at some announced block height.
 
