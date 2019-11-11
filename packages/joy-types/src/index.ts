@@ -173,7 +173,9 @@ export type ProposalVotes = [AccountId, VoteKind][];
 function registerElectionAndProposalTypes () {
   try {
     const typeRegistry = getTypeRegistry();
-
+    typeRegistry.register({
+      MemoText: 'Text'
+    });
     // Register parametrized enum ElectionStage:
     typeRegistry.register({
       ElectionStage
