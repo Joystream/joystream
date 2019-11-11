@@ -276,17 +276,10 @@ pub enum StakePurpose {
 }
 
 // Safe and explict way of chosing
-#[derive(Encode, Decode, Eq, PartialEq, Clone)]
-pub enum ActivateOpeningAt<T: Trait> {
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+pub enum ActivateOpeningAt<BlockNumber> {
     CurrentBlock,
-    ExactBlock(T::BlockNumber),
-}
-
-impl<T: Trait> Default for ActivateOpeningAt<T> {
-
-    fn default() -> Self {
-        ActivateOpeningAt::CurrentBlock
-    }
+    ExactBlock(BlockNumber),
 }
 
 #[derive(Debug, PartialEq)]
@@ -374,7 +367,7 @@ pub enum DeactivateApplicationError {
 
 impl<T: Trait> Module<T> {
     pub fn add_opening(
-        activate_at: ActivateOpeningAt<T>,
+        activate_at: ActivateOpeningAt<T::BlockNumber>,
         max_review_period_length: T::BlockNumber,
         application_rationing_policy: Option<ApplicationRationingPolicy>,
         application_staking_policy: Option<StakingPolicy<BalanceOf<T>, T::BlockNumber>>,
