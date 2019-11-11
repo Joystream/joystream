@@ -276,7 +276,7 @@ pub enum StakePurpose {
 }
 
 // Safe and explict way of chosing
-#[derive(Encode, Decode, Debug, Eq, PartialEq)]
+#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
 pub enum ActivateOpeningAt<T: Trait> {
     CurrentBlock,
     ExactBlock(T::BlockNumber),
