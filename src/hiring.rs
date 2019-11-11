@@ -261,7 +261,7 @@ impl<Balance: PartialOrd + Clone, BlockNumber> StakingPolicy<Balance, BlockNumbe
 }
 
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone)]
-pub struct Opening<Balance: Default, BlockNumber, ApplicationId> {
+pub struct Opening<Balance, BlockNumber, ApplicationId> {
     // Block at which opening was added
     pub created: BlockNumber,
 
