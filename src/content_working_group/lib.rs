@@ -578,6 +578,17 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
     }
 }
 
+impl rstd::convert::From<WrappedError<hiring::BeginReviewError>> for &str {
+    fn from(wrapper: WrappedError<hiring::BeginReviewError>) -> Self {
+       
+       match wrapper.error {
+            hiring::BeginReviewError::OpeningDoesNotExist => "Opening does not exist",
+            hiring::BeginReviewError::OpeningNotInAcceptingApplicationsStage => "Opening not in accepting applications stage"
+       }
+    }
+}
+
+
 // add opening error
 // ...
 
@@ -701,7 +712,7 @@ decl_event! {
         //PermissionGroupUpdated
         //CuratorOpeningAdded
         AcceptedCuratorApplications(OpeningId),
-        //BeganCuratorApplicationReview
+        BeganCuratorApplicationReview(OpeningId),
         //CuratorOpeningFilled
         //CuratorSlashed
         //TerminatedCurator
