@@ -1082,7 +1082,7 @@ decl_module! {
             // this working group, not something else.
             Self::ensure_curator_opening_exists(opening_id)?;
 
-            // Attempt to begin accepting applicationsa
+            // Attempt to begin review of applications
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::begin_review(opening_id)
@@ -1111,15 +1111,17 @@ decl_module! {
             // this working group, not something else.
             let (curator_opening, _opening) = Self::ensure_curator_opening_exists(opening_id)?;
 
-            // Attempt to begin accepting applicationsa
+            // Attempt to fill opening
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
-                hiring::Module::<T>::fill_opening(opening_id,
-                                                    successful_applications.clone(),
-                                                    curator_opening.policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period,
-                                                    curator_opening.policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period,
-                                                    curator_opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period)
-                )?;
+                hiring::Module::<T>::fill_opening(
+                    opening_id,
+                    successful_applications.clone(),
+                    curator_opening.policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period,
+                    curator_opening.policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period,
+                    curator_opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
+                )
+            )?;
 
             //
             // == MUTATION SAFE ==
