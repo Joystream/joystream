@@ -679,7 +679,7 @@ decl_event! {
         ChannelCreated(ChannelId),
         ChannelOwnershipTransferred(ChannelId),
         LeadSet(LeadId),
-        //LeadUnset
+        LeadUnset(LeadId),
         CuratorOpeningAdded(OpeningId),
         //LeadRewardUpdated
         //LeadRoleAccountUpdated
@@ -1175,21 +1175,41 @@ decl_module! {
             Self::deposit_event(RawEvent::LeadSet(new_lead_id));
         }
 
-        /// ..
+        /// Evict the currently unset lead
         pub fn unset_lead(origin) {
 
-            
+            // Ensure root is origin
+            ensure_root(origin)?;
 
-        }
-    
-        /// ...
-        pub fn set_opening_policy(_origin) {
+            // Ensure there is a lead set
+            let (lead_id,lead) = Self::ensure_lead_is_set()?;
 
-        }
+            //
+            // == MUTATION SAFE ==
+            //
 
-        /// ...
-        pub fn update_lead_reward(_origin) {
+            // Unregister from role in membership model
+            let current_lead_role = role_types::ActorInRole{
+                role: role_types::Role::CuratorLead,
+                actor_id: lead_id
+            };
 
+            let unregistered_role = <members::Module<T>>::unregister_role(current_lead_role).is_ok();
+
+            assert!(unregistered_role);
+
+            // Update lead stage as exited
+            let current_block = <system::Module<T>>::block_number();
+
+            let new_lead = Lead{
+                stage: LeadRoleState::Exited(ExitedLeadRole { initiated_at_block_number: current_block}),
+                ..lead
+            };
+
+            <LeadById<T>>::insert(lead_id, new_lead);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::LeadUnset(lead_id));
         }
         
         /// ...
