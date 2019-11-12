@@ -908,8 +908,6 @@ decl_module! {
 
         }
 
-
-
         /// ..
         pub fn create_version_store_credential(_origin)  {
 
@@ -1168,7 +1166,7 @@ decl_module! {
             <LeadById<T>>::insert(new_lead_id, new_lead);
 
             // Update current lead
-            <CurrentLeadId<T>>::put(Some(new_lead_id));
+            //<CurrentLeadId<T>>::put(Some(new_lead_id));
 
             // Update next lead counter
             <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
