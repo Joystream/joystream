@@ -98,6 +98,10 @@ static MSG_MEMBER_CANNOT_BECOME_CURATOR_LEAD: &str =
 //    "Lead is not set";
 static MSG_ORIGIN_IS_NOT_LEAD: &str =
     "Origin is not lead";
+//static MSG_OPENING_CANNOT_ACTIVATE_IN_THE_PAST: &str =
+//    "Opening cannot activate in the past";
+static MSG_OPENING_DOES_NOT_EXIST: &str =
+    "Opening does not exist";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -549,6 +553,15 @@ macro_rules! ensure_on_wrapped_error {
 //derive_from_impl(hiring::BeginAcceptingApplicationsError)
 //derive_from_impl(hiring::BeginAcceptingApplicationsError)
 
+impl rstd::convert::From<WrappedError<hiring::BeginAcceptingApplicationsError>> for &str {
+    fn from(wrapper: WrappedError<hiring::BeginAcceptingApplicationsError>) -> Self {
+       
+       match wrapper.error {
+            hiring::BeginAcceptingApplicationsError::OpeningDoesNotExist => "Opening does not exist",
+            hiring::BeginAcceptingApplicationsError::OpeningIsNotInWaitingToBeginStage => "Opening Is Not in Waiting"
+       }
+    }
+}
 
 impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
     fn from(wrapper: WrappedError<hiring::AddOpeningError>) -> Self {
@@ -687,7 +700,7 @@ decl_event! {
         //PermissionGroupAdded
         //PermissionGroupUpdated
         //CuratorOpeningAdded
-        //AcceptedCuratorApplications
+        AcceptedCuratorApplications(OpeningId),
         //BeganCuratorApplicationReview
         //CuratorOpeningFilled
         //CuratorSlashed
