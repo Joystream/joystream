@@ -588,10 +588,56 @@ impl rstd::convert::From<WrappedError<hiring::BeginReviewError>> for &str {
     }
 }
 
+impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError<T>>> for &str {
+    fn from(wrapper: WrappedError<hiring::FillOpeningError<T>>) -> Self {
+       
+       match wrapper.error {
+            hiring::FillOpeningError::<T>::OpeningDoesNotExist => "OpeningDoesNotExist",
+            hiring::FillOpeningError::<T>::OpeningNotInReviewPeriodStage => "OpeningNotInReviewPeriodStage",
+            hiring::FillOpeningError::<T>::UnstakingPeriodTooShort(stake_purpose, outcome_in_filled_opening) => {
 
-// add opening error
-// ...
+                match stake_purpose {
+                    hiring::StakePurpose::Application => {
 
+                        match outcome_in_filled_opening {
+                            hiring::ApplicationOutcomeInFilledOpening::Success => "Application stake unstaking period for successful applicants too short",
+                            hiring::ApplicationOutcomeInFilledOpening::Failure => "Application stake unstaking period for failed applicants too short",
+                        }
+                    },
+                    hiring::StakePurpose::Role => {
+
+                        match outcome_in_filled_opening {
+                            hiring::ApplicationOutcomeInFilledOpening::Success => "Role stake unstaking period for successful applicants too short",
+                            hiring::ApplicationOutcomeInFilledOpening::Failure => "Role stake unstaking period for failed applicants too short",
+                        }
+                    }
+                }
+            },
+
+            hiring::FillOpeningError::<T>::RedundantUnstakingPeriodProvided(stake_purpose, outcome_in_filled_opening) => {
+
+                match stake_purpose {
+                    hiring::StakePurpose::Application => {
+
+                        match outcome_in_filled_opening {
+                            hiring::ApplicationOutcomeInFilledOpening::Success => "Application stake unstaking period for successful applicants redundant",
+                            hiring::ApplicationOutcomeInFilledOpening::Failure => "Application stake unstaking period for failed applicants redundant",
+                        }
+                    },
+                    hiring::StakePurpose::Role => {
+
+                        match outcome_in_filled_opening {
+                            hiring::ApplicationOutcomeInFilledOpening::Success => "Role stake unstaking period for successful applicants redundant",
+                            hiring::ApplicationOutcomeInFilledOpening::Failure => "Role stake unstaking period for failed applicants redundant",
+                        }
+                    }
+                }
+            },
+            hiring::FillOpeningError::<T>::ApplicationDoesNotExist(_application_id) => "ApplicationDoesNotExist",
+            hiring::FillOpeningError::<T>::ApplicationNotInActiveStage(_application_id) => "ApplicationNotInActiveStage"
+       }
+    }
+}
 
 // ======================================================================== //
 
@@ -699,6 +745,7 @@ decl_event! {
         ChannelId = ChannelId<T>,
         LeadId = LeadId<T>,
         OpeningId = <T as hiring::Trait>::OpeningId,
+        ApplicationId = <T as hiring::Trait>::ApplicationId
     {
         ChannelCreated(ChannelId),
         ChannelOwnershipTransferred(ChannelId),
@@ -713,7 +760,7 @@ decl_event! {
         //CuratorOpeningAdded
         AcceptedCuratorApplications(OpeningId),
         BeganCuratorApplicationReview(OpeningId),
-        //CuratorOpeningFilled
+        CuratorOpeningFilled(OpeningId, BTreeSet<ApplicationId>),
         //CuratorSlashed
         //TerminatedCurator
         //AppliedOnCuratorOpening
@@ -1034,45 +1081,36 @@ decl_module! {
         }
 
         /// Fill opening for curator
-        pub fn fill_curator_opening(_origin) {
-
-            /*
+        pub fn fill_curator_opening(origin,
             opening_id: T::OpeningId,
-            successful_applications: BTreeSet<T::ApplicationId>,
-            opt_successful_applicant_application_stake_unstaking_period: Option<T::BlockNumber>,
+            successful_applications: BTreeSet<T::ApplicationId>
+        ) {
 
-            opt_failed_applicant_application_stake_unstaking_period: Option<T::BlockNumber>,
-            opt_failed_applicant_role_stake_unstaking_period: Option<T::BlockNumber>
-            */
+            // Ensure lead is set and is origin signer
+            Self::ensure_origin_is_set_lead(origin)?;
 
+            // Ensure opening exists
+            // NB: Even though call to hiring modul will have implicit check for 
+            // existence of opening as well, this check is to make sure that the opening is for
+            // this working group, not something else.
+            let (curator_opening, _opening) = Self::ensure_curator_opening_exists(opening_id)?;
 
-                        // Check state!!!!
-            // Check state!!!!
-            // Check state!!!!
-            // Check state!!!!
-
-
+            // Attempt to begin accepting applicationsa
+            // NB: Combined ensure check and mutation in hiring module
+            ensure_on_wrapped_error!(
+                hiring::Module::<T>::fill_opening(opening_id,
+                                                    successful_applications.clone(),
+                                                    curator_opening.policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period,
+                                                    curator_opening.policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period,
+                                                    curator_opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period)
+                )?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            /*
-            pub fn fill_opening(
-                opening_id: T::OpeningId,
-                successful_applications: BTreeSet<T::ApplicationId>,
-                opt_successful_applicant_application_stake_unstaking_period: Option<T::BlockNumber>,
-                opt_failed_applicant_application_stake_unstaking_period: Option<T::BlockNumber>,
-                /* this parameter does not make sense? opt_successful_applicant_role_stake_unstaking_period: Option<T::BlockNumber>, */
-                opt_failed_applicant_role_stake_unstaking_period: Option<T::BlockNumber>,
-            ) -> Result<(), FillOpeningError<T>> {
-            */
-
-
             // Trigger event
-            // Trigger event
-            // Trigger event
-
+            Self::deposit_event(RawEvent::CuratorOpeningFilled(opening_id, successful_applications));
         }
 
         /*
