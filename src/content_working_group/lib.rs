@@ -1204,9 +1204,6 @@ decl_module! {
 
         }
 
-        fn on_finalize(_now: T::BlockNumber) {
-
-        }
     }
 }
 
