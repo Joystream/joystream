@@ -43,7 +43,7 @@ export function MyMusicAlbums (props: MyMusicAlbumsProps) {
     </div>
     <div className='JoyListOfPreviews'>
       {albumCount === 0
-        ? <em>You don't have music albums yet</em>
+        ? <em className='NoItems'>You don't have music albums yet</em>
         : albums.map((album, i) =>
           <MusicAlbumPreview key={i} {...album} />
         )

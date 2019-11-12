@@ -1,7 +1,4 @@
 
-.SelectedItem {
-  background-color: #dff0ff;
-}
 .JoyMusicAlbumActionBar {
   margin: 1rem 0;
 
@@ -10,8 +7,16 @@
   }
 }
 .JoyListOfPreviews {
+  background-color: #ddd;
+
   .CheckboxCell {
     padding-left: 1rem;
+  }
+
+  .NoItems {
+    display: block;
+    background-color: #fafafa;
+    padding: 1rem 0;
   }
 }
 .JoyMusicAlbumPreview,
@@ -19,8 +24,17 @@
   display: flex;
 
   .JoyListOfPreviews & {
-    border-top: 1px solid #ddd;
+    background-color: #fafafa;
+    margin-top: 1px;
     padding: .5rem 0;
+  }
+  
+  &.DraggableItem {
+    background-color: #dff0ff;
+  }
+
+  &.SelectedItem {
+    background-color: #dff0ff;
   }
 
   .AlbumNumber {

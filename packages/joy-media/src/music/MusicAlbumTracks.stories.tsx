@@ -4,6 +4,7 @@ import './index.css';
 import { withKnobs } from '@storybook/addon-knobs';
 import { TracksOfMyMusicAlbum } from './MusicAlbumTracks';
 import { AlbumExample } from './StorybookUtils';
+import { ReorderTracksInAlbum } from './ReorderTracksInAlbum';
 
 export default { 
     title: 'Media | Tracks of my music album',
@@ -20,6 +21,12 @@ export const AlbumWithTracks = () => {
 		tracks={albumTracks} 
 	/>;
 }
+
+export const ReorderTracks = () =>
+	<ReorderTracksInAlbum
+		// album={AlbumExample}
+		tracks={albumTracks} 
+	/>
 
 const trackNames = [
 	'Arborvitae (Thuja occidentalis)',

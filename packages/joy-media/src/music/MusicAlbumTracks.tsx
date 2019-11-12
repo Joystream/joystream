@@ -11,7 +11,9 @@ export type MusicTrackPreviewProps = {
   artist: string,
   cover: string,
   position?: number,
-  onSelect?: OnCheckboxChange
+  onSelect?: OnCheckboxChange,
+  isDraggable?: boolean,
+  withActions?: boolean
 };
 
 export function MusicTrackPreview (props: MusicTrackPreviewProps) {
@@ -26,7 +28,7 @@ export function MusicTrackPreview (props: MusicTrackPreviewProps) {
     setChecked(d.checked || false);
   }
 
-  return <div className={`JoyMusicTrackPreview ${checked && `SelectedItem`}`}>
+  return <div className={`JoyMusicTrackPreview ${checked && `SelectedItem`} ${props.isDraggable && `DraggableItem`}`}>
     {props.onSelect && <div className='CheckboxCell'>
       <Checkbox checked={checked} onChange={onChange} />
     </div>}
@@ -38,10 +40,10 @@ export function MusicTrackPreview (props: MusicTrackPreviewProps) {
       <h3 className='AlbumTitle'>{props.title}</h3>
       <div className='AlbumArtist'>{props.artist}</div>
     </div>
-    <div className='AlbumActions'>
+    {props.withActions && <div className='AlbumActions'>
       <Button content='Edit' icon='pencil' />
       <Button content='Remove from album' icon='minus' />
-    </div>
+    </div>}
   </div>;
 }
 
@@ -83,13 +85,14 @@ export function TracksOfMyMusicAlbum (props: TracksOfMyMusicAlbumProps) {
 
     <div className='JoyListOfPreviews'>
       {tracksCount === 0
-        ? <em>This album has no tracks yet</em>
+        ? <em className='NoItems'>This album has no tracks yet</em>
         : tracks.map((track, i) =>
           <MusicTrackPreview
-            key={i} 
-            {...track} 
-            position={i + 1} 
+            key={i}
+            {...track}
+            position={i + 1}
             onSelect={(e, d) => onTrackSelect(i, e, d)}
+            withActions
           />
         )
       }
