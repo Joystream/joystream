@@ -713,7 +713,7 @@ decl_module! {
         pub fn create_channel(origin, owner: T::MemberId, role_account: T::AccountId, handle: Vec<u8>, description: Vec<u8>, content: ChannelContentType) {
 
             // Ensure that it is signed
-            let signer_account = ensure_signed(origin)?;
+            ensure_signed(origin)?;
 
             // Ensure prospective owner member is currently allowed to act in the publisher role
             let next_channel_id = NextChannelId::<T>::get();
@@ -727,7 +727,6 @@ decl_module! {
             };
 
             let can_register_as_publisher = <members::Module<T>>::can_register_role_on_member(
-                &signer_account, 
                 owner, 
                 member_as_publisher)
                 .is_ok();
@@ -780,7 +779,6 @@ decl_module! {
 
             // Dial out to membership module and inform about new role as channe owner.
             let registered_role = <members::Module<T>>::register_role_on_member(
-                &signer_account, 
                 owner, 
                 member_as_publisher)
                 .is_ok();
@@ -819,7 +817,6 @@ decl_module! {
             };
 
             let can_register_as_publisher = <members::Module<T>>::can_register_role_on_member(
-                &new_role_account, 
                 new_owner, 
                 new_member_as_publisher)
                 .is_ok();
@@ -851,9 +848,7 @@ decl_module! {
                 actor_id: old_actor_id
             };
 
-            let unregistered_role = <members::Module<T>>::unregister_role_on_member(
-                &signer_account,
-                channel.owner,
+            let unregistered_role = <members::Module<T>>::unregister_role(
                 old_member_as_publisher
                 )
                 .is_ok();
@@ -862,7 +857,6 @@ decl_module! {
 
             // Dial out to membership module and inform about new role as channe owner.
             let registered_role = <members::Module<T>>::register_role_on_member(
-                &new_role_account, 
                 new_owner, 
                 new_member_as_publisher)
                 .is_ok();
@@ -1149,7 +1143,6 @@ decl_module! {
             };
 
             let can_register_as_lead = <members::Module<T>>::can_register_role_on_member(
-                &role_account, 
                 member, 
                 new_member_as_lead)
                 .is_ok();
