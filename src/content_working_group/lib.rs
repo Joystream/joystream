@@ -102,6 +102,8 @@ static MSG_ORIGIN_IS_NOT_LEAD: &str =
 //    "Opening cannot activate in the past";
 static MSG_OPENING_DOES_NOT_EXIST: &str =
     "Opening does not exist";
+static MSG_APPLICATION_DOES_NOT_EXIST: &str =
+    "Application does not exist";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -613,7 +615,6 @@ impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError
                     }
                 }
             },
-
             hiring::FillOpeningError::<T>::RedundantUnstakingPeriodProvided(stake_purpose, outcome_in_filled_opening) => {
 
                 match stake_purpose {
@@ -638,6 +639,21 @@ impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError
        }
     }
 }
+
+impl rstd::convert::From<WrappedError<hiring::DeactivateApplicationError>> for &str {
+    fn from(wrapper: WrappedError<hiring::DeactivateApplicationError>) -> Self {
+       
+       match wrapper.error {
+            hiring::DeactivateApplicationError::ApplicationDoesNotExist => "ApplicationDoesNotExist",
+            hiring::DeactivateApplicationError::ApplicationNotActive => "ApplicationNotActive",
+            hiring::DeactivateApplicationError::OpeningNotAcceptingApplications => "OpeningNotAcceptingApplications",
+            hiring::DeactivateApplicationError::UnstakingPeriodTooShort(_stake_purpose) => "UnstakingPeriodTooShort",
+            hiring::DeactivateApplicationError::RedundantUnstakingPeriodProvided(_stake_purpose) => "RedundantUnstakingPeriodProvided"
+       }
+    }
+}
+
+// 
 
 // ======================================================================== //
 
@@ -762,7 +778,7 @@ decl_event! {
         BeganCuratorApplicationReview(OpeningId),
         CuratorOpeningFilled(OpeningId, BTreeSet<ApplicationId>),
         //CuratorSlashed
-        //TerminatedCurator
+        TerminatedCurator(OpeningId, ApplicationId),
         //AppliedOnCuratorOpening
         //CuratorRewardUpdated
         //CuratorRoleAccountUpdated
@@ -1127,16 +1143,32 @@ decl_module! {
         }
         */
 
-        /// ...
-        pub fn terminate_curator(_origin) {
+        /// Terminate active curator
+        pub fn terminate_curator(origin, application_id: T::ApplicationId) {
 
-            /*
-            pub fn deactive_application(
-                application_id: T::ApplicationId,
-                application_stake_unstaking_period: Option<T::BlockNumber>,
-                role_stake_unstaking_period: Option<T::BlockNumber>,
-            ) -> Result<(), DeactivateApplicationError> {
-            */
+            // Ensure lead is set and is origin signer
+            Self::ensure_origin_is_set_lead(origin)?;
+
+            // Grab opening corresponding to application
+            let (application, curator_opening, _opening) = Self::ensure_application_corresponds_to_curator_opening(application_id)?;
+
+            // Attempt to deactive applications
+            // NB: Combined ensure check and mutation in hiring module
+            ensure_on_wrapped_error!(
+                hiring::Module::<T>::deactive_application(
+                    application_id,
+                    curator_opening.policy_commitment.terminate_curator_application_stake_unstaking_period,
+                    curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period
+                )
+            )?;
+            
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Trigger event
+            Self::deposit_event(RawEvent::TerminatedCurator(application.opening_id, application_id));
         }
 
         /// ...
@@ -1469,6 +1501,20 @@ impl<T: Trait> Module<T> {
         let opening = hiring::OpeningById::<T>::get(opening_id);
 
         Ok((curator_opening, opening))
+    }
+
+    fn ensure_application_corresponds_to_curator_opening(application_id: <T as hiring::Trait>::ApplicationId) -> Result<(hiring::Application<<T as hiring::Trait>::OpeningId, T::BlockNumber, <T as stake::Trait>::StakeId>, CuratorOpening<T::BlockNumber, BalanceOf<T>> ,hiring::Opening<BalanceOf<T>, T::BlockNumber, <T as hiring::Trait>::ApplicationId>), &'static str> {
+
+        ensure!(
+            hiring::ApplicationById::<T>::exists(application_id),
+            MSG_APPLICATION_DOES_NOT_EXIST
+        );
+
+        let application = hiring::ApplicationById::<T>::get(application_id);
+
+        let (curator_opening, opening) = Self::ensure_curator_opening_exists(application.opening_id)?;
+
+        Ok((application, curator_opening, opening))
     }
 
 }
