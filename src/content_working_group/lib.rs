@@ -8,9 +8,10 @@ use codec::{Decode, Encode}; // Codec
 //use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
+use rstd::convert::From;
 use srml_support::traits::Currency;
 use srml_support::{
-    decl_module, decl_storage, decl_event, ensure, dispatch // , StorageMap, StorageValue, Parameter
+    decl_module, decl_storage, decl_event, ensure, dispatch // , StorageMap, , Parameter
 };
 use system::{self, ensure_signed, ensure_root};
 use runtime_primitives::traits::{One}; // Member, SimpleArithmetic, MaybeSerialize
@@ -89,8 +90,14 @@ static MSG_ORIGIN_DOES_NOT_MATCH_CHANNEL_ROLE_ACCOUNT: &str =
     "Origin does not match channel role account";
 static MSG_CURRENT_LEAD_ALREADY_SET: &str = 
     "Current lead is already set";
+static MSG_CURRENT_LEAD_NOT_SET: &str = 
+    "Current lead is not set";
 static MSG_MEMBER_CANNOT_BECOME_CURATOR_LEAD: &str =
     "The member cannot become curator lead";
+//static MSG_LEAD_IS_NOT_SET: &str = 
+//    "Lead is not set";
+static MSG_ORIGIN_IS_NOT_LEAD: &str =
+    "Origin is not lead";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -221,6 +228,23 @@ pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId
 
     /// Whether this curator can unilaterally alter the curation status of a channel.
     pub can_update_channel_curation_status: bool
+}
+
+/// An opening for a curator role.
+#[derive(Encode, Decode, Default, Debug, Clone)]
+pub struct CuratorOpening<BlockNumber, Balance> {
+
+    /// Commitment to policies in opening.
+    policy_commitment: OpeningPolicyCommitment<BlockNumber, Balance>
+
+    /*
+     * Add other stuff here in the future?
+     * Like default payment terms, privilidges etc.?
+     * Not obvious that it serves much of a purpose, they are mutable
+     * after all, they need to be.
+     * Revisit. 
+     */
+
 }
 
 /*
@@ -404,18 +428,39 @@ pub struct DynamicCredential<CuratorId: Ord, ChannelId, BlockNumber> {
     pub description: Vec<u8>
 }
 
-/// Policy governing any curator opening which can be made by lead.
-/// Be aware that all limits are forward looking in constrainign future extrinsics or method calls.
-/// Updating them has no side-effects beyond changing the limit.
-#[derive(Encode, Decode, Debug, Clone, Default)]
-pub struct OpeningPolicy<BlockNumber: Default, Balance> {
+/// Terms for slashings applied to a given role
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq)]
+pub struct SlashableTerms {
 
-    /// Limits the total number of curators which can be active, or possibly active through an active opening. 
-    /// The contribution of an active opening is counted by looking at the rationing policy of the opening.
-    /// A limit of N is counted as there being N actual active curators, as a worst case bound.
-    /// The absence of a limit is counted as "infinity", thus blocking any further openings from being created,
-    /// and is is not possible to actually hire a number of curators that would bring the number above this parameter `curator_limit`.
-    pub curator_limit: Option<u16>,
+    /// Maximum number of slashes.
+    pub max_count: u16,
+
+    /// Maximum percentage points of remaining stake which may be slashed in a single slash.
+    pub max_percent_pts_per_time: u16
+}
+
+/// Terms for what slashing can be applied in some context
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq)]
+pub enum SlashingTerms {
+    Unslashable,
+    Slashable(SlashableTerms)
+}
+
+impl Default for SlashingTerms {
+
+    fn default() -> Self {
+        Self::Unslashable
+    }
+}
+
+/// A commitment to the set of policy variables relevant to an opening.
+/// An applicant can observe this commitment and be secure that the terms
+/// of the application process cannot be changed ex-post.
+#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
+pub struct OpeningPolicyCommitment<BlockNumber, Balance> {
+
+    /// Rationing to be used
+    pub application_rationing_policy: Option<hiring::ApplicationRationingPolicy>,
 
     /// Maximum length of review period of applications
     pub max_review_period_length: BlockNumber,
@@ -424,20 +469,36 @@ pub struct OpeningPolicy<BlockNumber: Default, Balance> {
     pub application_staking_policy: Option<hiring::StakingPolicy<Balance, BlockNumber>>,
 
     /// Staking policy for role itself
-    pub role_staking_policy: Option<hiring::StakingPolicy<Balance, BlockNumber>>
-}
+    pub role_staking_policy: Option<hiring::StakingPolicy<Balance, BlockNumber>>,
 
-/*
-impl<BlockNumber, StakingPolicy> Default for OpeningPolicy<BlockNumber, StakingPolicy> {
+    // Slashing terms during application
+    // pub application_slashing_terms: SlashingTerms,
 
-    return OpeningPolicy {
-        curator_limit: Option<u16>,
-        max_review_period_length: BlockNumber,
-        application_staking_policy: Option<StakingPolicy>,
-        role_staking_policy: Option<StakingPolicy>
-    }
+    // Slashing terms during role, NOT application itself!
+    pub role_slashing_terms: SlashingTerms,
+    
+    /// When filling an opening: Unstaking period for application stake of successful applicants
+    pub fill_opening_successful_applicant_application_stake_unstaking_period: Option<BlockNumber>,
+
+    /// When filling an opening: 
+    pub fill_opening_failed_applicant_application_stake_unstaking_period: Option<BlockNumber>,
+
+    /// When filling an opening: 
+    pub fill_opening_failed_applicant_role_stake_unstaking_period: Option<BlockNumber>,
+
+    /// When terminating a curator:
+    pub terminate_curator_application_stake_unstaking_period: Option<BlockNumber>,
+
+    /// When terminating a curator:
+    pub terminate_curator_role_stake_unstaking_period: Option<BlockNumber>,
+
+    /// When a curator exists: ..
+    pub exit_curator_role_application_stake_unstaking_period: Option<BlockNumber>,
+
+    /// When a curator exists: ..
+    pub exit_curator_rolerole_stake_unstaking_period: Option<BlockNumber>
+
 }
-*/
 
 /// Represents 
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
@@ -461,6 +522,55 @@ pub enum ChannelActor<T: Trait> {
 }
 */
 
+// ======================================================================== //
+// Move this out in its own file later //
+// ======================================================================== //
+
+/*
+struct WrappedBeginAcceptingApplicationsError { // can this be made generic, or does that undermine the whole orhpan rule spirit?
+    pub error: hiring::BeginAcceptingApplicationsError 
+}
+*/
+
+struct WrappedError<E> { // can this be made generic, or does that undermine the whole orhpan rule spirit?
+    pub error: E
+}
+
+/// ....
+macro_rules! ensure_on_wrapped_error {
+    ($call:expr) => {{
+
+        {$call}.map_err(|err| WrappedError{error: err})
+
+    }};
+}
+
+// Add macro here to make this 
+//derive_from_impl(hiring::BeginAcceptingApplicationsError)
+//derive_from_impl(hiring::BeginAcceptingApplicationsError)
+
+
+impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
+    fn from(wrapper: WrappedError<hiring::AddOpeningError>) -> Self {
+       
+       match wrapper.error {
+            hiring::AddOpeningError::OpeningMustActivateInTheFuture => "Opening must activate in the future",
+            hiring::AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(purpose) => {
+                match purpose {
+                    hiring::StakePurpose::Role => "Role stake amount less than minimum currency balance",
+                    hiring::StakePurpose::Application => "Application stake amount less than minimum currency balance"
+                }
+            }
+       }
+    }
+}
+
+// add opening error
+// ...
+
+
+// ======================================================================== //
+
 decl_storage! {
     trait Store for Module<T: Trait> as ContentWorkingGroup {
 
@@ -478,7 +588,12 @@ decl_storage! {
 
         /// Set of identifiers for all openings originated from this group.
         /// Using map to model a set.
-        pub Openings get(openings) config(): linked_map T::OpeningId => ();
+        pub CuratorOpeningById get(curator_opening_by_id) config(): linked_map T::OpeningId => CuratorOpening<T::BlockNumber, BalanceOf<T>>;
+
+        // The set of active openings.
+        // This must be maintained to effectively enforce 
+        // `MaxSimultaneouslyActiveOpenings`.
+        // pub ActiveOpenings get(openings) config(): BTreeSet<T::OpeningId>;
 
         /// Maps identifier to corresponding channel.
         pub ChannelById get(channel_by_id) config(): linked_map ChannelId<T> => Channel<T::MemberId, T::AccountId, T::BlockNumber>;
@@ -497,9 +612,8 @@ decl_storage! {
         /// Next identifier for new curator.
         pub NextCuratorId get(next_curator_id) config(): CuratorId<T>;
 
-        /// The constraints lead must respect when creating a new curator opening.
-        /// Lack of policy is interpreted as blocking any new openings at all.
-        pub OptOpeningPolicy get(opening_policy) config(): Option<OpeningPolicy<T::BlockNumber, BalanceOf<T>>>;
+        /// The set of ids for currently active curators.
+        pub ActiveCuratorIds get(active_curator_ids) config(): BTreeSet<CuratorId<T>>;
 
         /// Credentials for built in roles.
         pub CredentialOfLead get(credential_of_lead) config(): LeadCredential;
@@ -519,36 +633,54 @@ decl_storage! {
         /// Whether it is currently possible to create a channel via `create_channel` extrinsic.
         pub ChannelCreationEnabled get(channel_creation_enabled) config(): bool;
 
+        // Limits
+        
+        /// Limits the total number of curators which can be active.
 
-        // Input guards
+        // Limits the total number of openings which are not yet deactivated.
+        // pub MaxSimultaneouslyActiveOpenings get(max_simultaneously_active_openings) config(): Option<u16>,
 
-        /// 
+        // Vector length input guards
+
         pub ChannelHandleConstraint get(channel_handle_constraint) config(): InputValidationLengthConstraint;
         pub ChannelDescriptionConstraint get(channel_description_constraint) config(): InputValidationLengthConstraint;
-
-/*
-        // TODO: use proper input constraint types
-
-        /// Upper bound for character length of description field of any new or updated PermissionGroup 
-        pub MaxPermissionGroupDescriptionLength get(max_permission_group_description_length) config(): u16;
-
-        /// Upper bound for character length of the rationale_text field of any new CuratorRoleStage.
-        pub MaxCuratorExitRationaleTextLength get(max_curator_exit_rationale_text_length) config(): u16;
-        */
-
+        pub OpeningHumanReadableText get(opening_human_readble_text) config(): InputValidationLengthConstraint;
     }
 }
+
+/*
+TODO 
+- building issues: <=== done!!
+
+- redo extrinsics so hiring: routine isguard, and we converterro to strings thoruhg
+helper orutines. That way we do not need to replicate guards here? 
+   - step 0: just do it with simple "ERR" for every case. 
+   - step 1: later
+
+- Introduce CuratorOpening class with time bounds, which is instantiated in add_opening, which also
+needs checks for validation.
+
+
+
+- Implement permissions model & checker in sensible way.
+
+- Impl curation & channel editing (as curator and owner) in sensible way.
+
+- step 1: add actual mapper for real error messages.
+
+*/
 
 decl_event! {
     pub enum Event<T> where
         ChannelId = ChannelId<T>,
         LeadId = LeadId<T>,
+        OpeningId = <T as hiring::Trait>::OpeningId,
     {
         ChannelCreated(ChannelId),
         ChannelOwnershipTransferred(ChannelId),
         LeadSet(LeadId),
         //LeadUnset
-        //OpeningPolicySet
+        CuratorOpeningAdded(OpeningId),
         //LeadRewardUpdated
         //LeadRoleAccountUpdated
         //LeadRewardAccountUpdated
@@ -790,52 +922,180 @@ decl_module! {
 
         }
 
-        /// ...
-        pub fn update_lead_role_account(_origin) {
+        /// Add an opening for a curator role.
+        pub fn add_curator_opening(origin, activate_at: hiring::ActivateOpeningAt<T::BlockNumber>, commitment: OpeningPolicyCommitment<T::BlockNumber, BalanceOf<T>>, human_readable_text: Vec<u8>)  {
 
+            // Ensure lead is set and is origin signer
+            Self::ensure_origin_is_set_lead(origin)?;
+
+            // Validate activate_at
+            //Self::ensure_activate_opening_at_valid(&activate_at)?;
+
+            // Ensure human radable text is valid
+            Self::ensure_opening_human_readable_text_is_valid(&human_readable_text)?;
+
+            // Add opening
+            // NB: This call can in principle fail, because the staking policies
+            // may not respect the minimum currency requirement.
+
+            let policy_commitment = commitment.clone();
+
+            let opening_id = ensure_on_wrapped_error!(
+                hiring::Module::<T>::add_opening(
+                    activate_at,
+                    commitment.max_review_period_length,
+                    commitment.application_rationing_policy,
+                    commitment.application_staking_policy,
+                    commitment.role_staking_policy,
+                    human_readable_text,
+                ))?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Create and add opening.
+            let new_opening_by_id = CuratorOpening {
+                policy_commitment: policy_commitment
+            };
+
+            CuratorOpeningById::<T>::insert(opening_id, new_opening_by_id);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorOpeningAdded(opening_id));
         }
 
-        /// ...
-        pub fn update_lead_reward_account(_origin)  {
+        /// Begin accepting curator applications to an opening that is active.
+        pub fn accept_curator_applications(origin, opening_id: T::OpeningId)  {
 
+            // Ensure lead is set and is origin signer
+            Self::ensure_origin_is_set_lead(origin)?;
+
+            // Ensure opening exists in this working group
+            // NB: Even though call to hiring modul will have implicit check for 
+            // existence of opening as well, this check is to make sure that the opening is for
+            // this working group, not something else.
+            Self::ensure_curator_opening_exists(opening_id)?;
+
+            // Attempt to begin accepting applicationsa
+            // NB: Combined ensure check and mutation in hiring module
+            ensure_on_wrapped_error!(
+                hiring::Module::<T>::begin_accepting_applications(opening_id)
+                )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Trigger event
+            Self::deposit_event(RawEvent::AcceptedCuratorApplications(opening_id));
         }
 
-        /// ...
-        pub fn add_curator_opening(_origin)  {
+        /// Begin reviewing, and therefore not accepting new applications.
+        pub fn begin_curator_applicant_review(origin, opening_id: T::OpeningId) {
 
+            // Ensure lead is set and is origin signer
+            let (_lead_id, _lead) = Self::ensure_origin_is_set_lead(origin)?;
+
+            // Ensure opening exists
+            // NB: Even though call to hiring modul will have implicit check for 
+            // existence of opening as well, this check is to make sure that the opening is for
+            // this working group, not something else.
+            Self::ensure_curator_opening_exists(opening_id)?;
+
+            // Attempt to begin accepting applicationsa
+            // NB: Combined ensure check and mutation in hiring module
+            ensure_on_wrapped_error!(
+                hiring::Module::<T>::begin_review(opening_id)
+                )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Trigger event
+            Self::deposit_event(RawEvent::BeganCuratorApplicationReview(opening_id));
         }
 
-        /// ...
-        pub fn accept_curator_applications(_origin)  {
-
-        }
-
-        /// ...
-        pub fn begin_curator_applicant_review(_origin) {
-        }
-
-        /// ...
+        /// Fill opening for curator
         pub fn fill_curator_opening(_origin) {
 
+            /*
+            opening_id: T::OpeningId,
+            successful_applications: BTreeSet<T::ApplicationId>,
+            opt_successful_applicant_application_stake_unstaking_period: Option<T::BlockNumber>,
+
+            opt_failed_applicant_application_stake_unstaking_period: Option<T::BlockNumber>,
+            opt_failed_applicant_role_stake_unstaking_period: Option<T::BlockNumber>
+            */
+
+
+                        // Check state!!!!
+            // Check state!!!!
+            // Check state!!!!
+            // Check state!!!!
+
+
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            /*
+            pub fn fill_opening(
+                opening_id: T::OpeningId,
+                successful_applications: BTreeSet<T::ApplicationId>,
+                opt_successful_applicant_application_stake_unstaking_period: Option<T::BlockNumber>,
+                opt_failed_applicant_application_stake_unstaking_period: Option<T::BlockNumber>,
+                /* this parameter does not make sense? opt_successful_applicant_role_stake_unstaking_period: Option<T::BlockNumber>, */
+                opt_failed_applicant_role_stake_unstaking_period: Option<T::BlockNumber>,
+            ) -> Result<(), FillOpeningError<T>> {
+            */
+
+
+            // Trigger event
+            // Trigger event
+            // Trigger event
+
         }
 
+        /*
         /// ...
         pub fn update_curator_reward(_origin) {
 
         }
+        */
 
+        /*
         /// ...
         pub fn slash_curator(_origin) {
 
         }
+        */
 
         /// ...
         pub fn terminate_curator(_origin) {
 
+            /*
+            pub fn deactive_application(
+                application_id: T::ApplicationId,
+                application_stake_unstaking_period: Option<T::BlockNumber>,
+                role_stake_unstaking_period: Option<T::BlockNumber>,
+            ) -> Result<(), DeactivateApplicationError> {
+            */
         }
 
         /// ...
         pub fn apply_on_curator_opening(_origin) {
+
+            /*
+            pub fn add_application(
+                opening_id: T::OpeningId,
+                opt_role_stake_imbalance: Option<NegativeImbalance<T>>,
+                opt_application_stake_imbalance: Option<NegativeImbalance<T>>,
+                human_readable_text: Vec<u8>,
+            ) -> Result<ApplicationAdded<T::ApplicationId>, AddApplicationError> {
+            */
 
         }
 
@@ -852,6 +1112,14 @@ decl_module! {
 
         /// ...
         pub fn exit_curator_role(_origin) {
+
+            /*
+            pub fn deactive_application(
+                application_id: T::ApplicationId,
+                application_stake_unstaking_period: Option<T::BlockNumber>,
+                role_stake_unstaking_period: Option<T::BlockNumber>,
+            ) -> Result<(), DeactivateApplicationError> {
+            */
 
         }
 
@@ -1023,7 +1291,7 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> Module<T> {
 
-    // TODO: convert into macroes
+    // TODO: convert InputConstraint ensurer routines into macroes
 
     fn ensure_channel_handle_is_valid(handle: &Vec<u8>) -> dispatch::Result {
         ChannelHandleConstraint::get().ensure_valid(
@@ -1041,6 +1309,14 @@ impl<T: Trait> Module<T> {
         )
     }
 
+    fn ensure_opening_human_readable_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        ChannelDescriptionConstraint::get().ensure_valid(
+            text.len(),
+            MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
+            MSG_CHANNEL_DESCRIPTION_TOO_LONG,
+        )
+    }
+
     fn ensure_channel_id_is_valid(channel_id: ChannelId<T>) -> Result<Channel<T::MemberId, T::AccountId, T::BlockNumber>,&'static str> {
 
         if ChannelById::<T>::exists(channel_id) {
@@ -1053,5 +1329,76 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    fn ensure_lead_is_set() -> Result<(LeadId<T>, Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>), &'static str>{
+
+        // Ensure lead id is set
+        let lead_id = Self::ensure_lead_id_set()?;
+
+        // If so, grab actual lead
+        let lead = <LeadById<T>>::get(lead_id);
+
+        // and return both
+        Ok((lead_id, lead))
+    }
+
+    fn ensure_lead_id_set() -> Result<LeadId<T>,&'static str> {
+
+        let opt_current_lead_id = <CurrentLeadId<T>>::get();
+
+        if let Some(lead_id) = opt_current_lead_id {
+            Ok(lead_id)
+        } else {
+            Err(MSG_CURRENT_LEAD_NOT_SET)
+        }
+    }
+
+    fn ensure_origin_is_set_lead(origin: T::Origin) -> Result<(LeadId<T>, Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>), &'static str>{
+
+        // Ensure lead is actually set
+        let (lead_id, lead) = Self::ensure_lead_is_set()?;
+        
+        // Ensure is signed
+        let signer = ensure_signed(origin)?;
+
+        // Ensure signer is lead
+        ensure!(
+            signer == lead.role_account,
+            MSG_ORIGIN_IS_NOT_LEAD
+        );
+
+        Ok((lead_id, lead))
+    }
+/*
+    fn ensure_activate_opening_at_valid(activate_at: &hiring::ActivateOpeningAt<T::BlockNumber>) -> Result<T::BlockNumber, &'static str>{
+
+        let current_block = <system::Module<T>>::block_number();
+
+        let starting_block = 
+            match activate_at {
+                hiring::ActivateOpeningAt::CurrentBlock => current_block,
+                hiring::ActivateOpeningAt::ExactBlock(block_number) => block_number.clone()
+        };
+
+        ensure!(
+            starting_block >= current_block,
+            MSG_OPENING_CANNOT_ACTIVATE_IN_THE_PAST
+        );
+
+        Ok(starting_block)
+    }
+*/
+    fn ensure_curator_opening_exists(opening_id: T::OpeningId) -> Result<(CuratorOpening<T::BlockNumber, BalanceOf<T>> ,hiring::Opening<BalanceOf<T>, T::BlockNumber, <T as hiring::Trait>::ApplicationId>), &'static str> {
+
+        ensure!(
+            CuratorOpeningById::<T>::exists(opening_id),
+            MSG_OPENING_DOES_NOT_EXIST
+        );
+
+        let curator_opening = CuratorOpeningById::<T>::get(opening_id);
+
+        let opening = hiring::OpeningById::<T>::get(opening_id);
+
+        Ok((curator_opening, opening))
+    }
 
 }
