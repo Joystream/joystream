@@ -397,6 +397,8 @@ pub mod storage;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
 mod membership;
 mod memo;
+pub use versioned_store;
+use versioned_store_permissions;
 mod traits;
 pub use forum;
 use membership::members;
@@ -409,6 +411,16 @@ use service_discovery::discovery;
 
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;
+
+impl versioned_store::Trait for Runtime {
+    type Event = Event;
+}
+
+impl versioned_store_permissions::Trait for Runtime {
+    type Credential = u64;
+    type CredentialChecker = (); // ROOT only access
+    type CreateClassPermissionsChecker = (); // ROOT only access
+}
 
 impl currency::GovernanceCurrency for Runtime {
     type Currency = balances::Module<Self>;
@@ -565,35 +577,37 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
         // Substrate
-		System: system::{Module, Call, Storage, Config, Event},
-		Babe: babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
-		Timestamp: timestamp::{Module, Call, Storage, Inherent},
-		Authorship: authorship::{Module, Call, Storage, Inherent},
-		Indices: indices,
-		Balances: balances,
+        System: system::{Module, Call, Storage, Config, Event},
+        Babe: babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
+        Timestamp: timestamp::{Module, Call, Storage, Inherent},
+        Authorship: authorship::{Module, Call, Storage, Inherent},
+        Indices: indices,
+        Balances: balances,
         TransactionPayment: transaction_payment::{Module, Storage},
-		Staking: staking::{default, OfflineWorker},
-		Session: session::{Module, Call, Storage, Event, Config<T>},
+        Staking: staking::{default, OfflineWorker},
+        Session: session::{Module, Call, Storage, Event, Config<T>},
         FinalityTracker: finality_tracker::{Module, Call, Inherent},
-		Grandpa: grandpa::{Module, Call, Storage, Config, Event},
+        Grandpa: grandpa::{Module, Call, Storage, Config, Event},
         ImOnline: im_online::{Module, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
-		AuthorityDiscovery: authority_discovery::{Module, Call, Config<T>},
-		Offences: offences::{Module, Call, Storage, Event},
+        AuthorityDiscovery: authority_discovery::{Module, Call, Config<T>},
+        Offences: offences::{Module, Call, Storage, Event},
         RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
-		Sudo: sudo,
+        Sudo: sudo,
         // Joystream
-		Proposals: proposals::{Module, Call, Storage, Event<T>, Config<T>},
-		CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
-		Council: council::{Module, Call, Storage, Event<T>, Config<T>},
-		Memo: memo::{Module, Call, Storage, Event<T>},
-		Members: members::{Module, Call, Storage, Event<T>, Config<T>},
+        Proposals: proposals::{Module, Call, Storage, Event<T>, Config<T>},
+        CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
+        Council: council::{Module, Call, Storage, Event<T>, Config<T>},
+        Memo: memo::{Module, Call, Storage, Event<T>},
+        Members: members::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-		Migration: migration::{Module, Call, Storage, Event<T>},
-		Actors: actors::{Module, Call, Storage, Event<T>, Config},
-		DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-		DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
-		DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
+        Migration: migration::{Module, Call, Storage, Event<T>},
+        Actors: actors::{Module, Call, Storage, Event<T>, Config},
+        DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
+        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
+        DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
         Discovery: discovery::{Module, Call, Storage, Event<T>},
+        VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
+        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage},
 	}
 );
 

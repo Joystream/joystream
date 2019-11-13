@@ -42,6 +42,8 @@ std = [
     'randomness-collective-flip/std',
     'system-rpc-runtime-api/std',
     'forum/std',
+    'versioned_store/std',
+    'versioned_store_permissions/std',
 ]
 
 [dependencies.babe]
@@ -252,8 +254,18 @@ version = '1.0.4'
 
 [dependencies.forum]
 default_features = false
-git = 'https://github.com/mnaamani/substrate-forum-module'
+git = 'https://github.com/Joystream/substrate-forum-module'
 package = 'substrate-forum-module'
-branch = 'use-polkadot-master-substrate-version'
-# Before releasing Rome - finalize and tag release new forum and update this
-# tag = 'v1.0.0'
+rev = '4bdeadaadfcca1fd6e822c520f429d4beacc4c8a'
+
+[dependencies.versioned_store]
+default_features = false
+package ='substrate-versioned-store'
+git = 'https://github.com/joystream/substrate-versioned-store-module'
+rev = 'd0c68722405355404840512edf3064d5ced3e1fe'
+
+[dependencies.versioned_store_permissions]
+default_features = false
+git = 'https://github.com/mnaamani/substrate-versioned-store-permissions-module'
+package = 'substrate-versioned-store-permissions-module'
+rev = 'd4c5ca400a5f421665ae3addfce312bc5cc2a9d0'
