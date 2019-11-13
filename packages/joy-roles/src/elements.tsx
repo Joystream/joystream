@@ -1,5 +1,6 @@
-import React from 'react'
-import { Header,  Card, Icon, Image, Label, Message, Table } from 'semantic-ui-react';
+import React, { useEffect, useState } from 'react'
+import moment from 'moment'
+import { Header, Card, Icon, Image, Label, Statistic } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
 import { Balance } from '@polkadot/types/interfaces';
@@ -146,4 +147,59 @@ export function GroupMemberView(props: GroupMemberProps) {
 	)
 }
 
+type CountdownProps = {
+	end: Date
+}
 
+export function Countdown(props: CountdownProps) {
+    let interval: number = -1
+
+    const [days, setDays] = useState<number | undefined>(undefined)
+    const [hours, setHours] = useState<number | undefined>(undefined)
+    const [minutes, setMinutes] = useState<number | undefined>(undefined)
+    const [seconds, setSeconds] = useState<number | undefined>(undefined)
+
+	const update = () => {
+		const then = moment(props.end)
+        const now = moment()
+        const d = moment.duration(then.diff(now))
+        setDays( d.days())
+        setHours( d.hours())
+        setMinutes( d.minutes())
+        setSeconds( d.seconds())
+	}
+
+	interval = window.setInterval(update, 1000);
+
+    useEffect(() => {
+		update()
+        return () => {
+            clearInterval(interval);
+        };
+    }, []);
+
+    if(!seconds) {
+        return null;
+    }
+    
+    return (
+        <div className='countdown wrapper'>
+			<Statistic size="tiny">
+				<Statistic.Value>{days}</Statistic.Value> 
+				<Statistic.Label>Days</Statistic.Label>
+			</Statistic>
+			<Statistic size="tiny">
+				<Statistic.Value>{hours}</Statistic.Value> 
+				<Statistic.Label>hours</Statistic.Label>
+			</Statistic>
+			<Statistic size="tiny">
+				<Statistic.Value>{minutes}</Statistic.Value> 
+				<Statistic.Label>minutes</Statistic.Label>
+			</Statistic>
+			<Statistic size="tiny">
+				<Statistic.Value>{seconds}</Statistic.Value> 
+				<Statistic.Label>seconds</Statistic.Label>
+			</Statistic>
+        </div>
+    )
+}

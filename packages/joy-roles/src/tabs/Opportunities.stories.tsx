@@ -1,5 +1,5 @@
 import React from 'react'
-import { boolean, number, select, text, withKnobs } from '@storybook/addon-knobs'
+import { boolean, date, number, select, text, withKnobs } from '@storybook/addon-knobs'
 import * as faker from 'faker'
 
 import { Text, u128 } from '@polkadot/types'
@@ -18,7 +18,13 @@ import '@polkadot/joy-roles/index.sass'
 export default { 
     title: 'Roles / Components / Opportunities groups tab',
     decorators: [withKnobs],
-    excludeStories: ['yesterday', 'opening', 'creator', 'stateOptions'],
+    excludeStories: ['tomorrow', 'yesterday', 'opening', 'creator', 'stateOptions'],
+}
+
+export function tomorrow(): Date {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return d
 }
 
 export function yesterday(): Date {
@@ -79,6 +85,8 @@ export function OpportunitySandbox(){
         starting_block: number("Created block", 2956498, {}, "Opening"),
         starting_block_hash: "somehash",
         created_time: yesterday(),
+		review_end_block: 3956498,
+		review_end_time: tomorrow(),
     }
 
     const applicationSliderOptions = {

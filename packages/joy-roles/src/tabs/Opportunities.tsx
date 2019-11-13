@@ -10,7 +10,7 @@ import { Button, Card, Container, Grid, Header, Icon, Label, List, Message, Stat
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 
-import { GroupMemberProps, GroupMemberView } from '../elements'
+import { Countdown, GroupMemberProps, GroupMemberView } from '../elements'
 import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
 import { Opening } from "@joystream/types/hiring"
 
@@ -256,6 +256,7 @@ export function OpeningBodyStakeRequirement(props: StakeRequirementProps) {
     const plural = (props.application_stake.anyRequirement() && props.role_stake.anyRequirement()) ? "s" : null
     let title = <Message.Header color="orange" as='h5'><Icon name="shield" /> Stake{plural} required!</Message.Header>
     let explanation = null
+
     if (!props.dynamic_minimum.isZero()) {
         title = <Message.Header color="orange" as='h5'><Icon name="shield" /> Increased stake{plural} required!</Message.Header>
         explanation = (
@@ -347,6 +348,35 @@ export function OpeningBodyApplicationsStatus(props: OpeningBodyApplicationsStat
     )
 }
 
+export function OpeningBodyReviewInProgress(props: OpeningStageClassification) {
+    let countdown = null
+    if (typeof props.review_end_time !== "undefined") {
+        countdown = <Countdown end={props.review_end_time} />
+    }
+
+    return (
+        <Message info className="countdown">
+            <h4>Review process has begun</h4>
+            {countdown}
+
+            <p>
+				<span>Candidates will be selected by block&nbsp;
+					<NumberFormat value={props.review_end_block}
+						  displayType="text" 
+						  thousandSeparator={true} 
+					/>
+					&nbsp;(expected on&nbsp;
+                </span>
+                <strong>
+                    <Moment format="MMM DD, YYYY  HH:mm:ss" date={props.review_end_time} interval={0}/>
+                </strong>
+				)
+                <span> at the latest.</span>
+            </p>
+        </Message>
+    )
+}
+
 type BlockTimeProps = {
     block_time_in_seconds: number
 }
@@ -372,6 +402,19 @@ export function OpeningBody(props: OpeningBodyProps) {
     const blockNumber = <NumberFormat value={props.opening.max_review_period_length.toNumber()}
                                       displayType="text" 
                                       thousandSeparator={true} />
+
+    let stakeRequirements = null
+    switch (props.stage.state) {
+        case OpeningState.WaitingToBegin:
+        case OpeningState.AcceptingApplications:
+            stakeRequirements = <OpeningBodyStakeRequirement {...props.applications} dynamic_minimum={props.dynamic_minimum} />
+            break
+
+        case OpeningState.InReview:
+            stakeRequirements = <OpeningBodyReviewInProgress {...props.stage} />
+                break
+    }
+
     return (
         <Grid columns="equal">
             <Grid.Column width={10} className="summary">
@@ -399,7 +442,7 @@ export function OpeningBody(props: OpeningBodyProps) {
             </Grid.Column>
             <Grid.Column width={6} className="details">
                 <OpeningBodyApplicationsStatus {...props.applications} />
-                <OpeningBodyStakeRequirement {...props.applications} dynamic_minimum={props.dynamic_minimum} />
+                {stakeRequirements}
                 <h5>Group lead</h5>
                 <GroupMemberView {...props.creator} inset={true} />
                 <OpeningBodyCTAView {...props} {...props.applications} />

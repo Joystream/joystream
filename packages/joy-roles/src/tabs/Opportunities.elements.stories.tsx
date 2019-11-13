@@ -6,11 +6,12 @@ import { u128 } from '@polkadot/types'
 
 import { openingClass, 
 		 OpeningBodyApplicationsStatus, OpeningBodyApplicationsStatusProps, 
+		 OpeningBodyReviewInProgress,
 		 OpeningBodyStakeRequirement, StakeRequirementProps,
 		 OpeningHeader,
 		 ApplicationStakeRequirement, RoleStakeRequirement, StakeType,
        } from "./Opportunities"
-import { opening, creator, yesterday } from "./Opportunities.stories"
+import { tomorrow, yesterday } from "./Opportunities.stories"
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
 
@@ -248,3 +249,31 @@ export function OpeningApplicationsStakeRequirementByStake() {
 		</Container>
 	)
 }
+
+export function ReviewInProgress() {
+	const permutations:(OpeningStageClassification & TestProps)[] = [
+		{
+			_description: "Standard control",
+			review_end_time: tomorrow(),
+			review_end_block: 1000000,
+		},
+	]
+
+	return (
+		<Container>
+			{permutations.map((permutation, key) => (
+				<Container className="outer opening" key={key}>
+					<h4>{permutation._description}</h4>
+					<Card fluid>
+						<Card.Content>
+							<Container className="main">
+								<OpeningBodyReviewInProgress {...permutation} />
+							</Container>
+						</Card.Content>
+					</Card>
+				</Container>
+			))}
+		</Container>
+	)
+}
+
