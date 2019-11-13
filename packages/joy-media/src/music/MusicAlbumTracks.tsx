@@ -13,10 +13,12 @@ export type MusicTrackPreviewProps = {
   position?: number,
   onSelect?: OnCheckboxChange,
   isDraggable?: boolean,
-  withActions?: boolean
+  withActions?: boolean,
+  withActionLabels?: boolean
 };
 
 export function MusicTrackPreview (props: MusicTrackPreviewProps) {
+  const { withActionLabels = false } = props;
   const [checked, setChecked] = useState(false);
 
   const onChange: OnCheckboxChange = (e, d) => {
@@ -41,8 +43,8 @@ export function MusicTrackPreview (props: MusicTrackPreviewProps) {
       <div className='AlbumArtist'>{props.artist}</div>
     </div>
     {props.withActions && <div className='AlbumActions'>
-      <Button content='Edit' icon='pencil' />
-      <Button content='Remove from album' icon='minus' />
+      <Button icon='pencil' content={withActionLabels ? 'Edit' : null} />
+      <Button icon='trash' content={withActionLabels ? 'Remove from album' : null} />
     </div>}
   </div>;
 }
