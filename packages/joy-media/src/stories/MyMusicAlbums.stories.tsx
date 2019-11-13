@@ -1,9 +1,9 @@
 import React from 'react';
-import './index.css';
+import '../music/index.css';
 
 import { withKnobs } from '@storybook/addon-knobs';
-import { MyMusicAlbums } from './MyMusicAlbums';
-import { AlbumExample } from './StorybookUtils';
+import { MyMusicAlbums } from '../music/MyMusicAlbums';
+import { AlbumExample } from '../music/StorybookUtils';
 
 export default { 
     title: 'Media | My music albums',

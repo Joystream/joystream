@@ -1,15 +1,15 @@
 import React from 'react';
-import { EditForm } from './UploadVideo'
+import { EditForm } from '../upload/UploadVideo'
 import '../index.css';
 
 import { withKnobs } from '@storybook/addon-knobs';
 import { Option } from '@polkadot/types/codec';
 import { ContentId, ContentMetadata } from '@joystream/types/media';
-import { newContentMetadata } from './ContentMetadataHelper';
+import { newContentMetadata } from '../upload/ContentMetadataHelper';
 
 export default { 
-    title: 'Media | Upload video',
-    decorators: [withKnobs],
+	title: 'Media | Upload video',
+	decorators: [withKnobs],
 };
 
 export const DefaultState = () => {
