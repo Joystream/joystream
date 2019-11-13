@@ -89,12 +89,15 @@ TBD
 | 15.10.19     |  0.30  |  0.67  |  0.68  |  0.38  |  0.25  |           -            |
 | 22.10.19     |  0.35  |  0.69  |  0.68  |  0.64  |  0.25  |           -            |
 | 29.10.19     |  0.47  |  0.72  |  0.68  |  0.51  |  0.25  |           -            |
-| 05.11.19     |        |        |        |        |        |           -            |
+| 05.11.19     |  0.47  |  0.73  |  0.68  |  0.51  |  0.25  |           -            |
+| 12.11.19     |  0.53  |  0.73  | 0.45`*`|  0.51  |  0.25  |  `*` See note 2.       |
+| 19.11.19     |        |        |        |        |        |           -            |
 | dd.mm.yy     |        |        |        |        |        |           -            |
 
 #### Tracking Notes
 
-* Some tweaks to the tracking should be expected. In this case, these changes will be reflected in the comments.
+1. Some tweaks to the tracking should be expected. In this case, these changes will be reflected in the comments.
+2. It was decided to only launch with two content types, thus the tracked score of KR3 was adjusted by **2/3**.
 
 <br />
 
@@ -129,7 +132,9 @@ TBD
 | 15.10.19     |   0    |   0    |   0    |   0    |           -            |
 | 22.10.19     |   0    |   0    |   0    |   0    |           -            |
 | 29.10.19     |   0    |   0    |   0    |   0    |           -            |
-| 05.11.19     |        |        |        |        |           -            |
+| 05.11.19     |   0    |   0    |   0    |   0    |           -            |
+| 12.11.19     |   0    |   0    |   0    |   0    |           -            |
+| 19.11.19     |        |        |        |        |           -            |
 | dd.mm.yy     |        |        |        |        |           -            |
 
 #### Tracking Notes
