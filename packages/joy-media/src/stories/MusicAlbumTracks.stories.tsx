@@ -3,9 +3,11 @@ import '../music/index.css';
 
 import { withKnobs } from '@storybook/addon-knobs';
 import { TracksOfMyMusicAlbum, TracksOfMyMusicAlbumProps } from '../music/MusicAlbumTracks';
-import { AlbumExample } from '../music/StorybookUtils';
+import { AlbumPreviewExample } from '../music/StorybookUtils';
 import { ReorderTracksInAlbum } from '../music/ReorderTracksInAlbum';
 import { EditAlbumModal } from '../music/EditAlbumModal';
+import { MusicAlbumEntity } from '../entities/MusicAlbumEntity';
+import { EditMusicAlbum } from '../music/EditMusicAlbum';
 
 export default { 
     title: 'Media | Tracks of my music album',
@@ -13,7 +15,7 @@ export default {
 };
 
 export const DefaultState = () => {
-	return <TracksOfMyMusicAlbum album={AlbumExample} />;
+	return <TracksOfMyMusicAlbum album={AlbumPreviewExample} />;
 }
 
 export const AlbumWithTracks = () => {
@@ -23,8 +25,15 @@ export const AlbumWithTracks = () => {
 export const ReorderTracks = () =>
 	<ReorderTracksInAlbum {...AlbumWithTracksProps} />
 
-export const EditAlbumStory = () =>
+export const EditAlbumModalStory = () =>
 	<EditAlbumModal {...AlbumWithTracksProps} />
+
+export const EditAlbumStory = () =>
+	<EditMusicAlbum
+		isStorybook={true} 
+		entity={MusicAlbumExample}
+		tracks={albumTracks}
+	/>
 
 const trackNames = [
 	'Arborvitae (Thuja occidentalis)',
@@ -50,6 +59,25 @@ const albumTracks = trackNames.map(title => ({
 }));
 
 const AlbumWithTracksProps: TracksOfMyMusicAlbumProps = {
-	album: AlbumExample,
+	album: AlbumPreviewExample,
 	tracks: albumTracks
 }
+
+const MusicAlbumExample: MusicAlbumEntity = {
+	title: 'Requiem (Mozart)',
+	about: 'The Requiem in D minor, K. 626, is a requiem mass by Wolfgang Amadeus Mozart (1756–1791). Mozart composed part of the Requiem in Vienna in late 1791, but it was unfinished at his death on 5 December the same year. A completed version dated 1792 by Franz Xaver Süssmayr was delivered to Count Franz von Walsegg, who commissioned the piece for a Requiem service to commemorate the anniversary of his wifes death on 14 February.',
+	cover: 'https://assets.classicfm.com/2017/36/mozart-1504532179-list-handheld-0.jpg',
+	year: 2019,
+
+	// visibility: 'Public',
+	// album: 'Greatest Collection of Mozart',
+
+	// Additional:
+	artist: 'Berlin Philharmonic',
+	composer: 'Wolfgang Amadeus Mozart',
+	genre: 'Classical Music',
+	mood: 'Relaxing',
+	theme: 'Dark',
+	explicit: false,
+	license: 'Public Domain',
+};

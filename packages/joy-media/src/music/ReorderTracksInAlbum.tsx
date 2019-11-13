@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { MusicTrackPreviewProps, MusicTrackPreview } from './MusicAlbumTracks';
+import { MusicTrackPreviewProps, MusicTrackPreview, TracksOfMyMusicAlbumProps } from './MusicAlbumTracks';
 
 // A little function to help us with reordering the result
 const reorder = (list: OrderableItem[], startIndex: number, endIndex: number) => {
@@ -11,18 +11,15 @@ const reorder = (list: OrderableItem[], startIndex: number, endIndex: number) =>
   return result;
 };
 
-type Props = {
-  tracks: MusicTrackPreviewProps[]
-}
-
 type OrderableItem = MusicTrackPreviewProps & {
   id: string
 }
 
-export const ReorderTracksInAlbum = (props: Props) => {
-  
+export const ReorderTracksInAlbum = (props: TracksOfMyMusicAlbumProps) => {
+  const { tracks = [] } = props;
+
   const [items, setItems] = useState(
-    props.tracks.map<OrderableItem>(
+    tracks.map<OrderableItem>(
       (x, i) => ({ ...x, id: `item-${i}` })));
 
   const onDragEnd = (result: DropResult) => {
@@ -65,6 +62,7 @@ export const ReorderTracksInAlbum = (props: Props) => {
                       {...item}
                       position={index + 1}
                       isDraggable={snapshot.isDragging}
+                      withRemoveButton
                     />
                   </div>
                 )}

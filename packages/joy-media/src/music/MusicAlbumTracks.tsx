@@ -13,7 +13,8 @@ export type MusicTrackPreviewProps = {
   position?: number,
   onSelect?: OnCheckboxChange,
   isDraggable?: boolean,
-  withActions?: boolean,
+  withEditButton?: boolean,
+  withRemoveButton?: boolean,
   withActionLabels?: boolean
 };
 
@@ -42,10 +43,10 @@ export function MusicTrackPreview (props: MusicTrackPreviewProps) {
       <h3 className='AlbumTitle'>{props.title}</h3>
       <div className='AlbumArtist'>{props.artist}</div>
     </div>
-    {props.withActions && <div className='AlbumActions'>
-      <Button icon='pencil' content={withActionLabels ? 'Edit' : null} />
-      <Button icon='trash' content={withActionLabels ? 'Remove from album' : null} />
-    </div>}
+    <div className='AlbumActions'>
+      {props.withEditButton && <Button icon='pencil' content={withActionLabels ? 'Edit' : null} />}
+      {props.withRemoveButton && <Button icon='trash' content={withActionLabels ? 'Remove from album' : null} />}
+    </div>
   </div>;
 }
 
@@ -82,7 +83,7 @@ export function TracksOfMyMusicAlbum (props: TracksOfMyMusicAlbumProps) {
 
     <div className='JoyMusicAlbumActionBar'>
       <Button content='Add track' icon='plus' />
-      {selectedCount > 0 && <Button content={removeButtonText} icon='minus' />}
+      {selectedCount > 0 && <Button content={removeButtonText} icon='trash' />}
     </div>
 
     <div className='JoyListOfPreviews'>
@@ -94,7 +95,7 @@ export function TracksOfMyMusicAlbum (props: TracksOfMyMusicAlbumProps) {
             {...track}
             position={i + 1}
             onSelect={(e, d) => onTrackSelect(i, e, d)}
-            withActions
+            withRemoveButton
           />
         )
       }

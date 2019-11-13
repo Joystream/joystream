@@ -3,7 +3,7 @@ import '../music/index.css';
 
 import { withKnobs } from '@storybook/addon-knobs';
 import { MyMusicAlbums } from '../music/MyMusicAlbums';
-import { AlbumExample } from '../music/StorybookUtils';
+import { AlbumPreviewExample } from '../music/StorybookUtils';
 
 export default { 
     title: 'Media | My music albums',
@@ -19,7 +19,7 @@ export const FewMusicAlbums = () => {
 }
 
 const fewMusicAlbums = [
-	AlbumExample,
+	AlbumPreviewExample,
 	{
 		title: 'Riddle',
 		artist: 'Liquid Stone',

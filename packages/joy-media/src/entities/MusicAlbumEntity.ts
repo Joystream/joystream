@@ -1,5 +1,3 @@
-import { MusicTrackEntity } from "./MusicTrackEntity";
-
 export type MusicAlbumEntity = {
   title: string,
   artist: string,
@@ -22,8 +20,6 @@ export type MusicAlbumEntity = {
   lyrics?: string,
   composer?: string,
   reviews?: string,
-
-  tracks?: MusicTrackEntity[],
 
   // publicationStatus: ...
   // curationStatus: ...

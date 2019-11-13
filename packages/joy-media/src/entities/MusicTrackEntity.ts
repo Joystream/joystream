@@ -1,7 +1,7 @@
 export type MusicTrackEntity = {
 
   // Basic:
-  name: string,
+  title: string,
   description?: string,
   thumbnail?: string,
   visibility?: string,

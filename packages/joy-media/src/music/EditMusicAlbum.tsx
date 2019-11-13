@@ -13,7 +13,10 @@ import { Text } from '@polkadot/types';
 import { Option } from '@polkadot/types/codec';
 import { ContentId, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from '@joystream/types/media';
 import { onImageError } from '../utils';
+import { MusicAlbumEntity } from '../entities/MusicAlbumEntity';
 import { MusicTrackEntity } from '../entities/MusicTrackEntity';
+import { ReorderTracksInAlbum } from './ReorderTracksInAlbum';
+import { MusicAlbumPreviewProps } from './MyMusicAlbums';
 
 // TODO get from verstore
 const visibilityOptions = [
@@ -63,15 +66,17 @@ const buildSchema = () => Yup.object().shape({
   title: Yup.string()
     // .min(p.minTitleLen, `Title is too short. Minimum length is ${p.minTitleLen} chars.`)
     // .max(p.maxTitleLen, `Title is too long. Maximum length is ${p.maxTitleLen} chars.`)
-    .required('Title is required'),
-  description: Yup.string()
+    .required('Title is required')
+    ,
+  about: Yup.string()
     // .min(p.minDescLen, `Description is too short. Minimum length is ${p.minDescLen} chars.`)
     // .max(p.maxDescLen, `Description is too long. Maximum length is ${p.maxDescLen} chars.`)
+    .required('Text about this album is required')
     ,
-  thumbnail: Yup.string()
-    // .max(p.maxThumbLen, `Thumbnail URL is too long. Maximum length is ${p.maxThumbLen} chars.`)
-    .url('Thumbnail must be a valid URL of an image.')
-    .required('Thumbnail is required')
+  cover: Yup.string()
+    // .max(p.maxThumbLen, `Cover URL is too long. Maximum length is ${p.maxThumbLen} chars.`)
+    .url('Cover must be a valid URL of an image.')
+    .required('Cover is required')
 });
 
 type ValidationProps = {
@@ -87,10 +92,11 @@ type OuterProps = ValidationProps & {
   history?: History,
   contentId: ContentId,
   fileName?: string,
-  entity?: MusicTrackEntity
+  entity?: MusicAlbumEntity,
+  tracks?: MusicTrackEntity[]
 };
 
-type FormValues = MusicTrackEntity;
+type FormValues = MusicAlbumEntity;
 
 type FormProps = OuterProps & FormikProps<FormValues>;
 
@@ -104,6 +110,7 @@ const InnerForm = (props: FormProps) => {
     history,
     contentId,
     entity,
+    tracks = [],
     values,
     dirty,
     isValid,
@@ -114,8 +121,9 @@ const InnerForm = (props: FormProps) => {
 
   const {
     title,
-    description,
-    thumbnail
+    about,
+    cover,
+    artist
   } = values;
 
   const onSubmit = (sendTx: () => void) => {
@@ -123,7 +131,7 @@ const InnerForm = (props: FormProps) => {
   };
 
   const onTxCancelled = () => {
-
+    // Nothing yet
   };
 
   const onTxFailed = (txResult: SubmittableResult) => {
@@ -151,8 +159,8 @@ const InnerForm = (props: FormProps) => {
 
     const json = JSON.stringify({
       title,
-      description,
-      thumbnail
+      about,
+      cover
     });
 
     // TODO set Option.some only on changed fields && if json has changed fields
@@ -169,10 +177,10 @@ const InnerForm = (props: FormProps) => {
   const basicInfoTab = () => <Tab.Pane as='div'>
     <LabelledText name='title' label={`Title`} {...props} />
     
-    <LabelledText name='thumbnail' label={`Thumbnail image URL`} {...props} />
+    <LabelledText name='cover' label={`Cover image URL`} {...props} />
     
-    <LabelledField name='description' label={`About this track`} {...props}>
-      <Field component='textarea' id='description' name='description' disabled={isSubmitting} rows={3} />
+    <LabelledField name='about' label={`About this album`} {...props}>
+      <Field component='textarea' id='about' name='about' disabled={isSubmitting} rows={3} />
     </LabelledField>
 
     <LabelledField name='visibility' label={`Visibility`} {...props}>
@@ -202,11 +210,27 @@ const InnerForm = (props: FormProps) => {
     </LabelledField>
   </Tab.Pane>
 
+  const tracksTab = () => {
+    const album: MusicAlbumPreviewProps = {
+      title,
+      artist,
+      cover,
+      tracksCount: tracks.length
+    }
+
+    return <Tab.Pane as='div'>
+      <ReorderTracksInAlbum 
+        album={album} tracks={tracks}
+      />
+    </Tab.Pane>
+  }
+
   const tabs = () => <Tab
     menu={{ secondary: true, pointing: true, color: 'blue' }}
     panes={[
       { menuItem: 'Basic info', render: basicInfoTab },
       { menuItem: 'Additional', render: additionalTab },
+      { menuItem: `Tracks (${tracks.length})`, render: tracksTab },
     ]}
   />;
 
@@ -245,8 +269,8 @@ const InnerForm = (props: FormProps) => {
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
-    {thumbnail &&
-      <img src={thumbnail} onError={onImageError} />
+    {cover &&
+      <img src={cover} onError={onImageError} />
     }
     </div>
 
@@ -270,7 +294,7 @@ const InnerForm = (props: FormProps) => {
   </div>;
 };
 
-export const EditForm = withFormik<OuterProps, FormValues>({
+export const EditMusicAlbum = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
   mapPropsToValues: props => {
@@ -279,10 +303,9 @@ export const EditForm = withFormik<OuterProps, FormValues>({
     return {
       // Basic:
       title: entity && entity.title || fileName || '',
-      description: entity && entity.description || '',
-      thumbnail: entity && entity.thumbnail || '',
-      visibility: entity && entity.visibility || visibilityOptions[0].value,
-      album: entity && entity.album || '',
+      about: entity && entity.about || '',
+      cover: entity && entity.cover || '',
+      // visibility: entity && entity.visibility || visibilityOptions[0].value,
 
       // Additional:
       artist: entity && entity.artist || '',
@@ -302,4 +325,4 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   }
 })(InnerForm);
 
-export default EditForm;
+export default EditMusicAlbum;
