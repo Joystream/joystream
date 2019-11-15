@@ -1,0 +1,88 @@
+.ui.dimmer
+  padding: 0 
+
+.ui.modal.fullscreen
+  width: 100% !important
+  height: 100% !important
+  margin: 0 !important
+
+.apply-flow 
+  .statistic
+    .label, .value
+      text-align: left
+
+  .label 
+    &.fluid
+      width: calc(100% + 1rem + 1.2em);
+
+    &.standout
+      margin-bottom: 1.2em
+
+  .column
+    &.cancel
+      text-align: right
+      a
+        color: colour(grey, light)
+        transition: 0.3s;
+        &:hover
+          color: colour(blue)
+
+  .container
+    &.content
+      margin-top: 1em
+    &.cta
+      margin-top: 1.5em
+
+  .accordion
+    background-color: colour(grey, trans)
+    .content
+      padding: 0 1em !important
+
+.keypair
+  display: flex
+  flex-wrap: nowrap
+  justify-content: space-between
+  position: relative
+  white-space: nowrap
+
+  .address, .balance
+    display: inline-block
+    flex: 1
+    font-family: monospace
+    margin-left: 1rem
+    opacity: 0.5
+    overflow: hidden
+    text-overflow: ellipsis
+
+  .name
+    display: inline-block
+    flex: 1 0
+    overflow: hidden
+    text-overflow: ellipsis
+    margin-left: 0.5rem
+
+    &.uppercase
+      text-transform: uppercase
+ 
+.stake-rank-selector
+  background-color: #fafafa
+  padding: 1em
+  margin-top: 1.5em
+
+  .controls
+    text-align: center
+    margin-bottom: 1em
+
+    p
+      margin-top: 1em
+
+    .input, .button 
+      margin-right: 0.5em
+
+  .ticks
+    margin-left: 10px
+    margin-right: 10px
+    .tick
+      display: inline-block
+      text-align: center
+      border-right: 1px dotted #ccc

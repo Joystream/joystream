@@ -7009,6 +7009,11 @@ cyclist@^1.0.1:
   resolved "https://registry.yarnpkg.com/cyclist/-/cyclist-1.0.1.tgz#596e9698fd0c80e12038c2b82d6eb1b35b6224d9"
   integrity sha1-WW6WmP0MgOEgOMK4LW6xs1tiJNk=
 
+d3-array@^1.2.4:
+  version "1.2.4"
+  resolved "https://registry.yarnpkg.com/d3-array/-/d3-array-1.2.4.tgz#635ce4d5eea759f6f605863dbcfc30edc737f71f"
+  integrity sha512-KHW6M86R+FUPYGb3R5XiYjXPq7VzwxZ22buHhAEVG5ztoEcZZMLov530mmccaqA1GghZArjQV46fuc8kUqhhHw==
+
 d@1, d@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/d/-/d-1.0.1.tgz#8698095372d58dbee346ffd0c7093f99f8f9eb5a"
@@ -15685,6 +15690,16 @@ react-color@^2.17.0:
     reactcss "^1.2.0"
     tinycolor2 "^1.4.1"
 
+react-compound-slider@^2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/react-compound-slider/-/react-compound-slider-2.4.0.tgz#9116637268a78311f49f9cbb5d0cfdbff1b0997e"
+  integrity sha512-fGlmTjXl3U2A+SZi5r5H0RYYEvIJLOg4plxRtOwhLNXNGgTS75/dFYnlg6ZdjmJdW8frUNe+pKUCYe8sd5ynfw==
+  dependencies:
+    "@babel/runtime" "^7.6.3"
+    d3-array "^1.2.4"
+    prop-types "^15.7.2"
+    warning "^3.0.0"
+
 react-copy-to-clipboard@^5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/react-copy-to-clipboard/-/react-copy-to-clipboard-5.0.1.tgz#8eae107bb400be73132ed3b6a7b4fb156090208e"
@@ -15966,6 +15981,11 @@ react-select@^3.0.0:
     prop-types "^15.6.0"
     react-input-autosize "^2.2.2"
     react-transition-group "^2.2.1"
+
+react-semantic-ui-range@^0.7.0:
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/react-semantic-ui-range/-/react-semantic-ui-range-0.7.0.tgz#54054eaddfe6e45b21863ef02f62022338db66fb"
+  integrity sha512-1Y0GakHM+9gvEpPDbzRFvwHsmPtTRH0lLEAx2Ho2rhH9q7S+goTjgHlEUXlvXS/WbBtwVDqfpzXSj+JO8p0nmQ==
 
 react-sizeme@^2.6.7:
   version "2.6.10"

@@ -109,7 +109,7 @@ $colours: (
     dark: darken($colour-grey, $colour-shade-amount),
     darker: darken($colour-grey, $colour-shade-amount * 2),
     darkest: darken($colour-grey, $colour-shade-amount * 3),
-    trans: rgba($colour-grey, 0.15),
+    trans: rgba($colour-grey, 0.05),
   ),
   black: (
     base: $colour-black,
