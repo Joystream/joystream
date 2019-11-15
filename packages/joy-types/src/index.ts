@@ -9,7 +9,8 @@ import { registerMediaTypes } from './media';
 import { registerMembershipTypes } from './members';
 import { registerRolesTypes } from './roles';
 import { registerDiscoveryTypes } from './discovery';
-
+import { registerVersionedStoreTypes } from './versioned-store';
+import { registerVersionedStorePermissionsTypes } from './versioned-store/permissions';
 
 export function getTextPropAsString (struct: Struct, fieldName: string): string {
   return (struct.get(fieldName) as Text).toString();
@@ -24,7 +25,7 @@ export function getOptionPropOrUndefined <T extends Codec>
 
   return (struct.get(fieldName) as Option<T>).unwrapOr(undefined);
 }
-import { registerVersionedStoreTypes } from './versioned-store';
+
 
 export class OptionText extends Option.with(Text) {
 
@@ -245,4 +246,5 @@ export function registerJoystreamTypes () {
   registerElectionAndProposalTypes();
   registerDiscoveryTypes();
   registerVersionedStoreTypes();
+  registerVersionedStorePermissionsTypes();
 }
