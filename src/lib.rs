@@ -21,11 +21,13 @@ use im_online::sr25519::AuthorityId as ImOnlineId;
 use primitives::{crypto::key_types, OpaqueMetadata};
 use rstd::prelude::*;
 use runtime_primitives::curve::PiecewiseLinear;
-use runtime_primitives::traits::{BlakeTwo256, Block as BlockT, NumberFor, StaticLookup, Verify};
+use runtime_primitives::traits::{
+    BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, StaticLookup, Verify,
+};
 use runtime_primitives::weights::Weight;
 use runtime_primitives::{
     create_runtime_str, generic, impl_opaque_keys, transaction_validity::TransactionValidity,
-    AnySignature, ApplyResult,
+    ApplyResult, MultiSignature,
 };
 use substrate_client::{
     block_builder::api::{self as block_builder_api, CheckInherentsResult, InherentData},
@@ -52,11 +54,11 @@ pub use timestamp::Call as TimestampCall;
 pub type BlockNumber = u32;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
-pub type Signature = AnySignature;
+pub type Signature = MultiSignature;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
-pub type AccountId = <Signature as Verify>::Signer;
+pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 
 /// The type for looking up accounts. We don't expect more than 4 billion of them, but you
 /// never know...
