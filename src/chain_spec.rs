@@ -16,12 +16,13 @@
 
 use hex_literal::hex;
 use node_runtime::{
-    forum::InputValidationLengthConstraint, AccountId, ActorsConfig, AuthorityDiscoveryConfig,
-    BabeConfig, Balance, BalancesConfig, CouncilConfig, CouncilElectionConfig,
-    DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ForumConfig, GenesisConfig,
-    GrandpaConfig, ImOnlineConfig, IndicesConfig, MembersConfig, Perbill, ProposalsConfig,
-    SessionConfig, SessionKeys, StakerStatus, StakingConfig, SudoConfig, SystemConfig, DAYS,
-    WASM_BINARY,
+    forum::InputValidationLengthConstraint,
+    versioned_store::InputValidationLengthConstraint as VsInputValidation, AccountId, ActorsConfig,
+    AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, CouncilConfig,
+    CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
+    ForumConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig, MembersConfig,
+    Perbill, ProposalsConfig, SessionConfig, SessionKeys, StakerStatus, StakingConfig, SudoConfig,
+    SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 use primitives::{crypto::UncheckedInto, Pair, Public};
 
@@ -151,6 +152,10 @@ impl Alternative {
             _ => None,
         }
     }
+}
+
+fn new_vs_validation(min: u16, max_min_diff: u16) -> VsInputValidation {
+    return VsInputValidation { min, max_min_diff };
 }
 
 /// Joystream LiveTestnet generator
@@ -304,6 +309,16 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
             enable_storage_role: true,
             request_life_time: 300,
         }),
+        versioned_store: Some(VersionedStoreConfig {
+            class_by_id: vec![],
+            entity_by_id: vec![],
+            next_class_id: 1,
+            next_entity_id: 1,
+            property_name_constraint: new_vs_validation(1, 99),
+            property_description_constraint: new_vs_validation(1, 999),
+            class_name_constraint: new_vs_validation(1, 99),
+            class_description_constraint: new_vs_validation(1, 999),
+        }),
     }
 }
 
@@ -418,6 +433,16 @@ pub fn testnet_genesis(
         actors: Some(ActorsConfig {
             enable_storage_role: true,
             request_life_time: 300,
+        }),
+        versioned_store: Some(VersionedStoreConfig {
+            class_by_id: vec![],
+            entity_by_id: vec![],
+            next_class_id: 1,
+            next_entity_id: 1,
+            property_name_constraint: new_vs_validation(1, 99),
+            property_description_constraint: new_vs_validation(1, 999),
+            class_name_constraint: new_vs_validation(1, 99),
+            class_description_constraint: new_vs_validation(1, 999),
         }),
     }
 }
