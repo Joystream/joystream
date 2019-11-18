@@ -10,7 +10,7 @@ import { openingClass,
 		 OpeningBodyStakeRequirement, StakeRequirementProps,
 		 OpeningHeader,
 		 ApplicationStakeRequirement, RoleStakeRequirement, StakeType,
-       } from "./Opportunities"
+} from "./Opportunities"
 import { tomorrow, yesterday } from "./Opportunities.stories"
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
