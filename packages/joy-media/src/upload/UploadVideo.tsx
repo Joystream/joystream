@@ -14,6 +14,12 @@ import { Option } from '@polkadot/types/codec';
 import { ContentId, ContentMetadata, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from '@joystream/types/media';
 import { onImageError } from '../utils';
 
+const fakeFieldDescription = 'This is a description of the field';
+
+function tooltip (_fieldName: keyof FormValues): string | undefined {
+  return fakeFieldDescription; // TODO get real field description
+}
+
 // TODO get from verstore
 const visibilityOptions = [
   'Public',
@@ -193,38 +199,38 @@ const InnerForm = (props: FormProps) => {
   };
 
   const basicInfoTab = () => <Tab.Pane as='div'>
-    <LabelledText name='name' label={`Name`} {...props} />
+    <LabelledText name='name' label={`Name`} tooltip={tooltip('name')} {...props} />
     
-    <LabelledText name='thumbnail' label={`Thumbnail image URL`} {...props} />
+    <LabelledText name='thumbnail' label={`Thumbnail image URL`} tooltip={tooltip('thumbnail')} {...props} />
     
-    <LabelledField name='description' label={`Description`} {...props}>
+    <LabelledField name='description' label={`Description`} tooltip={tooltip('description')} {...props}>
       <Field component='textarea' id='description' name='description' disabled={isSubmitting} rows={3} />
     </LabelledField>
 
-    {/* <LabelledText name='keywords' label={`Keywords`} placeholder={`Comma-separated keywords`} {...props} /> */}
+    {/* <LabelledText name='keywords' label={`Keywords`} tooltip={tooltip('keywords')} placeholder={`Comma-separated keywords`} {...props} /> */}
 
-    <LabelledField name='visibility' label={`Visibility`} {...props}>
+    <LabelledField name='visibility' label={`Visibility`} tooltip={tooltip('visibility')} {...props}>
       <Field component={Dropdown} id='visibility' name='visibility' disabled={isSubmitting} selection options={visibilityOptions} />
     </LabelledField>
     
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <LabelledField name='synopsis' label={`Synopsis`} {...props}>
+    <LabelledField name='synopsis' label={`Synopsis`} tooltip={tooltip('synopsis')} {...props}>
       <Field component='textarea' id='synopsis' name='synopsis' disabled={isSubmitting} rows={3} />
     </LabelledField>
 
-    <LabelledText name='creator' label={`Creator`} {...props} />
+    <LabelledText name='creator' label={`Creator`} tooltip={tooltip('creator')} {...props} />
 
-    <LabelledField name='category' label={`Category`} {...props}>
+    <LabelledField name='category' label={`Category`} tooltip={tooltip('category')} {...props}>
       <Field component={Dropdown} id='category' name='category' disabled={isSubmitting} search selection options={categoryOptions} />
     </LabelledField>
 
-    <LabelledField name='language' label={`Language`} {...props}>
+    <LabelledField name='language' label={`Language`} tooltip={tooltip('language')} {...props}>
       <Field component={Dropdown} id='language' name='language' disabled={isSubmitting} search selection options={languageOptions} />
     </LabelledField>
 
-    <LabelledField name='license' label={`License`} {...props}>
+    <LabelledField name='license' label={`License`} tooltip={tooltip('license')} {...props}>
       <Field component={Dropdown} id='license' name='license' disabled={isSubmitting} search selection options={licenseOptions} />
     </LabelledField>
   </Tab.Pane>

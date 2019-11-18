@@ -3,6 +3,7 @@ import { Field, ErrorMessage, FormikErrors, FormikTouched } from 'formik';
 
 import { BareProps } from '@polkadot/react-components/types';
 import { nonEmptyStr } from '@polkadot/joy-utils/index';
+import { Popup, Icon } from 'semantic-ui-react';
 
 type FormValuesType = {
   [s: string]: string
@@ -13,6 +14,7 @@ type LabelledProps<FormValues = FormValuesType> = BareProps & {
   label?: React.ReactNode,
   invisibleLabel?: boolean,
   placeholder?: string,
+  tooltip?: React.ReactNode,
   style?: React.CSSProperties,
   children?: JSX.Element | JSX.Element[],
   errors: FormikErrors<FormValues>,
@@ -22,7 +24,7 @@ type LabelledProps<FormValues = FormValuesType> = BareProps & {
 
 export function LabelledField<FormValues = FormValuesType> () {
   return (props: LabelledProps<FormValues>) => {
-    const { name, label, invisibleLabel = false, touched, errors, children, style } = props;
+    const { name, label, invisibleLabel = false, tooltip, touched, errors, children, style } = props;
     const hasError = name && touched[name] && errors[name];
 
     const fieldWithError = <>
@@ -32,7 +34,10 @@ export function LabelledField<FormValues = FormValuesType> () {
     
     return (label || invisibleLabel)
       ? <div style={style} className={`ui--Labelled field ${hasError ? 'error' : ''}`}>
-          <label htmlFor={name as string}>{nonEmptyStr(label) && label + ':'}</label>
+          <label htmlFor={name as string}>
+            {nonEmptyStr(label) && label}
+            {tooltip && <FieldTooltip>{tooltip}</FieldTooltip> }
+          </label>
           <div className='ui--Labelled-content'>
             {fieldWithError}
           </div>
@@ -52,4 +57,16 @@ export function LabelledText<FormValues = FormValuesType> () {
       <Field id={name} disabled={otherProps.isSubmitting} {...fieldProps} />
     </LF>;
   };
+}
+
+type FieldTooltipProps = {
+  children: React.ReactNode
+}
+
+export const FieldTooltip = (props: FieldTooltipProps) => {
+  return <Popup
+    trigger={<Icon name='question' circular size='small' style={{ marginLeft: '.25rem' }} />}
+    content={props.children}
+    position='right center'
+  />;
 }

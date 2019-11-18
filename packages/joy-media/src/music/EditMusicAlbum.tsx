@@ -18,6 +18,12 @@ import { MusicTrackEntity } from '../entities/MusicTrackEntity';
 import { ReorderTracksInAlbum } from './ReorderTracksInAlbum';
 import { MusicAlbumPreviewProps } from './MyMusicAlbums';
 
+const fakeFieldDescription = 'This is a description of the field';
+
+function tooltip (_fieldName: keyof FormValues): string | undefined {
+  return fakeFieldDescription; // TODO get real field description
+}
+
 // TODO get from verstore
 const visibilityOptions = [
   'Public',
@@ -175,37 +181,38 @@ const InnerForm = (props: FormProps) => {
   };
 
   const basicInfoTab = () => <Tab.Pane as='div'>
-    <LabelledText name='title' label={`Title`} {...props} />
+    <LabelledText name='title' label={`Title`} tooltip={tooltip('title')} {...props} />
     
-    <LabelledText name='cover' label={`Cover image URL`} {...props} />
+    <LabelledText name='cover' label={`Cover image URL`} tooltip={tooltip('cover')} {...props} />
     
-    <LabelledField name='about' label={`About this album`} {...props}>
+    <LabelledField name='about' label={`About this album`} tooltip={tooltip('about')} {...props}>
       <Field component='textarea' id='about' name='about' disabled={isSubmitting} rows={3} />
     </LabelledField>
 
-    <LabelledField name='visibility' label={`Visibility`} {...props}>
+    <LabelledField name='visibility' label={`Visibility`} tooltip={tooltip('visibility')} {...props}>
       <Field component={Dropdown} id='visibility' name='visibility' disabled={isSubmitting} selection options={visibilityOptions} />
     </LabelledField>
     
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <LabelledText name='artist' label={`Artist`} {...props} />
-    <LabelledText name='composer' label={`Composer`} {...props} />
+    <LabelledText name='artist' label={`Artist`} tooltip={tooltip('artist')} {...props} />
 
-    <LabelledField name='genre' label={`Genre`} {...props}>
+    <LabelledText name='composer' label={`Composer`} tooltip={tooltip('composer')} {...props} />
+
+    <LabelledField name='genre' label={`Genre`} tooltip={tooltip('genre')} {...props}>
       <Field component={Dropdown} id='genre' name='genre' disabled={isSubmitting} search selection options={genreOptions} />
     </LabelledField>
 
-    <LabelledField name='mood' label={`Mood`} {...props}>
+    <LabelledField name='mood' label={`Mood`} tooltip={tooltip('mood')} {...props}>
       <Field component={Dropdown} id='mood' name='mood' disabled={isSubmitting} search selection options={moodOptions} />
     </LabelledField>
 
-    <LabelledField name='theme' label={`Theme`} {...props}>
+    <LabelledField name='theme' label={`Theme`} tooltip={tooltip('theme')} {...props}>
       <Field component={Dropdown} id='theme' name='theme' disabled={isSubmitting} search selection options={themeOptions} />
     </LabelledField>
 
-    <LabelledField name='license' label={`License`} {...props}>
+    <LabelledField name='license' label={`License`} tooltip={tooltip('license')} {...props}>
       <Field component={Dropdown} id='license' name='license' disabled={isSubmitting} search selection options={licenseOptions} />
     </LabelledField>
   </Tab.Pane>
