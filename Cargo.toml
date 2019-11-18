@@ -18,8 +18,8 @@ log = '0.4.8'
 parking_lot = '0.9.0'
 tokio = '0.1.22'
 jsonrpc-core = '13.2.0'
-rand = "0.7.2"
-structopt = "0.3.3"
+rand = '0.7.2'
+structopt = '0.3.3'
 
 [dependencies.substrate-basic-authorship]
 git = 'https://github.com/paritytech/substrate.git'
@@ -55,12 +55,13 @@ package = 'substrate-network'
 rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dependencies.node-runtime]
-package = "joystream-node-runtime"
-# git = 'https://github.com/bedeho/substrate-runtime-joystream'
+package = 'joystream-node-runtime'
+git = 'https://github.com/mnaamani/substrate-runtime-joystream'
 # branch = 'add-content-wg'
+rev = 'ea0fee618e1210ac5588742eb5b42e397d2469aa'
 # for local development...
 # clone https://github.com/joystream/substrate-runtime-joystream to this path:
-path = 'substrate-runtime-joystream'
+# path = 'substrate-runtime-joystream'
 
 [dependencies.primitives]
 git = 'https://github.com/paritytech/substrate.git'
