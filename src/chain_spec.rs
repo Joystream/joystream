@@ -21,16 +21,19 @@ use node_runtime::{
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, CouncilConfig,
     CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
     ForumConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig, MembersConfig,
-    Perbill, ProposalsConfig, SessionConfig, SessionKeys, StakerStatus, StakingConfig, SudoConfig,
-    SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    Perbill, ProposalsConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
+    SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
-use primitives::{crypto::UncheckedInto, Pair, Public};
+use primitives::{crypto::UncheckedInto, sr25519, Pair, Public};
+use runtime_primitives::traits::{IdentifyAccount, Verify};
 
 use babe_primitives::AuthorityId as BabeId;
 use grandpa_primitives::AuthorityId as GrandpaId;
 use im_online::sr25519::AuthorityId as ImOnlineId;
 use substrate_service;
 use substrate_telemetry::TelemetryEndpoints;
+
+type AccountPublic = <Signature as Verify>::Signer;
 
 // Note this is the URL for the telemetry server
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -60,13 +63,21 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
         .public()
 }
 
+/// Helper function to generate an account ID from seed
+pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
+where
+    AccountPublic: From<<TPublic::Pair as Pair>::Public>,
+{
+    AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
+}
+
 /// Helper function to generate stash, controller and session key from seed
 pub fn get_authority_keys_from_seed(
     seed: &str,
 ) -> (AccountId, AccountId, GrandpaId, BabeId, ImOnlineId) {
     (
-        get_from_seed::<AccountId>(&format!("{}//stash", seed)),
-        get_from_seed::<AccountId>(seed),
+        get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
+        get_account_id_from_seed::<sr25519::Public>(seed),
         get_from_seed::<GrandpaId>(seed),
         get_from_seed::<BabeId>(seed),
         get_from_seed::<ImOnlineId>(seed),
@@ -91,12 +102,12 @@ impl Alternative {
                 || {
                     testnet_genesis(
                         vec![get_authority_keys_from_seed("Alice")],
-                        get_from_seed::<AccountId>("Alice"),
+                        get_account_id_from_seed::<sr25519::Public>("Alice"),
                         vec![
-                            get_from_seed::<AccountId>("Alice"),
-                            get_from_seed::<AccountId>("Bob"),
-                            get_from_seed::<AccountId>("Alice//stash"),
-                            get_from_seed::<AccountId>("Bob//stash"),
+                            get_account_id_from_seed::<sr25519::Public>("Alice"),
+                            get_account_id_from_seed::<sr25519::Public>("Bob"),
+                            get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+                            get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
                         ],
                     )
                 },
@@ -115,20 +126,20 @@ impl Alternative {
                             get_authority_keys_from_seed("Alice"),
                             get_authority_keys_from_seed("Bob"),
                         ],
-                        get_from_seed::<AccountId>("Alice"),
+                        get_account_id_from_seed::<sr25519::Public>("Alice"),
                         vec![
-                            get_from_seed::<AccountId>("Alice"),
-                            get_from_seed::<AccountId>("Bob"),
-                            get_from_seed::<AccountId>("Charlie"),
-                            get_from_seed::<AccountId>("Dave"),
-                            get_from_seed::<AccountId>("Eve"),
-                            get_from_seed::<AccountId>("Ferdie"),
-                            get_from_seed::<AccountId>("Alice//stash"),
-                            get_from_seed::<AccountId>("Bob//stash"),
-                            get_from_seed::<AccountId>("Charlie//stash"),
-                            get_from_seed::<AccountId>("Dave//stash"),
-                            get_from_seed::<AccountId>("Eve//stash"),
-                            get_from_seed::<AccountId>("Ferdie//stash"),
+                            get_account_id_from_seed::<sr25519::Public>("Alice"),
+                            get_account_id_from_seed::<sr25519::Public>("Bob"),
+                            get_account_id_from_seed::<sr25519::Public>("Charlie"),
+                            get_account_id_from_seed::<sr25519::Public>("Dave"),
+                            get_account_id_from_seed::<sr25519::Public>("Eve"),
+                            get_account_id_from_seed::<sr25519::Public>("Ferdie"),
+                            get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+                            get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+                            get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+                            get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
+                            get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
+                            get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                         ],
                     )
                 },
@@ -190,16 +201,14 @@ fn new_validation(min: u16, max_min_diff: u16) -> InputValidationLengthConstrain
 
 fn staging_testnet_config_genesis() -> GenesisConfig {
     let initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId, ImOnlineId)> = vec![(
-        hex!["0610d1a2b1d704723e588c842a934737491688b18b052baae1286f12e96adb65"].unchecked_into(), // stash
-        hex!["609cee3edd9900e69be44bcbf7a1892cad10408840a2d72d563811d72d9bb339"].unchecked_into(), // controller
+        hex!["0610d1a2b1d704723e588c842a934737491688b18b052baae1286f12e96adb65"].into(), // stash
+        hex!["609cee3edd9900e69be44bcbf7a1892cad10408840a2d72d563811d72d9bb339"].into(), // controller
         hex!["65179fd9c39ec301457d1ee47a13f3bb0fef65812a57b6c93212e609b10d35d2"].unchecked_into(), // session key
         hex!["8acbf7448d96592e61881c5ef0f0ab18da6955cf4824534eb19b26f03df56b5a"].unchecked_into(),
         hex!["8acbf7448d96592e61881c5ef0f0ab18da6955cf4824534eb19b26f03df56b5a"].unchecked_into(),
     )];
-    let endowed_accounts = vec![hex![
-        "0ae55282e669fc55cb9529c0b12b989f2c5bf636d0de7630b5a4850055ed9c30"
-    ]
-    .unchecked_into()];
+    let endowed_accounts =
+        vec![hex!["0ae55282e669fc55cb9529c0b12b989f2c5bf636d0de7630b5a4850055ed9c30"].into()];
 
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;
