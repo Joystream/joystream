@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, CheckboxProps, Dropdown, Modal } from 'semantic-ui-react';
+import { Button, CheckboxProps, Dropdown, Modal, Message } from 'semantic-ui-react';
 
 import { Pluralize } from '@polkadot/joy-utils/Pluralize';
 import Section from '@polkadot/joy-utils/Section';
@@ -33,6 +33,13 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
   const tracksCount = tracks.length;
   const selectedCount = idxsOfSelectedTracks.size;
 
+  let longestAlbumName = '';
+  albums.forEach(x => {
+    if (longestAlbumName.length < x.title.length) {
+      longestAlbumName = x.title;
+    }
+  });
+
   const albumsDropdownOptions = albums.map(x => {
     const id = x.title; // TODO replace with unique id of album
     return {
@@ -43,72 +50,103 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
     };
   });
 
-  const [showModal, setShowModal] = useState(false);
+  const [showSecondScreen, setShowSecondScreen] = useState(false);
   const [albumName, setAlbumName] = useState<string | undefined>();
   const [albumQuery, setAlbumQuery] = useState<string | undefined>('');
 
-  const AlbumDropdown = () => (
-    <Dropdown
-      onChange={(_e, { searchQuery, value }) => {
-        setAlbumQuery(searchQuery);
-        setAlbumName(value as string);
-        setShowModal(true);
-      }}
-      onSearchChange={(_e, { searchQuery }) => {
-        setAlbumQuery(searchQuery);
-      }}
-      options={albumsDropdownOptions}
-      placeholder='Select an album'
-      search
-      searchQuery={albumQuery}
-      selection
-      value={albumName}
-    />
-  )
+  const AlbumDropdown = () => {
+    const style = {
+      display: 'inline-block',
+      opacity: selectedCount ? 1 : 0,
 
-  const AddTracksText = () => albumsCount > 0
-    ? <span>Add <Pluralize count={selectedCount} singularText='track' /> to your album</span>
-    : <em>You have no albums. <Button content='Create first album' icon='plus' /></em>
+      // This is a required hack to fit every dropdown items on a single line:
+      minWidth: `${longestAlbumName.length / 1.5}rem`
+    }
+    
+    return <div style={style}>
+      <Dropdown
+        onChange={(_e, { searchQuery, value }) => {
+          setAlbumQuery(searchQuery);
+          setAlbumName(value as string);
+          setShowSecondScreen(true);
+        }}
+        onSearchChange={(_e, { searchQuery }) => {
+          setAlbumQuery(searchQuery);
+        }}
+        options={albumsDropdownOptions}
+        placeholder='Select an album'
+        search
+        searchQuery={albumQuery}
+        selection
+        value={albumName}
+      />
+    </div>;
+  }
 
-  return <Section title={`My Tracks (${tracksCount})`}>
+  const AddTracksText = () => albumsCount
+    ? <span style={{ marginRight: '1rem' }}>
+        Add <Pluralize count={selectedCount} singularText='track' /> to
+      </span>
+    : <em>
+        You have no albums.
+        <Button content='Create first album' icon='plus' />
+      </em>
 
-    <Modal
-      centered={false}
-      open={showModal}
-      onClose={() => setShowModal(false)}
-    >
-      <Modal.Header>Add tracks to album {albumName}</Modal.Header>
-      <Modal.Content image>
-        <Modal.Description>
-          <ReorderTracksInAlbum tracks={tracks.filter((_track, i) => idxsOfSelectedTracks.has(i))} />
-        </Modal.Description>
-      </Modal.Content>
-      <Modal.Actions>
-        <Button onClick={() => setShowModal(false)}>Cancel</Button>
-        <Button primary onClick={() => setShowModal(false)}>Add to album</Button>
-      </Modal.Actions>
-    </Modal>
+  const goBack = () => {
+    setAlbumName('');
+    setShowSecondScreen(false);
+  }
 
-    <div className='JoyTopActionBar'>
-      {selectedCount > 0
-        ? <><AddTracksText /><AlbumDropdown /></>
-        : <span>Select tracks to add them to an album</span>
-      }
-    </div>
+  const renderAllTracks = () => {
+    return <Section title={`My Music Tracks (${tracksCount})`}>
 
-    <div className='JoyListOfPreviews'>
-      {tracksCount === 0
-        ? <em className='NoItems'>You have no music tracks yet</em>
-        : tracks.map((track, i) =>
-          <MusicTrackPreview
-            key={i}
-            {...track}
-            position={i + 1}
-            onSelect={(e, d) => onTrackSelect(i, e, d)}
-            withRemoveButton
-          />
-        )
-      }
-    </div>
-  </Section>;
+      <div className='JoyTopActionBar'>
+        {selectedCount
+          ? <><AddTracksText /></>
+          : <span>Select tracks to add them to your album</span>
+        }
+        <AlbumDropdown />
+      </div>
+
+      <div className='JoyListOfPreviews'>
+        {tracksCount === 0
+          ? <em className='NoItems'>You have no music tracks yet</em>
+          : tracks.map((track, i) =>
+              <MusicTrackPreview
+                key={i}
+                {...track}
+                position={i + 1}
+                selected={idxsOfSelectedTracks.has(i)}
+                onSelect={(e, d) => onTrackSelect(i, e, d)}
+                withEditButton
+              />
+            )
+        }
+      </div>
+    </Section>;
+  }
+
+  const renderReorderTracks = () => {
+    return <Section title={`Add tracks to album "${albumName}"`}>
+
+      <Message
+        info
+        icon='info'
+        content='You can reorder tracks before adding them to this album.'
+      />
+
+      <ReorderTracksInAlbum tracks={tracks.filter((_track, i) => idxsOfSelectedTracks.has(i))} />
+
+      <div style={{ marginTop: '1rem' }}>
+        <Button size='large' onClick={goBack}>&lt; Back to my tracks</Button>
+        <Button size='large' primary style={{ float: 'right' }} onClick={goBack}>Add to album &gt;</Button>
+      </div>
+    </Section>;
+  }
+
+  return <div className='JoyPaperWidth'>{
+    !showSecondScreen
+      ? renderAllTracks()
+      : renderReorderTracks()
+    }</div>;
 }

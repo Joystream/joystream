@@ -8,6 +8,7 @@ export type MusicTrackPreviewProps = {
   artist: string,
   cover: string,
   position?: number,
+  selected?: boolean,
   onSelect?: OnCheckboxChange,
   isDraggable?: boolean,
   withEditButton?: boolean,
@@ -16,8 +17,8 @@ export type MusicTrackPreviewProps = {
 };
 
 export function MusicTrackPreview (props: MusicTrackPreviewProps) {
-  const { withActionLabels = false } = props;
-  const [checked, setChecked] = useState(false);
+  const { withActionLabels = false, selected = false } = props;
+  const [checked, setChecked] = useState(selected);
 
   const onChange: OnCheckboxChange = (e, d) => {
     try {
