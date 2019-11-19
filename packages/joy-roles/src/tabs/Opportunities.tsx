@@ -276,10 +276,13 @@ export function OpeningBodyStakeRequirement(props: StakeRequirementProps) {
     )
 }
 
-export type OpeningBodyApplicationsStatusProps = StakeRequirementProps & {
+export type ApplicationCountProps = {
     application_count: number
     application_max: number
+    applied?: boolean
 }
+
+export type OpeningBodyApplicationsStatusProps = StakeRequirementProps & ApplicationCountProps
 
 function applicationImpossible(props: OpeningBodyApplicationsStatusProps): boolean {
     return props.application_max > 0 && 
@@ -291,6 +294,31 @@ function applicationPossibleWithIncresedStake(props: OpeningBodyApplicationsStat
     return props.application_max > 0 && 
            (props.application_count >= props.application_max) && 
            hasAnyStake(props)
+}
+
+export function ApplicationCount(props: ApplicationCountProps) { 
+    let max_applications = null
+    if (props.application_max > 0) {
+        max_applications = (
+            <span>
+                /
+                <NumberFormat value={props.application_max}
+                              displayType="text" 
+                              thousandSeparator={true} 
+                />
+            </span>
+        )
+    }
+
+    return (
+        <span>
+            <NumberFormat value={props.application_count + (props.applied ? 1 : 0)}
+                          displayType="text" 
+                          thousandSeparator={true} 
+            />
+            {max_applications}
+        </span>
+    )
 }
 
 export function OpeningBodyApplicationsStatus(props: OpeningBodyApplicationsStatusProps) {
@@ -335,7 +363,7 @@ export function OpeningBodyApplicationsStatus(props: OpeningBodyApplicationsStat
         <Message positive={msg.positive} warning={msg.warning} negative={msg.negative}>
             <Statistic size="small">
                 <Statistic.Value>
-                    <NumberFormat value={props.application_count}
+                    <NumberFormat value={props.application_count + (props.applied ? 1 : 0)}
                                   displayType="text" 
                                   thousandSeparator={true} 
                     />

@@ -51,23 +51,22 @@ export function ApplicationSandbox() {
 			["SOmething else", "abc123"],
 		]),
 		keypairs: [
-			{
-				shortName: "KP1",
-				accountId: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
-				balance: new u128(23342),
-			},
-			{
-				shortName: "KP2",
-				accountId: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
-				balance: new u128(993342),
-			},
-			{
-				shortName: "KP3",
-				accountId: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
-				balance: new u128(242),
-			},
+            {
+                shortName: "KP1",
+                accountId: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
+                balance: new u128(23342),
+            },
+            {
+                shortName: "KP2",
+                accountId: new GenericAccountId('5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
+                balance: new u128(993342),
+            },
+            {
+                shortName: "KP3",
+                accountId: new GenericAccountId('5DBaczGTDhcHgwsZzNE5qW15GrQxxdyros4pYkcKrSUovFQ9'),
+                balance: new u128(242),
+            },
 		],
-
     }
 
     return <FlowModal {...props} />

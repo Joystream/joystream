@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom';
 
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 import { GenericAccountId } from '@polkadot/types'
 
-import { Accordion, Button, Container, Dropdown, Form, Grid, Header, Icon, Input, Label, Modal, Step, Table } from 'semantic-ui-react'
+import { Accordion, Button, Container, Dropdown, Form, Grid, Header, Icon, Input, Label, Message, Modal, Step, Table } from 'semantic-ui-react'
 import { Slider } from "react-semantic-ui-range";
 
 import Identicon from '@polkadot/react-identicon';
@@ -15,6 +16,7 @@ import {
 } from '../elements'
 import {
     OpeningBodyApplicationsStatus, OpeningBodyApplicationsStatusProps,
+    ApplicationCount, 
 } from '../tabs/Opportunities'
 
 type accordionProps = {
@@ -71,7 +73,7 @@ type FundSourceCallbackProps = {
     passphraseCallback?: (passphrase: string) => void
 }
 
-function FundSourceSelector( props: FundSourceSelectorProps & FundSourceCallbackProps) {
+export function FundSourceSelector( props: FundSourceSelectorProps & FundSourceCallbackProps) {
     const pairs = [];
 
     const onChangeDropdown = (e, {value}) => {
@@ -104,16 +106,23 @@ function FundSourceSelector( props: FundSourceSelectorProps & FundSourceCallback
         })
     })
 
+    useEffect(() => {
+		if (pairs.length > 0 && typeof props.addressCallback !== "undefined") {
+			props.addressCallback(new GenericAccountId(pairs[0].accountId))
+		}
+	}, [])
+
     return (
       <Form className="fund-source-selector">
           <Form.Field>
               <label>Select source of funds</label>
-              <Dropdown
+              <Form.Dropdown
                 placeholder='Source'
                 fluid
                 selection
                 options={pairs}
                 onChange={onChangeDropdown}
+				defaultValue={pairs.length > 0 ? pairs[0].value : null}
               />
           </Form.Field>
           <Form.Field>
@@ -327,14 +336,51 @@ export function SubmitApplicationStage(props: SubmitApplicationStageProps) {
     )
 }
 
-export type DoneStageProps = FlowModalProps
+export type DoneStageProps = {
+    applications: OpeningBodyApplicationsStatusProps
+    roleKeyName: string
+}
 
 export function DoneStage(props: DoneStageProps) {
     return (
       <Container className="content">
+		  <h4>Application submitted!</h4>
           <p>
-              Done
+              Your application is <strong>#<ApplicationCount {...props.applications} applied={true} /></strong>. 
+              Once the group lead has started their review, your application will be considered.
+		  </p>
+		  <p>
+			  You can track the progress of your
+              application in the <Link to="#roles/my-roles">My roles</Link> section. If you have any issues,
+                  you can raise them in in the <Link to="#forum">Forum</Link> or contact the group lead
+			  directly.
           </p>
+
+		  <h4>Your new role key</h4>
+		  <p>
+              This role requires a new sub-key to be associated with your account. 
+              You'll never have to use the key directly, but you will need it in order 
+              to perform any duties in the role.
+          </p>
+		  <p>
+              We've generated a new role key, <strong>{props.roleKeyName}</strong>, automatically. You can 
+              download its backup file using the button below, or from the <Link to="#accounts">My account</Link> 
+              &nbsp; section.
+          </p>
+		  <Message warning>
+              <strong>Please make sure to save this file in a secure location as it is the only 
+              way to restore your role key!</strong>
+          </Message>
+          <Container className="cta">
+              <Button content='Download role key backup' icon='download' labelPosition='left' primary />
+              <Button 
+                  content='Go to My Roles' 
+                  icon='right arrow' 
+                  labelPosition='right' 
+                  color='teal'
+              />
+          </Container>
+
        </Container>
     )
 }
@@ -347,8 +393,10 @@ export type FlowModalProps = FundSourceSelectorProps & {
 export function FlowModal(props: FlowModalProps) {
     const hasConfirmStep = false
     const [activeStep, setActiveStep] = useState(ProgressSteps.SubmitApplication)
+    const [complete, setComplete] = useState(false)
     
     const enterDoneState = () => {
+        setComplete(true)
         setActiveStep(ProgressSteps.Done)
     }
 
@@ -386,28 +434,28 @@ export function FlowModal(props: FlowModalProps) {
                                 <Label.Detail>Content curator</Label.Detail>
                             </Label>
                       </Grid.Column>
-            <Grid.Column width={5} className="cancel">
-                <a href="">
-                    <Icon name='cancel' /> Cancel application
-                </a>
-            </Grid.Column>
-        </Grid>
-        <Grid columns="equal">
-            <Grid.Column width={11} className="main">
-                <ProgressStepsView activeStep={activeStep} hasConfirmStep={hasConfirmStep} />
-                {stage}
-            </Grid.Column>
-            <Grid.Column width={5} className="summary">
-                <Header as='h3'>Help us curate awesome content</Header>
-            <Label as='h1' size='large' ribbon='right' className="fluid standout">
-                Reward
-                    <Label.Detail>10 UNIT per block</Label.Detail>
-            </Label>
-             <OpeningBodyApplicationsStatus {...props.applications} />
-             <h5>Group lead</h5>
-             <GroupMemberView {...props.creator} inset={true} />
-          </Grid.Column>
-        </Grid>
+                      <Grid.Column width={5} className="cancel">
+                          <a href="">
+                              <Icon name='cancel' /> Cancel application
+                          </a>
+                        </Grid.Column>
+                    </Grid>
+                    <Grid columns="equal">
+                    <Grid.Column width={11} className="main">
+                        <ProgressStepsView activeStep={activeStep} hasConfirmStep={hasConfirmStep} />
+                        {stage}
+                    </Grid.Column>
+                    <Grid.Column width={5} className="summary">
+                        <Header as='h3'>Help us curate awesome content</Header>
+                    <Label as='h1' size='large' ribbon='right' className="fluid standout">
+                        Reward
+                        <Label.Detail>10 UNIT per block</Label.Detail>
+                    </Label>
+                    <OpeningBodyApplicationsStatus {...props.applications} applied={complete} />
+                    <h5>Group lead</h5>
+                    <GroupMemberView {...props.creator} inset={true} />
+                  </Grid.Column>
+                </Grid>
             </Container>
           </Modal.Content>
         </Modal>
