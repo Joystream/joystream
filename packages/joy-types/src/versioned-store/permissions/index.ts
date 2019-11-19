@@ -5,14 +5,12 @@ import EntityPermissions from './EntityPermissions';
 import { ReferenceConstraint} from './reference-constraint';
 import ClassPermissionsType from './ClassPermissions';
 import { Operation } from './batching/';
-import PropertyIndex from '../PropertyIndex';
 
 export function registerVersionedStorePermissionsTypes () {
     try {
       getTypeRegistry().register({
         Credential,
         CredentialSet,
-        PropertyIndex,
         EntityPermissions,
         ReferenceConstraint,
         ClassPermissionsType,
