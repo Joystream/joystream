@@ -1,5 +1,5 @@
 
-.JoyMusicAlbumActionBar {
+.JoyTopActionBar {
   margin: 1rem 0;
 
   .button {
@@ -92,11 +92,13 @@
       max-height: 60px;
     }
   }
-
+  .AlbumTitle {
+    font-size: 1rem;
+  }
   .AlbumArtist {
     color: #999;
+    font-size: .9rem;
   }
-
   .AlbumActions {
     opacity: 1;
   }

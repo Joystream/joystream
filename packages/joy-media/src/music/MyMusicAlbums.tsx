@@ -38,7 +38,7 @@ export function MyMusicAlbums (props: MyMusicAlbumsProps) {
 
   return <>
     <h2>{`My music albums (${albumCount})`}</h2>
-    <div className='JoyMusicAlbumActionBar'>
+    <div className='JoyTopActionBar'>
       <Button content='New album' icon='plus' />
     </div>
     <div className='JoyListOfPreviews'>

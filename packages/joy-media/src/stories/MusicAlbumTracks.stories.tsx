@@ -3,30 +3,17 @@ import '../music/index.css';
 
 import { withKnobs } from '@storybook/addon-knobs';
 import { TracksOfMyMusicAlbum, TracksOfMyMusicAlbumProps } from '../music/MusicAlbumTracks';
-import { AlbumPreviewExample } from '../music/StorybookUtils';
+import { AlbumPreviewExample, FewMusicAlbums } from '../music/StorybookUtils';
 import { ReorderTracksInAlbum } from '../music/ReorderTracksInAlbum';
 import { EditAlbumModal } from '../music/EditAlbumModal';
 import { MusicAlbumEntity } from '../entities/MusicAlbumEntity';
 import { EditMusicAlbum } from '../music/EditMusicAlbum';
+import { MyMusicTracks } from '../music/MyMusicTracks';
 
 export default { 
-    title: 'Media | Tracks of my music album',
+    title: 'Media | My music tracks',
     decorators: [withKnobs],
 };
-
-export const DefaultState = () => {
-	return <TracksOfMyMusicAlbum album={AlbumPreviewExample} />;
-}
-
-export const AlbumWithTracks = () => {
-	return <TracksOfMyMusicAlbum {...AlbumWithTracksProps} />
-}
-
-export const ReorderTracks = () =>
-	<ReorderTracksInAlbum {...AlbumWithTracksProps} />
-
-export const EditAlbumModalStory = () =>
-	<EditAlbumModal {...AlbumWithTracksProps} />
 
 export const EditAlbumStory = () =>
 	<EditMusicAlbum
@@ -34,6 +21,26 @@ export const EditAlbumStory = () =>
 		entity={MusicAlbumExample}
 		tracks={albumTracks}
 	/>
+
+export const MyMusicTracksStory = () =>
+	<MyMusicTracks
+		albums={FewMusicAlbums}
+		tracks={allMyTracks}
+	/>
+
+// export const DefaultState = () => {
+// 	return <TracksOfMyMusicAlbum album={AlbumPreviewExample} />;
+// }
+
+// export const AlbumWithTracks = () => {
+// 	return <TracksOfMyMusicAlbum {...AlbumWithTracksProps} />
+// }
+
+// export const ReorderTracks = () =>
+// 	<ReorderTracksInAlbum {...AlbumWithTracksProps} />
+
+// export const EditAlbumModalStory = () =>
+// 	<EditAlbumModal {...AlbumWithTracksProps} />
 
 const trackNames = [
 	'Arborvitae (Thuja occidentalis)',
@@ -57,6 +64,20 @@ const albumTracks = trackNames.map(title => ({
 	artist: 'Man from the Woods',
 	cover: 'https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=60'
 }));
+
+const allMyTracks = 
+	trackNames.slice(0, trackNames.length / 2).map(title => ({
+		title,
+		artist: 'Man from the Woods',
+		cover: 'https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=60'
+	}))
+	.concat(
+		trackNames.slice(trackNames.length / 2).map(title => ({
+			title,
+			artist: 'Liquid Stone',
+			cover: 'https://images.unsplash.com/photo-1484352491158-830ef5692bb3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+		}))
+	)
 
 const AlbumWithTracksProps: TracksOfMyMusicAlbumProps = {
 	album: AlbumPreviewExample,
