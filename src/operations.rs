@@ -1,4 +1,3 @@
-use crate::versioned_store_types::{PropertyIndex, SchemaId};
 use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
@@ -25,7 +24,7 @@ pub enum ParameterizedEntity {
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct ParametrizedClassPropertyValue {
     /// Index is into properties vector of class.
-    pub in_class_index: PropertyIndex,
+    pub in_class_index: u16,
 
     /// Value of property with index `in_class_index` in a given class.
     pub value: ParametrizedPropertyValue,
@@ -45,7 +44,7 @@ pub struct UpdatePropertyValuesOperation {
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct AddSchemaSupportToEntityOperation {
     pub entity_id: ParameterizedEntity,
-    pub schema_id: SchemaId,
+    pub schema_id: u16,
     pub parametrized_property_values: Vec<ParametrizedClassPropertyValue>,
 }
 

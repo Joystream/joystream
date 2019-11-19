@@ -17,13 +17,11 @@ mod mock;
 mod operations;
 mod permissions;
 mod tests;
-mod versioned_store_types;
 
 pub use constraint::*;
 pub use credentials::*;
 pub use operations::*;
 pub use permissions::*;
-pub use versioned_store_types::{PropertyIndex, SchemaId};
 
 /// Trait for checking if an account has specified Credential
 pub trait CredentialChecker<T: Trait> {
@@ -59,12 +57,8 @@ impl<T: Trait> CreateClassPermissionsChecker<T> for () {
     }
 }
 
-pub type ClassPermissionsType<T> = ClassPermissions<
-    ClassId,
-    <T as Trait>::Credential,
-    PropertyIndex,
-    <T as system::Trait>::BlockNumber,
->;
+pub type ClassPermissionsType<T> =
+    ClassPermissions<ClassId, <T as Trait>::Credential, u16, <T as system::Trait>::BlockNumber>;
 
 pub trait Trait: system::Trait + versioned_store::Trait {
     // type Event: ...
@@ -209,7 +203,7 @@ decl_module! {
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId,
-            constraint: ReferenceConstraint<ClassId, PropertyIndex>
+            constraint: ReferenceConstraint<ClassId, u16>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
@@ -287,7 +281,7 @@ decl_module! {
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId,
-            existing_properties: Vec<PropertyIndex>,
+            existing_properties: Vec<u16>,
             new_properties: Vec<Property>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -326,7 +320,7 @@ decl_module! {
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
-            schema_id: SchemaId,
+            schema_id: u16, // Do not type alias u16!! - u16,
             property_values: Vec<ClassPropertyValue>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -453,7 +447,7 @@ impl<T: Trait> Module<T> {
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
         entity_id: EntityId,
-        schema_id: SchemaId,
+        schema_id: u16,
         property_values: Vec<ClassPropertyValue>,
     ) -> dispatch::Result {
         // class id of the entity being updated
