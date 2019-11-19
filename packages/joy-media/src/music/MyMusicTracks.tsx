@@ -52,7 +52,6 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
 
   const [showSecondScreen, setShowSecondScreen] = useState(false);
   const [albumName, setAlbumName] = useState<string | undefined>();
-  const [albumQuery, setAlbumQuery] = useState<string | undefined>('');
 
   const AlbumDropdown = () => {
     const style = {
@@ -65,18 +64,13 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
     
     return <div style={style}>
       <Dropdown
-        onChange={(_e, { searchQuery, value }) => {
-          setAlbumQuery(searchQuery);
+        onChange={(_e, { value }) => {
           setAlbumName(value as string);
           setShowSecondScreen(true);
-        }}
-        onSearchChange={(_e, { searchQuery }) => {
-          setAlbumQuery(searchQuery);
         }}
         options={albumsDropdownOptions}
         placeholder='Select an album'
         search
-        searchQuery={albumQuery}
         selection
         value={albumName}
       />
