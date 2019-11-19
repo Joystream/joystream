@@ -15,7 +15,7 @@ import { ContentId, ContentMetadataUpdate, SchemaId, ContentVisibility, VecConte
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
 import { MusicAlbumEntity } from '../entities/MusicAlbumEntity';
 import { MusicTrackEntity } from '../entities/MusicTrackEntity';
-import { ReorderTracksInAlbum } from './ReorderTracksInAlbum';
+import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumPreviewProps } from './MyMusicAlbums';
 
 const fakeFieldDescription = 'This is a description of the field';
@@ -226,7 +226,7 @@ const InnerForm = (props: FormProps) => {
     }
 
     return <Tab.Pane as='div'>
-      <ReorderTracksInAlbum 
+      <ReorderableTracks 
         album={album} tracks={tracks}
       />
     </Tab.Pane>

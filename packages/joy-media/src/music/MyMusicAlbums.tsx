@@ -4,6 +4,7 @@ import { Button } from 'semantic-ui-react';
 import { Pluralize } from '@polkadot/joy-utils/Pluralize';
 
 export type MusicAlbumPreviewProps = {
+  id: string,
   title: string,
   artist: string,
   cover: string,

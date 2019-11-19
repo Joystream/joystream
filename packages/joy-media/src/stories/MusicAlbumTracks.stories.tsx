@@ -4,7 +4,7 @@ import '../music/index.css';
 import { withKnobs } from '@storybook/addon-knobs';
 import { TracksOfMyMusicAlbum, TracksOfMyMusicAlbumProps } from '../music/MusicAlbumTracks';
 import { AlbumPreviewExample, FewMusicAlbums } from '../music/StorybookUtils';
-import { ReorderTracksInAlbum } from '../music/ReorderTracksInAlbum';
+import { ReorderableTracks } from '../music/ReorderableTracks';
 import { EditAlbumModal } from '../music/EditAlbumModal';
 import { MusicAlbumEntity } from '../entities/MusicAlbumEntity';
 import { EditMusicAlbum } from '../music/EditMusicAlbum';
@@ -37,7 +37,7 @@ export const MyMusicTracksStory = () =>
 // }
 
 // export const ReorderTracks = () =>
-// 	<ReorderTracksInAlbum {...AlbumWithTracksProps} />
+// 	<ReorderableTracks {...AlbumWithTracksProps} />
 
 // export const EditAlbumModalStory = () =>
 // 	<EditAlbumModal {...AlbumWithTracksProps} />
@@ -59,20 +59,23 @@ const trackNames = [
 	'Pin Cherry (Prunus pensylvanica)'
 ]
 
-const albumTracks = trackNames.map(title => ({
+const albumTracks = trackNames.map((title, i) => ({
+	id: `${i}`,
 	title,
 	artist: 'Man from the Woods',
 	cover: 'https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=60'
 }));
 
 const allMyTracks = 
-	trackNames.slice(0, trackNames.length / 2).map(title => ({
+	trackNames.slice(0, trackNames.length / 2).map((title, i) => ({
+		id: `${100 + i}`,
 		title,
 		artist: 'Man from the Woods',
 		cover: 'https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=60'
 	}))
 	.concat(
-		trackNames.slice(trackNames.length / 2).map(title => ({
+		trackNames.slice(trackNames.length / 2).map((title, i) => ({
+			id: `${200 + i}`,
 			title,
 			artist: 'Liquid Stone',
 			cover: 'https://images.unsplash.com/photo-1484352491158-830ef5692bb3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',

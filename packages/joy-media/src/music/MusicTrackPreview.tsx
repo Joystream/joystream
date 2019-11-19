@@ -4,20 +4,29 @@ import { Button, Checkbox, CheckboxProps } from 'semantic-ui-react';
 type OnCheckboxChange = (event: React.FormEvent<HTMLInputElement>, data: CheckboxProps) => void;
 
 export type MusicTrackPreviewProps = {
+  id: string,
   title: string,
   artist: string,
   cover: string,
   position?: number,
   selected?: boolean,
   onSelect?: OnCheckboxChange,
-  isDraggable?: boolean,
+  onEdit?: () => void,
+  onRemove?: () => void,
   withEditButton?: boolean,
   withRemoveButton?: boolean,
   withActionLabels?: boolean
+  isDraggable?: boolean,
 };
 
 export function MusicTrackPreview (props: MusicTrackPreviewProps) {
-  const { withActionLabels = false, selected = false } = props;
+  const {
+    withActionLabels = false,
+    selected = false,
+    onEdit = () => {},
+    onRemove = () => {}
+  } = props;
+
   const [checked, setChecked] = useState(selected);
 
   const onChange: OnCheckboxChange = (e, d) => {
@@ -42,8 +51,8 @@ export function MusicTrackPreview (props: MusicTrackPreviewProps) {
       <div className='AlbumArtist'>{props.artist}</div>
     </div>
     <div className='AlbumActions'>
-      {props.withEditButton && <Button icon='pencil' content={withActionLabels ? 'Edit' : null} />}
-      {props.withRemoveButton && <Button icon='trash' content={withActionLabels ? 'Remove from album' : null} />}
+      {props.withEditButton && <Button icon='pencil' content={withActionLabels ? 'Edit' : null} onClick={onEdit} />}
+      {props.withRemoveButton && <Button icon='trash' content={withActionLabels ? 'Remove' : null} onClick={onRemove} />}
     </div>
   </div>;
 }

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Button, CheckboxProps, Dropdown, Modal, Message } from 'semantic-ui-react';
+import { Button, CheckboxProps, Dropdown, Message } from 'semantic-ui-react';
 
 import { Pluralize } from '@polkadot/joy-utils/Pluralize';
 import Section from '@polkadot/joy-utils/Section';
 import { MusicAlbumPreviewProps } from './MyMusicAlbums';
 import { MusicTrackPreviewProps, MusicTrackPreview } from './MusicTrackPreview';
-import { ReorderTracksInAlbum } from './ReorderTracksInAlbum';
+import { ReorderableTracks } from './ReorderableTracks';
 
 export type MyMusicTracksProps = {
   albums?: MusicAlbumPreviewProps[],
@@ -13,25 +13,27 @@ export type MyMusicTracksProps = {
 };
 
 export function MyMusicTracks (props: MyMusicTracksProps) {
-  const [idxsOfSelectedTracks, setIdxsOfSelectedTracks] = useState(new Set<number>());
+  const [idsOfSelectedTracks, setIdsOfSelectedTracks] = useState(new Set<string>());
 
   const onTrackSelect = (
-    trackIdx: number,
+    track: MusicTrackPreviewProps,
     _event: React.FormEvent<HTMLInputElement>,
     data: CheckboxProps
   ) => {
-    const set = new Set(idxsOfSelectedTracks);
+    const { id } = track;
+    const set = new Set(idsOfSelectedTracks);
+
     data.checked
-      ? set.add(trackIdx)
-      : set.delete(trackIdx)
+      ? set.add(id)
+      : set.delete(id)
     ;
-    setIdxsOfSelectedTracks(set);
+    setIdsOfSelectedTracks(set);
   }
 
   const { albums = [], tracks = [] } = props;
   const albumsCount = albums.length;
   const tracksCount = tracks.length;
-  const selectedCount = idxsOfSelectedTracks.size;
+  const selectedCount = idsOfSelectedTracks.size;
 
   let longestAlbumName = '';
   albums.forEach(x => {
@@ -41,7 +43,7 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
   });
 
   const albumsDropdownOptions = albums.map(x => {
-    const id = x.title; // TODO replace with unique id of album
+    const { id } = x;
     return {
       key: id,
       value: id,
@@ -64,9 +66,12 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
     
     return <div style={style}>
       <Dropdown
-        onChange={(_e, { value }) => {
-          setAlbumName(value as string);
-          setShowSecondScreen(true);
+        onChange={(_e, { value: id }) => {
+          const selectedAlbum = albums.find(x => x.id === id);
+          if (selectedAlbum) {
+            setAlbumName(selectedAlbum.title);
+            setShowSecondScreen(true);
+          }
         }}
         options={albumsDropdownOptions}
         placeholder='Select an album'
@@ -110,8 +115,8 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
                 key={i}
                 {...track}
                 position={i + 1}
-                selected={idxsOfSelectedTracks.has(i)}
-                onSelect={(e, d) => onTrackSelect(i, e, d)}
+                selected={idsOfSelectedTracks.has(track.id)}
+                onSelect={(e, d) => onTrackSelect(track, e, d)}
                 withEditButton
               />
             )
@@ -119,6 +124,8 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
       </div>
     </Section>;
   }
+
+  const selectedTracks = tracks.filter(track => idsOfSelectedTracks.has(track.id))
 
   const renderReorderTracks = () => {
     return <Section title={`Add tracks to album "${albumName}"`}>
@@ -129,11 +136,18 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
         content='You can reorder tracks before adding them to this album.'
       />
 
-      <ReorderTracksInAlbum tracks={tracks.filter((_track, i) => idxsOfSelectedTracks.has(i))} />
+      <ReorderableTracks
+        tracks={selectedTracks}
+        onRemove={track => {
+          const set = new Set(idsOfSelectedTracks);
+          set.delete(track.id);
+          setIdsOfSelectedTracks(set);
+        }}
+      />
 
       <div style={{ marginTop: '1rem' }}>
         <Button size='large' onClick={goBack}>&lt; Back to my tracks</Button>
-        <Button size='large' primary style={{ float: 'right' }} onClick={goBack}>Add to album &gt;</Button>
+        <Button size='large' primary style={{ float: 'right' }} onClick={() => alert('Not implemented yet')}>Add to album &gt;</Button>
       </div>
     </Section>;
   }
