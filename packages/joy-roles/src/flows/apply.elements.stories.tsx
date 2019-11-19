@@ -5,6 +5,7 @@ import { Card, Container, Message } from 'semantic-ui-react'
 import { u128, GenericAccountId } from '@polkadot/types'
 
 import { 
+	ConfirmStakesStage, ConfirmStakesStageProps,
     ProgressStepsView, ProgressStepsProps, ProgressSteps,
     SubmitApplicationStage, SubmitApplicationStageProps,
     DoneStage, DoneStageProps, 
@@ -13,6 +14,7 @@ import {
 import {
     OpeningBodyApplicationsStatusProps,
     ApplicationStakeRequirement, RoleStakeRequirement,
+	StakeType, 
 } from '../tabs/Opportunities'
 
 import { creator } from "../tabs/Opportunities.stories"
@@ -55,7 +57,6 @@ type TestProps = {
 }
 
 export function ProgressIndicator() {
-
     const permutations:(ProgressStepsProps & TestProps)[] = [
         {
             _description: "Two steps, first active",
@@ -127,6 +128,175 @@ export function FundSourceSelectorFragment() {
                 <p>Address: {address ? address.toString(): 'not set'}</p>
                 <p>Passphrase: {passphrase}</p>
             </Message>
+        </Container>
+    )
+}
+
+export function StageAConfirmStakes() {
+	const permutations:(ConfirmStakesStageProps & TestProps)[] = [
+        {
+            _description: "One fixed stake (application), no limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 0,
+			application_count: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "One fixed stake (role), no limit",
+			application_stake: new ApplicationStakeRequirement(new u128(0)),
+			role_stake: new RoleStakeRequirement(new u128(1213)),
+			application_max: 0,
+			application_count: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "Two fixed stakes, no limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(10)),
+			application_max: 0,
+			application_count: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "One fixed stake (application), 20 applicant limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 20,
+			application_count: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "One fixed stake (role), 20 applicant limit",
+			application_stake: new ApplicationStakeRequirement(new u128(456)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 20,
+			application_count: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "Two fixed stakes, 20 applicant limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(10)),
+			application_max: 20,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "One minimum stake (application), no limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "One minimum stake (role), no limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "Two minimum stakes, no limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "Minimum application stake, fixed role stake, no limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "Minimum role stake, fixed application stake, no limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "One minimum stake (application), 20 applicant limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "One minimum stake (role), 20 applicant limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "Two minimum stakes, 20 applicant limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "Minimum application stake, fixed role stake, 20 applicant limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+        {
+            _description: "Minimum role stake, fixed application stake, 20 applicant limit",
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_max: 0,
+			dynamic_minimum: new u128(0),
+			nextTransition: () => {},
+        },
+    ]
+
+	const keypairs = [
+		{
+			shortName: "KP1",
+			accountId: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
+			balance: new u128(23342),
+		},
+		{
+			shortName: "KP2",
+			accountId: new GenericAccountId('5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
+			balance: new u128(993342),
+		},
+		{
+			shortName: "KP3",
+			accountId: new GenericAccountId('5DBaczGTDhcHgwsZzNE5qW15GrQxxdyros4pYkcKrSUovFQ9'),
+			balance: new u128(242),
+		},
+	]
+
+    return (
+        <Container className="apply-flow">
+            {permutations.map((permutation, key) => (
+                <Container className="outer" key={key}>
+                    <h4>{permutation._description}</h4>
+                    <Card fluid>
+                        <ConfirmStakesStage {...permutation} keypairs={keypairs} />
+                    </Card>
+                </Container>
+            ))}
         </Container>
     )
 }

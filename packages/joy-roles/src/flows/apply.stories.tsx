@@ -38,7 +38,7 @@ export function ApplicationSandbox() {
             application_count: number("Applications count", 0, applicationSliderOptions, "Role rationing policy"),
             application_max: number("Application max", 0, applicationSliderOptions, "Role rationing policy"),
             application_stake: new ApplicationStakeRequirement(
-                new u128(number("Application stake", 500, moneySliderOptions, "Role stakes")), 
+                new u128(number("Application stake", 0, moneySliderOptions, "Role stakes")), 
             ),
             role_stake: new RoleStakeRequirement(
                 new u128(number("Role stake", 0, moneySliderOptions, "Role stakes")), 

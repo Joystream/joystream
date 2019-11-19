@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
-import { GenericAccountId } from '@polkadot/types'
+import { GenericAccountId, u128 } from '@polkadot/types'
 
 import { Accordion, Button, Container, Dropdown, Form, Grid, Header, Icon, Input, Label, Message, Modal, Step, Table } from 'semantic-ui-react'
 import { Slider } from "react-semantic-ui-range";
@@ -17,6 +17,8 @@ import {
 import {
     OpeningBodyApplicationsStatus, OpeningBodyApplicationsStatusProps,
     ApplicationCount, 
+    StakeRequirementProps,
+  IStakeRequirement,
 } from '../tabs/Opportunities'
 
 type accordionProps = {
@@ -107,10 +109,10 @@ export function FundSourceSelector( props: FundSourceSelectorProps & FundSourceC
     })
 
     useEffect(() => {
-		if (pairs.length > 0 && typeof props.addressCallback !== "undefined") {
-			props.addressCallback(new GenericAccountId(pairs[0].accountId))
-		}
-	}, [])
+        if (pairs.length > 0 && typeof props.addressCallback !== "undefined") {
+            props.addressCallback(new GenericAccountId(pairs[0].accountId))
+        }
+    }, [])
 
     return (
       <Form className="fund-source-selector">
@@ -122,7 +124,7 @@ export function FundSourceSelector( props: FundSourceSelectorProps & FundSourceC
                 selection
                 options={pairs}
                 onChange={onChangeDropdown}
-				defaultValue={pairs.length > 0 ? pairs[0].value : null}
+                defaultValue={pairs.length > 0 ? pairs[0].value : null}
               />
           </Form.Field>
           <Form.Field>
@@ -253,25 +255,45 @@ export type StageTransitionProps = FlowModalProps & {
     nextTransition: () => void
 }
 
-export type ConfirmStakesStageProps = StageTransitionProps 
+export type ApplicationStatusProps = {
+  application_count: number
+}
 
-function ConfirmStakesStage(props: ConfirmStakesStageProps) {
+export type ConfirmStakesStageProps = StageTransitionProps & 
+                                      StakeRequirementProps & 
+                                      FundSourceSelectorProps &
+                                      ApplicationStatusProps
+
+export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
+    const [address, setAddress] = useState<AccountId>()
+    const [passphrase, setPassphrase] = useState("")
+    const [minStake, setMinStake] = useState(new u128(0)) // FIXME
+    const [appStake, setAppStake] = useState(new u128(0))
+    const [roleStake, setRoleStake] = useState(new u128(0))
+
+    let content = null
+    if (bothStakesVariable(props)) {
+        content = <ConfirmStakes2Up {...props} setApplicationStake={setAppStake} setRoleStake={setRoleStake} />
+    } else {
+        content = <ConfirmStakes1Up {...props} setApplicationStake={setAppStake} setRoleStake={setRoleStake} />
+    }
+
     return (
       <Container className="content">
-          <p>
-              You need to make a transaction to apply for this role. There is a fee of <strong>1.000 JOY</strong> for this transaction.
-          </p>
-         
-          <Header as='h4'>Source of transaction fee funds</Header>
-          <p>Please select the account that will be used as the source of transaction fee funds.</p>
-          <FundSourceSelector />
+          {content}
+          <Header as='h4'>Source of stake funds</Header>
+          <p>Please select the account that will be used as the source of stake funds.</p>
+          <FundSourceSelector {...props} 
+                              transactionFee={minStake}
+                              addressCallback={setAddress} 
+                              passphraseCallback={setPassphrase} 
+          />
 
-          <StakeRankSelector />
 
           <Container className="cta">
               <Button content='Cancel' icon='cancel' labelPosition='left' />
               <Button 
-                  content='Make transaction and submit application' 
+                  content='Confirm stake and continue' 
                   icon='right arrow' 
                   labelPosition='right' 
                   positive 
@@ -279,6 +301,94 @@ function ConfirmStakesStage(props: ConfirmStakesStageProps) {
               />
           </Container>
       </Container>
+    )
+}
+
+function bothStakesVariable(props: StakeRequirementProps): boolean {
+    return props.application_stake.anyRequirement() && props.role_stake.anyRequirement() &&
+           props.application_stake.atLeast() && props.role_stake.atLeast()
+}
+
+type StakeSelectorProps = ConfirmStakesStageProps & ApplicationStatusProps & {
+    setApplicationStake: (b:Balance) => void
+    setRoleStake: (b:Balance) => void
+}
+
+function ConfirmStakes1Up(props: StakeSelectorProps) {
+  let applicationStake = null
+  if (props.application_stake.anyRequirement()) {
+    applicationStake = <CaptureStake1Up 
+                          name="application stake"
+                          return_policy="after the opening is resolved or your application ends"
+                          colour="yellow"
+                          requirement={props.application_stake}
+                          setValue={props.setApplicationStake}
+                          application_max={props.application_max}
+                          application_count={props.application_count}
+                     />
+  }
+  
+  let roleStake = null
+  if (props.role_stake.anyRequirement()) {
+   roleStake = <CaptureStake1Up 
+                          name="role stake"
+                          return_policy="after the opening is resolved or your application ends"
+                          colour="red"
+                          requirement={props.role_stake}
+                          setValue={props.setRoleStake}
+                          application_max={props.application_max}
+                          application_count={props.application_count}
+                     />
+  }
+
+
+  return (
+      <Container className="stakes 1-up">
+        {applicationStake}
+        {roleStake}
+      </Container>
+    )
+}
+
+function ConfirmStakes2Up(props: StakeSelectorProps) {
+    return (
+        <Container className="application stage">
+            <h4>FIXME</h4>
+        </Container>
+    )
+}
+
+type CaptureStake1UpProps = ApplicationStatusProps & {
+  name: string
+  return_policy: string
+  colour: string
+  requirement: IStakeRequirement
+  setValue: (b: Balance) => void
+  application_max: number
+}
+
+function CaptureStake1Up(props: CaptureStake1UpProps) {
+  let limit = null
+  if (props.application_max > 0) {
+    limit = (
+      <span> This will be used to rank candidates, and only the top <strong>{props.application_max}</strong> will be considered. </span>
+    )
+  }
+
+ return (
+     <Message info={props.colour === 'yellow'} warning={props.colour === 'red'} className={props.name}>
+       <Message.Header><Icon name="shield"/> {props.name}</Message.Header>
+       <Message.Content>
+        <p>
+         <span>This role requires an <strong>{props.name}</strong> of <strong>{formatBalance(props.requirement.value)}</strong>.</span>
+            {limit}
+           <span> There are currently <strong>{props.application_count}</strong> applications. </span>
+        </p>
+        <p>
+           Your <strong>{props.name}</strong> will be returned {props.return_policy}.
+         </p>
+        </Message.Content>
+       </Message>
     )
 }
 
@@ -344,30 +454,30 @@ export type DoneStageProps = {
 export function DoneStage(props: DoneStageProps) {
     return (
       <Container className="content">
-		  <h4>Application submitted!</h4>
+          <h4>Application submitted!</h4>
           <p>
               Your application is <strong>#<ApplicationCount {...props.applications} applied={true} /></strong>. 
               Once the group lead has started their review, your application will be considered.
-		  </p>
-		  <p>
-			  You can track the progress of your
+          </p>
+          <p>
+              You can track the progress of your
               application in the <Link to="#roles/my-roles">My roles</Link> section. If you have any issues,
                   you can raise them in in the <Link to="#forum">Forum</Link> or contact the group lead
-			  directly.
+              directly.
           </p>
 
-		  <h4>Your new role key</h4>
-		  <p>
+          <h4>Your new role key</h4>
+          <p>
               This role requires a new sub-key to be associated with your account. 
               You'll never have to use the key directly, but you will need it in order 
               to perform any duties in the role.
           </p>
-		  <p>
+          <p>
               We've generated a new role key, <strong>{props.roleKeyName}</strong>, automatically. You can 
               download its backup file using the button below, or from the <Link to="#accounts">My account</Link> 
               &nbsp; section.
           </p>
-		  <Message warning>
+          <Message warning>
               <strong>Please make sure to save this file in a secure location as it is the only 
               way to restore your role key!</strong>
           </Message>

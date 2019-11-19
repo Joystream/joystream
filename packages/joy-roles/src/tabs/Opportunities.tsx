@@ -164,6 +164,15 @@ export enum StakeType {
     AtLeast,
 }
 
+export interface IStakeRequirement {
+    anyRequirement(): boolean 
+    qualifier(): string | null 
+	value:Balance 
+	fixed(): boolean 
+	atLeast(): boolean 
+    describe(string) 
+}
+
 abstract class StakeRequirement {
     hard: Balance
     type: StakeType
@@ -183,9 +192,21 @@ abstract class StakeRequirement {
         }
         return null
     }
+
+	get value():Balance {
+		return this.hard
+	}
+
+	fixed(): boolean {
+		return this.type === StakeType.Fixed
+	}
+
+	atLeast(): boolean {
+		return this.type === StakeType.AtLeast
+	}
 }
 
-export class ApplicationStakeRequirement extends StakeRequirement {
+export class ApplicationStakeRequirement extends StakeRequirement implements IStakeRequirement {
     describe(name:string) {
         if (!this.anyRequirement()) {
             return null
@@ -199,7 +220,7 @@ export class ApplicationStakeRequirement extends StakeRequirement {
     }
 }
 
-export class RoleStakeRequirement extends StakeRequirement {
+export class RoleStakeRequirement extends StakeRequirement implements IStakeRequirement {
     describe(name:string) {
         if (!this.anyRequirement()) {
             return null
@@ -222,7 +243,6 @@ export type StakeRequirementProps = DynamicMinimumProps & {
 function hasAnyStake(props: StakeRequirementProps): boolean {
     return props.application_stake.anyRequirement() || props.role_stake.anyRequirement()
 }
-
 
 class messageState {
     positive: boolean = true
