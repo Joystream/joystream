@@ -420,8 +420,28 @@ impl versioned_store::Trait for Runtime {
 
 impl versioned_store_permissions::Trait for Runtime {
     type Credential = u64;
-    type CredentialChecker = (); // ROOT only access
-    type CreateClassPermissionsChecker = (); // ROOT only access
+    type CredentialChecker = SudoKeyHasAllCredentials;
+    type CreateClassPermissionsChecker = SudoKeyCanCreateClasses;
+}
+
+// Credential Checker that gives the sudo key holder all credentials
+pub struct SudoKeyHasAllCredentials {}
+impl versioned_store_permissions::CredentialChecker<Runtime> for SudoKeyHasAllCredentials {
+    fn account_has_credential(
+        account: &AccountId,
+        _credential: <Runtime as versioned_store_permissions::Trait>::Credential,
+    ) -> bool {
+        <sudo::Module<Runtime>>::key() == *account
+    }
+}
+// Allow sudo key holder permission to create classes
+pub struct SudoKeyCanCreateClasses {}
+impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
+    for SudoKeyCanCreateClasses
+{
+    fn account_can_create_class_permissions(account: &AccountId) -> bool {
+        <sudo::Module<Runtime>>::key() == *account
+    }
 }
 
 impl currency::GovernanceCurrency for Runtime {
