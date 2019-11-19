@@ -92,17 +92,17 @@ macro_rules! ensure_opening_is_active {
         match $stage {
             hiring::OpeningStage::Active {
                 // <= need proper type here in the future, not param
-                stage,
-                applicants,
-                active_application_count,
-                unstaking_application_count,
-                deactivated_application_count,
+                ref stage,
+                ref applicants,
+                ref active_application_count,
+                ref unstaking_application_count,
+                ref deactivated_application_count,
             } => Ok((
-                stage,
-                applicants,
-                active_application_count,
-                unstaking_application_count,
-                deactivated_application_count,
+                stage.clone(),
+                applicants.clone(),
+                active_application_count.clone(),
+                unstaking_application_count.clone(),
+                deactivated_application_count.clone(),
             )),
             _ => Err($error),
         }
@@ -188,7 +188,40 @@ macro_rules! ensure_active_opening_is_in_review_period {
 ///
 /// Returns ...
 #[macro_export]
-macro_rules! ensure_stake_imbalance_matches_staking_policy {
+macro_rules! ensure_stake_balance_matches_staking_policy {
+    (
+        $opt_balance:expr,
+        $opt_policy: expr,
+        $stake_missing_when_required_error:expr,
+        $stake_provided_when_redundant_error:expr,
+        $stake_amount_too_low_error:expr
+
+    ) => {{
+        if let Some(ref balance) = $opt_balance {
+            if let Some(ref policy) = $opt_policy {
+
+                if !policy.accepts_amount(balance) {
+                    Err($stake_amount_too_low_error)
+                } else {
+                    Ok(Some(balance.clone()))
+                }
+            } else {
+                Err($stake_provided_when_redundant_error)
+            }
+        } else if $opt_policy.is_some() {
+            Err($stake_missing_when_required_error)
+        } else {
+            Ok(None)
+        }
+    }};
+}
+
+/*
+/// Ensures that optional imbalance matches requirements of optional staking policy
+///
+/// Returns ...
+#[macro_export]
+macro_rules! ensure_stake_balance_matches_staking_policy {
     (
         $opt_imbalance:expr,
         $opt_policy: expr,
@@ -216,6 +249,7 @@ macro_rules! ensure_stake_imbalance_matches_staking_policy {
         }
     }};
 }
+*/
 
 /// Ensures that an optional unstaking period is at least one block whens set.
 ///

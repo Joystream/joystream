@@ -343,6 +343,24 @@ pub enum BeginAcceptingApplicationsError {
     OpeningIsNotInWaitingToBeginStage,
 }
 
+pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
+
+    pub opening: Opening<BalanceOf<T>, T::BlockNumber, T::ApplicationId>,
+
+    pub active_stage: ActiveOpeningStage<T::BlockNumber>,
+    
+    pub applicants: BTreeSet<T::ApplicationId>,
+    
+    pub active_application_count: u32,
+    
+    pub unstaking_application_count: u32,
+    
+    pub deactivated_application_count: u32,
+    
+    pub would_get_added_success: ApplicationAddedSuccess<T>
+
+}
+
 pub enum AddApplicationError {
     OpeningDoesNotExist,
     StakeProvidedWhenRedundant(StakePurpose),
@@ -824,29 +842,27 @@ impl<T: Trait> Module<T> {
     /// the role, the application or both possibly.
     ///
     /// Returns ..
-    pub fn add_application(
+    pub fn ensure_can_add_application(
         opening_id: T::OpeningId,
-        opt_role_stake_imbalance: Option<NegativeImbalance<T>>,
-        opt_application_stake_imbalance: Option<NegativeImbalance<T>>,
-        human_readable_text: Vec<u8>,
-    ) -> Result<ApplicationAdded<T::ApplicationId>, AddApplicationError> {
-        // NB: Should we provide the two imbalances back??
+        opt_role_stake_balance: Option<BalanceOf<T>>,
+        opt_application_stake_balance: Option<BalanceOf<T>>
+    ) -> Result<DestructuredApplicationCanBeAddedEvaluation<T>, AddApplicationError> {
 
         // Ensure that the opening exists
         let opening =
             ensure_opening_exists!(T, opening_id, AddApplicationError::OpeningDoesNotExist)?;
 
         // Ensure that proposed stakes match the policy of the opening.
-        let opt_role_stake_balance = ensure_stake_imbalance_matches_staking_policy!(
-            &opt_role_stake_imbalance,
+        let opt_role_stake_balance = ensure_stake_balance_matches_staking_policy!(
+            &opt_role_stake_balance,
             &opening.role_staking_policy,
             AddApplicationError::StakeMissingWhenRequired(StakePurpose::Role),
             AddApplicationError::StakeProvidedWhenRedundant(StakePurpose::Role),
             AddApplicationError::StakeAmountTooLow(StakePurpose::Role)
         )?;
 
-        let opt_application_stake_balance = ensure_stake_imbalance_matches_staking_policy!(
-            &opt_application_stake_imbalance,
+        let opt_application_stake_balance = ensure_stake_balance_matches_staking_policy!(
+            &opt_application_stake_balance,
             &opening.application_staking_policy,
             AddApplicationError::StakeMissingWhenRequired(StakePurpose::Application),
             AddApplicationError::StakeProvidedWhenRedundant(StakePurpose::Application),
@@ -872,13 +888,53 @@ impl<T: Trait> Module<T> {
         )?;
 
         // Ensure that the new application would actually make it
-        let success = ensure_application_would_get_added!(
+        let would_get_added_success = ensure_application_would_get_added!(
             &opening.application_rationing_policy,
             &applicants,
             &opt_role_stake_balance,
             &opt_application_stake_balance,
             AddApplicationError::NewApplicationWasCrowdedOut
         )?;
+
+
+        Ok(DestructuredApplicationCanBeAddedEvaluation{
+            opening: opening,
+            active_stage: active_stage,
+            applicants: applicants,
+            active_application_count: active_application_count,
+            unstaking_application_count: unstaking_application_count,
+            deactivated_application_count: deactivated_application_count,
+            would_get_added_success: would_get_added_success
+        })
+    }
+
+    /// Adds a new application on the given opening, and begins staking for
+    /// the role, the application or both possibly.
+    ///
+    /// Returns ..
+    pub fn add_application(
+        opening_id: T::OpeningId,
+        opt_role_stake_imbalance: Option<NegativeImbalance<T>>,
+        opt_application_stake_imbalance: Option<NegativeImbalance<T>>,
+        human_readable_text: Vec<u8>,
+    ) -> Result<ApplicationAdded<T::ApplicationId>, AddApplicationError> {
+
+        let opt_role_stake_balance = 
+            if let Some(ref imbalance) = opt_role_stake_imbalance {
+                Some(imbalance.peek())
+            } else {
+                None
+            };
+
+        let opt_application_stake_balance =
+            if let Some(ref imbalance) = opt_application_stake_imbalance {
+                Some(imbalance.peek())
+            } else {
+                None
+            };
+
+
+        let can_be_added_destructured = Self::ensure_can_add_application(opening_id, opt_role_stake_balance, opt_application_stake_balance)?;
 
         //
         // == MUTATION SAFE ==
@@ -887,16 +943,16 @@ impl<T: Trait> Module<T> {
         // If required, deactive another application that was crowded out.
         if let ApplicationAddedSuccess::CrowdsOutExistingApplication(
             id_of_croweded_out_application,
-        ) = success
+        ) = can_be_added_destructured.would_get_added_success
         {
             // Get relevant unstaking periods
             let opt_application_stake_unstaking_period =
                 Self::opt_staking_policy_to_crowded_out_unstaking_period(
-                    &opening.application_staking_policy,
+                    &can_be_added_destructured.opening.application_staking_policy,
                 );
             let opt_role_stake_unstaking_period =
                 Self::opt_staking_policy_to_crowded_out_unstaking_period(
-                    &opening.role_staking_policy,
+                    &can_be_added_destructured.opening.role_staking_policy,
                 );
 
             // Fetch application
@@ -938,7 +994,9 @@ impl<T: Trait> Module<T> {
         // Compute index for this new application
         // TODO: fix so that `number_of_appliations_ever_added` can be invoked.
         let application_index_in_opening =
-            active_application_count + unstaking_application_count + deactivated_application_count; // cant do this due to bad design of stage => opening.stage.number_of_appliations_ever_added();
+            can_be_added_destructured.active_application_count + 
+            can_be_added_destructured.unstaking_application_count + 
+            can_be_added_destructured.deactivated_application_count; // cant do this due to bad design of stage => opening.stage.number_of_appliations_ever_added();
 
         // Create a new application
         let new_application = hiring::Application {
@@ -958,22 +1016,25 @@ impl<T: Trait> Module<T> {
         <NextApplicationId<T>>::mutate(|id| *id += One::one());
 
         // Update counter on opening
+        
+        /*
+        TODO:
+        Yet another instance of problems due to not following https://github.com/Joystream/joystream/issues/36#issuecomment-539567407
+        */
+        let new_active_stage = hiring::OpeningStage::Active {
+            stage: can_be_added_destructured.active_stage,
+            applicants: can_be_added_destructured.applicants,
+            active_application_count: can_be_added_destructured.active_application_count + 1,
+            unstaking_application_count: can_be_added_destructured.unstaking_application_count,
+            deactivated_application_count: can_be_added_destructured.deactivated_application_count,
+        };
+
         <OpeningById<T>>::mutate(opening_id, |opening| {
-            /*
-            TODO:
-            Yet another instance of problems due to not following https://github.com/Joystream/joystream/issues/36#issuecomment-539567407
-            */
-            opening.stage = hiring::OpeningStage::Active {
-                stage: active_stage,
-                applicants: applicants,
-                active_application_count: active_application_count + 1,
-                unstaking_application_count: unstaking_application_count,
-                deactivated_application_count: deactivated_application_count,
-            };
+            opening.stage = new_active_stage;
         });
 
         // DONE
-        Ok(match success {
+        Ok(match can_be_added_destructured.would_get_added_success {
             ApplicationAddedSuccess::CrowdsOutExistingApplication(
                 id_of_croweded_out_application,
             ) => ApplicationAdded::CrodedOutApplication(id_of_croweded_out_application),
@@ -1470,12 +1531,12 @@ impl<T: Trait> Module<T> {
  * Used by `add_application` method.
  */
 
-enum ApplicationAddedSuccess<T: Trait> {
+pub enum ApplicationAddedSuccess<T: Trait> {
     Unconditionally,
     CrowdsOutExistingApplication(T::ApplicationId),
 }
 
-enum ApplicationWouldGetAddedEvaluation<T: Trait> {
+pub enum ApplicationWouldGetAddedEvaluation<T: Trait> {
     No,
     Yes(ApplicationAddedSuccess<T>),
 }
