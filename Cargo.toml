@@ -254,8 +254,8 @@ version = '1.0.4'
 
 [dependencies.forum]
 default_features = false
-git = 'https://github.com/Joystream/substrate-forum-module'
 package = 'substrate-forum-module'
+git = 'https://github.com/Joystream/substrate-forum-module'
 rev = '4bdeadaadfcca1fd6e822c520f429d4beacc4c8a'
 
 [dependencies.versioned_store]
@@ -266,6 +266,7 @@ rev = 'd0c68722405355404840512edf3064d5ced3e1fe'
 
 [dependencies.versioned_store_permissions]
 default_features = false
-git = 'https://github.com/mnaamani/substrate-versioned-store-permissions-module'
 package = 'substrate-versioned-store-permissions-module'
-rev = 'd4c5ca400a5f421665ae3addfce312bc5cc2a9d0'
+git = 'https://github.com/mnaamani/substrate-versioned-store-permissions-module'
+rev = '02cfd53c132f95c99cb936bace4432a064b62b86'
+# path = '/Users/mokhtar/joystream/substrate-versioned-store-permissions-module'

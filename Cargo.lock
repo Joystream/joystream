@@ -1007,7 +1007,7 @@ dependencies = [
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-session 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-versioned-store 1.1.0 (git+https://github.com/joystream/substrate-versioned-store-module?rev=d0c68722405355404840512edf3064d5ced3e1fe)",
- "substrate-versioned-store-permissions-module 1.0.0 (git+https://github.com/mnaamani/substrate-versioned-store-permissions-module?rev=d4c5ca400a5f421665ae3addfce312bc5cc2a9d0)",
+ "substrate-versioned-store-permissions-module 1.0.0 (git+https://github.com/mnaamani/substrate-versioned-store-permissions-module?rev=02cfd53c132f95c99cb936bace4432a064b62b86)",
  "substrate-wasm-builder-runner 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -3392,7 +3392,7 @@ dependencies = [
 [[package]]
 name = "substrate-versioned-store-permissions-module"
 version = "1.0.0"
-source = "git+https://github.com/mnaamani/substrate-versioned-store-permissions-module?rev=d4c5ca400a5f421665ae3addfce312bc5cc2a9d0#d4c5ca400a5f421665ae3addfce312bc5cc2a9d0"
+source = "git+https://github.com/mnaamani/substrate-versioned-store-permissions-module?rev=02cfd53c132f95c99cb936bace4432a064b62b86#02cfd53c132f95c99cb936bace4432a064b62b86"
 dependencies = [
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4416,7 +4416,7 @@ dependencies = [
 "checksum substrate-telemetry 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
 "checksum substrate-trie 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
 "checksum substrate-versioned-store 1.1.0 (git+https://github.com/joystream/substrate-versioned-store-module?rev=d0c68722405355404840512edf3064d5ced3e1fe)" = "<none>"
-"checksum substrate-versioned-store-permissions-module 1.0.0 (git+https://github.com/mnaamani/substrate-versioned-store-permissions-module?rev=d4c5ca400a5f421665ae3addfce312bc5cc2a9d0)" = "<none>"
+"checksum substrate-versioned-store-permissions-module 1.0.0 (git+https://github.com/mnaamani/substrate-versioned-store-permissions-module?rev=02cfd53c132f95c99cb936bace4432a064b62b86)" = "<none>"
 "checksum substrate-wasm-builder-runner 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "bd48273fe9d7f92c1f7d6c1c537bb01c8068f925b47ad2cd8367e11dc32f8550"
 "checksum substrate-wasm-interface 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
 "checksum subtle 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2d67a5a62ba6e01cb2192ff309324cb4875d0c451d55fe2319433abe7a05a8ee"
