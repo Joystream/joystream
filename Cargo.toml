@@ -57,10 +57,8 @@ rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 [dependencies.node-runtime]
 package = 'joystream-node-runtime'
 git = 'https://github.com/mnaamani/substrate-runtime-joystream'
-# branch = 'add-content-wg'
-rev = 'ea0fee618e1210ac5588742eb5b42e397d2469aa'
-# for local development...
-# clone https://github.com/joystream/substrate-runtime-joystream to this path:
+rev = 'b6866a3dae58b64c4daa572494cd749f9a20180e'
+# local development...
 # path = 'substrate-runtime-joystream'
 
 [dependencies.primitives]
