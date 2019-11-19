@@ -7,7 +7,7 @@ import { BlockNumber } from '@polkadot/types/interfaces';
 
 type IClassPermissions = {
     entity_permissions: EntityPermissions,
-    propertentities_can_be_createdy_index: bool,
+    entities_can_be_created: bool,
     add_schemas: CredentialSet,
     create_entities: CredentialSet,
     reference_constraint: ReferenceConstraint,
@@ -19,7 +19,7 @@ export default class ClassPermissionsType extends JoyStruct<IClassPermissions> {
     constructor (value: IClassPermissions) {
         super({
             entity_permissions: EntityPermissions,
-            propertentities_can_be_createdy_index: bool,
+            entities_can_be_created: bool,
             add_schemas: CredentialSet,
             create_entities: CredentialSet,
             reference_constraint: ReferenceConstraint,

@@ -11,7 +11,7 @@ export type ReferenceConstraintVariant =
   Restricted
 ;
 
-type ReferenceConstraintValue = {
+export type ReferenceConstraintValue = {
     [typeName: string]: ReferenceConstraintVariant;
 };
 
