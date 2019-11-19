@@ -12,7 +12,7 @@ import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Text } from '@polkadot/types';
 import { Option } from '@polkadot/types/codec';
 import { ContentId, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from '@joystream/types/media';
-import { onImageError } from '../utils';
+import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
 import { MusicTrackEntity } from '../entities/MusicTrackEntity';
 
 const fakeFieldDescription = 'This is a description of the field';
@@ -252,9 +252,7 @@ const InnerForm = (props: FormProps) => {
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
-    {thumbnail &&
-      <img src={thumbnail} onError={onImageError} />
-    }
+      {thumbnail && <img src={thumbnail} onError={onImageError} />}
     </div>
 
     <Form className='ui form JoyForm EditMetaForm'>
@@ -287,7 +285,7 @@ export const EditForm = withFormik<OuterProps, FormValues>({
       // Basic:
       title: entity && entity.title || fileName || '',
       description: entity && entity.description || '',
-      thumbnail: entity && entity.thumbnail || '',
+      thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
       visibility: entity && entity.visibility || visibilityOptions[0].value,
       album: entity && entity.album || '',
 

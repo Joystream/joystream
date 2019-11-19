@@ -16,7 +16,7 @@ import translate from './translate';
 import { DiscoveryProviderProps } from './DiscoveryProvider';
 import { DataObject, ContentMetadata, ContentId, DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '@joystream/types/media';
 import { MutedDiv } from '@polkadot/joy-utils/MutedText';
-import { DEFAULT_THUMBNAIL_URL, onImageError } from './utils';
+import { onImageError, DEFAULT_THUMBNAIL_URL } from './utils';
 import { isEmptyStr } from '@polkadot/joy-utils/index';
 import { MyAccountContext, MyAccountContextProps } from '@polkadot/joy-utils/MyAccountContext';
 import { Message } from 'semantic-ui-react';
