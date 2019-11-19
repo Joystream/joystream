@@ -31,7 +31,7 @@
     "test": "echo \"skipping tests\"",
     "vanitygen": "node packages/app-accounts/scripts/vanitygen.js",
     "start": "cd packages/apps && webpack --config webpack.config.js",
-    "storybook": "start-storybook -p 3001"
+    "storybook": "start-storybook -s ./packages/apps/public -p 3001"
   },
   "devDependencies": {
     "@babel/core": "^7.6.2",
