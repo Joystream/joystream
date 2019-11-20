@@ -107,11 +107,11 @@ class Component extends React.PureComponent<Props> {
       </Table.Row>
       <Table.Row>
         <Table.Cell>Root account</Table.Cell>
-        <Table.Cell><AddressMini value={root_account} isShort={false} isPadded={false} size={36} withName withBalance /></Table.Cell>
+        <Table.Cell><AddressMini value={root_account} isShort={false} isPadded={false} withBalance /></Table.Cell>
       </Table.Row>
       <Table.Row>
         <Table.Cell>Controller account</Table.Cell>
-        <Table.Cell><AddressMini value={controller_account} isShort={false} isPadded={false} size={36} withName withBalance /></Table.Cell>
+        <Table.Cell><AddressMini value={controller_account} isShort={false} isPadded={false} withBalance /></Table.Cell>
       </Table.Row>
       <Table.Row>
         <Table.Cell>Registered on</Table.Cell>
@@ -149,7 +149,7 @@ class Component extends React.PureComponent<Props> {
       return <div>Paid, terms ID: {paid.toNumber()}</div>;
     } else if (etype === Screening.name) {
       const accountId = entry.value as Screening;
-      return <div>Screened by <AddressMini value={accountId} isShort={false} isPadded={false} size={36} withName withBalance /></div>;
+      return <div>Screened by <AddressMini value={accountId} isShort={false} isPadded={false} withBalance /></div>;
     } else {
       return <em className='muted text'>Unknown</em>;
     }

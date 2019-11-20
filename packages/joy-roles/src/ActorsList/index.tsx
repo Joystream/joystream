@@ -70,7 +70,7 @@ class ActorInner extends React.PureComponent<ActorProps> {
             <Table.Row>
                 <Table.Cell>{actor.member_id.toString()}</Table.Cell>
                 <Table.Cell>{actor.role.toString()}</Table.Cell>
-                <Table.Cell><AddressMini value={actor.account} isShort={false} isPadded={false} withBalance={true} withName={true} withMemo={true} size={36} /></Table.Cell>
+                <Table.Cell><AddressMini value={actor.account} isShort={false} isPadded={false} withBalance={true} /></Table.Cell>
                 { memberIsActor ? <Table.Cell>{this.renderUnstakeTxButton(actor.account)}</Table.Cell> : null }
             </Table.Row>
         )
