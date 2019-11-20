@@ -379,9 +379,13 @@ pub enum AddApplicationError {
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
-pub enum ApplicationAdded<ApplicationId> {
-    NoCrowdingOut,
-    CrodedOutApplication(ApplicationId),
+pub struct ApplicationAdded<ApplicationId> {
+
+    /// ...
+    application_id_added: ApplicationId,
+
+    /// ...
+    application_id_crowded_out: Option<ApplicationId>
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -1044,12 +1048,17 @@ impl<T: Trait> Module<T> {
         });
 
         // DONE
-        Ok(match can_be_added_destructured.would_get_added_success {
-            ApplicationAddedSuccess::CrowdsOutExistingApplication(
-                id_of_croweded_out_application,
-            ) => ApplicationAdded::CrodedOutApplication(id_of_croweded_out_application),
-            _ => ApplicationAdded::NoCrowdingOut,
-        })
+        let application_added_result = ApplicationAdded{
+            application_id_added: new_application_id,
+            application_id_crowded_out: 
+            
+            match can_be_added_destructured.would_get_added_success {
+                ApplicationAddedSuccess::CrowdsOutExistingApplication(id) => Some(id),
+                _ => None,
+            }
+        };
+
+        Ok(application_added_result)
     }
 
     /// Deactive an active application.
