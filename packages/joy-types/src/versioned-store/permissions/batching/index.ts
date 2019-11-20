@@ -6,7 +6,7 @@ import { Credential } from '../credentials';
 type IOperation = {
     with_credential: Option<Credential>,
     as_entity_maintainer: bool,
-    peration_type: OperationType,
+    operation_type: OperationType,
 }
 
 export class Operation extends JoyStruct<IOperation> {
@@ -14,9 +14,19 @@ export class Operation extends JoyStruct<IOperation> {
         super({
             with_credential: Option.with(Credential),
             as_entity_maintainer: bool,
-            peration_type: OperationType,
+            operation_type: OperationType,
         }, value);
     }
 
-    // getters...
+    get with_credential () : Option<Credential> {
+        return this.getField('with_credential');
+    }
+
+    get as_entity_maintainer () : bool {
+        return this.getField('as_entity_maintainer');
+    }
+
+    get operation_type () : OperationType {
+        return this.getField('operation_type');
+    }
 }

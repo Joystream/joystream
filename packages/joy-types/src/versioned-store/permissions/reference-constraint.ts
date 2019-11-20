@@ -23,4 +23,16 @@ export class ReferenceConstraint extends Enum {
       Restricted,
     }, value, index);
   }
+
+  static NoReferencingAllowed () : ReferenceConstraint {
+    return new ReferenceConstraint({'NoReferencingAllowed': new NoReferencingAllowed()});
+  }
+
+  static NoConstraint () : ReferenceConstraint {
+    return new ReferenceConstraint({'NoConstraint': new NoConstraint()});
+  }
+
+  static Restricted (restrictions: Vec<PropertyOfClass>) : ReferenceConstraint {
+    return new ReferenceConstraint({'Restricted': new Restricted(restrictions)});
+  }
 }

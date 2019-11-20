@@ -16,5 +16,11 @@ export default class ParametrizedClassPropertyValue extends JoyStruct<IParametri
         }, value);
     }
 
-    // getters..
+    get in_class_index() : u16 {
+        return this.getField('in_class_index');
+    }
+
+    get value() : ParametrizedPropertyValue {
+        return this.getField('value');
+    }
 }

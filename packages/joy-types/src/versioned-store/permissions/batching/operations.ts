@@ -1,25 +1,24 @@
 import ClassId from "../../ClassId";
 import { JoyStruct } from '../../../JoyStruct';
 import { ParametrizedEntity } from "./parametrized-entity";
-import { Vec } from "@polkadot/types";
+import { Vec, u16 } from "@polkadot/types";
 import ParametrizedClassPropertyValue from "./ParametrizedClassPropertyValue";
-import { SchemaId } from "../../../media";
 
-class ParameterizedClassPropertyValues extends Vec.with(ParametrizedClassPropertyValue) {}
+export class ParameterizedClassPropertyValues extends Vec.with(ParametrizedClassPropertyValue) {}
 
-type ICreateEntityOperation = {
+export type ICreateEntityOperation = {
     class_id: ClassId,
 };
 
-type IUpdatePropertyValuesOperation = {
+export type IUpdatePropertyValuesOperation = {
     entity_id: ParametrizedEntity,
-    new_parametrized_property_values: ParameterizedClassPropertyValues
+    parametrized_property_values: ParameterizedClassPropertyValues
 };
 
-type IAddSchemaSupportToEntityOperation = {
+export type IAddSchemaSupportToEntityOperation = {
     entity_id: ParametrizedEntity,
-    schema_id: SchemaId,
-    new_parametrized_property_values: ParameterizedClassPropertyValues
+    schema_id: u16,
+    parametrized_property_values: ParameterizedClassPropertyValues
 };
 
 export class CreateEntityOperation extends JoyStruct<ICreateEntityOperation> {
@@ -37,25 +36,7 @@ export class CreateEntityOperation extends JoyStruct<ICreateEntityOperation> {
 export class UpdatePropertyValuesOperation extends JoyStruct<IUpdatePropertyValuesOperation> {
     constructor (value: IUpdatePropertyValuesOperation) {
         super({
-            entity_id: ClassId,
-            new_parametrized_property_values: ParameterizedClassPropertyValues
-        }, value);
-    }
-
-    get entity_id() : ParametrizedEntity {
-        return this.getField('entity_id');
-    }
-
-    get property_values() : ParameterizedClassPropertyValues {
-        return this.getField('new_parametrized_property_values');
-    }
-}
-
-export class AddSchemaSupportToEntityOperation extends JoyStruct<IAddSchemaSupportToEntityOperation> {
-    constructor (value: IAddSchemaSupportToEntityOperation) {
-        super({
-            entity_id: ClassId,
-            schema_id: SchemaId,
+            entity_id: ParametrizedEntity,
             parametrized_property_values: ParameterizedClassPropertyValues
         }, value);
     }
@@ -65,10 +46,28 @@ export class AddSchemaSupportToEntityOperation extends JoyStruct<IAddSchemaSuppo
     }
 
     get property_values() : ParameterizedClassPropertyValues {
-        return this.getField('new_parametrized_property_values');
+        return this.getField('parametrized_property_values');
+    }
+}
+
+export class AddSchemaSupportToEntityOperation extends JoyStruct<IAddSchemaSupportToEntityOperation> {
+    constructor (value: IAddSchemaSupportToEntityOperation) {
+        super({
+            entity_id: ParametrizedEntity,
+            schema_id: u16,
+            parametrized_property_values: ParameterizedClassPropertyValues
+        }, value);
     }
 
-    get schema_id() : SchemaId {
+    get entity_id() : ParametrizedEntity {
+        return this.getField('entity_id');
+    }
+
+    get property_values() : ParameterizedClassPropertyValues {
+        return this.getField('parametrized_property_values');
+    }
+
+    get schema_id() : u16 {
         return this.getField('schema_id');
     }
 }

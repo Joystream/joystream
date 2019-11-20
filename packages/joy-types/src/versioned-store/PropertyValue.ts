@@ -55,7 +55,7 @@ export type PropertyValueEnum =
   InternalVec
 ;
 
-type PropertyValueEnumValue = {
+export type PropertyValueEnumValue = {
   [typeName: string]: PropertyValueEnum;
 };
 

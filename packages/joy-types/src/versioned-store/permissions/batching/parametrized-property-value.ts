@@ -1,5 +1,5 @@
 import { Enum, u32, Vec } from '@polkadot/types';
-import { PropertyValue as VersionedStorePropertyValue } from '../../PropertyValue';
+import { PropertyValue as VersionedStorePropertyValue, PropertyValueEnumValue } from '../../PropertyValue';
 import { ParametrizedEntity } from './parametrized-entity';
 
 export class PropertyValue extends VersionedStorePropertyValue {}
@@ -19,5 +19,23 @@ export class ParametrizedPropertyValue extends Enum {
             InternalEntityJustAdded,
             InternalEntityVec,
         }, value, index);
-      }
+    }
+
+    static PropertyValue(value: PropertyValueEnumValue) : ParametrizedPropertyValue {
+        return new ParametrizedPropertyValue({'PropertyValue': new VersionedStorePropertyValue(
+            value
+        )});
+    }
+
+    static InternalEntityJustAdded(index: number | u32) : ParametrizedPropertyValue {
+        return new ParametrizedPropertyValue({'InternalEntityJustAdded': new InternalEntityJustAdded(
+            index
+        )});
+    }
+
+    static InternalEntityVec(entities: ParametrizedEntity[] | Vec<ParametrizedEntity>) : ParametrizedPropertyValue {
+        return new ParametrizedPropertyValue({'InternalEntityVec': new InternalEntityVec(
+            entities
+        )});
+    }
 }

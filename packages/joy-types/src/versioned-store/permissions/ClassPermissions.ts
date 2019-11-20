@@ -28,5 +28,32 @@ export default class ClassPermissionsType extends JoyStruct<IClassPermissions> {
         }, value);
     }
 
-    // getters..
+
+    get entity_permissions() : EntityPermissions {
+        return this.getField('entity_permissions');
+    }
+
+    get entities_can_be_created() : bool {
+        return this.getField('entities_can_be_created');
+    }
+
+    get add_schemas() : CredentialSet {
+        return this.getField('add_schemas');
+    }
+
+    get create_entities() : CredentialSet {
+        return this.getField('create_entities');
+    }
+
+    get reference_constraint() : ReferenceConstraint {
+        return this.getField('reference_constraint');
+    }
+
+    get admins () : CredentialSet {
+        return this.getField('admins');
+    }
+
+    get last_permissions_update() : u32 {
+        return this.getField('last_permissions_update');
+    }
 }
