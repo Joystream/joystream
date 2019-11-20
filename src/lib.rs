@@ -382,10 +382,10 @@ pub enum AddApplicationError {
 pub struct ApplicationAdded<ApplicationId> {
 
     /// ...
-    application_id_added: ApplicationId,
+    pub application_id_added: ApplicationId,
 
     /// ...
-    application_id_crowded_out: Option<ApplicationId>
+    pub application_id_crowded_out: Option<ApplicationId>
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
