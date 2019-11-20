@@ -5,7 +5,7 @@ import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 import { GenericAccountId, u128 } from '@polkadot/types'
 
-import { Accordion, Button, Container, Dropdown, Form, Grid, Header, Icon, Input, Label, Message, Modal, Step, Table } from 'semantic-ui-react'
+import { Accordion, Button, Container, Dropdown, Form, Grid, Header, Icon, Input, Label, Message, Modal, SemanticICONS, Step, Table } from 'semantic-ui-react'
 import { Slider } from "react-semantic-ui-range";
 
 import Identicon from '@polkadot/react-identicon';
@@ -151,39 +151,98 @@ function rankIcon(place: number, slots: number): string {
     return 'thermometer'
 }
 
-function StakeRankSelector() {
-    const slots = 20
-    const [value, setValue] = useState(11);
+export type StakeRankSelectorProps = {
+    minStake: Balance
+    slots: Balance[] // List of stakes to beat
+    stake: Balance
+    setStake: (b:Balance) => void
+    step: Balance
+}
+
+export function StakeRankSelector(props: StakeRankSelectorProps) {
+    const slotCount = props.slots.length
+    const [rank, setRank] = useState(1);
     const settings = {
         min: 0,
-        max: slots,
+        max: slotCount,
         step: 1,
         onChange: value => {
-            setValue(value);
+            if (value >= props.slots.length) {
+                value = props.slots.length
+            } else if (value > 0 && !focused) {
+                props.setStake(props.slots[value-1])
+            } else if (!focused) {
+                props.setStake(props.minStake)
+            }
+            setRank(value)
         }
-  };
-  const ticks = []
-  for (var i = 0; i < slots; i++) {
-      ticks.push(<div class="tick" style={{width: (100/slots)+'%'}}>{slots-i}</div>)
-  }
+    };
+
+    const ticks = []
+    for (var i = 0; i < slotCount; i++) {
+        ticks.push(<div key={i} className="tick" style={{width: (100/slotCount)+'%'}}>{slotCount-i}</div>)
+    }
+    const slider = <Slider className="labeled" rank={rank} color="teal" settings={settings} />
+
+    const findRankValue = (newStake: Balance): number => {
+        if (newStake.gt(props.slots[slotCount-1])) {
+            return slotCount
+        }
+
+        for (let i = slotCount; i--; i >= 0) {
+            if (newStake.gt(props.slots[i])) {
+                return i+1
+            }
+        }
+
+        return 0
+    }
+
+    const [focused, setFocused] = useState(false)
+
+    const changeValue = (e, {value}) => {
+        const newStake = new u128(value) 
+        props.setStake(newStake)
+        setRank(findRankValue(newStake))
+    }
+
+	useEffect( () => {
+		props.setStake(props.minStake)
+	}, [])
+
     return (
+
         <Container className="stake-rank-selector">
+            <h4>Choose a stake</h4>
             <div className="controls">
-                <Button circular icon='angle double left' onClick={() => {setValue(1)}} />
-                <Button circular icon='angle left' onClick={() => {setValue(value-1)}} />
-                <Input label="JOY" labelPosition="right" type="number"  />
-                <Button circular icon='angle right' onClick={() => {setValue(value+1)}} />
-                <Button circular icon='angle double right' onClick={() => {setValue(slots)}} />
+                <Button circular icon='angle double left' onClick={() => {setRank(1)}} />
+                <Button circular icon='angle left' onClick={() => {rank > 1 && setRank(rank-1)}} />
+                <Input label="JOY" 
+                       labelPosition="right" 
+                       onChange={changeValue} 
+                       type="number" 
+                       onBlur={() => {setFocused(false)}}
+                       onFocus={() => {setFocused(true)}}
+                       step={props.step.toNumber()}
+                       value={props.stake.toNumber() > 0 ? props.stake.toNumber() : null} 
+                />
+                <Button circular icon='angle right' onClick={() => {rank <= slotCount && setRank(rank+1)}} />
+                <Button circular icon='angle double right' onClick={() => {setRank(slotCount)}} />
                 <p>
-                <Label size='large'>
-                    <Icon name={rankIcon(value, slots)} />
-                    Estimated rank
-                    <Label.Detail>{(slots+1)-value}</Label.Detail>
-                </Label>
-                    </p>
+                    <Label size='large'>
+                        <Icon name={rankIcon(rank, slotCount)} />
+                        Estimated rank
+                        <Label.Detail>{(slotCount+1)-rank} / {slotCount}</Label.Detail>
+                    </Label>
+                    <Label size='large'>
+                        <Icon name="shield" />
+                        Your stake
+                        <Label.Detail>{formatBalance(props.stake)}</Label.Detail>
+                    </Label>
+                </p>
             </div>
 
-            <Slider className="labeled" value={value} color="teal" settings={settings} />
+            <Slider discrete className="labeled" value={rank} color="teal" settings={settings} />
             <div className="ticks">
                 {ticks}
             </div>
@@ -251,6 +310,37 @@ export function ProgressStepsView(props: ProgressStepsProps) {
     )
 }
 
+type CTACallback = () => void
+
+type CTAProps = {
+    negativeLabel: string
+    negativeIcon: SemanticICONS
+    negativeCallback: CTACallback
+    positiveLabel: string
+    positiveIcon: SemanticICONS
+    positiveCallback: CTACallback
+}
+
+function CTA(props: CTAProps) {
+    return (
+        <Container className="cta">
+            <Button 
+                content={props.negativeLabel}
+                icon={props.negativeIcon}
+                labelPosition='left' 
+                  onClick={props.negativeCallback}
+            />
+            <Button 
+                  content={props.positiveLabel}
+                  icon={props.positiveIcon}
+                  labelPosition='right' 
+                  positive 
+                  onClick={props.positiveCallback}
+            />
+        </Container>
+    )
+}
+
 export type StageTransitionProps = FlowModalProps & {
     nextTransition: () => void
 }
@@ -262,7 +352,8 @@ export type ApplicationStatusProps = {
 export type ConfirmStakesStageProps = StageTransitionProps & 
                                       StakeRequirementProps & 
                                       FundSourceSelectorProps &
-                                      ApplicationStatusProps
+									  ApplicationStatusProps &
+									  StakeRankSelectorProps
 
 export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
     const [address, setAddress] = useState<AccountId>()
@@ -271,16 +362,14 @@ export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
     const [appStake, setAppStake] = useState(new u128(0))
     const [roleStake, setRoleStake] = useState(new u128(0))
 
-    let content = null
-    if (bothStakesVariable(props)) {
-        content = <ConfirmStakes2Up {...props} setApplicationStake={setAppStake} setRoleStake={setRoleStake} />
-    } else {
-        content = <ConfirmStakes1Up {...props} setApplicationStake={setAppStake} setRoleStake={setRoleStake} />
-    }
+    const ctaContinue = (zeroOrTwoStakes(props)) ?
+        'Confirm stakes and continue' :
+        'Confirm stake and continue';
 
     return (
       <Container className="content">
-          {content}
+          <ConfirmStakes {...props} setApplicationStake={setAppStake} setRoleStake={setRoleStake} />
+
           <Header as='h4'>Source of stake funds</Header>
           <p>Please select the account that will be used as the source of stake funds.</p>
           <FundSourceSelector {...props} 
@@ -288,20 +377,27 @@ export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
                               addressCallback={setAddress} 
                               passphraseCallback={setPassphrase} 
           />
-
-
-          <Container className="cta">
-              <Button content='Cancel' icon='cancel' labelPosition='left' />
-              <Button 
-                  content='Confirm stake and continue' 
-                  icon='right arrow' 
-                  labelPosition='right' 
-                  positive 
-                  onClick={props.nextTransition}
-              />
-          </Container>
+        
+          <CTA
+              negativeLabel='Cancel'
+              negativeIcon='cancel'
+              negativeCallback={() => {}}
+              positiveLabel={ctaContinue}
+              positiveIcon='right arrow'
+              positiveCallback={props.nextTransition}
+          />
       </Container>
     )
+}
+
+function stakeCount(props: StakeRequirementProps): number {
+    return (props.application_stake.anyRequirement() ? 1 : 0) +
+           (props.role_stake.anyRequirement() ? 1 : 0)
+}
+
+function zeroOrTwoStakes(props: StakeRequirementProps): boolean {
+    const count = stakeCount(props)
+    return (count == 0 || count == 2)
 }
 
 function bothStakesVariable(props: StakeRequirementProps): boolean {
@@ -312,6 +408,14 @@ function bothStakesVariable(props: StakeRequirementProps): boolean {
 type StakeSelectorProps = ConfirmStakesStageProps & ApplicationStatusProps & {
     setApplicationStake: (b:Balance) => void
     setRoleStake: (b:Balance) => void
+}
+
+function ConfirmStakes(props: StakeSelectorProps) {
+    if (bothStakesVariable(props)) {
+       return <ConfirmStakes2Up {...props} />
+    } 
+
+    return <ConfirmStakes1Up {...props} />
 }
 
 function ConfirmStakes1Up(props: StakeSelectorProps) {
@@ -325,6 +429,7 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
                           setValue={props.setApplicationStake}
                           application_max={props.application_max}
                           application_count={props.application_count}
+		                  {...props}
                      />
   }
   
@@ -338,9 +443,9 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
                           setValue={props.setRoleStake}
                           application_max={props.application_max}
                           application_count={props.application_count}
+		                  {...props}
                      />
   }
-
 
   return (
       <Container className="stakes 1-up">
@@ -368,19 +473,31 @@ type CaptureStake1UpProps = ApplicationStatusProps & {
 }
 
 function CaptureStake1Up(props: CaptureStake1UpProps) {
-  let limit = null
-  if (props.application_max > 0) {
-    limit = (
-      <span> This will be used to rank candidates, and only the top <strong>{props.application_max}</strong> will be considered. </span>
-    )
-  }
+	let limit = null
+	if (props.application_max > 0) {
+		limit = (
+			<span> This will be used to rank candidates, and only the top <strong>{props.application_max}</strong> will be considered. </span>
+		)
+	}
 
- return (
+	// Set default value
+	useEffect(() => {
+		props.setValue(props.requirement.value)
+	}, [])
+
+	let slider = null
+	let atLeast = null
+	if (props.requirement.atLeast()) {
+		slider = <StakeRankSelector {...props} />
+		atLeast = 'at least '
+    }
+
+    return (
      <Message info={props.colour === 'yellow'} warning={props.colour === 'red'} className={props.name}>
        <Message.Header><Icon name="shield"/> {props.name}</Message.Header>
        <Message.Content>
         <p>
-         <span>This role requires an <strong>{props.name}</strong> of <strong>{formatBalance(props.requirement.value)}</strong>.</span>
+         <span>This role requires an <strong>{props.name}</strong> of {atLeast}<strong>{formatBalance(props.requirement.value)}</strong>.</span>
             {limit}
            <span> There are currently <strong>{props.application_count}</strong> applications. </span>
         </p>
@@ -388,7 +505,8 @@ function CaptureStake1Up(props: CaptureStake1UpProps) {
            Your <strong>{props.name}</strong> will be returned {props.return_policy}.
          </p>
         </Message.Content>
-       </Message>
+          {slider}
+      </Message>
     )
 }
 
@@ -432,16 +550,14 @@ export function SubmitApplicationStage(props: SubmitApplicationStageProps) {
                               passphraseCallback={setPassphrase} 
           />
 
-          <Container className="cta">
-              <Button content='Cancel' icon='cancel' labelPosition='left' />
-              <Button 
-                  content='Make transaction and submit application' 
-                  icon='right arrow' 
-                  labelPosition='right' 
-                  positive 
-                  onClick={onSubmit}
-              />
-          </Container>
+          <CTA
+              negativeLabel='Cancel'
+              negativeIcon='cancel'
+              negativeCallback={() => {}}
+              positiveLabel='Make transaction and submit application'
+              positiveIcon='right arrow'
+              positiveCallback={onSubmit}
+          />
       </Container>
     )
 }

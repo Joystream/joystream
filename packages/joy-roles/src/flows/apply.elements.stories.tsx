@@ -10,6 +10,7 @@ import {
     SubmitApplicationStage, SubmitApplicationStageProps,
     DoneStage, DoneStageProps, 
     FundSourceSelector,
+	StakeRankSelector, StakeRankSelectorProps,
 } from "./apply"
 import {
     OpeningBodyApplicationsStatusProps,
@@ -132,11 +133,43 @@ export function FundSourceSelectorFragment() {
     )
 }
 
+export function StakeRankSelectorFragment() {
+	const [stake, setStake] = useState<Balance>(new u128(0))
+
+	// List of the minimum stake required to beat each rank
+	const slots: Balance[] = []
+	for (let i = 0; i < 10; i++) {
+		slots.push(new u128((i*100)+10+i+1))
+	}
+
+    const props: StakeRankSelectorProps = {
+		minStake: new u128(10),
+		stake: stake,
+		setStake: setStake,
+		slots: slots,
+		step: new u128(10),
+    }
+
+    return (
+        <Container className="apply-flow">
+            <Card fluid>
+				<Message info>
+					<StakeRankSelector {...props} />
+				</Message>
+            </Card>
+			<Message warning>
+				Slots: {JSON.stringify(slots)}<br />
+				Stake: {stake.toString()}
+			</Message>
+        </Container>
+    )
+}
+
 export function StageAConfirmStakes() {
 	const permutations:(ConfirmStakesStageProps & TestProps)[] = [
         {
             _description: "One fixed stake (application), no limit",
-			application_stake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
+			application_stake: new ApplicationStakeRequirement(new u128(10)),
 			role_stake: new RoleStakeRequirement(new u128(0)),
 			application_max: 0,
 			application_count: 0,
@@ -184,22 +217,25 @@ export function StageAConfirmStakes() {
 			application_stake: new ApplicationStakeRequirement(new u128(10)),
 			role_stake: new RoleStakeRequirement(new u128(10)),
 			application_max: 20,
+			application_count: 0,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
         },
         {
             _description: "One minimum stake (application), no limit",
-			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			application_stake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
 			role_stake: new RoleStakeRequirement(new u128(0)),
 			application_max: 0,
+			application_count: 10,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
         },
         {
             _description: "One minimum stake (role), no limit",
-			application_stake: new ApplicationStakeRequirement(new u128(10)),
-			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_stake: new ApplicationStakeRequirement(new u128(0)),
+			role_stake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
 			application_max: 0,
+			application_count: 10,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
         },
@@ -287,13 +323,29 @@ export function StageAConfirmStakes() {
 		},
 	]
 
+	const [stake, setStake] = useState<Balance>(new u128(0))
+
+	// List of the minimum stake required to beat each rank
+	const slots: Balance[] = []
+	for (let i = 0; i < 10; i++) {
+		slots.push(new u128((i*100)+10+i+1))
+	}
+
+    const stakeRankSelectorProps: StakeRankSelectorProps = {
+		minStake: new u128(10),
+		stake: stake,
+		setStake: setStake,
+		slots: slots,
+		step: new u128(10),
+    }
+
     return (
         <Container className="apply-flow">
             {permutations.map((permutation, key) => (
                 <Container className="outer" key={key}>
-                    <h4>{permutation._description}</h4>
+                    <h4>{key}. {permutation._description}</h4>
                     <Card fluid>
-                        <ConfirmStakesStage {...permutation} keypairs={keypairs} />
+                        <ConfirmStakesStage {...permutation} {...stakeRankSelectorProps} keypairs={keypairs} />
                     </Card>
                 </Container>
             ))}
