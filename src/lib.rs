@@ -269,7 +269,7 @@ decl_module! {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum StakePurpose {
     Role,
     Application,
@@ -282,7 +282,7 @@ pub enum ActivateOpeningAt<BlockNumber> {
     ExactBlock(BlockNumber),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum AddOpeningError {
     OpeningMustActivateInTheFuture,
 
@@ -299,12 +299,14 @@ pub struct ApplicationUnstakingPeriods<T: Trait> {
 */
 
 /// The possible outcome for an application in an opening which is being filled.
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum ApplicationOutcomeInFilledOpening {
     Success,
     Failure,
 }
 
 /// Error due to attempting to fill an opening.
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum FillOpeningError<T: Trait> {
     OpeningDoesNotExist,
     OpeningNotInReviewPeriodStage,
@@ -314,6 +316,7 @@ pub enum FillOpeningError<T: Trait> {
     ApplicationNotInActiveStage(T::ApplicationId),
 }
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum CancelOpeningError {
     UnstakingPeriodTooShort(StakePurpose),
     RedundantUnstakingPeriodProvided(StakePurpose),
@@ -324,20 +327,24 @@ pub enum CancelOpeningError {
 /// NB:
 /// `OpeningCancelled` does not have the ideal form.
 /// https://github.com/Joystream/substrate-hiring-module/issues/10
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub struct OpeningCancelled {
     pub number_of_unstaking_applications: u32,
     pub number_of_deactivated_applications: u32,
 }
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum RemoveOpeningError {
     OpeningDoesNotExist,
 }
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum BeginReviewError {
     OpeningDoesNotExist,
     OpeningNotInAcceptingApplicationsStage,
 }
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum BeginAcceptingApplicationsError {
     OpeningDoesNotExist,
     OpeningIsNotInWaitingToBeginStage,
@@ -361,6 +368,7 @@ pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
 
 }
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum AddApplicationError {
     OpeningDoesNotExist,
     StakeProvidedWhenRedundant(StakePurpose),
@@ -370,11 +378,13 @@ pub enum AddApplicationError {
     NewApplicationWasCrowdedOut,
 }
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum ApplicationAdded<ApplicationId> {
     NoCrowdingOut,
     CrodedOutApplication(ApplicationId),
 }
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum DeactivateApplicationError {
     ApplicationDoesNotExist,
     ApplicationNotActive,
