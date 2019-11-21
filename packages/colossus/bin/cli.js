@@ -196,7 +196,7 @@ async function run_signup(account_file)
     console.log(`There are still ${availableSlots} slots available, proceeding`);
   }
 
-  const member_address = api.identities.key.address();
+  const member_address = api.identities.key.address;
 
   // Check if account works
   const min = await api.roles.requiredBalanceForRoleStaking(api.roles.ROLE_STORAGE);
@@ -208,7 +208,7 @@ async function run_signup(account_file)
 
   // Create a role key
   const role_key = await api.identities.createRoleKey(member_address);
-  const role_address = role_key.address();
+  const role_address = role_key.address;
   console.log('Generated', role_address, '- this is going to be exported to a JSON file.\n',
     ' You can provide an empty passphrase to make starting the server easier,\n',
     ' but you must keep the file very safe, then.');
@@ -240,7 +240,7 @@ async function wait_for_role(config)
 
   // Wait for the account role to be finalized
   console.log('Waiting for the account to be staked as a storage provider role...');
-  const result = await api.roles.waitForRole(api.identities.key.address(), api.roles.ROLE_STORAGE);
+  const result = await api.roles.waitForRole(api.identities.key.address, api.roles.ROLE_STORAGE);
   return [result, api];
 }
 
@@ -267,7 +267,7 @@ async function announce_public_url(api, config) {
   debug('announcing public url')
   const { publish } = require('@joystream/discovery')
 
-  const accountId = api.identities.key.address()
+  const accountId = api.identities.key.address
 
   try {
     const serviceInformation = get_service_information(config)
@@ -294,7 +294,7 @@ async function announce_public_url(api, config) {
 }
 
 function go_offline(api) {
-  return api.discovery.unsetAccountInfo(api.identities.key.address())
+  return api.discovery.unsetAccountInfo(api.identities.key.address)
 }
 
 // Simple CLI commands

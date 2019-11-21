@@ -20,15 +20,15 @@
 
 const path = require('path');
 const fs = require('fs');
-const readline = require('readline');
+// const readline = require('readline');
 
 const debug = require('debug')('joystream:runtime:identities');
 
-const { Keyring } = require('@joystream/crypto');
-const { Null } = require('@polkadot/types/primitive');
+const { Keyring } = require('@polkadot/keyring');
+// const { Null } = require('@polkadot/types/primitive');
 const util_crypto = require('@polkadot/util-crypto');
 
-const { _ } = require('lodash');
+// const { _ } = require('lodash');
 
 /*
  * Add identity management to the substrate API.
@@ -50,7 +50,7 @@ class IdentitiesApi
     debug('Init');
 
     // Creatre keyring
-    this.keyring = await Keyring.create();
+    this.keyring = new Keyring();
 
     this.canPromptForPassphrase = canPromptForPassphrase || false;
 
@@ -71,7 +71,7 @@ class IdentitiesApi
     debug('Initializing key from', fullname);
     const key = this.keyring.addFromJson(require(fullname));
     await this.tryUnlock(key, passphrase);
-    debug('Successfully initialized with address', key.address());
+    debug('Successfully initialized with address', key.address);
     return key;
   }
 
@@ -81,7 +81,8 @@ class IdentitiesApi
    */
   async tryUnlock(key, passphrase)
   {
-    if (!key.isLocked()) {
+    if (!key.isLocked) {
+      debug('Key is not locked, not attempting to unlock')
       return;
     }
 
@@ -109,7 +110,7 @@ class IdentitiesApi
 
     // If that didn't work, ask for a passphrase if appropriate
     if (this.canPromptForPassphrase) {
-      passphrase = await this.askForPassphrase(key.address());
+      passphrase = await this.askForPassphrase(key.address);
       key.decodePkcs8(passphrase);
       return
     }
@@ -132,8 +133,8 @@ class IdentitiesApi
    */
   async isMember(accountId)
   {
-    const memberId = await this.memberIdOf(accountId);
-    return !_.isEqual(memberId.raw, new Null());
+    const memberIds = await this.memberIdsOf(accountId); // return array of member ids
+    return memberIds.length > 0 // true if at least one member id exists for the acccount
   }
 
   /*
@@ -147,13 +148,22 @@ class IdentitiesApi
   }
 
   /*
-   * Return the member ID of an account - this is an Option, so '.raw' may or may not
-   * have a useful value.
+   * Return the member IDs of an account
    */
-  async memberIdOf(accountId)
+  async memberIdsOf(accountId)
   {
     const decoded = this.keyring.decodeAddress(accountId);
-    return await this.base.api.query.membership.memberIdByAccountId(decoded);
+    return await this.base.api.query.members.memberIdsByRootAccountId(decoded);
+  }
+
+  /*
+   * Return the first member ID of an account, or undefined if not a member.
+   */
+  async firstMemberIdOf(accountId)
+  {
+    const decoded = this.keyring.decodeAddress(accountId);
+    let ids = await this.base.api.query.members.memberIdsByRootAccountId(decoded);
+    return ids[0]
   }
 
   /*

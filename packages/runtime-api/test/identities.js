@@ -28,14 +28,14 @@ const { RuntimeApi } = require('@joystream/runtime-api');
 describe('Identities', () => {
   var api;
   before(async () => {
-    api = await RuntimeApi.create();
+    api = await RuntimeApi.create({ canPromptForPassphrase: true });
   });
 
   it('creates role keys', async () => {
     const key = await api.identities.createRoleKey('foo', 'bar');
     expect(key).to.have.property('type', 'ed25519');
-    expect(key.getMeta().name).to.include('foo');
-    expect(key.getMeta().name).to.include('bar');
+    expect(key.meta.name).to.include('foo');
+    expect(key.meta.name).to.include('bar');
   });
 
   it('imports keys', async () => {
@@ -58,26 +58,25 @@ describe('Identities', () => {
 
   it('knows about membership', async () => {
     const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json');
-    const addr = key.address();
+    const addr = key.address;
 
     // Without seeding the runtime with data, we can only verify that the API
     // reacts well in the absence of membership
     expect(await api.identities.isMember(addr)).to.be.false;
-    const member_id = await api.identities.memberIdOf(addr);
+    const member_id = await api.identities.firstMemberIdOf(addr);
 
-    const { isNullOption } = require('./common');
-    expect(isNullOption(member_id)).to.be.true;
+    expect(member_id).to.be.undefined;
   });
 
   it('exports keys', async () => {
     const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json');
 
     const passphrase_stub = sinon.stub(api.identities, 'askForPassphrase').callsFake(_ => 'asdf');
-    const exported = await api.identities.exportKeyPair(key.address());
+    const exported = await api.identities.exportKeyPair(key.address);
     passphrase_stub.restore();
 
     expect(exported).to.have.property('address');
-    expect(exported.address).to.equal(key.address());
+    expect(exported.address).to.equal(key.address);
 
     expect(exported).to.have.property('encoding');
 
@@ -97,7 +96,7 @@ describe('Identities', () => {
     const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json');
 
     const passphrase_stub = sinon.stub(api.identities, 'askForPassphrase').callsFake(_ => 'asdf');
-    const filename = await api.identities.writeKeyPairExport(key.address(), prefix);
+    const filename = await api.identities.writeKeyPairExport(key.address, prefix);
     passphrase_stub.restore();
 
     const fs = require('fs');
