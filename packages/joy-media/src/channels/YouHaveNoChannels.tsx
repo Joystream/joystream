@@ -15,17 +15,19 @@ export function YouHaveNoChannels (props: Props) {
       icon='warning sign'
       header='Channel Creation Suspended'
       content='Please try again later'
-      style={{ display: 'inline-flex', width: 'auto', marginTop: 0 }}
+      className='NoChannelsMsg'
     />
-  )
-
+  )  
+  
   const renderCreateButton = () => (
-    <Button size='big' color='green' style={{ padding: '.75rem 2.25rem' }}>
-      <div>Create Channel</div>
-      <div style={{ fontSize: '.9rem', paddingTop: '.25rem' }}>
-        and start publishing
-      </div>
-    </Button>
+    <Message
+      compact
+      success
+      icon='plus circle'
+      header='Create Channel'
+      content='and start publishing'
+      className='NoChannelsMsg CreateBtn'
+    />
   )
 
   return <>

@@ -1,0 +1,29 @@
+.JoyMyChannels {
+
+  .ui.message.NoChannelsMsg {
+    display: inline-flex;
+    width: auto;
+    margin-top: 0;
+
+    &.CreateBtn {
+      cursor: pointer;
+
+      /* Disable text selection by user: */
+      -webkit-touch-callout: none; /* iOS Safari */
+      -webkit-user-select: none; /* Safari */
+       -khtml-user-select: none; /* Konqueror HTML */
+         -moz-user-select: none; /* Old versions of Firefox */
+          -ms-user-select: none; /* Internet Explorer/Edge */
+              user-select: none; /* Non-prefixed version, currently
+                                    supported by Chrome, Opera and Firefox */
+
+      &:hover,
+      &:focus {
+        background-color: #f3fce0;
+      }
+      &:active {
+        background-color: #e0f4b7;
+      }
+    }
+  }
+}

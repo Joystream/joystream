@@ -12,7 +12,7 @@ type Props = {
 export function MyChannels (props: Props) {
   const { suspended = false, channels = [] } = props;
 
-  return <Section title='My Channels'>
+  return <Section title='My Channels' className='JoyMyChannels'>
     {!channels.length
       ? <YouHaveNoChannels suspended={suspended} />
       : channels.map(x => (
