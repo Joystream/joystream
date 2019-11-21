@@ -9,7 +9,7 @@ export class SubscriptionId extends u64 {}
 
 export class Paid extends PaidTermId {}
 export class Screening extends GenericAccountId {}
-export class Genesis extends Null {} // Works for enum variant that doesn't encapsulate any value?
+export class Genesis extends Null {}
 export class EntryMethod extends Enum {
   constructor (value?: any, index?: number) {
     super({
@@ -21,13 +21,13 @@ export class EntryMethod extends Enum {
 }
 
 export class Role extends Enum {
-  constructor (value?: any) {
+  constructor (value?: any, index?: number) {
     super([
       'StorageProvider',
       'Publisher',
       'CuratorLead',
       'Curator',
-    ], value);
+    ], value, index);
   }
 }
 
@@ -42,7 +42,7 @@ export type Profile = {
   subscription: Option<SubscriptionId>,
   root_account: AccountId,
   controller_account: AccountId,
-  // roles: BTreeSet<ActorInRole>
+  // roles: Vec<ActorInRole>,
 };
 
 export class UserInfo extends Struct {
@@ -81,13 +81,8 @@ export class PaidMembershipTerms extends Struct {
 export function registerMembershipTypes () {
   try {
     const typeRegistry = getTypeRegistry();
-    // Register enum EntryMethod
     typeRegistry.register({
-      // Paid,
-      // Screening,
-      EntryMethod
-    });
-    typeRegistry.register({
+      EntryMethod,
       MemberId,
       PaidTermId,
       SubscriptionId,
@@ -102,7 +97,7 @@ export function registerMembershipTypes () {
         subscription: 'Option<SubscriptionId>',
         root_account: 'AccountId',
         controller_account: 'AccountId',
-        // roles: 'BTreeSet<ActorInRole>'
+        roles: 'Vec<ActorInRole>' // BTreeSet<ActorInRole>
       },
       UserInfo,
       CheckedUserInfo: {
@@ -111,7 +106,6 @@ export function registerMembershipTypes () {
         about: 'Text'
       },
       PaidMembershipTerms: {
-        id: 'PaidTermId',
         fee: 'BalanceOf',
         text: 'Text'
       },

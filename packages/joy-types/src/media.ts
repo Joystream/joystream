@@ -290,7 +290,7 @@ export function registerMediaTypes () {
     getTypeRegistry().register({
       '::ContentId': ContentId,
       '::DataObjectTypeId': DataObjectTypeId,
-      SchemaId,
+      // SchemaId, // This isn't required? (its what caused issue with type mismatch in permissions module!)
       ContentId,
       ContentVisibility,
       ContentMetadata,
