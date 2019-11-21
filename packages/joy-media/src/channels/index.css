@@ -1,6 +1,6 @@
-.JoyMyChannels {
+.JoyChannels {
 
-  .ui.message.NoChannelsMsg {
+  .ui.message.JoyInlineMsg {
     display: inline-flex;
     width: auto;
     margin-top: 0;
@@ -23,6 +23,45 @@
       }
       &:active {
         background-color: #e0f4b7;
+      }
+    }
+  }
+
+  .ChannelPreview {
+    display: flex;
+
+    .ChannelAvatar {
+      /* NOTE: set 'background-image' property in JS */
+
+      background-size: cover;
+      display: table;
+      border-radius: 50%;
+      margin-right: 2rem;
+
+      $size: 100px;
+      width: $size;
+      height: $size;
+    }
+
+    .ChannelTitle {
+      color: #000;
+    }
+
+    .ChannelStats {
+      margin-left: 3rem;
+      text-align: right;
+
+      .statistic {
+        .label,
+        .value {
+          text-align: right;
+          white-space: nowrap;
+        }
+        .label {
+          color: #999;
+          font-weight: normal;
+          font-size: .9rem;
+        }
       }
     }
   }

@@ -3,12 +3,12 @@ import '../music/index.css';
 
 import { withKnobs } from '@storybook/addon-knobs';
 import { TracksOfMyMusicAlbum, TracksOfMyMusicAlbumProps } from '../music/MusicAlbumTracks';
-import { AlbumPreviewExample, FewMusicAlbums } from '../music/StorybookUtils';
 import { ReorderableTracks } from '../music/ReorderableTracks';
 import { EditAlbumModal } from '../music/EditAlbumModal';
 import { MusicAlbumEntity } from '../entities/MusicAlbumEntity';
 import { EditMusicAlbum } from '../music/EditMusicAlbum';
 import { MyMusicTracks } from '../music/MyMusicTracks';
+import { MusicAlbumSamples, MusicAlbumSample } from './data/MusicAlbumSamples';
 
 export default { 
     title: 'Media | My music tracks',
@@ -24,12 +24,12 @@ export const EditAlbumStory = () =>
 
 export const MyMusicTracksStory = () =>
 	<MyMusicTracks
-		albums={FewMusicAlbums}
+		albums={MusicAlbumSamples}
 		tracks={allMyTracks}
 	/>
 
 // export const DefaultState = () => {
-// 	return <TracksOfMyMusicAlbum album={AlbumPreviewExample} />;
+// 	return <TracksOfMyMusicAlbum album={MusicAlbumSample} />;
 // }
 
 // export const AlbumWithTracks = () => {
@@ -83,7 +83,7 @@ const allMyTracks =
 	)
 
 const AlbumWithTracksProps: TracksOfMyMusicAlbumProps = {
-	album: AlbumPreviewExample,
+	album: MusicAlbumSample,
 	tracks: albumTracks
 }
 

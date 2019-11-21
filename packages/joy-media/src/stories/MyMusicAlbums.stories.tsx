@@ -3,7 +3,7 @@ import '../music/index.css';
 
 import { withKnobs } from '@storybook/addon-knobs';
 import { MyMusicAlbums } from '../music/MyMusicAlbums';
-import { FewMusicAlbums } from '../music/StorybookUtils';
+import { MusicAlbumSamples } from './data/MusicAlbumSamples';
 
 export default { 
     title: 'Media | My music albums',
@@ -15,5 +15,5 @@ export const DefaultState = () => {
 }
 
 export const WithState = () => {
-	return <MyMusicAlbums albums={FewMusicAlbums} />;
+	return <MyMusicAlbums albums={MusicAlbumSamples} />;
 }

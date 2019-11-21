@@ -1,9 +1,9 @@
-import { MusicAlbumPreviewProps } from "./MyMusicAlbums";
+import { MusicAlbumPreviewProps } from "@polkadot/joy-media/music/MyMusicAlbums";
 
 let id = 0;
 const nextId = (): string => `${++id}`;
 
-export const AlbumPreviewExample: MusicAlbumPreviewProps = {
+export const MusicAlbumSample: MusicAlbumPreviewProps = {
 	id: nextId(),
   title: 'Sound of the cold leaves',
   artist: 'Man from the Woods',
@@ -11,8 +11,8 @@ export const AlbumPreviewExample: MusicAlbumPreviewProps = {
   tracksCount: 8
 };
 
-export const FewMusicAlbums = [
-	AlbumPreviewExample,
+export const MusicAlbumSamples = [
+	MusicAlbumSample,
 	{
 		id: nextId(),
 		title: 'Riddle',
@@ -27,4 +27,4 @@ export const FewMusicAlbums = [
 		cover: 'https://images.unsplash.com/photo-1543467091-5f0406620f8b?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=200&q=60',
 		tracksCount: 12
 	}
-]
+];

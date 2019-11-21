@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Message } from 'semantic-ui-react';
+import { Message } from 'semantic-ui-react';
 
 type Props = {
   suspended?: boolean
@@ -15,10 +15,10 @@ export function YouHaveNoChannels (props: Props) {
       icon='warning sign'
       header='Channel Creation Suspended'
       content='Please try again later'
-      className='NoChannelsMsg'
+      className='JoyInlineMsg'
     />
-  )  
-  
+  )
+
   const renderCreateButton = () => (
     <Message
       compact
@@ -26,7 +26,7 @@ export function YouHaveNoChannels (props: Props) {
       icon='plus circle'
       header='Create Channel'
       content='and start publishing'
-      className='NoChannelsMsg CreateBtn'
+      className='JoyInlineMsg CreateBtn'
     />
   )
 
