@@ -69,7 +69,7 @@
     &.uppercase
       text-transform: uppercase
  
-.stake-rank-selector
+.stake-rank-selector, .confirm-stakes-2up
   margin-top: 1.5em
 
   .controls
@@ -84,7 +84,27 @@
   .ticks
     margin-left: 10px
     margin-right: 10px
+
+    .label
+      position: relative
+      transform: translateX(-50%)
+
     .tick
       display: inline-block
       text-align: center
       border-right: 1px dotted #ccc
+
+      &:first-of-type
+        border-left: 1px dotted #ccc
+
+.confirm-stakes-2up
+  .header
+    margin-bottom: 1em !important
+  .two-up
+    margin-top: 1em
+  .ticks
+    margin-top: 1.5em
+  .center
+    text-align: center
+  .controls
+

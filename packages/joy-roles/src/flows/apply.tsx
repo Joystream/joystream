@@ -5,7 +5,7 @@ import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 import { GenericAccountId, u128 } from '@polkadot/types'
 
-import { Accordion, Button, Container, Dropdown, Form, Grid, Header, Icon, Input, Label, Message, Modal, SemanticICONS, Step, Table } from 'semantic-ui-react'
+import { Accordion, Button, Container, Divider, Dropdown, Form, Grid, Header, Icon, Input, Label, Message, Modal, Segment, SemanticICONS, Step, Table } from 'semantic-ui-react'
 import { Slider } from "react-semantic-ui-range";
 
 import Identicon from '@polkadot/react-identicon';
@@ -182,6 +182,11 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
     for (var i = 0; i < slotCount; i++) {
         ticks.push(<div key={i} className="tick" style={{width: (100/slotCount)+'%'}}>{slotCount-i}</div>)
     }
+
+    const tickLabel = <div className="ui pointing above label" style={{left: ((100/slotCount)*rank)+'%'}}>
+        Your rank
+        <div class="detail">{(slotCount-rank)+1}</div>
+    </div>
     const slider = <Slider className="labeled" rank={rank} color="teal" settings={settings} />
 
     const findRankValue = (newStake: Balance): number => {
@@ -206,9 +211,9 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
         setRank(findRankValue(newStake))
     }
 
-	useEffect( () => {
-		props.setStake(props.minStake)
-	}, [])
+    useEffect( () => {
+        props.setStake(props.minStake)
+    }, [])
 
     return (
 
@@ -225,6 +230,7 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
                        onFocus={() => {setFocused(true)}}
                        step={props.step.toNumber()}
                        value={props.stake.toNumber() > 0 ? props.stake.toNumber() : null} 
+                       min={props.minStake.toNumber()}
                 />
                 <Button circular icon='angle right' onClick={() => {rank <= slotCount && setRank(rank+1)}} />
                 <Button circular icon='angle double right' onClick={() => {setRank(slotCount)}} />
@@ -244,7 +250,10 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
 
             <Slider discrete className="labeled" value={rank} color="teal" settings={settings} />
             <div className="ticks">
-                {ticks}
+                <div className="scale">
+                    {ticks}
+                </div>
+                {tickLabel}
             </div>
         </Container>
     )
@@ -352,13 +361,13 @@ export type ApplicationStatusProps = {
 export type ConfirmStakesStageProps = StageTransitionProps & 
                                       StakeRequirementProps & 
                                       FundSourceSelectorProps &
-									  ApplicationStatusProps &
-									  StakeRankSelectorProps
+                                      ApplicationStatusProps &
+                                      StakeRankSelectorProps
 
 export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
     const [address, setAddress] = useState<AccountId>()
     const [passphrase, setPassphrase] = useState("")
-    const [minStake, setMinStake] = useState(new u128(0)) // FIXME
+    const [minStake, setMinStake] = useState(new u128(0)) // FIXME: dynamic_minimum
     const [appStake, setAppStake] = useState(new u128(0))
     const [roleStake, setRoleStake] = useState(new u128(0))
 
@@ -429,7 +438,7 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
                           setValue={props.setApplicationStake}
                           application_max={props.application_max}
                           application_count={props.application_count}
-		                  {...props}
+                          {...props}
                      />
   }
   
@@ -443,7 +452,7 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
                           setValue={props.setRoleStake}
                           application_max={props.application_max}
                           application_count={props.application_count}
-		                  {...props}
+                          {...props}
                      />
   }
 
@@ -455,10 +464,180 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
     )
 }
 
-function ConfirmStakes2Up(props: StakeSelectorProps) {
+export type ConfirmStakes2UpProps = StakeSelectorProps & {
+    step: Balance
+    slots: Balance[]
+}
+
+export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
+    const slotCount = props.slots.length
+    const [rank, setRank] = useState(1);
+
+    // FIXME! These should be passed into the component
+    const [applicationStake, setApplicationStake] = useState(props.application_stake.value)
+    const [roleStake, setRoleStake] = useState(props.role_stake.value)
+    const [valid, setValid] = useState(false)
+
+    // FIXME! What if there are 0?
+    const minStake = props.slots[0]
+
+    const [combined, setCombined] = useState(new u128(0))
+
+    // Watch stake values
+    useEffect( () => {
+            const newCombined = new u128(applicationStake.add(roleStake))
+            setCombined(newCombined)
+            setRank(findRankValue(newCombined))
+            setValid(combined.gt(minStake))
+        },
+        [applicationStake, roleStake]
+    )
+
+    const findRankValue = (newStake: Balance): number => {
+        if (newStake.gt(props.slots[slotCount-1])) {
+            return slotCount
+        }
+
+        for (let i = slotCount; i--; i >= 0) {
+            if (newStake.gt(props.slots[i])) {
+                return i+1
+            }
+        }
+
+        return 0
+    }
+
+    const ticks = []
+    for (var i = 0; i < slotCount; i++) {
+        ticks.push(<div key={i} className="tick" style={{width: (100/slotCount)+'%'}}>{slotCount-i}</div>)
+    }
+
+    const tickLabel = <div className="ui pointing below label" style={{left: ((100/slotCount)*rank)+'%'}}>
+        Your rank
+        <div class="detail">{(slotCount-rank)+1}</div>
+    </div>
+
+    let rankExplanation = <p>This role required a combined stake (applicationm stake plus role stake) of {formatBalance(minStake)}.</p>
+    if (props.application_max > 0) {
+        rankExplanation = (
+            <Container>
+               <p>
+                    Only the top {props.application_max} applications, ranked by their combined <strong>application state</strong> and <strong>role stake</strong>, will be considered for this role.
+               </p>
+               <p>
+                    There is a minimum application stake of {formatBalance(props.application_stake.value)} and a minimum role stake of {formatBalance(props.role_stake.value)} to apply for this role. 
+                    However, in order to be in the top {props.application_max} applications, you wil need to stake a combined total of <strong>{formatBalance(minStake)}</strong>.
+               </p>
+            </Container>
+        )
+    }
+
     return (
-        <Container className="application stage">
-            <h4>FIXME</h4>
+        <Container className="confirm-stakes-2up">
+            <Message info>
+                <Message.Header><Icon name="shield"/> This role requires a minimum combined stake</Message.Header>
+                    <Message.Content>
+                        {rankExplanation}
+                        <Grid stackable className="two-up">
+                        <Grid.Row columns={2}>
+                            <Grid.Column>
+                                <h5>Application stake</h5>
+                                <p>
+                                    This role requires an application stake of at least <strong>{formatBalance(props.application_stake.value)}</strong>. 
+                                    Along with the role stake, it will be used to rank candidates.
+                                </p>
+                                <p>
+                                    Your application stake will be returned after the opening is resolved or your application ends.
+                                </p>
+                            </Grid.Column>
+                            <Grid.Column>
+                                <h5>Role stake</h5>
+                                <p>
+                                    This role requires a role stake of a least <strong>{formatBalance(props.role_stake.value)}</strong>. 
+                                    This stake will be returned if your application is unsuccessful, and will also be used to rank applications. 
+                                </p>
+                                <p>
+                                    If you're hired and then withdraw from the role, your role stake will be returned.
+                                </p>
+                            </Grid.Column>
+                        </Grid.Row>
+                        <Grid.Row columns={2}>
+                            <Grid.Column>
+                                <StakeRankMiniSelector step={props.step} 
+                                                       value={applicationStake} 
+                                                       setValue={setApplicationStake} 
+                                                       min={props.application_stake.value}
+                                />
+                            </Grid.Column>
+                            <Grid.Column>
+                                <StakeRankMiniSelector step={props.step} 
+                                                       value={roleStake} 
+                                                       setValue={setRoleStake} 
+                                                       min={props.role_stake.value}
+                                />
+                            </Grid.Column>
+                        </Grid.Row>
+                        <Grid.Row columns={1}>
+                            <Grid.Column className="center">
+                                <Label color='teal'>
+                                    <Icon name='shield' />
+                                    Minimum required stake
+                                    <Label.Detail>{formatBalance(minStake)}</Label.Detail>
+                                </Label>
+                                <Label color={valid ? 'green' : 'red'}>
+                                    <Icon name='times circle' />
+                                    Your current combined stake
+                                    <Label.Detail>{formatBalance(new u128(applicationStake.add(roleStake)))}</Label.Detail>
+                                </Label>
+                                <Label color='grey'>
+                                    <Icon name={rankIcon(rank, slotCount)} />
+                                    Estimated rank
+                                    <Label.Detail>{rank}/{slotCount}</Label.Detail>
+                                </Label>
+                            </Grid.Column>
+                        </Grid.Row>
+                    </Grid>
+            <div className="ticks">
+                {tickLabel}
+                <div className="scale">
+                    {ticks}
+                </div>
+            </div>
+                </Message.Content>
+            </Message>
+        </Container>
+    )
+}
+
+type StakeRankMiniSelectorProps = {
+    setValue: (b:Balance) => void
+    value: Balance
+    step: Balance
+    min: Balance
+}
+
+function StakeRankMiniSelector(props: StakeRankMiniSelectorProps) {
+    const changeValue = (e, {value}) => {
+        if (value < 0) {
+            console.log("<0",value)
+            props.setValue(new u128(0))
+            return
+        }
+        const newStake = new u128(value) 
+        props.setValue(newStake)
+        //setRank(findRankValue(newStake))
+    }
+
+    return (
+        <Container className="controls">
+            <Input label="JOY"  fluid
+                   labelPosition="right" 
+                   onChange={changeValue} 
+                   type="number" 
+                   min={props.min.toNumber()}
+                   step={props.step.toNumber()}
+                   value={props.value.toNumber() > 0 ? props.value.toNumber() : null} 
+            />
         </Container>
     )
 }
@@ -473,23 +652,23 @@ type CaptureStake1UpProps = ApplicationStatusProps & {
 }
 
 function CaptureStake1Up(props: CaptureStake1UpProps) {
-	let limit = null
-	if (props.application_max > 0) {
-		limit = (
-			<span> This will be used to rank candidates, and only the top <strong>{props.application_max}</strong> will be considered. </span>
-		)
-	}
+    let limit = null
+    if (props.application_max > 0) {
+        limit = (
+            <span> This will be used to rank candidates, and only the top <strong>{props.application_max}</strong> will be considered. </span>
+        )
+    }
 
-	// Set default value
-	useEffect(() => {
-		props.setValue(props.requirement.value)
-	}, [])
+    // Set default value
+    useEffect(() => {
+        props.setValue(props.requirement.value)
+    }, [])
 
-	let slider = null
-	let atLeast = null
-	if (props.requirement.atLeast()) {
-		slider = <StakeRankSelector {...props} />
-		atLeast = 'at least '
+    let slider = null
+    let atLeast = null
+    if (props.requirement.atLeast()) {
+        slider = <StakeRankSelector {...props} />
+        atLeast = 'at least '
     }
 
     return (

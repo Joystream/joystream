@@ -11,6 +11,7 @@ import {
     DoneStage, DoneStageProps, 
     FundSourceSelector,
 	StakeRankSelector, StakeRankSelectorProps,
+	ConfirmStakes2Up, ConfirmStakes2UpProps,
 } from "./apply"
 import {
     OpeningBodyApplicationsStatusProps,
@@ -165,6 +166,36 @@ export function StakeRankSelectorFragment() {
     )
 }
 
+export function Select2MinimumStakes() {
+	// List of the minimum stake required to beat each rank
+	const slots: Balance[] = []
+	for (let i = 0; i < 20; i++) {
+		slots.push(new u128((i*100)+10+i+1))
+	}
+
+
+	const props: ConfirmStakes2UpProps & TestProps =  {
+		_description: "One fixed stake (application), no limit",
+		application_stake: new ApplicationStakeRequirement(new u128(1)),
+		role_stake: new RoleStakeRequirement(new u128(2)),
+		application_max: 0,
+		application_count: 0,
+		dynamic_minimum: new u128(0),
+		step: new u128(5),
+        slots: slots,
+	}
+
+	return (
+        <Container className="apply-flow">
+            <Card fluid>
+				<Card.Content>
+					<ConfirmStakes2Up {...props} />
+				</Card.Content>
+			</Card>
+		</Container>
+	)
+}
+
 export function StageAConfirmStakes() {
 	const permutations:(ConfirmStakesStageProps & TestProps)[] = [
         {
@@ -226,7 +257,7 @@ export function StageAConfirmStakes() {
 			application_stake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
 			role_stake: new RoleStakeRequirement(new u128(0)),
 			application_max: 0,
-			application_count: 10,
+			application_count: 20,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
         },
@@ -235,22 +266,22 @@ export function StageAConfirmStakes() {
 			application_stake: new ApplicationStakeRequirement(new u128(0)),
 			role_stake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
 			application_max: 0,
-			application_count: 10,
+			application_count: 20,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
         },
         {
             _description: "Two minimum stakes, no limit",
-			application_stake: new ApplicationStakeRequirement(new u128(10)),
-			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_stake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
+			role_stake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
 			application_max: 0,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
         },
         {
             _description: "Minimum application stake, fixed role stake, no limit",
-			application_stake: new ApplicationStakeRequirement(new u128(10)),
-			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_stake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
+			role_stake: new RoleStakeRequirement(new u128(10)),
 			application_max: 0,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
@@ -258,48 +289,52 @@ export function StageAConfirmStakes() {
         {
             _description: "Minimum role stake, fixed application stake, no limit",
 			application_stake: new ApplicationStakeRequirement(new u128(10)),
-			role_stake: new RoleStakeRequirement(new u128(0)),
+			role_stake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
 			application_max: 0,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
         },
         {
             _description: "One minimum stake (application), 20 applicant limit",
-			application_stake: new ApplicationStakeRequirement(new u128(10)),
+			application_stake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
 			role_stake: new RoleStakeRequirement(new u128(0)),
 			application_max: 0,
+			application_count: 20,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
         },
         {
             _description: "One minimum stake (role), 20 applicant limit",
-			application_stake: new ApplicationStakeRequirement(new u128(10)),
-			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_stake: new ApplicationStakeRequirement(new u128(0)),
+			role_stake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
 			application_max: 0,
+			application_count: 20,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
         },
         {
             _description: "Two minimum stakes, 20 applicant limit",
-			application_stake: new ApplicationStakeRequirement(new u128(10)),
-			role_stake: new RoleStakeRequirement(new u128(0)),
-			application_max: 0,
+			application_stake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
+			role_stake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
+			application_max: 20,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
         },
         {
             _description: "Minimum application stake, fixed role stake, 20 applicant limit",
-			application_stake: new ApplicationStakeRequirement(new u128(10)),
-			role_stake: new RoleStakeRequirement(new u128(0)),
+			application_stake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
+			role_stake: new RoleStakeRequirement(new u128(10)),
 			application_max: 0,
+			application_count: 20,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
         },
         {
             _description: "Minimum role stake, fixed application stake, 20 applicant limit",
 			application_stake: new ApplicationStakeRequirement(new u128(10)),
-			role_stake: new RoleStakeRequirement(new u128(0)),
+			role_stake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
 			application_max: 0,
+			application_count: 20,
 			dynamic_minimum: new u128(0),
 			nextTransition: () => {},
         },
@@ -327,7 +362,7 @@ export function StageAConfirmStakes() {
 
 	// List of the minimum stake required to beat each rank
 	const slots: Balance[] = []
-	for (let i = 0; i < 10; i++) {
+	for (let i = 0; i < 20; i++) {
 		slots.push(new u128((i*100)+10+i+1))
 	}
 
