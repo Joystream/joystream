@@ -119,6 +119,18 @@ static MSG_CURATOR_OPENING_DOES_NOT_EXIST: &str =
     "Curator opening does not exist";
 static MSG_CURATOR_APPLICATION_DOES_NOT_EXIST: &str =
     "Curator application does not exist";
+//static MSG_INSUFFICIENT_BALANCE_TO_COVER_ROLE_STAKE: &str =
+//    "Insufficient balance to cover role stake";
+//static MSG_INSUFFICIENT_BALANCE_TO_COVER_APPLICATION_STAKE: &str =
+//    "Insufficient balance to cover application stake";
+static MSG_INSUFFICIENT_BALANCE_TO_APPLY: &str =
+    "Insufficient balance to apply";
+static MSG_SUCCESSFUL_CURATOR_APPLICATION_DOES_NOT_EXIST: &str =
+    "Successful curatora pplication does not exist";
+static MSG_MEMBER_NO_LONGER_REGISTRABLE_AS_CURATOR: &str =
+    "Member no longer registrable as curator";
+static MSG_CURATOR_DOES_NOT_EXIST: &str = 
+    "Curator does not exist";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
