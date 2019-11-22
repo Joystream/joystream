@@ -888,26 +888,25 @@ decl_event! {
     pub enum Event<T> where
         ChannelId = ChannelId<T>,
         LeadId = LeadId<T>,
-        OpeningId = <T as hiring::Trait>::OpeningId,
+        CuratorOpeningId = CuratorOpeningId<T>,
         CuratorApplicationId = CuratorApplicationId<T>
     {
         ChannelCreated(ChannelId),
         ChannelOwnershipTransferred(ChannelId),
         LeadSet(LeadId),
         LeadUnset(LeadId),
-        CuratorOpeningAdded(OpeningId),
+        CuratorOpeningAdded(CuratorOpeningId),
         //LeadRewardUpdated
         //LeadRoleAccountUpdated
         //LeadRewardAccountUpdated
         //PermissionGroupAdded
         //PermissionGroupUpdated
-        //CuratorOpeningAdded
-        AcceptedCuratorApplications(OpeningId),
-        BeganCuratorApplicationReview(OpeningId),
-        CuratorOpeningFilled(OpeningId, BTreeSet<ApplicationId>),
+        AcceptedCuratorApplications(CuratorOpeningId),
+        BeganCuratorApplicationReview(CuratorOpeningId),
+        CuratorOpeningFilled(CuratorOpeningId, BTreeSet<CuratorApplicationId>),
         //CuratorSlashed
-        TerminatedCurator(OpeningId, ApplicationId),
-        //AppliedOnCuratorOpening
+        TerminatedCurator(CuratorOpeningId),
+        AppliedOnCuratorOpening(CuratorOpeningId, CuratorApplicationId),
         //CuratorRewardUpdated
         //CuratorRoleAccountUpdated
         //CuratorRewardAccountUpdated
