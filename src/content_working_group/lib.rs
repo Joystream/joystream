@@ -1532,7 +1532,18 @@ impl<T: Trait> Module<T> {
         Ok((curator_opening, opening))
     }
 
-    fn ensure_application_corresponds_to_curator_opening(application_id: <T as hiring::Trait>::ApplicationId) -> Result<(hiring::Application<<T as hiring::Trait>::OpeningId, T::BlockNumber, <T as stake::Trait>::StakeId>, CuratorOpening<T::BlockNumber, BalanceOf<T>> ,hiring::Opening<BalanceOf<T>, T::BlockNumber, <T as hiring::Trait>::ApplicationId>), &'static str> {
+    fn ensure_curator_exists(curator_id: &CuratorId<T>) -> Result<Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId>, &'static str> {
+
+        ensure!(
+            CuratorById::<T>::exists(curator_id),
+            MSG_CURATOR_DOES_NOT_EXIST
+        );
+
+        let curator = CuratorById::<T>::get(curator_id);
+
+        Ok(curator)
+    }
+
 
         ensure!(
             hiring::ApplicationById::<T>::exists(application_id),
