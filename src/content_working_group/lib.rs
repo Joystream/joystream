@@ -103,8 +103,8 @@ static MSG_ORIGIN_IS_NOT_LEAD: &str =
     "Origin is not lead";
 //static MSG_OPENING_CANNOT_ACTIVATE_IN_THE_PAST: &str =
 //    "Opening cannot activate in the past";
-static MSG_OPENING_DOES_NOT_EXIST: &str =
-    "Opening does not exist";
+static MSG_CURATOR_OPENING_DOES_NOT_EXIST: &str =
+    "Curator opening does not exist";
 static MSG_CURATOR_APPLICATION_DOES_NOT_EXIST: &str =
     "Curator application does not exist";
 
@@ -1580,16 +1580,16 @@ impl<T: Trait> Module<T> {
         Ok(starting_block)
     }
 */
-    fn ensure_curator_opening_exists(opening_id: T::OpeningId) -> Result<(CuratorOpening<T::BlockNumber, BalanceOf<T>> ,hiring::Opening<BalanceOf<T>, T::BlockNumber, <T as hiring::Trait>::ApplicationId>), &'static str> {
+    fn ensure_curator_opening_exists(curator_opening_id: &CuratorOpeningId<T>) -> Result<(CuratorOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>> ,hiring::Opening<BalanceOf<T>, T::BlockNumber, <T as hiring::Trait>::ApplicationId>), &'static str> {
 
         ensure!(
-            CuratorOpeningById::<T>::exists(opening_id),
-            MSG_OPENING_DOES_NOT_EXIST
+            CuratorOpeningById::<T>::exists(curator_opening_id),
+            MSG_CURATOR_OPENING_DOES_NOT_EXIST
         );
 
-        let curator_opening = CuratorOpeningById::<T>::get(opening_id);
+        let curator_opening = CuratorOpeningById::<T>::get(curator_opening_id);
 
-        let opening = hiring::OpeningById::<T>::get(opening_id);
+        let opening = hiring::OpeningById::<T>::get(curator_opening.opening_id);
 
         Ok((curator_opening, opening))
     }
