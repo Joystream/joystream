@@ -805,7 +805,7 @@ decl_event! {
         ChannelId = ChannelId<T>,
         LeadId = LeadId<T>,
         OpeningId = <T as hiring::Trait>::OpeningId,
-        ApplicationId = <T as hiring::Trait>::ApplicationId
+        CuratorApplicationId = CuratorApplicationId<T>
     {
         ChannelCreated(ChannelId),
         ChannelOwnershipTransferred(ChannelId),
