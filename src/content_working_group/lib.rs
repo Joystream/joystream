@@ -1357,32 +1357,48 @@ decl_module! {
         }
         */
 
-        /// Terminate active curator
-        pub fn terminate_curator(origin, application_id: T::ApplicationId) {
+        pub fn withdraw_curator_application(_origin) {
 
+        }
+
+        /// Lead terminate curator application
+        pub fn terminate_curator_application(
+            origin,
+            curator_application_id: CuratorApplicationId<T>
+            ) {
+            /*
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_set_lead(origin)?;
 
-            // Grab opening corresponding to application
-            let (application, curator_opening, _opening) = Self::ensure_application_corresponds_to_curator_opening(application_id)?;
+            // Ensuring curator application actually exists
+            let (curator_application, _, curator_opening) = Self::ensure_curator_application_exists(&curator_application_id)?;
 
+            // when is tha ppliation actually removed from the curator opening?????
+            // it may not be possible to do right away if ther eis unstaking?
+            // so we have to wait?
+
+            
+            // **************************************** //
+
+            
             // Attempt to deactive applications
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::deactive_application(
-                    application_id,
+                    curator_application.application_id,
                     curator_opening.policy_commitment.terminate_curator_application_stake_unstaking_period,
                     curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period
                 )
             )?;
             
-
             //
             // == MUTATION SAFE ==
             //
 
             // Trigger event
-            Self::deposit_event(RawEvent::TerminatedCurator(application.opening_id, application_id));
+            Self::deposit_event(RawEvent::TerminatedCurator(curator_application_id));
+
+            */
         }
 
         /// ...
