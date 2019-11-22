@@ -562,17 +562,19 @@ impl<T: Trait> Module<T> {
     // ** Note ** Role specific policies should be enforced by the client modules
     // this method should handle higher level policies
     pub fn can_register_role_on_member(
-        member_id: T::MemberId,
-        actor_in_role: ActorInRole<T::ActorId>,
-    ) -> Result<(), &'static str> {
-        let profile = Self::ensure_profile(member_id)?;
+        member_id: &T::MemberId,
+        actor_in_role: &ActorInRole<T::ActorId>,
+    ) -> Result<Profile<T>, &'static str> {
+
+        // Ensure member exists
+        let profile = Self::ensure_profile(*member_id)?;
 
         // ensure is active member
         ensure!(!profile.suspended, "SuspendedMemberCannotEnterRole");
 
         // guard against duplicate ActorInRole
         ensure!(
-            !<MembershipIdByActorInRole<T>>::exists(&actor_in_role),
+            !<MembershipIdByActorInRole<T>>::exists(actor_in_role),
             "ActorInRoleAlreadyExists"
         );
 
@@ -586,22 +588,22 @@ impl<T: Trait> Module<T> {
         // Minimum balance
         // EntryMethod
 
-        Ok(())
+        Ok(profile)
     }
 
     pub fn register_role_on_member(
         member_id: T::MemberId,
-        actor_in_role: ActorInRole<T::ActorId>,
+        actor_in_role: &ActorInRole<T::ActorId>,
     ) -> Result<(), &'static str> {
-        // policy check
-        Self::can_register_role_on_member(member_id, actor_in_role)?;
 
-        let mut profile = Self::ensure_profile(member_id)?; // .expect().. ?
-        assert!(profile.roles.register_role(&actor_in_role));
+        // Policy check
+        let mut profile = Self::can_register_role_on_member(&member_id, actor_in_role)?;
+
+        assert!(profile.roles.register_role(actor_in_role));
 
         <MemberProfile<T>>::insert(member_id, profile);
-        <MembershipIdByActorInRole<T>>::insert(&actor_in_role, member_id);
-        Self::deposit_event(RawEvent::MemberRegisteredRole(member_id, actor_in_role));
+        <MembershipIdByActorInRole<T>>::insert(actor_in_role, member_id);
+        Self::deposit_event(RawEvent::MemberRegisteredRole(member_id, *actor_in_role));
         Ok(())
     }
 
