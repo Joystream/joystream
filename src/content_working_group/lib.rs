@@ -267,10 +267,14 @@ pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId
 #[derive(Encode, Decode, Default, Debug, Clone)]
 pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId: core::cmp::Ord> {
 
+    /// Identifer for underlying opening in the hiring module.
+    pub opening_id: OpeningId,
+
     /// Set of identifiers for curator applications
     pub curator_applications: BTreeSet<CuratorApplicationId>,
+
     /// Commitment to policies in opening.
-    policy_commitment: OpeningPolicyCommitment<BlockNumber, Balance>
+    pub policy_commitment: OpeningPolicyCommitment<BlockNumber, Balance>
 
     /*
      * Add other stuff here in the future?
