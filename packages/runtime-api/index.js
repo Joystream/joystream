@@ -78,8 +78,8 @@ class RuntimeApi
     this.api.disconnect();
   }
 
-  executeWithLock(execFunction) {
-    return this.asyncLock.acquire(RuntimeApi.NONCE_LOCK_KEY, execFunction);
+  executeWithAccountLock(account_id, func) {
+    return this.asyncLock.acquire(`${account_id}`, func);
   }
 
   /*
@@ -163,27 +163,20 @@ class RuntimeApi
   {
     // Prepare key
     const from_key = this.identities.keyring.getPair(accountId);
+
     if (from_key.isLocked) {
       throw new Error('Must unlock key before using it to sign!');
     }
 
-    const finalizedPromise = (function() {
-      // externally controller promise
-      let resolve, reject;
-      const promise = new Promise((res, rej) => {
-        resolve = res;
-        reject = rej;
-      });
-      return {resolve, reject, promise}
-    })();
+    const finalizedPromise = newExternallyControlledPromise();
 
-    let unsubscribe = await this.executeWithLock(async () => {
+    let unsubscribe = await this.executeWithAccountLock(accountId,  async () => {
       // Try to get the next nonce to use
-      var nonce = this.nonces[accountId];
+      let nonce = this.nonces[accountId];
 
       let incrementNonce = () => {
         // only increment once
-        incrementNonce = () => {}; // turn it into a noop
+        incrementNonce = () => {}; // turn it into a no-op
         nonce = nonce.addn(1);
         this.nonces[accountId] = nonce;
       }
@@ -283,8 +276,16 @@ class RuntimeApi
   }
 }
 
-RuntimeApi.NONCE_LOCK_KEY = 'nonce';
-
 module.exports = {
   RuntimeApi: RuntimeApi,
+}
+
+function newExternallyControlledPromise () {
+  // externally controller promise
+  let resolve, reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return ({resolve, reject, promise});
 }
