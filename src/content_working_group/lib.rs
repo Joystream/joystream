@@ -218,7 +218,7 @@ pub struct CuratorInduction<LeadId, ApplicationId, BlockNumber> {
 /// Working group participant: curator
 /// This role can be staked, have reward and be inducted through the hiring module.
 #[derive(Encode, Decode, Default, Debug, Clone)]
-pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId, ApplicationId> {
+pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId, CuratorApplicationId> {
 
     /// Account used to authenticate in this role,
     pub role_account: AccountId,
@@ -233,7 +233,7 @@ pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId
     pub stage: CuratorRoleStage<BlockNumber>,
 
     /// How the curator was inducted into the working group.
-    pub induction: CuratorInduction<LeadId, ApplicationId, BlockNumber>,
+    pub induction: CuratorInduction<LeadId, CuratorApplicationId, BlockNumber>,
 
     /// Whether this curator can unilaterally alter the curation status of a channel.
     pub can_update_channel_curation_status: bool
@@ -241,8 +241,10 @@ pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId
 
 /// An opening for a curator role.
 #[derive(Encode, Decode, Default, Debug, Clone)]
-pub struct CuratorOpening<BlockNumber, Balance> {
+pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId: core::cmp::Ord> {
 
+    /// Set of identifiers for curator applications
+    pub curator_applications: BTreeSet<CuratorApplicationId>,
     /// Commitment to policies in opening.
     policy_commitment: OpeningPolicyCommitment<BlockNumber, Balance>
 
@@ -716,10 +718,10 @@ decl_storage! {
         /// Next identifier for new current lead.
         pub NextLeadId get(next_lead_id) config(): LeadId<T>;
 
-        /// Set of identifiers for all openings originated from this group.
-        /// Using map to model a set.
-        pub CuratorOpeningById get(curator_opening_by_id) config(): linked_map T::OpeningId => CuratorOpening<T::BlockNumber, BalanceOf<T>>;
+        /// Maps identifeir to curator opening.
+        pub CuratorOpeningById get(curator_opening_by_id) config(): linked_map CuratorOpeningId<T> => CuratorOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>>;
 
+        /// Maps identifier to curator application on opening.
         pub CuratorApplicationById get(curator_application_by_id) config(): linked_map CuratorApplicationId<T> => CuratorApplication<T::AccountId, CuratorOpeningId<T>, T::MemberId, T::ApplicationId>;
 
         /// Next identifier value for new curator application.
