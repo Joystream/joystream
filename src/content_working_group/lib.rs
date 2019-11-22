@@ -1227,26 +1227,62 @@ decl_module! {
         }
 
         /// Fill opening for curator
-        pub fn fill_curator_opening(origin,
-            opening_id: T::OpeningId,
-            successful_applications: BTreeSet<T::ApplicationId>
+        pub fn fill_curator_opening(
+            origin,
+            curator_opening_id: CuratorOpeningId<T>,
+            successful_curator_application_ids: BTreeSet<CuratorApplicationId<T>>
         ) {
-
             // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_set_lead(origin)?;
+            let (lead_id, _lead) = Self::ensure_origin_is_set_lead(origin)?;
 
-            // Ensure opening exists
-            // NB: Even though call to hiring modul will have implicit check for 
-            // existence of opening as well, this check is to make sure that the opening is for
-            // this working group, not something else.
-            let (curator_opening, _opening) = Self::ensure_curator_opening_exists(opening_id)?;
+            // Ensure curator opening exists
+            let (curator_opening, _) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
+
+            // Make iterator over successful curator application
+            let successful_iter = successful_curator_application_ids
+                                    .iter()
+                                    // recover curator application from id
+                                    .map(|curator_application_id| { Self::ensure_curator_application_exists(curator_application_id) })
+                                    // remove Err cases, i.e. non-existing applications
+                                    .filter_map(|result| result.ok());
+
+            // Count number of successful curators provided
+            let num_provided_successful_curator_application_ids = successful_curator_application_ids.len();
+
+            // Ensure all curator applications exist
+            let number_of_successful_applications = successful_iter
+                                                    .clone()
+                                                    .collect::<Vec<_>>()
+                                                    .len();
+
+            ensure!(
+                number_of_successful_applications == num_provided_successful_curator_application_ids,
+                MSG_SUCCESSFUL_CURATOR_APPLICATION_DOES_NOT_EXIST
+            );
 
             // Attempt to fill opening
+            let successful_application_ids = successful_iter
+                                            .clone()
+                                            .map(|(successful_curator_application, _, _)| successful_curator_application.application_id)
+                                            .collect::<BTreeSet<_>>();
+
+            // Ensure all applications are from members that _still_ can step into the given role
+            let num_successful_applications_that_can_register_as_curator = successful_iter
+                                                                        .clone()
+                                                                        .map(|(successful_curator_application, _, _)| successful_curator_application.member_id)
+                                                                        .filter_map(|successful_member_id| Self::ensure_can_register_curator_role_on_member(&successful_member_id).ok() )
+                                                                        .collect::<Vec<_>>().len();
+
+            ensure!(
+                num_successful_applications_that_can_register_as_curator == num_provided_successful_curator_application_ids,
+                MSG_MEMBER_NO_LONGER_REGISTRABLE_AS_CURATOR
+            );
+
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::fill_opening(
-                    opening_id,
-                    successful_applications.clone(),
+                    curator_opening.opening_id,
+                    successful_application_ids,
                     curator_opening.policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period,
                     curator_opening.policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period,
                     curator_opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
@@ -1257,8 +1293,54 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            let current_block = <system::Module<T>>::block_number();
+
+            // For each successful application
+            // - create and hold on to curator
+            // - register role with membership module
+
+            successful_iter
+            .clone()
+            .for_each(|(successful_curator_application, id, _)| {
+
+                // No reward is established by default
+                let reward_relationship: Option<RewardRelationshipId<T>> = None;
+
+                // Get possible stake for role
+                let application = hiring::ApplicationById::<T>::get(successful_curator_application.application_id);
+                let role_stake = application.active_role_staking_id;
+
+                // Construct curator
+                let curator = Curator::new(
+                    &(successful_curator_application.role_account),
+                    &reward_relationship, 
+                    &role_stake,
+                    &CuratorRoleStage::Active,
+                    &CuratorInduction::new(&lead_id, &id, &current_block),
+                    false
+                );
+
+                // Get curator id
+                let new_curator_id = NextCuratorId::<T>::get();
+
+                // Store curator
+                CuratorById::<T>::insert(new_curator_id, curator);
+
+                // Register role on member
+                let registered_role = members::Module::<T>::register_role_on_member(
+                    successful_curator_application.member_id, 
+                    &role_types::ActorInRole::new(role_types::Role::Curator, new_curator_id)
+                ).is_ok();
+
+                assert!(registered_role);
+
+                // Update next curator id
+                NextCuratorId::<T>::mutate(|id| *id += <CuratorId<T> as One>::one());
+            });
+
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorOpeningFilled(opening_id, successful_applications));
+            Self::deposit_event(RawEvent::CuratorOpeningFilled(curator_opening_id, successful_curator_application_ids));
+
         }
 
         /*
