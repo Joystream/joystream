@@ -770,13 +770,35 @@ impl rstd::convert::From<WrappedError<hiring::DeactivateApplicationError>> for &
             hiring::DeactivateApplicationError::ApplicationDoesNotExist => "ApplicationDoesNotExist",
             hiring::DeactivateApplicationError::ApplicationNotActive => "ApplicationNotActive",
             hiring::DeactivateApplicationError::OpeningNotAcceptingApplications => "OpeningNotAcceptingApplications",
-            hiring::DeactivateApplicationError::UnstakingPeriodTooShort(_stake_purpose) => "UnstakingPeriodTooShort",
-            hiring::DeactivateApplicationError::RedundantUnstakingPeriodProvided(_stake_purpose) => "RedundantUnstakingPeriodProvided"
+            hiring::DeactivateApplicationError::UnstakingPeriodTooShort(_stake_purpose) => "UnstakingPeriodTooShort ...",
+            hiring::DeactivateApplicationError::RedundantUnstakingPeriodProvided(_stake_purpose) => "RedundantUnstakingPeriodProvided ..."
        }
     }
 }
 
-// 
+impl rstd::convert::From<WrappedError<members::ControllerAccountForMemberCheckFailed>> for &str {
+    fn from(wrapper: WrappedError<members::ControllerAccountForMemberCheckFailed>) -> Self {
+       
+       match wrapper.error {
+            members::ControllerAccountForMemberCheckFailed::NotMember => "Is not a member",
+            members::ControllerAccountForMemberCheckFailed::NotControllerAccount => "Account is not controller account of member",
+       }
+    }
+}
+
+impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for &str {
+    fn from(wrapper: WrappedError<hiring::AddApplicationError>) -> Self {
+       
+       match wrapper.error {
+            hiring::AddApplicationError::OpeningDoesNotExist => "OpeningDoesNotExist",
+            hiring::AddApplicationError::StakeProvidedWhenRedundant(_stake_purpose) => "StakeProvidedWhenRedundant ...",
+            hiring::AddApplicationError::StakeMissingWhenRequired(_stake_purpose) => "StakeMissingWhenRequired ...",
+            hiring::AddApplicationError::StakeAmountTooLow(_stake_purpose) => "StakeAmountTooLow ...",
+            hiring::AddApplicationError::OpeningNotInAcceptingApplicationsStage => "OpeningNotInAcceptingApplicationsStage",
+            hiring::AddApplicationError::NewApplicationWasCrowdedOut => "NewApplicationWasCrowdedOut"
+       }
+    }
+}
 
 // ======================================================================== //
 
