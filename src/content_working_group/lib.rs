@@ -798,6 +798,9 @@ decl_storage! {
         /// Maps identifeir to curator opening.
         pub CuratorOpeningById get(curator_opening_by_id) config(): linked_map CuratorOpeningId<T> => CuratorOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>>;
 
+        /// Next identifier valuefor new curator opening.
+        pub NextCuratorOpeningId get(next_curator_opening_id) config(): CuratorOpeningId<T>;
+
         /// Maps identifier to curator application on opening.
         pub CuratorApplicationById get(curator_application_by_id) config(): linked_map CuratorApplicationId<T> => CuratorApplication<T::AccountId, CuratorOpeningId<T>, T::MemberId, T::ApplicationId>;
 
