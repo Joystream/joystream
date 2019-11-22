@@ -394,10 +394,33 @@ decl_module! {
     }
 }
 
+/// Reason why a given member id does not have a given account as the controller account.
+pub enum ControllerAccountForMemberCheckFailed {
+    NotMember,
+    NotControllerAccount,
+}
+
 impl<T: Trait> Module<T> {
     /// Provided that the memberid exists return its profile. Returns error otherwise.
     pub fn ensure_profile(id: T::MemberId) -> Result<Profile<T>, &'static str> {
         Self::member_profile(&id).ok_or("member profile not found")
+    }
+
+    /// Ensure that given member has given account as the controller account
+    pub fn ensure_is_controller_account_for_member(member_id: &T::MemberId, account: &T::AccountId) -> Result<Profile<T>, ControllerAccountForMemberCheckFailed> {
+
+        if MemberProfile::<T>::exists(member_id) {
+
+            let profile = MemberProfile::<T>::get(member_id).unwrap();
+
+            if profile.controller_account == *account {
+                Ok(profile)
+            } else {
+                Err(ControllerAccountForMemberCheckFailed::NotControllerAccount)
+            }
+        } else {
+            Err(ControllerAccountForMemberCheckFailed::NotMember)
+        }
     }
 
     /// Returns true if account is either a member's root or controller account
