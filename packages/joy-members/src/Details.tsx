@@ -12,7 +12,7 @@ import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
-import { MemberId, Profile, EntryMethod, Paid, Screening,SubscriptionId } from '@joystream/types/members';
+import { MemberId, Profile, EntryMethod, Paid, Screening, Genesis, SubscriptionId } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
 import { Seat } from '@joystream/types/';
 import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/index';
@@ -150,6 +150,8 @@ class Component extends React.PureComponent<Props> {
     } else if (etype === Screening.name) {
       const accountId = entry.value as Screening;
       return <div>Screened by <AddressMini value={accountId} isShort={false} isPadded={false} withBalance /></div>;
+    } else if (etype === Genesis.name) {
+      return <div>Created at Genesis</div>;
     } else {
       return <em className='muted text'>Unknown</em>;
     }
