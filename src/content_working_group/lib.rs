@@ -1497,14 +1497,40 @@ decl_module! {
 
         }
 
-            /*
-            pub fn deactive_application(
-                application_id: T::ApplicationId,
-                application_stake_unstaking_period: Option<T::BlockNumber>,
-                role_stake_unstaking_period: Option<T::BlockNumber>,
-            ) -> Result<(), DeactivateApplicationError> {
-            */
+        /// Lead can terminate and active curator
+        pub fn terminate_curator_role(
+            origin,
+            curator_id: CuratorId<T>
+            ) {
 
+            /*
+            // Ensure lead is set and is origin signer
+            //Self::ensure_origin_is_set_lead(origin)?;
+
+
+
+            // Ensuring curator actually exists
+            let curator = Self::ensure_curator_exists(&curator_id)?;
+
+
+            // Attempt to deactive applications
+            // NB: Combined ensure check and mutation in hiring module
+            ensure_on_wrapped_error!(
+                hiring::Module::<T>::deactive_application(
+                    curator_application.application_id,
+                    curator_opening.policy_commitment.terminate_curator_application_stake_unstaking_period,
+                    curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period
+                )
+            )?;
+            
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Trigger event
+            Self::deposit_event(RawEvent::TerminatedCurator(curator_application_id));
+
+            */
         }
 
         /*
