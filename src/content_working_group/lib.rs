@@ -896,6 +896,7 @@ decl_storage! {
         pub ChannelHandleConstraint get(channel_handle_constraint) config(): InputValidationLengthConstraint;
         pub ChannelDescriptionConstraint get(channel_description_constraint) config(): InputValidationLengthConstraint;
         pub OpeningHumanReadableText get(opening_human_readble_text) config(): InputValidationLengthConstraint;
+        pub ApplicationHumanReadableText get(application_human_readable_text) config(): InputValidationLengthConstraint;
     }
 }
 
@@ -1401,18 +1402,83 @@ decl_module! {
             */
         }
 
-        /// ...
-        pub fn apply_on_curator_opening(_origin) {
+        /// Apply on a curator opening.
+        pub fn apply_on_curator_opening(
+            origin,
+            member_id: T::MemberId,
+            curator_opening_id: CuratorOpeningId<T>,
+            role_account: T::AccountId,
+            source_account: T::AccountId,
+            opt_role_stake_balance: Option<BalanceOf<T>>,
+            opt_application_stake_balance: Option<BalanceOf<T>>,
+            human_readable_text: Vec<u8>
+        ) {
 
-            /*
-            pub fn add_application(
-                opening_id: T::OpeningId,
-                opt_role_stake_imbalance: Option<NegativeImbalance<T>>,
-                opt_application_stake_imbalance: Option<NegativeImbalance<T>>,
-                human_readable_text: Vec<u8>,
-            ) -> Result<ApplicationAdded<T::ApplicationId>, AddApplicationError> {
-            */
+            // Ensure transaction is signed.
+            let signer_account = ensure_signed(origin)?;
 
+            // Ensure that owner member can authenticate with signer account
+            ensure_on_wrapped_error!(
+                members::Module::<T>::ensure_is_controller_account_for_member(&member_id, &signer_account)
+            )?;
+
+            // Ensure curator opening exists
+            let (curator_opening, _opening) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
+
+            // Ensure new owner can actually become a curator
+            let (_member_as_curator, _new_curator_id) = Self::ensure_can_register_curator_role_on_member(&member_id)?;
+
+            // Ensure that there is sufficient balance to cover stake proposed
+            Self::ensure_can_make_stake_imbalance(
+                vec![&opt_role_stake_balance, &opt_application_stake_balance], 
+                &source_account)
+                .map_err(|_err| MSG_INSUFFICIENT_BALANCE_TO_APPLY)?;
+
+            // Ensure application can actually be added
+            ensure_on_wrapped_error!(
+                hiring::Module::<T>::ensure_can_add_application(curator_opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Make imbalances for staking
+            let opt_role_stake_imbalance = Self::make_stake_opt_imbalance(&opt_role_stake_balance, &source_account);
+            let opt_application_stake_imbalance = Self::make_stake_opt_imbalance(&opt_application_stake_balance, &source_account);
+
+            // Call hiring module to add application
+            let add_application_result = hiring::Module::<T>::add_application(
+                curator_opening.opening_id,
+                opt_role_stake_imbalance,
+                opt_application_stake_imbalance,
+                human_readable_text
+            );
+
+            // Has to hold
+            assert!(add_application_result.is_ok());
+
+            let application_id = add_application_result.unwrap().application_id_added;
+
+            // Get id of new curator application
+            let new_curator_application_id = NextCuratorApplicationId::<T>::get();
+
+            // Make curator application
+            let curator_application = CuratorApplication::new(&role_account, &curator_opening_id, &member_id, &application_id);
+
+            // Store application
+            CuratorApplicationById::<T>::insert(new_curator_application_id, curator_application);
+
+            // Update next curator application identifier value
+            NextCuratorApplicationId::<T>::mutate(|id| *id += <CuratorApplicationId<T> as One>::one());
+
+            // Add application to set of application in curator opening
+            CuratorOpeningById::<T>::mutate(curator_opening_id, |curator_opening| {
+                curator_opening.curator_applications.insert(new_curator_application_id);
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::AppliedOnCuratorOpening(curator_opening_id, new_curator_application_id));
         }
 
         /// ...
