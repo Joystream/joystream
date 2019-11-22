@@ -284,7 +284,7 @@ rev = '28f4815a7d020fdcd450095cc8a8d7076f8899a6'
 default_features = false
 git = 'https://github.com/bedeho/substrate-hiring-module'
 package = 'substrate-hiring-module'
-rev = 'c3bbc67be1ad1891874abcc8ec9ec0e612c475cd'
+rev = 'c66b2591787e86ec3fecbc9bd358d5beec923299'
 
 [dependencies.versioned_store]
 default_features = false
