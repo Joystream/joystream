@@ -105,8 +105,8 @@ static MSG_ORIGIN_IS_NOT_LEAD: &str =
 //    "Opening cannot activate in the past";
 static MSG_OPENING_DOES_NOT_EXIST: &str =
     "Opening does not exist";
-static MSG_APPLICATION_DOES_NOT_EXIST: &str =
-    "Application does not exist";
+static MSG_CURATOR_APPLICATION_DOES_NOT_EXIST: &str =
+    "Curator application does not exist";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -1578,11 +1578,28 @@ impl<T: Trait> Module<T> {
         Ok(curator)
     }
 
+    fn ensure_curator_application_exists(curator_application_id: &CuratorApplicationId<T>) -> Result<(
+        CuratorApplication<T::AccountId, CuratorOpeningId<T>, T::MemberId, T::ApplicationId>, 
+        CuratorApplicationId<T>,
+        CuratorOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>>), &'static str> {
+    
+        //Result<(hiring::Application<<T as hiring::Trait>::OpeningId, T::BlockNumber, <T as stake::Trait>::StakeId>, CuratorOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>> ,hiring::Opening<BalanceOf<T>, T::BlockNumber, <T as hiring::Trait>::ApplicationId>), &'static str> {
 
         ensure!(
-            hiring::ApplicationById::<T>::exists(application_id),
-            MSG_APPLICATION_DOES_NOT_EXIST
+            CuratorApplicationById::<T>::exists(curator_application_id),
+            MSG_CURATOR_APPLICATION_DOES_NOT_EXIST
         );
+
+        let curator_application = CuratorApplicationById::<T>::get(curator_application_id);
+
+        //let application = hiring::ApplicationById::<T>::get(curator_application.application_id);
+
+        let curator_opening = CuratorOpeningById::<T>::get(curator_application.curator_opening_id);
+
+        //let opening = hiring::OpeningById::<T>::get(curator_opening.opening_id);
+
+        Ok((curator_application, curator_application_id.clone(), curator_opening))
+    }
 
         let application = hiring::ApplicationById::<T>::get(application_id);
 
