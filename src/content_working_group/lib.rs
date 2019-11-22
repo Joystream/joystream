@@ -1405,6 +1405,15 @@ impl<T: Trait> Module<T> {
 
         <members::Module<T>>::can_register_role_on_member(member_id, &new_actor_in_role).map(|_| new_actor_in_role)    
     }
+
+    fn ensure_can_register_curator_role_on_member(member_id: &T::MemberId) -> Result<(members::ActorInRole<ActorIdInMembersModule<T>>, CuratorId<T>), &'static str>{
+
+        let next_id = <NextCuratorId<T>>::get();
+
+        Self::ensure_can_register_role_on_member(member_id, role_types::Role::Curator, &next_id)
+        .map(|curator_in_role| (curator_in_role, next_id))
+    }
+
     // TODO: convert InputConstraint ensurer routines into macroes
 
     fn ensure_channel_handle_is_valid(handle: &Vec<u8>) -> dispatch::Result {
