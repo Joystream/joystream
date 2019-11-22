@@ -1395,6 +1395,16 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> Module<T> {
 
+    fn ensure_can_register_role_on_member(
+        member_id: &T::MemberId,
+        role: role_types::Role,
+        actor_id: &ActorIdInMembersModule<T>,
+     ) -> Result< members::ActorInRole<ActorIdInMembersModule<T>>, &'static str>{
+
+        let new_actor_in_role = role_types::ActorInRole::new(role, *actor_id);
+
+        <members::Module<T>>::can_register_role_on_member(member_id, &new_actor_in_role).map(|_| new_actor_in_role)    
+    }
     // TODO: convert InputConstraint ensurer routines into macroes
 
     fn ensure_channel_handle_is_valid(handle: &Vec<u8>) -> dispatch::Result {
