@@ -2,10 +2,12 @@ import React from 'react'
 import { boolean, date, number, select, text, withKnobs } from '@storybook/addon-knobs'
 
 import { u128, GenericAccountId } from '@polkadot/types'
+import { Balance } from '@polkadot/types/interfaces';
 
 import { FlowModal } from "./apply"
 import {
     ApplicationStakeRequirement, RoleStakeRequirement,
+	StakeType,
 } from '../tabs/Opportunities'
 
 import { creator } from "../tabs/Opportunities.stories"
@@ -33,6 +35,12 @@ const moneySliderOptions = {
 }
 
 export function ApplicationSandbox() {
+	// List of the minimum stake required to beat each rank
+	const slots: Balance[] = []
+	for (let i = 0; i < 20; i++) {
+		slots.push(new u128((i*100)+10+i+1))
+
+	}
     const props = {
         applications: {
             application_count: number("Applications count", 0, applicationSliderOptions, "Role rationing policy"),
@@ -67,6 +75,15 @@ export function ApplicationSandbox() {
                 balance: new u128(242),
             },
 		],
+		hasConfirmStep: true,
+		application_stake: new ApplicationStakeRequirement(new u128(1)),
+		role_stake: new RoleStakeRequirement(new u128(2), StakeType.AtLeast),
+		application_max: 0,
+		application_count: 0,
+		dynamic_minimum: new u128(0),
+		step: new u128(5),
+        slots: slots,
+
     }
 
     return <FlowModal {...props} />

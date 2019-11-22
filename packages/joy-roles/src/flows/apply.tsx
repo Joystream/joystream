@@ -152,7 +152,6 @@ function rankIcon(place: number, slots: number): string {
 }
 
 export type StakeRankSelectorProps = {
-    minStake: Balance
     slots: Balance[] // List of stakes to beat
     stake: Balance
     setStake: (b:Balance) => void
@@ -172,7 +171,7 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
             } else if (value > 0 && !focused) {
                 props.setStake(props.slots[value-1])
             } else if (!focused) {
-                props.setStake(props.minStake)
+                props.setStake(props.slots[0])
             }
             setRank(value)
         }
@@ -187,7 +186,6 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
         Your rank
         <div class="detail">{(slotCount-rank)+1}</div>
     </div>
-    const slider = <Slider className="labeled" rank={rank} color="teal" settings={settings} />
 
     const findRankValue = (newStake: Balance): number => {
         if (newStake.gt(props.slots[slotCount-1])) {
@@ -210,13 +208,26 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
         props.setStake(newStake)
         setRank(findRankValue(newStake))
     }
-
     useEffect( () => {
-        props.setStake(props.minStake)
+		props.setStake(props.slots[0])
     }, [])
 
-    return (
+    let slider = null
+    if (slotCount > 1) {
+        slider = (
+            <div>
+                <Slider discrete className="labeled" value={rank} color="teal" settings={settings} />
+                <div className="ticks">
+                    <div className="scale">
+                        {ticks}
+                    </div>
+                    {tickLabel}
+                </div>
+            </div>
+        )
+    }
 
+    return (
         <Container className="stake-rank-selector">
             <h4>Choose a stake</h4>
             <div className="controls">
@@ -228,9 +239,9 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
                        type="number" 
                        onBlur={() => {setFocused(false)}}
                        onFocus={() => {setFocused(true)}}
-                       step={props.step.toNumber()}
-                       value={props.stake.toNumber() > 0 ? props.stake.toNumber() : null} 
-                       min={props.minStake.toNumber()}
+					   step={props.step.toNumber()}
+					   value={props.stake.toNumber() > 0 ? props.stake.toNumber() : null} 
+					   min={props.slots[0].toNumber()}
                 />
                 <Button circular icon='angle right' onClick={() => {rank <= slotCount && setRank(rank+1)}} />
                 <Button circular icon='angle double right' onClick={() => {setRank(slotCount)}} />
@@ -247,14 +258,7 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
                     </Label>
                 </p>
             </div>
-
-            <Slider discrete className="labeled" value={rank} color="teal" settings={settings} />
-            <div className="ticks">
-                <div className="scale">
-                    {ticks}
-                </div>
-                {tickLabel}
-            </div>
+            {slider}
         </Container>
     )
 }
@@ -362,14 +366,18 @@ export type ConfirmStakesStageProps = StageTransitionProps &
                                       StakeRequirementProps & 
                                       FundSourceSelectorProps &
                                       ApplicationStatusProps &
-                                      StakeRankSelectorProps
+                                      StakeRankSelectorProps & {
+    selectedApplicationStake: Balance
+    setSelectedApplicationStake: (b:Balance) => void
+    selectedRoleStake: Balance
+    setSelectedRoleStake: (b:Balance) => void
+}
 
+//TODO! Set state
 export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
     const [address, setAddress] = useState<AccountId>()
     const [passphrase, setPassphrase] = useState("")
-    const [minStake, setMinStake] = useState(new u128(0)) // FIXME: dynamic_minimum
-    const [appStake, setAppStake] = useState(new u128(0))
-    const [roleStake, setRoleStake] = useState(new u128(0))
+    const minStake = useState(new u128(0))
 
     const ctaContinue = (zeroOrTwoStakes(props)) ?
         'Confirm stakes and continue' :
@@ -377,7 +385,7 @@ export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
 
     return (
       <Container className="content">
-          <ConfirmStakes {...props} setApplicationStake={setAppStake} setRoleStake={setRoleStake} />
+          <ConfirmStakes {...props} />
 
           <Header as='h4'>Source of stake funds</Header>
           <p>Please select the account that will be used as the source of stake funds.</p>
@@ -414,10 +422,7 @@ function bothStakesVariable(props: StakeRequirementProps): boolean {
            props.application_stake.atLeast() && props.role_stake.atLeast()
 }
 
-type StakeSelectorProps = ConfirmStakesStageProps & ApplicationStatusProps & {
-    setApplicationStake: (b:Balance) => void
-    setRoleStake: (b:Balance) => void
-}
+type StakeSelectorProps = ConfirmStakesStageProps & ApplicationStatusProps
 
 function ConfirmStakes(props: StakeSelectorProps) {
     if (bothStakesVariable(props)) {
@@ -435,7 +440,8 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
                           return_policy="after the opening is resolved or your application ends"
                           colour="yellow"
                           requirement={props.application_stake}
-                          setValue={props.setApplicationStake}
+					      value={props.selectedApplicationStake}
+                          setValue={props.setSelectedApplicationStake}
                           application_max={props.application_max}
                           application_count={props.application_count}
                           {...props}
@@ -449,7 +455,8 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
                           return_policy="after the opening is resolved or your application ends"
                           colour="red"
                           requirement={props.role_stake}
-                          setValue={props.setRoleStake}
+					      value={props.selectedRoleStake}
+                          setValue={props.setSelectedRoleStake}
                           application_max={props.application_max}
                           application_count={props.application_count}
                           {...props}
@@ -467,30 +474,27 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
 export type ConfirmStakes2UpProps = StakeSelectorProps & {
     step: Balance
     slots: Balance[]
+    selectedApplicationStake: boolean
+    setSelectedApplicationStake: (v:Balance) => void
+    selectedRoleStake: boolean
+    setSelectedRoleStake: (v:Balance) => void
 }
 
 export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
+    const [valid, setValid] = useState(false)
     const slotCount = props.slots.length
     const [rank, setRank] = useState(1);
-
-    // FIXME! These should be passed into the component
-    const [applicationStake, setApplicationStake] = useState(props.application_stake.value)
-    const [roleStake, setRoleStake] = useState(props.role_stake.value)
-    const [valid, setValid] = useState(false)
-
-    // FIXME! What if there are 0?
     const minStake = props.slots[0]
-
     const [combined, setCombined] = useState(new u128(0))
 
     // Watch stake values
     useEffect( () => {
-            const newCombined = new u128(applicationStake.add(roleStake))
+            const newCombined = new u128(props.selectedApplicationStake.add(props.selectedRoleStake))
             setCombined(newCombined)
             setRank(findRankValue(newCombined))
             setValid(combined.gt(minStake))
         },
-        [applicationStake, roleStake]
+        [props.selectedApplicationStake, props.selectedRoleStake]
     )
 
     const findRankValue = (newStake: Balance): number => {
@@ -517,7 +521,19 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
         <div class="detail">{(slotCount-rank)+1}</div>
     </div>
 
-    let rankExplanation = <p>This role required a combined stake (applicationm stake plus role stake) of {formatBalance(minStake)}.</p>
+    let tickContainer = null
+    if (slotCount > 3) {
+        tickContainer = (
+           <div className="ticks">
+                {tickLabel}
+                <div className="scale">
+                    {ticks}
+                </div>
+            </div>
+        )
+    }
+  
+    let rankExplanation = <p>This role required a combined stake (application stake plus role stake) of {formatBalance(minStake)}.</p>
     if (props.application_max > 0) {
         rankExplanation = (
             <Container>
@@ -564,15 +580,15 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
                         <Grid.Row columns={2}>
                             <Grid.Column>
                                 <StakeRankMiniSelector step={props.step} 
-                                                       value={applicationStake} 
-                                                       setValue={setApplicationStake} 
+                                                       value={props.selectedApplicationStake} 
+                                                       setValue={props.setSelectedApplicationStake} 
                                                        min={props.application_stake.value}
                                 />
                             </Grid.Column>
                             <Grid.Column>
                                 <StakeRankMiniSelector step={props.step} 
-                                                       value={roleStake} 
-                                                       setValue={setRoleStake} 
+                                                       value={props.selectedRoleStake} 
+                                                       setValue={props.setSelectedRoleStake} 
                                                        min={props.role_stake.value}
                                 />
                             </Grid.Column>
@@ -587,7 +603,7 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
                                 <Label color={valid ? 'green' : 'red'}>
                                     <Icon name='times circle' />
                                     Your current combined stake
-                                    <Label.Detail>{formatBalance(new u128(applicationStake.add(roleStake)))}</Label.Detail>
+                                    <Label.Detail>{formatBalance(new u128(props.selectedApplicationStake.add(props.selectedRoleStake)))}</Label.Detail>
                                 </Label>
                                 <Label color='grey'>
                                     <Icon name={rankIcon(rank, slotCount)} />
@@ -597,12 +613,7 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
                             </Grid.Column>
                         </Grid.Row>
                     </Grid>
-            <div className="ticks">
-                {tickLabel}
-                <div className="scale">
-                    {ticks}
-                </div>
-            </div>
+                    {tickContainer}
                 </Message.Content>
             </Message>
         </Container>
@@ -619,13 +630,11 @@ type StakeRankMiniSelectorProps = {
 function StakeRankMiniSelector(props: StakeRankMiniSelectorProps) {
     const changeValue = (e, {value}) => {
         if (value < 0) {
-            console.log("<0",value)
             props.setValue(new u128(0))
             return
         }
         const newStake = new u128(value) 
         props.setValue(newStake)
-        //setRank(findRankValue(newStake))
     }
 
     return (
@@ -647,6 +656,7 @@ type CaptureStake1UpProps = ApplicationStatusProps & {
   return_policy: string
   colour: string
   requirement: IStakeRequirement
+  value: Balance
   setValue: (b: Balance) => void
   application_max: number
 }
@@ -661,13 +671,13 @@ function CaptureStake1Up(props: CaptureStake1UpProps) {
 
     // Set default value
     useEffect(() => {
-        props.setValue(props.requirement.value)
+		props.setValue(props.requirement.value)
     }, [])
 
     let slider = null
     let atLeast = null
     if (props.requirement.atLeast()) {
-        slider = <StakeRankSelector {...props} />
+        slider = <StakeRankSelector {...props} stake={props.value} setStake={props.setValue} />
         atLeast = 'at least '
     }
 
@@ -793,39 +803,39 @@ export function DoneStage(props: DoneStageProps) {
 export type FlowModalProps = FundSourceSelectorProps & {
     applications: OpeningBodyApplicationsStatusProps,
     creator: GroupMemberProps
+    hasConfirmStep: boolean
 }
 
 export function FlowModal(props: FlowModalProps) {
-    const hasConfirmStep = false
-    const [activeStep, setActiveStep] = useState(ProgressSteps.SubmitApplication)
+    const [applicationStake, setApplicationStake] = useState(new u128(0))
+    const [roleStake, setRoleStake] = useState(new u128(1))
+    const [activeStep, setActiveStep] = useState(props.hasConfirmStep ? 
+                                                 ProgressSteps.ConfirmStakes :
+                                                 ProgressSteps.SubmitApplication 
+                                        )
     const [complete, setComplete] = useState(false)
     
+    const enterSubmitApplicationState = () => {
+        setActiveStep(ProgressSteps.SubmitApplication)
+    }
+
     const enterDoneState = () => {
         setComplete(true)
         setActiveStep(ProgressSteps.Done)
     }
 
-    const [stage, setStage] = useState(<SubmitApplicationStage {...props} nextTransition={enterDoneState} />)
+	const setProps = {
+		 selectedApplicationStake: applicationStake,
+		 setSelectedApplicationStake: setApplicationStake,
+		 selectedRoleStake: roleStake,
+		 setSelectedRoleStake: setRoleStake,
+	}
 
-    // Watch for state changes
-    useEffect( 
-        () => {
-            switch(activeStep) {
-                case ProgressSteps.ConfirmStakes:
-                    setStage(<ConfirmStakesStage {...props} nextTransition={enterDoneState} />)
-                    break
-
-                case ProgressSteps.SubmitApplication:
-                    setStage(<SubmitApplicationStage {...props} nextTransition={enterDoneState} />)
-                    break
-
-                case ProgressSteps.Done:
-                    setStage(<DoneStage {...props} />)
-                    break
-            }
-        },
-        [activeStep],
-    )
+	const stages = new Map<ProgressSteps,any>([
+		[ProgressSteps.ConfirmStakes, <ConfirmStakesStage {...props} nextTransition={enterSubmitApplicationState} {...setProps} />],
+		[ProgressSteps.SubmitApplication, <SubmitApplicationStage {...props} nextTransition={enterDoneState} />],
+		[ProgressSteps.Done, <DoneStage {...props} />], 
+	])
 
     return (
         <Modal size='fullscreen' open={true} dimmer='inverted' className="apply-flow">
@@ -847,8 +857,8 @@ export function FlowModal(props: FlowModalProps) {
                     </Grid>
                     <Grid columns="equal">
                     <Grid.Column width={11} className="main">
-                        <ProgressStepsView activeStep={activeStep} hasConfirmStep={hasConfirmStep} />
-                        {stage}
+                        <ProgressStepsView activeStep={activeStep} hasConfirmStep={props.hasConfirmStep} />
+                        {stages.get(activeStep)}
                     </Grid.Column>
                     <Grid.Column width={5} className="summary">
                         <Header as='h3'>Help us curate awesome content</Header>

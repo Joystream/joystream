@@ -3,6 +3,7 @@ import { number, withKnobs } from '@storybook/addon-knobs'
 import { Card, Container, Message } from 'semantic-ui-react'
 
 import { u128, GenericAccountId } from '@polkadot/types'
+import { Balance } from '@polkadot/types/interfaces';
 
 import { 
 	ConfirmStakesStage, ConfirmStakesStageProps,
@@ -144,7 +145,6 @@ export function StakeRankSelectorFragment() {
 	}
 
     const props: StakeRankSelectorProps = {
-		minStake: new u128(10),
 		stake: stake,
 		setStake: setStake,
 		slots: slots,
@@ -166,7 +166,10 @@ export function StakeRankSelectorFragment() {
     )
 }
 
-export function Select2MinimumStakes() {
+export function SelectTwoMinimumStakes() {
+    const [applicationStake, setApplicationStake] = useState(new u128(1))
+    const [roleStake, setRoleStake] = useState(new u128(2))
+
 	// List of the minimum stake required to beat each rank
 	const slots: Balance[] = []
 	for (let i = 0; i < 20; i++) {
@@ -183,6 +186,8 @@ export function Select2MinimumStakes() {
 		dynamic_minimum: new u128(0),
 		step: new u128(5),
         slots: slots,
+		selectedApplicationStake: applicationStake, setSelectedApplicationStake: setApplicationStake,
+		selectedRoleStake: roleStake, setSelectedRoleStake: setRoleStake,
 	}
 
 	return (
@@ -358,7 +363,6 @@ export function StageAConfirmStakes() {
 		},
 	]
 
-	const [stake, setStake] = useState<Balance>(new u128(0))
 
 	// List of the minimum stake required to beat each rank
 	const slots: Balance[] = []
@@ -366,24 +370,45 @@ export function StageAConfirmStakes() {
 		slots.push(new u128((i*100)+10+i+1))
 	}
 
-    const stakeRankSelectorProps: StakeRankSelectorProps = {
-		minStake: new u128(10),
-		stake: stake,
-		setStake: setStake,
-		slots: slots,
-		step: new u128(10),
-    }
+
+	const renders = []
+    permutations.map((permutation, key) => {
+		const [applicationStake, setApplicationStake] = useState(new u128(0))
+		const [roleStake, setRoleStake] = useState<Balance>(new u128(0))
+
+		const [stake, setStake] = useState<Balance>(new u128(0))
+		const stakeRankSelectorProps: StakeRankSelectorProps = {
+			slots: slots,
+			step: new u128(10),
+		}
+
+		renders.push(
+			(
+				<Container className="outer" key={key}>
+                    <h4>{key}. {permutation._description}</h4>
+                    <Card fluid>
+						<ConfirmStakesStage {...permutation} 
+											{...stakeRankSelectorProps} 
+											keypairs={keypairs}
+                                            selectedApplicationStake={applicationStake}
+                                            setSelectedApplicationStake={setApplicationStake}
+                                            selectedRoleStake={roleStake}
+                                            setSelectedRoleStake={setRoleStake}
+						/>
+                    </Card>
+					<Message info>
+						A: {applicationStake.toString()}, R: {roleStake.toString()}
+					</Message>
+                </Container>
+			)
+		)
+	})
 
     return (
         <Container className="apply-flow">
-            {permutations.map((permutation, key) => (
-                <Container className="outer" key={key}>
-                    <h4>{key}. {permutation._description}</h4>
-                    <Card fluid>
-                        <ConfirmStakesStage {...permutation} {...stakeRankSelectorProps} keypairs={keypairs} />
-                    </Card>
-                </Container>
-            ))}
+            {renders.map((render, key) => (
+				<div>{render}</div>
+           ))}
         </Container>
     )
 }
