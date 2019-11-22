@@ -1016,6 +1016,7 @@ decl_module! {
         /// 
         /// Notice that working group participants cannot do this.
         /// Notice that censored or unpublished channel may still be transferred.
+        /// Notice that transfers are unilateral, so new owner cannot block. This may be problematic: https://github.com/Joystream/substrate-runtime-joystream/issues/95
         pub fn transfer_channel_ownership(origin, channel_id: ChannelId<T>, new_owner: T::MemberId, new_role_account: T::AccountId) {
 
             // Ensure that it is signed
@@ -1030,23 +1031,8 @@ decl_module! {
                 MSG_ORIGIN_DOES_NOT_MATCH_CHANNEL_ROLE_ACCOUNT
             );
 
-            // Ensure new owner can actually become a publisher
-            let new_actor_id = channel_id;
-
-            let new_member_as_publisher = role_types::ActorInRole{
-                role: role_types::Role::Publisher,
-                actor_id: new_actor_id
-            };
-
-            let can_register_as_publisher = <members::Module<T>>::can_register_role_on_member(
-                new_owner, 
-                new_member_as_publisher)
-                .is_ok();
-            
-            ensure!(
-                can_register_as_publisher,
-                MSG_MEMBER_CANNOT_BECOME_PUBLISHER
-            );
+            // Ensure prospective new owner can actually become a channel owner
+            let (new_owner_as_channel_owner, _next_channel_id) = Self::ensure_can_register_channel_owner_role_on_member(&new_owner, Some(channel_id))?;
 
             //
             // == MUTATION SAFE ==
@@ -1062,25 +1048,15 @@ decl_module! {
             // Overwrite entry in ChannelById
             ChannelById::<T>::insert(channel_id, new_channel);
 
-            // Dial out to membership module and inform about removal of role as channle owner for old owner.
-            let old_actor_id = channel_id;
-
-            let old_member_as_publisher = role_types::ActorInRole{
-                role: role_types::Role::Publisher,
-                actor_id: old_actor_id
-            };
-
-            let unregistered_role = <members::Module<T>>::unregister_role(
-                old_member_as_publisher
-                )
-                .is_ok();
+            // Remove 
+            let unregistered_role = <members::Module<T>>::unregister_role(role_types::ActorInRole::new(role_types::Role::ChannelOwner, channel_id)).is_ok();
 
             assert!(unregistered_role);
 
             // Dial out to membership module and inform about new role as channe owner.
             let registered_role = <members::Module<T>>::register_role_on_member(
                 new_owner, 
-                new_member_as_publisher)
+                &new_owner_as_channel_owner)
                 .is_ok();
 
             assert!(registered_role);
