@@ -60,6 +60,9 @@ pub type CuratorId<T> = <T as members::Trait>::ActorId;
 /// Type for identifier for dynamic version store credential.
 pub type DynamicCredentialId<T> = <T as versioned_store_permissions::Trait>::PrincipalId;
 
+/// Tyoe for the indentifier for an application as a curator.
+pub type CuratorApplicationId<T> = <T as hiring::Trait>::ApplicationId;
+
 /// Balance type of runtime
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
@@ -251,6 +254,47 @@ pub struct CuratorOpening<BlockNumber, Balance> {
      * Revisit. 
      */
 
+}
+
+/// An application for the curator role.
+#[derive(Encode, Decode, Default, Debug, Clone)]
+pub struct CuratorApplication<AccountId, CuratorOpeningId, MemberId, ApplicationId> {
+
+    /// Account used to authenticate in this role,
+    pub role_account: AccountId,
+
+    /// Opening on which this application applies
+    pub curator_opening_id: CuratorOpeningId,
+    
+    /// Member applying
+    pub member_id: MemberId,
+
+    /// Underlying application in hiring module
+    pub application_id: ApplicationId,
+}
+
+impl<
+    AccountId: Clone,
+    CuratorOpeningId: Clone,
+    MemberId: Clone, 
+    ApplicationId: Clone
+    >
+    CuratorApplication<
+        AccountId,
+        CuratorOpeningId,
+        MemberId,
+        ApplicationId
+        > {
+
+    pub fn new(role_account: &AccountId, curator_opening_id: &CuratorOpeningId, member_id: &MemberId, application_id: &ApplicationId) -> Self {
+
+        CuratorApplication {
+            role_account: (*role_account).clone(),
+            curator_opening_id: (*curator_opening_id).clone(),
+            member_id: (*member_id).clone(),
+            application_id: (*application_id).clone()
+        }
+    }
 }
 
 /*
