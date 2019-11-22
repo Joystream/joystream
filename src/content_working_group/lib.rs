@@ -1686,10 +1686,66 @@ impl<T: Trait> Module<T> {
     }
 
     /// CRITICAL: 
+    /// https://github.com/Joystream/substrate-runtime-joystream/issues/92
+    /// This assumes that ensure_can_withdraw can be don
+    /// for a sum of balance that later will be actually withdrawn
+    /// using individual terms in that sum.
+    /// This needs to be fully checked across all possibly scenarios 
+    /// of actual balance, minimum balance limit, reservation, vesting and locking.
+    fn ensure_can_make_stake_imbalance(
+        opt_balances: Vec<&Option<BalanceOf<T>>>, 
+        source_account: &T::AccountId) -> Result<(), &'static str> {
 
-        let (curator_opening, opening) = Self::ensure_curator_opening_exists(application.opening_id)?;
+        let zero_balance = <BalanceOf<T> as Zero>::zero();
 
-        Ok((application, curator_opening, opening))
+        // Total amount to be staked
+        let total_amount = opt_balances
+        .iter()
+        .fold(zero_balance, |sum, opt_balance| {
+
+            sum + if let Some(balance) = opt_balance {
+                *balance
+            } else {
+                zero_balance
+            }
+
+        });
+
+        if total_amount > zero_balance {
+
+            let new_balance = CurrencyOf::<T>::free_balance(source_account) - total_amount;
+
+            CurrencyOf::<T>::ensure_can_withdraw(
+                source_account,
+                total_amount,
+                WithdrawReasons::all(),
+                new_balance
+            )
+
+        } else {
+            Ok(())
+        }
+
     }
 
+    fn make_stake_opt_imbalance(opt_balance: &Option<BalanceOf<T>>, source_account: &T::AccountId) -> Option<NegativeImbalance<T>> {
+
+        if let Some(balance) = opt_balance {
+
+            let withdraw_result = CurrencyOf::<T>::withdraw(
+                source_account,
+                *balance,
+                WithdrawReasons::all(),
+                ExistenceRequirement::AllowDeath,
+            );
+
+            assert!(withdraw_result.is_ok());
+
+            withdraw_result.ok()
+
+        } else {
+            None
+        }
+
+    }
 }
