@@ -878,7 +878,7 @@ decl_storage! {
         /// Maps dynamic credential by
         pub DynamicCredentialById get(dynamic_credential_by_id) config(): linked_map DynamicCredentialId<T> => DynamicCredential<CuratorId<T>, ChannelId<T>, T::BlockNumber>;
 
-        /// ...
+        /// Identifier for next credential
         pub NextDynamicCredentialId get(next_dynamic_credential_id) config(): DynamicCredentialId<T>;
 
         /// Whether it is currently possible to create a channel via `create_channel` extrinsic.
@@ -887,6 +887,7 @@ decl_storage! {
         // Limits
         
         /// Limits the total number of curators which can be active.
+        pub MaxSimultanouslyActiveCurators get(max_simultanously_active_curators) config(): Option<u16>;
 
         // Limits the total number of openings which are not yet deactivated.
         // pub MaxSimultaneouslyActiveOpenings get(max_simultaneously_active_openings) config(): Option<u16>,
@@ -899,28 +900,6 @@ decl_storage! {
         pub ApplicationHumanReadableText get(application_human_readable_text) config(): InputValidationLengthConstraint;
     }
 }
-
-/*
-TODO 
-- building issues: <=== done!!
-
-- redo extrinsics so hiring: routine isguard, and we converterro to strings thoruhg
-helper orutines. That way we do not need to replicate guards here? 
-   - step 0: just do it with simple "ERR" for every case. 
-   - step 1: later
-
-- Introduce CuratorOpening class with time bounds, which is instantiated in add_opening, which also
-needs checks for validation.
-
-
-
-- Implement permissions model & checker in sensible way.
-
-- Impl curation & channel editing (as curator and owner) in sensible way.
-
-- step 1: add actual mapper for real error messages.
-
-*/
 
 decl_event! {
     pub enum Event<T> where
@@ -1130,9 +1109,6 @@ decl_module! {
 
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_set_lead(origin)?;
-
-            // Validate activate_at
-            //Self::ensure_activate_opening_at_valid(&activate_at)?;
 
             // Ensure human radable text is valid
             Self::ensure_opening_human_readable_text_is_valid(&human_readable_text)?;
