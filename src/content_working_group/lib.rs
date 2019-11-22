@@ -443,8 +443,8 @@ impl Default for ChannelCurationStatus {
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Channel<MemberId, AccountId, BlockNumber> {
 
-    /// Unique human readble channel handle.
-    pub handle: Vec<u8>, 
+    /// Unique human readble channel name.
+    pub channel_name: Vec<u8>, 
 
     /// Whether channel has been verified, in the normal Web2.0 platform sense of being authenticated.
     pub verified: bool,
@@ -818,7 +818,7 @@ decl_storage! {
         /// Maps (unique+immutable) channel handle to the corresponding identifier for the channel.
         /// Mapping is required to allow efficient (O(log N)) on-chain verification that a proposed handle is indeed unique 
         /// at the time it is being proposed.
-        pub ChannelIdByHandle get(channel_id_by_handle) config(): linked_map Vec<u8> => ChannelId<T>;
+        pub ChannelIdByName get(channel_id_by_handle) config(): linked_map Vec<u8> => ChannelId<T>;
 
         /// Maps identifier to corresponding curator.
         pub CuratorById get(curator_by_id) config(): linked_map CuratorId<T> => Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, CuratorApplicationId<T>>;
@@ -969,8 +969,8 @@ decl_module! {
             // Add channel to ChannelById under id
             ChannelById::<T>::insert(next_channel_id, new_channel);
 
-            // Add id to ChannelIdByHandle under handle
-            ChannelIdByHandle::<T>::insert(handle.clone(), next_channel_id);
+            // Add id to ChannelIdByName under handle
+            ChannelIdByName::<T>::insert(channel_name.clone(), next_channel_id);
 
             // Increment NextChannelId
             NextChannelId::<T>::mutate(|id| *id += <ChannelId<T> as One>::one());
