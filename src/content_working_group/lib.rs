@@ -1189,7 +1189,7 @@ decl_module! {
         }
 
         /// Begin reviewing, and therefore not accepting new applications.
-        pub fn begin_curator_applicant_review(origin, opening_id: T::OpeningId) {
+        pub fn begin_curator_applicant_review(origin, curator_opening_id: CuratorOpeningId<T>) {
 
             // Ensure lead is set and is origin signer
             let (_lead_id, _lead) = Self::ensure_origin_is_set_lead(origin)?;
@@ -1198,12 +1198,12 @@ decl_module! {
             // NB: Even though call to hiring modul will have implicit check for 
             // existence of opening as well, this check is to make sure that the opening is for
             // this working group, not something else.
-            Self::ensure_curator_opening_exists(opening_id)?;
+            let (curator_opening, _opening) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
 
             // Attempt to begin review of applications
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
-                hiring::Module::<T>::begin_review(opening_id)
+                hiring::Module::<T>::begin_review(curator_opening.opening_id)
                 )?;
 
             //
@@ -1211,7 +1211,7 @@ decl_module! {
             //
 
             // Trigger event
-            Self::deposit_event(RawEvent::BeganCuratorApplicationReview(opening_id));
+            Self::deposit_event(RawEvent::BeganCuratorApplicationReview(curator_opening_id));
         }
 
         /// Fill opening for curator
