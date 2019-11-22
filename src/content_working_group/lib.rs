@@ -275,6 +275,43 @@ pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId
     pub can_update_channel_curation_status: bool
 }
 
+impl<
+    AccountId: Clone,
+    RewardRelationshipId: Clone,
+    StakeId: Clone,
+    BlockNumber: Clone,
+    LeadId: Clone,
+    ApplicationId: Clone
+    > 
+    Curator<
+        AccountId,
+        RewardRelationshipId,
+        StakeId,
+        BlockNumber,
+        LeadId,
+        ApplicationId
+        > {
+
+    pub fn new(
+        role_account: &AccountId,
+        reward_relationship: &Option<RewardRelationshipId>,
+        stake: &Option<StakeId>,
+        stage: &CuratorRoleStage<BlockNumber>,
+        induction: &CuratorInduction<LeadId, ApplicationId, BlockNumber>,
+        can_update_channel_curation_status: bool) -> Self {
+
+        Curator {
+            role_account: (*role_account).clone(),
+            reward_relationship: (*reward_relationship).clone(),
+            stake: (*stake).clone(),
+            stage: (*stage).clone(),
+            induction: (*induction).clone(),
+            can_update_channel_curation_status: can_update_channel_curation_status
+        }
+    }
+
+}
+
 /// An opening for a curator role.
 #[derive(Encode, Decode, Default, Debug, Clone)]
 pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId: core::cmp::Ord> {
