@@ -203,16 +203,40 @@ impl<BlockNumber> Default for CuratorRoleStage<BlockNumber> {
 
 /// The induction of a curator in the working group.
 #[derive(Encode, Decode, Default, Debug, Clone)]
-pub struct CuratorInduction<LeadId, ApplicationId, BlockNumber> {
+pub struct CuratorInduction<LeadId, CuratorApplicationId, BlockNumber> {
 
-    /// Lead responsible
+    /// Lead responsible for inducting curator
     pub lead: LeadId,
 
     /// Application through which curator was inducted
-    pub application: ApplicationId,
+    pub curator_application_id: CuratorApplicationId,
 
     /// When induction occurred
     pub at_block: BlockNumber
+}
+
+impl< 
+    LeadId: Clone, 
+    CuratorApplicationId: Clone,
+    BlockNumber: Clone
+>
+CuratorInduction
+<
+    LeadId,
+    CuratorApplicationId,
+    BlockNumber
+> {
+    pub fn new(
+    lead: &LeadId,
+    curator_application_id: &CuratorApplicationId,
+    at_block: &BlockNumber) -> Self {
+
+        CuratorInduction {
+            lead: (*lead).clone(),
+            curator_application_id: (*curator_application_id).clone(),
+            at_block: (*at_block).clone()
+        }
+    }
 }
 
 /// Working group participant: curator
@@ -1601,7 +1625,7 @@ impl<T: Trait> Module<T> {
         Ok((curator_application, curator_application_id.clone(), curator_opening))
     }
 
-        let application = hiring::ApplicationById::<T>::get(application_id);
+    /// CRITICAL: 
 
         let (curator_opening, opening) = Self::ensure_curator_opening_exists(application.opening_id)?;
 
