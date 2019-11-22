@@ -1426,8 +1426,10 @@ decl_module! {
 
         }
 
-        /// ...
-        pub fn exit_curator_role(_origin) {
+        /// An active curator leaves role
+        pub fn leave_curator_role(_origin) {
+
+        }
 
             /*
             pub fn deactive_application(
