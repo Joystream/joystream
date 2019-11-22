@@ -720,6 +720,11 @@ decl_storage! {
         /// Using map to model a set.
         pub CuratorOpeningById get(curator_opening_by_id) config(): linked_map T::OpeningId => CuratorOpening<T::BlockNumber, BalanceOf<T>>;
 
+        pub CuratorApplicationById get(curator_application_by_id) config(): linked_map CuratorApplicationId<T> => CuratorApplication<T::AccountId, CuratorOpeningId<T>, T::MemberId, T::ApplicationId>;
+
+        /// Next identifier value for new curator application.
+        pub NextCuratorApplicationId get(next_curator_application_id) config(): CuratorApplicationId<T>;
+
         // The set of active openings.
         // This must be maintained to effectively enforce 
         // `MaxSimultaneouslyActiveOpenings`.
@@ -737,7 +742,7 @@ decl_storage! {
         pub ChannelIdByHandle get(channel_id_by_handle) config(): linked_map Vec<u8> => ChannelId<T>;
 
         /// Maps identifier to corresponding curator.
-        pub CuratorById get(curator_by_id) config(): linked_map CuratorId<T> => Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId>;
+        pub CuratorById get(curator_by_id) config(): linked_map CuratorId<T> => Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, CuratorApplicationId<T>>;
         
         /// Next identifier for new curator.
         pub NextCuratorId get(next_curator_id) config(): CuratorId<T>;
