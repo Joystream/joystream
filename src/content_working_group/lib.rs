@@ -9,12 +9,12 @@ use codec::{Decode, Encode}; // Codec
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use rstd::convert::From;
-use srml_support::traits::Currency;
+use srml_support::traits::{Currency, WithdrawReasons, ExistenceRequirement};
 use srml_support::{
     decl_module, decl_storage, decl_event, ensure, dispatch // , StorageMap, , Parameter
 };
 use system::{self, ensure_signed, ensure_root};
-use runtime_primitives::traits::{One}; // Member, SimpleArithmetic, MaybeSerialize
+use runtime_primitives::traits::{One, Zero}; // Member, SimpleArithmetic, MaybeSerialize
 use minting;
 use recurringrewards;
 use stake;
