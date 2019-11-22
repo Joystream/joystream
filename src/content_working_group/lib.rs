@@ -1144,15 +1144,22 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Create and add opening.
+            let new_curator_opening_id = NextCuratorOpeningId::<T>::get();
+
+            // Create and add curator opening.
             let new_opening_by_id = CuratorOpening {
+                opening_id : opening_id,
+                curator_applications: BTreeSet::new(),
                 policy_commitment: policy_commitment
             };
 
-            CuratorOpeningById::<T>::insert(opening_id, new_opening_by_id);
+            CuratorOpeningById::<T>::insert(new_curator_opening_id, new_opening_by_id);
+
+            // Update NextCuratorOpeningId
+            NextCuratorOpeningId::<T>::mutate(|id| *id += <CuratorOpeningId<T> as One>::one());
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorOpeningAdded(opening_id));
+            Self::deposit_event(RawEvent::CuratorOpeningAdded(new_curator_opening_id));
         }
 
         /// Begin accepting curator applications to an opening that is active.
