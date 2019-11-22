@@ -1422,6 +1422,9 @@ decl_module! {
 
             <LeadById<T>>::insert(lead_id, new_lead);
 
+            // Update current lead
+            <CurrentLeadId<T>>::take(); // None
+
             // Trigger event
             Self::deposit_event(RawEvent::LeadUnset(lead_id));
         }
