@@ -797,44 +797,30 @@ decl_module! {
          */
 
         /// Create a new channel.
-        pub fn create_channel(origin, owner: T::MemberId, role_account: T::AccountId, handle: Vec<u8>, description: Vec<u8>, content: ChannelContentType) {
+        pub fn create_channel(origin, owner: T::MemberId, role_account: T::AccountId, channel_name: Vec<u8>, description: Vec<u8>, content: ChannelContentType) {
 
             // Ensure that it is signed
-            ensure_signed(origin)?;
+            let signer_account = ensure_signed(origin)?;
 
-            // Ensure prospective owner member is currently allowed to act in the publisher role
-            let next_channel_id = NextChannelId::<T>::get();
-
-            // Publisher is identified by the id of the owned channel
-            let new_actor_id = next_channel_id;
-
-            let member_as_publisher = role_types::ActorInRole{
-                role: role_types::Role::Publisher,
-                actor_id: new_actor_id
-            };
-
-            let can_register_as_publisher = <members::Module<T>>::can_register_role_on_member(
-                owner, 
-                member_as_publisher)
-                .is_ok();
-            
-            ensure!(
-                can_register_as_publisher,
-                MSG_MEMBER_CANNOT_BECOME_PUBLISHER
-            );
-
+            // Ensure that owner member can authenticate with signer account
+            ensure_on_wrapped_error!(
+                members::Module::<T>::ensure_is_controller_account_for_member(&owner, &signer_account)
+            )?;
+                        
             // Ensure it is currently possible to create channels (ChannelCreationEnabled).
             ensure!(
                 ChannelCreationEnabled::get(),
                 MSG_CHANNEL_CREATION_DISABLED
             );
 
+            // Ensure prospective owner member is currently allowed to become channel owner
+            let (member_in_role, next_channel_id) = Self::ensure_can_register_channel_owner_role_on_member(&owner, None)?;
+
             // Ensure handle is acceptable length
-            Self::ensure_channel_handle_is_valid(&handle)?;
+            Self::ensure_channel_handle_is_valid(&channel_name)?;
 
             // Ensure description is acceptable length
             Self::ensure_channel_description_is_valid(&description)?;
-
 
             //
             // == MUTATION SAFE ==
@@ -842,7 +828,7 @@ decl_module! {
 
             // Construct channel
             let new_channel = Channel {
-                handle: handle.clone(), 
+                channel_name: channel_name.clone(), 
                 verified: false,
                 description: description,
                 content: content,
