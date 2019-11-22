@@ -851,10 +851,7 @@ decl_module! {
             /// CREDENTIAL STUFF ///
 
             // Dial out to membership module and inform about new role as channe owner.
-            let registered_role = <members::Module<T>>::register_role_on_member(
-                owner, 
-                member_as_publisher)
-                .is_ok();
+            let registered_role = <members::Module<T>>::register_role_on_member(owner, &member_in_role).is_ok();
 
             assert!(registered_role);
 
