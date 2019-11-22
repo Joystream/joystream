@@ -1349,20 +1349,10 @@ decl_module! {
             // Ensure that member can actually become lead
             let new_lead_id = <NextLeadId<T>>::get();
 
-            let new_member_as_lead = role_types::ActorInRole{
-                role: role_types::Role::CuratorLead,
-                actor_id: new_lead_id
-            };
-
-            let can_register_as_lead = <members::Module<T>>::can_register_role_on_member(
-                member, 
-                new_member_as_lead)
-                .is_ok();
-            
-            ensure!(
-                can_register_as_lead,
-                MSG_MEMBER_CANNOT_BECOME_CURATOR_LEAD
-            );
+            let _profile = <members::Module<T>>::can_register_role_on_member(
+                &member, 
+                &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id)
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -1380,7 +1370,7 @@ decl_module! {
             <LeadById<T>>::insert(new_lead_id, new_lead);
 
             // Update current lead
-            //<CurrentLeadId<T>>::put(Some(new_lead_id));
+            <CurrentLeadId<T>>::put(new_lead_id); // Some(new_lead_id)
 
             // Update next lead counter
             <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
