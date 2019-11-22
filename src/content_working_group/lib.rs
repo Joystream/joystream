@@ -46,19 +46,25 @@ pub trait Trait: system::Trait + minting::Trait + recurringrewards::Trait + stak
 
 }
 
+/// Type constraint for identifer used for actors in members module in this runtime.
+pub type ActorIdInMembersModule<T> = <T as members::Trait>::ActorId;
+
 /// Type for identifier for channels.
 /// The ChannelId must be capable of behaving like an actor id for membership module,
 /// since publishers are identified by their channel id.
-pub type ChannelId<T> = <T as members::Trait>::ActorId;
+pub type ChannelId<T> = ActorIdInMembersModule<T>;
 
 /// Type identifier for lead role, which must be same as membership actor identifeir
-pub type LeadId<T> = <T as members::Trait>::ActorId;
+pub type LeadId<T> = ActorIdInMembersModule<T>;
 
 /// Type identifier for curator role, which must be same as membership actor identifeir
-pub type CuratorId<T> = <T as members::Trait>::ActorId;
+pub type CuratorId<T> = ActorIdInMembersModule<T>;
 
 /// Type for identifier for dynamic version store credential.
 pub type DynamicCredentialId<T> = <T as versioned_store_permissions::Trait>::PrincipalId;
+
+/// Type for the identifer for an opening for a curator.
+pub type CuratorOpeningId<T> = <T as hiring::Trait>::OpeningId;
 
 /// Tyoe for the indentifier for an application as a curator.
 pub type CuratorApplicationId<T> = <T as hiring::Trait>::ApplicationId;
@@ -67,9 +73,15 @@ pub type CuratorApplicationId<T> = <T as hiring::Trait>::ApplicationId;
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
+/// Balance type of runtime
+pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
+
 /// Negative imbalance of runtime.
-// pub type NegativeImbalance<T> =
-//    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+pub type NegativeImbalance<T> =
+    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+
+
+pub type RewardRelationshipId<T> = <T as recurringrewards::Trait>::RewardRelationshipId;
 
 /*
  * MOVE ALL OF THESE OUT TO COMMON LATER
