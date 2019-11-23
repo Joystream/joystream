@@ -868,11 +868,6 @@ decl_storage! {
         /// Next identifier value for new curator application.
         pub NextCuratorApplicationId get(next_curator_application_id) config(): CuratorApplicationId<T>;
 
-        // The set of active openings.
-        // This must be maintained to effectively enforce 
-        // `MaxSimultaneouslyActiveOpenings`.
-        // pub ActiveOpenings get(openings) config(): BTreeSet<T::OpeningId>;
-
         /// Maps identifier to corresponding channel.
         pub ChannelById get(channel_by_id) config(): linked_map ChannelId<T> => Channel<T::MemberId, T::AccountId, T::BlockNumber>;
 
@@ -889,9 +884,6 @@ decl_storage! {
         
         /// Next identifier for new curator.
         pub NextCuratorId get(next_curator_id) config(): CuratorId<T>;
-
-        /// The set of ids for currently active curators.
-        pub ActiveCuratorIds get(active_curator_ids) config(): BTreeSet<CuratorId<T>>;
 
         /// Credentials for built in roles.
         pub CredentialOfLead get(credential_of_lead) config(): LeadCredential;
@@ -1545,9 +1537,6 @@ decl_module! {
             };
 
             CuratorById::<T>::insert(curator_id, new_curator);
-
-            // Update number of actie curators
-            // TBD.
             
             // Trigger event
             Self::deposit_event(RawEvent::TerminatedCurator(curator_id));
