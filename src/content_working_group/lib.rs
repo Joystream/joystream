@@ -141,6 +141,8 @@ static MSG_CURATOR_APPLICATION_TEXT_TOO_LONG: &str =
     "Curator application text too long";
 static MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT: &str =
     "Curator application text too short";
+static MSG_SIGNER_IS_NOT_CURATOR_ROLE_ACCOUNT: &str =
+    "Signer is not curator role account";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -1361,8 +1363,8 @@ decl_module! {
 
         /// Lead terminate curator application
         pub fn terminate_curator_application(
-            origin,
-            curator_application_id: CuratorApplicationId<T>
+            _origin,
+            _curator_application_id: CuratorApplicationId<T>
             ) {
             /*
             // Ensure lead is set and is origin signer
@@ -1493,8 +1495,28 @@ decl_module! {
         }
 
         /// An active curator leaves role
-        pub fn leave_curator_role(_origin) {
+        pub fn leave_curator_role(
+            origin,
+            curator_id: CuratorId<T>,
+            _rationale_text: Vec<u8>
+        ) {
+            // Ensure origin is signed and from account matching existing 
+            // active curator corresponding to id.
+            let _active_curator = Self::ensure_active_curator_signed(origin, &curator_id)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // WIP:
+
+                // Update curator stage
+
+                // begin unstaking: stake
+
+                // stop any recurring rewards??: reward_relationship
+
+                // Trigger event
         }
 
         /// Lead can terminate and active curator
@@ -1507,19 +1529,10 @@ decl_module! {
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_set_lead(origin)?;
 
-            // Ensuring curator actually exists
-            let curator = Self::ensure_curator_exists(&curator_id)?;
+            // Ensuring curator actually exists and is active
+            let curator = Self::ensure_active_curator_exists(&curator_id)?;
 
-            // Ensure curator is still active
-            ensure!(
-                match curator.stage {
-                    CuratorRoleStage::Active => true,
-                    _ => false
-                },
-                MSG_CURATOR_IS_NOT_ACTIVE
-            );
-
-            // Enusre rationale text is valid
+            // Ensure rationale text is valid
             Self::ensure_curator_exit_rationale_text_is_valid(&rationale_text)?;
 
             //
@@ -1880,6 +1893,40 @@ impl<T: Trait> Module<T> {
         );
 
         let curator = CuratorById::<T>::get(curator_id);
+
+        Ok(curator)
+    }
+
+    fn ensure_active_curator_exists(curator_id: &CuratorId<T>) -> Result<Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId>, &'static str> {
+
+        // Ensuring curator actually exists
+        let curator = Self::ensure_curator_exists(curator_id)?;
+
+        // Ensure curator is still active
+        ensure!(
+            match curator.stage {
+                CuratorRoleStage::Active => true,
+                _ => false
+            },
+            MSG_CURATOR_IS_NOT_ACTIVE
+        );
+
+        Ok(curator)
+    }
+
+    fn ensure_active_curator_signed(origin: T::Origin, curator_id: &CuratorId<T>) -> Result<Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId>, &'static str>{
+
+        // Ensure that it is signed
+        let signer_account = ensure_signed(origin)?;
+
+        // Ensure that id corresponds to active curator
+        let curator = Self::ensure_active_curator_exists(&curator_id)?;
+
+        // Ensure that signer is actually role account of curator
+        ensure!(
+            signer_account == curator.role_account,
+            MSG_SIGNER_IS_NOT_CURATOR_ROLE_ACCOUNT
+        );
 
         Ok(curator)
     }
