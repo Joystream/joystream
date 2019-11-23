@@ -60,7 +60,7 @@ class ActorInner extends React.PureComponent<ActorProps> {
     render() {
         const { actor: actorOpt , memberId} = this.props;
 
-        if (!actorOpt || actorOpt.isNone || !memberId) return null;
+        if (!actorOpt || actorOpt.isNone) return null;
 
         const actor = actorOpt.unwrap();
 
