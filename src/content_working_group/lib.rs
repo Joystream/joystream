@@ -131,6 +131,12 @@ static MSG_MEMBER_NO_LONGER_REGISTRABLE_AS_CURATOR: &str =
     "Member no longer registrable as curator";
 static MSG_CURATOR_DOES_NOT_EXIST: &str = 
     "Curator does not exist";
+static MSG_CURATOR_IS_NOT_ACTIVE: &str =
+    "Curator is not active";
+static MSG_CURATOR_EXIT_RATIOANEL_TEXT_TOO_LONG: &str =
+    "Curator exit rationale text is too long";
+static MSG_CURATOR_EXIT_RATIOANEL_TEXT_TOO_SHORT: &str =
+    "Curator exit rationale text is too short";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -204,6 +210,23 @@ pub struct ExitedCuratorRoleStage<BlockNumber> {
     /// Explainer for why exit was initited.
     pub rationale_text: Vec<u8>
 }
+
+impl<BlockNumber: Clone> ExitedCuratorRoleStage<BlockNumber> {
+
+    pub fn new(
+        origin: &CuratorExitInitiationOrigin,
+        initiated_at_block_number: &BlockNumber,
+        rationale_text: &Vec<u8>
+        ) -> Self {
+
+        ExitedCuratorRoleStage {
+            origin: (*origin).clone(),
+            initiated_at_block_number: (*initiated_at_block_number).clone(),
+            rationale_text: (*rationale_text).clone()
+        }
+    }
+}
+
 
 /// The stage of the involvement of a curator in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -898,6 +921,7 @@ decl_storage! {
         pub ChannelDescriptionConstraint get(channel_description_constraint) config(): InputValidationLengthConstraint;
         pub OpeningHumanReadableText get(opening_human_readble_text) config(): InputValidationLengthConstraint;
         pub ApplicationHumanReadableText get(application_human_readable_text) config(): InputValidationLengthConstraint;
+        pub CuratorExitRationaleText get(curator_exit_rationale_text) config(): InputValidationLengthConstraint;
     }
 }
 
@@ -906,7 +930,8 @@ decl_event! {
         ChannelId = ChannelId<T>,
         LeadId = LeadId<T>,
         CuratorOpeningId = CuratorOpeningId<T>,
-        CuratorApplicationId = CuratorApplicationId<T>
+        CuratorApplicationId = CuratorApplicationId<T>,
+        CuratorId = CuratorId<T>
     {
         ChannelCreated(ChannelId),
         ChannelOwnershipTransferred(ChannelId),
@@ -922,7 +947,7 @@ decl_event! {
         BeganCuratorApplicationReview(CuratorOpeningId),
         CuratorOpeningFilled(CuratorOpeningId, BTreeSet<CuratorApplicationId>),
         //CuratorSlashed
-        TerminatedCurator(CuratorOpeningId),
+        TerminatedCurator(CuratorId),
         AppliedOnCuratorOpening(CuratorOpeningId, CuratorApplicationId),
         //CuratorRewardUpdated
         //CuratorRoleAccountUpdated
@@ -1476,37 +1501,49 @@ decl_module! {
         /// Lead can terminate and active curator
         pub fn terminate_curator_role(
             origin,
-            curator_id: CuratorId<T>
+            curator_id: CuratorId<T>,
+            rationale_text: Vec<u8>
             ) {
 
-            /*
             // Ensure lead is set and is origin signer
-            //Self::ensure_origin_is_set_lead(origin)?;
-
-
+            Self::ensure_origin_is_set_lead(origin)?;
 
             // Ensuring curator actually exists
             let curator = Self::ensure_curator_exists(&curator_id)?;
 
+            // Ensure curator is still active
+            ensure!(
+                match curator.stage {
+                    CuratorRoleStage::Active => true,
+                    _ => false
+                },
+                MSG_CURATOR_IS_NOT_ACTIVE
+            );
 
-            // Attempt to deactive applications
-            // NB: Combined ensure check and mutation in hiring module
-            ensure_on_wrapped_error!(
-                hiring::Module::<T>::deactive_application(
-                    curator_application.application_id,
-                    curator_opening.policy_commitment.terminate_curator_application_stake_unstaking_period,
-                    curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period
-                )
-            )?;
-            
+            // Enusre rationale text is valid
+            Self::ensure_curator_exit_rationale_text_is_valid(&rationale_text)?;
+
             //
             // == MUTATION SAFE ==
             //
 
-            // Trigger event
-            Self::deposit_event(RawEvent::TerminatedCurator(curator_application_id));
+            let current_block = <system::Module<T>>::block_number();
 
-            */
+            // Update curator stage
+            let new_curator = Curator{
+                stage: CuratorRoleStage::Exited(
+                    ExitedCuratorRoleStage::new(&CuratorExitInitiationOrigin::Lead, &current_block, &rationale_text)
+                    ),
+                ..curator
+            };
+
+            CuratorById::<T>::insert(curator_id, new_curator);
+
+            // Update number of actie curators
+            // TBD.
+            
+            // Trigger event
+            Self::deposit_event(RawEvent::TerminatedCurator(curator_id));
         }
 
         /*
@@ -1736,6 +1773,14 @@ impl<T: Trait> Module<T> {
             text.len(),
             MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
             MSG_CHANNEL_DESCRIPTION_TOO_LONG,
+        )
+    }
+
+    fn ensure_curator_exit_rationale_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        CuratorExitRationaleText::get().ensure_valid(
+            text.len(),
+            MSG_CURATOR_EXIT_RATIOANEL_TEXT_TOO_SHORT,
+            MSG_CURATOR_EXIT_RATIOANEL_TEXT_TOO_LONG,
         )
     }
 
