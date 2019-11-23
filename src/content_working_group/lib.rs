@@ -137,6 +137,10 @@ static MSG_CURATOR_EXIT_RATIOANEL_TEXT_TOO_LONG: &str =
     "Curator exit rationale text is too long";
 static MSG_CURATOR_EXIT_RATIOANEL_TEXT_TOO_SHORT: &str =
     "Curator exit rationale text is too short";
+static MSG_CURATOR_APPLICATION_TEXT_TOO_LONG: &str =
+    "Curator application text too long";
+static MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT: &str =
+    "Curator application text too short";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -920,7 +924,7 @@ decl_storage! {
         pub ChannelHandleConstraint get(channel_handle_constraint) config(): InputValidationLengthConstraint;
         pub ChannelDescriptionConstraint get(channel_description_constraint) config(): InputValidationLengthConstraint;
         pub OpeningHumanReadableText get(opening_human_readble_text) config(): InputValidationLengthConstraint;
-        pub ApplicationHumanReadableText get(application_human_readable_text) config(): InputValidationLengthConstraint;
+        pub CuratorApplicationHumanReadableText get(curator_application_human_readable_text) config(): InputValidationLengthConstraint;
         pub CuratorExitRationaleText get(curator_exit_rationale_text) config(): InputValidationLengthConstraint;
     }
 }
@@ -1434,6 +1438,9 @@ decl_module! {
                 vec![&opt_role_stake_balance, &opt_application_stake_balance], 
                 &source_account)
                 .map_err(|_err| MSG_INSUFFICIENT_BALANCE_TO_APPLY)?;
+            
+            // Ensure application text is valid
+            Self::ensure_curator_application_text_is_valid(&human_readable_text)?;
 
             // Ensure application can actually be added
             ensure_on_wrapped_error!(
@@ -1768,11 +1775,11 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_opening_human_readable_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
-        ChannelDescriptionConstraint::get().ensure_valid(
+    fn ensure_curator_application_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        CuratorApplicationHumanReadableText::get().ensure_valid(
             text.len(),
-            MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
-            MSG_CHANNEL_DESCRIPTION_TOO_LONG,
+            MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT,
+            MSG_CURATOR_APPLICATION_TEXT_TOO_LONG,
         )
     }
 
@@ -1781,6 +1788,14 @@ impl<T: Trait> Module<T> {
             text.len(),
             MSG_CURATOR_EXIT_RATIOANEL_TEXT_TOO_SHORT,
             MSG_CURATOR_EXIT_RATIOANEL_TEXT_TOO_LONG,
+        )
+    }
+
+    fn ensure_opening_human_readable_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        OpeningHumanReadableText::get().ensure_valid(
+            text.len(),
+            MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
+            MSG_CHANNEL_DESCRIPTION_TOO_LONG,
         )
     }
 
