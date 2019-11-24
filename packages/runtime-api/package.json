@@ -45,7 +45,7 @@
     "temp": "^0.9.0"
   },
   "dependencies": {
-    "@polkadot/api": "^0.95.0-beta.36",
+    "@polkadot/api": "^0.96.1",
     "async-lock": "^1.2.0",
     "lodash": "^4.17.11",
     "password-prompt": "^1.1.2"
