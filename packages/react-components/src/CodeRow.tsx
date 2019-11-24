@@ -51,18 +51,17 @@ const DEFAULT_ADDR = '5'.padEnd(16, 'x');
 class CodeRow extends Row<Props, State> {
   public state: State;
 
-  public constructor (props: Props) {
+  constructor (props: Props) {
     super(props);
 
     this.state = this.createState();
   }
 
-  public static getDerivedStateFromProps ({ code: { json }, accounts_idAndIndex = [] }: Props, prevState: State): State | null {
+  public static getDerivedStateFromProps ({ code: { json }, accounts_info }: Props, prevState: State): State | null {
     const codeHash = json.codeHash || DEFAULT_HASH;
     const name = json.name || DEFAULT_NAME;
     const tags = json.tags || [];
-    const [_accountId] = accounts_idAndIndex;
-    const accountId = _accountId;
+    const { accountId } = accounts_info || {};
     const address = accountId
       ? accountId.toString()
       : DEFAULT_ADDR;

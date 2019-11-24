@@ -3,10 +3,10 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { DerivedBalances, DerivedStaking, DerivedStakingOnlineStatus } from '@polkadot/api-derive/types';
+import { DerivedBalances, DerivedStaking, DerivedStakingOnlineStatus, DerivedHeartbeats } from '@polkadot/api-derive/types';
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
-import { AccountId, BlockNumber, Exposure, StakingLedger, ValidatorPrefs } from '@polkadot/types/interfaces';
+import { AccountId, Exposure, StakingLedger, ValidatorPrefs } from '@polkadot/types/interfaces';
 import { KeyringSectionOption } from '@polkadot/ui-keyring/options/types';
 
 import { Popup } from 'semantic-ui-react';
@@ -26,14 +26,12 @@ import Unbond from './Unbond';
 import Validate from './Validate';
 import { u8aToHex, u8aConcat } from '@polkadot/util';
 
-import { updateOnlineStatus } from '../../util';
-
 interface Props extends ApiProps, I18nProps {
   accountId: string;
   allStashes?: string[];
   balances_all?: DerivedBalances;
   className?: string;
-  recentlyOnline: Record<string, BlockNumber>;
+  recentlyOnline?: DerivedHeartbeats;
   staking_info?: DerivedStaking;
   stashOptions: KeyringSectionOption[];
 }
@@ -70,6 +68,14 @@ const DEFAULT_BALANCES = {
   unlocking: false
 };
 
+const CONTROLLER_BALANCES = {
+  available: true,
+  bonded: false,
+  free: false,
+  redeemable: false,
+  unlocking: false
+};
+
 function toIdString (id?: AccountId | null): string | null {
   return id
     ? id.toString()
@@ -97,12 +103,12 @@ class Account extends React.PureComponent<Props, State> {
     stashId: null
   };
 
-  public static getDerivedStateFromProps ({ allStashes, recentlyOnline, staking_info }: Props): Pick<State, never> | null {
+  public static getDerivedStateFromProps ({ allStashes, staking_info }: Props): Pick<State, never> | null {
     if (!staking_info) {
       return null;
     }
 
-    const { controllerId, nextSessionIds, nominators, online, offline, rewardDestination, sessionIds, stakers, stakingLedger, stashId, validatorPrefs } = staking_info;
+    const { controllerId, nextSessionIds, nominators, rewardDestination, sessionIds, stakers, stakingLedger, stashId, validatorPrefs } = staking_info;
     const isStashNominating = nominators && !!nominators.length;
     const _stashId = toIdString(stashId);
     const isStashValidating = !!allStashes && !!_stashId && allStashes.includes(_stashId);
@@ -118,7 +124,6 @@ class Account extends React.PureComponent<Props, State> {
       isStashNominating,
       isStashValidating,
       nominees: nominators && nominators.map(toIdString),
-      onlineStatus: updateOnlineStatus(recentlyOnline)(sessionIds || null, { online, offline }),
       sessionIds: (
         nextSessionIds.length
           ? nextSessionIds
@@ -133,7 +138,7 @@ class Account extends React.PureComponent<Props, State> {
 
   public render (): React.ReactNode {
     const { className, isSubstrateV2, t } = this.props;
-    const { controllerId, hexSessionId, isBondExtraOpen, isInjectOpen, isStashValidating, isUnbondOpen, nominees, sessionIds, stashId } = this.state;
+    const { controllerId, hexSessionId, isBondExtraOpen, isInjectOpen, isStashValidating, isUnbondOpen, nominees, onlineStatus, sessionIds, stashId } = this.state;
 
     if (!stashId) {
       return null;
@@ -146,7 +151,12 @@ class Account extends React.PureComponent<Props, State> {
     return (
       <AddressCard
         buttons={this.renderButtons()}
-        iconInfo={this.renderOnlineStatus()}
+        iconInfo={onlineStatus && (
+          <OnlineStatus
+            isTooltip
+            value={onlineStatus}
+          />
+        )}
         label={t('stash')}
         type='account'
         value={stashId}
@@ -176,7 +186,16 @@ class Account extends React.PureComponent<Props, State> {
         {this.renderValidate()}
         <div className={className}>
           <div className='staking--Accounts'>
-            {this.renderControllerAccount()}
+            {controllerId && (
+              <div className='staking--Account-detail actions'>
+                <AddressRow
+                  label={t('controller')}
+                  value={controllerId}
+                  withAddressOrName
+                  withBalance={CONTROLLER_BALANCES}
+                />
+              </div>
+            )}
             {!isSubstrateV2 && !!sessionIds.length && (
               <div className='staking--Account-detail actions'>
                 <AddressRow
@@ -226,49 +245,6 @@ class Account extends React.PureComponent<Props, State> {
           </div>
         </div>
       </AddressCard>
-    );
-  }
-
-  private renderOnlineStatus (): React.ReactNode {
-    const { onlineStatus, controllerId } = this.state;
-
-    if (!controllerId || !onlineStatus) {
-      return null;
-    }
-
-    return (
-      <OnlineStatus
-        accountId={controllerId}
-        value={onlineStatus}
-        tooltip
-      />
-    );
-  }
-
-  private renderControllerAccount (): React.ReactNode {
-    const { t } = this.props;
-    const { controllerId } = this.state;
-
-    if (!controllerId) {
-      return null;
-    }
-
-    return (
-      <div className='staking--Account-detail actions'>
-        <AddressRow
-          label={t('controller')}
-          value={controllerId}
-          withAddressOrName
-          withBalance={{
-            available: true,
-            bonded: false,
-            free: false,
-            redeemable: false,
-            unlocking: false
-          }}
-        />
-      </div>
-
     );
   }
 
@@ -399,7 +375,7 @@ class Account extends React.PureComponent<Props, State> {
 
     // only show a "Bond Additional" button if this stash account actually doesn't bond everything already
     // staking_ledger.total gives the total amount that can be slashed (any active amount + what is being unlocked)
-    const canBondExtra = balances_all && balances_all.availableBalance.gtn(0);
+    const canBondExtra = balances_all && balances_all.freeBalance.gtn(0);
 
     return (
       <Menu
@@ -428,7 +404,7 @@ class Account extends React.PureComponent<Props, State> {
         }
         {!isStashNominating && (!!sessionIds.length || (isSubstrateV2 && hexSessionId !== '0x')) &&
           <Menu.Item onClick={this.toggleSetSessionAccount}>
-            {isSubstrateV2 ? t('Rotate session keys') : t('Change session account')}
+            {isSubstrateV2 ? t('Change session keys') : t('Change session account')}
           </Menu.Item>
         }
         {isStashNominating &&

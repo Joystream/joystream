@@ -44,7 +44,7 @@ class Deploy extends ContractModal<Props, State> {
 
   public isContract = true;
 
-  public constructor (props: Props) {
+  constructor (props: Props) {
     super(props);
 
     this.defaultState = {
@@ -124,16 +124,16 @@ class Deploy extends ContractModal<Props, State> {
     const { abi: { contract: { constructors } } } = contractAbi;
     const constructor = constructors[constructorIndex];
     const constructOptions: ConstructOptions = constructors.map(
-      (constr) => {
+      (constr, index) => {
         return {
-          key: `${constructorIndex}`,
+          key: `${index}`,
           text: (
             <MessageSignature
               asConstructor
               message={constr}
             />
           ),
-          value: `${constructorIndex}`
+          value: `${index}`
         };
       });
 
@@ -292,10 +292,12 @@ class Deploy extends ContractModal<Props, State> {
     const { api, history } = this.props;
 
     const section = api.tx.contracts ? 'contracts' : 'contract';
-    const record = result.findRecord(section, 'Instantiated');
+    const records = result.filterRecords(section, 'Instantiated');
 
-    if (record) {
-      const address = record.event.data[1] as unknown as AccountId;
+    if (records.length) {
+      // find the last EventRecord (in the case of multiple contracts deployed - we should really be
+      // more clever here to find the exact contract deployed, this works for eg. Delegator)
+      const address = records[records.length - 1].event.data[1] as unknown as AccountId;
 
       this.setState(({ abi, name, tags }): Pick<State, never> | unknown => {
         if (!abi || !name) {

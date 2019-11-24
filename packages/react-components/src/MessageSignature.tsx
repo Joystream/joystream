@@ -2,7 +2,7 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { ContractABIMethod } from '@polkadot/api-contract/types';
+import { ContractABIMessage } from '@polkadot/api-contract/types';
 import { I18nProps } from '@polkadot/react-components/types';
 
 import React from 'react';
@@ -13,15 +13,19 @@ import Icon from './Icon';
 import Tooltip from './Tooltip';
 import translate from './translate';
 
+const MAX_PARAM_LENGTH = 20;
+
 export interface Props extends I18nProps {
   asConstructor?: boolean;
-  message: ContractABIMethod;
+  message: ContractABIMessage;
+  params?: any[];
   withTooltip?: boolean;
 }
 
 const Signature = styled.div`
   font-family: monospace;
   font-weight: normal;
+  flex-grow: 1;
 
   .mutates {
     color: #ff8600;
@@ -43,7 +47,13 @@ const ReturnType = styled.span`
   color: #ff8600;
 `;
 
-function MessageSignature ({ message: { args, mutates, name, returnType }, asConstructor = false, withTooltip = false, t }: Props): React.ReactElement<Props> {
+function truncate (param: string): string {
+  return param.length > MAX_PARAM_LENGTH
+    ? `${param.substring(0, MAX_PARAM_LENGTH / 2)}…${param.substring(param.length - MAX_PARAM_LENGTH / 2)}`
+    : param;
+}
+
+function MessageSignature ({ message: { args, mutates, name, returnType }, params = [], asConstructor = false, withTooltip = false, t }: Props): React.ReactElement<Props> {
   return (
     <Signature>
       <Name>
@@ -56,7 +66,13 @@ function MessageSignature ({ message: { args, mutates, name, returnType }, asCon
             {name}:
             {' '}
             <Type>
-              {displayType(type)}
+              {params && params[index]
+                ? (
+                  <b>
+                    {truncate(params[index].toString())}
+                  </b>
+                )
+                : displayType(type)}
             </Type>
             {index < args.length - 1 && ', '}
           </React.Fragment>

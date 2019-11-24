@@ -18,7 +18,7 @@ interface Props extends BareProps, CallProps {
   params?: AccountId | AccountIndex | Address | string | Uint8Array | null;
 }
 
-export function AvailableDisplay ({ balances_all, children, className, label = '' }: Props): React.ReactElement<Props> {
+function AvailableDisplay ({ balances_all, children, className, label = '' }: Props): React.ReactElement<Props> {
   return (
     <div className={className}>
       {label}{

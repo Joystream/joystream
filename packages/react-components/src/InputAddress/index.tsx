@@ -202,12 +202,12 @@ class InputAddress extends React.PureComponent<Props, State> {
     );
   }
 
-  private renderLabel = ({ value }: KeyringSectionOption): string | undefined => {
+  private renderLabel = ({ value }: KeyringSectionOption): React.ReactNode => {
     if (!value) {
       return undefined;
     }
 
-    return getAddressName(value, null, true);
+    return getAddressName(value);
   }
 
   private getLastOptionValue (): KeyringSectionOption | undefined {
@@ -265,7 +265,7 @@ class InputAddress extends React.PureComponent<Props, State> {
     const queryLower = query.toLowerCase();
     const matches = filteredOptions.filter((item): boolean =>
       item.value !== null && (
-        item.name.toLowerCase().includes(queryLower) ||
+        (item.name.toLowerCase && item.name.toLowerCase().includes(queryLower)) ||
         item.value.toLowerCase().includes(queryLower)
       )
     );
@@ -300,6 +300,10 @@ const ExportedComponent = withMulti(
   styled(InputAddress)`
     .ui.dropdown .text {
       width: 100%;
+    }
+
+    .ui.disabled.search {
+      pointer-events: all;
     }
 
     .ui.search.selection.dropdown {

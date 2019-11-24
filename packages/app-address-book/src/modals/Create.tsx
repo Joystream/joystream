@@ -16,7 +16,7 @@ import translate from '../translate';
 interface Props extends ModalProps, I18nProps {}
 
 function Create ({ onClose, onStatusChange, t }: Props): React.ReactElement<Props> {
-  const [{ isNameValid, name }, setName] = useState<{ isNameValid: boolean; name: string }>({ isNameValid: true, name: 'new address' });
+  const [{ isNameValid, name }, setName] = useState<{ isNameValid: boolean; name: string }>({ isNameValid: false, name: '' });
   const [{ address, isAddressExisting, isAddressValid }, setAddress] = useState<{ address: string; isAddressExisting: boolean; isAddressValid: boolean }>({ address: '', isAddressExisting: false, isAddressValid: false });
   const isValid = isAddressValid && isNameValid;
 
@@ -40,7 +40,7 @@ function Create ({ onClose, onStatusChange, t }: Props): React.ReactElement<Prop
           isAddressExisting = true;
           isAddressValid = true;
 
-          setName({ isNameValid: !!newName, name: newName });
+          setName({ isNameValid: !!(newName || '').trim(), name: newName });
         }
       }
     } catch (error) {
@@ -85,6 +85,7 @@ function Create ({ onClose, onStatusChange, t }: Props): React.ReactElement<Prop
       <Modal.Content>
         <AddressRow
           defaultName={name}
+          noDefaultNameOpacity
           value={address}
         >
           <Input
@@ -95,6 +96,7 @@ function Create ({ onClose, onStatusChange, t }: Props): React.ReactElement<Prop
             label={t('address')}
             onChange={_onChangeAddress}
             onEnter={_onCommit}
+            placeholder={t('new address')}
             value={address}
           />
           <Input

@@ -87,5 +87,12 @@
   "next up": "next up",
   "intention": "intention",
   "waiting": "waiting",
-  "last block": "last block"
+  "last block": "last block",
+  "era points": "era points",
+  "Selected for the next session": "Selected for the next session",
+  "Show only elected for next session": "Show only elected for next session",
+  "Active with {{blocks}} blocks authored{{hasMessage}} heartbeat message": "Active with {{blocks}} blocks authored{{hasMessage}} heartbeat message",
+  "transferrable ": "transferrable ",
+  "The specified value is greater than your free balance. The node will bond the maximum amount available.": "The specified value is greater than your free balance. The node will bond the maximum amount available.",
+  "Change session keys": "Change session keys"
 }

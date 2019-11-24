@@ -19,6 +19,8 @@ import { Api } from '@polkadot/react-api';
 import { QueueConsumer } from '@polkadot/react-components/Status/Context';
 import Queue from '@polkadot/react-components/Status/Queue';
 import { MyAccountProvider } from '@polkadot/joy-utils/MyAccountContext';
+import { BlockAuthors, Events } from '@polkadot/react-query';
+
 import Apps from './Apps';
 
 const rootId = 'root';
@@ -73,11 +75,15 @@ ReactDOM.render(
             queueSetTxStatus={queueSetTxStatus}
             url={wsEndpoint}
           >
-            <HashRouter>
-              <ThemeProvider theme={theme}>
-                <Apps />
-              </ThemeProvider>
-            </HashRouter>
+            <BlockAuthors>
+              <Events>
+                <HashRouter>
+                  <ThemeProvider theme={theme}>
+                    <Apps />
+                  </ThemeProvider>
+                </HashRouter>
+              </Events>
+            </BlockAuthors>
           </Api>
         )}
       </QueueConsumer>
