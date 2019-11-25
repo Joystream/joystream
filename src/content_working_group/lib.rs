@@ -83,6 +83,9 @@ pub type NegativeImbalance<T> =
 
 pub type RewardRelationshipId<T> = <T as recurringrewards::Trait>::RewardRelationshipId;
 
+/// Stake identifier in staking module
+pub type StakeId<T> = <T as stake::Trait>::StakeId;
+
 /*
  * MOVE ALL OF THESE OUT TO COMMON LATER
  */
@@ -904,6 +907,9 @@ decl_storage! {
 
         /// Whether it is currently possible to create a channel via `create_channel` extrinsic.
         pub ChannelCreationEnabled get(channel_creation_enabled) config(): bool;
+
+        /// Recover curator by the role stake which is currently unstaking.
+        pub UnstakerByStakeId get(unstaker_by_stake_id) config(): linked_map StakeId<T> => WorkingGroupUnstaker<LeadId<T>, CuratorId<T>>;
 
         // Limits
         
