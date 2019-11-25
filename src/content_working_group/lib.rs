@@ -908,7 +908,7 @@ decl_storage! {
         // Limits
         
         /// Limits the total number of curators which can be active.
-        pub MaxSimultanouslyActiveCurators get(max_simultanously_active_curators) config(): Option<u16>;
+        //pub MaxSimultanouslyActiveCurators get(max_simultanously_active_curators) config(): Option<u16>;
 
         // Limits the total number of openings which are not yet deactivated.
         // pub MaxSimultaneouslyActiveOpenings get(max_simultaneously_active_openings) config(): Option<u16>,
