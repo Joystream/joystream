@@ -3,9 +3,27 @@ import { Link } from 'react-router-dom';
 
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
-import { GenericAccountId, u128 } from '@polkadot/types'
+import {
+  GenericAccountId,
+  u128,
+} from '@polkadot/types'
 
-import { Accordion, Button, Container, Divider, Dropdown, Form, Grid, Header, Icon, Input, Label, Message, Modal, Segment, SemanticICONS, Step, Table } from 'semantic-ui-react'
+import {
+  Accordion,
+  Button,
+  Container,
+  Form,
+  Grid,
+  Header,
+  Icon,
+  Input,
+  Label,
+  Message,
+  Modal,
+  SemanticICONS,
+  Step,
+  Table,
+} from 'semantic-ui-react'
 import { Slider } from "react-semantic-ui-range";
 
 import Identicon from '@polkadot/react-identicon';
@@ -15,9 +33,9 @@ import {
     GroupMemberView, GroupMemberProps,
 } from '../elements'
 import {
-    OpeningBodyApplicationsStatus, OpeningBodyApplicationsStatusProps,
-    ApplicationCount, 
-    StakeRequirementProps,
+  OpeningBodyApplicationsStatus, OpeningBodyApplicationsStatusProps,
+  ApplicationCount,
+  StakeRequirementProps,
   IStakeRequirement,
 } from '../tabs/Opportunities'
 
@@ -209,7 +227,7 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
         setRank(findRankValue(newStake))
     }
     useEffect( () => {
-		props.setStake(props.slots[0])
+    props.setStake(props.slots[0])
     }, [])
 
     let slider = null
@@ -239,9 +257,9 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
                        type="number" 
                        onBlur={() => {setFocused(false)}}
                        onFocus={() => {setFocused(true)}}
-					   step={props.step.toNumber()}
-					   value={props.stake.toNumber() > 0 ? props.stake.toNumber() : null} 
-					   min={props.slots[0].toNumber()}
+             step={props.step.toNumber()}
+             value={props.stake.toNumber() > 0 ? props.stake.toNumber() : null} 
+             min={props.slots[0].toNumber()}
                 />
                 <Button circular icon='angle right' onClick={() => {rank <= slotCount && setRank(rank+1)}} />
                 <Button circular icon='angle double right' onClick={() => {setRank(slotCount)}} />
@@ -440,7 +458,7 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
                           stakeReturnPolicy="after the opening is resolved or your application ends"
                           colour="yellow"
                           requirement={props.requiredApplicationStake}
-					      value={props.selectedApplicationStake}
+                          value={props.selectedApplicationStake}
                           setValue={props.setSelectedApplicationStake}
                           maxNumberOfApplications={props.maxNumberOfApplications}
                           numberOfApplications={props.numberOfApplications}
@@ -455,7 +473,7 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
                           stakeReturnPolicy="after the opening is resolved or your application ends"
                           colour="red"
                           requirement={props.requiredRoleStake}
-					      value={props.selectedRoleStake}
+                          value={props.selectedRoleStake}
                           setValue={props.setSelectedRoleStake}
                           maxNumberOfApplications={props.maxNumberOfApplications}
                           numberOfApplications={props.numberOfApplications}
@@ -671,7 +689,7 @@ function CaptureStake1Up(props: CaptureStake1UpProps) {
 
     // Set default value
     useEffect(() => {
-		props.setValue(props.requirement.value)
+    props.setValue(props.requirement.value)
     }, [])
 
     let slider = null
@@ -824,18 +842,18 @@ export function FlowModal(props: FlowModalProps) {
         setActiveStep(ProgressSteps.Done)
     }
 
-	const setProps = {
-		 selectedApplicationStake: applicationStake,
-		 setSelectedApplicationStake: setApplicationStake,
-		 selectedRoleStake: roleStake,
-		 setSelectedRoleStake: setRoleStake,
-	}
+  const setProps = {
+     selectedApplicationStake: applicationStake,
+     setSelectedApplicationStake: setApplicationStake,
+     selectedRoleStake: roleStake,
+     setSelectedRoleStake: setRoleStake,
+  }
 
-	const stages = new Map<ProgressSteps,any>([
-		[ProgressSteps.ConfirmStakes, <ConfirmStakesStage {...props} nextTransition={enterSubmitApplicationState} {...setProps} />],
-		[ProgressSteps.SubmitApplication, <SubmitApplicationStage {...props} nextTransition={enterDoneState} />],
-		[ProgressSteps.Done, <DoneStage {...props} />], 
-	])
+  const stages = new Map<ProgressSteps,any>([
+    [ProgressSteps.ConfirmStakes, <ConfirmStakesStage {...props} nextTransition={enterSubmitApplicationState} {...setProps} />],
+    [ProgressSteps.SubmitApplication, <SubmitApplicationStage {...props} nextTransition={enterDoneState} />],
+    [ProgressSteps.Done, <DoneStage {...props} />], 
+  ])
 
     return (
         <Modal size='fullscreen' open={true} dimmer='inverted' className="apply-flow">
