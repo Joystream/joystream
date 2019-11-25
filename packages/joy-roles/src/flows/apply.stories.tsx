@@ -43,12 +43,12 @@ export function ApplicationSandbox() {
 	}
     const props = {
         applications: {
-            application_count: number("Applications count", 0, applicationSliderOptions, "Role rationing policy"),
-            application_max: number("Application max", 0, applicationSliderOptions, "Role rationing policy"),
-            application_stake: new ApplicationStakeRequirement(
+            numberOfApplications: number("Applications count", 0, applicationSliderOptions, "Role rationing policy"),
+            maxNumberOfApplications: number("Application max", 0, applicationSliderOptions, "Role rationing policy"),
+            requiredApplicationStake: new ApplicationStakeRequirement(
                 new u128(number("Application stake", 0, moneySliderOptions, "Role stakes")), 
             ),
-            role_stake: new RoleStakeRequirement(
+            requiredRoleStake: new RoleStakeRequirement(
                 new u128(number("Role stake", 0, moneySliderOptions, "Role stakes")), 
                            ),
         },
@@ -76,11 +76,11 @@ export function ApplicationSandbox() {
             },
 		],
 		hasConfirmStep: true,
-		application_stake: new ApplicationStakeRequirement(new u128(1)),
-		role_stake: new RoleStakeRequirement(new u128(2), StakeType.AtLeast),
-		application_max: 0,
-		application_count: 0,
-		dynamic_minimum: new u128(0),
+		requiredApplicationStake: new ApplicationStakeRequirement(new u128(1)),
+		requiredRoleStake: new RoleStakeRequirement(new u128(2), StakeType.AtLeast),
+		maxNumberOfApplications: 0,
+		numberOfApplications: 0,
+		defactoMinimumStake: new u128(0),
 		step: new u128(5),
         slots: slots,
 

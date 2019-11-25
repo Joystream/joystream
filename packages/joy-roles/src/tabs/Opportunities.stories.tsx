@@ -104,24 +104,24 @@ export function OpportunitySandbox(){
     }
 
     const applications:OpeningBodyApplicationsStatusProps ={
-        application_count: number("Applications count", 0, applicationSliderOptions, "Role rationing policy"),
-        application_max: number("Application max", 0, applicationSliderOptions, "Role rationing policy"),
-        application_stake: new ApplicationStakeRequirement(
+        numberOfApplications: number("Applications count", 0, applicationSliderOptions, "Role rationing policy"),
+        maxNumberOfApplications: number("Application max", 0, applicationSliderOptions, "Role rationing policy"),
+        requiredApplicationStake: new ApplicationStakeRequirement(
                                 new u128(number("Application stake", 500, moneySliderOptions, "Role stakes")), 
                            ),
-        role_stake: new RoleStakeRequirement(
+        requiredRoleStake: new RoleStakeRequirement(
                                 new u128(number("Role stake", 0, moneySliderOptions, "Role stakes")), 
                            ),
     }
 
-	const dynamic_minimum:Balance = new u128(number("Dynamic min stake", 0, moneySliderOptions, "Role stakes"))
+	const defactoMinimumStake:Balance = new u128(number("Dynamic min stake", 0, moneySliderOptions, "Role stakes"))
 
     return (
 		<OpeningView opening={opening} 
 			creator={creator} 
 			stage={stage} 
 			applications={applications} 
-			dynamic_minimum={dynamic_minimum} 
+			defactoMinimumStake={defactoMinimumStake} 
 			block_time_in_seconds={3}
 		/>
     )

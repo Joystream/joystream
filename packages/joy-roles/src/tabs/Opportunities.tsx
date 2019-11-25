@@ -122,7 +122,7 @@ export function OpeningHeader(props: OpeningHeaderProps) {
 }
 
 type DynamicMinimumProps = {
-    dynamic_minimum: Balance
+    defactoMinimumStake: Balance
 }
 
 type OpeningBodyCTAProps = OpeningBodyApplicationsStatusProps & OpeningHeaderProps & OpeningBodyProps
@@ -139,8 +139,8 @@ function OpeningBodyCTAView(props: OpeningBodyCTAProps) {
     )
 
     if (hasAnyStake(props)) {
-        const balance = !props.dynamic_minimum.isZero() ? props.dynamic_minimum : props.application_stake.hard.add(props.role_stake.hard)
-        const plural = (props.application_stake.anyRequirement() && props.role_stake.anyRequirement()) ? "s totalling" : " of"
+        const balance = !props.defactoMinimumStake.isZero() ? props.defactoMinimumStake : props.requiredApplicationStake.hard.add(props.requiredRoleStake.hard)
+        const plural = (props.requiredApplicationStake.anyRequirement() && props.requiredRoleStake.anyRequirement()) ? "s totalling" : " of"
         message = (
             <Message warning>
                 <Icon name="warning sign" /> Stake{plural} at least <strong>{formatBalance(balance)}</strong> required!
@@ -235,13 +235,13 @@ export class RoleStakeRequirement extends StakeRequirement implements IStakeRequ
 }
 
 export type StakeRequirementProps = DynamicMinimumProps & {
-    application_stake: ApplicationStakeRequirement
-    role_stake: RoleStakeRequirement
-    application_max: number
+    requiredApplicationStake: ApplicationStakeRequirement
+    requiredRoleStake: RoleStakeRequirement
+    maxNumberOfApplications: number
 }
 
 function hasAnyStake(props: StakeRequirementProps): boolean {
-    return props.application_stake.anyRequirement() || props.role_stake.anyRequirement()
+    return props.requiredApplicationStake.anyRequirement() || props.requiredRoleStake.anyRequirement()
 }
 
 class messageState {
@@ -273,15 +273,15 @@ export function OpeningBodyStakeRequirement(props: StakeRequirementProps) {
         return null
     }
 
-    const plural = (props.application_stake.anyRequirement() && props.role_stake.anyRequirement()) ? "s" : null
+    const plural = (props.requiredApplicationStake.anyRequirement() && props.requiredRoleStake.anyRequirement()) ? "s" : null
     let title = <Message.Header color="orange" as='h5'><Icon name="shield" /> Stake{plural} required!</Message.Header>
     let explanation = null
 
-    if (!props.dynamic_minimum.isZero()) {
+    if (!props.defactoMinimumStake.isZero()) {
         title = <Message.Header color="orange" as='h5'><Icon name="shield" /> Increased stake{plural} required!</Message.Header>
         explanation = (
             <p>
-                However, in order to be in the top {props.application_max} candidates, you wil need to stake at least <strong>{formatBalance(props.dynamic_minimum)} in total</strong>.
+                However, in order to be in the top {props.maxNumberOfApplications} candidates, you wil need to stake at least <strong>{formatBalance(props.defactoMinimumStake)} in total</strong>.
             </p>
         )
     }
@@ -289,40 +289,40 @@ export function OpeningBodyStakeRequirement(props: StakeRequirementProps) {
     return (
         <Message className="stake-requirements" warning>
             {title}
-            {props.application_stake.describe()}
-            {props.role_stake.describe()}
+            {props.requiredApplicationStake.describe()}
+            {props.requiredRoleStake.describe()}
             {explanation}
         </Message>
     )
 }
 
 export type ApplicationCountProps = {
-    application_count: number
-    application_max: number
+    numberOfApplications: number
+    maxNumberOfApplications: number
     applied?: boolean
 }
 
 export type OpeningBodyApplicationsStatusProps = StakeRequirementProps & ApplicationCountProps
 
 function applicationImpossible(props: OpeningBodyApplicationsStatusProps): boolean {
-    return props.application_max > 0 && 
-           (props.application_count >= props.application_max) && 
+    return props.maxNumberOfApplications > 0 && 
+           (props.numberOfApplications >= props.maxNumberOfApplications) && 
            !hasAnyStake(props)
 }
 
 function applicationPossibleWithIncresedStake(props: OpeningBodyApplicationsStatusProps): boolean {
-    return props.application_max > 0 && 
-           (props.application_count >= props.application_max) && 
+    return props.maxNumberOfApplications > 0 && 
+           (props.numberOfApplications >= props.maxNumberOfApplications) && 
            hasAnyStake(props)
 }
 
 export function ApplicationCount(props: ApplicationCountProps) { 
     let max_applications = null
-    if (props.application_max > 0) {
+    if (props.maxNumberOfApplications > 0) {
         max_applications = (
             <span>
                 /
-                <NumberFormat value={props.application_max}
+                <NumberFormat value={props.maxNumberOfApplications}
                               displayType="text" 
                               thousandSeparator={true} 
                 />
@@ -332,7 +332,7 @@ export function ApplicationCount(props: ApplicationCountProps) {
 
     return (
         <span>
-            <NumberFormat value={props.application_count + (props.applied ? 1 : 0)}
+            <NumberFormat value={props.numberOfApplications + (props.applied ? 1 : 0)}
                           displayType="text" 
                           thousandSeparator={true} 
             />
@@ -358,11 +358,11 @@ export function OpeningBodyApplicationsStatus(props: OpeningBodyApplicationsStat
     let max_applications = null
     let message = <p>All applications{order} will be considered during the review period.</p>
 
-    if (props.application_max > 0) {
+    if (props.maxNumberOfApplications > 0) {
         max_applications = (
             <span>
                 /
-                <NumberFormat value={props.application_max}
+                <NumberFormat value={props.maxNumberOfApplications}
                               displayType="text" 
                               thousandSeparator={true} 
                 />
@@ -375,7 +375,7 @@ export function OpeningBodyApplicationsStatus(props: OpeningBodyApplicationsStat
         }
 
         message = (
-            <p>Only the top {props.application_max} applications{order} will be considered for this role. {disclaimer}</p>
+            <p>Only the top {props.maxNumberOfApplications} applications{order} will be considered for this role. {disclaimer}</p>
         )
     }
 
@@ -383,7 +383,7 @@ export function OpeningBodyApplicationsStatus(props: OpeningBodyApplicationsStat
         <Message positive={msg.positive} warning={msg.warning} negative={msg.negative}>
             <Statistic size="small">
                 <Statistic.Value>
-                    <NumberFormat value={props.application_count + (props.applied ? 1 : 0)}
+                    <NumberFormat value={props.numberOfApplications + (props.applied ? 1 : 0)}
                                   displayType="text" 
                                   thousandSeparator={true} 
                     />
@@ -455,7 +455,7 @@ export function OpeningBody(props: OpeningBodyProps) {
     switch (props.stage.state) {
         case OpeningState.WaitingToBegin:
         case OpeningState.AcceptingApplications:
-            stakeRequirements = <OpeningBodyStakeRequirement {...props.applications} dynamic_minimum={props.dynamic_minimum} />
+            stakeRequirements = <OpeningBodyStakeRequirement {...props.applications} defactoMinimumStake={props.defactoMinimumStake} />
             break
 
         case OpeningState.InReview:
@@ -542,7 +542,7 @@ export function OpeningView(props: Props) {
                                  creator={props.creator} 
                                  stage={props.stage} 
                                  applications={props.applications}
-                                 dynamic_minimum={props.dynamic_minimum}
+                                 defactoMinimumStake={props.defactoMinimumStake}
                                  block_time_in_seconds={props.block_time_in_seconds}
                     />
                 </Card.Content>

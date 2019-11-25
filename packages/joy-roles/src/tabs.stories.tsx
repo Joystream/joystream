@@ -3,6 +3,7 @@ import { withKnobs } from '@storybook/addon-knobs'
 import { Container, Tab } from 'semantic-ui-react';
 import { ContentCuratorsSection, StorageProvidersSection } from './tabs/WorkingGroup.stories'
 import { OpportunitySandbox } from './tabs/Opportunities.stories'
+import { ApplicationSandbox } from './flows/apply.stories'
 
 export default { 
   title: 'Roles / Pages',
@@ -34,3 +35,5 @@ export const RolesPage = () => {
     />
 	)
 }
+
+export const ApplicationLightbox = ApplicationSandbox

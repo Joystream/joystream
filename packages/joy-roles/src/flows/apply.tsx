@@ -359,7 +359,7 @@ export type StageTransitionProps = FlowModalProps & {
 }
 
 export type ApplicationStatusProps = {
-  application_count: number
+  numberOfApplications: number
 }
 
 export type ConfirmStakesStageProps = StageTransitionProps & 
@@ -408,8 +408,8 @@ export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
 }
 
 function stakeCount(props: StakeRequirementProps): number {
-    return (props.application_stake.anyRequirement() ? 1 : 0) +
-           (props.role_stake.anyRequirement() ? 1 : 0)
+    return (props.requiredApplicationStake.anyRequirement() ? 1 : 0) +
+           (props.requiredRoleStake.anyRequirement() ? 1 : 0)
 }
 
 function zeroOrTwoStakes(props: StakeRequirementProps): boolean {
@@ -418,8 +418,8 @@ function zeroOrTwoStakes(props: StakeRequirementProps): boolean {
 }
 
 function bothStakesVariable(props: StakeRequirementProps): boolean {
-    return props.application_stake.anyRequirement() && props.role_stake.anyRequirement() &&
-           props.application_stake.atLeast() && props.role_stake.atLeast()
+    return props.requiredApplicationStake.anyRequirement() && props.requiredRoleStake.anyRequirement() &&
+           props.requiredApplicationStake.atLeast() && props.requiredRoleStake.atLeast()
 }
 
 type StakeSelectorProps = ConfirmStakesStageProps & ApplicationStatusProps
@@ -434,31 +434,31 @@ function ConfirmStakes(props: StakeSelectorProps) {
 
 function ConfirmStakes1Up(props: StakeSelectorProps) {
   let applicationStake = null
-  if (props.application_stake.anyRequirement()) {
+  if (props.requiredApplicationStake.anyRequirement()) {
     applicationStake = <CaptureStake1Up 
                           name="application stake"
-                          return_policy="after the opening is resolved or your application ends"
+                          stakeReturnPolicy="after the opening is resolved or your application ends"
                           colour="yellow"
-                          requirement={props.application_stake}
+                          requirement={props.requiredApplicationStake}
 					      value={props.selectedApplicationStake}
                           setValue={props.setSelectedApplicationStake}
-                          application_max={props.application_max}
-                          application_count={props.application_count}
+                          maxNumberOfApplications={props.maxNumberOfApplications}
+                          numberOfApplications={props.numberOfApplications}
                           {...props}
                      />
   }
   
   let roleStake = null
-  if (props.role_stake.anyRequirement()) {
+  if (props.requiredRoleStake.anyRequirement()) {
    roleStake = <CaptureStake1Up 
                           name="role stake"
-                          return_policy="after the opening is resolved or your application ends"
+                          stakeReturnPolicy="after the opening is resolved or your application ends"
                           colour="red"
-                          requirement={props.role_stake}
+                          requirement={props.requiredRoleStake}
 					      value={props.selectedRoleStake}
                           setValue={props.setSelectedRoleStake}
-                          application_max={props.application_max}
-                          application_count={props.application_count}
+                          maxNumberOfApplications={props.maxNumberOfApplications}
+                          numberOfApplications={props.numberOfApplications}
                           {...props}
                      />
   }
@@ -534,15 +534,15 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
     }
   
     let rankExplanation = <p>This role required a combined stake (application stake plus role stake) of {formatBalance(minStake)}.</p>
-    if (props.application_max > 0) {
+    if (props.maxNumberOfApplications > 0) {
         rankExplanation = (
             <Container>
                <p>
-                    Only the top {props.application_max} applications, ranked by their combined <strong>application state</strong> and <strong>role stake</strong>, will be considered for this role.
+                    Only the top {props.maxNumberOfApplications} applications, ranked by their combined <strong>application state</strong> and <strong>role stake</strong>, will be considered for this role.
                </p>
                <p>
-                    There is a minimum application stake of {formatBalance(props.application_stake.value)} and a minimum role stake of {formatBalance(props.role_stake.value)} to apply for this role. 
-                    However, in order to be in the top {props.application_max} applications, you wil need to stake a combined total of <strong>{formatBalance(minStake)}</strong>.
+                    There is a minimum application stake of {formatBalance(props.requiredApplicationStake.value)} and a minimum role stake of {formatBalance(props.requiredRoleStake.value)} to apply for this role. 
+                    However, in order to be in the top {props.maxNumberOfApplications} applications, you wil need to stake a combined total of <strong>{formatBalance(minStake)}</strong>.
                </p>
             </Container>
         )
@@ -559,7 +559,7 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
                             <Grid.Column>
                                 <h5>Application stake</h5>
                                 <p>
-                                    This role requires an application stake of at least <strong>{formatBalance(props.application_stake.value)}</strong>. 
+                                    This role requires an application stake of at least <strong>{formatBalance(props.requiredApplicationStake.value)}</strong>. 
                                     Along with the role stake, it will be used to rank candidates.
                                 </p>
                                 <p>
@@ -569,7 +569,7 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
                             <Grid.Column>
                                 <h5>Role stake</h5>
                                 <p>
-                                    This role requires a role stake of a least <strong>{formatBalance(props.role_stake.value)}</strong>. 
+                                    This role requires a role stake of a least <strong>{formatBalance(props.requiredRoleStake.value)}</strong>. 
                                     This stake will be returned if your application is unsuccessful, and will also be used to rank applications. 
                                 </p>
                                 <p>
@@ -582,14 +582,14 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
                                 <StakeRankMiniSelector step={props.step} 
                                                        value={props.selectedApplicationStake} 
                                                        setValue={props.setSelectedApplicationStake} 
-                                                       min={props.application_stake.value}
+                                                       min={props.requiredApplicationStake.value}
                                 />
                             </Grid.Column>
                             <Grid.Column>
                                 <StakeRankMiniSelector step={props.step} 
                                                        value={props.selectedRoleStake} 
                                                        setValue={props.setSelectedRoleStake} 
-                                                       min={props.role_stake.value}
+                                                       min={props.requiredRoleStake.value}
                                 />
                             </Grid.Column>
                         </Grid.Row>
@@ -653,19 +653,19 @@ function StakeRankMiniSelector(props: StakeRankMiniSelectorProps) {
 
 type CaptureStake1UpProps = ApplicationStatusProps & {
   name: string
-  return_policy: string
+  stakeReturnPolicy: string
   colour: string
   requirement: IStakeRequirement
   value: Balance
   setValue: (b: Balance) => void
-  application_max: number
+  maxNumberOfApplications: number
 }
 
 function CaptureStake1Up(props: CaptureStake1UpProps) {
     let limit = null
-    if (props.application_max > 0) {
+    if (props.maxNumberOfApplications > 0) {
         limit = (
-            <span> This will be used to rank candidates, and only the top <strong>{props.application_max}</strong> will be considered. </span>
+            <span> This will be used to rank candidates, and only the top <strong>{props.maxNumberOfApplications}</strong> will be considered. </span>
         )
     }
 
@@ -688,10 +688,10 @@ function CaptureStake1Up(props: CaptureStake1UpProps) {
         <p>
          <span>This role requires an <strong>{props.name}</strong> of {atLeast}<strong>{formatBalance(props.requirement.value)}</strong>.</span>
             {limit}
-           <span> There are currently <strong>{props.application_count}</strong> applications. </span>
+           <span> There are currently <strong>{props.numberOfApplications}</strong> applications. </span>
         </p>
         <p>
-           Your <strong>{props.name}</strong> will be returned {props.return_policy}.
+           Your <strong>{props.name}</strong> will be returned {props.stakeReturnPolicy}.
          </p>
         </Message.Content>
           {slider}
