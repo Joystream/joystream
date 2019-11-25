@@ -717,6 +717,16 @@ function CaptureStake1Up(props: CaptureStake1UpProps) {
     )
 }
 
+export type ApplicationDetailsStageProps = {}
+
+export function ApplicationDetailsStage() {
+  return (
+    <Container>
+      Hello
+    </Container>
+  )
+}
+
 export type SubmitApplicationStageProps = FundSourceSelectorProps & 
                                           StageTransitionProps & {
     transactionFee: Balance

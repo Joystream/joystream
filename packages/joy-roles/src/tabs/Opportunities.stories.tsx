@@ -46,6 +46,28 @@ export const opening = new Opening({
             title: text("Job title", "Content curator", "Role"),
             description: text("Job description", faker.lorem.paragraphs(4), "Role")
         },
+        application: {
+          sections: [
+            {
+              title: "About you",
+              questions: [
+                {
+                  itle: "your name",
+                  type: "text"
+                }
+              ]
+            },
+            {
+              title: "About you",
+              questions: [
+                {
+                  title: "your name",
+                  type: "text area"
+                }
+              ]
+            }
+          ]
+        },
         reward: text("Reward", "10 JOY per block", "Role"),
         creator: {
             membership: {

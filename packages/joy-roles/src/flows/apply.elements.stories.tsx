@@ -7,10 +7,11 @@ import { Balance } from '@polkadot/types/interfaces';
 
 import { 
 	ConfirmStakesStage, ConfirmStakesStageProps,
-    ProgressStepsView, ProgressStepsProps, ProgressSteps,
-    SubmitApplicationStage, SubmitApplicationStageProps,
-    DoneStage, DoneStageProps, 
-    FundSourceSelector,
+  ProgressStepsView, ProgressStepsProps, ProgressSteps,
+  ApplicationDetailsStage, ApplicationDetailsStageProps,
+  SubmitApplicationStage, SubmitApplicationStageProps,
+  DoneStage, DoneStageProps, 
+  FundSourceSelector,
 	StakeRankSelector, StakeRankSelectorProps,
 	ConfirmStakes2Up, ConfirmStakes2UpProps,
 } from "./apply"
@@ -413,7 +414,22 @@ export function StageAConfirmStakes() {
     )
 }
 
-export function StageBSubmitApplication() {
+export function StageBApplicationDetails() {
+    const props: ApplicationDetailsStageProps = {
+    }
+
+    return (
+        <Container className="apply-flow">
+            <Card fluid>
+                <Card.Content>
+                  <ApplicationDetailsStage {...props} />
+                </Card.Content>
+            </Card>
+        </Container>
+    )
+}
+
+export function StageCSubmitApplication() {
     const props: SubmitApplicationStageProps = {
         nextTransition: () => {},
         applications: applications,
@@ -453,7 +469,7 @@ export function StageBSubmitApplication() {
     )
 }
 
-export function StageCDone() {
+export function StageDDone() {
     const props: DoneStageProps = {
         applications: applications,
         roleKeyName: "NEW_ROLE_KEY",

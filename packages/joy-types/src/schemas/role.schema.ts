@@ -9,15 +9,19 @@ export type SchemaVersion = number;
 export type Headline = string;
 export type JobTitle = string;
 export type JobDescriptionExpectsHTML = string;
+export type TheTypeSchema = string;
+export type TheQuestionsSchema = TheItemsSchema1[];
+export type TheSectionsSchema = TheItemsSchema[];
 export type TheRewardSchema = string;
 export type HandleOrUsername = string;
-export type TheItemsSchema = string;
-export type AdditionalRolehiringProcessDetails = TheItemsSchema[];
+export type TheItemsSchema2 = string;
+export type AdditionalRolehiringProcessDetails = TheItemsSchema2[];
 
 export interface GenericJoyStreamRoleSchema {
   version: SchemaVersion;
   headline: Headline;
   job: JobSpecifics;
+  application: TheApplicationSchema;
   reward: TheRewardSchema;
   creator: CreatorDetails;
   process?: HiringProcess;
@@ -26,6 +30,20 @@ export interface GenericJoyStreamRoleSchema {
 export interface JobSpecifics {
   title: JobTitle;
   description: JobDescriptionExpectsHTML;
+  [k: string]: any;
+}
+export interface TheApplicationSchema {
+  sections?: TheSectionsSchema;
+  [k: string]: any;
+}
+export interface TheItemsSchema {
+  title: any;
+  questions: TheQuestionsSchema;
+  [k: string]: any;
+}
+export interface TheItemsSchema1 {
+  title: any;
+  type: TheTypeSchema;
   [k: string]: any;
 }
 export interface CreatorDetails {

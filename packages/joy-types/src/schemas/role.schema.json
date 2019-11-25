@@ -1,15 +1,27 @@
 {
-  "definitions": {},
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://joystream.org/schemas/hiring/role.json",
   "type": "object",
   "title": "Generic JoyStream role schema",
+  "definitions": {
+    "title": {
+      "$id": "#/properties/application/title",
+      "type": "string",
+      "title": "The Title Schema",
+      "default": "",
+      "examples": [
+        "About you"
+      ],
+      "pattern": "^(.*)$"
+    }
+  },
   "required": [
     "version",
     "headline",
     "job",
     "reward",
-    "creator"
+    "creator",
+    "application"
   ],
   "properties": {
     "version": {
@@ -58,6 +70,62 @@
           "examples": [
             "<p>Lorem ipsum</p>"
           ]
+        }
+      }
+    },
+    "application": {
+      "$id": "#/properties/application",
+      "type": "object",
+      "title": "The Application Schema",
+      "properties": {
+        "sections": {
+          "$id": "#/properties/application/properties/sections",
+          "type": "array",
+          "title": "The Sections Schema",
+          "items": {
+            "$id": "#/properties/application/properties/sections/items",
+            "type": "object",
+            "title": "The Items Schema",
+            "required": [
+              "title",
+              "questions"
+            ],
+            "properties": {
+              "title": {
+                "$ref": "#/properties/application/title"
+              },
+              "questions": {
+                "$id": "#/properties/application/properties/sections/items/properties/questions",
+                "type": "array",
+                "title": "The Questions Schema",
+                "items": {
+                  "$id": "#/properties/application/properties/sections/items/properties/questions/items",
+                  "type": "object",
+                  "title": "The Items Schema",
+                  "required": [
+                    "title",
+                    "type"
+                  ],
+                  "properties": {
+                    "title": {
+                      "$ref": "#/properties/application/title"
+                    },
+                    "type": {
+      "$id": "#/properties/application/properties/questions/items/type",
+      "type": "string",
+      "title": "The Type Schema",
+      "default": "",
+      "examples": [
+        "text|text area"
+      ],
+      "pattern": "^(text|text area)$"
+
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
