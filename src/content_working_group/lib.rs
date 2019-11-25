@@ -675,15 +675,23 @@ pub struct OpeningPolicyCommitment<BlockNumber, Balance> {
 
 }
 
-/// Represents 
+/// Represents a possible unstaker in working group.
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
-pub enum WorkingGroupActor<T: Trait> {
+pub enum WorkingGroupUnstaker<LeadId, CuratorId> {
 
     ///
-    Lead(LeadId<T>),
+    Lead(LeadId),
 
     ///
-    Curator(CuratorId<T>),
+    Curator(CuratorId),
+}
+
+impl<LeadId: Default, CuratorId> Default for WorkingGroupUnstaker<LeadId, CuratorId> {
+
+    fn default() -> Self {
+        Self::Lead(LeadId::default())
+    }
+
 }
 
 /*
