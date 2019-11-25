@@ -968,7 +968,7 @@ decl_event! {
         //CuratorRewardUpdated
         //CuratorRoleAccountUpdated
         //CuratorRewardAccountUpdated
-        //CuratorExited
+        CuratorExited(CuratorId),
     }
 }
 
@@ -1671,6 +1671,55 @@ decl_module! {
         /// ..
         pub fn update_lead_credential(_origin) {
 
+        }
+
+        /// The stake, with the given id, was unstaked.
+        pub fn unstaked(
+            origin,
+            stake_id: StakeId<T>
+        ) {
+            // Ensure its a runtime root origin
+            ensure_root(origin)?;
+
+            // Ensure its an unstaker in this group
+            let unstaker = Self::ensure_unstaker_exists(&stake_id)?;
+
+            // Get curator doing the unstaking,
+            // urrently the only possible unstaker in this module.
+            let curator_id =
+                if let WorkingGroupUnstaker::Curator(curator_id) = unstaker {
+                    curator_id
+                } else {
+                    panic!("Should not be possible, only curators unstake in this module currently.");
+                };
+
+            // Grab curator from id, unwrap, because this curator _must_ exist.
+            let unstaking_curator = Self::ensure_curator_exists(&curator_id).unwrap();
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update stage of curator
+            let curator_exit_summary =
+                if let CuratorRoleStage::Unstaking(summary) = unstaking_curator.stage {
+                    summary
+                } else {
+                    panic!("Curator must be in unstaking stage.");
+                };
+
+            let new_curator = Curator{
+                stage: CuratorRoleStage::Exited(curator_exit_summary),
+                ..unstaking_curator
+            };
+
+            CuratorById::<T>::insert(curator_id, new_curator);
+
+            // Remove from unstaker
+            UnstakerByStakeId::<T>::remove(stake_id);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::TerminatedCurator(curator_id));
         }
 
     }
