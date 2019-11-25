@@ -210,7 +210,7 @@ pub enum CuratorExitInitiationOrigin {
 
 /// The exit stage of a curators involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
-pub struct ExitedCuratorRoleStage<BlockNumber> {
+pub struct CuratorExitSummary<BlockNumber> {
 
     /// Origin for exit.
     pub origin: CuratorExitInitiationOrigin,
@@ -222,7 +222,7 @@ pub struct ExitedCuratorRoleStage<BlockNumber> {
     pub rationale_text: Vec<u8>
 }
 
-impl<BlockNumber: Clone> ExitedCuratorRoleStage<BlockNumber> {
+impl<BlockNumber: Clone> CuratorExitSummary<BlockNumber> {
 
     pub fn new(
         origin: &CuratorExitInitiationOrigin,
@@ -230,14 +230,13 @@ impl<BlockNumber: Clone> ExitedCuratorRoleStage<BlockNumber> {
         rationale_text: &Vec<u8>
         ) -> Self {
 
-        ExitedCuratorRoleStage {
+        CuratorExitSummary {
             origin: (*origin).clone(),
             initiated_at_block_number: (*initiated_at_block_number).clone(),
             rationale_text: (*rationale_text).clone()
         }
     }
 }
-
 
 /// The stage of the involvement of a curator in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -246,8 +245,11 @@ pub enum CuratorRoleStage<BlockNumber> {
     /// Currently active.
     Active,
 
-    /// No longer active, for some reason
-    Exited(ExitedCuratorRoleStage<BlockNumber>)
+    /// Currently unstaking
+    Unstaking(CuratorExitSummary<BlockNumber>),
+
+    /// No longer active and unstaked
+    Exited(CuratorExitSummary<BlockNumber>)
 }
 
 /// Must be default constructible because it indirectly is a value in a storage map.
@@ -1560,7 +1562,7 @@ decl_module! {
             // Update curator stage
             let new_curator = Curator{
                 stage: CuratorRoleStage::Exited(
-                    ExitedCuratorRoleStage::new(&CuratorExitInitiationOrigin::Lead, &current_block, &rationale_text)
+                    CuratorExitSummary::new(&CuratorExitInitiationOrigin::Lead, &current_block, &rationale_text)
                     ),
                 ..curator
             };
