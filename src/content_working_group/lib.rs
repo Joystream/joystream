@@ -146,6 +146,8 @@ static MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT: &str =
     "Curator application text too short";
 static MSG_SIGNER_IS_NOT_CURATOR_ROLE_ACCOUNT: &str =
     "Signer is not curator role account";
+static MSG_UNSTAKER_DOES_NOT_EXIST: &str =
+    "Unstaker does not exist";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -1901,6 +1903,18 @@ impl<T: Trait> Module<T> {
         let curator = CuratorById::<T>::get(curator_id);
 
         Ok(curator)
+    }
+
+    fn ensure_unstaker_exists(stake_id: &StakeId<T>) -> Result<WorkingGroupUnstaker<LeadId<T>, CuratorId<T>>, &'static str> {
+
+        ensure!(
+            UnstakerByStakeId::<T>::exists(stake_id),
+            MSG_UNSTAKER_DOES_NOT_EXIST
+        );
+
+        let unstaker = UnstakerByStakeId::<T>::get(stake_id);
+
+        Ok(unstaker)
     }
 
     fn ensure_active_curator_exists(curator_id: &CuratorId<T>) -> Result<Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId>, &'static str> {
