@@ -30,6 +30,7 @@ use runtime_primitives::traits::{IdentifyAccount, Verify};
 use babe_primitives::AuthorityId as BabeId;
 use grandpa_primitives::AuthorityId as GrandpaId;
 use im_online::sr25519::AuthorityId as ImOnlineId;
+use serde_json as json;
 use substrate_service;
 use substrate_telemetry::TelemetryEndpoints;
 
@@ -179,7 +180,18 @@ pub fn staging_testnet_config() -> ChainSpec {
     let boot_nodes = vec![
 		String::from("/dns4/bootnode1.joystream.org/tcp/30333/p2p/QmeDa8jASqMRpTh4YCkeVEuHo6nbMcFDzD9pkUxTr3WxhM"),
 		String::from("/dns4/bootnode2.joystream.org/tcp/30333/p2p/QmbjzmNMjzQUMHpzqcPHW5DnFeUjM3x4hbiDSMkYv1McD3"),
-	];
+    ];
+
+    let mut properties: json::map::Map<String, json::Value> = json::map::Map::new();
+    properties.insert(
+        String::from("tokenDecimals"),
+        json::Value::Number(json::Number::from(0)),
+    );
+    properties.insert(
+        String::from("tokenSymbol"),
+        json::Value::String(String::from("JOY")),
+    );
+
     ChainSpec::from_genesis(
         "Joystream Staging Testnet",
         "joy_staging_6",
@@ -189,9 +201,12 @@ pub fn staging_testnet_config() -> ChainSpec {
             STAGING_TELEMETRY_URL.to_string(),
             0,
         )])),
-        Some(&*"joy"), // protocol_id
-        None,          // consensus engine
-        None,          // properties
+        // protocol_id
+        Some(&*"joy.staging"),
+        // Properties
+        Some(properties),
+        // Extensions
+        None,
     )
 }
 

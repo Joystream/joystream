@@ -20,6 +20,7 @@ tokio = '0.1.22'
 jsonrpc-core = '13.2.0'
 rand = '0.7.2'
 structopt = '0.3.3'
+serde_json = '1.0'
 
 [dependencies.substrate-basic-authorship]
 git = 'https://github.com/paritytech/substrate.git'

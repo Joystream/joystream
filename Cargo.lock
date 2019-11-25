@@ -1349,6 +1349,7 @@ dependencies = [
  "parity-scale-codec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "sr-io 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "srml-im-online 0.1.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
