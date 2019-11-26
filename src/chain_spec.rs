@@ -16,12 +16,11 @@
 
 use hex_literal::hex;
 use node_runtime::{
-    forum::InputValidationLengthConstraint,
     versioned_store::InputValidationLengthConstraint as VsInputValidation, AccountId, ActorsConfig,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, CouncilConfig,
     CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
-    ForumConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig, MembersConfig,
-    Perbill, ProposalsConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
+    GenesisConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig, MembersConfig, Perbill,
+    ProposalsConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
     SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 use primitives::{crypto::UncheckedInto, sr25519, Pair, Public};
@@ -213,10 +212,6 @@ pub fn staging_testnet_config() -> ChainSpec {
     )
 }
 
-fn new_validation(min: u16, max_min_diff: u16) -> InputValidationLengthConstraint {
-    return InputValidationLengthConstraint { min, max_min_diff };
-}
-
 fn staging_testnet_config_genesis() -> GenesisConfig {
     let initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId, ImOnlineId)> = vec![(
         hex!["0610d1a2b1d704723e588c842a934737491688b18b052baae1286f12e96adb65"].into(), // stash
@@ -232,8 +227,6 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
     const DOLLARS: Balance = 100 * CENTS;
     const STASH: Balance = 50 * DOLLARS;
     const ENDOWMENT: Balance = 100_000_000 * DOLLARS;
-
-    let initial_members = crate::import_members::initial_members();
 
     GenesisConfig {
         system: Some(SystemConfig {
@@ -311,23 +304,9 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
         }),
         members: Some(MembersConfig {
             default_paid_membership_fee: 100u128,
-            members: initial_members,
+            members: crate::members_config::initial_members(),
         }),
-        forum: Some(ForumConfig {
-            category_by_id: vec![],
-            thread_by_id: vec![],
-            post_by_id: vec![],
-            next_category_id: 1,
-            next_thread_id: 1,
-            next_post_id: 1,
-            forum_sudo: endowed_accounts[0].clone(),
-            category_title_constraint: new_validation(10, 90),
-            category_description_constraint: new_validation(10, 490),
-            thread_title_constraint: new_validation(10, 90),
-            post_text_constraint: new_validation(10, 990),
-            thread_moderation_rationale_constraint: new_validation(10, 290),
-            post_moderation_rationale_constraint: new_validation(10, 290),
-        }),
+        forum: Some(crate::forum_config::create(endowed_accounts[0].clone())),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
@@ -372,7 +351,7 @@ pub fn testnet_genesis(
     ];
 
     // Additional initial members
-    initial_members.append(&mut crate::import_members::initial_members());
+    initial_members.append(&mut crate::members_config::initial_members());
 
     GenesisConfig {
         //substrate modules
@@ -452,21 +431,7 @@ pub fn testnet_genesis(
             default_paid_membership_fee: 100u128,
             members: initial_members,
         }),
-        forum: Some(ForumConfig {
-            category_by_id: vec![],
-            thread_by_id: vec![],
-            post_by_id: vec![],
-            next_category_id: 1,
-            next_thread_id: 1,
-            next_post_id: 1,
-            forum_sudo: root_key,
-            category_title_constraint: new_validation(10, 90),
-            category_description_constraint: new_validation(10, 490),
-            thread_title_constraint: new_validation(10, 90),
-            post_text_constraint: new_validation(10, 990),
-            thread_moderation_rationale_constraint: new_validation(10, 290),
-            post_moderation_rationale_constraint: new_validation(10, 290),
-        }),
+        forum: Some(crate::forum_config::create(root_key)),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),

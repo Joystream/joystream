@@ -6,10 +6,10 @@ use primitives::crypto::{AccountId32, Ss58Codec};
 #[derive(Serialize, Deserialize)]
 struct Member {
     /// SS58 Encoded public key
-    pub address: String,
-    pub handle: String,
-    pub avatar_uri: String,
-    pub about: String,
+    address: String,
+    handle: String,
+    avatar_uri: String,
+    about: String,
 }
 
 // fn test_load_members() -> Result<Vec<Member>> {
@@ -34,8 +34,9 @@ fn decode_address(address: String) -> AccountId32 {
 }
 
 pub fn initial_members() -> Vec<(AccountId32, String, String, String)> {
-    parse_members_json()
-        .unwrap_or(vec![]) // if parsing fails, use empty vector
+    let members = parse_members_json().expect("failed parsing members data");
+
+    members
         .into_iter()
         .map(|member| {
             (
