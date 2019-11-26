@@ -4,6 +4,7 @@ import { ChannelEntity } from '../entities/MusicChannelEntity';
 import { YouHaveNoChannels } from './YouHaveNoChannels';
 import Section from '@polkadot/joy-utils/Section';
 import { formatNumber } from '@polkadot/util';
+import { ChannelAvatar } from './ChannelAvatar';
 
 type Props = {
   suspended?: boolean,
@@ -62,10 +63,6 @@ type ChannelPreviewProps = {
 const ChannelPreview = (props: ChannelPreviewProps) => {
   const { channel } = props;
 
-  const avatarStyle = {
-    backgroundImage: `url(${channel.avatarUrl})`
-  }
-
   const statSize = 'tiny';
 
   let itemsPublishedLabel = ''
@@ -84,7 +81,8 @@ const ChannelPreview = (props: ChannelPreviewProps) => {
 
   return <Segment padded>
     <div className='ChannelPreview'>
-      <div className='ChannelAvatar' style={avatarStyle} />
+
+      <ChannelAvatar channel={channel} />
 
       <div className='ChannelDetails'>
         <h2 className='ChannelTitle'>{channel.title}</h2>

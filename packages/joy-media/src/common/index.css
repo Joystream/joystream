@@ -1,0 +1,235 @@
+$blackFont: #222;
+
+.JoyBgImg {
+  background-size: cover;
+  background-position: center;
+}
+
+.Ellipsis {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.JoyTopActionBar {
+  margin: 1rem 0;
+
+  .button {
+    margin-right: .5rem;
+  }
+}
+
+.JoyListOfPreviews {
+  background-color: #ddd;
+
+  .CheckboxCell {
+    padding-left: 1rem;
+  }
+
+  .NoItems {
+    display: block;
+    background-color: #fafafa;
+    padding: 1rem 0;
+  }
+}
+
+.JoyMusicAlbumPreview,
+.JoyMusicTrackPreview {
+  display: flex;
+
+  .JoyListOfPreviews & {
+    background-color: #fafafa;
+    margin-top: 1px;
+    padding: .5rem 0;
+
+    &:hover {
+      background-color: #f2f2f2;
+    }
+
+    &.DraggableItem,
+    &.SelectedItem {
+      background-color: #dff0ff;
+    }
+  }
+
+  .AlbumNumber {
+    color: #999;
+    width: 3.5rem;
+    text-align: right;
+    padding-right: 1rem;
+  }
+
+  .AlbumCover {
+    text-align: right;
+    white-space: nowrap;
+
+    $size: 60px;
+    width: $size;
+
+    img {
+      max-width: $size;
+      max-height: $size;
+    }
+  }
+
+  .AlbumDescription {
+    padding: 0 1rem;
+    width: 100%;
+
+    .AlbumTitle {
+      font-size: 1rem;
+      font-weight: bold;
+      color: $blackFont;
+      margin-bottom: 0.25rem;
+    }
+    .AlbumArtist {
+      color: #999;
+      font-size: .9rem;
+    }
+    .AlbumTracksCount {
+      color: #999;
+      margin-top: .5rem;
+    }
+  }
+
+  .AlbumActions {
+    white-space: nowrap;
+    opacity: 0;
+
+    .button {
+      margin-right: .5rem;
+    }
+  }
+  &:hover .AlbumActions {
+    opacity: 1;
+  }
+}
+
+/* Music Album */
+/* ------------------------------------------------------ */
+
+.JoyMusicAlbumPreview {
+  display: inline-flex;
+  flex-direction: column;
+  padding: 0 1rem 1rem 0;
+  $size: 200px;
+
+  .AlbumDescription {
+    text-align: left;
+    padding: 0;
+  }
+  .AlbumCover {
+    width: $size;
+    height: $size;
+    min-width: $size;
+    min-height: $size;
+  }
+  .AlbumTitle {
+    @extend .Ellipsis;
+
+    font-size: 1.15rem;
+    font-weight: bold;
+    color: $blackFont;
+    margin: .25rem 0;
+    max-width: calc($size - 1rem);
+  }
+  .AlbumArtist {
+    color: #999;
+    font-size: 1rem;
+  }
+  .AlbumActions {
+    opacity: 1;
+  }
+}
+
+/* Channels */
+/* ------------------------------------------------------ */
+
+.ChannelTitle {
+  color: $blackFont;
+}
+
+.ChannelAvatar {
+  /* NOTE: set 'background-image' property in JS */
+
+  display: table;
+  border-radius: 50%;
+  margin-right: 2rem;
+
+  $size: 100px;
+  width: $size;
+  height: $size;
+  min-width: $size;
+  min-height: $size;
+}
+
+.JoyChannels {
+
+  .ui.message.JoyInlineMsg {
+    display: inline-flex;
+    width: auto;
+    margin-top: 0;
+
+    &.CreateBtn {
+      cursor: pointer;
+
+      /* Disable text selection by user: */
+      -webkit-touch-callout: none; /* iOS Safari */
+      -webkit-user-select: none; /* Safari */
+       -khtml-user-select: none; /* Konqueror HTML */
+         -moz-user-select: none; /* Old versions of Firefox */
+          -ms-user-select: none; /* Internet Explorer/Edge */
+              user-select: none; /* Non-prefixed version, currently
+                                    supported by Chrome, Opera and Firefox */
+
+      &:hover,
+      &:focus {
+        background-color: #f3fce0;
+      }
+      &:active {
+        background-color: #e0f4b7;
+      }
+    }
+  }
+
+  .ChannelPreview {
+    display: flex;
+
+    .ChannelStats {
+      margin-left: 3rem;
+      text-align: right;
+
+      .statistic {
+        .label,
+        .value {
+          text-align: right;
+          white-space: nowrap;
+        }
+        .label {
+          color: #999;
+          font-weight: normal;
+          font-size: .9rem;
+        }
+      }
+    }
+  }
+}
+
+.JoyViewChannel {
+  .ChannelCover {
+    background-size: cover;
+    margin-bottom: 2rem;
+    height: 200px;
+  }
+}
+
+.ChannelHeader {
+  .ChannelTitle {
+    font-size: 2rem;
+    margin-top: 1rem;
+  }
+  .ChannelSubtitle {
+    color: #999;
+    text-transform: uppercase;
+  }
+}

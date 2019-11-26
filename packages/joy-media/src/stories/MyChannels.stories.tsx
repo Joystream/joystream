@@ -1,9 +1,9 @@
 import React from 'react';
-import '../channels/index.css';
+import '../common/index.css';
 
 import { withKnobs } from '@storybook/addon-knobs';
 import { MyChannels } from '../channels/MyChannels';
-import { ChannelsDataSamples } from './data/ChannelsSamples';
+import { ChannelsDataSamples } from './data/ChannelSamples';
 
 export default { 
     title: 'Media | My channels',

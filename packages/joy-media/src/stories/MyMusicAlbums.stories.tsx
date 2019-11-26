@@ -1,5 +1,5 @@
 import React from 'react';
-import '../music/index.css';
+import '../common/index.css';
 
 import { withKnobs } from '@storybook/addon-knobs';
 import { MyMusicAlbums } from '../music/MyMusicAlbums';
