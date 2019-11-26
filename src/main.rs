@@ -21,6 +21,7 @@
 
 mod chain_spec;
 mod cli;
+mod import_members;
 mod service;
 
 pub use substrate_cli::{error, IntoExit, VersionInfo};

@@ -115,7 +115,7 @@ impl Alternative {
                 vec![],
                 None,
                 None,
-                None,
+                Some(chain_spec_properties()),
                 None,
             ),
             Alternative::LocalTestnet => ChainSpec::from_genesis(
@@ -147,7 +147,7 @@ impl Alternative {
                 vec![],
                 None,
                 None,
-                None,
+                Some(chain_spec_properties()),
                 None,
             ),
             Alternative::StagingTestnet => staging_testnet_config(),
@@ -175,13 +175,7 @@ pub fn live_testnet_config() -> Result<ChainSpec, String> {
     ChainSpec::from_json_bytes(&include_bytes!("../res/dummy.json")[..])
 }
 
-/// Staging testnet config
-pub fn staging_testnet_config() -> ChainSpec {
-    let boot_nodes = vec![
-		String::from("/dns4/bootnode1.joystream.org/tcp/30333/p2p/QmeDa8jASqMRpTh4YCkeVEuHo6nbMcFDzD9pkUxTr3WxhM"),
-		String::from("/dns4/bootnode2.joystream.org/tcp/30333/p2p/QmbjzmNMjzQUMHpzqcPHW5DnFeUjM3x4hbiDSMkYv1McD3"),
-    ];
-
+pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
     let mut properties: json::map::Map<String, json::Value> = json::map::Map::new();
     properties.insert(
         String::from("tokenDecimals"),
@@ -191,6 +185,15 @@ pub fn staging_testnet_config() -> ChainSpec {
         String::from("tokenSymbol"),
         json::Value::String(String::from("JOY")),
     );
+    properties
+}
+
+/// Staging testnet config
+pub fn staging_testnet_config() -> ChainSpec {
+    let boot_nodes = vec![
+		String::from("/dns4/bootnode1.joystream.org/tcp/30333/p2p/QmeDa8jASqMRpTh4YCkeVEuHo6nbMcFDzD9pkUxTr3WxhM"),
+		String::from("/dns4/bootnode2.joystream.org/tcp/30333/p2p/QmbjzmNMjzQUMHpzqcPHW5DnFeUjM3x4hbiDSMkYv1McD3"),
+    ];
 
     ChainSpec::from_genesis(
         "Joystream Staging Testnet",
@@ -204,7 +207,7 @@ pub fn staging_testnet_config() -> ChainSpec {
         // protocol_id
         Some(&*"joy.staging"),
         // Properties
-        Some(properties),
+        Some(chain_spec_properties()),
         // Extensions
         None,
     )
@@ -229,6 +232,8 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
     const DOLLARS: Balance = 100 * CENTS;
     const STASH: Balance = 50 * DOLLARS;
     const ENDOWMENT: Balance = 100_000_000 * DOLLARS;
+
+    let initial_members = crate::import_members::initial_members();
 
     GenesisConfig {
         system: Some(SystemConfig {
@@ -306,7 +311,7 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
         }),
         members: Some(MembersConfig {
             default_paid_membership_fee: 100u128,
-            members: vec![],
+            members: initial_members,
         }),
         forum: Some(ForumConfig {
             category_by_id: vec![],
@@ -354,6 +359,20 @@ pub fn testnet_genesis(
 ) -> GenesisConfig {
     const STASH: Balance = 10000;
     const ENDOWMENT: Balance = 100_000_000;
+
+    // Static members
+    let mut initial_members = vec![
+        // Make Root a member
+        (
+            root_key.clone(),
+            String::from("system"),
+            String::from("http://joystream.org/avatar.png"),
+            String::from("I am root!"),
+        ),
+    ];
+
+    // Additional initial members
+    initial_members.append(&mut crate::import_members::initial_members());
 
     GenesisConfig {
         //substrate modules
@@ -431,7 +450,7 @@ pub fn testnet_genesis(
         }),
         members: Some(MembersConfig {
             default_paid_membership_fee: 100u128,
-            members: vec![],
+            members: initial_members,
         }),
         forum: Some(ForumConfig {
             category_by_id: vec![],
