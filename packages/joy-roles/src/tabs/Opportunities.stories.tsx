@@ -52,7 +52,7 @@ export const opening = new Opening({
               title: "About you",
               questions: [
                 {
-                  itle: "your name",
+                  title: "your name",
                   type: "text"
                 }
               ]

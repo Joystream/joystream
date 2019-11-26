@@ -7,7 +7,7 @@
     "title": {
       "$id": "#/properties/application/title",
       "type": "string",
-      "title": "The Title Schema",
+      "title": "Field title",
       "default": "",
       "examples": [
         "About you"
@@ -76,16 +76,16 @@
     "application": {
       "$id": "#/properties/application",
       "type": "object",
-      "title": "The Application Schema",
+      "title": "Application details",
       "properties": {
         "sections": {
           "$id": "#/properties/application/properties/sections",
           "type": "array",
-          "title": "The Sections Schema",
+          "title": "Question sections",
           "items": {
             "$id": "#/properties/application/properties/sections/items",
             "type": "object",
-            "title": "The Items Schema",
+            "title": "Question section",
             "required": [
               "title",
               "questions"
@@ -97,11 +97,11 @@
               "questions": {
                 "$id": "#/properties/application/properties/sections/items/properties/questions",
                 "type": "array",
-                "title": "The Questions Schema",
+                "title": "Questions fields",
                 "items": {
                   "$id": "#/properties/application/properties/sections/items/properties/questions/items",
                   "type": "object",
-                  "title": "The Items Schema",
+                  "title": "Question field",
                   "required": [
                     "title",
                     "type"
@@ -113,10 +113,11 @@
                     "type": {
       "$id": "#/properties/application/properties/questions/items/type",
       "type": "string",
-      "title": "The Type Schema",
+      "title": "Question field type",
       "default": "",
       "examples": [
-        "text|text area"
+        "text",
+		"text area"
       ],
       "pattern": "^(text|text area)$"
 

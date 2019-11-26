@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useReducer, useState } from 'react'
 import { Link } from 'react-router-dom';
 
 import { formatBalance } from '@polkadot/util';
@@ -20,6 +20,7 @@ import {
   Label,
   Message,
   Modal,
+  Segment,
   SemanticICONS,
   Step,
   Table,
@@ -38,6 +39,11 @@ import {
   StakeRequirementProps,
   IStakeRequirement,
 } from '../tabs/Opportunities'
+import { 
+  ApplicationDetails,
+  QuestionField,
+  QuestionSection,
+} from '@joystream/types/schemas/role.schema'
 
 type accordionProps = {
     title: string
@@ -283,6 +289,7 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
 
 export enum ProgressSteps {
     ConfirmStakes = 0,
+    ApplicationDetails,
     SubmitApplication,
     Done,
 }
@@ -318,6 +325,10 @@ export function ProgressStepsView(props: ProgressStepsProps) {
         { 
             name: "Confirm stakes",  
             display: props.hasConfirmStep,
+        },
+        { 
+            name: "Application details",  
+            display: true,
         },
         { 
             name: "Submit application", 
@@ -374,6 +385,7 @@ function CTA(props: CTAProps) {
 
 export type StageTransitionProps = FlowModalProps & {
     nextTransition: () => void
+    prevTransition: () => void
 }
 
 export type ApplicationStatusProps = {
@@ -404,14 +416,15 @@ export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
     return (
       <Container className="content">
           <ConfirmStakes {...props} />
-
-          <Header as='h4'>Source of stake funds</Header>
-          <p>Please select the account that will be used as the source of stake funds.</p>
-          <FundSourceSelector {...props} 
-                              transactionFee={minStake}
-                              addressCallback={setAddress} 
-                              passphraseCallback={setPassphrase} 
-          />
+          <Segment padding>
+              <Label attached='top'>Source of stake funds</Label>
+              <p>Please select the account that will be used as the source of stake funds.</p>
+              <FundSourceSelector {...props} 
+                                  transactionFee={minStake}
+                                  addressCallback={setAddress} 
+                                  passphraseCallback={setPassphrase} 
+              />
+          </Segment>
         
           <CTA
               negativeLabel='Cancel'
@@ -717,12 +730,146 @@ function CaptureStake1Up(props: CaptureStake1UpProps) {
     )
 }
 
-export type ApplicationDetailsStageProps = {}
+function questionHash(section: QuestionSection, question: QuestionField):string {
+    return section.title + "|" + question.title
+}
 
-export function ApplicationDetailsStage() {
-  return (
-    <Container>
-      Hello
+interface questionDataMap {
+  [k: string]: any;
+}
+
+function applicationDetailsToObject(input: ApplicationDetails): any {
+  const output = {}
+  input.sections.map((section) => {
+    section.questions.map((question) => {
+      output[questionHash(section, question)] = ""
+    })
+  })
+  return output
+}
+
+function applicationDetailsToDataObject(input: ApplicationDetails, data: questionDataMap): any {
+    const output = {}
+    input.sections.map((section) => {
+        output[section.title] = {}
+        section.questions.map((question) => {
+            const hash = questionHash(section, question)
+            output[section.title][question.title] = data[hash]
+        })
+    })
+  return output
+}
+
+function questionReducer(state:any, action:any) {
+  return {...state, [action.key]: action.value}
+}
+
+function questionFieldValueIsValid(question: QuestionField, value: any): boolean {
+    switch (question.type) {
+      case 'text':
+      case 'text area':
+         return value !== ""
+    }
+
+    return false
+}
+
+export type ApplicationDetailsStageProps = StageTransitionProps & {
+  applicationDetails: ApplicationDetails
+  setData: (o: object) => void
+}
+
+export function ApplicationDetailsStage(props: ApplicationDetailsStageProps) {
+    const initialForm = applicationDetailsToObject(props.applicationDetails)
+
+    const [data, setData] = useReducer(questionReducer, initialForm)
+    const [completed, setCompleted] = useState(false)
+    const [valid, setValid] = useState(false)
+
+    const handleChange = (e, { name, value }) => {
+        setData({key: name, value: value})
+    }
+
+    const questionField = (section: QuestionSection, question: QuestionField, key: any) => {
+        switch (question.type) {
+            case 'text':
+                return <Form.Input value={data[questionHash(section, question)]} 
+                    name={questionHash(section, question)}
+                    label={question.title} 
+                    onChange={handleChange}
+                    required
+                    error={completed && !questionFieldValueIsValid(question, data[questionHash(section, question)])}
+                    key={key} 
+                />
+
+            case 'text area':
+                return <Form.TextArea value={data[questionHash(section, question)]}
+                    name={questionHash(section, question)}
+                    label={question.title} 
+                    onChange={handleChange}
+                    required 
+                    error={completed && !questionFieldValueIsValid(question, data[questionHash(section, question)])}
+                    key={key} 
+                />
+            }
+
+            return null
+    }
+
+    const isFormValid = (): boolean => {
+        let valid = true
+        props.applicationDetails.sections.map((section) => {
+            section.questions.map((question) => {
+                if (!questionFieldValueIsValid(question, data[questionHash(section, question)])) {
+                    valid = false
+                }
+            })
+        })
+
+        return valid
+    }
+
+    useEffect( () => {
+        setValid(isFormValid())
+    },
+    [data])
+
+    const onSubmit = () => {
+        setCompleted(true)
+
+        if (!valid) {
+            return false
+        }
+
+        props.setData(applicationDetailsToDataObject(props.applicationDetails, data))
+
+        props.nextTransition()
+    }
+
+    return (
+      <Container className="content application-questions">
+          <Form error={completed && !valid}>
+          {props.applicationDetails.sections.map((section,key) => (
+              <Segment padded className="section" key={key}>
+                  <h4><Label attached='top'>{section.title}</Label></h4>
+                  {section.questions.map((question,key) => 
+                    questionField(section, question, key)
+                  )}
+              </Segment>
+           ))}
+           <CTA
+              negativeLabel='Back'
+              negativeIcon='left arrow'
+              negativeCallback={props.prevTransition}
+              positiveLabel='Continue to submit application'
+              positiveIcon='right arrow'
+              positiveCallback={onSubmit}
+            />
+
+            <Message error>
+                Please check all the form fields
+            </Message>
+        </Form>
     </Container>
   )
 }
@@ -760,17 +907,19 @@ export function SubmitApplicationStage(props: SubmitApplicationStageProps) {
               </Table>
           </ModalAccordion>
           
-          <Header as='h4'>Source of transaction fee funds</Header>
+          <Segment padding>
+          <Label attached='top'>Source of transaction fee funds</Label>
           <p>Please select the account that will be used as the source of transaction fee funds.</p>
           <FundSourceSelector {...props} 
                               addressCallback={setAddress} 
                               passphraseCallback={setPassphrase} 
           />
+          </Segment>
 
           <CTA
-              negativeLabel='Cancel'
-              negativeIcon='cancel'
-              negativeCallback={() => {}}
+              negativeLabel='Back'
+              negativeIcon='left arrow'
+              negativeCallback={props.prevTransition}
               positiveLabel='Make transaction and submit application'
               positiveIcon='right arrow'
               positiveCallback={onSubmit}
@@ -832,6 +981,7 @@ export type FlowModalProps = FundSourceSelectorProps & {
     applications: OpeningBodyApplicationsStatusProps,
     creator: GroupMemberProps
     hasConfirmStep: boolean
+    applicationDetails: ApplicationDetails
 }
 
 export function FlowModal(props: FlowModalProps) {
@@ -839,15 +989,28 @@ export function FlowModal(props: FlowModalProps) {
     const [roleStake, setRoleStake] = useState(new u128(1))
     const [activeStep, setActiveStep] = useState(props.hasConfirmStep ? 
                                                  ProgressSteps.ConfirmStakes :
-                                                 ProgressSteps.SubmitApplication 
-                                        )
+                                                 ProgressSteps.ApplicationDetails)
     const [complete, setComplete] = useState(false)
+    const [appDetails, setAppDetails] = useState({})
+
+    const cancel = () => {
+        //FIXME! Close lightbox
+    }
     
+    const enterConfirmStakeState = () => {
+        setActiveStep(ProgressSteps.ApplicationDetails)
+    }
+
+    const enterApplicationDetailsState = () => {
+        setActiveStep(ProgressSteps.ApplicationDetails)
+    }
+
     const enterSubmitApplicationState = () => {
         setActiveStep(ProgressSteps.SubmitApplication)
     }
 
     const enterDoneState = () => {
+        console.log(appDetails)
         setComplete(true)
         setActiveStep(ProgressSteps.Done)
     }
@@ -860,9 +1023,27 @@ export function FlowModal(props: FlowModalProps) {
   }
 
   const stages = new Map<ProgressSteps,any>([
-    [ProgressSteps.ConfirmStakes, <ConfirmStakesStage {...props} nextTransition={enterSubmitApplicationState} {...setProps} />],
-    [ProgressSteps.SubmitApplication, <SubmitApplicationStage {...props} nextTransition={enterDoneState} />],
-    [ProgressSteps.Done, <DoneStage {...props} />], 
+      [ProgressSteps.ConfirmStakes, <ConfirmStakesStage 
+          {...props} 
+          nextTransition={enterApplicationDetailsState} 
+          prevTransition={cancel}
+          {...setProps} 
+      />],
+
+      [ProgressSteps.ApplicationDetails, <ApplicationDetailsStage 
+          setData={setAppDetails} 
+          applicationDetails={props.applicationDetails}  
+          nextTransition={enterSubmitApplicationState} 
+          prevTransition={props.hasConfirmStep ? enterConfirmStakeState : cancel}
+      />],
+
+      [ProgressSteps.SubmitApplication, <SubmitApplicationStage 
+          {...props} 
+          nextTransition={enterDoneState} 
+          prevTransition={enterApplicationDetailsState}
+      />],
+
+      [ProgressSteps.Done, <DoneStage {...props} />], 
   ])
 
     return (

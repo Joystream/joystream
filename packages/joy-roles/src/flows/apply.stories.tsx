@@ -83,7 +83,32 @@ export function ApplicationSandbox() {
 		defactoMinimumStake: new u128(0),
 		step: new u128(5),
         slots: slots,
-
+        applicationDetails: {
+          sections: [
+            {
+              title: "About you",
+              questions: [
+                {
+                  title: "Your name",
+                  type: "text"
+                },
+                {
+                  title: "Your e-mail address",
+                  type: "text"
+                }
+              ]
+            },
+            {
+              title: "Your experience",
+              questions: [
+                {
+                  title: "Why would you be good for this role?",
+                  type: "text area"
+                }
+              ]
+            }
+          ]
+        },
     }
 
     return <FlowModal {...props} />
