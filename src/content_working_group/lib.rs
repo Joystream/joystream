@@ -654,6 +654,8 @@ pub enum SlashingTerms {
     Slashable(SlashableTerms)
 }
 
+/// Must be default constructible because it indirectly is a value in a storage map.
+/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
 impl Default for SlashingTerms {
 
     fn default() -> Self {
@@ -719,6 +721,8 @@ pub enum WorkingGroupUnstaker<LeadId, CuratorId> {
     Curator(CuratorId),
 }
 
+/// Must be default constructible because it indirectly is a value in a storage map.
+/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
 impl<LeadId: Default, CuratorId> Default for WorkingGroupUnstaker<LeadId, CuratorId> {
 
     fn default() -> Self {
