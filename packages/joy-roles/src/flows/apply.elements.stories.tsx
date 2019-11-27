@@ -205,66 +205,18 @@ export function SelectTwoMinimumStakes() {
   )
 }
 
-export function StageAApplicationDetails() {
-	const [data, setData] = useState<object>({})
-
-    const props: ApplicationDetailsStageProps = {
-        applicationDetails: object("JSON",{
-          sections: [
-            {
-              title: "About you",
-              questions: [
-                {
-                  title: "Your name",
-                  type: "text"
-                },
-                {
-                  title: "Your e-mail address",
-                  type: "text"
-                }
-              ]
-            },
-            {
-              title: "Your experience",
-              questions: [
-                {
-                  title: "Why would you be good for this role?",
-                  type: "text area"
-                }
-              ]
-            }
-          ]
-        }, 'Application questions'),
-		setData: setData,
-		nextTransition: () => { },
-    }
-
-    return (
-        <Container className="apply-flow">
-            <Card fluid>
-                <Card.Content>
-                  <ApplicationDetailsStage {...props} />
-                </Card.Content>
-			    <Message info>
-					{JSON.stringify(data)}
-				</Message>
-            </Card>
-        </Container>
-    )
-}
-
-export function StageBConfirmStakes() {
+export function StageAConfirmStakes() {
   const permutations:(ConfirmStakesStageProps & TestProps)[] = [
-        {
-            _description: "One fixed stake (application), no limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      maxNumberOfApplications: 0,
-      numberOfApplications: 0,
-      defactoMinimumStake: new u128(0),
-      nextTransition: () => {},
-        },
-        {
+      {
+          _description: "One fixed stake (application), no limit",
+          requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
+          requiredRoleStake: new RoleStakeRequirement(new u128(0)),
+          maxNumberOfApplications: 0,
+          numberOfApplications: 0,
+          defactoMinimumStake: new u128(0),
+          nextTransition: () => {},
+      },
+      {
             _description: "One fixed stake (role), no limit",
       requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
       requiredRoleStake: new RoleStakeRequirement(new u128(1213)),
@@ -427,6 +379,8 @@ export function StageBConfirmStakes() {
     permutations.map((permutation, key) => {
     const [applicationStake, setApplicationStake] = useState(new u128(0))
     const [roleStake, setRoleStake] = useState<Balance>(new u128(0))
+    const [stakeKeyAddress, setStakeKeyAddress] = useState<AccountId>(null)
+    const [stakeKeyPassphrase, setStakeKeyPassphrase] = useState("")
 
     const [stake, setStake] = useState<Balance>(new u128(0))
     const stakeRankSelectorProps: StakeRankSelectorProps = {
@@ -437,21 +391,25 @@ export function StageBConfirmStakes() {
     renders.push(
       (
         <Container className="outer" key={key}>
-                    <h4>{key}. {permutation._description}</h4>
-                    <Card fluid>
-            <ConfirmStakesStage {...permutation} 
+            <h4>{key}. {permutation._description}</h4>
+            <Card fluid>
+                <ConfirmStakesStage {...permutation} 
                       {...stakeRankSelectorProps} 
                       keypairs={keypairs}
-                                            selectedApplicationStake={applicationStake}
-                                            setSelectedApplicationStake={setApplicationStake}
-                                            selectedRoleStake={roleStake}
-                                            setSelectedRoleStake={setRoleStake}
-            />
-                    </Card>
+                      selectedApplicationStake={applicationStake}
+                      setSelectedApplicationStake={setApplicationStake}
+                      selectedRoleStake={roleStake}
+                      setSelectedRoleStake={setRoleStake}
+                      keyAddress={stakeKeyAddress}
+                      setKeyAddress={setStakeKeyAddress}
+                      keyPassphrase={stakeKeyPassphrase}
+                      setKeyPassphrase={setStakeKeyPassphrase}
+                />
+            </Card>
           <Message info>
             A: {applicationStake.toString()}, R: {roleStake.toString()}
           </Message>
-                </Container>
+        </Container>
       )
     )
   })
@@ -461,6 +419,59 @@ export function StageBConfirmStakes() {
             {renders.map((render, key) => (
         <div>{render}</div>
            ))}
+        </Container>
+    )
+}
+
+export function StageBApplicationDetails() {
+    const [data, setData] = useState<object>({
+        "About you": {
+            "Your e-mail address": "pre-filled"
+        }
+    })
+
+    const props: ApplicationDetailsStageProps = {
+        applicationDetails: object("JSON",{
+          sections: [
+            {
+              title: "About you",
+              questions: [
+                {
+                  title: "Your name",
+                  type: "text"
+                },
+                {
+                  title: "Your e-mail address",
+                  type: "text"
+                }
+              ]
+            },
+            {
+              title: "Your experience",
+              questions: [
+                {
+                  title: "Why would you be good for this role?",
+                  type: "text area"
+                }
+              ]
+            }
+          ]
+        }, 'Application questions'),
+        data: data,
+        setData: setData,
+        nextTransition: () => { },
+    }
+
+    return (
+        <Container className="apply-flow">
+            <Card fluid>
+                <Card.Content>
+                  <ApplicationDetailsStage {...props} />
+                </Card.Content>
+                <Message info>
+                    {JSON.stringify(data)}
+                </Message>
+            </Card>
         </Container>
     )
 }

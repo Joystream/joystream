@@ -82,7 +82,6 @@ function KeyPair ({ address, className, isUppercase, name, style, balance }: Pro
   );
 }
 
-
 export type keyPairDetails = {
     shortName: string
     accountId: AccountId
@@ -162,7 +161,7 @@ export function FundSourceSelector( props: FundSourceSelectorProps & FundSourceC
     )
 }
 
-function rankIcon(place: number, slots: number): string {
+function rankIcon(place: number, slots: number): SemanticICONS {
     if (place <= 1) {
         return 'thermometer empty'
     } else if (place <= (slots/4)) {
@@ -299,9 +298,11 @@ export type ProgressStepsProps = {
     hasConfirmStep: boolean
 }
 
-interface ProgressStep {
+interface ProgressStepDefinition {
     name: string
     display: boolean
+}
+interface ProgressStep extends ProgressStepDefinition {
     active: boolean
     disabled: boolean
 }
@@ -321,7 +322,7 @@ function ProgressStepView(props: ProgressStep) {
 }
 
 export function ProgressStepsView(props: ProgressStepsProps) {
-    const steps:ProgressStep[] = [
+    const steps:ProgressStepDefinition[] = [
         { 
             name: "Confirm stakes",  
             display: props.hasConfirmStep,
@@ -370,14 +371,14 @@ function CTA(props: CTAProps) {
                 content={props.negativeLabel}
                 icon={props.negativeIcon}
                 labelPosition='left' 
-                  onClick={props.negativeCallback}
+                onClick={props.negativeCallback}
             />
             <Button 
-                  content={props.positiveLabel}
-                  icon={props.positiveIcon}
-                  labelPosition='right' 
-                  positive 
-                  onClick={props.positiveCallback}
+                content={props.positiveLabel}
+                icon={props.positiveIcon}
+                labelPosition='right' 
+                positive 
+                onClick={props.positiveCallback}
             />
         </Container>
     )
@@ -392,11 +393,20 @@ export type ApplicationStatusProps = {
   numberOfApplications: number
 }
 
+type CaptureKeyAndPassphraseProps = {
+    keyAddress: AccountId
+    setKeyAddress: (a: AccountId) => void
+    keyPassphrase: string
+    setKeyPassphrase: (p: string) => void
+    minStake: Balance
+}
+
 export type ConfirmStakesStageProps = StageTransitionProps & 
                                       StakeRequirementProps & 
                                       FundSourceSelectorProps &
                                       ApplicationStatusProps &
-                                      StakeRankSelectorProps & {
+                                      StakeRankSelectorProps &
+                                      CaptureKeyAndPassphraseProps & {
     selectedApplicationStake: Balance
     setSelectedApplicationStake: (b:Balance) => void
     selectedRoleStake: Balance
@@ -405,13 +415,13 @@ export type ConfirmStakesStageProps = StageTransitionProps &
 
 //TODO! Set state
 export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
-    const [address, setAddress] = useState<AccountId>()
-    const [passphrase, setPassphrase] = useState("")
-    const minStake = useState(new u128(0))
-
     const ctaContinue = (zeroOrTwoStakes(props)) ?
         'Confirm stakes and continue' :
         'Confirm stake and continue';
+
+    const continueFn = () => {
+       props.nextTransition() 
+    }
 
     return (
       <Container className="content">
@@ -420,9 +430,9 @@ export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
               <Label attached='top'>Source of stake funds</Label>
               <p>Please select the account that will be used as the source of stake funds.</p>
               <FundSourceSelector {...props} 
-                                  transactionFee={minStake}
-                                  addressCallback={setAddress} 
-                                  passphraseCallback={setPassphrase} 
+                                  transactionFee={new u128(props.selectedApplicationStake.add(props.selectedRoleStake))}
+                                  addressCallback={props.setKeyAddress} 
+                                  passphraseCallback={props.setKeyPassphrase} 
               />
           </Segment>
         
@@ -432,7 +442,7 @@ export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
               negativeCallback={() => {}}
               positiveLabel={ctaContinue}
               positiveIcon='right arrow'
-              positiveCallback={props.nextTransition}
+              positiveCallback={continueFn}
           />
       </Container>
     )
@@ -734,18 +744,26 @@ function questionHash(section: QuestionSection, question: QuestionField):string 
     return section.title + "|" + question.title
 }
 
-interface questionDataMap {
-  [k: string]: any;
+interface finalDataMap {
+  [k: string]: finalDataMap;
 }
 
-function applicationDetailsToObject(input: ApplicationDetails): any {
+function applicationDetailsToObject(input: ApplicationDetails, data: finalDataMap): any {
   const output = {}
   input.sections.map((section) => {
     section.questions.map((question) => {
-      output[questionHash(section, question)] = ""
+        let value = ""
+        if (data[section.title] && data[section.title][question.title]) {
+            value = data[section.title][question.title]
+        }
+        output[questionHash(section, question)] = value
     })
   })
   return output
+}
+
+interface questionDataMap {
+  [k: string]: any;
 }
 
 function applicationDetailsToDataObject(input: ApplicationDetails, data: questionDataMap): any {
@@ -776,11 +794,12 @@ function questionFieldValueIsValid(question: QuestionField, value: any): boolean
 
 export type ApplicationDetailsStageProps = StageTransitionProps & {
   applicationDetails: ApplicationDetails
+  data: object
   setData: (o: object) => void
 }
 
 export function ApplicationDetailsStage(props: ApplicationDetailsStageProps) {
-    const initialForm = applicationDetailsToObject(props.applicationDetails)
+    const initialForm = applicationDetailsToObject(props.applicationDetails, props.data as finalDataMap)
 
     const [data, setData] = useReducer(questionReducer, initialForm)
     const [completed, setCompleted] = useState(false)
@@ -842,8 +861,12 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps) {
         }
 
         props.setData(applicationDetailsToDataObject(props.applicationDetails, data))
-
         props.nextTransition()
+    }
+
+    const onCancel = () => {
+        props.setData(applicationDetailsToDataObject(props.applicationDetails, data))
+        props.prevTransition()
     }
 
     return (
@@ -860,7 +883,7 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps) {
            <CTA
               negativeLabel='Back'
               negativeIcon='left arrow'
-              negativeCallback={props.prevTransition}
+              negativeCallback={onCancel}
               positiveLabel='Continue to submit application'
               positiveIcon='right arrow'
               positiveCallback={onSubmit}
@@ -875,15 +898,13 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps) {
 }
 
 export type SubmitApplicationStageProps = FundSourceSelectorProps & 
-                                          StageTransitionProps & {
+                                          StageTransitionProps & 
+                                          CaptureKeyAndPassphraseProps & {
     transactionFee: Balance
     transactionDetails: Map<string, string>
 }
 
 export function SubmitApplicationStage(props: SubmitApplicationStageProps) {
-    const [address, setAddress] = useState<AccountId>()
-    const [passphrase, setPassphrase] = useState("")
-
     const onSubmit = () => {
         props.nextTransition()
     }
@@ -911,8 +932,8 @@ export function SubmitApplicationStage(props: SubmitApplicationStageProps) {
           <Label attached='top'>Source of transaction fee funds</Label>
           <p>Please select the account that will be used as the source of transaction fee funds.</p>
           <FundSourceSelector {...props} 
-                              addressCallback={setAddress} 
-                              passphraseCallback={setPassphrase} 
+                              addressCallback={props.setKeyAddress} 
+                              passphraseCallback={props.setKeyPassphrase} 
           />
           </Segment>
 
@@ -982,11 +1003,17 @@ export type FlowModalProps = FundSourceSelectorProps & {
     creator: GroupMemberProps
     hasConfirmStep: boolean
     applicationDetails: ApplicationDetails
+    transactionFee: Balance
 }
 
 export function FlowModal(props: FlowModalProps) {
     const [applicationStake, setApplicationStake] = useState(new u128(0))
     const [roleStake, setRoleStake] = useState(new u128(1))
+    const [stakeKeyAddress, setStakeKeyAddress] = useState<AccountId>(null)
+    const [stakeKeyPassphrase, setStakeKeyPassphrase] = useState("")
+    const [txKeyAddress, setTxKeyAddress] = useState<AccountId>(null)
+    const [txKeyPassphrase, setTxKeyPassphrase] = useState("")
+
     const [activeStep, setActiveStep] = useState(props.hasConfirmStep ? 
                                                  ProgressSteps.ConfirmStakes :
                                                  ProgressSteps.ApplicationDetails)
@@ -996,9 +1023,9 @@ export function FlowModal(props: FlowModalProps) {
     const cancel = () => {
         //FIXME! Close lightbox
     }
-    
+
     const enterConfirmStakeState = () => {
-        setActiveStep(ProgressSteps.ApplicationDetails)
+        setActiveStep(ProgressSteps.ConfirmStakes)
     }
 
     const enterApplicationDetailsState = () => {
@@ -1010,41 +1037,53 @@ export function FlowModal(props: FlowModalProps) {
     }
 
     const enterDoneState = () => {
-        console.log(appDetails)
+        console.log("Selected stake:", applicationStake, roleStake)
+        console.log("Questions:",appDetails)
+        console.log("Stake key:",stakeKeyAddress, stakeKeyPassphrase)
+        console.log("Tx key:",stakeKeyAddress, stakeKeyPassphrase)
         setComplete(true)
         setActiveStep(ProgressSteps.Done)
     }
 
-  const setProps = {
-     selectedApplicationStake: applicationStake,
-     setSelectedApplicationStake: setApplicationStake,
-     selectedRoleStake: roleStake,
-     setSelectedRoleStake: setRoleStake,
-  }
+    const setStakeProps = {
+        selectedApplicationStake: applicationStake,
+        setSelectedApplicationStake: setApplicationStake,
+        selectedRoleStake: roleStake,
+        setSelectedRoleStake: setRoleStake,
+    }
 
-  const stages = new Map<ProgressSteps,any>([
-      [ProgressSteps.ConfirmStakes, <ConfirmStakesStage 
-          {...props} 
-          nextTransition={enterApplicationDetailsState} 
-          prevTransition={cancel}
-          {...setProps} 
-      />],
+    const stages = new Map<ProgressSteps,any>([
+        [ProgressSteps.ConfirmStakes, <ConfirmStakesStage 
+            {...props} 
+            nextTransition={enterApplicationDetailsState} 
+            prevTransition={cancel}
+            {...setStakeProps} 
+            keyAddress={stakeKeyAddress}
+            setKeyAddress={setStakeKeyAddress}
+            keyPassphrase={stakeKeyPassphrase}
+            setKeyPassphrase={setStakeKeyPassphrase}
+        />],
 
-      [ProgressSteps.ApplicationDetails, <ApplicationDetailsStage 
-          setData={setAppDetails} 
-          applicationDetails={props.applicationDetails}  
-          nextTransition={enterSubmitApplicationState} 
-          prevTransition={props.hasConfirmStep ? enterConfirmStakeState : cancel}
-      />],
+        [ProgressSteps.ApplicationDetails, <ApplicationDetailsStage 
+            setData={setAppDetails} 
+            data={appDetails}
+            applicationDetails={props.applicationDetails}  
+            nextTransition={enterSubmitApplicationState} 
+            prevTransition={() => {props.hasConfirmStep ? enterConfirmStakeState() : cancel()}}
+        />],
 
-      [ProgressSteps.SubmitApplication, <SubmitApplicationStage 
-          {...props} 
-          nextTransition={enterDoneState} 
-          prevTransition={enterApplicationDetailsState}
-      />],
+        [ProgressSteps.SubmitApplication, <SubmitApplicationStage 
+            {...props} 
+            nextTransition={enterDoneState} 
+            prevTransition={enterApplicationDetailsState}
+            keyAddress={txKeyAddress}
+            setKeyAddress={setTxKeyAddress}
+            keyPassphrase={txKeyPassphrase}
+            setKeyPassphrase={setTxKeyPassphrase}
+        />],
 
-      [ProgressSteps.Done, <DoneStage {...props} />], 
-  ])
+        [ProgressSteps.Done, <DoneStage {...props} />], 
+    ])
 
     return (
         <Modal size='fullscreen' open={true} dimmer='inverted' className="apply-flow">
