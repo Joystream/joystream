@@ -1004,6 +1004,9 @@ decl_event! {
         //CuratorRoleAccountUpdated
         //CuratorRewardAccountUpdated
         CuratorExited(CuratorId),
+        CuratorUnstaking(CuratorId),
+        CuratorApplicationTerminated(CuratorApplicationId),
+        CuratorApplicationWithdrawn(CuratorApplicationId),
     }
 }
 
@@ -2144,5 +2147,87 @@ impl<T: Trait> Module<T> {
             None
         }
 
+    }
+
+    fn deactivate_curator(
+        curator_id: &CuratorId<T>,
+        curator: &Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, CuratorApplicationId<T>>,
+        exit_initiation_origin: &CuratorExitInitiationOrigin,
+        rationale_text: &Vec<u8>) {
+
+        // Stop any possible recurring rewards
+        let did_deactivate_recurring_reward =
+            if let Some(ref reward_relationship_id) = curator.reward_relationship {
+
+                // Attempt to deactivate
+                recurringrewards::Module::<T>::try_to_deactivate_relationship(*reward_relationship_id)
+                .expect("Relatioship must exist")
+
+            } else {
+
+                // Did not deactivate, there was no reward relationship!
+                false
+            };
+
+        // When the curator is staked, unstaking must first be initated,
+        // otherwise they can be terminted right away.
+
+        // Create exit summary for this termination
+        let current_block = <system::Module<T>>::block_number();
+
+        let curator_exit_summary = CuratorExitSummary::new(
+            exit_initiation_origin,
+            &current_block, 
+            rationale_text
+        );
+
+        // Determine new curator stage and event to emit
+        let (new_curator_stage, unstake_directions, event) = 
+            if let Some(ref stake_profile) = curator.role_stake_profile {
+
+                // Determine unstaknig period based on who initiated deactivation
+                let unstaking_period = match curator_exit_summary.origin {
+                    CuratorExitInitiationOrigin::Lead => stake_profile.termination_unstaking_period,
+                    CuratorExitInitiationOrigin::Curator => stake_profile.exit_unstaking_period,
+                };
+
+                (
+                    CuratorRoleStage::Unstaking(curator_exit_summary),
+                    Some((stake_profile.stake_id.clone(), unstaking_period)),
+                    RawEvent::CuratorUnstaking(curator_id.clone())
+                )
+
+            } else {
+
+                (
+                    CuratorRoleStage::Exited(curator_exit_summary.clone()),
+                    None,
+                    match curator_exit_summary.origin {
+                        CuratorExitInitiationOrigin::Lead => RawEvent::TerminatedCurator(curator_id.clone()),
+                        CuratorExitInitiationOrigin::Curator => RawEvent::CuratorExited(curator_id.clone()),
+                    }
+                )
+            };
+    
+        // Update curator
+        let new_curator = Curator{
+            stage: new_curator_stage,
+            ..(curator.clone())
+        };
+
+        CuratorById::<T>::insert(curator_id, new_curator);
+
+        // Unstake if directions provided
+        if let Some(directions) = unstake_directions {
+
+            // Unstake
+            stake::Module::<T>::initiate_unstaking(
+                &directions.0,
+                directions.1
+            ).expect("Unstaking must be possible at this time.");
+        }
+
+        // Trigger event
+        Self::deposit_event(event);
     }
 }
