@@ -398,7 +398,7 @@ pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId:
     /// Identifer for underlying opening in the hiring module.
     pub opening_id: OpeningId,
 
-    /// Set of identifiers for curator applications
+    /// Set of identifiers for all curator applications ever added
     pub curator_applications: BTreeSet<CuratorApplicationId>,
 
     /// Commitment to policies in opening.
@@ -706,7 +706,7 @@ pub struct OpeningPolicyCommitment<BlockNumber, Balance> {
     pub exit_curator_role_application_stake_unstaking_period: Option<BlockNumber>,
 
     /// When a curator exists: ..
-    pub exit_curator_rolerole_stake_unstaking_period: Option<BlockNumber>
+    pub exit_curator_role_stake_unstaking_period: Option<BlockNumber>
 
 }
 
