@@ -1751,7 +1751,7 @@ decl_module! {
                 };
 
             let new_curator = Curator{
-                stage: CuratorRoleStage::Exited(curator_exit_summary),
+                stage: CuratorRoleStage::Exited(curator_exit_summary.clone()),
                 ..unstaking_curator
             };
 
@@ -1761,7 +1761,12 @@ decl_module! {
             UnstakerByStakeId::<T>::remove(stake_id);
 
             // Trigger event
-            Self::deposit_event(RawEvent::TerminatedCurator(curator_id));
+            let event = match curator_exit_summary.origin {
+                CuratorExitInitiationOrigin::Lead => RawEvent::TerminatedCurator(curator_id),
+                CuratorExitInitiationOrigin::Curator => RawEvent::CuratorExited(curator_id),
+            };
+
+            Self::deposit_event(event);
         }
 
     }
