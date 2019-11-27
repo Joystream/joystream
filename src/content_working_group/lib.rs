@@ -80,7 +80,7 @@ pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
-
+/// Type of mintin reward relationship identifiers
 pub type RewardRelationshipId<T> = <T as recurringrewards::Trait>::RewardRelationshipId;
 
 /// Stake identifier in staking module
