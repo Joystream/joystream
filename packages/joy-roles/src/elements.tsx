@@ -11,118 +11,118 @@ import { Profile } from '@joystream/types/members';
 import { Text } from '@polkadot/types';
 
 type ActorProps = {
-    actor: Actor
+  actor: Actor
 }
 
 type BalanceProps = {
-    balance?: Balance
+  balance?: Balance
 }
 
 export function BalanceView(props: BalanceProps) {
-    return (
-        <div className="balance">
-            <span>Balance:</span> {formatBalance(props.balance)}
-        </div>
-    )
+  return (
+    <div className="balance">
+      <span>Balance:</span> {formatBalance(props.balance)}
+    </div>
+  )
 }
 
 type MemoProps = ActorProps & {
-    memo?: Text
+  memo?: Text
 }
 
 export function MemoView(props: MemoProps) {
-	if (typeof props.memo === "undefined") {
-		return null
-	}
+  if (typeof props.memo === "undefined") {
+    return null
+  }
 
-    return (
-        <div className="memo">
-            <span>Memo:</span> {props.memo.toString()}
-				<Link to={`#/addressbook/memo/${props.actor.account.toString()}`}>{' view full memo'}</Link>
-        </div>
-    )
+  return (
+    <div className="memo">
+      <span>Memo:</span> {props.memo.toString()}
+      <Link to={`#/addressbook/memo/${props.actor.account.toString()}`}>{' view full memo'}</Link>
+    </div>
+  )
 }
 
 type ProfileProps = {
-	profile: Profile
+  profile: Profile
 }
 
 export function HandleView(props: ProfileProps) {
-	if (typeof props.profile === "undefined") {
-		return null
-	}
+  if (typeof props.profile === "undefined") {
+    return null
+  }
 
-    return (
-		<Link to={`#/members/${props.profile.handle.toString()}`}>{props.profile.handle.toString()}</Link>
-    )
+  return (
+    <Link to={`#/members/${props.profile.handle.toString()}`}>{props.profile.handle.toString()}</Link>
+  )
 }
 
 type MemberProps = ActorProps & BalanceProps & ProfileProps
 
 export function MemberView(props: MemberProps) {
-	let avatar = <Identicon value={props.actor.account.toString()} size="50"  />
-	if (typeof props.profile.avatar_uri !== "undefined") {
-		avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
-	}
+  let avatar = <Identicon value={props.actor.account.toString()} size="50" />
+  if (typeof props.profile.avatar_uri !== "undefined") {
+    avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
+  }
 
-    return (
-		<Header as='h4' image>
-			{avatar}
-			<Header.Content>
-				<HandleView profile={props.profile} />
-				<BalanceView balance={props.balance} />
-			</Header.Content>
-	    </Header>
-    )
+  return (
+    <Header as='h4' image>
+      {avatar}
+      <Header.Content>
+        <HandleView profile={props.profile} />
+        <BalanceView balance={props.balance} />
+      </Header.Content>
+    </Header>
+  )
 }
 
 type ActorDetailsProps = MemoProps & BalanceProps
 
 export function ActorDetailsView(props: ActorDetailsProps) {
-    return (
-        <div className="actor-summary" id={props.actor.account.toString()}>
-            {props.actor.account.toString()}
-            <MemoView actor={props.actor} memo={props.memo} />
-        </div>
-    )
+  return (
+    <div className="actor-summary" id={props.actor.account.toString()}>
+      {props.actor.account.toString()}
+      <MemoView actor={props.actor} memo={props.memo} />
+    </div>
+  )
 }
 
 export type GroupMemberProps = {
-	actor: Actor
-	profile: Profile
-	title: string
-	lead: boolean
-	stake?: Balance 	
-	earned?: Balance
-	inset?: boolean
+  actor: Actor
+  profile: Profile
+  title: string
+  lead: boolean
+  stake?: Balance
+  earned?: Balance
+  inset?: boolean
 }
 
 export function GroupMemberView(props: GroupMemberProps) {
   let fluid = false
-	if (typeof props.inset !== "undefined") {
+  if (typeof props.inset !== "undefined") {
     fluid = props.inset
   }
 
-	let stake = null
-	if (typeof props.stake !== "undefined" && props.stake.toNumber() !== 0) {
+  let stake = null
+  if (typeof props.stake !== "undefined" && props.stake.toNumber() !== 0) {
     stake = (
       <Label color={props.lead ? 'teal' : 'green'} ribbon={fluid ? 'right' : 'left'}>
-        <Icon name="shield" /> 
-        Staked 
+        <Icon name="shield" />
+        Staked
         <Label.Detail>{formatBalance(props.stake)}</Label.Detail>
       </Label>
     )
-	}
+  }
 
-	let avatar = <Identicon value={props.actor.account.toString()} size="50"  />
-	if (typeof props.profile.avatar_uri !== "undefined") {
-		avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
-	}
+  let avatar = <Identicon value={props.actor.account.toString()} size="50" />
+  if (typeof props.profile.avatar_uri !== "undefined") {
+    avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
+  }
 
   let earned = null
-  if (typeof props.earned !== "undefined" && 
-      props.earned.toNumber() > 0 &&
-      !fluid) {
+  if (typeof props.earned !== "undefined" &&
+    props.earned.toNumber() > 0 &&
+    !fluid) {
     earned = (
       <Card.Content extra>
         <Label>Earned <Label.Detail>{formatBalance(props.earned)}</Label.Detail></Label>
@@ -130,76 +130,76 @@ export function GroupMemberView(props: GroupMemberProps) {
     )
   }
 
-	return (
+  return (
     <Card color={props.lead ? 'teal' : 'grey'} className="staked-card" fluid={fluid}>
       <Card.Content>
-		<Image floated='right'>
-			{avatar}
-		</Image>
-		<Card.Header><HandleView profile={props.profile} /></Card.Header>
+        <Image floated='right'>
+          {avatar}
+        </Image>
+        <Card.Header><HandleView profile={props.profile} /></Card.Header>
         <Card.Meta>{props.title}</Card.Meta>
-		 <Card.Description>
-			 {stake}
+        <Card.Description>
+          {stake}
         </Card.Description>
       </Card.Content>
       {earned}
     </Card>
-	)
+  )
 }
 
 type CountdownProps = {
-	end: Date
+  end: Date
 }
 
 export function Countdown(props: CountdownProps) {
-    let interval: number = -1
+  let interval: number = -1
 
-    const [days, setDays] = useState<number | undefined>(undefined)
-    const [hours, setHours] = useState<number | undefined>(undefined)
-    const [minutes, setMinutes] = useState<number | undefined>(undefined)
-    const [seconds, setSeconds] = useState<number | undefined>(undefined)
+  const [days, setDays] = useState<number | undefined>(undefined)
+  const [hours, setHours] = useState<number | undefined>(undefined)
+  const [minutes, setMinutes] = useState<number | undefined>(undefined)
+  const [seconds, setSeconds] = useState<number | undefined>(undefined)
 
-	const update = () => {
-		const then = moment(props.end)
-        const now = moment()
-        const d = moment.duration(then.diff(now))
-        setDays( d.days())
-        setHours( d.hours())
-        setMinutes( d.minutes())
-        setSeconds( d.seconds())
-	}
+  const update = () => {
+    const then = moment(props.end)
+    const now = moment()
+    const d = moment.duration(then.diff(now))
+    setDays(d.days())
+    setHours(d.hours())
+    setMinutes(d.minutes())
+    setSeconds(d.seconds())
+  }
 
-	interval = window.setInterval(update, 1000);
+  interval = window.setInterval(update, 1000);
 
-    useEffect(() => {
-		update()
-        return () => {
-            clearInterval(interval);
-        };
-    }, []);
+  useEffect(() => {
+    update()
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
 
-    if(!seconds) {
-        return null;
-    }
-    
-    return (
-        <div className='countdown wrapper'>
-			<Statistic size="tiny">
-				<Statistic.Value>{days}</Statistic.Value> 
-				<Statistic.Label>Days</Statistic.Label>
-			</Statistic>
-			<Statistic size="tiny">
-				<Statistic.Value>{hours}</Statistic.Value> 
-				<Statistic.Label>hours</Statistic.Label>
-			</Statistic>
-			<Statistic size="tiny">
-				<Statistic.Value>{minutes}</Statistic.Value> 
-				<Statistic.Label>minutes</Statistic.Label>
-			</Statistic>
-			<Statistic size="tiny">
-				<Statistic.Value>{seconds}</Statistic.Value> 
-				<Statistic.Label>seconds</Statistic.Label>
-			</Statistic>
-        </div>
-    )
+  if (!seconds) {
+    return null;
+  }
+
+  return (
+    <div className='countdown wrapper'>
+      <Statistic size="tiny">
+        <Statistic.Value>{days}</Statistic.Value>
+        <Statistic.Label>Days</Statistic.Label>
+      </Statistic>
+      <Statistic size="tiny">
+        <Statistic.Value>{hours}</Statistic.Value>
+        <Statistic.Label>hours</Statistic.Label>
+      </Statistic>
+      <Statistic size="tiny">
+        <Statistic.Value>{minutes}</Statistic.Value>
+        <Statistic.Label>minutes</Statistic.Label>
+      </Statistic>
+      <Statistic size="tiny">
+        <Statistic.Value>{seconds}</Statistic.Value>
+        <Statistic.Label>seconds</Statistic.Label>
+      </Statistic>
+    </div>
+  )
 }
