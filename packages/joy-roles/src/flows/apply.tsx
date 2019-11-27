@@ -702,6 +702,15 @@ type CaptureStake1UpProps = ApplicationStatusProps & {
   maxNumberOfApplications: number
 }
 
+// This is not a perfect generator! 'User' would reaturn 'an', for example,
+// and 'an user' is incorrect. There is no lightweight method of figuring out
+// indefinitelt articles for English nouns, but it works in the use cases for
+// this context, so let's just go with it.
+function indefiniteArticle(noun: string): "a" | "an" {
+	var startsWithVowel = /^([aeiou])/i
+	return startsWithVowel.test(noun) ? "an" : "a"
+}
+
 function CaptureStake1Up(props: CaptureStake1UpProps) {
     let limit = null
     if (props.maxNumberOfApplications > 0) {
@@ -727,7 +736,7 @@ function CaptureStake1Up(props: CaptureStake1UpProps) {
        <Message.Header><Icon name="shield"/> {props.name}</Message.Header>
        <Message.Content>
         <p>
-         <span>This role requires an <strong>{props.name}</strong> of {atLeast}<strong>{formatBalance(props.requirement.value)}</strong>.</span>
+         <span>This role requires {indefiniteArticle(props.name)} <strong>{props.name}</strong> of {atLeast}<strong>{formatBalance(props.requirement.value)}</strong>.</span>
             {limit}
            <span> There are currently <strong>{props.numberOfApplications}</strong> applications. </span>
         </p>
