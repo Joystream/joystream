@@ -1558,25 +1558,22 @@ decl_module! {
         pub fn leave_curator_role(
             origin,
             curator_id: CuratorId<T>,
-            _rationale_text: Vec<u8>
+            rationale_text: Vec<u8>
         ) {
             // Ensure origin is signed and from account matching existing 
             // active curator corresponding to id.
-            let _active_curator = Self::ensure_active_curator_signed(origin, &curator_id)?;
+            let active_curator = Self::ensure_active_curator_signed(origin, &curator_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // WIP:
-
-                // Update curator stage
-
-                // begin unstaking: stake
-
-                // stop any recurring rewards??: reward_relationship
-
-                // Trigger event
+            Self::deactivate_curator(
+                &curator_id,
+                &active_curator,
+                &CuratorExitInitiationOrigin::Curator,
+                &rationale_text
+            );
         }
 
         /// Lead can terminate and active curator
