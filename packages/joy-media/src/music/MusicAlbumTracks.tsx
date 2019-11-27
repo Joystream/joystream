@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { Button, CheckboxProps } from 'semantic-ui-react';
-
-import { MusicAlbumPreviewProps, MusicAlbumPreview } from './MyMusicAlbums';
 import { Pluralize } from '@polkadot/joy-utils/Pluralize';
-import { MusicTrackPreviewProps, MusicTrackPreview } from './MusicTrackPreview';
+import { EditableMusicTrackPreviewProps, MusicTrackPreview } from './MusicTrackPreview';
+import { MusicAlbumPreviewProps, MusicAlbumPreview } from './MusicAlbumPreview';
 
 export type TracksOfMyMusicAlbumProps = {
   album: MusicAlbumPreviewProps,
-  tracks?: MusicTrackPreviewProps[]
+  tracks?: EditableMusicTrackPreviewProps[]
 };
 
 export function TracksOfMyMusicAlbum (props: TracksOfMyMusicAlbumProps) {

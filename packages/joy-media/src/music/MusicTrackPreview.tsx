@@ -3,7 +3,7 @@ import { Button, Checkbox, CheckboxProps } from 'semantic-ui-react';
 
 type OnCheckboxChange = (event: React.FormEvent<HTMLInputElement>, data: CheckboxProps) => void;
 
-export type MusicTrackPreviewProps = {
+export type EditableMusicTrackPreviewProps = {
   id: string,
   title: string,
   artist: string,
@@ -19,7 +19,7 @@ export type MusicTrackPreviewProps = {
   isDraggable?: boolean,
 };
 
-export function MusicTrackPreview (props: MusicTrackPreviewProps) {
+export function MusicTrackPreview (props: EditableMusicTrackPreviewProps) {
   const {
     withActionLabels = false,
     selected = false,

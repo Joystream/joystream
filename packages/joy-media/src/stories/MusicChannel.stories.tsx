@@ -5,6 +5,7 @@ import { withKnobs } from '@storybook/addon-knobs';
 import { ChannelsDataSample } from './data/ChannelSamples';
 import { ViewMusicChannel } from '../channels/ViewMusicChannel';
 import { MusicAlbumSamples } from './data/MusicAlbumSamples';
+import { MusicTrackSamples } from './data/MusicTrackSamples';
 
 export default { 
     title: 'Media | Music channel',
@@ -16,3 +17,13 @@ export const EmptyMusicChannel = () =>
 
 export const MusicChannelWithAlbumsOnly = () =>
 	<ViewMusicChannel channel={ChannelsDataSample} albums={MusicAlbumSamples} />
+
+export const MusicChannelWithAlbumAndTracks = () =>
+<>
+<div>tracks:{ MusicTrackSamples.length}</div>
+	<ViewMusicChannel
+		channel={ChannelsDataSample}
+		albums={MusicAlbumSamples}
+		tracks={MusicTrackSamples}
+	/>
+	</>

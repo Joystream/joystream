@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { MusicTrackPreviewProps, MusicTrackPreview } from './MusicTrackPreview';
+import { EditableMusicTrackPreviewProps, MusicTrackPreview } from './MusicTrackPreview';
 
 // A little function to help us with reordering the result
 const reorder = (list: OrderableItem[], startIndex: number, endIndex: number) => {
@@ -12,11 +12,11 @@ const reorder = (list: OrderableItem[], startIndex: number, endIndex: number) =>
 };
 
 type Props = {
-  tracks: MusicTrackPreviewProps[],
-  onRemove?: (track: MusicTrackPreviewProps) => void
+  tracks: EditableMusicTrackPreviewProps[],
+  onRemove?: (track: EditableMusicTrackPreviewProps) => void
 }
 
-type OrderableItem = MusicTrackPreviewProps;
+type OrderableItem = EditableMusicTrackPreviewProps;
 
 export const ReorderableTracks = (props: Props) => {
   const { tracks = [], onRemove = () => {} } = props;

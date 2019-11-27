@@ -1,14 +1,14 @@
 import React from 'react';
 import { ChannelEntity } from '../entities/MusicChannelEntity';
-import { MusicTrackEntity } from '../entities/MusicTrackEntity';
 import Section from '@polkadot/joy-utils/Section';
 import { ChannelHeader } from './ChannelHeader';
 import { MusicAlbumPreviewProps, MusicAlbumPreview } from '../music/MusicAlbumPreview';
+import { MusicTrackReaderPreview, MusicTrackReaderPreviewProps } from '../music/MusicTrackReaderPreview';
 
 type Props = {
   channel: ChannelEntity,
   albums?: MusicAlbumPreviewProps[],
-  tracks?: MusicTrackEntity[]
+  tracks?: MusicTrackReaderPreviewProps[]
 };
 
 function NoAlbums () {
@@ -26,14 +26,16 @@ export function ViewMusicChannel (props: Props) {
     !albums.length
       ? <NoAlbums />
       : <Section title={`Music albums`}>
-          {albums.map(album => <MusicAlbumPreview {...album} />)}
+          {albums.map(x => <MusicAlbumPreview {...x} />)}
         </Section>
   );
 
   const renderTracksSection = () => (
     !tracks.length
       ? <NoTracks />
-      : <Section title={`Music tracks`}>TODO render tracks</Section>
+      : <Section title={`Music tracks`}>
+        {tracks.map(x => <MusicTrackReaderPreview {...x} />)}
+      </Section>
   );
   
   return <div className='JoyViewChannel'>

@@ -3,20 +3,20 @@ import { Button, CheckboxProps, Dropdown, Message } from 'semantic-ui-react';
 
 import { Pluralize } from '@polkadot/joy-utils/Pluralize';
 import Section from '@polkadot/joy-utils/Section';
-import { MusicAlbumPreviewProps } from './MyMusicAlbums';
-import { MusicTrackPreviewProps, MusicTrackPreview } from './MusicTrackPreview';
+import { EditableMusicTrackPreviewProps, MusicTrackPreview } from './MusicTrackPreview';
 import { ReorderableTracks } from './ReorderableTracks';
+import { MusicAlbumPreviewProps } from './MusicAlbumPreview';
 
 export type MyMusicTracksProps = {
   albums?: MusicAlbumPreviewProps[],
-  tracks?: MusicTrackPreviewProps[]
+  tracks?: EditableMusicTrackPreviewProps[]
 };
 
 export function MyMusicTracks (props: MyMusicTracksProps) {
   const [idsOfSelectedTracks, setIdsOfSelectedTracks] = useState(new Set<string>());
 
   const onTrackSelect = (
-    track: MusicTrackPreviewProps,
+    track: EditableMusicTrackPreviewProps,
     _event: React.FormEvent<HTMLInputElement>,
     data: CheckboxProps
   ) => {
