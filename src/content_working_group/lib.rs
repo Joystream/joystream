@@ -299,6 +299,37 @@ CuratorInduction
     }
 }
 
+/// Role stake information for a curator.
+#[derive(Encode, Decode, Default, Debug, Clone)]
+pub struct CuratorRoleStakeProfile<StakeId, BlockNumber> {
+
+    /// Whether participant is staked, and if so, the identifier for this staking in the staking module.
+    pub stake_id: StakeId,
+        
+    /// Unstaking period when terminated.
+    pub termination_unstaking_period: Option<BlockNumber>,
+
+    /// Unstaking period when exiting.
+    pub exit_unstaking_period: Option<BlockNumber>
+
+}
+
+impl<StakeId: Clone, BlockNumber: Clone> CuratorRoleStakeProfile<StakeId, BlockNumber> {
+
+    pub fn new(
+        stake_id: &StakeId,
+        termination_unstaking_period: &Option<BlockNumber>,
+        exit_unstaking_period: &Option<BlockNumber>
+    ) -> Self {
+
+        Self {
+            stake_id: (*stake_id).clone(),
+            termination_unstaking_period: (*termination_unstaking_period).clone(),
+            exit_unstaking_period: (*exit_unstaking_period).clone()
+        }
+    }
+}
+
 /// Working group participant: curator
 /// This role can be staked, have reward and be inducted through the hiring module.
 #[derive(Encode, Decode, Default, Debug, Clone)]
@@ -310,8 +341,8 @@ pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId
     /// Whether the role has recurring reward, and if so an identifier for this.
     pub reward_relationship: Option<RewardRelationshipId>,
 
-    /// Whether participant is staked, and if so, the identifier for this staking in the staking module.
-    pub stake: Option<StakeId>,
+    /// When set, describes role stake of curator.
+    pub role_stake_profile: Option<CuratorRoleStakeProfile<StakeId, BlockNumber>>,
 
     /// The stage of this curator in the working group.
     pub stage: CuratorRoleStage<BlockNumber>,
@@ -343,7 +374,7 @@ impl<
     pub fn new(
         role_account: &AccountId,
         reward_relationship: &Option<RewardRelationshipId>,
-        stake: &Option<StakeId>,
+        role_stake_profile: &Option<CuratorRoleStakeProfile<StakeId, BlockNumber>>,
         stage: &CuratorRoleStage<BlockNumber>,
         induction: &CuratorInduction<LeadId, ApplicationId, BlockNumber>,
         can_update_channel_curation_status: bool) -> Self {
@@ -351,7 +382,7 @@ impl<
         Curator {
             role_account: (*role_account).clone(),
             reward_relationship: (*reward_relationship).clone(),
-            stake: (*stake).clone(),
+            role_stake_profile: (*role_stake_profile).clone(),
             stage: (*stage).clone(),
             induction: (*induction).clone(),
             can_update_channel_curation_status: can_update_channel_curation_status
@@ -1326,13 +1357,27 @@ decl_module! {
 
                 // Get possible stake for role
                 let application = hiring::ApplicationById::<T>::get(successful_curator_application.application_id);
-                let role_stake = application.active_role_staking_id;
 
+                // Staking profile for curator
+                let stake_profile = 
+                    if let Some(ref stake_id) = application.active_role_staking_id {
+
+                        Some(
+                            CuratorRoleStakeProfile::new(
+                                stake_id,
+                                &curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period,
+                                &curator_opening.policy_commitment.exit_curator_role_stake_unstaking_period
+                            )
+                        )
+                    } else {
+                        None
+                    };
+                
                 // Construct curator
                 let curator = Curator::new(
                     &(successful_curator_application.role_account),
                     &reward_relationship, 
-                    &role_stake,
+                    &stake_profile,
                     &CuratorRoleStage::Active,
                     &CuratorInduction::new(&lead_id, &id, &current_block),
                     false
