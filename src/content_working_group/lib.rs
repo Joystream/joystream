@@ -1433,25 +1433,17 @@ decl_module! {
 
         /// Lead terminate curator application
         pub fn terminate_curator_application(
-            _origin,
-            _curator_application_id: CuratorApplicationId<T>
+            origin,
+            curator_application_id: CuratorApplicationId<T>
             ) {
-            /*
+        
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_set_lead(origin)?;
 
             // Ensuring curator application actually exists
             let (curator_application, _, curator_opening) = Self::ensure_curator_application_exists(&curator_application_id)?;
 
-            // when is tha ppliation actually removed from the curator opening?????
-            // it may not be possible to do right away if ther eis unstaking?
-            // so we have to wait?
-
-            
-            // **************************************** //
-
-            
-            // Attempt to deactive applications
+            // Attempt to deactivate application
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::deactive_application(
@@ -1460,15 +1452,13 @@ decl_module! {
                     curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period
                 )
             )?;
-            
+
             //
             // == MUTATION SAFE ==
             //
 
             // Trigger event
-            Self::deposit_event(RawEvent::TerminatedCurator(curator_application_id));
-
-            */
+            Self::deposit_event(RawEvent::CuratorApplicationTerminated(curator_application_id));
         }
 
         /// Apply on a curator opening.
