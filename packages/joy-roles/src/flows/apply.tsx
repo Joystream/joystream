@@ -915,7 +915,7 @@ export function SubmitApplicationStage(props: SubmitApplicationStageProps) {
               You need to make a transaction to apply for this role. 
               There is a fee of <strong>{formatBalance(props.transactionFee)}</strong> for this transaction.
           </p>
-          <ModalAccordion title="Technical transaction details">
+          <ModalAccordion title="Transaction details">
              <Table basic='very'>
                <Table.Body>
                   {[...props.transactionDetails].map((v, k) => (
@@ -1044,8 +1044,10 @@ export function FlowModal(props: FlowModalProps) {
         console.log("Tx key:",stakeKeyAddress, stakeKeyPassphrase)
 
         // TODO: Setup transaction
+        setTxDetail("Transaction fee", formatBalance(props.transactionFee))
+        setTxDetail("Application stake", formatBalance(applicationStake))
+        setTxDetail("Role stake", formatBalance(roleStake))
         setTxDetail("Extrinsic hash", "0xae6d24d4d55020c645ddfe2e8d0faf93b1c0c9879f9bf2c439fb6514c6d1292e")
-        setTxDetail("Something else", "abc123")
         
         // TODO: Make transaction
         setActiveStep(ProgressSteps.SubmitApplication)
