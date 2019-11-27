@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { number, withKnobs } from '@storybook/addon-knobs'
+import { number, object, withKnobs } from '@storybook/addon-knobs'
 import { Card, Container, Message } from 'semantic-ui-react'
 
 import { u128, GenericAccountId } from '@polkadot/types'
@@ -209,7 +209,7 @@ export function StageAApplicationDetails() {
 	const [data, setData] = useState<object>({})
 
     const props: ApplicationDetailsStageProps = {
-        applicationDetails: {
+        applicationDetails: object("JSON",{
           sections: [
             {
               title: "About you",
@@ -234,7 +234,7 @@ export function StageAApplicationDetails() {
               ]
             }
           ]
-        },
+        }, 'Application questions'),
 		setData: setData,
 		nextTransition: () => { },
     }

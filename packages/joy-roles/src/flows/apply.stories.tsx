@@ -1,5 +1,5 @@
 import React from 'react'
-import { boolean, date, number, select, text, withKnobs } from '@storybook/addon-knobs'
+import { number, object, withKnobs } from '@storybook/addon-knobs'
 
 import { u128, GenericAccountId } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces';
@@ -83,7 +83,7 @@ export function ApplicationSandbox() {
 		defactoMinimumStake: new u128(0),
 		step: new u128(5),
         slots: slots,
-        applicationDetails: {
+        applicationDetails: object('JSON', {
           sections: [
             {
               title: "About you",
@@ -108,7 +108,7 @@ export function ApplicationSandbox() {
               ]
             }
           ]
-        },
+        }, "Application questions"),
     }
 
     return <FlowModal {...props} />
