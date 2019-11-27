@@ -1599,20 +1599,12 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let current_block = <system::Module<T>>::block_number();
-
-            // Update curator stage
-            let new_curator = Curator{
-                stage: CuratorRoleStage::Exited(
-                    CuratorExitSummary::new(&CuratorExitInitiationOrigin::Lead, &current_block, &rationale_text)
-                    ),
-                ..curator
-            };
-
-            CuratorById::<T>::insert(curator_id, new_curator);
-            
-            // Trigger event
-            Self::deposit_event(RawEvent::TerminatedCurator(curator_id));
+            Self::deactivate_curator(
+                &curator_id,
+                &curator,
+                &CuratorExitInitiationOrigin::Lead,
+                &rationale_text
+            );
         }
 
         /*
