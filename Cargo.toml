@@ -270,9 +270,9 @@ rev = '5570e3b56e9caffa7df1dbede6308b2e6ce18217'
 
 [dependencies.recurringrewards]
 default_features = false
-git = 'https://github.com/Joystream/substrate-recurring-reward-module'
+git = 'https://github.com/bedeho/substrate-recurring-reward-module'
 package = 'substrate-recurring-reward-module'
-rev = 'fe678fc2dc113609c0fc7938baa41c21d8e75f0c'
+rev = '6a1dfef112fa6ee1d018c919ccb2c6f075bb2426'
 
 [dependencies.stake]
 default_features = false
