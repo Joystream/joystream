@@ -116,6 +116,8 @@ static MSG_MEMBER_CANNOT_BECOME_CURATOR_LEAD: &str =
 //    "Lead is not set";
 static MSG_ORIGIN_IS_NOT_LEAD: &str =
     "Origin is not lead";
+static MSG_ORIGIN_IS_NOT_APPLICANT: &str =
+    "Origin is not applicant";
 //static MSG_OPENING_CANNOT_ACTIVATE_IN_THE_PAST: &str =
 //    "Opening cannot activate in the past";
 static MSG_CURATOR_OPENING_DOES_NOT_EXIST: &str =
@@ -1427,7 +1429,38 @@ decl_module! {
         }
         */
 
-        pub fn withdraw_curator_application(_origin) {
+        pub fn withdraw_curator_application(
+            origin,
+            curator_application_id: CuratorApplicationId<T>
+        ) {
+            // Ensuring curator application actually exists
+            let (curator_application, _, curator_opening) = Self::ensure_curator_application_exists(&curator_application_id)?;
+
+            // Ensure that it is signed
+            let signer_account = ensure_signed(origin)?;
+
+            // Ensure that signer is applicant role account
+            ensure!(
+                signer_account == curator_application.role_account,
+                MSG_ORIGIN_IS_NOT_APPLICANT
+            );
+
+            // Attempt to deactivate application
+            // NB: Combined ensure check and mutation in hiring module
+            ensure_on_wrapped_error!(
+                hiring::Module::<T>::deactive_application(
+                    curator_application.application_id,
+                    curator_opening.policy_commitment.exit_curator_role_application_stake_unstaking_period,
+                    curator_opening.policy_commitment.exit_curator_role_stake_unstaking_period
+                )
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorApplicationWithdrawn(curator_application_id));
 
         }
 
