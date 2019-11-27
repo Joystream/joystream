@@ -702,7 +702,7 @@ type CaptureStake1UpProps = ApplicationStatusProps & {
   maxNumberOfApplications: number
 }
 
-// This is not a perfect generator! 'User' would reaturn 'an', for example,
+// This is not a perfect generator! 'User' would return 'an', for example,
 // and 'an user' is incorrect. There is no lightweight method of figuring out
 // indefinitelt articles for English nouns, but it works in the use cases for
 // this context, so let's just go with it.
