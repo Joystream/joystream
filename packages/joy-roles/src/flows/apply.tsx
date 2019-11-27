@@ -1002,7 +1002,6 @@ export type FlowModalProps = FundSourceSelectorProps & {
     applications: OpeningBodyApplicationsStatusProps,
     creator: GroupMemberProps
     hasConfirmStep: boolean
-    applicationDetails: ApplicationDetails
     transactionFee: Balance
 }
 
@@ -1019,6 +1018,11 @@ export function FlowModal(props: FlowModalProps) {
                                                  ProgressSteps.ApplicationDetails)
     const [complete, setComplete] = useState(false)
     const [appDetails, setAppDetails] = useState({})
+    const [txDetails, setTxDetails] = useState(new Map<string, string>())
+
+    const setTxDetail = (name: string, value: string) => {
+        setTxDetails(new Map(txDetails.set(name, value)))
+    }
 
     const cancel = () => {
         //FIXME! Close lightbox
@@ -1033,14 +1037,21 @@ export function FlowModal(props: FlowModalProps) {
     }
 
     const enterSubmitApplicationState = () => {
-        setActiveStep(ProgressSteps.SubmitApplication)
-    }
-
-    const enterDoneState = () => {
+        // TODO: remove this
         console.log("Selected stake:", applicationStake, roleStake)
         console.log("Questions:",appDetails)
         console.log("Stake key:",stakeKeyAddress, stakeKeyPassphrase)
         console.log("Tx key:",stakeKeyAddress, stakeKeyPassphrase)
+
+        // TODO: Setup transaction
+        setTxDetail("Extrinsic hash", "0xae6d24d4d55020c645ddfe2e8d0faf93b1c0c9879f9bf2c439fb6514c6d1292e")
+        setTxDetail("Something else", "abc123")
+        
+        // TODO: Make transaction
+        setActiveStep(ProgressSteps.SubmitApplication)
+    }
+
+    const enterDoneState = () => {
         setComplete(true)
         setActiveStep(ProgressSteps.Done)
     }
@@ -1080,6 +1091,7 @@ export function FlowModal(props: FlowModalProps) {
             setKeyAddress={setTxKeyAddress}
             keyPassphrase={txKeyPassphrase}
             setKeyPassphrase={setTxKeyPassphrase}
+            transactionDetails={txDetails}
         />],
 
         [ProgressSteps.Done, <DoneStage {...props} />], 

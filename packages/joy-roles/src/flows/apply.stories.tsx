@@ -54,10 +54,6 @@ export function ApplicationSandbox() {
         },
         creator: creator,
         transactionFee: new u128(number("Transaction fee", 500, moneySliderOptions, "Application Tx")), 
-        transactionDetails: new Map<string, string>([
-            ["Extrinsic hash", "0xae6d24d4d55020c645ddfe2e8d0faf93b1c0c9879f9bf2c439fb6514c6d1292e"],
-            ["SOmething else", "abc123"],
-        ]),
         keypairs: [
             {
                 shortName: "KP1",
