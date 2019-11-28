@@ -1440,13 +1440,9 @@ decl_module! {
             opt_application_stake_balance: Option<BalanceOf<T>>,
             human_readable_text: Vec<u8>
         ) {
-
-            // Ensure transaction is signed.
-            let signer_account = ensure_signed(origin)?;
-
-            // Ensure that owner member can authenticate with signer account
+            // Ensure that origin is signed by member with given id.
             ensure_on_wrapped_error!(
-                members::Module::<T>::ensure_is_controller_account_for_member(&member_id, &signer_account)
+                members::Module::<T>::ensure_member_controller_account_signed(origin, &member_id)
             )?;
 
             // Ensure curator opening exists
