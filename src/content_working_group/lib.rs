@@ -1,8 +1,8 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
+//#[cfg(feature = "std")]
+//use serde::{Deserialize, Serialize};
 
 use codec::{Decode, Encode}; // Codec
 //use rstd::collections::btree_map::BTreeMap;
@@ -48,9 +48,6 @@ pub type LeadId<T> = ActorIdInMembersModule<T>;
 /// Type identifier for curator role, which must be same as membership actor identifeir
 pub type CuratorId<T> = ActorIdInMembersModule<T>;
 
-/// Type for identifier for dynamic version store credential.
-pub type DynamicCredentialId<T> = <T as versioned_store_permissions::Trait>::PrincipalId;
-
 /// Type for the identifer for an opening for a curator.
 pub type CuratorOpeningId<T> = <T as hiring::Trait>::OpeningId;
 
@@ -91,8 +88,8 @@ static MSG_CHANNEL_DESCRIPTION_TOO_SHORT: &str =
     "Channel description too short";
 static MSG_CHANNEL_DESCRIPTION_TOO_LONG: &str = 
     "Channel description too long";
-static MSG_MEMBER_CANNOT_BECOME_PUBLISHER: &str =
-    "Member cannot become a publisher";
+//static MSG_MEMBER_CANNOT_BECOME_PUBLISHER: &str =
+//    "Member cannot become a publisher";
 static MSG_CHANNEL_ID_INVALID: &str = 
     "Channel id invalid";
 static MSG_ORIGIN_DOES_NOT_MATCH_CHANNEL_ROLE_ACCOUNT: &str =
@@ -101,8 +98,8 @@ static MSG_CURRENT_LEAD_ALREADY_SET: &str =
     "Current lead is already set";
 static MSG_CURRENT_LEAD_NOT_SET: &str = 
     "Current lead is not set";
-static MSG_MEMBER_CANNOT_BECOME_CURATOR_LEAD: &str =
-    "The member cannot become curator lead";
+//static MSG_MEMBER_CANNOT_BECOME_CURATOR_LEAD: &str =
+//    "The member cannot become curator lead";
 //static MSG_LEAD_IS_NOT_SET: &str = 
 //    "Lead is not set";
 static MSG_ORIGIN_IS_NOT_LEAD: &str =
@@ -2143,7 +2140,7 @@ impl<T: Trait> Module<T> {
         rationale_text: &Vec<u8>) {
 
         // Stop any possible recurring rewards
-        let did_deactivate_recurring_reward =
+        let _did_deactivate_recurring_reward =
             if let Some(ref reward_relationship_id) = curator.reward_relationship {
 
                 // Attempt to deactivate
