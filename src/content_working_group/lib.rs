@@ -26,18 +26,6 @@ use crate::membership::{members, role_types};
 /// InputValidationLengthConstraint has not been factored out yet!!!
 use forum::InputValidationLengthConstraint;
 
-/*
- * Permissions model.
- * 
- * New channels are created, and the corresponding member
- * is set as owner, and a new dynamic credential is created.
- * 
- * 
- *
- * 
- * 
- */
-
 /// Module configuration trait for this Substrate module.
 pub trait Trait: system::Trait + minting::Trait + recurringrewards::Trait + stake::Trait + hiring::Trait + versioned_store_permissions::Trait + members::Trait { // + Sized
 
@@ -595,86 +583,6 @@ impl<CuratorId, ChannelId> Default for Principal<CuratorId, ChannelId> {
     }
 }
 
-
-/// The types of built in credential holders.
-#[derive(Encode, Decode, Debug, Clone)]
-pub enum BuiltInCredentialHolder {
-
-    /// Cyrrent working group lead.
-    Lead,
-    
-    /// Any active urator in the working group.
-    AnyCurator,
-
-    /// Any active member in the membership registry.
-    AnyMember
-}
-
-/// Holder of dynamic credential.
-#[derive(Encode, Decode, Debug, Clone)]
-pub enum DynamicCredentialHolder<CuratorId: Ord, ChannelId> {
-
-    /// Sets of curators.
-    Curators(BTreeSet<CuratorId>),
-
-    /// Owner of a channel.
-    ChannelOwner(ChannelId),
-}
-
-/// Must be default constructible because it indirectly is a value in a storage map.
-/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
-impl<CuratorId: Ord, ChannelId> Default for DynamicCredentialHolder<CuratorId, ChannelId> {
-
-    fn default() -> Self {
-        DynamicCredentialHolder::Curators(BTreeSet::new())
-    }
-}
-
-/// Represents credential for authenticating as "the current lead".
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, Default)]
-pub struct LeadCredential {
-
-    /// Whether it is currently possible to authenticate with this credential.
-    pub is_active: bool
-}
-
-/// Represents credential for authenticating as "any curator".
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, Default)]
-pub struct AnyCuratorCredential {
-
-    /// Whether it is currently possible to authenticate with this credential.
-    pub is_active: bool
-}
-
-/// Represents credential for authenticating as "any member".
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, Default)]
-pub struct AnyMemberCredential {
-
-    /// Whether it is currently possible to authenticate with this credential.
-    pub is_active: bool
-}
-
-/// Represents credential to be referenced from the version store.
-/// It is dynamic in the sense that these can be created on the fly.
-#[derive(Encode, Decode, Default, Debug, Clone)]
-pub struct DynamicCredential<CuratorId: Ord, ChannelId, BlockNumber> {
-
-    /// Who holds this credential, meaning they can successfully authenticate with this credential.
-    pub holder: DynamicCredentialHolder<CuratorId, ChannelId>,
-
-    /// Whether it is currently possible to authenticate with this credential.
-    pub is_active: bool,
-
-    /// When it was created.
-    pub created: BlockNumber,
-
-    /// Human readable description of credential.
-    pub description: Vec<u8>
-}
-
 /// Terms for slashings applied to a given role
 #[derive(Encode, Decode, Debug, Clone, PartialEq, Eq)]
 pub struct SlashableTerms {
@@ -982,21 +890,6 @@ decl_storage! {
         /// Next identifier for 
         pub NextPrincipalId get(next_principal_id) config(): PrincipalId<T>;
 
-        /// Credentials for built in roles.
-        pub CredentialOfLead get(credential_of_lead) config(): LeadCredential;
-
-        /// The "any curator" credential.
-        pub CredentialOfAnyCurator get(credential_of_anycurator) config(): AnyCuratorCredential;
-
-        /// The "any member" credential.
-        pub CredentialOfAnyMember get(credential_of_anymember) config(): AnyMemberCredential;
-
-        /// Maps dynamic credential by
-        pub DynamicCredentialById get(dynamic_credential_by_id) config(): linked_map DynamicCredentialId<T> => DynamicCredential<CuratorId<T>, ChannelId<T>, T::BlockNumber>;
-
-        /// Identifier for next credential
-        pub NextDynamicCredentialId get(next_dynamic_credential_id) config(): DynamicCredentialId<T>;
-
         /// Whether it is currently possible to create a channel via `create_channel` extrinsic.
         pub ChannelCreationEnabled get(channel_creation_enabled) config(): bool;
 
@@ -1194,28 +1087,6 @@ decl_module! {
 
         }
 
-        /*
-         * Credential management for versioned store permissions.
-         * 
-         * Lead credential is managed as non-dispatchable.
-         */
-
-        pub fn update_any_member_credential(_origin) {
-            
-        }
-
-        pub fn update_any_curator_credential(_origin) {
-            
-        }
-
-        pub fn create_dynamic_credential(_origin) {
-
-        }
-
-        pub fn update_dynamic_credential(_origin) {
-
-        }
-
         /// ...
         pub fn update_channel_as_owner(_origin) {
 
@@ -1223,12 +1094,6 @@ decl_module! {
 
         /// ...
         pub fn update_channel_as_curator(_origin) {
-
-        }
-
-        /// ..
-        pub fn create_version_store_credential(_origin)  {
-
 
         }
 
@@ -1777,16 +1642,6 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::LeadUnset(lead_id));
         }
-        
-        /// ...
-        pub fn account_is_in_group(_origin) {
-
-        }
-
-        /// ..
-        pub fn update_lead_credential(_origin) {
-
-        }
 
         /// The stake, with the given id, was unstaked.
         pub fn unstaked(
@@ -1844,78 +1699,6 @@ decl_module! {
 
     }
 }
-
-/*
- *  ======== ======== ======== ======== =======
- *  ======== PRIVATE TYPES AND METHODS ========
- *  ======== ======== ======== ======== =======
-
-/// ...
-enum Credential<CuratorId: Ord, ChannelId, BlockNumber> {
-    Lead(LeadCredential),
-    AnyCurator(AnyCuratorCredential),
-    AnyMember(AnyMemberCredential),
-    Dynamic(DynamicCredential<CuratorId, ChannelId, BlockNumber>)
-}
-
-/// Holder of a credential.
-enum CredentialHolder<DynamicCredentialId> {
-
-    /// Built in credential holder.
-    BuiltInCredentialHolder(BuiltInCredentialHolder),
-
-    /// A possible dynamic credendtial holder.
-    CandidateDynamicCredentialId(DynamicCredentialId)
-}
-
-impl<T: Trait> Module<T> {
-
-    /// Maps a permission module credential identifier to a credential holder.
-    /// 
-    /// **CRITICAL**: 
-    /// 
-    /// Credential identifiers are stored in the permissions module, this means that
-    /// the mapping in this function _must_ not disturb how it maps any id that is actually in use
-    /// across runtime upgrades, _unless_ one is also prepared to make the corresponding migrations
-    /// in the permissions module. Best to keep mapping stable.
-    /// 
-    /// In practice the only way one may want augment this map is to support new
-    /// built in credentials. In this case, the mapping has to be written and deployed while
-    /// no new dynamic credentials are created, and a new case of the form below must be introcued
-    /// in the match: CandidateDynamicCredentialId(credential_id - X), where X = #ChannelIds mapped so far.
-    fn credential_id_to_holder(credential_id: T::PrincipalId) -> CredentialHolder<DynamicCredentialId<T>> {
-
-        // Credential identifiers for built in credential holder types.
-        let LEAD_CREDENTIAL_ID = T::PrincipalId::from(0);
-        let ANY_CURATOR_CREDENTIAL_ID = T::PrincipalId::from(1);
-        let ANY_MEMBER_CREDENTIAL_ID = T::PrincipalId::from(2);
-
-        match credential_id {
-
-            LEAD_CREDENTIAL_ID => CredentialHolder::BuiltInCredentialHolder(BuiltInCredentialHolder::Lead),
-            ANY_CURATOR_CREDENTIAL_ID => CredentialHolder::BuiltInCredentialHolder(BuiltInCredentialHolder::AnyCurator),
-            ANY_MEMBER_CREDENTIAL_ID => CredentialHolder::BuiltInCredentialHolder(BuiltInCredentialHolder::AnyMember),
-            _ => CredentialHolder::CandidateDynamicCredentialId(credential_id - T::PrincipalId::from(3)) // will map first dynamic id to 0
-
-            /*
-            Add new built in credentials here below
-            */
-        }
-    }
-    
-    /// .
-    fn credential_from_id(credential_id: T::PrincipalId) -> Option<DynamicCredential<T::CuratorId, ChannelId, T::BlockNumber>> {
-
-        //let  = credential_id_to_built_in_credential_holder(credential_id);
-
-        // 2. 
-
-
-        None
-    }
-    
-}
-*/
 
 impl<T: Trait> versioned_store_permissions::PrincipalIdChecker<T> for Module<T> {
 
