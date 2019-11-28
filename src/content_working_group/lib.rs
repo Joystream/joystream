@@ -141,6 +141,8 @@ static MSG_SIGNER_IS_NOT_CURATOR_ROLE_ACCOUNT: &str =
     "Signer is not curator role account";
 static MSG_UNSTAKER_DOES_NOT_EXIST: &str =
     "Unstaker does not exist";
+static MSG_CURATOR_HAS_NO_REWARD: &str =
+    "Curator has no recurring reward";
 static MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER: &str =
     "Curator not controlled by member";
 
@@ -961,6 +963,7 @@ decl_event! {
         CuratorApplicationTerminated(CuratorApplicationId),
         CuratorApplicationWithdrawn(CuratorApplicationId),
         CuratorRoleAccountUpdated(CuratorId, AccountId),
+        CuratorRewardAccountUpdated(CuratorId, AccountId),
     }
 }
 
@@ -1541,9 +1544,36 @@ decl_module! {
             Self::deposit_event(RawEvent::CuratorRoleAccountUpdated(curator_id, new_role_account));
         }
 
-        /// ...
-        pub fn update_curator_reward_account(_origin) {
+        /// An active curator can update the reward account associated
+        /// with a set reward relationship.
+        pub fn update_curator_reward_account(
+            origin,
+            curator_id: CuratorId<T>,
+            new_reward_account: T::AccountId
+        ) {
 
+            // Ensure there is a signer which matches role account of curator corresponding to provided id.
+            let curator = Self::ensure_active_curator_signed(origin, &curator_id)?;
+
+            // Ensure the curator actually has a recurring reward
+            let relationship_id = Self::ensure_curator_has_recurring_reward(&curator)?;
+ 
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update, only, reward account.
+            recurringrewards::Module::<T>::set_reward_relationship(
+                relationship_id,
+                Some(new_reward_account.clone()), // new_account
+                None, // new_payout
+                None, //new_next_payment_at
+                None //new_payout_interval
+            )
+            .expect("Must be set, since curator has recurring reward");
+
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorRewardAccountUpdated(curator_id, new_reward_account));
         }
 
         /// An active curator leaves role
@@ -2032,6 +2062,18 @@ impl<T: Trait> Module<T> {
         //let opening = hiring::OpeningById::<T>::get(curator_opening.opening_id);
 
         Ok((curator_application, curator_application_id.clone(), curator_opening))
+    }
+
+    fn ensure_curator_has_recurring_reward(curator: &Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId, PrincipalId<T>>) -> Result<T::RewardRelationshipId, &'static str> {
+
+        ensure!(
+            curator.reward_relationship.is_some(),
+            MSG_CURATOR_HAS_NO_REWARD
+        );
+
+        let relationship_id = curator.reward_relationship.unwrap();
+
+        Ok(relationship_id)
     }
 
     /// CRITICAL: 
