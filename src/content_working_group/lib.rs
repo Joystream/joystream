@@ -141,6 +141,9 @@ static MSG_SIGNER_IS_NOT_CURATOR_ROLE_ACCOUNT: &str =
     "Signer is not curator role account";
 static MSG_UNSTAKER_DOES_NOT_EXIST: &str =
     "Unstaker does not exist";
+static MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER: &str =
+    "Curator not controlled by member";
+
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -838,6 +841,17 @@ impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for &str {
     }
 }
 
+impl rstd::convert::From<WrappedError<members::MemberControllerAccountDidNotSign>> for &str {
+    fn from(wrapper: WrappedError<members::MemberControllerAccountDidNotSign>) -> Self {
+       
+        match wrapper.error {
+            members::MemberControllerAccountDidNotSign::UnsignedOrigin => "Unsigned origin",
+            members::MemberControllerAccountDidNotSign::MemberIdInvalid => "Member id is invalid",
+            members::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => "Signer does not match controller account"
+        }
+    }
+}
+
 // ======================================================================== //
 
 decl_storage! {
@@ -920,7 +934,8 @@ decl_event! {
         LeadId = LeadId<T>,
         CuratorOpeningId = CuratorOpeningId<T>,
         CuratorApplicationId = CuratorApplicationId<T>,
-        CuratorId = CuratorId<T>
+        CuratorId = CuratorId<T>,
+        <T as system::Trait>::AccountId,
     {
         ChannelCreated(ChannelId),
         ChannelOwnershipTransferred(ChannelId),
@@ -945,6 +960,7 @@ decl_event! {
         CuratorUnstaking(CuratorId),
         CuratorApplicationTerminated(CuratorApplicationId),
         CuratorApplicationWithdrawn(CuratorApplicationId),
+        CuratorRoleAccountUpdated(CuratorId, AccountId),
     }
 }
 
@@ -1492,10 +1508,37 @@ decl_module! {
             Self::deposit_event(RawEvent::AppliedOnCuratorOpening(curator_opening_id, new_curator_application_id));
         }
 
-        /// ...
-        pub fn update_curator_role_account(_origin) {
+        /// An active curator can update the associated role account.
+        pub fn update_curator_role_account(
+            origin,
+            member_id: T::MemberId,
+            curator_id: CuratorId<T>,
+            new_role_account: T::AccountId
+        ) {
+            // Ensure that origin is signed by member with given id.
+            ensure_on_wrapped_error!(
+                members::Module::<T>::ensure_member_controller_account_signed(origin, &member_id)
+            )?;
 
+            // Ensure that member is this curator
+            let actor_in_role = role_types::ActorInRole::new(role_types::Role::Curator, curator_id);
 
+            ensure!(
+                members::MembershipIdByActorInRole::<T>::get(actor_in_role) == member_id,
+                MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update role account
+            CuratorById::<T>::mutate(curator_id, |curator| {
+                curator.role_account = new_role_account.clone()
+            });
+            
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorRoleAccountUpdated(curator_id, new_role_account));
         }
 
         /// ...
