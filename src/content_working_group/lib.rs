@@ -143,7 +143,6 @@ static MSG_CURATOR_HAS_NO_REWARD: &str =
 static MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER: &str =
     "Curator not controlled by member";
 
-
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
 pub struct ExitedLeadRole<BlockNumber> {
@@ -346,7 +345,7 @@ pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId
     pub induction: CuratorInduction<LeadId, CuratorApplicationId, BlockNumber>,
 
     /// Whether this curator can unilaterally alter the curation status of a channel.
-    pub can_update_channel_curation_status: bool,
+    //pub can_update_channel_curation_status: bool,
 
     /// Permissions module principal id
     pub principal_id: PrincipalId
@@ -377,7 +376,7 @@ impl<
         role_stake_profile: &Option<CuratorRoleStakeProfile<StakeId, BlockNumber>>,
         stage: &CuratorRoleStage<BlockNumber>,
         induction: &CuratorInduction<LeadId, ApplicationId, BlockNumber>,
-        can_update_channel_curation_status: bool,
+        //can_update_channel_curation_status: bool,
         principal_id: &PrincipalId
     ) -> Self {
 
@@ -387,7 +386,7 @@ impl<
             role_stake_profile: (*role_stake_profile).clone(),
             stage: (*stage).clone(),
             induction: (*induction).clone(),
-            can_update_channel_curation_status: can_update_channel_curation_status,
+            //can_update_channel_curation_status: can_update_channel_curation_status,
             principal_id: (*principal_id).clone() 
         }
     }
@@ -458,6 +457,13 @@ impl<
     }
 }
 
+/// Type of .... .
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq)]
+pub enum CurationActor<CuratorId> {
+    Lead,
+    Curator(CuratorId)
+}
+
 /*
  * BEGIN: =========================================================
  * Channel stuff
@@ -506,7 +512,7 @@ impl Default for ChannelPublishingStatus {
 /// Is only meant to affect visibility currently, but in the future
 /// it will also gate publication of new child content,
 /// editing properties, revenue flows, etc. 
-#[derive(Encode, Decode, Debug, Clone, PartialEq)]
+#[derive(Encode, Decode, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChannelCurationStatus {
     Normal,
     Censored
@@ -961,6 +967,7 @@ decl_event! {
         CuratorApplicationWithdrawn(CuratorApplicationId),
         CuratorRoleAccountUpdated(CuratorId, AccountId),
         CuratorRewardAccountUpdated(CuratorId, AccountId),
+        ChannelCurationStatusUpdated(CurationActor<CuratorId>, ChannelId, ChannelCurationStatus),
     }
 }
 
@@ -1095,12 +1102,27 @@ decl_module! {
         }
 
         /// Update channel curation status of a channel.
-        /// 
-        /// Can 
-        pub fn update_channel_curation_status(_origin) {
+        pub fn update_channel_curation_status(
+            origin,
+            curation_actor: CurationActor<CuratorId<T>>,
+            channel_id: ChannelId<T>,
+            new_status: ChannelCurationStatus
+        ) {
 
-            // WorkingGroupActor
+            // Ensure curation actor signed
+            Self::ensure_curation_actor_signed(origin, &curation_actor)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update channel curation status
+            ChannelById::<T>::mutate(channel_id,|channel| {
+                channel.curation_status = new_status;
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::ChannelCurationStatusUpdated(curation_actor, channel_id, new_status));
         }
 
         /// ...
@@ -1323,7 +1345,7 @@ decl_module! {
                     &stake_profile,
                     &CuratorRoleStage::Active,
                     &CuratorInduction::new(&lead_id, &id, &current_block),
-                    false,
+                    //false,
                     &principal_id
                 );
 
@@ -2031,6 +2053,28 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(curator)
+    }
+
+    fn ensure_curation_actor_signed(
+        origin: T::Origin,
+        curation_actor: &CurationActor<CuratorId<T>>
+    ) -> Result<(), &'static str> {
+
+        match curation_actor {
+            CurationActor::Lead => {
+
+                // Ensure lead is set and is origin signer
+                Self::ensure_origin_is_set_lead(origin).map(|_| ())
+
+            },
+            CurationActor::Curator(curator_id) => {
+
+                // Ensure there is a signer which matches role account of curator corresponding to provided id.
+                Self::ensure_active_curator_signed(origin, &curator_id).map(|_| ())
+
+            }
+        }
+
     }
 
     fn ensure_curator_application_exists(curator_application_id: &CuratorApplicationId<T>) -> Result<(
