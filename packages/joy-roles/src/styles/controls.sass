@@ -19,8 +19,30 @@
     -moz-transition: all $time ease-in-out
     transition: all $time ease-in-out
 
+@keyframes warning-pulse 
+  0% 
+    transform: scale(1)
+  
+  50% 
+    transform: scale(1.2)
+
+@keyframes pulse
+  0% 
+    text-shadow: 0 0 1px #fff
+  
+  100% 
+    text-shadow: 0 0 30px #fff
+  
+
 button
   position: relative
   overflow: hidden
   &.positive
     @include gleam-on-hover
+
+  &.negative:hover
+    .icon
+      animation: 1s infinite warning-pulse
+      &::before
+
+        animation: 1s infinite pulse
