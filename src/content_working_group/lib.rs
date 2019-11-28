@@ -86,6 +86,9 @@ pub type RewardRelationshipId<T> = <T as recurringrewards::Trait>::RewardRelatio
 /// Stake identifier in staking module
 pub type StakeId<T> = <T as stake::Trait>::StakeId;
 
+/// Type of permissions module prinicipal identifiers
+pub type PrincipalId<T> = <T as versioned_store_permissions::Trait>::PrincipalId;
+
 /*
  * MOVE ALL OF THESE OUT TO COMMON LATER
  */
@@ -335,7 +338,7 @@ impl<StakeId: Clone, BlockNumber: Clone> CuratorRoleStakeProfile<StakeId, BlockN
 /// Working group participant: curator
 /// This role can be staked, have reward and be inducted through the hiring module.
 #[derive(Encode, Decode, Default, Debug, Clone)]
-pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId, CuratorApplicationId> {
+pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId, CuratorApplicationId, PrincipalId> {
 
     /// Account used to authenticate in this role,
     pub role_account: AccountId,
@@ -353,7 +356,10 @@ pub struct Curator<AccountId, RewardRelationshipId, StakeId, BlockNumber, LeadId
     pub induction: CuratorInduction<LeadId, CuratorApplicationId, BlockNumber>,
 
     /// Whether this curator can unilaterally alter the curation status of a channel.
-    pub can_update_channel_curation_status: bool
+    pub can_update_channel_curation_status: bool,
+
+    /// Permissions module principal id
+    pub principal_id: PrincipalId
 }
 
 impl<
@@ -362,7 +368,8 @@ impl<
     StakeId: Clone,
     BlockNumber: Clone,
     LeadId: Clone,
-    ApplicationId: Clone
+    ApplicationId: Clone,
+    PrincipalId: Clone
     > 
     Curator<
         AccountId,
@@ -370,7 +377,8 @@ impl<
         StakeId,
         BlockNumber,
         LeadId,
-        ApplicationId
+        ApplicationId,
+        PrincipalId
         > {
 
     pub fn new(
@@ -379,7 +387,9 @@ impl<
         role_stake_profile: &Option<CuratorRoleStakeProfile<StakeId, BlockNumber>>,
         stage: &CuratorRoleStage<BlockNumber>,
         induction: &CuratorInduction<LeadId, ApplicationId, BlockNumber>,
-        can_update_channel_curation_status: bool) -> Self {
+        can_update_channel_curation_status: bool,
+        principal_id: &PrincipalId
+    ) -> Self {
 
         Curator {
             role_account: (*role_account).clone(),
@@ -387,7 +397,8 @@ impl<
             role_stake_profile: (*role_stake_profile).clone(),
             stage: (*stage).clone(),
             induction: (*induction).clone(),
-            can_update_channel_curation_status: can_update_channel_curation_status
+            can_update_channel_curation_status: can_update_channel_curation_status,
+            principal_id: (*principal_id).clone() 
         }
     }
 
@@ -522,7 +533,7 @@ impl Default for ChannelCurationStatus {
 
 /// A channel for publishing content.
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct Channel<MemberId, AccountId, BlockNumber> {
+pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
 
     /// Unique human readble channel name.
     pub channel_name: Vec<u8>, 
@@ -550,14 +561,40 @@ pub struct Channel<MemberId, AccountId, BlockNumber> {
     pub curation_status: ChannelCurationStatus,
 
     /// When channel was established.
-    pub created: BlockNumber
+    pub created: BlockNumber,
 
+    /// Permissions module principal id
+    pub principal_id: PrincipalId
 }
 
 /*
  * END: =========================================================
  * Channel stuff
  */
+
+
+/// Permissions module principal
+#[derive(Encode, Decode, Debug, Clone)]
+pub enum Principal<CuratorId, ChannelId> {
+
+    /// Its sloppy to have this here, less safe,
+    /// but its not worth the ffort to solve.
+    Lead,
+
+    Curator(CuratorId),
+
+    ChannelOwner(ChannelId)
+}
+
+/// Must be default constructible because it indirectly is a value in a storage map.
+/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
+impl<CuratorId, ChannelId> Default for Principal<CuratorId, ChannelId> {
+
+    fn default() -> Self {
+        Principal::Lead
+    }
+}
+
 
 /// The types of built in credential holders.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -923,7 +960,7 @@ decl_storage! {
         pub NextCuratorApplicationId get(next_curator_application_id) config(): CuratorApplicationId<T>;
 
         /// Maps identifier to corresponding channel.
-        pub ChannelById get(channel_by_id) config(): linked_map ChannelId<T> => Channel<T::MemberId, T::AccountId, T::BlockNumber>;
+        pub ChannelById get(channel_by_id) config(): linked_map ChannelId<T> => Channel<T::MemberId, T::AccountId, T::BlockNumber, PrincipalId<T>>;
 
         /// Identifier to be used by the next channel introduced.
         pub NextChannelId get(next_channel_id) config(): ChannelId<T>;
@@ -934,10 +971,16 @@ decl_storage! {
         pub ChannelIdByName get(channel_id_by_handle) config(): linked_map Vec<u8> => ChannelId<T>;
 
         /// Maps identifier to corresponding curator.
-        pub CuratorById get(curator_by_id) config(): linked_map CuratorId<T> => Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, CuratorApplicationId<T>>;
+        pub CuratorById get(curator_by_id) config(): linked_map CuratorId<T> => Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, CuratorApplicationId<T>, PrincipalId<T>>;
         
         /// Next identifier for new curator.
         pub NextCuratorId get(next_curator_id) config(): CuratorId<T>;
+
+        /// Maps identifier to principal.
+        pub PrincipalById get(principal_by_id) config(): linked_map PrincipalId<T> => Principal<CuratorId<T>, ChannelId<T>>;
+
+        /// Next identifier for 
+        pub NextPrincipalId get(next_principal_id) config(): PrincipalId<T>;
 
         /// Credentials for built in roles.
         pub CredentialOfLead get(credential_of_lead) config(): LeadCredential;
@@ -1051,6 +1094,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // Make and add new principal
+            let principal_id = Self::add_new_principal(&Principal::ChannelOwner(next_channel_id));
+
             // Construct channel
             let new_channel = Channel {
                 channel_name: channel_name.clone(), 
@@ -1061,7 +1107,8 @@ decl_module! {
                 role_account: role_account,
                 publishing_status: ChannelPublishingStatus::NotPublished,
                 curation_status: ChannelCurationStatus::Normal,
-                created: <system::Module<T>>::block_number()
+                created: <system::Module<T>>::block_number(),
+                principal_id: principal_id
             };
 
             // Add channel to ChannelById under id
@@ -1096,7 +1143,7 @@ decl_module! {
             let signer_account = ensure_signed(origin)?;
 
             // Ensure channel id is valid
-            let channel = Self::ensure_channel_id_is_valid(channel_id)?;
+            let channel = Self::ensure_channel_id_is_valid(&channel_id)?;
 
             // Ensure origin matches channel role account
             ensure!(
@@ -1381,6 +1428,12 @@ decl_module! {
                     } else {
                         None
                     };
+
+                // Get curator id
+                let new_curator_id = NextCuratorId::<T>::get();
+
+                // Make and add new principal
+                let principal_id = Self::add_new_principal(&Principal::Curator(new_curator_id));
                 
                 // Construct curator
                 let curator = Curator::new(
@@ -1389,11 +1442,9 @@ decl_module! {
                     &stake_profile,
                     &CuratorRoleStage::Active,
                     &CuratorInduction::new(&lead_id, &id, &current_block),
-                    false
+                    false,
+                    &principal_id
                 );
-
-                // Get curator id
-                let new_curator_id = NextCuratorId::<T>::get();
 
                 // Store curator
                 CuratorById::<T>::insert(new_curator_id, curator);
@@ -1866,6 +1917,61 @@ impl<T: Trait> Module<T> {
 }
 */
 
+impl<T: Trait> versioned_store_permissions::PrincipalIdChecker<T> for Module<T> {
+
+    fn account_can_act_as_principal(account: &T::AccountId, id: PrincipalId<T>) -> bool {
+
+        // Check that principal exists
+        if !PrincipalById::<T>::exists(&id) {
+            return false;
+        }
+
+        // Get principal
+        let principal = PrincipalById::<T>::get(&id);
+
+        // Get possible 
+        let opt_prinicipal_account = 
+            match principal {
+
+                Principal::Lead => {
+
+                    // Try to get lead
+                    match Self::ensure_lead_is_set() {
+                        Ok((_, lead)) => Some(lead.role_account),
+                        Err(_) => None
+                    }
+                },
+
+                Principal::Curator(curator_id) => {
+
+                    Some(
+                        Self::ensure_curator_exists(&curator_id)
+                        .expect("Curator must exist")
+                        .role_account
+                    )
+                },
+
+                Principal::ChannelOwner(channel_id) => {
+
+                    Some(
+                        Self::ensure_channel_id_is_valid(&channel_id)
+                        .expect("Channel must exist")
+                        .role_account
+                    )
+                }
+            };
+
+        // Compare, possibly set, principal account with the given account
+        match opt_prinicipal_account {
+            Some(principal_account) => *account == principal_account,
+            None => false
+        }
+    }
+
+
+
+}
+
 impl<T: Trait> Module<T> {
 
     fn ensure_can_register_role_on_member(
@@ -1937,7 +2043,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_channel_id_is_valid(channel_id: ChannelId<T>) -> Result<Channel<T::MemberId, T::AccountId, T::BlockNumber>,&'static str> {
+    fn ensure_channel_id_is_valid(channel_id: &ChannelId<T>) -> Result<Channel<T::MemberId, T::AccountId, T::BlockNumber, PrincipalId<T>>,&'static str> {
 
         if ChannelById::<T>::exists(channel_id) {
 
@@ -2021,7 +2127,7 @@ impl<T: Trait> Module<T> {
         Ok((curator_opening, opening))
     }
 
-    fn ensure_curator_exists(curator_id: &CuratorId<T>) -> Result<Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId>, &'static str> {
+    fn ensure_curator_exists(curator_id: &CuratorId<T>) -> Result<Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId, PrincipalId<T>>, &'static str> {
 
         ensure!(
             CuratorById::<T>::exists(curator_id),
@@ -2045,7 +2151,7 @@ impl<T: Trait> Module<T> {
         Ok(unstaker)
     }
 
-    fn ensure_active_curator_exists(curator_id: &CuratorId<T>) -> Result<Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId>, &'static str> {
+    fn ensure_active_curator_exists(curator_id: &CuratorId<T>) -> Result<Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId, PrincipalId<T>>, &'static str> {
 
         // Ensuring curator actually exists
         let curator = Self::ensure_curator_exists(curator_id)?;
@@ -2062,7 +2168,7 @@ impl<T: Trait> Module<T> {
         Ok(curator)
     }
 
-    fn ensure_active_curator_signed(origin: T::Origin, curator_id: &CuratorId<T>) -> Result<Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId>, &'static str>{
+    fn ensure_active_curator_signed(origin: T::Origin, curator_id: &CuratorId<T>) -> Result<Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, T::ApplicationId, PrincipalId<T>>, &'static str>{
 
         // Ensure that it is signed
         let signer_account = ensure_signed(origin)?;
@@ -2168,7 +2274,7 @@ impl<T: Trait> Module<T> {
 
     fn deactivate_curator(
         curator_id: &CuratorId<T>,
-        curator: &Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, CuratorApplicationId<T>>,
+        curator: &Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, CuratorApplicationId<T>, PrincipalId<T>>,
         exit_initiation_origin: &CuratorExitInitiationOrigin,
         rationale_text: &Vec<u8>) {
 
@@ -2246,5 +2352,21 @@ impl<T: Trait> Module<T> {
 
         // Trigger event
         Self::deposit_event(event);
+    }
+
+    /// Adds the given principal to storage under the returned identifier.
+    fn add_new_principal(principal: &Principal<CuratorId<T>, ChannelId<T>>) -> PrincipalId<T> {
+
+        // Get principal id for curator
+        let principal_id = NextPrincipalId::<T>::get();
+
+        // Update next principal id value
+        NextPrincipalId::<T>::mutate(|id| *id += PrincipalId::<T>::one());
+
+        // Store principal
+        PrincipalById::<T>::insert(principal_id, principal);
+
+        // Return id
+        principal_id
     }
 }
