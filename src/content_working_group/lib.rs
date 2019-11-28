@@ -1575,8 +1575,7 @@ decl_module! {
             curator_id: CuratorId<T>,
             rationale_text: Vec<u8>
         ) {
-            // Ensure origin is signed and from account matching existing 
-            // active curator corresponding to id.
+            // Ensure there is a signer which matches role account of curator corresponding to provided id.
             let active_curator = Self::ensure_active_curator_signed(origin, &curator_id)?;
 
             //
