@@ -969,7 +969,7 @@ decl_event! {
         CuratorApplicationWithdrawn(CuratorApplicationId),
         CuratorRoleAccountUpdated(CuratorId, AccountId),
         CuratorRewardAccountUpdated(CuratorId, AccountId),
-        ChannelCurationStatusUpdated(CurationActor<CuratorId>, ChannelId, ChannelCurationStatus),
+        ChannelUpdatedByCurationActor(ChannelId),
     }
 }
 
@@ -2295,5 +2295,48 @@ impl<T: Trait> Module<T> {
 
         // Return id
         principal_id
+    }
+
+    fn update_channel(
+        channel_id: &ChannelId<T>,
+        new_channel_name: &Option<Vec<u8>>,
+        new_verified: &Option<bool>,
+        new_descriptin: &Option<Vec<u8>>,
+        new_publishing_status: &Option<ChannelPublishingStatus>,
+        new_curation_status: &Option<ChannelCurationStatus>
+    ) {
+
+        // Update name to channel mapping if there is a new name mapping
+        if let Some(ref channel_name) = new_channel_name {
+            ChannelIdByName::<T>::insert(channel_name.clone(), channel_id);
+        }
+
+        // Update channel
+        ChannelById::<T>::mutate(channel_id,|channel| {
+
+            if let Some(ref channel_name) = new_channel_name {
+                channel.channel_name = channel_name.clone();
+            }
+
+            if let Some(ref verified) = new_verified {
+                channel.verified = *verified;
+            }
+
+            if let Some(ref description) = new_descriptin {
+                channel.description = description.clone();
+            }
+
+            if let Some(ref publishing_status) = new_publishing_status {
+                channel.publishing_status = publishing_status.clone();
+            }
+
+            if let Some(ref curation_status) = new_curation_status {
+                channel.curation_status = *curation_status;
+            }
+        });
+
+        // Trigger event
+        Self::deposit_event(RawEvent::ChannelUpdatedByCurationActor(*channel_id));
+
     }
 }
