@@ -4,10 +4,10 @@ use node_runtime::{
     },
     AccountId, BlockNumber, ForumConfig, Moment,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::Result;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 struct ForumData {
     categories: Vec<(CategoryId, Category<BlockNumber, Moment, AccountId>)>,
     posts: Vec<(PostId, Post<BlockNumber, Moment, AccountId>)>,
@@ -15,7 +15,7 @@ struct ForumData {
 }
 
 fn parse_forum_json() -> Result<ForumData> {
-    let data = include_str!("../res/forum_data.json");
+    let data = include_str!("../../res/forum_data_acropolis_serialized.json");
     serde_json::from_str(data)
 }
 

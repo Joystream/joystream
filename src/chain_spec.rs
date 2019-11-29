@@ -306,7 +306,9 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
             default_paid_membership_fee: 100u128,
             members: crate::members_config::initial_members(),
         }),
-        forum: Some(crate::forum_config::create(endowed_accounts[0].clone())),
+        forum: Some(crate::forum_config::from_serialized::create(
+            endowed_accounts[0].clone(),
+        )),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
@@ -431,7 +433,7 @@ pub fn testnet_genesis(
             default_paid_membership_fee: 100u128,
             members: initial_members,
         }),
-        forum: Some(crate::forum_config::create(root_key)),
+        forum: Some(crate::forum_config::from_serialized::create(root_key)),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),

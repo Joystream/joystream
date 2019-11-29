@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::Result;
 
 use primitives::crypto::{AccountId32, Ss58Codec};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 struct Member {
     /// SS58 Encoded public key
     address: String,
@@ -25,7 +25,7 @@ struct Member {
 // }
 
 fn parse_members_json() -> Result<Vec<Member>> {
-    let data = include_str!("../res/initial_members.json");
+    let data = include_str!("../res/acropolis_members.json");
     serde_json::from_str(data)
 }
 
