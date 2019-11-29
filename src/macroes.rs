@@ -15,7 +15,7 @@ macro_rules! ensure_eq {
 ///
 /// Returns ...
 #[macro_export]
-macro_rules! ensure_map_has_mapping_with_key {
+macro_rules! ensure_map_key {
     ($map_variable_name:ident , $runtime_trait:tt, $key:expr, $error:expr) => {{
         if <$map_variable_name<$runtime_trait>>::exists($key) {
             let value = <$map_variable_name<$runtime_trait>>::get($key);
@@ -35,7 +35,7 @@ macro_rules! ensure_map_has_mapping_with_key {
 #[macro_export]
 macro_rules! ensure_opening_exists {
     ($runtime_trait:tt, $opening_id:expr, $error:expr) => {{
-        ensure_map_has_mapping_with_key!(OpeningById, $runtime_trait, $opening_id, $error)
+        ensure_map_key!(OpeningById, $runtime_trait, $opening_id, $error)
     }};
 }
 
@@ -45,7 +45,7 @@ macro_rules! ensure_opening_exists {
 
     ($runtime_trait:tt, $application_id:expr, $error:expr, auto_fetch_opening) => {{
 
-        let application = ensure_map_has_mapping_with_key!(
+        let application = ensure_map_key!(
             ApplicationById,
             $runtime_trait,
             $application_id,
@@ -67,7 +67,7 @@ macro_rules! ensure_opening_exists {
 #[macro_export]
 macro_rules! ensure_application_exists {
     ($runtime_trait:tt, $application_id:expr, $error:expr) => {{
-        ensure_map_has_mapping_with_key!(ApplicationById, $runtime_trait, $application_id, $error)
+        ensure_map_key!(ApplicationById, $runtime_trait, $application_id, $error)
     }};
 
     ($runtime_trait:tt, $application_id:expr, $error:expr, auto_fetch_opening) => {{
