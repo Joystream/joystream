@@ -1094,28 +1094,40 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelOwnershipTransferred(channel_id));
         }
 
-        /// Update channel curation status of a channel.
-        pub fn update_channel_curation_status(
+        /// Channel owner updates some channel properties
+        pub fn update_channel_as_owner(
             origin,
-            curation_actor: CurationActor<CuratorId<T>>,
             channel_id: ChannelId<T>,
-            new_status: ChannelCurationStatus
-        ) {
+            new_channel_name: Option<Vec<u8>>,
+            new_description: Option<Vec<u8>>,
+            new_publishing_status: Option<ChannelPublishingStatus>) {
 
-            // Ensure curation actor signed
-            Self::ensure_curation_actor_signed(origin, &curation_actor)?;
+            // Ensure channel owner has signed
+            Self::ensure_channel_owner_signed(origin, &channel_id)?;
+
+            // If set, ensure handle is acceptable length
+            if let Some(ref channel_name) = new_channel_name {
+                Self::ensure_channel_name_is_valid(channel_name)?;
+            }
+
+            // If set, ensure description is acceptable length
+            if let Some(ref description) = new_description {
+                Self::ensure_channel_description_is_valid(description)?;
+            }
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Update channel curation status
-            ChannelById::<T>::mutate(channel_id,|channel| {
-                channel.curation_status = new_status;
-            });
+            Self::update_channel(
+                &channel_id,
+                &None,
+                &None,
+                &new_description,
+                &new_publishing_status,
+                &None
+            );
 
-            // Trigger event
-            Self::deposit_event(RawEvent::ChannelCurationStatusUpdated(curation_actor, channel_id, new_status));
         }
 
         /// Update channel as a curation actor
