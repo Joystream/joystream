@@ -1055,17 +1055,8 @@ decl_module! {
         /// Notice that transfers are unilateral, so new owner cannot block. This may be problematic: https://github.com/Joystream/substrate-runtime-joystream/issues/95
         pub fn transfer_channel_ownership(origin, channel_id: ChannelId<T>, new_owner: T::MemberId, new_role_account: T::AccountId) {
 
-            // Ensure that it is signed
-            let signer_account = ensure_signed(origin)?;
-
-            // Ensure channel id is valid
-            let channel = Self::ensure_channel_id_is_valid(&channel_id)?;
-
-            // Ensure origin matches channel role account
-            ensure!(
-                signer_account == channel.role_account,
-                MSG_ORIGIN_DOES_NOT_MATCH_CHANNEL_ROLE_ACCOUNT
-            );
+            // Ensure channel owner has signed
+            let channel = Self::ensure_channel_owner_signed(origin, &channel_id)?;
 
             // Ensure prospective new owner can actually become a channel owner
             let (new_owner_as_channel_owner, _next_channel_id) = Self::ensure_can_register_channel_owner_role_on_member(&new_owner, Some(channel_id))?;
@@ -2075,6 +2066,27 @@ impl<T: Trait> Module<T> {
             }
         }
 
+    }
+
+    /// Ensure origin is signed by account matching role account corresponding to the channel
+    fn ensure_channel_owner_signed(
+        origin: T::Origin,
+        channel_id: &ChannelId<T>,
+    ) -> Result<Channel<T::MemberId, T::AccountId, T::BlockNumber, PrincipalId<T>>, &'static str> {
+
+        // Ensure that it is signed
+        let signer_account = ensure_signed(origin)?;
+
+        // Ensure channel id is valid
+        let channel = Self::ensure_channel_id_is_valid(&channel_id)?;
+
+        // Ensure origin matches channel role account
+        ensure!(
+            signer_account == channel.role_account,
+            MSG_ORIGIN_DOES_NOT_MATCH_CHANNEL_ROLE_ACCOUNT
+        );
+
+        Ok(channel)
     }
 
     fn ensure_curator_application_exists(curator_application_id: &CuratorApplicationId<T>) -> Result<(
