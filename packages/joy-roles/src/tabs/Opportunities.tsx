@@ -70,7 +70,7 @@ export function openingDescription(state: OpeningState): string {
   return openingStateMarkup<string>(state, "description")
 }
 
-function openingIcon(state: OpeningState) {
+export function openingIcon(state: OpeningState) {
   const icon = openingStateMarkup<SemanticICONS>(state, "icon")
   const spin = openingStateMarkup<boolean>(state, "iconSpin")
 
@@ -408,7 +408,7 @@ export function OpeningBodyReviewInProgress(props: OpeningStageClassification) {
 
       <p>
         <span>Candidates will be selected by block&nbsp;
-					<NumberFormat value={props.review_end_block}
+			<NumberFormat value={props.review_end_block}
             displayType="text"
             thousandSeparator={true}
           />
@@ -418,7 +418,7 @@ export function OpeningBodyReviewInProgress(props: OpeningStageClassification) {
           <Moment format="MMM DD, YYYY  HH:mm:ss" date={props.review_end_time} interval={0} />
         </strong>
         )
-                <span> at the latest.</span>
+        <span> at the latest.</span>
       </p>
     </Message>
   )

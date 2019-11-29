@@ -124,3 +124,11 @@ $colours: (
 @function colour($name, $tone: 'base') {
     @return map-get(map-get($colours, $name), $tone);
 }
+
+@mixin text-colour($name, $tone: 'base') {
+	color: colour($name, $tone) !important
+}
+
+@mixin bg-colour($name, $tone: 'base') {
+	background-color: colour($name, $tone) !important
+}
