@@ -14,10 +14,10 @@ pub use runtime_primitives::{
 
 use srml_support::{impl_outer_origin, parameter_types};
 
+use hiring;
 use minting;
 use recurringrewards;
 use stake;
-use hiring;
 use versioned_store;
 use versioned_store_permissions;
 
@@ -136,7 +136,7 @@ impl versioned_store::Trait for Test {
 impl versioned_store_permissions::Trait for Test {
     type PrincipalId = u64;
     type PrincipalIdChecker = ();
-    type CreateClassPermissionsChecker =  ();
+    type CreateClassPermissionsChecker = ();
 }
 
 impl membership::Trait for Test {

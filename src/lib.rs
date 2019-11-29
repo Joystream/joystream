@@ -409,7 +409,6 @@ mod service_discovery;
 use roles::actors;
 use service_discovery::discovery;
 
-
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;
 

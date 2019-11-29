@@ -403,7 +403,7 @@ pub enum ControllerAccountForMemberCheckFailed {
 pub enum MemberControllerAccountDidNotSign {
     UnsignedOrigin,
     MemberIdInvalid,
-    SignerControllerAccountMismatch
+    SignerControllerAccountMismatch,
 }
 
 impl<T: Trait> Module<T> {
@@ -413,10 +413,11 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure that given member has given account as the controller account
-    pub fn ensure_is_controller_account_for_member(member_id: &T::MemberId, account: &T::AccountId) -> Result<Profile<T>, ControllerAccountForMemberCheckFailed> {
-
+    pub fn ensure_is_controller_account_for_member(
+        member_id: &T::MemberId,
+        account: &T::AccountId,
+    ) -> Result<Profile<T>, ControllerAccountForMemberCheckFailed> {
         if MemberProfile::<T>::exists(member_id) {
-
             let profile = MemberProfile::<T>::get(member_id).unwrap();
 
             if profile.controller_account == *account {
@@ -583,17 +584,18 @@ impl<T: Trait> Module<T> {
             .ok()
             .map_or(false, |profile| profile.roles.occupies_role(role))
     }
-    
-    pub fn ensure_member_controller_account_signed(
-        origin: T::Origin, 
-        member_id: &T::MemberId
-    ) -> Result<T::AccountId, MemberControllerAccountDidNotSign> {
 
+    pub fn ensure_member_controller_account_signed(
+        origin: T::Origin,
+        member_id: &T::MemberId,
+    ) -> Result<T::AccountId, MemberControllerAccountDidNotSign> {
         // Ensure transaction is signed.
-        let signer_account = ensure_signed(origin).map_err(|_| MemberControllerAccountDidNotSign::UnsignedOrigin)?;
+        let signer_account =
+            ensure_signed(origin).map_err(|_| MemberControllerAccountDidNotSign::UnsignedOrigin)?;
 
         // Ensure member exists
-        let profile = Self::ensure_profile(member_id.clone()).map_err(|_| MemberControllerAccountDidNotSign::MemberIdInvalid)?;
+        let profile = Self::ensure_profile(member_id.clone())
+            .map_err(|_| MemberControllerAccountDidNotSign::MemberIdInvalid)?;
 
         ensure!(
             profile.controller_account == signer_account,
@@ -613,7 +615,6 @@ impl<T: Trait> Module<T> {
         member_id: &T::MemberId,
         actor_in_role: &ActorInRole<T::ActorId>,
     ) -> Result<Profile<T>, &'static str> {
-
         // Ensure member exists
         let profile = Self::ensure_profile(*member_id)?;
 
@@ -643,7 +644,6 @@ impl<T: Trait> Module<T> {
         member_id: T::MemberId,
         actor_in_role: &ActorInRole<T::ActorId>,
     ) -> Result<(), &'static str> {
-
         // Policy check
         let mut profile = Self::can_register_role_on_member(&member_id, actor_in_role)?;
 
