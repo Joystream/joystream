@@ -142,6 +142,8 @@ static MSG_CURATOR_HAS_NO_REWARD: &str =
     "Curator has no recurring reward";
 static MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER: &str =
     "Curator not controlled by member";
+static MSG_CHANNEL_NAME_ALREADY_TAKEN: &str =
+    "Channel name is already taken";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -1000,8 +1002,8 @@ decl_module! {
             // Ensure prospective owner member is currently allowed to become channel owner
             let (member_in_role, next_channel_id) = Self::ensure_can_register_channel_owner_role_on_member(&owner, None)?;
 
-            // Ensure handle is acceptable length
-            Self::ensure_channel_handle_is_valid(&channel_name)?;
+            // Ensure channel name is acceptable length
+            Self::ensure_channel_name_is_valid(&channel_name)?;
 
             // Ensure description is acceptable length
             Self::ensure_channel_description_is_valid(&description)?;
@@ -1864,12 +1866,21 @@ impl<T: Trait> Module<T> {
 
     // TODO: convert InputConstraint ensurer routines into macroes
 
-    fn ensure_channel_handle_is_valid(handle: &Vec<u8>) -> dispatch::Result {
+    fn ensure_channel_name_is_valid(channel_name: &Vec<u8>) -> dispatch::Result {
+
         ChannelHandleConstraint::get().ensure_valid(
-            handle.len(),
+            channel_name.len(),
             MSG_CHANNEL_HANDLE_TOO_SHORT,
             MSG_CHANNEL_HANDLE_TOO_LONG,
-        )
+        )?;
+
+        // Has to not already be occupied
+        ensure!(
+            ChannelIdByName::<T>::exists(channel_name),
+            MSG_CHANNEL_NAME_ALREADY_TAKEN
+        );
+
+        Ok(())
     }
 
     fn ensure_channel_description_is_valid(description: &Vec<u8>) -> dispatch::Result {
