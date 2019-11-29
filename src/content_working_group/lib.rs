@@ -1118,14 +1118,38 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCurationStatusUpdated(curation_actor, channel_id, new_status));
         }
 
-        /// ...
-        pub fn update_channel_as_owner(_origin) {
+        /// Update channel as a curation actor
+        pub fn update_channel_as_curation_actor(
+            origin,
+            curation_actor: CurationActor<CuratorId<T>>,
+            channel_id: ChannelId<T>,
+            new_verified: Option<bool>,
+            new_description: Option<Vec<u8>>,
+            new_curation_status: Option<ChannelCurationStatus>
+            ) {
 
-        }
+            // Ensure curation actor signed
+            Self::ensure_curation_actor_signed(origin, &curation_actor)?;
 
-        /// ...
-        pub fn update_channel_as_curator(_origin) {
+            // If set, ensure description is acceptable length
+            if let Some(ref description) = new_description {
+                Self::ensure_channel_description_is_valid(description)?;
+            }
 
+            //
+            // == MUTATION SAFE ==
+            //
+
+
+            Self::update_channel(
+                &channel_id,
+                &None,
+                &new_verified,
+                &new_description,
+                &None,
+                &new_curation_status
+            );
+            
         }
 
         /// Add an opening for a curator role.
