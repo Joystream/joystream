@@ -892,7 +892,7 @@ decl_storage! {
         /// Identifier to be used by the next channel introduced.
         pub NextChannelId get(next_channel_id) config(): ChannelId<T>;
 
-        /// Maps (unique+immutable) channel handle to the corresponding identifier for the channel.
+        /// Maps (unique) channel handle to the corresponding identifier for the channel.
         /// Mapping is required to allow efficient (O(log N)) on-chain verification that a proposed handle is indeed unique 
         /// at the time it is being proposed.
         pub ChannelIdByName get(channel_id_by_handle) config(): linked_map Vec<u8> => ChannelId<T>;
