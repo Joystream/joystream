@@ -473,7 +473,7 @@ impl<T: Trait> Module<T> {
         <OpeningById<T>>::insert(new_opening_id, new_opening);
 
         // Update NextOpeningId counter
-        <NextOpeningId<T>>::mutate(|id| *id += T::OpeningId::from(1));
+        <NextOpeningId<T>>::mutate(|id| *id += T::OpeningId::one());
 
         // Return
         Ok(new_opening_id)
