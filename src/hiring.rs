@@ -138,7 +138,9 @@ pub enum ActiveOpeningStage<BlockNumber> {
 
         started_accepting_applicants_at_block: BlockNumber,
 
-        started_review_period_at_block: BlockNumber,
+        // Whether the review period had ever been started, and if so, at what block.
+        // Deactivation can also occur directly from the AcceptingApplications stage.
+        started_review_period_at_block: Option<BlockNumber>,
     },
 }
 

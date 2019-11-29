@@ -249,7 +249,7 @@ decl_module! {
                             cause: hiring::OpeningDeactivationCause::ReviewPeriodExpired,
                             deactivated_at_block: now,
                             started_accepting_applicants_at_block: started_accepting_applicants_at_block,
-                            started_review_period_at_block: started_review_period_at_block,
+                            started_review_period_at_block: Some(started_review_period_at_block),
                         },
 
                         applicants: BTreeSet::new(),
@@ -495,23 +495,47 @@ impl<T: Trait> Module<T> {
         let (
             active_stage,
             applicants,
-            _active_application_count,
-            _unstaking_application_count,
-            _deactivated_application_count,
+            active_application_count,
+            unstaking_application_count,
+            deactivated_application_count,
         ) = ensure_opening_is_active!(
             opening.stage,
             CancelOpeningError::OpeningNotInCancellableStage
         )?;
 
-        // NB: Not macroised yet, since this is only place where its used.
-        ensure!(
-            match active_stage {
-                ActiveOpeningStage::AcceptingApplications { .. }
-                | ActiveOpeningStage::ReviewPeriod { .. } => true,
-                _ => false,
+        // 
+        let current_block_height = <system::Module<T>>::block_number(); // move later!
+
+        let new_active_stage = 
+        match active_stage {
+            ActiveOpeningStage::AcceptingApplications { started_accepting_applicants_at_block } => {
+
+                Ok(
+                    ActiveOpeningStage::Deactivated {
+                        cause: OpeningDeactivationCause::CancelledAcceptingApplications,
+                        deactivated_at_block: current_block_height,
+                        started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                        started_review_period_at_block: None,
+                    }
+                )
+
             },
-            CancelOpeningError::OpeningNotInCancellableStage
-        );
+            ActiveOpeningStage::ReviewPeriod { started_accepting_applicants_at_block, started_review_period_at_block} => {
+
+                Ok(
+                    ActiveOpeningStage::Deactivated {
+                        cause: OpeningDeactivationCause::CancelledInReviewPeriod,
+                        deactivated_at_block: current_block_height,
+                        started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                        started_review_period_at_block: Some(started_review_period_at_block),
+                    }
+                )
+
+            },
+            ActiveOpeningStage::Deactivated {..} => {
+                Err(CancelOpeningError::OpeningNotInCancellableStage)
+            },
+        }?;
 
         // Ensure unstaking periods are OK.
         ensure_opt_unstaking_period_is_ok!(
@@ -531,6 +555,20 @@ impl<T: Trait> Module<T> {
         //
         // == MUTATION SAFE ==
         //
+
+        // Create and store new cancelled opening
+        let new_opening = Opening{
+            stage: OpeningStage::Active{
+                stage: new_active_stage,
+                applicants: applicants.clone(),
+                active_application_count: active_application_count,
+                unstaking_application_count: unstaking_application_count,
+                deactivated_application_count: deactivated_application_count,
+            },
+            ..opening
+        };
+
+        OpeningById::<T>::insert(opening_id, new_opening);
 
         // Map with applications
         let applications_map = Self::application_id_iter_to_map(applicants.iter());
@@ -834,7 +872,7 @@ impl<T: Trait> Module<T> {
                     cause: OpeningDeactivationCause::Filled,
                     deactivated_at_block: current_block_height,
                     started_accepting_applicants_at_block: started_accepting_applicants_at_block,
-                    started_review_period_at_block: started_review_period_at_block,
+                    started_review_period_at_block: Some(started_review_period_at_block),
                 },
                 //.. <== cant use here, same issue
                 applicants: applicants,
