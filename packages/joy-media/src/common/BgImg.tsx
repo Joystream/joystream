@@ -1,12 +1,38 @@
-import React from 'react';
+import React, { CSSProperties } from 'react';
 
 type Props = {
   url: string,
-  className?: string
-}
+  size?: number,
+  circle?: boolean,
+  className?: string,
+  style?: CSSProperties
+};
 
 export function BgImg (props: Props) {
-  const style = { backgroundImage: `url(${props.url})` };
+  const { url, size, circle, className, style } = props;
 
-  return <div className={`JoyBgImg ` + props.className} style={style} />
+  const fullClass = 'JoyBgImg ' + className;
+
+  let fullStyle: CSSProperties = {
+    backgroundImage: `url(${url})`,
+  };
+
+  if (size) {
+    fullStyle = Object.assign(fullStyle, {
+      width: size,
+      height: size,
+      minWidth: size,
+      minHeight: size
+    })
+  }
+
+  if (circle) {
+    fullStyle = Object.assign(fullStyle, {
+      borderRadius: '50%'
+    })
+  }
+
+  fullStyle = Object.assign(fullStyle, style);
+
+  return <div className={fullClass} style={fullStyle} />;
 }

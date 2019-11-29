@@ -34,8 +34,8 @@ export function ViewMusicChannel (props: Props) {
     !tracks.length
       ? <NoTracks />
       : <Section title={`Music tracks`}>
-        {tracks.map(x => <MusicTrackReaderPreview {...x} />)}
-      </Section>
+          {tracks.map(x => <MusicTrackReaderPreview {...x} />)}
+        </Section>
   );
   
   return <div className='JoyViewChannel'>

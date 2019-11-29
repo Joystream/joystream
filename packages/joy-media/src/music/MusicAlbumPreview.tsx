@@ -9,13 +9,16 @@ export type MusicAlbumPreviewProps = {
   artist: string,
   cover: string,
   tracksCount: number,
+  size?: number,
   withActions?: boolean
 };
 
 export function MusicAlbumPreview (props: MusicAlbumPreviewProps) {
+  const { size = 200 } = props;
+  
   return <div className='JoyMusicAlbumPreview'>
   
-    <BgImg className='AlbumCover' url={props.cover} />
+    <BgImg className='AlbumCover' url={props.cover} size={size} />
 
     <div className='AlbumDescription'>
       <h3 className='AlbumTitle'>{props.title}</h3>
