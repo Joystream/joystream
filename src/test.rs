@@ -52,7 +52,7 @@ fn add_opening_success_waiting_to_begin() {
                     stage: ActiveOpeningStage::AcceptingApplications {
                         started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT
                     },
-                    applicants: BTreeSet::new(),
+                    applications_added: BTreeSet::new(),
                     active_application_count: 0,
                     unstaking_application_count: 0,
                     deactivated_application_count: 0

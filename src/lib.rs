@@ -155,7 +155,7 @@ decl_module! {
                         stage: hiring::ActiveOpeningStage::AcceptingApplications {
                             started_accepting_applicants_at_block: now
                         },
-                        applicants: BTreeSet::new(),
+                        applications_added: BTreeSet::new(),
                         active_application_count: 0,
                         unstaking_application_count: 0,
                         deactivated_application_count: 0
@@ -173,7 +173,7 @@ decl_module! {
 
                     if let hiring::OpeningStage::Active {
                         ref stage,
-                        ref applicants,
+                        ref applications_added,
                         ref active_application_count,
                         ref unstaking_application_count,
                         ref deactivated_application_count
@@ -189,7 +189,7 @@ decl_module! {
                                     opening.clone(),
                                     (
                                         stage.clone(),
-                                        applicants.clone(),
+                                        applications_added.clone(),
                                         *active_application_count,
                                         *unstaking_application_count,
                                         *deactivated_application_count,
@@ -211,7 +211,7 @@ decl_module! {
                 opening,
                 (
                     _stage,
-                    applicants,
+                    applications_added,
                     _active_application_count,
                     _unstaking_application_count,
                     _deactivated_application_count,
@@ -229,7 +229,7 @@ decl_module! {
 
 
                 // Get applications
-                let applications_map = Self::application_id_iter_to_map(applicants.iter());
+                let applications_map = Self::application_id_iter_to_map(applications_added.iter());
 
                 // Deactivate
                 Self::initiate_application_deactivations(
@@ -252,7 +252,7 @@ decl_module! {
                             started_review_period_at_block: Some(started_review_period_at_block),
                         },
 
-                        applicants: BTreeSet::new(),
+                        applications_added: BTreeSet::new(),
                         active_application_count: 0,
                         unstaking_application_count: 0,
                         deactivated_application_count: 0
@@ -356,7 +356,7 @@ pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
 
     pub active_stage: ActiveOpeningStage<T::BlockNumber>,
     
-    pub applicants: BTreeSet<T::ApplicationId>,
+    pub applications_added: BTreeSet<T::ApplicationId>,
     
     pub active_application_count: u32,
     
@@ -443,7 +443,7 @@ impl<T: Trait> Module<T> {
                 },
 
                 // Empty set of applicants
-                applicants: BTreeSet::new(), // Map::new(),
+                applications_added: BTreeSet::new(), // Map::new(),
 
                 // All counters set to 0
                 active_application_count: 0,
@@ -494,7 +494,7 @@ impl<T: Trait> Module<T> {
 
         let (
             active_stage,
-            applicants,
+            applications_added,
             active_application_count,
             unstaking_application_count,
             deactivated_application_count,
@@ -560,7 +560,7 @@ impl<T: Trait> Module<T> {
         let new_opening = Opening{
             stage: OpeningStage::Active{
                 stage: new_active_stage,
-                applicants: applicants.clone(),
+                applications_added: applications_added.clone(),
                 active_application_count: active_application_count,
                 unstaking_application_count: unstaking_application_count,
                 deactivated_application_count: deactivated_application_count,
@@ -571,7 +571,7 @@ impl<T: Trait> Module<T> {
         OpeningById::<T>::insert(opening_id, new_opening);
 
         // Map with applications
-        let applications_map = Self::application_id_iter_to_map(applicants.iter());
+        let applications_map = Self::application_id_iter_to_map(applications_added.iter());
 
         // Initiate deactivation of all active applications
         let net_result = Self::initiate_application_deactivations(
@@ -631,7 +631,7 @@ impl<T: Trait> Module<T> {
                 stage: hiring::ActiveOpeningStage::AcceptingApplications {
                     started_accepting_applicants_at_block: current_block_height,
                 },
-                applicants: BTreeSet::new(), //BTreeMap::new(),
+                applications_added: BTreeSet::new(), //BTreeMap::new(),
                 active_application_count: 0,
                 unstaking_application_count: 0,
                 deactivated_application_count: 0,
@@ -654,7 +654,7 @@ impl<T: Trait> Module<T> {
 
         let (
             active_stage,
-            applicants,
+            applications_added,
             active_application_count,
             unstaking_application_count,
             deactivated_application_count,
@@ -680,7 +680,7 @@ impl<T: Trait> Module<T> {
                     started_accepting_applicants_at_block: started_accepting_applicants_at_block,
                     started_review_period_at_block: current_block_height,
                 },
-                applicants,
+                applications_added,
                 active_application_count,
                 unstaking_application_count,
                 deactivated_application_count,
@@ -710,7 +710,7 @@ impl<T: Trait> Module<T> {
 
         let (
             active_stage,
-            applicants,
+            applications_added,
             active_application_count,
             unstaking_application_count,
             deactivated_application_count,
@@ -841,7 +841,7 @@ impl<T: Trait> Module<T> {
         // Deactivate all unsuccessful applications, with cause being not being hired.
 
         // First get all failed applications by their id.
-        let failed_applications_map = applicants
+        let failed_applications_map = applications_added
             .difference(&successful_applications)
             .cloned()
             .map(|application_id| {
@@ -875,7 +875,7 @@ impl<T: Trait> Module<T> {
                     started_review_period_at_block: Some(started_review_period_at_block),
                 },
                 //.. <== cant use here, same issue
-                applicants: applicants,
+                applications_added: applications_added,
                 active_application_count: active_application_count,
                 unstaking_application_count: unstaking_application_count,
                 deactivated_application_count: deactivated_application_count,
@@ -925,7 +925,7 @@ impl<T: Trait> Module<T> {
 
         let (
             active_stage,
-            applicants,
+            applications_added,
             active_application_count,
             unstaking_application_count,
             deactivated_application_count,
@@ -942,7 +942,7 @@ impl<T: Trait> Module<T> {
         // Ensure that the new application would actually make it
         let would_get_added_success = ensure_application_would_get_added!(
             &opening.application_rationing_policy,
-            &applicants,
+            &applications_added,
             &opt_role_stake_balance,
             &opt_application_stake_balance,
             AddApplicationError::NewApplicationWasCrowdedOut
@@ -952,7 +952,7 @@ impl<T: Trait> Module<T> {
         Ok(DestructuredApplicationCanBeAddedEvaluation{
             opening: opening,
             active_stage: active_stage,
-            applicants: applicants,
+            applications_added: applications_added,
             active_application_count: active_application_count,
             unstaking_application_count: unstaking_application_count,
             deactivated_application_count: deactivated_application_count,
@@ -1075,7 +1075,7 @@ impl<T: Trait> Module<T> {
         */
         let new_active_stage = hiring::OpeningStage::Active {
             stage: can_be_added_destructured.active_stage,
-            applicants: can_be_added_destructured.applicants,
+            applications_added: can_be_added_destructured.applications_added,
             active_application_count: can_be_added_destructured.active_application_count + 1,
             unstaking_application_count: can_be_added_destructured.unstaking_application_count,
             deactivated_application_count: can_be_added_destructured.deactivated_application_count,
@@ -1278,7 +1278,7 @@ impl<T: Trait> Module<T> {
                 // NB: This ugly byref destructuring is same issue as pointed out multiple times now.
                 if let hiring::OpeningStage::Active {
                     ref stage,
-                    ref applicants,
+                    ref applications_added,
                     active_application_count,
                     unstaking_application_count,
                     deactivated_application_count,
@@ -1286,7 +1286,7 @@ impl<T: Trait> Module<T> {
                 {
                     opening.stage = hiring::OpeningStage::Active {
                         stage: stage.clone(),
-                        applicants: applicants.clone(),
+                        applications_added: applications_added.clone(),
                         active_application_count: active_application_count,
                         unstaking_application_count: unstaking_application_count - 1,
                         deactivated_application_count: deactivated_application_count + 1,
@@ -1464,7 +1464,7 @@ impl<T: Trait> Module<T> {
                     // NB: This ugly byref destructuring is same issue as pointed out multiple times now.
                     if let hiring::OpeningStage::Active {
                         ref stage,
-                        ref applicants,
+                        ref applications_added,
                         ref active_application_count,
                         ref unstaking_application_count,
                         ref deactivated_application_count,
@@ -1480,7 +1480,7 @@ impl<T: Trait> Module<T> {
 
                         opening.stage = hiring::OpeningStage::Active {
                             stage: (*stage).clone(),           // <= truly horrible
-                            applicants: (*applicants).clone(), // <= truly horrible
+                            applications_added: (*applications_added).clone(), // <= truly horrible
                             active_application_count: new_active_application_count,
                             unstaking_application_count: new_unstaking_application_count,
                             deactivated_application_count: new_deactivated_application_count,

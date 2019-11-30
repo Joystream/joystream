@@ -93,13 +93,13 @@ macro_rules! ensure_opening_is_active {
             hiring::OpeningStage::Active {
                 // <= need proper type here in the future, not param
                 ref stage,
-                ref applicants,
+                ref applications_added,
                 ref active_application_count,
                 ref unstaking_application_count,
                 ref deactivated_application_count,
             } => Ok((
                 stage.clone(),
-                applicants.clone(),
+                applications_added.clone(),
                 active_application_count.clone(),
                 unstaking_application_count.clone(),
                 deactivated_application_count.clone(),

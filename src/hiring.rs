@@ -160,7 +160,7 @@ pub enum OpeningStage<BlockNumber, ApplicationId> {
 
         // Set of identifiers for all applications which have been added, but not removed, for this opening.
         // Is required for timely on-chain lookup of all applications associated with an opening.
-        applicants: BTreeSet<ApplicationId>, //BTreeMap<ApplicationId, ()>, //Vec<T::ApplicationId>,
+        applications_added: BTreeSet<ApplicationId>, //BTreeMap<ApplicationId, ()>, //Vec<T::ApplicationId>,
 
         // TODO: Drop these counters
         // https://github.com/Joystream/substrate-hiring-module/issues/9
