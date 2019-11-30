@@ -1531,8 +1531,6 @@ impl<T: Trait> Module<T> {
         opt_stake_id.is_some()
     }
 
-    /// TODO: these also look messy
-
     fn opt_staking_policy_to_crowded_out_unstaking_period(
         opt_staking_policy: &Option<hiring::StakingPolicy<BalanceOf<T>, T::BlockNumber>>,
     ) -> Option<T::BlockNumber> {
