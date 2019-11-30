@@ -1470,6 +1470,9 @@ impl<T: Trait> Module<T> {
                         ref deactivated_application_count,
                     } = opening.stage
                     {
+
+                        assert!(*active_application_count > 0);
+
                         let new_active_application_count = active_application_count - 1;
 
                         let new_unstaking_application_count =
