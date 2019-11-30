@@ -768,11 +768,11 @@ impl<T: Trait> Module<T> {
             opt_failed_applicant_role_stake_unstaking_period,
             opening.role_staking_policy,
             FillOpeningError::UnstakingPeriodTooShort(
-                StakePurpose::Application,
+                StakePurpose::Role,
                 ApplicationOutcomeInFilledOpening::Failure
             ),
             FillOpeningError::RedundantUnstakingPeriodProvided(
-                StakePurpose::Application,
+                StakePurpose::Role,
                 ApplicationOutcomeInFilledOpening::Failure
             )
         )?;
