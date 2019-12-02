@@ -7,14 +7,12 @@ import { SIDEBAR_MENU_THRESHOLD } from '../constants';
 
 import './SideBar.css';
 
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Responsive } from 'semantic-ui-react';
 import routing from '@polkadot/apps-routing';
-import { ApiContext } from '@polkadot/react-api';
 import { Button, ChainImg, Icon, Menu, media } from '@polkadot/react-components';
 import { classes } from '@polkadot/react-components/util';
-import { BestNumber, Chain } from '@polkadot/react-query';
 
 import translate from '../translate';
 import Item from './Item';
@@ -112,7 +110,6 @@ class SideBar extends React.PureComponent<Props, State> {
           <Responsive minWidth={SIDEBAR_MENU_THRESHOLD}>
 */
 function SideBar ({ className, collapse, handleResize, isCollapsed, toggleMenu, menuOpen }: Props): React.ReactElement<Props> {
-  const { api, isApiReady } = useContext(ApiContext);
   const [modals, setModals] = useState<Record<string, boolean>>(
     routing.routes.reduce((result: Record<string, boolean>, route): Record<string, boolean> => {
       if (route && route.Modal) {
@@ -156,20 +153,7 @@ function SideBar ({ className, collapse, handleResize, isCollapsed, toggleMenu, 
           vertical
         >
           <div className='apps-SideBar-Scroll'>
-          {JoystreamLogo(isCollapsed)}
-            <div
-              className='apps--SideBar-logo'
-              onClick={_toggleModal('network')}
-            >
-              <ChainImg />
-              <div className='info'>
-                <Chain className='chain' />
-                {isApiReady && (
-                  <div className='runtimeVersion'>version {api.runtimeVersion.specVersion.toNumber()}</div>
-                )}
-                <BestNumber label='#' />
-              </div>
-            </div>
+            {JoystreamLogo(isCollapsed)}
             {routing.routes.map((route, index): React.ReactNode => (
               route
                 ? (

@@ -121,7 +121,7 @@ export class Component extends React.PureComponent<Props, State> {
 
       <div style={{ marginTop: '.5rem' }}>
         <span className='Preview-label' style={{ marginRight: '.25rem' }}>Proposer: </span>
-        <AddressMini value={proposal.proposer} isShort={false} isPadded={true} withBalance={true} withName={true} size={36} />
+        <AddressMini value={proposal.proposer} isShort={false} isPadded={true} withBalance={true} />
       </div>
 
       {!preview && <div>
@@ -174,7 +174,7 @@ export class Component extends React.PureComponent<Props, State> {
           <Table.Cell>{i + 1}</Table.Cell>
           <Table.Cell>{this.renderVoteKind(voteKind.toString())}</Table.Cell>
           <Table.Cell>
-            <AddressMini value={voter} isShort={false} isPadded={false} withBalance={true} withName={true} size={36} />
+            <AddressMini value={voter} isShort={false} isPadded={false} withBalance={true} />
           </Table.Cell>
         </Table.Row>;
       })}</Table.Body>

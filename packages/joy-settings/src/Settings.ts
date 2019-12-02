@@ -6,7 +6,7 @@ import EventEmitter from 'eventemitter3';
 import store from 'store';
 import { isUndefined } from '@polkadot/util';
 
-import { CRYPTOS, ENDPOINT_DEFAULT, ENDPOINTS, ICON_DEFAULT, ICONS, LANGUAGE_DEFAULT, LANGUAGES, LEDGER_CONN, LEDGER_CONN_DEFAULT, LOCKING_DEFAULT, LOCKING, PREFIX_DEFAULT, PREFIXES, UIMODE_DEFAULT, UIMODES, UITHEME_DEFAULT, UITHEMES } from './defaults';
+import { CRYPTOS, ENDPOINT_DEFAULT, ENDPOINTS, ICON_DEFAULT, ICONS, LANGUAGE_DEFAULT, LANGUAGES, LEDGER_CONN, LEDGER_CONN_DEFAULT, LOCKING_DEFAULT, LOCKING, PREFIX_DEFAULT, PREFIXES, UIMODE_DEFAULT, UIMODES, UITHEME_DEFAULT, UITHEMES, CAMERA, CAMERA_DEFAULT } from './defaults';
 import { Option, SettingsStruct } from './types';
 
 type ChangeCallback = (settings: SettingsStruct) => void;
@@ -31,6 +31,8 @@ export class Settings implements SettingsStruct {
 
   private _uiTheme: string;
 
+  private _camera: string;
+
   public constructor () {
     const settings = store.get('settings') || {};
 
@@ -44,6 +46,7 @@ export class Settings implements SettingsStruct {
     this._prefix = isUndefined(settings.prefix) ? PREFIX_DEFAULT : settings.prefix;
     this._uiMode = settings.uiMode || UIMODE_DEFAULT;
     this._uiTheme = settings.uiTheme || UITHEME_DEFAULT;
+    this._camera = settings.camera || CAMERA_DEFAULT;
   }
 
   public get apiUrl (): string {
@@ -122,6 +125,14 @@ export class Settings implements SettingsStruct {
     return UITHEMES;
   }
 
+  public get camera () :string {
+    return this._camera;
+  }
+
+  public get availableCamera (): Option[] {
+    return CAMERA;
+  }
+
   public get (): SettingsStruct {
     return {
       apiUrl: this._apiUrl,
@@ -131,7 +142,8 @@ export class Settings implements SettingsStruct {
       locking: this._locking,
       prefix: this._prefix,
       uiMode: this._uiMode,
-      uiTheme: this._uiTheme
+      uiTheme: this._uiTheme,
+      camera: this._camera,
     };
   }
 

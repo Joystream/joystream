@@ -14,10 +14,10 @@ import Button from '../Button';
 import Icon from '../Icon';
 import translate from '../translate';
 import { classes } from '../util';
-import QueueContext from './Context';
+import StatusContext from './Context';
 import { STATUS_COMPLETE } from './constants';
 
-export { QueueContext };
+export { StatusContext };
 
 interface Props extends I18nProps {
   stqueue?: QueueStatus[];
@@ -68,7 +68,7 @@ function signerIconName (status: QueueTxStatus): any {
 
 function renderStatus ({ account, action, id, message, removeItem, status }: QueueStatus): React.ReactNode {
   const addressRendered = account
-    ? <AddressMini value={account} />
+    ? <AddressMini value={account} withName={false} />
     : undefined;
 
   return (

@@ -3,34 +3,39 @@
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { DerivedElectionsInfo } from '@polkadot/api-derive/types';
-import { BlockNumber, SetIndex, VoteIndex } from '@polkadot/types/interfaces';
-import { ComponentProps as Props } from './types';
+import { BlockNumber } from '@polkadot/types/interfaces';
+import { ComponentProps } from './types';
 
-import BN from 'bn.js';
 import React from 'react';
 import { withCalls } from '@polkadot/react-api';
 import { Button } from '@polkadot/react-components';
+import { createType } from '@polkadot/types';
 
 import Members from './Members';
 import SubmitCandidacy from './SubmitCandidacy';
 import Summary from './Summary';
 import Vote from './Vote';
 
+interface Props extends ComponentProps {
+  bestNumber?: BlockNumber;
+}
+
 const NULL_INFO: DerivedElectionsInfo = {
-  members: {},
   candidates: [],
-  candidateCount: new BN(0),
-  desiredSeats: new BN(0),
-  nextVoterSet: new BN(0) as SetIndex,
-  termDuration: new BN(0) as BlockNumber,
-  voteCount: new BN(0) as VoteIndex,
-  voterCount: new BN(0) as SetIndex
+  candidateCount: createType('u32'),
+  desiredSeats: createType('u32'),
+  members: [],
+  runnersUp: [],
+  termDuration: createType('BlockNumber')
 };
 
-function Overview ({ electionsInfo = NULL_INFO }: Props): React.ReactElement<Props> {
+function Overview ({ bestNumber, electionsInfo = NULL_INFO }: Props): React.ReactElement<Props> {
   return (
     <>
-      <Summary electionsInfo={electionsInfo} />
+      <Summary
+        bestNumber={bestNumber}
+        electionsInfo={electionsInfo}
+      />
       <Button.Group>
         <SubmitCandidacy electionsInfo={electionsInfo} />
         <Button.Or />
@@ -42,10 +47,10 @@ function Overview ({ electionsInfo = NULL_INFO }: Props): React.ReactElement<Pro
 }
 
 export default withCalls<Props>(
-  [
-    'derive.elections.info',
-    {
-      propName: 'electionsInfo'
-    }
-  ]
+  ['derive.elections.info', {
+    propName: 'electionsInfo'
+  }],
+  ['derive.chain.bestNumber', {
+    propName: 'bestNumber'
+  }]
 )(Overview);

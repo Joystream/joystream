@@ -12,10 +12,11 @@ import Section from '@polkadot/joy-utils/Section';
 import translate from './translate';
 import { queryMembershipToProp } from './utils';
 
+import { FIRST_MEMBER_ID } from './constants';
+
 type Props = ApiProps & I18nProps & {
   newMembershipsAllowed?: Bool,
-  firstMemberId?: BN,
-  nextMemberId?: BN,
+  membersCreated?: BN,
   minHandleLength?: BN,
   maxHandleLength?: BN,
   maxAvatarUriLength?: BN,
@@ -36,10 +37,10 @@ class Dashboard extends React.PureComponent<Props> {
         {isAllowed && (isAllowed.eq(true) ? 'Yes' : 'No')}
       </Bubble>
       <Bubble label='Next member ID'>
-        {formatNumber(p.nextMemberId)}
+        {formatNumber(p.membersCreated)}
       </Bubble>
       <Bubble label='First member ID'>
-        {formatNumber(p.firstMemberId)}
+        {formatNumber(FIRST_MEMBER_ID)}
       </Bubble>
     </Section>;
   }
@@ -75,8 +76,7 @@ class Dashboard extends React.PureComponent<Props> {
 export default translate(
   withCalls<Props>(
     queryMembershipToProp('newMembershipsAllowed'),
-    queryMembershipToProp('firstMemberId'),
-    queryMembershipToProp('nextMemberId'),
+    queryMembershipToProp('membersCreated'),
     queryMembershipToProp('minHandleLength'),
     queryMembershipToProp('maxHandleLength'),
     queryMembershipToProp('maxAvatarUriLength'),

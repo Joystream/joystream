@@ -1,5 +1,5 @@
 import { Struct } from '@polkadot/types/codec';
-import { getTypeRegistry, Text, u64 } from '@polkadot/types';
+import { getTypeRegistry, Text, u32 } from '@polkadot/types';
 import { BlockNumber } from '@polkadot/types/interfaces';
 
 export class IPNSIdentity extends Text {}
@@ -9,7 +9,7 @@ export class AccountInfo extends Struct {
   constructor (value?: any) {
     super({
       identity: IPNSIdentity,
-      expires_at: u64 // BlockNumber
+      expires_at: u32 // BlockNumber
     }, value);
   }
 

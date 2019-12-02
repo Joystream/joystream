@@ -26,7 +26,8 @@ interface Props extends BareProps, I18nProps {
   isError?: boolean;
   isSi?: boolean;
   isDecimal?: boolean;
-  label?: any;
+  label?: React.ReactNode;
+  labelExtra?: React.ReactNode;
   maxLength?: number;
   maxValue?: BN;
   onChange?: (value?: BN) => void;
@@ -52,7 +53,7 @@ const ZERO = new BN(0);
 const TEN = new BN(10);
 
 class InputNumber extends React.PureComponent<Props, State> {
-  public constructor (props: Props) {
+  constructor (props: Props) {
     super(props);
 
     const { defaultValue, isSi, value } = this.props;

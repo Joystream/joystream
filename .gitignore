@@ -2,7 +2,8 @@ build/
 coverage/
 node_modules/
 tmp/
-.idea
+.idea/
+.vscode/
 .DS_Store
 .env.local
 .env.development.local
@@ -14,4 +15,8 @@ package-lock.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.idea/
+
+!patches/**
+
+# Compiled Joystream types:
+packages/joy-types/lib/
