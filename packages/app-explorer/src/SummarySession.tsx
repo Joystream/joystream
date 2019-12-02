@@ -2,101 +2,83 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { I18nProps } from '@polkadot/ui-app/types';
+import { DerivedSessionInfo } from '@polkadot/api-derive/types';
+import { I18nProps } from '@polkadot/react-components/types';
 
-import BN from 'bn.js';
 import React from 'react';
-import { BlockNumber } from '@polkadot/types';
-import { CardSummary } from '@polkadot/ui-app';
-import { withCalls } from '@polkadot/ui-api';
+import { CardSummary } from '@polkadot/react-components';
+import { withCalls } from '@polkadot/react-api';
 
 import translate from './translate';
+import { formatNumber } from '@polkadot/util';
 
-type Props = I18nProps & {
-  session_eraLength?: BN,
-  session_eraProgress?: BN,
-  session_sessionProgress?: BN,
-  // FIXME Replaced in poc-3, we should calculate the session reward
-  // sessionBrokenValue?: BN,
-  // sessionBrokenPercentLate?: BN,
-  session_sessionLength?: BlockNumber,
-  withBroken?: boolean,
-  withEra?: boolean,
-  withSession?: boolean
-};
+interface Props extends I18nProps {
+  sessionInfo?: DerivedSessionInfo;
+  withEra?: boolean;
+  withSession?: boolean;
+}
 
-class SummarySession extends React.PureComponent<Props> {
-  render () {
-    return (
-      <>
-        {this.renderSession()}
-        {this.renderEra()}
-      </>
-    );
+function renderSession ({ sessionInfo, t, withSession = true }: Props): React.ReactNode {
+  if (!withSession || !sessionInfo) {
+    return null;
   }
 
-  // private renderBroken () {
-  //   const { sessionBrokenValue, sessionBrokenPercentLate, t, withBroken = true } = this.props;
+  const label = sessionInfo.isEpoch && sessionInfo.sessionLength.gtn(1)
+    ? t('epoch')
+    : t('session');
 
-  //   if (!withBroken) {
-  //     return null;
-  //   }
-
-  //   return (
-  //     <CardSummary
-  //       label={t('lateness')}
-  //       progress={{
-  //         color: 'autoReverse',
-  //         isPercent: true,
-  //         total: sessionBrokenPercentLate,
-  //         value: sessionBrokenValue
-  //       }}
-  //     />
-  //   );
-  // }
-
-  private renderEra () {
-    const { session_eraLength, session_eraProgress, t, withEra = true } = this.props;
-
-    if (!withEra) {
-      return null;
-    }
-
-    return (
+  return sessionInfo.sessionLength.gtn(0)
+    ? (
       <CardSummary
-        label={t('era')}
+        label={label}
         progress={{
-          total: session_eraLength,
-          value: session_eraProgress
+          total: sessionInfo.sessionLength,
+          value: sessionInfo.sessionProgress
         }}
       />
+    )
+    : (
+      <CardSummary label={label}>
+        {formatNumber(sessionInfo.currentIndex)}
+      </CardSummary>
     );
+}
+
+function renderEra ({ sessionInfo, t, withEra = true }: Props): React.ReactNode {
+  if (!withEra || !sessionInfo) {
+    return null;
   }
 
-  private renderSession () {
-    const { session_sessionProgress, session_sessionLength = new BN(0), t, withSession = true } = this.props;
+  const label = t('era');
 
-    if (!withSession) {
-      return null;
-    }
-
-    return (
+  return sessionInfo.sessionLength.gtn(0)
+    ? (
       <CardSummary
-        label={t('session')}
+        label={label}
         progress={{
-          total: session_sessionLength,
-          value: session_sessionProgress
+          total: sessionInfo.eraLength,
+          value: sessionInfo.eraProgress
         }}
       />
+    )
+    : (
+      <CardSummary label={label}>
+        {formatNumber(sessionInfo.currentEra)}
+      </CardSummary>
     );
-  }
+}
+
+function SummarySession (props: Props): React.ReactElement<Props> {
+  return (
+    <>
+      {renderSession(props)}
+      {renderEra(props)}
+    </>
+  );
 }
 
 export default translate(
   withCalls<Props>(
-    'derive.session.eraLength',
-    'derive.session.eraProgress',
-    'derive.session.sessionProgress',
-    'query.session.sessionLength'
+    ['derive.session.info', { propName: 'sessionInfo' }]
   )(SummarySession)
 );

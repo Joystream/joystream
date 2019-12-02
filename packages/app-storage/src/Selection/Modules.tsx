@@ -2,130 +2,115 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { TypeDef, getTypeDef } from '@polkadot/types';
-import { StorageFunction } from '@polkadot/types/primitive/StorageKey';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { RawParams } from '@polkadot/ui-params/types';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { ComponentProps } from '../types';
+import { TypeDef } from '@polkadot/types/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { RawParams } from '@polkadot/react-params/types';
+import { ComponentProps, StorageEntryPromise } from '../types';
 
-import React from 'react';
-import { Button, InputStorage } from '@polkadot/ui-app';
-import Params from '@polkadot/ui-params';
-import { withApi, withMulti } from '@polkadot/ui-api';
-import { isUndefined } from '@polkadot/util';
+import React, { useContext, useState } from 'react';
+import { getTypeDef } from '@polkadot/types';
+import { Button, InputStorage } from '@polkadot/react-components';
+import Params from '@polkadot/react-params';
+import { ApiContext } from '@polkadot/react-api';
+import { isNull, isUndefined } from '@polkadot/util';
 
 import translate from '../translate';
 
-type Props = ComponentProps & ApiProps & I18nProps;
+interface Props extends ComponentProps, I18nProps {}
 
-type State = {
-  isValid: boolean,
-  key: StorageFunction,
-  values: RawParams,
-  params: Array<{ type: TypeDef }>
-};
+type ParamsType = { type: TypeDef }[];
 
-class Modules extends React.PureComponent<Props, State> {
-  private defaultValue: any;
-  state: State;
-
-  constructor (props: Props) {
-    super(props);
-
-    const { api } = this.props;
-
-    this.defaultValue = api.query.timestamp.now;
-    this.state = {
-      isValid: true,
-      key: this.defaultValue,
-      values: [],
-      params: []
-    };
-  }
-
-  render () {
-    const { t } = this.props;
-    const { isValid, key: { method, section }, params } = this.state;
-
-    return (
-      <section className='storage--actionrow'>
-        <div className='storage--actionrow-value'>
-          <InputStorage
-            defaultValue={this.defaultValue}
-            label={t('selected state query')}
-            onChange={this.onChangeKey}
-          />
-          <Params
-            key={`${section}.${method}:params` /* force re-render on change */}
-            onChange={this.onChangeParams}
-            params={params}
-          />
-        </div>
-        <div className='storage--actionrow-buttons'>
-          <Button
-            icon='plus'
-            isDisabled={!isValid}
-            isPrimary
-            onClick={this.onAdd}
-          />
-        </div>
-      </section>
-    );
-  }
-
-  private nextState (newState: State): void {
-    this.setState(
-      (prevState: State) => {
-        const { key = prevState.key, values = prevState.values } = newState;
-        const hasParam = key.meta.type.isMap;
-        const isValid = values.length === (hasParam ? 1 : 0) &&
-          values.reduce((isValid, value) =>
-            isValid &&
-            !isUndefined(value) &&
-            !isUndefined(value.value) &&
-            value.isValid,
-            true
-          );
-
-        return {
-          isValid,
-          key,
-          values,
-          params: hasParam
-            ? [{ type: getTypeDef(key.meta.type.asMap.key.toString()) }]
-            : []
-        };
-      }
-    );
-  }
-
-  private onAdd = (): void => {
-    const { onAdd } = this.props;
-    const { key, values } = this.state;
-
-    onAdd({
-      key,
-      params: values
-    });
-  }
-
-  private onChangeKey = (key: StorageFunction): void => {
-    this.nextState({
-      isValid: false,
-      key,
-      values: [],
-      params: []
-    });
-  }
-
-  private onChangeParams = (values: RawParams = []): void => {
-    this.nextState({ values } as State);
-  }
+function areParamsValid (values: RawParams): boolean {
+  return values.reduce(
+    (isValid: boolean, value): boolean => (
+      isValid &&
+      !isUndefined(value) &&
+      !isUndefined(value.value) &&
+      value.isValid),
+    true
+  );
 }
 
-export default withMulti(
-  Modules,
-  translate,
-  withApi
-);
+function Modules ({ onAdd, t }: Props): React.ReactElement<Props> {
+  const { api } = useContext(ApiContext);
+  const [{ defaultValues, isLinked, key, params }, setKey] = useState<{ defaultValues: RawParams | undefined | null; isLinked: boolean; key: StorageEntryPromise; params: ParamsType }>({ defaultValues: undefined, isLinked: false, key: api.query.timestamp.now, params: [] });
+  const [{ isValid, values }, setValues] = useState<{ isValid: boolean; values: RawParams }>({ isValid: true, values: [] });
+
+  const _onAdd = (): void => {
+    isValid && onAdd({
+      isConst: false,
+      key,
+      params: values.filter(({ value }): boolean => !isLinked || !isNull(value))
+    });
+  };
+  const _onChangeValues = (values: RawParams): void => {
+    setValues({
+      isValid: (
+        key.creator.meta.type.isDoubleMap
+          ? values.length === 2
+          : values.length === (key.creator.meta.type.isMap ? 1 : 0)
+      ) && areParamsValid(values),
+      values
+    });
+  };
+  const _onChangeKey = (key: StorageEntryPromise): void => {
+    const isMap = key.creator.meta.type.isMap;
+    const isLinked = isMap && key.creator.meta.type.asMap.linked.isTrue;
+
+    setKey({
+      defaultValues: key.creator.section === 'session' && key.creator.meta.type.isDoubleMap
+        ? [{ isValid: true, value: api.consts.session.dedupKeyPrefix.toHex() }]
+        : null,
+      isLinked,
+      key,
+      params: key.creator.meta.type.isDoubleMap
+        ? [
+          { type: getTypeDef(key.creator.meta.type.asDoubleMap.key1.toString()) },
+          { type: getTypeDef(key.creator.meta.type.asDoubleMap.key2.toString()) }
+        ]
+        : isMap
+          ? [{
+            type: getTypeDef(
+              isLinked
+                ? `Option<${key.creator.meta.type.asMap.key.toString()}>`
+                : key.creator.meta.type.asMap.key.toString()
+            )
+          }]
+          : []
+    });
+
+    _onChangeValues([]);
+  };
+
+  const { creator: { method, section, meta } } = key;
+
+  return (
+    <section className='storage--actionrow'>
+      <div className='storage--actionrow-value'>
+        <InputStorage
+          defaultValue={api.query.timestamp.now}
+          label={t('selected state query')}
+          onChange={_onChangeKey}
+          help={meta && meta.documentation && meta.documentation.join(' ')}
+        />
+        <Params
+          key={`${section}.${method}:params` /* force re-render on change */}
+          onChange={_onChangeValues}
+          onEnter={_onAdd}
+          params={params}
+          values={defaultValues}
+        />
+      </div>
+      <div className='storage--actionrow-buttons'>
+        <Button
+          icon='plus'
+          isDisabled={!isValid}
+          isPrimary
+          onClick={_onAdd}
+        />
+      </div>
+    </section>
+  );
+}
+
+export default translate(Modules);

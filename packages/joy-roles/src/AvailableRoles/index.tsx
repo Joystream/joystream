@@ -1,9 +1,10 @@
 import React from 'react'
-import { BareProps } from '@polkadot/ui-app/types';
+import { BareProps } from '@polkadot/react-components/types';
 import { ComponentProps } from '../props';
 import { Role, RoleParameters } from  '@joystream/types/roles';
-import { Option, AccountId } from '@polkadot/types';
-import { withCalls } from '@polkadot/ui-api/index';
+import { Option } from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
+import { withCalls } from '@polkadot/react-api/index';
 import { Table } from 'semantic-ui-react';
 import Section from '@polkadot/joy-utils/Section';
 import { formatBalance } from '@polkadot/util';

@@ -2,139 +2,42 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import uiSettings from '@polkadot/joy-settings/';
-import { AppProps, I18nProps } from '@polkadot/ui-app/types';
-import { TabItem } from '@polkadot/ui-app/Tabs';
-import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import { ComponentProps, LocationProps } from './types';
+import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
-import './index.css';
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Route, Switch } from 'react-router';
 import accountObservable from '@polkadot/ui-keyring/observable/accounts';
-import { Tabs } from '@polkadot/ui-app';
-import { withMulti, withObservable } from '@polkadot/ui-api';
+import { HelpOverlay, Tabs } from '@polkadot/react-components';
+import { withMulti, withObservable } from '@polkadot/react-api';
 
-import Creator from './Creator';
-import Editor from './Editor';
-import Restore from './Restore';
-import Vanity from './Vanity';
-import MemoForm from './MemoForm';
+import basicMd from './md/basic.md';
+import Overview from './Overview';
 import translate from './translate';
+import Vanity from './Vanity';
 
-type Props = AppProps & I18nProps & {
-  allAccounts?: SubjectInfo
-};
+import MemoForm from './MemoForm';
 
-type State = {
-  hidden: Array<string>,
-  tabs: Array<TabItem>
-};
+interface Props extends AppProps, I18nProps {
+  allAccounts?: SubjectInfo;
+  location: any;
+}
 
-class AccountsApp extends React.PureComponent<Props, State> {
-  state: State;
+function AccountsApp ({ allAccounts = {}, basePath, location, onStatusChange, t }: Props): React.ReactElement<Props> {
+  const [hidden, setHidden] = useState<string[]>(['vanity']);
 
-  constructor (props: Props) {
-    super(props);
-
-    const { allAccounts = {}, t } = props;
-    const baseState = Object.keys(allAccounts).length !== 0
-      ? AccountsApp.showEditState()
-      : AccountsApp.hideEditState();
-
-    this.state = {
-      ...baseState,
-      tabs: [
-        {
-          name: 'edit',
-          text: t('Default key')
-        },
-        {
-          hasParams: true,
-          name: 'create',
-          text: t('Create key')
-        },
-        {
-          name: 'restore',
-          text: t('Restore key')
-        },
-        uiSettings.isBasicMode ? null : {
-          name: 'vanity',
-          text: t('Vanity address')
-        },
-        {
-          name: 'memo',
-          text: t('My memo')
-        }
-      ].filter(x => x !== null) as TabItem[]
-    };
-  }
-
-  static showEditState () {
-    return {
-      hidden: []
-    };
-  }
-
-  static hideEditState () {
-    // Hide vanity as well - since the route order and matching changes, the
-    // /create/:seed route become problematic, so don't allow that option
-    return {
-      hidden: ['edit', 'vanity']
-    };
-  }
-
-  static getDerivedStateFromProps ({ allAccounts = {} }: Props, { hidden }: State) {
-    const hasAddresses = Object.keys(allAccounts).length !== 0;
-
-    if (hidden.length === 0) {
-      return hasAddresses
-        ? null
-        : AccountsApp.hideEditState();
-    }
-
-    return hasAddresses
-      ? AccountsApp.showEditState()
-      : null;
-  }
-
-  render () {
-    const { basePath } = this.props;
-    const { hidden, tabs } = this.state;
-    const renderCreator = this.renderComponent(Creator);
-
-    return (
-      <main className='accounts--App'>
-        <header>
-          <Tabs
-            basePath={basePath}
-            hidden={hidden}
-            items={tabs}
-          />
-        </header>
-        <Switch>
-          <Route path={`${basePath}/create/:seed`} render={renderCreator} />
-          <Route path={`${basePath}/create`} render={renderCreator} />
-          <Route path={`${basePath}/restore`} render={this.renderComponent(Restore)} />
-          <Route path={`${basePath}/vanity`} render={this.renderComponent(Vanity)} />
-          <Route path={`${basePath}/memo`} component={MemoForm} />
-          <Route
-            render={
-              hidden.includes('edit')
-                ? renderCreator
-                : this.renderComponent(Editor)
-            }
-          />
-        </Switch>
-      </main>
+  useEffect((): void => {
+    setHidden(
+      Object.keys(allAccounts).length !== 0
+        ? []
+        : ['vanity']
     );
-  }
+  }, [allAccounts]);
 
-  private renderComponent (Component: React.ComponentType<ComponentProps>) {
-    return ({ match }: LocationProps) => {
-      const { basePath, location, onStatusChange } = this.props;
-
+  const _renderComponent = (Component: React.ComponentType<ComponentProps>): (props: LocationProps) => React.ReactNode => {
+    // eslint-disable-next-line react/display-name
+    return ({ match }: LocationProps): React.ReactNode => {
       return (
         <Component
           basePath={basePath}
@@ -144,7 +47,39 @@ class AccountsApp extends React.PureComponent<Props, State> {
         />
       );
     };
-  }
+  };
+
+  return (
+    <main className='accounts--App'>
+      <HelpOverlay md={basicMd} />
+      <header>
+        <Tabs
+          basePath={basePath}
+          hidden={hidden}
+          items={[
+            {
+              isRoot: true,
+              name: 'overview',
+              text: t('My accounts')
+            },
+            {
+              name: 'vanity',
+              text: t('Vanity address')
+            },
+            {
+              name: 'memo',
+              text: t('My memo')
+            }
+          ]}
+        />
+      </header>
+      <Switch>
+        <Route path={`${basePath}/vanity`} render={_renderComponent(Vanity)} />
+        <Route path={`${basePath}/memo`} component={MemoForm} />
+        <Route render={_renderComponent(Overview)} />
+      </Switch>
+    </main>
+  );
 }
 
 export default withMulti(

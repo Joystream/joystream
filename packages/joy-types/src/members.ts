@@ -1,32 +1,48 @@
-import { EnumType, Option, Struct } from '@polkadot/types/codec';
-import { getTypeRegistry, Bool, BlockNumber, Moment, AccountId, BalanceOf, u64, Text } from '@polkadot/types';
+import { Enum, getTypeRegistry, Option, Struct, Null, bool, u64, u128, Text, GenericAccountId } from '@polkadot/types';
+import { BlockNumber, Moment, BalanceOf } from '@polkadot/types/interfaces';
 import { OptionText } from './index';
+import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
 export class MemberId extends u64 {}
 export class PaidTermId extends u64 {}
 export class SubscriptionId extends u64 {}
 
 export class Paid extends PaidTermId {}
-export class Screening extends AccountId {}
-export class EntryMethod extends EnumType<Paid | Screening> {
+export class Screening extends GenericAccountId {}
+export class Genesis extends Null {}
+export class EntryMethod extends Enum {
   constructor (value?: any, index?: number) {
     super({
       Paid,
-      Screening
+      Screening,
+      Genesis,
     }, value, index);
   }
 }
 
+export class Role extends Enum {
+  constructor (value?: any, index?: number) {
+    super([
+      'StorageProvider',
+      'Publisher',
+      'CuratorLead',
+      'Curator',
+    ], value, index);
+  }
+}
+
 export type Profile = {
-  id: MemberId,
   handle: Text,
   avatar_uri: Text,
   about: Text,
   registered_at_block: BlockNumber,
   registered_at_time: Moment,
   entry: EntryMethod,
-  suspended: Bool,
-  subscription: Option<SubscriptionId>
+  suspended: bool,
+  subscription: Option<SubscriptionId>,
+  root_account: AccountId,
+  controller_account: AccountId,
+  // roles: Vec<ActorInRole>,
 };
 
 export class UserInfo extends Struct {
@@ -48,14 +64,9 @@ export type CheckedUserInfo = {
 export class PaidMembershipTerms extends Struct {
   constructor (value?: any) {
     super({
-      id: PaidTermId,
-      fee: BalanceOf,
+      fee: u128, // BalanceOf
       text: Text
     }, value);
-  }
-
-  get id (): PaidTermId {
-    return this.get('id') as PaidTermId;
   }
 
   get fee (): BalanceOf {
@@ -70,26 +81,23 @@ export class PaidMembershipTerms extends Struct {
 export function registerMembershipTypes () {
   try {
     const typeRegistry = getTypeRegistry();
-    // Register enum EntryMethod and its options:
     typeRegistry.register({
-      Paid,
-      Screening,
-      EntryMethod
-    });
-    typeRegistry.register({
+      EntryMethod,
       MemberId,
       PaidTermId,
       SubscriptionId,
       Profile: {
-        id: 'MemberId',
         handle: 'Text',
         avatar_uri: 'Text',
         about: 'Text',
         registered_at_block: 'BlockNumber',
         registered_at_time: 'Moment',
         entry: 'EntryMethod',
-        suspended: 'Bool',
-        subscription: 'Option<SubscriptionId>'
+        suspended: 'bool',
+        subscription: 'Option<SubscriptionId>',
+        root_account: 'AccountId',
+        controller_account: 'AccountId',
+        roles: 'Vec<ActorInRole>' // BTreeSet<ActorInRole>
       },
       UserInfo,
       CheckedUserInfo: {
@@ -98,10 +106,15 @@ export function registerMembershipTypes () {
         about: 'Text'
       },
       PaidMembershipTerms: {
-        id: 'PaidTermId',
         fee: 'BalanceOf',
         text: 'Text'
-      }
+      },
+      Role,
+      ActorId: 'u64',
+      ActorInRole: {
+        role: 'Role',
+        actor_id: 'ActorId'
+      },
     });
   } catch (err) {
     console.error('Failed to register custom types of membership module', err);

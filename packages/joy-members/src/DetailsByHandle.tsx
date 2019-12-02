@@ -1,8 +1,7 @@
 import React from 'react';
 
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { Option } from '@polkadot/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
 import { stringToU8a, u8aToHex } from '@polkadot/util';
 
 import translate from './translate';
@@ -12,18 +11,16 @@ import { queryMembershipToProp } from './utils';
 
 type DetailsByHandleProps = {
   handle: string,
-  handles?: Option<MemberId>
+  handles?: MemberId
 };
 
 function DetailsByHandleInner (p: DetailsByHandleProps) {
-  const { handles: memberIdOpt } = p;
-  if (memberIdOpt) {
-    return memberIdOpt.isNone
-      ? <em>Member profile not found.</em>
-      : <div className='ui massive relaxed middle aligned list FullProfile'>
-        <Details memberId={memberIdOpt.unwrap()} />
-      </div>;
-  } else return <em>Loading member's profile...</em>;
+  const { handles: memberId } = p;
+  return memberId !== undefined ? // here we can't make distinction value existing and loading
+      <div className='ui massive relaxed middle aligned list FullProfile'>
+        <Details memberId={memberId} />
+      </div>
+  : <em>Member profile not found.</em>;
 }
 
 const DetailsByHandle = withCalls<DetailsByHandleProps>(

@@ -1,13 +1,14 @@
 import React from 'react';
 import { Table } from 'semantic-ui-react';
-import { BareProps, CallProps } from '@polkadot/ui-api/types';
+import { BareProps, CallProps } from '@polkadot/react-api/types';
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import { withCalls, withMulti } from '@polkadot/ui-api/index';
+import { withCalls, withMulti } from '@polkadot/react-api/index';
 import { Request, Role, RoleParameters } from '@joystream/types/roles';
-import { AccountId, Balance, Option } from '@polkadot/types';
+import { Option } from '@polkadot/types';
+import { AccountId, Balance } from '@polkadot/types/interfaces';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import BN from 'bn.js';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
+import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { ComponentProps } from '../props';
 
 type Props = BareProps & ComponentProps & MyAccountProps & {
@@ -66,7 +67,7 @@ class Action extends React.PureComponent<ActionProps> {
 
         return (
             <Table.Row>
-                <Table.Cell><AddressMini value={account} isShort={false} isPadded={false} withBalance={true} withName={true} withMemo={false} size={36}/></Table.Cell>
+                <Table.Cell><AddressMini value={account} isShort={false} isPadded={false} withBalance={true} /></Table.Cell>
                 <Table.Cell>{role.toString()}</Table.Cell>
                 <Table.Cell>{canStake ? null : `(minimum required balance: ${minStake.toString()})`}</Table.Cell>
                 <Table.Cell>

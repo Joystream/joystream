@@ -1,21 +1,22 @@
 import React from 'react';
 import BN from 'bn.js';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { Bubble } from '@polkadot/ui-app/index';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
+import { Bubble } from '@polkadot/react-components/index';
 import { formatNumber } from '@polkadot/util';
-import { Bool } from '@polkadot/types';
+import { bool as Bool } from '@polkadot/types';
 
 import Section from '@polkadot/joy-utils/Section';
 import translate from './translate';
 import { queryMembershipToProp } from './utils';
 
+import { FIRST_MEMBER_ID } from './constants';
+
 type Props = ApiProps & I18nProps & {
   newMembershipsAllowed?: Bool,
-  firstMemberId?: BN,
-  nextMemberId?: BN,
+  membersCreated?: BN,
   minHandleLength?: BN,
   maxHandleLength?: BN,
   maxAvatarUriLength?: BN,
@@ -36,10 +37,10 @@ class Dashboard extends React.PureComponent<Props> {
         {isAllowed && (isAllowed.eq(true) ? 'Yes' : 'No')}
       </Bubble>
       <Bubble label='Next member ID'>
-        {formatNumber(p.nextMemberId)}
+        {formatNumber(p.membersCreated)}
       </Bubble>
       <Bubble label='First member ID'>
-        {formatNumber(p.firstMemberId)}
+        {formatNumber(FIRST_MEMBER_ID)}
       </Bubble>
     </Section>;
   }
@@ -75,8 +76,7 @@ class Dashboard extends React.PureComponent<Props> {
 export default translate(
   withCalls<Props>(
     queryMembershipToProp('newMembershipsAllowed'),
-    queryMembershipToProp('firstMemberId'),
-    queryMembershipToProp('nextMemberId'),
+    queryMembershipToProp('membersCreated'),
     queryMembershipToProp('minHandleLength'),
     queryMembershipToProp('maxHandleLength'),
     queryMembershipToProp('maxAvatarUriLength'),

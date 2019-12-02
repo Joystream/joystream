@@ -1,9 +1,9 @@
 import React from 'react';
 
-import { I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { Hash } from '@polkadot/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { withCalls } from '@polkadot/react-api/with';
+import { Hash } from '@polkadot/types/interfaces';
 
 import translate from './translate';
 import SealedVote from './SealedVote';

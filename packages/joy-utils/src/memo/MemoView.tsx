@@ -2,9 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { truncate } from 'lodash';
 
-import { Bytes } from '@polkadot/types';
-import { u8aToString } from '@polkadot/util';
-import { withCalls } from '@polkadot/ui-api/index';
+import { withCalls } from '@polkadot/react-api/index';
 
 import { nonEmptyStr } from '../index';
 import './Memo.css';
@@ -16,7 +14,7 @@ const mdStripper = remark().use(strip);
 
 type Props = {
   accountId: string,
-  memo?: Bytes,
+  memo?: Text,
   preview?: boolean,
   showEmpty?: boolean,
   className?: string,
@@ -38,7 +36,7 @@ class Component extends React.PureComponent<Props> {
 
   private isMemoEmpty (): boolean {
     const { memo } = this.props;
-    return !memo || memo.isEmpty;
+    return !memo;
   }
 
   renderMemo () {
@@ -46,7 +44,7 @@ class Component extends React.PureComponent<Props> {
     if (this.isMemoEmpty()) {
       return <em className='JoyMemo--empty'>Memo is empty.</em>;
     } else {
-      const md = u8aToString(memo).trim();
+      const md = memo ? memo.toString().trim() : '';
       if (preview) {
         const plainText = this.mdToPlainText(md);
         const previewText = truncate(plainText, { length: 80, omission: '…' });

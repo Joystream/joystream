@@ -1,10 +1,11 @@
 import React from 'react'
-import { BareProps } from '@polkadot/ui-app/types';
+import { BareProps } from '@polkadot/react-components/types';
 import { ComponentProps } from '../props';
-import { withCalls } from '@polkadot/ui-api/index';
+import { withCalls } from '@polkadot/react-api/index';
 import { Table } from 'semantic-ui-react';
-import { Option, AccountId} from '@polkadot/types';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
+import { Option, Vec} from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
+import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { Actor } from '@joystream/types/roles';
 import { MemberId } from '@joystream/types/members';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
@@ -12,14 +13,22 @@ import { queryMembershipToProp } from '@polkadot/joy-members/utils';
 import TxButton from '@polkadot/joy-utils/TxButton';
 
 type MemberIdProps = {
-    memberIdByAccountId?: Option<MemberId>,
+    memberIdsByRootAccountId?: Vec<MemberId>,
+    memberIdsByControllerAccountId?: Vec<MemberId>,
 };
 
 type Props = BareProps & ComponentProps & MyAccountProps & MemberIdProps;
 
 class ActorsList extends React.PureComponent<Props> {
     render() {
-        const { actorAccountIds, memberIdByAccountId } = this.props;
+        const { actorAccountIds, memberIdsByRootAccountId, memberIdsByControllerAccountId } = this.props;
+        let memberId : MemberId;
+        if (memberIdsByControllerAccountId && memberIdsByRootAccountId) {
+            memberIdsByRootAccountId.concat(memberIdsByControllerAccountId);
+            if (memberIdsByRootAccountId.length) {
+                memberId = memberIdsByRootAccountId[0];
+            }
+        }
 
         return (
             <Table>
@@ -32,7 +41,7 @@ class ActorsList extends React.PureComponent<Props> {
                     </Table.Row>
                 </Table.Header>
                 <Table.Body>{ actorAccountIds.map((account: string) =>
-                    <ActorDisplay key={account} account={account} memberIdByAccountId={memberIdByAccountId} />
+                    <ActorDisplay key={account} account={account} memberId={memberId} />
                 )}
                 </Table.Body>
             </Table>
@@ -43,25 +52,25 @@ class ActorsList extends React.PureComponent<Props> {
 
 type ActorProps = BareProps & MemberIdProps & {
     account: string,
-    actor?: Option<Actor>
+    actor?: Option<Actor>,
+    memberId?: MemberId
 }
 
 class ActorInner extends React.PureComponent<ActorProps> {
     render() {
-        const { actor: actorOpt , memberIdByAccountId: memberIdOpt} = this.props;
+        const { actor: actorOpt , memberId} = this.props;
 
-        if (!actorOpt || actorOpt.isNone || !memberIdOpt) return null;
+        if (!actorOpt || actorOpt.isNone) return null;
 
         const actor = actorOpt.unwrap();
 
-        const memberId = memberIdOpt.isSome ? memberIdOpt.unwrap() : undefined;
         const memberIsActor = memberId && (memberId.toString() == actor.member_id.toString());
 
         return (
             <Table.Row>
                 <Table.Cell>{actor.member_id.toString()}</Table.Cell>
                 <Table.Cell>{actor.role.toString()}</Table.Cell>
-                <Table.Cell><AddressMini value={actor.account} isShort={false} isPadded={false} withBalance={true} withName={true} withMemo={true} size={36} /></Table.Cell>
+                <Table.Cell><AddressMini value={actor.account} isShort={false} isPadded={false} withBalance={true} /></Table.Cell>
                 { memberIsActor ? <Table.Cell>{this.renderUnstakeTxButton(actor.account)}</Table.Cell> : null }
             </Table.Row>
         )
@@ -79,7 +88,8 @@ const ActorDisplay = withCalls<ActorProps>(
 
 
 const ActionableActorsList = withMyAccount(withCalls<Props>(
-    queryMembershipToProp('memberIdByAccountId', 'myAddress')
+    queryMembershipToProp('memberIdsByRootAccountId', 'myAddress'),
+    queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress'),
 )(ActorsList));
 
 export default ActionableActorsList;

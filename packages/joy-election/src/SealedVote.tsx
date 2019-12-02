@@ -2,16 +2,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Table } from 'semantic-ui-react';
 
-import { I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { Hash } from '@polkadot/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { withCalls } from '@polkadot/react-api/with';
+import { Hash } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 
 import translate from './translate';
 import { calcTotalStake } from '@polkadot/joy-utils/index';
 import { SealedVote } from '@joystream/types/';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
+import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { findVoteByHash } from './myVotesStore';
 
 type Props = ApiProps & I18nProps & {
@@ -29,7 +29,7 @@ class Comp extends React.PureComponent<Props> {
 
     if (sealedVote.vote.isSome) {
       const candidateId = sealedVote.vote.unwrap();
-      return <AddressMini value={candidateId} isShort={false} isPadded={false} withBalance={true} withName={true} withMemo={true} size={36} />;
+      return <AddressMini value={candidateId} isShort={false} isPadded={false} withBalance={true} />;
     } else {
       const revealUrl = `/council/reveals?hashedVote=${hash.toHex()}`;
       return <Link to={revealUrl} className='ui button primary inverted'>Reveal this vote</Link>;
@@ -61,7 +61,7 @@ class Comp extends React.PureComponent<Props> {
       </Table.Row>}
       <Table.Row>
         <Table.Cell>Voter</Table.Cell>
-        <Table.Cell><AddressMini value={sealedVote.voter} isShort={false} isPadded={false} withBalance={true} withName={true} size={36} /></Table.Cell>
+        <Table.Cell><AddressMini value={sealedVote.voter} isShort={false} isPadded={false} withBalance={true} /></Table.Cell>
       </Table.Row>
       <Table.Row>
         <Table.Cell>Candidate</Table.Cell>

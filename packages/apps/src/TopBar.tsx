@@ -1,19 +1,25 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { I18nProps } from '@polkadot/ui-app/types';
+import { I18nProps } from '@polkadot/react-components/types';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
+import { InputAddress } from '@polkadot/react-components';
+import { Available } from '@polkadot/react-query';
 import translate from './translate';
 import './TopBar.css';
 
 type Props = I18nProps & {};
 
 function renderAddress (address: string) {
-  const marginRight = { marginRight: '.5rem' };
+  const balance = <span className='label'>Balance: </span>;
+
   return <div className='JoyTopBar'>
-    <span style={marginRight}>My key: </span>
-    <AddressMini value={address} isShort={false} isPadded={false} withBalance={true} withName={true} size={36} style={marginRight} />
-    <Link className='ui small button inverted' to='/accounts'>Change key</Link>
+    <InputAddress
+      defaultValue={address}
+      help='My current key that signs transactions'
+      label='My key'
+      labelExtra={<Available label={balance} params={address} />}
+      type='account'
+    />
   </div>;
 }
 

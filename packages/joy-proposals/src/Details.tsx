@@ -3,14 +3,14 @@ import React from 'react';
 import { Table, Message } from 'semantic-ui-react';
 import ReactMarkdown from 'react-markdown';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { Labelled } from '@polkadot/ui-app/index';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
+import { Labelled } from '@polkadot/react-components/index';
 import { formatNumber, formatBalance } from '@polkadot/util';
 
 import { queryToProp, ZERO } from '@polkadot/joy-utils/index';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
+import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import Section from '@polkadot/joy-utils/Section';
 import translate from './translate';
 import FilterProps from './FilterProps';
@@ -121,7 +121,7 @@ export class Component extends React.PureComponent<Props, State> {
 
       <div style={{ marginTop: '.5rem' }}>
         <span className='Preview-label' style={{ marginRight: '.25rem' }}>Proposer: </span>
-        <AddressMini value={proposal.proposer} isShort={false} isPadded={true} withBalance={true} withName={true} size={36} />
+        <AddressMini value={proposal.proposer} isShort={false} isPadded={true} withBalance={true} />
       </div>
 
       {!preview && <div>
@@ -174,7 +174,7 @@ export class Component extends React.PureComponent<Props, State> {
           <Table.Cell>{i + 1}</Table.Cell>
           <Table.Cell>{this.renderVoteKind(voteKind.toString())}</Table.Cell>
           <Table.Cell>
-            <AddressMini value={voter} isShort={false} isPadded={false} withBalance={true} withName={true} size={36} />
+            <AddressMini value={voter} isShort={false} isPadded={false} withBalance={true} />
           </Table.Cell>
         </Table.Row>;
       })}</Table.Body>

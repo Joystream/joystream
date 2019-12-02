@@ -2,8 +2,8 @@
 import React from 'react';
 import { Route, Switch } from 'react-router';
 
-import { AppProps, I18nProps } from '@polkadot/ui-app/types';
-import Tabs, { TabItem } from '@polkadot/ui-app/Tabs';
+import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
 
 import './index.css';
 
@@ -13,8 +13,8 @@ import Explore from './Explore';
 import { Play } from './View';
 import { EditByContentId } from './EditMeta';
 import { withDiscoveryProvider, DiscoveryProviderProps } from './DiscoveryProvider';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { withMulti } from '@polkadot/ui-api/with';
+import { ApiProps } from '@polkadot/react-api/types';
+import { withMulti } from '@polkadot/react-api/with';
 
 type Props = AppProps & I18nProps & ApiProps & DiscoveryProviderProps & {};
 
@@ -24,6 +24,7 @@ class App extends React.PureComponent<Props> {
     const { t } = this.props;
     return [
       {
+        isRoot: true,
         name: 'media',
         text: t('Explore')
       },
