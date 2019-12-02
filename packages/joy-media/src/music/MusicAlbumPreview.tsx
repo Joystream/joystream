@@ -15,12 +15,12 @@ export type MusicAlbumPreviewProps = {
 
 export function MusicAlbumPreview (props: MusicAlbumPreviewProps) {
   const { size = 200 } = props;
-  
+
   return <div className='JoyMusicAlbumPreview'>
   
     <BgImg className='AlbumCover' url={props.cover} size={size} />
 
-    <div className='AlbumDescription'>
+    <div className='AlbumDescription' style={{ maxWidth: size }}>
       <h3 className='AlbumTitle'>{props.title}</h3>
       <div className='AlbumArtist'>{props.artist}</div>
       <div className='AlbumTracksCount'><Pluralize count={props.tracksCount} singularText='track' /></div>
