@@ -1,4 +1,4 @@
-import { MusicAlbumPreviewProps } from "@polkadot/joy-media/music/MyMusicAlbums";
+import { MusicAlbumPreviewProps } from "@polkadot/joy-media/music/MusicAlbumPreview";
 
 let id = 0;
 const nextId = (): string => `${++id}`;

@@ -26,5 +26,5 @@ export function Pluralize (props: PluralizeProps) {
     ? singularText
     : plural();
 
-  return <><b>{count}</b> {text}</>;
+  return <>{count} {text}</>;
 }

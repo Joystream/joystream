@@ -26,23 +26,29 @@ export const albumTracks = trackNames.map((title, i) => ({
 	cover: 'https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=60'
 }));
 
-export const MusicTrackSamples = 
-	trackNames.slice(0, trackNames.length / 2).map((title, i) => ({
+export const Album1TrackSamples = trackNames
+	.slice(0, trackNames.length / 2)
+	.map((title, i) => ({
 		id: `${100 + i}`,
 		title,
 		artist: 'Man from the Woods',
 		cover: 'https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=60'
 	}))
-	.concat(
-		trackNames.slice(trackNames.length / 2).map((title, i) => ({
-			id: `${200 + i}`,
-			title,
-			artist: 'Liquid Stone',
-			cover: 'https://images.unsplash.com/photo-1484352491158-830ef5692bb3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-		}))
-	)
 
-  export const AlbumWithTracksProps: TracksOfMyMusicAlbumProps = {
+export const Album2TrackSamples = trackNames
+	.slice(trackNames.length / 2)
+	.map((title, i) => ({
+		id: `${200 + i}`,
+		title,
+		artist: 'Liquid Stone',
+		cover: 'https://images.unsplash.com/photo-1484352491158-830ef5692bb3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+	}))
+
+export const AllMusicTrackSamples = 
+	Album1TrackSamples
+	.concat(Album2TrackSamples)
+
+export const AlbumWithTracksProps: TracksOfMyMusicAlbumProps = {
 	album: MusicAlbumSample,
 	tracks: albumTracks
 }

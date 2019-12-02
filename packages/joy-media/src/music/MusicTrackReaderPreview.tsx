@@ -1,19 +1,28 @@
-import React from 'react';
+import React, { CSSProperties } from 'react';
 import { BgImg } from '../common/BgImg';
 
 export type MusicTrackReaderPreviewProps = {
   id: string,
   title: string,
   artist: string,
-  cover: string
+  cover: string,
+  size?: number,
+  orientation?: 'vertical' | 'horizontal',
 };
 
 export function MusicTrackReaderPreview (props: MusicTrackReaderPreviewProps) {
-  return <div className='JoyMusicAlbumPreview'>
-  
-    <BgImg className='AlbumCover' url={props.cover} />
+  const { size = 200, orientation = 'vertical' } = props;
 
-    <div className='AlbumDescription'>
+  let descStyle: CSSProperties = {};
+  if (orientation === 'vertical') {
+    descStyle.maxWidth = size;
+  }
+
+  return <div className={`JoyMusicAlbumPreview ` + orientation}>
+
+    <BgImg className='AlbumCover' url={props.cover} size={size} />
+
+    <div className='AlbumDescription' style={descStyle}>
       <h3 className='AlbumTitle'>{props.title}</h3>
       <div className='AlbumArtist'>{props.artist}</div>
     </div>

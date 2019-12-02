@@ -1,4 +1,5 @@
 $blackFont: #222;
+$grayFont: #999;
 
 .JoyBgImg {
   background-size: cover;
@@ -37,6 +38,18 @@ $blackFont: #222;
 .JoyMusicTrackPreview {
   display: flex;
 
+  &.vertical {
+    flex-direction: column;
+  }
+
+  &.horizontal {
+    flex-direction: row;
+
+    .AlbumCover {
+      margin-right: 1rem;
+    }
+  }
+
   .JoyListOfPreviews & {
     background-color: #fafafa;
     margin-top: 1px;
@@ -53,7 +66,7 @@ $blackFont: #222;
   }
 
   .AlbumNumber {
-    color: #999;
+    color: $grayFont;
     width: 3.5rem;
     text-align: right;
     padding-right: 1rem;
@@ -83,11 +96,11 @@ $blackFont: #222;
       margin-bottom: 0.25rem;
     }
     .AlbumArtist {
-      color: #999;
+      color: $grayFont;
       font-size: .9rem;
     }
     .AlbumTracksCount {
-      color: #999;
+      color: $grayFont;
       margin-top: .5rem;
     }
   }
@@ -131,10 +144,9 @@ $blackFont: #222;
     font-weight: bold;
     color: $blackFont;
     margin: .25rem 0;
-    max-width: calc($size - 1rem);
   }
   .AlbumArtist {
-    color: #999;
+    color: $grayFont;
     font-size: 1rem;
   }
   .AlbumActions {
@@ -206,7 +218,7 @@ $blackFont: #222;
           white-space: nowrap;
         }
         .label {
-          color: #999;
+          color: $grayFont;
           font-weight: normal;
           font-size: .9rem;
         }
@@ -229,7 +241,59 @@ $blackFont: #222;
     margin-top: 1rem;
   }
   .ChannelSubtitle {
-    color: #999;
+    color: $grayFont;
     text-transform: uppercase;
+  }
+}
+
+
+
+/* Play Album */
+/* ------------------------------------------------------ */
+
+.JoyPlayAlbum {
+  display: flex;
+  flex-direction: row;
+
+  .JoyPlayAlbum_Main {
+    display: flex;
+    flex-direction: row;
+    margin-right: 1rem;
+
+    .JoyPlayAlbum_CurrentTrack {
+      margin-right: 1rem;
+
+      .AlbumTitle {
+        font-size: 1.5rem;
+        margin-top: 1rem;
+      }
+      .AlbumArtist {
+        font-size: 1.15rem;
+      }
+    }
+
+    .JoyPlayAlbum_AlbumTracks {
+      .Track {
+        display: flex;
+
+        .TrackNumber {
+          color: $grayFont;
+          width: 2rem;
+        }
+        .AlbumDescription {
+          max-width: 300px;
+        }
+      }
+    }
+
+    .JoyPlayAlbum_MetaInfo {
+      td:first-child {
+        font-weight: bold;
+      }
+    }
+  }
+
+  .JoyPlayAlbum_Featured {
+    max-width: 200px;
   }
 }

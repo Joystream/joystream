@@ -5,7 +5,7 @@ import { withKnobs } from '@storybook/addon-knobs';
 import { EditMusicAlbum } from '../music/EditMusicAlbum';
 import { MyMusicTracks } from '../music/MyMusicTracks';
 import { MusicAlbumSamples } from './data/MusicAlbumSamples';
-import { MusicAlbumExample, albumTracks, MusicTrackSamples } from './data/MusicTrackSamples';
+import { MusicAlbumExample, albumTracks, AllMusicTrackSamples } from './data/MusicTrackSamples';
 
 export default { 
     title: 'Media | My music tracks',
@@ -22,7 +22,7 @@ export const EditAlbumStory = () =>
 export const MyMusicTracksStory = () =>
 	<MyMusicTracks
 		albums={MusicAlbumSamples}
-		tracks={MusicTrackSamples}
+		tracks={AllMusicTrackSamples}
 	/>
 
 // export const DefaultState = () => {
