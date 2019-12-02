@@ -1,6 +1,9 @@
 $blackFont: #222;
 $grayFont: #999;
 
+$bgHover: #f2f2f2;
+$bgSelected: #c7e7fa;
+
 .JoyBgImg {
   background-size: cover;
   background-position: center;
@@ -56,12 +59,12 @@ $grayFont: #999;
     padding: .5rem 0;
 
     &:hover {
-      background-color: #f2f2f2;
+      background-color: $bgHover;
     }
 
     &.DraggableItem,
     &.SelectedItem {
-      background-color: #dff0ff;
+      background-color: $bgSelected;
     }
   }
 
@@ -275,7 +278,16 @@ $grayFont: #999;
     .JoyPlayAlbum_AlbumTracks {
       .Track {
         display: flex;
+        cursor: pointer;
+        padding: .5rem;
 
+        &.Current {
+          background-color: $bgSelected;
+        }
+
+        .JoyMusicAlbumPreview {
+          padding: 0;
+        }
         .TrackNumber {
           color: $grayFont;
           width: 2rem;

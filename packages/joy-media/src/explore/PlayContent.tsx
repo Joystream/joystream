@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MusicAlbumPreviewProps, MusicAlbumPreview } from '../music/MusicAlbumPreview';
 import { MusicTrackReaderPreviewProps, MusicTrackReaderPreview } from '../music/MusicTrackReaderPreview';
 import { Pluralize } from '@polkadot/joy-utils/Pluralize';
@@ -24,7 +24,7 @@ const meta = {
 export function PlayContent (props: Props) {
   const { tracks = [], currentTrackIndex = 0, featuredAlbums = [] } = props;
 
-  const currentTrack = tracks[currentTrackIndex];
+  const [currentTrack, setCurrentTrack] = useState(tracks[currentTrackIndex]);
 
   const metaField = (label: React.ReactNode, value: React.ReactNode) =>
     <Table.Row>
@@ -55,12 +55,15 @@ export function PlayContent (props: Props) {
       </div>
       <div className='JoyPlayAlbum_AlbumTracks'>
         <h3><Pluralize count={tracks.length} singularText='Track' /></h3>
-        {tracks.map((x, i) => 
-          <div className='Track'>
-            <span className='TrackNumber'>{i + 1}</span>
-            <MusicTrackReaderPreview {...x} orientation='horizontal' size={60} />
-          </div>
-        )}
+        {tracks.map((x, i) => {
+          const isCurrent = x.id === currentTrack.id;
+          const className = `Track ` + (isCurrent ? 'Current' : '');
+
+          return <div className={className} onClick={() => setCurrentTrack(x)}>
+              <span className='TrackNumber'>{i + 1}</span>
+              <MusicTrackReaderPreview {...x} orientation='horizontal' size={60} />
+            </div>;
+          })}
       </div>
     </div>
     {featuredAlbums.length > 0 &&
