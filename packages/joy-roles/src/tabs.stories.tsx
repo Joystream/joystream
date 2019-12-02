@@ -4,6 +4,7 @@ import { Container, Tab } from 'semantic-ui-react';
 import { ContentCuratorsSection, StorageProvidersSection } from './tabs/WorkingGroup.stories'
 import { OpportunitySandbox } from './tabs/Opportunities.stories'
 import { ApplicationSandbox } from './flows/apply.stories'
+import { MyRolesSandbox } from './tabs/MyRoles.stories'
 
 export default {
   title: 'Roles / Pages',
@@ -25,7 +26,7 @@ export const RolesPage = () => {
   const panes = [
     { menuItem: 'Working groups', render: () => tab },
     { menuItem: 'Opportunities', render: () => <OpportunitySandbox /> },
-    { menuItem: 'My roles', render: () => null },
+    { menuItem: 'My roles', render: () => <MyRolesSandbox /> },
   ]
 
   return (

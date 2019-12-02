@@ -36,7 +36,7 @@ type TestProps = {
   _description: string
 }
 
-export function CurrentRoleFragment() {
+export function CurrentRolesFragment() {
   const props: CurrentRolesProps = {
     currentRoles: [
       {
@@ -263,7 +263,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
 
 export function ApplicationFragment() {
   return (
-    <Container className="outer">
+    <Container className="outer my-roles">
       {permutations.map((permutation, key) => (
         <Container key={key} className="current-applications outer">
           <h4>{permutation._description}</h4>
@@ -276,8 +276,8 @@ export function ApplicationFragment() {
 
 export function ApplicationsFragment() {
   return (
-    <Container className="outer">
-      <Applications applications={permutations} />
+    <Container className="outer my-roles">
+		<Applications applications={permutations} />
     </Container>
   )
 }

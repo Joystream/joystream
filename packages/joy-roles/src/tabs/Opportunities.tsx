@@ -530,7 +530,7 @@ export function OpeningView(props: Props) {
 
   return (
     <Container className={"opening " + openingClass(props.stage.state)}>
-      <h3>{text.job.title}</h3>
+      <h2>{text.job.title}</h2>
       <Card fluid className="container">
         <Card.Content className="header">
           <OpeningHeader stage={props.stage} />

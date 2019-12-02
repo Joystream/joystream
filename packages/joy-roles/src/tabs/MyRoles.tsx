@@ -68,7 +68,7 @@ export type CurrentRolesProps = {
 export function CurrentRoles(props: CurrentRolesProps) {
   return (
     <Container className="current-roles">
-      <h3>Current roles</h3>
+      <h2>Current roles</h2>
       <Table basic='very'>
         <Table.Header>
           <Table.Row>
@@ -243,13 +243,25 @@ export function ApplicationStatus(props: ApplicationStatusProps) {
   return applicationStatusRenderers.get(props.openingStatus)(props)
 }
 
-function applicationClass(props: ApplicationProps): string {
+enum ApplicationState {
+  Positive = 0,
+  Negative,
+  Cancelled,
+}
+
+const applicationClass = new Map<ApplicationState, string>([
+  [ApplicationState.Positive, 'positive'],
+  [ApplicationState.Negative, 'negative'],
+  [ApplicationState.Cancelled, 'cancelled'],
+])
+
+function applicationState(props: ApplicationProps): ApplicationState {
   if (typeof props.cancelledReason !== 'undefined') {
-    return 'cancelled'
+    return ApplicationState.Cancelled
   } else if (props.capacity > 0 && props.rank > props.capacity) {
-    return 'negative'
+    return ApplicationState.Negative
   }
-  return 'positive'
+  return ApplicationState.Positive
 }
 
 export type ApplicationProps = {
@@ -274,10 +286,24 @@ export function Application(props: ApplicationProps) {
   }
 
   const application = props.opening.human_readable_text as GenericJoyStreamRoleSchema
-  console.log(applicationClass(props))
+  const appState = applicationState(props)
+
+  let CTA = null
+  if (appState == ApplicationState.Positive) {
+    CTA = <Button fluid
+      icon
+      labelPosition='left'
+      negative
+      className='cta'
+      onClick={props.ctaCallback}
+    >
+      <Icon name='warning sign' />
+      Cancel and withdraw stake
+     </Button>
+  }
 
   return (
-    <Segment className={'application status-' + applicationClass(props)}>
+    <Segment className={'application status-' + applicationClass.get(appState)}>
       <Label attached='top'>
         {application.job.title}
         <Label.Detail className="right">
@@ -350,16 +376,7 @@ export function Application(props: ApplicationProps) {
 
           <h4>Group lead</h4>
           <GroupMemberView {...props.creator} inset={true} />
-          <Button fluid
-            icon
-            labelPosition='left'
-            negative
-            className='cta'
-            onClick={props.ctaCallback}
-          >
-            <Icon name='warning sign' />
-            Cancel and withdraw stake
-           </Button>
+          {CTA}
         </Grid.Column>
       </Grid>
     </Segment>
@@ -373,7 +390,7 @@ export type ApplicationsProps = {
 export function Applications(props: ApplicationsProps) {
   return (
     <Container className="current-applications">
-      <h3>Applications</h3>
+      <h2>Applications</h2>
       {props.applications.map((app, key) => (
         <Application key={key} {...app} />
       ))}
