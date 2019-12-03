@@ -1,8 +1,9 @@
 import React from 'react'
-import { boolean, date, number, select, text, withKnobs } from '@storybook/addon-knobs'
+import { boolean, number, select, text, withKnobs } from '@storybook/addon-knobs'
 import * as faker from 'faker'
 
 import { Text, u128 } from '@polkadot/types'
+import { Balance } from '@polkadot/types/interfaces';
 
 import { Actor } from "@joystream/types/roles"
 import { Opening } from "@joystream/types/hiring"
@@ -13,6 +14,8 @@ import {
 } from "./Opportunities"
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
+
+import { mockProfile } from '../mocks'
 
 import 'semantic-ui-css/semantic.min.css'
 import '@polkadot/joy-roles/index.sass'
@@ -86,9 +89,7 @@ export const opening = new Opening({
 
 export const creator = {
   actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
-  profile: {
-    handle: new Text(text("Handle", "benholdencrowther", "Creator")),
-  },
+  profile: mockProfile('benholdencrowther'),
   title: text('Title', 'Group lead', "Creator"),
   lead: boolean('Lead member', true, "Creator"),
   stake: new u128(number('Stake', 10, {}, "Creator")),
@@ -136,6 +137,7 @@ export function OpportunitySandbox() {
     requiredRoleStake: new RoleStakeRequirement(
       new u128(number("Role stake", 0, moneySliderOptions, "Role stakes")),
     ),
+	defactoMinimumStake: new u128(0),
   }
 
   const defactoMinimumStake: Balance = new u128(number("Dynamic min stake", 0, moneySliderOptions, "Role stakes"))

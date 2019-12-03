@@ -25,10 +25,12 @@ import {
   Step,
   Table,
 } from 'semantic-ui-react'
+
+// @ts-ignore
 import { Slider } from "react-semantic-ui-range";
 
 import Identicon from '@polkadot/react-identicon';
-import { AccountId } from '@polkadot/types/interfaces';
+import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
 import {
   GroupMemberView, GroupMemberProps,
@@ -62,7 +64,7 @@ function ModalAccordion(props: React.PropsWithChildren<accordionProps>) {
   )
 }
 
-function KeyPair({ address, className, isUppercase, name, style, balance }: Props): React.ReactElement<Props> {
+function KeyPair({ address, className, style, isUppercase, name, balance }: any): any {
   return (
     <div
       className={['keypair', className].join(' ')}
@@ -79,7 +81,7 @@ function KeyPair({ address, className, isUppercase, name, style, balance }: Prop
         {address}
       </div>
     </div>
-  );
+  )
 }
 
 export type keyPairDetails = {
@@ -99,15 +101,15 @@ type FundSourceCallbackProps = {
 }
 
 export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCallbackProps) {
-  const pairs = [];
+  const pairs:any[] = [];
 
-  const onChangeDropdown = (e, { value }) => {
+  const onChangeDropdown = (e:any, { value }: any) => {
     if (typeof props.addressCallback !== "undefined") {
       props.addressCallback(new GenericAccountId(value))
     }
   }
 
-  const onChangeInput = (e, { value }) => {
+  const onChangeInput = (e:any, { value }: any) => {
     if (typeof props.passphraseCallback !== "undefined") {
       props.passphraseCallback(value)
     }
@@ -121,7 +123,8 @@ export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCa
     pairs.push({
       key: v.shortName,
       text: (
-        <KeyPair address={v.accountId.toString()}
+        <KeyPair 
+          address={v.accountId.toString()}
           name={v.shortName}
           balance={v.balance}
           isUppercase={true}
@@ -188,7 +191,7 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
     min: 0,
     max: slotCount,
     step: 1,
-    onChange: value => {
+    onChange: (value:any) => {
       if (value >= props.slots.length) {
         value = props.slots.length
       } else if (value > 0 && !focused) {
@@ -207,7 +210,7 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
 
   const tickLabel = <div className="ui pointing above label" style={{ left: ((100 / slotCount) * rank) + '%' }}>
     Your rank
-        <div class="detail">{(slotCount - rank) + 1}</div>
+        <div className="detail">{(slotCount - rank) + 1}</div>
   </div>
 
   const findRankValue = (newStake: Balance): number => {
@@ -226,7 +229,7 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
 
   const [focused, setFocused] = useState(false)
 
-  const changeValue = (e, { value }) => {
+  const changeValue = (e:any, { value }:any) => {
     const newStake = new u128(value)
     props.setStake(newStake)
     setRank(findRankValue(newStake))
@@ -384,7 +387,7 @@ function CTA(props: CTAProps) {
   )
 }
 
-export type StageTransitionProps = FlowModalProps & {
+export type StageTransitionProps = {
   nextTransition: () => void
   prevTransition: () => void
 }
@@ -401,7 +404,7 @@ type CaptureKeyAndPassphraseProps = {
   minStake: Balance
 }
 
-export type ConfirmStakesStageProps = StageTransitionProps &
+export type ConfirmStakesStageProps = 
   StakeRequirementProps &
   FundSourceSelectorProps &
   ApplicationStatusProps &
@@ -414,7 +417,7 @@ export type ConfirmStakesStageProps = StageTransitionProps &
   }
 
 //TODO! Set state
-export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
+export function ConfirmStakesStage(props: ConfirmStakesStageProps & StageTransitionProps) {
   const ctaContinue = (zeroOrTwoStakes(props)) ?
     'Confirm stakes and continue' :
     'Confirm stake and continue';
@@ -441,7 +444,7 @@ export function ConfirmStakesStage(props: ConfirmStakesStageProps) {
         negativeIcon='cancel'
         negativeCallback={() => { }}
         positiveLabel={ctaContinue}
-        positiveIcon='right arrow'
+        positiveIcon={'right arrow' as SemanticICONS}
         positiveCallback={continueFn}
       />
     </Container>
@@ -515,9 +518,9 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
 export type ConfirmStakes2UpProps = StakeSelectorProps & {
   step: Balance
   slots: Balance[]
-  selectedApplicationStake: boolean
+  selectedApplicationStake: Balance
   setSelectedApplicationStake: (v: Balance) => void
-  selectedRoleStake: boolean
+  selectedRoleStake: Balance
   setSelectedRoleStake: (v: Balance) => void
 }
 
@@ -559,7 +562,7 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
 
   const tickLabel = <div className="ui pointing below label" style={{ left: ((100 / slotCount) * rank) + '%' }}>
     Your rank
-        <div class="detail">{(slotCount - rank) + 1}</div>
+        <div className="detail">{(slotCount - rank) + 1}</div>
   </div>
 
   let tickContainer = null
@@ -669,7 +672,7 @@ type StakeRankMiniSelectorProps = {
 }
 
 function StakeRankMiniSelector(props: StakeRankMiniSelectorProps) {
-  const changeValue = (e, { value }) => {
+  const changeValue = (e:any, { value }:any) => {
     if (value < 0) {
       props.setValue(new u128(0))
       return
@@ -700,6 +703,8 @@ type CaptureStake1UpProps = ApplicationStatusProps & {
   value: Balance
   setValue: (b: Balance) => void
   maxNumberOfApplications: number
+  slots: Balance[] // List of stakes to beat
+  step: Balance
 }
 
 // This is not a perfect generator! 'User' would return 'an', for example,
@@ -727,7 +732,11 @@ function CaptureStake1Up(props: CaptureStake1UpProps) {
   let slider = null
   let atLeast = null
   if (props.requirement.atLeast()) {
-    slider = <StakeRankSelector {...props} stake={props.value} setStake={props.setValue} />
+    slider = <StakeRankSelector 
+      {...props}
+      stake={props.value} 
+      setStake={props.setValue} 
+      />
     atLeast = 'at least '
   }
 
@@ -758,10 +767,13 @@ interface finalDataMap {
 }
 
 function applicationDetailsToObject(input: ApplicationDetails, data: finalDataMap): any {
-  const output = {}
+  const output:any = {}
+  if (!input.sections) {
+    return {}
+  }
   input.sections.map((section) => {
     section.questions.map((question) => {
-      let value = ""
+      let value:any = ""
       if (data[section.title] && data[section.title][question.title]) {
         value = data[section.title][question.title]
       }
@@ -776,7 +788,10 @@ interface questionDataMap {
 }
 
 function applicationDetailsToDataObject(input: ApplicationDetails, data: questionDataMap): any {
-  const output = {}
+  const output:any = {}
+  if (!input.sections) {
+    return {}
+  }
   input.sections.map((section) => {
     output[section.title] = {}
     section.questions.map((question) => {
@@ -801,20 +816,20 @@ function questionFieldValueIsValid(question: QuestionField, value: any): boolean
   return false
 }
 
-export type ApplicationDetailsStageProps = StageTransitionProps & {
+export type ApplicationDetailsStageProps = {
   applicationDetails: ApplicationDetails
   data: object
   setData: (o: object) => void
 }
 
-export function ApplicationDetailsStage(props: ApplicationDetailsStageProps) {
+export function ApplicationDetailsStage(props: ApplicationDetailsStageProps & StageTransitionProps) {
   const initialForm = applicationDetailsToObject(props.applicationDetails, props.data as finalDataMap)
 
   const [data, setData] = useReducer(questionReducer, initialForm)
   const [completed, setCompleted] = useState(false)
   const [valid, setValid] = useState(false)
 
-  const handleChange = (e, { name, value }) => {
+  const handleChange = (e:any, { name, value }:any) => {
     setData({ key: name, value: value })
   }
 
@@ -846,6 +861,11 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps) {
 
   const isFormValid = (): boolean => {
     let valid = true
+
+    if (!props.applicationDetails || !props.applicationDetails.sections) {
+      return valid
+    }
+
     props.applicationDetails.sections.map((section) => {
       section.questions.map((question) => {
         if (!questionFieldValueIsValid(question, data[questionHash(section, question)])) {
@@ -862,11 +882,11 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps) {
   },
     [data])
 
-  const onSubmit = () => {
+  const onSubmit = (): void => {
     setCompleted(true)
 
     if (!valid) {
-      return false
+      return
     }
 
     props.setData(applicationDetailsToDataObject(props.applicationDetails, data))
@@ -881,7 +901,7 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps) {
   return (
     <Container className="content application-questions">
       <Form error={completed && !valid}>
-        {props.applicationDetails.sections.map((section, key) => (
+        {props.applicationDetails && props.applicationDetails.sections &&  props.applicationDetails.sections.map((section, key) => (
           <Segment padded className="section" key={key}>
             <h4><Label attached='top'>{section.title}</Label></h4>
             {section.questions.map((question, key) =>
@@ -891,10 +911,10 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps) {
         ))}
         <CTA
           negativeLabel='Back'
-          negativeIcon='left arrow'
+          negativeIcon={'left arrow' as SemanticICONS}
           negativeCallback={onCancel}
           positiveLabel='Continue to submit application'
-          positiveIcon='right arrow'
+          positiveIcon={'right arrow' as SemanticICONS}
           positiveCallback={onSubmit}
         />
 
@@ -948,10 +968,10 @@ export function SubmitApplicationStage(props: SubmitApplicationStageProps) {
 
       <CTA
         negativeLabel='Back'
-        negativeIcon='left arrow'
+        negativeIcon={'left arrow' as SemanticICONS}
         negativeCallback={props.prevTransition}
         positiveLabel='Make transaction and submit application'
-        positiveIcon='right arrow'
+        positiveIcon={'right arrow' as SemanticICONS}
         positiveCallback={onSubmit}
       />
     </Container>
@@ -1007,7 +1027,7 @@ directly.
   )
 }
 
-export type FlowModalProps = FundSourceSelectorProps & {
+export type FlowModalProps = ApplicationDetailsStageProps & ConfirmStakesStageProps & FundSourceSelectorProps & {
   applications: OpeningBodyApplicationsStatusProps,
   creator: GroupMemberProps
   hasConfirmStep: boolean
@@ -1017,9 +1037,9 @@ export type FlowModalProps = FundSourceSelectorProps & {
 export function FlowModal(props: FlowModalProps) {
   const [applicationStake, setApplicationStake] = useState(new u128(0))
   const [roleStake, setRoleStake] = useState(new u128(1))
-  const [stakeKeyAddress, setStakeKeyAddress] = useState<AccountId>(null)
+  const [stakeKeyAddress, setStakeKeyAddress] = useState<AccountId>(new AccountId())
   const [stakeKeyPassphrase, setStakeKeyPassphrase] = useState("")
-  const [txKeyAddress, setTxKeyAddress] = useState<AccountId>(null)
+  const [txKeyAddress, setTxKeyAddress] = useState<AccountId>(new AccountId())
   const [txKeyPassphrase, setTxKeyPassphrase] = useState("")
 
   const [activeStep, setActiveStep] = useState(props.hasConfirmStep ?
@@ -1028,6 +1048,7 @@ export function FlowModal(props: FlowModalProps) {
   const [complete, setComplete] = useState(false)
   const [appDetails, setAppDetails] = useState({})
   const [txDetails, setTxDetails] = useState(new Map<string, string>())
+  const [roleKeyName, setRoleKeyName] = useState("role.key")
 
   const setTxDetail = (name: string, value: string) => {
     setTxDetails(new Map(txDetails.set(name, value)))
@@ -1057,6 +1078,8 @@ export function FlowModal(props: FlowModalProps) {
     setTxDetail("Application stake", formatBalance(applicationStake))
     setTxDetail("Role stake", formatBalance(roleStake))
     setTxDetail("Extrinsic hash", "0xae6d24d4d55020c645ddfe2e8d0faf93b1c0c9879f9bf2c439fb6514c6d1292e")
+
+	setRoleKeyName("some-role.key")
 
     // TODO: Make transaction
     setActiveStep(ProgressSteps.SubmitApplication)
@@ -1105,7 +1128,7 @@ export function FlowModal(props: FlowModalProps) {
       transactionDetails={txDetails}
     />],
 
-    [ProgressSteps.Done, <DoneStage {...props} />],
+    [ProgressSteps.Done, <DoneStage {...props} roleKeyName={roleKeyName} />],
   ])
 
   return (

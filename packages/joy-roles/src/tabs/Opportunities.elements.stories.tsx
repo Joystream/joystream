@@ -1,5 +1,5 @@
 import React from 'react'
-import { number, text, withKnobs } from '@storybook/addon-knobs'
+import { withKnobs } from '@storybook/addon-knobs'
 import { Card, Container } from 'semantic-ui-react'
 
 import { u128 } from '@polkadot/types'
@@ -257,6 +257,11 @@ export function ReviewInProgress() {
       _description: "Standard control",
       review_end_time: tomorrow(),
       review_end_block: 1000000,
+      uri: "",
+      state: OpeningState.InReview,
+      starting_block: 0,
+      starting_block_hash: "",
+      created_time: new Date(),
     },
   ]
 

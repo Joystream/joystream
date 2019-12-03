@@ -74,7 +74,7 @@ export function StorageAndDistribution(props: StorageAndDistributionProps) {
                 <MemberView
                   actor={actor}
                   balance={props.balances.get(actor.account.toString())}
-                  profile={props.profiles.get(actor.member_id.toNumber())}
+                  profile={props.profiles.get(actor.member_id.toNumber()) as Profile}
                 />
               </Table.Cell>
               <Table.Cell>

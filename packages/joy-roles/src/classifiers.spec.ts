@@ -1,10 +1,10 @@
 import { AcceptingApplications, ActiveOpeningStage, OpeningStage, OpeningStageActive } from "@joystream/types/hiring"
-import { classifyOpeningStage, OpeningStageClassification } from './classifiers'
+import { classifyOpeningStage } from './classifiers'
 
 type Test = {
   description: string
   input: OpeningStage
-  output: OpeningStageClassification
+  output: any//OpeningStageClassification
 }
 
 describe('publicToAddr', (): void => {
@@ -22,7 +22,6 @@ describe('publicToAddr', (): void => {
         })
       }),
       output: {
-        description: "Accepting applications",
         class: "active",
         starting_block: 100,
       },

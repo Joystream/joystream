@@ -60,9 +60,9 @@ export function HandleView(props: ProfileProps) {
 type MemberProps = ActorProps & BalanceProps & ProfileProps
 
 export function MemberView(props: MemberProps) {
-  let avatar = <Identicon value={props.actor.account.toString()} size="50" />
-  if (typeof props.profile.avatar_uri !== "undefined") {
-    avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
+  let avatar = <Identicon value={props.actor.account.toString()} size={50} />
+  if (typeof props.profile.avatar_uri !== "undefined" && props.profile.avatar_uri.toString() != "") {
+	  avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
   }
 
   return (
@@ -106,6 +106,7 @@ export function GroupMemberView(props: GroupMemberProps) {
   let stake = null
   if (typeof props.stake !== "undefined" && props.stake.toNumber() !== 0) {
     stake = (
+      // @ts-ignore
       <Label color={props.lead ? 'teal' : 'green'} ribbon={fluid ? 'right' : 'left'}>
         <Icon name="shield" />
         Staked
@@ -114,8 +115,8 @@ export function GroupMemberView(props: GroupMemberProps) {
     )
   }
 
-  let avatar = <Identicon value={props.actor.account.toString()} size="50" />
-  if (typeof props.profile.avatar_uri !== "undefined") {
+  let avatar = <Identicon value={props.actor.account.toString()} size={50} />
+  if (typeof props.profile.avatar_uri !== "undefined" && props.profile.avatar_uri.toString() != "") {
     avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
   }
 
