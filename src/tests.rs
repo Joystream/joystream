@@ -212,3 +212,49 @@ fn track_missed_payouts() {
         assert_eq!(recipient.total_reward_missed, payout);
     });
 }
+
+#[test]
+fn activate_and_deactivate_relationship() {
+    build_test_externalities().execute_with(|| {
+
+        System::set_block_number(10000);
+        let recipient_account: u64 = 1;
+        let _ = Balances::deposit_creating(&recipient_account, 400);
+        let mint_id = create_new_mint_with_capacity(0);
+        let recipient_id = Rewards::add_recipient();
+        let payout: u64 = 1000;
+        let next_payout_at: u64 = 12222;
+        
+        // Add relationship
+        let relationship_id = Rewards::add_reward_relationship(
+            mint_id,
+            recipient_id,
+            recipient_account,
+            payout,
+            next_payout_at,
+            None,
+        ).unwrap();
+
+        // The relationship starts out active
+        assert!(Rewards::reward_relationships(&relationship_id).is_active());
+
+        // We are able to deactivate relationship
+        assert!(Rewards::try_to_deactivate_relationship(relationship_id).unwrap());
+
+        // The relationship is no longer active
+        assert!(!Rewards::reward_relationships(&relationship_id).is_active());
+
+        // We cannot deactivate an already deactivated relationship
+        assert!(!Rewards::try_to_deactivate_relationship(relationship_id).unwrap());
+
+        // We are able to activate relationship
+        assert!(Rewards::try_to_activate_relationship(relationship_id, next_payout_at).unwrap());
+
+        // The relationship is now not active
+        assert!(Rewards::reward_relationships(&relationship_id).is_active());
+
+        // We cannot activate an already active relationship
+        assert!(!Rewards::try_to_activate_relationship(relationship_id, next_payout_at).unwrap());
+
+    });
+}
