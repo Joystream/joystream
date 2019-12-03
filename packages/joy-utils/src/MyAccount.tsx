@@ -2,7 +2,7 @@ import React from 'react';
 import { Message } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
-import { Option } from '@polkadot/types';
+import { Vec } from '@polkadot/types';
 import { withCalls, withMulti } from '@polkadot/react-api/with';
 
 import { MemberId } from '@joystream/types/members';
@@ -15,7 +15,8 @@ export type MyAddressProps = {
 
 export type MyAccountProps = MyAddressProps & {
   myMemberId?: MemberId,
-  myMemberIdOpt?: Option<MemberId>,
+  memberIdsByRootAccountId? :Vec<MemberId>,
+  memberIdsByControllerAccountId? :Vec<MemberId>,
   myMemberIdChecked?: boolean,
   iAmMember?: boolean
 };
@@ -28,20 +29,24 @@ function withMyAddress<P extends MyAccountProps> (Component: React.ComponentType
 }
 
 const withMyMemberId = withCalls<MyAccountProps>(
-  queryMembershipToProp(
-    'memberIdByAccountId', {
-      paramName: 'myAddress',
-      propName: 'myMemberIdOpt'
-    }
-  )
+  queryMembershipToProp('memberIdsByRootAccountId', 'myAddress'),
+  queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress')
 );
 
 function withMyMembership<P extends MyAccountProps> (Component: React.ComponentType<P>) {
   return function (props: P) {
-    const { myMemberIdOpt } = props;
-    const myMemberIdChecked = myMemberIdOpt !== undefined;
-    const myMemberId = myMemberIdOpt && myMemberIdOpt.isSome
-      ? myMemberIdOpt.unwrap() : undefined;
+    const { memberIdsByRootAccountId, memberIdsByControllerAccountId } = props;
+
+    const myMemberIdChecked = memberIdsByRootAccountId && memberIdsByControllerAccountId;
+
+    let myMemberId;
+    if (memberIdsByRootAccountId && memberIdsByControllerAccountId) {
+      memberIdsByRootAccountId.concat(memberIdsByControllerAccountId);
+      if (memberIdsByRootAccountId.length) {
+        myMemberId = memberIdsByRootAccountId[0];
+      }
+    }
+
     const iAmMember = myMemberId !== undefined;
 
     const newProps = {

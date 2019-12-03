@@ -2,102 +2,50 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { Codec, TypeDef } from '@polkadot/types/types';
-import { Props, RawParam } from '../types';
+import { TypeDef } from '@polkadot/types/types';
+import { ParamDef, Props, RawParam } from '../types';
 
-import React from 'react';
-import { isUndefined } from '@polkadot/util';
+import React, { useEffect, useState } from 'react';
+import { createType, getTypeDef } from '@polkadot/types';
 
-import Bare from './Bare';
-import findComponent from './findComponent';
+import Params from '../';
+import Base from './Base';
+import Static from './Static';
 
-interface State {
-  Components: React.ComponentType<Props>[];
-  sub: string[];
-  subTypes: TypeDef[];
-  type?: string;
-  values: RawParam[];
-}
+export default function Tuple (props: Props): React.ReactElement<Props> {
+  const [params, setParams] = useState<ParamDef[]>([]);
+  const { className, isDisabled, label, onChange, style, type, withLabel } = props;
 
-export default class Tuple extends React.PureComponent<Props, State> {
-  public state: State = {
-    Components: [],
-    sub: [],
-    subTypes: [],
-    values: []
+  useEffect((): void => {
+    const rawType = createType(type.type as any).toRawType();
+    const typeDef = getTypeDef(rawType);
+
+    setParams((typeDef.sub as TypeDef[]).map((type): ParamDef => ({ name: type.name, type })));
+  }, [type]);
+
+  if (isDisabled) {
+    return <Static {...props} />;
+  }
+
+  const _onChangeParams = (values: RawParam[]): void => {
+    onChange && onChange({
+      isValid: values.reduce((result, { isValid }): boolean => result && isValid, true as boolean),
+      value: values.map(({ value }): any => value)
+    });
   };
 
-  public static getDerivedStateFromProps ({ defaultValue: { value }, type: { sub, type } }: Props, prevState: State): Partial<State> | null {
-    if (type === prevState.type) {
-      return null;
-    }
-
-    const subTypes = sub && Array.isArray(sub)
-      ? sub
-      : [];
-    const values = (value as any[]).map((value): { isValid: boolean; value: Codec } =>
-      isUndefined(value) || isUndefined(value.isValid)
-        ? {
-          isValid: !isUndefined(value),
-          value
-        }
-        : value
-    );
-
-    return {
-      Components: subTypes.map((type): React.ComponentType<Props> => findComponent(type)),
-      sub: subTypes.map(({ type }): string => type),
-      subTypes,
-      type,
-      values
-    };
-  }
-
-  public render (): React.ReactNode {
-    const { className, isDisabled, onEnter, style, withLabel } = this.props;
-    const { Components, sub, subTypes, values } = this.state;
-
-    return (
-      <Bare
+  return (
+    <div className='ui--Params-Tuple'>
+      <Base
         className={className}
+        label={label}
         style={style}
-      >
-        {Components.map((Component, index): React.ReactNode => (
-          <Component
-            defaultValue={values[index] || {}}
-            isDisabled={isDisabled}
-            key={index}
-            label={sub[index]}
-            onChange={this.onChange(index)}
-            onEnter={onEnter}
-            type={subTypes[index]}
-            withLabel={withLabel}
-          />
-        ))}
-      </Bare>
-    );
-  }
-
-  private onChange = (index: number): (value: RawParam) => void => {
-    return (value: RawParam): void => {
-      this.setState(
-        ({ values }: State): State => ({
-          values: values.map((svalue, sindex): RawParam =>
-            (sindex === index)
-              ? value
-              : svalue
-          )
-        } as unknown as State),
-        (): void => {
-          const { values } = this.state;
-          const { onChange } = this.props;
-
-          onChange && onChange({
-            isValid: values.reduce((result: boolean, { isValid }): boolean => result && isValid, true),
-            value: values.map(({ value }): any => value)
-          });
-        }
-      );
-    };
-  }
+        withLabel={withLabel}
+      />
+      <Params
+        onChange={_onChangeParams}
+        params={params}
+      />
+    </div>
+  );
 }

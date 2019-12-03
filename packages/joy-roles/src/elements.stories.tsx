@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react'
 import { boolean, number, text, withKnobs } from '@storybook/addon-knobs'
 import { Table } from 'semantic-ui-react';

@@ -284,7 +284,7 @@ class Component extends React.PureComponent<Props, State> {
       await axios.put<{ message: string }>(url, file_data, config);
     } catch(err) {
       this.setState({ progress: 0, error: err, uploading: false });
-      if (axios.isCancel) {
+      if (axios.isCancel(err)) {
         return;
       }
       if (!err.response || (err.response.status >= 500 && err.response.status <= 504)) {

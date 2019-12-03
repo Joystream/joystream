@@ -11,13 +11,14 @@ import {
   Segment,
   Statistic,
   Table,
+  SemanticICONS,
 } from 'semantic-ui-react'
 
 import { formatBalance } from '@polkadot/util';
 import { u128 } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
-import { GenericJoyStreamRoleSchema } from './schemas/role.schema'
+import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
 import { Opening } from "@joystream/types/hiring"
 
 import {
@@ -114,7 +115,7 @@ function RankAndCapacity(props: RankAndCapacityProps) {
     capacity = "/ " + props.capacity
   }
 
-  let iconName = 'check circle'
+  let iconName:SemanticICONS = 'check circle'
   if (props.capacity > 0 && props.rank > props.capacity) {
     iconName = 'times circle'
   }
@@ -157,7 +158,7 @@ function ApplicationCancelledStatus(props: ApplicationStatusProps) {
     </Message>
   )
 }
-type statusRenderer = (p: ApplicationProps) => void
+type statusRenderer = (p: ApplicationStatusProps) => any
 
 const applicationStatusRenderers = new Map<OpeningState, statusRenderer>([
   [OpeningState.AcceptingApplications, ApplicationStatusAcceptingApplications],
@@ -165,7 +166,7 @@ const applicationStatusRenderers = new Map<OpeningState, statusRenderer>([
   [OpeningState.Complete, ApplicationStatusComplete],
 ])
 
-function ApplicationStatusAcceptingApplications(props: ApplicationStatusProps) {
+function ApplicationStatusAcceptingApplications(props: ApplicationStatusProps): any {
   let positive = true
   let message = (
     <p>When the review period begins, you will be considered for this role. </p>
@@ -187,7 +188,7 @@ function ApplicationStatusAcceptingApplications(props: ApplicationStatusProps) {
   )
 }
 
-function ApplicationStatusInReview(props: ApplicationStatusProps) {
+function ApplicationStatusInReview(props: ApplicationStatusProps): any {
   let positive = true
   let message = (
     <p>You are being considered for this role. </p>
@@ -209,7 +210,7 @@ function ApplicationStatusInReview(props: ApplicationStatusProps) {
   )
 }
 
-function ApplicationStatusComplete(props: ApplicationStatusProps) {
+function ApplicationStatusComplete(props: ApplicationStatusProps): any {
   return (
     <Message negative>
       <Message.Header>
@@ -240,7 +241,7 @@ export function ApplicationStatus(props: ApplicationStatusProps) {
     return ApplicationCancelledStatus(props)
   }
 
-  return applicationStatusRenderers.get(props.openingStatus)(props)
+  return (applicationStatusRenderers.get(props.openingStatus) as statusRenderer)(props)
 }
 
 enum ApplicationState {
@@ -354,7 +355,7 @@ export function Application(props: ApplicationProps) {
           </Table>
           <h4>Hiring process details</h4>
           <List bulleted>
-            {application.process.details.map((detail, key) => (
+            {application.process && application.process.details.map((detail:string, key:any) => (
               <List.Item key={key}>
                 <List.Icon name="info circle" />
                 <List.Content>{detail}</List.Content>

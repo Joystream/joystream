@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState } from 'react'
 import { number, object, withKnobs } from '@storybook/addon-knobs'
 import { Card, Container, Message } from 'semantic-ui-react'
@@ -206,7 +207,7 @@ export function SelectTwoMinimumStakes() {
 }
 
 export function StageAConfirmStakes() {
-  const permutations: (ConfirmStakesStageProps & TestProps)[] = [
+  const permutations: (any & TestProps)[] = [
     {
       _description: "One fixed stake (application), no limit",
       requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
@@ -214,7 +215,6 @@ export function StageAConfirmStakes() {
       maxNumberOfApplications: 0,
       numberOfApplications: 0,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "One fixed stake (role), no limit",
@@ -223,7 +223,6 @@ export function StageAConfirmStakes() {
       maxNumberOfApplications: 0,
       numberOfApplications: 0,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "Two fixed stakes, no limit",
@@ -232,7 +231,6 @@ export function StageAConfirmStakes() {
       maxNumberOfApplications: 0,
       numberOfApplications: 0,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "One fixed stake (application), 20 applicant limit",
@@ -241,7 +239,6 @@ export function StageAConfirmStakes() {
       maxNumberOfApplications: 20,
       numberOfApplications: 0,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "One fixed stake (role), 20 applicant limit",
@@ -250,7 +247,6 @@ export function StageAConfirmStakes() {
       maxNumberOfApplications: 20,
       numberOfApplications: 0,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "Two fixed stakes, 20 applicant limit",
@@ -259,7 +255,6 @@ export function StageAConfirmStakes() {
       maxNumberOfApplications: 20,
       numberOfApplications: 0,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "One minimum stake (application), no limit",
@@ -268,7 +263,6 @@ export function StageAConfirmStakes() {
       maxNumberOfApplications: 0,
       numberOfApplications: 20,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "One minimum stake (role), no limit",
@@ -277,7 +271,6 @@ export function StageAConfirmStakes() {
       maxNumberOfApplications: 0,
       numberOfApplications: 20,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "Two minimum stakes, no limit",
@@ -285,7 +278,6 @@ export function StageAConfirmStakes() {
       requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
       maxNumberOfApplications: 0,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "Minimum application stake, fixed role stake, no limit",
@@ -293,7 +285,6 @@ export function StageAConfirmStakes() {
       requiredRoleStake: new RoleStakeRequirement(new u128(10)),
       maxNumberOfApplications: 0,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "Minimum role stake, fixed application stake, no limit",
@@ -301,7 +292,6 @@ export function StageAConfirmStakes() {
       requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
       maxNumberOfApplications: 0,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "One minimum stake (application), 20 applicant limit",
@@ -310,7 +300,6 @@ export function StageAConfirmStakes() {
       maxNumberOfApplications: 0,
       numberOfApplications: 20,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "One minimum stake (role), 20 applicant limit",
@@ -319,7 +308,6 @@ export function StageAConfirmStakes() {
       maxNumberOfApplications: 0,
       numberOfApplications: 20,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "Two minimum stakes, 20 applicant limit",
@@ -327,7 +315,6 @@ export function StageAConfirmStakes() {
       requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
       maxNumberOfApplications: 20,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "Minimum application stake, fixed role stake, 20 applicant limit",
@@ -336,7 +323,6 @@ export function StageAConfirmStakes() {
       maxNumberOfApplications: 0,
       numberOfApplications: 20,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
     {
       _description: "Minimum role stake, fixed application stake, 20 applicant limit",
@@ -345,7 +331,6 @@ export function StageAConfirmStakes() {
       maxNumberOfApplications: 0,
       numberOfApplications: 20,
       defactoMinimumStake: new u128(0),
-      nextTransition: () => { },
     },
   ]
 

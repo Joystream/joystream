@@ -21,8 +21,11 @@ export interface OpeningStageClassification {
 export function classifyOpeningStage(stage: OpeningStage): OpeningStageClassification {
   // TODO! Implement this properly, based on enum values
   return {
+    uri: "",
     state: OpeningState.AcceptingApplications,
     starting_block: 100,
+    starting_block_hash: "",
+    created_time: new Date(),
   }
 }
 

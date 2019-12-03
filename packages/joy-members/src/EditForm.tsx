@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
-import { Option, Vec as Vector } from '@polkadot/types';
+import { Option, Vec } from '@polkadot/types';
 import Section from '@polkadot/joy-utils/Section';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import * as JoyForms from '@polkadot/joy-utils/forms';
@@ -42,7 +42,9 @@ type ValidationProps = {
 
 type OuterProps = ValidationProps & {
   profile?: Profile,
-  paidTerms: PaidMembershipTerms
+  paidTerms: PaidMembershipTerms,
+  paidTermId: PaidTermId,
+  memberId? : MemberId,
 };
 
 type FormValues = {
@@ -63,6 +65,7 @@ const InnerForm = (props: FormProps) => {
   const {
     profile,
     paidTerms,
+    paidTermId,
     initialValues,
     values,
     touched,
@@ -70,7 +73,8 @@ const InnerForm = (props: FormProps) => {
     isValid,
     isSubmitting,
     setSubmitting,
-    resetForm
+    resetForm,
+    memberId,
   } = props;
 
   const onSubmit = (sendTx: () => void) => {
@@ -114,9 +118,11 @@ const InnerForm = (props: FormProps) => {
     });
 
     if (profile) {
-      return [ userInfo ];
+      // update profile
+      return [ memberId, userInfo ];
     } else {
-      return [ paidTerms.id, userInfo ];
+      // register as new member
+      return [ paidTermId, userInfo ];
     }
   };
 
@@ -226,6 +232,8 @@ function WithMyProfileInner (p: WithMyProfileProps) {
       maxAboutTextLength={p.maxAboutTextLength.toNumber()}
       profile={profile as Profile}
       paidTerms={p.paidTerms.unwrap()}
+      paidTermId={p.paidTermsId}
+      memberId={p.memberId}
     />;
   } else return <em>Loading...</em>;
 }
@@ -241,14 +249,18 @@ const WithMyProfile = withCalls<WithMyProfileProps>(
 )(WithMyProfileInner);
 
 type WithMyMemberIdProps = MyAccountProps & {
-  memberIdByAccountId?: Option<MemberId>,
-  paidTermsIds?: Vector<PaidTermId>
+  memberIdsByRootAccountId?: Vec<MemberId>,
+  memberIdsByControllerAccountId?: Vec<MemberId>,
+  paidTermsIds?: Vec<PaidTermId>
 };
 
 function WithMyMemberIdInner (p: WithMyMemberIdProps) {
-  if (p.memberIdByAccountId && p.paidTermsIds) {
+  if (p.memberIdsByRootAccountId && p.memberIdsByControllerAccountId && p.paidTermsIds) {
     if (p.paidTermsIds.length) {
-      const memberId = p.memberIdByAccountId.unwrapOr(undefined);
+      // let member_ids = p.memberIdsByRootAccountId.slice(); // u8a.subarray is not a function!!
+      p.memberIdsByRootAccountId.concat(p.memberIdsByControllerAccountId);
+      const memberId = p.memberIdsByRootAccountId.length ? p.memberIdsByRootAccountId[0] : undefined;
+
       return <WithMyProfile memberId={memberId} paidTermsId={p.paidTermsIds[0]} />;
     } else {
       console.error('Active paid membership terms is empty');
@@ -258,7 +270,8 @@ function WithMyMemberIdInner (p: WithMyMemberIdProps) {
 }
 
 const WithMyMemberId = withMyAccount(withCalls<WithMyMemberIdProps>(
-  queryMembershipToProp('memberIdByAccountId', 'myAddress'),
+  queryMembershipToProp('memberIdsByRootAccountId', 'myAddress'),
+  queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress'),
   queryMembershipToProp('activePaidMembershipTerms', { propName: 'paidTermsIds' })
 )(WithMyMemberIdInner));
 

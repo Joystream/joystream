@@ -19,6 +19,8 @@ import { Api } from '@polkadot/react-api';
 import { QueueConsumer } from '@polkadot/react-components/Status/Context';
 import Queue from '@polkadot/react-components/Status/Queue';
 import { MyAccountProvider } from '@polkadot/joy-utils/MyAccountContext';
+import { BlockAuthors, Events } from '@polkadot/react-query';
+
 import Apps from './Apps';
 
 const rootId = 'root';
@@ -28,15 +30,15 @@ const rootElement = document.getElementById(rootId);
 //  - http://localhost:3000/?rpc=wss://substrate-rpc.parity.io/#/explorer
 //  - http://localhost:3000/#/explorer?rpc=wss://substrate-rpc.parity.io
 const urlOptions = queryString.parse(location.href.split('?')[1]);
-const wsEndpoint = urlOptions.rpc || process.env.WS_URL || settings.apiUrl;
+const _wsEndpoint = urlOptions.rpc || process.env.WS_URL || settings.apiUrl;
 
-if (Array.isArray(wsEndpoint)) {
+if (Array.isArray(_wsEndpoint)) {
   throw new Error('Invalid WS endpoint specified');
 }
 
-if (!rootElement) {
-  throw new Error(`Unable to find element with id '${rootId}'`);
-}
+// on some combo of browsers/os, this https://polkadot.js.org/apps/?rpc=ws://127.0.0.1:9944#/explorer
+// turns into ws://127.0.0.1:9944#/explorer (split these)
+const wsEndpoint = _wsEndpoint.split('#')[0];
 
 console.log('WS endpoint=', wsEndpoint);
 
@@ -58,6 +60,10 @@ const theme = {
   theme: settings.uiTheme
 };
 
+if (!rootElement) {
+  throw new Error(`Unable to find element with id '${rootId}'`);
+}
+
 ReactDOM.render(
   <Suspense fallback='...'>
     <MyAccountProvider>
@@ -69,11 +75,15 @@ ReactDOM.render(
             queueSetTxStatus={queueSetTxStatus}
             url={wsEndpoint}
           >
-            <HashRouter>
-              <ThemeProvider theme={theme}>
-                <Apps />
-              </ThemeProvider>
-            </HashRouter>
+            <BlockAuthors>
+              <Events>
+                <HashRouter>
+                  <ThemeProvider theme={theme}>
+                    <Apps />
+                  </ThemeProvider>
+                </HashRouter>
+              </Events>
+            </BlockAuthors>
           </Api>
         )}
       </QueueConsumer>

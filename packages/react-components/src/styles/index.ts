@@ -11,6 +11,7 @@ import cssMedia from './media';
 import cssRx from './rx';
 import cssSemantic from './semantic';
 import cssTheme from './theme';
+import cssJoystream from './joystream';
 
 export default createGlobalStyle`
   #root {
@@ -99,6 +100,10 @@ export default createGlobalStyle`
 
     &[open] > summary {
       white-space: normal;
+
+      br, br + * {
+        display: block;
+      }
     }
 
     > summary {
@@ -106,6 +111,10 @@ export default createGlobalStyle`
       overflow: hidden;
       white-space: nowrap;
       outline: none;
+
+      br, br + * {
+        display: none;
+      }
     }
   }
 
@@ -169,4 +178,5 @@ export default createGlobalStyle`
   ${cssMedia}
   ${cssRx}
   ${cssComponents}
+  ${cssJoystream}
 `;

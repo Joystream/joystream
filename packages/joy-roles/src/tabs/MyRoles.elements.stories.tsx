@@ -1,5 +1,5 @@
 import React from 'react'
-import { number, text, withKnobs } from '@storybook/addon-knobs'
+import { text, withKnobs } from '@storybook/addon-knobs'
 
 import {
   Container,
@@ -13,7 +13,7 @@ import {
   CurrentRoles, CurrentRolesProps,
   Application, ApplicationProps,
   ApplicationStatus, ApplicationStatusProps, CancelledReason,
-  Applications, ApplicationsProps,
+  Applications,
 } from "./MyRoles"
 
 import 'semantic-ui-css/semantic.min.css'

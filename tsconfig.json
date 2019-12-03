@@ -1,7 +1,8 @@
 {
   "extends": "./node_modules/@polkadot/dev/config/tsconfig",
   "exclude": [
-    "patches"
+    "build/**/*",
+    "**/build/**/*"
   ],
   "compilerOptions": {
     "baseUrl": ".",
@@ -82,6 +83,7 @@
       "@polkadot/react-signer": [ "packages/react-signer/src" ],
       "@polkadot/react-signer/*": [ "packages/react-signer/src/*" ]
     },
+    "skipLibCheck": true,
     "typeRoots": [
       "./node_modules/@polkadot/ts",
       "./node_modules/@types",

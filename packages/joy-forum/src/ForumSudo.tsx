@@ -6,7 +6,6 @@ import * as Yup from 'yup';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
 import { InputAddress } from '@polkadot/react-components/index';
-// import { Props as InputAddressProps } from '@polkadot/react-components/InputAddress';
 import { withMulti } from '@polkadot/react-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
@@ -16,7 +15,7 @@ import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { withOnlySudo } from '@polkadot/joy-utils/Sudo';
 import { AccountId } from '@polkadot/types/interfaces';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
-import { AddressPreview } from '@polkadot/react-components/AddressMiniJoy';
+import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { withForumCalls } from './calls';
 
 const buildSchema = () => Yup.object().shape({});
@@ -141,7 +140,7 @@ const InnerForm = (props: FormProps) => {
       </Section>
     )
     : (<>
-      {currentSudo && <p><AddressPreview address={currentSudo} /></p>}
+      {currentSudo && <p><AddressMini value={currentSudo} /></p>}
       <Button
         type='button'
         size='large'
@@ -217,7 +216,7 @@ function innerWithOnlyForumSudo<P extends LoadStructProps> (Component: React.Com
       return (
         <JoyWarn title={`Only forum sudo can access this functionality.`}>
           <div>Current forum sudo:</div>
-          <div>{sudo ? <AddressPreview address={sudo} /> : 'UNDEFINED'}</div>
+          <div>{sudo ? <AddressMini value={sudo} /> : 'UNDEFINED'}</div>
         </JoyWarn>
       );
     }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react'
 import { number, object, withKnobs } from '@storybook/addon-knobs'
 

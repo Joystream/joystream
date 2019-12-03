@@ -5,7 +5,7 @@ import marked from 'marked';
 import CopyToClipboard from 'react-copy-to-clipboard';
 
 import { Link } from 'react-router-dom';
-import { Button, Card, Container, Grid, Header, Icon, Label, List, Message, Statistic, SemanticICONS } from 'semantic-ui-react'
+import { Button, Card, Container, Grid, Icon, Label, List, Message, Statistic, SemanticICONS } from 'semantic-ui-react'
 
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
@@ -82,10 +82,6 @@ type OpeningHeaderProps = {
 }
 
 export function OpeningHeader(props: OpeningHeaderProps) {
-  const onCopy = () => {
-    return false
-  }
-
   return (
     <Grid columns="equal">
       <Grid.Column className="status">
@@ -169,7 +165,7 @@ export interface IStakeRequirement {
   value: Balance
   fixed(): boolean
   atLeast(): boolean
-  describe(string)
+  describe(): any
 }
 
 abstract class StakeRequirement {
@@ -206,7 +202,7 @@ abstract class StakeRequirement {
 }
 
 export class ApplicationStakeRequirement extends StakeRequirement implements IStakeRequirement {
-  describe(name: string) {
+  describe(): any {
     if (!this.anyRequirement()) {
       return null
     }
@@ -220,7 +216,7 @@ export class ApplicationStakeRequirement extends StakeRequirement implements ISt
 }
 
 export class RoleStakeRequirement extends StakeRequirement implements IStakeRequirement {
-  describe(name: string) {
+  describe(): any {
     if (!this.anyRequirement()) {
       return null
     }
@@ -479,7 +475,7 @@ export function OpeningBody(props: OpeningBodyProps) {
               The maximum review period for this opening is <strong>{blockNumber} blocks</strong> (approximately <strong>{timeInHumanFormat(props.block_time_in_seconds, props.opening.max_review_period_length.toNumber())}</strong>).
                         </List.Content>
           </List.Item>
-          {props.text.process.details.map((detail, key) => (
+          {props.text.process && props.text.process.details.map((detail, key) => (
             <List.Item key={key}>
               <List.Icon name="info circle" />
               <List.Content>{detail}</List.Content>
@@ -520,10 +516,8 @@ type Props = OpeningHeaderProps & DynamicMinimumProps & BlockTimeProps & {
 export function OpeningView(props: Props) {
   const hrt = props.opening.human_readable_text
 
-  if (typeof hrt === "undefined") {
+  if (typeof hrt === "undefined" || typeof hrt === "string") {
     return null
-  } else if (typeof hrt === "string") {
-    return "FIXME: what do we do?"
   }
 
   const text = hrt as GenericJoyStreamRoleSchema
@@ -536,7 +530,9 @@ export function OpeningView(props: Props) {
           <OpeningHeader stage={props.stage} />
         </Card.Content>
         <Card.Content className="main">
-          <OpeningBody text={text}
+          <OpeningBody 
+            {...props.applications}
+            text={text}
             opening={props.opening}
             creator={props.creator}
             stage={props.stage}
