@@ -351,21 +351,19 @@ pub enum BeginAcceptingApplicationsError {
 }
 
 pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
-
     pub opening: Opening<BalanceOf<T>, T::BlockNumber, T::ApplicationId>,
 
     pub active_stage: ActiveOpeningStage<T::BlockNumber>,
-    
-    pub applications_added: BTreeSet<T::ApplicationId>,
-    
-    pub active_application_count: u32,
-    
-    pub unstaking_application_count: u32,
-    
-    pub deactivated_application_count: u32,
-    
-    pub would_get_added_success: ApplicationAddedSuccess<T>
 
+    pub applications_added: BTreeSet<T::ApplicationId>,
+
+    pub active_application_count: u32,
+
+    pub unstaking_application_count: u32,
+
+    pub deactivated_application_count: u32,
+
+    pub would_get_added_success: ApplicationAddedSuccess<T>,
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -380,12 +378,11 @@ pub enum AddApplicationError {
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct ApplicationAdded<ApplicationId> {
-
     /// ...
     pub application_id_added: ApplicationId,
 
     /// ...
-    pub application_id_crowded_out: Option<ApplicationId>
+    pub application_id_crowded_out: Option<ApplicationId>,
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -503,38 +500,30 @@ impl<T: Trait> Module<T> {
             CancelOpeningError::OpeningNotInCancellableStage
         )?;
 
-        // 
+        //
         let current_block_height = <system::Module<T>>::block_number(); // move later!
 
-        let new_active_stage = 
-        match active_stage {
-            ActiveOpeningStage::AcceptingApplications { started_accepting_applicants_at_block } => {
-
-                Ok(
-                    ActiveOpeningStage::Deactivated {
-                        cause: OpeningDeactivationCause::CancelledAcceptingApplications,
-                        deactivated_at_block: current_block_height,
-                        started_accepting_applicants_at_block: started_accepting_applicants_at_block,
-                        started_review_period_at_block: None,
-                    }
-                )
-
-            },
-            ActiveOpeningStage::ReviewPeriod { started_accepting_applicants_at_block, started_review_period_at_block} => {
-
-                Ok(
-                    ActiveOpeningStage::Deactivated {
-                        cause: OpeningDeactivationCause::CancelledInReviewPeriod,
-                        deactivated_at_block: current_block_height,
-                        started_accepting_applicants_at_block: started_accepting_applicants_at_block,
-                        started_review_period_at_block: Some(started_review_period_at_block),
-                    }
-                )
-
-            },
-            ActiveOpeningStage::Deactivated {..} => {
+        let new_active_stage = match active_stage {
+            ActiveOpeningStage::AcceptingApplications {
+                started_accepting_applicants_at_block,
+            } => Ok(ActiveOpeningStage::Deactivated {
+                cause: OpeningDeactivationCause::CancelledAcceptingApplications,
+                deactivated_at_block: current_block_height,
+                started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                started_review_period_at_block: None,
+            }),
+            ActiveOpeningStage::ReviewPeriod {
+                started_accepting_applicants_at_block,
+                started_review_period_at_block,
+            } => Ok(ActiveOpeningStage::Deactivated {
+                cause: OpeningDeactivationCause::CancelledInReviewPeriod,
+                deactivated_at_block: current_block_height,
+                started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                started_review_period_at_block: Some(started_review_period_at_block),
+            }),
+            ActiveOpeningStage::Deactivated { .. } => {
                 Err(CancelOpeningError::OpeningNotInCancellableStage)
-            },
+            }
         }?;
 
         // Ensure unstaking periods are OK.
@@ -557,8 +546,8 @@ impl<T: Trait> Module<T> {
         //
 
         // Create and store new cancelled opening
-        let new_opening = Opening{
-            stage: OpeningStage::Active{
+        let new_opening = Opening {
+            stage: OpeningStage::Active {
                 stage: new_active_stage,
                 applications_added: applications_added.clone(),
                 active_application_count: active_application_count,
@@ -897,9 +886,8 @@ impl<T: Trait> Module<T> {
     pub fn ensure_can_add_application(
         opening_id: T::OpeningId,
         opt_role_stake_balance: Option<BalanceOf<T>>,
-        opt_application_stake_balance: Option<BalanceOf<T>>
+        opt_application_stake_balance: Option<BalanceOf<T>>,
     ) -> Result<DestructuredApplicationCanBeAddedEvaluation<T>, AddApplicationError> {
-
         // Ensure that the opening exists
         let opening =
             ensure_opening_exists!(T, opening_id, AddApplicationError::OpeningDoesNotExist)?;
@@ -948,15 +936,14 @@ impl<T: Trait> Module<T> {
             AddApplicationError::NewApplicationWasCrowdedOut
         )?;
 
-
-        Ok(DestructuredApplicationCanBeAddedEvaluation{
+        Ok(DestructuredApplicationCanBeAddedEvaluation {
             opening: opening,
             active_stage: active_stage,
             applications_added: applications_added,
             active_application_count: active_application_count,
             unstaking_application_count: unstaking_application_count,
             deactivated_application_count: deactivated_application_count,
-            would_get_added_success: would_get_added_success
+            would_get_added_success: would_get_added_success,
         })
     }
 
@@ -970,13 +957,11 @@ impl<T: Trait> Module<T> {
         opt_application_stake_imbalance: Option<NegativeImbalance<T>>,
         human_readable_text: Vec<u8>,
     ) -> Result<ApplicationAdded<T::ApplicationId>, AddApplicationError> {
-
-        let opt_role_stake_balance = 
-            if let Some(ref imbalance) = opt_role_stake_imbalance {
-                Some(imbalance.peek())
-            } else {
-                None
-            };
+        let opt_role_stake_balance = if let Some(ref imbalance) = opt_role_stake_imbalance {
+            Some(imbalance.peek())
+        } else {
+            None
+        };
 
         let opt_application_stake_balance =
             if let Some(ref imbalance) = opt_application_stake_imbalance {
@@ -985,8 +970,11 @@ impl<T: Trait> Module<T> {
                 None
             };
 
-
-        let can_be_added_destructured = Self::ensure_can_add_application(opening_id, opt_role_stake_balance, opt_application_stake_balance)?;
+        let can_be_added_destructured = Self::ensure_can_add_application(
+            opening_id,
+            opt_role_stake_balance,
+            opt_application_stake_balance,
+        )?;
 
         //
         // == MUTATION SAFE ==
@@ -1045,10 +1033,9 @@ impl<T: Trait> Module<T> {
 
         // Compute index for this new application
         // TODO: fix so that `number_of_appliations_ever_added` can be invoked.
-        let application_index_in_opening =
-            can_be_added_destructured.active_application_count + 
-            can_be_added_destructured.unstaking_application_count + 
-            can_be_added_destructured.deactivated_application_count; // cant do this due to bad design of stage => opening.stage.number_of_appliations_ever_added();
+        let application_index_in_opening = can_be_added_destructured.active_application_count
+            + can_be_added_destructured.unstaking_application_count
+            + can_be_added_destructured.deactivated_application_count; // cant do this due to bad design of stage => opening.stage.number_of_appliations_ever_added();
 
         // Create a new application
         let new_application = hiring::Application {
@@ -1068,7 +1055,7 @@ impl<T: Trait> Module<T> {
         <NextApplicationId<T>>::mutate(|id| *id += One::one());
 
         // Update counter on opening
-        
+
         /*
         TODO:
         Yet another instance of problems due to not following https://github.com/Joystream/joystream/issues/36#issuecomment-539567407
@@ -1086,14 +1073,12 @@ impl<T: Trait> Module<T> {
         });
 
         // DONE
-        let application_added_result = ApplicationAdded{
+        let application_added_result = ApplicationAdded {
             application_id_added: new_application_id,
-            application_id_crowded_out: 
-            
-            match can_be_added_destructured.would_get_added_success {
+            application_id_crowded_out: match can_be_added_destructured.would_get_added_success {
                 ApplicationAddedSuccess::CrowdsOutExistingApplication(id) => Some(id),
                 _ => None,
-            }
+            },
         };
 
         Ok(application_added_result)
@@ -1470,7 +1455,6 @@ impl<T: Trait> Module<T> {
                         ref deactivated_application_count,
                     } = opening.stage
                     {
-
                         assert!(*active_application_count > 0);
 
                         let new_active_application_count = active_application_count - 1;
@@ -1482,7 +1466,7 @@ impl<T: Trait> Module<T> {
                             deactivated_application_count + if was_unstaked { 0 } else { 1 };
 
                         opening.stage = hiring::OpeningStage::Active {
-                            stage: (*stage).clone(),           // <= truly horrible
+                            stage: (*stage).clone(),                           // <= truly horrible
                             applications_added: (*applications_added).clone(), // <= truly horrible
                             active_application_count: new_active_application_count,
                             unstaking_application_count: new_unstaking_application_count,

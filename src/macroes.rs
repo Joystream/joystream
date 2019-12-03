@@ -199,7 +199,6 @@ macro_rules! ensure_stake_balance_matches_staking_policy {
     ) => {{
         if let Some(ref balance) = $opt_balance {
             if let Some(ref policy) = $opt_policy {
-
                 if !policy.accepts_amount(balance) {
                     Err($stake_amount_too_low_error)
                 } else {
