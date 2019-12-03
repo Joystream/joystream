@@ -42,8 +42,12 @@ std = [
     'randomness-collective-flip/std',
     'system-rpc-runtime-api/std',
     'forum/std',
+    'minting/std',
+    'recurringrewards/std',
+    'stake/std',
+    'hiring/std',
     'versioned_store/std',
-    'versioned_store_permissions/std',
+    'versioned_store_permissions/std'
 ]
 
 [dependencies.babe]
@@ -254,9 +258,39 @@ version = '1.0.4'
 
 [dependencies.forum]
 default_features = false
+git = 'https://github.com/joystream/substrate-forum-module'
 package = 'substrate-forum-module'
-git = 'https://github.com/Joystream/substrate-forum-module'
 rev = '4bdeadaadfcca1fd6e822c520f429d4beacc4c8a'
+
+[dependencies.minting]
+default_features = false
+git = 'https://github.com/joystream/substrate-token-minting-module/'
+package = 'substrate-token-mint-module'
+rev = '5570e3b56e9caffa7df1dbede6308b2e6ce18217'
+
+[dependencies.recurringrewards]
+default_features = false
+git = 'https://github.com/joystream/substrate-recurring-reward-module'
+package = 'substrate-recurring-reward-module'
+rev = '417f7bb5b82ae50f02716ac4eefa2fc7952e0f61'
+
+[dependencies.stake]
+default_features = false
+git = 'https://github.com/mnaamani/substrate-stake/'
+package = 'substrate-stake-module'
+rev = '28f4815a7d020fdcd450095cc8a8d7076f8899a6'
+# [dependencies.stake]
+# default_features = false
+# git = 'https://github.com/joystream/substrate-stake-module'
+# package = 'substrate-stake-module'
+# rev = '0516efe9230da112bc095e28f34a3715c2e03ca8'
+# hiring is still pointing at mnaamani/substrate stake
+# update to latest dev branch rev after merging of: https://github.com/Joystream/substrate-hiring-module/pull/13
+[dependencies.hiring]
+default_features = false
+git = 'https://github.com/joystream/substrate-hiring-module'
+package = 'substrate-hiring-module'
+rev = 'e2b84fc8bc760671e69c3f23efe5bfc3521f6e19'
 
 [dependencies.versioned_store]
 default_features = false
