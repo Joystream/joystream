@@ -7,6 +7,9 @@ use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 //use crate::{Trait};
 
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
 // Possible causes
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord)]
 pub enum ApplicationDeactivationCause {
@@ -99,6 +102,7 @@ pub struct Application<OpeningId, BlockNumber, StakeId> {
 }
 
 // How to limit the number of eligible applicants
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
 pub struct ApplicationRationingPolicy {
     // The maximum number of applications that can be on the list at any time.
@@ -223,6 +227,7 @@ impl<BlockNumber: Default, ApplicationId> Default for OpeningStage<BlockNumber, 
 }
 
 // Constraints around staking amount
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
 pub enum StakingAmountLimitMode {
     AtLeast,
@@ -230,6 +235,7 @@ pub enum StakingAmountLimitMode {
 }
 
 // Policy for staking
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
 pub struct StakingPolicy<Balance, BlockNumber> {
     // Staking amount
