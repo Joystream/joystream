@@ -6,6 +6,7 @@ import { ExploreContent } from '../explore/ExploreContent';
 import { MusicAlbumSamples } from './data/MusicAlbumSamples';
 import { PlayContent } from '../explore/PlayContent';
 import { Album1TrackSamples } from './data/MusicTrackSamples';
+import { ChannelDataSample } from './data/ChannelSamples';
 
 export default { 
     title: 'Media | Explore',
@@ -25,6 +26,7 @@ export const FeaturedAndLatestAlbums = () =>
 
 export const PlayAlbum = () =>
 	<PlayContent 
+		channel={ChannelDataSample}
 		featuredAlbums={FeaturedAlbums}
 		tracks={Album1TrackSamples}
 		currentTrackIndex={3}

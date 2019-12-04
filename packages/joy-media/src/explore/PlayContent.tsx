@@ -3,8 +3,11 @@ import { MusicAlbumPreviewProps, MusicAlbumPreview } from '../music/MusicAlbumPr
 import { MusicTrackReaderPreviewProps, MusicTrackReaderPreview } from '../music/MusicTrackReaderPreview';
 import { Pluralize } from '@polkadot/joy-utils/Pluralize';
 import { Table } from 'semantic-ui-react';
+import { ChannelEntity } from '../entities/MusicChannelEntity';
+import { ChannelPreview } from '../channels/ChannelPreview';
 
 type Props = {
+  channel: ChannelEntity,
   tracks: MusicTrackReaderPreviewProps[],
   currentTrackIndex?: number,
   featuredAlbums?: MusicAlbumPreviewProps[],
@@ -22,7 +25,7 @@ const meta = {
 }
 
 export function PlayContent (props: Props) {
-  const { tracks = [], currentTrackIndex = 0, featuredAlbums = [] } = props;
+  const { channel, tracks = [], currentTrackIndex = 0, featuredAlbums = [] } = props;
 
   const [currentTrack, setCurrentTrack] = useState(tracks[currentTrackIndex]);
 
@@ -47,23 +50,36 @@ export function PlayContent (props: Props) {
     </Table>
   </>
 
+  const albumTracks = (
+    <div className='JoyPlayAlbum_AlbumTracks'>
+      <h3><Pluralize count={tracks.length} singularText='Track' /></h3>
+      <Table basic='very' compact>
+        <Table.Body>
+          {tracks.map((x, i) => {
+            const isCurrent = x.id === currentTrack.id;
+            const className = `TrackRow ` + (isCurrent ? 'Current' : '');
+
+            return (
+              <Table.Row className={className} onClick={() => setCurrentTrack(x)}>
+                <Table.Cell className='TrackNumber' width={1}>{i + 1}</Table.Cell>
+                <Table.Cell className='TrackTitle'>{x.title}</Table.Cell>
+              </Table.Row>
+            );
+          })}
+        </Table.Body>
+      </Table>
+    </div>
+  );
+
   return <div className='JoyPlayAlbum'>
     <div className='JoyPlayAlbum_Main'>
       <div className='JoyPlayAlbum_CurrentTrack'>
         <MusicTrackReaderPreview {...currentTrack} size={400} />
-        {metaTable}
+        <ChannelPreview channel={channel} />
       </div>
-      <div className='JoyPlayAlbum_AlbumTracks'>
-        <h3><Pluralize count={tracks.length} singularText='Track' /></h3>
-        {tracks.map((x, i) => {
-          const isCurrent = x.id === currentTrack.id;
-          const className = `Track ` + (isCurrent ? 'Current' : '');
-
-          return <div className={className} onClick={() => setCurrentTrack(x)}>
-              <span className='TrackNumber'>{i + 1}</span>
-              <MusicTrackReaderPreview {...x} orientation='horizontal' size={60} />
-            </div>;
-          })}
+      <div>
+        {albumTracks}
+        {metaTable}
       </div>
     </div>
     {featuredAlbums.length > 0 &&

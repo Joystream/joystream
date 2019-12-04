@@ -5,6 +5,7 @@ $bgHover: #f2f2f2;
 $bgSelected: #c7e7fa;
 
 .JoyBgImg {
+  background-color: #ccc;
   background-size: cover;
   background-position: center;
 }
@@ -98,13 +99,10 @@ $bgSelected: #c7e7fa;
       color: $blackFont;
       margin-bottom: 0.25rem;
     }
-    .AlbumArtist {
-      color: $grayFont;
-      font-size: .9rem;
-    }
+    .AlbumArtist,
     .AlbumTracksCount {
       color: $grayFont;
-      margin-top: .5rem;
+      font-size: .9rem;
     }
   }
 
@@ -165,17 +163,13 @@ $bgSelected: #c7e7fa;
 }
 
 .ChannelAvatar {
-  /* NOTE: set 'background-image' property in JS */
-
   display: table;
   border-radius: 50%;
-  margin-right: 2rem;
+  margin-right: 1rem;
 
-  $size: 100px;
-  width: $size;
-  height: $size;
-  min-width: $size;
-  min-height: $size;
+  &.big {
+    margin-right: 2rem;
+  }
 }
 
 .JoyChannels {
@@ -238,18 +232,33 @@ $bgSelected: #c7e7fa;
   }
 }
 
-.ChannelHeader {
+.ChannelPreview {
+  display: flex;
+
+  .JoyPlayAlbum & {
+    margin: .5rem 0;
+  }
+
   .ChannelTitle {
     font-size: 2rem;
-    margin-top: 1rem;
+    margin-bottom: .5rem;
+
+    .ChannelHeader & {
+      margin-top: 1rem;
+    }
+
+    .JoyPlayAlbum & {
+      font-size: 1.25rem;
+      margin-top: 1rem;
+    }
   }
+
   .ChannelSubtitle {
     color: $grayFont;
+    font-size: .9rem;
     text-transform: uppercase;
   }
 }
-
-
 
 /* Play Album */
 /* ------------------------------------------------------ */
@@ -261,7 +270,7 @@ $bgSelected: #c7e7fa;
   .JoyPlayAlbum_Main {
     display: flex;
     flex-direction: row;
-    margin-right: 1rem;
+    margin-right: 2rem;
 
     .JoyPlayAlbum_CurrentTrack {
       margin-right: 1rem;
@@ -276,10 +285,8 @@ $bgSelected: #c7e7fa;
     }
 
     .JoyPlayAlbum_AlbumTracks {
-      .Track {
-        display: flex;
+      .TrackRow {
         cursor: pointer;
-        padding: .5rem;
 
         &.Current {
           background-color: $bgSelected;
@@ -291,6 +298,10 @@ $bgSelected: #c7e7fa;
         .TrackNumber {
           color: $grayFont;
           width: 2rem;
+          padding-left: .5rem !important;
+        }
+        .TrackTitle {
+          padding-right: .5rem !important;
         }
         .AlbumDescription {
           max-width: 300px;
@@ -298,9 +309,11 @@ $bgSelected: #c7e7fa;
       }
     }
 
+    .JoyPlayAlbum_AlbumTracks,
     .JoyPlayAlbum_MetaInfo {
       td:first-child {
         font-weight: bold;
+        color: $grayFont;
       }
     }
   }

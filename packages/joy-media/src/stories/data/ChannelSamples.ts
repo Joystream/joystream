@@ -3,7 +3,7 @@ import { ChannelEntity } from "@polkadot/joy-media/entities/MusicChannelEntity";
 import { AccountIdSamples } from "./AccountIdSamples";
 import BN from 'bn.js';
 
-export const ChannelsDataSample: ChannelEntity = {
+export const ChannelDataSample: ChannelEntity = {
 	revenueAccountId: AccountIdSamples.Alice,
 	rewardEarned: new BN('4587'),
 	contentItemsCount: 57,
@@ -19,7 +19,7 @@ export const ChannelsDataSample: ChannelEntity = {
 };
 
 export const ChannelsDataSamples: ChannelEntity[] = [
-	ChannelsDataSample,
+	ChannelDataSample,
 	{
 		revenueAccountId: AccountIdSamples.Bob,
 		rewardEarned: new BN('1820021'),

@@ -82,7 +82,7 @@ const ChannelPreview = (props: ChannelPreviewProps) => {
   return <Segment padded>
     <div className='ChannelPreview'>
 
-      <ChannelAvatar channel={channel} />
+      <ChannelAvatar channel={channel} size='big' />
 
       <div className='ChannelDetails'>
         <h2 className='ChannelTitle'>{channel.title}</h2>
