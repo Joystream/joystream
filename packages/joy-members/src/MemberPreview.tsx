@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { withCalls, withMulti } from '@polkadot/react-api/with';
-import { Option } from '@polkadot/types';
+import { Option, Vec } from '@polkadot/types';
 import { AccountId } from '@polkadot/types/interfaces';
 import IdentityIcon from '@polkadot/react-components/IdentityIcon';
 
@@ -71,23 +71,29 @@ class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
 }
 
 type WithMemberIdByAccountIdProps = {
-  memberIdByAccountId?: Option<MemberId>
+  memberIdsByRootAccountId?: Vec<MemberId>,
+  memberIdsByControllerAccountId?: Vec<MemberId>
 };
 
 const withMemberIdByAccountId = withCalls<WithMemberIdByAccountIdProps>(
-  queryMembershipToProp('memberIdByAccountId', 'accountId')
+  queryMembershipToProp('memberIdsByRootAccountId', 'accountId'),
+  queryMembershipToProp('memberIdsByControllerAccountId', 'accountId'),
 );
 
+// Get first matching memberid controlled by an account
 function setMemberIdByAccountId (Component: React.ComponentType<MemberPreviewProps>) {
   return function (props: WithMemberIdByAccountIdProps & MemberPreviewProps) {
-    const { memberIdByAccountId: opt } = props;
-    if (opt) {
-      if (opt.isSome) {
-        const memberId = opt.unwrap();
-        return <Component {...props} memberId={memberId} />;
+    const { memberIdsByRootAccountId, memberIdsByControllerAccountId } = props;
+
+    if (memberIdsByRootAccountId && memberIdsByControllerAccountId) {
+      memberIdsByRootAccountId.concat(memberIdsByControllerAccountId);
+
+      if (memberIdsByRootAccountId.length) {
+        return <Component {...props} memberId={memberIdsByRootAccountId[0]} />;
       } else {
-        return <em>Member not found</em>;
+        return <em>Member not found</em>
       }
+
     } else {
       return null;
     }

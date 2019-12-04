@@ -4,7 +4,7 @@
 
 import { Props as BaseProps, Size } from '../types';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Compact } from '@polkadot/types';
 import { Input } from '@polkadot/react-components';
 import { hexToU8a, isHex, u8aToHex } from '@polkadot/util';
@@ -39,11 +39,25 @@ function convertInput (value: string): [boolean, Uint8Array] {
     // we continue
   }
 
-  return [false, new Uint8Array([])];
+  return [value === '0x', new Uint8Array([])];
 }
 
-function onChange ({ asHex, length = -1, onChange, validate = defaultValidate, withLength }: Props): (_: string) => void {
-  return function (hex: string): void {
+export default function BaseBytes ({ asHex, children, className, defaultValue: { value }, isDisabled, isError, label, length = -1, onChange, onEnter, size = 'full', style, validate = defaultValidate, withLabel, withLength }: Props): React.ReactElement<Props> {
+  const [isValid, setIsValid] = useState(false);
+
+  useEffect((): void => {
+    const [isValid, converted] = convertInput(value);
+
+    setIsValid(
+      isValid && validate(converted) && (
+        length !== -1
+          ? converted.length === length
+          : true
+      )
+    );
+  }, [length, value]);
+
+  const _onChange = (hex: string): void => {
     let [isValid, value] = convertInput(hex);
 
     isValid = isValid && validate(value) && (
@@ -62,11 +76,10 @@ function onChange ({ asHex, length = -1, onChange, validate = defaultValidate, w
         ? u8aToHex(value)
         : value
     });
-  };
-}
 
-export default function BaseBytes (props: Props): React.ReactElement<Props> {
-  const { children, className, defaultValue: { value }, isDisabled, isError, label, onEnter, size = 'full', style, withLabel } = props;
+    setIsValid(isValid);
+  };
+
   const defaultValue = value
     ? (
       isHex(value)
@@ -85,9 +98,9 @@ export default function BaseBytes (props: Props): React.ReactElement<Props> {
         defaultValue={defaultValue}
         isAction={!!children}
         isDisabled={isDisabled}
-        isError={isError}
+        isError={isError || !isValid}
         label={label}
-        onChange={onChange(props)}
+        onChange={_onChange}
         onEnter={onEnter}
         placeholder='0x...'
         type='text'

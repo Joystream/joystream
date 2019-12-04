@@ -67,7 +67,7 @@ class Action extends React.PureComponent<ActionProps> {
 
         return (
             <Table.Row>
-                <Table.Cell><AddressMini value={account} isShort={false} isPadded={false} withBalance={true} withName={true} withMemo={false} size={36}/></Table.Cell>
+                <Table.Cell><AddressMini value={account} isShort={false} isPadded={false} withBalance={true} /></Table.Cell>
                 <Table.Cell>{role.toString()}</Table.Cell>
                 <Table.Cell>{canStake ? null : `(minimum required balance: ${minStake.toString()})`}</Table.Cell>
                 <Table.Cell>

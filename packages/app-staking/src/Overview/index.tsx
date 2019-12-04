@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 // Copyright 2017-2019 @polkadot/app-staking authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
@@ -6,68 +5,47 @@
 import { BareProps } from '@polkadot/react-components/types';
 import { ComponentProps } from '../types';
 
-import React, { useContext } from 'react';
-import { HeaderExtended } from '@polkadot/api-derive';
+import React, { useContext, useEffect, useState } from 'react';
 import { ApiContext } from '@polkadot/react-api';
-import { withCalls, withMulti } from '@polkadot/react-api/with';
-import { formatNumber } from '@polkadot/util';
+import { BlockAuthorsContext } from '@polkadot/react-query';
 
 import CurrentList from './CurrentList';
 import Summary from './Summary';
 
-interface Props extends BareProps, ComponentProps {
-  chain_subscribeNewHeads?: HeaderExtended;
-}
+interface Props extends BareProps, ComponentProps {}
 
-// TODO: Switch to useState
-function Overview (props: Props): React.ReactElement<Props> {
+export default function Overview ({ allControllers, allStashes, recentlyOnline, stakingOverview }: Props): React.ReactElement<Props> {
   const { isSubstrateV2 } = useContext(ApiContext);
-  const { chain_subscribeNewHeads, allControllers, allStashes, currentValidators, recentlyOnline } = props;
-  let nextSorted: string[];
+  const { byAuthor, lastBlockAuthors, lastBlockNumber } = useContext(BlockAuthorsContext);
+  const [next, setNext] = useState<string[]>([]);
+  const validators = stakingOverview && stakingOverview.validators;
 
-  if (isSubstrateV2) {
-    // this is a V2 node currentValidators is a list of stashes
-    nextSorted = allStashes.filter((address): boolean =>
-      !currentValidators.includes(address)
+  useEffect((): void => {
+    validators && setNext(
+      isSubstrateV2
+        // this is a V2 node currentValidators is a list of stashes
+        ? allStashes.filter((address): boolean => !validators.includes(address as any))
+        // this is a V1 node currentValidators is a list of controllers
+        : allControllers.filter((address): boolean => !validators.includes(address as any))
     );
-  } else {
-    // this is a V1 node currentValidators is a list of controllers
-    nextSorted = allControllers.filter((address): boolean =>
-      !currentValidators.includes(address)
-    );
-  }
-
-  let lastBlock = '';
-  let lastAuthor: string | undefined;
-
-  if (chain_subscribeNewHeads) {
-    lastBlock = formatNumber(chain_subscribeNewHeads.number);
-    lastAuthor = (chain_subscribeNewHeads.author || '').toString();
-  }
+  }, [allControllers, allStashes, validators]);
 
   return (
     <div className='staking--Overview'>
       <Summary
         allControllers={allControllers}
-        currentValidators={currentValidators}
-        lastBlock={lastBlock}
-        lastAuthor={lastAuthor}
-        next={nextSorted}
+        lastBlock={lastBlockNumber}
+        lastAuthors={lastBlockAuthors}
+        next={next}
+        stakingOverview={stakingOverview}
       />
       <CurrentList
-        currentValidators={currentValidators}
-        lastBlock={lastBlock}
-        lastAuthor={lastAuthor}
-        next={nextSorted}
+        authorsMap={byAuthor}
+        lastAuthors={lastBlockAuthors}
+        next={next}
         recentlyOnline={recentlyOnline}
+        stakingOverview={stakingOverview}
       />
     </div>
   );
 }
-
-export default withMulti(
-  Overview,
-  withCalls<Props>(
-    'derive.chain.subscribeNewHeads'
-  )
-);

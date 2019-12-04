@@ -1,15 +1,10 @@
-import { Enum, Struct } from '@polkadot/types/codec';
+import { Struct } from '@polkadot/types/codec';
 import { getTypeRegistry, u32, u128, GenericAccountId } from '@polkadot/types';
 import { BlockNumber, AccountId, Balance } from '@polkadot/types/interfaces';
-import { MemberId } from './members';
+import { MemberId, Role } from './members';
 
-export class Role extends Enum {
-  constructor (value?: any) {
-    super([
-      'Storage'
-    ], value);
-  }
-}
+// re-export Role
+export { Role } from './members';
 
 export class Actor extends Struct {
   constructor (value?: any) {
@@ -92,7 +87,6 @@ export function registerRolesTypes () {
   try {
     const typeRegistry = getTypeRegistry();
     typeRegistry.register({
-      Role,
       RoleParameters,
       Request: '(AccountId, MemberId, Role, BlockNumber)',
       Requests: 'Vec<Request>',

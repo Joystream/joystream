@@ -35,6 +35,21 @@ const LOCKING: Option[] = [
   }
 ];
 
+const CAMERA_DEFAULT = 'on';
+
+const CAMERA: Option[] = [
+  {
+    info: 'on',
+    text: 'Allow camera access',
+    value: 'on'
+  },
+  {
+    info: 'off',
+    text: 'Do not allow camera access',
+    value: 'off'
+  }
+];
+
 export {
   CRYPTOS,
   ENDPOINT_DEFAULT,
@@ -53,5 +68,7 @@ export {
   UIMODE_DEFAULT,
   UIMODES,
   UITHEME_DEFAULT,
-  UITHEMES
+  UITHEMES,
+  CAMERA,
+  CAMERA_DEFAULT
 };
