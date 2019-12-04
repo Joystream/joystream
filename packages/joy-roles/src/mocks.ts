@@ -3,7 +3,7 @@ import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
 import { Profile, EntryMethod } from '@joystream/types/members';
 
-export function mockProfile(name: string, avatar_uri:string = ""): Profile {
+export function mockProfile(name: string, avatar_uri: string = ""): Profile {
   return {
     handle: new Text(name),
     avatar_uri: new Text(avatar_uri),
