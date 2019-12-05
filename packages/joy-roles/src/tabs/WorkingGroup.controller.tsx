@@ -17,7 +17,7 @@ type State = {
   storageProviders?: StorageAndDistributionProps,
 }
 
-export class OpportunitiesController extends Controller<ITransport, State> {
+export class WorkingGroupsController extends Controller<ITransport, State> {
   constructor (props: controllerProps<ITransport>) {
     super(props, {});
 

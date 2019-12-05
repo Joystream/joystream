@@ -15,7 +15,7 @@ import { ITransport } from './transport'
 //import { Transport } from './transport.polkadot'
 import { Transport } from './transport.mock'
 
-import { OpportunitiesController } from './tabs/Opportunities.controller'
+import { WorkingGroupsController } from './tabs/WorkingGroup.controller'
 
 import './index.sass';
 
@@ -79,9 +79,9 @@ class App extends React.PureComponent<Props, State> {
           />
         </header>
         <Switch>
-          <Route path={`${basePath}/opportunities`} render={this.renderComponent(OpportunitiesController)} />
-          <Route path={`${basePath}/my-roles`} render={this.renderComponent(OpportunitiesController)} />
-          <Route render={this.renderComponent(OpportunitiesController)} />
+          <Route path={`${basePath}/opportunities`} render={this.renderComponent(WorkingGroupsController)} />
+          <Route path={`${basePath}/my-roles`} render={this.renderComponent(WorkingGroupsController)} />
+          <Route render={this.renderComponent(WorkingGroupsController)} />
         </Switch>
       </main>
     );
