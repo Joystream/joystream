@@ -33,7 +33,7 @@ import Identicon from '@polkadot/react-identicon';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
 import {
-  GroupMemberView, GroupMemberProps,
+  GroupMemberView, GroupMember,
 } from '../elements'
 import {
   OpeningBodyApplicationsStatus, OpeningBodyApplicationsStatusProps,
@@ -1029,7 +1029,7 @@ directly.
 
 export type FlowModalProps = ApplicationDetailsStageProps & ConfirmStakesStageProps & FundSourceSelectorProps & {
   applications: OpeningBodyApplicationsStatusProps,
-  creator: GroupMemberProps
+  creator: GroupMember
   hasConfirmStep: boolean
   transactionFee: Balance
 }

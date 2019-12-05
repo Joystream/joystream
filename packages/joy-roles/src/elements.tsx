@@ -38,7 +38,7 @@ export function MemoView(props: MemoProps) {
   return (
     <div className="memo">
       <span>Memo:</span> {props.memo.toString()}
-      <Link to={`#/addressbook/memo/${props.actor.account.toString()}`}>{' view full memo'}</Link>
+      <Link to={`/addressbook/memo/${props.actor.account.toString()}`}>{' view full memo'}</Link>
     </div>
   )
 }
@@ -53,7 +53,7 @@ export function HandleView(props: ProfileProps) {
   }
 
   return (
-    <Link to={`#/members/${props.profile.handle.toString()}`}>{props.profile.handle.toString()}</Link>
+    <Link to={`/members/${props.profile.handle.toString()}`}>{props.profile.handle.toString()}</Link>
   )
 }
 
@@ -87,7 +87,7 @@ export function ActorDetailsView(props: ActorDetailsProps) {
   )
 }
 
-export type GroupMemberProps = {
+export type GroupMember = {
   actor: Actor
   profile: Profile
   title: string
@@ -97,7 +97,7 @@ export type GroupMemberProps = {
   inset?: boolean
 }
 
-export function GroupMemberView(props: GroupMemberProps) {
+export function GroupMemberView(props: GroupMember) {
   let fluid = false
   if (typeof props.inset !== "undefined") {
     fluid = props.inset

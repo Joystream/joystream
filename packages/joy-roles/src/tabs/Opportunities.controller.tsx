@@ -1,26 +1,36 @@
 import React from 'react';
+import { Container } from 'semantic-ui-react';
 
 // Middleware: FIXME: move somewhere outside of hiring package
-import { Controller, controllerProps } from '../middleware/controller'
+import { Controller, controllerProps } from '@polkadot/joy-utils'
 
 import { ITransport } from '../transport'
 
-import { Role } from '@joystream/types/roles';
+import { 
+  ContentCurators,  
+  WorkingGroupProps, 
+  StorageAndDistribution, StorageAndDistributionProps,
+} from './WorkingGroup'
 
 type State = {
-  a?: Array<Role>,
+  contentCurators?: WorkingGroupProps,
+  storageProviders?: StorageAndDistributionProps,
 }
 
 export class OpportunitiesController extends Controller<ITransport, State> {
   constructor (props: controllerProps<ITransport>) {
     super(props, {});
 
-    props.transport.roles().then((value) => { this.setState({a: value}) })
+    props.transport.curationGroup().then(value => this.setState({contentCurators: value}) )
+    props.transport.storageGroup().then(value => this.setState({storageProviders: value}) )
   }
 
   render() {
     return (
-      <pre>{this.state.a && JSON.stringify(this.state.a.toString())}</pre>
+      <Container>
+        <ContentCurators {...this.state.contentCurators as WorkingGroupProps} />
+        <StorageAndDistribution {...this.state.storageProviders as StorageAndDistributionProps} />
+      </Container>
     )
   }
 }

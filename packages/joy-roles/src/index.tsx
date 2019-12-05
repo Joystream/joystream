@@ -9,12 +9,11 @@ import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
 import accountObservable from '@polkadot/ui-keyring/observable/accounts';
 import { withCalls, withMulti, withObservable } from '@polkadot/react-api/index';
 
-// Middleware: FIXME: move somewhere outside of hiring package
-import { ControllerComponent } from './middleware/controller'
+import { ControllerComponent } from 'polkadot/joy-utils'
 
 import { ITransport } from './transport'
-import { Transport } from './transport.polkadot'
-//import { Transport as MockTransport } from './transport.mock'
+//import { Transport } from './transport.polkadot'
+import { Transport } from './transport.mock'
 
 import { OpportunitiesController } from './tabs/Opportunities.controller'
 
@@ -37,7 +36,7 @@ class App extends React.PureComponent<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    this.transport = new Transport(props)
+    this.transport = new Transport()
 
     const { t } = props;
 

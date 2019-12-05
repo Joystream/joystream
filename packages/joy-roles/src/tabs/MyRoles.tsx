@@ -25,7 +25,7 @@ import {
   OpeningBodyReviewInProgress,
   openingIcon, openingDescription,
 } from './Opportunities'
-import { GroupMemberProps, GroupMemberView } from '../elements'
+import { GroupMember, GroupMemberView } from '../elements'
 import { OpeningStageClassification, OpeningState } from "../classifiers"
 
 type CTACallback = () => void
@@ -271,7 +271,7 @@ export type ApplicationProps = {
   cancelledReason?: CancelledReason
   hired?: boolean
   stage: OpeningStageClassification
-  creator: GroupMemberProps
+  creator: GroupMember
   opening: Opening
   applicationStake: Balance
   roleStake: Balance

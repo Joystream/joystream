@@ -135,3 +135,11 @@ export function getUrlParam (location: Location, paramName: string, deflt: strin
   const params = queryString.parse(location.search);
   return params[paramName] ? params[paramName] as string : deflt;
 }
+
+// Business logic middleware
+// --------------------------------------
+import { Controller, ControllerComponent, controllerProps } from './Controller';
+import { Loadable } from './Loadable';
+import { Transport } from './Transport';
+
+export { Controller, ControllerComponent, controllerProps, Loadable, Transport };

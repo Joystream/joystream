@@ -10,7 +10,7 @@ import { Button, Card, Container, Grid, Icon, Label, List, Message, Statistic, S
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 
-import { Countdown, GroupMemberProps, GroupMemberView } from '../elements'
+import { Countdown, GroupMember, GroupMemberView } from '../elements'
 import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
 import { Opening } from "@joystream/types/hiring"
 
@@ -435,7 +435,7 @@ function timeInHumanFormat(block_time_in_seconds: number, blocks: number) {
 export type OpeningBodyProps = DynamicMinimumProps & StakeRequirementProps & BlockTimeProps & {
   opening: Opening
   text: GenericJoyStreamRoleSchema
-  creator: GroupMemberProps
+  creator: GroupMember
   stage: OpeningStageClassification
   applications: OpeningBodyApplicationsStatusProps
 }
@@ -509,7 +509,7 @@ function OpeningReward(props: OpeningRewardProps) {
 
 type Props = OpeningHeaderProps & DynamicMinimumProps & BlockTimeProps & {
   opening: Opening
-  creator: GroupMemberProps
+  creator: GroupMember
   applications: OpeningBodyApplicationsStatusProps
 }
 

@@ -8,7 +8,7 @@ import { Actor } from '@joystream/types/roles'
 import { Profile } from '@joystream/types/members';
 
 import { ContentCurators, StorageAndDistribution } from "@polkadot/joy-roles/tabs/WorkingGroup"
-import { GroupMemberProps } from "@polkadot/joy-roles/elements"
+import { GroupMember } from "@polkadot/joy-roles/elements"
 
 import { mockProfile } from '../mocks'
 
@@ -21,7 +21,7 @@ export default {
 }
 
 export function ContentCuratorsSection() {
-  const members: GroupMemberProps[] = [
+  const members: GroupMember[] = [
     {
       actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
       profile: mockProfile(
@@ -87,7 +87,7 @@ export const StorageProvidersSection = () => {
   ])
 
   const memos = new Map<string, Text>([
-    ['5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp', new Text("hello")]
+    ['5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp', new Text("This is a memo")]
   ])
 
   const profiles = new Map<number, Profile>([
