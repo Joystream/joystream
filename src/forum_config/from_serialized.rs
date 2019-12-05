@@ -1,7 +1,6 @@
+use super::new_validation;
 use node_runtime::{
-    forum::{
-        Category, CategoryId, InputValidationLengthConstraint, Post, PostId, Thread, ThreadId,
-    },
+    forum::{Category, CategoryId, Post, PostId, Thread, ThreadId},
     AccountId, BlockNumber, ForumConfig, Moment,
 };
 use serde::Deserialize;
@@ -17,10 +16,6 @@ struct ForumData {
 fn parse_forum_json() -> Result<ForumData> {
     let data = include_str!("../../res/forum_data_acropolis_serialized.json");
     serde_json::from_str(data)
-}
-
-fn new_validation(min: u16, max_min_diff: u16) -> InputValidationLengthConstraint {
-    return InputValidationLengthConstraint { min, max_min_diff };
 }
 
 pub fn create(forum_sudo: AccountId) -> ForumConfig {

@@ -17,11 +17,11 @@
 use hex_literal::hex;
 use node_runtime::{
     versioned_store::InputValidationLengthConstraint as VsInputValidation, AccountId, ActorsConfig,
-    AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, CouncilConfig,
-    CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
-    GenesisConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig, MembersConfig, Perbill,
-    ProposalsConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
+    CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
+    DataObjectTypeRegistryConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig,
+    MembersConfig, Perbill, ProposalsConfig, SessionConfig, SessionKeys, Signature, StakerStatus,
+    StakingConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 use primitives::{crypto::UncheckedInto, sr25519, Pair, Public};
 use runtime_primitives::traits::{IdentifyAccount, Verify};
@@ -329,6 +329,32 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
             class_name_constraint: new_vs_validation(1, 99),
             class_description_constraint: new_vs_validation(1, 999),
         }),
+        content_wg: Some(ContentWorkingGroupConfig {
+            // config()
+            mint: 0,
+            // config()
+            current_lead_id: 0,
+            lead_by_id: vec![],
+            next_lead_id: 0,
+            curator_opening_by_id: vec![],
+            next_curator_opening_id: 0,
+            curator_application_by_id: vec![],
+            next_curator_application_id: 0,
+            channel_by_id: vec![],
+            next_channel_id: 0,
+            channel_id_by_handle: vec![],
+            curator_by_id: vec![],
+            next_curator_id: 0,
+            principal_by_id: vec![],
+            next_principal_id: 0,
+            channel_creation_enabled: true, // there is no extrinsic to change it so enabling at genesis
+            unstaker_by_stake_id: vec![],
+            channel_handle_constraint: crate::forum_config::new_validation(5, 20),
+            channel_description_constraint: crate::forum_config::new_validation(1, 1024),
+            opening_human_readble_text: crate::forum_config::new_validation(1, 2048),
+            curator_application_human_readable_text: crate::forum_config::new_validation(1, 2048),
+            curator_exit_rationale_text: crate::forum_config::new_validation(1, 2048),
+        }),
     }
 }
 
@@ -453,6 +479,32 @@ pub fn testnet_genesis(
             property_description_constraint: new_vs_validation(1, 999),
             class_name_constraint: new_vs_validation(1, 99),
             class_description_constraint: new_vs_validation(1, 999),
+        }),
+        content_wg: Some(ContentWorkingGroupConfig {
+            // This needs to be exist to ensure correct behavior
+            mint: 0,
+            // Can't set to None? -> use build() and genesis_extra because we need to call set_lead()
+            current_lead_id: 0,
+            lead_by_id: vec![],
+            next_lead_id: 0,
+            curator_opening_by_id: vec![],
+            next_curator_opening_id: 0,
+            curator_application_by_id: vec![],
+            next_curator_application_id: 0,
+            channel_by_id: vec![],
+            next_channel_id: 0,
+            channel_id_by_handle: vec![],
+            curator_by_id: vec![],
+            next_curator_id: 0,
+            principal_by_id: vec![],
+            next_principal_id: 0,
+            channel_creation_enabled: true, // there is no extrinsic to change it so enabling at genesis
+            unstaker_by_stake_id: vec![],
+            channel_handle_constraint: crate::forum_config::new_validation(5, 20),
+            channel_description_constraint: crate::forum_config::new_validation(1, 1024),
+            opening_human_readble_text: crate::forum_config::new_validation(1, 2048),
+            curator_application_human_readable_text: crate::forum_config::new_validation(1, 2048),
+            curator_exit_rationale_text: crate::forum_config::new_validation(1, 2048),
         }),
     }
 }

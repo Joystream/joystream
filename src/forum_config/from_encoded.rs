@@ -3,12 +3,13 @@
 
 use node_runtime::{
     forum::{
-        Category, CategoryId, InputValidationLengthConstraint, Post, PostId, Thread, ThreadId,
+        Category, CategoryId, Post, PostId, Thread, ThreadId,
     },
     AccountId, BlockNumber, ForumConfig, Moment,
 };
 use serde::Deserialize;
 use serde_json::Result;
+use super::new_validation;
 
 use codec::Decode;
 
@@ -43,10 +44,6 @@ fn decode_thread(encoded: String) -> Thread<BlockNumber, Moment, AccountId> {
 fn parse_forum_json() -> Result<ForumData> {
     let data = include_str!("../../res/forum_data_acropolis_encoded.json");
     serde_json::from_str(data)
-}
-
-fn new_validation(min: u16, max_min_diff: u16) -> InputValidationLengthConstraint {
-    return InputValidationLengthConstraint { min, max_min_diff };
 }
 
 pub fn create(forum_sudo: AccountId) -> ForumConfig {
