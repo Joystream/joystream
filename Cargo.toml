@@ -274,11 +274,6 @@ git = 'https://github.com/joystream/substrate-recurring-reward-module'
 package = 'substrate-recurring-reward-module'
 rev = '417f7bb5b82ae50f02716ac4eefa2fc7952e0f61'
 
-# [dependencies.stake]
-# default_features = false
-# git = 'https://github.com/mnaamani/substrate-stake/'
-# package = 'substrate-stake-module'
-# rev = '28f4815a7d020fdcd450095cc8a8d7076f8899a6'
 [dependencies.stake]
 default_features = false
 git = 'https://github.com/joystream/substrate-stake-module'
@@ -304,4 +299,3 @@ default_features = false
 package = 'substrate-versioned-store-permissions-module'
 git = 'https://github.com/mnaamani/substrate-versioned-store-permissions-module'
 rev = '02cfd53c132f95c99cb936bace4432a064b62b86'
-# path = '/Users/mokhtar/joystream/substrate-versioned-store-permissions-module'
