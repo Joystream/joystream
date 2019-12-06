@@ -7,6 +7,7 @@ import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 import { Role } from '@joystream/types/roles';
 
 import { WorkingGroupProps, StorageAndDistributionProps } from "./tabs/WorkingGroup"
+import { WorkingGroupOpening } from "./tabs/Opportunities"
 
 export class Transport extends TransportBase implements ITransport {
   protected api: ApiPromise
@@ -22,7 +23,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   public curationGroup(): Promise<WorkingGroupProps> {
-    // Image this queried the API!
+    // Imagine this queried the API!
     // TODO: Make this query the API
     return this.promise<WorkingGroupProps>({} as WorkingGroupProps)
   }
@@ -30,6 +31,18 @@ export class Transport extends TransportBase implements ITransport {
   public storageGroup(): Promise<StorageAndDistributionProps> {
     return this.promise<StorageAndDistributionProps>(
       {} as StorageAndDistributionProps,
+    )
+  }
+
+  public currentOpportunities(): Promise<Array<WorkingGroupOpening>> {
+    return this.promise<Array<WorkingGroupOpening>>(
+      [],
+    )
+  }
+
+  public expectedBlockTime(): Promise<number> {
+    return this.promise<number>(
+      this.api.consts.babe.expectedBlockTime.toNumber() / 1000
     )
   }
 }

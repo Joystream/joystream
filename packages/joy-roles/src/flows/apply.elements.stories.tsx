@@ -20,7 +20,7 @@ import {
   ConfirmStakes2Up, ConfirmStakes2UpProps,
 } from "./apply"
 import {
-  OpeningBodyApplicationsStatusProps,
+  OpeningStakeAndApplicationStatus,
   ApplicationStakeRequirement, RoleStakeRequirement,
   StakeType,
 } from '../tabs/Opportunities'
@@ -49,7 +49,7 @@ const moneySliderOptions = {
   step: 500,
 }
 
-const applications: OpeningBodyApplicationsStatusProps = {
+const applications: OpeningStakeAndApplicationStatus = {
   numberOfApplications: number("Applications count", 0, applicationSliderOptions, "Role rationing policy"),
   maxNumberOfApplications: number("Application max", 0, applicationSliderOptions, "Role rationing policy"),
   requiredApplicationStake: new ApplicationStakeRequirement(

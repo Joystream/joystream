@@ -8,7 +8,7 @@ import { Balance } from '@polkadot/types/interfaces';
 import { Actor } from "@joystream/types/roles"
 import { Opening } from "@joystream/types/hiring"
 import {
-  OpeningView, OpeningBodyApplicationsStatusProps,
+  OpeningView, OpeningStakeAndApplicationStatus,
   ApplicationStakeRequirement, RoleStakeRequirement,
   stateMarkup
 } from "./Opportunities"
@@ -38,7 +38,7 @@ export function yesterday(): Date {
   return d
 }
 
-function newMockHumanReadableText(obj: any) {
+export function newMockHumanReadableText(obj: any) {
   return new Text(JSON.stringify(obj))
 }
 
@@ -128,7 +128,7 @@ export function OpportunitySandbox() {
     step: 500,
   }
 
-  const applications: OpeningBodyApplicationsStatusProps = {
+  const applications: OpeningStakeAndApplicationStatus = {
     numberOfApplications: number("Applications count", 0, applicationSliderOptions, "Role rationing policy"),
     maxNumberOfApplications: number("Application max", 0, applicationSliderOptions, "Role rationing policy"),
     requiredApplicationStake: new ApplicationStakeRequirement(

@@ -16,6 +16,8 @@ import { Opening } from "@joystream/types/hiring"
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
 
+import { Loadable } from '@polkadot/joy-utils/index'
+
 export type headerMarkup = {
   class: string
   description: string
@@ -77,11 +79,11 @@ export function openingIcon(state: OpeningState) {
   return <Icon name={icon} loading={spin} />
 }
 
-type OpeningHeaderProps = {
+type OpeningStage = {
   stage: OpeningStageClassification
 }
 
-export function OpeningHeader(props: OpeningHeaderProps) {
+export function OpeningHeader(props: OpeningStage) {
   return (
     <Grid columns="equal">
       <Grid.Column className="status">
@@ -116,11 +118,11 @@ export function OpeningHeader(props: OpeningHeaderProps) {
   )
 }
 
-type DynamicMinimumProps = {
+type DefactoMinimumStake = {
   defactoMinimumStake: Balance
 }
 
-type OpeningBodyCTAProps = OpeningBodyApplicationsStatusProps & OpeningHeaderProps & OpeningBodyProps
+type OpeningBodyCTAProps = OpeningStakeAndApplicationStatus & OpeningStage & OpeningBodyProps
 
 function OpeningBodyCTAView(props: OpeningBodyCTAProps) {
   if (props.stage.state != OpeningState.AcceptingApplications || applicationImpossible(props.applications)) {
@@ -229,7 +231,7 @@ export class RoleStakeRequirement extends StakeRequirement implements IStakeRequ
   }
 }
 
-export type StakeRequirementProps = DynamicMinimumProps & {
+export type StakeRequirementProps = DefactoMinimumStake & {
   requiredApplicationStake: ApplicationStakeRequirement
   requiredRoleStake: RoleStakeRequirement
   maxNumberOfApplications: number
@@ -297,15 +299,15 @@ export type ApplicationCountProps = {
   applied?: boolean
 }
 
-export type OpeningBodyApplicationsStatusProps = StakeRequirementProps & ApplicationCountProps
+export type OpeningStakeAndApplicationStatus = StakeRequirementProps & ApplicationCountProps
 
-function applicationImpossible(props: OpeningBodyApplicationsStatusProps): boolean {
+function applicationImpossible(props: OpeningStakeAndApplicationStatus): boolean {
   return props.maxNumberOfApplications > 0 &&
     (props.numberOfApplications >= props.maxNumberOfApplications) &&
     !hasAnyStake(props)
 }
 
-function applicationPossibleWithIncresedStake(props: OpeningBodyApplicationsStatusProps): boolean {
+function applicationPossibleWithIncresedStake(props: OpeningStakeAndApplicationStatus): boolean {
   return props.maxNumberOfApplications > 0 &&
     (props.numberOfApplications >= props.maxNumberOfApplications) &&
     hasAnyStake(props)
@@ -336,7 +338,7 @@ export function ApplicationCount(props: ApplicationCountProps) {
   )
 }
 
-export function OpeningBodyApplicationsStatus(props: OpeningBodyApplicationsStatusProps) {
+export function OpeningBodyApplicationsStatus(props: OpeningStakeAndApplicationStatus) {
   const impossible = applicationImpossible(props)
   const msg = new messageState()
   if (impossible) {
@@ -432,12 +434,12 @@ function timeInHumanFormat(block_time_in_seconds: number, blocks: number) {
 }
 
 
-export type OpeningBodyProps = DynamicMinimumProps & StakeRequirementProps & BlockTimeProps & {
+export type OpeningBodyProps = DefactoMinimumStake & StakeRequirementProps & BlockTimeProps & {
   opening: Opening
   text: GenericJoyStreamRoleSchema
   creator: GroupMember
   stage: OpeningStageClassification
-  applications: OpeningBodyApplicationsStatusProps
+  applications: OpeningStakeAndApplicationStatus
 }
 
 export function OpeningBody(props: OpeningBodyProps) {
@@ -507,13 +509,15 @@ function OpeningReward(props: OpeningRewardProps) {
   )
 }
 
-type Props = OpeningHeaderProps & DynamicMinimumProps & BlockTimeProps & {
+export type WorkingGroupOpening =  OpeningStage & DefactoMinimumStake & {
   opening: Opening
   creator: GroupMember
-  applications: OpeningBodyApplicationsStatusProps
+  applications: OpeningStakeAndApplicationStatus
 }
 
-export function OpeningView(props: Props) {
+type OpeningViewProps = WorkingGroupOpening & BlockTimeProps
+
+export function OpeningView(props: OpeningViewProps) {
   const hrt = props.opening.human_readable_text
 
   if (typeof hrt === "undefined" || typeof hrt === "string") {
@@ -545,3 +549,21 @@ export function OpeningView(props: Props) {
     </Container>
   )
 }
+
+export type OpeningsViewProps = BlockTimeProps & {
+  openings: Array<WorkingGroupOpening>
+}
+
+export const OpeningsView = Loadable<OpeningsViewProps>(
+  ['openings'],
+  props => {
+    console.log(props)
+    return (
+      <Container>
+        {props.openings.map((opening, key) => (
+          <OpeningView key={key} {...opening} block_time_in_seconds={props.block_time_in_seconds} />
+        ))}
+      </Container>
+    )
+  }
+)

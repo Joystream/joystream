@@ -12,10 +12,11 @@ import { withCalls, withMulti, withObservable } from '@polkadot/react-api/index'
 import { ControllerComponent } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
-//import { Transport } from './transport.polkadot'
-import { Transport } from './transport.mock'
+import { Transport } from './transport.polkadot'
+import { Transport as MockTransport} from './transport.mock'
 
-import { WorkingGroupsController } from './tabs/WorkingGroup.controller'
+import { WorkingGroupsController, } from './tabs/WorkingGroup.controller'
+import { OpportunitiesController } from './tabs/Opportunities.controller'
 
 import './index.sass';
 
@@ -32,11 +33,13 @@ type State = {
 class App extends React.PureComponent<Props, State> {
   state: State;
   transport: ITransport
+  mockTransport: ITransport
 
   constructor(props: Props) {
     super(props);
 
-    this.transport = new Transport()
+    this.transport = new Transport(props)
+    this.mockTransport = new MockTransport()
 
     const { t } = props;
 
@@ -79,18 +82,18 @@ class App extends React.PureComponent<Props, State> {
           />
         </header>
         <Switch>
-          <Route path={`${basePath}/opportunities`} render={this.renderComponent(WorkingGroupsController)} />
-          <Route path={`${basePath}/my-roles`} render={this.renderComponent(WorkingGroupsController)} />
-          <Route render={this.renderComponent(WorkingGroupsController)} />
+          <Route path={`${basePath}/opportunities`} render={this.renderComponent(OpportunitiesController, this.mockTransport)} />
+          <Route path={`${basePath}/my-roles`} render={this.renderComponent(WorkingGroupsController, this.mockTransport)} />
+          <Route render={this.renderComponent(WorkingGroupsController, this.mockTransport)} />
         </Switch>
       </main>
     );
   }
 
-  private renderComponent(Ctrl: ControllerComponent<ITransport>) {
+  private renderComponent(Ctrl: ControllerComponent<ITransport>, transport: ITransport) {
     return (): React.ReactNode => {
       return (
-        <Ctrl transport={this.transport} />
+        <Ctrl transport={transport} />
       )
     };
   }

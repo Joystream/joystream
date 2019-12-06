@@ -6,7 +6,7 @@ import { u128 } from '@polkadot/types'
 
 import {
   openingClass,
-  OpeningBodyApplicationsStatus, OpeningBodyApplicationsStatusProps,
+  OpeningBodyApplicationsStatus, OpeningStakeAndApplicationStatus,
   OpeningBodyReviewInProgress,
   OpeningBodyStakeRequirement, StakeRequirementProps,
   OpeningHeader,
@@ -83,7 +83,7 @@ export function OpeningHeaderByState() {
 }
 
 export function OpeningApplicationsStatusByState() {
-  const permutations: (OpeningBodyApplicationsStatusProps & TestProps)[] = [
+  const permutations: (OpeningStakeAndApplicationStatus & TestProps)[] = [
     {
       _description: "No limit, no applications, no stake",
       numberOfApplications: 0,

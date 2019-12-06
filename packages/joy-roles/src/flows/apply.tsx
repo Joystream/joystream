@@ -36,7 +36,7 @@ import {
   GroupMemberView, GroupMember,
 } from '../elements'
 import {
-  OpeningBodyApplicationsStatus, OpeningBodyApplicationsStatusProps,
+  OpeningBodyApplicationsStatus, OpeningStakeAndApplicationStatus,
   ApplicationCount,
   StakeRequirementProps,
   IStakeRequirement,
@@ -979,7 +979,7 @@ export function SubmitApplicationStage(props: SubmitApplicationStageProps) {
 }
 
 export type DoneStageProps = {
-  applications: OpeningBodyApplicationsStatusProps
+  applications: OpeningStakeAndApplicationStatus
   roleKeyName: string
 }
 
@@ -1028,7 +1028,7 @@ directly.
 }
 
 export type FlowModalProps = ApplicationDetailsStageProps & ConfirmStakesStageProps & FundSourceSelectorProps & {
-  applications: OpeningBodyApplicationsStatusProps,
+  applications: OpeningStakeAndApplicationStatus,
   creator: GroupMember
   hasConfirmStep: boolean
   transactionFee: Balance

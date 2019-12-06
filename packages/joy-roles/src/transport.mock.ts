@@ -5,10 +5,18 @@ import { ITransport } from './transport'
 import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Actor, Role } from '@joystream/types/roles'
+import { Opening } from "@joystream/types/hiring"
 import { Profile } from '@joystream/types/members';
 
 import { WorkingGroupProps, StorageAndDistributionProps } from "./tabs/WorkingGroup"
+import { 
+  WorkingGroupOpening ,
+  ApplicationStakeRequirement, RoleStakeRequirement,
+} from "./tabs/Opportunities"
+import { tomorrow, yesterday, newMockHumanReadableText } from "./tabs/Opportunities.stories"
+import { OpeningState } from "./classifiers"
 
+import * as faker from 'faker'
 import { mockProfile } from './mocks'
 
 export class Transport extends TransportBase implements ITransport {
@@ -103,6 +111,91 @@ export class Transport extends TransportBase implements ITransport {
         ],
       },
     )
+  }
+
+  public currentOpportunities(): Promise<Array<WorkingGroupOpening>> {
+	  return this.promise<Array<WorkingGroupOpening>>(
+		  [
+			  {
+				  opening: new Opening({
+					  max_review_period_length: 50000,
+					  human_readable_text: newMockHumanReadableText({
+						  version: 1,
+						  headline: "Help us curate awesome content",
+						  job: {
+							  title: "Content curator", 
+							  description: faker.lorem.paragraphs(4), 
+						  },
+						  application: {
+							  sections: [
+								  {
+									  title: "About you",
+									  questions: [
+										  {
+											  title: "your name",
+											  type: "text"
+										  }
+									  ]
+								  },
+								  {
+									  title: "About you",
+									  questions: [
+										  {
+											  title: "your name",
+											  type: "text area"
+										  }
+									  ]
+								  }
+							  ]
+						  },
+						  reward: "10 JOY per block",
+						  creator: {
+							  membership: {
+								  handle: "ben",
+							  }
+						  },
+						  process: {
+							  details: [
+								  "Some custom detail"
+							  ]
+						  }
+					  }),
+				  }),
+				  creator: {
+					  actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
+					  profile: mockProfile('benholdencrowther'),
+					  title: 'Group lead',
+					  lead: true,
+					  stake: new u128(10),
+				  },
+				  stage: {
+					  uri: "https://some.url/#1",
+					  state: OpeningState.AcceptingApplications,
+					  starting_block: 2956498,
+					  starting_block_hash: "somehash",
+					  created_time: yesterday(),
+					  review_end_block: 3956498,
+					  review_end_time: tomorrow(),
+				  },
+				  applications: {
+					  numberOfApplications: 0,
+					  maxNumberOfApplications: 0,
+					  requiredApplicationStake: new ApplicationStakeRequirement(
+						  new u128(500),
+					  ),
+					  requiredRoleStake: new RoleStakeRequirement(
+						  new u128(0),
+					  ),
+					  defactoMinimumStake: new u128(0),
+				  },
+				  defactoMinimumStake: new u128(0),
+			  },
+		  ],
+	)
+  }
+
+  public expectedBlockTime(): Promise<number> {
+	  return this.promise<number>(6)
   }
 }
 
