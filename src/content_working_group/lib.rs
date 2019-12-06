@@ -847,16 +847,16 @@ decl_storage! {
     trait Store for Module<T: Trait> as ContentWorkingGroup {
 
         /// The mint currently funding the rewards for this module.
-        pub Mint get(mint) config(): <T as minting::Trait>::MintId;
+        pub Mint get(mint) : <T as minting::Trait>::MintId;
 
         /// The current lead.
-        pub CurrentLeadId get(current_lead_id) config(): Option<LeadId<T>>;
+        pub CurrentLeadId get(current_lead_id) : Option<LeadId<T>>;
 
         /// Maps identifier to corresponding lead.
-        pub LeadById get(lead_by_id) config(): linked_map LeadId<T> => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
+        pub LeadById get(lead_by_id): linked_map LeadId<T> => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
 
         /// Next identifier for new current lead.
-        pub NextLeadId get(next_lead_id) config(): LeadId<T>;
+        pub NextLeadId get(next_lead_id): LeadId<T>;
 
         /// Maps identifeir to curator opening.
         pub CuratorOpeningById get(curator_opening_by_id) config(): linked_map CuratorOpeningId<T> => CuratorOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>>;
@@ -914,6 +914,21 @@ decl_storage! {
         pub OpeningHumanReadableText get(opening_human_readble_text) config(): InputValidationLengthConstraint;
         pub CuratorApplicationHumanReadableText get(curator_application_human_readable_text) config(): InputValidationLengthConstraint;
         pub CuratorExitRationaleText get(curator_exit_rationale_text) config(): InputValidationLengthConstraint;
+    }
+    add_extra_genesis {
+        config(initial_lead) : Option<(T::MemberId, T::AccountId)>;
+        config(mint_capacity): minting::BalanceOf<T>;
+        // config(mint_adjustment): minting::Adjustment<BalanceOf<T>, T::BlockNumber> (add serialize/deserialize derivation for type)
+        build(|config: &GenesisConfig<T>| {
+            // create mint
+            let mint_id = <minting::Module<T>>::add_mint(config.mint_capacity, None).expect("Failed to create a mint for the content working group");
+            Mint::<T>::put(mint_id);
+
+            // create lead
+            if let Some((member_id, account_id)) = config.initial_lead.clone() {
+                <Module<T>>::do_set_lead(member_id, account_id).expect("Failed to create the lead for the content working group");
+            }
+        });
     }
 }
 
@@ -1662,43 +1677,7 @@ decl_module! {
             // Ensure root is origin
             ensure_root(origin)?;
 
-            // Ensure there is no current lead
-            ensure!(
-                <CurrentLeadId<T>>::get().is_none(),
-                MSG_CURRENT_LEAD_ALREADY_SET
-            );
-
-            // Ensure that member can actually become lead
-            let new_lead_id = <NextLeadId<T>>::get();
-
-            let _profile = <members::Module<T>>::can_register_role_on_member(
-                &member,
-                &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id)
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Construct lead
-            let new_lead = Lead{
-                role_account: role_account.clone(),
-                reward_relationship: None,
-                inducted: <system::Module<T>>::block_number(),
-                stage: LeadRoleState::Active
-            };
-
-            // Store lead
-            <LeadById<T>>::insert(new_lead_id, new_lead);
-
-            // Update current lead
-            <CurrentLeadId<T>>::put(new_lead_id); // Some(new_lead_id)
-
-            // Update next lead counter
-            <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
-
-            // Trigger event
-            Self::deposit_event(RawEvent::LeadSet(new_lead_id));
+            Self::do_set_lead(member, role_account)?;
         }
 
         /// Evict the currently unset lead
@@ -2420,5 +2399,48 @@ impl<T: Trait> Module<T> {
 
         // Trigger event
         Self::deposit_event(RawEvent::ChannelUpdatedByCurationActor(*channel_id));
+    }
+
+    /// Introduce a lead when one is not currently set.
+    pub fn do_set_lead(member: T::MemberId, role_account: T::AccountId) -> dispatch::Result {
+        // Ensure there is no current lead
+        ensure!(
+            <CurrentLeadId<T>>::get().is_none(),
+            MSG_CURRENT_LEAD_ALREADY_SET
+        );
+
+        // Ensure that member can actually become lead
+        let new_lead_id = <NextLeadId<T>>::get();
+
+        let _profile = <members::Module<T>>::can_register_role_on_member(
+            &member,
+            &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id),
+        )?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Construct lead
+        let new_lead = Lead {
+            role_account: role_account.clone(),
+            reward_relationship: None,
+            inducted: <system::Module<T>>::block_number(),
+            stage: LeadRoleState::Active,
+        };
+
+        // Store lead
+        <LeadById<T>>::insert(new_lead_id, new_lead);
+
+        // Update current lead
+        <CurrentLeadId<T>>::put(new_lead_id); // Some(new_lead_id)
+
+        // Update next lead counter
+        <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
+
+        // Trigger event
+        Self::deposit_event(RawEvent::LeadSet(new_lead_id));
+
+        Ok(())
     }
 }
