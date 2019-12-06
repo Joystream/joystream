@@ -1,8 +1,8 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-//#[cfg(feature = "std")]
-//use serde::{Deserialize, Serialize};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 use codec::{Decode, Encode}; // Codec
                              //use rstd::collections::btree_map::BTreeMap;
@@ -134,6 +134,7 @@ static MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER: &str = "Curator not controlled by m
 static MSG_CHANNEL_NAME_ALREADY_TAKEN: &str = "Channel name is already taken";
 
 /// The exit stage of a lead involvement in the working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone)]
 pub struct ExitedLeadRole<BlockNumber> {
     /// When exit was initiated.
@@ -141,6 +142,7 @@ pub struct ExitedLeadRole<BlockNumber> {
 }
 
 /// The stage of the involvement of a lead in the working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone)]
 pub enum LeadRoleState<BlockNumber> {
     /// Currently active.
@@ -161,6 +163,7 @@ impl<BlockNumber> Default for LeadRoleState<BlockNumber> {
 /// Working group lead: curator lead
 /// For now this role is not staked or inducted through an structured process, like the hiring module,
 /// hence information about this is missing. Recurring rewards is included, somewhat arbitrarily!
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone)]
 pub struct Lead<AccountId, RewardRelationshipId, BlockNumber> {
     /// Account used to authenticate in this role,
@@ -178,6 +181,7 @@ pub struct Lead<AccountId, RewardRelationshipId, BlockNumber> {
 }
 
 /// Origin of exit initiation on behalf of a curator.'
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone)]
 pub enum CuratorExitInitiationOrigin {
     /// Lead is origin.
@@ -188,6 +192,7 @@ pub enum CuratorExitInitiationOrigin {
 }
 
 /// The exit stage of a curators involvement in the working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone)]
 pub struct CuratorExitSummary<BlockNumber> {
     /// Origin for exit.
@@ -215,6 +220,7 @@ impl<BlockNumber: Clone> CuratorExitSummary<BlockNumber> {
 }
 
 /// The stage of the involvement of a curator in the working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone)]
 pub enum CuratorRoleStage<BlockNumber> {
     /// Currently active.
@@ -236,6 +242,7 @@ impl<BlockNumber> Default for CuratorRoleStage<BlockNumber> {
 }
 
 /// The induction of a curator in the working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone)]
 pub struct CuratorInduction<LeadId, CuratorApplicationId, BlockNumber> {
     /// Lead responsible for inducting curator
@@ -265,6 +272,7 @@ impl<LeadId: Clone, CuratorApplicationId: Clone, BlockNumber: Clone>
 }
 
 /// Role stake information for a curator.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone)]
 pub struct CuratorRoleStakeProfile<StakeId, BlockNumber> {
     /// Whether participant is staked, and if so, the identifier for this staking in the staking module.
@@ -293,6 +301,7 @@ impl<StakeId: Clone, BlockNumber: Clone> CuratorRoleStakeProfile<StakeId, BlockN
 
 /// Working group participant: curator
 /// This role can be staked, have reward and be inducted through the hiring module.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone)]
 pub struct Curator<
     AccountId,
@@ -366,6 +375,7 @@ impl<
 }
 
 /// An opening for a curator role.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone)]
 pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId: core::cmp::Ord> {
     /// Identifer for underlying opening in the hiring module.
@@ -385,6 +395,7 @@ pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId:
 }
 
 /// An application for the curator role.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone)]
 pub struct CuratorApplication<AccountId, CuratorOpeningId, MemberId, ApplicationId> {
     /// Account used to authenticate in this role,
@@ -431,6 +442,7 @@ pub enum CurationActor<CuratorId> {
  */
 
 /// Type of channel content.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum ChannelContentType {
     Video,
@@ -449,6 +461,7 @@ impl Default for ChannelContentType {
 /// Status of channel, as set by the owner.
 /// Is only meant to affect visibility, mutation of channel and child content
 /// is unaffected on runtime.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum ChannelPublishingStatus {
     /// Compliant UIs should render.
@@ -470,6 +483,7 @@ impl Default for ChannelPublishingStatus {
 /// Is only meant to affect visibility currently, but in the future
 /// it will also gate publication of new child content,
 /// editing properties, revenue flows, etc.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChannelCurationStatus {
     Normal,
@@ -485,6 +499,7 @@ impl Default for ChannelCurationStatus {
 }
 
 /// A channel for publishing content.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
     /// Unique human readble channel name.
@@ -525,6 +540,7 @@ pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
  */
 
 /// Permissions module principal
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone)]
 pub enum Principal<CuratorId, ChannelId> {
     /// Its sloppy to have this here, less safe,
@@ -545,6 +561,7 @@ impl<CuratorId, ChannelId> Default for Principal<CuratorId, ChannelId> {
 }
 
 /// Terms for slashings applied to a given role
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq, Eq)]
 pub struct SlashableTerms {
     /// Maximum number of slashes.
@@ -555,6 +572,7 @@ pub struct SlashableTerms {
 }
 
 /// Terms for what slashing can be applied in some context
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq, Eq)]
 pub enum SlashingTerms {
     Unslashable,
@@ -572,6 +590,7 @@ impl Default for SlashingTerms {
 /// A commitment to the set of policy variables relevant to an opening.
 /// An applicant can observe this commitment and be secure that the terms
 /// of the application process cannot be changed ex-post.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
 pub struct OpeningPolicyCommitment<BlockNumber, Balance> {
     /// Rationing to be used
@@ -615,6 +634,7 @@ pub struct OpeningPolicyCommitment<BlockNumber, Balance> {
 }
 
 /// Represents a possible unstaker in working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
 pub enum WorkingGroupUnstaker<LeadId, CuratorId> {
     ///
