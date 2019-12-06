@@ -9,7 +9,7 @@ import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
 import accountObservable from '@polkadot/ui-keyring/observable/accounts';
 import { withCalls, withMulti, withObservable } from '@polkadot/react-api/index';
 
-import { ControllerComponent } from 'polkadot/joy-utils'
+import { ControllerComponent } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
 //import { Transport } from './transport.polkadot'

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button, Card, Icon, Message, Table } from 'semantic-ui-react';
+import { Button, Card, Icon, Message, SemanticICONS, Table } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
 import { Balance } from '@polkadot/types/interfaces';
@@ -8,7 +8,7 @@ import { Profile } from '@joystream/types/members';
 import { Text } from '@polkadot/types';
 
 import { ActorDetailsView, GroupMember, MemberView, GroupMemberView } from "../elements"
-import { Loadable } from '@polkadot/joy-utils'
+import { Loadable } from '@polkadot/joy-utils/index'
 
 export type WorkingGroupProps = {
   members: GroupMember[]
@@ -35,7 +35,7 @@ export const ContentCurators = Loadable<WorkingGroupProps>(
           <Link to="/roles/opportunities">
             <Button icon labelPosition="right" color="green" positive>
               Find out more
-        <Icon name='right arrow' />
+			  <Icon name={'right arrow' as SemanticICONS} />
             </Button>
           </Link>
         </Message>

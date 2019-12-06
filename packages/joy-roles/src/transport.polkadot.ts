@@ -2,7 +2,7 @@ import { ApiProps } from '@polkadot/react-api/types';
 import ApiPromise from '@polkadot/api/promise';
 
 import { ITransport } from './transport'
-import { Transport as TransportBase } from '@poladot/joy-utils'
+import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Role } from '@joystream/types/roles';
 
@@ -24,12 +24,12 @@ export class Transport extends TransportBase implements ITransport {
   public curationGroup(): Promise<WorkingGroupProps> {
     // Image this queried the API!
     // TODO: Make this query the API
-    return this.promise<WorkingGroupProps>({})
+    return this.promise<WorkingGroupProps>({} as WorkingGroupProps)
   }
 
   public storageGroup(): Promise<StorageAndDistributionProps> {
     return this.promise<StorageAndDistributionProps>(
-      {},
+      {} as StorageAndDistributionProps,
     )
   }
 }

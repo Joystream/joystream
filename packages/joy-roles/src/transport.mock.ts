@@ -2,7 +2,7 @@ import { Balance } from '@polkadot/types/interfaces'
 import { Text, u128 } from '@polkadot/types'
 
 import { ITransport } from './transport'
-import { Transport as TransportBase } from '@polkadot/joy-utils'
+import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Actor, Role } from '@joystream/types/roles'
 import { Profile } from '@joystream/types/members';
@@ -38,7 +38,7 @@ export class Transport extends TransportBase implements ITransport {
         },
         {
           actor: new Actor({ member_id: 2, account: '5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew' }),
-          profile: mockProfile("Handle", "bwhm0", "Martin"),
+          profile: mockProfile("bwhm0", "Martin"),
           title: 'Content curator',
           lead: false,
           stake: new u128(10101),
