@@ -1894,7 +1894,7 @@ impl<T: Trait> Module<T> {
 
         // Has to not already be occupied
         ensure!(
-            ChannelIdByName::<T>::exists(channel_name),
+            !ChannelIdByName::<T>::exists(channel_name),
             MSG_CHANNEL_NAME_ALREADY_TAKEN
         );
 
