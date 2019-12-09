@@ -108,10 +108,12 @@ impl<T: Trait> Default for TestExternalitiesBuilder<T> {
 }
 
 impl<T: Trait> TestExternalitiesBuilder<T> {
+    /*
     pub fn set_system_config(mut self, system_config: system::GenesisConfig) -> Self {
         self.system_config = Some(system_config);
         self
     }
+    */
     pub fn set_membership_config(mut self, membership_config: members::GenesisConfig<T>) -> Self {
         self.membership_config = Some(membership_config);
         self

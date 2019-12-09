@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::lib::{self, Trait, *};
+use super::lib::{Trait, *};
 pub use primitives::{map, Blake2Hasher, H256};
 use rstd::prelude::*;
 
@@ -9,12 +9,12 @@ use rstd::prelude::*;
 use forum::InputValidationLengthConstraint;
 
 /// The way a map (linked_map) is represented in the GenesisConfig produced by decl_storage
-pub type GenesisConfigMap<K, V> = std::vec::Vec<(K, V)>;
+//pub type GenesisConfigMap<K, V> = std::vec::Vec<(K, V)>;
 
 /// Builder of genesis configuration of content working group.
 pub struct GenesisConfigBuilder<T: Trait> {
     mint: <T as minting::Trait>::MintId,
-    current_lead_id: LeadId<T>,
+    //current_lead_id: LeadId<T>,
 
     /*
     lead_by_id: GenesisConfigMap<LeadId<T>, Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>>,
@@ -88,7 +88,7 @@ impl<T: Trait> Default for GenesisConfigBuilder<T> {
 
         Self {
             mint: <T as minting::Trait>::MintId::default(),
-            current_lead_id: LeadId::<T>::default(), //Option<LeadId>,
+            //current_lead_id: LeadId::<T>::default(), //Option<LeadId>,
 
             /*
             lead_by_id: map![], //GenesisConfigMap<LeadId, Lead>,
