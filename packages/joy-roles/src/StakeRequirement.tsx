@@ -1,3 +1,5 @@
+import React from 'react'
+
 import { Balance } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 
