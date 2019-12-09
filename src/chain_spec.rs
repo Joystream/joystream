@@ -330,12 +330,8 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
             class_description_constraint: new_vs_validation(1, 999),
         }),
         content_wg: Some(ContentWorkingGroupConfig {
-            // config()
-            mint: 0,
-            // config()
-            current_lead_id: 0,
-            lead_by_id: vec![],
-            next_lead_id: 0,
+            mint_capacity: 100000,
+            initial_lead: None,
             curator_opening_by_id: vec![],
             next_curator_opening_id: 0,
             curator_application_by_id: vec![],
@@ -481,12 +477,8 @@ pub fn testnet_genesis(
             class_description_constraint: new_vs_validation(1, 999),
         }),
         content_wg: Some(ContentWorkingGroupConfig {
-            // This needs to be exist to ensure correct behavior
-            mint: 0,
-            // Can't set to None? -> use build() and genesis_extra because we need to call set_lead()
-            current_lead_id: 0,
-            lead_by_id: vec![],
-            next_lead_id: 0,
+            mint_capacity: 100000,
+            initial_lead: None,
             curator_opening_by_id: vec![],
             next_curator_opening_id: 0,
             curator_application_by_id: vec![],
