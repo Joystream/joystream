@@ -427,8 +427,8 @@ impl versioned_store::Trait for Runtime {
 
 impl versioned_store_permissions::Trait for Runtime {
     type Credential = u64;
-    type CredentialChecker = (SudoKeyHasAllCredentials, ContentWorkingGroup);
-    type CreateClassPermissionsChecker = SudoKeyCanCreateClasses;
+    type CredentialChecker = (ContentWorkingGroup, SudoKeyHasAllCredentials);
+    type CreateClassPermissionsChecker = ContentLeadOrSudoKeyCanCreateClasses;
 }
 
 // Credential Checker that gives the sudo key holder all credentials
@@ -448,6 +448,47 @@ impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
 {
     fn account_can_create_class_permissions(account: &AccountId) -> bool {
         <sudo::Module<Runtime>>::key() == *account
+    }
+}
+
+// Impl this in the permissions module - can't be done here because
+// neither CreateClassPermissionsChecker or (X, Y) are local types?
+// impl<
+//         T: versioned_store_permissions::Trait,
+//         X: versioned_store_permissions::CreateClassPermissionsChecker<T>,
+//         Y: versioned_store_permissions::CreateClassPermissionsChecker<T>,
+//     > versioned_store_permissions::CreateClassPermissionsChecker<T> for (X, Y)
+// {
+//     fn account_can_create_class_permissions(account: &T::AccountId) -> bool {
+//         X::account_can_create_class_permissions(account)
+//             || Y::account_can_create_class_permissions(account)
+//     }
+// }
+
+pub struct ContentLeadOrSudoKeyCanCreateClasses {}
+impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
+    for ContentLeadOrSudoKeyCanCreateClasses
+{
+    fn account_can_create_class_permissions(account: &AccountId) -> bool {
+        ContentLeadCanCreateClasses::account_can_create_class_permissions(account)
+            || SudoKeyCanCreateClasses::account_can_create_class_permissions(account)
+    }
+}
+
+// Allow content working group lead to create classes in content directory
+pub struct ContentLeadCanCreateClasses {}
+impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
+    for ContentLeadCanCreateClasses
+{
+    fn account_can_create_class_permissions(account: &AccountId) -> bool {
+        // get current lead id
+        let maybe_current_lead_id = content_wg::CurrentLeadId::<Runtime>::get();
+        if let Some(lead_id) = maybe_current_lead_id {
+            let lead = content_wg::LeadById::<Runtime>::get(lead_id);
+            lead.role_account == *account
+        } else {
+            false
+        }
     }
 }
 
