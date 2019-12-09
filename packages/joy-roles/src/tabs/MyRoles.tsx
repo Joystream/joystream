@@ -23,8 +23,11 @@ import { Opening } from "@joystream/types/hiring"
 
 import {
   OpeningBodyReviewInProgress,
-  openingIcon, openingDescription,
 } from './Opportunities'
+import {
+  openingIcon,
+  openingDescription,
+} from '../openingStateMarkup'
 import { GroupMember, GroupMemberView } from '../elements'
 import { OpeningStageClassification, OpeningState } from "../classifiers"
 

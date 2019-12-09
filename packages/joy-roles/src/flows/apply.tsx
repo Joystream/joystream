@@ -39,8 +39,8 @@ import {
   OpeningBodyApplicationsStatus, OpeningStakeAndApplicationStatus,
   ApplicationCount,
   StakeRequirementProps,
-  IStakeRequirement,
 } from '../tabs/Opportunities'
+import { IStakeRequirement } from '../StakeRequirement'
 import {
   ApplicationDetails,
   QuestionField,

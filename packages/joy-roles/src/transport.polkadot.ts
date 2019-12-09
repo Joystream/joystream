@@ -42,6 +42,7 @@ export class Transport extends TransportBase implements ITransport {
 
   public expectedBlockTime(): Promise<number> {
     return this.promise<number>(
+	  // @ts-ignore
       this.api.consts.babe.expectedBlockTime.toNumber() / 1000
     )
   }

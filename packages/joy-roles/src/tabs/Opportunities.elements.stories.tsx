@@ -5,13 +5,16 @@ import { Card, Container } from 'semantic-ui-react'
 import { u128 } from '@polkadot/types'
 
 import {
-  openingClass,
   OpeningBodyApplicationsStatus, OpeningStakeAndApplicationStatus,
   OpeningBodyReviewInProgress,
   OpeningBodyStakeRequirement, StakeRequirementProps,
   OpeningHeader,
-  ApplicationStakeRequirement, RoleStakeRequirement, StakeType,
 } from "./Opportunities"
+import {
+  openingClass,
+} from '../openingStateMarkup'
+import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType, } from '../StakeRequirement'
+
 import { tomorrow, yesterday } from "./Opportunities.stories"
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"

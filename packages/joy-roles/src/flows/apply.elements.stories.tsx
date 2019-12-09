@@ -21,9 +21,9 @@ import {
 } from "./apply"
 import {
   OpeningStakeAndApplicationStatus,
-  ApplicationStakeRequirement, RoleStakeRequirement,
   StakeType,
 } from '../tabs/Opportunities'
+import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement'
 
 import { creator } from "../tabs/Opportunities.stories"
 

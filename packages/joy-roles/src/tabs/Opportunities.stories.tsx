@@ -9,10 +9,13 @@ import { Actor } from "@joystream/types/roles"
 import { Opening } from "@joystream/types/hiring"
 import {
   OpeningView, OpeningStakeAndApplicationStatus,
-  ApplicationStakeRequirement, RoleStakeRequirement,
-  stateMarkup
 } from "./Opportunities"
 
+import {
+  stateMarkup
+} from '../openingStateMarkup'
+
+import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement'
 import { OpeningStageClassification, OpeningState } from "../classifiers"
 
 import { mockProfile } from '../mocks'

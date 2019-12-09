@@ -11,8 +11,9 @@ import { Profile } from '@joystream/types/members';
 import { WorkingGroupProps, StorageAndDistributionProps } from "./tabs/WorkingGroup"
 import { 
   WorkingGroupOpening ,
-  ApplicationStakeRequirement, RoleStakeRequirement,
 } from "./tabs/Opportunities"
+import { ApplicationStakeRequirement, RoleStakeRequirement } from './StakeRequirement'
+
 import { tomorrow, yesterday, newMockHumanReadableText } from "./tabs/Opportunities.stories"
 import { OpeningState } from "./classifiers"
 

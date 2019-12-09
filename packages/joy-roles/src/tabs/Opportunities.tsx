@@ -5,79 +5,34 @@ import marked from 'marked';
 import CopyToClipboard from 'react-copy-to-clipboard';
 
 import { Link } from 'react-router-dom';
-import { Button, Card, Container, Grid, Icon, Label, List, Message, Statistic, SemanticICONS } from 'semantic-ui-react'
+import { 
+	Button, 
+  Card, 
+  Container, 
+  Grid, 
+  Icon, 
+  Label, 
+  List, 
+  Message, 
+  Statistic,
+} from 'semantic-ui-react'
 
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 
 import { Countdown, GroupMember, GroupMemberView } from '../elements'
+import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement'
 import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
 import { Opening } from "@joystream/types/hiring"
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
+import {
+  openingIcon,
+  openingClass,
+  openingDescription,
+} from '../openingStateMarkup'
 
 import { Loadable } from '@polkadot/joy-utils/index'
-
-export type headerMarkup = {
-  class: string
-  description: string
-  icon: SemanticICONS
-  iconSpin?: boolean
-}
-
-export const stateMarkup = new Map<OpeningState, headerMarkup>([
-  [OpeningState.WaitingToBegin, {
-    class: "waiting-to-begin",
-    description: "Waiting to begin",
-    icon: "spinner",
-    iconSpin: true,
-  }],
-  [OpeningState.AcceptingApplications, {
-    class: "active",
-    description: "Accepting applications",
-    icon: "heart",
-  }],
-  [OpeningState.InReview, {
-    class: "in-review",
-    description: "Applications in review",
-    icon: "hourglass half",
-  }],
-  [OpeningState.Complete, {
-    class: "complete",
-    description: "Hiring complete",
-    icon: "thumbs up",
-  }],
-  [OpeningState.Cancelled, {
-    class: "cancelled",
-    description: "Cancelled",
-    icon: "ban",
-  }],
-])
-
-function openingStateMarkup<T>(state: OpeningState, key: string): T {
-  const markup = stateMarkup.get(state)
-
-  if (typeof markup === "undefined") {
-    return null as unknown as T
-  }
-
-  return (markup as any)[key]
-}
-
-export function openingClass(state: OpeningState): string {
-  return "status-" + openingStateMarkup<string>(state, "class")
-}
-
-export function openingDescription(state: OpeningState): string {
-  return openingStateMarkup<string>(state, "description")
-}
-
-export function openingIcon(state: OpeningState) {
-  const icon = openingStateMarkup<SemanticICONS>(state, "icon")
-  const spin = openingStateMarkup<boolean>(state, "iconSpin")
-
-  return <Icon name={icon} loading={spin} />
-}
 
 type OpeningStage = {
   stage: OpeningStageClassification
@@ -156,81 +111,6 @@ function OpeningBodyCTAView(props: OpeningBodyCTAProps) {
       {message}
     </Container>
   )
-}
-
-export enum StakeType {
-  Fixed = 0,
-  AtLeast,
-}
-
-export interface IStakeRequirement {
-  anyRequirement(): boolean
-  qualifier(): string | null
-  value: Balance
-  fixed(): boolean
-  atLeast(): boolean
-  describe(): any
-}
-
-abstract class StakeRequirement {
-  hard: Balance
-  type: StakeType
-
-  constructor(hard: Balance, stakeType: StakeType = StakeType.Fixed) {
-    this.hard = hard
-    this.type = stakeType
-  }
-
-  anyRequirement(): boolean {
-    return !this.hard.isZero()
-  }
-
-  qualifier(): string | null {
-    if (this.type == StakeType.AtLeast) {
-      return "at least"
-    }
-    return null
-  }
-
-  get value(): Balance {
-    return this.hard
-  }
-
-  fixed(): boolean {
-    return this.type === StakeType.Fixed
-  }
-
-  atLeast(): boolean {
-    return this.type === StakeType.AtLeast
-  }
-}
-
-export class ApplicationStakeRequirement extends StakeRequirement implements IStakeRequirement {
-  describe(): any {
-    if (!this.anyRequirement()) {
-      return null
-    }
-
-    return (
-      <p>
-        You must stake {this.qualifier()} <strong>{formatBalance(this.hard)}</strong> to apply for this role. This stake will be returned to you when the hiring process is complete, whether or not you are hired, and will also be used to rank applications.
-            </p>
-    )
-  }
-}
-
-export class RoleStakeRequirement extends StakeRequirement implements IStakeRequirement {
-  describe(): any {
-    if (!this.anyRequirement()) {
-      return null
-    }
-
-    return (
-      <p>
-        You must stake {this.qualifier()} <strong>{formatBalance(this.hard)}</strong> to be eligible for this role. You may lose this stake if you're hired and then dismised from this role. This stake will be returned if your application is unsuccessful, and will also be used to rank applications.
-            </p>
-    )
-  }
 }
 
 export type StakeRequirementProps = DefactoMinimumStake & {
@@ -408,7 +288,7 @@ export function OpeningBodyReviewInProgress(props: OpeningStageClassification) {
 
       <p>
         <span>Candidates will be selected by block&nbsp;
-			<NumberFormat value={props.review_end_block}
+      <NumberFormat value={props.review_end_block}
             displayType="text"
             thousandSeparator={true}
           />
@@ -434,7 +314,6 @@ function timeInHumanFormat(block_time_in_seconds: number, blocks: number) {
   d2.setSeconds(d2.getSeconds() + (block_time_in_seconds * blocks))
   return <Moment duration={d1} date={d2} interval={0} />
 }
-
 
 export type OpeningBodyProps = DefactoMinimumStake & StakeRequirementProps & BlockTimeProps & {
   opening: Opening
