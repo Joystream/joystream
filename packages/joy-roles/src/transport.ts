@@ -8,5 +8,6 @@ export interface ITransport {
   curationGroup: () => Promise<WorkingGroupProps>
   storageGroup: () => Promise<StorageAndDistributionProps>
   currentOpportunities: () => Promise<Array<WorkingGroupOpening>>
+//  opportunity: (id: string) => Promise<any> // <-- FIXME! Type
   expectedBlockTime: () => Promise<number>
 }

@@ -4,7 +4,7 @@ import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
-import { Route, Switch } from 'react-router';
+import { Route, Switch, RouteComponentProps } from 'react-router';
 import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
 import accountObservable from '@polkadot/ui-keyring/observable/accounts';
 import { withCalls, withMulti, withObservable } from '@polkadot/react-api/index';
@@ -17,6 +17,7 @@ import { Transport as MockTransport} from './transport.mock'
 
 import { WorkingGroupsController, } from './tabs/WorkingGroup.controller'
 import { OpportunitiesController } from './tabs/Opportunities.controller'
+import { ApplyController } from './flows/apply.controller'
 
 import './index.sass';
 
@@ -82,22 +83,24 @@ class App extends React.PureComponent<Props, State> {
           />
         </header>
         <Switch>
-          <Route path={`${basePath}/opportunities`} render={this.renderComponent(OpportunitiesController, this.mockTransport)} />
-          <Route path={`${basePath}/my-roles`} render={this.renderComponent(WorkingGroupsController, this.mockTransport)} />
-          <Route render={this.renderComponent(WorkingGroupsController, this.mockTransport)} />
+          <Route path={`${basePath}/opportunities`} render={() => this.renderComponent(OpportunitiesController, this.mockTransport)} />
+            <Route path={`${basePath}/my-roles`} render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
+            <Route path={`${basePath}/apply/:id`} render={(props) => this.renderComponent(ApplyController, this.mockTransport, props)} />
+              <Route render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
         </Switch>
       </main>
     );
   }
 
-  private renderComponent(Ctrl: ControllerComponent<ITransport>, transport: ITransport) {
-    return (): React.ReactNode => {
-      return (
-        <Ctrl transport={transport} />
-      )
-    };
+  private renderComponent(Ctrl: ControllerComponent<ITransport>, transport: ITransport, props?: RouteComponentProps) {
+    let params = new Map<string,string>()
+    if (typeof props !== 'undefined' && props.match.params) {
+      params = new Map<string,string>(Object.entries(props.match.params))
+    }
+    return (
+      <Ctrl transport={transport} params={params} />
+     )
   }
-
 }
 
 export default withMulti(

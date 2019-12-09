@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React from 'react'
-import { number, object, withKnobs } from '@storybook/addon-knobs'
+import { number, object, select, withKnobs } from '@storybook/addon-knobs'
 
 import { u128, GenericAccountId } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces';
@@ -35,6 +35,11 @@ const moneySliderOptions = {
   step: 500,
 }
 
+const stakeTypeOptions = {
+	"Fixed": StakeType.Fixed,
+	"At least": StakeType.AtLeast,
+}
+
 export function ApplicationSandbox() {
   // List of the minimum stake required to beat each rank
   const slots: Balance[] = []
@@ -47,14 +52,17 @@ export function ApplicationSandbox() {
       numberOfApplications: number("Applications count", 0, applicationSliderOptions, "Role rationing policy"),
       maxNumberOfApplications: number("Application max", 0, applicationSliderOptions, "Role rationing policy"),
       requiredApplicationStake: new ApplicationStakeRequirement(
-        new u128(number("Application stake", 0, moneySliderOptions, "Role stakes")),
+        new u128(number("Application stake", 500, moneySliderOptions, "Role stakes")),
+		select("Application stake type", stakeTypeOptions, StakeType.AtLeast, "Role stakes"),
       ),
       requiredRoleStake: new RoleStakeRequirement(
-        new u128(number("Role stake", 0, moneySliderOptions, "Role stakes")),
+        new u128(number("Role stake", 500, moneySliderOptions, "Role stakes")),
+		select("Role stake type", stakeTypeOptions, StakeType.Fixed, "Role stakes"),
       ),
+      defactoMinimumStake: new u128(0),
     },
     creator: creator,
-    transactionFee: new u128(number("Transaction fee", 500, moneySliderOptions, "Application Tx")),
+    transactionFee: new u128(number("Transaction fee", 499, moneySliderOptions, "Application Tx")),
     keypairs: [
       {
         shortName: "KP1",
@@ -73,11 +81,6 @@ export function ApplicationSandbox() {
       },
     ],
     hasConfirmStep: true,
-    requiredApplicationStake: new ApplicationStakeRequirement(new u128(1)),
-    requiredRoleStake: new RoleStakeRequirement(new u128(2), StakeType.AtLeast),
-    maxNumberOfApplications: 0,
-    numberOfApplications: 0,
-    defactoMinimumStake: new u128(0),
     step: new u128(5),
     slots: slots,
     applicationDetails: object('JSON', {

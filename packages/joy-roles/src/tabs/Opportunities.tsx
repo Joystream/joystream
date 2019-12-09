@@ -147,10 +147,12 @@ function OpeningBodyCTAView(props: OpeningBodyCTAProps) {
 
   return (
     <Container>
-      <Button icon fluid positive size="huge">
-        APPLY NOW
-                <Icon name="angle right" />
-      </Button>
+      <Link to={props.stage.uri}>
+        <Button icon fluid positive size="huge">
+          APPLY NOW
+          <Icon name="angle right" />
+        </Button>
+      </Link>
       {message}
     </Container>
   )
@@ -557,7 +559,6 @@ export type OpeningsViewProps = BlockTimeProps & {
 export const OpeningsView = Loadable<OpeningsViewProps>(
   ['openings'],
   props => {
-    console.log(props)
     return (
       <Container>
         {props.openings.map((opening, key) => (

@@ -10,7 +10,6 @@ export function Loadable<P extends {[index:string]: any}>(required: string[], f:
 
     for (let requirement of required) {
       if (!props.hasOwnProperty(requirement) || typeof props[requirement] === 'undefined') {
-        console.log("rehect")
         return loading
       }
     }
