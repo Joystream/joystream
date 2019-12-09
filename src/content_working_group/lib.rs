@@ -962,7 +962,7 @@ decl_module! {
          */
 
         /// Create a new channel.
-        pub fn create_channel(origin, owner: T::MemberId, role_account: T::AccountId, channel_name: Vec<u8>, description: Vec<u8>, content: ChannelContentType) {
+        pub fn create_channel(origin, owner: T::MemberId, role_account: T::AccountId, channel_name: Vec<u8>, description: Vec<u8>, content: ChannelContentType, publishing_status: ChannelPublishingStatus) {
 
             // Ensure that it is signed
             let signer_account = ensure_signed(origin)?;
@@ -1002,7 +1002,7 @@ decl_module! {
                 content: content,
                 owner: owner,
                 role_account: role_account,
-                publishing_status: ChannelPublishingStatus::NotPublished,
+                publishing_status: publishing_status,
                 curation_status: ChannelCurationStatus::Normal,
                 created: <system::Module<T>>::block_number(),
                 principal_id: principal_id
