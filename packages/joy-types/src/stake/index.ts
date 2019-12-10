@@ -2,10 +2,6 @@ import { getTypeRegistry, u32, u64, u128, Enum, Null, BTreeMap, bool } from '@po
 import { JoyStruct } from '../JoyStruct';
 import { BlockNumber, Balance } from '@polkadot/types/interfaces';
 
-// type name clash with "Stake" from council election module.
-// import { Stake } from '..';
-// Will have to rename one of them!
-
 export class StakeId extends u64 {};
 export class SlashId extends u64 {};
 
