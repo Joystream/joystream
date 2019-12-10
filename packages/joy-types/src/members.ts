@@ -6,6 +6,7 @@ import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 export class MemberId extends u64 {}
 export class PaidTermId extends u64 {}
 export class SubscriptionId extends u64 {}
+export class ActorId extends u64 {}
 
 export class Paid extends PaidTermId {}
 export class Screening extends GenericAccountId {}
@@ -24,7 +25,7 @@ export class Role extends Enum {
   constructor (value?: any, index?: number) {
     super([
       'StorageProvider',
-      'Publisher',
+      'ChannelOwner',
       'CuratorLead',
       'Curator',
     ], value, index);
@@ -110,7 +111,7 @@ export function registerMembershipTypes () {
         text: 'Text'
       },
       Role,
-      ActorId: 'u64',
+      ActorId,
       ActorInRole: {
         role: 'Role',
         actor_id: 'ActorId'
