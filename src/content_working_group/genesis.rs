@@ -30,9 +30,10 @@ pub struct GenesisConfigBuilder<T: Trait> {
     next_curator_id: CuratorId<T>,
     principal_by_id: GenesisConfigMap<PrincipalId<T>, Principal<CuratorId<T>, ChannelId<T>>>,
     next_principal_id: PrincipalId<T>,
-    channel_creation_enabled: bool,
+    
     unstaker_by_stake_id: GenesisConfigMap<TestStakeId, WorkingGroupUnstaker<LeadId<T>, CuratorId<T>>>,
     */
+    channel_creation_enabled: bool,
     channel_handle_constraint: InputValidationLengthConstraint,
     channel_description_constraint: InputValidationLengthConstraint,
     opening_human_readble_text: InputValidationLengthConstraint,
@@ -45,7 +46,18 @@ impl<T: Trait> GenesisConfigBuilder<T> {
         self.mint = mint;
         self
     }
-
+    pub fn set_channel_handle_constraint(mut self, constraint: InputValidationLengthConstraint) -> Self {
+        self.channel_description_constraint = constraint;
+        self
+    }
+    pub fn set_channel_description_constraint(mut self, constraint: InputValidationLengthConstraint) -> Self {
+        self.channel_description_constraint = constraint;
+        self
+    }
+    pub fn set_channel_creation_enabled(mut self, channel_creation_enabled: bool) -> Self {
+        self.channel_creation_enabled = channel_creation_enabled;
+        self
+    }
     pub fn build(self) -> GenesisConfig<T> {
         GenesisConfig {
             mint: self.mint,
@@ -67,7 +79,7 @@ impl<T: Trait> GenesisConfigBuilder<T> {
             next_curator_id: CuratorId::<T>::default(),
             principal_by_id: map![], //GenesisConfigMap<PrinicipalId, Prinicipal>,
             next_principal_id: PrincipalId::<T>::default(),
-            channel_creation_enabled: true,
+            channel_creation_enabled: self.channel_creation_enabled,
             unstaker_by_stake_id: map![], //GenesisConfigMap<LeadId, CuratorId>,
 
             channel_handle_constraint: self.channel_handle_constraint,
@@ -81,9 +93,10 @@ impl<T: Trait> GenesisConfigBuilder<T> {
 
 impl<T: Trait> Default for GenesisConfigBuilder<T> {
     fn default() -> Self {
+
         let default_constraint = InputValidationLengthConstraint {
-            min: 3,
-            max_min_diff: 43,
+            min: 8,
+            max_min_diff: 13,
         };
 
         Self {
@@ -104,9 +117,10 @@ impl<T: Trait> Default for GenesisConfigBuilder<T> {
             next_curator_id: 0,
             principal_by_id: map![], //GenesisConfigMap<PrinicipalId, Prinicipal>,
             next_principal_id: 0,
-            channel_creation_enabled: true,
+            
             unstaker_by_stake_id: map![], //GenesisConfigMap<LeadId, CuratorId>,
             */
+            channel_creation_enabled: true,
             channel_handle_constraint: default_constraint.clone(),
             channel_description_constraint: default_constraint.clone(),
             opening_human_readble_text: default_constraint.clone(),

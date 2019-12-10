@@ -23,6 +23,8 @@ pub use stake;
 pub use versioned_store;
 pub use versioned_store_permissions;
 
+use super::genesis;
+
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
     pub const MaximumBlockWeight: u32 = 1024;
@@ -201,6 +203,7 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
         self
     }
     pub fn build(self) -> runtime_io::TestExternalities {
+
         // Add system
         let mut t = self
             .system_config
@@ -215,10 +218,18 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
             .unwrap();
 
         // Add content wg
-        self.content_wg_config
-            .unwrap_or(GenesisConfig::<T>::default())
-            .assimilate_storage(&mut t)
-            .unwrap();
+
+        if self.content_wg_config.is_none() {
+            genesis::GenesisConfigBuilder::<Test>::default()
+                .build()
+                .assimilate_storage(&mut t)
+                .unwrap();
+        } else {
+            self.content_wg_config
+                .unwrap()
+                .assimilate_storage(&mut t)
+                .unwrap();
+        }
 
         t.into()
     }

@@ -6,6 +6,10 @@ use super::mock::{self, *};
 use crate::membership;
 use srml_support::{StorageLinkedMap, StorageValue};
 
+/// DIRTY IMPORT BECAUSE
+/// InputValidationLengthConstraint has not been factored out yet!!!
+use forum::InputValidationLengthConstraint;
+
 #[test]
 fn create_channel_success() {
     let channel_creator_member_root_account = 12312;
@@ -25,9 +29,13 @@ fn create_channel_success() {
         )
         .build()
         .execute_with(|| {
+
+            let channel_handle_constraint = ChannelHandleConstraint::get();
+            let description_constraint = ChannelDescriptionConstraint::get();
+
             let role_account = channel_creator_member_root_account;
-            let channel_name = "My channel".as_bytes().to_vec();
-            let description = "A great channel".as_bytes().to_vec();
+            let channel_name = generate_valid_length_buffer(&channel_handle_constraint);
+            let description = generate_valid_length_buffer(&description_constraint);
             let content = ChannelContentType::Video;
             let publishing_status = ChannelPublishingStatus::NotPublished;
 
@@ -101,21 +109,266 @@ fn create_channel_success() {
         });
 }
 
-fn ensure_channelcreated_event_deposited() -> lib::ChannelId<Test> {
-    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
-        if let lib::RawEvent::ChannelCreated(ref channel_id) = x {
-            return channel_id.clone();
-        } else {
-            panic!("Event was not ChannelCreated.")
-        }
-    } else {
-        panic!("No event deposited.")
-    }
+#[test]
+fn create_channel_not_enabled() {
+    let channel_creator_member_root_account = 12312;
+
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            membership::genesis::GenesisConfigBuilder::default()
+                .members([channel_creator_member_root_account].to_vec())
+                .build()
+        )
+        .build()
+        .execute_with(|| {
+
+            let number_of_events_before_call = System::events().len();
+
+            // Create channel incorrect member role account
+            assert_eq!(
+                ContentWorkingGroup::create_channel(
+                    Origin::signed(channel_creator_member_root_account),
+                    7893412,  // <== incorrect: no member has this ID
+                    channel_creator_member_root_account,
+                    generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+                    generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
+                    ChannelContentType::Video,
+                    ChannelPublishingStatus::NotPublished
+                ).unwrap_err()
+                ,
+                MSG_CREATE_CHANNEL_IS_NOT_MEMBER
+            );
+
+            // No new events deposited
+            assert_no_new_events(number_of_events_before_call);
+        });
 }
 
 #[test]
-fn create_channel_failure() {
+fn create_channel_is_not_a_member() {
+    let channel_creator_member_root_account = 12312;
+    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
 
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            membership::genesis::GenesisConfigBuilder::default()
+                .members([channel_creator_member_root_account].to_vec())
+                .build(),
+        )
+        .set_content_wg_config(
+            genesis::GenesisConfigBuilder::default()
+                .set_channel_creation_enabled(false)
+                .build()
+        )
+        .build()
+        .execute_with(|| {
+
+            let number_of_events_before_call = System::events().len();
+
+            // Create channel
+            assert_eq!(
+                ContentWorkingGroup::create_channel(
+                    Origin::signed(channel_creator_member_root_account),
+                    channel_creator_member_id,
+                    channel_creator_member_root_account,
+                    generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+                    generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
+                    ChannelContentType::Video,
+                    ChannelPublishingStatus::NotPublished
+                ).unwrap_err()
+                ,
+                MSG_CHANNEL_CREATION_DISABLED
+            );
+
+            // No new events deposited
+            assert_no_new_events(number_of_events_before_call);
+        });
+}
+
+#[test]
+fn create_channel_with_bad_member_role_account() {
+    let channel_creator_member_root_account = 12312;
+    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
+
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            membership::genesis::GenesisConfigBuilder::default()
+                .members([channel_creator_member_root_account].to_vec())
+                .build(),
+        )
+        .set_content_wg_config(
+            genesis::GenesisConfigBuilder::default()
+                .build()
+        )
+        .build()
+        .execute_with(|| {
+
+            let number_of_events_before_call = System::events().len();
+
+            // Create channel incorrect member role account
+            assert_eq!(
+                ContentWorkingGroup::create_channel(
+                    Origin::signed(71893780491), // <== incorrect
+                    channel_creator_member_id,
+                    channel_creator_member_root_account,
+                    generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+                    generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
+                    ChannelContentType::Video,
+                    ChannelPublishingStatus::NotPublished
+                ).unwrap_err()
+                ,
+                MSG_CREATE_CHANNEL_NOT_CONTROLLER_ACCOUNT
+            );
+
+            // No new events deposited
+            assert_no_new_events(number_of_events_before_call);
+
+        });
+}
+
+#[test]
+fn create_channel_handle_too_long() {
+    let channel_creator_member_root_account = 12312;
+    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
+
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            membership::genesis::GenesisConfigBuilder::default()
+                .members([channel_creator_member_root_account].to_vec())
+                .build(),
+        )
+        .build()
+        .execute_with(|| {
+
+            let number_of_events_before_call = System::events().len();
+
+            // Create channel with handle that is too long
+            assert_eq!(
+                ContentWorkingGroup::create_channel(
+                    Origin::signed(channel_creator_member_root_account),
+                    channel_creator_member_id,
+                    channel_creator_member_root_account,
+                    generate_too_long_length_buffer(&ChannelHandleConstraint::get()),
+                    generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
+                    ChannelContentType::Video,
+                    ChannelPublishingStatus::NotPublished
+                ).unwrap_err()
+                ,
+                MSG_CHANNEL_HANDLE_TOO_LONG
+            );
+
+            // No new events deposited
+            assert_no_new_events(number_of_events_before_call);
+        });
+}
+
+#[test]
+fn create_channel_handle_too_short() {
+    let channel_creator_member_root_account = 12312;
+    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
+
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            membership::genesis::GenesisConfigBuilder::default()
+                .members([channel_creator_member_root_account].to_vec())
+                .build(),
+        )
+        .build()
+        .execute_with(|| {
+
+            let number_of_events_before_call = System::events().len();
+
+            // Create channel with handle that is too short
+            assert_eq!(
+                ContentWorkingGroup::create_channel(
+                    Origin::signed(channel_creator_member_root_account),
+                    channel_creator_member_id,
+                    channel_creator_member_root_account,
+                    generate_too_short_length_buffer(&ChannelHandleConstraint::get()),
+                    generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
+                    ChannelContentType::Video,
+                    ChannelPublishingStatus::NotPublished
+                ).unwrap_err()
+                ,
+                MSG_CHANNEL_HANDLE_TOO_SHORT
+            );
+
+            // No new events deposited
+            assert_no_new_events(number_of_events_before_call);
+        });
+}
+
+#[test]
+fn create_channel_description_too_long() {
+    let channel_creator_member_root_account = 12312;
+    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
+
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            membership::genesis::GenesisConfigBuilder::default()
+                .members([channel_creator_member_root_account].to_vec())
+                .build(),
+        )
+        .build()
+        .execute_with(|| {
+
+            let number_of_events_before_call = System::events().len();
+
+            // Create channel with description that is too long
+            assert_eq!(
+                ContentWorkingGroup::create_channel(
+                    Origin::signed(channel_creator_member_root_account),
+                    channel_creator_member_id,
+                    channel_creator_member_root_account,
+                    generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+                    generate_too_long_length_buffer(&ChannelDescriptionConstraint::get()),
+                    ChannelContentType::Video,
+                    ChannelPublishingStatus::NotPublished
+                ).unwrap_err()
+                ,
+                MSG_CHANNEL_DESCRIPTION_TOO_LONG
+            );
+
+            // No new events deposited
+            assert_no_new_events(number_of_events_before_call);
+        });
+}
+
+#[test]
+fn create_channel_description_too_short() {
+    let channel_creator_member_root_account = 12312;
+    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
+
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            membership::genesis::GenesisConfigBuilder::default()
+                .members([channel_creator_member_root_account].to_vec())
+                .build(),
+        )
+        .build()
+        .execute_with(|| {
+
+            let number_of_events_before_call = System::events().len();
+
+            // Create channel with description that is too short
+            assert_eq!(
+                ContentWorkingGroup::create_channel(
+                    Origin::signed(channel_creator_member_root_account),
+                    channel_creator_member_id,
+                    channel_creator_member_root_account,
+                    generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+                    generate_too_short_length_buffer(&ChannelDescriptionConstraint::get()),
+                    ChannelContentType::Video,
+                    ChannelPublishingStatus::NotPublished
+                ).unwrap_err()
+                ,
+                MSG_CHANNEL_DESCRIPTION_TOO_SHORT
+            );
+
+            // No new events deposited
+            assert_no_new_events(number_of_events_before_call);
+
+        });
 }
 
 #[test]
@@ -296,4 +549,42 @@ fn account_can_act_as_principal_success() {
 #[test]
 fn account_can_act_as_principal_failure() {
 
+}
+
+// ================
+
+fn ensure_channelcreated_event_deposited() -> lib::ChannelId<Test> {
+    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+        if let lib::RawEvent::ChannelCreated(ref channel_id) = x {
+            return channel_id.clone();
+        } else {
+            panic!("Event was not ChannelCreated.")
+        }
+    } else {
+        panic!("No event deposited.")
+    }
+}
+
+fn assert_no_new_events(number_of_events_before_call: usize) {
+
+    assert_eq!(
+        number_of_events_before_call,
+        System::events().len()
+    );
+}
+
+pub fn generate_text(len: usize) -> Vec<u8> {
+    vec![b'x'; len]
+}
+
+pub fn generate_valid_length_buffer(constraint: &InputValidationLengthConstraint) -> Vec<u8> {
+    generate_text(constraint.min as usize)
+}
+
+pub fn generate_too_short_length_buffer(constraint: &InputValidationLengthConstraint) -> Vec<u8> {
+    generate_text((constraint.min - 1) as usize)
+}
+
+pub fn generate_too_long_length_buffer(constraint: &InputValidationLengthConstraint) -> Vec<u8> {
+    generate_text((constraint.max() + 1) as usize)
 }
