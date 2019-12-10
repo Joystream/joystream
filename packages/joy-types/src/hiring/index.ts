@@ -1,5 +1,5 @@
-import { getTypeRegistry, Null, u128, u64, u32, u8, Vec, Option } from '@polkadot/types';
-import { Enum, /* BTreeSet, */ } from '@polkadot/types/codec';
+import { getTypeRegistry, Null, u128, u64, u32, Vec, Option, Text } from '@polkadot/types';
+import { Enum } from '@polkadot/types/codec';
 import { BlockNumber, Balance } from '@polkadot/types/interfaces';
 import { JoyStruct } from '../JoyStruct';
 
@@ -164,7 +164,7 @@ export class ActiveOpeningStage extends Enum {
             'Deactivated': Deactivated,
           },
           value, index);
-      }
+    }
 }
 
 export type ActiveOpeningStageVariantType = {
@@ -232,7 +232,7 @@ export type IOpening = {
     application_rationing_policy: Option<ApplicationRationingPolicy>,
     application_staking_policy: Option<StakingPolicy>,
     role_staking_policy: Option<StakingPolicy>,
-    human_readable_text: Vec<u8>,
+    human_readable_text: Text, // Vec<u8>,
 };
 
 export class Opening extends JoyStruct<IOpening> {
@@ -244,7 +244,7 @@ export class Opening extends JoyStruct<IOpening> {
         application_rationing_policy: Option.with(ApplicationRationingPolicy),
         application_staking_policy: Option.with(StakingPolicy),
         role_staking_policy: Option.with(StakingPolicy),
-        human_readable_text: Vec.with(u8),
+        human_readable_text: Text, // Vec.with(u8),
       }, value);
     }
 };
