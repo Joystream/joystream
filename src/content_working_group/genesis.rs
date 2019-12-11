@@ -14,7 +14,6 @@ use forum::InputValidationLengthConstraint;
 /// Builder of genesis configuration of content working group.
 pub struct GenesisConfigBuilder<T: Trait> {
     mint: <T as minting::Trait>::MintId,
-    //current_lead_id: LeadId<T>,
 
     /*
     lead_by_id: GenesisConfigMap<LeadId<T>, Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>>,
@@ -46,6 +45,7 @@ impl<T: Trait> GenesisConfigBuilder<T> {
         self.mint = mint;
         self
     }
+    /*
     pub fn set_channel_handle_constraint(mut self, constraint: InputValidationLengthConstraint) -> Self {
         self.channel_description_constraint = constraint;
         self
@@ -54,6 +54,7 @@ impl<T: Trait> GenesisConfigBuilder<T> {
         self.channel_description_constraint = constraint;
         self
     }
+    */
     pub fn set_channel_creation_enabled(mut self, channel_creation_enabled: bool) -> Self {
         self.channel_creation_enabled = channel_creation_enabled;
         self
@@ -61,7 +62,6 @@ impl<T: Trait> GenesisConfigBuilder<T> {
     pub fn build(self) -> GenesisConfig<T> {
         GenesisConfig {
             mint: self.mint,
-            current_lead_id: LeadId::<T>::default(), //Option<LeadId>,
 
             // WE HAVE TO PROVIDE SOME VALUE FOR THESE FOR NOW
             // USING DEFAULT FOR NOW.
@@ -101,9 +101,9 @@ impl<T: Trait> Default for GenesisConfigBuilder<T> {
 
         Self {
             mint: <T as minting::Trait>::MintId::default(),
-            //current_lead_id: LeadId::<T>::default(), //Option<LeadId>,
-
+            
             /*
+            current_lead_id: LeadId::<T>::default(), //Option<LeadId>,
             lead_by_id: map![], //GenesisConfigMap<LeadId, Lead>,
             next_lead_id: 0,
             curator_opening_by_id: map![], //GenesisConfigMap<CuratorOpeningId, Opening>,

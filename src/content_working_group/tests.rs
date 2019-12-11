@@ -4,7 +4,9 @@ use super::genesis;
 use super::lib;
 use super::mock::{self, *};
 use crate::membership;
+use hiring;
 use srml_support::{StorageLinkedMap, StorageValue};
+use rstd::collections::btree_set::BTreeSet;
 
 /// DIRTY IMPORT BECAUSE
 /// InputValidationLengthConstraint has not been factored out yet!!!
@@ -404,6 +406,100 @@ fn update_channel_as_curation_actor_failure() {
 #[test]
 fn add_curator_opening_success() {
 
+    let lead_member_root_and_controller_account = 12312;
+    let lead_member_id = 0; /* HACK, guessing ID, needs better solution */
+
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            membership::genesis::GenesisConfigBuilder::default()
+                .members([lead_member_root_and_controller_account].to_vec())
+                .build(),
+        )
+        .build()
+        .execute_with(|| {
+
+            // Set lead
+            set_lead(lead_member_id, lead_member_root_and_controller_account);
+
+            let expected_opening_id = hiring::NextOpeningId::<Test>::get();
+
+            // ====
+
+            // Add opening
+            let activate_at = hiring::ActivateOpeningAt::ExactBlock(34);
+
+            let policy = OpeningPolicyCommitment{
+                application_rationing_policy: None, //Option<hiring::ApplicationRationingPolicy>,
+                max_review_period_length: 100,
+                application_staking_policy: None, // Option<hiring::StakingPolicy<Balance, BlockNumber>>,
+                role_staking_policy: None, // Option<hiring::StakingPolicy<Balance, BlockNumber>>,
+                role_slashing_terms: SlashingTerms::Unslashable,
+                fill_opening_successful_applicant_application_stake_unstaking_period: None,
+                fill_opening_failed_applicant_application_stake_unstaking_period: None,
+                fill_opening_failed_applicant_role_stake_unstaking_period: None,
+                terminate_curator_application_stake_unstaking_period: None,
+                terminate_curator_role_stake_unstaking_period: None,
+                exit_curator_role_application_stake_unstaking_period: None,
+                exit_curator_role_stake_unstaking_period: None,
+            };
+
+            let human_readable_text = generate_valid_length_buffer(&OpeningHumanReadableText::get());
+
+            assert_eq!(
+                ContentWorkingGroup::add_curator_opening(
+                    Origin::signed(lead_member_root_and_controller_account),
+                    activate_at.clone(),
+                    policy.clone(),
+                    human_readable_text.clone()
+                ).unwrap(),
+                ()
+            );
+
+            let curator_opening_id = ensure_curatoropeningadded_event_deposited();
+
+            // Assert that given opening id has been added,
+            // and has the right properties.
+            assert!(lib::CuratorOpeningById::<Test>::exists(curator_opening_id));
+
+            let created_curator_opening = lib::CuratorOpeningById::<Test>::get(curator_opening_id);
+
+            let expected_curator_opening = CuratorOpening{
+                opening_id: expected_opening_id,
+                curator_applications: BTreeSet::new(),
+                policy_commitment: policy.clone()
+            };
+
+            assert_eq!(
+                created_curator_opening,
+                expected_curator_opening                
+            );
+
+            // Assert that next id incremented.
+            assert_eq!(
+                lib::NextCuratorOpeningId::<Test>::get(),
+                expected_opening_id + 1
+            );
+
+        });
+}
+
+pub fn set_lead(member_id: <Test as members::Trait>::MemberId, new_role_account: <Test as system::Trait>::AccountId) -> LeadId<Test> {
+
+    // Get controller account
+    //let lead_member_controller_account = members::Module::<Test>::ensure_profile(member_id).unwrap().controller_account;
+
+    // Set lead
+    assert_eq!(
+        ContentWorkingGroup::set_lead(
+            mock::Origin::system(system::RawOrigin::Root),
+            member_id,
+            new_role_account
+        ).unwrap(),
+        ()
+    );
+
+    // Grab lead id
+    ensure_lead_set_event_deposited()
 }
 
 #[test]
@@ -551,7 +647,9 @@ fn account_can_act_as_principal_failure() {
 
 }
 
-// ================
+/*
+ * Event readers
+ */
 
 fn ensure_channelcreated_event_deposited() -> lib::ChannelId<Test> {
     if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
@@ -565,6 +663,35 @@ fn ensure_channelcreated_event_deposited() -> lib::ChannelId<Test> {
     }
 }
 
+fn ensure_lead_set_event_deposited() -> lib::LeadId<Test> {
+
+    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+        if let lib::RawEvent::LeadSet(ref lead_id) = x {
+            return lead_id.clone();
+        } else {
+            panic!("Event was not LeadSet.")
+        }
+    } else {
+        panic!("No event deposited.")
+    }
+
+}
+
+fn ensure_curatoropeningadded_event_deposited() -> lib::CuratorOpeningId<Test> {
+
+    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+        if let lib::RawEvent::CuratorOpeningAdded(ref curator_opening_id) = x {
+            return curator_opening_id.clone();
+        } else {
+            panic!("Event was not CuratorOpeningAdded.")
+        }
+    } else {
+        panic!("No event deposited.")
+    } 
+}
+
+
+
 fn assert_no_new_events(number_of_events_before_call: usize) {
 
     assert_eq!(
@@ -572,6 +699,10 @@ fn assert_no_new_events(number_of_events_before_call: usize) {
         System::events().len()
     );
 }
+
+/*
+ * Buffer generators
+ */
 
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]

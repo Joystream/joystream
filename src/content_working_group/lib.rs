@@ -410,7 +410,7 @@ impl<
 }
 
 /// An opening for a curator role.
-#[derive(Encode, Decode, Default, Debug, Clone)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId: core::cmp::Ord> {
     /// Identifer for underlying opening in the hiring module.
     pub opening_id: OpeningId,
@@ -837,7 +837,8 @@ decl_storage! {
         pub Mint get(mint) config(): <T as minting::Trait>::MintId;
 
         /// The current lead.
-        pub CurrentLeadId get(current_lead_id) config(): Option<LeadId<T>>;
+        /// Not configurable, because default set value breaks semantics: https://github.com/Joystream/joystream/issues/36#issuecomment-564560373
+        pub CurrentLeadId get(current_lead_id): Option<LeadId<T>>;
 
         /// Maps identifier to corresponding lead.
         pub LeadById get(lead_by_id) config(): linked_map LeadId<T> => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
