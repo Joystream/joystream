@@ -483,25 +483,6 @@ fn add_curator_opening_success() {
         });
 }
 
-pub fn set_lead(member_id: <Test as members::Trait>::MemberId, new_role_account: <Test as system::Trait>::AccountId) -> LeadId<Test> {
-
-    // Get controller account
-    //let lead_member_controller_account = members::Module::<Test>::ensure_profile(member_id).unwrap().controller_account;
-
-    // Set lead
-    assert_eq!(
-        ContentWorkingGroup::set_lead(
-            mock::Origin::system(system::RawOrigin::Root),
-            member_id,
-            new_role_account
-        ).unwrap(),
-        ()
-    );
-
-    // Grab lead id
-    ensure_lead_set_event_deposited()
-}
-
 #[test]
 fn add_curator_opening_failure() {
 
@@ -509,6 +490,47 @@ fn add_curator_opening_failure() {
 
 #[test]
 fn accept_curator_applications_success() {
+
+    let lead_member_root_and_controller_account = 12312;
+    let lead_member_new_role_account = 18271;
+    let lead_member_id = 0; /* HACK, guessing ID, needs better solution */
+
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            membership::genesis::GenesisConfigBuilder::default()
+                .members([lead_member_root_and_controller_account].to_vec())
+                .build(),
+        )
+        .build()
+        .execute_with(|| {
+
+            /*
+             * Setup
+             */
+            
+            set_lead(lead_member_id, lead_member_new_role_account);
+
+            let curator_opening_id = add_curator_opening(lead_member_new_role_account);
+
+            /*
+             * Test
+             */
+
+            assert_eq!(
+                ContentWorkingGroup::accept_curator_applications(
+                    Origin::signed(lead_member_new_role_account),
+                    curator_opening_id
+                    ).unwrap(),
+                ()
+            );
+
+            let event_curator_opening_id = ensure_acceptedcuratorapplications_event_deposited();
+
+            assert_eq!(
+                curator_opening_id,
+                event_curator_opening_id
+            );
+        });
 
 }
 
@@ -648,6 +670,73 @@ fn account_can_act_as_principal_failure() {
 }
 
 /*
+ * Fixtures
+ */
+
+ /* TODO */
+
+/*
+ * Setups
+ */
+
+pub fn add_member() {
+    /* TODO */
+}
+
+pub fn set_lead(member_id: <Test as members::Trait>::MemberId, new_role_account: <Test as system::Trait>::AccountId) -> LeadId<Test> {
+
+    // Get controller account
+    //let lead_member_controller_account = members::Module::<Test>::ensure_profile(member_id).unwrap().controller_account;
+
+    // Set lead
+    assert_eq!(
+        ContentWorkingGroup::set_lead(
+            mock::Origin::system(system::RawOrigin::Root),
+            member_id,
+            new_role_account
+        ).unwrap(),
+        ()
+    );
+
+    // Grab lead id
+    ensure_lead_set_event_deposited()
+}
+
+pub fn add_curator_opening(lead_role_account: <Test as system::Trait>::AccountId) -> CuratorOpeningId<Test> {
+
+    let activate_at = hiring::ActivateOpeningAt::ExactBlock(34);
+
+    let policy = OpeningPolicyCommitment{
+        application_rationing_policy: None, //Option<hiring::ApplicationRationingPolicy>,
+        max_review_period_length: 100,
+        application_staking_policy: None, // Option<hiring::StakingPolicy<Balance, BlockNumber>>,
+        role_staking_policy: None, // Option<hiring::StakingPolicy<Balance, BlockNumber>>,
+        role_slashing_terms: SlashingTerms::Unslashable,
+        fill_opening_successful_applicant_application_stake_unstaking_period: None,
+        fill_opening_failed_applicant_application_stake_unstaking_period: None,
+        fill_opening_failed_applicant_role_stake_unstaking_period: None,
+        terminate_curator_application_stake_unstaking_period: None,
+        terminate_curator_role_stake_unstaking_period: None,
+        exit_curator_role_application_stake_unstaking_period: None,
+        exit_curator_role_stake_unstaking_period: None,
+    };
+
+    let human_readable_text = generate_valid_length_buffer(&OpeningHumanReadableText::get());
+
+    assert_eq!(
+        ContentWorkingGroup::add_curator_opening(
+            Origin::signed(lead_role_account),
+            activate_at.clone(),
+            policy.clone(),
+            human_readable_text.clone()
+        ).unwrap(),
+        ()
+    );
+
+    ensure_curatoropeningadded_event_deposited()
+}
+
+/*
  * Event readers
  */
 
@@ -690,6 +779,18 @@ fn ensure_curatoropeningadded_event_deposited() -> lib::CuratorOpeningId<Test> {
     } 
 }
 
+fn ensure_acceptedcuratorapplications_event_deposited() -> lib::CuratorOpeningId<Test> {
+    
+    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+        if let lib::RawEvent::AcceptedCuratorApplications(ref curator_opening_id) = x {
+            return curator_opening_id.clone();
+        } else {
+            panic!("Event was not AcceptedCuratorApplications.")
+        }
+    } else {
+        panic!("No event deposited.")
+    } 
+}
 
 
 fn assert_no_new_events(number_of_events_before_call: usize) {
