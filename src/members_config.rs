@@ -29,7 +29,7 @@ fn parse_members_json() -> Result<Vec<Member>> {
     serde_json::from_str(data)
 }
 
-fn decode_address(address: String) -> AccountId32 {
+pub fn decode_address(address: String) -> AccountId32 {
     AccountId32::from_ss58check(address.as_ref()).expect("failed to decode account id")
 }
 

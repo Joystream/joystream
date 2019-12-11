@@ -331,7 +331,13 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
         }),
         content_wg: Some(ContentWorkingGroupConfig {
             mint_capacity: 100000,
-            initial_lead: None,
+            // Ben - Not safest way to assign. Revisit how to ensure we are selecting correct memberid
+            initial_lead: Some((
+                7,
+                crate::members_config::decode_address(String::from(
+                    "5H8kTuZp2T2geceCuaEQ29Jg8fFjCJkwGQgZjRhhGLxFVMSC",
+                )),
+            )),
             curator_opening_by_id: vec![],
             next_curator_opening_id: 0,
             curator_application_by_id: vec![],
@@ -455,7 +461,9 @@ pub fn testnet_genesis(
             default_paid_membership_fee: 100u128,
             members: initial_members,
         }),
-        forum: Some(crate::forum_config::from_serialized::create(root_key)),
+        forum: Some(crate::forum_config::from_serialized::create(
+            root_key.clone(),
+        )),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
@@ -478,7 +486,7 @@ pub fn testnet_genesis(
         }),
         content_wg: Some(ContentWorkingGroupConfig {
             mint_capacity: 100000,
-            initial_lead: None,
+            initial_lead: Some((0, root_key)),
             curator_opening_by_id: vec![],
             next_curator_opening_id: 0,
             curator_application_by_id: vec![],
