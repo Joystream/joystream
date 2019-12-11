@@ -919,20 +919,11 @@ decl_event! {
         LeadSet(LeadId),
         LeadUnset(LeadId),
         CuratorOpeningAdded(CuratorOpeningId),
-        //LeadRewardUpdated
-        //LeadRoleAccountUpdated
-        //LeadRewardAccountUpdated
-        //PermissionGroupAdded
-        //PermissionGroupUpdated
         AcceptedCuratorApplications(CuratorOpeningId),
         BeganCuratorApplicationReview(CuratorOpeningId),
         CuratorOpeningFilled(CuratorOpeningId, BTreeSet<CuratorApplicationId>),
-        //CuratorSlashed
         TerminatedCurator(CuratorId),
         AppliedOnCuratorOpening(CuratorOpeningId, CuratorApplicationId),
-        //CuratorRewardUpdated
-        //CuratorRoleAccountUpdated
-        //CuratorRewardAccountUpdated
         CuratorExited(CuratorId),
         CuratorUnstaking(CuratorId),
         CuratorApplicationTerminated(CuratorApplicationId),
