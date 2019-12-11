@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect} from 'react';
 
-import { Controller, controllerProps } from '@polkadot/joy-utils/index'
+// FIXME! Remove
+//import { Controller, controllerProps } from '@polkadot/joy-utils/index'
 
 import { ITransport } from '../transport'
 
@@ -10,23 +11,96 @@ import {
 } from './Opportunities'
 
 type State = {
+	a: number
   blockTime?: number,
   opportunities?: Array<WorkingGroupOpening>,
 }
 
-export class OpportunitiesController extends Controller<ITransport, State> {
-  constructor (props: controllerProps<ITransport>) {
-    super(props, {});
+type Observer<S> = (v: S) => void
 
-  props.transport.expectedBlockTime().then(value => this.setState({blockTime: value}) )
-  props.transport.currentOpportunities().then(value => this.setState({opportunities: value}) )
+export class Store<S, T> {
+  public state: S
+  protected transport: T
+  private observers: Observer<S>[] = []
+
+  constructor(transport: T, initialState:S) {
+    this.state = initialState
+    this.transport = transport
   }
 
-  render() {
-    return (
-      <OpeningsView openings={this.state.opportunities as Array<WorkingGroupOpening>}  
-                    block_time_in_seconds={this.state.blockTime as number} 
-      />
-    )
+  public attach(observer: Observer<S>) {
+	  this.observers.push(observer)
+  }
+
+  public detach(observerToRemove: Observer<S>) {
+	  this. observers = this.observers.filter(observer => observerToRemove !== observer)
+  }
+
+  public dispatch() {
+	  this.observers.forEach(observer => observer(this.state))
   }
 }
+
+export class OpportunitiesStore extends Store<State, ITransport> {
+  constructor(transport: ITransport, initialState:State={a:1}) {
+    super(transport, initialState)
+    const self = this
+    setInterval(function(){ self.state.a++; self.dispatch()}, 1000);
+    this.getOpportunities()
+    this.getBlocktime()
+  }
+
+  getOpportunities() {
+    this.transport.currentOpportunities().then(value => {
+      this.state.opportunities = value
+      this.dispatch()
+    })
+  }
+
+  getBlocktime() {
+    this.transport.expectedBlockTime().then(value => {
+      this.state.blockTime = value
+      this.dispatch()
+    })
+  }
+}
+
+export type controllerProps<Str, P, S> =  P & {
+  store: Str
+}
+
+export function Controller<T, Str extends Store<S, T>, P, S>(fn: (props: controllerProps<Str, P,S>, state: S) => any): React.FC<controllerProps<Str, P, S>> {
+  return (props: controllerProps<Str, P,S>) => {
+
+  const [state, setState] = useState<S>(props.store.state)
+
+  const onUpdate = (newState: S) => {
+    setState({...newState})
+  }
+
+  useEffect( ()=> {
+    props.store.attach(onUpdate)
+
+    return () => {
+      props.store.detach(onUpdate)
+    }
+  })
+
+    return fn(props, state)
+  }
+}
+
+type Props = {
+}
+
+export const OpportunitiesController = Controller<ITransport, OpportunitiesStore, Props, State>(
+  (props, state) => {
+  return (
+    <div>
+      <p>B: {state.a}</p>
+        <OpeningsView openings={state.opportunities as Array<WorkingGroupOpening>}  
+          block_time_in_seconds={state.blockTime as number} 
+        /> 
+      </div>
+  )
+})
