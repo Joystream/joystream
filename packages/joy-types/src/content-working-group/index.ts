@@ -319,6 +319,17 @@ export class Lead extends JoyStruct<ILead> {
   }
 };
 
+export class WorkingGroupUnstaker extends Enum {
+  constructor (value?: any, index?: number) {
+    super(
+      {
+        Lead: LeadId,
+        Curator: CuratorId,
+      },
+      value, index);
+  }
+}
+
 export function registerContentWorkingGroupTypes () {
     try {
       getTypeRegistry().register({
@@ -339,7 +350,7 @@ export function registerContentWorkingGroupTypes () {
         Lead,
         OpeningPolicyCommitment,
         Principal,
-        WorkingGroupUnstaker: {},
+        WorkingGroupUnstaker,
       });
     } catch (err) {
       console.error('Failed to register custom types of content working group module', err);
