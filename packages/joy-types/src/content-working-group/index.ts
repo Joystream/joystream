@@ -265,6 +265,7 @@ export class OpeningPolicyCommitment extends JoyStruct<IOpeningPolicyCommitment>
   }
 };
 
+// Not entierly sure that using BTreeSet will work correctly when reading/decoding this type from chain state
 export type ICuratorOpening = {
   opening_id: OpeningId,
   curator_applications: BTreeSet<CuratorApplicationId>,
