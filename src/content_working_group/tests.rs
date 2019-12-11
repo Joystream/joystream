@@ -379,27 +379,12 @@ fn transfer_channel_ownership_success() {
 }
 
 #[test]
-fn transfer_channel_ownership_failure() {
-
-}
-
-#[test]
 fn update_channel_as_owner_success() {
 
 }
 
 #[test]
-fn update_channel_as_owner_failure() {
-
-}
-
-#[test]
 fn update_channel_as_curation_actor_success() {
-
-}
-
-#[test]
-fn update_channel_as_curation_actor_failure() {
 
 }
 
@@ -484,11 +469,6 @@ fn add_curator_opening_success() {
 }
 
 #[test]
-fn add_curator_opening_failure() {
-
-}
-
-#[test]
 fn accept_curator_applications_success() {
 
     let lead_member_root_and_controller_account = 12312;
@@ -535,17 +515,7 @@ fn accept_curator_applications_success() {
 }
 
 #[test]
-fn accept_curator_applications_failure() {
-
-}
-
-#[test]
 fn begin_curator_applicant_review_success() {
-
-}
-
-#[test]
-fn begin_curator_applicant_review_failure() {
 
 }
 
@@ -555,17 +525,7 @@ fn fill_curator_opening_success() {
 }
 
 #[test]
-fn fill_curator_opening_failure() {
-
-}
-
-#[test]
 fn withdraw_curator_application_success() {
-
-}
-
-#[test]
-fn withdraw_curator_application_failure() {
 
 }
 
@@ -575,17 +535,7 @@ fn terminate_curator_application_success() {
 }
 
 #[test]
-fn terminate_curator_application_failure() {
-
-}
-
-#[test]
 fn apply_on_curator_opening_success() {
-
-}
-
-#[test]
-fn apply_on_curator_opening_failure() {
 
 }
 
@@ -595,17 +545,7 @@ fn update_curator_role_account_success() {
 }
 
 #[test]
-fn update_curator_role_account_failure() {
-
-}
-
-#[test]
 fn update_curator_reward_account_success() {
-
-}
-
-#[test]
-fn update_curator_reward_account_failure() {
 
 }
 
@@ -615,17 +555,7 @@ fn leave_curator_role_success() {
 }
 
 #[test]
-fn leave_curator_role_failure() {
-
-}
-
-#[test]
 fn terminate_curator_role_success() {
-
-}
-
-#[test]
-fn terminate_curator_role_failure() {
 
 }
 
@@ -635,17 +565,7 @@ fn set_lead_success() {
 }
 
 #[test]
-fn set_lead_failure() {
-
-}
-
-#[test]
 fn unset_lead_success() {
-
-}
-
-#[test]
-fn unset_lead_failure() {
 
 }
 
@@ -655,17 +575,7 @@ fn unstaked_success() {
 }
 
 #[test]
-fn unstaked_failure() {
-
-}
-
-#[test]
 fn account_can_act_as_principal_success() {
-
-}
-
-#[test]
-fn account_can_act_as_principal_failure() {
 
 }
 
