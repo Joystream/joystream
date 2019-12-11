@@ -16,12 +16,13 @@ type State = {
   opportunities?: Array<WorkingGroupOpening>,
 }
 
+// FIXME! Move to proper place
 type Observer<S> = (v: S) => void
 
-export class Store<S, T> {
+export class Observable<S, T> {
   public state: S
   protected transport: T
-  private observers: Observer<S>[] = []
+  protected observers: Observer<S>[] = []
 
   constructor(transport: T, initialState:S) {
     this.state = initialState
@@ -41,11 +42,10 @@ export class Store<S, T> {
   }
 }
 
-export class OpportunitiesStore extends Store<State, ITransport> {
+// TODO: add error states and URL params (latter to View?)
+export class OpportunitiesController extends Observable<State, ITransport> {
   constructor(transport: ITransport, initialState:State={a:1}) {
     super(transport, initialState)
-    const self = this
-    setInterval(function(){ self.state.a++; self.dispatch()}, 1000);
     this.getOpportunities()
     this.getBlocktime()
   }
@@ -63,28 +63,34 @@ export class OpportunitiesStore extends Store<State, ITransport> {
       this.dispatch()
     })
   }
+
+  hideOpportunities() {
+    this.state.opportunities = []
+    this.dispatch()
+  }
 }
 
 export type controllerProps<Str, P, S> =  P & {
   store: Str
 }
 
-export function Controller<T, Str extends Store<S, T>, P, S>(fn: (props: controllerProps<Str, P,S>, state: S) => any): React.FC<controllerProps<Str, P, S>> {
+// FIXME! Move to proper place
+export function View<T, Str extends Observable<S, T>, P, S>(fn: (props: controllerProps<Str, P,S>, state: S) => any): React.FC<controllerProps<Str, P, S>> {
   return (props: controllerProps<Str, P,S>) => {
 
-  const [state, setState] = useState<S>(props.store.state)
+    const [state, setState] = useState<S>(props.store.state)
 
-  const onUpdate = (newState: S) => {
-    setState({...newState})
-  }
-
-  useEffect( ()=> {
-    props.store.attach(onUpdate)
-
-    return () => {
-      props.store.detach(onUpdate)
+    const onUpdate = (newState: S) => {
+      setState({...newState})
     }
-  })
+
+    useEffect( ()=> {
+      props.store.attach(onUpdate)
+
+      return () => {
+        props.store.detach(onUpdate)
+      }
+    })
 
     return fn(props, state)
   }
@@ -93,14 +99,15 @@ export function Controller<T, Str extends Store<S, T>, P, S>(fn: (props: control
 type Props = {
 }
 
-export const OpportunitiesController = Controller<ITransport, OpportunitiesStore, Props, State>(
+export const OpportunitiesView = View<ITransport, OpportunitiesController, Props, State>(
   (props, state) => {
-  return (
-    <div>
-      <p>B: {state.a}</p>
-        <OpeningsView openings={state.opportunities as Array<WorkingGroupOpening>}  
-          block_time_in_seconds={state.blockTime as number} 
-        /> 
-      </div>
-  )
-})
+    return (
+      <div>
+        <button onClick={() =>props.store.hideOpportunities()}>Clear</button>
+          <button onClick={() =>props.store.getOpportunities()}>Refresh</button>
+            <OpeningsView openings={state.opportunities as Array<WorkingGroupOpening>}  
+              block_time_in_seconds={state.blockTime as number} 
+            /> 
+          </div>
+    )
+  })
