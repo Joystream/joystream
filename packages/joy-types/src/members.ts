@@ -107,7 +107,7 @@ export function registerMembershipTypes () {
         subscription: 'Option<SubscriptionId>',
         root_account: 'AccountId',
         controller_account: 'AccountId',
-        roles: 'BTreeSet<ActorInRole>' // BTreeSet<ActorInRole>
+        roles: 'Vec<ActorInRole>' // BTreeSet<ActorInRole>
       },
       UserInfo,
       CheckedUserInfo: {
