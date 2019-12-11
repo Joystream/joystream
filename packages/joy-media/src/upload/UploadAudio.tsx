@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button, Tab, Dropdown } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps } from 'formik';
-import * as Yup from 'yup';
 import BN from 'bn.js';
 import { History } from 'history';
 
@@ -14,6 +13,7 @@ import { Option } from '@polkadot/types/codec';
 import { ContentId, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from '@joystream/types/media';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
 import { MusicTrackEntity } from '../entities/MusicTrackEntity';
+import { MusicTrackValidationSchema } from '../schemas/music/MusicTrack';
 
 const fakeFieldDescription = 'This is a description of the field';
 
@@ -64,21 +64,6 @@ const licenseOptions = [
 ].map(x => ({
   key: x, text: x, value: x,
 }));
-
-const buildSchema = () => Yup.object().shape({
-  title: Yup.string()
-    // .min(p.minTitleLen, `Title is too short. Minimum length is ${p.minTitleLen} chars.`)
-    // .max(p.maxTitleLen, `Title is too long. Maximum length is ${p.maxTitleLen} chars.`)
-    .required('Title is required'),
-  description: Yup.string()
-    // .min(p.minDescLen, `Description is too short. Minimum length is ${p.minDescLen} chars.`)
-    // .max(p.maxDescLen, `Description is too long. Maximum length is ${p.maxDescLen} chars.`)
-    ,
-  thumbnail: Yup.string()
-    // .max(p.maxThumbLen, `Thumbnail URL is too long. Maximum length is ${p.maxThumbLen} chars.`)
-    .url('Thumbnail must be a valid URL of an image.')
-    .required('Thumbnail is required')
-});
 
 type ValidationProps = {
   // minTitleLen: number,
@@ -300,7 +285,7 @@ export const EditForm = withFormik<OuterProps, FormValues>({
     };
   },
 
-  validationSchema: buildSchema,
+  validationSchema: () => MusicTrackValidationSchema,
 
   handleSubmit: () => {
     // do submitting things
