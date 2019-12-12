@@ -7,6 +7,7 @@ use crate::membership;
 use hiring;
 use srml_support::{StorageLinkedMap, StorageValue};
 use rstd::collections::btree_set::BTreeSet;
+use runtime_primitives::traits::One;
 
 /// DIRTY IMPORT BECAUSE
 /// InputValidationLengthConstraint has not been factored out yet!!!
@@ -14,44 +15,43 @@ use forum::InputValidationLengthConstraint;
 
 #[test]
 fn create_channel_success() {
-    let channel_creator_member_root_account = 12312;
-    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
-    let mint_id = 0;
 
-    TestExternalitiesBuilder::default()
-        .set_membership_config(
-            membership::genesis::GenesisConfigBuilder::default()
-                .members([channel_creator_member_root_account].to_vec())
-                .build(),
-        )
-        .set_content_wg_config(
-            genesis::GenesisConfigBuilder::<Test>::default()
-                .set_mint(mint_id)
-                .build(),
-        )
+    TestExternalitiesBuilder::<Test>::default()
         .build()
         .execute_with(|| {
 
-            let channel_handle_constraint = ChannelHandleConstraint::get();
-            let description_constraint = ChannelDescriptionConstraint::get();
+            /*
+             * Setup
+             */
 
-            let role_account = channel_creator_member_root_account;
-            let channel_name = generate_valid_length_buffer(&channel_handle_constraint);
-            let description = generate_valid_length_buffer(&description_constraint);
+            let channel_creator_member_root_and_controller_account = 12312;
+
+            let channel_creator_member_id = add_member(channel_creator_member_root_and_controller_account, to_vec(CHANNEL_CREATOR_HANDLE));
+
+            let channel_name = generate_valid_length_buffer(&ChannelHandleConstraint::get());
+            let description = generate_valid_length_buffer(&ChannelDescriptionConstraint::get());
             let content = ChannelContentType::Video;
             let publishing_status = ChannelPublishingStatus::NotPublished;
 
+            /*
+             * Test
+             */ 
+
             // Create channel
             ContentWorkingGroup::create_channel(
-                Origin::signed(channel_creator_member_root_account),
+                Origin::signed(channel_creator_member_root_and_controller_account),
                 channel_creator_member_id,
-                role_account,
+                channel_creator_member_root_and_controller_account,
                 channel_name.clone(),
                 description.clone(),
                 content.clone(),
                 publishing_status.clone()
             )
             .expect("Should work");
+
+            /*
+             * Assert
+             */
 
             // Assert that event was triggered,
             // keep channel id.
@@ -69,7 +69,7 @@ fn create_channel_success() {
                 description: description,
                 content: content,
                 owner: channel_creator_member_id,
-                role_account: role_account,
+                role_account: channel_creator_member_root_and_controller_account,
                 publishing_status: publishing_status,
                 curation_status: ChannelCurationStatus::Normal,
                 created: 1,
@@ -113,25 +113,35 @@ fn create_channel_success() {
 
 #[test]
 fn create_channel_not_enabled() {
-    let channel_creator_member_root_account = 12312;
-
+    
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            membership::genesis::GenesisConfigBuilder::default()
-                .members([channel_creator_member_root_account].to_vec())
-                .build()
-        )
         .build()
         .execute_with(|| {
 
+            /*
+             * Setup
+             */
+
+            add_member_and_set_as_lead();
+
+            let channel_creator_member_id = add_channel_creator_member();
+
+            set_channel_creation_enabled(false);
+
             let number_of_events_before_call = System::events().len();
+
+            /*
+             * Test
+             */
 
             // Create channel incorrect member role account
             assert_eq!(
                 ContentWorkingGroup::create_channel(
-                    Origin::signed(channel_creator_member_root_account),
-                    7893412,  // <== incorrect: no member has this ID
-                    channel_creator_member_root_account,
+                    Origin::signed(CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT),
+
+                    // invalid member id
+                    channel_creator_member_id + <<Test as members::Trait>::MemberId as One>::one(),
+                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
                     generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                     generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
                     ChannelContentType::Video,
@@ -583,14 +593,66 @@ fn account_can_act_as_principal_success() {
  * Fixtures
  */
 
- /* TODO */
+static LEAD_ROOT_AND_CONTROLLER_ACCOUNT: <Test as system::Trait>::AccountId = 1289;
+static LEAD_ROLE_ACCOUNT: <Test as system::Trait>::AccountId = 1289;
+static LEAD_MEMBER_HANDLE: &str = "IamTheLead";
+static CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT: <Test as system::Trait>::AccountId = 11;
+static CHANNEL_CREATOR_HANDLE: &str = "Coolcreator";
+
+pub fn to_vec(s: &str) -> Vec<u8> {
+    s.as_bytes().to_vec()
+}
 
 /*
  * Setups
  */
 
-pub fn add_member() {
-    /* TODO */
+pub fn add_member_and_set_as_lead() -> (<Test as members::Trait>::MemberId, LeadId<Test>) {
+
+    let member_id = add_member(
+        LEAD_ROOT_AND_CONTROLLER_ACCOUNT,
+        to_vec(LEAD_MEMBER_HANDLE)
+    );
+
+    let lead_id = set_lead(member_id, LEAD_ROLE_ACCOUNT);
+
+    (member_id, lead_id)
+}
+
+pub fn set_channel_creation_enabled(enabled: bool) {
+
+    lib::Module::<Test>::set_channel_creation_enabled(
+        Origin::signed(LEAD_ROLE_ACCOUNT), 
+        enabled
+    ).unwrap()
+}
+
+pub fn add_channel_creator_member() -> <Test as members::Trait>::MemberId {
+
+    let channel_creator_member_id = add_member(
+        CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
+        to_vec(CHANNEL_CREATOR_HANDLE)
+    );
+
+    channel_creator_member_id
+}
+
+pub fn add_member(root_and_controller_account: <Test as system::Trait>::AccountId, handle: Vec<u8>) -> <Test as members::Trait>::MemberId {
+    
+    assert_eq!(
+        members::Module::<Test>::buy_membership(
+            Origin::signed(root_and_controller_account),
+            0,
+            members::UserInfo{
+                handle: Some(handle),
+                avatar_uri: None,
+                about: None,
+            }
+        ).unwrap(),
+        ()
+    );
+
+    ensure_memberregistered_event_deposited()
 }
 
 pub fn set_lead(member_id: <Test as members::Trait>::MemberId, new_role_account: <Test as system::Trait>::AccountId) -> LeadId<Test> {
@@ -649,6 +711,21 @@ pub fn add_curator_opening(lead_role_account: <Test as system::Trait>::AccountId
 /*
  * Event readers
  */
+
+// MOVE OUT TO MEMBERSHIP MODULE MOCK LATER?,
+// OR MAKE MACRO OUT OF.
+fn ensure_memberregistered_event_deposited() -> <Test as members::Trait>::MemberId {
+
+    if let mock::TestEvent::members(ref x) = System::events().last().unwrap().event {
+        if let members::RawEvent::MemberRegistered(ref member_id, ref _root_and_controller_account) = x {
+            return member_id.clone();
+        } else {
+            panic!("Event was not MemberRegistered.")
+        }
+    } else {
+        panic!("No event deposited.")
+    }
+}
 
 fn ensure_channelcreated_event_deposited() -> lib::ChannelId<Test> {
     if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
