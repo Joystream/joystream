@@ -931,6 +931,7 @@ decl_event! {
         CuratorRoleAccountUpdated(CuratorId, AccountId),
         CuratorRewardAccountUpdated(CuratorId, AccountId),
         ChannelUpdatedByCurationActor(ChannelId),
+        ChannelCreationEnabledUpdated(bool),
     }
 }
 
@@ -1774,6 +1775,22 @@ decl_module! {
             Self::deposit_event(event);
         }
 
+        /// Add an opening for a curator role.
+        pub fn set_channel_creation_enabled(origin, enabled: bool)  {
+
+            // Ensure lead is set and is origin signer
+            Self::ensure_origin_is_set_lead(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update storage value
+            ChannelCreationEnabled::put(enabled);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::ChannelCreationEnabledUpdated(enabled));
+        }
     }
 }
 
