@@ -54,11 +54,11 @@ impl<T: Trait> GenesisConfigBuilder<T> {
         self.channel_description_constraint = constraint;
         self
     }
-    */
     pub fn set_channel_creation_enabled(mut self, channel_creation_enabled: bool) -> Self {
         self.channel_creation_enabled = channel_creation_enabled;
         self
     }
+    */
     pub fn build(self) -> GenesisConfig<T> {
         GenesisConfig {
             mint: self.mint,

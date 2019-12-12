@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::genesis;
+//use super::genesis;
 use super::lib;
 use super::mock::{self, *};
 use crate::membership;
@@ -112,7 +112,7 @@ fn create_channel_success() {
 }
 
 #[test]
-fn create_channel_not_enabled() {
+fn create_channel_is_not_a_member() {
     
     TestExternalitiesBuilder::<Test>::default()
         .build()
@@ -122,11 +122,7 @@ fn create_channel_not_enabled() {
              * Setup
              */
 
-            add_member_and_set_as_lead();
-
             let channel_creator_member_id = add_channel_creator_member();
-
-            set_channel_creation_enabled(false);
 
             let number_of_events_before_call = System::events().len();
 
@@ -157,32 +153,34 @@ fn create_channel_not_enabled() {
 }
 
 #[test]
-fn create_channel_is_not_a_member() {
-    let channel_creator_member_root_account = 12312;
-    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
+fn create_channel_not_enabled() {
 
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            membership::genesis::GenesisConfigBuilder::default()
-                .members([channel_creator_member_root_account].to_vec())
-                .build(),
-        )
-        .set_content_wg_config(
-            genesis::GenesisConfigBuilder::default()
-                .set_channel_creation_enabled(false)
-                .build()
-        )
         .build()
         .execute_with(|| {
 
+            /*
+             * Setup
+             */
+
+            add_member_and_set_as_lead();
+
+            set_channel_creation_enabled(false);
+
+            let channel_creator_member_id = add_channel_creator_member();
+
+            /*
+             * Test
+             */
+            
             let number_of_events_before_call = System::events().len();
 
             // Create channel
             assert_eq!(
                 ContentWorkingGroup::create_channel(
-                    Origin::signed(channel_creator_member_root_account),
+                    Origin::signed(CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT),
                     channel_creator_member_id,
-                    channel_creator_member_root_account,
+                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
                     generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                     generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
                     ChannelContentType::Video,
@@ -199,30 +197,31 @@ fn create_channel_is_not_a_member() {
 
 #[test]
 fn create_channel_with_bad_member_role_account() {
-    let channel_creator_member_root_account = 12312;
-    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
 
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            membership::genesis::GenesisConfigBuilder::default()
-                .members([channel_creator_member_root_account].to_vec())
-                .build(),
-        )
-        .set_content_wg_config(
-            genesis::GenesisConfigBuilder::default()
-                .build()
-        )
         .build()
         .execute_with(|| {
 
+            /*
+             * Setup
+             */
+
+            let channel_creator_member_id = add_channel_creator_member();
+
             let number_of_events_before_call = System::events().len();
+
+            /*
+             * Test
+             */
 
             // Create channel incorrect member role account
             assert_eq!(
                 ContentWorkingGroup::create_channel(
-                    Origin::signed(71893780491), // <== incorrect
+
+                    // <== incorrect
+                    Origin::signed(71893780491),
                     channel_creator_member_id,
-                    channel_creator_member_root_account,
+                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
                     generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                     generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
                     ChannelContentType::Video,
@@ -240,26 +239,29 @@ fn create_channel_with_bad_member_role_account() {
 
 #[test]
 fn create_channel_handle_too_long() {
-    let channel_creator_member_root_account = 12312;
-    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
 
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            membership::genesis::GenesisConfigBuilder::default()
-                .members([channel_creator_member_root_account].to_vec())
-                .build(),
-        )
         .build()
         .execute_with(|| {
 
+            /*
+             * Setup
+             */
+
+            let channel_creator_member_id = add_channel_creator_member();
+
             let number_of_events_before_call = System::events().len();
+
+            /*
+             * Test
+             */
 
             // Create channel with handle that is too long
             assert_eq!(
                 ContentWorkingGroup::create_channel(
-                    Origin::signed(channel_creator_member_root_account),
+                    Origin::signed(CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT),
                     channel_creator_member_id,
-                    channel_creator_member_root_account,
+                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
                     generate_too_long_length_buffer(&ChannelHandleConstraint::get()),
                     generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
                     ChannelContentType::Video,
@@ -276,26 +278,29 @@ fn create_channel_handle_too_long() {
 
 #[test]
 fn create_channel_handle_too_short() {
-    let channel_creator_member_root_account = 12312;
-    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
 
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            membership::genesis::GenesisConfigBuilder::default()
-                .members([channel_creator_member_root_account].to_vec())
-                .build(),
-        )
         .build()
         .execute_with(|| {
 
+            /*
+             * Setup
+             */
+
+            let channel_creator_member_id = add_channel_creator_member();
+
             let number_of_events_before_call = System::events().len();
+
+            /*
+             * Test
+             */
 
             // Create channel with handle that is too short
             assert_eq!(
                 ContentWorkingGroup::create_channel(
-                    Origin::signed(channel_creator_member_root_account),
+                    Origin::signed(CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT),
                     channel_creator_member_id,
-                    channel_creator_member_root_account,
+                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
                     generate_too_short_length_buffer(&ChannelHandleConstraint::get()),
                     generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
                     ChannelContentType::Video,
@@ -312,26 +317,29 @@ fn create_channel_handle_too_short() {
 
 #[test]
 fn create_channel_description_too_long() {
-    let channel_creator_member_root_account = 12312;
-    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
 
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            membership::genesis::GenesisConfigBuilder::default()
-                .members([channel_creator_member_root_account].to_vec())
-                .build(),
-        )
         .build()
         .execute_with(|| {
 
+            /*
+             * Setup
+             */
+
+            let channel_creator_member_id = add_channel_creator_member();
+
             let number_of_events_before_call = System::events().len();
+
+            /*
+             * Test
+             */
 
             // Create channel with description that is too long
             assert_eq!(
                 ContentWorkingGroup::create_channel(
-                    Origin::signed(channel_creator_member_root_account),
+                    Origin::signed(CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT),
                     channel_creator_member_id,
-                    channel_creator_member_root_account,
+                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
                     generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                     generate_too_long_length_buffer(&ChannelDescriptionConstraint::get()),
                     ChannelContentType::Video,
@@ -348,26 +356,29 @@ fn create_channel_description_too_long() {
 
 #[test]
 fn create_channel_description_too_short() {
-    let channel_creator_member_root_account = 12312;
-    let channel_creator_member_id = 0; /* HACK, guessing ID, needs better solution */
 
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            membership::genesis::GenesisConfigBuilder::default()
-                .members([channel_creator_member_root_account].to_vec())
-                .build(),
-        )
         .build()
         .execute_with(|| {
 
+            /*
+             * Setup
+             */
+
+            let channel_creator_member_id = add_channel_creator_member();
+
             let number_of_events_before_call = System::events().len();
+
+            /*
+             * Test
+             */
 
             // Create channel with description that is too short
             assert_eq!(
                 ContentWorkingGroup::create_channel(
-                    Origin::signed(channel_creator_member_root_account),
+                    Origin::signed(CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT),
                     channel_creator_member_id,
-                    channel_creator_member_root_account,
+                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
                     generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                     generate_too_short_length_buffer(&ChannelDescriptionConstraint::get()),
                     ChannelContentType::Video,
@@ -401,50 +412,32 @@ fn update_channel_as_curation_actor_success() {
 #[test]
 fn add_curator_opening_success() {
 
-    let lead_member_root_and_controller_account = 12312;
-    let lead_member_id = 0; /* HACK, guessing ID, needs better solution */
-
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            membership::genesis::GenesisConfigBuilder::default()
-                .members([lead_member_root_and_controller_account].to_vec())
-                .build(),
-        )
         .build()
         .execute_with(|| {
 
-            // Set lead
-            set_lead(lead_member_id, lead_member_root_and_controller_account);
+            /*
+             * Setup
+             */
+
+            add_member_and_set_as_lead();
 
             let expected_opening_id = hiring::NextOpeningId::<Test>::get();
 
-            // ====
+            /*
+             * Test
+             */
 
             // Add opening
             let activate_at = hiring::ActivateOpeningAt::ExactBlock(34);
-
-            let policy = OpeningPolicyCommitment{
-                application_rationing_policy: None, //Option<hiring::ApplicationRationingPolicy>,
-                max_review_period_length: 100,
-                application_staking_policy: None, // Option<hiring::StakingPolicy<Balance, BlockNumber>>,
-                role_staking_policy: None, // Option<hiring::StakingPolicy<Balance, BlockNumber>>,
-                role_slashing_terms: SlashingTerms::Unslashable,
-                fill_opening_successful_applicant_application_stake_unstaking_period: None,
-                fill_opening_failed_applicant_application_stake_unstaking_period: None,
-                fill_opening_failed_applicant_role_stake_unstaking_period: None,
-                terminate_curator_application_stake_unstaking_period: None,
-                terminate_curator_role_stake_unstaking_period: None,
-                exit_curator_role_application_stake_unstaking_period: None,
-                exit_curator_role_stake_unstaking_period: None,
-            };
 
             let human_readable_text = generate_valid_length_buffer(&OpeningHumanReadableText::get());
 
             assert_eq!(
                 ContentWorkingGroup::add_curator_opening(
-                    Origin::signed(lead_member_root_and_controller_account),
+                    Origin::signed(LEAD_ROLE_ACCOUNT),
                     activate_at.clone(),
-                    policy.clone(),
+                    OPENING_POLICY.clone(),
                     human_readable_text.clone()
                 ).unwrap(),
                 ()
@@ -461,7 +454,7 @@ fn add_curator_opening_success() {
             let expected_curator_opening = CuratorOpening{
                 opening_id: expected_opening_id,
                 curator_applications: BTreeSet::new(),
-                policy_commitment: policy.clone()
+                policy_commitment: OPENING_POLICY.clone()
             };
 
             assert_eq!(
@@ -481,26 +474,17 @@ fn add_curator_opening_success() {
 #[test]
 fn accept_curator_applications_success() {
 
-    let lead_member_root_and_controller_account = 12312;
-    let lead_member_new_role_account = 18271;
-    let lead_member_id = 0; /* HACK, guessing ID, needs better solution */
-
     TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            membership::genesis::GenesisConfigBuilder::default()
-                .members([lead_member_root_and_controller_account].to_vec())
-                .build(),
-        )
         .build()
         .execute_with(|| {
 
             /*
              * Setup
              */
-            
-            set_lead(lead_member_id, lead_member_new_role_account);
 
-            let curator_opening_id = add_curator_opening(lead_member_new_role_account);
+            add_member_and_set_as_lead();
+
+            let curator_opening_id = add_curator_opening();
 
             /*
              * Test
@@ -508,7 +492,7 @@ fn accept_curator_applications_success() {
 
             assert_eq!(
                 ContentWorkingGroup::accept_curator_applications(
-                    Origin::signed(lead_member_new_role_account),
+                    Origin::signed(LEAD_ROLE_ACCOUNT),
                     curator_opening_id
                     ).unwrap(),
                 ()
@@ -599,6 +583,21 @@ static LEAD_MEMBER_HANDLE: &str = "IamTheLead";
 static CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT: <Test as system::Trait>::AccountId = 11;
 static CHANNEL_CREATOR_HANDLE: &str = "Coolcreator";
 
+static OPENING_POLICY: OpeningPolicyCommitment<<Test as system::Trait>::BlockNumber, BalanceOf<Test>> = OpeningPolicyCommitment{
+    application_rationing_policy: None, //Option<hiring::ApplicationRationingPolicy>,
+    max_review_period_length: 100,
+    application_staking_policy: None, // Option<hiring::StakingPolicy<Balance, BlockNumber>>,
+    role_staking_policy: None, // Option<hiring::StakingPolicy<Balance, BlockNumber>>,
+    role_slashing_terms: SlashingTerms::Unslashable,
+    fill_opening_successful_applicant_application_stake_unstaking_period: None,
+    fill_opening_failed_applicant_application_stake_unstaking_period: None,
+    fill_opening_failed_applicant_role_stake_unstaking_period: None,
+    terminate_curator_application_stake_unstaking_period: None,
+    terminate_curator_role_stake_unstaking_period: None,
+    exit_curator_role_application_stake_unstaking_period: None,
+    exit_curator_role_stake_unstaking_period: None,
+};
+
 pub fn to_vec(s: &str) -> Vec<u8> {
     s.as_bytes().to_vec()
 }
@@ -674,32 +673,18 @@ pub fn set_lead(member_id: <Test as members::Trait>::MemberId, new_role_account:
     ensure_lead_set_event_deposited()
 }
 
-pub fn add_curator_opening(lead_role_account: <Test as system::Trait>::AccountId) -> CuratorOpeningId<Test> {
+// lead_role_account: <Test as system::Trait>::AccountId
+pub fn add_curator_opening() -> CuratorOpeningId<Test> {
 
     let activate_at = hiring::ActivateOpeningAt::ExactBlock(34);
-
-    let policy = OpeningPolicyCommitment{
-        application_rationing_policy: None, //Option<hiring::ApplicationRationingPolicy>,
-        max_review_period_length: 100,
-        application_staking_policy: None, // Option<hiring::StakingPolicy<Balance, BlockNumber>>,
-        role_staking_policy: None, // Option<hiring::StakingPolicy<Balance, BlockNumber>>,
-        role_slashing_terms: SlashingTerms::Unslashable,
-        fill_opening_successful_applicant_application_stake_unstaking_period: None,
-        fill_opening_failed_applicant_application_stake_unstaking_period: None,
-        fill_opening_failed_applicant_role_stake_unstaking_period: None,
-        terminate_curator_application_stake_unstaking_period: None,
-        terminate_curator_role_stake_unstaking_period: None,
-        exit_curator_role_application_stake_unstaking_period: None,
-        exit_curator_role_stake_unstaking_period: None,
-    };
 
     let human_readable_text = generate_valid_length_buffer(&OpeningHumanReadableText::get());
 
     assert_eq!(
         ContentWorkingGroup::add_curator_opening(
-            Origin::signed(lead_role_account),
+            Origin::signed(LEAD_ROLE_ACCOUNT),
             activate_at.clone(),
-            policy.clone(),
+            OPENING_POLICY.clone(),
             human_readable_text.clone()
         ).unwrap(),
         ()
