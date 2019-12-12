@@ -431,17 +431,18 @@ export function OpeningView(props: OpeningViewProps) {
   )
 }
 
-export type OpeningsViewProps = BlockTimeProps & {
-  openings: Array<WorkingGroupOpening>
+export type OpeningsViewProps = {
+  openings?: Array<WorkingGroupOpening>
+  block_time_in_seconds?: number
 }
 
 export const OpeningsView = Loadable<OpeningsViewProps>(
-  ['openings'],
+  ['openings', 'block_time_in_seconds'],
   props => {
     return (
       <Container>
-        {props.openings.map((opening, key) => (
-          <OpeningView key={key} {...opening} block_time_in_seconds={props.block_time_in_seconds} />
+        {props.openings && props.openings.map((opening, key) => (
+          <OpeningView key={key} {...opening} block_time_in_seconds={props.block_time_in_seconds as number} />
         ))}
       </Container>
     )

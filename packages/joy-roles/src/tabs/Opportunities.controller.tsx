@@ -52,8 +52,7 @@ export const OpportunitiesView = View<OpportunitiesController, Props, State>(
     <div>
       <button onClick={() => props.controller.hideOpportunities()}>Clear</button>
       <button onClick={() => props.controller.getOpportunities()}>Refresh</button>
-      <OpeningsView openings={state.opportunities as Array<WorkingGroupOpening>}
-        block_time_in_seconds={state.blockTime as number}
+      <OpeningsView openings={state.opportunities} block_time_in_seconds={state.blockTime}
       />
     </div>
   )

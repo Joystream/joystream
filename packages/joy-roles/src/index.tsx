@@ -13,7 +13,7 @@ import { ControllerComponent } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
 import { Transport } from './transport.polkadot'
-import { Transport as MockTransport} from './transport.mock'
+import { Transport as MockTransport } from './transport.mock'
 
 import { WorkingGroupsController, } from './tabs/WorkingGroup.controller'
 import { OpportunitiesController, OpportunitiesView } from './tabs/Opportunities.controller'
@@ -85,23 +85,23 @@ class App extends React.PureComponent<Props, State> {
           />
         </header>
         <Switch>
-          <Route path={`${basePath}/opportunities`} render={() => <OpportunitiesView controller={this.oppCtrl} /> } />
-            <Route path={`${basePath}/my-roles`} render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
-            <Route path={`${basePath}/apply/:id`} render={(props) => this.renderComponent(ApplyController, this.mockTransport, props)} />
-              <Route render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
+          <Route path={`${basePath}/opportunities`} render={() => <OpportunitiesView controller={this.oppCtrl} />} />
+          <Route path={`${basePath}/my-roles`} render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
+          <Route path={`${basePath}/apply/:id`} render={(props) => this.renderComponent(ApplyController, this.mockTransport, props)} />
+          <Route render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
         </Switch>
       </main>
     );
   }
 
   private renderComponent(Ctrl: ControllerComponent<ITransport>, transport: ITransport, props?: RouteComponentProps) {
-    let params = new Map<string,string>()
+    let params = new Map<string, string>()
     if (typeof props !== 'undefined' && props.match.params) {
-      params = new Map<string,string>(Object.entries(props.match.params))
+      params = new Map<string, string>(Object.entries(props.match.params))
     }
     return (
       <Ctrl transport={transport} params={params} />
-     )
+    )
   }
 }
 
