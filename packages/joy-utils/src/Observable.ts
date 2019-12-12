@@ -1,6 +1,6 @@
 export type Observer<S> = (v: S) => void
 
-export class Observable<S, T> {
+export abstract class Observable<S, T> {
   public state: S
   protected transport: T
   protected observers: Observer<S>[] = []
