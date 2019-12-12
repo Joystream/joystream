@@ -6,10 +6,10 @@ type controllerProps<C, P, S> = P & {
   controller: C
 }
 
-type controllerFn<C, P, S> = (props: controllerProps<C, P, S>, state: S) => void
+type controllerFn<C, P, S> = (props: controllerProps<C, P, S>, state: S) => React.ReactElement | null
 
 export function View<C extends Observable<S, any>, P, S>(fn: controllerFn<C, P, S>): React.FC<controllerProps<C, P, S>> {
-  return (props: controllerProps<C, P, S>) => {
+  return (props: controllerProps<C, P, S>): React.ReactElement | null => {
 
     const [state, setState] = useState<S>(props.controller.state)
 
