@@ -140,7 +140,7 @@ export function OpportunitySandbox() {
     requiredRoleStake: new RoleStakeRequirement(
       new u128(number("Role stake", 0, moneySliderOptions, "Role stakes")),
     ),
-	defactoMinimumStake: new u128(0),
+    defactoMinimumStake: new u128(0),
   }
 
   const defactoMinimumStake: Balance = new u128(number("Dynamic min stake", 0, moneySliderOptions, "Role stakes"))

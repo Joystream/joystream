@@ -57,7 +57,7 @@ export function ContentCuratorsSection() {
       profile: mockProfile(
         "alex_joystream",
         "https://avatars2.githubusercontent.com/u/153928?s=200&v=4",
-                          ),
+      ),
       title: text('Title', 'Content curator', 'Alex'),
       lead: boolean("Lead", false, "Alex"),
       stake: new u128(number("Stake", 10101, {}, "Alex")),

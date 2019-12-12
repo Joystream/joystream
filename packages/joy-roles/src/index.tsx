@@ -35,14 +35,14 @@ class App extends React.PureComponent<Props, State> {
   state: State;
   transport: ITransport
   mockTransport: ITransport
-  oppStore: OpportunitiesController
+  oppCtrl: OpportunitiesController
 
   constructor(props: Props) {
     super(props);
 
     this.transport = new Transport(props)
     this.mockTransport = new MockTransport()
-    this.oppStore = new OpportunitiesController(this.mockTransport)
+    this.oppCtrl = new OpportunitiesController(this.mockTransport)
 
     const { t } = props;
 
@@ -85,7 +85,7 @@ class App extends React.PureComponent<Props, State> {
           />
         </header>
         <Switch>
-          <Route path={`${basePath}/opportunities`} render={() => <OpportunitiesView store={this.oppStore} /> } />
+          <Route path={`${basePath}/opportunities`} render={() => <OpportunitiesView controller={this.oppCtrl} /> } />
             <Route path={`${basePath}/my-roles`} render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
             <Route path={`${basePath}/apply/:id`} render={(props) => this.renderComponent(ApplyController, this.mockTransport, props)} />
               <Route render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />

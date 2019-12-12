@@ -118,7 +118,7 @@ function RankAndCapacity(props: RankAndCapacityProps) {
     capacity = "/ " + props.capacity
   }
 
-  let iconName:SemanticICONS = 'check circle'
+  let iconName: SemanticICONS = 'check circle'
   if (props.capacity > 0 && props.rank > props.capacity) {
     iconName = 'times circle'
   }
@@ -358,7 +358,7 @@ export function Application(props: ApplicationProps) {
           </Table>
           <h4>Hiring process details</h4>
           <List bulleted>
-            {application.process && application.process.details.map((detail:string, key:any) => (
+            {application.process && application.process.details.map((detail: string, key: any) => (
               <List.Item key={key}>
                 <List.Icon name="info circle" />
                 <List.Content>{detail}</List.Content>

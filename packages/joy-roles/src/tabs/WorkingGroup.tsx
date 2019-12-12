@@ -66,7 +66,7 @@ export type StorageAndDistributionProps = {
   profiles: Map<number, Profile>
 }
 
-export const StorageAndDistribution = Loadable<StorageAndDistributionProps>( 
+export const StorageAndDistribution = Loadable<StorageAndDistributionProps>(
   ['actors'],
   props => {
     return (

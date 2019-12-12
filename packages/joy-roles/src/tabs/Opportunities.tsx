@@ -5,15 +5,15 @@ import marked from 'marked';
 import CopyToClipboard from 'react-copy-to-clipboard';
 
 import { Link } from 'react-router-dom';
-import { 
-	Button, 
-  Card, 
-  Container, 
-  Grid, 
-  Icon, 
-  Label, 
-  List, 
-  Message, 
+import {
+  Button,
+  Card,
+  Container,
+  Grid,
+  Icon,
+  Label,
+  List,
+  Message,
   Statistic,
 } from 'semantic-ui-react'
 
@@ -390,7 +390,7 @@ function OpeningReward(props: OpeningRewardProps) {
   )
 }
 
-export type WorkingGroupOpening =  OpeningStage & DefactoMinimumStake & {
+export type WorkingGroupOpening = OpeningStage & DefactoMinimumStake & {
   opening: Opening
   creator: GroupMember
   applications: OpeningStakeAndApplicationStatus
@@ -415,7 +415,7 @@ export function OpeningView(props: OpeningViewProps) {
           <OpeningHeader stage={props.stage} />
         </Card.Content>
         <Card.Content className="main">
-          <OpeningBody 
+          <OpeningBody
             {...props.applications}
             text={text}
             opening={props.opening}

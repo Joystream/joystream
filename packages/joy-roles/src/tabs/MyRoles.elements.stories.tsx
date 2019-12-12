@@ -277,7 +277,7 @@ export function ApplicationFragment() {
 export function ApplicationsFragment() {
   return (
     <Container className="outer my-roles">
-		<Applications applications={permutations} />
+      <Applications applications={permutations} />
     </Container>
   )
 }

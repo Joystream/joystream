@@ -1,17 +1,16 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 
 // FIXME! Remove
 //import { Controller, controllerProps } from '@polkadot/joy-utils/index'
 
 import { ITransport } from '../transport'
 
-import { 
-  WorkingGroupOpening, 
+import {
+  WorkingGroupOpening,
   OpeningsView,
 } from './Opportunities'
 
 type State = {
-	a: number
   blockTime?: number,
   opportunities?: Array<WorkingGroupOpening>,
 }
@@ -24,27 +23,27 @@ export class Observable<S, T> {
   protected transport: T
   protected observers: Observer<S>[] = []
 
-  constructor(transport: T, initialState:S) {
+  constructor(transport: T, initialState: S) {
     this.state = initialState
     this.transport = transport
   }
 
   public attach(observer: Observer<S>) {
-	  this.observers.push(observer)
+    this.observers.push(observer)
   }
 
   public detach(observerToRemove: Observer<S>) {
-	  this. observers = this.observers.filter(observer => observerToRemove !== observer)
+    this.observers = this.observers.filter(observer => observerToRemove !== observer)
   }
 
   public dispatch() {
-	  this.observers.forEach(observer => observer(this.state))
+    this.observers.forEach(observer => observer(this.state))
   }
 }
 
 // TODO: add error states and URL params (latter to View?)
 export class OpportunitiesController extends Observable<State, ITransport> {
-  constructor(transport: ITransport, initialState:State={a:1}) {
+  constructor(transport: ITransport, initialState: State = {}) {
     super(transport, initialState)
     this.getOpportunities()
     this.getBlocktime()
@@ -70,25 +69,25 @@ export class OpportunitiesController extends Observable<State, ITransport> {
   }
 }
 
-export type controllerProps<Str, P, S> =  P & {
-  store: Str
+export type controllerProps<C, P, S> = P & {
+  controller: C
 }
 
 // FIXME! Move to proper place
-export function View<T, Str extends Observable<S, T>, P, S>(fn: (props: controllerProps<Str, P,S>, state: S) => any): React.FC<controllerProps<Str, P, S>> {
-  return (props: controllerProps<Str, P,S>) => {
+export function View<C extends Observable<S, any>, P, S>(fn: (props: controllerProps<C, P, S>, state: S) => any): React.FC<controllerProps<C, P, S>> {
+  return (props: controllerProps<C, P, S>) => {
 
-    const [state, setState] = useState<S>(props.store.state)
+    const [state, setState] = useState<S>(props.controller.state)
 
     const onUpdate = (newState: S) => {
-      setState({...newState})
+      setState({ ...newState })
     }
 
-    useEffect( ()=> {
-      props.store.attach(onUpdate)
+    useEffect(() => {
+      props.controller.attach(onUpdate)
 
       return () => {
-        props.store.detach(onUpdate)
+        props.controller.detach(onUpdate)
       }
     })
 
@@ -99,15 +98,15 @@ export function View<T, Str extends Observable<S, T>, P, S>(fn: (props: controll
 type Props = {
 }
 
-export const OpportunitiesView = View<ITransport, OpportunitiesController, Props, State>(
+export const OpportunitiesView = View<OpportunitiesController, Props, State>(
   (props, state) => {
     return (
       <div>
-        <button onClick={() =>props.store.hideOpportunities()}>Clear</button>
-          <button onClick={() =>props.store.getOpportunities()}>Refresh</button>
-            <OpeningsView openings={state.opportunities as Array<WorkingGroupOpening>}  
-              block_time_in_seconds={state.blockTime as number} 
-            /> 
-          </div>
+        <button onClick={props.controller.hideOpportunities}>Clear</button>
+        <button onClick={() => props.controller.getOpportunities()}>Refresh</button>
+        <OpeningsView openings={state.opportunities as Array<WorkingGroupOpening>}
+          block_time_in_seconds={state.blockTime as number}
+        />
+      </div>
     )
   })

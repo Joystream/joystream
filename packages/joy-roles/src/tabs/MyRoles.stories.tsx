@@ -10,7 +10,7 @@ import '@polkadot/joy-roles/index.sass'
 
 import {
   ApplicationsFragment,
-	CurrentRolesFragment,
+  CurrentRolesFragment,
 } from './MyRoles.elements.stories'
 
 export default {
@@ -20,9 +20,9 @@ export default {
 
 export function MyRolesSandbox() {
   return (
-	  <Container className="my-roles">
-		  <CurrentRolesFragment />
+    <Container className="my-roles">
+      <CurrentRolesFragment />
       <ApplicationsFragment />
-	  </Container>
+    </Container>
   )
 }
