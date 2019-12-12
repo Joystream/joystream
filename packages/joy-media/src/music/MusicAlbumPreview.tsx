@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from 'semantic-ui-react';
 import { Pluralize } from '@polkadot/joy-utils/Pluralize';
 import { BgImg } from '../common/BgImg';
+import { ChannelEntity } from '../entities/MusicChannelEntity';
 
 export type MusicAlbumPreviewProps = {
   id: string,
@@ -9,12 +10,15 @@ export type MusicAlbumPreviewProps = {
   artist: string,
   cover: string,
   tracksCount: number,
+
+  // Extra props:
+  channel?: ChannelEntity,
   size?: number,
   withActions?: boolean
 };
 
 export function MusicAlbumPreview (props: MusicAlbumPreviewProps) {
-  const { size = 200 } = props;
+  const { channel, size = 200 } = props;
 
   return <div className='JoyMusicAlbumPreview'>
   

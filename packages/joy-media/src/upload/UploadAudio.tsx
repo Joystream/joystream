@@ -1,24 +1,24 @@
 import React from 'react';
 import { Button, Tab, Dropdown } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps } from 'formik';
-import BN from 'bn.js';
 import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
-import { Text } from '@polkadot/types';
-import { Option } from '@polkadot/types/codec';
-import { ContentId, ContentMetadataUpdate, SchemaId, ContentVisibility, VecContentId } from '@joystream/types/media';
+import { ContentId } from '@joystream/types/media';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
-import { MusicTrackEntity } from '../entities/MusicTrackEntity';
-import { MusicTrackValidationSchema } from '../schemas/music/MusicTrack';
+import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass } from '../schemas/music/MusicTrack';
 
-const fakeFieldDescription = 'This is a description of the field';
+function fieldName (_fieldName: keyof FormValues): string | undefined {
+  const field = MusicTrackClass[_fieldName];
+  return field ? field.name : undefined;
+}
 
 function tooltip (_fieldName: keyof FormValues): string | undefined {
-  return fakeFieldDescription; // TODO get real field description
+  const field = MusicTrackClass[_fieldName];
+  return field ? field.description : undefined;
 }
 
 // TODO get from verstore
@@ -78,10 +78,10 @@ type OuterProps = ValidationProps & {
   history?: History,
   contentId: ContentId,
   fileName?: string,
-  entity?: MusicTrackEntity
+  entity?: MusicTrackType
 };
 
-type FormValues = MusicTrackEntity;
+type FormValues = MusicTrackType;
 
 type FormProps = OuterProps & FormikProps<FormValues>;
 
@@ -103,11 +103,7 @@ const InnerForm = (props: FormProps) => {
     resetForm
   } = props;
 
-  const {
-    title,
-    description,
-    thumbnail
-  } = values;
+  const { trackThumbnail } = values;
 
   const onSubmit = (sendTx: () => void) => {
     if (isValid) sendTx();
@@ -140,56 +136,42 @@ const InnerForm = (props: FormProps) => {
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    const json = JSON.stringify({
-      title,
-      description,
-      thumbnail
-    });
-
-    // TODO set Option.some only on changed fields && if json has changed fields
-    const meta = new ContentMetadataUpdate({
-      children_ids: new Option(VecContentId, null),
-      visibility: new Option(ContentVisibility, 'Draft'),
-      schema: new Option(SchemaId, new BN(1)),
-      json: new Option(Text, json)
-    });
-
-    return [ contentId, meta ];
+    return [ /* TODO save entity to versioned store */ ];
   };
 
   const basicInfoTab = () => <Tab.Pane as='div'>
-    <LabelledText name='title' label={`Title`} tooltip={tooltip('title')} {...props} />
+    <LabelledText name='trackTitle' label={fieldName('trackTitle')} tooltip={tooltip('trackTitle')} {...props} />
     
-    <LabelledText name='thumbnail' label={`Thumbnail image URL`} tooltip={tooltip('thumbnail')} {...props} />
+    <LabelledText name='trackThumbnail' label={fieldName('trackThumbnail')} tooltip={tooltip('trackThumbnail')} {...props} />
     
-    <LabelledField name='description' label={`About this track`} tooltip={tooltip('description')} {...props}>
-      <Field component='textarea' id='description' name='description' disabled={isSubmitting} rows={3} />
+    <LabelledField name='aboutTheTrack' label={fieldName('aboutTheTrack')} tooltip={tooltip('aboutTheTrack')} {...props}>
+      <Field component='textarea' id='aboutTheTrack' name='aboutTheTrack' disabled={isSubmitting} rows={3} />
     </LabelledField>
 
-    <LabelledField name='visibility' label={`Visibility`} tooltip={tooltip('visibility')} {...props}>
-      <Field component={Dropdown} id='visibility' name='visibility' disabled={isSubmitting} selection options={visibilityOptions} />
+    <LabelledField name='publicationStatus' label={fieldName('publicationStatus')} tooltip={tooltip('publicationStatus')} {...props}>
+      <Field component={Dropdown} id='publicationStatus' name='publicationStatus' disabled={isSubmitting} selection options={visibilityOptions} />
     </LabelledField>
     
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <LabelledText name='artist' label={`Artist`} tooltip={tooltip('artist')} {...props} />
+    <LabelledText name='trackArtist' label={fieldName('trackArtist')} tooltip={tooltip('trackArtist')} {...props} />
 
-    <LabelledText name='composer' label={`Composer`} tooltip={tooltip('composer')} {...props} />
+    <LabelledText name='composerOrSongwriter' label={fieldName('composerOrSongwriter')} tooltip={tooltip('composerOrSongwriter')} {...props} />
 
-    <LabelledField name='genre' label={`Genre`} tooltip={tooltip('genre')} {...props}>
+    <LabelledField name='genre' label={fieldName('genre')} tooltip={tooltip('genre')} {...props}>
       <Field component={Dropdown} id='genre' name='genre' disabled={isSubmitting} search selection options={genreOptions} />
     </LabelledField>
 
-    <LabelledField name='mood' label={`Mood`} tooltip={tooltip('mood')} {...props}>
+    <LabelledField name='mood' label={fieldName('mood')} tooltip={tooltip('mood')} {...props}>
       <Field component={Dropdown} id='mood' name='mood' disabled={isSubmitting} search selection options={moodOptions} />
     </LabelledField>
 
-    <LabelledField name='theme' label={`Theme`} tooltip={tooltip('theme')} {...props}>
+    <LabelledField name='theme' label={fieldName('theme')} tooltip={tooltip('theme')} {...props}>
       <Field component={Dropdown} id='theme' name='theme' disabled={isSubmitting} search selection options={themeOptions} />
     </LabelledField>
 
-    <LabelledField name='license' label={`License`} tooltip={tooltip('license')} {...props}>
+    <LabelledField name='license' label={fieldName('license')} tooltip={tooltip('license')} {...props}>
       <Field component={Dropdown} id='license' name='license' disabled={isSubmitting} search selection options={licenseOptions} />
     </LabelledField>
   </Tab.Pane>
@@ -237,7 +219,7 @@ const InnerForm = (props: FormProps) => {
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
-      {thumbnail && <img src={thumbnail} onError={onImageError} />}
+      {trackThumbnail && <img src={trackThumbnail} onError={onImageError} />}
     </div>
 
     <Form className='ui form JoyForm EditMetaForm'>
@@ -268,15 +250,15 @@ export const EditForm = withFormik<OuterProps, FormValues>({
 
     return {
       // Basic:
-      title: entity && entity.title || fileName || '',
-      description: entity && entity.description || '',
-      thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
-      visibility: entity && entity.visibility || visibilityOptions[0].value,
+      trackTitle: entity && entity.trackTitle || fileName || '',
+      aboutTheTrack: entity && entity.aboutTheTrack || '',
+      trackThumbnail: entity && entity.trackThumbnail || DEFAULT_THUMBNAIL_URL,
+      publicationStatus: entity && entity.publicationStatus || visibilityOptions[0].value,
       album: entity && entity.album || '',
 
       // Additional:
-      artist: entity && entity.artist || '',
-      composer: entity && entity.composer || '',
+      trackArtist: entity && entity.trackArtist || '',
+      composerOrSongwriter: entity && entity.composerOrSongwriter || '',
       genre: entity && entity.genre || genreOptions[0].value,
       mood: entity && entity.mood || moodOptions[0].value,
       theme: entity && entity.theme || themeOptions[0].value,
