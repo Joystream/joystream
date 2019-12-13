@@ -5,11 +5,7 @@ import { BareProps } from '@polkadot/react-components/types';
 import { nonEmptyStr } from '@polkadot/joy-utils/index';
 import { Popup, Icon } from 'semantic-ui-react';
 
-type FormValuesType = {
-  [s: string]: string
-};
-
-type LabelledProps<FormValues = FormValuesType> = BareProps & {
+export type LabelledProps<FormValues> = BareProps & {
   name?: keyof FormValues,
   label?: React.ReactNode,
   invisibleLabel?: boolean,
@@ -22,7 +18,7 @@ type LabelledProps<FormValues = FormValuesType> = BareProps & {
   isSubmitting: boolean
 };
 
-export function LabelledField<FormValues = FormValuesType> () {
+export function LabelledField<FormValues> () {
   return (props: LabelledProps<FormValues>) => {
     const { name, label, invisibleLabel = false, tooltip, touched, errors, children, style } = props;
     const hasError = name && touched[name] && errors[name];
@@ -48,7 +44,7 @@ export function LabelledField<FormValues = FormValuesType> () {
   };
 }
 
-export function LabelledText<FormValues = FormValuesType> () {
+export function LabelledText<FormValues> () {
   const LF = LabelledField<FormValues>();
   return (props: LabelledProps<FormValues>) => {
     const { name, placeholder, className, style, ...otherProps } = props;

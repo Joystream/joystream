@@ -1,16 +1,16 @@
 import React from 'react';
-import { Button, Tab, Dropdown, DropdownItemProps } from 'semantic-ui-react';
-import { Form, Field, withFormik, FormikProps } from 'formik';
+import { Button, Tab } from 'semantic-ui-react';
+import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
 
-import * as JoyForms from '@polkadot/joy-utils/forms';
 import { ContentId } from '@joystream/types/media';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
-import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields, MusicTrackGenericProp } from '../schemas/music/MusicTrack';
+import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields } from '../schemas/music/MusicTrack';
 import * as Opts from '../common/DropdownOptions';
+import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 
 type OuterProps = {
   isStorybook?: boolean,
@@ -22,18 +22,22 @@ type OuterProps = {
 
 type FormValues = MusicTrackType;
 
-type FormProps = OuterProps & FormikProps<FormValues>;
-
-const LabelledField = JoyForms.LabelledField<FormValues>();
-
-const LabelledText = JoyForms.LabelledText<FormValues>();
-
-const InnerForm = (props: FormProps) => {
+const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
+    
+    // React components for form fields:
+    // LabelledText,
+    LabelledField,
+    MediaText,
+    MediaField,
+    MediaDropdown,
+
     isStorybook = false,
     history,
     contentId,
     entity,
+
+    // Formik stuff:
     values,
     dirty,
     isValid,
@@ -43,45 +47,6 @@ const InnerForm = (props: FormProps) => {
   } = props;
 
   const { trackThumbnail } = values;
-
-  type HasFieldProp = {
-    field: MusicTrackGenericProp
-  };
-
-  type MediaTextProps = HasFieldProp;
-
-  type MediaFieldProps = HasFieldProp & any;
-
-  type MediaDropdownProps = HasFieldProp & {
-    options: DropdownItemProps[]
-  };
-  
-  const MediaText = (fieldProps: MediaTextProps) => {
-    const { field: f } = fieldProps;
-    return !f ? null : <LabelledText name={f.id} label={f.name} tooltip={f.description} {...props} />;
-  }
-
-  const MediaField = (fieldProps: MediaFieldProps) => {
-    const { field: f, ...otherProps } = fieldProps;
-    return !f ? null : (
-      <LabelledField name={f.id} label={f.name} tooltip={f.description} {...props}>
-        <Field name={f.id} id={f.id} {...otherProps} />
-      </LabelledField>
-    );
-  }
-
-  const MediaDropdown = (fieldProps: MediaDropdownProps) => {
-    const { field: f, options } = fieldProps;
-    return !f ? null : (
-      <MediaField
-        field={f}
-        component={Dropdown}
-        selection
-        options={options}
-        disabled={isSubmitting}
-      />
-    );
-  }
 
   const onSubmit = (sendTx: () => void) => {
     if (isValid) sendTx();
@@ -118,19 +83,19 @@ const InnerForm = (props: FormProps) => {
   };
 
   const basicInfoTab = () => <Tab.Pane as='div'>
-    <MediaText field={Fields.trackTitle} />
-    <MediaText field={Fields.trackThumbnail} />
-    <MediaField field={Fields.aboutTheTrack} component='textarea' rows={3} disabled={isSubmitting} />
-    <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} />
+    <MediaText field={Fields.trackTitle} {...props} />
+    <MediaText field={Fields.trackThumbnail} {...props} />
+    <MediaField field={Fields.aboutTheTrack} component='textarea' rows={3} disabled={isSubmitting} {...props} />
+    <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <MediaText field={Fields.trackArtist} />
-    <MediaText field={Fields.composerOrSongwriter} />
-    <MediaDropdown field={Fields.genre} options={Opts.genreOptions} />
-    <MediaDropdown field={Fields.mood} options={Opts.moodOptions} />
-    <MediaDropdown field={Fields.theme} options={Opts.themeOptions} />
-    <MediaDropdown field={Fields.license} options={Opts.licenseOptions} />
+    <MediaText field={Fields.trackArtist} {...props} />
+    <MediaText field={Fields.composerOrSongwriter} {...props} />
+    <MediaDropdown field={Fields.genre} options={Opts.genreOptions} {...props} />
+    <MediaDropdown field={Fields.mood} options={Opts.moodOptions} {...props} />
+    <MediaDropdown field={Fields.theme} options={Opts.themeOptions} {...props} />
+    <MediaDropdown field={Fields.license} options={Opts.licenseOptions} {...props} />
   </Tab.Pane>
 
   const tabs = () => <Tab
@@ -229,6 +194,6 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   handleSubmit: () => {
     // do submitting things
   }
-})(InnerForm);
+})(withMediaForm(InnerForm));
 
 export default EditForm;
