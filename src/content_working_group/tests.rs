@@ -437,7 +437,7 @@ fn add_curator_opening_success() {
                 ContentWorkingGroup::add_curator_opening(
                     Origin::signed(LEAD_ROLE_ACCOUNT),
                     activate_at.clone(),
-                    OPENING_POLICY.clone(),
+                    get_baseline_opening_policy(),
                     human_readable_text.clone()
                 ).unwrap(),
                 ()
@@ -454,7 +454,7 @@ fn add_curator_opening_success() {
             let expected_curator_opening = CuratorOpening{
                 opening_id: expected_opening_id,
                 curator_applications: BTreeSet::new(),
-                policy_commitment: OPENING_POLICY.clone()
+                policy_commitment: get_baseline_opening_policy()
             };
 
             assert_eq!(
@@ -467,6 +467,10 @@ fn add_curator_opening_success() {
                 lib::NextCuratorOpeningId::<Test>::get(),
                 expected_opening_id + 1
             );
+
+            /*
+             * TODO: Add asserts here about side-effects in external modules, like hiring.
+             */
 
         });
 }
@@ -531,6 +535,106 @@ fn terminate_curator_application_success() {
 #[test]
 fn apply_on_curator_opening_success() {
 
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
+
+            /*
+             * Setup
+             */
+
+            let curator_applicant_root_and_controller_account = 72618;
+            
+            let curator_opening_id = setup_normal_opening();
+
+            let curator_applicant_member_id = add_member(
+                curator_applicant_root_and_controller_account,
+                to_vec("IwillTrytoapplyhere")
+            );
+
+            assert_eq!(
+                ContentWorkingGroup::accept_curator_applications(
+                    Origin::signed(LEAD_ROLE_ACCOUNT),
+                    curator_opening_id
+                    ).unwrap(),
+                ()
+            );
+
+            let curator_applicant_role_account = 8881111;
+
+            let role_stake_balance = get_baseline_opening_policy().role_staking_policy.unwrap().amount;
+            let application_stake_balance = get_baseline_opening_policy().application_staking_policy.unwrap().amount;
+            let total_balance = role_stake_balance + application_stake_balance;
+        
+            let source_account = 918111;
+
+            // Credit staking source account
+            let _ = balances::Module::<Test>::deposit_creating(&source_account, total_balance);
+
+            let human_readable_text = generate_valid_length_buffer(&ChannelHandleConstraint::get());
+
+            let expected_curator_application_id = NextCuratorApplicationId::<Test>::get();
+
+            let old_curator_opening = CuratorOpeningById::<Test>::get(curator_opening_id);
+
+            /*
+             * Test
+             */
+
+            assert_eq!(
+                ContentWorkingGroup::apply_on_curator_opening(
+                    Origin::signed(curator_applicant_root_and_controller_account),
+                    curator_applicant_member_id,
+                    curator_opening_id,
+                    curator_applicant_role_account,
+                    source_account,
+                    Some(role_stake_balance),
+                    Some(application_stake_balance),
+                    human_readable_text
+                )
+                .unwrap(),
+                ()
+            );
+
+            let (curator_opening_id, new_curator_application_id) = ensure_applieadoncuratoropening_event_deposited();
+
+            assert!(
+                CuratorApplicationById::<Test>::exists(new_curator_application_id)
+            );
+
+            // Assert that appropriate application has been added
+            let new_curator_application = CuratorApplicationById::<Test>::get(new_curator_application_id);
+
+            let expected_curator_application = CuratorApplication{
+                role_account: curator_applicant_role_account,
+                curator_opening_id: curator_opening_id,
+                member_id: curator_applicant_member_id,
+                application_id: expected_curator_application_id,
+            };
+
+            assert_eq!(
+                expected_curator_application,
+                new_curator_application
+            );
+
+            // Assert that the opening has had the application added to application list
+            let mut singleton = BTreeSet::new(); // Unavoidable mutable, BTreeSet can only be populated this way.
+            singleton.insert(new_curator_application_id);
+
+            let new_curator_applications = old_curator_opening.curator_applications.union(&singleton).cloned().collect();
+
+            let expected_curator_opening = CuratorOpening{
+                curator_applications: new_curator_applications,
+                ..old_curator_opening
+            };
+
+            let new_curator_opening = CuratorOpeningById::<Test>::get(curator_opening_id);
+
+            assert_eq!(
+                expected_curator_opening,
+                new_curator_opening
+            );
+        });
 }
 
 #[test]
@@ -583,20 +687,37 @@ static LEAD_MEMBER_HANDLE: &str = "IamTheLead";
 static CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT: <Test as system::Trait>::AccountId = 11;
 static CHANNEL_CREATOR_HANDLE: &str = "Coolcreator";
 
-static OPENING_POLICY: OpeningPolicyCommitment<<Test as system::Trait>::BlockNumber, BalanceOf<Test>> = OpeningPolicyCommitment{
-    application_rationing_policy: None, //Option<hiring::ApplicationRationingPolicy>,
-    max_review_period_length: 100,
-    application_staking_policy: None, // Option<hiring::StakingPolicy<Balance, BlockNumber>>,
-    role_staking_policy: None, // Option<hiring::StakingPolicy<Balance, BlockNumber>>,
-    role_slashing_terms: SlashingTerms::Unslashable,
-    fill_opening_successful_applicant_application_stake_unstaking_period: None,
-    fill_opening_failed_applicant_application_stake_unstaking_period: None,
-    fill_opening_failed_applicant_role_stake_unstaking_period: None,
-    terminate_curator_application_stake_unstaking_period: None,
-    terminate_curator_role_stake_unstaking_period: None,
-    exit_curator_role_application_stake_unstaking_period: None,
-    exit_curator_role_stake_unstaking_period: None,
-};
+/// Made into function to avoid having to clone every time we read fields
+pub fn get_baseline_opening_policy() -> OpeningPolicyCommitment<<Test as system::Trait>::BlockNumber, BalanceOf<Test>> {
+    
+    OpeningPolicyCommitment{
+        application_rationing_policy: Some(hiring::ApplicationRationingPolicy{
+            max_active_applicants : 5
+        }),
+        max_review_period_length: 100,
+        application_staking_policy: Some(hiring::StakingPolicy{
+            amount: 40000,
+            amount_mode: hiring::StakingAmountLimitMode::Exact,
+            crowded_out_unstaking_period_length: Some(3),
+            review_period_expired_unstaking_period_length: Some(22),
+        }),
+        role_staking_policy: Some(hiring::StakingPolicy{
+            amount: 900000,
+            amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+            crowded_out_unstaking_period_length: Some(30),
+            review_period_expired_unstaking_period_length: Some(2),
+        }),
+        role_slashing_terms: SlashingTerms::Unslashable,
+
+        fill_opening_successful_applicant_application_stake_unstaking_period: None,
+        fill_opening_failed_applicant_application_stake_unstaking_period: None,
+        fill_opening_failed_applicant_role_stake_unstaking_period: None,
+        terminate_curator_application_stake_unstaking_period: None,
+        terminate_curator_role_stake_unstaking_period: None,
+        exit_curator_role_application_stake_unstaking_period: None,
+        exit_curator_role_stake_unstaking_period: None,
+    }
+}
 
 pub fn to_vec(s: &str) -> Vec<u8> {
     s.as_bytes().to_vec()
@@ -605,6 +726,51 @@ pub fn to_vec(s: &str) -> Vec<u8> {
 /*
  * Setups
  */
+
+/*
+pub fn add_member_and_apply_on_opening() {
+
+    let curator_applicant_member_id = add_member(
+        channel_creator_member_root_and_controller_account,
+        to_vec("IwillTrytoapplyhere")
+    );
+
+    // Needs money!!!
+
+    assert_eq!(
+        ContentWorkingGroup::apply_on_curator_opening(
+            origin,
+            member_id: T::MemberId,
+            curator_opening_id: CuratorOpeningId<T>,
+            role_account: T::AccountId,
+            source_account: T::AccountId,
+            opt_role_stake_balance: Option<BalanceOf<T>>,
+            opt_application_stake_balance: Option<BalanceOf<T>>,
+            human_readable_text: Vec<u8>
+        )
+        .unwrap(),
+        ()
+    );
+
+}
+*/
+
+pub fn setup_normal_opening() -> CuratorOpeningId<Test>{
+
+    add_member_and_set_as_lead();
+
+    assert_eq!(
+        ContentWorkingGroup::add_curator_opening(
+            Origin::signed(LEAD_ROLE_ACCOUNT),
+            hiring::ActivateOpeningAt::ExactBlock(34),
+            get_baseline_opening_policy(),
+            generate_valid_length_buffer(&OpeningHumanReadableText::get())
+        ).unwrap(),
+        ()
+    );
+
+    ensure_curatoropeningadded_event_deposited()
+}
 
 pub fn add_member_and_set_as_lead() -> (<Test as members::Trait>::MemberId, LeadId<Test>) {
 
@@ -684,7 +850,7 @@ pub fn add_curator_opening() -> CuratorOpeningId<Test> {
         ContentWorkingGroup::add_curator_opening(
             Origin::signed(LEAD_ROLE_ACCOUNT),
             activate_at.clone(),
-            OPENING_POLICY.clone(),
+            get_baseline_opening_policy(),
             human_readable_text.clone()
         ).unwrap(),
         ()
@@ -696,6 +862,20 @@ pub fn add_curator_opening() -> CuratorOpeningId<Test> {
 /*
  * Event readers
  */
+
+fn ensure_applieadoncuratoropening_event_deposited() -> (lib::CuratorOpeningId<Test>, lib::CuratorApplicationId<Test>) {
+
+
+    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+        if let lib::RawEvent::AppliedOnCuratorOpening(ref curator_opening_id, ref new_curator_application_id) = x {
+            return (curator_opening_id.clone(), new_curator_application_id.clone())
+        } else {
+            panic!("Event was not AppliedOnCuratorOpening.")
+        }
+    } else {
+        panic!("No event deposited.")
+    }
+}
 
 // MOVE OUT TO MEMBERSHIP MODULE MOCK LATER?,
 // OR MAKE MACRO OUT OF.
