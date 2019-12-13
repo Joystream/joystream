@@ -62,6 +62,15 @@ When making changes to the runtime library remember to purge the chain after reb
 cargo run --release -- purge-chain --dev
 ```
 
-### Substrate node template
+### Docker - experimental
 
-The full node is built based on the substrate node [template](https://github.com/shawntabrizi/substrate-package/tree/master/substrate-node-template)
+A joystream-node can be run in a docker container using the provided [Dockerfile](Dockerfile):
+
+```bash
+# Build and tag a new docker image, which will compile joystream-node from source
+# The image is specifically made run joystream-node full node inside a container.
+docker build . -t joystream-node
+# run a development chain by launching a new docker container, publishing the websocket port
+docker run -p 9944:9944 joystream-node --dev --ws-external
+```
+
