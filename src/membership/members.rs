@@ -140,6 +140,8 @@ pub struct PaidMembershipTerms<T: Trait> {
     pub text: Vec<u8>,
 }
 
+/// Must be default constructible because it indirectly is a value in a storage map.
+/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
 impl<T: Trait> Default for PaidMembershipTerms<T> {
     fn default() -> Self {
         PaidMembershipTerms {
