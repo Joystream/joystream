@@ -59,8 +59,6 @@ const FIRST_PAID_TERMS_ID: u32 = 1;
 
 // Default paid membership terms
 pub const DEFAULT_PAID_TERM_ID: u32 = 0;
-const DEFAULT_PAID_TERM_FEE: u32 = 100; // Can be overidden in genesis config
-const DEFAULT_PAID_TERM_TEXT: &str = "Default Paid Term TOS...";
 
 // Default user info constraints
 const DEFAULT_MIN_HANDLE_LENGTH: u32 = 5;
@@ -145,8 +143,8 @@ pub struct PaidMembershipTerms<T: Trait> {
 impl<T: Trait> Default for PaidMembershipTerms<T> {
     fn default() -> Self {
         PaidMembershipTerms {
-            fee: BalanceOf::<T>::from(DEFAULT_PAID_TERM_FEE),
-            text: DEFAULT_PAID_TERM_TEXT.as_bytes().to_vec(),
+            fee: BalanceOf::<T>::default(),
+            text: Vec::default(),
         }
     }
 }
