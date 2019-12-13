@@ -13,8 +13,28 @@ export type MusicMoodType = {
   mood: string
 };
 
-export const MusicMoodClass = {
+export type MusicMoodPropId =
+  'mood'
+  ;
+
+export type MusicMoodGenericProp = {
+  id: MusicMoodPropId,
+  type: string,
+  name: string,
+  description?: string,
+  required?: boolean,
+  maxItems?: number,
+  maxTextLength?: number,
+  classId?: any
+};
+
+type MusicMoodClassType = {
+  [id in keyof MusicMoodType]: MusicMoodGenericProp
+};
+
+export const MusicMoodClass: MusicMoodClassType = {
   mood: {
+    "id": "mood",
     "name": "Mood",
     "description": "Moods for music.",
     "required": true,

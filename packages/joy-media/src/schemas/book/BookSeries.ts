@@ -32,8 +32,37 @@ export type BookSeriesType = {
   explicit: boolean
 };
 
-export const BookSeriesClass = {
+export type BookSeriesPropId =
+  'title' |
+  'description' |
+  'bookCover' |
+  'language' |
+  'booksInTheSeries' |
+  'author' |
+  'synopsis' |
+  'publicationStatus' |
+  'curationStatus' |
+  'explicit'
+  ;
+
+export type BookSeriesGenericProp = {
+  id: BookSeriesPropId,
+  type: string,
+  name: string,
+  description?: string,
+  required?: boolean,
+  maxItems?: number,
+  maxTextLength?: number,
+  classId?: any
+};
+
+type BookSeriesClassType = {
+  [id in keyof BookSeriesType]: BookSeriesGenericProp
+};
+
+export const BookSeriesClass: BookSeriesClassType = {
   title: {
+    "id": "title",
     "name": "Title",
     "description": "The title of the book series",
     "type": "Text",
@@ -41,6 +70,7 @@ export const BookSeriesClass = {
     "maxTextLength": 255
   },
   description: {
+    "id": "description",
     "name": "Description",
     "description": "Description of the book series",
     "required": true,
@@ -48,6 +78,7 @@ export const BookSeriesClass = {
     "maxTextLength": 4000
   },
   bookCover: {
+    "id": "bookCover",
     "name": "Book Cover",
     "description": "URL to book thumbnail: TODO",
     "required": true,
@@ -55,6 +86,7 @@ export const BookSeriesClass = {
     "maxTextLength": 255
   },
   language: {
+    "id": "language",
     "name": "Language",
     "description": "The language(s) the book series is available in.",
     "required": true,
@@ -63,6 +95,7 @@ export const BookSeriesClass = {
     "classId": "Language"
   },
   booksInTheSeries: {
+    "id": "booksInTheSeries",
     "name": "Books in the series",
     "description": "The books that are in the series",
     "type": "InternalVec",
@@ -70,18 +103,21 @@ export const BookSeriesClass = {
     "classId": "Book Series Entry"
   },
   author: {
+    "id": "author",
     "name": "Author",
     "description": "The author or authors of the series",
     "type": "Text",
     "maxTextLength": 255
   },
   synopsis: {
+    "id": "synopsis",
     "name": "Synopsis",
     "description": "A short description of the series",
     "type": "Text",
     "maxTextLength": 255
   },
   publicationStatus: {
+    "id": "publicationStatus",
     "name": "Publication Status",
     "description": "The publication status of the book item.",
     "required": true,
@@ -89,12 +125,14 @@ export const BookSeriesClass = {
     "classId": "Publication Status"
   },
   curationStatus: {
+    "id": "curationStatus",
     "name": "Curation Status",
     "description": "The publication status of the book item set by the a content curator on the platform.",
     "type": "Internal",
     "classId": "Curation Status"
   },
   explicit: {
+    "id": "explicit",
     "name": "Explicit",
     "description": "Indicates whether the book item contains explicit material.",
     "required": true,

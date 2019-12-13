@@ -18,8 +18,30 @@ export type BookEntryFormatType = {
   images: boolean
 };
 
-export const BookEntryFormatClass = {
+export type BookEntryFormatPropId =
+  'format' |
+  'extension' |
+  'images'
+  ;
+
+export type BookEntryFormatGenericProp = {
+  id: BookEntryFormatPropId,
+  type: string,
+  name: string,
+  description?: string,
+  required?: boolean,
+  maxItems?: number,
+  maxTextLength?: number,
+  classId?: any
+};
+
+type BookEntryFormatClassType = {
+  [id in keyof BookEntryFormatType]: BookEntryFormatGenericProp
+};
+
+export const BookEntryFormatClass: BookEntryFormatClassType = {
   format: {
+    "id": "format",
     "name": "Format",
     "description": "The name of the file format of the book item.",
     "required": true,
@@ -27,6 +49,7 @@ export const BookEntryFormatClass = {
     "maxTextLength": 5
   },
   extension: {
+    "id": "extension",
     "name": "Extension",
     "description": "The file extension of the book item.",
     "required": true,
@@ -34,6 +57,7 @@ export const BookEntryFormatClass = {
     "maxTextLength": 5
   },
   images: {
+    "id": "images",
     "name": "Images",
     "description": "Wether the book item contains images or not.",
     "required": true,

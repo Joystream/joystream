@@ -11,8 +11,28 @@ export type BookSeriesEntryType = {
   bookItem?: any[]
 };
 
-export const BookSeriesEntryClass = {
+export type BookSeriesEntryPropId =
+  'bookItem'
+  ;
+
+export type BookSeriesEntryGenericProp = {
+  id: BookSeriesEntryPropId,
+  type: string,
+  name: string,
+  description?: string,
+  required?: boolean,
+  maxItems?: number,
+  maxTextLength?: number,
+  classId?: any
+};
+
+type BookSeriesEntryClassType = {
+  [id in keyof BookSeriesEntryType]: BookSeriesEntryGenericProp
+};
+
+export const BookSeriesEntryClass: BookSeriesEntryClassType = {
   bookItem: {
+    "id": "bookItem",
     "name": "Book Item",
     "description": "A specific publication of the book. Ie. translation, illustrated version, etc.",
     "type": "InternalVec",

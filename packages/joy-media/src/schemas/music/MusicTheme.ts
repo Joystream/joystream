@@ -13,8 +13,28 @@ export type MusicThemeType = {
   theme: string
 };
 
-export const MusicThemeClass = {
+export type MusicThemePropId =
+  'theme'
+  ;
+
+export type MusicThemeGenericProp = {
+  id: MusicThemePropId,
+  type: string,
+  name: string,
+  description?: string,
+  required?: boolean,
+  maxItems?: number,
+  maxTextLength?: number,
+  classId?: any
+};
+
+type MusicThemeClassType = {
+  [id in keyof MusicThemeType]: MusicThemeGenericProp
+};
+
+export const MusicThemeClass: MusicThemeClassType = {
   theme: {
+    "id": "theme",
     "name": "Theme",
     "description": "Themes for music.",
     "required": true,

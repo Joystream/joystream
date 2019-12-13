@@ -13,14 +13,37 @@ export type FeaturedContentType = {
   featuredAlbums?: any[]
 };
 
-export const FeaturedContentClass = {
+export type FeaturedContentPropId =
+  'topVideo' |
+  'featuredVideos' |
+  'featuredAlbums'
+  ;
+
+export type FeaturedContentGenericProp = {
+  id: FeaturedContentPropId,
+  type: string,
+  name: string,
+  description?: string,
+  required?: boolean,
+  maxItems?: number,
+  maxTextLength?: number,
+  classId?: any
+};
+
+type FeaturedContentClassType = {
+  [id in keyof FeaturedContentType]: FeaturedContentGenericProp
+};
+
+export const FeaturedContentClass: FeaturedContentClassType = {
   topVideo: {
+    "id": "topVideo",
     "name": "Top Video",
     "description": "The video that has the most prominent position(s) on the platform.",
     "type": "Internal",
     "classId": "Video"
   },
   featuredVideos: {
+    "id": "featuredVideos",
     "name": "Featured Videos",
     "description": "Videos featured in the Video tab.",
     "type": "InternalVec",
@@ -28,6 +51,7 @@ export const FeaturedContentClass = {
     "classId": "Video"
   },
   featuredAlbums: {
+    "id": "featuredAlbums",
     "name": "Featured Albums",
     "description": "Music albums featured in the Music tab.",
     "type": "InternalVec",

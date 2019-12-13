@@ -13,8 +13,28 @@ export type PublicationStatusType = {
   status: string
 };
 
-export const PublicationStatusClass = {
+export type PublicationStatusPropId =
+  'status'
+  ;
+
+export type PublicationStatusGenericProp = {
+  id: PublicationStatusPropId,
+  type: string,
+  name: string,
+  description?: string,
+  required?: boolean,
+  maxItems?: number,
+  maxTextLength?: number,
+  classId?: any
+};
+
+type PublicationStatusClassType = {
+  [id in keyof PublicationStatusType]: PublicationStatusGenericProp
+};
+
+export const PublicationStatusClass: PublicationStatusClassType = {
   status: {
+    "id": "status",
     "name": "Status",
     "description": "The publication status of the content in the content directory.",
     "required": true,

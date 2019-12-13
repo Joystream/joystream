@@ -13,8 +13,28 @@ export type VideoCategoryType = {
   category: string
 };
 
-export const VideoCategoryClass = {
+export type VideoCategoryPropId =
+  'category'
+  ;
+
+export type VideoCategoryGenericProp = {
+  id: VideoCategoryPropId,
+  type: string,
+  name: string,
+  description?: string,
+  required?: boolean,
+  maxItems?: number,
+  maxTextLength?: number,
+  classId?: any
+};
+
+type VideoCategoryClassType = {
+  [id in keyof VideoCategoryType]: VideoCategoryGenericProp
+};
+
+export const VideoCategoryClass: VideoCategoryClassType = {
   category: {
+    "id": "category",
     "name": "Category",
     "description": "Categories for videos.",
     "type": "Text",

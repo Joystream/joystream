@@ -13,8 +13,28 @@ export type LanguageType = {
   languageCode: string
 };
 
-export const LanguageClass = {
+export type LanguagePropId =
+  'languageCode'
+  ;
+
+export type LanguageGenericProp = {
+  id: LanguagePropId,
+  type: string,
+  name: string,
+  description?: string,
+  required?: boolean,
+  maxItems?: number,
+  maxTextLength?: number,
+  classId?: any
+};
+
+type LanguageClassType = {
+  [id in keyof LanguageType]: LanguageGenericProp
+};
+
+export const LanguageClass: LanguageClassType = {
   languageCode: {
+    "id": "languageCode",
     "name": "Language code",
     "description": "Language code following the ISO 639-1 two letter standard.",
     "type": "Text",

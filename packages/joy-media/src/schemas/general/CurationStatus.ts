@@ -13,8 +13,28 @@ export type CurationStatusType = {
   status: string
 };
 
-export const CurationStatusClass = {
+export type CurationStatusPropId =
+  'status'
+  ;
+
+export type CurationStatusGenericProp = {
+  id: CurationStatusPropId,
+  type: string,
+  name: string,
+  description?: string,
+  required?: boolean,
+  maxItems?: number,
+  maxTextLength?: number,
+  classId?: any
+};
+
+type CurationStatusClassType = {
+  [id in keyof CurationStatusType]: CurationStatusGenericProp
+};
+
+export const CurationStatusClass: CurationStatusClassType = {
   status: {
+    "id": "status",
     "name": "Status",
     "description": "The curator publication status of the content in the content directory.",
     "required": true,

@@ -13,8 +13,28 @@ export type MusicGenreType = {
   genre: string
 };
 
-export const MusicGenreClass = {
+export type MusicGenrePropId =
+  'genre'
+  ;
+
+export type MusicGenreGenericProp = {
+  id: MusicGenrePropId,
+  type: string,
+  name: string,
+  description?: string,
+  required?: boolean,
+  maxItems?: number,
+  maxTextLength?: number,
+  classId?: any
+};
+
+type MusicGenreClassType = {
+  [id in keyof MusicGenreType]: MusicGenreGenericProp
+};
+
+export const MusicGenreClass: MusicGenreClassType = {
   genre: {
+    "id": "genre",
     "name": "Genre",
     "description": "Genres for music.",
     "required": true,

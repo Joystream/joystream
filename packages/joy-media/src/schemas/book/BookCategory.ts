@@ -13,8 +13,28 @@ export type BookCategoryType = {
   category: string
 };
 
-export const BookCategoryClass = {
+export type BookCategoryPropId =
+  'category'
+  ;
+
+export type BookCategoryGenericProp = {
+  id: BookCategoryPropId,
+  type: string,
+  name: string,
+  description?: string,
+  required?: boolean,
+  maxItems?: number,
+  maxTextLength?: number,
+  classId?: any
+};
+
+type BookCategoryClassType = {
+  [id in keyof BookCategoryType]: BookCategoryGenericProp
+};
+
+export const BookCategoryClass: BookCategoryClassType = {
   category: {
+    "id": "category",
     "name": "Category",
     "description": "Categories for books and book Series.",
     "type": "Text",
