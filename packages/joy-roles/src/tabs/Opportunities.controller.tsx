@@ -35,11 +35,6 @@ export class OpportunitiesController extends Observable<State, ITransport> {
       this.dispatch()
     })
   }
-
-  hideOpportunities() {
-    this.state.opportunities = []
-    this.dispatch()
-  }
 }
 
 
@@ -49,11 +44,6 @@ type Props = {
 
 export const OpportunitiesView = View<OpportunitiesController, Props, State>(
   (props, state) => (
-    <div>
-      <button onClick={() => props.controller.hideOpportunities()}>Clear</button>
-      <button onClick={() => props.controller.getOpportunities()}>Refresh</button>
-      <OpeningsView openings={state.opportunities} block_time_in_seconds={state.blockTime}
-      />
-    </div>
+	  <OpeningsView openings={state.opportunities} block_time_in_seconds={state.blockTime} />
   )
 )
