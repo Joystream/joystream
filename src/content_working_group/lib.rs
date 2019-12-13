@@ -430,7 +430,7 @@ pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId:
 }
 
 /// An application for the curator role.
-#[derive(Encode, Decode, Default, Debug, Clone)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct CuratorApplication<AccountId, CuratorOpeningId, MemberId, ApplicationId> {
     /// Account used to authenticate in this role,
     pub role_account: AccountId,
