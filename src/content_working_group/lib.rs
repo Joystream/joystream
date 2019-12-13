@@ -117,6 +117,7 @@ pub static MSG_UNSTAKER_DOES_NOT_EXIST:                                         
 pub static MSG_CURATOR_HAS_NO_REWARD:                                                              &str = "Curator has no recurring reward";
 pub static MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER:                                                   &str = "Curator not controlled by member";
 pub static MSG_CHANNEL_NAME_ALREADY_TAKEN:                                                         &str = "Channel name is already taken";
+pub static MSG_INSUFFICIENT_BALANCE_TO_COVER_STAKE:                                                &str = "Insuffieicnt balance to cover stake";
 
 /*
  * The errors below, while in many cases encoding similar outcomes,
@@ -2241,14 +2242,20 @@ impl<T: Trait> Module<T> {
         });
 
         if total_amount > zero_balance {
-            let new_balance = CurrencyOf::<T>::free_balance(source_account) - total_amount;
 
-            CurrencyOf::<T>::ensure_can_withdraw(
-                source_account,
-                total_amount,
-                WithdrawReasons::all(),
-                new_balance,
-            )
+            // Ensure that
+            if CurrencyOf::<T>::free_balance(source_account) < total_amount {
+                Err(MSG_INSUFFICIENT_BALANCE_TO_COVER_STAKE)
+            } else {
+                let new_balance = CurrencyOf::<T>::free_balance(source_account) - total_amount;
+
+                CurrencyOf::<T>::ensure_can_withdraw(
+                    source_account,
+                    total_amount,
+                    WithdrawReasons::all(),
+                    new_balance,
+                )
+            }
         } else {
             Ok(())
         }
