@@ -9,7 +9,7 @@ import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
 import accountObservable from '@polkadot/ui-keyring/observable/accounts';
 import { withCalls, withMulti, withObservable } from '@polkadot/react-api/index';
 
-import { ControllerComponent } from '@polkadot/joy-utils/index'
+import { ControllerComponent, ViewComponent } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
 import { Transport } from './transport.polkadot'
@@ -17,7 +17,7 @@ import { Transport as MockTransport } from './transport.mock'
 
 import { WorkingGroupsController, } from './tabs/WorkingGroup.controller'
 import { OpportunitiesController, OpportunitiesView } from './tabs/Opportunities.controller'
-import { ApplyController } from './flows/apply.controller'
+import { ApplyController, ApplyView } from './flows/apply.controller'
 
 import './index.sass';
 
@@ -36,6 +36,7 @@ class App extends React.PureComponent<Props, State> {
   transport: ITransport
   mockTransport: ITransport
   oppCtrl: OpportunitiesController
+  applyCtrl: ApplyController
 
   constructor(props: Props) {
     super(props);
@@ -43,6 +44,7 @@ class App extends React.PureComponent<Props, State> {
     this.transport = new Transport(props)
     this.mockTransport = new MockTransport()
     this.oppCtrl = new OpportunitiesController(this.mockTransport)
+    this.applyCtrl = new ApplyController(this.mockTransport)
 
     const { t } = props;
 
@@ -85,13 +87,22 @@ class App extends React.PureComponent<Props, State> {
           />
         </header>
         <Switch>
-          <Route path={`${basePath}/opportunities`} render={() => <OpportunitiesView controller={this.oppCtrl} />} />
+          <Route path={`${basePath}/opportunities`} render={() =>this.renderViewComponent(OpportunitiesView(this.oppCtrl)) } />
           <Route path={`${basePath}/my-roles`} render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
-          <Route path={`${basePath}/apply/:id`} render={(props) => this.renderComponent(ApplyController, this.mockTransport, props)} />
+            <Route path={`${basePath}/apply/:id`} render={(props) => this.renderViewComponent(ApplyView(this.applyCtrl), props)} />
           <Route render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
         </Switch>
       </main>
     );
+  }
+
+  private renderViewComponent(Component: ViewComponent<any>, props?: RouteComponentProps) { 
+    let params = new Map<string, string>()
+    if (typeof props !== 'undefined' && props.match.params) {
+      params = new Map<string, string>(Object.entries(props.match.params))
+    }
+
+    return <Component params={params} />
   }
 
   private renderComponent(Ctrl: ControllerComponent<ITransport>, transport: ITransport, props?: RouteComponentProps) {
