@@ -10,17 +10,25 @@ import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Option } from '@polkadot/types/codec';
 import { ContentId, ContentMetadata } from '@joystream/types/media';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
-import { VideoValidationSchema, VideoClass, VideoType } from '../schemas/video/Video';
+import { VideoValidationSchema, VideoType, VideoClass, /* VideoPropNames, VideoPropDescriptions */ } from '../schemas/video/Video';
 
-function fieldName (_fieldName: keyof FormValues): string | undefined {
-  const field = VideoClass[_fieldName];
-  return field ? field.name : undefined;
+export type VideoPropId = keyof VideoType;
+
+type PropIdToStringMapping = {
+  [_ in VideoPropId]: string;
 }
 
-function tooltip (_fieldName: keyof FormValues): string | undefined {
-  const field = VideoClass[_fieldName];
-  return field ? field.description : undefined;
-}
+export const VideoPropIds = {} as PropIdToStringMapping;
+export const VideoPropNames = {} as PropIdToStringMapping;
+export const VideoPropDescriptions = {} as PropIdToStringMapping;
+
+Object.keys(VideoClass).map(x => {
+  const id = x as VideoPropId
+  const prop = VideoClass[id];
+  VideoPropIds[id] = id;
+  VideoPropNames[id] = prop.name;
+  VideoPropDescriptions[id] = prop.description;
+});
 
 // TODO get from verstore
 const visibilityOptions = [
@@ -71,22 +79,17 @@ const licenseOptions = [
   key: x, text: x, value: x,
 }));
 
-type ValidationProps = {
-  // minNameLen: number,
-  // maxNameLen: number,
-  // minDescLen: number,
-  // maxDescLen: number,
-  // maxThumbLen: number,
-  // maxKeywordsLen: number
-};
-
-type OuterProps = ValidationProps & {
+type OuterProps = {
   isStorybook?: boolean,
   history?: History,
   contentId: ContentId,
   fileName?: string,
   metadataOpt?: Option<ContentMetadata>
 };
+
+const FormLabels = VideoPropNames;
+
+const FormTooltips = VideoPropDescriptions;
 
 type FormValues = VideoType;
 

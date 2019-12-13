@@ -11,17 +11,8 @@ import { ContentId } from '@joystream/types/media';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
 import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumPreviewProps } from './MusicAlbumPreview';
-import { MusicAlbumValidationSchema, MusicAlbumClass, MusicAlbumType } from '../schemas/music/MusicAlbum';
-
-function fieldName (_fieldName: keyof FormValues): string | undefined {
-  const field = MusicAlbumClass[_fieldName];
-  return field ? field.name : undefined;
-}
-
-function tooltip (_fieldName: keyof FormValues): string | undefined {
-  const field = MusicAlbumClass[_fieldName];
-  return field ? field.description : undefined;
-}
+import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumPropNames, MusicAlbumPropDescriptions } from '../schemas/music/MusicAlbum';
+import { MusicTrackType } from '../schemas/music/MusicTrack';
 
 // TODO get from verstore
 const visibilityOptions = [
@@ -67,15 +58,7 @@ const licenseOptions = [
   key: x, text: x, value: x,
 }));
 
-type ValidationProps = {
-  // minTitleLen: number,
-  // maxTitleLen: number,
-  // minDescLen: number,
-  // maxDescLen: number,
-  // maxThumbLen: number,
-};
-
-type OuterProps = ValidationProps & {
+type OuterProps = {
   isStorybook?: boolean,
   history?: History,
   contentId: ContentId,
@@ -83,6 +66,10 @@ type OuterProps = ValidationProps & {
   entity?: MusicAlbumType,
   tracks?: MusicTrackType[]
 };
+
+const FormLabels = MusicAlbumPropNames;
+
+const FormTooltips = MusicAlbumPropDescriptions;
 
 type FormValues = MusicAlbumType;
 
