@@ -3,7 +3,7 @@
 //use super::genesis;
 use super::lib;
 use super::mock::{self, *};
-use crate::membership;
+//use crate::membership;
 use hiring;
 use srml_support::{StorageLinkedMap, StorageValue};
 use rstd::collections::btree_set::BTreeSet;

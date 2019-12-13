@@ -193,7 +193,6 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
         self.system_config = Some(system_config);
         self
     }
-    */
     pub fn set_membership_config(mut self, membership_config: members::GenesisConfig<T>) -> Self {
         self.membership_config = Some(membership_config);
         self
@@ -202,6 +201,7 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
         self.content_wg_config = Some(conteng_wg_config);
         self
     }
+    */
     pub fn build(self) -> runtime_io::TestExternalities {
 
         // Add system
