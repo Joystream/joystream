@@ -16,7 +16,7 @@ type LabelledProps<FormValues = FormValuesType> = BareProps & {
   placeholder?: string,
   tooltip?: React.ReactNode,
   style?: React.CSSProperties,
-  children?: JSX.Element | JSX.Element[],
+  children?: React.ReactNode,
   errors: FormikErrors<FormValues>,
   touched: FormikTouched<FormValues>,
   isSubmitting: boolean
