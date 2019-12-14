@@ -543,21 +543,15 @@ fn apply_on_curator_opening_success() {
              * Setup
              */
 
+            let curator_opening_id = setup_normal_accepting_opening();
+
+            // Add curator membership
+
             let curator_applicant_root_and_controller_account = 72618;
-            
-            let curator_opening_id = setup_normal_opening();
 
             let curator_applicant_member_id = add_member(
                 curator_applicant_root_and_controller_account,
                 to_vec("IwillTrytoapplyhere")
-            );
-
-            assert_eq!(
-                ContentWorkingGroup::accept_curator_applications(
-                    Origin::signed(LEAD_ROLE_ACCOUNT),
-                    curator_opening_id
-                    ).unwrap(),
-                ()
             );
 
             let curator_applicant_role_account = 8881111;
