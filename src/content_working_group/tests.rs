@@ -878,8 +878,20 @@ pub fn add_curator_opening() -> CuratorOpeningId<Test> {
  * Event readers
  */
 
-fn ensure_applieadoncuratoropening_event_deposited() -> (lib::CuratorOpeningId<Test>, lib::CuratorApplicationId<Test>) {
+fn ensure_curatorapplicationwithdrawn_event_deposited() -> lib::CuratorApplicationId<Test> {
 
+    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+        if let lib::RawEvent::CuratorApplicationWithdrawn(ref curator_application_id) = x {
+            return curator_application_id.clone()
+        } else {
+            panic!("Event was not AppliedOnCuratorOpening.")
+        }
+    } else {
+        panic!("No event deposited.")
+    }
+}
+
+fn ensure_applieadoncuratoropening_event_deposited() -> (lib::CuratorOpeningId<Test>, lib::CuratorApplicationId<Test>) {
 
     if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
         if let lib::RawEvent::AppliedOnCuratorOpening(ref curator_opening_id, ref new_curator_application_id) = x {
