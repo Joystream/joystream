@@ -515,6 +515,51 @@ fn accept_curator_applications_success() {
 #[test]
 fn begin_curator_applicant_review_success() {
 
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
+
+            /*
+             * Setup
+             */
+
+            let curator_opening_id = setup_normal_accepting_opening();
+
+            let _ = add_member_and_apply_on_opening(
+                curator_opening_id,
+                333,
+                to_vec("CuratorWannabe"),
+                11111,
+                91000,
+                generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get())
+            );
+
+            /*
+             * Test
+             */
+
+            assert_eq!(
+                ContentWorkingGroup::begin_curator_applicant_review(
+                    Origin::signed(LEAD_ROLE_ACCOUNT),
+                    curator_opening_id
+                )
+                .unwrap(),
+                ()
+            );
+
+            let event_curator_opening_id = ensure_begancuratorapplicationreview_event_deposited();
+
+            assert_eq!(
+                curator_opening_id,
+                event_curator_opening_id
+            );
+            
+            /*
+             * TODO: add assertion abouot side-effect in hiring module, 
+             * this is where state of application has fundamentally changed.
+             */
+        
+        });
 }
 
 #[test]
@@ -983,6 +1028,19 @@ pub fn add_curator_opening() -> CuratorOpeningId<Test> {
 /*
  * Event readers
  */
+
+fn ensure_begancuratorapplicationreview_event_deposited() -> lib::CuratorOpeningId<Test> {
+
+    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+        if let lib::RawEvent::BeganCuratorApplicationReview(ref curator_opening_id) = x {
+            return curator_opening_id.clone()
+        } else {
+            panic!("Event was not BeganCuratorApplicationReview.")
+        }
+    } else {
+        panic!("No event deposited.")
+    }
+}
 
 fn ensure_curatorapplicationwithdrawn_event_deposited() -> lib::CuratorApplicationId<Test> {
 
