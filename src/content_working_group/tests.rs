@@ -772,6 +772,21 @@ pub fn setup_normal_opening() -> CuratorOpeningId<Test>{
     ensure_curatoropeningadded_event_deposited()
 }
 
+pub fn setup_normal_accepting_opening() -> CuratorOpeningId<Test>{
+
+    let id = setup_normal_opening();
+
+    assert_eq!(
+        ContentWorkingGroup::accept_curator_applications(
+            Origin::signed(LEAD_ROLE_ACCOUNT),
+            id
+            ).unwrap(),
+        ()
+    );
+
+    id
+}
+
 pub fn add_member_and_set_as_lead() -> (<Test as members::Trait>::MemberId, LeadId<Test>) {
 
     let member_id = add_member(
