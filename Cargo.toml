@@ -280,13 +280,11 @@ git = 'https://github.com/joystream/substrate-stake-module'
 package = 'substrate-stake-module'
 rev = '0516efe9230da112bc095e28f34a3715c2e03ca8'
 
-# update to joystream upstream repo after merging of:
-# https://github.com/Joystream/substrate-hiring-module/pull/13
 [dependencies.hiring]
 default_features = false
-git = 'https://github.com/mnaamani/substrate-hiring-module'
+git = 'https://github.com/joystream/substrate-hiring-module'
 package = 'substrate-hiring-module'
-rev = '504cecb1e3e312a19fcc244419905ec9ea377a4f'
+rev = '6e9f399a94d7db7da8d0343fbcaaeecc59137001'
 
 [dependencies.versioned_store]
 default_features = false
