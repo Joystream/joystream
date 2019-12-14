@@ -727,33 +727,94 @@ pub fn to_vec(s: &str) -> Vec<u8> {
  * Setups
  */
 
-/*
-pub fn add_member_and_apply_on_opening() {
 
+pub fn add_member_and_apply_on_opening(
+    curator_opening_id: CuratorOpeningId<Test>,
+    curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
+    handle: Vec<u8>,
+    curator_applicant_role_account: <Test as system::Trait>::AccountId,
+    source_account: <Test as system::Trait>::AccountId,
+    human_readable_text: Vec<u8>
+) -> (<Test as members::Trait>::MemberId, lib::CuratorApplicationId<Test>) {
+
+    // Make membership
     let curator_applicant_member_id = add_member(
-        channel_creator_member_root_and_controller_account,
-        to_vec("IwillTrytoapplyhere")
+        curator_applicant_root_and_controller_account,
+        handle
     );
 
-    // Needs money!!!
+    // Guarantee sufficient stake
+    let role_stake_balance = get_baseline_opening_policy().role_staking_policy.unwrap().amount;
+    let application_stake_balance = get_baseline_opening_policy().application_staking_policy.unwrap().amount;
+    let total_balance = role_stake_balance + application_stake_balance;
+
+    // Credit staking source account
+    let _ = balances::Module::<Test>::deposit_creating(&source_account, total_balance);
+
+    let expected_curator_application_id = NextCuratorApplicationId::<Test>::get();
+
+    let old_curator_opening = CuratorOpeningById::<Test>::get(curator_opening_id);
+
+    /*
+     * Test
+     */
 
     assert_eq!(
         ContentWorkingGroup::apply_on_curator_opening(
-            origin,
-            member_id: T::MemberId,
-            curator_opening_id: CuratorOpeningId<T>,
-            role_account: T::AccountId,
-            source_account: T::AccountId,
-            opt_role_stake_balance: Option<BalanceOf<T>>,
-            opt_application_stake_balance: Option<BalanceOf<T>>,
-            human_readable_text: Vec<u8>
+            Origin::signed(curator_applicant_root_and_controller_account),
+            curator_applicant_member_id,
+            curator_opening_id,
+            curator_applicant_role_account,
+            source_account,
+            Some(role_stake_balance),
+            Some(application_stake_balance),
+            human_readable_text
         )
         .unwrap(),
         ()
     );
 
+    let (curator_opening_id, new_curator_application_id) = ensure_applieadoncuratoropening_event_deposited();
+
+    assert!(
+        CuratorApplicationById::<Test>::exists(new_curator_application_id)
+    );
+
+    // Assert that appropriate application has been added
+    let new_curator_application = CuratorApplicationById::<Test>::get(new_curator_application_id);
+
+    let expected_curator_application = CuratorApplication{
+        role_account: curator_applicant_role_account,
+        curator_opening_id: curator_opening_id,
+        member_id: curator_applicant_member_id,
+        application_id: expected_curator_application_id,
+    };
+
+    assert_eq!(
+        expected_curator_application,
+        new_curator_application
+    );
+
+    // Assert that the opening has had the application added to application list
+    let mut singleton = BTreeSet::new(); // Unavoidable mutable, BTreeSet can only be populated this way.
+    singleton.insert(new_curator_application_id);
+
+    let new_curator_applications = old_curator_opening.curator_applications.union(&singleton).cloned().collect();
+
+    let expected_curator_opening = CuratorOpening{
+        curator_applications: new_curator_applications,
+        ..old_curator_opening
+    };
+
+    let new_curator_opening = CuratorOpeningById::<Test>::get(curator_opening_id);
+
+    assert_eq!(
+        expected_curator_opening,
+        new_curator_opening
+    );
+
+    (curator_applicant_member_id, new_curator_application_id)
 }
-*/
 
 pub fn setup_normal_opening() -> CuratorOpeningId<Test>{
 
