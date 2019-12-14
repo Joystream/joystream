@@ -469,7 +469,8 @@ fn add_curator_opening_success() {
             );
 
             /*
-             * TODO: Add asserts here about side-effects in external modules, like hiring.
+             * TODO: add assertion abouot side-effect in hiring module, 
+             * this is where state of application has fundamentally changed.
              */
 
         });
@@ -508,6 +509,11 @@ fn accept_curator_applications_success() {
                 curator_opening_id,
                 event_curator_opening_id
             );
+
+            /*
+             * TODO: add assertion abouot side-effect in hiring module, 
+             * this is where state of application has fundamentally changed.
+             */
         });
 
 }
