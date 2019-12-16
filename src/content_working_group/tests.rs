@@ -632,6 +632,51 @@ fn withdraw_curator_application_success() {
 #[test]
 fn terminate_curator_application_success() {
 
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
+
+            /*
+             * Setup
+             */
+
+            let curator_opening_id = setup_normal_accepting_opening();
+
+            let (_curator_member_id, curator_application_id) = add_member_and_apply_on_opening(
+                curator_opening_id,
+                333,
+                to_vec("CuratorWannabe"),
+                11111,
+                91000,
+                generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get())
+            );
+
+            /*
+             * Test
+             */
+
+            assert_eq!(
+                ContentWorkingGroup::terminate_curator_application(
+                    Origin::signed(LEAD_ROLE_ACCOUNT),
+                    curator_opening_id
+                )
+                .unwrap(),
+                ()
+            );
+
+            let event_curator_application_id = ensure_terminatecuratorapplication_event_deposited();
+
+            assert_eq!(
+                curator_application_id,
+                event_curator_application_id
+            );
+
+            /*
+             * TODO: add assertion abouot side-effect in hiring module, 
+             * this is where state of application has fundamentally changed.
+             */
+        
+        });
 }
 
 #[test]
