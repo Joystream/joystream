@@ -1,4 +1,4 @@
-<p align="center"><img src="img/testnets.svg"></p>
+<p align="center"><img src="img/testnets_new.svg"></p>
 
 Table of Contents
 =================
