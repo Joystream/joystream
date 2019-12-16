@@ -1,6 +1,6 @@
 import React from 'react'
 
-export function Loadable<P extends {[index:string]: any}>(required: string[], f: (props: P) => React.ReactNode): (props: P) => any {
+export function Loadable<P extends {[index:string]: any}>(required: string[], f: (props: P) => React.ReactNode | void): (props: P) => any {
 	const loading = <div className="spinner"></div>
   
   return (props: P) => {

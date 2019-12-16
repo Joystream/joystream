@@ -40,6 +40,7 @@ class App extends React.PureComponent<Props, State> {
 
   constructor(props: Props) {
     super(props);
+    console.log(props)
 
     this.transport = new Transport(props)
     this.mockTransport = new MockTransport()

@@ -9,7 +9,7 @@ import { FlowModal } from "./apply"
 import {
   ApplicationStakeRequirement, RoleStakeRequirement,
   StakeType,
-} from '../tabs/Opportunities'
+} from '../StakeRequirement'
 
 import { creator } from "../tabs/Opportunities.stories"
 

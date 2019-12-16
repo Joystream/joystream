@@ -1,4 +1,5 @@
 import React, { useEffect, useReducer, useState } from 'react'
+import { useHistory } from "react-router-dom"
 import { Link } from 'react-router-dom';
 
 import { formatBalance } from '@polkadot/util';
@@ -46,6 +47,8 @@ import {
   QuestionField,
   QuestionSection,
 } from '@joystream/types/schemas/role.schema'
+
+import { Loadable } from '@polkadot/joy-utils/index'
 
 type accordionProps = {
   title: string
@@ -443,7 +446,7 @@ export function ConfirmStakesStage(props: ConfirmStakesStageProps & StageTransit
       <CTA
         negativeLabel='Cancel'
         negativeIcon='cancel'
-        negativeCallback={() => { }}
+        negativeCallback={() => {props.prevTransition()}}
         positiveLabel={ctaContinue}
         positiveIcon={'right arrow' as SemanticICONS}
         positiveCallback={continueFn}
@@ -1038,30 +1041,49 @@ export type FlowModalProps = ApplicationDetailsStageProps & ConfirmStakesStagePr
   creator: GroupMember
   hasConfirmStep: boolean
   transactionFee: Balance
+  prepareApplicationTransaction:(
+    applicationStake: Balance,
+    roleStake: Balance,
+    questionResponses: any,
+    stakeKeyAddress: AccountId, stakeKeyPassphrase: string,
+    txKeyAddress: AccountId, txKeyPassphrase: string,
+  ) => Promise<any>
+  makeApplicationTransaction:() => Promise<any>
+  transactionDetails: Map<string,string>
+  roleKeyName: string
 }
 
-export function FlowModal(props: FlowModalProps) {
+export const FlowModal = Loadable<FlowModalProps>(
+	[
+		'applications',
+		'creator',
+		'transactionFee',
+		'keypairs',
+		'slots',
+		'applicationDetails',
+	],
+props => {
+  // Capture state
   const [applicationStake, setApplicationStake] = useState(new u128(0))
-  const [roleStake, setRoleStake] = useState(new u128(1))
+  const [roleStake, setRoleStake] = useState(new u128(0))
   const [stakeKeyAddress, setStakeKeyAddress] = useState<AccountId>(new AccountId())
   const [stakeKeyPassphrase, setStakeKeyPassphrase] = useState("")
   const [txKeyAddress, setTxKeyAddress] = useState<AccountId>(new AccountId())
   const [txKeyPassphrase, setTxKeyPassphrase] = useState("")
+  const [appDetails, setAppDetails] = useState({})
 
+  // Presentation state
   const [activeStep, setActiveStep] = useState(props.hasConfirmStep ?
     ProgressSteps.ConfirmStakes :
     ProgressSteps.ApplicationDetails)
   const [complete, setComplete] = useState(false)
-  const [appDetails, setAppDetails] = useState({})
-  const [txDetails, setTxDetails] = useState(new Map<string, string>())
-  const [roleKeyName, setRoleKeyName] = useState("role.key")
 
-  const setTxDetail = (name: string, value: string) => {
-    setTxDetails(new Map(txDetails.set(name, value)))
-  }
-
+  const history = useHistory()
   const cancel = () => {
-    //FIXME! Close lightbox
+    if (history.length > 1) {
+      history.goBack()
+    }
+    history.push('/roles/')
   }
 
   const enterConfirmStakeState = () => {
@@ -1073,27 +1095,22 @@ export function FlowModal(props: FlowModalProps) {
   }
 
   const enterSubmitApplicationState = () => {
-    // TODO: remove this
-    console.log("Selected stake:", applicationStake, roleStake)
-    console.log("Questions:", appDetails)
-    console.log("Stake key:", stakeKeyAddress, stakeKeyPassphrase)
-    console.log("Tx key:", stakeKeyAddress, stakeKeyPassphrase)
-
-    // TODO: Setup transaction
-    setTxDetail("Transaction fee", formatBalance(props.transactionFee))
-    setTxDetail("Application stake", formatBalance(applicationStake))
-    setTxDetail("Role stake", formatBalance(roleStake))
-    setTxDetail("Extrinsic hash", "0xae6d24d4d55020c645ddfe2e8d0faf93b1c0c9879f9bf2c439fb6514c6d1292e")
-
-    setRoleKeyName("some-role.key")
-
-    // TODO: Make transaction
-    setActiveStep(ProgressSteps.SubmitApplication)
+    props.prepareApplicationTransaction(
+      applicationStake, roleStake,
+      appDetails,
+      stakeKeyAddress, stakeKeyPassphrase,
+      txKeyAddress, txKeyPassphrase, 
+    ).then(() => {
+      setActiveStep(ProgressSteps.SubmitApplication)
+    })
   }
 
   const enterDoneState = () => {
-    setComplete(true)
-    setActiveStep(ProgressSteps.Done)
+    // FIXME: What if this fails?
+    props.makeApplicationTransaction().then(() => {
+      setComplete(true)
+      setActiveStep(ProgressSteps.Done)
+    })
   }
 
   const setStakeProps = {
@@ -1131,10 +1148,10 @@ export function FlowModal(props: FlowModalProps) {
       setKeyAddress={setTxKeyAddress}
       keyPassphrase={txKeyPassphrase}
       setKeyPassphrase={setTxKeyPassphrase}
-      transactionDetails={txDetails}
+      transactionDetails={props.transactionDetails}
     />],
 
-    [ProgressSteps.Done, <DoneStage {...props} roleKeyName={roleKeyName} />],
+    [ProgressSteps.Done, <DoneStage {...props} roleKeyName={props.roleKeyName} />],
   ])
 
   return (
@@ -1150,7 +1167,7 @@ export function FlowModal(props: FlowModalProps) {
               </Label>
             </Grid.Column>
             <Grid.Column width={5} className="cancel">
-              <a href="">
+              <a onClick={() => cancel()}>
                 <Icon name='cancel' /> Cancel application
                           </a>
             </Grid.Column>
@@ -1175,4 +1192,4 @@ export function FlowModal(props: FlowModalProps) {
       </Modal.Content>
     </Modal>
   )
-}
+})

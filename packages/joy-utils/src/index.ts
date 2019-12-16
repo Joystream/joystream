@@ -142,12 +142,12 @@ import { Controller, ControllerComponent, controllerProps } from './Controller';
 import { Loadable } from './Loadable';
 import { Observer, Observable } from './Observable'
 import { Transport } from './Transport';
-import { View } from './View';
+import { View, ViewComponent } from './View';
 
 export { 
 	Controller, ControllerComponent, controllerProps, 
   Loadable, 
   Observer, Observable,
   Transport,
-  View,
+  View, ViewComponent,
 };
