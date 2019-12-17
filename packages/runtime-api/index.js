@@ -37,11 +37,9 @@ class RuntimeApi
 {
   static async create(options)
   {
-    const ret = new RuntimeApi();
-    await ret.init(options || {
-      canPromptForPassphrase: false
-    });
-    return ret;
+    const runtime_api = new RuntimeApi();
+    await runtime_api.init(options || {});
+    return runtime_api;
   }
 
   async init(options)
@@ -51,10 +49,10 @@ class RuntimeApi
     // Register joystream types
     registerJoystreamTypes();
 
-    const provider = new WsProvider('ws://localhost:9944');
+    const provider = new WsProvider(options.provider_url || 'ws://localhost:9944');
 
     // Create the API instrance
-    this.api = await ApiPromise.create(provider);
+    this.api = await ApiPromise.create({ provider });
 
     this.asyncLock = new AsyncLock();
 
