@@ -46,6 +46,8 @@ class RuntimeApi
   {
     debug('Init');
 
+    options = options || {};
+
     // Register joystream types
     registerJoystreamTypes();
 
