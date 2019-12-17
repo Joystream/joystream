@@ -14,7 +14,6 @@ type State = {
   opportunities?: Array<WorkingGroupOpening>,
 }
 
-// TODO: add error states and URL params (latter to View?)
 export class OpportunitiesController extends Observable<State, ITransport> {
   constructor(transport: ITransport, initialState: State = {}) {
     super(transport, initialState)
