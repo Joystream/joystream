@@ -67,7 +67,7 @@ pub struct Application<OpeningId, BlockNumber, StakeId> {
     // Block at which this application was added.
     pub add_to_opening_in_block: BlockNumber,
 
-    // NB: The given staking idnetifiers have a bloated purpose,
+    // NB: The given staking identifiers have a bloated purpose,
     // and are mutable, fix this.
     // https://github.com/Joystream/substrate-hiring-module/issues/11
 

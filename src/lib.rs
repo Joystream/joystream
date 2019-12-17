@@ -31,7 +31,7 @@ use stake;
 pub trait ApplicationDeactivatedHandler<T: Trait> {
     /// An application, with the given id, was fully deactivated, with the
     /// given cause, and was put in the inactive state.
-    fn deactivated(application_id: &T::ApplicationId, cause: &hiring::ApplicationDeactivationCause);
+    fn deactivated(application_id: &T::ApplicationId, cause: hiring::ApplicationDeactivationCause);
 }
 
 pub trait Trait: system::Trait + stake::Trait + Sized {
@@ -64,7 +64,7 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
 impl<T: Trait> ApplicationDeactivatedHandler<T> for () {
     fn deactivated(
         _application_id: &T::ApplicationId,
-        _cause: &hiring::ApplicationDeactivationCause,
+        _cause: hiring::ApplicationDeactivationCause,
     ) {
     }
 }
@@ -98,7 +98,6 @@ decl_storage! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-
         fn on_finalize(now: T::BlockNumber) {
 
             //
@@ -179,8 +178,8 @@ decl_module! {
                                         *active_application_count,
                                         *unstaking_application_count,
                                         *deactivated_application_count,
-                                        started_accepting_applicants_at_block.clone(),
-                                        started_review_period_at_block.clone()
+                                        *started_accepting_applicants_at_block,
+                                        *started_review_period_at_block
                                     )
                                 ))
 
@@ -222,7 +221,7 @@ decl_module! {
                     &applications_map,
                     application_stake_unstaking_period,
                     role_stake_unstaking_period,
-                    &hiring::ApplicationDeactivationCause::ReviewPeriodExpired
+                    hiring::ApplicationDeactivationCause::ReviewPeriodExpired
                 );
 
                 // NB: Shows issue https://github.com/Joystream/substrate-hiring-module/issues/5
@@ -546,7 +545,7 @@ impl<T: Trait> Module<T> {
             &applications_map,
             application_stake_unstaking_period,
             role_stake_unstaking_period,
-            &hiring::ApplicationDeactivationCause::OpeningCancelled,
+            hiring::ApplicationDeactivationCause::OpeningCancelled,
         );
 
         // Return
@@ -778,7 +777,7 @@ impl<T: Trait> Module<T> {
                 *application_id,
                 opt_successful_applicant_application_stake_unstaking_period,
                 None, // <= We do not unstake role stake for successful applicants, opt_successful_applicant_role_stake_unstaking_period,
-                &hiring::ApplicationDeactivationCause::Hired,
+                hiring::ApplicationDeactivationCause::Hired,
             );
         }
 
@@ -802,7 +801,7 @@ impl<T: Trait> Module<T> {
                 *application_id,
                 opt_failed_applicant_application_stake_unstaking_period,
                 opt_failed_applicant_role_stake_unstaking_period,
-                &hiring::ApplicationDeactivationCause::NotHired,
+                hiring::ApplicationDeactivationCause::NotHired,
             );
         }
 
@@ -963,7 +962,7 @@ impl<T: Trait> Module<T> {
                     id_of_croweded_out_application,
                     opt_application_stake_unstaking_period,
                     opt_role_stake_unstaking_period,
-                    &hiring::ApplicationDeactivationCause::CrowdedOut
+                    hiring::ApplicationDeactivationCause::CrowdedOut
                 ),
                 ApplicationDeactivationInitationResult::Ignored
             );
@@ -1099,7 +1098,7 @@ impl<T: Trait> Module<T> {
             application_id,
             application_stake_unstaking_period,
             role_stake_unstaking_period,
-            &hiring::ApplicationDeactivationCause::External,
+            hiring::ApplicationDeactivationCause::External,
         );
 
         // MUST not have been ignored, is runtime invariant, false means code is broken.
@@ -1183,7 +1182,7 @@ impl<T: Trait> Module<T> {
                 ApplicationStage::Inactive {
                     deactivation_initiated,
                     deactivated: current_block_height,
-                    cause: cause.clone()
+                    cause
                 }
 
             } else {
@@ -1229,7 +1228,7 @@ impl<T: Trait> Module<T> {
             });
 
             // Call handler
-            T::ApplicationDeactivatedHandler::deactivated(&application_id, &cause);
+            T::ApplicationDeactivatedHandler::deactivated(&application_id, cause);
         }
     }
 }
@@ -1265,7 +1264,7 @@ impl<T: Trait> Module<T> {
             .map(|application_id| {
                 let application = <ApplicationById<T>>::get(application_id);
 
-                (application_id.clone(), application)
+                (*application_id, application)
             })
             .collect::<BTreeMap<_, _>>()
     }
@@ -1279,7 +1278,7 @@ impl<T: Trait> Module<T> {
         >,
         application_stake_unstaking_period: Option<T::BlockNumber>,
         role_stake_unstaking_period: Option<T::BlockNumber>,
-        cause: &ApplicationDeactivationCause,
+        cause: ApplicationDeactivationCause,
     ) -> ApplicationsDeactivationsInitiationResult {
         // Update stage on active applications, and collect result
 
@@ -1290,7 +1289,7 @@ impl<T: Trait> Module<T> {
                     // Initiate deactivations!
                     Self::try_to_initiate_application_deactivation(
                         application,
-                        application_id.clone(),
+                        *application_id,
                         application_stake_unstaking_period,
                         role_stake_unstaking_period,
                         cause,
@@ -1336,7 +1335,7 @@ impl<T: Trait> Module<T> {
         application_id: T::ApplicationId,
         application_stake_unstaking_period: Option<T::BlockNumber>,
         role_stake_unstaking_period: Option<T::BlockNumber>,
-        cause: &hiring::ApplicationDeactivationCause,
+        cause: hiring::ApplicationDeactivationCause,
     ) -> ApplicationDeactivationInitationResult {
         match application.stage {
             ApplicationStage::Active => {
@@ -1367,16 +1366,17 @@ impl<T: Trait> Module<T> {
                  */
 
                 // Figure out new stage for the applcation
-                let new_application_stage = match was_unstaked {
-                    true => ApplicationStage::Unstaking {
+                let new_application_stage = if was_unstaked {
+                    ApplicationStage::Unstaking {
                         deactivation_initiated: current_block_height,
-                        cause: cause.clone(),
-                    },
-                    false => ApplicationStage::Inactive {
+                        cause,
+                    }
+                } else {
+                    ApplicationStage::Inactive {
                         deactivation_initiated: current_block_height,
                         deactivated: current_block_height,
-                        cause: cause.clone(),
-                    },
+                        cause,
+                    }
                 };
 
                 // Update the application stage
@@ -1406,8 +1406,8 @@ impl<T: Trait> Module<T> {
                             deactivated_application_count + if was_unstaked { 0 } else { 1 };
 
                         opening.stage = hiring::OpeningStage::Active {
-                            stage: (*stage).clone(),                           // <= truly horrible
-                            applications_added: (*applications_added).clone(), // <= truly horrible
+                            stage: stage.clone(),
+                            applications_added: applications_added.clone(),
                             active_application_count: new_active_application_count,
                             unstaking_application_count: new_unstaking_application_count,
                             deactivated_application_count: new_deactivated_application_count,
@@ -1423,9 +1423,10 @@ impl<T: Trait> Module<T> {
                 }
 
                 // Return conclusion
-                match was_unstaked {
-                    true => ApplicationDeactivationInitationResult::Unstaking,
-                    false => ApplicationDeactivationInitationResult::Deactivated,
+                if was_unstaked {
+                    ApplicationDeactivationInitationResult::Unstaking
+                } else {
+                    ApplicationDeactivationInitationResult::Deactivated
                 }
             }
             _ => ApplicationDeactivationInitationResult::Ignored,
@@ -1447,7 +1448,7 @@ impl<T: Trait> Module<T> {
 
             assert!(<stake::Module<T>>::initiate_unstaking(
                 &stake_id,
-                opt_unstaking_period.clone()
+                opt_unstaking_period
             )
             .is_ok());
         }
@@ -1590,7 +1591,7 @@ impl<T: Trait> Module<T> {
         // The total stake of all current active applications
         let opt_min_item = active_applications_with_stake_iter
             .clone()
-            .min_by_key(|(_, _, total_stake)| total_stake.clone());
+            .min_by_key(|(_, _, total_stake)| *total_stake);
 
         // MUST hold , since guard above guarantees that `number_of_active_applications`
         // which is length of `active_applications_iter`, > 0.
@@ -1603,7 +1604,7 @@ impl<T: Trait> Module<T> {
             ApplicationWouldGetAddedEvaluation::No // stake too low!
         } else {
             ApplicationWouldGetAddedEvaluation::Yes(
-                ApplicationAddedSuccess::CrowdsOutExistingApplication(application_id.clone()),
+                ApplicationAddedSuccess::CrowdsOutExistingApplication(*application_id),
             )
         }
     }
