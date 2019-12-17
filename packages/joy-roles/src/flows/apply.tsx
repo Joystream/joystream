@@ -197,6 +197,7 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
     onChange: (value: any) => {
       if (value >= props.slots.length) {
         value = props.slots.length
+        props.setStake(props.slots[value - 1])
       } else if (value > 0 && !focused) {
         props.setStake(props.slots[value - 1])
       } else if (!focused) {
@@ -273,7 +274,7 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
           min={props.slots[0].toNumber()}
         />
         <Button circular icon='angle right' onClick={() => { rank <= slotCount && setRank(rank + 1) }} />
-        <Button circular icon='angle double right' onClick={() => { setRank(slotCount) }} />
+        <Button circular icon='angle double right' onClick={() => { rank < slotCount && setRank(slotCount) }} />
         <Container className='ranks-and-stake'>
           <Label size='large'>
             <Icon name={rankIcon(rank, slotCount)} />
