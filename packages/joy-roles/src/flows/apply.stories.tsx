@@ -36,8 +36,8 @@ const moneySliderOptions = {
 }
 
 const stakeTypeOptions = {
-	"Fixed": StakeType.Fixed,
-	"At least": StakeType.AtLeast,
+  "Fixed": StakeType.Fixed,
+  "At least": StakeType.AtLeast,
 }
 
 export function ApplicationSandbox() {
@@ -53,11 +53,11 @@ export function ApplicationSandbox() {
       maxNumberOfApplications: number("Application max", 0, applicationSliderOptions, "Role rationing policy"),
       requiredApplicationStake: new ApplicationStakeRequirement(
         new u128(number("Application stake", 500, moneySliderOptions, "Role stakes")),
-		select("Application stake type", stakeTypeOptions, StakeType.AtLeast, "Role stakes"),
+        select("Application stake type", stakeTypeOptions, StakeType.AtLeast, "Role stakes"),
       ),
       requiredRoleStake: new RoleStakeRequirement(
         new u128(number("Role stake", 500, moneySliderOptions, "Role stakes")),
-		select("Role stake type", stakeTypeOptions, StakeType.Fixed, "Role stakes"),
+        select("Role stake type", stakeTypeOptions, StakeType.Fixed, "Role stakes"),
       ),
       defactoMinimumStake: new u128(0),
     },

@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 
 import { Observable } from './Observable'
 
-type Context = Map<string, string>
-const newContext = (): Context => {
+type Params = Map<string, string>
+const newParams = (): Params => {
 	return new Map<string,string>()
 }
 
 type controllerProps<C, P, S> = P & {
-  context?: Context
+  params?: Params
 }
 
 type controllerFn<C, P, S> = (props: controllerProps<C, P, S>, state: S, controller: C, params?: Map<String, String>) => React.ReactElement | null
@@ -33,11 +33,11 @@ export function View<C extends Observable<S, any>, P, S>(fn: controllerFn<C, P, 
         }
       })
 
-      let context:Context
-      if (typeof props.context !== 'undefined') {
-        context = props.context
+      let context:Params
+      if (typeof props.params !== 'undefined') {
+        context = props.params
       } else {
-        context = newContext()
+        context = newParams()
       }
 
       return useMemo(() => fn(props, state, controller, context), [state])

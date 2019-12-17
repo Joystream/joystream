@@ -9,13 +9,13 @@ import { Observable, View } from '@polkadot/joy-utils/index'
 
 import { ITransport } from '../transport'
 
-import { 
-  keyPairDetails, 
-  FlowModal 
+import {
+  keyPairDetails,
+  FlowModal
 } from './apply'
 
 import {
-   GroupMember,
+  GroupMember,
 } from '../elements'
 
 import {
@@ -54,77 +54,77 @@ export class ApplyController extends Observable<State, ITransport> {
   constructor(transport: ITransport, initialState: State = {}) {
     super(transport, initialState)
 
-  const slots: Balance[] = []
-  for (let i = 0; i < 20; i++) {
-    slots.push(new u128((i * 100) + 10 + i + 1))
-  }
+    const slots: Balance[] = []
+    for (let i = 0; i < 20; i++) {
+      slots.push(new u128((i * 100) + 10 + i + 1))
+    }
 
-  this.state = {
-    applications: {
-      numberOfApplications: 0,
-      maxNumberOfApplications: 0,
-      requiredApplicationStake: new ApplicationStakeRequirement(
-        new u128(500),
-		StakeType.AtLeast,
-      ),
-      requiredRoleStake: new RoleStakeRequirement(
-        new u128(500),
-		StakeType.Fixed,
-      ),
-      defactoMinimumStake: new u128(0),
-  }, 
-    creator: creator,
-    transactionFee: new u128(500),
-    keypairs: [
-      {
-        shortName: "KP1",
-        accountId: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
-        balance: new u128(23342),
+    this.state = {
+      applications: {
+        numberOfApplications: 0,
+        maxNumberOfApplications: 0,
+        requiredApplicationStake: new ApplicationStakeRequirement(
+          new u128(500),
+          StakeType.AtLeast,
+        ),
+        requiredRoleStake: new RoleStakeRequirement(
+          new u128(500),
+          StakeType.Fixed,
+        ),
+        defactoMinimumStake: new u128(0),
       },
-      {
-        shortName: "KP2",
-        accountId: new GenericAccountId('5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
-        balance: new u128(993342),
-      },
-      {
-        shortName: "KP3",
-        accountId: new GenericAccountId('5DBaczGTDhcHgwsZzNE5qW15GrQxxdyros4pYkcKrSUovFQ9'),
-        balance: new u128(242),
-      },
-    ],
-    hasConfirmStep: true,
-    step: new u128(5),
-    slots: slots,
-    applicationDetails:{ 
-      sections: [
+      creator: creator,
+      transactionFee: new u128(500),
+      keypairs: [
         {
-          title: "About you",
-          questions: [
-            {
-              title: "Your name",
-              type: "text"
-            },
-            {
-              title: "Your e-mail address",
-              type: "text"
-            }
-          ]
+          shortName: "KP1",
+          accountId: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
+          balance: new u128(23342),
         },
         {
-          title: "Your experience",
-          questions: [
-            {
-              title: "Why would you be good for this role?",
-              type: "text area"
-            }
-          ]
-        }
-      ]
-    },
-  }
+          shortName: "KP2",
+          accountId: new GenericAccountId('5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
+          balance: new u128(993342),
+        },
+        {
+          shortName: "KP3",
+          accountId: new GenericAccountId('5DBaczGTDhcHgwsZzNE5qW15GrQxxdyros4pYkcKrSUovFQ9'),
+          balance: new u128(242),
+        },
+      ],
+      hasConfirmStep: true,
+      step: new u128(5),
+      slots: slots,
+      applicationDetails: {
+        sections: [
+          {
+            title: "About you",
+            questions: [
+              {
+                title: "Your name",
+                type: "text"
+              },
+              {
+                title: "Your e-mail address",
+                type: "text"
+              }
+            ]
+          },
+          {
+            title: "Your experience",
+            questions: [
+              {
+                title: "Why would you be good for this role?",
+                type: "text area"
+              }
+            ]
+          }
+        ]
+      },
+    }
 
-  this.state.transactionDetails = new Map<string,string>()
-  this.state.roleKeyName = ""
+    this.state.transactionDetails = new Map<string, string>()
+    this.state.roleKeyName = ""
   }
 
   async prepareApplicationTransaction(
@@ -134,7 +134,7 @@ export class ApplyController extends Observable<State, ITransport> {
     stakeKeyAddress: AccountId, stakeKeyPassphrase: string,
     txKeyAddress: AccountId, txKeyPassphrase: string,
   ): Promise<any> {
-    return new Promise<any>( (resolve, reject) => {
+    return new Promise<any>((resolve, reject) => {
       console.log("Selected stake:", applicationStake, roleStake)
       console.log("Questions:", questionResponses)
       console.log("Stake key:", stakeKeyAddress, stakeKeyPassphrase)
@@ -153,7 +153,7 @@ export class ApplyController extends Observable<State, ITransport> {
 
   // FIXME! All these arguments should be 'prepare transaction'
   async makeApplicationTransaction(): Promise<any> {
-    return new Promise<any>( (resolve, reject) => {
+    return new Promise<any>((resolve, reject) => {
       console.log("TODO: make tx")
       this.dispatch()
       resolve()
@@ -165,18 +165,18 @@ type Props = {
 }
 
 export const ApplyView = View<ApplyController, Props, State>(
-  (props, state, controller, context) => {
+  (props, state, controller, params) => {
     // FIXME! Load opening by ID
     return (
       <FlowModal
-			  applications={state.applications}
-			  creator={state.creator}
-			  transactionFee={state.transactionFee}
-			  keypairs={state.keypairs}
-			  hasConfirmStep={state.hasConfirmStep}
-			  step={state.step}
-			  slots={state.slots}
-			  applicationDetails={state.applicationDetails}
+        applications={state.applications}
+        creator={state.creator}
+        transactionFee={state.transactionFee}
+        keypairs={state.keypairs}
+        hasConfirmStep={state.hasConfirmStep}
+        step={state.step}
+        slots={state.slots}
+        applicationDetails={state.applicationDetails}
         transactionDetails={state.transactionDetails}
         roleKeyName={state.roleKeyName}
         prepareApplicationTransaction={(...args) => controller.prepareApplicationTransaction(...args)}

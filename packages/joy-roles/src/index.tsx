@@ -40,7 +40,6 @@ class App extends React.PureComponent<Props, State> {
 
   constructor(props: Props) {
     super(props);
-    console.log(props)
 
     this.transport = new Transport(props)
     this.mockTransport = new MockTransport()
@@ -88,16 +87,16 @@ class App extends React.PureComponent<Props, State> {
           />
         </header>
         <Switch>
-          <Route path={`${basePath}/opportunities`} render={() =>this.renderViewComponent(OpportunitiesView(this.oppCtrl)) } />
+          <Route path={`${basePath}/opportunities`} render={() => this.renderViewComponent(OpportunitiesView(this.oppCtrl))} />
           <Route path={`${basePath}/my-roles`} render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
-            <Route path={`${basePath}/apply/:id`} render={(props) => this.renderViewComponent(ApplyView(this.applyCtrl), props)} />
+          <Route path={`${basePath}/apply/:id`} render={(props) => this.renderViewComponent(ApplyView(this.applyCtrl), props)} />
           <Route render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
         </Switch>
       </main>
     );
   }
 
-  private renderViewComponent(Component: ViewComponent<any>, props?: RouteComponentProps) { 
+  private renderViewComponent(Component: ViewComponent<any>, props?: RouteComponentProps) {
     let params = new Map<string, string>()
     if (typeof props !== 'undefined' && props.match.params) {
       params = new Map<string, string>(Object.entries(props.match.params))
