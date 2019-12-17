@@ -435,11 +435,11 @@ impl<T: Trait> Module<T> {
         let new_opening = hiring::Opening {
             created: current_block_height,
             stage: opening_stage,
-            max_review_period_length: max_review_period_length,
-            application_rationing_policy: application_rationing_policy,
-            application_staking_policy: application_staking_policy,
-            role_staking_policy: role_staking_policy,
-            human_readable_text: human_readable_text,
+            max_review_period_length,
+            application_rationing_policy,
+            application_staking_policy,
+            role_staking_policy,
+            human_readable_text,
         };
 
         // Get Id for new opening
@@ -488,7 +488,7 @@ impl<T: Trait> Module<T> {
             } => Ok(ActiveOpeningStage::Deactivated {
                 cause: OpeningDeactivationCause::CancelledAcceptingApplications,
                 deactivated_at_block: current_block_height,
-                started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                started_accepting_applicants_at_block,
                 started_review_period_at_block: None,
             }),
             ActiveOpeningStage::ReviewPeriod {
@@ -497,7 +497,7 @@ impl<T: Trait> Module<T> {
             } => Ok(ActiveOpeningStage::Deactivated {
                 cause: OpeningDeactivationCause::CancelledInReviewPeriod,
                 deactivated_at_block: current_block_height,
-                started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                started_accepting_applicants_at_block,
                 started_review_period_at_block: Some(started_review_period_at_block),
             }),
             ActiveOpeningStage::Deactivated { .. } => {
@@ -529,9 +529,9 @@ impl<T: Trait> Module<T> {
             stage: OpeningStage::Active {
                 stage: new_active_stage,
                 applications_added: applications_added.clone(),
-                active_application_count: active_application_count,
-                unstaking_application_count: unstaking_application_count,
-                deactivated_application_count: deactivated_application_count,
+                active_application_count,
+                unstaking_application_count,
+                deactivated_application_count,
             },
             ..opening
         };
@@ -630,7 +630,7 @@ impl<T: Trait> Module<T> {
         let new_opening = hiring::Opening {
             stage: hiring::OpeningStage::Active {
                 stage: hiring::ActiveOpeningStage::ReviewPeriod {
-                    started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                    started_accepting_applicants_at_block,
                     started_review_period_at_block: current_block_height,
                 },
                 applications_added,
@@ -815,14 +815,14 @@ impl<T: Trait> Module<T> {
                 stage: hiring::ActiveOpeningStage::Deactivated {
                     cause: OpeningDeactivationCause::Filled,
                     deactivated_at_block: current_block_height,
-                    started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                    started_accepting_applicants_at_block,
                     started_review_period_at_block: Some(started_review_period_at_block),
                 },
                 //.. <== cant use here, same issue
-                applications_added: applications_added,
-                active_application_count: active_application_count,
-                unstaking_application_count: unstaking_application_count,
-                deactivated_application_count: deactivated_application_count,
+                applications_added,
+                active_application_count,
+                unstaking_application_count,
+                deactivated_application_count,
             },
             ..opening
         };
@@ -892,13 +892,13 @@ impl<T: Trait> Module<T> {
         )?;
 
         Ok(DestructuredApplicationCanBeAddedEvaluation {
-            opening: opening,
-            active_stage: active_stage,
-            applications_added: applications_added,
-            active_application_count: active_application_count,
-            unstaking_application_count: unstaking_application_count,
-            deactivated_application_count: deactivated_application_count,
-            would_get_added_success: would_get_added_success,
+            opening,
+            active_stage,
+            applications_added,
+            active_application_count,
+            unstaking_application_count,
+            deactivated_application_count,
+            would_get_added_success,
         })
     }
 
@@ -994,13 +994,13 @@ impl<T: Trait> Module<T> {
 
         // Create a new application
         let new_application = hiring::Application {
-            opening_id: opening_id,
-            application_index_in_opening: application_index_in_opening,
+            opening_id,
+            application_index_in_opening,
             add_to_opening_in_block: current_block_height,
-            active_role_staking_id: active_role_staking_id,
-            active_application_staking_id: active_application_staking_id,
+            active_role_staking_id,
+            active_application_staking_id,
             stage: application_stage,
-            human_readable_text: human_readable_text,
+            human_readable_text,
         };
 
         // Insert into main application map
@@ -1181,7 +1181,7 @@ impl<T: Trait> Module<T> {
                 let current_block_height = <system::Module<T>>::block_number();
 
                 ApplicationStage::Inactive {
-                    deactivation_initiated: deactivation_initiated,
+                    deactivation_initiated,
                     deactivated: current_block_height,
                     cause: cause.clone()
                 }
@@ -1219,12 +1219,12 @@ impl<T: Trait> Module<T> {
                     opening.stage = hiring::OpeningStage::Active {
                         stage: stage.clone(),
                         applications_added: applications_added.clone(),
-                        active_application_count: active_application_count,
+                        active_application_count,
                         unstaking_application_count: unstaking_application_count - 1,
                         deactivated_application_count: deactivated_application_count + 1,
                     };
                 } else {
-                    assert!(false);
+                    panic!("stage MUST be active")
                 }
             });
 
@@ -1413,7 +1413,7 @@ impl<T: Trait> Module<T> {
                             deactivated_application_count: new_deactivated_application_count,
                         };
                     } else {
-                        assert!(false);
+                        panic!("opening stage must be 'Active'");
                     }
                 });
 
@@ -1619,8 +1619,7 @@ impl<T: Trait> Module<T> {
                 // INVARIANT: stake MUST be in the staked state.
                 stake::StakingStatus::Staked(staked_state) => staked_state.staked_amount,
                 _ => {
-                    assert!(false);
-                    Zero::zero()
+                    panic!("stake MUST be in the staked state.")
                 }
             }
         })

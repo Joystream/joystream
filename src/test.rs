@@ -57,7 +57,7 @@ fn add_opening_success_waiting_to_begin() {
                     unstaking_application_count: 0,
                     deactivated_application_count: 0
                 },
-                max_review_period_length: max_review_period_length,
+                max_review_period_length,
                 application_rationing_policy: None, //application_rationing_policy,
                 application_staking_policy: None,   //application_staking_policy,
                 role_staking_policy: None,          //role_staking_policy,
