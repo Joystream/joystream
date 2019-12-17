@@ -40,7 +40,13 @@ const stakeTypeOptions = {
   "At least": StakeType.AtLeast,
 }
 
-export function ApplicationSandbox() {
+function mockPromise<T = any>(): () => Promise<T> {
+	return () => new Promise<T>( (resolve, reject) => {
+		resolve()
+	})
+}
+
+export const ApplicationSandbox = () => {
   // List of the minimum stake required to beat each rank
   const slots: Balance[] = []
   for (let i = 0; i < 20; i++) {
@@ -80,6 +86,9 @@ export function ApplicationSandbox() {
         balance: new u128(242),
       },
     ],
+	prepareApplicationTransaction: mockPromise(),
+	makeApplicationTransaction: mockPromise(),
+	transactionDetails: new Map<string,string>([ ["Detail title", "Detail value"]]),
     hasConfirmStep: true,
     step: new u128(5),
     slots: slots,
