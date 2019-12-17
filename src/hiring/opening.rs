@@ -3,6 +3,8 @@ use crate::{hiring, ApplicationRationingPolicy, StakingPolicy};
 use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 
+use crate::hiring::StakePurpose;
+
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone)]
 pub struct Opening<Balance, BlockNumber, ApplicationId> {
     /// Block at which opening was added
@@ -93,10 +95,12 @@ impl<BlockNumber: Clone, ApplicationId> OpeningStage<BlockNumber, ApplicationId>
         }
     }
 
-
     /// Ensures that an opening is waiting to begin.
-    pub fn ensure_opening_stage_is_waiting_to_begin<Err>(&self, error: Err) -> Result<BlockNumber, Err> {
-        if let OpeningStage::WaitingToBegin { begins_at_block} = self {
+    pub fn ensure_opening_stage_is_waiting_to_begin<Err>(
+        &self,
+        error: Err,
+    ) -> Result<BlockNumber, Err> {
+        if let OpeningStage::WaitingToBegin { begins_at_block } = self {
             return Ok(begins_at_block.clone());
         }
 
@@ -114,3 +118,53 @@ impl<BlockNumber: Default, ApplicationId> Default for OpeningStage<BlockNumber, 
     }
 }
 
+/// NB:
+/// `OpeningCancelled` does not have the ideal form.
+/// https://github.com/Joystream/substrate-hiring-module/issues/10
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub struct OpeningCancelled {
+    pub number_of_unstaking_applications: u32,
+    pub number_of_deactivated_applications: u32,
+}
+
+// Safe and explict way of chosing
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+pub enum ActivateOpeningAt<BlockNumber> {
+    CurrentBlock,
+    ExactBlock(BlockNumber),
+}
+
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub enum AddOpeningError {
+    OpeningMustActivateInTheFuture,
+
+    /// It is not possible to stake less than the minimum balance defined in the
+    /// `Currency` module.
+    StakeAmountLessThanMinimumCurrencyBalance(StakePurpose),
+}
+
+/// The possible outcome for an application in an opening which is being filled.
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub enum ApplicationOutcomeInFilledOpening {
+    Success,
+    Failure,
+}
+
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub enum CancelOpeningError {
+    UnstakingPeriodTooShort(StakePurpose),
+    RedundantUnstakingPeriodProvided(StakePurpose),
+    OpeningDoesNotExist,
+    OpeningNotInCancellableStage,
+}
+
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub enum RemoveOpeningError {
+    OpeningDoesNotExist,
+}
+
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub enum BeginReviewError {
+    OpeningDoesNotExist,
+    OpeningNotInAcceptingApplicationsStage,
+}

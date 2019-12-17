@@ -3,7 +3,7 @@
 
 use rstd::prelude::*;
 
-use codec::{Codec, Decode, Encode};
+use codec::Codec;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::traits::Currency;
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
@@ -209,8 +209,8 @@ decl_module! {
                 //
 
                 // Get unstaking periods
-                let application_stake_unstaking_period = Self::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.application_staking_policy);
-                let role_stake_unstaking_period = Self::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.role_staking_policy);
+                let application_stake_unstaking_period = hiring::StakingPolicy::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.application_staking_policy);
+                let role_stake_unstaking_period = hiring::StakingPolicy::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.role_staking_policy);
 
 
                 // Get applications
@@ -254,35 +254,6 @@ decl_module! {
     }
 }
 
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum StakePurpose {
-    Role,
-    Application,
-}
-
-// Safe and explict way of chosing
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub enum ActivateOpeningAt<BlockNumber> {
-    CurrentBlock,
-    ExactBlock(BlockNumber),
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum AddOpeningError {
-    OpeningMustActivateInTheFuture,
-
-    /// It is not possible to stake less than the minimum balance defined in the
-    /// `Currency` module.
-    StakeAmountLessThanMinimumCurrencyBalance(StakePurpose),
-}
-
-/// The possible outcome for an application in an opening which is being filled.
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum ApplicationOutcomeInFilledOpening {
-    Success,
-    Failure,
-}
-
 /// Error due to attempting to fill an opening.
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum FillOpeningError<T: Trait> {
@@ -292,40 +263,6 @@ pub enum FillOpeningError<T: Trait> {
     RedundantUnstakingPeriodProvided(StakePurpose, ApplicationOutcomeInFilledOpening),
     ApplicationDoesNotExist(T::ApplicationId),
     ApplicationNotInActiveStage(T::ApplicationId),
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum CancelOpeningError {
-    UnstakingPeriodTooShort(StakePurpose),
-    RedundantUnstakingPeriodProvided(StakePurpose),
-    OpeningDoesNotExist,
-    OpeningNotInCancellableStage,
-}
-
-/// NB:
-/// `OpeningCancelled` does not have the ideal form.
-/// https://github.com/Joystream/substrate-hiring-module/issues/10
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct OpeningCancelled {
-    pub number_of_unstaking_applications: u32,
-    pub number_of_deactivated_applications: u32,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum RemoveOpeningError {
-    OpeningDoesNotExist,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum BeginReviewError {
-    OpeningDoesNotExist,
-    OpeningNotInAcceptingApplicationsStage,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum BeginAcceptingApplicationsError {
-    OpeningDoesNotExist,
-    OpeningIsNotInWaitingToBeginStage,
 }
 
 pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
@@ -342,34 +279,6 @@ pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
     pub deactivated_application_count: u32,
 
     pub would_get_added_success: ApplicationAddedSuccess<T>,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum AddApplicationError {
-    OpeningDoesNotExist,
-    StakeProvidedWhenRedundant(StakePurpose),
-    StakeMissingWhenRequired(StakePurpose),
-    StakeAmountTooLow(StakePurpose),
-    OpeningNotInAcceptingApplicationsStage,
-    NewApplicationWasCrowdedOut,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct ApplicationAdded<ApplicationId> {
-    /// ...
-    pub application_id_added: ApplicationId,
-
-    /// ...
-    pub application_id_crowded_out: Option<ApplicationId>,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum DeactivateApplicationError {
-    ApplicationDoesNotExist,
-    ApplicationNotActive,
-    OpeningNotAcceptingApplications,
-    UnstakingPeriodTooShort(StakePurpose),
-    RedundantUnstakingPeriodProvided(StakePurpose),
 }
 
 impl<T: Trait> Module<T> {
@@ -671,10 +580,10 @@ impl<T: Trait> Module<T> {
         )?;
 
         // Ensure opening is in review period
-        let (started_accepting_applicants_at_block, started_review_period_at_block) =
-            active_stage.ensure_active_opening_is_in_review_period(
-            FillOpeningError::OpeningNotInReviewPeriodStage
-        )?;
+        let (started_accepting_applicants_at_block, started_review_period_at_block) = active_stage
+            .ensure_active_opening_is_in_review_period(
+                FillOpeningError::OpeningNotInReviewPeriodStage,
+            )?;
 
         //
         // Ensure that all unstaking periods are neither too short (0) nor redundant.
@@ -875,9 +784,8 @@ impl<T: Trait> Module<T> {
             AddApplicationError::OpeningNotInAcceptingApplicationsStage
         )?;
 
-
         active_stage.ensure_active_opening_is_accepting_applications(
-            AddApplicationError::OpeningNotInAcceptingApplicationsStage
+            AddApplicationError::OpeningNotInAcceptingApplicationsStage,
         )?;
 
         // Ensure that the new application would actually make it
@@ -940,11 +848,11 @@ impl<T: Trait> Module<T> {
         {
             // Get relevant unstaking periods
             let opt_application_stake_unstaking_period =
-                Self::opt_staking_policy_to_crowded_out_unstaking_period(
+                hiring::StakingPolicy::opt_staking_policy_to_crowded_out_unstaking_period(
                     &can_be_added_destructured.opening.application_staking_policy,
                 );
             let opt_role_stake_unstaking_period =
-                Self::opt_staking_policy_to_crowded_out_unstaking_period(
+                hiring::StakingPolicy::opt_staking_policy_to_crowded_out_unstaking_period(
                     &can_be_added_destructured.opening.role_staking_policy,
                 );
 
@@ -1068,7 +976,7 @@ impl<T: Trait> Module<T> {
         )?;
 
         active_stage.ensure_active_opening_is_accepting_applications(
-            DeactivateApplicationError::OpeningNotAcceptingApplications
+            DeactivateApplicationError::OpeningNotAcceptingApplications,
         )?;
 
         // Ensure unstaking periods are OK.
@@ -1451,16 +1359,6 @@ impl<T: Trait> Module<T> {
 
         opt_stake_id.is_some()
     }
-
-    fn opt_staking_policy_to_crowded_out_unstaking_period(
-        opt_staking_policy: &Option<hiring::StakingPolicy<BalanceOf<T>, T::BlockNumber>>,
-    ) -> Option<T::BlockNumber> {
-        if let Some(ref staking_policy) = opt_staking_policy {
-            staking_policy.crowded_out_unstaking_period_length
-        } else {
-            None
-        }
-    }
 }
 
 impl<T: Trait> Module<T> {
@@ -1616,27 +1514,5 @@ impl<T: Trait> Module<T> {
                 _ => panic!("stake MUST be in the staked state."),
             }
         })
-    }
-}
-
-/*
- * Used by unstaked method.
- */
-
-// ...
-
-/*
- * Used by `on_initialized`
- */
-
-impl<T: Trait> Module<T> {
-    fn opt_staking_policy_to_review_period_expired_unstaking_period(
-        opt_staking_policy: &Option<hiring::StakingPolicy<BalanceOf<T>, T::BlockNumber>>,
-    ) -> Option<T::BlockNumber> {
-        if let Some(ref staking_policy) = opt_staking_policy {
-            staking_policy.review_period_expired_unstaking_period_length
-        } else {
-            None
-        }
     }
 }
