@@ -69,20 +69,6 @@ impl<T: Trait> ApplicationDeactivatedHandler<T> for () {
     }
 }
 
-/*
-impl<T: Trait, X: ApplicationDeactivatedHandler<T>, Y: ApplicationDeactivatedHandler<T>> ApplicationDeactivatedHandler<T>
-    for (X, Y)
-{
-    fn deactivated(
-        application_id: T::ApplicationId,
-        cause: hiring::ApplicationDeactivationCause
-    ) {
-        X::deactivated(application_id, cause);
-        Y::deactivated(application_id, cause);
-    }
-}
-*/
-
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
@@ -290,13 +276,6 @@ pub enum AddOpeningError {
     /// `Currency` module.
     StakeAmountLessThanMinimumCurrencyBalance(StakePurpose),
 }
-
-/*
-pub struct ApplicationUnstakingPeriods<T: Trait> {
-    successful_applicants: T::BlockNumber,
-    unsuccessful_applicants: T::BlockNumber
-}
-*/
 
 /// The possible outcome for an application in an opening which is being filled.
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -577,21 +556,6 @@ impl<T: Trait> Module<T> {
         })
     }
 
-    /*
-    pub fn remove_opening(
-        opening_id: T::OpeningId
-    ) -> Result<u32, RemoveOpeningError> {
-
-        // Applies when a given opening is in stage WaitingToBegin or Began.Inactive.
-        // In the latter it is also required that all applications are inactive.
-        // Opening, and all associated applications, are removed from openingsById and applicationsById.
-        // The number of applications removed is returned.
-        //
-
-        Ok(0)
-    }
-    */
-
     pub fn begin_accepting_applications(
         opening_id: T::OpeningId,
     ) -> Result<(), BeginAcceptingApplicationsError> {
@@ -743,15 +707,6 @@ impl<T: Trait> Module<T> {
                 ApplicationOutcomeInFilledOpening::Failure
             )
         )?;
-
-        /*
-        ensure_opt_unstaking_period_is_ok!(
-            opt_successful_applicant_role_stake_unstaking_period,
-            opening.role_staking_policy,
-            FillOpeningError::UnstakingPeriodTooShort(StakePurpose::Application, ApplicationOutcomeInFilledOpening::Success),
-            FillOpeningError::RedundantUnstakingPeriodProvided(StakePurpose::Application, ApplicationOutcomeInFilledOpening::Success)
-        )?;
-        */
 
         ensure_opt_unstaking_period_is_ok!(
             opt_failed_applicant_role_stake_unstaking_period,
@@ -1155,14 +1110,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /*
-    pub fn remove_application() ->() {
-
-        // Applies when an application is in the stage Inactive. Results in removing instance from applicationsById,
-        // and from the corresponding opening. Returns nothing.
-    }
-    */
-
     /// The stake, with the given id, was unstaked.
     pub fn unstaked(stake_id: T::StakeId) {
         // Ignore unstaked
@@ -1301,14 +1248,7 @@ struct ApplicationsDeactivationsInitiationResult {
     number_of_unstaking_applications: u32,
     number_of_deactivated_applications: u32,
 }
-/*
-impl ApplicationsDeactivationsInitiationResult {
 
-    fn total(&self) -> u32 {
-        self.number_of_unstaking_applications + self.number_of_deactivated_applications
-    }
-}
-*/
 #[derive(PartialEq, Debug)]
 enum ApplicationDeactivationInitationResult {
     Ignored, // <= is there a case for kicking this out, making sure that initation cannot happen when it may fail?

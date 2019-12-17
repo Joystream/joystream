@@ -39,26 +39,6 @@ macro_rules! ensure_opening_exists {
     }};
 }
 
-/*
- * Move this out later
- *
-
-    ($runtime_trait:tt, $application_id:expr, $error:expr, auto_fetch_opening) => {{
-
-        let application = ensure_map_key!(
-            ApplicationById,
-            $runtime_trait,
-            $application_id,
-            $error
-        )?;
-
-        // Grab corresponding opening, which MUST exist.
-        let opening = <OpeningById<$runtime_trait>>::get(application.opening_id);
-
-        // Return both
-        Ok((application, opening))
-    }};
-*/
 
 /// Ensure that an applications exists in `ApplicationById` , and if so, return it along with the
 /// corresponding opening.
@@ -125,28 +105,6 @@ macro_rules! ensure_opening_stage_is_waiting_to_begin {
     }};
 }
 
-/*
-//// FAILED ATTEMPT AT GENERLIZATION
-/// Ensures that ....
-///
-/// Returns ...
-#[macro_export]
-macro_rules! ensure_is_variant {
-
-    ($stage:expr, $variant_path:path, $error:expr, $( $x:expr ),*) => {{
-
-        match $stage {
-
-            $variant_path { $($x,)* } =>
-                Ok(( $($x,)* ))
-            ,
-            _ => Err($error),
-        }
-    }}
-
-
-}
-*/
 
 /// Ensures that active opening stage is accepting applications.
 ///
@@ -214,41 +172,6 @@ macro_rules! ensure_stake_balance_matches_staking_policy {
         }
     }};
 }
-
-/*
-/// Ensures that optional imbalance matches requirements of optional staking policy
-///
-/// Returns ...
-#[macro_export]
-macro_rules! ensure_stake_balance_matches_staking_policy {
-    (
-        $opt_imbalance:expr,
-        $opt_policy: expr,
-        $stake_missing_when_required_error:expr,
-        $stake_provided_when_redundant_error:expr,
-        $stake_amount_too_low_error:expr
-
-    ) => {{
-        if let Some(ref imbalance) = $opt_imbalance {
-            if let Some(ref policy) = $opt_policy {
-                let imbalance_value = imbalance.peek();
-
-                if !policy.accepts_amount(&imbalance_value) {
-                    Err($stake_amount_too_low_error)
-                } else {
-                    Ok(Some(imbalance_value))
-                }
-            } else {
-                Err($stake_provided_when_redundant_error)
-            }
-        } else if $opt_policy.is_some() {
-            Err($stake_missing_when_required_error)
-        } else {
-            Ok(None)
-        }
-    }};
-}
-*/
 
 /// Ensures that an optional unstaking period is at least one block whens set.
 ///

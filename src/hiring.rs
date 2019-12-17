@@ -1,11 +1,6 @@
 use codec::{Decode, Encode};
-//use srml_support::traits::{Currency};
-//use runtime_primitives::traits::{SimpleArithmetic, Zero};
-//use srml_support::ensure;
-//use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
-//use crate::{Trait};
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -21,14 +16,6 @@ pub enum ApplicationDeactivationCause {
     ReviewPeriodExpired,
     OpeningFilled,
 }
-
-/*
-pub enum OutstandingUnstaking {
-  RoleOnly,
-  ApplicationOnly,
-  Both
-}
-*/
 
 // Possible status of an application
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd, Ord)]
@@ -249,15 +236,6 @@ pub struct StakingPolicy<Balance, BlockNumber> {
     pub crowded_out_unstaking_period_length: Option<BlockNumber>,
     pub review_period_expired_unstaking_period_length: Option<BlockNumber>,
 }
-
-/*
-impl<T: Currency> StakingPolicy<T::Balance, T::BlockNumber> {
-
-  pub fn amount_is_valid(&self) -> bool {
-    self.amount >= T::Currency::minimum_balance()
-  }
-}
-*/
 
 impl<Balance: PartialOrd + Clone, BlockNumber> StakingPolicy<Balance, BlockNumber> {
     pub fn accepts_amount(&self, test_amount: &Balance) -> bool {
