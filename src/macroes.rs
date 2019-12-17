@@ -39,7 +39,6 @@ macro_rules! ensure_opening_exists {
     }};
 }
 
-
 /// Ensure that an applications exists in `ApplicationById` , and if so, return it along with the
 /// corresponding opening.
 ///
@@ -104,7 +103,6 @@ macro_rules! ensure_opening_stage_is_waiting_to_begin {
         }
     }};
 }
-
 
 /// Ensures that active opening stage is accepting applications.
 ///

@@ -1446,11 +1446,9 @@ impl<T: Trait> Module<T> {
             // `initiate_unstaking` MUST hold, is runtime invariant, false means code is broken.
             // But should we do panic in runtime? Is there safer way?
 
-            assert!(<stake::Module<T>>::initiate_unstaking(
-                &stake_id,
-                opt_unstaking_period
-            )
-            .is_ok());
+            assert!(
+                <stake::Module<T>>::initiate_unstaking(&stake_id, opt_unstaking_period).is_ok()
+            );
         }
 
         opt_stake_id.is_some()
@@ -1619,9 +1617,7 @@ impl<T: Trait> Module<T> {
             match stake.staking_status {
                 // INVARIANT: stake MUST be in the staked state.
                 stake::StakingStatus::Staked(staked_state) => staked_state.staked_amount,
-                _ => {
-                    panic!("stake MUST be in the staked state.")
-                }
+                _ => panic!("stake MUST be in the staked state."),
             }
         })
     }
