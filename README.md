@@ -1,4 +1,4 @@
-![Storage Nodes for Joystream](./banner.svg)
+![Storage Nodes for Joystream](./storage-node_new.svg)
 
 This repository contains several Node packages, located under the `packages/`
 subdirectory. See each individual package for details:
