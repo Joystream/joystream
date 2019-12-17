@@ -525,7 +525,7 @@ impl<T: Trait> Module<T> {
 
         // Create and store new cancelled opening
         let new_opening = Opening {
-            stage: OpeningStage::Active {
+            stage: hiring::OpeningStage::Active {
                 stage: new_active_stage,
                 applications_added: applications_added.clone(),
                 active_application_count,
@@ -566,9 +566,8 @@ impl<T: Trait> Module<T> {
         )?;
 
         // Ensure that it is the waiting to begin stage
-        ensure_opening_stage_is_waiting_to_begin!(
-            opening.stage,
-            BeginAcceptingApplicationsError::OpeningIsNotInWaitingToBeginStage
+        opening.stage.ensure_opening_stage_is_waiting_to_begin(
+            BeginAcceptingApplicationsError::OpeningIsNotInWaitingToBeginStage,
         )?;
 
         //
@@ -672,8 +671,8 @@ impl<T: Trait> Module<T> {
         )?;
 
         // Ensure opening is in review period
-        let (started_accepting_applicants_at_block, started_review_period_at_block) = ensure_active_opening_is_in_review_period!(
-            active_stage,
+        let (started_accepting_applicants_at_block, started_review_period_at_block) =
+            active_stage.ensure_active_opening_is_in_review_period(
             FillOpeningError::OpeningNotInReviewPeriodStage
         )?;
 
@@ -876,8 +875,8 @@ impl<T: Trait> Module<T> {
             AddApplicationError::OpeningNotInAcceptingApplicationsStage
         )?;
 
-        ensure_active_opening_is_accepting_applications!(
-            active_stage,
+
+        active_stage.ensure_active_opening_is_accepting_applications(
             AddApplicationError::OpeningNotInAcceptingApplicationsStage
         )?;
 
@@ -1068,8 +1067,7 @@ impl<T: Trait> Module<T> {
             DeactivateApplicationError::OpeningNotAcceptingApplications
         )?;
 
-        ensure_active_opening_is_accepting_applications!(
-            active_stage,
+        active_stage.ensure_active_opening_is_accepting_applications(
             DeactivateApplicationError::OpeningNotAcceptingApplications
         )?;
 
