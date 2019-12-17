@@ -209,8 +209,8 @@ decl_module! {
                 //
 
                 // Get unstaking periods
-                let application_stake_unstaking_period = hiring::StakingPolicy::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.application_staking_policy);
-                let role_stake_unstaking_period = hiring::StakingPolicy::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.role_staking_policy);
+                let application_stake_unstaking_period = StakingPolicy::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.application_staking_policy);
+                let role_stake_unstaking_period = StakingPolicy::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.role_staking_policy);
 
 
                 // Get applications
@@ -1161,11 +1161,19 @@ enum ApplicationDeactivationInitationResult {
     Deactivated,
 }
 
+pub type ApplicationBTreeMap<T> = BTreeMap<
+    <T as Trait>::ApplicationId,
+    hiring::Application<
+        <T as Trait>::OpeningId,
+        <T as system::Trait>::BlockNumber,
+        <T as stake::Trait>::StakeId,
+    >,
+>;
+
 impl<T: Trait> Module<T> {
     fn application_id_iter_to_map<'a>(
         application_id_iter: impl Iterator<Item = &'a T::ApplicationId>,
-    ) -> BTreeMap<T::ApplicationId, hiring::Application<T::OpeningId, T::BlockNumber, T::StakeId>>
-    {
+    ) -> ApplicationBTreeMap<T> {
         application_id_iter
             .map(|application_id| {
                 let application = <ApplicationById<T>>::get(application_id);
@@ -1178,10 +1186,7 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> Module<T> {
     fn initiate_application_deactivations(
-        applications: &BTreeMap<
-            T::ApplicationId,
-            hiring::Application<T::OpeningId, T::BlockNumber, T::StakeId>,
-        >,
+        applications: &ApplicationBTreeMap<T>,
         application_stake_unstaking_period: Option<T::BlockNumber>,
         role_stake_unstaking_period: Option<T::BlockNumber>,
         cause: ApplicationDeactivationCause,
