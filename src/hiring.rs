@@ -70,7 +70,6 @@ pub struct Application<OpeningId, BlockNumber, StakeId> {
     // NB: The given staking identifiers have a bloated purpose,
     // and are mutable, fix this.
     // https://github.com/Joystream/substrate-hiring-module/issues/11
-
     /// Identifier for stake that may possibly be established for role.
     /// Will be set iff the role staking policy of the corresponding opening
     /// states so AND application is not inactive.
@@ -169,7 +168,6 @@ pub enum OpeningStage<BlockNumber, ApplicationId> {
         // - `deactivated_application_count`
         //
         // equals the total number of applications ever added to the openig via `add_application`.
-
         /// Active NOW
         active_application_count: u32,
 

@@ -720,7 +720,7 @@ impl<T: Trait> Module<T> {
             )
         )?;
 
-        // Ensure that all provided application ids are infact valid
+        // Ensure that all provided application ids are in fact valid
         let invalid_application_ids = successful_applications
             .clone()
             .iter()
@@ -734,11 +734,11 @@ impl<T: Trait> Module<T> {
             .collect::<BTreeSet<T::ApplicationId>>();
 
         if !invalid_application_ids.is_empty() {
-            let first_missing_application_id = invalid_application_ids.iter().next().unwrap();
+            let first_missing_application_id = invalid_application_ids.iter().next();
 
-            return Err(FillOpeningError::ApplicationDoesNotExist(
-                *first_missing_application_id,
-            ));
+            if let Some(application_id) = first_missing_application_id {
+                return Err(FillOpeningError::ApplicationDoesNotExist(*application_id));
+            }
         }
 
         // Ensure that all claimed successful applications actually exist, and collect@
@@ -1591,19 +1591,17 @@ impl<T: Trait> Module<T> {
             .clone()
             .min_by_key(|(_, _, total_stake)| *total_stake);
 
-        // MUST hold , since guard above guarantees that `number_of_active_applications`
-        // which is length of `active_applications_iter`, > 0.
-        assert!(opt_min_item.is_some());
-
-        let (application_id, _, lowest_active_total_stake) = opt_min_item.unwrap();
-
-        // Finally we compare the two and come up with a final evaluation
-        if total_stake_of_new_application <= lowest_active_total_stake {
-            ApplicationWouldGetAddedEvaluation::No // stake too low!
+        if let Some((application_id, _, lowest_active_total_stake)) = opt_min_item {
+            // Finally we compare the two and come up with a final evaluation
+            if total_stake_of_new_application <= lowest_active_total_stake {
+                ApplicationWouldGetAddedEvaluation::No // stake too low!
+            } else {
+                ApplicationWouldGetAddedEvaluation::Yes(
+                    ApplicationAddedSuccess::CrowdsOutExistingApplication(*application_id),
+                )
+            }
         } else {
-            ApplicationWouldGetAddedEvaluation::Yes(
-                ApplicationAddedSuccess::CrowdsOutExistingApplication(*application_id),
-            )
+            panic!("`number_of_active_applications` (length of `active_applications_iter`) == 0")
         }
     }
 
