@@ -863,16 +863,19 @@ impl<T: Trait> Module<T> {
             //
             // MUST not have been ignored, is runtime invariant, false means code is broken.
             // But should we do panic in runtime? Is there safer way?
-            assert_ne!(
-                Self::try_to_initiate_application_deactivation(
-                    &crowded_out_application,
-                    id_of_croweded_out_application,
-                    opt_application_stake_unstaking_period,
-                    opt_role_stake_unstaking_period,
-                    hiring::ApplicationDeactivationCause::CrowdedOut
-                ),
-                ApplicationDeactivationInitationResult::Ignored
+            let deactivation_result = Self::try_to_initiate_application_deactivation(
+                &crowded_out_application,
+                id_of_croweded_out_application,
+                opt_application_stake_unstaking_period,
+                opt_role_stake_unstaking_period,
+                hiring::ApplicationDeactivationCause::CrowdedOut,
             );
+
+            if deactivation_result == ApplicationDeactivationInitationResult::Ignored {
+                return Err(AddApplicationError::BrokenInvariant(
+                    "Application deactivation cannot be ignored.",
+                ));
+            }
         }
 
         // Get Id for this new application
@@ -1007,9 +1010,11 @@ impl<T: Trait> Module<T> {
             hiring::ApplicationDeactivationCause::External,
         );
 
-        // MUST not have been ignored, is runtime invariant, false means code is broken.
-        // But should we do panic in runtime? Is there safer way?
-        assert_ne!(result, ApplicationDeactivationInitationResult::Ignored);
+        if result == ApplicationDeactivationInitationResult::Ignored {
+            return Err(DeactivateApplicationError::BrokenInvariant(
+                "Application deactivation cannot be ignored.",
+            ));
+        }
 
         // DONE
         Ok(())
