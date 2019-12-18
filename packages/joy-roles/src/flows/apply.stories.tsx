@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React from 'react'
-import { number, object, select, withKnobs } from '@storybook/addon-knobs'
+import { number, object, select, text, withKnobs } from '@storybook/addon-knobs'
+import * as faker from 'faker'
 
 import { u128, GenericAccountId } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces';
@@ -41,9 +42,9 @@ const stakeTypeOptions = {
 }
 
 function mockPromise<T = any>(): () => Promise<T> {
-	return () => new Promise<T>( (resolve, reject) => {
-		resolve()
-	})
+  return () => new Promise<T>((resolve, reject) => {
+    resolve()
+  })
 }
 
 export const ApplicationSandbox = () => {
@@ -54,6 +55,51 @@ export const ApplicationSandbox = () => {
 
   }
   const props = {
+    role: {
+      version: 1,
+      headline: text("Headline", "Help us curate awesome content", "Role"),
+      job: {
+        title: text("Job title", "Content curator", "Role"),
+        description: text("Job description", faker.lorem.paragraphs(4), "Role")
+      },
+      application: {
+        sections: [
+          {
+            title: "About you",
+            questions: [
+              {
+                title: "Your name",
+                type: "text"
+              },
+              {
+                title: "Your e-mail address",
+                type: "text"
+              }
+            ]
+          },
+          {
+            title: "Your experience",
+            questions: [
+              {
+                title: "Why would you be good for this role?",
+                type: "text area"
+              }
+            ]
+          }
+        ]
+      },
+      reward: text("Reward", "10 JOY per block", "Role"),
+      creator: {
+        membership: {
+          handle: text("Creator handle", "ben", "Role")
+        }
+      },
+      process: {
+        details: [
+          "Some custom detail"
+        ]
+      }
+    },
     applications: {
       numberOfApplications: number("Applications count", 0, applicationSliderOptions, "Role rationing policy"),
       maxNumberOfApplications: number("Application max", 0, applicationSliderOptions, "Role rationing policy"),
@@ -86,9 +132,9 @@ export const ApplicationSandbox = () => {
         balance: new u128(242),
       },
     ],
-	prepareApplicationTransaction: mockPromise(),
-	makeApplicationTransaction: mockPromise(),
-	transactionDetails: new Map<string,string>([ ["Detail title", "Detail value"]]),
+    prepareApplicationTransaction: mockPromise(),
+    makeApplicationTransaction: mockPromise(),
+    transactionDetails: new Map<string, string>([["Detail title", "Detail value"]]),
     hasConfirmStep: true,
     step: new u128(5),
     slots: slots,

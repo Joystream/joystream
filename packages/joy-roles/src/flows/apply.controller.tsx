@@ -5,128 +5,127 @@ import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
-import { Observable, View } from '@polkadot/joy-utils/index'
+import { Observable, EmptyProps, Params, View } from '@polkadot/joy-utils/index'
+
+import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
 
 import { ITransport } from '../transport'
 
-import {
-  keyPairDetails,
-  FlowModal
-} from './apply'
+import { keyPairDetails, FlowModal } from './apply'
 
-import {
-  GroupMember,
-} from '../elements'
+import { GroupMember } from '../elements'
+import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities'
+import { Min, Step } from "../balances"
 
-import {
-  ApplicationStakeRequirement, RoleStakeRequirement,
-  StakeType,
-} from '../StakeRequirement'
-
-import {
-  OpeningStakeAndApplicationStatus,
-} from '../tabs/Opportunities'
-
-import {
-  ApplicationDetails,
-} from '@joystream/types/schemas/role.schema'
-
-import { creator } from "../tabs/Opportunities.stories"
-
-// FIXME! Make this type-safe
 type State = {
   // Input data from state
-  applications: OpeningStakeAndApplicationStatus
-  creator: GroupMember
-  transactionFee: Balance
-  keypairs: keyPairDetails[]
-  hasConfirmStep: boolean
-  step: Balance // Rename: this is the +/- step for selecting stakes
-  slots: Balance[] // Rename: this is the current application slots
-  applicationDetails: ApplicationDetails
+  role?: GenericJoyStreamRoleSchema
+  applications?: OpeningStakeAndApplicationStatus
+  creator?: GroupMember
+  transactionFee?: Balance
+  keypairs?: keyPairDetails[] // <- Where does this come from?
+  hasConfirmStep?: boolean
+  step?: Balance // Rename: this is the +/- step for selecting stakes
+  slots?: Balance[] // Rename: this is the current application slots
 
   // Data generated for transaction
   transactionDetails: Map<string, string>
   roleKeyName: string
+
+  // Error capture and display
+  hasError: true
+}
+
+const newEmptyState = (): State => {
+  return {
+    transactionDetails: new Map<string, string>(),
+    roleKeyName: "",
+  }
 }
 
 export class ApplyController extends Observable<State, ITransport> {
-  constructor(transport: ITransport, initialState: State = {}) {
+  protected currentOpeningId: string = ""
+
+  constructor(transport: ITransport, initialState: State = newEmptyState()) {
     super(transport, initialState)
 
-    const slots: Balance[] = []
-    for (let i = 0; i < 20; i++) {
-      slots.push(new u128((i * 100) + 10 + i + 1))
-    }
-
-    this.state = {
-      applications: {
-        numberOfApplications: 0,
-        maxNumberOfApplications: 0,
-        requiredApplicationStake: new ApplicationStakeRequirement(
-          new u128(500),
-          StakeType.AtLeast,
-        ),
-        requiredRoleStake: new RoleStakeRequirement(
-          new u128(500),
-          StakeType.Fixed,
-        ),
-        defactoMinimumStake: new u128(0),
+    // FIXME! Where do we get these?
+    this.state.keypairs = [
+      {
+        shortName: "KP1",
+        accountId: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
+        balance: new u128(23342),
       },
-      creator: creator,
-      transactionFee: new u128(500),
-      keypairs: [
-        {
-          shortName: "KP1",
-          accountId: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
-          balance: new u128(23342),
-        },
-        {
-          shortName: "KP2",
-          accountId: new GenericAccountId('5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
-          balance: new u128(993342),
-        },
-        {
-          shortName: "KP3",
-          accountId: new GenericAccountId('5DBaczGTDhcHgwsZzNE5qW15GrQxxdyros4pYkcKrSUovFQ9'),
-          balance: new u128(242),
-        },
-      ],
-      hasConfirmStep: true,
-      step: new u128(5),
-      slots: slots,
-      applicationDetails: {
-        sections: [
-          {
-            title: "About you",
-            questions: [
-              {
-                title: "Your name",
-                type: "text"
-              },
-              {
-                title: "Your e-mail address",
-                type: "text"
-              }
-            ]
-          },
-          {
-            title: "Your experience",
-            questions: [
-              {
-                title: "Why would you be good for this role?",
-                type: "text area"
-              }
-            ]
-          }
-        ]
+      {
+        shortName: "KP2",
+        accountId: new GenericAccountId('5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
+        balance: new u128(993342),
       },
-    }
+      {
+        shortName: "KP3",
+        accountId: new GenericAccountId('5DBaczGTDhcHgwsZzNE5qW15GrQxxdyros4pYkcKrSUovFQ9'),
+        balance: new u128(242),
+      },
+    ]
 
-    this.state.transactionDetails = new Map<string, string>()
-    this.state.roleKeyName = ""
   }
 
+  // TODO: Mixin?
+  protected onError(desc: any) {
+    this.state.hasError = true
+    console.error(desc)
+    this.dispatch()
+  }
+
+  findOpening(params: Params) {
+    const id = params.get("id")
+    if (typeof id === "undefined") {
+      return this.onError("ApplyController: no ID provided in params")
+    }
+
+    if (this.currentOpeningId == id) {
+      return
+    }
+
+    Promise.all(
+      [
+        this.transport.opening(id),
+        this.transport.openingApplicationRanks(id),
+        this.transport.transactionFee(),
+      ],
+    )
+      .then(
+        ([opening, ranks, txFee]) => {
+          const hrt = opening.opening.human_readable_text
+          if (typeof hrt !== "object") {
+            return this.onError("human_readable_text is not an object")
+          }
+
+          this.state.role = hrt
+          this.state.applications = opening.applications
+          this.state.creator = opening.creator
+          this.state.transactionFee = txFee
+          this.state.slots = ranks
+          this.state.step = Min(Step(ranks, ranks.length))
+		  this.state.hasConfirmStep = 
+			  opening.applications.requiredApplicationStake.anyRequirement() ||
+			  opening.applications.requiredRoleStake.anyRequirement()
+
+          // When everything is collected, update the view
+          this.dispatch()
+        }
+      )
+      .catch(
+        (err: any) => {
+          this.currentOpeningId = ""
+          this.onError(err)
+        }
+      )
+
+    this.currentOpeningId = id
+  }
+
+  // TODO: Move to transport
   async prepareApplicationTransaction(
     applicationStake: Balance,
     roleStake: Balance,
@@ -135,8 +134,8 @@ export class ApplyController extends Observable<State, ITransport> {
     txKeyAddress: AccountId, txKeyPassphrase: string,
   ): Promise<any> {
     return new Promise<any>((resolve, reject) => {
-      console.log("Selected stake:", applicationStake, roleStake)
-      console.log("Questions:", questionResponses)
+      console.log("Selected stake:", applicationStake.toString(), roleStake)
+      console.log("Questions:", JSON.stringify(questionResponses))
       console.log("Stake key:", stakeKeyAddress, stakeKeyPassphrase)
       console.log("Tx key:", txKeyAddress, txKeyPassphrase)
 
@@ -151,7 +150,7 @@ export class ApplyController extends Observable<State, ITransport> {
     })
   }
 
-  // FIXME! All these arguments should be 'prepare transaction'
+  // TODO: Move to transport
   async makeApplicationTransaction(): Promise<any> {
     return new Promise<any>((resolve, reject) => {
       console.log("TODO: make tx")
@@ -161,23 +160,20 @@ export class ApplyController extends Observable<State, ITransport> {
   }
 }
 
-type Props = {
-}
-
-export const ApplyView = View<ApplyController, Props, State>(
+export const ApplyView = View<ApplyController, EmptyProps, State>(
   (props, state, controller, params) => {
-    // FIXME! Load opening by ID
+    controller.findOpening(params)
     return (
       <FlowModal
-        applications={state.applications}
-        creator={state.creator}
-        transactionFee={state.transactionFee}
-        keypairs={state.keypairs}
-        hasConfirmStep={state.hasConfirmStep}
-        step={state.step}
-        slots={state.slots}
-        applicationDetails={state.applicationDetails}
-        transactionDetails={state.transactionDetails}
+        role={state.role!}
+        applications={state.applications!}
+        creator={state.creator!}
+        transactionFee={state.transactionFee!}
+        keypairs={state.keypairs!}
+        hasConfirmStep={state.hasConfirmStep!}
+        step={state.step!}
+        slots={state.slots!}
+        transactionDetails={state.transactionDetails!}
         roleKeyName={state.roleKeyName}
         prepareApplicationTransaction={(...args) => controller.prepareApplicationTransaction(...args)}
         makeApplicationTransaction={() => controller.makeApplicationTransaction()}

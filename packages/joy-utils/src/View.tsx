@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 
 import { Observable } from './Observable'
 
-type Params = Map<string, string>
+export interface EmptyProps {}
+
+export type Params = Map<string, string>
 const newParams = (): Params => {
 	return new Map<string,string>()
 }
@@ -11,7 +13,7 @@ type controllerProps<C, P, S> = P & {
   params?: Params
 }
 
-type controllerFn<C, P, S> = (props: controllerProps<C, P, S>, state: S, controller: C, params?: Map<String, String>) => React.ReactElement | null
+type controllerFn<C, P, S> = (props: controllerProps<C, P, S>, state: S, controller: C, params: Params) => React.ReactElement | null
 
 export type ViewComponent<C, P = any, S = any> = React.FC<controllerProps<C, P, S>>
 export type ViewComponentFactory<C, P = any, S = any> = (controller: C) => React.FC<controllerProps<C, P, S>>

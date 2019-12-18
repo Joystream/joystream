@@ -33,6 +33,8 @@ import { Slider } from "react-semantic-ui-range";
 import Identicon from '@polkadot/react-identicon';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
+import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
+
 import {
   GroupMemberView, GroupMember,
 } from '../elements'
@@ -888,8 +890,11 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps & St
 
   useEffect(() => {
     setValid(isFormValid())
+    if (completed === true) {
+      props.nextTransition()
+    }
   },
-    [data])
+    [data, completed])
 
   const onSubmit = (): void => {
     setCompleted(true)
@@ -899,7 +904,6 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps & St
     }
 
     props.setData(applicationDetailsToDataObject(props.applicationDetails, data))
-    props.nextTransition()
   }
 
   const onCancel = () => {
@@ -942,7 +946,7 @@ export type SubmitApplicationStageProps = FundSourceSelectorProps &
     transactionDetails: Map<string, string>
   }
 
-export function SubmitApplicationStage(props: SubmitApplicationStageProps) {
+export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
   const onSubmit = () => {
     props.nextTransition()
   }
@@ -999,25 +1003,25 @@ export function DoneStage(props: DoneStageProps) {
       <p>
         Your application is <strong>#<ApplicationCount {...props.applications} applied={true} /></strong>.
         Once the group lead has started their review, your application will be considered.
-          </p>
+	  </p>
       <p>
         You can track the progress of your
               application in the <Link to="#roles/my-roles">My roles</Link> section. If you have any issues,
                   you can raise them in in the <Link to="#forum">Forum</Link> or contact the group lead
 directly.
-          </p>
+	  </p>
 
       <h4>Your new role key</h4>
       <p>
         This role requires a new sub-key to be associated with your account.
         You'll never have to use the key directly, but you will need it in order
         to perform any duties in the role.
-          </p>
+	  </p>
       <p>
         We've generated a new role key, <strong>{props.roleKeyName}</strong>, automatically. You can
               download its backup file using the button below, or from the <Link to="#accounts">My account</Link>
         &nbsp; section.
-          </p>
+	  </p>
       <Message warning>
         <strong>Please make sure to save this file in a secure location as it is the only
               way to restore your role key!</strong>
@@ -1036,7 +1040,8 @@ directly.
   )
 }
 
-export type FlowModalProps = ApplicationDetailsStageProps & ConfirmStakesStageProps & FundSourceSelectorProps & {
+export type FlowModalProps = ConfirmStakesStageProps & FundSourceSelectorProps & {
+  role: GenericJoyStreamRoleSchema
   applications: OpeningStakeAndApplicationStatus,
   creator: GroupMember
   hasConfirmStep: boolean
@@ -1055,12 +1060,12 @@ export type FlowModalProps = ApplicationDetailsStageProps & ConfirmStakesStagePr
 
 export const FlowModal = Loadable<FlowModalProps>(
   [
+    'role',
     'applications',
     'creator',
     'transactionFee',
     'keypairs',
     'slots',
-    'applicationDetails',
   ],
   props => {
     // Capture state
@@ -1070,7 +1075,7 @@ export const FlowModal = Loadable<FlowModalProps>(
     const [stakeKeyPassphrase, setStakeKeyPassphrase] = useState("")
     const [txKeyAddress, setTxKeyAddress] = useState<AccountId>(new AccountId())
     const [txKeyPassphrase, setTxKeyPassphrase] = useState("")
-    const [appDetails, setAppDetails] = useState({})
+    const [appDetails, setAppDetails] = useState<any>({})
 
     // Presentation state
     const [activeStep, setActiveStep] = useState(props.hasConfirmStep ?
@@ -1135,7 +1140,7 @@ export const FlowModal = Loadable<FlowModalProps>(
       [ProgressSteps.ApplicationDetails, <ApplicationDetailsStage
         setData={setAppDetails}
         data={appDetails}
-        applicationDetails={props.applicationDetails}
+        applicationDetails={props.role.application}
         nextTransition={enterSubmitApplicationState}
         prevTransition={() => { props.hasConfirmStep ? enterConfirmStakeState() : cancel() }}
       />],
@@ -1163,7 +1168,7 @@ export const FlowModal = Loadable<FlowModalProps>(
                 <Label as='h1' color='green' size='huge' ribbon>
                   <Icon name='heart' />
                   Applying for
-                                <Label.Detail>Content curator</Label.Detail>
+                  <Label.Detail>{props.role.job.title}</Label.Detail>
                 </Label>
               </Grid.Column>
               <Grid.Column width={5} className="cancel">
@@ -1178,10 +1183,10 @@ export const FlowModal = Loadable<FlowModalProps>(
                 {stages.get(activeStep)}
               </Grid.Column>
               <Grid.Column width={5} className="summary">
-                <Header as='h3'>Help us curate awesome content</Header>
+                <Header as='h3'>{props.role.headline}</Header>
                 <Label as='h1' size='large' ribbon='right' className="fluid standout">
                   Reward
-                        <Label.Detail>10 UNIT per block</Label.Detail>
+                        <Label.Detail>{props.role.reward}</Label.Detail>
                 </Label>
                 <OpeningBodyApplicationsStatus {...props.applications} applied={complete} />
                 <h5>Group lead</h5>
