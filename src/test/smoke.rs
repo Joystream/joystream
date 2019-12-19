@@ -19,6 +19,9 @@ Not covered:
 - unstaked
 - cancel_opening
 - deactive_application
+
+Smoke-test concept:
+https://en.wikipedia.org/wiki/Smoke_testing_(software)
 **/
 #[test]
 fn full_hiring_workflow_successful_path() {
