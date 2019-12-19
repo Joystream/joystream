@@ -140,7 +140,8 @@ export function getUrlParam (location: Location, paramName: string, deflt: strin
 // --------------------------------------
 import { Controller, ControllerComponent, controllerProps } from './Controller';
 import { Loadable } from './Loadable';
-import { Observer, Observable } from './Observable'
+import { Observable } from './Observable'
+import { Observer, Subscribable, Subscription } from './Subscribable'
 import { Transport } from './Transport';
 import { View, ViewComponent, Params, EmptyProps } from './View';
 
@@ -148,6 +149,7 @@ export {
   Controller, ControllerComponent, controllerProps, 
   Loadable, 
   Observer, Observable,
+	Subscribable, Subscription,
   Transport,
   View, ViewComponent, Params, EmptyProps,
 };

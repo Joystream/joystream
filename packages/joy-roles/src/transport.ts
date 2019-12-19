@@ -1,3 +1,4 @@
+import { Subscribable } from '@polkadot/joy-utils/index'
 import { Balance } from '@polkadot/types/interfaces';
 
 import { Role } from '@joystream/types/roles';
@@ -6,6 +7,7 @@ import { WorkingGroupProps, StorageAndDistributionProps } from "./tabs/WorkingGr
 import { 
   WorkingGroupOpening,
 } from "./tabs/Opportunities"
+import { keyPairDetails } from './flows/apply'
 
 export interface ITransport {
   roles: () => Promise<Array<Role>>
@@ -16,4 +18,5 @@ export interface ITransport {
   openingApplicationRanks: (openingId: string) => Promise<Balance[]>
   expectedBlockTime: () => Promise<number>
   transactionFee: () => Promise<Balance>
+  accounts: () => Subscribable<keyPairDetails[]>
 }

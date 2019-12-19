@@ -28,10 +28,10 @@ export function View<C extends Observable<S, any>, P, S>(fn: controllerFn<C, P, 
       }
 
       useEffect(() => {
-        controller.attach(onUpdate)
+        controller.subscribe(onUpdate)
 
         return () => {
-          controller.detach(onUpdate)
+          controller.unsubscribe(onUpdate)
         }
       })
 

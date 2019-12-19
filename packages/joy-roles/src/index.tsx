@@ -6,8 +6,7 @@ import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 import { Route, Switch, RouteComponentProps } from 'react-router';
 import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
-import accountObservable from '@polkadot/ui-keyring/observable/accounts';
-import { withCalls, withMulti, withObservable } from '@polkadot/react-api/index';
+import { withMulti } from '@polkadot/react-api/index';
 
 import { ControllerComponent, ViewComponent } from '@polkadot/joy-utils/index'
 
@@ -119,10 +118,4 @@ class App extends React.PureComponent<Props, State> {
 export default withMulti(
   App,
   translate,
-  withObservable(accountObservable.subject, { propName: 'allAccounts' }),
-  withCalls<Props>(
-    ['query.actors.actorAccountIds', { propName: 'actorAccountIds' }],
-    ['query.actors.roleEntryRequests', { propName: 'requests' }],
-    ['query.actors.availableRoles', { propName: 'roles' }],
-  )
 );

@@ -1,6 +1,7 @@
-export type Observer<S> = (v: S) => void
+import { ISubscribable, IUnsubscribable, Observer } from './Subscribable'
 
-export abstract class Observable<S, T> {
+
+export abstract class Observable<S, T> implements ISubscribable<S> {
   public state: S
   protected transport: T
   protected observers: Observer<S>[] = []
@@ -10,11 +11,12 @@ export abstract class Observable<S, T> {
     this.transport = transport
   }
 
-  public attach(observer: Observer<S>) {
+  public subscribe(observer: Observer<S>): IUnsubscribable<S> {
     this.observers.push(observer)
+	return this
   }
 
-  public detach(observerToRemove: Observer<S>) {
+  public unsubscribe(observerToRemove: Observer<S>) {
     this.observers = this.observers.filter(observer => observerToRemove !== observer)
   }
 

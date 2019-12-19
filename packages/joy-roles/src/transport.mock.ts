@@ -1,5 +1,8 @@
+import { Observable, Observer } from 'rxjs';
 import { Balance } from '@polkadot/types/interfaces'
-import { Text, u128 } from '@polkadot/types'
+import { Text, u128, GenericAccountId } from '@polkadot/types'
+
+import { Subscribable } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
 import { Transport as TransportBase } from '@polkadot/joy-utils/index'
@@ -13,6 +16,7 @@ import {
   WorkingGroupOpening ,
 } from "./tabs/Opportunities"
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
+import { keyPairDetails } from './flows/apply'
 
 import { tomorrow, yesterday, newMockHumanReadableText } from "./tabs/Opportunities.stories"
 import { OpeningState } from "./classifiers"
@@ -293,6 +297,30 @@ export class Transport extends TransportBase implements ITransport {
 
   transactionFee(): Promise<Balance> {
     return this.promise<Balance>(new u128(5))
+  }
+
+  accounts(): Subscribable<keyPairDetails[]> {
+    return Observable.create<keyPairDetails[]>( (observer:Observer<keyPairDetails[]>) => {
+      observer.next(
+        [
+          { 
+            shortName: "KP1",
+            accountId: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
+            balance: new u128(23342),
+          },
+          {
+            shortName: "KP2",
+            accountId: new GenericAccountId('5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
+            balance: new u128(993342),
+          },
+          {
+            shortName: "KP3",
+            accountId: new GenericAccountId('5DBaczGTDhcHgwsZzNE5qW15GrQxxdyros4pYkcKrSUovFQ9'),
+            balance: new u128(242),
+          },
+        ]
+      )
+    })
   }
 }
 

@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { u128, GenericAccountId } from '@polkadot/types'
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
@@ -25,19 +24,20 @@ type State = {
   transactionFee?: Balance
   keypairs?: keyPairDetails[] // <- Where does this come from?
   hasConfirmStep?: boolean
-  step?: Balance // Rename: this is the +/- step for selecting stakes
-  slots?: Balance[] // Rename: this is the current application slots
+  step?: Balance
+  slots?: Balance[]
 
   // Data generated for transaction
   transactionDetails: Map<string, string>
   roleKeyName: string
 
   // Error capture and display
-  hasError: true
+  hasError: boolean
 }
 
 const newEmptyState = (): State => {
   return {
+    hasError: false,
     transactionDetails: new Map<string, string>(),
     roleKeyName: "",
   }
@@ -49,31 +49,17 @@ export class ApplyController extends Observable<State, ITransport> {
   constructor(transport: ITransport, initialState: State = newEmptyState()) {
     super(transport, initialState)
 
-    // FIXME! Where do we get these?
-    this.state.keypairs = [
-      {
-        shortName: "KP1",
-        accountId: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
-        balance: new u128(23342),
-      },
-      {
-        shortName: "KP2",
-        accountId: new GenericAccountId('5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
-        balance: new u128(993342),
-      },
-      {
-        shortName: "KP3",
-        accountId: new GenericAccountId('5DBaczGTDhcHgwsZzNE5qW15GrQxxdyros4pYkcKrSUovFQ9'),
-        balance: new u128(242),
-      },
-    ]
-
+    this.transport.accounts().subscribe((keys) => this.updateAccounts(keys))
   }
 
-  // TODO: Mixin?
   protected onError(desc: any) {
     this.state.hasError = true
     console.error(desc)
+    this.dispatch()
+  }
+
+  protected updateAccounts(keys: keyPairDetails[]) {
+    this.state.keypairs = keys
     this.dispatch()
   }
 
@@ -107,9 +93,9 @@ export class ApplyController extends Observable<State, ITransport> {
           this.state.transactionFee = txFee
           this.state.slots = ranks
           this.state.step = Min(Step(ranks, ranks.length))
-		  this.state.hasConfirmStep = 
-			  opening.applications.requiredApplicationStake.anyRequirement() ||
-			  opening.applications.requiredRoleStake.anyRequirement()
+          this.state.hasConfirmStep =
+            opening.applications.requiredApplicationStake.anyRequirement() ||
+            opening.applications.requiredRoleStake.anyRequirement()
 
           // When everything is collected, update the view
           this.dispatch()
