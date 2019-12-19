@@ -65,7 +65,7 @@ export type VideoGenericProp = {
 };
 
 type VideoClassType = {
-  [id in keyof VideoType]: VideoGenericProp
+  [id in VideoPropId]: VideoGenericProp
 };
 
 export const VideoClass: VideoClassType = {

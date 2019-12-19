@@ -29,7 +29,7 @@ export type PublicationStatusGenericProp = {
 };
 
 type PublicationStatusClassType = {
-  [id in keyof PublicationStatusType]: PublicationStatusGenericProp
+  [id in PublicationStatusPropId]: PublicationStatusGenericProp
 };
 
 export const PublicationStatusClass: PublicationStatusClassType = {

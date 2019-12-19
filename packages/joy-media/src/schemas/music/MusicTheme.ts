@@ -29,7 +29,7 @@ export type MusicThemeGenericProp = {
 };
 
 type MusicThemeClassType = {
-  [id in keyof MusicThemeType]: MusicThemeGenericProp
+  [id in MusicThemePropId]: MusicThemeGenericProp
 };
 
 export const MusicThemeClass: MusicThemeClassType = {

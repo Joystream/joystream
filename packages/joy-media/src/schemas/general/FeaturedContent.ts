@@ -31,7 +31,7 @@ export type FeaturedContentGenericProp = {
 };
 
 type FeaturedContentClassType = {
-  [id in keyof FeaturedContentType]: FeaturedContentGenericProp
+  [id in FeaturedContentPropId]: FeaturedContentGenericProp
 };
 
 export const FeaturedContentClass: FeaturedContentClassType = {

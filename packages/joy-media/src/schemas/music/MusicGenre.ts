@@ -29,7 +29,7 @@ export type MusicGenreGenericProp = {
 };
 
 type MusicGenreClassType = {
-  [id in keyof MusicGenreType]: MusicGenreGenericProp
+  [id in MusicGenrePropId]: MusicGenreGenericProp
 };
 
 export const MusicGenreClass: MusicGenreClassType = {

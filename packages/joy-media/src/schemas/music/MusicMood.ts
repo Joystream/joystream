@@ -29,7 +29,7 @@ export type MusicMoodGenericProp = {
 };
 
 type MusicMoodClassType = {
-  [id in keyof MusicMoodType]: MusicMoodGenericProp
+  [id in MusicMoodPropId]: MusicMoodGenericProp
 };
 
 export const MusicMoodClass: MusicMoodClassType = {

@@ -29,7 +29,7 @@ export type BookCategoryGenericProp = {
 };
 
 type BookCategoryClassType = {
-  [id in keyof BookCategoryType]: BookCategoryGenericProp
+  [id in BookCategoryPropId]: BookCategoryGenericProp
 };
 
 export const BookCategoryClass: BookCategoryClassType = {

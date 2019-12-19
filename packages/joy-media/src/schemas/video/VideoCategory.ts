@@ -29,7 +29,7 @@ export type VideoCategoryGenericProp = {
 };
 
 type VideoCategoryClassType = {
-  [id in keyof VideoCategoryType]: VideoCategoryGenericProp
+  [id in VideoCategoryPropId]: VideoCategoryGenericProp
 };
 
 export const VideoCategoryClass: VideoCategoryClassType = {

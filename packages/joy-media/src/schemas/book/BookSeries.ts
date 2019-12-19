@@ -57,7 +57,7 @@ export type BookSeriesGenericProp = {
 };
 
 type BookSeriesClassType = {
-  [id in keyof BookSeriesType]: BookSeriesGenericProp
+  [id in BookSeriesPropId]: BookSeriesGenericProp
 };
 
 export const BookSeriesClass: BookSeriesClassType = {

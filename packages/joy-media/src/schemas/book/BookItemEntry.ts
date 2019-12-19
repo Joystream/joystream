@@ -29,7 +29,7 @@ export type BookItemEntryGenericProp = {
 };
 
 type BookItemEntryClassType = {
-  [id in keyof BookItemEntryType]: BookItemEntryGenericProp
+  [id in BookItemEntryPropId]: BookItemEntryGenericProp
 };
 
 export const BookItemEntryClass: BookItemEntryClassType = {

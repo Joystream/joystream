@@ -29,7 +29,7 @@ export type CurationStatusGenericProp = {
 };
 
 type CurationStatusClassType = {
-  [id in keyof CurationStatusType]: CurationStatusGenericProp
+  [id in CurationStatusPropId]: CurationStatusGenericProp
 };
 
 export const CurationStatusClass: CurationStatusClassType = {

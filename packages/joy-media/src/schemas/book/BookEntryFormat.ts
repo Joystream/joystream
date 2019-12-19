@@ -36,7 +36,7 @@ export type BookEntryFormatGenericProp = {
 };
 
 type BookEntryFormatClassType = {
-  [id in keyof BookEntryFormatType]: BookEntryFormatGenericProp
+  [id in BookEntryFormatPropId]: BookEntryFormatGenericProp
 };
 
 export const BookEntryFormatClass: BookEntryFormatClassType = {

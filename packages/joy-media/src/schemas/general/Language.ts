@@ -29,7 +29,7 @@ export type LanguageGenericProp = {
 };
 
 type LanguageClassType = {
-  [id in keyof LanguageType]: LanguageGenericProp
+  [id in LanguagePropId]: LanguageGenericProp
 };
 
 export const LanguageClass: LanguageClassType = {

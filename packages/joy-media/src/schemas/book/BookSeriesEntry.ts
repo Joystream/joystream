@@ -27,7 +27,7 @@ export type BookSeriesEntryGenericProp = {
 };
 
 type BookSeriesEntryClassType = {
-  [id in keyof BookSeriesEntryType]: BookSeriesEntryGenericProp
+  [id in BookSeriesEntryPropId]: BookSeriesEntryGenericProp
 };
 
 export const BookSeriesEntryClass: BookSeriesEntryClassType = {

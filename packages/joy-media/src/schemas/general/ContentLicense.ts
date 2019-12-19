@@ -29,7 +29,7 @@ export type ContentLicenseGenericProp = {
 };
 
 type ContentLicenseClassType = {
-  [id in keyof ContentLicenseType]: ContentLicenseGenericProp
+  [id in ContentLicensePropId]: ContentLicenseGenericProp
 };
 
 export const ContentLicenseClass: ContentLicenseClassType = {

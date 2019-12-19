@@ -29,7 +29,7 @@ export type MediaObjectGenericProp = {
 };
 
 type MediaObjectClassType = {
-  [id in keyof MediaObjectType]: MediaObjectGenericProp
+  [id in MediaObjectPropId]: MediaObjectGenericProp
 };
 
 export const MediaObjectClass: MediaObjectClassType = {

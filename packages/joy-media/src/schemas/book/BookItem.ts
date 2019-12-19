@@ -67,7 +67,7 @@ export type BookItemGenericProp = {
 };
 
 type BookItemClassType = {
-  [id in keyof BookItemType]: BookItemGenericProp
+  [id in BookItemPropId]: BookItemGenericProp
 };
 
 export const BookItemClass: BookItemClassType = {

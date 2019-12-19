@@ -80,7 +80,7 @@ export type MusicAlbumGenericProp = {
 };
 
 type MusicAlbumClassType = {
-  [id in keyof MusicAlbumType]: MusicAlbumGenericProp
+  [id in MusicAlbumPropId]: MusicAlbumGenericProp
 };
 
 export const MusicAlbumClass: MusicAlbumClassType = {
