@@ -49,6 +49,7 @@ fn full_hiring_workflow_successful_path() {
 
         let found_opening = Hiring::opening_by_id(expected_opening_id);
 
+        // Check opening content
         assert_eq!(
             found_opening,
             Opening {
@@ -70,40 +71,30 @@ fn full_hiring_workflow_successful_path() {
             }
         );
 
-        //        // 2. begin_accepting_applications
-        //        let current_opening_id = expected_opening_id;
-        //        let begin_accepting_apps_result = Hiring::begin_accepting_applications(current_opening_id);
-        //
-        //        //assert_eq!(begin_accepting_apps_result.is_ok(), true);
-        //        if !begin_accepting_apps_result.is_ok() {
-        //            println!("{:?}", begin_accepting_apps_result.unwrap_err());
-        //        }
-
         // 2. add_application
         let current_opening_id = expected_opening_id;
-        let add_application_result =
-            Hiring::add_application(current_opening_id, None, None, application_readable_text.clone());
+        let add_application_result = Hiring::add_application(
+            current_opening_id,
+            None,
+            None,
+            application_readable_text.clone(),
+        );
 
+        // Check add_application result
         assert!(add_application_result.is_ok());
 
-        let new_application_id = add_application_result.unwrap().application_id_added;
+        // Check that application wasn't crowded_out
+        let app_added = add_application_result.unwrap();
+        assert_eq!(app_added.application_id_crowded_out, None);
 
-        /*
-        // DONE
-        let application_added_result = ApplicationAdded {
-            application_id_added: new_application_id,
-            application_id_crowded_out: match can_be_added_destructured.would_get_added_success {
-                ApplicationAddedSuccess::CrowdsOutExistingApplication(id) => Some(id),
-                _ => None,
-            },
-        };
-        */
+        let new_application_id = app_added.application_id_added;
 
         // Check that our application actually was added
         assert!(<ApplicationById<Test>>::exists(new_application_id));
 
         let new_application = Hiring::application_by_id(new_application_id);
 
+        // Check application content
         assert_eq!(
             new_application,
             Application {
@@ -120,10 +111,12 @@ fn full_hiring_workflow_successful_path() {
         // 3. begin_review
         let begin_review_result = Hiring::begin_review(current_opening_id);
 
+        // Check begin_review result
         assert!(begin_review_result.is_ok());
 
         let updated_opening_after_begin_review = Hiring::opening_by_id(current_opening_id);
 
+        // Check updated opening content
         assert_eq!(
             updated_opening_after_begin_review,
             Opening {
@@ -153,10 +146,12 @@ fn full_hiring_workflow_successful_path() {
         let fill_opening_result =
             Hiring::fill_opening(current_opening_id, applications, None, None, None);
 
+        // Check fill_opening result
         assert!(fill_opening_result.is_ok());
 
         let updated_opening_fill_opening = Hiring::opening_by_id(current_opening_id);
 
+        // Check updated opening content
         assert_eq!(
             updated_opening_fill_opening,
             Opening {
@@ -184,6 +179,7 @@ fn full_hiring_workflow_successful_path() {
         let current_application_id = new_application_id;
         let application_after_fill_opening = Hiring::application_by_id(current_application_id);
 
+        // Check updated application content
         assert_eq!(
             application_after_fill_opening,
             Application {
