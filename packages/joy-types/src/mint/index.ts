@@ -7,6 +7,7 @@ export class MintId extends u64 {};
 export class Setting extends u128 {};
 export class Adding extends u128 {};
 export class Reducing extends u128 {};
+
 export class AdjustCapacityBy extends Enum {
     constructor (value?: any, index?: number) {
         super(
