@@ -1,4 +1,4 @@
-import { Observable, Observer } from 'rxjs';
+import { Observable } from 'rxjs';
 import { Balance } from '@polkadot/types/interfaces'
 import { Text, u128, GenericAccountId } from '@polkadot/types'
 
@@ -300,7 +300,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   accounts(): Subscribable<keyPairDetails[]> {
-    return Observable.create<keyPairDetails[]>((observer: Observer<keyPairDetails[]>) => {
+    return new Observable<keyPairDetails[]>(observer => {
       observer.next(
         [
           {

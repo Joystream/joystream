@@ -1,4 +1,4 @@
-import { Observable, Observer } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { ApiProps } from '@polkadot/react-api/types';
 import ApiPromise from '@polkadot/api/promise';
@@ -68,7 +68,7 @@ export class Transport extends TransportBase implements ITransport {
     return this.promise<Balance>(new u128(5))
   }
   accounts(): Subscribable<keyPairDetails[]> {
-    return Observable.create<keyPairDetails[]>((observer: Observer<keyPairDetails[]>) => {
+    return new Observable<keyPairDetails[]>((observer) => {
     })
   }
 }
