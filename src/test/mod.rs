@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+mod smoke;
+
 use super::*;
 use crate::mock::*;
 
