@@ -10,9 +10,15 @@ use rstd::collections::btree_set::BTreeSet;
 /**
 Main hiring workflow:
 1. add_opening
+1.1 (optional) ensure_can_add_application
 2. add_application
 3. begin_review
 4. fill_opening
+Not covered:
+- begin_accepting_applications
+- unstaked
+- cancel_opening
+- deactive_application
 **/
 #[test]
 fn full_hiring_workflow_successful_path() {
@@ -64,15 +70,24 @@ fn full_hiring_workflow_successful_path() {
                     deactivated_application_count: 0
                 },
                 max_review_period_length,
-                application_rationing_policy: None, //application_rationing_policy,
-                application_staking_policy: None,   //application_staking_policy,
-                role_staking_policy: None,          //role_staking_policy,
+                application_rationing_policy: None,
+                application_staking_policy: None,
+                role_staking_policy: None,
                 human_readable_text: human_readable_text.clone()
             }
         );
+        let current_opening_id = expected_opening_id;
+
+        // 1.1 (optional) ensure_can_add_application
+        let ensure_can_add_application_result = Hiring::ensure_can_add_application(
+            current_opening_id,
+            None,
+            None);
+
+        // Check ensure_can_add_application result
+        assert!(ensure_can_add_application_result.is_ok());
 
         // 2. add_application
-        let current_opening_id = expected_opening_id;
         let add_application_result = Hiring::add_application(
             current_opening_id,
             None,
