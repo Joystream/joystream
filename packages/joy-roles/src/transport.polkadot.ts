@@ -49,17 +49,17 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   opening(id: string): Promise<WorkingGroupOpening> {
-	  // @ts-ignore
+    // @ts-ignore
     return this.promise<WorkingGroupOpening>({})
   }
- 
-  openingApplicationRanks(openingId: string): Promise<Balance[]>{
-	  return this.promise<Balance[]>([])
+
+  openingApplicationRanks(openingId: string): Promise<Balance[]> {
+    return this.promise<Balance[]>([])
   }
 
   expectedBlockTime(): Promise<number> {
     return this.promise<number>(
-	  // @ts-ignore
+      // @ts-ignore
       this.api.consts.babe.expectedBlockTime.toNumber() / 1000
     )
   }
@@ -68,7 +68,7 @@ export class Transport extends TransportBase implements ITransport {
     return this.promise<Balance>(new u128(5))
   }
   accounts(): Subscribable<keyPairDetails[]> {
-    return Observable.create<keyPairDetails[]>( (observer:Observer<keyPairDetails[]>) => {
+    return Observable.create<keyPairDetails[]>((observer: Observer<keyPairDetails[]>) => {
     })
   }
 }

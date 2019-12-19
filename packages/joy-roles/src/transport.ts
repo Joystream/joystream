@@ -4,7 +4,7 @@ import { Balance } from '@polkadot/types/interfaces';
 import { Role } from '@joystream/types/roles';
 
 import { WorkingGroupProps, StorageAndDistributionProps } from "./tabs/WorkingGroup"
-import { 
+import {
   WorkingGroupOpening,
 } from "./tabs/Opportunities"
 import { keyPairDetails } from './flows/apply'

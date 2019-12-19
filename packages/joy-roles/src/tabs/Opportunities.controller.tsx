@@ -43,6 +43,6 @@ type Props = {
 
 export const OpportunitiesView = View<OpportunitiesController, Props, State>(
   (props, state) => (
-	  <OpeningsView openings={state.opportunities} block_time_in_seconds={state.blockTime} />
+    <OpeningsView openings={state.opportunities} block_time_in_seconds={state.blockTime} />
   )
 )

@@ -12,8 +12,8 @@ import { Opening } from "@joystream/types/hiring"
 import { Profile } from '@joystream/types/members';
 
 import { WorkingGroupProps, StorageAndDistributionProps } from "./tabs/WorkingGroup"
-import { 
-  WorkingGroupOpening ,
+import {
+  WorkingGroupOpening,
 } from "./tabs/Opportunities"
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
 import { keyPairDetails } from './flows/apply'
@@ -118,84 +118,84 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   currentOpportunities(): Promise<Array<WorkingGroupOpening>> {
-	  return this.promise<Array<WorkingGroupOpening>>(
-		  [
-			  {
-				  opening: new Opening({
-					  max_review_period_length: 50000,
-					  human_readable_text: newMockHumanReadableText({
-						  version: 1,
-						  headline: "Help us curate awesome content",
-						  job: {
-							  title: "Content curator", 
-							  description: faker.lorem.paragraphs(4), 
-						  },
-						  application: {
-							  sections: [
-								  {
-									  title: "About you",
-									  questions: [
-										  {
-											  title: "your name",
-											  type: "text"
-										  }
-									  ]
-								  },
-								  {
-									  title: "About you",
-									  questions: [
-										  {
-											  title: "your name",
-											  type: "text area"
-										  }
-									  ]
-								  }
-							  ]
-						  },
-						  reward: "10 JOY per block",
-						  creator: {
-							  membership: {
-								  handle: "ben",
-							  }
-						  },
-						  process: {
-							  details: [
-								  "Some custom detail"
-							  ]
-						  }
-					  }),
-				  }),
-				  creator: {
-					  actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
-					  profile: mockProfile('benholdencrowther'),
-					  title: 'Group lead',
-					  lead: true,
-					  stake: new u128(10),
-				  },
-				  stage: {
-					  uri: "/roles/apply/1",
-					  state: OpeningState.AcceptingApplications,
-					  starting_block: 2956498,
-					  starting_block_hash: "somehash",
-					  created_time: yesterday(),
-					  review_end_block: 3956498,
-					  review_end_time: tomorrow(),
-				  },
-				  applications: {
-					  numberOfApplications: 0,
-					  maxNumberOfApplications: 0,
-					  requiredApplicationStake: new ApplicationStakeRequirement(
-						  new u128(500),
-					  ),
-					  requiredRoleStake: new RoleStakeRequirement(
-						  new u128(0),
-					  ),
-					  defactoMinimumStake: new u128(0),
-				  },
-				  defactoMinimumStake: new u128(0),
-			  },
-		  ],
-	)
+    return this.promise<Array<WorkingGroupOpening>>(
+      [
+        {
+          opening: new Opening({
+            max_review_period_length: 50000,
+            human_readable_text: newMockHumanReadableText({
+              version: 1,
+              headline: "Help us curate awesome content",
+              job: {
+                title: "Content curator",
+                description: faker.lorem.paragraphs(4),
+              },
+              application: {
+                sections: [
+                  {
+                    title: "About you",
+                    questions: [
+                      {
+                        title: "your name",
+                        type: "text"
+                      }
+                    ]
+                  },
+                  {
+                    title: "About you",
+                    questions: [
+                      {
+                        title: "your name",
+                        type: "text area"
+                      }
+                    ]
+                  }
+                ]
+              },
+              reward: "10 JOY per block",
+              creator: {
+                membership: {
+                  handle: "ben",
+                }
+              },
+              process: {
+                details: [
+                  "Some custom detail"
+                ]
+              }
+            }),
+          }),
+          creator: {
+            actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
+            profile: mockProfile('benholdencrowther'),
+            title: 'Group lead',
+            lead: true,
+            stake: new u128(10),
+          },
+          stage: {
+            uri: "/roles/apply/1",
+            state: OpeningState.AcceptingApplications,
+            starting_block: 2956498,
+            starting_block_hash: "somehash",
+            created_time: yesterday(),
+            review_end_block: 3956498,
+            review_end_time: tomorrow(),
+          },
+          applications: {
+            numberOfApplications: 0,
+            maxNumberOfApplications: 0,
+            requiredApplicationStake: new ApplicationStakeRequirement(
+              new u128(500),
+            ),
+            requiredRoleStake: new RoleStakeRequirement(
+              new u128(0),
+            ),
+            defactoMinimumStake: new u128(0),
+          },
+          defactoMinimumStake: new u128(0),
+        },
+      ],
+    )
   }
 
   opening(id: string): Promise<WorkingGroupOpening> {
@@ -207,8 +207,8 @@ export class Transport extends TransportBase implements ITransport {
             version: 1,
             headline: "Help us curate awesome content",
             job: {
-              title: "Content curator", 
-              description: faker.lorem.paragraphs(4), 
+              title: "Content curator",
+              description: faker.lorem.paragraphs(4),
             },
             application: {
               sections: [
@@ -282,17 +282,17 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
-  openingApplicationRanks(openingId: string): Promise<Balance[]>{
-	  const slots: Balance[] = []
-	  for (let i = 0; i < 20; i++) {
-		  slots.push(new u128((i * 100) + 10 + i + 1))
-	  }
+  openingApplicationRanks(openingId: string): Promise<Balance[]> {
+    const slots: Balance[] = []
+    for (let i = 0; i < 20; i++) {
+      slots.push(new u128((i * 100) + 10 + i + 1))
+    }
 
-	  return this.promise<Balance[]>(slots)
+    return this.promise<Balance[]>(slots)
   }
 
   expectedBlockTime(): Promise<number> {
-	  return this.promise<number>(6)
+    return this.promise<number>(6)
   }
 
   transactionFee(): Promise<Balance> {
@@ -300,10 +300,10 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   accounts(): Subscribable<keyPairDetails[]> {
-    return Observable.create<keyPairDetails[]>( (observer:Observer<keyPairDetails[]>) => {
+    return Observable.create<keyPairDetails[]>((observer: Observer<keyPairDetails[]>) => {
       observer.next(
         [
-          { 
+          {
             shortName: "KP1",
             accountId: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
             balance: new u128(23342),
