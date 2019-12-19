@@ -4,8 +4,6 @@ import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { SubmittableResult } from '@polkadot/api';
-
 import { ContentId } from '@joystream/types/media';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
 import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields } from '../schemas/music/MusicTrack';
@@ -24,17 +22,21 @@ type FormValues = MusicTrackType;
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
+    isStorybook = false,
     
     // React components for form fields:
-    // LabelledText,
-    LabelledField,
     MediaText,
     MediaField,
     MediaDropdown,
+    LabelledField,
 
-    isStorybook = false,
-    history,
-    contentId,
+    // Callbacks:
+    onSubmit,
+    onTxSuccess,
+    onTxFailed,
+
+    // history,
+    // contentId,
     entity,
 
     // Formik stuff:
@@ -42,37 +44,10 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     dirty,
     isValid,
     isSubmitting,
-    setSubmitting,
     resetForm
   } = props;
 
   const { trackThumbnail } = values;
-
-  const onSubmit = (sendTx: () => void) => {
-    if (isValid) sendTx();
-  };
-
-  const onTxCancelled = () => {
-    // Nothing yet.
-  };
-
-  const onTxFailed = (txResult: SubmittableResult) => {
-    setSubmitting(false);
-    if (txResult == null) {
-      return onTxCancelled();
-    }
-  };
-
-  const onTxSuccess = (_txResult: SubmittableResult) => {
-    setSubmitting(false);
-    goToPlayerPage();
-  };
-
-  const goToPlayerPage = () => {
-    if (history) {
-      history.push('/media/play/' + contentId.encode());
-    }
-  };
 
   const isNew = !entity;
 
@@ -176,7 +151,7 @@ export const EditForm = withFormik<OuterProps, FormValues>({
       aboutTheTrack: entity && entity.aboutTheTrack || '',
       trackThumbnail: entity && entity.trackThumbnail || DEFAULT_THUMBNAIL_URL,
       publicationStatus: entity && entity.publicationStatus || Opts.visibilityOptions[0].value,
-      album: entity && entity.album || '',
+      // album: entity && entity.album || '',
 
       // Additional:
       trackArtist: entity && entity.trackArtist || '',
