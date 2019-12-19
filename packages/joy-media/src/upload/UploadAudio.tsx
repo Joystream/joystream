@@ -22,7 +22,7 @@ type FormValues = MusicTrackType;
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
-    isStorybook = false,
+    isStorybook,
     
     // React components for form fields:
     MediaText,
@@ -148,8 +148,8 @@ export const EditForm = withFormik<OuterProps, FormValues>({
     return {
       // Basic:
       trackTitle: entity && entity.trackTitle || fileName || '',
-      aboutTheTrack: entity && entity.aboutTheTrack || '',
       trackThumbnail: entity && entity.trackThumbnail || DEFAULT_THUMBNAIL_URL,
+      aboutTheTrack: entity && entity.aboutTheTrack || '',
       publicationStatus: entity && entity.publicationStatus || Opts.visibilityOptions[0].value,
       // album: entity && entity.album || '',
 
@@ -159,7 +159,7 @@ export const EditForm = withFormik<OuterProps, FormValues>({
       genre: entity && entity.genre || Opts.genreOptions[0].value,
       mood: entity && entity.mood || Opts.moodOptions[0].value,
       theme: entity && entity.theme || Opts.themeOptions[0].value,
-      explicit: entity && entity.explicit || false, // TODO explicitOptions[0].value,
+      // explicit: entity && entity.explicit || false, // TODO explicitOptions[0].value,
       license: entity && entity.license || Opts.licenseOptions[0].value,
     };
   },

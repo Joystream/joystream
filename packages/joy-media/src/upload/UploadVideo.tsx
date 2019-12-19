@@ -23,7 +23,7 @@ type FormValues = VideoType;
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
-    isStorybook = false,
+    isStorybook,
 
     // React components for form fields:
     MediaText,

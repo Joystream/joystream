@@ -1,126 +1,57 @@
 import React from 'react';
-import { Button, Tab, Dropdown } from 'semantic-ui-react';
-import { Form, Field, withFormik, FormikProps } from 'formik';
+import { Button, Tab } from 'semantic-ui-react';
+import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { SubmittableResult } from '@polkadot/api';
-
-import * as JoyForms from '@polkadot/joy-utils/forms';
 import { ContentId } from '@joystream/types/media';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
 import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumPreviewProps } from './MusicAlbumPreview';
-import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumPropNames, MusicAlbumPropDescriptions } from '../schemas/music/MusicAlbum';
+import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumClass as Fields } from '../schemas/music/MusicAlbum';
 import { MusicTrackType } from '../schemas/music/MusicTrack';
-
-// TODO get from verstore
-const visibilityOptions = [
-  'Public',
-  'Unlisted'
-].map(x => ({
-  key: x, text: x, value: x,
-}));
-
-// TODO get from verstore
-const genreOptions = [
-  'Classical Music',
-  'Metal',
-  'Rock',
-  'Rap',
-  'Techno',
-].map(x => ({
-  key: x, text: x, value: x,
-}));
-
-// TODO get from verstore
-const moodOptions = [
-  'Relaxing',
-].map(x => ({
-  key: x, text: x, value: x,
-}));
-
-// TODO get from verstore
-const themeOptions = [
-  'Dark',
-  'Light',
-].map(x => ({
-  key: x, text: x, value: x,
-}));
-
-// TODO get from verstore
-const licenseOptions = [
-  'Public Domain',
-  'Share Alike',
-  'No Derivatives',
-  'No Commercial'
-].map(x => ({
-  key: x, text: x, value: x,
-}));
+import { withMediaForm, MediaFormProps } from '../common/MediaForms';
+import { genreOptions, moodOptions, themeOptions, licenseOptions, visibilityOptions } from '../common/DropdownOptions';
+import * as Opts from '../common/DropdownOptions';
 
 type OuterProps = {
   isStorybook?: boolean,
   history?: History,
   contentId: ContentId,
-  fileName?: string,
   entity?: MusicAlbumType,
   tracks?: MusicTrackType[]
 };
 
-const FormLabels = MusicAlbumPropNames;
-
-const FormTooltips = MusicAlbumPropDescriptions;
-
 type FormValues = MusicAlbumType;
 
-type FormProps = OuterProps & FormikProps<FormValues>;
-
-const LabelledField = JoyForms.LabelledField<FormValues>();
-
-const LabelledText = JoyForms.LabelledText<FormValues>();
-
-const InnerForm = (props: FormProps) => {
+const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
-    isStorybook = false,
-    history,
-    contentId,
+    isStorybook,
+
+    // React components for form fields:
+    MediaText,
+    MediaField,
+    MediaDropdown,
+    LabelledField,
+
+    // Callbacks:
+    onSubmit,
+    onTxSuccess,
+    onTxFailed,
+
+    // history,
+    // contentId,
     entity,
     tracks = [],
+
     values,
     dirty,
     isValid,
     isSubmitting,
-    setSubmitting,
     resetForm
   } = props;
 
   const { albumCover } = values;
-
-  const onSubmit = (sendTx: () => void) => {
-    if (isValid) sendTx();
-  };
-
-  const onTxCancelled = () => {
-    // Nothing yet
-  };
-
-  const onTxFailed = (txResult: SubmittableResult) => {
-    setSubmitting(false);
-    if (txResult == null) {
-      return onTxCancelled();
-    }
-  };
-
-  const onTxSuccess = (_txResult: SubmittableResult) => {
-    setSubmitting(false);
-    goToPlayerPage();
-  };
-
-  const goToPlayerPage = () => {
-    if (history) {
-      history.push('/media/play/' + contentId.encode());
-    }
-  };
 
   const isNew = !entity;
 
@@ -131,47 +62,27 @@ const InnerForm = (props: FormProps) => {
   };
 
   const basicInfoTab = () => <Tab.Pane as='div'>
-    <LabelledText name='albumTitle' label={fieldName('albumTitle')} tooltip={tooltip('albumTitle')} {...props} />
-    
-    <LabelledText name='albumCover' label={fieldName('albumCover')} tooltip={tooltip('albumCover')} {...props} />
-    
-    <LabelledField name='aboutTheAlbum' label={fieldName('aboutTheAlbum')} tooltip={tooltip('aboutTheAlbum')} {...props}>
-      <Field component='textarea' id='aboutTheAlbum' name='aboutTheAlbum' disabled={isSubmitting} rows={3} />
-    </LabelledField>
-
-    <LabelledField name='publicationStatus' label={fieldName('publicationStatus')} tooltip={tooltip('publicationStatus')} {...props}>
-      <Field component={Dropdown} id='publicationStatus' name='publicationStatus' disabled={isSubmitting} selection options={visibilityOptions} />
-    </LabelledField>
-    
+    <MediaText field={Fields.albumTitle} {...props} />
+    <MediaText field={Fields.albumCover} {...props} />
+    <MediaField field={Fields.aboutTheAlbum} component='textarea' rows={3} disabled={isSubmitting} {...props} />
+    <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <LabelledText name='albumArtist' label={fieldName('albumArtist')} tooltip={tooltip('albumArtist')} {...props} />
-
-    <LabelledText name='composerOrSongwriter' label={fieldName('composerOrSongwriter')} tooltip={tooltip('composerOrSongwriter')} {...props} />
-
-    <LabelledField name='genre' label={fieldName('genre')} tooltip={tooltip('genre')} {...props}>
-      <Field component={Dropdown} id='genre' name='genre' disabled={isSubmitting} search selection options={genreOptions} />
-    </LabelledField>
-
-    <LabelledField name='mood' label={fieldName('mood')} tooltip={tooltip('mood')} {...props}>
-      <Field component={Dropdown} id='mood' name='mood' disabled={isSubmitting} search selection options={moodOptions} />
-    </LabelledField>
-
-    <LabelledField name='theme' label={fieldName('theme')} tooltip={tooltip('theme')} {...props}>
-      <Field component={Dropdown} id='theme' name='theme' disabled={isSubmitting} search selection options={themeOptions} />
-    </LabelledField>
-
-    <LabelledField name='license' label={fieldName('license')} tooltip={tooltip('license')} {...props}>
-      <Field component={Dropdown} id='license' name='license' disabled={isSubmitting} search selection options={licenseOptions} />
-    </LabelledField>
+    <MediaText field={Fields.albumArtist} {...props} />
+    <MediaText field={Fields.composerOrSongwriter} {...props} />
+    <MediaDropdown field={Fields.genre} options={Opts.genreOptions} {...props} />
+    <MediaDropdown field={Fields.mood} options={Opts.moodOptions} {...props} />
+    <MediaDropdown field={Fields.theme} options={Opts.themeOptions} {...props} />
+    <MediaDropdown field={Fields.license} options={Opts.licenseOptions} {...props} />
   </Tab.Pane>
 
   const tracksTab = () => {
     const album: MusicAlbumPreviewProps = {
-      albumTitle,
-      albumArtist,
-      albumCover,
+      id: 'ignore',
+      title: values.albumTitle,
+      artist: values.albumArtist,
+      cover: values.albumCover,
       tracksCount: tracks.length
     }
 
@@ -253,14 +164,14 @@ export const EditMusicAlbum = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
   mapPropsToValues: props => {
-    const { entity, fileName } = props;
+    const { entity } = props;
 
     return {
       // Basic:
-      albumTitle: entity && entity.albumTitle || fileName || '',
-      aboutTheAlbum: entity && entity.aboutTheAlbum || '',
+      albumTitle: entity && entity.albumTitle || '',
       albumCover: entity && entity.albumCover || DEFAULT_THUMBNAIL_URL,
-      // publicationStatus: entity && entity.publicationStatus || visibilityOptions[0].value,
+      aboutTheAlbum: entity && entity.aboutTheAlbum || '',
+      publicationStatus: entity && entity.publicationStatus || visibilityOptions[0].value,
 
       // Additional:
       albumArtist: entity && entity.albumArtist || '',
@@ -278,6 +189,6 @@ export const EditMusicAlbum = withFormik<OuterProps, FormValues>({
   handleSubmit: () => {
     // do submitting things
   }
-})(InnerForm);
+})(withMediaForm(InnerForm));
 
 export default EditMusicAlbum;
