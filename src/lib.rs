@@ -18,6 +18,7 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 
 mod hiring;
+#[macro_use]
 mod macroes;
 mod mock;
 mod test;
@@ -265,6 +266,7 @@ pub enum FillOpeningError<T: Trait> {
     ApplicationNotInActiveStage(T::ApplicationId),
 }
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
     pub opening: Opening<BalanceOf<T>, T::BlockNumber, T::ApplicationId>,
 
@@ -1418,11 +1420,13 @@ impl<T: Trait> Module<T> {
  * Used by `add_application` method.
  */
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum ApplicationAddedSuccess<T: Trait> {
     Unconditionally,
     CrowdsOutExistingApplication(T::ApplicationId),
 }
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum ApplicationWouldGetAddedEvaluation<T: Trait> {
     No,
     Yes(ApplicationAddedSuccess<T>),
