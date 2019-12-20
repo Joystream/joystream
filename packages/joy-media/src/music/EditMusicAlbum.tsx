@@ -51,7 +51,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     resetForm
   } = props;
 
-  const { albumCover } = values;
+  const { thumbnail } = values;
 
   const isNew = !entity;
 
@@ -62,14 +62,14 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   };
 
   const basicInfoTab = () => <Tab.Pane as='div'>
-    <MediaText field={Fields.albumTitle} {...props} />
-    <MediaText field={Fields.albumCover} {...props} />
-    <MediaField field={Fields.aboutTheAlbum} component='textarea' rows={3} disabled={isSubmitting} {...props} />
+    <MediaText field={Fields.title} {...props} />
+    <MediaText field={Fields.thumbnail} {...props} />
+    <MediaField field={Fields.description} component='textarea' rows={3} disabled={isSubmitting} {...props} />
     <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <MediaText field={Fields.albumArtist} {...props} />
+    <MediaText field={Fields.artist} {...props} />
     <MediaText field={Fields.composerOrSongwriter} {...props} />
     <MediaDropdown field={Fields.genre} options={Opts.genreOptions} {...props} />
     <MediaDropdown field={Fields.mood} options={Opts.moodOptions} {...props} />
@@ -80,9 +80,9 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const tracksTab = () => {
     const album: MusicAlbumPreviewProps = {
       id: 'ignore',
-      title: values.albumTitle,
-      artist: values.albumArtist,
-      cover: values.albumCover,
+      title: values.title,
+      artist: values.artist,
+      cover: values.thumbnail,
       tracksCount: tracks.length
     }
 
@@ -137,7 +137,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
-      {albumCover && <img src={albumCover} onError={onImageError} />}
+      {thumbnail && <img src={thumbnail} onError={onImageError} />}
     </div>
 
     <Form className='ui form JoyForm EditMetaForm'>
@@ -168,13 +168,13 @@ export const EditMusicAlbum = withFormik<OuterProps, FormValues>({
 
     return {
       // Basic:
-      albumTitle: entity && entity.albumTitle || '',
-      albumCover: entity && entity.albumCover || DEFAULT_THUMBNAIL_URL,
-      aboutTheAlbum: entity && entity.aboutTheAlbum || '',
+      title: entity && entity.title || '',
+      thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
+      description: entity && entity.description || '',
       publicationStatus: entity && entity.publicationStatus || visibilityOptions[0].value,
 
       // Additional:
-      albumArtist: entity && entity.albumArtist || '',
+      artist: entity && entity.artist || '',
       composerOrSongwriter: entity && entity.composerOrSongwriter || '',
       genre: entity && entity.genre || genreOptions[0].value,
       mood: entity && entity.mood || moodOptions[0].value,

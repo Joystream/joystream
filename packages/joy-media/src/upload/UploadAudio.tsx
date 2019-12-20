@@ -47,7 +47,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     resetForm
   } = props;
 
-  const { trackThumbnail } = values;
+  const { thumbnail } = values;
 
   const isNew = !entity;
 
@@ -58,14 +58,14 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   };
 
   const basicInfoTab = () => <Tab.Pane as='div'>
-    <MediaText field={Fields.trackTitle} {...props} />
-    <MediaText field={Fields.trackThumbnail} {...props} />
-    <MediaField field={Fields.aboutTheTrack} component='textarea' rows={3} disabled={isSubmitting} {...props} />
+    <MediaText field={Fields.title} {...props} />
+    <MediaText field={Fields.thumbnail} {...props} />
+    <MediaField field={Fields.description} component='textarea' rows={3} disabled={isSubmitting} {...props} />
     <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <MediaText field={Fields.trackArtist} {...props} />
+    <MediaText field={Fields.artist} {...props} />
     <MediaText field={Fields.composerOrSongwriter} {...props} />
     <MediaDropdown field={Fields.genre} options={Opts.genreOptions} {...props} />
     <MediaDropdown field={Fields.mood} options={Opts.moodOptions} {...props} />
@@ -116,7 +116,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
-      {trackThumbnail && <img src={trackThumbnail} onError={onImageError} />}
+      {thumbnail && <img src={thumbnail} onError={onImageError} />}
     </div>
 
     <Form className='ui form JoyForm EditMetaForm'>
@@ -147,14 +147,14 @@ export const EditForm = withFormik<OuterProps, FormValues>({
 
     return {
       // Basic:
-      trackTitle: entity && entity.trackTitle || fileName || '',
-      trackThumbnail: entity && entity.trackThumbnail || DEFAULT_THUMBNAIL_URL,
-      aboutTheTrack: entity && entity.aboutTheTrack || '',
+      title: entity && entity.title || fileName || '',
+      thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
+      description: entity && entity.description || '',
       publicationStatus: entity && entity.publicationStatus || Opts.visibilityOptions[0].value,
       // album: entity && entity.album || '',
 
       // Additional:
-      trackArtist: entity && entity.trackArtist || '',
+      artist: entity && entity.artist || '',
       composerOrSongwriter: entity && entity.composerOrSongwriter || '',
       genre: entity && entity.genre || Opts.genreOptions[0].value,
       mood: entity && entity.mood || Opts.moodOptions[0].value,

@@ -47,7 +47,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     resetForm
   } = props;
 
-  const { videoThumbnail } = values;
+  const { thumbnail } = values;
 
   const isNew = !entity;
 
@@ -59,18 +59,15 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   const basicInfoTab = () => <Tab.Pane as='div'>
     <MediaText field={Fields.title} {...props} />
-    <MediaText field={Fields.videoThumbnail} {...props} />
+    <MediaText field={Fields.thumbnail} {...props} />
     <MediaField field={Fields.description} component='textarea' rows={3} disabled={isSubmitting} {...props} />
     <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <MediaField field={Fields.aboutTheVideo} component='textarea' rows={3} disabled={isSubmitting} {...props} />
-
+    <MediaField field={Fields.description} component='textarea' rows={3} disabled={isSubmitting} {...props} />
     <MediaDropdown field={Fields.category} options={Opts.videoCategoryOptions} {...props} />
-
     <MediaDropdown field={Fields.language} options={Opts.languageOptions} {...props} />
-
     <MediaDropdown field={Fields.license} options={Opts.licenseOptions} {...props} />
   </Tab.Pane>
 
@@ -117,7 +114,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
-      {videoThumbnail && <img src={videoThumbnail} onError={onImageError} />}
+      {thumbnail && <img src={thumbnail} onError={onImageError} />}
     </div>
 
     <Form className='ui form JoyForm EditMetaForm'>
@@ -149,12 +146,11 @@ export const EditForm = withFormik<OuterProps, FormValues>({
     return {
       // Basic:
       title: entity && entity.title || fileName || '',
-      videoThumbnail: entity && entity.videoThumbnail || DEFAULT_THUMBNAIL_URL,
+      thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
       description: entity && entity.description || '',
       publicationStatus: visibilityOptions[0].value,
 
       // Additional:
-      aboutTheVideo: '',
       category: Opts.videoCategoryOptions[0].value,
       language: Opts.languageOptions[0].value,
       // explicit: '',// TODO explicitOptions[0].value,
