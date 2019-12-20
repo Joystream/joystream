@@ -218,6 +218,9 @@ use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure,
 };
 
+#[macro_use]
+extern crate bitflags;
+
 mod mock;
 mod tests;
 
@@ -298,7 +301,8 @@ const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rational
 const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
 const ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED: &str =
     "Category cannot be unarchived when deleted.";
-
+const ERROR_MODERATOR_MODERATE_CATEGORY: &str = "Moderator can not moderate category.";
+const ERROR_EXCEED_MAX_CATEGORY_DEPTH: &str = "Category exceed max depth.";
 //use srml_support::storage::*;
 
 //use sr_io::{StorageOverlay, ChildrenStorageOverlay};
@@ -358,6 +362,23 @@ pub struct PostTextChange<BlockNumber, Moment> {
 
     /// Text that expired
     text: Vec<u8>,
+}
+
+
+bitflags! {
+    /// Represents a post reaction
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(Encode, Decode, Default)]
+    pub struct PostReaction: u32 {
+        /// number of thumb up
+        const UP = 0b00000001;
+
+        /// number of thumb down
+        const DOWN = 0b00000010;
+
+        /// number of like
+        const LIKE = 0b00000100;
+    }
 }
 
 /// Represents a post identifier
@@ -548,8 +569,16 @@ decl_storage! {
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): PostId;
 
+        /// Max depth of category.
+        pub MaxCategoryDepth get(max_category_depth) config(): u8;
+
         /// Account of forum sudo.
         pub ForumSudo get(forum_sudo) config(): Option<T::AccountId>;
+
+        /// Moderator set for each Category
+        pub CategoryByModerator get(category_by_moderator) config(): double_map CategoryId, blake2_256(T::AccountId) => bool;
+
+        pub ReactionByPost get(reaction_by_post) config(): double_map PostId, blake2_256(T::AccountId) => PostReaction;
 
         /// Input constraints
         /// These are all forward looking, that is they are enforced on all
@@ -625,6 +654,39 @@ decl_module! {
 
         fn deposit_event() = default;
 
+        /// enable a moderator can moderate a category and its sub categories.
+        fn set_moderator_category(origin, category_id: CategoryId, account_id: T::AccountId) -> dispatch::Result {
+            let who = ensure_signed(origin)?;
+
+            // Not signed by forum SUDO
+            Self::ensure_is_forum_sudo(&who)?;
+
+            // ensure category exists.
+            ensure!(
+            <CategoryById<T>>::exists(&category_id),
+            ERROR_CATEGORY_DOES_NOT_EXIST
+            );
+
+            // ensure account id exist.
+            Self::ensure_is_forum_member(&account_id)?;
+
+            <CategoryByModerator<T>>::insert(category_id, account_id, true);
+            Ok(())
+
+        }
+
+        /// set max category depth.
+        fn set_max_category_depth(origin, max_category_depth: u8) -> dispatch::Result {
+            let who = ensure_signed(origin)?;
+
+            // Not signed by forum SUDO
+            Self::ensure_is_forum_sudo(&who)?;
+
+            <MaxCategoryDepth>::put(max_category_depth);
+            Ok(())
+        }
+
+
         /// Set forum sudo.
         fn set_forum_sudo(origin, new_forum_sudo: Option<T::AccountId>) -> dispatch::Result {
             ensure_root(origin)?;
@@ -672,6 +734,9 @@ decl_module! {
             if let Some(parent_category_id) = parent {
 
                 let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(parent_category_id)?;
+                if category_tree_path.len() >= <MaxCategoryDepth>::get() as usize {
+                    return Err(ERROR_EXCEED_MAX_CATEGORY_DEPTH);
+                }
 
                 // Can we mutate in this category?
                 Self::ensure_can_add_subcategory_path_leaf(&category_tree_path)?;
@@ -773,6 +838,14 @@ decl_module! {
                 ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED
             );
 
+            // no any change then return Ok, no update and no event.
+            let deletion_unchanged = new_deletion_status == None || new_deletion_status == Some(category.deleted);
+            let archive_unchanged = new_archival_status == None || new_archival_status == Some(category.archived);
+
+            if deletion_unchanged && archive_unchanged {
+                return Ok(())
+            }
+
             // Mutate category, and set possible new change parameters
 
             <CategoryById<T>>::mutate(category_id, |c| {
@@ -842,7 +915,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Self::ensure_is_forum_sudo(&who)?;
 
             // Get thread
             let mut thread = Self::ensure_thread_exists(&thread_id)?;
@@ -852,6 +925,9 @@ decl_module! {
 
             // Rationale valid
             Self::ensure_thread_moderation_rationale_is_valid(&rationale)?;
+
+            // ensure origin can moderate category
+            Self::ensure_moderate_category(who.clone(), thread.category_id)?;
 
             // Can mutate in corresponding category
             let path = Self::build_category_tree_path(thread.category_id);
@@ -923,6 +999,75 @@ decl_module! {
             Ok(())
         }
 
+        /// like a post.
+        fn like_post(origin, post_id: PostId, like: bool) -> dispatch::Result {
+                        // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_member(&who)?;
+
+            // Make sure there exists a mutable post with post id `post_id`
+            let _ = Self::ensure_post_is_mutable(&post_id)?;
+
+            // set like
+            let old_value = <ReactionByPost<T>>::get(post_id, who.clone());
+            if like == true && old_value.contains(PostReaction::LIKE) == false {
+                <ReactionByPost<T>>::insert(post_id, who, old_value | PostReaction::LIKE);
+            }
+            else if like == false && old_value.contains(PostReaction::LIKE) == true {
+                <ReactionByPost<T>>::insert(post_id, who, old_value - PostReaction::LIKE);
+            }
+   
+            Ok(())
+        }
+
+        /// up a post.
+        fn up_post(origin, post_id: PostId, up: bool) -> dispatch::Result {
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_member(&who)?;
+
+            // Make sure there exists a mutable post with post id `post_id`
+            let _ = Self::ensure_post_is_mutable(&post_id)?;
+
+            // set up
+            let old_value = <ReactionByPost<T>>::get(post_id, who.clone());
+            if up == true && old_value.contains(PostReaction::UP) == false {
+                <ReactionByPost<T>>::insert(post_id, who, old_value | PostReaction::UP);
+            }
+            else if up == false && old_value.contains(PostReaction::UP) == true {
+                <ReactionByPost<T>>::insert(post_id, who, old_value - PostReaction::UP);
+            }
+   
+            Ok(())
+        }
+
+        /// down a post.
+        fn down_post(origin, post_id: PostId, down: bool) -> dispatch::Result {
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_member(&who)?;
+
+            // Make sure there exists a mutable post with post id `post_id`
+            let _ = Self::ensure_post_is_mutable(&post_id)?;
+
+            // set down
+            let old_value = <ReactionByPost<T>>::get(post_id, who.clone());
+            if down == true && old_value.contains(PostReaction::DOWN) == false {
+                <ReactionByPost<T>>::insert(post_id, who, old_value | PostReaction::DOWN);
+            }
+            else if down == false && old_value.contains(PostReaction::DOWN) == true {
+                <ReactionByPost<T>>::insert(post_id, who, old_value - PostReaction::DOWN);
+            }
+   
+            Ok(())
+        }
+
         /// Edit post text
         fn edit_post_text(origin, post_id: PostId, new_text: Vec<u8>) -> dispatch::Result {
 
@@ -983,6 +1128,10 @@ decl_module! {
             let post = Self::ensure_post_is_mutable(&post_id)?;
 
             Self::ensure_post_moderation_rationale_is_valid(&rationale)?;
+
+            // make sure origin can moderate the category
+            let thread = Self::ensure_thread_exists(&post.thread_id)?;
+            Self::ensure_moderate_category(who.clone(), thread.category_id)?;
 
             /*
              * Here we are safe to mutate
@@ -1316,5 +1465,19 @@ impl<T: Trait> Module<T> {
         });
 
         new_post
+    }
+
+    /// check if an account can moderate a category.
+    fn ensure_moderate_category(
+        account_id: T::AccountId,
+        category_id: CategoryId,
+    ) -> Result<(), &'static str> {
+        let category_tree_path = Self::build_category_tree_path(category_id.clone());
+        for i in 0..category_tree_path.len() {
+            if <CategoryByModerator<T>>::get(category_tree_path[i].id, &account_id) == true {
+                return Ok(());
+            }
+        }
+        return Err(ERROR_MODERATOR_MODERATE_CATEGORY);
     }
 }

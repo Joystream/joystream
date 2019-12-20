@@ -249,6 +249,9 @@ fn update_category_undelete_and_unarchive() {
         &vec![],                     // post_by_id
         1,                           // next_post_id
         forum_sudo,
+        &vec![],
+        3,
+        &vec![],
         &sloppy_constraint,
         &sloppy_constraint,
         &sloppy_constraint,
@@ -438,10 +441,11 @@ fn create_post_text_too_long() {
 #[test]
 fn moderate_thread_successfully() {
     let config = default_genesis_config();
+
     let origin = OriginType::Signed(config.forum_sudo);
 
     build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
+        let (_, _, thread_id) = create_root_category_and_moderator_and_thread(origin.clone());
         assert_eq!(moderate_thread(origin, thread_id, good_rationale()), Ok(()));
     });
 }
@@ -452,7 +456,7 @@ fn cannot_moderate_already_moderated_thread() {
     let origin = OriginType::Signed(config.forum_sudo);
 
     build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
+        let (_, _, thread_id) = create_root_category_and_moderator_and_thread(origin.clone());
         assert_eq!(
             moderate_thread(origin.clone(), thread_id.clone(), good_rationale()),
             Ok(())
@@ -471,7 +475,7 @@ fn moderate_thread_rationale_too_short() {
     let min_len = config.thread_moderation_rationale_constraint.min as usize;
 
     build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
+        let (_, _, thread_id) = create_root_category_and_moderator_and_thread(origin.clone());
         let bad_rationale = generate_text(min_len - 1);
         assert_eq!(
             moderate_thread(origin, thread_id, bad_rationale),
@@ -487,7 +491,7 @@ fn moderate_thread_rationale_too_long() {
     let max_len = config.thread_moderation_rationale_constraint.max() as usize;
 
     build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
+        let (_, _, thread_id) = create_root_category_and_moderator_and_thread(origin.clone());
         let bad_rationale = generate_text(max_len + 1);
         assert_eq!(
             moderate_thread(origin, thread_id, bad_rationale),
@@ -502,7 +506,7 @@ fn moderate_post_successfully() {
     let origin = OriginType::Signed(config.forum_sudo);
 
     build_test_externalities(config).execute_with(|| {
-        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
+        let (_, _, _, post_id) = create_root_category_and_moderator_and_thread_and_post(origin.clone());
         assert_eq!(moderate_post(origin, post_id, good_rationale()), Ok(()));
     });
 }
@@ -514,7 +518,7 @@ fn moderate_post_rationale_too_short() {
     let min_len = config.post_moderation_rationale_constraint.min as usize;
 
     build_test_externalities(config).execute_with(|| {
-        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
+        let (_, _, _, post_id) = create_root_category_and_moderator_and_thread_and_post(origin.clone());
         let bad_rationale = generate_text(min_len - 1);
         assert_eq!(
             moderate_post(origin, post_id, bad_rationale),
@@ -530,7 +534,7 @@ fn moderate_post_rationale_too_long() {
     let max_len = config.post_moderation_rationale_constraint.max() as usize;
 
     build_test_externalities(config).execute_with(|| {
-        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
+        let (_, _, _, post_id) = create_root_category_and_moderator_and_thread_and_post(origin.clone());
         let bad_rationale = generate_text(max_len + 1);
         assert_eq!(
             moderate_post(origin, post_id, bad_rationale),
@@ -545,7 +549,7 @@ fn cannot_moderate_already_moderated_post() {
     let origin = OriginType::Signed(config.forum_sudo);
 
     build_test_externalities(config).execute_with(|| {
-        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
+        let (_, _, _, post_id) = create_root_category_and_moderator_and_thread_and_post(origin.clone());
         assert_eq!(
             moderate_post(origin.clone(), post_id.clone(), good_rationale()),
             Ok(())
@@ -617,7 +621,7 @@ fn not_forum_sudo_cannot_moderate_thread() {
         let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
         assert_eq!(
             moderate_thread(NOT_FORUM_SUDO_ORIGIN, thread_id, good_rationale()),
-            Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
+            Err(ERROR_MODERATOR_MODERATE_CATEGORY)
         );
     });
 }
@@ -946,7 +950,7 @@ fn cannot_create_post_in_moderated_thread() {
     let forum_sudo = OriginType::Signed(config.forum_sudo);
 
     build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(forum_sudo.clone());
+        let (_, _, thread_id) = create_root_category_and_moderator_and_thread(forum_sudo.clone());
         assert_ok!(moderate_thread(
             forum_sudo,
             thread_id.clone(),
@@ -967,7 +971,7 @@ fn cannot_edit_post_in_moderated_thread() {
 
     build_test_externalities(config).execute_with(|| {
         let (member_origin, _, thread_id, post_id) =
-            create_root_category_and_thread_and_post(forum_sudo.clone());
+            create_root_category_and_moderator_and_thread_and_post(forum_sudo.clone());
         assert_ok!(moderate_thread(forum_sudo, thread_id, good_rationale()));
         assert_err!(
             TestForumModule::edit_post_text(mock_origin(member_origin), post_id, good_rationale()),
@@ -979,3 +983,146 @@ fn cannot_edit_post_in_moderated_thread() {
 // TODO impl
 // #[test]
 // fn cannot_edit_moderated_post() {}
+
+
+
+// fn set_moderator_category
+#[test]
+fn set_moderator_category_successfully() {
+    /*
+     * Create an initial state with two levels of categories, where
+     * leaf category is deleted, and then try to undelete.
+     */
+    let config = default_genesis_config();
+    let forum_sudo = OriginType::Signed(config.forum_sudo);
+
+    build_test_externalities(config).execute_with(|| {
+        let (_, category_id, _, _) =
+            create_root_category_and_thread_and_post(forum_sudo.clone());
+
+        let member_id = 123;
+        let new_member = registry::Member { id: member_id };
+        registry::TestMembershipRegistryModule::add_member(&new_member);
+
+        // Ensure init value is false
+        assert_eq!(
+            TestForumModule::category_by_moderator(category_id, member_id),
+            false
+        );
+
+        assert_eq!(
+            TestForumModule::set_moderator_category(
+                Origin::signed(default_genesis_config().forum_sudo),
+                category_id,
+                member_id
+            ),
+            Ok(())
+        );
+
+        // Ensure the value updated successfully
+        assert_eq!(
+            TestForumModule::category_by_moderator(category_id, member_id),
+            true
+        );
+    });
+}
+
+
+/*
+ * set_max_category_depth
+ * ==============================================================================
+ *
+ */
+
+#[test]
+fn set_max_category_depth_successfully() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin_depth = config.max_category_depth;
+
+
+    build_test_externalities(config).execute_with(|| {
+        // Ensure that forum sudo is default
+        assert_eq!(TestForumModule::max_category_depth(), origin_depth);
+
+        // Unset forum sudo
+        assert_ok!(TestForumModule::set_max_category_depth(
+            Origin::signed(forum_sudo),
+            2
+        ));
+
+        // max depth updated
+        assert_eq!(TestForumModule::max_category_depth(), 2);
+    });
+}
+
+
+/*
+ * up post
+ * ==============================================================================
+ *
+ */
+#[test]
+fn up_post_successfully() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    build_test_externalities(config).execute_with(|| {
+        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin);
+        assert_ok!(TestForumModule::up_post(
+            Origin::signed(forum_sudo),
+            post_id,
+            true
+        ));
+        assert_eq!(TestForumModule::reaction_by_post(post_id, forum_sudo) |  PostReaction::UP, PostReaction::UP);
+    });
+
+}
+
+/*
+ * down post
+ * ==============================================================================
+ *
+ */
+#[test]
+fn down_post_successfully() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    build_test_externalities(config).execute_with(|| {
+        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin);
+        assert_ok!(TestForumModule::down_post(
+            Origin::signed(forum_sudo),
+            post_id,
+            true
+        ));
+        assert_eq!(TestForumModule::reaction_by_post(post_id, forum_sudo) |  PostReaction::DOWN, PostReaction::DOWN);
+    });
+
+}
+
+/*
+ * like post
+ * ==============================================================================
+ *
+ */
+#[test]
+fn like_post_successfully() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(config.forum_sudo);
+
+    build_test_externalities(config).execute_with(|| {
+        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin);
+        assert_ok!(TestForumModule::like_post(
+            Origin::signed(forum_sudo),
+            post_id,
+            true
+        ));
+        assert_eq!(TestForumModule::reaction_by_post(post_id, forum_sudo) |  PostReaction::LIKE, PostReaction::LIKE);
+    });
+
+}
+

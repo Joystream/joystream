@@ -317,6 +317,36 @@ pub fn create_root_category_and_thread(
     let category_id = create_root_category(forum_sudo);
     let thread_id = TestForumModule::next_thread_id();
 
+    let forum_sudo_member = registry::Member { id: default_genesis_config().forum_sudo };
+    registry::TestMembershipRegistryModule::add_member(&forum_sudo_member);
+
+    CreateThreadFixture {
+        origin: member_origin.clone(),
+        category_id,
+        title: good_thread_title(),
+        text: good_thread_text(),
+        result: Ok(()),
+    }
+    .call_and_assert();
+
+    (member_origin, category_id, thread_id)
+}
+
+pub fn create_root_category_and_moderator_and_thread(
+    forum_sudo: OriginType,
+) -> (OriginType, CategoryId, ThreadId) {
+    let member_origin = create_forum_member();
+    let category_id = create_root_category(forum_sudo);
+    let thread_id = TestForumModule::next_thread_id();
+
+    let forum_sudo_member = registry::Member { id: default_genesis_config().forum_sudo };
+    registry::TestMembershipRegistryModule::add_member(&forum_sudo_member);
+    let _ = TestForumModule::set_moderator_category(
+                Origin::signed(default_genesis_config().forum_sudo),
+                category_id,
+                default_genesis_config().forum_sudo
+            );
+
     CreateThreadFixture {
         origin: member_origin.clone(),
         category_id,
@@ -333,6 +363,23 @@ pub fn create_root_category_and_thread_and_post(
     forum_sudo: OriginType,
 ) -> (OriginType, CategoryId, ThreadId, PostId) {
     let (member_origin, category_id, thread_id) = create_root_category_and_thread(forum_sudo);
+    let post_id = TestForumModule::next_post_id();
+
+    CreatePostFixture {
+        origin: member_origin.clone(),
+        thread_id: thread_id.clone(),
+        text: good_post_text(),
+        result: Ok(()),
+    }
+    .call_and_assert();
+
+    (member_origin, category_id, thread_id, post_id)
+}
+
+pub fn create_root_category_and_moderator_and_thread_and_post(
+    forum_sudo: OriginType,
+) -> (OriginType, CategoryId, ThreadId, PostId) {
+    let (member_origin, category_id, thread_id) = create_root_category_and_moderator_and_thread(forum_sudo);
     let post_id = TestForumModule::next_post_id();
 
     CreatePostFixture {
@@ -410,6 +457,9 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         next_post_id: 1,
 
         forum_sudo: 33,
+        category_by_moderator: vec![],
+        max_category_depth: 3,
+        reaction_by_post: vec![],
 
         category_title_constraint: InputValidationLengthConstraint {
             min: 10,
@@ -447,6 +497,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 }
 
 pub type RuntimeMap<K, V> = std::vec::Vec<(K, V)>;
+pub type RuntimeDoubleMap<K1, K2, V> = std::vec::Vec<(K1, K2, V)>;
 pub type RuntimeCategory = Category<
     <Runtime as system::Trait>::BlockNumber,
     <Runtime as timestamp::Trait>::Moment,
@@ -475,6 +526,9 @@ pub fn genesis_config(
     post_by_id: &RuntimeMap<PostId, RuntimePost>,
     next_post_id: u64,
     forum_sudo: <Runtime as system::Trait>::AccountId,
+    category_by_moderator: &RuntimeDoubleMap<CategoryId, <Runtime as system::Trait>::AccountId, bool>,
+    max_category_depth: u8,
+    reaction_by_post: &RuntimeDoubleMap<PostId, <Runtime as system::Trait>::AccountId, PostReaction>,
     category_title_constraint: &InputValidationLengthConstraint,
     category_description_constraint: &InputValidationLengthConstraint,
     thread_title_constraint: &InputValidationLengthConstraint,
@@ -490,6 +544,9 @@ pub fn genesis_config(
         post_by_id: post_by_id.clone(),
         next_post_id: next_post_id,
         forum_sudo: forum_sudo,
+        category_by_moderator: category_by_moderator.clone(),
+        max_category_depth: max_category_depth,
+        reaction_by_post: reaction_by_post.clone(),
         category_title_constraint: category_title_constraint.clone(),
         category_description_constraint: category_description_constraint.clone(),
         thread_title_constraint: thread_title_constraint.clone(),
