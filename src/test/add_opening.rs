@@ -8,7 +8,10 @@ use rstd::collections::btree_set::BTreeSet;
 static FIRST_BLOCK_HEIGHT: <Test as system::Trait>::BlockNumber = 1;
 static OPENING_HUMAN_READABLE_TEXT: &[u8] = b"OPENING_HUMAN_READABLE_TEXT!!!!";
 
-/// add_opening
+/*
+Not covered:
+- ApplicationRationingPolicy (no ensures yet in add_opening)
+*/
 
 struct AddOpeningFixture<Balance> {
     activate_at: ActivateOpeningAt<u64>,
