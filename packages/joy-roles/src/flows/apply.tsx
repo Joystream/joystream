@@ -841,6 +841,7 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps & St
   const [valid, setValid] = useState(false)
 
   const handleChange = (e: any, { name, value }: any) => {
+    setCompleted(false)
     setData({ key: name, value: value })
   }
 
@@ -890,11 +891,13 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps & St
 
   useEffect(() => {
     setValid(isFormValid())
-    if (completed === true) {
+  }, [data])
+
+  useEffect(() => {
+    if (completed === true && valid === true) {
       props.nextTransition()
     }
-  },
-    [data, completed])
+  }, [completed])
 
   const onSubmit = (): void => {
     setCompleted(true)
