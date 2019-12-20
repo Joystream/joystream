@@ -1,15 +1,9 @@
 import React from 'react';
 
-import {
-  Container,
-} from 'semantic-ui-react'
-
+import { Container, } from 'semantic-ui-react'
 import { Observable, View } from '@polkadot/joy-utils/index'
-
 import { ITransport } from '../transport'
-
 import { Opening } from "@joystream/types/hiring"
-
 import {
   Applications, OpeningApplication,
   CurrentRoles, ActiveRole, ActiveRoleWithCTAs,
