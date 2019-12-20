@@ -82,13 +82,43 @@ fn full_hiring_workflow_successful_path() {
         let current_opening_id = expected_opening_id;
 
         // 1.1 (optional) ensure_can_add_application
-        let ensure_can_add_application_result = Hiring::ensure_can_add_application(
-            current_opening_id,
-            None,
-            None);
+        let ensure_can_add_application_result =
+            Hiring::ensure_can_add_application(current_opening_id, None, None);
 
         // Check ensure_can_add_application result
         assert!(ensure_can_add_application_result.is_ok());
+
+        // Check returned content
+        let destructured_app_data = ensure_can_add_application_result.unwrap();
+        let expected = DestructuredApplicationCanBeAddedEvaluation {
+            opening: Opening {
+                created: 1,
+                stage: OpeningStage::Active {
+                    stage: ActiveOpeningStage::AcceptingApplications {
+                        started_accepting_applicants_at_block: 1,
+                    },
+                    applications_added: BTreeSet::new(),
+                    active_application_count: 0,
+                    unstaking_application_count: 0,
+                    deactivated_application_count: 0,
+                },
+                max_review_period_length: 672,
+                application_rationing_policy: None,
+                application_staking_policy: None,
+                role_staking_policy: None,
+                human_readable_text: human_readable_text.clone(),
+            },
+            active_stage: ActiveOpeningStage::AcceptingApplications {
+                started_accepting_applicants_at_block: 1,
+            },
+            applications_added: BTreeSet::new(),
+            active_application_count: 0,
+            unstaking_application_count: 0,
+            deactivated_application_count: 0,
+            would_get_added_success: ApplicationAddedSuccess::Unconditionally,
+        };
+
+        assert_eq!(destructured_app_data, expected);
 
         // 2. add_application
         let add_application_result = Hiring::add_application(
