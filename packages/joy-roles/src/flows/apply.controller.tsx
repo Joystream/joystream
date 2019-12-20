@@ -150,6 +150,7 @@ export const ApplyView = View<ApplyController, EmptyProps, State>(
   (props, state, controller, params) => {
     controller.findOpening(params)
     return (
+      // @ts-ignore
       <FlowModal
         role={state.role!}
         applications={state.applications!}
