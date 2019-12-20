@@ -18,6 +18,8 @@ import { formatBalance } from '@polkadot/util';
 import { u128 } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
+import { Loadable } from '@polkadot/joy-utils/index'
+
 import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
 import { Opening } from "@joystream/types/hiring"
 
@@ -59,53 +61,62 @@ function RoleName(props: nameAndURL) {
   return <span>{props.name}</span>
 }
 
-interface currentRole extends nameAndURL {
+export interface ActiveRole extends nameAndURL {
   reward: string
   stake: Balance
+}
+
+export interface ActiveRoleWithCTAs extends ActiveRole {
   CTAs: CTA[]
 }
 
 export type CurrentRolesProps = {
-  currentRoles: currentRole[]
+  currentRoles: ActiveRoleWithCTAs[]
 }
 
-export function CurrentRoles(props: CurrentRolesProps) {
-  return (
-    <Container className="current-roles">
-      <h2>Current roles</h2>
-      <Table basic='very'>
-        <Table.Header>
-          <Table.Row>
-            <Table.HeaderCell>Role</Table.HeaderCell>
-            <Table.HeaderCell>Reward</Table.HeaderCell>
-            <Table.HeaderCell>Stake</Table.HeaderCell>
-            <Table.HeaderCell></Table.HeaderCell>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {props.currentRoles.map((role, key) => (
-            <Table.Row key={key}>
-              <Table.Cell>
-                <RoleName name={role.name} url={role.url} />
-              </Table.Cell>
-              <Table.Cell>
-                {role.reward}
-              </Table.Cell>
-              <Table.Cell>
-                {formatBalance(role.stake)}
-              </Table.Cell>
-              <Table.Cell>
-                {role.CTAs.map((cta, key2) => (
-                  <CTAButton {...cta} key={key2} />
-                ))}
-              </Table.Cell>
+export const CurrentRoles = Loadable<CurrentRolesProps>(
+  ['currentRoles'],
+  props => {
+    if (props.currentRoles.length === 0) {
+      return null
+    }
+
+    return (
+      <Container className="current-roles">
+        <h2>Current roles</h2>
+        <Table basic='very'>
+          <Table.Header>
+            <Table.Row>
+              <Table.HeaderCell>Role</Table.HeaderCell>
+              <Table.HeaderCell>Reward</Table.HeaderCell>
+              <Table.HeaderCell>Stake</Table.HeaderCell>
+              <Table.HeaderCell></Table.HeaderCell>
             </Table.Row>
-          ))}
-        </Table.Body>
-      </Table>
-    </Container>
-  )
-}
+          </Table.Header>
+          <Table.Body>
+            {props.currentRoles.map((role, key) => (
+              <Table.Row key={key}>
+                <Table.Cell>
+                  <RoleName name={role.name} url={role.url} />
+                </Table.Cell>
+                <Table.Cell>
+                  {role.reward}
+                </Table.Cell>
+                <Table.Cell>
+                  {formatBalance(role.stake)}
+                </Table.Cell>
+                <Table.Cell>
+                  {role.CTAs.map((cta, key2) => (
+                    <CTAButton {...cta} key={key2} />
+                  ))}
+                </Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table>
+      </Container>
+    )
+  })
 
 type RankAndCapacityProps = {
   rank: number
@@ -259,7 +270,7 @@ const applicationClass = new Map<ApplicationState, string>([
   [ApplicationState.Cancelled, 'cancelled'],
 ])
 
-function applicationState(props: ApplicationProps): ApplicationState {
+function applicationState(props: OpeningApplication): ApplicationState {
   if (typeof props.cancelledReason !== 'undefined') {
     return ApplicationState.Cancelled
   } else if (props.capacity > 0 && props.rank > props.capacity) {
@@ -268,7 +279,7 @@ function applicationState(props: ApplicationProps): ApplicationState {
   return ApplicationState.Positive
 }
 
-export type ApplicationProps = {
+export type OpeningApplication = {
   rank: number
   capacity: number
   cancelledReason?: CancelledReason
@@ -278,10 +289,15 @@ export type ApplicationProps = {
   opening: Opening
   applicationStake: Balance
   roleStake: Balance
-  ctaCallback: () => void
   review_end_time?: Date
   review_end_block?: number
 }
+
+export type CancelCallback = {
+  cancelCallback: (opening: Opening) => void
+}
+
+export type ApplicationProps = OpeningApplication & CancelCallback
 
 export function Application(props: ApplicationProps) {
   let countdown = null
@@ -299,7 +315,7 @@ export function Application(props: ApplicationProps) {
       labelPosition='left'
       negative
       className='cta'
-      onClick={props.ctaCallback}
+      onClick={() => { props.cancelCallback(props.opening) }}
     >
       <Icon name='warning sign' />
       Cancel and withdraw stake
@@ -387,17 +403,18 @@ export function Application(props: ApplicationProps) {
   )
 }
 
-export type ApplicationsProps = {
-  applications: ApplicationProps[]
+export type ApplicationsProps = CancelCallback & {
+  applications: OpeningApplication[]
 }
 
-export function Applications(props: ApplicationsProps) {
-  return (
+export const Applications = Loadable<ApplicationsProps>(
+  ['applications'],
+  props => (
     <Container className="current-applications">
       <h2>Applications</h2>
       {props.applications.map((app, key) => (
-        <Application key={key} {...app} />
+        <Application key={key} cancelCallback={props.cancelCallback} {...app} />
       ))}
     </Container>
   )
-}
+)

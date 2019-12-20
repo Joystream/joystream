@@ -17,6 +17,8 @@ import { WorkingGroupOpening } from "./tabs/Opportunities"
 
 import { keyPairDetails } from './flows/apply'
 
+import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
+
 export class Transport extends TransportBase implements ITransport {
   protected api: ApiPromise
 
@@ -71,4 +73,23 @@ export class Transport extends TransportBase implements ITransport {
     return new Observable<keyPairDetails[]>((observer) => {
     })
   }
+
+  openingApplications(): Subscribable<OpeningApplication[]> {
+    return new Observable<OpeningApplication[]>(observer => {
+    }
+    )
+  }
+
+  myCurationGroupRoles(): Subscribable<ActiveRole[]> {
+    return new Observable<ActiveRole[]>(observer => {
+    }
+    )
+  }
+
+  myStorageGroupRoles(): Subscribable<ActiveRole[]> {
+    return new Observable<ActiveRole[]>(observer => {
+    }
+    )
+  }
+
 }

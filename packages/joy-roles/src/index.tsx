@@ -17,6 +17,7 @@ import { Transport as MockTransport } from './transport.mock'
 import { WorkingGroupsController, } from './tabs/WorkingGroup.controller'
 import { OpportunitiesController, OpportunitiesView } from './tabs/Opportunities.controller'
 import { ApplyController, ApplyView } from './flows/apply.controller'
+import { MyRolesController, MyRolesView } from './tabs/MyRoles.controller'
 
 import './index.sass';
 
@@ -36,6 +37,7 @@ class App extends React.PureComponent<Props, State> {
   mockTransport: ITransport
   oppCtrl: OpportunitiesController
   applyCtrl: ApplyController
+  myRolesCtrl: MyRolesController
 
   constructor(props: Props) {
     super(props);
@@ -44,6 +46,7 @@ class App extends React.PureComponent<Props, State> {
     this.mockTransport = new MockTransport()
     this.oppCtrl = new OpportunitiesController(this.mockTransport)
     this.applyCtrl = new ApplyController(this.mockTransport)
+    this.myRolesCtrl = new MyRolesController(this.mockTransport)
 
     const { t } = props;
 
@@ -87,7 +90,7 @@ class App extends React.PureComponent<Props, State> {
         </header>
         <Switch>
           <Route path={`${basePath}/opportunities`} render={() => this.renderViewComponent(OpportunitiesView(this.oppCtrl))} />
-          <Route path={`${basePath}/my-roles`} render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
+          <Route path={`${basePath}/my-roles`} render={() => this.renderViewComponent(MyRolesView(this.myRolesCtrl))} />
           <Route path={`${basePath}/apply/:id`} render={(props) => this.renderViewComponent(ApplyView(this.applyCtrl), props)} />
           <Route render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
         </Switch>

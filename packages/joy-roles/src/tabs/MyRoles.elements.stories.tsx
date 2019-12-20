@@ -27,6 +27,8 @@ import {
 } from './Opportunities.stories'
 import { OpeningState } from "../classifiers"
 
+import { Opening } from "@joystream/types/hiring"
+
 export default {
   title: 'Roles / Components / My roles tab / Elements',
   decorators: [withKnobs],
@@ -165,7 +167,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    ctaCallback: () => { },
+    cancelCallback: (o: Opening) => { },
     rank: 15,
     capacity: 20,
   },
@@ -182,7 +184,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    ctaCallback: () => { },
+    cancelCallback: () => { },
     rank: 21,
     capacity: 20,
   },
@@ -201,7 +203,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    ctaCallback: () => { },
+    cancelCallback: () => { },
     rank: 15,
     capacity: 20,
   },
@@ -220,7 +222,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    ctaCallback: () => { },
+    cancelCallback: () => { },
     rank: 21,
     capacity: 20,
   },
@@ -237,7 +239,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    ctaCallback: () => { },
+    cancelCallback: () => { },
     rank: 21,
     capacity: 20,
   },
@@ -254,7 +256,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    ctaCallback: () => { },
+    cancelCallback: () => { },
     rank: 21,
     capacity: 20,
     cancelledReason: CancelledReason.HirerCancelledOpening
@@ -275,9 +277,10 @@ export function ApplicationFragment() {
 }
 
 export function ApplicationsFragment() {
+  const cancelCallback = () => { }
   return (
     <Container className="outer my-roles">
-      <Applications applications={permutations} />
+      <Applications applications={permutations} cancelCallback={cancelCallback} />
     </Container>
   )
 }
