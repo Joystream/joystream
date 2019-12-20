@@ -35,7 +35,7 @@ type LanguageClassType = {
 export const LanguageClass: LanguageClassType = {
   languageCode: {
     "id": "languageCode",
-    "name": "Language code",
+    "name": "Language Code",
     "description": "Language code following the ISO 639-1 two letter standard.",
     "type": "Text",
     "required": true,

@@ -4,16 +4,16 @@
 import * as Yup from 'yup';
 
 export const MusicAlbumValidationSchema = Yup.object().shape({
-  albumTitle: Yup.string()
+  title: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  albumArtist: Yup.string()
+  artist: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  albumCover: Yup.string()
+  thumbnail: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  aboutTheAlbum: Yup.string()
+  description: Yup.string()
     .required('This field is required')
     .max(4000, 'Text is too long. Maximum length is 4000 chars.'),
   lyrics: Yup.string()
@@ -25,10 +25,10 @@ export const MusicAlbumValidationSchema = Yup.object().shape({
 });
 
 export type MusicAlbumType = {
-  albumTitle: string
-  albumArtist: string
-  albumCover: string
-  aboutTheAlbum: string
+  title: string
+  artist: string
+  thumbnail: string
+  description: string
   firstReleased: number
   genre?: any[]
   mood?: any[]
@@ -47,10 +47,10 @@ export type MusicAlbumType = {
 };
 
 export type MusicAlbumPropId =
-  'albumTitle' |
-  'albumArtist' |
-  'albumCover' |
-  'aboutTheAlbum' |
+  'title' |
+  'artist' |
+  'thumbnail' |
+  'description' |
   'firstReleased' |
   'genre' |
   'mood' |
@@ -84,33 +84,33 @@ type MusicAlbumClassType = {
 };
 
 export const MusicAlbumClass: MusicAlbumClassType = {
-  albumTitle: {
-    "id": "albumTitle",
-    "name": "Album Title",
+  title: {
+    "id": "title",
+    "name": "Title",
     "description": "The title of the album",
     "type": "Text",
     "required": true,
     "maxTextLength": 255
   },
-  albumArtist: {
-    "id": "albumArtist",
-    "name": "Album Artist",
+  artist: {
+    "id": "artist",
+    "name": "Artist",
     "description": "The artist, composer, band or group that published the album.",
     "type": "Text",
     "required": true,
     "maxTextLength": 255
   },
-  albumCover: {
-    "id": "albumCover",
-    "name": "Album Cover",
+  thumbnail: {
+    "id": "thumbnail",
+    "name": "Thumbnail",
     "description": "URL to album cover art thumbnail: NOTE: Should be an https link to a square image, between 1400x1400 and 3000x3000 pixels, in JPEG or PNG format.",
     "required": true,
     "type": "Text",
     "maxTextLength": 255
   },
-  aboutTheAlbum: {
-    "id": "aboutTheAlbum",
-    "name": "About the Album",
+  description: {
+    "id": "description",
+    "name": "Description",
     "description": "Information about the album and artist.",
     "required": true,
     "type": "Text",
@@ -119,7 +119,7 @@ export const MusicAlbumClass: MusicAlbumClassType = {
   firstReleased: {
     "id": "firstReleased",
     "name": "First Released",
-    "description": "When the track was first released",
+    "description": "When the album was first released",
     "required": true,
     "type": "Int64"
   },
@@ -212,7 +212,7 @@ export const MusicAlbumClass: MusicAlbumClassType = {
   explicit: {
     "id": "explicit",
     "name": "Explicit",
-    "description": "Indicates whether the track contains explicit material.",
+    "description": "Indicates whether the album contains explicit material.",
     "required": true,
     "type": "Bool"
   },
