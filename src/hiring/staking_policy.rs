@@ -48,6 +48,21 @@ impl<Balance: PartialOrd + Clone, BlockNumber: Clone> StakingPolicy<Balance, Blo
             None
         }
     }
+
+    /// Ensures that optional staking policy prescribes value that clears minimum balance requirement
+    pub fn ensure_amount_valid_in_opt_staking_policy<Err>(
+        opt_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
+        runtime_minimum_balance: Balance,
+        error: Err,
+    ) -> Result<(), Err> {
+        if let Some(ref staking_policy) = opt_staking_policy {
+            if staking_policy.amount < runtime_minimum_balance {
+                return Err(error)
+            }
+        }
+
+        Ok(())
+    }
 }
 
 /// Constraints around staking amount

@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::hiring::StakePurpose;
 
+use rstd::vec::Vec;
+
 /// An application for an actor to occupy an opening.
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone, PartialOrd, Ord)]
 pub struct Application<OpeningId, BlockNumber, StakeId> {

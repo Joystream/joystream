@@ -2,6 +2,9 @@ use crate::{hiring, ApplicationRationingPolicy, StakingPolicy};
 
 use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
+use rstd::vec::Vec;
+
+use srml_support::ensure;
 
 use crate::hiring::StakePurpose;
 
@@ -27,6 +30,90 @@ pub struct Opening<Balance, BlockNumber, ApplicationId> {
 
     /// Description of opening
     pub human_readable_text: Vec<u8>,
+}
+
+impl<Balance, BlockNumber, ApplicationId> Opening<Balance, BlockNumber, ApplicationId>
+where
+    Balance: PartialOrd + Clone,
+    BlockNumber: Clone + PartialOrd,
+    ApplicationId: Ord,
+{
+    ///Creates new instance of Opening
+    pub fn new(
+        current_block_height: BlockNumber,
+        activate_at: ActivateOpeningAt<BlockNumber>,
+        max_review_period_length: BlockNumber,
+        application_rationing_policy: Option<ApplicationRationingPolicy>,
+        application_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
+        role_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
+        human_readable_text: Vec<u8>,
+    ) -> Self {
+        // Construct new opening
+        let opening_stage = match activate_at {
+            ActivateOpeningAt::CurrentBlock => hiring::OpeningStage::Active {
+                // We immediately start accepting applications
+                stage: hiring::ActiveOpeningStage::AcceptingApplications {
+                    started_accepting_applicants_at_block: current_block_height.clone(),
+                },
+
+                // Empty set of applicants
+                applications_added: BTreeSet::new(),
+
+                // All counters set to 0
+                active_application_count: 0,
+                unstaking_application_count: 0,
+                deactivated_application_count: 0,
+            },
+
+            ActivateOpeningAt::ExactBlock(block_number) => hiring::OpeningStage::WaitingToBegin {
+                begins_at_block: block_number,
+            },
+        };
+
+        hiring::Opening {
+            created: current_block_height,
+            stage: opening_stage,
+            max_review_period_length,
+            application_rationing_policy,
+            application_staking_policy,
+            role_staking_policy,
+            human_readable_text,
+        }
+    }
+
+    /// Performs all necessary check before adding an opening
+    pub fn ensure_can_add_opening(
+        current_block_height: BlockNumber,
+        activate_at: ActivateOpeningAt<BlockNumber>,
+        runtime_minimum_balance: Balance,
+        application_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
+        role_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
+    ) -> Result<(), AddOpeningError> {
+        // Check that exact activation is actually in the future
+        ensure!(
+            match activate_at {
+                ActivateOpeningAt::ExactBlock(block_number) => block_number > current_block_height,
+                _ => true,
+            },
+            AddOpeningError::OpeningMustActivateInTheFuture
+        );
+
+        // Check that staking amounts clear minimum balance required.
+        StakingPolicy::ensure_amount_valid_in_opt_staking_policy(
+            application_staking_policy,
+            runtime_minimum_balance.clone(),
+            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Application),
+        )?;
+
+        // Check that staking amounts clear minimum balance required.
+        StakingPolicy::ensure_amount_valid_in_opt_staking_policy(
+            role_staking_policy,
+            runtime_minimum_balance,
+            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Role),
+        )?;
+
+        Ok(())
+    }
 }
 
 /// The stage at which an `Opening` may be at.

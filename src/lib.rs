@@ -294,63 +294,25 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::OpeningId, AddOpeningError> {
         let current_block_height = <system::Module<T>>::block_number();
 
-        // Check that exact activation is actually in the future
-        ensure!(
-            match activate_at {
-                ActivateOpeningAt::ExactBlock(block_number) => block_number > current_block_height,
-                _ => true,
-            },
-            AddOpeningError::OpeningMustActivateInTheFuture
-        );
-
-        // Check that staking amounts clear minimum balance required.
-        ensure_amount_valid_in_opt_staking_policy!(
-            T,
-            application_staking_policy,
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Application)
+        Opening::<BalanceOf<T>, T::BlockNumber, T::ApplicationId>::ensure_can_add_opening(
+            current_block_height,
+            activate_at.clone(),
+            T::Currency::minimum_balance(),
+            application_staking_policy.clone(),
+            role_staking_policy.clone(),
         )?;
 
-        ensure_amount_valid_in_opt_staking_policy!(
-            T,
-            role_staking_policy,
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Role)
-        )?;
-
-        //
         // == MUTATION SAFE ==
-        //
 
-        // Construct new opening
-        let opening_stage = match activate_at {
-            ActivateOpeningAt::CurrentBlock => hiring::OpeningStage::Active {
-                // We immediately start accepting applications
-                stage: hiring::ActiveOpeningStage::AcceptingApplications {
-                    started_accepting_applicants_at_block: current_block_height,
-                },
-
-                // Empty set of applicants
-                applications_added: BTreeSet::new(), // Map::new(),
-
-                // All counters set to 0
-                active_application_count: 0,
-                unstaking_application_count: 0,
-                deactivated_application_count: 0,
-            },
-
-            ActivateOpeningAt::ExactBlock(block_number) => hiring::OpeningStage::WaitingToBegin {
-                begins_at_block: block_number,
-            },
-        };
-
-        let new_opening = hiring::Opening {
-            created: current_block_height,
-            stage: opening_stage,
+        let new_opening = hiring::Opening::new(
+            current_block_height,
+            activate_at,
             max_review_period_length,
             application_rationing_policy,
             application_staking_policy,
             role_staking_policy,
             human_readable_text,
-        };
+        );
 
         // Get Id for new opening
         let new_opening_id = <NextOpeningId<T>>::get();

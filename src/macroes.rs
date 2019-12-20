@@ -185,22 +185,6 @@ macro_rules! ensure_opt_unstaking_period_is_ok {
     }};
 }
 
-/// Ensures that optional staking policy prescribes value that clears minimum balance requirement of the `Currency` module.
-///
-/// Returns ...
-macro_rules! ensure_amount_valid_in_opt_staking_policy {
-    ($runtime_trait:tt, $opt_staking_policy:expr, $error:expr) => {{
-        if let Some(ref staking_policy) = $opt_staking_policy {
-            if staking_policy.amount < $runtime_trait::Currency::minimum_balance() {
-                Err($error)
-            } else {
-                Ok(())
-            }
-        } else {
-            Ok(())
-        }
-    }};
-}
 
 /// Ensures that a new application would make it into a given opening
 ///
