@@ -140,17 +140,6 @@ pub struct PaidMembershipTerms<T: Trait> {
     pub text: Vec<u8>,
 }
 
-/// Must be default constructible because it indirectly is a value in a storage map.
-/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
-impl<T: Trait> Default for PaidMembershipTerms<T> {
-    fn default() -> Self {
-        PaidMembershipTerms {
-            fee: BalanceOf::<T>::default(),
-            text: Vec::default(),
-        }
-    }
-}
-
 decl_storage! {
     trait Store for Module<T: Trait> as Membership {
         /// MemberId to assign to next member that is added to the registry, and is also the
@@ -180,8 +169,10 @@ decl_storage! {
             // compiled as native code. (Will be called when building `raw` chainspec)
             // So it can't be relied upon to initialize storage for runtimes updates.
             // Initialization for updated runtime is done in run_migration()
-            let mut terms: PaidMembershipTerms<T> = Default::default();
-            terms.fee = config.default_paid_membership_fee;
+            let terms = PaidMembershipTerms {
+                fee:  config.default_paid_membership_fee,
+                text: Vec::default(),
+            };
             vec![(T::PaidTermId::from(DEFAULT_PAID_TERM_ID), terms)]
         }) : map T::PaidTermId => Option<PaidMembershipTerms<T>>;
 
