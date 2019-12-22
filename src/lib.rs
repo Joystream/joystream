@@ -303,6 +303,11 @@ const ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED: &str =
     "Category cannot be unarchived when deleted.";
 const ERROR_MODERATOR_MODERATE_CATEGORY: &str = "Moderator can not moderate category.";
 const ERROR_EXCEED_MAX_CATEGORY_DEPTH: &str = "Category exceed max depth.";
+const ERROR_POLL_DESC_TOO_SHORT: &str = "Poll description too short.";
+const ERROR_POLL_DESC_TOO_LONG: &str = "Poll description too long.";
+const ERROR_POLL_ITEMS_TOO_SHORT: &str = "Poll items number too short.";
+const ERROR_POLL_ITEMS_TOO_LONG: &str = "Poll items number too long.";
+const ERROR_POLL_NOT_EXIST: &str = "Poll not exist.";
 //use srml_support::storage::*;
 
 //use sr_io::{StorageOverlay, ChildrenStorageOverlay};
@@ -364,22 +369,27 @@ pub struct PostTextChange<BlockNumber, Moment> {
     text: Vec<u8>,
 }
 
-
 bitflags! {
     /// Represents a post reaction
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(Encode, Decode, Default)]
     pub struct PostReaction: u32 {
-        /// number of thumb up
+        /// Represent nothing set
+        const NONE = 0b00000000;
+
+        /// Represent thumb up set
         const UP = 0b00000001;
 
-        /// number of thumb down
+        /// Represent thumb down set
         const DOWN = 0b00000010;
 
-        /// number of like
+        /// Represent like set
         const LIKE = 0b00000100;
     }
 }
+
+/// Represents a poll identifier, each bit represent an item. multiple items select possible.
+pub type PollData = u64;
 
 /// Represents a post identifier
 pub type PostId = u64;
@@ -393,13 +403,6 @@ pub struct Post<BlockNumber, Moment, AccountId> {
 
     /// Id of thread to which this post corresponds.
     thread_id: ThreadId,
-
-    /// The post number of this post in its thread, i.e. total number of posts added (including this)
-    /// to a thread when it was added.
-    /// Is needed to give light clients assurance about getting all posts in a given range,
-    // `created_at` is not sufficient.
-    /// Starts at 1 for first post in thread.
-    nr_in_thread: u32,
 
     /// Current text of post
     current_text: Vec<u8>,
@@ -433,56 +436,21 @@ pub struct Thread<BlockNumber, Moment, AccountId> {
     /// Category in which this thread lives
     category_id: CategoryId,
 
-    /// The thread number of this thread in its category, i.e. total number of thread added (including this)
-    /// to a category when it was added.
-    /// Is needed to give light clients assurance about getting all threads in a given range,
-    /// `created_at` is not sufficient.
-    /// Starts at 1 for first thread in category.
-    nr_in_category: u32,
-
     /// Possible moderation of this thread
     moderation: Option<ModerationAction<BlockNumber, Moment, AccountId>>,
-
-    /// Number of unmoderated and moderated posts in this thread.
-    /// The sum of these two only increases, and former is incremented
-    /// for each new post added to this thread. A new post is added
-    /// with a `nr_in_thread` equal to this sum
-    ///
-    /// When there is a moderation
-    /// of a post, the variables are incremented and decremented, respectively.
-    ///
-    /// These values are vital for light clients, in order to validate that they are
-    /// not being censored from posts in a thread.
-    num_unmoderated_posts: u32,
-    num_moderated_posts: u32,
 
     /// When thread was established.
     created_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Author of post.
     author_id: AccountId,
-}
 
-impl<BlockNumber, Moment, AccountId> Thread<BlockNumber, Moment, AccountId> {
-    fn num_posts_ever_created(&self) -> u32 {
-        self.num_unmoderated_posts + self.num_moderated_posts
-    }
+    /// poll
+    include_poll: bool,
 }
 
 /// Represents a category identifier
 pub type CategoryId = u64;
-
-/// Represents
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct ChildPositionInParentCategory {
-    /// Id of parent category
-    parent_id: CategoryId,
-
-    /// Nr of the child in the parent
-    /// Starts at 1
-    child_nr_in_parent_category: u32,
-}
 
 /// Represents a category
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -506,35 +474,11 @@ pub struct Category<BlockNumber, Moment, AccountId> {
     /// Whether category is archived.
     archived: bool,
 
-    /// Number of subcategories (deleted, archived or neither),
-    /// unmoderated threads and moderated threads, _directly_ in this category.
-    ///
-    /// As noted, the first is unaffected by any change in state of direct subcategory.
-    ///
-    /// The sum of the latter two only increases, and former is incremented
-    /// for each new thread added to this category. A new thread is added
-    /// with a `nr_in_category` equal to this sum.
-    ///
-    /// When there is a moderation
-    /// of a thread, the variables are incremented and decremented, respectively.
-    ///
-    /// These values are vital for light clients, in order to validate that they are
-    /// not being censored from subcategories or threads in a category.
-    num_direct_subcategories: u32,
-    num_direct_unmoderated_threads: u32,
-    num_direct_moderated_threads: u32,
-
-    /// Position as child in parent, if present, otherwise this category is a root category
-    position_in_parent_category: Option<ChildPositionInParentCategory>,
+    /// Parent category id.
+    parent_id: Option<CategoryId>,
 
     /// Account of the moderator which created category.
     moderator_id: AccountId,
-}
-
-impl<BlockNumber, Moment, AccountId> Category<BlockNumber, Moment, AccountId> {
-    fn num_threads_created(&self) -> u32 {
-        self.num_direct_unmoderated_threads + self.num_direct_moderated_threads
-    }
 }
 
 /// Represents a sequence of categories which have child-parent relatioonship
@@ -580,6 +524,9 @@ decl_storage! {
 
         pub ReactionByPost get(reaction_by_post) config(): double_map PostId, blake2_256(T::AccountId) => PostReaction;
 
+        pub PollDesc get(poll_desc) config(): double_map ThreadId, blake2_256(u8) => Vec<u8>;
+        pub PollDataByAccount get(poll_by_account) config(): double_map ThreadId, blake2_256(T::AccountId) => PollData;
+
         /// Input constraints
         /// These are all forward looking, that is they are enforced on all
         /// future calls.
@@ -589,6 +536,9 @@ decl_storage! {
         pub PostTextConstraint get(post_text_constraint) config(): InputValidationLengthConstraint;
         pub ThreadModerationRationaleConstraint get(thread_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
         pub PostModerationRationaleConstraint get(post_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
+
+        pub PollDescConstraint get(poll_desc_constraint) config(): InputValidationLengthConstraint;
+        pub PollItemsConstraint get(poll_items_constraint) config(): InputValidationLengthConstraint;
     }
     /*
     JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
@@ -646,6 +596,19 @@ decl_event!(
 
         /// Given account was set as forum sudo.
         ForumSudoSet(Option<AccountId>, Option<AccountId>),
+
+        /// Thumb up post
+        ThumbUpPost(AccountId, PostId),
+        /// Thumb down post
+        ThumbDownPost(AccountId, PostId),
+        /// Like post
+        LikePost(AccountId, PostId),
+        /// Unthumb up post
+        UnthumbUpPost(AccountId, PostId),
+        /// Thumb down post
+        UnthumbDownPost(AccountId, PostId),
+        /// Unlike post
+        UnlikePost(AccountId, PostId),
     }
 );
 
@@ -727,9 +690,6 @@ decl_module! {
             // Validate description
             Self::ensure_category_description_is_valid(&description)?;
 
-            // Position in parent field value for new category
-            let mut position_in_parent_category_field = None;
-
             // If not root, then check that we can create in parent category
             if let Some(parent_category_id) = parent {
 
@@ -740,25 +700,6 @@ decl_module! {
 
                 // Can we mutate in this category?
                 Self::ensure_can_add_subcategory_path_leaf(&category_tree_path)?;
-
-                /*
-                 * Here we are safe to mutate
-                 */
-
-                // Increment number of subcategories to reflect this new category being
-                // added as a child
-                <CategoryById<T>>::mutate(parent_category_id, |c| {
-                    c.num_direct_subcategories += 1;
-                });
-
-                // Set `position_in_parent_category_field`
-                let parent_category = category_tree_path.first().unwrap();
-
-                position_in_parent_category_field = Some(ChildPositionInParentCategory{
-                    parent_id: parent_category_id,
-                    child_nr_in_parent_category: parent_category.num_direct_subcategories
-                });
-
             }
 
             /*
@@ -775,10 +716,7 @@ decl_module! {
                 created_at : Self::current_block_and_time(),
                 deleted: false,
                 archived: false,
-                num_direct_subcategories: 0,
-                num_direct_unmoderated_threads: 0,
-                num_direct_moderated_threads: 0,
-                position_in_parent_category: position_in_parent_category_field,
+                parent_id: parent,
                 moderator_id: who
             };
 
@@ -865,6 +803,8 @@ decl_module! {
             Ok(())
         }
 
+
+
         /// Create new thread in category
         fn create_thread(origin, category_id: CategoryId, title: Vec<u8>, text: Vec<u8>) -> dispatch::Result {
 
@@ -897,7 +837,7 @@ decl_module! {
              */
 
             // Add thread
-            let thread = Self::add_new_thread(category_id, &title, &who);
+            let thread = Self::add_new_thread(category_id, &title, &who, false);
 
             // Add inital post to thread
             Self::add_new_post(thread.id, &text, &who);
@@ -906,6 +846,72 @@ decl_module! {
             Self::deposit_event(RawEvent::ThreadCreated(thread.id));
 
             Ok(())
+        }
+
+        /// Create new thread in category with poll
+        fn create_thread_with_poll(origin, category_id: CategoryId, title: Vec<u8>, text: Vec<u8>, poll_desc: Vec<Vec<u8>>) -> dispatch::Result {
+
+            /*
+             * Update SPEC with new errors,
+             * and mutation of Category class,
+             * as well as side effect to update Category::num_threads_created.
+             */
+
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_member(&who)?;
+
+            // Get path from parent to root of category tree.
+            let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
+
+            // No ancestor is blocking us doing mutation in this category
+            Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+
+            // Validate title
+            Self::ensure_thread_title_is_valid(&title)?;
+
+            // Validate post text
+            Self::ensure_post_text_is_valid(&text)?;
+
+            /*
+             * Here it is safe to mutate state.
+             */
+
+            // Add thread
+            let thread = Self::add_new_thread(category_id, &title, &who, true);
+
+            // Add inital post to thread
+            Self::add_new_post(thread.id, &text, &who);
+
+            // Add a poll 
+            let _ = Self::create_poll(thread.id, poll_desc)?;
+
+            // Generate event
+            Self::deposit_event(RawEvent::ThreadCreated(thread.id));
+
+            Ok(())
+        }
+
+        /// submit a poll
+        fn submit_poll(origin, thread_id: ThreadId, poll_value: PollData) -> dispatch::Result {
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_member(&who)?;
+
+            // Get thread
+            let thread = Self::ensure_thread_exists(&thread_id)?;
+
+            if thread.include_poll == false {
+                Err(ERROR_POLL_NOT_EXIST)
+            } else {
+                // if re submit is allowed. PollDataByAccount(thread_id, &who).exist()
+                <PollDataByAccount<T>>::insert(thread_id, &who, poll_value);
+                Ok(())
+            }  
         }
 
         /// Moderate thread
@@ -951,10 +957,10 @@ decl_module! {
             <ThreadById<T>>::insert(thread_id, thread.clone());
 
             // Update moderation/umoderation count of corresponding category
-            <CategoryById<T>>::mutate(thread.category_id, |category| {
-                category.num_direct_unmoderated_threads -= 1;
-                category.num_direct_moderated_threads += 1;
-            });
+            // <CategoryById<T>>::mutate(thread.category_id, |category| {
+            //     category.num_direct_unmoderated_threads -= 1;
+            //     category.num_direct_moderated_threads += 1;
+            // });
 
             // Generate event
             Self::deposit_event(RawEvent::ThreadModerated(thread_id));
@@ -1014,9 +1020,12 @@ decl_module! {
             let old_value = <ReactionByPost<T>>::get(post_id, who.clone());
             if like == true && old_value.contains(PostReaction::LIKE) == false {
                 <ReactionByPost<T>>::insert(post_id, who, old_value | PostReaction::LIKE);
+                Self::deposit_event(RawEvent::LikePost(who, post_id));
             }
             else if like == false && old_value.contains(PostReaction::LIKE) == true {
                 <ReactionByPost<T>>::insert(post_id, who, old_value - PostReaction::LIKE);
+                Self::deposit_event(RawEvent::UnlikePost(who, post_id));
+            }
             }
    
             Ok(())
@@ -1037,9 +1046,11 @@ decl_module! {
             let old_value = <ReactionByPost<T>>::get(post_id, who.clone());
             if up == true && old_value.contains(PostReaction::UP) == false {
                 <ReactionByPost<T>>::insert(post_id, who, old_value | PostReaction::UP);
+                Self::deposit_event(RawEvent::ThumbUpPost(who, post_id));
             }
             else if up == false && old_value.contains(PostReaction::UP) == true {
                 <ReactionByPost<T>>::insert(post_id, who, old_value - PostReaction::UP);
+                Self::deposit_event(RawEvent::UnthumbUpPost(who, post_id));
             }
    
             Ok(())
@@ -1060,9 +1071,11 @@ decl_module! {
             let old_value = <ReactionByPost<T>>::get(post_id, who.clone());
             if down == true && old_value.contains(PostReaction::DOWN) == false {
                 <ReactionByPost<T>>::insert(post_id, who, old_value | PostReaction::DOWN);
+                Self::deposit_event(RawEvent::ThumbDownPost(who, post_id));
             }
             else if down == false && old_value.contains(PostReaction::DOWN) == true {
                 <ReactionByPost<T>>::insert(post_id, who, old_value - PostReaction::DOWN);
+                Self::deposit_event(RawEvent::UnthumbDownPost(who, post_id));
             }
    
             Ok(())
@@ -1148,12 +1161,6 @@ decl_module! {
                 p.moderation = Some(moderation_action);
             });
 
-            // Update moderated and unmoderated post count of corresponding thread
-            <ThreadById<T>>::mutate(post.thread_id, |t| {
-                t.num_unmoderated_posts -= 1;
-                t.num_moderated_posts += 1;
-            });
-
             // Generate event
             Self::deposit_event(RawEvent::PostModerated(post.id));
 
@@ -1164,6 +1171,21 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+
+    fn create_poll(thread_id: ThreadId, text: Vec<Vec<u8>>) -> dispatch::Result {
+        let len = text.len();
+        Self::ensure_poll_items_is_valid(len)?;
+        for index in 0..len {
+            let desc_len = text[index].len();
+            Self::ensure_poll_desc_is_valid(desc_len)?;
+        }
+        for index in 0..len {
+            // <CategoryByModerator<T>>::insert(category_id, account_id, true);
+            PollDesc::insert(thread_id, index as u8, &text[index]);
+        }
+        Ok(())
+    }
+
     fn ensure_category_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
         CategoryTitleConstraint::get().ensure_valid(
             title.len(),
@@ -1209,6 +1231,22 @@ impl<T: Trait> Module<T> {
             rationale.len(),
             ERROR_POST_MODERATION_RATIONALE_TOO_SHORT,
             ERROR_POST_MODERATION_RATIONALE_TOO_LONG,
+        )
+    }
+
+    fn ensure_poll_desc_is_valid(len: usize) -> dispatch::Result {
+        PollDescConstraint::get().ensure_valid(
+            len,
+            ERROR_POLL_DESC_TOO_SHORT,
+            ERROR_POLL_DESC_TOO_LONG,
+        )
+    }
+
+    fn ensure_poll_items_is_valid(len: usize) -> dispatch::Result {
+        PollItemsConstraint::get().ensure_valid(
+            len,
+            ERROR_POLL_ITEMS_TOO_SHORT,
+            ERROR_POLL_ITEMS_TOO_LONG,
         )
     }
 
@@ -1372,19 +1410,14 @@ impl<T: Trait> Module<T> {
         // Grab category
         let category = <CategoryById<T>>::get(category_id);
 
-        // Copy out position_in_parent_category
-        let position_in_parent_category_field = category.position_in_parent_category.clone();
-
         // Add category to path container
-        path.push(category);
+        path.push(category.clone());
 
         // Make recursive call on parent if we are not at root
-        if let Some(child_position_in_parent) = position_in_parent_category_field {
-            assert!(<CategoryById<T>>::exists(
-                &child_position_in_parent.parent_id
-            ));
+        if let Some(parent) = category.parent_id {
+            assert!(<CategoryById<T>>::exists(parent));
 
-            Self::_build_category_tree_path(child_position_in_parent.parent_id, path);
+            Self::_build_category_tree_path(parent, path);
         }
     }
 
@@ -1392,10 +1425,8 @@ impl<T: Trait> Module<T> {
         category_id: CategoryId,
         title: &Vec<u8>,
         author_id: &T::AccountId,
+        include_poll: bool,
     ) -> Thread<T::BlockNumber, T::Moment, T::AccountId> {
-        // Get category
-        let category = <CategoryById<T>>::get(category_id);
-
         // Create and add new thread
         let new_thread_id = NextThreadId::get();
 
@@ -1403,12 +1434,10 @@ impl<T: Trait> Module<T> {
             id: new_thread_id,
             title: title.clone(),
             category_id: category_id,
-            nr_in_category: category.num_threads_created() + 1,
             moderation: None,
-            num_unmoderated_posts: 0,
-            num_moderated_posts: 0,
             created_at: Self::current_block_and_time(),
             author_id: author_id.clone(),
+            include_poll: include_poll,
         };
 
         // Store thread
@@ -1420,9 +1449,9 @@ impl<T: Trait> Module<T> {
         });
 
         // Update unmoderated thread count in corresponding category
-        <CategoryById<T>>::mutate(category_id, |c| {
-            c.num_direct_unmoderated_threads += 1;
-        });
+        // <CategoryById<T>>::mutate(category_id, |c| {
+        //     c.num_direct_unmoderated_threads += 1;
+        // });
 
         new_thread
     }
@@ -1434,16 +1463,12 @@ impl<T: Trait> Module<T> {
         text: &Vec<u8>,
         author_id: &T::AccountId,
     ) -> Post<T::BlockNumber, T::Moment, T::AccountId> {
-        // Get thread
-        let thread = <ThreadById<T>>::get(thread_id);
-
         // Make and add initial post
         let new_post_id = NextPostId::get();
 
         let new_post = Post {
             id: new_post_id,
             thread_id: thread_id,
-            nr_in_thread: thread.num_posts_ever_created() + 1,
             current_text: text.clone(),
             moderation: None,
             text_change_history: vec![],
@@ -1457,11 +1482,6 @@ impl<T: Trait> Module<T> {
         // Update next post id
         NextPostId::mutate(|n| {
             *n += 1;
-        });
-
-        // Update unmoderated post count of thread
-        <ThreadById<T>>::mutate(thread_id, |t| {
-            t.num_unmoderated_posts += 1;
         });
 
         new_post

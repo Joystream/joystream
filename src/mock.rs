@@ -460,6 +460,8 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         category_by_moderator: vec![],
         max_category_depth: 3,
         reaction_by_post: vec![],
+        poll_desc: vec![],
+        poll_by_account: vec![],
 
         category_title_constraint: InputValidationLengthConstraint {
             min: 10,
@@ -491,8 +493,14 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
             max_min_diff: 2000,
         }, // JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
 
-           // Extra genesis fields
-           //initial_forum_sudo: Some(143)
+        poll_desc_constraint: InputValidationLengthConstraint {
+            min: 10,
+            max_min_diff: 200,
+        },
+        poll_items_constraint: InputValidationLengthConstraint {
+            min: 1,
+            max_min_diff: 20,
+        },
     }
 }
 
@@ -529,12 +537,16 @@ pub fn genesis_config(
     category_by_moderator: &RuntimeDoubleMap<CategoryId, <Runtime as system::Trait>::AccountId, bool>,
     max_category_depth: u8,
     reaction_by_post: &RuntimeDoubleMap<PostId, <Runtime as system::Trait>::AccountId, PostReaction>,
+    poll_desc: &RuntimeDoubleMap<PostId, u8, Vec<u8>>,
+    poll_by_account: &RuntimeDoubleMap<PostId, <Runtime as system::Trait>::AccountId, PollData>,
     category_title_constraint: &InputValidationLengthConstraint,
     category_description_constraint: &InputValidationLengthConstraint,
     thread_title_constraint: &InputValidationLengthConstraint,
     post_text_constraint: &InputValidationLengthConstraint,
     thread_moderation_rationale_constraint: &InputValidationLengthConstraint,
     post_moderation_rationale_constraint: &InputValidationLengthConstraint,
+    poll_desc_constraint: &InputValidationLengthConstraint,
+    poll_items_constraint: &InputValidationLengthConstraint,
 ) -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
         category_by_id: category_by_id.clone(),
@@ -547,12 +559,16 @@ pub fn genesis_config(
         category_by_moderator: category_by_moderator.clone(),
         max_category_depth: max_category_depth,
         reaction_by_post: reaction_by_post.clone(),
+        poll_desc: poll_desc.clone(),
+        poll_by_account: poll_by_account.clone(),
         category_title_constraint: category_title_constraint.clone(),
         category_description_constraint: category_description_constraint.clone(),
         thread_title_constraint: thread_title_constraint.clone(),
         post_text_constraint: post_text_constraint.clone(),
         thread_moderation_rationale_constraint: thread_moderation_rationale_constraint.clone(),
         post_moderation_rationale_constraint: post_moderation_rationale_constraint.clone(),
+        poll_desc_constraint: poll_desc_constraint.clone(),
+        poll_items_constraint: poll_items_constraint.clone(),
     }
 }
 
