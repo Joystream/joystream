@@ -1019,13 +1019,12 @@ decl_module! {
             // set like
             let old_value = <ReactionByPost<T>>::get(post_id, who.clone());
             if like == true && old_value.contains(PostReaction::LIKE) == false {
-                <ReactionByPost<T>>::insert(post_id, who, old_value | PostReaction::LIKE);
+                <ReactionByPost<T>>::insert(post_id, who.clone(), old_value | PostReaction::LIKE);
                 Self::deposit_event(RawEvent::LikePost(who, post_id));
             }
             else if like == false && old_value.contains(PostReaction::LIKE) == true {
-                <ReactionByPost<T>>::insert(post_id, who, old_value - PostReaction::LIKE);
+                <ReactionByPost<T>>::insert(post_id, who.clone(), old_value - PostReaction::LIKE);
                 Self::deposit_event(RawEvent::UnlikePost(who, post_id));
-            }
             }
    
             Ok(())
@@ -1045,11 +1044,11 @@ decl_module! {
             // set up
             let old_value = <ReactionByPost<T>>::get(post_id, who.clone());
             if up == true && old_value.contains(PostReaction::UP) == false {
-                <ReactionByPost<T>>::insert(post_id, who, old_value | PostReaction::UP);
+                <ReactionByPost<T>>::insert(post_id, who.clone(), old_value | PostReaction::UP);
                 Self::deposit_event(RawEvent::ThumbUpPost(who, post_id));
             }
             else if up == false && old_value.contains(PostReaction::UP) == true {
-                <ReactionByPost<T>>::insert(post_id, who, old_value - PostReaction::UP);
+                <ReactionByPost<T>>::insert(post_id, who.clone(), old_value - PostReaction::UP);
                 Self::deposit_event(RawEvent::UnthumbUpPost(who, post_id));
             }
    
@@ -1070,11 +1069,11 @@ decl_module! {
             // set down
             let old_value = <ReactionByPost<T>>::get(post_id, who.clone());
             if down == true && old_value.contains(PostReaction::DOWN) == false {
-                <ReactionByPost<T>>::insert(post_id, who, old_value | PostReaction::DOWN);
+                <ReactionByPost<T>>::insert(post_id, who.clone(), old_value | PostReaction::DOWN);
                 Self::deposit_event(RawEvent::ThumbDownPost(who, post_id));
             }
             else if down == false && old_value.contains(PostReaction::DOWN) == true {
-                <ReactionByPost<T>>::insert(post_id, who, old_value - PostReaction::DOWN);
+                <ReactionByPost<T>>::insert(post_id, who.clone(), old_value - PostReaction::DOWN);
                 Self::deposit_event(RawEvent::UnthumbDownPost(who, post_id));
             }
    
@@ -1166,7 +1165,6 @@ decl_module! {
 
             Ok(())
         }
-
     }
 }
 
