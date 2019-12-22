@@ -761,7 +761,12 @@ decl_module! {
                 let mut path_to_check = category_tree_path.clone();
                 path_to_check.remove(0);
 
-                Self::ensure_can_mutate_in_path_leaf(&path_to_check)?;
+                if Self::ensure_can_mutate_in_path_leaf(&path_to_check).is_err() {
+                    // if ancestor archived or deleted, no necessary to set child again.    
+                    if new_archival_status == Some(true) || new_deletion_status == Some(true) {
+                        return Ok(())
+                    }
+                };
             }
 
             // If the category itself is already deleted, then this
