@@ -3,9 +3,15 @@
 
 mod add_opening;
 mod begin_accepting_applications;
+mod begin_review;
 mod smoke;
 
 use super::*;
+
+////Debug test object content
+//pub fn debug_print<T: rstd::fmt::Debug>(obj: T) {
+//    println!("{:?}", obj);
+//}
 
 // cancel_opening
 
@@ -28,13 +34,6 @@ use super::*;
 //fn cancel_opening_fails_due_to_opening_not_existing() {
 //    build_test_externalities().execute_with(|| {});
 //}
-
-//Debug test object content
-//pub fn debug_print<T : rstd::fmt::Debug>(obj: T) {
-//    println!("{:?}", obj);
-//}
-
-//
 
 /*
  * remove_opening
