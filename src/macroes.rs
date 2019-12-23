@@ -185,7 +185,6 @@ macro_rules! ensure_opt_unstaking_period_is_ok {
     }};
 }
 
-
 /// Ensures that a new application would make it into a given opening
 ///
 /// Returns ...

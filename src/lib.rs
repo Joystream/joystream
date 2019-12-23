@@ -973,10 +973,7 @@ impl<T: Trait> Module<T> {
             hiring::ApplicationDeactivationCause::External,
         );
 
-        assert_ne!(
-            result,
-            ApplicationDeactivationInitationResult::Ignored
-        );
+        assert_ne!(result, ApplicationDeactivationInitationResult::Ignored);
 
         // DONE
         Ok(())

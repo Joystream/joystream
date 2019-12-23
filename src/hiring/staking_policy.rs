@@ -57,7 +57,7 @@ impl<Balance: PartialOrd + Clone, BlockNumber: Clone> StakingPolicy<Balance, Blo
     ) -> Result<(), Err> {
         if let Some(ref staking_policy) = opt_staking_policy {
             if staking_policy.amount < runtime_minimum_balance {
-                return Err(error)
+                return Err(error);
             }
         }
 
