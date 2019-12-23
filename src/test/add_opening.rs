@@ -49,21 +49,43 @@ impl AddOpeningFixture<u64> {
         );
         assert_eq!(add_opening_result, expected_result);
 
-        let (expected_next_opening_id, expected_opening_existence) = if add_opening_result.is_ok() {
-            // Next opening id has been updated and opening exists
-            (expected_opening_id + 1, true)
+        if add_opening_result.is_ok() {
+            // Check next opening id has been updated
+            assert_eq!(Hiring::next_opening_id(), expected_opening_id + 1);
+            // Check opening exists
+            assert!(<OpeningById<Test>>::exists(expected_opening_id));
         } else {
-            // Next opening id has not been updated and opening does not exist
-            (expected_opening_id, false)
+            // Check next opening id has not been updated
+            assert_eq!(Hiring::next_opening_id(), expected_opening_id);
+            // Check opening does not exist
+            assert!(!<OpeningById<Test>>::exists(expected_opening_id));
         };
 
-        //Check next opening_id
-        assert_eq!(Hiring::next_opening_id(), expected_next_opening_id);
-        // Check  opening existence
-        assert_eq!(
-            <OpeningById<Test>>::exists(expected_opening_id),
-            expected_opening_existence
-        );
+        //Check opening content
+        if add_opening_result.is_ok() {
+            let found_opening = Hiring::opening_by_id(expected_opening_id);
+
+            assert_eq!(
+                found_opening,
+                Opening {
+                    created: FIRST_BLOCK_HEIGHT,
+                    stage: OpeningStage::Active {
+                        stage: ActiveOpeningStage::AcceptingApplications {
+                            started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT
+                        },
+                        applications_added: BTreeSet::new(),
+                        active_application_count: 0,
+                        unstaking_application_count: 0,
+                        deactivated_application_count: 0
+                    },
+                    max_review_period_length: self.max_review_period_length,
+                    application_rationing_policy: self.application_rationing_policy.clone(),
+                    application_staking_policy: self.application_staking_policy.clone(),
+                    role_staking_policy: self.role_staking_policy.clone(),
+                    human_readable_text: OPENING_HUMAN_READABLE_TEXT.to_vec()
+                }
+            );
+        }
     }
 }
 
@@ -76,30 +98,6 @@ fn add_opening_success_waiting_to_begin() {
 
         // Add an opening, check that the returned value is Zero
         opening_data.call_and_assert(Ok(expected_opening_id));
-
-        let found_opening = Hiring::opening_by_id(expected_opening_id);
-
-        // Check opening content
-        assert_eq!(
-            found_opening,
-            Opening {
-                created: FIRST_BLOCK_HEIGHT,
-                stage: OpeningStage::Active {
-                    stage: ActiveOpeningStage::AcceptingApplications {
-                        started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT
-                    },
-                    applications_added: BTreeSet::new(),
-                    active_application_count: 0,
-                    unstaking_application_count: 0,
-                    deactivated_application_count: 0
-                },
-                max_review_period_length: opening_data.max_review_period_length,
-                application_rationing_policy: None,
-                application_staking_policy: None,
-                role_staking_policy: None,
-                human_readable_text: OPENING_HUMAN_READABLE_TEXT.to_vec()
-            }
-        );
     });
 }
 

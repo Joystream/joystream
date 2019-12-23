@@ -835,11 +835,10 @@ impl<T: Trait> Module<T> {
                 hiring::ApplicationDeactivationCause::CrowdedOut,
             );
 
-            if deactivation_result == ApplicationDeactivationInitationResult::Ignored {
-                return Err(AddApplicationError::BrokenInvariant(
-                    "Application deactivation cannot be ignored.",
-                ));
-            }
+            assert_ne!(
+                deactivation_result,
+                ApplicationDeactivationInitationResult::Ignored
+            );
         }
 
         // Get Id for this new application
@@ -974,11 +973,10 @@ impl<T: Trait> Module<T> {
             hiring::ApplicationDeactivationCause::External,
         );
 
-        if result == ApplicationDeactivationInitationResult::Ignored {
-            return Err(DeactivateApplicationError::BrokenInvariant(
-                "Application deactivation cannot be ignored.",
-            ));
-        }
+        assert_ne!(
+            result,
+            ApplicationDeactivationInitationResult::Ignored
+        );
 
         // DONE
         Ok(())

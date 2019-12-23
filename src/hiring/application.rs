@@ -184,7 +184,6 @@ pub enum AddApplicationError {
     StakeAmountTooLow(StakePurpose),
     OpeningNotInAcceptingApplicationsStage,
     NewApplicationWasCrowdedOut,
-    BrokenInvariant(&'static str),
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -203,5 +202,4 @@ pub enum DeactivateApplicationError {
     OpeningNotAcceptingApplications,
     UnstakingPeriodTooShort(StakePurpose),
     RedundantUnstakingPeriodProvided(StakePurpose),
-    BrokenInvariant(&'static str),
 }
