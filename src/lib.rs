@@ -468,13 +468,7 @@ impl<T: Trait> Module<T> {
         let opening = ensure_opening_exists!(T, opening_id, BeginReviewError::OpeningDoesNotExist)?;
 
         // Opening is accepting applications
-        let (
-            active_stage,
-            applications_added,
-            active_application_count,
-            unstaking_application_count,
-            deactivated_application_count,
-        ) = ensure_opening_is_active!(
+        let (active_stage, _, _, _, _) = ensure_opening_is_active!(
             opening.stage,
             BeginReviewError::OpeningNotInAcceptingApplicationsStage
         )?;
@@ -490,19 +484,11 @@ impl<T: Trait> Module<T> {
 
         let current_block_height = <system::Module<T>>::block_number();
 
-        let new_opening = hiring::Opening {
-            stage: hiring::OpeningStage::Active {
-                stage: hiring::ActiveOpeningStage::ReviewPeriod {
-                    started_accepting_applicants_at_block,
-                    started_review_period_at_block: current_block_height,
-                },
-                applications_added,
-                active_application_count,
-                unstaking_application_count,
-                deactivated_application_count,
-            },
-            ..opening
-        };
+        let new_opening =
+            opening.clone_with_new_active_opening_stage(hiring::ActiveOpeningStage::ReviewPeriod {
+                started_accepting_applicants_at_block,
+                started_review_period_at_block: current_block_height,
+            });
 
         // Update to new opening
         <OpeningById<T>>::insert(opening_id, new_opening);

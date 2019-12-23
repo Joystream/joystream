@@ -85,13 +85,41 @@ where
         self,
         active_opening_stage: hiring::ActiveOpeningStage<BlockNumber>,
     ) -> Self {
+
+        //TODO: hiring::OpeningStage::Active params should be changed to struct
+        //Copy parameters from previous active stage if any or set defaults
+        let (
+            applications_added,
+            active_application_count,
+            unstaking_application_count,
+            deactivated_application_count,
+        ) = if let hiring::OpeningStage::Active {
+            stage: _,
+            applications_added,
+            active_application_count,
+            unstaking_application_count,
+            deactivated_application_count,
+        } = self.stage
+        {
+            //Active opening stage
+            (
+                applications_added,
+                active_application_count,
+                unstaking_application_count,
+                deactivated_application_count,
+            )
+        } else {
+            //Not active opening stage
+            (BTreeSet::new(), 0, 0, 0)
+        };
+
         hiring::Opening {
             stage: hiring::OpeningStage::Active {
                 stage: active_opening_stage.clone(),
-                applications_added: BTreeSet::new(),
-                active_application_count: 0,
-                unstaking_application_count: 0,
-                deactivated_application_count: 0,
+                applications_added,
+                active_application_count,
+                unstaking_application_count,
+                deactivated_application_count,
             },
             ..self
         }
@@ -219,6 +247,77 @@ impl<BlockNumber: Default, ApplicationId> Default for OpeningStage<BlockNumber, 
             begins_at_block: BlockNumber::default(),
         }
     }
+}
+
+#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
+pub enum ActiveOpeningStage<BlockNumber> {
+    AcceptingApplications {
+        //
+        started_accepting_applicants_at_block: BlockNumber,
+    },
+
+    //
+    ReviewPeriod {
+        started_accepting_applicants_at_block: BlockNumber,
+
+        started_review_period_at_block: BlockNumber,
+    },
+
+    //
+    Deactivated {
+        cause: OpeningDeactivationCause,
+
+        deactivated_at_block: BlockNumber,
+
+        started_accepting_applicants_at_block: BlockNumber,
+
+        /// Whether the review period had ever been started, and if so, at what block.
+        /// Deactivation can also occur directly from the AcceptingApplications stage.
+        started_review_period_at_block: Option<BlockNumber>,
+    },
+}
+
+impl<BlockNumber: Clone> ActiveOpeningStage<BlockNumber> {
+    /// Ensures that active opening stage is accepting applications.
+    pub(crate) fn ensure_active_opening_is_accepting_applications<Err>(
+        &self,
+        error: Err,
+    ) -> Result<BlockNumber, Err> {
+        if let ActiveOpeningStage::AcceptingApplications {
+            started_accepting_applicants_at_block,
+        } = self
+        {
+            return Ok(started_accepting_applicants_at_block.clone());
+        }
+
+        Err(error)
+    }
+
+    /// Ensures that active opening stage is in review period.
+    pub fn ensure_active_opening_is_in_review_period<Err>(
+        &self,
+        error: Err,
+    ) -> Result<(BlockNumber, BlockNumber), Err> {
+        match self {
+            ActiveOpeningStage::ReviewPeriod {
+                started_accepting_applicants_at_block,
+                started_review_period_at_block,
+            } => Ok((
+                started_accepting_applicants_at_block.clone(),
+                started_review_period_at_block.clone(),
+            )), // <= need proper type here in the future, not param
+            _ => Err(error),
+        }
+    }
+}
+
+#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
+pub enum OpeningDeactivationCause {
+    CancelledBeforeActivation,
+    CancelledAcceptingApplications,
+    CancelledInReviewPeriod,
+    ReviewPeriodExpired,
+    Filled,
 }
 
 /// NB:

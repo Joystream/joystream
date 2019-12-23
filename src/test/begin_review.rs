@@ -6,6 +6,11 @@ use rstd::collections::btree_set::BTreeSet;
 
 use add_opening::AddOpeningFixture;
 
+/*
+Not covered:
+- opening has applications
+*/
+
 #[test]
 fn begin_review_fails_with_no_opening() {
     build_test_externalities().execute_with(|| {
