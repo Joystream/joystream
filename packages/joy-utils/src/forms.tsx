@@ -1,5 +1,5 @@
 import React from 'react';
-import { Field, ErrorMessage, FormikErrors, FormikTouched } from 'formik';
+import { Field, FormikErrors, FormikTouched } from 'formik';
 
 import { BareProps } from '@polkadot/react-components/types';
 import { nonEmptyStr } from '@polkadot/joy-utils/index';
@@ -22,12 +22,16 @@ export type LabelledProps<FormValues> = BareProps & {
 export function LabelledField<FormValues> () {
   return (props: LabelledProps<FormValues>) => {
     const { name, label, invisibleLabel = false, tooltip, required = false, touched, errors, children, style } = props;
+    
     const hasError = name && touched[name] && errors[name];
 
-    const fieldWithError = <>
-      <div>{children}</div>
-      {name && <ErrorMessage name={name as string} component='div' className='ui pointing red label' />}
-    </>;
+    const errorClass = hasError ? 'error' : ''
+
+    const fieldWithError =
+      <>
+        <div>{children}</div>
+        {name && hasError && <div className='ui pointing red label'>{errors[name]}</div>}
+      </>
 
     const renderLabel = () =>
       nonEmptyStr(label)
@@ -38,7 +42,7 @@ export function LabelledField<FormValues> () {
         : null
     
     return (label || invisibleLabel)
-      ? <div style={style} className={`ui--Labelled field ${hasError ? 'error' : ''}`}>
+      ? <div style={style} className={`ui--Labelled field ${errorClass}`}>
           <label htmlFor={name as string}>
             {renderLabel()}
             {tooltip && <FieldTooltip>{tooltip}</FieldTooltip> }
@@ -47,7 +51,7 @@ export function LabelledField<FormValues> () {
             {fieldWithError}
           </div>
         </div>
-      : <div style={style} className={`field ${hasError ? 'error' : ''}`}>
+      : <div style={style} className={`field ${errorClass}`}>
           {fieldWithError}
         </div>;
   };
