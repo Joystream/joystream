@@ -62,13 +62,13 @@ export function withMediaForm<OuterProps, FormValues>
   
   function MediaText (props: MediaTextProps<OuterProps, FormValues>) {
     const { field: f } = props;
-    return !f ? null : <LabelledText name={f.id} label={f.name} tooltip={f.description} {...props} />;
+    return !f ? null : <LabelledText name={f.id} label={f.name} tooltip={f.description} required={f.required} {...props} />;
   }
 
   const MediaField = (props: MediaFieldProps<OuterProps, FormValues>) => {
     const { field: f, ...otherProps } = props;
     return !f ? null : (
-      <LabelledField name={f.id} label={f.name} tooltip={f.description} {...props}>
+      <LabelledField name={f.id} label={f.name} tooltip={f.description}  required={f.required} {...props}>
         <Field name={f.id} id={f.id} {...otherProps} />
       </LabelledField>
     );

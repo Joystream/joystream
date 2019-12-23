@@ -11,6 +11,7 @@ export type LabelledProps<FormValues> = BareProps & {
   invisibleLabel?: boolean,
   placeholder?: string,
   tooltip?: React.ReactNode,
+  required?: boolean,
   style?: React.CSSProperties,
   children?: React.ReactNode,
   errors: FormikErrors<FormValues>,
@@ -20,18 +21,26 @@ export type LabelledProps<FormValues> = BareProps & {
 
 export function LabelledField<FormValues> () {
   return (props: LabelledProps<FormValues>) => {
-    const { name, label, invisibleLabel = false, tooltip, touched, errors, children, style } = props;
+    const { name, label, invisibleLabel = false, tooltip, required = false, touched, errors, children, style } = props;
     const hasError = name && touched[name] && errors[name];
 
     const fieldWithError = <>
       <div>{children}</div>
       {name && <ErrorMessage name={name as string} component='div' className='ui pointing red label' />}
     </>;
+
+    const renderLabel = () =>
+      nonEmptyStr(label)
+        ? <>
+            {required && <b style={{ color: 'red'}} title='This field is required'>* </b>}
+            {label}
+          </>
+        : null
     
     return (label || invisibleLabel)
       ? <div style={style} className={`ui--Labelled field ${hasError ? 'error' : ''}`}>
           <label htmlFor={name as string}>
-            {nonEmptyStr(label) && label}
+            {renderLabel()}
             {tooltip && <FieldTooltip>{tooltip}</FieldTooltip> }
           </label>
           <div className='ui--Labelled-content'>
