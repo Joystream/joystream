@@ -81,8 +81,24 @@ where
         }
     }
 
+    pub(crate) fn clone_with_new_active_opening_stage(
+        self,
+        active_opening_stage: hiring::ActiveOpeningStage<BlockNumber>,
+    ) -> Self {
+        hiring::Opening {
+            stage: hiring::OpeningStage::Active {
+                stage: active_opening_stage.clone(),
+                applications_added: BTreeSet::new(),
+                active_application_count: 0,
+                unstaking_application_count: 0,
+                deactivated_application_count: 0,
+            },
+            ..self
+        }
+    }
+
     /// Performs all necessary check before adding an opening
-    pub fn ensure_can_add_opening(
+    pub(crate) fn ensure_can_add_opening(
         current_block_height: BlockNumber,
         activate_at: ActivateOpeningAt<BlockNumber>,
         runtime_minimum_balance: Balance,
@@ -183,7 +199,7 @@ impl<BlockNumber: Clone, ApplicationId> OpeningStage<BlockNumber, ApplicationId>
     }
 
     /// Ensures that an opening is waiting to begin.
-    pub fn ensure_opening_stage_is_waiting_to_begin<Err>(
+    pub(crate) fn ensure_opening_stage_is_waiting_to_begin<Err>(
         &self,
         error: Err,
     ) -> Result<BlockNumber, Err> {

@@ -138,7 +138,7 @@ pub enum ActiveOpeningStage<BlockNumber> {
 
 impl<BlockNumber: Clone> ActiveOpeningStage<BlockNumber> {
     /// Ensures that active opening stage is accepting applications.
-    pub fn ensure_active_opening_is_accepting_applications<Err>(
+    pub(crate) fn ensure_active_opening_is_accepting_applications<Err>(
         &self,
         error: Err,
     ) -> Result<BlockNumber, Err> {

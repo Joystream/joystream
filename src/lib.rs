@@ -450,18 +450,11 @@ impl<T: Trait> Module<T> {
         let current_block_height = <system::Module<T>>::block_number();
 
         // Update state of opening
-        let new_opening = hiring::Opening {
-            stage: hiring::OpeningStage::Active {
-                stage: hiring::ActiveOpeningStage::AcceptingApplications {
-                    started_accepting_applicants_at_block: current_block_height,
-                },
-                applications_added: BTreeSet::new(), //BTreeMap::new(),
-                active_application_count: 0,
-                unstaking_application_count: 0,
-                deactivated_application_count: 0,
+        let new_opening = opening.clone_with_new_active_opening_stage(
+            hiring::ActiveOpeningStage::AcceptingApplications {
+                started_accepting_applicants_at_block: current_block_height,
             },
-            ..opening
-        };
+        );
 
         // Write back opening
         <OpeningById<T>>::insert(opening_id, new_opening);
@@ -475,7 +468,6 @@ impl<T: Trait> Module<T> {
         let opening = ensure_opening_exists!(T, opening_id, BeginReviewError::OpeningDoesNotExist)?;
 
         // Opening is accepting applications
-
         let (
             active_stage,
             applications_added,

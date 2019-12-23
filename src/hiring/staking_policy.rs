@@ -50,7 +50,7 @@ impl<Balance: PartialOrd + Clone, BlockNumber: Clone> StakingPolicy<Balance, Blo
     }
 
     /// Ensures that optional staking policy prescribes value that clears minimum balance requirement
-    pub fn ensure_amount_valid_in_opt_staking_policy<Err>(
+    pub(crate) fn ensure_amount_valid_in_opt_staking_policy<Err>(
         opt_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
         runtime_minimum_balance: Balance,
         error: Err,
