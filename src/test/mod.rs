@@ -5,6 +5,7 @@ mod add_application;
 mod add_opening;
 mod begin_accepting_applications;
 mod begin_review;
+mod ensure_can_add_application;
 mod smoke;
 
 /*

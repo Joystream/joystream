@@ -1,11 +1,11 @@
 use rstd::collections::btree_set::BTreeSet;
 use rstd::vec::Vec;
 
-use srml_support::ensure;
 use codec::{Decode, Encode};
+use srml_support::ensure;
 
-use crate::{hiring, ApplicationRationingPolicy, StakingPolicy};
 use crate::hiring::StakePurpose;
+use crate::{hiring, ApplicationRationingPolicy, StakingPolicy};
 
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone)]
 pub struct Opening<Balance, BlockNumber, ApplicationId> {
