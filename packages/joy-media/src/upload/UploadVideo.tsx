@@ -65,7 +65,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <MediaField field={Fields.description} component='textarea' rows={3} disabled={isSubmitting} {...props} />
     <MediaDropdown field={Fields.category} options={Opts.videoCategoryOptions} {...props} />
     <MediaDropdown field={Fields.language} options={Opts.languageOptions} {...props} />
     <MediaDropdown field={Fields.license} options={Opts.licenseOptions} {...props} />
