@@ -858,13 +858,15 @@ impl<T: Trait> Module<T> {
 
         // Update counter on opening
 
+        let mut apps_added = can_be_added_destructured.applications_added;
+        apps_added.insert(new_application_id);
         /*
         TODO:
         Yet another instance of problems due to not following https://github.com/Joystream/joystream/issues/36#issuecomment-539567407
         */
         let new_active_stage = hiring::OpeningStage::Active {
             stage: can_be_added_destructured.active_stage,
-            applications_added: can_be_added_destructured.applications_added,
+            applications_added: apps_added,
             active_application_count: can_be_added_destructured.active_application_count + 1,
             unstaking_application_count: can_be_added_destructured.unstaking_application_count,
             deactivated_application_count: can_be_added_destructured.deactivated_application_count,
