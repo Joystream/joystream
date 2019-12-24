@@ -214,9 +214,7 @@ use serde_derive::{Deserialize, Serialize};
 use rstd::prelude::*;
 
 use codec::{Decode, Encode};
-use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure,
-};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
 
 mod mock;
 mod tests;
