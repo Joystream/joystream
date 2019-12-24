@@ -56,29 +56,38 @@ impl AddOpeningFixture<u64> {
 
         //Check opening content
         if add_opening_result.is_ok() {
-            let found_opening = Hiring::opening_by_id(expected_opening_id);
-
-            assert_eq!(
-                found_opening,
-                Opening {
-                    created: FIRST_BLOCK_HEIGHT,
-                    stage: OpeningStage::Active {
-                        stage: ActiveOpeningStage::AcceptingApplications {
-                            started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT
-                        },
-                        applications_added: BTreeSet::new(),
-                        active_application_count: 0,
-                        unstaking_application_count: 0,
-                        deactivated_application_count: 0
-                    },
-                    max_review_period_length: self.max_review_period_length,
-                    application_rationing_policy: self.application_rationing_policy.clone(),
-                    application_staking_policy: self.application_staking_policy.clone(),
-                    role_staking_policy: self.role_staking_policy.clone(),
-                    human_readable_text: OPENING_HUMAN_READABLE_TEXT.to_vec()
-                }
-            );
+            self.assert_opening_content(expected_opening_id);
         }
+    }
+
+    fn assert_opening_content(&self, expected_opening_id: u64) {
+        let expected_opening_stage = match self.activate_at {
+            ActivateOpeningAt::CurrentBlock => OpeningStage::Active {
+                stage: ActiveOpeningStage::AcceptingApplications {
+                    started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT,
+                },
+                applications_added: BTreeSet::new(),
+                active_application_count: 0,
+                unstaking_application_count: 0,
+                deactivated_application_count: 0,
+            },
+            ActivateOpeningAt::ExactBlock(block_number) => OpeningStage::WaitingToBegin {
+                begins_at_block: block_number,
+            },
+        };
+
+        let expected_opening = Opening {
+            created: FIRST_BLOCK_HEIGHT,
+            stage: expected_opening_stage,
+            max_review_period_length: self.max_review_period_length,
+            application_rationing_policy: self.application_rationing_policy.clone(),
+            application_staking_policy: self.application_staking_policy.clone(),
+            role_staking_policy: self.role_staking_policy.clone(),
+            human_readable_text: OPENING_HUMAN_READABLE_TEXT.to_vec(),
+        };
+
+        let found_opening = Hiring::opening_by_id(expected_opening_id);
+        assert_eq!(found_opening, expected_opening);
     }
 
     pub fn add_opening(&self) -> Result<u64, AddOpeningError> {
@@ -114,24 +123,6 @@ fn add_opening_success_waiting_to_begin() {
 
         // Add an opening, check that the returned value is Zero
         opening_data.call_and_assert(Ok(expected_opening_id));
-
-        let found_opening = Hiring::opening_by_id(expected_opening_id);
-
-        // Check opening content
-        assert_eq!(
-            found_opening,
-            Opening {
-                created: FIRST_BLOCK_HEIGHT,
-                stage: OpeningStage::WaitingToBegin {
-                    begins_at_block: 22
-                },
-                max_review_period_length: opening_data.max_review_period_length,
-                application_rationing_policy: None,
-                application_staking_policy: None,
-                role_staking_policy: None,
-                human_readable_text: OPENING_HUMAN_READABLE_TEXT.to_vec()
-            }
-        );
     });
 }
 
