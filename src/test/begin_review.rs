@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use super::*;
 use crate::mock::*;
 use rstd::collections::btree_set::BTreeSet;

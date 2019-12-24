@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use super::*;
 use crate::mock::*;
 
@@ -7,7 +5,6 @@ use crate::hiring::*;
 use crate::test::add_application::AddApplicationFixture;
 use add_opening::{AddOpeningFixture, OPENING_HUMAN_READABLE_TEXT};
 use rstd::collections::btree_set::BTreeSet;
-
 
 /*
 Not covered:
