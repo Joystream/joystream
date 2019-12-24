@@ -2,12 +2,16 @@ import { Enum, Option, Struct } from '@polkadot/types/codec';
 import { getTypeRegistry, Text } from '@polkadot/types';
 import { BlockNumber, AccountId, Balance, Hash } from '@polkadot/types/interfaces';
 import { u32, bool } from '@polkadot/types/primitive';
+import { Codec } from '@polkadot/types/types';
+
 import { registerForumTypes } from './forum';
 import { registerMediaTypes } from './media';
 import { registerMembershipTypes } from './members';
 import { registerRolesTypes } from './roles';
 import { registerDiscoveryTypes } from './discovery';
-import { Codec } from '@polkadot/types/types';
+import { registerHiringTypes } from './hiring';
+import { registerVersionedStoreTypes } from './versioned-store';
+import { registerVersionedStorePermissionsTypes } from './versioned-store/permissions';
 
 export function getTextPropAsString (struct: Struct, fieldName: string): string {
   return (struct.get(fieldName) as Text).toString();
@@ -22,6 +26,7 @@ export function getOptionPropOrUndefined <T extends Codec>
 
   return (struct.get(fieldName) as Option<T>).unwrapOr(undefined);
 }
+
 
 export class OptionText extends Option.with(Text) {
 
@@ -241,4 +246,7 @@ export function registerJoystreamTypes () {
   registerForumTypes();
   registerElectionAndProposalTypes();
   registerDiscoveryTypes();
+  registerHiringTypes();
+  registerVersionedStoreTypes();
+  registerVersionedStorePermissionsTypes();
 }

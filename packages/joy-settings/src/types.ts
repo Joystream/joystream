@@ -18,4 +18,5 @@ export interface SettingsStruct {
   prefix: number;
   uiMode: string;
   uiTheme: string;
+  camera: string;
 }

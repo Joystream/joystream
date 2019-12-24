@@ -85,7 +85,7 @@ class Component extends React.PureComponent<Props, State> {
         <Table.Body>
           <Table.Row>
             <Table.Cell>Applicant</Table.Cell>
-            <Table.Cell><AddressMini value={applicantId} isShort={false} isPadded={false} withBalance={true} withName={true} size={36} withMemo={true} /></Table.Cell>
+            <Table.Cell><AddressMini value={applicantId} isShort={false} isPadded={false} withBalance={true}  /></Table.Cell>
           </Table.Row>
           <Table.Row>
             <Table.Cell>Stake</Table.Cell>

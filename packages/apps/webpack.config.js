@@ -83,6 +83,21 @@ function createWebpack ({ alias = {}, context, name = 'index' }) {
           ]
         },
         {
+            test: /\.s[ac]ss$/i,
+            use: [
+              // Creates `style` nodes from JS strings
+              'style-loader',
+              // Translates CSS into CommonJS
+              'css-loader',
+              // Compiles Sass to CSS
+              'sass-loader',
+            ],
+        },
+        { 
+            test: /\.less$/, 
+            loaders: [ 'style-loader', 'css-loader', 'less-loader' ] 
+        },
+        {
           test: /\.css$/,
           include: /node_modules/,
           use: [

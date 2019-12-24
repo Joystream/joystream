@@ -23,7 +23,7 @@ interface Props extends BareProps {
   isPadded?: boolean;
   isShort?: boolean;
   type?: KeyringItemType;
-  value?: AccountId | AccountIndex | Address | string;
+  value?: AccountId | AccountIndex | Address | string | null;
   withAddress?: boolean;
   withBalance?: boolean;
   withBonded?: boolean;

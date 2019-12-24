@@ -100,6 +100,10 @@ export default createGlobalStyle`
 
     &[open] > summary {
       white-space: normal;
+
+      br, br + * {
+        display: block;
+      }
     }
 
     > summary {
@@ -107,6 +111,10 @@ export default createGlobalStyle`
       overflow: hidden;
       white-space: nowrap;
       outline: none;
+
+      br, br + * {
+        display: none;
+      }
     }
   }
 

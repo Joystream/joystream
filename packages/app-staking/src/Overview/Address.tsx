@@ -1,216 +1,232 @@
-/* eslint-disable @typescript-eslint/camelcase */
 // Copyright 2017-2019 @polkadot/app-staking authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { AccountId, Balance, BlockNumber, Exposure } from '@polkadot/types/interfaces';
-import { DerivedStaking, DerivedStakingOnlineStatus } from '@polkadot/api-derive/types';
-import { ApiProps } from '@polkadot/react-api/types';
+import { AccountId, Balance, Points } from '@polkadot/types/interfaces';
+import { DerivedStaking, DerivedHeartbeats } from '@polkadot/api-derive/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { ValidatorFilter } from '../types';
 
-import React from 'react';
+import BN from 'bn.js';
+import React, { useContext, useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { withCalls, withMulti } from '@polkadot/react-api/with';
-import { AddressCard, AddressMini, OnlineStatus } from '@polkadot/react-components';
+import { ApiContext, withCalls, withMulti } from '@polkadot/react-api';
+import { AddressCard, AddressMini, Badge, Expander, Icon } from '@polkadot/react-components';
 import { classes } from '@polkadot/react-components/util';
-import keyring from '@polkadot/ui-keyring';
-import { formatBalance } from '@polkadot/util';
-import { updateOnlineStatus } from '../util';
+import { formatNumber } from '@polkadot/util';
 
 import translate from '../translate';
 
-interface Props extends ApiProps, I18nProps {
-  address: string;
+interface Props extends I18nProps {
+  address: AccountId | string;
+  authorsMap: Record<string, string>;
   className?: string;
   defaultName: string;
   filter: ValidatorFilter;
-  lastAuthor: string;
-  lastBlock: string;
-  recentlyOnline?: Record<string, BlockNumber>;
-  staking_info?: DerivedStaking;
+  isElected: boolean;
+  lastAuthors?: string[];
+  myAccounts: string[];
+  points?: Points;
+  recentlyOnline?: DerivedHeartbeats;
+  stakingInfo?: DerivedStaking;
+  withNominations?: boolean;
 }
 
-interface State {
-  controllerId: string | null;
-  onlineStatus: DerivedStakingOnlineStatus;
-  stashActive: string | null;
-  stashTotal: string | null;
-  sessionId: string | null;
-  stakers?: Exposure;
-  stashId: string | null;
-  badgeExpanded: boolean;
+interface StakingState {
+  balanceOpts: { bonded: boolean | BN[] };
+  controllerId?: string;
+  hasNominators: boolean;
+  isNominatorMe: boolean;
+  nominators: [AccountId, Balance][];
+  sessionId?: string;
+  stashId?: string;
 }
 
-class Address extends React.PureComponent<Props, State> {
-  public state: State;
+const WITH_VALIDATOR_PREFS = { validatorPayment: true };
 
-  public constructor (props: Props) {
-    super(props);
+function Address ({ address, authorsMap, className, defaultName, filter, isElected, lastAuthors, myAccounts, points, recentlyOnline, stakingInfo, t, withNominations = true }: Props): React.ReactElement<Props> | null {
+  const { isSubstrateV2 } = useContext(ApiContext);
+  const [extraInfo, setExtraInfo] = useState<[React.ReactNode, React.ReactNode][] | undefined>();
+  const [hasActivity, setHasActivity] = useState(true);
+  const [{ balanceOpts, controllerId, hasNominators, isNominatorMe, nominators, sessionId, stashId }, setStakingState] = useState<StakingState>({
+    balanceOpts: { bonded: true },
+    hasNominators: false,
+    isNominatorMe: false,
+    nominators: []
+  });
 
-    this.state = {
-      controllerId: null,
-      onlineStatus: {},
-      sessionId: null,
-      stashActive: null,
-      stashId: null,
-      stashTotal: null,
-      badgeExpanded: false
-    };
+  useEffect((): void => {
+    if (points) {
+      const formatted = formatNumber(points);
+
+      if (!extraInfo || extraInfo[0][1] !== formatted) {
+        setExtraInfo([[t('era points'), formatted]]);
+      }
+    }
+  }, [extraInfo, points]);
+
+  useEffect((): void => {
+    if (stakingInfo) {
+      const { controllerId, nextSessionIds, stakers, stashId } = stakingInfo;
+      const nominators = withNominations && stakers
+        ? stakers.others.map(({ who, value }): [AccountId, Balance] => [who, value.unwrap()])
+        : [];
+      const stakersOwn = stakers && !stakers.own.isEmpty && stakers.own.unwrap();
+
+      setStakingState({
+        balanceOpts: stakers && stakersOwn
+          ? { bonded: [stakersOwn, stakers.total.unwrap().sub(stakersOwn)] }
+          : { bonded: true },
+        controllerId: controllerId?.toString(),
+        hasNominators: nominators.length !== 0,
+        isNominatorMe: nominators.some(([who]): boolean =>
+          myAccounts.includes(who.toString())
+        ),
+        nominators,
+        sessionId: nextSessionIds && nextSessionIds[0]?.toString(),
+        stashId: stashId?.toString()
+      });
+    }
+  }, [stakingInfo]);
+
+  useEffect((): void => {
+    setHasActivity(
+      recentlyOnline && recentlyOnline[stashId || '']
+        ? recentlyOnline[stashId || ''].isOnline
+        : true
+    );
+  }, [recentlyOnline, stashId]);
+
+  if ((filter === 'hasNominators' && !hasNominators) ||
+    (filter === 'noNominators' && hasNominators) ||
+    (filter === 'hasWarnings' && hasActivity) ||
+    (filter === 'noWarnings' && !hasActivity) ||
+    (filter === 'iNominated' && !isNominatorMe) ||
+    (filter === 'nextSet' && !isElected)) {
+    return null;
   }
 
-  public static getDerivedStateFromProps ({ recentlyOnline = {}, staking_info }: Props, prevState: State): Pick<State, never> | null {
-    if (!staking_info) {
-      return null;
-    }
-
-    const { controllerId, nextSessionId, online, offline, stakers, stakingLedger, stashId } = staking_info;
-
-    return {
-      controllerId: controllerId && controllerId.toString(),
-      onlineStatus: updateOnlineStatus(recentlyOnline)(staking_info.sessionIds || null, { offline, online }),
-      sessionId: nextSessionId && nextSessionId.toString(),
-      stashActive: stakingLedger
-        ? formatBalance(stakingLedger.active)
-        : prevState.stashActive,
-      stakers,
-      stashId: stashId && stashId.toString(),
-      stashTotal: stakingLedger
-        ? formatBalance(stakingLedger.total)
-        : prevState.stashTotal
-    };
-  }
-
-  public render (): React.ReactNode {
-    const { address, className, defaultName, filter, isSubstrateV2, lastAuthor, lastBlock, t } = this.props;
-    const { controllerId, onlineStatus, sessionId, stakers, stashId } = this.state;
-    const bonded = stakers && !stakers.own.isEmpty
-      ? [stakers.own.unwrap(), stakers.total.unwrap().sub(stakers.own.unwrap())]
-      : true;
-
-    if ((filter === 'hasNominators' && !this.hasNominators()) ||
-      (filter === 'noNominators' && this.hasNominators()) ||
-      (filter === 'hasWarnings' && !this.hasWarnings()) ||
-      (filter === 'noWarnings' && this.hasWarnings()) ||
-      (filter === 'iNominated' && !this.iNominated())) {
-      return null;
-    }
-
-    const isAuthor = !!lastBlock && !!lastAuthor && [address, controllerId, stashId].includes(lastAuthor);
-    const nominators = this.getNominators();
-
+  if (!stashId) {
     return (
       <AddressCard
-        buttons={
-          <div className='staking--Address-info'>
-            {isAuthor && (
-              <div className={classes(isSubstrateV2 ? 'blockNumberV2' : 'blockNumberV1')}>#{lastBlock}</div>
-            )}
-            {controllerId && (
-              <div>
-                <label className={classes('staking--label', isSubstrateV2 && !isAuthor && 'controllerSpacer')}>{t('controller')}</label>
-                <AddressMini value={controllerId} />
-              </div>
-            )}
-            {!isSubstrateV2 && sessionId && (
-              <div>
-                <label className='staking--label'>{t('session')}</label>
-                <AddressMini value={sessionId} />
-              </div>
-            )}
-          </div>
-        }
         className={className}
         defaultName={defaultName}
-        iconInfo={controllerId && onlineStatus && (
-          <OnlineStatus
-            accountId={controllerId}
-            value={onlineStatus}
-            tooltip
-          />
-        )}
-        key={stashId || controllerId || undefined}
-        value={stashId || address}
-        withBalance={{ bonded }}
-        withValidatorPrefs={{ validatorPayment: true }}
-      >
-        {nominators.length !== 0 && (
-          <details>
-            <summary>
-              {t('Nominators ({{count}})', {
+        isDisabled
+        value={address}
+        withBalance={false}
+      />
+    );
+  }
+
+  const lastBlockNumber = authorsMap[stashId];
+  const isAuthor = lastAuthors && lastAuthors.includes(stashId);
+
+  return (
+    <AddressCard
+      buttons={
+        <div className='staking--Address-info'>
+          {lastBlockNumber && (
+            <div className={`blockNumberV${isSubstrateV2 ? '2' : '1'} ${isAuthor && 'isCurrent'}`}>#{lastBlockNumber}</div>
+          )}
+          {controllerId && (
+            <div>
+              <label className={classes('staking--label', isSubstrateV2 && !lastBlockNumber && 'controllerSpacer')}>{t('controller')}</label>
+              <AddressMini value={controllerId} />
+            </div>
+          )}
+          {!isSubstrateV2 && sessionId && (
+            <div>
+              <label className='staking--label'>{t('session')}</label>
+              <AddressMini value={sessionId} />
+            </div>
+          )}
+        </div>
+      }
+      className={className}
+      defaultName={defaultName}
+      extraInfo={extraInfo}
+      iconInfo={
+        <>
+          {isElected && (
+            <Badge
+              hover={t('Selected for the next session')}
+              info={<Icon name='chevron right' />}
+              isTooltip
+              type='next'
+            />
+          )}
+          {recentlyOnline && hasActivity && recentlyOnline[stashId] && (
+            <Badge
+              hover={t('Active with {{blocks}} blocks authored{{hasMessage}} heartbeat message', {
                 replace: {
-                  count: nominators.length
+                  blocks: formatNumber(recentlyOnline[stashId].blockCount),
+                  hasMessage: recentlyOnline[stashId].hasMessage ? ' and a' : ', no'
                 }
               })}
-            </summary>
-            {nominators.map(([who, bonded]): React.ReactNode =>
-              <AddressMini
-                bonded={bonded}
-                key={who.toString()}
-                value={who}
-                withBonded
-              />
-            )}
-          </details>
-        )}
-      </AddressCard>
-    );
-  }
-
-  private getNominators (): [AccountId, Balance][] {
-    const { stakers } = this.state;
-
-    return stakers
-      ? stakers.others.map(({ who, value }): [AccountId, Balance] => [who, value.unwrap()])
-      : [];
-  }
-
-  private iNominated (): boolean {
-    const nominators = this.getNominators();
-    const myAddresses = keyring.getAccounts().map(({ address }): string => address);
-
-    return nominators.some(([who]): boolean =>
-      myAddresses.includes(who.toString())
-    );
-  }
-
-  private hasNominators (): boolean {
-    const nominators = this.getNominators();
-
-    return !!nominators.length;
-  }
-
-  private hasWarnings (): boolean {
-    const { stashId, onlineStatus } = this.state;
-
-    if (!stashId || !onlineStatus.offline || !onlineStatus.offline.length) {
-      return false;
-    }
-
-    return true;
-  }
+              info={<Icon name='check' />}
+              isTooltip
+              type='online'
+            />
+          )}
+        </>
+      }
+      isDisabled={isSubstrateV2 && !hasActivity}
+      stakingInfo={stakingInfo}
+      value={stashId}
+      withBalance={balanceOpts}
+      withValidatorPrefs={WITH_VALIDATOR_PREFS}
+    >
+      {withNominations && hasNominators && (
+        <Expander
+          summary={t('Nominators ({{count}})', {
+            replace: {
+              count: nominators.length
+            }
+          })}
+        >
+          {nominators.map(([who, bonded]): React.ReactNode =>
+            <AddressMini
+              bonded={bonded}
+              key={who.toString()}
+              value={who}
+              withBonded
+            />
+          )}
+        </Expander>
+      )}
+    </AddressCard>
+  );
 }
 
 export default withMulti(
-  styled(Address as React.ComponentClass<Props>)`
+  styled(Address)`
     .blockNumberV1,
     .blockNumberV2 {
-      background: #3f3f3f;
       border-radius: 0.25rem;
-      box-shadow: 0 3px 3px rgba(0,0,0,.2);
-      color: #eee;
       font-size: 1.5rem;
       font-weight: 100;
       line-height: 1.5rem;
+      opacity: 0.5;
       vertical-align: middle;
       z-index: 1;
+
+      &.isCurrent {
+        background: #3f3f3f;
+        box-shadow: 0 3px 3px rgba(0,0,0,.2);
+        color: #eee;
+        opacity: 1;
+      }
     }
 
     .blockNumberV2 {
       display: inline-block;
       margin-bottom: 0.75rem;
-      margin-right: -0.25rem;
-      padding: 0.25rem 0.75rem;
+      padding: 0.25rem 0;
+
+      &.isCurrent {
+        margin-right: -0.25rem;
+        padding: 0.25rem 0.75rem;
+      }
     }
 
     .blockNumberV1 {
@@ -235,6 +251,9 @@ export default withMulti(
   `,
   translate,
   withCalls<Props>(
-    ['derive.staking.info', { paramName: 'address' }]
+    ['derive.staking.info', {
+      paramName: 'address',
+      propName: 'stakingInfo'
+    }]
   )
 );

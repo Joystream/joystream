@@ -1,0 +1,48 @@
+@mixin gleam-on-hover($time: 0.5s)
+  &:after
+    content: ''
+    position: absolute
+    top: 0
+    left: -20%
+    width: 0
+    height: 100%
+    background-color: rgba(255,255,255,0.4)
+    -webkit-transition: none
+    -moz-transition: none
+    transition: none
+    transform: skew(-15deg)
+
+  &:hover:after
+    width: 140%
+    background-color: rgba(255,255,255,0)
+    -webkit-transition: all $time ease-in-out
+    -moz-transition: all $time ease-in-out
+    transition: all $time ease-in-out
+
+@keyframes warning-pulse 
+  0% 
+    transform: scale(1)
+  
+  50% 
+    transform: scale(1.2)
+
+@keyframes pulse
+  0% 
+    text-shadow: 0 0 1px #fff
+  
+  100% 
+    text-shadow: 0 0 30px #fff
+  
+
+button
+  position: relative
+  overflow: hidden
+  &.positive
+    @include gleam-on-hover
+
+  &.negative:hover
+    .icon
+      animation: 1s infinite warning-pulse
+      &::before
+
+        animation: 1s infinite pulse
