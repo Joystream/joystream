@@ -1,21 +1,21 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::prelude::*;
-
-use codec::Codec;
+use runtime_primitives::traits::Zero;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
+
 use srml_support::traits::Currency;
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
-
-use rstd::iter::Iterator;
-
-use runtime_primitives::traits::Zero;
 
 use crate::sr_api_hidden_includes_decl_storage::hidden_include::traits::Imbalance;
 
 use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
+use rstd::iter::Iterator;
+use rstd::prelude::*;
+
+use codec::Codec;
+use system;
 
 mod hiring;
 #[macro_use]
@@ -24,8 +24,6 @@ mod mock;
 mod test;
 
 pub use hiring::*;
-use system;
-
 use stake;
 
 /// ...
@@ -250,7 +248,6 @@ decl_module! {
                 <OpeningById<T>>::insert(opening_id, opening_accepting_applications);
 
             }
-
         }
     }
 }

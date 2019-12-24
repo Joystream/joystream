@@ -1,11 +1,10 @@
-use crate::{hiring, ApplicationRationingPolicy, StakingPolicy};
-
-use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 use rstd::vec::Vec;
 
 use srml_support::ensure;
+use codec::{Decode, Encode};
 
+use crate::{hiring, ApplicationRationingPolicy, StakingPolicy};
 use crate::hiring::StakePurpose;
 
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone)]
@@ -85,7 +84,6 @@ where
         self,
         active_opening_stage: hiring::ActiveOpeningStage<BlockNumber>,
     ) -> Self {
-
         //TODO: hiring::OpeningStage::Active params should be changed to struct
         //Copy parameters from previous active stage if any or set defaults
         let (
