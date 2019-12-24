@@ -1,13 +1,21 @@
+#![cfg(test)]
+
 use super::*;
 use crate::mock::*;
 
 use crate::hiring::*;
+use crate::test::add_application::AddApplicationFixture;
 use add_opening::{AddOpeningFixture, OPENING_HUMAN_READABLE_TEXT};
 use rstd::collections::btree_set::BTreeSet;
+
+
 /*
 Not covered:
-- ApplicationRationingPolicy
+- application deactivation
+- crowding out another application
+- staking state checks
 */
+
 #[test]
 fn ensure_can_add_application_fails_with_no_opening() {
     build_test_externalities().execute_with(|| {
@@ -174,6 +182,50 @@ fn ensure_can_add_application_fails_with_non_accepting_application_stage() {
 }
 
 #[test]
+fn ensure_can_add_application_succeeds_with_application_rationing_policy() {
+    build_test_externalities().execute_with(|| {
+        let mut opening_fixture = AddOpeningFixture::default();
+        opening_fixture.application_rationing_policy = Some(hiring::ApplicationRationingPolicy {
+            max_active_applicants: 1,
+        });
+        let add_opening_result = opening_fixture.add_opening();
+        let opening_id = add_opening_result.unwrap();
+
+        assert!(Hiring::ensure_can_add_application(opening_id, None, None).is_ok(),);
+    });
+}
+
+#[test]
+fn ensure_can_add_application_fails_with_application_rationing_policy() {
+    build_test_externalities().execute_with(|| {
+        let mut opening_fixture = AddOpeningFixture::default();
+        opening_fixture.application_rationing_policy = Some(hiring::ApplicationRationingPolicy {
+            max_active_applicants: 1,
+        });
+        opening_fixture.application_staking_policy = Some(StakingPolicy {
+            amount: 100,
+            amount_mode: StakingAmountLimitMode::Exact,
+            crowded_out_unstaking_period_length: None,
+            review_period_expired_unstaking_period_length: None,
+        });
+
+        let add_opening_result = opening_fixture.add_opening();
+        let opening_id = add_opening_result.unwrap();
+
+        let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+        application_fixture.opt_application_stake_imbalance =
+            Some(stake::NegativeImbalance::<Test>::new(100));
+
+        assert!(application_fixture.add_application().is_ok());
+
+        assert_eq!(
+            Hiring::ensure_can_add_application(opening_id, None, Some(100)),
+            Err(AddApplicationError::NewApplicationWasCrowdedOut)
+        );
+    });
+}
+
+#[test]
 fn ensure_can_add_application_success() {
     build_test_externalities().execute_with(|| {
         let mut opening_fixture = AddOpeningFixture::default();
@@ -237,20 +289,3 @@ fn ensure_can_add_application_success() {
         );
     });
 }
-
-//#[test]
-//fn ensure_can_add_application_fails_with_application_rationing_policy() {
-//    build_test_externalities().execute_with(|| {
-//        let mut opening_fixture = AddOpeningFixture::default();
-//        opening_fixture.application_rationing_policy = Some(ApplicationRationingPolicy{max_active_applicants: 1});
-//        let add_opening_result = opening_fixture.add_opening();
-//        let opening_id = add_opening_result.unwrap();
-//
-//   //     assert_eq!(Hiring::begin_review(opening_id), Ok(()));
-//
-//        assert_eq!(
-//            Hiring::ensure_can_add_application(opening_id, None, None),
-//            Ok(DestructuredApplicationCanBeAddedEvaluation{..})
-//        );
-//    });
-//}
