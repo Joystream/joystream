@@ -9,7 +9,6 @@ use rstd::collections::btree_set::BTreeSet;
 /*
 Not covered:
 - application deactivation
-- crowding out another application
 - staking state checks
 */
 
@@ -201,7 +200,7 @@ fn ensure_can_add_application_fails_with_application_rationing_policy() {
         });
         opening_fixture.application_staking_policy = Some(StakingPolicy {
             amount: 100,
-            amount_mode: StakingAmountLimitMode::Exact,
+            amount_mode: StakingAmountLimitMode::AtLeast,
             crowded_out_unstaking_period_length: None,
             review_period_expired_unstaking_period_length: None,
         });
@@ -284,5 +283,91 @@ fn ensure_can_add_application_success() {
                 would_get_added_success: ApplicationAddedSuccess::Unconditionally
             })
         );
+    });
+}
+
+#[test]
+fn ensure_can_add_application_new_application_should_be_crowded_out_with_exact_stake() {
+    ensure_can_add_application_new_application_should_be_crowded_out_with_staking_policy(
+        StakingPolicy {
+            amount: 100,
+            amount_mode: StakingAmountLimitMode::Exact,
+            crowded_out_unstaking_period_length: None,
+            review_period_expired_unstaking_period_length: None,
+        },
+    );
+}
+
+#[test]
+fn ensure_can_add_application_new_application_should_be_crowded_out_with_atleast_stake() {
+    ensure_can_add_application_new_application_should_be_crowded_out_with_staking_policy(
+        StakingPolicy {
+            amount: 100,
+            amount_mode: StakingAmountLimitMode::AtLeast,
+            crowded_out_unstaking_period_length: None,
+            review_period_expired_unstaking_period_length: None,
+        },
+    );
+}
+
+fn ensure_can_add_application_new_application_should_be_crowded_out_with_staking_policy(
+    staking_policy: StakingPolicy<u64, u64>,
+) {
+    build_test_externalities().execute_with(|| {
+        let mut opening_fixture = AddOpeningFixture::default();
+        opening_fixture.application_rationing_policy = Some(hiring::ApplicationRationingPolicy {
+            max_active_applicants: 1,
+        });
+        opening_fixture.application_staking_policy = Some(staking_policy);
+
+        let add_opening_result = opening_fixture.add_opening();
+        let opening_id = add_opening_result.unwrap();
+
+        let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+        application_fixture.opt_application_stake_imbalance =
+            Some(stake::NegativeImbalance::<Test>::new(100));
+
+        assert!(application_fixture.add_application().is_ok());
+
+        assert_eq!(
+            Hiring::ensure_can_add_application(opening_id, None, Some(100)),
+            Err(AddApplicationError::NewApplicationWasCrowdedOut)
+        );
+    });
+}
+
+#[test]
+fn ensure_can_add_application_should_crowd_out_application() {
+    build_test_externalities().execute_with(|| {
+        let mut opening_fixture = AddOpeningFixture::default();
+        opening_fixture.application_rationing_policy = Some(hiring::ApplicationRationingPolicy {
+            max_active_applicants: 1,
+        });
+        opening_fixture.application_staking_policy = Some(StakingPolicy {
+            amount: 100,
+            amount_mode: StakingAmountLimitMode::AtLeast,
+            crowded_out_unstaking_period_length: None,
+            review_period_expired_unstaking_period_length: None,
+        });
+
+        let add_opening_result = opening_fixture.add_opening();
+        let opening_id = add_opening_result.unwrap();
+
+        let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+        application_fixture.opt_application_stake_imbalance =
+            Some(stake::NegativeImbalance::<Test>::new(100));
+
+        assert!(application_fixture.add_application().is_ok());
+
+        let destructered_app_result = Hiring::ensure_can_add_application(opening_id, None, Some(101));
+        assert!(destructered_app_result.is_ok());
+
+        let destructered_app = destructered_app_result.unwrap();
+
+        if let ApplicationAddedSuccess::CrowdsOutExistingApplication(application_id) = destructered_app.would_get_added_success {
+            assert_eq!(0, application_id);
+        } else {
+            panic!("Expected ApplicationAddedSuccess::CrowdsOutExistingApplication(application_id == 0)")
+        }
     });
 }

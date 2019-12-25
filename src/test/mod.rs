@@ -24,7 +24,7 @@ Add tests:
 
 */
 
-////Debug test object content
-//pub fn debug_print<T: rstd::fmt::Debug>(obj: T) {
-//    println!("{:?}", obj);
-//}
+//Debug test object content
+pub fn debug_print<T: rstd::fmt::Debug>(obj: T) {
+    println!("{:?}", obj);
+}
