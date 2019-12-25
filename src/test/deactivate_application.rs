@@ -20,7 +20,7 @@ pub struct DeactivateApplicationFixture {
 }
 
 impl DeactivateApplicationFixture {
-    pub fn default_for_application_id(application_id: u64) -> Self {
+    pub(crate) fn default_for_application_id(application_id: u64) -> Self {
         DeactivateApplicationFixture {
             application_id,
             application_stake_unstaking_period: None,
@@ -28,7 +28,7 @@ impl DeactivateApplicationFixture {
         }
     }
 
-    pub fn deactivate_application(&self) -> Result<(), DeactivateApplicationError> {
+    pub(crate) fn deactivate_application(&self) -> Result<(), DeactivateApplicationError> {
         Hiring::deactive_application(
             self.application_id,
             self.application_stake_unstaking_period,
@@ -133,7 +133,7 @@ impl DeactivateApplicationFixture {
 }
 
 #[test]
-fn deactivate_application_success() {
+fn deactivate_application_succeeds() {
     build_test_externalities().execute_with(|| {
         let opening_fixture = AddOpeningFixture::default();
         let add_opening_result = opening_fixture.add_opening();

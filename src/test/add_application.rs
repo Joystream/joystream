@@ -24,7 +24,7 @@ pub struct AddApplicationFixture {
 }
 
 impl AddApplicationFixture {
-    pub fn default_for_opening(opening_id: u64) -> Self {
+    pub(crate) fn default_for_opening(opening_id: u64) -> Self {
         AddApplicationFixture {
             opening_id,
             opt_role_stake_imbalance: None,
@@ -33,7 +33,7 @@ impl AddApplicationFixture {
         }
     }
 
-    pub fn add_application(&self) -> Result<ApplicationAdded<u64>, AddApplicationError> {
+    pub(crate) fn add_application(&self) -> Result<ApplicationAdded<u64>, AddApplicationError> {
         let mut opt_role_stake_imbalance = None;
         if let Some(ref imbalance) = self.opt_role_stake_imbalance {
             opt_role_stake_imbalance =
@@ -182,7 +182,7 @@ impl AddApplicationFixture {
 }
 
 #[test]
-fn add_application_success() {
+fn add_application_succeeds() {
     build_test_externalities().execute_with(|| {
         let opening_fixture = AddOpeningFixture::default();
         let add_opening_result = opening_fixture.add_opening();

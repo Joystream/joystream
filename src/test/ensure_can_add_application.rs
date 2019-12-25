@@ -222,7 +222,7 @@ fn ensure_can_add_application_fails_with_application_rationing_policy() {
 }
 
 #[test]
-fn ensure_can_add_application_success() {
+fn ensure_can_add_application_succeeds() {
     build_test_externalities().execute_with(|| {
         let mut opening_fixture = AddOpeningFixture::default();
         opening_fixture.application_staking_policy = Some(StakingPolicy {

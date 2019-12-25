@@ -14,7 +14,7 @@ use super::*;
 /*
 Add tests:
 - cancel_opening:
-.cancel_opening_success
+.cancel_opening_succeeds
 .cancel_opening_fails_due_to_too_short_application_unstaking_period
 .cancel_opening_fails_due_to_too_short_role_unstaking_period
 .cancel_opening_fails_due_to_opening_not_existing
@@ -26,6 +26,6 @@ Add tests:
 */
 
 ////Debug test object content
-//pub fn debug_print<T: rstd::fmt::Debug>(obj: T) {
+//pub(crate) fn debug_print<T: rstd::fmt::Debug>(obj: T) {
 //    println!("{:?}", obj);
 //}

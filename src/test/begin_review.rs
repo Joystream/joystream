@@ -37,7 +37,7 @@ fn begin_review_fails_with_not_in_accepting_application_stage() {
 }
 
 #[test]
-fn begin_review_success_call() {
+fn begin_review_succeeds() {
     build_test_externalities().execute_with(|| {
         let opening_fixture = AddOpeningFixture::default();
 

@@ -88,7 +88,7 @@ impl AddOpeningFixture<u64> {
         assert_eq!(found_opening, expected_opening);
     }
 
-    pub fn add_opening(&self) -> Result<u64, AddOpeningError> {
+    pub(crate) fn add_opening(&self) -> Result<u64, AddOpeningError> {
         Hiring::add_opening(
             self.activate_at.clone(),
             self.max_review_period_length,
@@ -101,7 +101,7 @@ impl AddOpeningFixture<u64> {
 }
 
 #[test]
-fn add_opening_success_exact_block() {
+fn add_opening_succeeds_with_exact_block() {
     build_test_externalities().execute_with(|| {
         let opening_data = AddOpeningFixture::default();
 
@@ -113,7 +113,7 @@ fn add_opening_success_exact_block() {
 }
 
 #[test]
-fn add_opening_success_waiting_to_begin() {
+fn add_opening_succeeds_with_waiting_to_begin() {
     build_test_externalities().execute_with(|| {
         let mut opening_data = AddOpeningFixture::default();
         opening_data.activate_at = ActivateOpeningAt::ExactBlock(22);

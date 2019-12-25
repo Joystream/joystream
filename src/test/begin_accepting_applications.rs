@@ -30,7 +30,7 @@ fn begin_accepting_applications_fails_with_not_in_waiting_for_begin() {
 }
 
 #[test]
-fn begin_accepting_applications_success_call() {
+fn begin_accepting_applications_succeeds() {
     build_test_externalities().execute_with(|| {
         let mut opening_fixture = AddOpeningFixture::default();
         // set future activation
