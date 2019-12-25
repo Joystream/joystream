@@ -860,17 +860,32 @@ impl<T: Trait> Module<T> {
 
         let mut apps_added = can_be_added_destructured.applications_added;
         apps_added.insert(new_application_id);
-        /*
-        TODO:
-        Yet another instance of problems due to not following https://github.com/Joystream/joystream/issues/36#issuecomment-539567407
-        */
-        let new_active_stage = hiring::OpeningStage::Active {
-            stage: can_be_added_destructured.active_stage,
-            applications_added: apps_added,
-            active_application_count: can_be_added_destructured.active_application_count + 1,
-            unstaking_application_count: can_be_added_destructured.unstaking_application_count,
-            deactivated_application_count: can_be_added_destructured.deactivated_application_count,
-        };
+
+        let new_active_stage;
+        // Should reload after possible deactivation in try_to_initiate_application_deactivation
+        let opening_needed_for_data = <OpeningById<T>>::get(opening_id);
+        if let hiring::OpeningStage::Active {
+            stage,
+            active_application_count,
+            unstaking_application_count,
+            deactivated_application_count,
+            ..
+        } = opening_needed_for_data.stage
+        {
+            /*
+               TODO:
+               Yet another instance of problems due to not following https://github.com/Joystream/joystream/issues/36#issuecomment-539567407
+            */
+            new_active_stage = hiring::OpeningStage::Active {
+                stage,
+                applications_added: apps_added,
+                active_application_count: active_application_count + 1,
+                unstaking_application_count,
+                deactivated_application_count
+            };
+        } else {
+            panic!("updated opening should be in active stage");
+        }
 
         <OpeningById<T>>::mutate(opening_id, |opening| {
             opening.stage = new_active_stage;
