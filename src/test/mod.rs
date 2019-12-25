@@ -1,9 +1,11 @@
 #![cfg(test)]
 
+
 mod add_application;
 mod add_opening;
 mod begin_accepting_applications;
 mod begin_review;
+mod deactivate_application;
 mod ensure_can_add_application;
 mod smoke;
 
@@ -18,7 +20,6 @@ Add tests:
 .cancel_opening_fails_due_to_opening_not_existing
 
 - fill_opening
-- deactive_application
 - unstaked
 - on_finalize
 

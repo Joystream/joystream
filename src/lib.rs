@@ -881,7 +881,7 @@ impl<T: Trait> Module<T> {
                 applications_added: apps_added,
                 active_application_count: active_application_count + 1,
                 unstaking_application_count,
-                deactivated_application_count
+                deactivated_application_count,
             };
         } else {
             panic!("updated opening should be in active stage");
