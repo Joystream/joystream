@@ -20,7 +20,7 @@ pub struct StakingPolicy<Balance, BlockNumber> {
 }
 
 impl<Balance: PartialOrd + Clone, BlockNumber: Clone> StakingPolicy<Balance, BlockNumber> {
-    pub fn accepts_amount(&self, test_amount: &Balance) -> bool {
+    pub(crate) fn accepts_amount(&self, test_amount: &Balance) -> bool {
         match self.amount_mode {
             StakingAmountLimitMode::AtLeast => *test_amount >= self.amount,
             StakingAmountLimitMode::Exact => *test_amount == self.amount,

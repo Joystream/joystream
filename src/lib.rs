@@ -280,6 +280,16 @@ pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
     pub would_get_added_success: ApplicationAddedSuccess<T>,
 }
 
+impl<T: Trait> DestructuredApplicationCanBeAddedEvaluation<T> {
+    pub(crate) fn calculate_total_application_count(&self) -> u32 {
+        // TODO: fix so that `number_of_appliations_ever_added` can be invoked.
+        // cant do this due to bad design of stage => opening.stage.number_of_appliations_ever_added();
+        self.active_application_count
+            + self.unstaking_application_count
+            + self.deactivated_application_count
+    }
+}
+
 impl<T: Trait> Module<T> {
     pub fn add_opening(
         activate_at: ActivateOpeningAt<T::BlockNumber>,
@@ -757,18 +767,9 @@ impl<T: Trait> Module<T> {
         opt_application_stake_imbalance: Option<NegativeImbalance<T>>,
         human_readable_text: Vec<u8>,
     ) -> Result<ApplicationAdded<T::ApplicationId>, AddApplicationError> {
-        let opt_role_stake_balance = if let Some(ref imbalance) = opt_role_stake_imbalance {
-            Some(imbalance.peek())
-        } else {
-            None
-        };
-
+        let opt_role_stake_balance = Self::create_stake_balance(&opt_role_stake_imbalance);
         let opt_application_stake_balance =
-            if let Some(ref imbalance) = opt_application_stake_imbalance {
-                Some(imbalance.peek())
-            } else {
-                None
-            };
+            Self::create_stake_balance(&opt_application_stake_imbalance);
 
         let can_be_added_destructured = Self::ensure_can_add_application(
             opening_id,
@@ -827,17 +828,12 @@ impl<T: Trait> Module<T> {
             &new_application_id,
         );
 
-        // Stage of new application
-        let application_stage = hiring::ApplicationStage::Active;
-
         // Grab current block height
         let current_block_height = <system::Module<T>>::block_number();
 
         // Compute index for this new application
-        // TODO: fix so that `number_of_appliations_ever_added` can be invoked.
-        let application_index_in_opening = can_be_added_destructured.active_application_count
-            + can_be_added_destructured.unstaking_application_count
-            + can_be_added_destructured.deactivated_application_count; // cant do this due to bad design of stage => opening.stage.number_of_appliations_ever_added();
+        let application_index_in_opening =
+            can_be_added_destructured.calculate_total_application_count();
 
         // Create a new application
         let new_application = hiring::Application {
@@ -846,7 +842,8 @@ impl<T: Trait> Module<T> {
             add_to_opening_in_block: current_block_height,
             active_role_staking_id,
             active_application_staking_id,
-            stage: application_stage,
+            // Stage of new application
+            stage: hiring::ApplicationStage::Active,
             human_readable_text,
         };
 
@@ -857,50 +854,25 @@ impl<T: Trait> Module<T> {
         <NextApplicationId<T>>::mutate(|id| *id += One::one());
 
         // Update counter on opening
-
-        let mut apps_added = can_be_added_destructured.applications_added;
-        apps_added.insert(new_application_id);
-
-        let new_active_stage;
         // Should reload after possible deactivation in try_to_initiate_application_deactivation
         let opening_needed_for_data = <OpeningById<T>>::get(opening_id);
-        if let hiring::OpeningStage::Active {
-            stage,
-            active_application_count,
-            unstaking_application_count,
-            deactivated_application_count,
-            ..
-        } = opening_needed_for_data.stage
-        {
-            /*
-               TODO:
-               Yet another instance of problems due to not following https://github.com/Joystream/joystream/issues/36#issuecomment-539567407
-            */
-            new_active_stage = hiring::OpeningStage::Active {
-                stage,
-                applications_added: apps_added,
-                active_application_count: active_application_count + 1,
-                unstaking_application_count,
-                deactivated_application_count,
-            };
-        } else {
-            panic!("updated opening should be in active stage");
-        }
+        let new_active_stage = opening_needed_for_data
+            .stage
+            .clone_with_added_active_application(new_application_id);
 
         <OpeningById<T>>::mutate(opening_id, |opening| {
             opening.stage = new_active_stage;
         });
 
-        // DONE
-        let application_added_result = ApplicationAdded {
-            application_id_added: new_application_id,
-            application_id_crowded_out: match can_be_added_destructured.would_get_added_success {
-                ApplicationAddedSuccess::CrowdsOutExistingApplication(id) => Some(id),
-                _ => None,
-            },
-        };
+        let application_id_crowded_out = can_be_added_destructured
+            .would_get_added_success
+            .crowded_out_application_id();
 
-        Ok(application_added_result)
+        // DONE
+        Ok(ApplicationAdded {
+            application_id_added: new_application_id,
+            application_id_crowded_out,
+        })
     }
 
     /// Deactive an active application.
@@ -1375,6 +1347,16 @@ pub enum ApplicationAddedSuccess<T: Trait> {
     CrowdsOutExistingApplication(T::ApplicationId),
 }
 
+impl<T: Trait> ApplicationAddedSuccess<T> {
+    pub(crate) fn crowded_out_application_id(&self) -> Option<T::ApplicationId> {
+        if let ApplicationAddedSuccess::CrowdsOutExistingApplication(id) = self {
+            Some(id.clone())
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum ApplicationWouldGetAddedEvaluation<T: Trait> {
     No,
@@ -1477,5 +1459,15 @@ impl<T: Trait> Module<T> {
                 _ => panic!("stake MUST be in the staked state."),
             }
         })
+    }
+
+    fn create_stake_balance(
+        opt_stake_imbalance: &Option<NegativeImbalance<T>>,
+    ) -> Option<BalanceOf<T>> {
+        if let Some(ref imbalance) = opt_stake_imbalance {
+            Some(imbalance.peek())
+        } else {
+            None
+        }
     }
 }

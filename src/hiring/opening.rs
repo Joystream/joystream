@@ -1,4 +1,6 @@
+use rstd::clone::Clone;
 use rstd::collections::btree_set::BTreeSet;
+use rstd::prelude::*;
 use rstd::vec::Vec;
 
 use codec::{Decode, Encode};
@@ -38,7 +40,7 @@ where
     ApplicationId: Ord,
 {
     ///Creates new instance of Opening
-    pub fn new(
+    pub(crate) fn new(
         current_block_height: BlockNumber,
         activate_at: ActivateOpeningAt<BlockNumber>,
         max_review_period_length: BlockNumber,
@@ -199,15 +201,17 @@ pub enum OpeningStage<BlockNumber, ApplicationId> {
         unstaking_application_count: u32,
 
         /// Deactivated at any time for any cause.
-        deactivated_application_count: u32, // Removed at any time.
-                                            //removed_application_count: u32
+        deactivated_application_count: u32,
+
+        // Removed at any time.
+        //removed_application_count: u32
     },
 }
 
-impl<BlockNumber: Clone, ApplicationId> OpeningStage<BlockNumber, ApplicationId> {
+impl<BlockNumber: Clone, ApplicationId: Ord + Clone> OpeningStage<BlockNumber, ApplicationId> {
     /// The number of applications ever added to the opening via
     /// `add_opening` extrinsic.
-    pub fn number_of_appliations_ever_added(&self) -> u32 {
+    pub fn number_of_applications_ever_added(&self) -> u32 {
         match self {
             OpeningStage::WaitingToBegin { .. } => 0,
 
@@ -234,6 +238,36 @@ impl<BlockNumber: Clone, ApplicationId> OpeningStage<BlockNumber, ApplicationId>
         }
 
         Err(error)
+    }
+
+    /// Clones current stage. Panics if not Active.
+    /// Adds application_id to applications_added collection.
+    /// Increments 'active_application_count' counter.
+    pub(crate) fn clone_with_added_active_application(
+        self,
+        new_application_id: ApplicationId,
+    ) -> Self {
+        if let hiring::OpeningStage::Active {
+            stage,
+            active_application_count,
+            unstaking_application_count,
+            deactivated_application_count,
+            applications_added,
+        } = self.clone()
+        {
+            let mut apps_added = applications_added.clone();
+            apps_added.insert(new_application_id);
+
+            hiring::OpeningStage::Active {
+                stage,
+                applications_added: apps_added,
+                active_application_count: active_application_count + 1,
+                unstaking_application_count,
+                deactivated_application_count,
+            }
+        } else {
+            panic!("updated opening should be in active stage");
+        }
     }
 }
 
@@ -292,7 +326,7 @@ impl<BlockNumber: Clone> ActiveOpeningStage<BlockNumber> {
     }
 
     /// Ensures that active opening stage is in review period.
-    pub fn ensure_active_opening_is_in_review_period<Err>(
+    pub(crate) fn ensure_active_opening_is_in_review_period<Err>(
         &self,
         error: Err,
     ) -> Result<(BlockNumber, BlockNumber), Err> {
