@@ -92,11 +92,11 @@ where
             unstaking_application_count,
             deactivated_application_count,
         ) = if let hiring::OpeningStage::Active {
-            stage: _,
             applications_added,
             active_application_count,
             unstaking_application_count,
             deactivated_application_count,
+            ..
         } = self.stage
         {
             //Active opening stage
@@ -113,7 +113,7 @@ where
 
         hiring::Opening {
             stage: hiring::OpeningStage::Active {
-                stage: active_opening_stage.clone(),
+                stage: active_opening_stage,
                 applications_added,
                 active_application_count,
                 unstaking_application_count,

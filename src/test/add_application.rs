@@ -1,6 +1,5 @@
 use super::*;
 use crate::mock::*;
-use rstd::collections::btree_set::BTreeSet;
 use stake::NegativeImbalance;
 
 use add_opening::AddOpeningFixture;
@@ -15,9 +14,6 @@ ii.application.active_application_staking_id;
 - stake module calls:
 i.infallible_opt_stake_initiation -> infallible_stake_initiation_on_application -> stake::create_stake()
 
-- opening state check after add_application() call
-- application deactivation on crowding out
-- crowding out another application
 */
 
 pub struct AddApplicationFixture {
@@ -83,12 +79,12 @@ impl AddApplicationFixture {
         //Check application content
         self.assert_application_content(add_application_result.clone(), expected_application_id);
 
-//        //Check opening state after add_application() call
-//        self.assert_opening_content(
-//            old_opening_state,
-//            add_application_result,
-//            expected_application_id,
-//        );
+        //Check opening state after add_application() call
+        self.assert_opening_content(
+            old_opening_state,
+            add_application_result,
+            expected_application_id,
+        );
     }
 
     fn assert_application_content(
@@ -100,11 +96,7 @@ impl AddApplicationFixture {
             let opening = <OpeningById<Test>>::get(self.opening_id);
             let total_applications_count;
             if let OpeningStage::Active {
-                stage: _,
-                applications_added,
-                active_application_count: _,
-                unstaking_application_count: _,
-                deactivated_application_count: _,
+                applications_added, ..
             } = opening.stage
             {
                 total_applications_count = applications_added.len();
@@ -113,7 +105,6 @@ impl AddApplicationFixture {
             }
 
             let found_application = <ApplicationById<Test>>::get(expected_application_id);
-            debug_print(found_application.clone());
             let expected_application_index_in_opening = total_applications_count as u32 - 1;
 
             // Skip this check due external stake module dependency
@@ -147,14 +138,14 @@ impl AddApplicationFixture {
 
         let mut expected_added_apps_in_opening;
         let mut expected_active_application_count;
-        let expected_unstaking_application_count;
-        let mut expected_deactivated_application_count;
+        let mut expected_unstaking_application_count;
+        let expected_deactivated_application_count;
         if let OpeningStage::Active {
-            stage: _,
             applications_added,
             active_application_count,
             unstaking_application_count,
             deactivated_application_count,
+            ..
         } = old_opening.stage
         {
             expected_added_apps_in_opening = applications_added.clone();
@@ -165,7 +156,7 @@ impl AddApplicationFixture {
             if let Ok(add_app_data) = add_application_result {
                 expected_added_apps_in_opening.insert(expected_application_id);
                 if add_app_data.application_id_crowded_out.is_some() {
-                    expected_deactivated_application_count += 1;
+                    expected_unstaking_application_count += 1;
                 } else {
                     expected_active_application_count += 1;
                 }
@@ -235,17 +226,6 @@ fn add_application_succeeds_with_crowding_out() {
             application_id_added: 1,
             application_id_crowded_out: Some(0),
         }));
-
-        //        let destructered_app_result = Hiring::ensure_can_add_application(opening_id, None, Some(101));
-        //        assert!(destructered_app_result.is_ok());
-        //
-        //        let destructered_app = destructered_app_result.unwrap();
-        //
-        //        if let ApplicationAddedSuccess::CrowdsOutExistingApplication(application_id) = destructered_app.would_get_added_success {
-        //            assert_eq!(0, application_id);
-        //        } else {
-        //            panic!("Expected ApplicationAddedSuccess::CrowdsOutExistingApplication(application_id == 0)")
-        //        }
     });
 }
 
