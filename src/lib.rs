@@ -244,8 +244,8 @@ pub struct InputValidationLengthConstraint {
 
 impl InputValidationLengthConstraint {
     /// Helper for computing max
-    pub fn max(&self) -> u16 {
-        self.min + self.max_min_diff
+    pub fn max(&self) -> usize {
+        self.min as usize + self.max_min_diff as usize
     }
 
     pub fn ensure_valid(
@@ -254,10 +254,9 @@ impl InputValidationLengthConstraint {
         too_short_msg: &'static str,
         too_long_msg: &'static str,
     ) -> Result<(), &'static str> {
-        let length = len as u16;
-        if length < self.min {
+        if len < self.min as usize {
             Err(too_short_msg)
-        } else if length > self.max() {
+        } else if len > self.max() {
             Err(too_long_msg)
         } else {
             Ok(())
@@ -265,49 +264,57 @@ impl InputValidationLengthConstraint {
     }
 }
 
-/// Constants
-/////////////////////////////////////////////////////////////////
-
-/// The greatest valid depth of a category.
-/// The depth of a root category is 0.
-const MAX_CATEGORY_DEPTH: u16 = 3;
-
-/// Error messages for dispatchables
+/// Error about users
 const ERROR_FORUM_SUDO_NOT_SET: &str = "Forum sudo not set.";
 const ERROR_ORIGIN_NOT_FORUM_SUDO: &str = "Origin not forum sudo.";
-const ERROR_CATEGORY_TITLE_TOO_SHORT: &str = "Category title too short.";
-const ERROR_CATEGORY_TITLE_TOO_LONG: &str = "Category title too long.";
-const ERROR_CATEGORY_DESCRIPTION_TOO_SHORT: &str = "Category description too long.";
-const ERROR_CATEGORY_DESCRIPTION_TOO_LONG: &str = "Category description too long.";
-const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str =
-    "Ancestor category immutable, i.e. deleted or archived";
-const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
-const ERROR_CATEGORY_DOES_NOT_EXIST: &str = "Category does not exist.";
 const ERROR_NOT_FORUM_USER: &str = "Not forum user.";
+const ERROR_NOT_MODERATOR_USER: &str = "Not moderator user.";
+const ERROR_USER_NAME_TOO_SHORT: &str = "User Name too short.";
+const ERROR_USER_NAME_TOO_LONG: &str = "User Name too long.";
+const ERROR_USER_SELF_DESC_TOO_SHORT: &str = "User self introduction too short.";
+const ERROR_USER_SELF_DESC_TOO_LONG: &str = "User self introduction too long.";
+
+// Errors about thread.
 const ERROR_THREAD_TITLE_TOO_SHORT: &str = "Thread title too short.";
 const ERROR_THREAD_TITLE_TOO_LONG: &str = "Thread title too long.";
-const ERROR_POST_TEXT_TOO_SHORT: &str = "Post text too short.";
-const ERROR_POST_TEXT_TOO_LONG: &str = "Post too long.";
 const ERROR_THREAD_DOES_NOT_EXIST: &str = "Thread does not exist";
 const ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT: &str = "Thread moderation rationale too short.";
 const ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG: &str = "Thread moderation rationale too long.";
 const ERROR_THREAD_ALREADY_MODERATED: &str = "Thread already moderated.";
 const ERROR_THREAD_MODERATED: &str = "Thread is moderated.";
+
+// Errors about post.
 const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
 const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match post author.";
 const ERROR_POST_MODERATED: &str = "Post is moderated.";
 const ERROR_POST_MODERATION_RATIONALE_TOO_SHORT: &str = "Post moderation rationale too short.";
 const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rationale too long.";
+const ERROR_POST_TEXT_TOO_SHORT: &str = "Post text too short.";
+const ERROR_POST_TEXT_TOO_LONG: &str = "Post too long.";
+
+// Errors about category.
 const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
 const ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED: &str =
     "Category cannot be unarchived when deleted.";
 const ERROR_MODERATOR_MODERATE_CATEGORY: &str = "Moderator can not moderate category.";
 const ERROR_EXCEED_MAX_CATEGORY_DEPTH: &str = "Category exceed max depth.";
+const ERROR_CATEGORY_TITLE_TOO_SHORT: &str = "Category title too short.";
+const ERROR_CATEGORY_TITLE_TOO_LONG: &str = "Category title too long.";
+const ERROR_CATEGORY_DESCRIPTION_TOO_SHORT: &str = "Category description too long.";
+const ERROR_CATEGORY_DESCRIPTION_TOO_LONG: &str = "Category description too long.";
+const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str = "Ancestor category immutable, i.e. deleted or archived";
+const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
+const ERROR_CATEGORY_DOES_NOT_EXIST: &str = "Category does not exist.";
+
+// Errors about poll.
 const ERROR_POLL_DESC_TOO_SHORT: &str = "Poll description too short.";
 const ERROR_POLL_DESC_TOO_LONG: &str = "Poll description too long.";
 const ERROR_POLL_ITEMS_TOO_SHORT: &str = "Poll items number too short.";
 const ERROR_POLL_ITEMS_TOO_LONG: &str = "Poll items number too long.";
 const ERROR_POLL_NOT_EXIST: &str = "Poll not exist.";
+const ERROR_POLL_TIME_SETTING: &str = "Poll date setting is wrong.";
+const ERROR_POLL_ITEMS_SETTING: &str = "Poll date items setting is wrong.";
+const ERROR_POLL_DATA: &str = "Poll data committed is wrong.";
 //use srml_support::storage::*;
 
 //use sr_io::{StorageOverlay, ChildrenStorageOverlay};
@@ -321,14 +328,33 @@ const ERROR_POLL_NOT_EXIST: &str = "Poll not exist.";
 use system;
 use system::{ensure_root, ensure_signed};
 
-/// Represents a user in this forum.
-#[derive(Debug, Copy, Clone)]
+/// Represents a forum user identifier, it is immutable.
+pub type ForumUserId = u64;
+
+/// Represents a user's information in this forum.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct ForumUser<AccountId> {
     /// Identifier of user
     pub id: AccountId, // In the future one could add things like
                        // - updating post count of a user
                        // - updating status (e.g. hero, new, etc.)
                        //
+    pub name: Vec<u8>,
+    pub self_introduction: Vec<u8>,
+}
+
+/// Represents a moderator identifier, it is immutable.
+pub type ModeratorId = u64;
+
+/// Represents a moderator in this forum.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Moderator<AccountId> {
+    /// Identifier of user
+    pub id: AccountId,
+    pub name: Vec<u8>,
+    pub self_introduction: Vec<u8>,
 }
 
 /// Represents a regsitry of `ForumUser` instances.
@@ -347,12 +373,12 @@ pub struct BlockchainTimestamp<BlockNumber, Moment> {
 /// Represents a moderation outcome applied to a post or a thread.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct ModerationAction<BlockNumber, Moment, AccountId> {
+pub struct ModerationAction<BlockNumber, Moment> {
     /// When action occured.
     moderated_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Account forum sudo which acted.
-    moderator_id: AccountId,
+    moderator_id: ModeratorId,
 
     /// Moderation rationale
     rationale: Vec<u8>,
@@ -388,8 +414,31 @@ bitflags! {
     }
 }
 
-/// Represents a poll identifier, each bit represent an item. multiple items select possible.
-pub type PollData = u64;
+/// Poll data raw storage, each bit represent an item selected.
+pub type PollData = u128;
+
+/// Represents a poll, each item's description not included.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct Poll<Moment> {
+    /// description text for poll
+    poll_description: Vec<u8>,
+
+    /// timestamp of poll start
+    start_time: Moment,
+
+    /// timestamp of poll end
+    end_time: Moment,
+
+    /// length of poll.
+    poll_item_number: u8,
+
+    /// min selected items.
+    min_selected_items: u8,
+
+    /// max selected items.
+    max_selected_items: u8,
+}
 
 /// Represents a post identifier
 pub type PostId = u64;
@@ -397,7 +446,7 @@ pub type PostId = u64;
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Post<BlockNumber, Moment, AccountId> {
+pub struct Post<BlockNumber, Moment> {
     /// Post identifier
     id: PostId,
 
@@ -408,7 +457,7 @@ pub struct Post<BlockNumber, Moment, AccountId> {
     current_text: Vec<u8>,
 
     /// Possible moderation of this post
-    moderation: Option<ModerationAction<BlockNumber, Moment, AccountId>>,
+    moderation: Option<ModerationAction<BlockNumber, Moment>>,
 
     /// Edits of post ordered chronologically by edit time.
     text_change_history: Vec<PostTextChange<BlockNumber, Moment>>,
@@ -417,7 +466,7 @@ pub struct Post<BlockNumber, Moment, AccountId> {
     created_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Author of post.
-    author_id: AccountId,
+    author_id: ForumUserId,
 }
 
 /// Represents a thread identifier
@@ -426,7 +475,7 @@ pub type ThreadId = u64;
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Thread<BlockNumber, Moment, AccountId> {
+pub struct Thread<BlockNumber, Moment> {
     /// Thread identifier
     id: ThreadId,
 
@@ -437,16 +486,16 @@ pub struct Thread<BlockNumber, Moment, AccountId> {
     category_id: CategoryId,
 
     /// Possible moderation of this thread
-    moderation: Option<ModerationAction<BlockNumber, Moment, AccountId>>,
+    moderation: Option<ModerationAction<BlockNumber, Moment>>,
 
     /// When thread was established.
     created_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Author of post.
-    author_id: AccountId,
+    author_id: ForumUserId,
 
-    /// poll
-    include_poll: bool,
+    /// poll description.
+    poll: Option<Poll<Moment>>,
 }
 
 /// Represents a category identifier
@@ -455,7 +504,7 @@ pub type CategoryId = u64;
 /// Represents a category
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Category<BlockNumber, Moment, AccountId> {
+pub struct Category<BlockNumber, Moment> {
     /// Category identifier
     id: CategoryId,
 
@@ -476,15 +525,12 @@ pub struct Category<BlockNumber, Moment, AccountId> {
 
     /// Parent category id.
     parent_id: Option<CategoryId>,
-
-    /// Account of the moderator which created category.
-    moderator_id: AccountId,
 }
 
 /// Represents a sequence of categories which have child-parent relatioonship
 /// where last element is final ancestor, or root, in the context of the category tree.
-type CategoryTreePath<BlockNumber, Moment, AccountId> =
-    Vec<Category<BlockNumber, Moment, AccountId>>;
+type CategoryTreePath<BlockNumber, Moment> =
+    Vec<Category<BlockNumber, Moment>>;
 
 pub trait Trait: system::Trait + timestamp::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -494,21 +540,38 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Forum {
+        /// Map forum user identifier to forum user information.
+        pub ForumUserById get(forum_user_by_id) config(): map ForumUserId => ForumUser<T::AccountId>;
+
+        /// Map forum user identifier to forum user information.
+        pub ForumUserIdByAccount get(forum_user_id_by_account) config(): map T::AccountId => ForumUserId;
+
+        /// Forum user identifier value for next new forum user.
+        pub NextForumUserId get(next_forum_user_id) config(): u64;
+
+        /// Map forum moderator identifier to moderator information.
+        pub ModeratorById get(moderator_by_id) config(): map ModeratorId => Moderator<T::AccountId>;
+
+        /// Map moderator identifier to moderator information.
+        pub ModeratorIdByAccount get(moderator_id_by_account) config(): map T::AccountId => ModeratorId;
+
+        /// Forum moderator identifier value for next new moderator user.
+        pub NextModeratorId get(next_moderator_id) config(): ModeratorId;
 
         /// Map category identifier to corresponding category.
-        pub CategoryById get(category_by_id) config(): map CategoryId => Category<T::BlockNumber, T::Moment, T::AccountId>;
+        pub CategoryById get(category_by_id) config(): map CategoryId => Category<T::BlockNumber, T::Moment>;
 
         /// Category identifier value to be used for the next Category created.
         pub NextCategoryId get(next_category_id) config(): CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(thread_by_id) config(): map ThreadId => Thread<T::BlockNumber, T::Moment, T::AccountId>;
+        pub ThreadById get(thread_by_id) config(): map ThreadId => Thread<T::BlockNumber, T::Moment>;
 
         /// Thread identifier value to be used for next Thread in threadById.
         pub NextThreadId get(next_thread_id) config(): ThreadId;
 
         /// Map post identifier to corresponding post.
-        pub PostById get(post_by_id) config(): map PostId => Post<T::BlockNumber, T::Moment, T::AccountId>;
+        pub PostById get(post_by_id) config(): map PostId => Post<T::BlockNumber, T::Moment>;
 
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): PostId;
@@ -520,25 +583,49 @@ decl_storage! {
         pub ForumSudo get(forum_sudo) config(): Option<T::AccountId>;
 
         /// Moderator set for each Category
-        pub CategoryByModerator get(category_by_moderator) config(): double_map CategoryId, blake2_256(T::AccountId) => bool;
+        pub CategoryByModerator get(category_by_moderator) config(): double_map CategoryId, blake2_256(ModeratorId) => bool;
 
-        pub ReactionByPost get(reaction_by_post) config(): double_map PostId, blake2_256(T::AccountId) => PostReaction;
+        /// Each account 's reaction to a post.
+        pub ReactionByPost get(reaction_by_post) config(): double_map PostId, blake2_256(ForumUserId) => PostReaction;
 
+        /// Description for each item in a poll.
         pub PollDesc get(poll_desc) config(): double_map ThreadId, blake2_256(u8) => Vec<u8>;
-        pub PollDataByAccount get(poll_by_account) config(): double_map ThreadId, blake2_256(T::AccountId) => PollData;
 
-        /// Input constraints
-        /// These are all forward looking, that is they are enforced on all
-        /// future calls.
+        /// Each account's data record to a poll.
+        pub PollDataByAccount get(poll_by_account) config(): double_map ThreadId, blake2_256(ForumUserId) => PollData;
+
+        /// Poll statistics
+        pub PollStatistics get(poll_statistics) config(): double_map ThreadId, blake2_256(PollData) => u64;
+
+        /// Input constraints for description text of category title.
         pub CategoryTitleConstraint get(category_title_constraint) config(): InputValidationLengthConstraint;
+
+        /// Input constraints for description text of category description.
         pub CategoryDescriptionConstraint get(category_description_constraint) config(): InputValidationLengthConstraint;
+
+        /// Input constraints for description text of thread title.
         pub ThreadTitleConstraint get(thread_title_constraint) config(): InputValidationLengthConstraint;
+
+        /// Input constraints for description text of post.
         pub PostTextConstraint get(post_text_constraint) config(): InputValidationLengthConstraint;
+
+        /// Input constraints for description text of moderation thread rationale.
         pub ThreadModerationRationaleConstraint get(thread_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
+
+        /// Input constraints for description text of moderation post rationale.
         pub PostModerationRationaleConstraint get(post_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
 
+        /// Input constraints for description text of each item in poll.
         pub PollDescConstraint get(poll_desc_constraint) config(): InputValidationLengthConstraint;
+
+        /// Input constraints for number of items in poll.
         pub PollItemsConstraint get(poll_items_constraint) config(): InputValidationLengthConstraint;
+
+        /// Input constraints for user name.
+        pub UserNameConstraint get(user_name_constraint) config(): InputValidationLengthConstraint;
+
+        /// Input constraints for user introduction.
+        pub UserSelfIntroductionConstraint get(user_self_introduction_constraint) config(): InputValidationLengthConstraint;
     }
     /*
     JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
@@ -598,17 +685,22 @@ decl_event!(
         ForumSudoSet(Option<AccountId>, Option<AccountId>),
 
         /// Thumb up post
-        ThumbUpPost(AccountId, PostId),
+        ThumbUpPost(ForumUserId, PostId),
+
         /// Thumb down post
-        ThumbDownPost(AccountId, PostId),
+        ThumbDownPost(ForumUserId, PostId),
+
         /// Like post
-        LikePost(AccountId, PostId),
+        LikePost(ForumUserId, PostId),
+
         /// Unthumb up post
-        UnthumbUpPost(AccountId, PostId),
+        UnthumbUpPost(ForumUserId, PostId),
+
         /// Thumb down post
-        UnthumbDownPost(AccountId, PostId),
+        UnthumbDownPost(ForumUserId, PostId),
+
         /// Unlike post
-        UnlikePost(AccountId, PostId),
+        UnlikePost(ForumUserId, PostId),
     }
 );
 
@@ -618,7 +710,7 @@ decl_module! {
         fn deposit_event() = default;
 
         /// enable a moderator can moderate a category and its sub categories.
-        fn set_moderator_category(origin, category_id: CategoryId, account_id: T::AccountId) -> dispatch::Result {
+        fn set_moderator_category(origin, category_id: CategoryId, account_id: T::AccountId, new_value: bool) -> dispatch::Result {
             let who = ensure_signed(origin)?;
 
             // Not signed by forum SUDO
@@ -630,12 +722,12 @@ decl_module! {
             ERROR_CATEGORY_DOES_NOT_EXIST
             );
 
-            // ensure account id exist.
-            Self::ensure_is_forum_member(&account_id)?;
+            // get moderator id. 
+            let moderator_id = Self::ensure_is_moderator(&account_id)?;
 
-            <CategoryByModerator<T>>::insert(category_id, account_id, true);
+            CategoryByModerator::insert(category_id, moderator_id, new_value);
+
             Ok(())
-
         }
 
         /// set max category depth.
@@ -645,10 +737,9 @@ decl_module! {
             // Not signed by forum SUDO
             Self::ensure_is_forum_sudo(&who)?;
 
-            <MaxCategoryDepth>::put(max_category_depth);
+            MaxCategoryDepth::put(max_category_depth);
             Ok(())
         }
-
 
         /// Set forum sudo.
         fn set_forum_sudo(origin, new_forum_sudo: Option<T::AccountId>) -> dispatch::Result {
@@ -694,7 +785,7 @@ decl_module! {
             if let Some(parent_category_id) = parent {
 
                 let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(parent_category_id)?;
-                if category_tree_path.len() >= <MaxCategoryDepth>::get() as usize {
+                if category_tree_path.len() >= MaxCategoryDepth::get() as usize {
                     return Err(ERROR_EXCEED_MAX_CATEGORY_DEPTH);
                 }
 
@@ -717,7 +808,6 @@ decl_module! {
                 deleted: false,
                 archived: false,
                 parent_id: parent,
-                moderator_id: who
             };
 
             // Insert category in map
@@ -813,17 +903,11 @@ decl_module! {
         /// Create new thread in category
         fn create_thread(origin, category_id: CategoryId, title: Vec<u8>, text: Vec<u8>) -> dispatch::Result {
 
-            /*
-             * Update SPEC with new errors,
-             * and mutation of Category class,
-             * as well as side effect to update Category::num_threads_created.
-             */
-
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_member(&who)?;
+            let forum_user_id = Self::ensure_is_forum_member(&who)?;
 
             // Get path from parent to root of category tree.
             let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
@@ -842,10 +926,10 @@ decl_module! {
              */
 
             // Add thread
-            let thread = Self::add_new_thread(category_id, &title, &who, false);
+            let thread = Self::add_new_thread(category_id, &title, forum_user_id, None);
 
             // Add inital post to thread
-            Self::add_new_post(thread.id, &text, &who);
+            Self::add_new_post(thread.id, &text, forum_user_id);
 
             // Generate event
             Self::deposit_event(RawEvent::ThreadCreated(thread.id));
@@ -854,19 +938,14 @@ decl_module! {
         }
 
         /// Create new thread in category with poll
-        fn create_thread_with_poll(origin, category_id: CategoryId, title: Vec<u8>, text: Vec<u8>, poll_desc: Vec<Vec<u8>>) -> dispatch::Result {
-
-            /*
-             * Update SPEC with new errors,
-             * and mutation of Category class,
-             * as well as side effect to update Category::num_threads_created.
-             */
+        fn create_thread_with_poll(origin, category_id: CategoryId, title: Vec<u8>, text: Vec<u8>, poll_items_description: Vec<Vec<u8>>, 
+            poll_description: Vec<u8>, start_time: T::Moment, end_time: T::Moment, min_selected_items: u8, max_select_items: u8) -> dispatch::Result {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_member(&who)?;
+            let forum_user_id = Self::ensure_is_forum_member(&who)?;
 
             // Get path from parent to root of category tree.
             let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
@@ -880,18 +959,21 @@ decl_module! {
             // Validate post text
             Self::ensure_post_text_is_valid(&text)?;
 
-            /*
-             * Here it is safe to mutate state.
-             */
-
-            // Add thread
-            let thread = Self::add_new_thread(category_id, &title, &who, true);
+            // get next thread id.
+            let new_thread_id = NextThreadId::get();
 
             // Add inital post to thread
-            Self::add_new_post(thread.id, &text, &who);
+            Self::add_new_post(NextThreadId::get(), &text, forum_user_id);
+            
+            // Add poll
+            let poll = Self::create_poll(poll_items_description.len(), &poll_description, start_time, 
+            end_time, min_selected_items, max_select_items)?;
 
-            // Add a poll 
-            let _ = Self::create_poll(thread.id, poll_desc)?;
+            // Add poll's all items 
+            let _ = Self::create_poll_items(new_thread_id, &poll_items_description)?;
+
+            // Add thread
+            let thread = Self::add_new_thread(category_id, &title, forum_user_id, Some(poll));
 
             // Generate event
             Self::deposit_event(RawEvent::ThreadCreated(thread.id));
@@ -904,17 +986,24 @@ decl_module! {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Check that account is forum member
-            Self::ensure_is_forum_member(&who)?;
+            // get forum user id.
+            let forum_user_id = Self::ensure_is_forum_member(&who)?;
 
             // Get thread
             let thread = Self::ensure_thread_exists(&thread_id)?;
 
-            if thread.include_poll == false {
+            if thread.poll.is_none() {
                 Err(ERROR_POLL_NOT_EXIST)
             } else {
-                // if re submit is allowed. PollDataByAccount(thread_id, &who).exist()
-                <PollDataByAccount<T>>::insert(thread_id, &who, poll_value);
+                Self::ensure_poll_data_valid(&thread.poll.unwrap(), poll_value)?;
+                PollDataByAccount::insert(thread_id, forum_user_id, poll_value);
+                if PollStatistics::exists(thread_id, poll_value) {
+                    PollStatistics::insert(thread_id, poll_value, 1);
+                } else {
+                    let old_value = PollStatistics::get(thread_id, poll_value);
+                    PollStatistics::insert(thread_id, poll_value, old_value + 1);
+                }
+                
                 Ok(())
             }  
         }
@@ -924,9 +1013,7 @@ decl_module! {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
-
-            // Signed by forum SUDO
-            // Self::ensure_is_forum_sudo(&who)?;
+            let moderator_id = Self::ensure_is_moderator(&who)?;
 
             // Get thread
             let mut thread = Self::ensure_thread_exists(&thread_id)?;
@@ -946,26 +1033,18 @@ decl_module! {
             // Path must be non-empty, as category id is from thread in state
             assert!(!path.is_empty());
 
+            // Path can be updated
             Self::ensure_can_mutate_in_path_leaf(&path)?;
-
-            /*
-             * Here we are safe to mutate
-             */
 
             // Add moderation to thread
             thread.moderation = Some(ModerationAction {
                 moderated_at: Self::current_block_and_time(),
-                moderator_id: who,
+                moderator_id: moderator_id,
                 rationale: rationale.clone()
             });
 
+            // Insert new value into map
             <ThreadById<T>>::insert(thread_id, thread.clone());
-
-            // Update moderation/umoderation count of corresponding category
-            // <CategoryById<T>>::mutate(thread.category_id, |category| {
-            //     category.num_direct_unmoderated_threads -= 1;
-            //     category.num_direct_moderated_threads += 1;
-            // });
 
             // Generate event
             Self::deposit_event(RawEvent::ThreadModerated(thread_id));
@@ -984,7 +1063,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_member(&who)?;
+            let forum_user_id = Self::ensure_is_forum_member(&who)?;
 
             // Validate post text
             Self::ensure_post_text_is_valid(&text)?;
@@ -1002,7 +1081,7 @@ decl_module! {
              * Here we are safe to mutate
              */
 
-            let post = Self::add_new_post(thread_id, &text, &who);
+            let post = Self::add_new_post(thread_id, &text, forum_user_id);
 
             // Generate event
             Self::deposit_event(RawEvent::PostAdded(post.id));
@@ -1010,76 +1089,77 @@ decl_module! {
             Ok(())
         }
 
-        /// like a post.
+        /// like or unlike a post.
         fn like_post(origin, post_id: PostId, like: bool) -> dispatch::Result {
-                        // Check that its a valid signature
+            // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_member(&who)?;
+            let forum_user_id = Self::ensure_is_forum_member(&who)?;
 
             // Make sure there exists a mutable post with post id `post_id`
             let _ = Self::ensure_post_is_mutable(&post_id)?;
 
             // set like
-            let old_value = <ReactionByPost<T>>::get(post_id, who.clone());
+            let old_value = ReactionByPost::get(post_id, forum_user_id);
             if like == true && old_value.contains(PostReaction::LIKE) == false {
-                <ReactionByPost<T>>::insert(post_id, who.clone(), old_value | PostReaction::LIKE);
-                Self::deposit_event(RawEvent::LikePost(who, post_id));
+                ReactionByPost::insert(post_id, forum_user_id, old_value | PostReaction::LIKE);
+                Self::deposit_event(RawEvent::LikePost(forum_user_id, post_id));
             }
             else if like == false && old_value.contains(PostReaction::LIKE) == true {
-                <ReactionByPost<T>>::insert(post_id, who.clone(), old_value - PostReaction::LIKE);
-                Self::deposit_event(RawEvent::UnlikePost(who, post_id));
+                ReactionByPost::insert(post_id, forum_user_id, old_value - PostReaction::LIKE);
+                Self::deposit_event(RawEvent::UnlikePost(forum_user_id, post_id));
             }
    
             Ok(())
         }
 
-        /// up a post.
-        fn up_post(origin, post_id: PostId, up: bool) -> dispatch::Result {
+        /// thumb up or unthumb up a post.
+        fn thumb_up_post(origin, post_id: PostId, up: bool) -> dispatch::Result {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_member(&who)?;
+            let forum_user_id = Self::ensure_is_forum_member(&who)?;
 
             // Make sure there exists a mutable post with post id `post_id`
             let _ = Self::ensure_post_is_mutable(&post_id)?;
 
             // set up
-            let old_value = <ReactionByPost<T>>::get(post_id, who.clone());
+            let old_value = ReactionByPost::get(post_id, forum_user_id);
             if up == true && old_value.contains(PostReaction::UP) == false {
-                <ReactionByPost<T>>::insert(post_id, who.clone(), old_value | PostReaction::UP);
-                Self::deposit_event(RawEvent::ThumbUpPost(who, post_id));
+                ReactionByPost::insert(post_id, forum_user_id, old_value | PostReaction::UP);
+                Self::deposit_event(RawEvent::ThumbUpPost(forum_user_id, post_id));
             }
             else if up == false && old_value.contains(PostReaction::UP) == true {
-                <ReactionByPost<T>>::insert(post_id, who.clone(), old_value - PostReaction::UP);
-                Self::deposit_event(RawEvent::UnthumbUpPost(who, post_id));
+                ReactionByPost::insert(post_id, forum_user_id, old_value - PostReaction::UP);
+                Self::deposit_event(RawEvent::UnthumbUpPost(forum_user_id, post_id));
             }
    
             Ok(())
         }
 
-        /// down a post.
-        fn down_post(origin, post_id: PostId, down: bool) -> dispatch::Result {
+        /// thumb down or unthumb down a post.
+        fn thumb_down_post(origin, post_id: PostId, down: bool) -> dispatch::Result {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_member(&who)?;
+            let forum_user_id = Self::ensure_is_forum_member(&who)?;
 
             // Make sure there exists a mutable post with post id `post_id`
             let _ = Self::ensure_post_is_mutable(&post_id)?;
 
             // set down
-            let old_value = <ReactionByPost<T>>::get(post_id, who.clone());
+            let old_value = ReactionByPost::get(post_id, forum_user_id);
+
             if down == true && old_value.contains(PostReaction::DOWN) == false {
-                <ReactionByPost<T>>::insert(post_id, who.clone(), old_value | PostReaction::DOWN);
-                Self::deposit_event(RawEvent::ThumbDownPost(who, post_id));
+                ReactionByPost::insert(post_id, forum_user_id, old_value | PostReaction::DOWN);
+                Self::deposit_event(RawEvent::ThumbDownPost(forum_user_id, post_id));
             }
             else if down == false && old_value.contains(PostReaction::DOWN) == true {
-                <ReactionByPost<T>>::insert(post_id, who.clone(), old_value - PostReaction::DOWN);
-                Self::deposit_event(RawEvent::UnthumbDownPost(who, post_id));
+                ReactionByPost::insert(post_id, forum_user_id, old_value - PostReaction::DOWN);
+                Self::deposit_event(RawEvent::UnthumbDownPost(forum_user_id, post_id));
             }
    
             Ok(())
@@ -1097,7 +1177,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_member(&who)?;
+            let forum_user_id = Self::ensure_is_forum_member(&who)?;
 
             // Validate post text
             Self::ensure_post_text_is_valid(&new_text)?;
@@ -1106,7 +1186,7 @@ decl_module! {
             let post = Self::ensure_post_is_mutable(&post_id)?;
 
             // Signer does not match creator of post with identifier postId
-            ensure!(post.author_id == who, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
+            ensure!(post.author_id == forum_user_id, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
 
             /*
              * Here we are safe to mutate
@@ -1138,8 +1218,8 @@ decl_module! {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Get moderator id.
+            let moderator_id = Self::ensure_is_moderator(&who)?;
 
             // Make sure post exists and is mutable
             let post = Self::ensure_post_is_mutable(&post_id)?;
@@ -1148,19 +1228,20 @@ decl_module! {
 
             // make sure origin can moderate the category
             let thread = Self::ensure_thread_exists(&post.thread_id)?;
-            Self::ensure_moderate_category(who.clone(), thread.category_id)?;
 
-            /*
-             * Here we are safe to mutate
-             */
+            // ensure the moderator can moderate the category
+            Self::ensure_moderate_category(who.clone(), thread.category_id)?;
 
             // Update moderation action on post
             let moderation_action = ModerationAction{
                 moderated_at: Self::current_block_and_time(),
-                moderator_id: who,
+                moderator_id: moderator_id,
                 rationale: rationale.clone()
             };
 
+            /*
+             * Here we are safe to mutate
+             */
             <PostById<T>>::mutate(post_id, |p| {
                 p.moderation = Some(moderation_action);
             });
@@ -1174,8 +1255,127 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    fn ensure_poll_data_valid(poll: &Poll<T::Moment>, poll_data: PollData) -> dispatch::Result {
+        // poll data must be in the scope
+        let one: u128 = 1;
+        let min_value = one << poll.min_selected_items - 1;
+        let max_value = (one << poll.max_selected_items) - min_value;
+        if poll_data < min_value || poll_data > max_value {
+            return Err(ERROR_POLL_DATA);
+        }
 
-    fn create_poll(thread_id: ThreadId, text: Vec<Vec<u8>>) -> dispatch::Result {
+        // Caculate the number of bit 1 in poll data
+        let mut data = poll_data;
+        let mut bits_num = 0;
+        for _ in 0..poll.poll_item_number {
+            if data & 0x01 == 1 {
+                bits_num += 1;
+            }
+            data = data >> 1;
+        }
+
+        // poll data bits number must be in the scope
+        if bits_num > poll.max_selected_items || bits_num < poll.min_selected_items {
+            Err(ERROR_POLL_DATA)
+        } else {
+            Ok(())
+        }
+    }
+   
+    fn create_poll(items_number: usize, poll_description: &Vec<u8>, start_time: T::Moment, 
+        end_time: T::Moment, min_selected_items: u8, max_selected_items: u8) -> Result<Poll<T::Moment>, &'static str> {
+        // end time is too early
+        if end_time < <timestamp::Module<T>>::now() {
+            return Err(ERROR_POLL_TIME_SETTING);
+        }
+
+        // items number never over 128 since use u128 store raw data
+        if items_number > 128 {
+            return Err(ERROR_POLL_ITEMS_SETTING);
+        }
+
+        let items_number = items_number as u8;
+
+        // Check the timestamp setting
+        if start_time > end_time {
+            return Err(ERROR_POLL_TIME_SETTING);
+        }
+
+        // Check all items number setting
+        if items_number < 1 || items_number > 128 {
+            return Err(ERROR_POLL_ITEMS_SETTING);
+        }
+
+        // Check could be selected items number setting
+        if min_selected_items < 1 || max_selected_items > 128 || items_number < max_selected_items {
+            return Err(ERROR_POLL_ITEMS_SETTING)
+        }
+
+        // Create a new Poll
+        let poll = Poll {
+            poll_description: poll_description.clone(),
+
+            /// timestamp of poll start
+            start_time: start_time,
+        
+            /// timestamp of poll end
+            end_time: end_time,
+        
+            /// length of poll.
+            poll_item_number: items_number,
+        
+            /// min selected items.
+            min_selected_items: min_selected_items,
+        
+            /// max selected items.
+            max_selected_items: max_selected_items,
+        };
+
+
+        Ok(poll)
+    }
+
+    fn create_forum_user(account_id: T::AccountId, name: Vec<u8>, self_introduction: Vec<u8>) -> dispatch::Result {
+        Self::ensure_user_name_is_valid(&name)?;
+
+        Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
+
+        let new_forum_user = ForumUser {
+            id: account_id.clone(),
+            name: name.clone(),
+            self_introduction: self_introduction.clone(),
+        };
+
+        <ForumUserById<T>>::insert(NextForumUserId::get(), new_forum_user);
+        <ForumUserIdByAccount<T>>::insert(account_id, NextForumUserId::get());
+
+        NextForumUserId::mutate(|n| {
+            *n += 1;
+        });
+        Ok(())
+    }
+
+    fn create_moderator(account_id: T::AccountId, name: Vec<u8>, self_introduction: Vec<u8>) -> dispatch::Result {
+        Self::ensure_user_name_is_valid(&name)?;
+
+        Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
+
+        let new_moderator = Moderator {
+            id: account_id.clone(),
+            name: name,
+            self_introduction: self_introduction,
+        };
+
+        <ModeratorById<T>>::insert(NextModeratorId::get(), new_moderator);
+        <ModeratorIdByAccount<T>>::insert(account_id, NextModeratorId::get());
+
+        NextModeratorId::mutate(|n| {
+            *n += 1;
+        });
+        Ok(())
+    }
+
+    fn create_poll_items(thread_id: ThreadId, text: &Vec<Vec<u8>>) -> dispatch::Result {
         let len = text.len();
         Self::ensure_poll_items_is_valid(len)?;
         for index in 0..len {
@@ -1183,10 +1383,25 @@ impl<T: Trait> Module<T> {
             Self::ensure_poll_desc_is_valid(desc_len)?;
         }
         for index in 0..len {
-            // <CategoryByModerator<T>>::insert(category_id, account_id, true);
             PollDesc::insert(thread_id, index as u8, &text[index]);
         }
         Ok(())
+    }
+
+    fn ensure_user_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        UserNameConstraint::get().ensure_valid(
+            text.len(),
+            ERROR_USER_NAME_TOO_SHORT,
+            ERROR_USER_NAME_TOO_LONG,
+        )
+    }
+
+    fn ensure_user_self_introduction_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        UserSelfIntroductionConstraint::get().ensure_valid(
+            text.len(),
+            ERROR_USER_SELF_DESC_TOO_SHORT,
+            ERROR_USER_SELF_DESC_TOO_LONG,
+        )
     }
 
     fn ensure_category_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
@@ -1262,7 +1477,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_post_is_mutable(
         post_id: &PostId,
-    ) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+    ) -> Result<Post<T::BlockNumber, T::Moment>, &'static str> {
         // Make sure post exists
         let post = Self::ensure_post_exists(post_id)?;
 
@@ -1277,7 +1492,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_post_exists(
         post_id: &PostId,
-    ) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+    ) -> Result<Post<T::BlockNumber, T::Moment>, &'static str> {
         if <PostById<T>>::exists(post_id) {
             Ok(<PostById<T>>::get(post_id))
         } else {
@@ -1287,7 +1502,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_thread_is_mutable(
         thread_id: &ThreadId,
-    ) -> Result<Thread<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+    ) -> Result<Thread<T::BlockNumber, T::Moment>, &'static str> {
         // Make sure thread exists
         let thread = Self::ensure_thread_exists(&thread_id)?;
 
@@ -1302,7 +1517,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_thread_exists(
         thread_id: &ThreadId,
-    ) -> Result<Thread<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+    ) -> Result<Thread<T::BlockNumber, T::Moment>, &'static str> {
         if <ThreadById<T>>::exists(thread_id) {
             Ok(<ThreadById<T>>::get(thread_id))
         } else {
@@ -1329,13 +1544,23 @@ impl<T: Trait> Module<T> {
 
     fn ensure_is_forum_member(
         account_id: &T::AccountId,
-    ) -> Result<ForumUser<T::AccountId>, &'static str> {
-        let forum_user_query = T::MembershipRegistry::get_forum_user(account_id);
-
-        if let Some(forum_user) = forum_user_query {
-            Ok(forum_user)
+    ) -> Result<ForumUserId, &'static str> {
+        // let forum_user_query = T::MembershipRegistry::get_forum_user(account_id);
+        if <ForumUserIdByAccount<T>>::exists(&account_id) {
+            Ok(<ForumUserIdByAccount<T>>::get(&account_id))
         } else {
             Err(ERROR_NOT_FORUM_USER)
+        }
+    }
+
+    fn ensure_is_moderator(
+        account_id: &T::AccountId,
+    ) -> Result<ModeratorId, &'static str> {
+        // let forum_user_query = T::MembershipRegistry::get_forum_user(account_id);
+        if <ModeratorIdByAccount<T>>::exists(&account_id) {
+            Ok(<ModeratorIdByAccount<T>>::get(&account_id))
+        } else {
+            Err(ERROR_NOT_MODERATOR_USER)
         }
     }
 
@@ -1346,12 +1571,12 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_can_mutate_in_path_leaf(
-        category_tree_path: &CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>,
+        category_tree_path: &CategoryTreePath<T::BlockNumber, T::Moment>,
     ) -> dispatch::Result {
         // Is parent category directly or indirectly deleted or archived category
         ensure!(
             !category_tree_path.iter().any(
-                |c: &Category<T::BlockNumber, T::Moment, T::AccountId>| c.deleted || c.archived
+                |c: &Category<T::BlockNumber, T::Moment>| c.deleted || c.archived
             ),
             ERROR_ANCESTOR_CATEGORY_IMMUTABLE
         );
@@ -1360,7 +1585,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_can_add_subcategory_path_leaf(
-        category_tree_path: &CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>,
+        category_tree_path: &CategoryTreePath<T::BlockNumber, T::Moment>,
     ) -> dispatch::Result {
         Self::ensure_can_mutate_in_path_leaf(category_tree_path)?;
 
@@ -1368,7 +1593,7 @@ impl<T: Trait> Module<T> {
         let depth_of_new_category = 1 + 1 + category_tree_path.len();
 
         ensure!(
-            depth_of_new_category <= MAX_CATEGORY_DEPTH as usize,
+            depth_of_new_category <= MaxCategoryDepth::get() as usize,
             ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED
         );
 
@@ -1377,7 +1602,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_valid_category_and_build_category_tree_path(
         category_id: CategoryId,
-    ) -> Result<CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+    ) -> Result<CategoryTreePath<T::BlockNumber, T::Moment>, &'static str> {
         ensure!(
             <CategoryById<T>>::exists(&category_id),
             ERROR_CATEGORY_DOES_NOT_EXIST
@@ -1395,7 +1620,7 @@ impl<T: Trait> Module<T> {
     /// Requires that `category_id` is valid
     fn build_category_tree_path(
         category_id: CategoryId,
-    ) -> CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId> {
+    ) -> CategoryTreePath<T::BlockNumber, T::Moment> {
         // Get path from parent to root of category tree.
         let mut category_tree_path = vec![];
 
@@ -1408,7 +1633,7 @@ impl<T: Trait> Module<T> {
     /// Requires that `category_id` is valid
     fn _build_category_tree_path(
         category_id: CategoryId,
-        path: &mut CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>,
+        path: &mut CategoryTreePath<T::BlockNumber, T::Moment>,
     ) {
         // Grab category
         let category = <CategoryById<T>>::get(category_id);
@@ -1427,9 +1652,9 @@ impl<T: Trait> Module<T> {
     fn add_new_thread(
         category_id: CategoryId,
         title: &Vec<u8>,
-        author_id: &T::AccountId,
-        include_poll: bool,
-    ) -> Thread<T::BlockNumber, T::Moment, T::AccountId> {
+        author_id: ForumUserId,
+        poll: Option<Poll<T::Moment>>,
+    ) -> Thread<T::BlockNumber, T::Moment> {
         // Create and add new thread
         let new_thread_id = NextThreadId::get();
 
@@ -1439,8 +1664,8 @@ impl<T: Trait> Module<T> {
             category_id: category_id,
             moderation: None,
             created_at: Self::current_block_and_time(),
-            author_id: author_id.clone(),
-            include_poll: include_poll,
+            author_id: author_id,
+            poll: poll,
         };
 
         // Store thread
@@ -1451,11 +1676,6 @@ impl<T: Trait> Module<T> {
             *n += 1;
         });
 
-        // Update unmoderated thread count in corresponding category
-        // <CategoryById<T>>::mutate(category_id, |c| {
-        //     c.num_direct_unmoderated_threads += 1;
-        // });
-
         new_thread
     }
 
@@ -1464,8 +1684,8 @@ impl<T: Trait> Module<T> {
     fn add_new_post(
         thread_id: ThreadId,
         text: &Vec<u8>,
-        author_id: &T::AccountId,
-    ) -> Post<T::BlockNumber, T::Moment, T::AccountId> {
+        author_id: ForumUserId,
+    ) -> Post<T::BlockNumber, T::Moment> {
         // Make and add initial post
         let new_post_id = NextPostId::get();
 
@@ -1476,7 +1696,7 @@ impl<T: Trait> Module<T> {
             moderation: None,
             text_change_history: vec![],
             created_at: Self::current_block_and_time(),
-            author_id: author_id.clone(),
+            author_id: author_id,
         };
 
         // Store post
@@ -1496,8 +1716,9 @@ impl<T: Trait> Module<T> {
         category_id: CategoryId,
     ) -> Result<(), &'static str> {
         let category_tree_path = Self::build_category_tree_path(category_id.clone());
+        let moderator_id = Self::ensure_is_moderator(&account_id)?;
         for i in 0..category_tree_path.len() {
-            if <CategoryByModerator<T>>::get(category_tree_path[i].id, &account_id) == true {
+            if CategoryByModerator::get(category_tree_path[i].id, moderator_id) == true {
                 return Ok(());
             }
         }
