@@ -298,6 +298,7 @@ impl<T: Trait> Module<T> {
             current_block_height,
             activate_at.clone(),
             T::Currency::minimum_balance(),
+            application_rationing_policy.clone(),
             application_staking_policy.clone(),
             role_staking_policy.clone(),
         )?;

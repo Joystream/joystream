@@ -166,3 +166,15 @@ fn add_opening_succeeds_or_fails_due_to_role_staking_policy() {
         ));
     });
 }
+
+#[test]
+fn add_opening_succeeds_or_fails_due_to_invalid_application_rationing_policy() {
+    build_test_externalities().execute_with(|| {
+        let mut opening_data = AddOpeningFixture::default();
+        opening_data.application_rationing_policy = Some(ApplicationRationingPolicy {
+            max_active_applicants: 0,
+        });
+
+        opening_data.call_and_assert(Err(AddOpeningError::ApplicationRationingZeroMaxApplicants));
+    });
+}
