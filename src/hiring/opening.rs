@@ -202,7 +202,6 @@ pub enum OpeningStage<BlockNumber, ApplicationId> {
 
         /// Deactivated at any time for any cause.
         deactivated_application_count: u32,
-
         // Removed at any time.
         //removed_application_count: u32
     },

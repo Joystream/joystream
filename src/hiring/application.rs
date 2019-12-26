@@ -41,6 +41,35 @@ pub struct Application<OpeningId, BlockNumber, StakeId> {
     pub human_readable_text: Vec<u8>,
 }
 
+impl<OpeningId, BlockNumber, StakeId: PartialEq + Clone>
+    Application<OpeningId, BlockNumber, StakeId>
+{
+    /// Compares provided stake_id with internal stake defined by stake_purpose.
+    /// Returns None on equality, Some(stake_id) otherwise.
+    pub(crate) fn toggle_stake_id(
+        &self,
+        stake_id: StakeId,
+        stake_purpose: StakePurpose,
+    ) -> Option<StakeId> {
+        let active_staking_id = match stake_purpose {
+            StakePurpose::Application => self.active_application_staking_id.clone(),
+            StakePurpose::Role => self.active_role_staking_id.clone(),
+        };
+
+        match active_staking_id {
+            // If there is a match, toggle.
+            Some(id) => {
+                if id == stake_id {
+                    None
+                } else {
+                    Some(id.clone())
+                }
+            }
+            _ => None,
+        }
+    }
+}
+
 /// Possible status of an application
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd, Ord)]
 pub enum ApplicationStage<BlockNumber> {

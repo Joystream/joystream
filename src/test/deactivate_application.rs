@@ -7,6 +7,7 @@ use add_opening::AddOpeningFixture;
 /*
 Not covered:
 - application content checks: deactivation in future blocks
+- ApplicationDeactivatedHandler
 
 - staking state checks:
 i.application.active_role_staking_id;

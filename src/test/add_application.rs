@@ -14,6 +14,7 @@ ii.application.active_application_staking_id;
 - stake module calls:
 i.infallible_opt_stake_initiation -> infallible_stake_initiation_on_application -> stake::create_stake()
 
+- ApplicationDeactivatedHandler
 */
 
 pub struct AddApplicationFixture {

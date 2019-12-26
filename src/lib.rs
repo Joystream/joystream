@@ -944,10 +944,10 @@ impl<T: Trait> Module<T> {
     }
 
     /// The stake, with the given id, was unstaked.
-    pub fn unstaked(stake_id: T::StakeId) {
+    pub fn unstaked(stake_id: T::StakeId) -> UnstakedResult {
         // Ignore unstaked
         if !<ApplicationIdByStakingId<T>>::exists(stake_id) {
-            return;
+            return UnstakedResult::StakeIdNonExistent;
         }
 
         // Get application
@@ -965,7 +965,7 @@ impl<T: Trait> Module<T> {
         {
             (deactivation_initiated, cause)
         } else {
-            return;
+            return UnstakedResult::ApplicationIsNotUnstaking;
         };
 
         //
@@ -1063,7 +1063,9 @@ impl<T: Trait> Module<T> {
 
             // Call handler
             T::ApplicationDeactivatedHandler::deactivated(&application_id, cause);
+            return UnstakedResult::Unstaked;
         }
+        return UnstakedResult::UnstakingInProgress;
     }
 }
 
@@ -1097,6 +1099,19 @@ pub type ApplicationBTreeMap<T> = BTreeMap<
         <T as stake::Trait>::StakeId,
     >,
 >;
+
+/// Informational result of the unstaked() method. Can be ignored.
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum UnstakedResult {
+    /// Non-existentent stake id provided
+    StakeIdNonExistent,
+    /// Application is not in 'Unstaking' state
+    ApplicationIsNotUnstaking,
+    /// Fully unstaked
+    Unstaked,
+    /// Unstaking in progress
+    UnstakingInProgress,
+}
 
 impl<T: Trait> Module<T> {
     fn application_id_iter_to_map<'a>(
