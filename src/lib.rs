@@ -535,7 +535,7 @@ type CategoryTreePath<BlockNumber, Moment> =
 pub trait Trait: system::Trait + timestamp::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    type MembershipRegistry: ForumUserRegistry<Self::AccountId>;
+    // type MembershipRegistry: ForumUserRegistry<Self::AccountId>;
 }
 
 decl_storage! {

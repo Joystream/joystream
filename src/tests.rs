@@ -4,7 +4,7 @@ use super::*;
 use crate::mock::*;
 
 use srml_support::{assert_err, assert_ok};
-
+use system::{EventRecord, Phase};
 /*
 * NB!: No test checks for event emission!!!!
 */
@@ -24,6 +24,8 @@ fn set_forum_sudo_unset() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
+        // System::set_block_number(1);
+        assert_eq!(System::events(), vec![]);
         // Ensure that forum sudo is default
         assert_eq!(TestForumModule::forum_sudo(), Some(33));
 
@@ -35,8 +37,12 @@ fn set_forum_sudo_unset() {
 
         // Sudo no longer set
         assert!(TestForumModule::forum_sudo().is_none());
+        // System::finalize();
 
-        // event emitted?!
+        // TODO event emitted but no found in system events
+        assert_eq!(System::events(), vec![
+            EventRecord { phase: Phase::ApplyExtrinsic(0), event: (), topics: vec!()}
+        ]);
     });
 }
 
@@ -205,7 +211,6 @@ fn update_category_undelete_and_unarchive() {
                 deleted: true,
                 archived: true,
                 parent_id: None,
-                moderator_id: forum_sudo,
             },
         ),
         // A subcategory of the one above
@@ -221,7 +226,6 @@ fn update_category_undelete_and_unarchive() {
                 deleted: true,
                 archived: false,
                 parent_id: Some(1),
-                moderator_id: forum_sudo,
             },
         ),
     ];
@@ -233,6 +237,12 @@ fn update_category_undelete_and_unarchive() {
     };
 
     let config = genesis_config(
+        &vec![],
+        &vec![],
+        1,
+        &vec![],
+        &vec![],
+        1,
         &category_by_id,             // category_by_id
         category_by_id.len() as u64, // next_category_id
         &vec![],                     // thread_by_id
@@ -245,6 +255,9 @@ fn update_category_undelete_and_unarchive() {
         &vec![],
         &vec![],
         &vec![],
+        &vec![],
+        &sloppy_constraint,
+        &sloppy_constraint,
         &sloppy_constraint,
         &sloppy_constraint,
         &sloppy_constraint,
@@ -607,34 +620,6 @@ fn not_forum_sudo_cannot_undelete_category() {
     assert_not_forum_sudo_cannot_update_category(undelete_category);
 }
 
-#[test]
-fn not_forum_sudo_cannot_moderate_thread() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, thread_id) = create_root_category_and_thread(origin.clone());
-        assert_eq!(
-            moderate_thread(NOT_FORUM_SUDO_ORIGIN, thread_id, good_rationale()),
-            Err(ERROR_MODERATOR_MODERATE_CATEGORY)
-        );
-    });
-}
-
-#[test]
-fn not_forum_sudo_cannot_moderate_post() {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin.clone());
-        assert_eq!(
-            moderate_post(NOT_FORUM_SUDO_ORIGIN, post_id, good_rationale()),
-            Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
-        );
-    });
-}
-
 // Not a member:
 // -----------------------------------------------------------------------------
 
@@ -742,8 +727,10 @@ fn cannot_create_post_with_invalid_thread_id() {
 fn cannot_moderate_thread_with_invalid_id() {
     let config = default_genesis_config();
     let origin = OriginType::Signed(config.forum_sudo);
+    
 
     build_test_externalities(config).execute_with(|| {
+        let _ = create_moderator();
         assert_err!(
             moderate_thread(origin, INVLAID_THREAD_ID, good_rationale()),
             ERROR_THREAD_DOES_NOT_EXIST
@@ -755,8 +742,10 @@ fn cannot_moderate_thread_with_invalid_id() {
 fn cannot_moderate_post_with_invalid_id() {
     let config = default_genesis_config();
     let origin = OriginType::Signed(config.forum_sudo);
+    
 
     build_test_externalities(config).execute_with(|| {
+        let _ = create_moderator();
         assert_err!(
             moderate_post(origin, INVLAID_POST_ID, good_rationale()),
             ERROR_POST_DOES_NOT_EXIST
@@ -989,19 +978,18 @@ fn set_moderator_category_successfully() {
      * leaf category is deleted, and then try to undelete.
      */
     let config = default_genesis_config();
+    let sudo_member = config.forum_sudo;
     let forum_sudo = OriginType::Signed(config.forum_sudo);
+    println!("forum sudo id is {}", sudo_member);
 
     build_test_externalities(config).execute_with(|| {
         let (_, category_id, _, _) =
             create_root_category_and_thread_and_post(forum_sudo.clone());
 
-        let member_id = 123;
-        let new_member = registry::Member { id: member_id };
-        registry::TestMembershipRegistryModule::add_member(&new_member);
-
+        let first_moderator_id = 1;
         // Ensure init value is false
         assert_eq!(
-            TestForumModule::category_by_moderator(category_id, member_id),
+            TestForumModule::category_by_moderator(category_id, first_moderator_id),
             false
         );
 
@@ -1009,14 +997,15 @@ fn set_moderator_category_successfully() {
             TestForumModule::set_moderator_category(
                 Origin::signed(default_genesis_config().forum_sudo),
                 category_id,
-                member_id
+                sudo_member,
+                true,
             ),
             Ok(())
         );
 
         // Ensure the value updated successfully
         assert_eq!(
-            TestForumModule::category_by_moderator(category_id, member_id),
+            TestForumModule::category_by_moderator(category_id, first_moderator_id),
             true
         );
     });
@@ -1065,7 +1054,7 @@ fn up_post_successfully() {
 
     build_test_externalities(config).execute_with(|| {
         let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin);
-        assert_ok!(TestForumModule::up_post(
+        assert_ok!(TestForumModule::thumb_up_post(
             Origin::signed(forum_sudo),
             post_id,
             true
@@ -1088,7 +1077,7 @@ fn down_post_successfully() {
 
     build_test_externalities(config).execute_with(|| {
         let (_, _, _, post_id) = create_root_category_and_thread_and_post(origin);
-        assert_ok!(TestForumModule::down_post(
+        assert_ok!(TestForumModule::thumb_down_post(
             Origin::signed(forum_sudo),
             post_id,
             true

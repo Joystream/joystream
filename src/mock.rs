@@ -37,24 +37,24 @@ pub mod registry {
     }
 
     impl<T: Trait> Module<T> {
-        pub fn add_member(member: &Member<T::AccountId>) {
-            <ForumUserById<T>>::insert(member.id.clone(), member.clone());
-        }
+        // pub fn add_member(member: &Member<T::AccountId>) {
+        //     <ForumUserById<T>>::insert(member.id.clone(), member.clone());
+        // }
     }
 
-    impl<T: Trait> ForumUserRegistry<T::AccountId> for Module<T> {
-        fn get_forum_user(id: &T::AccountId) -> Option<ForumUser<T::AccountId>> {
-            if <ForumUserById<T>>::exists(id) {
-                let m = <ForumUserById<T>>::get(id);
+    // impl<T: Trait> ForumUserRegistry<T::AccountId> for Module<T> {
+    //     fn get_forum_user(id: &T::AccountId) -> Option<ForumUser<T::AccountId>> {
+    //         if <ForumUserById<T>>::exists(id) {
+    //             let m = <ForumUserById<T>>::get(id);
 
-                Some(ForumUser { id: m.id })
-            } else {
-                None
-            }
-        }
-    }
+    //             Some(ForumUser { id: m.id })
+    //         } else {
+    //             None
+    //         }
+    //     }
+    // }
 
-    pub type TestMembershipRegistryModule = Module<Runtime>;
+    // pub type TestMembershipRegistryModule = Module<Runtime>;
 }
 
 impl_outer_origin! {
@@ -99,8 +99,13 @@ impl timestamp::Trait for Runtime {
 
 impl Trait for Runtime {
     type Event = ();
-    type MembershipRegistry = registry::TestMembershipRegistryModule;
+    // type MembershipRegistry = registry::TestMembershipRegistryModule;
 }
+
+// impl forum::Trait for Runtime {
+//     type Moment = u64;
+//     type Event = ();
+// }
 
 #[derive(Clone)]
 pub enum OriginType {
@@ -247,10 +252,25 @@ impl CreatePostFixture {
 }
 
 pub fn create_forum_member() -> OriginType {
-    let member_id = 123;
-    let new_member = registry::Member { id: member_id };
-    registry::TestMembershipRegistryModule::add_member(&new_member);
+    let member_id = 33;
+    // let new_member = registry::Member { id: member_id };
+    // registry::TestMembershipRegistryModule::add_member(&new_member);
+    // OriginType::Signed(member_id)
+    let _ = TestForumModule::create_forum_user(member_id, 
+        "new forum member".as_bytes().to_vec(), 
+        "new forum member self description".as_bytes().to_vec());
     OriginType::Signed(member_id)
+}
+
+pub fn create_moderator() -> OriginType {
+    let moderator = 33;
+    // let new_member = registry::Member { id: member_id };
+    // registry::TestMembershipRegistryModule::add_member(&new_member);
+    // OriginType::Signed(member_id)
+    let _ = TestForumModule::create_moderator(moderator, 
+        "new moderator member".as_bytes().to_vec(), 
+        "new moderator member self description".as_bytes().to_vec());
+    OriginType::Signed(moderator)
 }
 
 pub fn assert_create_category(
@@ -314,11 +334,12 @@ pub fn create_root_category_and_thread(
     forum_sudo: OriginType,
 ) -> (OriginType, CategoryId, ThreadId) {
     let member_origin = create_forum_member();
+    let _moderator = create_moderator();
     let category_id = create_root_category(forum_sudo);
     let thread_id = TestForumModule::next_thread_id();
 
-    let forum_sudo_member = registry::Member { id: default_genesis_config().forum_sudo };
-    registry::TestMembershipRegistryModule::add_member(&forum_sudo_member);
+    // let forum_sudo_member = registry::Member { id: default_genesis_config().forum_sudo };
+    // registry::TestMembershipRegistryModule::add_member(&forum_sudo_member);
 
     CreateThreadFixture {
         origin: member_origin.clone(),
@@ -335,16 +356,18 @@ pub fn create_root_category_and_thread(
 pub fn create_root_category_and_moderator_and_thread(
     forum_sudo: OriginType,
 ) -> (OriginType, CategoryId, ThreadId) {
-    let member_origin = create_forum_member();
+    let _forum_user = create_forum_member();
+    let member_origin = create_moderator();
     let category_id = create_root_category(forum_sudo);
     let thread_id = TestForumModule::next_thread_id();
 
-    let forum_sudo_member = registry::Member { id: default_genesis_config().forum_sudo };
-    registry::TestMembershipRegistryModule::add_member(&forum_sudo_member);
+    // let forum_sudo_member = registry::Member { id: default_genesis_config().forum_sudo };
+    // registry::TestMembershipRegistryModule::add_member(&forum_sudo_member);
     let _ = TestForumModule::set_moderator_category(
                 Origin::signed(default_genesis_config().forum_sudo),
                 category_id,
-                default_genesis_config().forum_sudo
+                default_genesis_config().forum_sudo,
+                true
             );
 
     CreateThreadFixture {
@@ -449,6 +472,12 @@ pub fn assert_not_forum_sudo_cannot_update_category(
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
+        forum_user_by_id: vec![],
+        forum_user_id_by_account: vec![],
+        next_forum_user_id: 1,
+        moderator_by_id: vec![],
+        moderator_id_by_account: vec![],
+        next_moderator_id: 1,
         category_by_id: vec![], // endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
         next_category_id: 1,
         thread_by_id: vec![],
@@ -462,6 +491,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         reaction_by_post: vec![],
         poll_desc: vec![],
         poll_by_account: vec![],
+        poll_statistics: vec![],
 
         category_title_constraint: InputValidationLengthConstraint {
             min: 10,
@@ -501,6 +531,14 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
             min: 1,
             max_min_diff: 20,
         },
+        user_name_constraint: InputValidationLengthConstraint {
+            min: 6,
+            max_min_diff: 20,
+        },
+        user_self_introduction_constraint: InputValidationLengthConstraint {
+            min: 10,
+            max_min_diff: 200,
+        },
     }
 }
 
@@ -509,17 +547,14 @@ pub type RuntimeDoubleMap<K1, K2, V> = std::vec::Vec<(K1, K2, V)>;
 pub type RuntimeCategory = Category<
     <Runtime as system::Trait>::BlockNumber,
     <Runtime as timestamp::Trait>::Moment,
-    <Runtime as system::Trait>::AccountId,
 >;
 pub type RuntimeThread = Thread<
     <Runtime as system::Trait>::BlockNumber,
     <Runtime as timestamp::Trait>::Moment,
-    <Runtime as system::Trait>::AccountId,
 >;
 pub type RuntimePost = Post<
     <Runtime as system::Trait>::BlockNumber,
     <Runtime as timestamp::Trait>::Moment,
-    <Runtime as system::Trait>::AccountId,
 >;
 pub type RuntimeBlockchainTimestamp = BlockchainTimestamp<
     <Runtime as system::Trait>::BlockNumber,
@@ -527,6 +562,12 @@ pub type RuntimeBlockchainTimestamp = BlockchainTimestamp<
 >;
 
 pub fn genesis_config(
+    forum_user_by_id: &RuntimeMap<ForumUserId, ForumUser<<Runtime as system::Trait>::AccountId>>,
+    forum_user_id_by_account: &RuntimeMap<<Runtime as system::Trait>::AccountId, ForumUserId>,
+    next_forum_user_id: u64,
+    moderator_by_id: &RuntimeMap<ModeratorId, Moderator<<Runtime as system::Trait>::AccountId>>,
+    moderator_id_by_account: &RuntimeMap<<Runtime as system::Trait>::AccountId, ModeratorId>,
+    next_moderator_id: u64,
     category_by_id: &RuntimeMap<CategoryId, RuntimeCategory>,
     next_category_id: u64,
     thread_by_id: &RuntimeMap<ThreadId, RuntimeThread>,
@@ -539,6 +580,7 @@ pub fn genesis_config(
     reaction_by_post: &RuntimeDoubleMap<PostId, <Runtime as system::Trait>::AccountId, PostReaction>,
     poll_desc: &RuntimeDoubleMap<PostId, u8, Vec<u8>>,
     poll_by_account: &RuntimeDoubleMap<PostId, <Runtime as system::Trait>::AccountId, PollData>,
+    poll_statistics: &RuntimeDoubleMap<ThreadId, PollData, u64>,
     category_title_constraint: &InputValidationLengthConstraint,
     category_description_constraint: &InputValidationLengthConstraint,
     thread_title_constraint: &InputValidationLengthConstraint,
@@ -547,8 +589,16 @@ pub fn genesis_config(
     post_moderation_rationale_constraint: &InputValidationLengthConstraint,
     poll_desc_constraint: &InputValidationLengthConstraint,
     poll_items_constraint: &InputValidationLengthConstraint,
+    user_name_constraint: &InputValidationLengthConstraint,
+    user_self_introduction_constraint: &InputValidationLengthConstraint,
 ) -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
+        forum_user_by_id: forum_user_by_id.clone(),
+        forum_user_id_by_account: forum_user_id_by_account.clone(),
+        next_forum_user_id: next_forum_user_id,
+        moderator_by_id: moderator_by_id.clone(),
+        moderator_id_by_account: moderator_id_by_account.clone(),
+        next_moderator_id: next_moderator_id,
         category_by_id: category_by_id.clone(),
         next_category_id: next_category_id,
         thread_by_id: thread_by_id.clone(),
@@ -561,6 +611,7 @@ pub fn genesis_config(
         reaction_by_post: reaction_by_post.clone(),
         poll_desc: poll_desc.clone(),
         poll_by_account: poll_by_account.clone(),
+        poll_statistics: poll_statistics.clone(),
         category_title_constraint: category_title_constraint.clone(),
         category_description_constraint: category_description_constraint.clone(),
         thread_title_constraint: thread_title_constraint.clone(),
@@ -569,6 +620,8 @@ pub fn genesis_config(
         post_moderation_rationale_constraint: post_moderation_rationale_constraint.clone(),
         poll_desc_constraint: poll_desc_constraint.clone(),
         poll_items_constraint: poll_items_constraint.clone(),
+        user_name_constraint: user_name_constraint.clone(),
+        user_self_introduction_constraint: user_self_introduction_constraint.clone(),
     }
 }
 
@@ -597,7 +650,7 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::T
     t.into()
 }
 
-// pub type System = system::Module<Runtime>;
+pub type System = system::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;
