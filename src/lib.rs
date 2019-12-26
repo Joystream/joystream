@@ -357,11 +357,6 @@ pub struct Moderator<AccountId> {
     pub self_introduction: Vec<u8>,
 }
 
-/// Represents a regsitry of `ForumUser` instances.
-pub trait ForumUserRegistry<AccountId> {
-    fn get_forum_user(id: &AccountId) -> Option<ForumUser<AccountId>>;
-}
-
 /// Convenient composite time stamp
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
@@ -534,8 +529,6 @@ type CategoryTreePath<BlockNumber, Moment> =
 
 pub trait Trait: system::Trait + timestamp::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-
-    // type MembershipRegistry: ForumUserRegistry<Self::AccountId>;
 }
 
 decl_storage! {

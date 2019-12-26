@@ -12,51 +12,6 @@ use runtime_primitives::{
 };
 use srml_support::{impl_outer_origin, parameter_types};
 
-/// Module which has a full Substrate module for
-/// mocking behaviour of MembershipRegistry
-pub mod registry {
-
-    use super::*;
-    // use srml_support::*;
-
-    #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-    pub struct Member<AccountId> {
-        pub id: AccountId,
-    }
-
-    decl_storage! {
-        trait Store for Module<T: Trait> as MockForumUserRegistry {
-
-            pub ForumUserById get(forum_user_by_id) config(): map T::AccountId => Member<T::AccountId>;
-
-        }
-    }
-
-    decl_module! {
-        pub struct Module<T: Trait> for enum Call where origin: T::Origin {}
-    }
-
-    impl<T: Trait> Module<T> {
-        // pub fn add_member(member: &Member<T::AccountId>) {
-        //     <ForumUserById<T>>::insert(member.id.clone(), member.clone());
-        // }
-    }
-
-    // impl<T: Trait> ForumUserRegistry<T::AccountId> for Module<T> {
-    //     fn get_forum_user(id: &T::AccountId) -> Option<ForumUser<T::AccountId>> {
-    //         if <ForumUserById<T>>::exists(id) {
-    //             let m = <ForumUserById<T>>::get(id);
-
-    //             Some(ForumUser { id: m.id })
-    //         } else {
-    //             None
-    //         }
-    //     }
-    // }
-
-    // pub type TestMembershipRegistryModule = Module<Runtime>;
-}
-
 impl_outer_origin! {
     pub enum Origin for Runtime {}
 }
@@ -253,9 +208,6 @@ impl CreatePostFixture {
 
 pub fn create_forum_member() -> OriginType {
     let member_id = 33;
-    // let new_member = registry::Member { id: member_id };
-    // registry::TestMembershipRegistryModule::add_member(&new_member);
-    // OriginType::Signed(member_id)
     let _ = TestForumModule::create_forum_user(member_id, 
         "new forum member".as_bytes().to_vec(), 
         "new forum member self description".as_bytes().to_vec());
@@ -264,9 +216,6 @@ pub fn create_forum_member() -> OriginType {
 
 pub fn create_moderator() -> OriginType {
     let moderator = 33;
-    // let new_member = registry::Member { id: member_id };
-    // registry::TestMembershipRegistryModule::add_member(&new_member);
-    // OriginType::Signed(member_id)
     let _ = TestForumModule::create_moderator(moderator, 
         "new moderator member".as_bytes().to_vec(), 
         "new moderator member self description".as_bytes().to_vec());
@@ -338,9 +287,6 @@ pub fn create_root_category_and_thread(
     let category_id = create_root_category(forum_sudo);
     let thread_id = TestForumModule::next_thread_id();
 
-    // let forum_sudo_member = registry::Member { id: default_genesis_config().forum_sudo };
-    // registry::TestMembershipRegistryModule::add_member(&forum_sudo_member);
-
     CreateThreadFixture {
         origin: member_origin.clone(),
         category_id,
@@ -361,8 +307,6 @@ pub fn create_root_category_and_moderator_and_thread(
     let category_id = create_root_category(forum_sudo);
     let thread_id = TestForumModule::next_thread_id();
 
-    // let forum_sudo_member = registry::Member { id: default_genesis_config().forum_sudo };
-    // registry::TestMembershipRegistryModule::add_member(&forum_sudo_member);
     let _ = TestForumModule::set_moderator_category(
                 Origin::signed(default_genesis_config().forum_sudo),
                 category_id,
@@ -625,13 +569,6 @@ pub fn genesis_config(
     }
 }
 
-// MockForumUserRegistry
-pub fn default_mock_forum_user_registry_genesis_config() -> registry::GenesisConfig<Runtime> {
-    registry::GenesisConfig::<Runtime> {
-        forum_user_by_id: vec![],
-    }
-}
-
 // NB!:
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
@@ -641,11 +578,6 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::T
         .unwrap();
 
     config.assimilate_storage(&mut t).unwrap();
-
-    // Add mock registry configuration
-    default_mock_forum_user_registry_genesis_config()
-        .assimilate_storage(&mut t)
-        .unwrap();
 
     t.into()
 }
