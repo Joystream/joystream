@@ -49,7 +49,7 @@ impl system::Trait for Test {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 100;
     pub const TransferFee: u32 = 0;
     pub const CreationFee: u32 = 0;
     pub const TransactionBaseFee: u32 = 1;

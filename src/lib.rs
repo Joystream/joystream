@@ -3,7 +3,7 @@
 
 use rstd::prelude::*;
 
-use codec::{Codec, Decode, Encode};
+use codec::Codec;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::traits::Currency;
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
@@ -18,6 +18,7 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 
 mod hiring;
+#[macro_use]
 mod macroes;
 mod mock;
 mod test;
@@ -31,7 +32,7 @@ use stake;
 pub trait ApplicationDeactivatedHandler<T: Trait> {
     /// An application, with the given id, was fully deactivated, with the
     /// given cause, and was put in the inactive state.
-    fn deactivated(application_id: &T::ApplicationId, cause: &hiring::ApplicationDeactivationCause);
+    fn deactivated(application_id: &T::ApplicationId, cause: hiring::ApplicationDeactivationCause);
 }
 
 pub trait Trait: system::Trait + stake::Trait + Sized {
@@ -64,24 +65,10 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
 impl<T: Trait> ApplicationDeactivatedHandler<T> for () {
     fn deactivated(
         _application_id: &T::ApplicationId,
-        _cause: &hiring::ApplicationDeactivationCause,
+        _cause: hiring::ApplicationDeactivationCause,
     ) {
     }
 }
-
-/*
-impl<T: Trait, X: ApplicationDeactivatedHandler<T>, Y: ApplicationDeactivatedHandler<T>> ApplicationDeactivatedHandler<T>
-    for (X, Y)
-{
-    fn deactivated(
-        application_id: T::ApplicationId,
-        cause: hiring::ApplicationDeactivationCause
-    ) {
-        X::deactivated(application_id, cause);
-        Y::deactivated(application_id, cause);
-    }
-}
-*/
 
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
@@ -112,7 +99,6 @@ decl_storage! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-
         fn on_finalize(now: T::BlockNumber) {
 
             //
@@ -193,8 +179,8 @@ decl_module! {
                                         *active_application_count,
                                         *unstaking_application_count,
                                         *deactivated_application_count,
-                                        started_accepting_applicants_at_block.clone(),
-                                        started_review_period_at_block.clone()
+                                        *started_accepting_applicants_at_block,
+                                        *started_review_period_at_block
                                     )
                                 ))
 
@@ -224,8 +210,8 @@ decl_module! {
                 //
 
                 // Get unstaking periods
-                let application_stake_unstaking_period = Self::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.application_staking_policy);
-                let role_stake_unstaking_period = Self::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.role_staking_policy);
+                let application_stake_unstaking_period = StakingPolicy::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.application_staking_policy);
+                let role_stake_unstaking_period = StakingPolicy::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.role_staking_policy);
 
 
                 // Get applications
@@ -236,7 +222,7 @@ decl_module! {
                     &applications_map,
                     application_stake_unstaking_period,
                     role_stake_unstaking_period,
-                    &hiring::ApplicationDeactivationCause::ReviewPeriodExpired
+                    hiring::ApplicationDeactivationCause::ReviewPeriodExpired
                 );
 
                 // NB: Shows issue https://github.com/Joystream/substrate-hiring-module/issues/5
@@ -269,42 +255,6 @@ decl_module! {
     }
 }
 
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum StakePurpose {
-    Role,
-    Application,
-}
-
-// Safe and explict way of chosing
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub enum ActivateOpeningAt<BlockNumber> {
-    CurrentBlock,
-    ExactBlock(BlockNumber),
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum AddOpeningError {
-    OpeningMustActivateInTheFuture,
-
-    /// It is not possible to stake less than the minimum balance defined in the
-    /// `Currency` module.
-    StakeAmountLessThanMinimumCurrencyBalance(StakePurpose),
-}
-
-/*
-pub struct ApplicationUnstakingPeriods<T: Trait> {
-    successful_applicants: T::BlockNumber,
-    unsuccessful_applicants: T::BlockNumber
-}
-*/
-
-/// The possible outcome for an application in an opening which is being filled.
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum ApplicationOutcomeInFilledOpening {
-    Success,
-    Failure,
-}
-
 /// Error due to attempting to fill an opening.
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum FillOpeningError<T: Trait> {
@@ -317,39 +267,6 @@ pub enum FillOpeningError<T: Trait> {
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
-pub enum CancelOpeningError {
-    UnstakingPeriodTooShort(StakePurpose),
-    RedundantUnstakingPeriodProvided(StakePurpose),
-    OpeningDoesNotExist,
-    OpeningNotInCancellableStage,
-}
-
-/// NB:
-/// `OpeningCancelled` does not have the ideal form.
-/// https://github.com/Joystream/substrate-hiring-module/issues/10
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct OpeningCancelled {
-    pub number_of_unstaking_applications: u32,
-    pub number_of_deactivated_applications: u32,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum RemoveOpeningError {
-    OpeningDoesNotExist,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum BeginReviewError {
-    OpeningDoesNotExist,
-    OpeningNotInAcceptingApplicationsStage,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum BeginAcceptingApplicationsError {
-    OpeningDoesNotExist,
-    OpeningIsNotInWaitingToBeginStage,
-}
-
 pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
     pub opening: Opening<BalanceOf<T>, T::BlockNumber, T::ApplicationId>,
 
@@ -366,34 +283,6 @@ pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
     pub would_get_added_success: ApplicationAddedSuccess<T>,
 }
 
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum AddApplicationError {
-    OpeningDoesNotExist,
-    StakeProvidedWhenRedundant(StakePurpose),
-    StakeMissingWhenRequired(StakePurpose),
-    StakeAmountTooLow(StakePurpose),
-    OpeningNotInAcceptingApplicationsStage,
-    NewApplicationWasCrowdedOut,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct ApplicationAdded<ApplicationId> {
-    /// ...
-    pub application_id_added: ApplicationId,
-
-    /// ...
-    pub application_id_crowded_out: Option<ApplicationId>,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum DeactivateApplicationError {
-    ApplicationDoesNotExist,
-    ApplicationNotActive,
-    OpeningNotAcceptingApplications,
-    UnstakingPeriodTooShort(StakePurpose),
-    RedundantUnstakingPeriodProvided(StakePurpose),
-}
-
 impl<T: Trait> Module<T> {
     pub fn add_opening(
         activate_at: ActivateOpeningAt<T::BlockNumber>,
@@ -405,63 +294,25 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::OpeningId, AddOpeningError> {
         let current_block_height = <system::Module<T>>::block_number();
 
-        // Check that exact activation is actually in the future
-        ensure!(
-            match activate_at {
-                ActivateOpeningAt::ExactBlock(block_number) => block_number > current_block_height,
-                _ => true,
-            },
-            AddOpeningError::OpeningMustActivateInTheFuture
-        );
-
-        // Check that staking amounts clear minimum balance required.
-        ensure_amount_valid_in_opt_staking_policy!(
-            T,
-            application_staking_policy,
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Application)
+        Opening::<BalanceOf<T>, T::BlockNumber, T::ApplicationId>::ensure_can_add_opening(
+            current_block_height,
+            activate_at.clone(),
+            T::Currency::minimum_balance(),
+            application_staking_policy.clone(),
+            role_staking_policy.clone(),
         )?;
 
-        ensure_amount_valid_in_opt_staking_policy!(
-            T,
-            role_staking_policy,
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Role)
-        )?;
-
-        //
         // == MUTATION SAFE ==
-        //
 
-        // Construct new opening
-        let opening_stage = match activate_at {
-            ActivateOpeningAt::CurrentBlock => hiring::OpeningStage::Active {
-                // We immediately start accepting applications
-                stage: hiring::ActiveOpeningStage::AcceptingApplications {
-                    started_accepting_applicants_at_block: current_block_height,
-                },
-
-                // Empty set of applicants
-                applications_added: BTreeSet::new(), // Map::new(),
-
-                // All counters set to 0
-                active_application_count: 0,
-                unstaking_application_count: 0,
-                deactivated_application_count: 0,
-            },
-
-            ActivateOpeningAt::ExactBlock(block_number) => hiring::OpeningStage::WaitingToBegin {
-                begins_at_block: block_number,
-            },
-        };
-
-        let new_opening = hiring::Opening {
-            created: current_block_height,
-            stage: opening_stage,
-            max_review_period_length: max_review_period_length,
-            application_rationing_policy: application_rationing_policy,
-            application_staking_policy: application_staking_policy,
-            role_staking_policy: role_staking_policy,
-            human_readable_text: human_readable_text,
-        };
+        let new_opening = hiring::Opening::new(
+            current_block_height,
+            activate_at,
+            max_review_period_length,
+            application_rationing_policy,
+            application_staking_policy,
+            role_staking_policy,
+            human_readable_text,
+        );
 
         // Get Id for new opening
         let new_opening_id = <NextOpeningId<T>>::get();
@@ -509,7 +360,7 @@ impl<T: Trait> Module<T> {
             } => Ok(ActiveOpeningStage::Deactivated {
                 cause: OpeningDeactivationCause::CancelledAcceptingApplications,
                 deactivated_at_block: current_block_height,
-                started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                started_accepting_applicants_at_block,
                 started_review_period_at_block: None,
             }),
             ActiveOpeningStage::ReviewPeriod {
@@ -518,7 +369,7 @@ impl<T: Trait> Module<T> {
             } => Ok(ActiveOpeningStage::Deactivated {
                 cause: OpeningDeactivationCause::CancelledInReviewPeriod,
                 deactivated_at_block: current_block_height,
-                started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                started_accepting_applicants_at_block,
                 started_review_period_at_block: Some(started_review_period_at_block),
             }),
             ActiveOpeningStage::Deactivated { .. } => {
@@ -547,12 +398,12 @@ impl<T: Trait> Module<T> {
 
         // Create and store new cancelled opening
         let new_opening = Opening {
-            stage: OpeningStage::Active {
+            stage: hiring::OpeningStage::Active {
                 stage: new_active_stage,
                 applications_added: applications_added.clone(),
-                active_application_count: active_application_count,
-                unstaking_application_count: unstaking_application_count,
-                deactivated_application_count: deactivated_application_count,
+                active_application_count,
+                unstaking_application_count,
+                deactivated_application_count,
             },
             ..opening
         };
@@ -567,7 +418,7 @@ impl<T: Trait> Module<T> {
             &applications_map,
             application_stake_unstaking_period,
             role_stake_unstaking_period,
-            &hiring::ApplicationDeactivationCause::OpeningCancelled,
+            hiring::ApplicationDeactivationCause::OpeningCancelled,
         );
 
         // Return
@@ -576,21 +427,6 @@ impl<T: Trait> Module<T> {
             number_of_deactivated_applications: net_result.number_of_deactivated_applications,
         })
     }
-
-    /*
-    pub fn remove_opening(
-        opening_id: T::OpeningId
-    ) -> Result<u32, RemoveOpeningError> {
-
-        // Applies when a given opening is in stage WaitingToBegin or Began.Inactive.
-        // In the latter it is also required that all applications are inactive.
-        // Opening, and all associated applications, are removed from openingsById and applicationsById.
-        // The number of applications removed is returned.
-        //
-
-        Ok(0)
-    }
-    */
 
     pub fn begin_accepting_applications(
         opening_id: T::OpeningId,
@@ -603,9 +439,8 @@ impl<T: Trait> Module<T> {
         )?;
 
         // Ensure that it is the waiting to begin stage
-        ensure_opening_stage_is_waiting_to_begin!(
-            opening.stage,
-            BeginAcceptingApplicationsError::OpeningIsNotInWaitingToBeginStage
+        opening.stage.ensure_opening_stage_is_waiting_to_begin(
+            BeginAcceptingApplicationsError::OpeningIsNotInWaitingToBeginStage,
         )?;
 
         //
@@ -666,7 +501,7 @@ impl<T: Trait> Module<T> {
         let new_opening = hiring::Opening {
             stage: hiring::OpeningStage::Active {
                 stage: hiring::ActiveOpeningStage::ReviewPeriod {
-                    started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                    started_accepting_applicants_at_block,
                     started_review_period_at_block: current_block_height,
                 },
                 applications_added,
@@ -709,10 +544,10 @@ impl<T: Trait> Module<T> {
         )?;
 
         // Ensure opening is in review period
-        let (started_accepting_applicants_at_block, started_review_period_at_block) = ensure_active_opening_is_in_review_period!(
-            active_stage,
-            FillOpeningError::OpeningNotInReviewPeriodStage
-        )?;
+        let (started_accepting_applicants_at_block, started_review_period_at_block) = active_stage
+            .ensure_active_opening_is_in_review_period(
+                FillOpeningError::OpeningNotInReviewPeriodStage,
+            )?;
 
         //
         // Ensure that all unstaking periods are neither too short (0) nor redundant.
@@ -744,15 +579,6 @@ impl<T: Trait> Module<T> {
             )
         )?;
 
-        /*
-        ensure_opt_unstaking_period_is_ok!(
-            opt_successful_applicant_role_stake_unstaking_period,
-            opening.role_staking_policy,
-            FillOpeningError::UnstakingPeriodTooShort(StakePurpose::Application, ApplicationOutcomeInFilledOpening::Success),
-            FillOpeningError::RedundantUnstakingPeriodProvided(StakePurpose::Application, ApplicationOutcomeInFilledOpening::Success)
-        )?;
-        */
-
         ensure_opt_unstaking_period_is_ok!(
             opt_failed_applicant_role_stake_unstaking_period,
             opening.role_staking_policy,
@@ -766,7 +592,7 @@ impl<T: Trait> Module<T> {
             )
         )?;
 
-        // Ensure that all provided application ids are infact valid
+        // Ensure that all provided application ids are in fact valid
         let invalid_application_ids = successful_applications
             .clone()
             .iter()
@@ -780,11 +606,11 @@ impl<T: Trait> Module<T> {
             .collect::<BTreeSet<T::ApplicationId>>();
 
         if !invalid_application_ids.is_empty() {
-            let first_missing_application_id = invalid_application_ids.iter().next().unwrap();
+            let first_missing_application_id = invalid_application_ids.iter().next();
 
-            return Err(FillOpeningError::ApplicationDoesNotExist(
-                *first_missing_application_id,
-            ));
+            if let Some(application_id) = first_missing_application_id {
+                return Err(FillOpeningError::ApplicationDoesNotExist(*application_id));
+            }
         }
 
         // Ensure that all claimed successful applications actually exist, and collect@
@@ -823,7 +649,7 @@ impl<T: Trait> Module<T> {
                 *application_id,
                 opt_successful_applicant_application_stake_unstaking_period,
                 None, // <= We do not unstake role stake for successful applicants, opt_successful_applicant_role_stake_unstaking_period,
-                &hiring::ApplicationDeactivationCause::Hired,
+                hiring::ApplicationDeactivationCause::Hired,
             );
         }
 
@@ -847,7 +673,7 @@ impl<T: Trait> Module<T> {
                 *application_id,
                 opt_failed_applicant_application_stake_unstaking_period,
                 opt_failed_applicant_role_stake_unstaking_period,
-                &hiring::ApplicationDeactivationCause::NotHired,
+                hiring::ApplicationDeactivationCause::NotHired,
             );
         }
 
@@ -860,14 +686,14 @@ impl<T: Trait> Module<T> {
                 stage: hiring::ActiveOpeningStage::Deactivated {
                     cause: OpeningDeactivationCause::Filled,
                     deactivated_at_block: current_block_height,
-                    started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                    started_accepting_applicants_at_block,
                     started_review_period_at_block: Some(started_review_period_at_block),
                 },
                 //.. <== cant use here, same issue
-                applications_added: applications_added,
-                active_application_count: active_application_count,
-                unstaking_application_count: unstaking_application_count,
-                deactivated_application_count: deactivated_application_count,
+                applications_added,
+                active_application_count,
+                unstaking_application_count,
+                deactivated_application_count,
             },
             ..opening
         };
@@ -922,9 +748,8 @@ impl<T: Trait> Module<T> {
             AddApplicationError::OpeningNotInAcceptingApplicationsStage
         )?;
 
-        ensure_active_opening_is_accepting_applications!(
-            active_stage,
-            AddApplicationError::OpeningNotInAcceptingApplicationsStage
+        active_stage.ensure_active_opening_is_accepting_applications(
+            AddApplicationError::OpeningNotInAcceptingApplicationsStage,
         )?;
 
         // Ensure that the new application would actually make it
@@ -937,13 +762,13 @@ impl<T: Trait> Module<T> {
         )?;
 
         Ok(DestructuredApplicationCanBeAddedEvaluation {
-            opening: opening,
-            active_stage: active_stage,
-            applications_added: applications_added,
-            active_application_count: active_application_count,
-            unstaking_application_count: unstaking_application_count,
-            deactivated_application_count: deactivated_application_count,
-            would_get_added_success: would_get_added_success,
+            opening,
+            active_stage,
+            applications_added,
+            active_application_count,
+            unstaking_application_count,
+            deactivated_application_count,
+            would_get_added_success,
         })
     }
 
@@ -987,11 +812,11 @@ impl<T: Trait> Module<T> {
         {
             // Get relevant unstaking periods
             let opt_application_stake_unstaking_period =
-                Self::opt_staking_policy_to_crowded_out_unstaking_period(
+                hiring::StakingPolicy::opt_staking_policy_to_crowded_out_unstaking_period(
                     &can_be_added_destructured.opening.application_staking_policy,
                 );
             let opt_role_stake_unstaking_period =
-                Self::opt_staking_policy_to_crowded_out_unstaking_period(
+                hiring::StakingPolicy::opt_staking_policy_to_crowded_out_unstaking_period(
                     &can_be_added_destructured.opening.role_staking_policy,
                 );
 
@@ -1002,14 +827,16 @@ impl<T: Trait> Module<T> {
             //
             // MUST not have been ignored, is runtime invariant, false means code is broken.
             // But should we do panic in runtime? Is there safer way?
+            let deactivation_result = Self::try_to_initiate_application_deactivation(
+                &crowded_out_application,
+                id_of_croweded_out_application,
+                opt_application_stake_unstaking_period,
+                opt_role_stake_unstaking_period,
+                hiring::ApplicationDeactivationCause::CrowdedOut,
+            );
+
             assert_ne!(
-                Self::try_to_initiate_application_deactivation(
-                    &crowded_out_application,
-                    id_of_croweded_out_application,
-                    opt_application_stake_unstaking_period,
-                    opt_role_stake_unstaking_period,
-                    &hiring::ApplicationDeactivationCause::CrowdedOut
-                ),
+                deactivation_result,
                 ApplicationDeactivationInitationResult::Ignored
             );
         }
@@ -1039,13 +866,13 @@ impl<T: Trait> Module<T> {
 
         // Create a new application
         let new_application = hiring::Application {
-            opening_id: opening_id,
-            application_index_in_opening: application_index_in_opening,
+            opening_id,
+            application_index_in_opening,
             add_to_opening_in_block: current_block_height,
-            active_role_staking_id: active_role_staking_id,
-            active_application_staking_id: active_application_staking_id,
+            active_role_staking_id,
+            active_application_staking_id,
             stage: application_stage,
-            human_readable_text: human_readable_text,
+            human_readable_text,
         };
 
         // Insert into main application map
@@ -1114,9 +941,8 @@ impl<T: Trait> Module<T> {
             DeactivateApplicationError::OpeningNotAcceptingApplications
         )?;
 
-        ensure_active_opening_is_accepting_applications!(
-            active_stage,
-            DeactivateApplicationError::OpeningNotAcceptingApplications
+        active_stage.ensure_active_opening_is_accepting_applications(
+            DeactivateApplicationError::OpeningNotAcceptingApplications,
         )?;
 
         // Ensure unstaking periods are OK.
@@ -1144,24 +970,14 @@ impl<T: Trait> Module<T> {
             application_id,
             application_stake_unstaking_period,
             role_stake_unstaking_period,
-            &hiring::ApplicationDeactivationCause::External,
+            hiring::ApplicationDeactivationCause::External,
         );
 
-        // MUST not have been ignored, is runtime invariant, false means code is broken.
-        // But should we do panic in runtime? Is there safer way?
         assert_ne!(result, ApplicationDeactivationInitationResult::Ignored);
 
         // DONE
         Ok(())
     }
-
-    /*
-    pub fn remove_application() ->() {
-
-        // Applies when an application is in the stage Inactive. Results in removing instance from applicationsById,
-        // and from the corresponding opening. Returns nothing.
-    }
-    */
 
     /// The stake, with the given id, was unstaked.
     pub fn unstaked(stake_id: T::StakeId) {
@@ -1234,9 +1050,9 @@ impl<T: Trait> Module<T> {
                 let current_block_height = <system::Module<T>>::block_number();
 
                 ApplicationStage::Inactive {
-                    deactivation_initiated: deactivation_initiated,
+                    deactivation_initiated,
                     deactivated: current_block_height,
-                    cause: cause.clone()
+                    cause
                 }
 
             } else {
@@ -1272,17 +1088,17 @@ impl<T: Trait> Module<T> {
                     opening.stage = hiring::OpeningStage::Active {
                         stage: stage.clone(),
                         applications_added: applications_added.clone(),
-                        active_application_count: active_application_count,
+                        active_application_count,
                         unstaking_application_count: unstaking_application_count - 1,
                         deactivated_application_count: deactivated_application_count + 1,
                     };
                 } else {
-                    assert!(false);
+                    panic!("stage MUST be active")
                 }
             });
 
             // Call handler
-            T::ApplicationDeactivatedHandler::deactivated(&application_id, &cause);
+            T::ApplicationDeactivatedHandler::deactivated(&application_id, cause);
         }
     }
 }
@@ -1301,14 +1117,7 @@ struct ApplicationsDeactivationsInitiationResult {
     number_of_unstaking_applications: u32,
     number_of_deactivated_applications: u32,
 }
-/*
-impl ApplicationsDeactivationsInitiationResult {
 
-    fn total(&self) -> u32 {
-        self.number_of_unstaking_applications + self.number_of_deactivated_applications
-    }
-}
-*/
 #[derive(PartialEq, Debug)]
 enum ApplicationDeactivationInitationResult {
     Ignored, // <= is there a case for kicking this out, making sure that initation cannot happen when it may fail?
@@ -1316,16 +1125,24 @@ enum ApplicationDeactivationInitationResult {
     Deactivated,
 }
 
+pub type ApplicationBTreeMap<T> = BTreeMap<
+    <T as Trait>::ApplicationId,
+    hiring::Application<
+        <T as Trait>::OpeningId,
+        <T as system::Trait>::BlockNumber,
+        <T as stake::Trait>::StakeId,
+    >,
+>;
+
 impl<T: Trait> Module<T> {
     fn application_id_iter_to_map<'a>(
         application_id_iter: impl Iterator<Item = &'a T::ApplicationId>,
-    ) -> BTreeMap<T::ApplicationId, hiring::Application<T::OpeningId, T::BlockNumber, T::StakeId>>
-    {
+    ) -> ApplicationBTreeMap<T> {
         application_id_iter
             .map(|application_id| {
                 let application = <ApplicationById<T>>::get(application_id);
 
-                (application_id.clone(), application)
+                (*application_id, application)
             })
             .collect::<BTreeMap<_, _>>()
     }
@@ -1333,13 +1150,10 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> Module<T> {
     fn initiate_application_deactivations(
-        applications: &BTreeMap<
-            T::ApplicationId,
-            hiring::Application<T::OpeningId, T::BlockNumber, T::StakeId>,
-        >,
+        applications: &ApplicationBTreeMap<T>,
         application_stake_unstaking_period: Option<T::BlockNumber>,
         role_stake_unstaking_period: Option<T::BlockNumber>,
-        cause: &ApplicationDeactivationCause,
+        cause: ApplicationDeactivationCause,
     ) -> ApplicationsDeactivationsInitiationResult {
         // Update stage on active applications, and collect result
 
@@ -1350,7 +1164,7 @@ impl<T: Trait> Module<T> {
                     // Initiate deactivations!
                     Self::try_to_initiate_application_deactivation(
                         application,
-                        application_id.clone(),
+                        *application_id,
                         application_stake_unstaking_period,
                         role_stake_unstaking_period,
                         cause,
@@ -1396,7 +1210,7 @@ impl<T: Trait> Module<T> {
         application_id: T::ApplicationId,
         application_stake_unstaking_period: Option<T::BlockNumber>,
         role_stake_unstaking_period: Option<T::BlockNumber>,
-        cause: &hiring::ApplicationDeactivationCause,
+        cause: hiring::ApplicationDeactivationCause,
     ) -> ApplicationDeactivationInitationResult {
         match application.stage {
             ApplicationStage::Active => {
@@ -1427,16 +1241,17 @@ impl<T: Trait> Module<T> {
                  */
 
                 // Figure out new stage for the applcation
-                let new_application_stage = match was_unstaked {
-                    true => ApplicationStage::Unstaking {
+                let new_application_stage = if was_unstaked {
+                    ApplicationStage::Unstaking {
                         deactivation_initiated: current_block_height,
-                        cause: cause.clone(),
-                    },
-                    false => ApplicationStage::Inactive {
+                        cause,
+                    }
+                } else {
+                    ApplicationStage::Inactive {
                         deactivation_initiated: current_block_height,
                         deactivated: current_block_height,
-                        cause: cause.clone(),
-                    },
+                        cause,
+                    }
                 };
 
                 // Update the application stage
@@ -1466,14 +1281,14 @@ impl<T: Trait> Module<T> {
                             deactivated_application_count + if was_unstaked { 0 } else { 1 };
 
                         opening.stage = hiring::OpeningStage::Active {
-                            stage: (*stage).clone(),                           // <= truly horrible
-                            applications_added: (*applications_added).clone(), // <= truly horrible
+                            stage: stage.clone(),
+                            applications_added: applications_added.clone(),
                             active_application_count: new_active_application_count,
                             unstaking_application_count: new_unstaking_application_count,
                             deactivated_application_count: new_deactivated_application_count,
                         };
                     } else {
-                        assert!(false);
+                        panic!("opening stage must be 'Active'");
                     }
                 });
 
@@ -1483,9 +1298,10 @@ impl<T: Trait> Module<T> {
                 }
 
                 // Return conclusion
-                match was_unstaked {
-                    true => ApplicationDeactivationInitationResult::Unstaking,
-                    false => ApplicationDeactivationInitationResult::Deactivated,
+                if was_unstaked {
+                    ApplicationDeactivationInitationResult::Unstaking
+                } else {
+                    ApplicationDeactivationInitationResult::Deactivated
                 }
             }
             _ => ApplicationDeactivationInitationResult::Ignored,
@@ -1505,24 +1321,12 @@ impl<T: Trait> Module<T> {
             // `initiate_unstaking` MUST hold, is runtime invariant, false means code is broken.
             // But should we do panic in runtime? Is there safer way?
 
-            assert!(<stake::Module<T>>::initiate_unstaking(
-                &stake_id,
-                opt_unstaking_period.clone()
-            )
-            .is_ok());
+            assert!(
+                <stake::Module<T>>::initiate_unstaking(&stake_id, opt_unstaking_period).is_ok()
+            );
         }
 
         opt_stake_id.is_some()
-    }
-
-    fn opt_staking_policy_to_crowded_out_unstaking_period(
-        opt_staking_policy: &Option<hiring::StakingPolicy<BalanceOf<T>, T::BlockNumber>>,
-    ) -> Option<T::BlockNumber> {
-        if let Some(ref staking_policy) = opt_staking_policy {
-            staking_policy.crowded_out_unstaking_period_length
-        } else {
-            None
-        }
     }
 }
 
@@ -1573,11 +1377,13 @@ impl<T: Trait> Module<T> {
  * Used by `add_application` method.
  */
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum ApplicationAddedSuccess<T: Trait> {
     Unconditionally,
     CrowdsOutExistingApplication(T::ApplicationId),
 }
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum ApplicationWouldGetAddedEvaluation<T: Trait> {
     No,
     Yes(ApplicationAddedSuccess<T>),
@@ -1650,21 +1456,19 @@ impl<T: Trait> Module<T> {
         // The total stake of all current active applications
         let opt_min_item = active_applications_with_stake_iter
             .clone()
-            .min_by_key(|(_, _, total_stake)| total_stake.clone());
+            .min_by_key(|(_, _, total_stake)| *total_stake);
 
-        // MUST hold , since guard above guarantees that `number_of_active_applications`
-        // which is length of `active_applications_iter`, > 0.
-        assert!(opt_min_item.is_some());
-
-        let (application_id, _, lowest_active_total_stake) = opt_min_item.unwrap();
-
-        // Finally we compare the two and come up with a final evaluation
-        if total_stake_of_new_application <= lowest_active_total_stake {
-            ApplicationWouldGetAddedEvaluation::No // stake too low!
+        if let Some((application_id, _, lowest_active_total_stake)) = opt_min_item {
+            // Finally we compare the two and come up with a final evaluation
+            if total_stake_of_new_application <= lowest_active_total_stake {
+                ApplicationWouldGetAddedEvaluation::No // stake too low!
+            } else {
+                ApplicationWouldGetAddedEvaluation::Yes(
+                    ApplicationAddedSuccess::CrowdsOutExistingApplication(*application_id),
+                )
+            }
         } else {
-            ApplicationWouldGetAddedEvaluation::Yes(
-                ApplicationAddedSuccess::CrowdsOutExistingApplication(application_id.clone()),
-            )
+            panic!("`number_of_active_applications` (length of `active_applications_iter`) == 0")
         }
     }
 
@@ -1678,33 +1482,8 @@ impl<T: Trait> Module<T> {
             match stake.staking_status {
                 // INVARIANT: stake MUST be in the staked state.
                 stake::StakingStatus::Staked(staked_state) => staked_state.staked_amount,
-                _ => {
-                    assert!(false);
-                    Zero::zero()
-                }
+                _ => panic!("stake MUST be in the staked state."),
             }
         })
-    }
-}
-
-/*
- * Used by unstaked method.
- */
-
-// ...
-
-/*
- * Used by `on_initialized`
- */
-
-impl<T: Trait> Module<T> {
-    fn opt_staking_policy_to_review_period_expired_unstaking_period(
-        opt_staking_policy: &Option<hiring::StakingPolicy<BalanceOf<T>, T::BlockNumber>>,
-    ) -> Option<T::BlockNumber> {
-        if let Some(ref staking_policy) = opt_staking_policy {
-            staking_policy.review_period_expired_unstaking_period_length
-        } else {
-            None
-        }
     }
 }
