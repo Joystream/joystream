@@ -86,6 +86,7 @@ where
         current_block_height: BlockNumber,
         activate_at: ActivateOpeningAt<BlockNumber>,
         runtime_minimum_balance: Balance,
+        application_rationing_policy: Option<ApplicationRationingPolicy>,
         application_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
         role_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
     ) -> Result<(), AddOpeningError> {
@@ -97,6 +98,13 @@ where
             },
             AddOpeningError::OpeningMustActivateInTheFuture
         );
+
+        if let Some(app_rationing_policy) = application_rationing_policy {
+            ensure!(
+                app_rationing_policy.max_active_applicants > 0,
+                AddOpeningError::ApplicationRationingZeroMaxApplicants
+            );
+        }
 
         // Check that staking amounts clear minimum balance required.
         StakingPolicy::ensure_amount_valid_in_opt_staking_policy(
@@ -228,6 +236,10 @@ pub enum AddOpeningError {
     /// It is not possible to stake less than the minimum balance defined in the
     /// `Currency` module.
     StakeAmountLessThanMinimumCurrencyBalance(StakePurpose),
+
+    /// It is not possible to provide application rationing policy with zero
+    /// 'max_active_applicants' parameter.
+    ApplicationRationingZeroMaxApplicants,
 }
 
 /// The possible outcome for an application in an opening which is being filled.
