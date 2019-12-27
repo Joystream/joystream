@@ -975,62 +975,16 @@ impl<T: Trait> Module<T> {
 
         // Drop stake from stake to application map
         <ApplicationIdByStakingId<T>>::remove(stake_id);
-
-        // New values for application stakes
-        let new_active_role_staking_id = match application.active_role_staking_id {
-            // If there is a match, reset.
-            Some(id) => {
-                if id == stake_id {
-                    None
-                } else {
-                    Some(id)
-                }
-            }
-            _ => None,
-        };
-
-        let new_active_application_staking_id = match application.active_application_staking_id {
-            // If there is a match, reset.
-            Some(id) => {
-                if id == stake_id {
-                    None
-                } else {
-                    Some(id)
-                }
-            }
-            _ => None,
-        };
-
-        // Are we now done unstaking?
-        // Is the case if thereare no application stakes set.
-        let is_now_done_unstaking =
-            new_active_role_staking_id.is_none() && new_active_application_staking_id.is_none();
-
-        // Stage of application after unstaking.
-        let new_stage =
-
-            // If we are done unstaking, then we go to the inactive stage
-            if is_now_done_unstaking {
-
-                let current_block_height = <system::Module<T>>::block_number();
-
-                ApplicationStage::Inactive {
-                    deactivation_initiated,
-                    deactivated: current_block_height,
-                    cause
-                }
-
-            } else {
-                application.stage
-            };
+        let current_block_height = <system::Module<T>>::block_number();
 
         // New application computed
-        let new_application = hiring::Application {
-            active_role_staking_id: new_active_role_staking_id,
-            active_application_staking_id: new_active_application_staking_id,
-            stage: new_stage,
-            ..application
-        };
+        let mut new_application = application.clone();
+        let is_now_done_unstaking = new_application.unstake_application(
+            current_block_height,
+            deactivation_initiated,
+            cause,
+            stake_id,
+        );
 
         // Update to new application
         <ApplicationById<T>>::insert(&application_id, new_application);
@@ -1041,25 +995,7 @@ impl<T: Trait> Module<T> {
             // Update Opening
             // We know the stage MUST be active, hence mutate is certain.
             <OpeningById<T>>::mutate(application.opening_id, |opening| {
-                // NB: This ugly byref destructuring is same issue as pointed out multiple times now.
-                if let hiring::OpeningStage::Active {
-                    ref stage,
-                    ref applications_added,
-                    active_application_count,
-                    unstaking_application_count,
-                    deactivated_application_count,
-                } = opening.stage
-                {
-                    opening.stage = hiring::OpeningStage::Active {
-                        stage: stage.clone(),
-                        applications_added: applications_added.clone(),
-                        active_application_count,
-                        unstaking_application_count: unstaking_application_count - 1,
-                        deactivated_application_count: deactivated_application_count + 1,
-                    };
-                } else {
-                    panic!("stage MUST be active")
-                }
+                opening.change_opening_stage_after_application_unstaked();
             });
 
             // Call handler
