@@ -45,6 +45,7 @@ export const genreOptions = [
 // TODO get from verstore
 export const moodOptions = [
   'Relaxing',
+  'Determined'
 ].map(x => ({
   key: x, text: x, value: x,
 }));

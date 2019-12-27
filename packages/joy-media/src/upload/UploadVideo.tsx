@@ -11,7 +11,7 @@ import { MediaFormProps, withMediaForm } from '../common/MediaForms';
 import { visibilityOptions, licenseOptions } from '../common/DropdownOptions';
 import * as Opts from '../common/DropdownOptions';
 
-type OuterProps = {
+export type OuterProps = {
   isStorybook?: boolean,
   history?: History,
   contentId: ContentId,

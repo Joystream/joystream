@@ -10,7 +10,7 @@ import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields }
 import * as Opts from '../common/DropdownOptions';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 
-type OuterProps = {
+export type OuterProps = {
   isStorybook?: boolean,
   history?: History,
   contentId: ContentId,

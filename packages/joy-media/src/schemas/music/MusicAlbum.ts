@@ -30,11 +30,11 @@ export type MusicAlbumType = {
   thumbnail: string
   description: string
   firstReleased: number
-  genre?: any[]
-  mood?: any[]
-  theme?: any[]
+  genre?: any
+  mood?: any
+  theme?: any
   tracks?: any[]
-  language?: any[]
+  language?: any
   link?: string[]
   lyrics?: string
   composerOrSongwriter?: string
@@ -126,25 +126,22 @@ export const MusicAlbumClass: MusicAlbumClassType = {
   genre: {
     "id": "genre",
     "name": "Genre",
-    "description": "The genre(s) of the album.",
-    "type": "InternalVec",
-    "maxItems": 3,
+    "description": "The genre of the album.",
+    "type": "Internal",
     "classId": "Music Genre"
   },
   mood: {
     "id": "mood",
     "name": "Mood",
-    "description": "The mood(s) of the album.",
-    "type": "InternalVec",
-    "maxItems": 3,
+    "description": "The mood of the album.",
+    "type": "Internal",
     "classId": "Music Mood"
   },
   theme: {
     "id": "theme",
     "name": "Theme",
-    "description": "The theme(s) of the album.",
-    "type": "InternalVec",
-    "maxItems": 3,
+    "description": "The theme of the album.",
+    "type": "Internal",
     "classId": "Music Theme"
   },
   tracks: {
@@ -160,8 +157,7 @@ export const MusicAlbumClass: MusicAlbumClassType = {
     "name": "Language",
     "description": "The language of the song lyrics in the album.",
     "required": false,
-    "type": "InternalVec",
-    "maxItems": 5,
+    "type": "Internal",
     "classId": "Language"
   },
   link: {
