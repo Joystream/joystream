@@ -190,88 +190,23 @@ fn create_category_description_too_long() {
 
 #[test]
 fn update_category_undelete_and_unarchive() {
-    /*
-     * Create an initial state with two levels of categories, where
-     * leaf category is deleted, and then try to undelete.
-     */
-
-    let forum_sudo = 32;
-
-    let created_at = RuntimeBlockchainTimestamp { block: 0, time: 0 };
-
-    let category_by_id = vec![
-        // A root category
-        (
-            1,
-            Category {
-                id: 1,
-                title: "New root".as_bytes().to_vec(),
-                description: "This is a new root category".as_bytes().to_vec(),
-                created_at: created_at.clone(),
-                deleted: true,
-                archived: true,
-                parent_id: None,
-            },
-        ),
-        // A subcategory of the one above
-        (
-            2,
-            Category {
-                id: 2,
-                title: "New subcategory".as_bytes().to_vec(),
-                description: "This is a new subcategory to root category"
-                    .as_bytes()
-                    .to_vec(),
-                created_at: created_at.clone(),
-                deleted: true,
-                archived: false,
-                parent_id: Some(1),
-            },
-        ),
-    ];
-
-    // Set constraints to be sloppy, we don't care about enforcing them.
-    let sloppy_constraint = InputValidationLengthConstraint {
-        min: 0,
-        max_min_diff: 1000,
-    };
-
-    let config = genesis_config(
-        &vec![],
-        &vec![],
-        1,
-        &vec![],
-        &vec![],
-        1,
-        &category_by_id,             // category_by_id
-        category_by_id.len() as u64, // next_category_id
-        &vec![],                     // thread_by_id
-        1,                           // next_thread_id
-        &vec![],                     // post_by_id
-        1,                           // next_post_id
-        forum_sudo,
-        &vec![],
-        3,
-        &vec![],
-        &vec![],
-        &vec![],
-        &vec![],
-        &sloppy_constraint,
-        &sloppy_constraint,
-        &sloppy_constraint,
-        &sloppy_constraint,
-        &sloppy_constraint,
-        &sloppy_constraint,
-        &sloppy_constraint,
-        &sloppy_constraint,
-        &sloppy_constraint,
-        &sloppy_constraint,
-    );
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
 
     build_test_externalities(config).execute_with(|| {
+        assert_eq!(
+            TestForumModule::create_category(
+                mock_origin(OriginType::Signed(forum_sudo)),
+                None,
+                good_category_title(),
+                good_category_description(),
+            ),
+            Ok(())
+        );
+
         UpdateCategoryFixture {
             origin: OriginType::Signed(forum_sudo),
-            category_id: 2,
+            category_id: 1,
             new_archival_status: None,        // same as before
             new_deletion_status: Some(false), // undelete
             result: Ok(()),
@@ -1110,3 +1045,14 @@ fn like_post_successfully() {
 
 }
 
+/*
+ * create_thread_with_poll
+ * ==============================================================================
+ *
+ */
+#[test]
+fn create_thread_with_poll_successfully() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(config.forum_sudo);
+}

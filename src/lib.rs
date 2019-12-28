@@ -218,9 +218,6 @@ use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure,
 };
 
-#[macro_use]
-extern crate bitflags;
-
 mod mock;
 mod tests;
 
@@ -315,6 +312,14 @@ const ERROR_POLL_NOT_EXIST: &str = "Poll not exist.";
 const ERROR_POLL_TIME_SETTING: &str = "Poll date setting is wrong.";
 const ERROR_POLL_ITEMS_SETTING: &str = "Poll date items setting is wrong.";
 const ERROR_POLL_DATA: &str = "Poll data committed is wrong.";
+const ERROR_POLL_COMMIT_EXPIRED: &str = "Poll data committed after poll expired.";
+
+// Error about label
+const ERROR_LABEL_TOO_SHORT: &str = "Label name too short.";
+const ERROR_LABEL_TOO_LONG: &str = "Label name too long.";
+const ERROR_TOO_MUCH_LABELS: &str = "labels number exceed max allowed.";
+const ERROR_LABEL_INDEX_IS_WRONG: &str = "label index is wrong.";
+
 //use srml_support::storage::*;
 
 //use sr_io::{StorageOverlay, ChildrenStorageOverlay};
@@ -390,22 +395,18 @@ pub struct PostTextChange<BlockNumber, Moment> {
     text: Vec<u8>,
 }
 
-bitflags! {
-    /// Represents a post reaction
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(Encode, Decode, Default)]
-    pub struct PostReaction: u32 {
-        /// Represent nothing set
-        const NONE = 0b00000000;
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Copy)]
+pub enum PostReaction {
+    NonReacton,
+    ThumbUp,
+    ThumbDown,
+    Like,
+}
 
-        /// Represent thumb up set
-        const UP = 0b00000001;
-
-        /// Represent thumb down set
-        const DOWN = 0b00000010;
-
-        /// Represent like set
-        const LIKE = 0b00000100;
+impl Default for PostReaction {
+    fn default() -> PostReaction {
+            Self::NonReacton
     }
 }
 
@@ -522,6 +523,9 @@ pub struct Category<BlockNumber, Moment> {
     parent_id: Option<CategoryId>,
 }
 
+/// Represents a label identifier
+pub type LabelId = u64;
+
 /// Represents a sequence of categories which have child-parent relatioonship
 /// where last element is final ancestor, or root, in the context of the category tree.
 type CategoryTreePath<BlockNumber, Moment> =
@@ -608,6 +612,9 @@ decl_storage! {
         /// Input constraints for description text of moderation post rationale.
         pub PostModerationRationaleConstraint get(post_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
 
+        /// Input constraints for label name.
+        pub LabelNameConstraint get(label_name_constraint) config(): InputValidationLengthConstraint;
+
         /// Input constraints for description text of each item in poll.
         pub PollDescConstraint get(poll_desc_constraint) config(): InputValidationLengthConstraint;
 
@@ -619,6 +626,21 @@ decl_storage! {
 
         /// Input constraints for user introduction.
         pub UserSelfIntroductionConstraint get(user_self_introduction_constraint) config(): InputValidationLengthConstraint;
+
+        /// Labels could be applied to category and thread
+        pub CategoryThreadLabels get(category_thread_labes) config(): map LabelId => Vec<u8>;
+
+        /// Next label identifier
+        NextLabelId get(next_label_id) config(): u64;
+
+        /// All labels applied to a category
+        CategoryLabels get(category_labels) config(): map CategoryId => Vec<LabelId>;
+
+        /// All labels applied to a thread
+        ThreadLabels get(thread_labels) config(): map ThreadId => Vec<LabelId>;
+
+        /// Max applied labels for a category or thread
+        MaxAppliedLabels get(max_applied_labels) config(): u32;
     }
     /*
     JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
@@ -678,22 +700,7 @@ decl_event!(
         ForumSudoSet(Option<AccountId>, Option<AccountId>),
 
         /// Thumb up post
-        ThumbUpPost(ForumUserId, PostId),
-
-        /// Thumb down post
-        ThumbDownPost(ForumUserId, PostId),
-
-        /// Like post
-        LikePost(ForumUserId, PostId),
-
-        /// Unthumb up post
-        UnthumbUpPost(ForumUserId, PostId),
-
-        /// Thumb down post
-        UnthumbDownPost(ForumUserId, PostId),
-
-        /// Unlike post
-        UnlikePost(ForumUserId, PostId),
+        PostReacted(ForumUserId, PostId, PostReaction),
     }
 );
 
@@ -760,7 +767,7 @@ decl_module! {
         }
 
         /// Add a new category.
-        fn create_category(origin, parent: Option<CategoryId>, title: Vec<u8>, description: Vec<u8>) -> dispatch::Result {
+        fn create_category(origin, parent: Option<CategoryId>, title: Vec<u8>, description: Vec<u8>, labels: Vec<LabelId>) -> dispatch::Result {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -773,6 +780,9 @@ decl_module! {
 
             // Validate description
             Self::ensure_category_description_is_valid(&description)?;
+
+            // Validate labels
+            Self::ensure_label_valid(&labels)?;
 
             // If not root, then check that we can create in parent category
             if let Some(parent_category_id) = parent {
@@ -805,6 +815,9 @@ decl_module! {
 
             // Insert category in map
             <CategoryById<T>>::insert(new_category.id, new_category);
+
+            // Add labels to category
+            CategoryLabels::insert(next_category_id, labels);
 
             // Update other things
             NextCategoryId::put(next_category_id + 1);
@@ -891,48 +904,54 @@ decl_module! {
             Ok(())
         }
 
-
-
-        /// Create new thread in category
-        fn create_thread(origin, category_id: CategoryId, title: Vec<u8>, text: Vec<u8>) -> dispatch::Result {
+        /// Update category
+        fn update_category_labels(origin, category_id: CategoryId, new_labels: Vec<LabelId>) -> dispatch::Result {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Check that account is forum member
-            let forum_user_id = Self::ensure_is_forum_member(&who)?;
+            // Validate labels
+            Self::ensure_label_valid(&new_labels)?;
 
             // Get path from parent to root of category tree.
             let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
 
-            // No ancestor is blocking us doing mutation in this category
-            Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+            // When we are dealing with a non-root category, we
+            // must ensure mutability of our category by traversing to
+            // root.
+            if category_tree_path.len() > 1  {
 
-            // Validate title
-            Self::ensure_thread_title_is_valid(&title)?;
+                // We must skip checking category itself.
+                // NB: This is kind of hacky way to avoid last element,
+                // something clearn can be done later.
+                let mut path_to_check = category_tree_path.clone();
+                path_to_check.remove(0);
 
-            // Validate post text
-            Self::ensure_post_text_is_valid(&text)?;
+                Self::ensure_can_mutate_in_path_leaf(&path_to_check)?;
+            }
 
-            /*
-             * Here it is safe to mutate state.
-             */
+            if Self::ensure_is_forum_sudo(&who).is_ok() {
+                // Update labels to category
+                CategoryLabels::insert(category_id, new_labels);
+            } else {
+                // is moderator
+                Self::ensure_is_moderator(&who)?;
 
-            // Add thread
-            let thread = Self::add_new_thread(category_id, &title, forum_user_id, None);
+                // ensure origin can moderate category
+                Self::ensure_moderate_category(&who, category_id)?;
 
-            // Add inital post to thread
-            Self::add_new_post(thread.id, &text, forum_user_id);
 
-            // Generate event
-            Self::deposit_event(RawEvent::ThreadCreated(thread.id));
+                // Update labels to category
+                CategoryLabels::insert(category_id, new_labels);
+            }
+            
 
             Ok(())
         }
 
         /// Create new thread in category with poll
-        fn create_thread_with_poll(origin, category_id: CategoryId, title: Vec<u8>, text: Vec<u8>, poll_items_description: Vec<Vec<u8>>, 
-            poll_description: Vec<u8>, start_time: T::Moment, end_time: T::Moment, min_selected_items: u8, max_select_items: u8) -> dispatch::Result {
+        fn create_new_thread(origin, category_id: CategoryId, title: Vec<u8>, text: Vec<u8>, labels: Vec<LabelId>,
+            poll_data: Option<(Vec<Vec<u8>>, Vec<u8>, T::Moment, T::Moment, u8, u8)>, ) -> dispatch::Result {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -940,39 +959,48 @@ decl_module! {
             // Check that account is forum member
             let forum_user_id = Self::ensure_is_forum_member(&who)?;
 
-            // Get path from parent to root of category tree.
-            let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
-
-            // No ancestor is blocking us doing mutation in this category
-            Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
-
-            // Validate title
-            Self::ensure_thread_title_is_valid(&title)?;
-
-            // Validate post text
-            Self::ensure_post_text_is_valid(&text)?;
-
-            // get next thread id.
-            let new_thread_id = NextThreadId::get();
-
-            // Add inital post to thread
-            Self::add_new_post(NextThreadId::get(), &text, forum_user_id);
-            
-            // Add poll
-            let poll = Self::create_poll(poll_items_description.len(), &poll_description, start_time, 
-            end_time, min_selected_items, max_select_items)?;
-
-            // Add poll's all items 
-            let _ = Self::create_poll_items(new_thread_id, &poll_items_description)?;
-
-            // Add thread
-            let thread = Self::add_new_thread(category_id, &title, forum_user_id, Some(poll));
+            //
+            let thread = Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels, &poll_data)?;
 
             // Generate event
             Self::deposit_event(RawEvent::ThreadCreated(thread.id));
 
             Ok(())
         }
+
+        /// Update category
+        fn update_thread_labels(origin, thread_id: ThreadId, new_labels: Vec<LabelId>) -> dispatch::Result {
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Get thread
+            let thread = Self::ensure_thread_exists(&thread_id)?;
+            
+            // Can mutate in corresponding category
+            let path = Self::build_category_tree_path(thread.category_id);
+            
+            // Path must be non-empty, as category id is from thread in state
+            assert!(!path.is_empty());
+
+            // Path can be updated
+            Self::ensure_can_mutate_in_path_leaf(&path)?;
+
+            // Validate labels
+            Self::ensure_label_valid(&new_labels)?;
+
+            // update labels if who is author
+            let forum_user_id = Self::ensure_is_forum_member(&who);
+            let is_author = forum_user_id.is_ok() && (forum_user_id.unwrap() == thread.author_id);
+            let is_moderator = Self::ensure_is_moderator(&who).is_ok() && Self::ensure_moderate_category(&who, thread.category_id).is_ok();
+            
+            // Update labels to thread
+            if is_author || is_moderator {
+                ThreadLabels::insert(thread_id, new_labels);
+            }
+            
+            Ok(())
+        }
+
 
         /// submit a poll
         fn submit_poll(origin, thread_id: ThreadId, poll_value: PollData) -> dispatch::Result {
@@ -984,21 +1012,26 @@ decl_module! {
 
             // Get thread
             let thread = Self::ensure_thread_exists(&thread_id)?;
-
-            if thread.poll.is_none() {
-                Err(ERROR_POLL_NOT_EXIST)
-            } else {
-                Self::ensure_poll_data_valid(&thread.poll.unwrap(), poll_value)?;
-                PollDataByAccount::insert(thread_id, forum_user_id, poll_value);
-                if PollStatistics::exists(thread_id, poll_value) {
-                    PollStatistics::insert(thread_id, poll_value, 1);
-                } else {
-                    let old_value = PollStatistics::get(thread_id, poll_value);
-                    PollStatistics::insert(thread_id, poll_value, old_value + 1);
+            
+            // Make sure poll exist and not expired
+            match thread.poll {
+                None => Err(ERROR_POLL_NOT_EXIST),
+                Some(poll) => {
+                    if poll.clone().end_time < <timestamp::Module<T>>::now() {
+                        Err(ERROR_POLL_COMMIT_EXPIRED)
+                    } else {
+                        Self::ensure_poll_data_valid(&poll, poll_value)?;
+                        PollDataByAccount::insert(thread_id, forum_user_id, poll_value);
+                        if PollStatistics::exists(thread_id, poll_value) {
+                            PollStatistics::insert(thread_id, poll_value, 1);
+                        } else {
+                            let old_value = PollStatistics::get(thread_id, poll_value);
+                            PollStatistics::insert(thread_id, poll_value, old_value + 1);
+                        }
+                        Ok(())
+                    }
                 }
-                
-                Ok(())
-            }  
+            }
         }
 
         /// Moderate thread
@@ -1018,7 +1051,7 @@ decl_module! {
             Self::ensure_thread_moderation_rationale_is_valid(&rationale)?;
 
             // ensure origin can moderate category
-            Self::ensure_moderate_category(who.clone(), thread.category_id)?;
+            Self::ensure_moderate_category(&who, thread.category_id)?;
 
             // Can mutate in corresponding category
             let path = Self::build_category_tree_path(thread.category_id);
@@ -1058,23 +1091,7 @@ decl_module! {
             // Check that account is forum member
             let forum_user_id = Self::ensure_is_forum_member(&who)?;
 
-            // Validate post text
-            Self::ensure_post_text_is_valid(&text)?;
-
-            // Make sure thread exists and is mutable
-            let thread = Self::ensure_thread_is_mutable(&thread_id)?;
-
-            // Get path from parent to root of category tree.
-            let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(thread.category_id)?;
-
-            // No ancestor is blocking us doing mutation in this category
-            Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
-
-            /*
-             * Here we are safe to mutate
-             */
-
-            let post = Self::add_new_post(thread_id, &text, forum_user_id);
+            let post = Self::add_new_post(thread_id, &text, forum_user_id)?;
 
             // Generate event
             Self::deposit_event(RawEvent::PostAdded(post.id));
@@ -1083,7 +1100,7 @@ decl_module! {
         }
 
         /// like or unlike a post.
-        fn like_post(origin, post_id: PostId, like: bool) -> dispatch::Result {
+        fn react_post(origin, post_id: PostId, react: PostReaction) -> dispatch::Result {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
@@ -1093,66 +1110,18 @@ decl_module! {
             // Make sure there exists a mutable post with post id `post_id`
             let _ = Self::ensure_post_is_mutable(&post_id)?;
 
-            // set like
-            let old_value = ReactionByPost::get(post_id, forum_user_id);
-            if like == true && old_value.contains(PostReaction::LIKE) == false {
-                ReactionByPost::insert(post_id, forum_user_id, old_value | PostReaction::LIKE);
-                Self::deposit_event(RawEvent::LikePost(forum_user_id, post_id));
+            // If react is meaningful
+            if react == PostReaction::NonReacton {
+                return Ok(())
             }
-            else if like == false && old_value.contains(PostReaction::LIKE) == true {
-                ReactionByPost::insert(post_id, forum_user_id, old_value - PostReaction::LIKE);
-                Self::deposit_event(RawEvent::UnlikePost(forum_user_id, post_id));
-            }
-   
-            Ok(())
-        }
 
-        /// thumb up or unthumb up a post.
-        fn thumb_up_post(origin, post_id: PostId, up: bool) -> dispatch::Result {
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
-            // Check that account is forum member
-            let forum_user_id = Self::ensure_is_forum_member(&who)?;
-
-            // Make sure there exists a mutable post with post id `post_id`
-            let _ = Self::ensure_post_is_mutable(&post_id)?;
-
-            // set up
-            let old_value = ReactionByPost::get(post_id, forum_user_id);
-            if up == true && old_value.contains(PostReaction::UP) == false {
-                ReactionByPost::insert(post_id, forum_user_id, old_value | PostReaction::UP);
-                Self::deposit_event(RawEvent::ThumbUpPost(forum_user_id, post_id));
-            }
-            else if up == false && old_value.contains(PostReaction::UP) == true {
-                ReactionByPost::insert(post_id, forum_user_id, old_value - PostReaction::UP);
-                Self::deposit_event(RawEvent::UnthumbUpPost(forum_user_id, post_id));
-            }
-   
-            Ok(())
-        }
-
-        /// thumb down or unthumb down a post.
-        fn thumb_down_post(origin, post_id: PostId, down: bool) -> dispatch::Result {
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
-            // Check that account is forum member
-            let forum_user_id = Self::ensure_is_forum_member(&who)?;
-
-            // Make sure there exists a mutable post with post id `post_id`
-            let _ = Self::ensure_post_is_mutable(&post_id)?;
-
-            // set down
+            // Get old value in map
             let old_value = ReactionByPost::get(post_id, forum_user_id);
 
-            if down == true && old_value.contains(PostReaction::DOWN) == false {
-                ReactionByPost::insert(post_id, forum_user_id, old_value | PostReaction::DOWN);
-                Self::deposit_event(RawEvent::ThumbDownPost(forum_user_id, post_id));
-            }
-            else if down == false && old_value.contains(PostReaction::DOWN) == true {
-                ReactionByPost::insert(post_id, forum_user_id, old_value - PostReaction::DOWN);
-                Self::deposit_event(RawEvent::UnthumbDownPost(forum_user_id, post_id));
+            // Update and save event.
+            if old_value != react {
+                ReactionByPost::insert(post_id, forum_user_id, react);
+                Self::deposit_event(RawEvent::PostReacted(forum_user_id, post_id, react));
             }
    
             Ok(())
@@ -1223,7 +1192,7 @@ decl_module! {
             let thread = Self::ensure_thread_exists(&post.thread_id)?;
 
             // ensure the moderator can moderate the category
-            Self::ensure_moderate_category(who.clone(), thread.category_id)?;
+            Self::ensure_moderate_category(&who, thread.category_id)?;
 
             // Update moderation action on post
             let moderation_action = ModerationAction{
@@ -1248,6 +1217,234 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    // Interface to add a new thread.
+    // It can be call from other module and this module.
+    // Method not check the forum user. The extrinsic call it should check if forum id is valid.
+    // If other module call it, could set the forum user id as zero, which not used by forum module.
+    // Data structure of poll data: item description vector, poll description, start time, end time, 
+    // minimum selected items, maximum selected items
+    fn add_new_thread(
+        category_id: CategoryId,
+        author_id: ForumUserId,
+        title: &Vec<u8>,
+        text: &Vec<u8>,
+        labels: &Vec<LabelId>,
+        poll_data: &Option<(Vec<Vec<u8>>, Vec<u8>, T::Moment, T::Moment, u8, u8)>,
+    ) -> Result<Thread<T::BlockNumber, T::Moment>, &'static str> {
+        // Get path from parent to root of category tree.
+        let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
+
+        // No ancestor is blocking us doing mutation in this category
+        Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+
+        // Validate title
+        Self::ensure_thread_title_is_valid(&title)?;
+
+        // Validate post text
+        Self::ensure_post_text_is_valid(&text)?;
+
+        // Validate labels
+        Self::ensure_label_valid(&labels)?;
+
+        // get next thread id.
+        let new_thread_id = NextThreadId::get();
+
+        if poll_data.is_some() {
+            let data = poll_data.clone().unwrap();
+            
+            Self::ensure_poll_items_valid(&data.0)?;
+
+            Self::ensure_poll_is_valid(data.0.len(), &data.1, data.2, data.3, data.4, data.5)?;
+
+            let _ = Self::add_poll_items(new_thread_id, &data.0);
+        }
+
+        let poll = if poll_data.is_some() {
+            let data = poll_data.clone().unwrap();
+            Some(Poll {
+                // description for poll
+                poll_description: data.1.clone(),
+
+                // timestamp of poll start
+                start_time: data.2,
+            
+                // timestamp of poll end
+                end_time: data.3,
+            
+                // length of poll items.
+                poll_item_number: data.1.len() as u8,
+            
+                // min selected items.
+                min_selected_items: data.4,
+            
+                // max selected items.
+                max_selected_items: data.5,
+            })
+        } else {
+            None
+        };
+
+        // Create and add new thread
+        let new_thread_id = NextThreadId::get();
+
+        // Add inital post to thread
+        let _ = Self::add_new_post(new_thread_id, &text, author_id);
+
+        // Add labels to thread
+        ThreadLabels::insert(new_thread_id, labels);
+
+        let new_thread = Thread {
+            id: new_thread_id,
+            title: title.clone(),
+            category_id: category_id,
+            moderation: None,
+            created_at: Self::current_block_and_time(),
+            author_id: author_id,
+            poll: poll,
+        };
+
+        // Store thread
+        <ThreadById<T>>::insert(new_thread_id, new_thread.clone());
+
+        // Store labels
+        ThreadLabels::insert(new_thread_id, labels);
+
+        // Update next thread id
+        NextThreadId::mutate(|n| {
+            *n += 1;
+        });
+
+        Ok(new_thread)
+    }
+
+    // Interface to add a new post.
+    // It can be call from other module and this module.
+    // Method not check the forum user. The extrinsic call it should check if forum id is valid.
+    // If other module call it, could set the forum user id as zero, which not used by forum module.
+    fn add_new_post(
+        thread_id: ThreadId,
+        text: &Vec<u8>,
+        author_id: ForumUserId,
+    ) -> Result<Post<T::BlockNumber, T::Moment>, &'static str> {
+        // Validate post text
+        Self::ensure_post_text_is_valid(text)?;
+
+        // Make sure thread exists and is mutable
+        let thread = Self::ensure_thread_is_mutable(&thread_id)?;
+
+        // Get path from parent to root of category tree.
+        let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(thread.category_id)?;
+
+        // No ancestor is blocking us doing mutation in this category
+        Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+
+        // Make and add initial post
+        let new_post_id = NextPostId::get();
+
+        let new_post = Post {
+            id: new_post_id,
+            thread_id: thread_id,
+            current_text: text.clone(),
+            moderation: None,
+            text_change_history: vec![],
+            created_at: Self::current_block_and_time(),
+            author_id: author_id,
+        };
+
+        // Store post
+        <PostById<T>>::insert(new_post_id, new_post.clone());
+
+        // Update next post id
+        NextPostId::mutate(|n| {
+            *n += 1;
+        });
+
+        Ok(new_post)
+    }
+
+    // The method only called from other module to create a forum user.
+    fn create_forum_user(account_id: T::AccountId, name: Vec<u8>, self_introduction: Vec<u8>) -> dispatch::Result {
+        Self::ensure_user_name_is_valid(&name)?;
+
+        Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
+
+        let new_forum_user = ForumUser {
+            id: account_id.clone(),
+            name: name.clone(),
+            self_introduction: self_introduction.clone(),
+        };
+
+        <ForumUserById<T>>::insert(NextForumUserId::get(), new_forum_user);
+        <ForumUserIdByAccount<T>>::insert(account_id, NextForumUserId::get());
+
+        NextForumUserId::mutate(|n| {
+            *n += 1;
+        });
+        Ok(())
+    }
+
+    // The method only called from other module to create a new moderator.
+    fn create_moderator(account_id: T::AccountId, name: Vec<u8>, self_introduction: Vec<u8>) -> dispatch::Result {
+        Self::ensure_user_name_is_valid(&name)?;
+
+        Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
+
+        let new_moderator = Moderator {
+            id: account_id.clone(),
+            name: name,
+            self_introduction: self_introduction,
+        };
+
+        <ModeratorById<T>>::insert(NextModeratorId::get(), new_moderator);
+        <ModeratorIdByAccount<T>>::insert(account_id, NextModeratorId::get());
+
+        NextModeratorId::mutate(|n| {
+            *n += 1;
+        });
+        Ok(())
+    }
+
+    // The method only called from other module to add some labels.
+    fn add_labels(labels: Vec<Vec<u8>>) -> dispatch::Result {
+        // Check label name length
+        Self::ensure_label_name_valid(&labels)?;
+
+        // Get next lable id
+        let mut label_index = NextLabelId::get();
+
+        // Add lable one by one
+        for index in 0..labels.len() {
+            CategoryThreadLabels::insert(label_index, labels[index].clone());
+            label_index += 1;
+        }
+
+        // Update next lable id
+        NextLabelId::mutate(|n| {
+            *n = label_index;
+        });
+
+        Ok(())
+    }
+
+    fn ensure_label_name_valid(labels: &Vec<Vec<u8>>) -> dispatch::Result {
+        for index in 0..labels.len() {
+            LabelNameConstraint::get().ensure_valid(labels[index].len(), ERROR_LABEL_TOO_SHORT, ERROR_LABEL_TOO_LONG)?;
+        }
+        Ok(())
+    }
+
+    fn ensure_label_valid(labels: &Vec<LabelId>) -> dispatch::Result {
+        let invalid = labels.iter().any(|label_id| *label_id >= NextLabelId::get());
+        if invalid {
+            Err(ERROR_LABEL_INDEX_IS_WRONG)
+        } else if labels.len() > MaxAppliedLabels::get() as usize {
+            // Validate label's amount
+            Err(ERROR_TOO_MUCH_LABELS)
+        } else {
+            Ok(())
+        }
+    }
+
     fn ensure_poll_data_valid(poll: &Poll<T::Moment>, poll_data: PollData) -> dispatch::Result {
         // poll data must be in the scope
         let one: u128 = 1;
@@ -1275,107 +1472,51 @@ impl<T: Trait> Module<T> {
         }
     }
    
-    fn create_poll(items_number: usize, poll_description: &Vec<u8>, start_time: T::Moment, 
-        end_time: T::Moment, min_selected_items: u8, max_selected_items: u8) -> Result<Poll<T::Moment>, &'static str> {
-        // end time is too early
-        if end_time < <timestamp::Module<T>>::now() {
-            return Err(ERROR_POLL_TIME_SETTING);
+    fn ensure_poll_is_valid(items_number: usize, poll_description: &Vec<u8>, start_time: T::Moment, 
+        end_time: T::Moment, min_selected_items: u8, max_selected_items: u8) -> dispatch::Result {
+            if end_time < <timestamp::Module<T>>::now() {
+                return Err(ERROR_POLL_TIME_SETTING);
+            }
+    
+            // items number never over 128 since use u128 store raw data
+            if items_number > 128 {
+                return Err(ERROR_POLL_ITEMS_SETTING);
+            }
+    
+            let items_number = items_number as u8;
+    
+            // Check the timestamp setting
+            if start_time > end_time {
+                return Err(ERROR_POLL_TIME_SETTING);
+            }
+    
+            // Check all items number setting
+            if items_number < 1 || items_number > 128 {
+                return Err(ERROR_POLL_ITEMS_SETTING);
+            }
+    
+            // Check could be selected items number setting
+            if min_selected_items < 1 || max_selected_items > 128 || items_number < max_selected_items {
+                Err(ERROR_POLL_ITEMS_SETTING)
+            } else {
+                Self::ensure_poll_desc_is_valid(poll_description.len())?;
+                Ok(())
+            }
         }
 
-        // items number never over 128 since use u128 store raw data
-        if items_number > 128 {
-            return Err(ERROR_POLL_ITEMS_SETTING);
-        }
 
-        let items_number = items_number as u8;
-
-        // Check the timestamp setting
-        if start_time > end_time {
-            return Err(ERROR_POLL_TIME_SETTING);
-        }
-
-        // Check all items number setting
-        if items_number < 1 || items_number > 128 {
-            return Err(ERROR_POLL_ITEMS_SETTING);
-        }
-
-        // Check could be selected items number setting
-        if min_selected_items < 1 || max_selected_items > 128 || items_number < max_selected_items {
-            return Err(ERROR_POLL_ITEMS_SETTING)
-        }
-
-        // Create a new Poll
-        let poll = Poll {
-            poll_description: poll_description.clone(),
-
-            /// timestamp of poll start
-            start_time: start_time,
-        
-            /// timestamp of poll end
-            end_time: end_time,
-        
-            /// length of poll.
-            poll_item_number: items_number,
-        
-            /// min selected items.
-            min_selected_items: min_selected_items,
-        
-            /// max selected items.
-            max_selected_items: max_selected_items,
-        };
-
-
-        Ok(poll)
-    }
-
-    fn create_forum_user(account_id: T::AccountId, name: Vec<u8>, self_introduction: Vec<u8>) -> dispatch::Result {
-        Self::ensure_user_name_is_valid(&name)?;
-
-        Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
-
-        let new_forum_user = ForumUser {
-            id: account_id.clone(),
-            name: name.clone(),
-            self_introduction: self_introduction.clone(),
-        };
-
-        <ForumUserById<T>>::insert(NextForumUserId::get(), new_forum_user);
-        <ForumUserIdByAccount<T>>::insert(account_id, NextForumUserId::get());
-
-        NextForumUserId::mutate(|n| {
-            *n += 1;
-        });
-        Ok(())
-    }
-
-    fn create_moderator(account_id: T::AccountId, name: Vec<u8>, self_introduction: Vec<u8>) -> dispatch::Result {
-        Self::ensure_user_name_is_valid(&name)?;
-
-        Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
-
-        let new_moderator = Moderator {
-            id: account_id.clone(),
-            name: name,
-            self_introduction: self_introduction,
-        };
-
-        <ModeratorById<T>>::insert(NextModeratorId::get(), new_moderator);
-        <ModeratorIdByAccount<T>>::insert(account_id, NextModeratorId::get());
-
-        NextModeratorId::mutate(|n| {
-            *n += 1;
-        });
-        Ok(())
-    }
-
-    fn create_poll_items(thread_id: ThreadId, text: &Vec<Vec<u8>>) -> dispatch::Result {
+    fn ensure_poll_items_valid(text: &Vec<Vec<u8>>) -> dispatch::Result {
         let len = text.len();
-        Self::ensure_poll_items_is_valid(len)?;
+        Self::ensure_poll_items_length_is_valid(len)?;
         for index in 0..len {
             let desc_len = text[index].len();
             Self::ensure_poll_desc_is_valid(desc_len)?;
         }
-        for index in 0..len {
+        Ok(())
+    }
+
+    fn add_poll_items(thread_id: ThreadId, text: &Vec<Vec<u8>>) -> dispatch::Result {
+        for index in 0..text.len() {
             PollDesc::insert(thread_id, index as u8, &text[index]);
         }
         Ok(())
@@ -1453,7 +1594,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_poll_items_is_valid(len: usize) -> dispatch::Result {
+    fn ensure_poll_items_length_is_valid(len: usize) -> dispatch::Result {
         PollItemsConstraint::get().ensure_valid(
             len,
             ERROR_POLL_ITEMS_TOO_SHORT,
@@ -1642,74 +1783,13 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn add_new_thread(
-        category_id: CategoryId,
-        title: &Vec<u8>,
-        author_id: ForumUserId,
-        poll: Option<Poll<T::Moment>>,
-    ) -> Thread<T::BlockNumber, T::Moment> {
-        // Create and add new thread
-        let new_thread_id = NextThreadId::get();
-
-        let new_thread = Thread {
-            id: new_thread_id,
-            title: title.clone(),
-            category_id: category_id,
-            moderation: None,
-            created_at: Self::current_block_and_time(),
-            author_id: author_id,
-            poll: poll,
-        };
-
-        // Store thread
-        <ThreadById<T>>::insert(new_thread_id, new_thread.clone());
-
-        // Update next thread id
-        NextThreadId::mutate(|n| {
-            *n += 1;
-        });
-
-        new_thread
-    }
-
-    /// Creates and ads a new post ot the given thread, and makes all required state updates
-    /// `thread_id` must be valid
-    fn add_new_post(
-        thread_id: ThreadId,
-        text: &Vec<u8>,
-        author_id: ForumUserId,
-    ) -> Post<T::BlockNumber, T::Moment> {
-        // Make and add initial post
-        let new_post_id = NextPostId::get();
-
-        let new_post = Post {
-            id: new_post_id,
-            thread_id: thread_id,
-            current_text: text.clone(),
-            moderation: None,
-            text_change_history: vec![],
-            created_at: Self::current_block_and_time(),
-            author_id: author_id,
-        };
-
-        // Store post
-        <PostById<T>>::insert(new_post_id, new_post.clone());
-
-        // Update next post id
-        NextPostId::mutate(|n| {
-            *n += 1;
-        });
-
-        new_post
-    }
-
-    /// check if an account can moderate a category.
+    // check if an account can moderate a category.
     fn ensure_moderate_category(
-        account_id: T::AccountId,
+        account_id: &T::AccountId,
         category_id: CategoryId,
     ) -> Result<(), &'static str> {
         let category_tree_path = Self::build_category_tree_path(category_id.clone());
-        let moderator_id = Self::ensure_is_moderator(&account_id)?;
+        let moderator_id = Self::ensure_is_moderator(account_id)?;
         for i in 0..category_tree_path.len() {
             if CategoryByModerator::get(category_tree_path[i].id, moderator_id) == true {
                 return Ok(());

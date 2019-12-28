@@ -5,7 +5,6 @@ authors = ['Bedeho Mender <bedeho.mender@protonmail.com>']
 edition = '2018'
 
 [dependencies]
-bitflags = '1.2.1'
 hex-literal = '0.1.0'
 serde = { version = '1.0.101', optional = true}
 serde_derive = { version = '1.0.101', optional = true }

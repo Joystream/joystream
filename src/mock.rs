@@ -54,13 +54,7 @@ impl timestamp::Trait for Runtime {
 
 impl Trait for Runtime {
     type Event = ();
-    // type MembershipRegistry = registry::TestMembershipRegistryModule;
 }
-
-// impl forum::Trait for Runtime {
-//     type Moment = u64;
-//     type Event = ();
-// }
 
 #[derive(Clone)]
 pub enum OriginType {
@@ -115,6 +109,18 @@ pub fn good_rationale() -> Vec<u8> {
     b"This post violates our community rules".to_vec()
 }
 
+pub fn good_poll_items() -> Vec<Vec<u8>> {
+    vec![
+        b"poll item A".to_vec(),
+        b"poll item B".to_vec(),
+        b"poll item C".to_vec(),
+        b"poll item D".to_vec(),
+    ]
+}
+
+pub fn good_poll_text() -> Vec<u8> {
+        b"It is a poll for you to choose A B C D".to_vec()
+}
 /*
  * These test fixtures can be heavily refactored to avoid repotition, needs macros, and event
  * assertions are also missing.
@@ -220,6 +226,17 @@ pub fn create_moderator() -> OriginType {
         "new moderator member".as_bytes().to_vec(), 
         "new moderator member self description".as_bytes().to_vec());
     OriginType::Signed(moderator)
+}
+
+pub fn create_thread_with_poll(forum_sudo: OriginType) -> ThreadId {
+    let _forum_user = create_forum_member();
+    let member_origin = create_moderator();
+    let category_id = create_root_category(forum_sudo);
+    let thread_id = TestForumModule::next_thread_id();
+    TestForumModule::create_thread_with_poll(mock_origin(forum_sudo), category_id, good_category_title(), 
+        good_category_description(), good_poll_items(), good_poll_text(), <timestamp::Module<Runtime>>::now(),
+        <timestamp::Module<Runtime>>::now() + 1000000, 1, 4);
+    thread_id
 }
 
 pub fn assert_create_category(
@@ -486,89 +503,6 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     }
 }
 
-pub type RuntimeMap<K, V> = std::vec::Vec<(K, V)>;
-pub type RuntimeDoubleMap<K1, K2, V> = std::vec::Vec<(K1, K2, V)>;
-pub type RuntimeCategory = Category<
-    <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
->;
-pub type RuntimeThread = Thread<
-    <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
->;
-pub type RuntimePost = Post<
-    <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
->;
-pub type RuntimeBlockchainTimestamp = BlockchainTimestamp<
-    <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
->;
-
-pub fn genesis_config(
-    forum_user_by_id: &RuntimeMap<ForumUserId, ForumUser<<Runtime as system::Trait>::AccountId>>,
-    forum_user_id_by_account: &RuntimeMap<<Runtime as system::Trait>::AccountId, ForumUserId>,
-    next_forum_user_id: u64,
-    moderator_by_id: &RuntimeMap<ModeratorId, Moderator<<Runtime as system::Trait>::AccountId>>,
-    moderator_id_by_account: &RuntimeMap<<Runtime as system::Trait>::AccountId, ModeratorId>,
-    next_moderator_id: u64,
-    category_by_id: &RuntimeMap<CategoryId, RuntimeCategory>,
-    next_category_id: u64,
-    thread_by_id: &RuntimeMap<ThreadId, RuntimeThread>,
-    next_thread_id: u64,
-    post_by_id: &RuntimeMap<PostId, RuntimePost>,
-    next_post_id: u64,
-    forum_sudo: <Runtime as system::Trait>::AccountId,
-    category_by_moderator: &RuntimeDoubleMap<CategoryId, <Runtime as system::Trait>::AccountId, bool>,
-    max_category_depth: u8,
-    reaction_by_post: &RuntimeDoubleMap<PostId, <Runtime as system::Trait>::AccountId, PostReaction>,
-    poll_desc: &RuntimeDoubleMap<PostId, u8, Vec<u8>>,
-    poll_by_account: &RuntimeDoubleMap<PostId, <Runtime as system::Trait>::AccountId, PollData>,
-    poll_statistics: &RuntimeDoubleMap<ThreadId, PollData, u64>,
-    category_title_constraint: &InputValidationLengthConstraint,
-    category_description_constraint: &InputValidationLengthConstraint,
-    thread_title_constraint: &InputValidationLengthConstraint,
-    post_text_constraint: &InputValidationLengthConstraint,
-    thread_moderation_rationale_constraint: &InputValidationLengthConstraint,
-    post_moderation_rationale_constraint: &InputValidationLengthConstraint,
-    poll_desc_constraint: &InputValidationLengthConstraint,
-    poll_items_constraint: &InputValidationLengthConstraint,
-    user_name_constraint: &InputValidationLengthConstraint,
-    user_self_introduction_constraint: &InputValidationLengthConstraint,
-) -> GenesisConfig<Runtime> {
-    GenesisConfig::<Runtime> {
-        forum_user_by_id: forum_user_by_id.clone(),
-        forum_user_id_by_account: forum_user_id_by_account.clone(),
-        next_forum_user_id: next_forum_user_id,
-        moderator_by_id: moderator_by_id.clone(),
-        moderator_id_by_account: moderator_id_by_account.clone(),
-        next_moderator_id: next_moderator_id,
-        category_by_id: category_by_id.clone(),
-        next_category_id: next_category_id,
-        thread_by_id: thread_by_id.clone(),
-        next_thread_id: next_thread_id,
-        post_by_id: post_by_id.clone(),
-        next_post_id: next_post_id,
-        forum_sudo: forum_sudo,
-        category_by_moderator: category_by_moderator.clone(),
-        max_category_depth: max_category_depth,
-        reaction_by_post: reaction_by_post.clone(),
-        poll_desc: poll_desc.clone(),
-        poll_by_account: poll_by_account.clone(),
-        poll_statistics: poll_statistics.clone(),
-        category_title_constraint: category_title_constraint.clone(),
-        category_description_constraint: category_description_constraint.clone(),
-        thread_title_constraint: thread_title_constraint.clone(),
-        post_text_constraint: post_text_constraint.clone(),
-        thread_moderation_rationale_constraint: thread_moderation_rationale_constraint.clone(),
-        post_moderation_rationale_constraint: post_moderation_rationale_constraint.clone(),
-        poll_desc_constraint: poll_desc_constraint.clone(),
-        poll_items_constraint: poll_items_constraint.clone(),
-        user_name_constraint: user_name_constraint.clone(),
-        user_self_introduction_constraint: user_self_introduction_constraint.clone(),
-    }
-}
-
 // NB!:
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
@@ -583,6 +517,8 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::T
 }
 
 pub type System = system::Module<Runtime>;
+
+pub type Timestamp = timestamp::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;
