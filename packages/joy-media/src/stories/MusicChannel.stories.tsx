@@ -1,15 +1,15 @@
 import React from 'react';
 import '../common/index.css';
 
-import { withKnobs } from '@storybook/addon-knobs';
 import { ChannelDataSample } from './data/ChannelSamples';
 import { ViewMusicChannel } from '../channels/ViewMusicChannel';
 import { MusicAlbumSamples } from './data/MusicAlbumSamples';
 import { AllMusicTrackSamples } from './data/MusicTrackSamples';
+import { withMockTransport } from './withMockTransport';
 
 export default { 
     title: 'Media | Music channel',
-    decorators: [withKnobs],
+    decorators: [ withMockTransport ],
 };
 
 export const EmptyMusicChannel = () =>

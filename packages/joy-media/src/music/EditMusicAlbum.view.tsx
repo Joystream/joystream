@@ -1,19 +1,13 @@
-import { MediaView, MediaViewProps } from '../MediaVIew';
-import EntityId from '@joystream/types/versioned-store/EntityId';
-import { OuterProps, EditMusicAlbum } from './EditMusicAlbum';
+import { MediaView } from '../MediaView';
+import { OuterProps, EditForm } from './EditMusicAlbum';
 
-export class EditMusicAlbumView extends MediaView<OuterProps> {
-
-  constructor (props: MediaViewProps<OuterProps>) {
-    super(EditMusicAlbum, props);
-  }
-
-  async resolveProps () {
-    const { id: idStr } = this.routeProps?.match.params as any;
-    const id = new EntityId(idStr as string);
-    const entity = await this.transport.musicAlbumById(id);
+export const EditMusicAlbumView = MediaView<OuterProps>({
+  component: EditForm,
+  resolveProps: async (props) => {
+    const { transport, id } = props;
+    const entity = id ? await transport.musicAlbumById(id) : undefined;
     return { entity };
   }
-}
+});
 
 export default EditMusicAlbumView;

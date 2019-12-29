@@ -9,12 +9,14 @@ import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
 import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields } from '../schemas/music/MusicTrack';
 import * as Opts from '../common/DropdownOptions';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
+import EntityId from '@joystream/types/versioned-store/EntityId';
 
 export type OuterProps = {
   isStorybook?: boolean,
   history?: History,
   contentId: ContentId,
   fileName?: string,
+  id?: EntityId,
   entity?: MusicTrackType
 };
 

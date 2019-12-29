@@ -9,7 +9,7 @@ import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
 
-export class Transport extends TransportBase implements ITransport {
+export class MockTransport extends TransportBase implements ITransport {
 
   musicTrackById (_id: EntityId): Promise<MusicTrackType> {
     return this.promise<MusicTrackType>(

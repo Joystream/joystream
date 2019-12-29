@@ -1,13 +1,13 @@
 import React from 'react';
 import '../common/index.css';
 
-import { withKnobs } from '@storybook/addon-knobs';
 import { MyChannels } from '../channels/MyChannels';
 import { ChannelsDataSamples } from './data/ChannelSamples';
+import { withMockTransport } from './withMockTransport';
 
 export default { 
     title: 'Media | My channels',
-    decorators: [withKnobs],
+    decorators: [ withMockTransport ],
 };
 
 export const DefaultState = () =>

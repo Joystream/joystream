@@ -10,12 +10,14 @@ import { VideoValidationSchema, VideoType, VideoClass as Fields } from '../schem
 import { MediaFormProps, withMediaForm } from '../common/MediaForms';
 import { visibilityOptions, licenseOptions } from '../common/DropdownOptions';
 import * as Opts from '../common/DropdownOptions';
+import EntityId from '@joystream/types/versioned-store/EntityId';
 
 export type OuterProps = {
   isStorybook?: boolean,
   history?: History,
   contentId: ContentId,
   fileName?: string,
+  id?: EntityId,
   entity?: VideoType
 };
 

@@ -1,35 +1,60 @@
-import React from 'react';
+import React, { useState, useEffect, useContext, createContext } from 'react';
 import { ITransport } from './transport';
-import { RouteComponentProps } from 'react-router';
+import { MockTransport } from './transport.mock';
+import { SubstrateTransport } from './transport.substrate';
 
-export type MediaViewProps<P = {}> = {
+export const TransportContext = createContext<ITransport>(undefined as unknown as ITransport);
+
+export const useTransportContext = () =>
+  useContext(TransportContext)
+
+export const MockTransportProvider = (props: React.PropsWithChildren<{}>) =>
+  <TransportContext.Provider value={new MockTransport()}>
+    {props.children}
+  </TransportContext.Provider>
+
+export const SubstrateTransportProvider = (props: React.PropsWithChildren<{}>) =>
+  <TransportContext.Provider value={new SubstrateTransport()}>
+    {props.children}
+  </TransportContext.Provider>
+
+type ResolverProps<A> = A & {
   transport: ITransport
-  routeProps?: RouteComponentProps
-  initialProps?: Partial<P>
 };
 
-export abstract class MediaView<P = {}> {
+type BaseProps<A, B> = {
+  component: React.ComponentType<A & B>
+  resolveProps?: (props: ResolverProps<A>) => Promise<B>
+  unresolvedView?: React.ReactElement
+};
 
-  protected Component: React.ComponentType<P>
-  protected transport: ITransport
-  protected routeProps?: RouteComponentProps
-  protected initialProps?: Partial<P>
+export function MediaView<A = {}, B = {}> (baseProps: BaseProps<A, B>) {
+  return function (initialProps: A & B) {
+    const { component: Component, resolveProps, unresolvedView = null } = baseProps;
+    const [ resolvedProps, setResolvedProps ] = useState({} as B);
+    const [ propsResolved, setPropsResolved ] = useState(false);
+    const transport = useTransportContext();
 
-  constructor (Component: React.ComponentType<P>, props: MediaViewProps<P>) {
-    this.Component = Component;
-    this.transport = props.transport;
-    this.routeProps = props.routeProps;
-    this.initialProps = props.initialProps;
-  }
+    useEffect(() => {
+      console.log('Resolving props of media view');
 
-  public abstract async resolveProps (): Promise<Partial<P>>
+      async function doResolveProps () {
+        if (typeof resolveProps === 'function') {
+          const resolverProps = { ...initialProps, transport };
+          setResolvedProps(await resolveProps(resolverProps));
+        }
+        setPropsResolved(true);
+      }
 
-  public render (): React.ReactElement | null {
-    const resolvedProps = await this.resolveProps();
-    const props = {
-      ...this.initialProps,
-      ...resolvedProps
-    } as P;
-    return <this.Component {...props} />;
+      if (!transport) {
+        console.log('ERROR: transport is not defined');
+      } else if (!propsResolved) {
+        doResolveProps();
+      }
+    }, [ false ]);
+    
+    return propsResolved
+      ? <Component {...initialProps} {...resolvedProps} />
+      : unresolvedView;
   }
 }

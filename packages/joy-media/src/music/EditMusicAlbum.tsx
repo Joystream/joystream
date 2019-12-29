@@ -4,7 +4,6 @@ import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { ContentId } from '@joystream/types/media';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
 import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumPreviewProps } from './MusicAlbumPreview';
@@ -13,11 +12,12 @@ import { MusicTrackType } from '../schemas/music/MusicTrack';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import { genreOptions, moodOptions, themeOptions, licenseOptions, visibilityOptions } from '../common/DropdownOptions';
 import * as Opts from '../common/DropdownOptions';
+import EntityId from '@joystream/types/versioned-store/EntityId';
 
 export type OuterProps = {
   isStorybook?: boolean,
   history?: History,
-  contentId: ContentId,
+  id?: EntityId,
   entity?: MusicAlbumType,
   tracks?: MusicTrackType[]
 };
@@ -40,7 +40,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     onTxFailed,
 
     // history,
-    // contentId,
     entity,
     tracks = [],
 
@@ -160,7 +159,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   </div>;
 };
 
-export const EditMusicAlbum = withFormik<OuterProps, FormValues>({
+export const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
   mapPropsToValues: props => {
@@ -191,4 +190,4 @@ export const EditMusicAlbum = withFormik<OuterProps, FormValues>({
   }
 })(withMediaForm(InnerForm));
 
-export default EditMusicAlbum;
+export default EditForm;

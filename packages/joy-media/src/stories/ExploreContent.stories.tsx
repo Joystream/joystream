@@ -1,16 +1,16 @@
 import React from 'react';
 import '../common/index.css';
 
-import { withKnobs } from '@storybook/addon-knobs';
 import { ExploreContent } from '../explore/ExploreContent';
 import { MusicAlbumSamples } from './data/MusicAlbumSamples';
 import { PlayContent } from '../explore/PlayContent';
 import { Album1TrackSamples } from './data/MusicTrackSamples';
 import { ChannelDataSample } from './data/ChannelSamples';
+import { withMockTransport } from './withMockTransport';
 
 export default { 
     title: 'Media | Explore',
-    decorators: [withKnobs],
+    decorators: [ withMockTransport ],
 };
 
 const FeaturedAlbums = MusicAlbumSamples.slice(0, 3);
