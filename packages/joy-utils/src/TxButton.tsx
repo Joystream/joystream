@@ -7,6 +7,8 @@ import { QueueConsumer } from '@polkadot/react-components/Status/Context';
 import { withApi } from '@polkadot/react-api/index';
 import { assert } from '@polkadot/util';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
+import { useTransportContext } from '@polkadot/joy-media/MediaView';
+import { SubstrateTransport } from '@polkadot/joy-media/transport.substrate';
 
 type InjectedProps = {
   queueExtrinsic: QueueTxExtrinsicAdd;
@@ -79,4 +81,36 @@ class TxButton extends React.PureComponent<Props> {
   }
 }
 
-export default withApi(withMyAccount(TxButton));
+function MockTxButton (props: Props) {
+  const { isPrimary = true, isDisabled, label, onClick  } = props;
+
+  const mockSendTx = () => {
+    console.log('WARN: Cannot send tx in a mock mode');
+  };
+
+  return (
+    <Button
+      {...props}
+      icon=''
+      isDisabled={isDisabled}
+      isPrimary={isPrimary}
+      label={label}
+      onClick={() => {
+        if (onClick) onClick(mockSendTx);
+        else mockSendTx();
+      }}
+    />
+  );
+}
+
+function ResolvedButton (props: Props) {
+  const isSubstrate = useTransportContext() instanceof SubstrateTransport;
+
+  const Component = isSubstrate
+    ? withApi(withMyAccount(TxButton))
+    : MockTxButton;
+
+  return <Component {...props} />;
+}
+
+export default ResolvedButton;

@@ -15,7 +15,6 @@ import * as Opts from '../common/DropdownOptions';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 
 export type OuterProps = {
-  isStorybook?: boolean,
   history?: History,
   id?: EntityId,
   entity?: MusicAlbumType,
@@ -26,8 +25,6 @@ type FormValues = MusicAlbumType;
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
-    isStorybook,
-
     // React components for form fields:
     MediaText,
     MediaField,
@@ -107,16 +104,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     const label = isNew
       ? 'Publish'
       : 'Update';
-
-    if (isStorybook) return (
-      <Button
-        primary
-        type='button'
-        size='large'
-        disabled={isDisabled}
-        content={label}
-      />
-    );
 
     return <TxButton
       type='submit'

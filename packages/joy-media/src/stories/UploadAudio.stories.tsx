@@ -8,22 +8,19 @@ import { UploadAudioView } from '../upload/UploadAudio.view';
 import { withMockTransport } from './withMockTransport';
 
 export default { 
-    title: 'Media | Upload audio',
-    decorators: [ withMockTransport ],
+	title: 'Media | Upload audio',
+	decorators: [ withMockTransport ],
 };
 
 const contentId = ContentId.generate();
 
-export const DefaultState = () => {
-	return <EditForm
-		isStorybook={true}
+export const DefaultState = () =>
+	<EditForm
 		contentId={contentId} 
 	/>;
-}
 
 export const MockEditFormView = () =>
 	<UploadAudioView
-		isStorybook={true}
 		contentId={contentId}
 		id={new EntityId(1)}
-	/>
+	/>;

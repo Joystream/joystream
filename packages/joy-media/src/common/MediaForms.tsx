@@ -49,9 +49,7 @@ export type MediaFormProps<OuterProps, FormValues> =
   OuterProps &
   FormikProps<FormValues> &
   FormFields<OuterProps, FormValues> &
-  FormCallbacks & {
-    isStorybook: boolean
-  };
+  FormCallbacks;
 
 export function withMediaForm<OuterProps, FormValues>
   (Component: React.ComponentType<MediaFormProps<OuterProps, FormValues>>)
@@ -87,7 +85,6 @@ export function withMediaForm<OuterProps, FormValues>
 
   return function (props: MediaFormProps<OuterProps, FormValues>) {
     const {
-      isStorybook = false,
       isValid,
       setSubmitting
     } = props;
@@ -110,8 +107,6 @@ export function withMediaForm<OuterProps, FormValues>
 
     const allProps = {
       ...props,
-
-      isStorybook,
 
       // Callbacks:
       onSubmit,

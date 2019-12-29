@@ -14,16 +14,13 @@ export default {
 
 const contentId = ContentId.generate();
 
-export const DefaultState = () => {
-	return <EditForm
-		isStorybook={true}
+export const DefaultState = () =>
+	<EditForm
 		contentId={contentId} 
 	/>;
-}
 
 export const MockEditFormView = () =>
 	<UploadVideoView
-		isStorybook={true}
 		contentId={contentId}
 		id={new EntityId(1)}
-	/>
+	/>;

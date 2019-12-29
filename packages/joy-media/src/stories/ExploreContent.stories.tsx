@@ -9,20 +9,20 @@ import { ChannelDataSample } from './data/ChannelSamples';
 import { withMockTransport } from './withMockTransport';
 
 export default { 
-    title: 'Media | Explore',
-    decorators: [ withMockTransport ],
+	title: 'Media | Explore',
+	decorators: [ withMockTransport ],
 };
 
 const FeaturedAlbums = MusicAlbumSamples.slice(0, 3);
 
 export const DefaultState = () =>
-	<ExploreContent />
+	<ExploreContent />;
 
 export const FeaturedAndLatestAlbums = () =>
 	<ExploreContent 
 		featuredAlbums={FeaturedAlbums}
 		latestAlbums={MusicAlbumSamples.reverse()}
-	/>
+	/>;
 
 export const PlayAlbum = () =>
 	<PlayContent 
@@ -30,4 +30,4 @@ export const PlayAlbum = () =>
 		featuredAlbums={FeaturedAlbums}
 		tracks={Album1TrackSamples}
 		currentTrackIndex={3}
-	/>
+	/>;

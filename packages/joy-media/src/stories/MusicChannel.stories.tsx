@@ -8,22 +8,19 @@ import { AllMusicTrackSamples } from './data/MusicTrackSamples';
 import { withMockTransport } from './withMockTransport';
 
 export default { 
-    title: 'Media | Music channel',
-    decorators: [ withMockTransport ],
+	title: 'Media | Music channel',
+	decorators: [ withMockTransport ],
 };
 
 export const EmptyMusicChannel = () =>
-	<ViewMusicChannel channel={ChannelDataSample} />
+	<ViewMusicChannel channel={ChannelDataSample} />;
 
 export const MusicChannelWithAlbumsOnly = () =>
-	<ViewMusicChannel channel={ChannelDataSample} albums={MusicAlbumSamples} />
+	<ViewMusicChannel channel={ChannelDataSample} albums={MusicAlbumSamples} />;
 
 export const MusicChannelWithAlbumAndTracks = () =>
-<>
-<div>tracks:{ AllMusicTrackSamples.length}</div>
 	<ViewMusicChannel
 		channel={ChannelDataSample}
 		albums={MusicAlbumSamples}
 		tracks={AllMusicTrackSamples}
-	/>
-	</>
+	/>;
