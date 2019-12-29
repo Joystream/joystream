@@ -84,7 +84,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     return <Tab.Pane as='div'>
       <ReorderableTracks 
-        album={album} tracks={tracks}
+        album={album} tracks={tracks} noTracksView={<em style={{ padding: '1rem 0', display: 'block' }}>This album has no tracks yet.</em>}
       />
     </Tab.Pane>
   }

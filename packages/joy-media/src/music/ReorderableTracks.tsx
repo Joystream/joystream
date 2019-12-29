@@ -13,15 +13,20 @@ const reorder = (list: OrderableItem[], startIndex: number, endIndex: number) =>
 
 type Props = {
   tracks: EditableMusicTrackPreviewProps[],
-  onRemove?: (track: EditableMusicTrackPreviewProps) => void
+  onRemove?: (track: EditableMusicTrackPreviewProps) => void,
+  noTracksView?: React.ReactElement
 }
 
 type OrderableItem = EditableMusicTrackPreviewProps;
 
 export const ReorderableTracks = (props: Props) => {
-  const { tracks = [], onRemove = () => {} } = props;
+  const { tracks = [], onRemove = () => {}, noTracksView = null } = props;
 
   const [items, setItems] = useState(tracks);
+
+  if (!items.length) {
+    return noTracksView;
+  }
 
   const onDragEnd = (result: DropResult) => {
 
