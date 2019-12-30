@@ -34,13 +34,13 @@ impl CancelOpeningFixture {
         let old_opening = <OpeningById<Test>>::get(self.opening_id);
         let old_applications = self.extract_applications();
 
-        let unstaked_result = self.cancel_opening();
+        let cancel_opening_result = self.cancel_opening();
 
-        assert_eq!(unstaked_result, expected_result);
+        assert_eq!(cancel_opening_result, expected_result);
 
-        self.assert_opening_content(old_opening, unstaked_result.clone());
+        self.assert_opening_content(old_opening, cancel_opening_result.clone());
 
-        if !unstaked_result.is_ok() {
+        if !cancel_opening_result.is_ok() {
             self.assert_same_applications(old_applications);
         }
     }
@@ -49,7 +49,7 @@ impl CancelOpeningFixture {
         &self,
         old_applications: BTreeMap<u64, Application<u64, u64, u64>>,
     ) {
-        for (app_id,  application) in old_applications {
+        for (app_id, application) in old_applications {
             let test_application = <ApplicationById<Test>>::get(app_id);
             assert_eq!(application, test_application)
         }

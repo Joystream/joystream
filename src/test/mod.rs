@@ -8,6 +8,7 @@ mod begin_review;
 mod cancel_opening;
 mod deactivate_application;
 mod ensure_can_add_application;
+mod fill_opening;
 mod smoke;
 mod unstaked;
 
@@ -15,7 +16,6 @@ use super::*;
 
 /*
 Add tests:
-- fill_opening
 - on_finalize
 
 */
