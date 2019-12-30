@@ -8,6 +8,8 @@ use rstd::collections::btree_map::BTreeMap;
 
 /*
 Not covered:
+- Successful cases
+- Application content check
 - ApplicationDeactivatedHandler
 
 - staking state checks:

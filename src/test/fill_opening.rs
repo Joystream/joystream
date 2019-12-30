@@ -3,18 +3,20 @@ use crate::mock::*;
 
 use add_application::AddApplicationFixture;
 use add_opening::AddOpeningFixture;
+use deactivate_application::DeactivateApplicationFixture;
 
 use rstd::collections::btree_set::BTreeSet;
 use rstd::result::Result;
 /*
 Not covered:
 - ApplicationDeactivatedHandler
+- Application content check
+- Opening content check
 
 - staking state checks:
 i.application.active_role_staking_id;
 ii.application.active_application_staking_id;
 */
-
 
 pub struct FillOpeningFixture {
     pub opening_id: u64,
@@ -36,18 +38,32 @@ impl FillOpeningFixture {
     }
 
     fn call_and_assert(&self, expected_result: Result<(), FillOpeningError<mock::Test>>) {
-        //		let old_opening = <OpeningById<Test>>::get(self.opening_id);
-        //		let old_applications = self.extract_applications();
+        let old_applications = self.extract_successful_applications();
 
         let fill_opening_result = self.fill_opening();
 
         assert_eq!(fill_opening_result, expected_result);
 
-        //		self.assert_opening_content(old_opening, unstaked_result.clone());
-        //
-        //		if !unstaked_result.is_ok() {
-        //			self.assert_same_applications(old_applications);
-        //		}
+        if !fill_opening_result.is_ok() {
+            self.assert_same_applications(old_applications);
+        }
+    }
+
+    fn assert_same_applications(
+        &self,
+        old_applications: BTreeMap<u64, Application<u64, u64, u64>>,
+    ) {
+        for (app_id, application) in old_applications {
+            let test_application = <ApplicationById<Test>>::get(app_id);
+            assert_eq!(application, test_application)
+        }
+    }
+
+    fn extract_successful_applications(&self) -> BTreeMap<u64, Application<u64, u64, u64>> {
+        self.successful_applications
+            .iter()
+            .map(|app_id| (*app_id, <ApplicationById<Test>>::get(app_id)))
+            .collect::<BTreeMap<u64, Application<u64, u64, u64>>>()
     }
 
     pub(crate) fn fill_opening(&self) -> Result<(), FillOpeningError<mock::Test>> {
@@ -114,12 +130,10 @@ fn cancel_opening_fails_due_too_short_successful_application_unstaking_period() 
 
         let mut fill_opening_fixture = FillOpeningFixture::default_for_opening(opening_id);
         fill_opening_fixture.opt_successful_applicant_application_stake_unstaking_period = Some(0);
-        fill_opening_fixture.call_and_assert(Err(
-            FillOpeningError::UnstakingPeriodTooShort(
-                StakePurpose::Application,
-				ApplicationOutcomeInFilledOpening::Success,
-            ),
-        ));
+        fill_opening_fixture.call_and_assert(Err(FillOpeningError::UnstakingPeriodTooShort(
+            StakePurpose::Application,
+            ApplicationOutcomeInFilledOpening::Success,
+        )));
     });
 }
 
@@ -154,12 +168,10 @@ fn cancel_opening_fails_due_too_short_failed_application_unstaking_period() {
 
         let mut fill_opening_fixture = FillOpeningFixture::default_for_opening(opening_id);
         fill_opening_fixture.opt_failed_applicant_application_stake_unstaking_period = Some(0);
-        fill_opening_fixture.call_and_assert(Err(
-            FillOpeningError::UnstakingPeriodTooShort(
-                StakePurpose::Application,
-				ApplicationOutcomeInFilledOpening::Failure,
-            ),
-        ));
+        fill_opening_fixture.call_and_assert(Err(FillOpeningError::UnstakingPeriodTooShort(
+            StakePurpose::Application,
+            ApplicationOutcomeInFilledOpening::Failure,
+        )));
     });
 }
 
@@ -194,11 +206,88 @@ fn cancel_opening_fails_due_too_short_failed_role_unstaking_period() {
 
         let mut fill_opening_fixture = FillOpeningFixture::default_for_opening(opening_id);
         fill_opening_fixture.opt_failed_applicant_role_stake_unstaking_period = Some(0);
-        fill_opening_fixture.call_and_assert(Err(
-            FillOpeningError::UnstakingPeriodTooShort(
-                StakePurpose::Role,
-				ApplicationOutcomeInFilledOpening::Failure,
-            ),
-        ));
+        fill_opening_fixture.call_and_assert(Err(FillOpeningError::UnstakingPeriodTooShort(
+            StakePurpose::Role,
+            ApplicationOutcomeInFilledOpening::Failure,
+        )));
+    });
+}
+
+#[test]
+fn cancel_opening_fails_due_not_existing_application() {
+    build_test_externalities().execute_with(|| {
+        let opening_fixture = AddOpeningFixture::default();
+
+        let add_opening_result = opening_fixture.add_opening();
+        let opening_id = add_opening_result.unwrap();
+        assert!(Hiring::begin_review(opening_id).is_ok());
+
+        let mut fill_opening_fixture = FillOpeningFixture::default_for_opening(opening_id);
+        let mut apps = BTreeSet::new();
+        let invalid_app_id = 10;
+        apps.insert(invalid_app_id);
+        fill_opening_fixture.successful_applications = apps;
+        fill_opening_fixture.call_and_assert(Err(FillOpeningError::ApplicationDoesNotExist(
+            invalid_app_id,
+        )));
+    });
+}
+
+#[test]
+fn cancel_opening_fails_due_not_active_application() {
+    build_test_externalities().execute_with(|| {
+        let opening_fixture = AddOpeningFixture::default();
+
+        let add_opening_result = opening_fixture.add_opening();
+        let opening_id = add_opening_result.unwrap();
+
+        let application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+        let app_application_result = application_fixture.add_application();
+        let application_id = app_application_result.unwrap().application_id_added;
+
+        let deactivate_application_fixture =
+            DeactivateApplicationFixture::default_for_application_id(application_id);
+
+        assert!(deactivate_application_fixture
+            .deactivate_application()
+            .is_ok());
+        assert!(Hiring::begin_review(opening_id).is_ok());
+
+        let mut fill_opening_fixture = FillOpeningFixture::default_for_opening(opening_id);
+        let mut apps = BTreeSet::new();
+        apps.insert(application_id);
+
+        fill_opening_fixture.successful_applications = apps;
+        fill_opening_fixture.call_and_assert(Err(FillOpeningError::ApplicationNotInActiveStage(
+            application_id,
+        )));
+    });
+}
+
+#[test]
+fn cancel_opening_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let opening_fixture = AddOpeningFixture::default();
+
+        let add_opening_result = opening_fixture.add_opening();
+        let opening_id = add_opening_result.unwrap();
+
+        let application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+        let to_deactivate_app_result = application_fixture.add_application();
+        let to_deactivate_app_id = to_deactivate_app_result.unwrap().application_id_added;
+
+        assert!(Hiring::deactive_application(to_deactivate_app_id, None, None).is_ok());
+
+        let app_application_result = application_fixture.add_application();
+        let application_id = app_application_result.unwrap().application_id_added;
+
+        assert!(Hiring::begin_review(opening_id).is_ok());
+
+        let mut fill_opening_fixture = FillOpeningFixture::default_for_opening(opening_id);
+        let mut apps = BTreeSet::new();
+        apps.insert(application_id);
+
+        fill_opening_fixture.successful_applications = apps;
+        fill_opening_fixture.call_and_assert(Ok(()));
     });
 }
