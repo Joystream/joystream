@@ -8,6 +8,8 @@ import { Entity } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
+import { ChannelId } from './channels/ChannelId';
+import { ChannelType } from './channels/ChannelFormTypes';
 
 export class SubstrateTransport extends TransportBase implements ITransport {
 
@@ -26,6 +28,12 @@ export class SubstrateTransport extends TransportBase implements ITransport {
   videoById (_id: EntityId): Promise<VideoType> {
     return this.promise<VideoType>(
       {} as VideoType // TODO impl
+    )
+  }
+
+  channelById (_id: ChannelId): Promise<ChannelType> {
+    return this.promise<ChannelType>(
+      {} as ChannelType // TODO impl
     )
   }
 

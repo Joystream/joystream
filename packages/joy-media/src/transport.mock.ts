@@ -8,6 +8,8 @@ import { Entity } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
+import { ChannelId } from './channels/ChannelId';
+import { ChannelType } from './channels/ChannelFormTypes';
 
 export class MockTransport extends TransportBase implements ITransport {
 
@@ -78,6 +80,20 @@ export class MockTransport extends TransportBase implements ITransport {
         explicit: true,
         license: 'Share Alike',
         attribution: undefined
+      }
+    )
+  }
+
+  channelById (_id: ChannelId): Promise<ChannelType> {
+    return this.promise<ChannelType>(
+      {
+        content: 'Music Channel',
+        channelName: 'top_notes',
+        thumbnail: 'https://images.unsplash.com/photo-1485561222814-e6c50477491b?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=200&q=60',
+        cover: 'https://images.unsplash.com/photo-1514119412350-e174d90d280e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=900&q=80',
+        description: 'Music is an art form and cultural activity whose medium is sound organized in time. General definitions of music include common elements such as pitch (which governs melody and harmony), rhythm (and its associated concepts tempo, meter, and articulation), dynamics (loudness and softness), and the sonic qualities of timbre and texture (which are sometimes termed the "color" of a musical sound).',
+        publicationStatus: 'Unlisted',
+        curationStatus: undefined // TODO replace w/ const
       }
     )
   }
