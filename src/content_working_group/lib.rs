@@ -11,6 +11,7 @@ use hiring;
 use minting;
 use recurringrewards;
 use rstd::collections::btree_set::BTreeSet;
+use rstd::collections::btree_map::BTreeMap;
 use rstd::convert::From;
 use rstd::prelude::*;
 use runtime_primitives::traits::{One, Zero}; // Member, SimpleArithmetic, MaybeSerialize
@@ -678,6 +679,16 @@ impl<LeadId: Default, CuratorId> Default for WorkingGroupUnstaker<LeadId, Curato
 }
 
 /*
+/// ...
+#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd, Ord)]
+pub struct OpeningHire<CuratorApplicationId, CuratorId, PrincipalId> {
+    curator_application_id: CuratorApplicationId,
+    curator_id: CuratorId,
+    principal_id: PrincipalId
+}
+*/
+
+/*
 pub enum ChannelActor<T: Trait> {
 
     ///
@@ -922,7 +933,7 @@ decl_event! {
         CuratorOpeningAdded(CuratorOpeningId),
         AcceptedCuratorApplications(CuratorOpeningId),
         BeganCuratorApplicationReview(CuratorOpeningId),
-        CuratorOpeningFilled(CuratorOpeningId, BTreeSet<CuratorApplicationId>),
+        CuratorOpeningFilled(CuratorOpeningId, BTreeMap<CuratorApplicationId, CuratorId>), //BTreeSet<CuratorApplicationId>),
         TerminatedCurator(CuratorId),
         AppliedOnCuratorOpening(CuratorOpeningId, CuratorApplicationId),
         CuratorExited(CuratorId),
@@ -1299,6 +1310,8 @@ decl_module! {
             // - create and hold on to curator
             // - register role with membership module
 
+            let mut curator_application_id_to_curator_id = BTreeMap::new();
+
             successful_iter
             .clone()
             .for_each(|(successful_curator_application, id, _)| {
@@ -1354,10 +1367,12 @@ decl_module! {
 
                 // Update next curator id
                 NextCuratorId::<T>::mutate(|id| *id += <CuratorId<T> as One>::one());
+
+                curator_application_id_to_curator_id.insert(id, new_curator_id);
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorOpeningFilled(curator_opening_id, successful_curator_application_ids));
+            Self::deposit_event(RawEvent::CuratorOpeningFilled(curator_opening_id, curator_application_id_to_curator_id));
 
         }
 
