@@ -47,7 +47,7 @@ impl<OpeningId, BlockNumber, StakeId: PartialEq + Clone>
 {
     /// Compares provided stake_id with internal stake defined by stake_purpose.
     /// Returns None on equality, Some(stake_id) otherwise.
-    pub(crate) fn toggle_stake_id(
+    pub fn toggle_stake_id(
         &self,
         stake_id: StakeId,
         stake_purpose: StakePurpose,

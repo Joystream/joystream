@@ -20,7 +20,7 @@ Add tests:
 
 */
 
-////Debug test object content
+//Debug test object content
 //pub(crate) fn debug_print<T: rstd::fmt::Debug>(obj: T) {
 //    println!("{:?}", obj);
 //}

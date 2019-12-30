@@ -24,13 +24,17 @@ impl UnstakedFixture {
         let old_opening = <OpeningById<Test>>::get(self.opening_id);
         let old_application = <ApplicationById<Test>>::get(self.application_id);
 
-        let unstaked_result = Hiring::unstaked(self.stake_id);
+        let unstaked_result = self.unstaked();
 
         assert_eq!(unstaked_result, expected_result);
 
         self.assert_application_content(old_application.clone(), unstaked_result);
 
         self.assert_opening_content(old_opening, unstaked_result);
+    }
+
+    pub(crate) fn unstaked(&self) -> UnstakedResult {
+        Hiring::unstaked(self.stake_id)
     }
 
     fn assert_application_content(
