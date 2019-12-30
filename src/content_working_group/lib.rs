@@ -223,7 +223,7 @@ pub struct Lead<AccountId, RewardRelationshipId, BlockNumber> {
 }
 
 /// Origin of exit initiation on behalf of a curator.'
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum CuratorExitInitiationOrigin {
     /// Lead is origin.
     Lead,
@@ -233,7 +233,7 @@ pub enum CuratorExitInitiationOrigin {
 }
 
 /// The exit stage of a curators involvement in the working group.
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub struct CuratorExitSummary<BlockNumber> {
     /// Origin for exit.
     pub origin: CuratorExitInitiationOrigin,
@@ -260,7 +260,7 @@ impl<BlockNumber: Clone> CuratorExitSummary<BlockNumber> {
 }
 
 /// The stage of the involvement of a curator in the working group.
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum CuratorRoleStage<BlockNumber> {
     /// Currently active.
     Active,
@@ -281,7 +281,7 @@ impl<BlockNumber> Default for CuratorRoleStage<BlockNumber> {
 }
 
 /// The induction of a curator in the working group.
-#[derive(Encode, Decode, Default, Debug, Clone)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct CuratorInduction<LeadId, CuratorApplicationId, BlockNumber> {
     /// Lead responsible for inducting curator
     pub lead: LeadId,
@@ -310,7 +310,7 @@ impl<LeadId: Clone, CuratorApplicationId: Clone, BlockNumber: Clone>
 }
 
 /// Role stake information for a curator.
-#[derive(Encode, Decode, Default, Debug, Clone)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct CuratorRoleStakeProfile<StakeId, BlockNumber> {
     /// Whether participant is staked, and if so, the identifier for this staking in the staking module.
     pub stake_id: StakeId,
@@ -338,7 +338,7 @@ impl<StakeId: Clone, BlockNumber: Clone> CuratorRoleStakeProfile<StakeId, BlockN
 
 /// Working group participant: curator
 /// This role can be staked, have reward and be inducted through the hiring module.
-#[derive(Encode, Decode, Default, Debug, Clone)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Curator<
     AccountId,
     RewardRelationshipId,
@@ -570,7 +570,7 @@ pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
  */
 
 /// Permissions module principal
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum Principal<CuratorId, ChannelId> {
     /// Its sloppy to have this here, less safe,
     /// but its not worth the ffort to solve.
