@@ -425,11 +425,6 @@ pub enum CancelOpeningError {
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
-pub enum RemoveOpeningError {
-    OpeningDoesNotExist,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum BeginReviewError {
     OpeningDoesNotExist,
     OpeningNotInAcceptingApplicationsStage,
