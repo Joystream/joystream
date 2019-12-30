@@ -7,6 +7,7 @@ use super::mock::{self, *};
 use hiring;
 use srml_support::{StorageLinkedMap, StorageValue};
 use rstd::collections::btree_set::BTreeSet;
+use rstd::collections::btree_map::BTreeMap;
 use runtime_primitives::traits::One;
 
 /// DIRTY IMPORT BECAUSE
@@ -529,10 +530,10 @@ fn begin_curator_applicant_review_success() {
              * Setup
              */
 
-            let curator_opening_id = setup_normal_accepting_opening();
+            let normal_opening_constructed = setup_normal_accepting_opening();
 
             let _ = add_member_and_apply_on_opening(
-                curator_opening_id,
+                normal_opening_constructed.curator_opening_id,
                 333,
                 to_vec("CuratorWannabe"),
                 11111,
@@ -547,7 +548,7 @@ fn begin_curator_applicant_review_success() {
             assert_eq!(
                 ContentWorkingGroup::begin_curator_applicant_review(
                     Origin::signed(LEAD_ROLE_ACCOUNT),
-                    curator_opening_id
+                    normal_opening_constructed.curator_opening_id
                 )
                 .unwrap(),
                 ()
@@ -556,7 +557,7 @@ fn begin_curator_applicant_review_success() {
             let event_curator_opening_id = ensure_begancuratorapplicationreview_event_deposited();
 
             assert_eq!(
-                curator_opening_id,
+                normal_opening_constructed.curator_opening_id,
                 event_curator_opening_id
             );
             
@@ -571,6 +572,221 @@ fn begin_curator_applicant_review_success() {
 #[test]
 fn fill_curator_opening_success() {
 
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
+
+            /*
+             * Setup
+             */
+
+            let applicants = vec![
+                FillOpeningApplicantParams::new(
+                    AddMemberAndApplyOnOpeningParams::new(
+                        2222,
+                        to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+                        2222*2,
+                        2222*3,
+                        generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get())
+                    ),
+                    true
+                ),
+                FillOpeningApplicantParams::new(
+                    AddMemberAndApplyOnOpeningParams::new(
+                        3333,
+                        to_vec("yoyoyo1"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+                        3333*2,
+                        3333*3,
+                        generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get())
+                    ),
+                    true
+                ),
+                FillOpeningApplicantParams::new(
+                    AddMemberAndApplyOnOpeningParams::new(
+                        5555,
+                        to_vec("yoyoyo2"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+                        5555*2,
+                        5555*3,
+                        generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get())
+                    ),
+                    false
+                ),
+                FillOpeningApplicantParams::new(
+                    AddMemberAndApplyOnOpeningParams::new(
+                        6666,
+                        to_vec("yoyoyo3"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+                        6666*2,
+                        6666*3,
+                        generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get())
+                    ),
+                    true
+                )
+            ];
+
+            let setup_opening_params = applicants
+                                        .iter()
+                                        .cloned()
+                                        .map(|param| param.add_and_apply_params)
+                                        .collect::<Vec<_>>();
+
+            let setup_opening_in_review = setup_opening_in_review(&setup_opening_params);
+
+            let curator_opening = CuratorOpeningById::<Test>::get(setup_opening_in_review.normal_opening_constructed.curator_opening_id);
+
+            // Set whom to hire
+            let applicants_to_hire_iter = applicants
+                                            .iter()
+                                            .filter(|params| params.hire);
+
+            let num_applicants_hired = applicants_to_hire_iter.cloned().count();
+            //let num_applicants_not_to_hire = (applicants.len() - num_applicants_hired) as usize;
+
+            let hired_applicant_and_result = setup_opening_in_review.added_members_application_result
+                    .iter()
+                    .zip(applicants.iter())
+                    .filter(|(_, fill_opening_applicant_params)| fill_opening_applicant_params.hire)
+                    .collect::<Vec<_>>();
+
+            let successful_curator_application_ids = hired_applicant_and_result
+                                                    .iter()
+                                                    .map(|(new_member_applied_result, _)| new_member_applied_result.curator_application_id)
+                                                    .collect::<BTreeSet<_>>();
+
+            // Remember original id counters
+            let original_next_curator_id = NextCuratorId::<Test>::get();
+            let original_next_principal_id = NextPrincipalId::<Test>::get();
+
+            /*
+             * Test
+             */
+
+            assert_eq!(
+                ContentWorkingGroup::fill_curator_opening(
+                    Origin::signed(LEAD_ROLE_ACCOUNT),
+                    setup_opening_in_review.normal_opening_constructed.curator_opening_id,
+                    successful_curator_application_ids.clone()
+                )
+                .unwrap(),
+                ()
+            );
+
+            /*
+             * Asserts
+             */
+
+            let (
+                event_curator_opening_id,
+                event_successful_curator_application_id_to_curator_id
+            ) = ensure_curatoropeningfilled_event_deposited();            
+            
+            // Event has correct payload
+            assert_eq!(
+                setup_opening_in_review.normal_opening_constructed.curator_opening_id,
+                event_curator_opening_id
+            );
+
+            assert_eq!(
+                successful_curator_application_ids,
+                event_successful_curator_application_id_to_curator_id
+                .keys()
+                .cloned()
+                .collect::<BTreeSet<_>>()
+            );
+
+            // The right number of curators have been created
+            let num_curators_created = NextCuratorId::<Test>::get() - original_next_curator_id;
+
+            assert_eq!(
+                num_curators_created,
+                (num_applicants_hired as u64)
+            );
+
+            // The right numbe of prinipals were created
+            let num_principals_created = NextPrincipalId::<Test>::get() - original_next_principal_id;
+
+            assert_eq!(
+                num_principals_created,
+                (num_applicants_hired as u64)
+            );
+
+            // Inspect all expected curators and principal added
+            for (hired_index, item) in hired_applicant_and_result.iter().enumerate()  {
+
+                let (new_member_applied_result, fill_opening_applicant_params) = item;
+
+                // Curator
+                let expected_added_curator_id: u64 = (hired_index as u64) + original_next_curator_id;
+
+                // Principal
+                let expected_added_principal_id: u64 = (hired_index as u64) + original_next_principal_id;
+                
+                // Curator added
+                assert!(
+                    CuratorById::<Test>::exists(expected_added_curator_id)
+                );
+
+                let added_curator = CuratorById::<Test>::get(expected_added_curator_id);
+
+                // expected_curator
+                let reward_relationship = None::<<Test as recurringrewards::Trait>::RewardRelationshipId>;
+
+                let curator_application = CuratorApplicationById::<Test>::get(new_member_applied_result.curator_application_id);
+                let application_id = curator_application.application_id;
+                let application = hiring::ApplicationById::<Test>::get(application_id);
+
+                let role_stake_profile = 
+                    if let Some(ref stake_id) = application.active_role_staking_id { // get_baseline_opening_policy().role_staking_policy {
+
+                        Some(
+                            CuratorRoleStakeProfile::new(
+                                stake_id,
+                                &curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period,
+                                &curator_opening.policy_commitment.exit_curator_role_stake_unstaking_period
+                            )
+                        )
+                    } else {
+                        None
+                    };
+                
+                let expected_curator = Curator{
+                    role_account: fill_opening_applicant_params.add_and_apply_params.curator_applicant_role_account ,
+                    reward_relationship: reward_relationship,
+                    role_stake_profile: role_stake_profile, //  added_curator.role_stake_profile.clone(),
+                    stage: CuratorRoleStage::Active,
+                    induction: CuratorInduction::new(
+                        &setup_opening_in_review.normal_opening_constructed.new_member_as_lead.lead_id,
+                        &new_member_applied_result.curator_application_id,
+                        &1
+                    ),
+                    principal_id: expected_added_principal_id,
+                };
+
+                assert_eq!(
+                    expected_curator,
+                    added_curator
+                );
+
+                // Principal added
+                assert!(
+                    PrincipalById::<Test>::exists(expected_added_principal_id)
+                );
+
+                let added_principal = PrincipalById::<Test>::get(expected_added_principal_id);
+
+                let expected_added_principal = Principal::Curator(expected_added_principal_id);
+
+                assert_eq!(
+                    added_principal,
+                    expected_added_principal
+                );
+            }
+
+            /*
+             * TODO: add assertion abouot side-effect in !hiring & membership! module, 
+             * this is where state of application has fundamentally changed.
+             */
+        
+        });
 }
 
 #[test]
@@ -584,14 +800,14 @@ fn withdraw_curator_application_success() {
              * Setup
              */
 
-            let curator_opening_id = setup_normal_accepting_opening();
+            let normal_opening_constructed = setup_normal_accepting_opening();
 
             let curator_applicant_root_and_controller_account = 333;
             let curator_applicant_role_account = 11111;
             let human_readable_text = generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get());
 
-            let (_curator_applicant_member_id, new_curator_application_id) = add_member_and_apply_on_opening(
-                curator_opening_id,
+            let result = add_member_and_apply_on_opening(
+                normal_opening_constructed.curator_opening_id,
                 curator_applicant_root_and_controller_account,
                 to_vec("CuratorWannabe"),
                 curator_applicant_role_account,
@@ -606,7 +822,7 @@ fn withdraw_curator_application_success() {
             assert_eq!(
                 ContentWorkingGroup::withdraw_curator_application(
                     Origin::signed(curator_applicant_role_account),
-                    new_curator_application_id
+                    result.curator_application_id
                 )
                 .unwrap(),
                 ()
@@ -616,7 +832,7 @@ fn withdraw_curator_application_success() {
             let curator_application_id = ensure_curatorapplicationwithdrawn_event_deposited();
 
             assert_eq!(
-                new_curator_application_id,
+                result.curator_application_id,
                 curator_application_id
             );
 
@@ -640,10 +856,10 @@ fn terminate_curator_application_success() {
              * Setup
              */
 
-            let curator_opening_id = setup_normal_accepting_opening();
+            let normal_opening_constructed = setup_normal_accepting_opening();
 
-            let (_curator_member_id, curator_application_id) = add_member_and_apply_on_opening(
-                curator_opening_id,
+            let result = add_member_and_apply_on_opening(
+                normal_opening_constructed.curator_opening_id,
                 333,
                 to_vec("CuratorWannabe"),
                 11111,
@@ -658,7 +874,7 @@ fn terminate_curator_application_success() {
             assert_eq!(
                 ContentWorkingGroup::terminate_curator_application(
                     Origin::signed(LEAD_ROLE_ACCOUNT),
-                    curator_opening_id
+                    normal_opening_constructed.curator_opening_id
                 )
                 .unwrap(),
                 ()
@@ -667,7 +883,7 @@ fn terminate_curator_application_success() {
             let event_curator_application_id = ensure_terminatecuratorapplication_event_deposited();
 
             assert_eq!(
-                curator_application_id,
+                result.curator_application_id,
                 event_curator_application_id
             );
 
@@ -690,7 +906,7 @@ fn apply_on_curator_opening_success() {
              * Setup
              */
 
-            let curator_opening_id = setup_normal_accepting_opening();
+            let normal_opening_constructed = setup_normal_accepting_opening();
 
             // Add curator membership
 
@@ -716,7 +932,7 @@ fn apply_on_curator_opening_success() {
 
             let expected_curator_application_id = NextCuratorApplicationId::<Test>::get();
 
-            let old_curator_opening = CuratorOpeningById::<Test>::get(curator_opening_id);
+            let old_curator_opening = CuratorOpeningById::<Test>::get(normal_opening_constructed.curator_opening_id);
 
             /*
              * Test
@@ -726,7 +942,7 @@ fn apply_on_curator_opening_success() {
                 ContentWorkingGroup::apply_on_curator_opening(
                     Origin::signed(curator_applicant_root_and_controller_account),
                     curator_applicant_member_id,
-                    curator_opening_id,
+                    normal_opening_constructed.curator_opening_id,
                     curator_applicant_role_account,
                     source_account,
                     Some(role_stake_balance),
@@ -869,14 +1085,156 @@ pub fn to_vec(s: &str) -> Vec<u8> {
  */
 
 
-pub fn add_member_and_apply_on_opening(
+//type TestSeed = u128;
+
+/*
+fn account_from_seed(TestSeed: seed) -> <Test as system::Trait>::AccountId {
+
+}
+
+fn vector_from_seed(TestSeed: seed) {
+
+}
+*/
+
+/*
+static INITIAL_SEED_VALUE: u128 = 0;
+static CURRENT_SEED: u128 = INITIAL_SEED_VALUE;
+
+fn get_current_seed() {
+
+}
+
+fn update_seed() {
+
+}
+
+fn reset_seed() {
+    CURRENT_SEED: u128 = INITIAL_SEED_VALUE;
+}
+*/
+
+
+// MOVE THIS LATER WHEN fill_opening is factored out
+#[derive(Clone)]
+pub struct FillOpeningApplicantParams {
+    pub add_and_apply_params: AddMemberAndApplyOnOpeningParams,
+    pub hire: bool
+}
+
+impl FillOpeningApplicantParams {
+    pub fn new(
+        add_and_apply_params: AddMemberAndApplyOnOpeningParams,
+        hire: bool
+    ) -> Self {
+
+        Self {
+            add_and_apply_params: add_and_apply_params.clone(),
+            hire: hire
+        }
+    }
+}
+
+
+#[derive(Clone)]
+pub struct AddMemberAndApplyOnOpeningParams {
+    //pub curator_opening_id: CuratorOpeningId<Test>,
+    pub curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
+    pub handle: Vec<u8>,
+    pub curator_applicant_role_account: <Test as system::Trait>::AccountId,
+    pub source_account: <Test as system::Trait>::AccountId,
+    pub human_readable_text: Vec<u8>
+}
+
+impl AddMemberAndApplyOnOpeningParams {
+    pub fn new(
+        //curator_opening_id: CuratorOpeningId<Test>,
+        curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
+        handle: Vec<u8>,
+        curator_applicant_role_account: <Test as system::Trait>::AccountId,
+        source_account: <Test as system::Trait>::AccountId,
+        human_readable_text: Vec<u8>
+    ) -> Self {
+
+        Self{
+            //curator_opening_id,
+            curator_applicant_root_and_controller_account,
+            handle,
+            curator_applicant_role_account,
+            source_account,
+            human_readable_text
+        }
+    }
+    /*
+    pub fn make_from_seed(TestSeed: seed) -> Self {
+
+        Self{
+            curator_opening_id: curator_opening_id,
+            curator_applicant_root_and_controller_account: 2222,
+            handle: Vec<u8>,
+            curator_applicant_role_account: 2222*2,
+            source_account: 2222*3,
+            human_readable_text: Vec<u8>
+        }
+    }
+    */
+    /*
+    pub toCurator() -> Curator<
+        AccountId,
+        RewardRelationshipId,
+        StakeId,
+        BlockNumber,
+        LeadId,
+        CuratorApplicationId,
+        PrincipalId,
+    > {
+
+        Curator::new(
+            role_account: &AccountId,
+            reward_relationship: &Option<RewardRelationshipId>,
+            role_stake_profile: &Option<CuratorRoleStakeProfile<StakeId, BlockNumber>>,
+            stage: &CuratorRoleStage<BlockNumber>,
+            induction: &CuratorInduction<LeadId, ApplicationId, BlockNumber>,
+            //can_update_channel_curation_status: bool,
+            principal_id: &PrincipalId,
+        )
+    }
+    */
+}
+
+fn add_members_and_apply_on_opening(curator_opening_id: CuratorOpeningId<Test>, applicants: &Vec<AddMemberAndApplyOnOpeningParams>) -> Vec<NewMemberAppliedResult> {
+
+    applicants
+    .iter()
+    .cloned()
+    .map(|params| -> NewMemberAppliedResult {
+        
+        add_member_and_apply_on_opening(
+            curator_opening_id,
+            params.curator_applicant_root_and_controller_account,
+            params.handle,
+            params.curator_applicant_role_account,
+            params.source_account,
+            params.human_readable_text
+        )
+    })
+    .collect()
+}
+
+#[derive(Clone)]
+struct NewMemberAppliedResult{
+    pub member_id: <Test as members::Trait>::MemberId,
+    pub curator_application_id: lib::CuratorApplicationId<Test>
+}
+
+fn add_member_and_apply_on_opening(
     curator_opening_id: CuratorOpeningId<Test>,
     curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
     handle: Vec<u8>,
     curator_applicant_role_account: <Test as system::Trait>::AccountId,
     source_account: <Test as system::Trait>::AccountId,
     human_readable_text: Vec<u8>
-) -> (<Test as members::Trait>::MemberId, lib::CuratorApplicationId<Test>) {
+) -> NewMemberAppliedResult {
 
     // Make membership
     let curator_applicant_member_id = add_member(
@@ -954,12 +1312,20 @@ pub fn add_member_and_apply_on_opening(
         new_curator_opening
     );
 
-    (curator_applicant_member_id, new_curator_application_id)
+    NewMemberAppliedResult {
+        member_id: curator_applicant_member_id,
+        curator_application_id: new_curator_application_id
+    }
 }
 
-pub fn setup_normal_opening() -> CuratorOpeningId<Test>{
+struct NormalOpeningConstructed {
+    pub curator_opening_id: CuratorOpeningId<Test>,
+    pub new_member_as_lead: NewMemberAsLead
+}
 
-    add_member_and_set_as_lead();
+fn setup_normal_opening() -> NormalOpeningConstructed {
+
+    let new_member_as_lead = add_member_and_set_as_lead();
 
     assert_eq!(
         ContentWorkingGroup::add_curator_opening(
@@ -971,25 +1337,67 @@ pub fn setup_normal_opening() -> CuratorOpeningId<Test>{
         ()
     );
 
-    ensure_curatoropeningadded_event_deposited()
+    let curator_opening_id = ensure_curatoropeningadded_event_deposited();
+
+    NormalOpeningConstructed {
+        curator_opening_id,
+        new_member_as_lead
+    }
 }
 
-pub fn setup_normal_accepting_opening() -> CuratorOpeningId<Test>{
+fn setup_normal_accepting_opening() -> NormalOpeningConstructed {
 
-    let id = setup_normal_opening();
+    let normal_opening_constructed = setup_normal_opening();
 
     assert_eq!(
         ContentWorkingGroup::accept_curator_applications(
-            Origin::signed(LEAD_ROLE_ACCOUNT),
-            id
+            Origin::signed(LEAD_ROLE_ACCOUNT), // <== get dynamic value from somewhere else later
+            normal_opening_constructed.curator_opening_id
             ).unwrap(),
         ()
     );
 
-    id
+    normal_opening_constructed
 }
 
-pub fn add_member_and_set_as_lead() -> (<Test as members::Trait>::MemberId, LeadId<Test>) {
+struct SetupOpeningInReview {
+    //pub curator_opening_id: lib::CuratorOpeningId<Test>,
+    pub normal_opening_constructed : NormalOpeningConstructed,
+    pub added_members_application_result: Vec<NewMemberAppliedResult>,
+}
+
+fn setup_opening_in_review(applicants: &Vec<AddMemberAndApplyOnOpeningParams>) -> SetupOpeningInReview {
+
+    let normal_opening_constructed = setup_normal_accepting_opening();
+
+    let added_members_application_result = add_members_and_apply_on_opening(
+        normal_opening_constructed.curator_opening_id,
+        applicants
+    );
+
+    assert_eq!(
+        ContentWorkingGroup::begin_curator_applicant_review(
+            Origin::signed(LEAD_ROLE_ACCOUNT),
+            normal_opening_constructed.curator_opening_id
+        )
+        .unwrap(),
+        ()
+    );
+
+    // TODO: assert event stuff !!!!
+
+    SetupOpeningInReview {
+        normal_opening_constructed,
+        added_members_application_result
+    }
+}
+
+struct NewMemberAsLead {
+    pub member_id: <Test as members::Trait>::MemberId,
+    pub lead_id: LeadId<Test>
+}
+
+fn add_member_and_set_as_lead() -> NewMemberAsLead {
 
     let member_id = add_member(
         LEAD_ROOT_AND_CONTROLLER_ACCOUNT,
@@ -998,7 +1406,10 @@ pub fn add_member_and_set_as_lead() -> (<Test as members::Trait>::MemberId, Lead
 
     let lead_id = set_lead(member_id, LEAD_ROLE_ACCOUNT);
 
-    (member_id, lead_id)
+    NewMemberAsLead {
+        member_id,
+        lead_id
+    }
 }
 
 pub fn set_channel_creation_enabled(enabled: bool) {
@@ -1079,6 +1490,19 @@ pub fn add_curator_opening() -> CuratorOpeningId<Test> {
 /*
  * Event readers
  */
+
+fn ensure_curatoropeningfilled_event_deposited() -> (lib::CuratorOpeningId<Test>, BTreeMap<CuratorApplicationId<Test>, CuratorId<Test>>) {
+
+    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+        if let lib::RawEvent::CuratorOpeningFilled(ref curator_opening_id, ref successful_curator_application_id_to_curator_id) = x {
+            return (curator_opening_id.clone(), successful_curator_application_id_to_curator_id.clone())
+        } else {
+            panic!("Event was not CuratorOpeningFilled.")
+        }
+    } else {
+        panic!("No event deposited.")
+    }
+}
 
 fn ensure_terminatecuratorapplication_event_deposited() -> lib::CuratorApplicationId<Test> {
 
