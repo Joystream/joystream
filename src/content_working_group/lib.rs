@@ -653,7 +653,7 @@ struct WrappedBeginAcceptingApplicationsError { // can this be made generic, or 
 }
 */
 
-struct WrappedError<E> {
+pub(super) struct WrappedError<E> {
     // can this be made generic, or does that undermine the whole orhpan rule spirit?
     pub error: E,
 }
@@ -697,6 +697,9 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
                         "Application stake amount less than minimum currency balance"
                     }
                 }
+            }
+            hiring::AddOpeningError::ApplicationRationingZeroMaxApplicants => {
+                "Application rationing policy: maximum active applicant number must be greater than zero"
             }
         }
     }
@@ -2383,7 +2386,6 @@ impl<T: Trait> Module<T> {
     ) {
         // Update name to channel mapping if there is a new name mapping
         if let Some(ref channel_name) = new_channel_name {
-
             // Remove mapping under old name
             let current_channel_name = ChannelById::<T>::get(channel_id).channel_name;
 
