@@ -340,163 +340,226 @@ fn set_forum_sudo() {
 /*
  * set_forum_sudo
  */
- #[test]
- // test case for check if origin is forum sudo
- fn create_category_origin() {
-    let origins = vec![OriginType::Signed(default_genesis_config().forum_sudo),
-    NOT_FORUM_SUDO_ORIGIN];
-    let results = vec![Ok(()),
-    Err(ERROR_ORIGIN_NOT_FORUM_SUDO)];
+#[test]
+// test case for check if origin is forum sudo
+fn create_category_origin() {
+    let origins = vec![
+        OriginType::Signed(default_genesis_config().forum_sudo),
+        NOT_FORUM_SUDO_ORIGIN,
+    ];
+    let results = vec![Ok(()), Err(ERROR_ORIGIN_NOT_FORUM_SUDO)];
     for index in 0..origins.len() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            create_category_mock(origins[index].clone(),
-            None, good_category_title(),good_category_description(),
-            &vec![], results[index]
-        );
+            create_category_mock(
+                origins[index].clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                results[index],
+            );
         });
     }
- }
+}
 
- #[test]
- // test case for check if origin is forum sudo
- fn create_category_parent() {
+#[test]
+// test case for check if origin is forum sudo
+fn create_category_parent() {
     let parents = vec![Some(1), Some(2), Some(3), Some(4)];
-    let results = vec![Ok(()),
-    Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
-    Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
-    Err(ERROR_CATEGORY_DOES_NOT_EXIST),];
+    let results = vec![
+        Ok(()),
+        Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
+        Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
+        Err(ERROR_CATEGORY_DOES_NOT_EXIST),
+    ];
 
     for index in 0..parents.len() {
         let config = default_genesis_config();
         let forum_sudo = config.forum_sudo;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
-            create_category_mock(origin.clone(), None, good_category_title(),good_category_description(),
-            &vec![], Ok(()));
-            create_category_mock(origin.clone(), Some(1), good_category_title(),good_category_description(),
-            &vec![], Ok(()));
-            create_category_mock(origin.clone(), Some(2), good_category_title(),good_category_description(),
-            &vec![], Ok(()));
+            create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                Ok(()),
+            );
+            create_category_mock(
+                origin.clone(),
+                Some(1),
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                Ok(()),
+            );
+            create_category_mock(
+                origin.clone(),
+                Some(2),
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                Ok(()),
+            );
             update_category_mock(origin.clone(), 3, Some(true), None, Ok(()));
             update_category_mock(origin.clone(), 2, None, Some(true), Ok(()));
-            create_category_mock(origin.clone(),
-            parents[index], good_category_title(),good_category_description(),
-            &vec![], 
-            results[index]
+            create_category_mock(
+                origin.clone(),
+                parents[index],
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                results[index],
             );
         });
     }
- }
+}
 
-
- #[test]
- // test case for check if origin is forum sudo
- fn create_category_depth() {
-        let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
-        let origin = OriginType::Signed(forum_sudo);
-        build_test_externalities(config).execute_with(|| {
-            create_category_mock(origin.clone(), None, good_category_title(),good_category_description(),
-            &vec![], Ok(()));
-            create_category_mock(origin.clone(), Some(1), good_category_title(),good_category_description(),
-            &vec![], Ok(()));
-            create_category_mock(origin.clone(), Some(2), good_category_title(),good_category_description(),
-            &vec![], Ok(()));
-            create_category_mock(origin.clone(), Some(3), good_category_title(),good_category_description(),
-            &vec![], Ok(()));
-            create_category_mock(origin.clone(),
-            Some(4), good_category_title(),good_category_description(),
-            &vec![], 
+#[test]
+// test case for check if origin is forum sudo
+fn create_category_depth() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(forum_sudo);
+    build_test_externalities(config).execute_with(|| {
+        create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            &vec![],
+            Ok(()),
+        );
+        create_category_mock(
+            origin.clone(),
+            Some(1),
+            good_category_title(),
+            good_category_description(),
+            &vec![],
+            Ok(()),
+        );
+        create_category_mock(
+            origin.clone(),
+            Some(2),
+            good_category_title(),
+            good_category_description(),
+            &vec![],
+            Ok(()),
+        );
+        create_category_mock(
+            origin.clone(),
+            Some(3),
+            good_category_title(),
+            good_category_description(),
+            &vec![],
+            Ok(()),
+        );
+        create_category_mock(
+            origin.clone(),
+            Some(4),
+            good_category_title(),
+            good_category_description(),
+            &vec![],
             Err(ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED),
-            );
-        });
- }
+        );
+    });
+}
 
- #[test]
- // test case for check if origin is forum sudo
- fn create_category_title() {
-        let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
-        let origin = OriginType::Signed(forum_sudo);
-        let titles = vec![generate_text(config.category_title_constraint.min as usize),
+#[test]
+// test case for check if origin is forum sudo
+fn create_category_title() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(forum_sudo);
+    let titles = vec![
+        generate_text(config.category_title_constraint.min as usize),
         generate_text((config.category_title_constraint.min - 1) as usize),
         generate_text((config.category_title_constraint.max() + 1) as usize),
-        ];
-        let results = vec![Ok(()), Err(ERROR_CATEGORY_TITLE_TOO_SHORT), Err(ERROR_CATEGORY_TITLE_TOO_LONG)];
-        for index in 0..titles.len() {
-            let config = default_genesis_config();
-            build_test_externalities(config).execute_with(|| {
-                
-                create_category_mock(origin.clone(),
-                None, titles[index].clone(),good_category_description(),
-                &vec![], 
-                results[index],
-                );
-            });
-
-        }
- }
-
- #[test]
- // test case for check if origin is forum sudo
- fn create_category_description() {
+    ];
+    let results = vec![
+        Ok(()),
+        Err(ERROR_CATEGORY_TITLE_TOO_SHORT),
+        Err(ERROR_CATEGORY_TITLE_TOO_LONG),
+    ];
+    for index in 0..titles.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
-        let origin = OriginType::Signed(forum_sudo);
-        let descriptions = vec![generate_text(config.category_description_constraint.min as usize),
+        build_test_externalities(config).execute_with(|| {
+            create_category_mock(
+                origin.clone(),
+                None,
+                titles[index].clone(),
+                good_category_description(),
+                &vec![],
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+// test case for check if origin is forum sudo
+fn create_category_description() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(forum_sudo);
+    let descriptions = vec![
+        generate_text(config.category_description_constraint.min as usize),
         generate_text((config.category_description_constraint.min - 1) as usize),
         generate_text((config.category_description_constraint.max() + 1) as usize),
-        ];
-        let results = vec![Ok(()), Err(ERROR_CATEGORY_DESCRIPTION_TOO_SHORT), Err(ERROR_CATEGORY_DESCRIPTION_TOO_LONG)];
-        for index in 0..descriptions.len() {
-            let config = default_genesis_config();
-            build_test_externalities(config).execute_with(|| {
-                
-                create_category_mock(origin.clone(),
-                None, good_category_title(), descriptions[index].clone(),
-                &vec![], 
-                results[index],
-                );
-            });
-
-        }
- }
-
- #[test]
- // test case for check if origin is forum sudo
- fn create_category_labels() {
+    ];
+    let results = vec![
+        Ok(()),
+        Err(ERROR_CATEGORY_DESCRIPTION_TOO_SHORT),
+        Err(ERROR_CATEGORY_DESCRIPTION_TOO_LONG),
+    ];
+    for index in 0..descriptions.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
-        let origin = OriginType::Signed(forum_sudo);
-        let labels = vec![
-            vec![1, 2, 3, 4, 5],
-            vec![1, 2, 3, 4, 5, 6],
-            vec![100],
-        ];
-        let results = vec![Ok(()), Err(ERROR_TOO_MUCH_LABELS), Err(ERROR_LABEL_INDEX_IS_WRONG)];
-
-        for index in 0..labels.len() {
-            let config = default_genesis_config();
-            build_test_externalities(config).execute_with(|| {
-                create_labels_mock();
-                create_category_mock(origin.clone(),
-                None, good_category_title(), good_category_description(),
-                &labels[index], 
+        build_test_externalities(config).execute_with(|| {
+            create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                descriptions[index].clone(),
+                &vec![],
                 results[index],
-                );
-            });
+            );
+        });
+    }
+}
 
-        }
- }
+#[test]
+// test case for check if origin is forum sudo
+fn create_category_labels() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(forum_sudo);
+    let labels = vec![vec![1, 2, 3, 4, 5], vec![1, 2, 3, 4, 5, 6], vec![100]];
+    let results = vec![
+        Ok(()),
+        Err(ERROR_TOO_MUCH_LABELS),
+        Err(ERROR_LABEL_INDEX_IS_WRONG),
+    ];
 
- /*
+    for index in 0..labels.len() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            create_labels_mock();
+            create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &labels[index],
+                results[index],
+            );
+        });
+    }
+}
+
+/*
  ** update_category
  */
- #[test]
- fn update_category() {
-
- }
-
-
- 
+#[test]
+fn update_category() {}

@@ -307,9 +307,10 @@ pub fn set_moderator_category_mock(
     account_id
 }
 
-pub fn update_category_mock(origin: OriginType,
+pub fn update_category_mock(
+    origin: OriginType,
     category_id: CategoryId,
-    new_archival_status: Option<bool>, 
+    new_archival_status: Option<bool>,
     new_deletion_status: Option<bool>,
     result: Result<(), &'static str>,
 ) -> CategoryId {
