@@ -95,7 +95,7 @@ impl stake::Trait for Test {
     type SlashId = u64;
 }
 
-pub fn build_test_externalities() -> runtime_io::TestExternalities {
+pub(crate) fn build_test_externalities() -> runtime_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();

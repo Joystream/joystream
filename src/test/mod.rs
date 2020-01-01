@@ -1,81 +1,31 @@
 #![cfg(test)]
 
+
+mod add_application;
 mod add_opening;
+mod begin_accepting_applications;
+mod begin_review;
+mod deactivate_application;
+mod ensure_can_add_application;
 mod smoke;
+mod unstaked;
 
 use super::*;
-use crate::mock::*;
 
-/// cancel_opening
+/*
+Add tests:
+- cancel_opening:
+.cancel_opening_succeeds
+.cancel_opening_fails_due_to_too_short_application_unstaking_period
+.cancel_opening_fails_due_to_too_short_role_unstaking_period
+.cancel_opening_fails_due_to_opening_not_existing
 
-#[test]
-fn cancel_opening_success() {
-    build_test_externalities().execute_with(|| {});
+- fill_opening
+- on_finalize
+
+*/
+
+////Debug test object content
+pub(crate) fn debug_print<T: rstd::fmt::Debug>(obj: T) {
+    println!("{:?}", obj);
 }
-
-#[test]
-fn cancel_opening_fails_due_to_too_short_application_unstaking_period() {
-    build_test_externalities().execute_with(|| {});
-}
-
-#[test]
-fn cancel_opening_fails_due_to_too_short_role_unstaking_period() {
-    build_test_externalities().execute_with(|| {});
-}
-
-#[test]
-fn cancel_opening_fails_due_to_opening_not_existing() {
-    build_test_externalities().execute_with(|| {});
-}
-
-//
-
-/*
- * remove_opening
- *
- *
- */
-
-/*
- * begin_accepting_applications
- *
- * begin_accepting_applications_succeeded
- * begin_accepting_applications_fails_due_to_invalid_opening_id
- * begin_accepting_applications_fails_due_to_opening_not_being_in_waiting_to_begin_stage
- */
-
-/*
- * begin_review
- *
- * begin_review
- */
-
-/*
- * fill_opening
- *
- * fill_opening
- */
-
-/*
- * add_application
- *
- * add_application
- */
-
-/*
- * deactive_application
- *
- * deactive_application
- */
-
-/*
- * remove_application
- *
- * remove_application
- */
-
-/*
- * unstaked
- *
- * unstaked
- */

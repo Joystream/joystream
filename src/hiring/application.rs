@@ -41,6 +41,35 @@ pub struct Application<OpeningId, BlockNumber, StakeId> {
     pub human_readable_text: Vec<u8>,
 }
 
+impl<OpeningId, BlockNumber, StakeId: PartialEq + Clone>
+    Application<OpeningId, BlockNumber, StakeId>
+{
+    /// Compares provided stake_id with internal stake defined by stake_purpose.
+    /// Returns None on equality, Some(stake_id) otherwise.
+    pub(crate) fn toggle_stake_id(
+        &self,
+        stake_id: StakeId,
+        stake_purpose: StakePurpose,
+    ) -> Option<StakeId> {
+        let active_staking_id = match stake_purpose {
+            StakePurpose::Application => self.active_application_staking_id.clone(),
+            StakePurpose::Role => self.active_role_staking_id.clone(),
+        };
+
+        match active_staking_id {
+            // If there is a match, toggle.
+            Some(id) => {
+                if id == stake_id {
+                    None
+                } else {
+                    Some(id.clone())
+                }
+            }
+            _ => None,
+        }
+    }
+}
+
 /// Possible status of an application
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd, Ord)]
 pub enum ApplicationStage<BlockNumber> {
@@ -97,77 +126,6 @@ pub struct ApplicationRationingPolicy {
     pub max_active_applicants: u32,
     // How applicants will be ranked, in order to respect the maximum simultaneous application limit
     //pub applicant_ranking: ApplicationRankingPolicy
-}
-
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
-pub enum OpeningDeactivationCause {
-    CancelledBeforeActivation,
-    CancelledAcceptingApplications,
-    CancelledInReviewPeriod,
-    ReviewPeriodExpired,
-    Filled,
-}
-
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
-pub enum ActiveOpeningStage<BlockNumber> {
-    AcceptingApplications {
-        //
-        started_accepting_applicants_at_block: BlockNumber,
-    },
-
-    //
-    ReviewPeriod {
-        started_accepting_applicants_at_block: BlockNumber,
-
-        started_review_period_at_block: BlockNumber,
-    },
-
-    //
-    Deactivated {
-        cause: OpeningDeactivationCause,
-
-        deactivated_at_block: BlockNumber,
-
-        started_accepting_applicants_at_block: BlockNumber,
-
-        /// Whether the review period had ever been started, and if so, at what block.
-        /// Deactivation can also occur directly from the AcceptingApplications stage.
-        started_review_period_at_block: Option<BlockNumber>,
-    },
-}
-
-impl<BlockNumber: Clone> ActiveOpeningStage<BlockNumber> {
-    /// Ensures that active opening stage is accepting applications.
-    pub fn ensure_active_opening_is_accepting_applications<Err>(
-        &self,
-        error: Err,
-    ) -> Result<BlockNumber, Err> {
-        if let ActiveOpeningStage::AcceptingApplications {
-            started_accepting_applicants_at_block,
-        } = self
-        {
-            return Ok(started_accepting_applicants_at_block.clone());
-        }
-
-        Err(error)
-    }
-
-    /// Ensures that active opening stage is in review period.
-    pub fn ensure_active_opening_is_in_review_period<Err>(
-        &self,
-        error: Err,
-    ) -> Result<(BlockNumber, BlockNumber), Err> {
-        match self {
-            ActiveOpeningStage::ReviewPeriod {
-                started_accepting_applicants_at_block,
-                started_review_period_at_block,
-            } => Ok((
-                started_accepting_applicants_at_block.clone(),
-                started_review_period_at_block.clone(),
-            )), // <= need proper type here in the future, not param
-            _ => Err(error),
-        }
-    }
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]

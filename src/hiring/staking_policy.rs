@@ -20,7 +20,7 @@ pub struct StakingPolicy<Balance, BlockNumber> {
 }
 
 impl<Balance: PartialOrd + Clone, BlockNumber: Clone> StakingPolicy<Balance, BlockNumber> {
-    pub fn accepts_amount(&self, test_amount: &Balance) -> bool {
+    pub(crate) fn accepts_amount(&self, test_amount: &Balance) -> bool {
         match self.amount_mode {
             StakingAmountLimitMode::AtLeast => *test_amount >= self.amount,
             StakingAmountLimitMode::Exact => *test_amount == self.amount,
@@ -50,7 +50,7 @@ impl<Balance: PartialOrd + Clone, BlockNumber: Clone> StakingPolicy<Balance, Blo
     }
 
     /// Ensures that optional staking policy prescribes value that clears minimum balance requirement
-    pub fn ensure_amount_valid_in_opt_staking_policy<Err>(
+    pub(crate) fn ensure_amount_valid_in_opt_staking_policy<Err>(
         opt_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
         runtime_minimum_balance: Balance,
         error: Err,

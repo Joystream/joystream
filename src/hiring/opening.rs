@@ -1,12 +1,13 @@
-use crate::{hiring, ApplicationRationingPolicy, StakingPolicy};
-
-use codec::{Decode, Encode};
+use rstd::clone::Clone;
 use rstd::collections::btree_set::BTreeSet;
+use rstd::prelude::*;
 use rstd::vec::Vec;
 
+use codec::{Decode, Encode};
 use srml_support::ensure;
 
 use crate::hiring::StakePurpose;
+use crate::{hiring, ApplicationRationingPolicy, StakingPolicy};
 
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone)]
 pub struct Opening<Balance, BlockNumber, ApplicationId> {
@@ -39,7 +40,7 @@ where
     ApplicationId: Ord,
 {
     ///Creates new instance of Opening
-    pub fn new(
+    pub(crate) fn new(
         current_block_height: BlockNumber,
         activate_at: ActivateOpeningAt<BlockNumber>,
         max_review_period_length: BlockNumber,
@@ -81,8 +82,51 @@ where
         }
     }
 
+    pub(crate) fn clone_with_new_active_opening_stage(
+        self,
+        active_opening_stage: hiring::ActiveOpeningStage<BlockNumber>,
+    ) -> Self {
+        //TODO: hiring::OpeningStage::Active params should be changed to struct
+        //Copy parameters from previous active stage if any or set defaults
+        let (
+            applications_added,
+            active_application_count,
+            unstaking_application_count,
+            deactivated_application_count,
+        ) = if let hiring::OpeningStage::Active {
+            applications_added,
+            active_application_count,
+            unstaking_application_count,
+            deactivated_application_count,
+            ..
+        } = self.stage
+        {
+            //Active opening stage
+            (
+                applications_added,
+                active_application_count,
+                unstaking_application_count,
+                deactivated_application_count,
+            )
+        } else {
+            //Not active opening stage
+            (BTreeSet::new(), 0, 0, 0)
+        };
+
+        hiring::Opening {
+            stage: hiring::OpeningStage::Active {
+                stage: active_opening_stage,
+                applications_added,
+                active_application_count,
+                unstaking_application_count,
+                deactivated_application_count,
+            },
+            ..self
+        }
+    }
+
     /// Performs all necessary check before adding an opening
-    pub fn ensure_can_add_opening(
+    pub(crate) fn ensure_can_add_opening(
         current_block_height: BlockNumber,
         activate_at: ActivateOpeningAt<BlockNumber>,
         runtime_minimum_balance: Balance,
@@ -165,15 +209,16 @@ pub enum OpeningStage<BlockNumber, ApplicationId> {
         unstaking_application_count: u32,
 
         /// Deactivated at any time for any cause.
-        deactivated_application_count: u32, // Removed at any time.
-                                            //removed_application_count: u32
+        deactivated_application_count: u32,
+        // Removed at any time.
+        //removed_application_count: u32
     },
 }
 
-impl<BlockNumber: Clone, ApplicationId> OpeningStage<BlockNumber, ApplicationId> {
+impl<BlockNumber: Clone, ApplicationId: Ord + Clone> OpeningStage<BlockNumber, ApplicationId> {
     /// The number of applications ever added to the opening via
     /// `add_opening` extrinsic.
-    pub fn number_of_appliations_ever_added(&self) -> u32 {
+    pub fn number_of_applications_ever_added(&self) -> u32 {
         match self {
             OpeningStage::WaitingToBegin { .. } => 0,
 
@@ -191,7 +236,7 @@ impl<BlockNumber: Clone, ApplicationId> OpeningStage<BlockNumber, ApplicationId>
     }
 
     /// Ensures that an opening is waiting to begin.
-    pub fn ensure_opening_stage_is_waiting_to_begin<Err>(
+    pub(crate) fn ensure_opening_stage_is_waiting_to_begin<Err>(
         &self,
         error: Err,
     ) -> Result<BlockNumber, Err> {
@@ -200,6 +245,36 @@ impl<BlockNumber: Clone, ApplicationId> OpeningStage<BlockNumber, ApplicationId>
         }
 
         Err(error)
+    }
+
+    /// Clones current stage. Panics if not Active.
+    /// Adds application_id to applications_added collection.
+    /// Increments 'active_application_count' counter.
+    pub(crate) fn clone_with_added_active_application(
+        self,
+        new_application_id: ApplicationId,
+    ) -> Self {
+        if let hiring::OpeningStage::Active {
+            stage,
+            active_application_count,
+            unstaking_application_count,
+            deactivated_application_count,
+            applications_added,
+        } = self.clone()
+        {
+            let mut apps_added = applications_added.clone();
+            apps_added.insert(new_application_id);
+
+            hiring::OpeningStage::Active {
+                stage,
+                applications_added: apps_added,
+                active_application_count: active_application_count + 1,
+                unstaking_application_count,
+                deactivated_application_count,
+            }
+        } else {
+            panic!("updated opening should be in active stage");
+        }
     }
 }
 
@@ -211,6 +286,77 @@ impl<BlockNumber: Default, ApplicationId> Default for OpeningStage<BlockNumber, 
             begins_at_block: BlockNumber::default(),
         }
     }
+}
+
+#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
+pub enum ActiveOpeningStage<BlockNumber> {
+    AcceptingApplications {
+        //
+        started_accepting_applicants_at_block: BlockNumber,
+    },
+
+    //
+    ReviewPeriod {
+        started_accepting_applicants_at_block: BlockNumber,
+
+        started_review_period_at_block: BlockNumber,
+    },
+
+    //
+    Deactivated {
+        cause: OpeningDeactivationCause,
+
+        deactivated_at_block: BlockNumber,
+
+        started_accepting_applicants_at_block: BlockNumber,
+
+        /// Whether the review period had ever been started, and if so, at what block.
+        /// Deactivation can also occur directly from the AcceptingApplications stage.
+        started_review_period_at_block: Option<BlockNumber>,
+    },
+}
+
+impl<BlockNumber: Clone> ActiveOpeningStage<BlockNumber> {
+    /// Ensures that active opening stage is accepting applications.
+    pub(crate) fn ensure_active_opening_is_accepting_applications<Err>(
+        &self,
+        error: Err,
+    ) -> Result<BlockNumber, Err> {
+        if let ActiveOpeningStage::AcceptingApplications {
+            started_accepting_applicants_at_block,
+        } = self
+        {
+            return Ok(started_accepting_applicants_at_block.clone());
+        }
+
+        Err(error)
+    }
+
+    /// Ensures that active opening stage is in review period.
+    pub(crate) fn ensure_active_opening_is_in_review_period<Err>(
+        &self,
+        error: Err,
+    ) -> Result<(BlockNumber, BlockNumber), Err> {
+        match self {
+            ActiveOpeningStage::ReviewPeriod {
+                started_accepting_applicants_at_block,
+                started_review_period_at_block,
+            } => Ok((
+                started_accepting_applicants_at_block.clone(),
+                started_review_period_at_block.clone(),
+            )), // <= need proper type here in the future, not param
+            _ => Err(error),
+        }
+    }
+}
+
+#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
+pub enum OpeningDeactivationCause {
+    CancelledBeforeActivation,
+    CancelledAcceptingApplications,
+    CancelledInReviewPeriod,
+    ReviewPeriodExpired,
+    Filled,
 }
 
 /// NB:

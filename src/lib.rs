@@ -1,21 +1,21 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::prelude::*;
-
-use codec::Codec;
+use runtime_primitives::traits::Zero;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
+
 use srml_support::traits::Currency;
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
-
-use rstd::iter::Iterator;
-
-use runtime_primitives::traits::Zero;
 
 use crate::sr_api_hidden_includes_decl_storage::hidden_include::traits::Imbalance;
 
 use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
+use rstd::iter::Iterator;
+use rstd::prelude::*;
+
+use codec::Codec;
+use system;
 
 mod hiring;
 #[macro_use]
@@ -24,8 +24,6 @@ mod mock;
 mod test;
 
 pub use hiring::*;
-use system;
-
 use stake;
 
 /// ...
@@ -250,7 +248,6 @@ decl_module! {
                 <OpeningById<T>>::insert(opening_id, opening_accepting_applications);
 
             }
-
         }
     }
 }
@@ -281,6 +278,16 @@ pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
     pub deactivated_application_count: u32,
 
     pub would_get_added_success: ApplicationAddedSuccess<T>,
+}
+
+impl<T: Trait> DestructuredApplicationCanBeAddedEvaluation<T> {
+    pub(crate) fn calculate_total_application_count(&self) -> u32 {
+        // TODO: fix so that `number_of_appliations_ever_added` can be invoked.
+        // cant do this due to bad design of stage => opening.stage.number_of_appliations_ever_added();
+        self.active_application_count
+            + self.unstaking_application_count
+            + self.deactivated_application_count
+    }
 }
 
 impl<T: Trait> Module<T> {
@@ -451,18 +458,11 @@ impl<T: Trait> Module<T> {
         let current_block_height = <system::Module<T>>::block_number();
 
         // Update state of opening
-        let new_opening = hiring::Opening {
-            stage: hiring::OpeningStage::Active {
-                stage: hiring::ActiveOpeningStage::AcceptingApplications {
-                    started_accepting_applicants_at_block: current_block_height,
-                },
-                applications_added: BTreeSet::new(), //BTreeMap::new(),
-                active_application_count: 0,
-                unstaking_application_count: 0,
-                deactivated_application_count: 0,
+        let new_opening = opening.clone_with_new_active_opening_stage(
+            hiring::ActiveOpeningStage::AcceptingApplications {
+                started_accepting_applicants_at_block: current_block_height,
             },
-            ..opening
-        };
+        );
 
         // Write back opening
         <OpeningById<T>>::insert(opening_id, new_opening);
@@ -476,14 +476,7 @@ impl<T: Trait> Module<T> {
         let opening = ensure_opening_exists!(T, opening_id, BeginReviewError::OpeningDoesNotExist)?;
 
         // Opening is accepting applications
-
-        let (
-            active_stage,
-            applications_added,
-            active_application_count,
-            unstaking_application_count,
-            deactivated_application_count,
-        ) = ensure_opening_is_active!(
+        let (active_stage, _, _, _, _) = ensure_opening_is_active!(
             opening.stage,
             BeginReviewError::OpeningNotInAcceptingApplicationsStage
         )?;
@@ -499,19 +492,11 @@ impl<T: Trait> Module<T> {
 
         let current_block_height = <system::Module<T>>::block_number();
 
-        let new_opening = hiring::Opening {
-            stage: hiring::OpeningStage::Active {
-                stage: hiring::ActiveOpeningStage::ReviewPeriod {
-                    started_accepting_applicants_at_block,
-                    started_review_period_at_block: current_block_height,
-                },
-                applications_added,
-                active_application_count,
-                unstaking_application_count,
-                deactivated_application_count,
-            },
-            ..opening
-        };
+        let new_opening =
+            opening.clone_with_new_active_opening_stage(hiring::ActiveOpeningStage::ReviewPeriod {
+                started_accepting_applicants_at_block,
+                started_review_period_at_block: current_block_height,
+            });
 
         // Update to new opening
         <OpeningById<T>>::insert(opening_id, new_opening);
@@ -783,18 +768,9 @@ impl<T: Trait> Module<T> {
         opt_application_stake_imbalance: Option<NegativeImbalance<T>>,
         human_readable_text: Vec<u8>,
     ) -> Result<ApplicationAdded<T::ApplicationId>, AddApplicationError> {
-        let opt_role_stake_balance = if let Some(ref imbalance) = opt_role_stake_imbalance {
-            Some(imbalance.peek())
-        } else {
-            None
-        };
-
+        let opt_role_stake_balance = Self::create_stake_balance(&opt_role_stake_imbalance);
         let opt_application_stake_balance =
-            if let Some(ref imbalance) = opt_application_stake_imbalance {
-                Some(imbalance.peek())
-            } else {
-                None
-            };
+            Self::create_stake_balance(&opt_application_stake_imbalance);
 
         let can_be_added_destructured = Self::ensure_can_add_application(
             opening_id,
@@ -853,17 +829,12 @@ impl<T: Trait> Module<T> {
             &new_application_id,
         );
 
-        // Stage of new application
-        let application_stage = hiring::ApplicationStage::Active;
-
         // Grab current block height
         let current_block_height = <system::Module<T>>::block_number();
 
         // Compute index for this new application
-        // TODO: fix so that `number_of_appliations_ever_added` can be invoked.
-        let application_index_in_opening = can_be_added_destructured.active_application_count
-            + can_be_added_destructured.unstaking_application_count
-            + can_be_added_destructured.deactivated_application_count; // cant do this due to bad design of stage => opening.stage.number_of_appliations_ever_added();
+        let application_index_in_opening =
+            can_be_added_destructured.calculate_total_application_count();
 
         // Create a new application
         let new_application = hiring::Application {
@@ -872,7 +843,8 @@ impl<T: Trait> Module<T> {
             add_to_opening_in_block: current_block_height,
             active_role_staking_id,
             active_application_staking_id,
-            stage: application_stage,
+            // Stage of new application
+            stage: hiring::ApplicationStage::Active,
             human_readable_text,
         };
 
@@ -883,33 +855,25 @@ impl<T: Trait> Module<T> {
         <NextApplicationId<T>>::mutate(|id| *id += One::one());
 
         // Update counter on opening
-
-        /*
-        TODO:
-        Yet another instance of problems due to not following https://github.com/Joystream/joystream/issues/36#issuecomment-539567407
-        */
-        let new_active_stage = hiring::OpeningStage::Active {
-            stage: can_be_added_destructured.active_stage,
-            applications_added: can_be_added_destructured.applications_added,
-            active_application_count: can_be_added_destructured.active_application_count + 1,
-            unstaking_application_count: can_be_added_destructured.unstaking_application_count,
-            deactivated_application_count: can_be_added_destructured.deactivated_application_count,
-        };
+        // Should reload after possible deactivation in try_to_initiate_application_deactivation
+        let opening_needed_for_data = <OpeningById<T>>::get(opening_id);
+        let new_active_stage = opening_needed_for_data
+            .stage
+            .clone_with_added_active_application(new_application_id);
 
         <OpeningById<T>>::mutate(opening_id, |opening| {
             opening.stage = new_active_stage;
         });
 
-        // DONE
-        let application_added_result = ApplicationAdded {
-            application_id_added: new_application_id,
-            application_id_crowded_out: match can_be_added_destructured.would_get_added_success {
-                ApplicationAddedSuccess::CrowdsOutExistingApplication(id) => Some(id),
-                _ => None,
-            },
-        };
+        let application_id_crowded_out = can_be_added_destructured
+            .would_get_added_success
+            .crowded_out_application_id();
 
-        Ok(application_added_result)
+        // DONE
+        Ok(ApplicationAdded {
+            application_id_added: new_application_id,
+            application_id_crowded_out,
+        })
     }
 
     /// Deactive an active application.
@@ -981,10 +945,10 @@ impl<T: Trait> Module<T> {
     }
 
     /// The stake, with the given id, was unstaked.
-    pub fn unstaked(stake_id: T::StakeId) {
+    pub fn unstaked(stake_id: T::StakeId) -> UnstakedResult {
         // Ignore unstaked
         if !<ApplicationIdByStakingId<T>>::exists(stake_id) {
-            return;
+            return UnstakedResult::StakeIdNonExistent;
         }
 
         // Get application
@@ -1002,7 +966,7 @@ impl<T: Trait> Module<T> {
         {
             (deactivation_initiated, cause)
         } else {
-            return;
+            return UnstakedResult::ApplicationIsNotUnstaking;
         };
 
         //
@@ -1100,7 +1064,9 @@ impl<T: Trait> Module<T> {
 
             // Call handler
             T::ApplicationDeactivatedHandler::deactivated(&application_id, cause);
+            return UnstakedResult::Unstaked;
         }
+        return UnstakedResult::UnstakingInProgress;
     }
 }
 
@@ -1134,6 +1100,19 @@ pub type ApplicationBTreeMap<T> = BTreeMap<
         <T as stake::Trait>::StakeId,
     >,
 >;
+
+/// Informational result of the unstaked() method. Can be ignored.
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum UnstakedResult {
+    /// Non-existentent stake id provided
+    StakeIdNonExistent,
+    /// Application is not in 'Unstaking' state
+    ApplicationIsNotUnstaking,
+    /// Fully unstaked
+    Unstaked,
+    /// Unstaking in progress
+    UnstakingInProgress,
+}
 
 impl<T: Trait> Module<T> {
     fn application_id_iter_to_map<'a>(
@@ -1384,6 +1363,16 @@ pub enum ApplicationAddedSuccess<T: Trait> {
     CrowdsOutExistingApplication(T::ApplicationId),
 }
 
+impl<T: Trait> ApplicationAddedSuccess<T> {
+    pub(crate) fn crowded_out_application_id(&self) -> Option<T::ApplicationId> {
+        if let ApplicationAddedSuccess::CrowdsOutExistingApplication(id) = self {
+            Some(id.clone())
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum ApplicationWouldGetAddedEvaluation<T: Trait> {
     No,
@@ -1486,5 +1475,15 @@ impl<T: Trait> Module<T> {
                 _ => panic!("stake MUST be in the staked state."),
             }
         })
+    }
+
+    fn create_stake_balance(
+        opt_stake_imbalance: &Option<NegativeImbalance<T>>,
+    ) -> Option<BalanceOf<T>> {
+        if let Some(ref imbalance) = opt_stake_imbalance {
+            Some(imbalance.peek())
+        } else {
+            None
+        }
     }
 }

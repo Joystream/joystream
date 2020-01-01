@@ -1,25 +1,23 @@
-#![cfg(test)]
-
 use super::*;
 use crate::mock::*;
 use crate::StakingAmountLimitMode::Exact;
 use rstd::collections::btree_set::BTreeSet;
 
 static FIRST_BLOCK_HEIGHT: <Test as system::Trait>::BlockNumber = 1;
-static OPENING_HUMAN_READABLE_TEXT: &[u8] = b"OPENING_HUMAN_READABLE_TEXT!!!!";
+pub static OPENING_HUMAN_READABLE_TEXT: &[u8] = b"OPENING_HUMAN_READABLE_TEXT!!!!";
 
 /*
 Not covered:
 - ApplicationRationingPolicy (no ensures yet in add_opening)
 */
 
-struct AddOpeningFixture<Balance> {
-    activate_at: ActivateOpeningAt<u64>,
-    max_review_period_length: u64,
-    application_rationing_policy: Option<ApplicationRationingPolicy>,
-    application_staking_policy: Option<StakingPolicy<Balance, u64>>,
-    role_staking_policy: Option<StakingPolicy<Balance, u64>>,
-    human_readable_text: Vec<u8>,
+pub struct AddOpeningFixture<Balance> {
+    pub activate_at: ActivateOpeningAt<u64>,
+    pub max_review_period_length: u64,
+    pub application_rationing_policy: Option<ApplicationRationingPolicy>,
+    pub application_staking_policy: Option<StakingPolicy<Balance, u64>>,
+    pub role_staking_policy: Option<StakingPolicy<Balance, u64>>,
+    pub human_readable_text: Vec<u8>,
 }
 
 impl<Balance> Default for AddOpeningFixture<Balance> {
@@ -36,17 +34,10 @@ impl<Balance> Default for AddOpeningFixture<Balance> {
 }
 
 impl AddOpeningFixture<u64> {
-    pub fn call_and_assert(&self, expected_result: Result<u64, AddOpeningError>) {
+    fn call_and_assert(&self, expected_result: Result<u64, AddOpeningError>) {
         let expected_opening_id = Hiring::next_opening_id();
 
-        let add_opening_result = Hiring::add_opening(
-            self.activate_at.clone(),
-            self.max_review_period_length,
-            self.application_rationing_policy.clone(),
-            self.application_staking_policy.clone(),
-            self.role_staking_policy.clone(),
-            self.human_readable_text.clone(),
-        );
+        let add_opening_result = self.add_opening();
         assert_eq!(add_opening_result, expected_result);
 
         if add_opening_result.is_ok() {
@@ -63,37 +54,69 @@ impl AddOpeningFixture<u64> {
 
         //Check opening content
         if add_opening_result.is_ok() {
-            let found_opening = Hiring::opening_by_id(expected_opening_id);
-
-            assert_eq!(
-                found_opening,
-                Opening {
-                    created: FIRST_BLOCK_HEIGHT,
-                    stage: OpeningStage::Active {
-                        stage: ActiveOpeningStage::AcceptingApplications {
-                            started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT
-                        },
-                        applications_added: BTreeSet::new(),
-                        active_application_count: 0,
-                        unstaking_application_count: 0,
-                        deactivated_application_count: 0
-                    },
-                    max_review_period_length: self.max_review_period_length,
-                    application_rationing_policy: self.application_rationing_policy.clone(),
-                    application_staking_policy: self.application_staking_policy.clone(),
-                    role_staking_policy: self.role_staking_policy.clone(),
-                    human_readable_text: OPENING_HUMAN_READABLE_TEXT.to_vec()
-                }
-            );
+            self.assert_opening_content(expected_opening_id);
         }
+    }
+
+    fn assert_opening_content(&self, expected_opening_id: u64) {
+        let expected_opening_stage = match self.activate_at {
+            ActivateOpeningAt::CurrentBlock => OpeningStage::Active {
+                stage: ActiveOpeningStage::AcceptingApplications {
+                    started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT,
+                },
+                applications_added: BTreeSet::new(),
+                active_application_count: 0,
+                unstaking_application_count: 0,
+                deactivated_application_count: 0,
+            },
+            ActivateOpeningAt::ExactBlock(block_number) => OpeningStage::WaitingToBegin {
+                begins_at_block: block_number,
+            },
+        };
+
+        let expected_opening = Opening {
+            created: FIRST_BLOCK_HEIGHT,
+            stage: expected_opening_stage,
+            max_review_period_length: self.max_review_period_length,
+            application_rationing_policy: self.application_rationing_policy.clone(),
+            application_staking_policy: self.application_staking_policy.clone(),
+            role_staking_policy: self.role_staking_policy.clone(),
+            human_readable_text: OPENING_HUMAN_READABLE_TEXT.to_vec(),
+        };
+
+        let found_opening = Hiring::opening_by_id(expected_opening_id);
+        assert_eq!(found_opening, expected_opening);
+    }
+
+    pub(crate) fn add_opening(&self) -> Result<u64, AddOpeningError> {
+        Hiring::add_opening(
+            self.activate_at.clone(),
+            self.max_review_period_length,
+            self.application_rationing_policy.clone(),
+            self.application_staking_policy.clone(),
+            self.role_staking_policy.clone(),
+            self.human_readable_text.clone(),
+        )
     }
 }
 
 #[test]
-fn add_opening_success_waiting_to_begin() {
+fn add_opening_succeeds_with_exact_block() {
     build_test_externalities().execute_with(|| {
         let opening_data = AddOpeningFixture::default();
 
+        let expected_opening_id = 0;
+
+        // Add an opening, check that the returned value is Zero
+        opening_data.call_and_assert(Ok(expected_opening_id));
+    });
+}
+
+#[test]
+fn add_opening_succeeds_with_waiting_to_begin() {
+    build_test_externalities().execute_with(|| {
+        let mut opening_data = AddOpeningFixture::default();
+        opening_data.activate_at = ActivateOpeningAt::ExactBlock(22);
         let expected_opening_id = 0;
 
         // Add an opening, check that the returned value is Zero

@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use super::*;
 use crate::mock::*;
 
@@ -164,6 +162,9 @@ fn full_hiring_workflow_successful_path() {
 
         let updated_opening_after_begin_review = Hiring::opening_by_id(current_opening_id);
 
+        let mut expected_added_apps_in_opening = BTreeSet::new();
+        expected_added_apps_in_opening.insert(0);
+
         // Check updated opening content
         assert_eq!(
             updated_opening_after_begin_review,
@@ -174,7 +175,7 @@ fn full_hiring_workflow_successful_path() {
                         started_accepting_applicants_at_block: 1,
                         started_review_period_at_block: 1
                     },
-                    applications_added: BTreeSet::new(),
+                    applications_added: expected_added_apps_in_opening.clone(),
                     active_application_count: 1,
                     unstaking_application_count: 0,
                     deactivated_application_count: 0
@@ -211,7 +212,7 @@ fn full_hiring_workflow_successful_path() {
                         started_accepting_applicants_at_block: 1,
                         started_review_period_at_block: Some(1)
                     },
-                    applications_added: BTreeSet::new(),
+                    applications_added: expected_added_apps_in_opening,
                     active_application_count: 1,
                     unstaking_application_count: 0,
                     deactivated_application_count: 0
