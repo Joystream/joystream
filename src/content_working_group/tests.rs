@@ -21,93 +21,17 @@ fn create_channel_success() {
         .build()
         .execute_with(|| {
 
-            /*
-             * Setup
-             */
-
+            // Add channel creator as member
             let channel_creator_member_root_and_controller_account = 12312;
 
-            let channel_creator_member_id = add_member(channel_creator_member_root_and_controller_account, to_vec(CHANNEL_CREATOR_HANDLE));
-
-            let channel_name = generate_valid_length_buffer(&ChannelHandleConstraint::get());
-            let description = generate_valid_length_buffer(&ChannelDescriptionConstraint::get());
-            let content = ChannelContentType::Video;
-            let publishing_status = ChannelPublishingStatus::NotPublished;
-
-            /*
-             * Test
-             */ 
-
-            // Create channel
-            ContentWorkingGroup::create_channel(
-                Origin::signed(channel_creator_member_root_and_controller_account),
-                channel_creator_member_id,
+            let channel_creator_member_id = add_member(
                 channel_creator_member_root_and_controller_account,
-                channel_name.clone(),
-                description.clone(),
-                content.clone(),
-                publishing_status.clone()
-            )
-            .expect("Should work");
-
-            /*
-             * Assert
-             */
-
-            // Assert that event was triggered,
-            // keep channel id.
-            let channel_id = ensure_channelcreated_event_deposited();
-
-            // Assert that given channel id has been added,
-            // and has the right properties.
-            assert!(lib::ChannelById::<Test>::exists(channel_id));
-
-            let created_channel = lib::ChannelById::<Test>::get(channel_id);
-
-            let expected_channel = Channel {
-                channel_name: channel_name.clone(),
-                verified: false,
-                description: description,
-                content: content,
-                owner: channel_creator_member_id,
-                role_account: channel_creator_member_root_and_controller_account,
-                publishing_status: publishing_status,
-                curation_status: ChannelCurationStatus::Normal,
-                created: 1,
-
-                // We have no expectation here, so we just copy what was added
-                principal_id: created_channel.principal_id
-            };
-
-            assert_eq!(
-                created_channel,
-                expected_channel                
+                to_vec(CHANNEL_CREATOR_HANDLE)
             );
 
-            // Assert that next id incremented.
-            assert_eq!(lib::NextChannelId::<Test>::get(), channel_id + 1);
+            let fixture = CreateChannelFixture::make_valid_unpulished_video_channel_for(channel_creator_member_id, None);
 
-            // Assert that there is a mapping established for name
-            assert_eq!(
-                lib::ChannelIdByName::<Test>::get(channel_name),
-                channel_id
-            );
-
-            // Check that principal actually has been added
-            assert!(
-                lib::PrincipalById::<Test>::exists(created_channel.principal_id)
-            );
-
-            let created_principal = lib::PrincipalById::<Test>::get(created_channel.principal_id);
-
-            assert!(
-                match created_principal {
-                    Principal::Lead => false,
-                    Principal::Curator(_) => false,
-                    Principal::ChannelOwner(created_principal_channel_id) => created_principal_channel_id == channel_id,
-                }
-            );
-
+            fixture.call_and_assert_success();
 
         });
 }
@@ -119,37 +43,15 @@ fn create_channel_is_not_a_member() {
         .build()
         .execute_with(|| {
 
-            /*
-             * Setup
-             */
-
             let channel_creator_member_id = add_channel_creator_member();
 
-            let number_of_events_before_call = System::events().len();
+            let mut fixture = CreateChannelFixture::make_valid_unpulished_video_channel_for(channel_creator_member_id, None);
 
-            /*
-             * Test
-             */
+            // Change to invalid member id, i.e. != channel_creator_member_id
+            fixture.channel_creator_member_id = fixture.channel_creator_member_id + <<Test as members::Trait>::MemberId as One>::one();
 
-            // Create channel incorrect member role account
-            assert_eq!(
-                ContentWorkingGroup::create_channel(
-                    Origin::signed(CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT),
+            fixture.call_and_assert_error(MSG_CREATE_CHANNEL_IS_NOT_MEMBER);
 
-                    // invalid member id
-                    channel_creator_member_id + <<Test as members::Trait>::MemberId as One>::one(),
-                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
-                    generate_valid_length_buffer(&ChannelHandleConstraint::get()),
-                    generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
-                    ChannelContentType::Video,
-                    ChannelPublishingStatus::NotPublished
-                ).unwrap_err()
-                ,
-                MSG_CREATE_CHANNEL_IS_NOT_MEMBER
-            );
-
-            // No new events deposited
-            assert_no_new_events(number_of_events_before_call);
         });
 }
 
@@ -160,39 +62,15 @@ fn create_channel_not_enabled() {
         .build()
         .execute_with(|| {
 
-            /*
-             * Setup
-             */
-
             add_member_and_set_as_lead();
 
             set_channel_creation_enabled(false);
 
             let channel_creator_member_id = add_channel_creator_member();
 
-            /*
-             * Test
-             */
-            
-            let number_of_events_before_call = System::events().len();
+            let fixture = CreateChannelFixture::make_valid_unpulished_video_channel_for(channel_creator_member_id, None);
 
-            // Create channel
-            assert_eq!(
-                ContentWorkingGroup::create_channel(
-                    Origin::signed(CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT),
-                    channel_creator_member_id,
-                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
-                    generate_valid_length_buffer(&ChannelHandleConstraint::get()),
-                    generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
-                    ChannelContentType::Video,
-                    ChannelPublishingStatus::NotPublished
-                ).unwrap_err()
-                ,
-                MSG_CHANNEL_CREATION_DISABLED
-            );
-
-            // No new events deposited
-            assert_no_new_events(number_of_events_before_call);
+            fixture.call_and_assert_error(MSG_CHANNEL_CREATION_DISABLED);
         });
 }
 
@@ -203,38 +81,11 @@ fn create_channel_with_bad_member_role_account() {
         .build()
         .execute_with(|| {
 
-            /*
-             * Setup
-             */
-
             let channel_creator_member_id = add_channel_creator_member();
 
-            let number_of_events_before_call = System::events().len();
+            let fixture = CreateChannelFixture::make_valid_unpulished_video_channel_for(channel_creator_member_id, Some(0));
 
-            /*
-             * Test
-             */
-
-            // Create channel incorrect member role account
-            assert_eq!(
-                ContentWorkingGroup::create_channel(
-
-                    // <== incorrect
-                    Origin::signed(71893780491),
-                    channel_creator_member_id,
-                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
-                    generate_valid_length_buffer(&ChannelHandleConstraint::get()),
-                    generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
-                    ChannelContentType::Video,
-                    ChannelPublishingStatus::NotPublished
-                ).unwrap_err()
-                ,
-                MSG_CREATE_CHANNEL_NOT_CONTROLLER_ACCOUNT
-            );
-
-            // No new events deposited
-            assert_no_new_events(number_of_events_before_call);
-
+            fixture.call_and_assert_error(MSG_CREATE_CHANNEL_NOT_CONTROLLER_ACCOUNT);
         });
 }
 
@@ -245,35 +96,13 @@ fn create_channel_handle_too_long() {
         .build()
         .execute_with(|| {
 
-            /*
-             * Setup
-             */
-
             let channel_creator_member_id = add_channel_creator_member();
 
-            let number_of_events_before_call = System::events().len();
+            let mut fixture = CreateChannelFixture::make_valid_unpulished_video_channel_for(channel_creator_member_id, None);
 
-            /*
-             * Test
-             */
+            fixture.channel_name = generate_too_long_length_buffer(&ChannelHandleConstraint::get());
 
-            // Create channel with handle that is too long
-            assert_eq!(
-                ContentWorkingGroup::create_channel(
-                    Origin::signed(CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT),
-                    channel_creator_member_id,
-                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
-                    generate_too_long_length_buffer(&ChannelHandleConstraint::get()),
-                    generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
-                    ChannelContentType::Video,
-                    ChannelPublishingStatus::NotPublished
-                ).unwrap_err()
-                ,
-                MSG_CHANNEL_HANDLE_TOO_LONG
-            );
-
-            // No new events deposited
-            assert_no_new_events(number_of_events_before_call);
+            fixture.call_and_assert_error(MSG_CHANNEL_HANDLE_TOO_LONG);
         });
 }
 
@@ -284,35 +113,13 @@ fn create_channel_handle_too_short() {
         .build()
         .execute_with(|| {
 
-            /*
-             * Setup
-             */
-
             let channel_creator_member_id = add_channel_creator_member();
 
-            let number_of_events_before_call = System::events().len();
+            let mut fixture = CreateChannelFixture::make_valid_unpulished_video_channel_for(channel_creator_member_id, None);
 
-            /*
-             * Test
-             */
+            fixture.channel_name = generate_too_short_length_buffer(&ChannelHandleConstraint::get());
 
-            // Create channel with handle that is too short
-            assert_eq!(
-                ContentWorkingGroup::create_channel(
-                    Origin::signed(CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT),
-                    channel_creator_member_id,
-                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
-                    generate_too_short_length_buffer(&ChannelHandleConstraint::get()),
-                    generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
-                    ChannelContentType::Video,
-                    ChannelPublishingStatus::NotPublished
-                ).unwrap_err()
-                ,
-                MSG_CHANNEL_HANDLE_TOO_SHORT
-            );
-
-            // No new events deposited
-            assert_no_new_events(number_of_events_before_call);
+            fixture.call_and_assert_error(MSG_CHANNEL_HANDLE_TOO_SHORT);
         });
 }
 
@@ -323,35 +130,13 @@ fn create_channel_description_too_long() {
         .build()
         .execute_with(|| {
 
-            /*
-             * Setup
-             */
-
             let channel_creator_member_id = add_channel_creator_member();
 
-            let number_of_events_before_call = System::events().len();
+            let mut fixture = CreateChannelFixture::make_valid_unpulished_video_channel_for(channel_creator_member_id, None);
 
-            /*
-             * Test
-             */
+            fixture.description = generate_too_long_length_buffer(&ChannelDescriptionConstraint::get());
 
-            // Create channel with description that is too long
-            assert_eq!(
-                ContentWorkingGroup::create_channel(
-                    Origin::signed(CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT),
-                    channel_creator_member_id,
-                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
-                    generate_valid_length_buffer(&ChannelHandleConstraint::get()),
-                    generate_too_long_length_buffer(&ChannelDescriptionConstraint::get()),
-                    ChannelContentType::Video,
-                    ChannelPublishingStatus::NotPublished
-                ).unwrap_err()
-                ,
-                MSG_CHANNEL_DESCRIPTION_TOO_LONG
-            );
-
-            // No new events deposited
-            assert_no_new_events(number_of_events_before_call);
+            fixture.call_and_assert_error(MSG_CHANNEL_DESCRIPTION_TOO_LONG);
         });
 }
 
@@ -362,35 +147,13 @@ fn create_channel_description_too_short() {
         .build()
         .execute_with(|| {
 
-            /*
-             * Setup
-             */
-
             let channel_creator_member_id = add_channel_creator_member();
 
-            let number_of_events_before_call = System::events().len();
+            let mut fixture = CreateChannelFixture::make_valid_unpulished_video_channel_for(channel_creator_member_id, None);
 
-            /*
-             * Test
-             */
+            fixture.description = generate_too_short_length_buffer(&ChannelDescriptionConstraint::get());
 
-            // Create channel with description that is too short
-            assert_eq!(
-                ContentWorkingGroup::create_channel(
-                    Origin::signed(CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT),
-                    channel_creator_member_id,
-                    CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
-                    generate_valid_length_buffer(&ChannelHandleConstraint::get()),
-                    generate_too_short_length_buffer(&ChannelDescriptionConstraint::get()),
-                    ChannelContentType::Video,
-                    ChannelPublishingStatus::NotPublished
-                ).unwrap_err()
-                ,
-                MSG_CHANNEL_DESCRIPTION_TOO_SHORT
-            );
-
-            // No new events deposited
-            assert_no_new_events(number_of_events_before_call);
+            fixture.call_and_assert_error(MSG_CHANNEL_DESCRIPTION_TOO_SHORT);
 
         });
 }
@@ -623,169 +386,12 @@ fn fill_curator_opening_success() {
                 )
             ];
 
-            let setup_opening_params = applicants
-                                        .iter()
-                                        .cloned()
-                                        .map(|param| param.add_and_apply_params)
-                                        .collect::<Vec<_>>();
-
-            let setup_opening_in_review = setup_opening_in_review(&setup_opening_params);
-
-            let curator_opening = CuratorOpeningById::<Test>::get(setup_opening_in_review.normal_opening_constructed.curator_opening_id);
-
-            // Set whom to hire
-            let applicants_to_hire_iter = applicants
-                                            .iter()
-                                            .filter(|params| params.hire);
-
-            let num_applicants_hired = applicants_to_hire_iter.cloned().count();
-            //let num_applicants_not_to_hire = (applicants.len() - num_applicants_hired) as usize;
-
-            let hired_applicant_and_result = setup_opening_in_review.added_members_application_result
-                    .iter()
-                    .zip(applicants.iter())
-                    .filter(|(_, fill_opening_applicant_params)| fill_opening_applicant_params.hire)
-                    .collect::<Vec<_>>();
-
-            let successful_curator_application_ids = hired_applicant_and_result
-                                                    .iter()
-                                                    .map(|(new_member_applied_result, _)| new_member_applied_result.curator_application_id)
-                                                    .collect::<BTreeSet<_>>();
-
-            // Remember original id counters
-            let original_next_curator_id = NextCuratorId::<Test>::get();
-            let original_next_principal_id = NextPrincipalId::<Test>::get();
-
             /*
-             * Test
+             * Exercise and assert
              */
 
-            assert_eq!(
-                ContentWorkingGroup::fill_curator_opening(
-                    Origin::signed(LEAD_ROLE_ACCOUNT),
-                    setup_opening_in_review.normal_opening_constructed.curator_opening_id,
-                    successful_curator_application_ids.clone()
-                )
-                .unwrap(),
-                ()
-            );
+            setup_and_fill_opening(&applicants);
 
-            /*
-             * Asserts
-             */
-
-            let (
-                event_curator_opening_id,
-                event_successful_curator_application_id_to_curator_id
-            ) = ensure_curatoropeningfilled_event_deposited();            
-            
-            // Event has correct payload
-            assert_eq!(
-                setup_opening_in_review.normal_opening_constructed.curator_opening_id,
-                event_curator_opening_id
-            );
-
-            assert_eq!(
-                successful_curator_application_ids,
-                event_successful_curator_application_id_to_curator_id
-                .keys()
-                .cloned()
-                .collect::<BTreeSet<_>>()
-            );
-
-            // The right number of curators have been created
-            let num_curators_created = NextCuratorId::<Test>::get() - original_next_curator_id;
-
-            assert_eq!(
-                num_curators_created,
-                (num_applicants_hired as u64)
-            );
-
-            // The right numbe of prinipals were created
-            let num_principals_created = NextPrincipalId::<Test>::get() - original_next_principal_id;
-
-            assert_eq!(
-                num_principals_created,
-                (num_applicants_hired as u64)
-            );
-
-            // Inspect all expected curators and principal added
-            for (hired_index, item) in hired_applicant_and_result.iter().enumerate()  {
-
-                let (new_member_applied_result, fill_opening_applicant_params) = item;
-
-                // Curator
-                let expected_added_curator_id: u64 = (hired_index as u64) + original_next_curator_id;
-
-                // Principal
-                let expected_added_principal_id: u64 = (hired_index as u64) + original_next_principal_id;
-                
-                // Curator added
-                assert!(
-                    CuratorById::<Test>::exists(expected_added_curator_id)
-                );
-
-                let added_curator = CuratorById::<Test>::get(expected_added_curator_id);
-
-                // expected_curator
-                let reward_relationship = None::<<Test as recurringrewards::Trait>::RewardRelationshipId>;
-
-                let curator_application = CuratorApplicationById::<Test>::get(new_member_applied_result.curator_application_id);
-                let application_id = curator_application.application_id;
-                let application = hiring::ApplicationById::<Test>::get(application_id);
-
-                let role_stake_profile = 
-                    if let Some(ref stake_id) = application.active_role_staking_id { // get_baseline_opening_policy().role_staking_policy {
-
-                        Some(
-                            CuratorRoleStakeProfile::new(
-                                stake_id,
-                                &curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period,
-                                &curator_opening.policy_commitment.exit_curator_role_stake_unstaking_period
-                            )
-                        )
-                    } else {
-                        None
-                    };
-                
-                let expected_curator = Curator{
-                    role_account: fill_opening_applicant_params.add_and_apply_params.curator_applicant_role_account ,
-                    reward_relationship: reward_relationship,
-                    role_stake_profile: role_stake_profile, //  added_curator.role_stake_profile.clone(),
-                    stage: CuratorRoleStage::Active,
-                    induction: CuratorInduction::new(
-                        &setup_opening_in_review.normal_opening_constructed.new_member_as_lead.lead_id,
-                        &new_member_applied_result.curator_application_id,
-                        &1
-                    ),
-                    principal_id: expected_added_principal_id,
-                };
-
-                assert_eq!(
-                    expected_curator,
-                    added_curator
-                );
-
-                // Principal added
-                assert!(
-                    PrincipalById::<Test>::exists(expected_added_principal_id)
-                );
-
-                let added_principal = PrincipalById::<Test>::get(expected_added_principal_id);
-
-                let expected_added_principal = Principal::Curator(expected_added_principal_id);
-
-                assert_eq!(
-                    added_principal,
-                    expected_added_principal
-                );
-            }
-
-            /*
-             * TODO: add assertion abouot side-effect in !hiring & membership! module, 
-             * this is where state of application has fundamentally changed.
-             */
-        
         });
 }
 
@@ -996,6 +602,83 @@ fn apply_on_curator_opening_success() {
 
 #[test]
 fn update_curator_role_account_success() {
+
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
+
+            /*
+             * Setup
+             */
+
+            let applicants = vec![
+                FillOpeningApplicantParams::new(
+                    AddMemberAndApplyOnOpeningParams::new(
+                        2222,
+                        to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+                        2222*2,
+                        2222*3,
+                        generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get())
+                    ),
+                    true
+                )
+            ];
+
+            /*
+             * Exercise and assert
+             */
+/*
+            // Create channel
+            let create_channel_params = CreateChannelFixture {
+                channel_creator_member_id: <Test as members::Trait>::MemberId,
+                channel_creator_role_account: <Test as system::Trait>::AccountId,
+                channel_name: Vec<u8>,
+                description: Vec<u8>,
+                content: ChannelContentType,
+                publishing_status: ChannelPublishingStatus
+            };
+
+            let created_channel_id = create_channel(&create_channel_params);
+
+*/
+            // Setup
+            setup_and_fill_opening(&applicants);
+
+
+            /*
+             * Test
+             */
+
+            /*
+                        update_channel_as_curation_actor(
+                            origin,
+                            curation_actor: CurationActor<CuratorId<T>>,
+                            channel_id: ChannelId<T>,
+                            new_verified: Option<bool>,
+                            new_description: Option<Vec<u8>>,
+                            new_curation_status: Option<ChannelCurationStatus>
+                            )
+            
+
+            assert_eq!(
+                ContentWorkingGroup::begin_curator_applicant_review(
+                    Origin::signed(LEAD_ROLE_ACCOUNT),
+                    normal_opening_constructed.curator_opening_id
+                )
+                .unwrap(),
+                ()
+            );
+
+            let event_curator_opening_id = ensure_begancuratorapplicationreview_event_deposited();
+
+            assert_eq!(
+                normal_opening_constructed.curator_opening_id,
+                event_curator_opening_id
+            );
+            */
+
+
+        });
 
 }
 
@@ -1392,6 +1075,308 @@ fn setup_opening_in_review(applicants: &Vec<AddMemberAndApplyOnOpeningParams>) -
     }
 }
 
+fn setup_and_fill_opening(applicants: &Vec<FillOpeningApplicantParams>) {
+
+    let setup_opening_params = applicants
+                                .iter()
+                                .cloned()
+                                .map(|param| param.add_and_apply_params)
+                                .collect::<Vec<_>>();
+
+    let setup_opening_in_review = setup_opening_in_review(&setup_opening_params);
+
+    let curator_opening = CuratorOpeningById::<Test>::get(setup_opening_in_review.normal_opening_constructed.curator_opening_id);
+
+    // Set whom to hire
+    let applicants_to_hire_iter = applicants
+                                    .iter()
+                                    .filter(|params| params.hire);
+
+    let num_applicants_hired = applicants_to_hire_iter.cloned().count();
+    //let num_applicants_not_to_hire = (applicants.len() - num_applicants_hired) as usize;
+
+    let hired_applicant_and_result = setup_opening_in_review.added_members_application_result
+            .iter()
+            .zip(applicants.iter())
+            .filter(|(_, fill_opening_applicant_params)| fill_opening_applicant_params.hire)
+            .collect::<Vec<_>>();
+
+    let successful_curator_application_ids = hired_applicant_and_result
+                                            .iter()
+                                            .map(|(new_member_applied_result, _)| new_member_applied_result.curator_application_id)
+                                            .collect::<BTreeSet<_>>();
+
+    // Remember original id counters
+    let original_next_curator_id = NextCuratorId::<Test>::get();
+    let original_next_principal_id = NextPrincipalId::<Test>::get();
+
+    /*
+        * Test
+        */
+
+    assert_eq!(
+        ContentWorkingGroup::fill_curator_opening(
+            Origin::signed(LEAD_ROLE_ACCOUNT),
+            setup_opening_in_review.normal_opening_constructed.curator_opening_id,
+            successful_curator_application_ids.clone()
+        )
+        .unwrap(),
+        ()
+    );
+
+    /*
+    * Asserts
+    */
+
+    let (
+        event_curator_opening_id,
+        event_successful_curator_application_id_to_curator_id
+    ) = ensure_curatoropeningfilled_event_deposited();            
+    
+    // Event has correct payload
+    assert_eq!(
+        setup_opening_in_review.normal_opening_constructed.curator_opening_id,
+        event_curator_opening_id
+    );
+
+    assert_eq!(
+        successful_curator_application_ids,
+        event_successful_curator_application_id_to_curator_id
+        .keys()
+        .cloned()
+        .collect::<BTreeSet<_>>()
+    );
+
+    // The right number of curators have been created
+    let num_curators_created = NextCuratorId::<Test>::get() - original_next_curator_id;
+
+    assert_eq!(
+        num_curators_created,
+        (num_applicants_hired as u64)
+    );
+
+    // The right numbe of prinipals were created
+    let num_principals_created = NextPrincipalId::<Test>::get() - original_next_principal_id;
+
+    assert_eq!(
+        num_principals_created,
+        (num_applicants_hired as u64)
+    );
+
+    // Inspect all expected curators and principal added
+    for (hired_index, item) in hired_applicant_and_result.iter().enumerate()  {
+
+        let (new_member_applied_result, fill_opening_applicant_params) = item;
+
+        // Curator
+        let expected_added_curator_id: u64 = (hired_index as u64) + original_next_curator_id;
+
+        // Principal
+        let expected_added_principal_id: u64 = (hired_index as u64) + original_next_principal_id;
+        
+        // Curator added
+        assert!(
+            CuratorById::<Test>::exists(expected_added_curator_id)
+        );
+
+        let added_curator = CuratorById::<Test>::get(expected_added_curator_id);
+
+        // expected_curator
+        let reward_relationship = None::<<Test as recurringrewards::Trait>::RewardRelationshipId>;
+
+        let curator_application = CuratorApplicationById::<Test>::get(new_member_applied_result.curator_application_id);
+        let application_id = curator_application.application_id;
+        let application = hiring::ApplicationById::<Test>::get(application_id);
+
+        let role_stake_profile = 
+            if let Some(ref stake_id) = application.active_role_staking_id { // get_baseline_opening_policy().role_staking_policy {
+
+                Some(
+                    CuratorRoleStakeProfile::new(
+                        stake_id,
+                        &curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period,
+                        &curator_opening.policy_commitment.exit_curator_role_stake_unstaking_period
+                    )
+                )
+            } else {
+                None
+            };
+        
+        let expected_curator = Curator{
+            role_account: fill_opening_applicant_params.add_and_apply_params.curator_applicant_role_account ,
+            reward_relationship: reward_relationship,
+            role_stake_profile: role_stake_profile, //  added_curator.role_stake_profile.clone(),
+            stage: CuratorRoleStage::Active,
+            induction: CuratorInduction::new(
+                &setup_opening_in_review.normal_opening_constructed.new_member_as_lead.lead_id,
+                &new_member_applied_result.curator_application_id,
+                &1
+            ),
+            principal_id: expected_added_principal_id,
+        };
+
+        assert_eq!(
+            expected_curator,
+            added_curator
+        );
+
+        // Principal added
+        assert!(
+            PrincipalById::<Test>::exists(expected_added_principal_id)
+        );
+
+        let added_principal = PrincipalById::<Test>::get(expected_added_principal_id);
+
+        let expected_added_principal = Principal::Curator(expected_added_principal_id);
+
+        assert_eq!(
+            added_principal,
+            expected_added_principal
+        );
+    }
+
+    /*
+    * TODO: add assertion abouot side-effect in !hiring & membership! module, 
+    * this is where state of application has fundamentally changed.
+    */
+
+}
+
+struct CreateChannelFixture {
+    pub channel_creator_member_id: <Test as members::Trait>::MemberId,
+    pub controller_account: <Test as system::Trait>::AccountId,
+    pub channel_creator_role_account: <Test as system::Trait>::AccountId,
+    pub channel_name: Vec<u8>,
+    pub description: Vec<u8>,
+    pub content: ChannelContentType,
+    pub publishing_status: ChannelPublishingStatus
+}
+
+impl CreateChannelFixture {
+
+    pub fn make_valid_unpulished_video_channel_for(
+        channel_creator_member_id: <Test as members::Trait>::MemberId,
+        override_controller_account: Option<<Test as system::Trait>::AccountId>
+    ) -> Self {
+
+        let controller_account = 
+            if let Some(account) = override_controller_account {
+                account
+            } else {
+                members::Module::<Test>::ensure_profile(channel_creator_member_id)
+                .unwrap()
+                .controller_account
+            };
+
+        Self {
+            channel_creator_member_id,
+            controller_account,
+            channel_creator_role_account: 527489,
+            channel_name: generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+            description: generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
+            content: ChannelContentType::Video,
+            publishing_status: ChannelPublishingStatus::NotPublished
+        }
+    }
+
+    fn create_channel(&self) -> Result<(), &'static str> {
+
+        ContentWorkingGroup::create_channel(
+            Origin::signed(self.controller_account),
+            self.channel_creator_member_id,
+            self.channel_creator_role_account,
+            self.channel_name.clone(),
+            self.description.clone(),
+            self.content.clone(),
+            self.publishing_status.clone()
+        )
+    }
+
+    pub fn call_and_assert_error(&self, err_message: &'static str) {
+
+        let number_of_events_before_call = System::events().len();
+
+        let call_result = self.create_channel();
+
+        assert_eq!(
+            call_result
+            ,
+            Err(err_message)
+        );
+
+        // No new events deposited
+        assert_no_new_events(number_of_events_before_call);
+    }
+
+    pub fn call_and_assert_success(&self) -> ChannelId<Test> {
+
+        let call_result = self.create_channel();
+
+        // Call result was Ok
+        assert_eq!(
+            call_result,
+            Ok(())
+        );
+
+        // Assert that event was triggered,
+        // keep channel id.
+        let channel_id = ensure_channelcreated_event_deposited();
+
+        // Assert that given channel id has been added,
+        // and has the right properties.
+        assert!(lib::ChannelById::<Test>::exists(channel_id));
+
+        let created_channel = lib::ChannelById::<Test>::get(channel_id);
+
+        let expected_channel = Channel {
+            channel_name: self.channel_name.clone(),
+            verified: false,
+            description: self.description.clone(),
+            content: self.content.clone(),
+            owner: self.channel_creator_member_id,
+            role_account: self.channel_creator_role_account,
+            publishing_status: self.publishing_status.clone(),
+            curation_status: ChannelCurationStatus::Normal,
+            created: 1, // <== replace with now()
+
+            // We have no expectation here, so we just copy what was added
+            principal_id: created_channel.principal_id
+        };
+
+        assert_eq!(
+            created_channel,
+            expected_channel                
+        );
+
+        // Assert that next id incremented.
+        assert_eq!(lib::NextChannelId::<Test>::get(), channel_id + 1);
+
+        // Assert that there is a mapping established for name
+        assert_eq!(
+            lib::ChannelIdByName::<Test>::get(self.channel_name.clone()),
+            channel_id
+        );
+
+        // Check that principal actually has been added
+        assert!(
+            lib::PrincipalById::<Test>::exists(created_channel.principal_id)
+        );
+
+        let created_principal = lib::PrincipalById::<Test>::get(created_channel.principal_id);
+
+        assert!(
+            match created_principal {
+                Principal::Lead => false,
+                Principal::Curator(_) => false,
+                Principal::ChannelOwner(created_principal_channel_id) => created_principal_channel_id == channel_id,
+            }
+        );
+
+        channel_id
+    }
+
+}
+
 struct NewMemberAsLead {
     pub member_id: <Test as members::Trait>::MemberId,
     pub lead_id: LeadId<Test>
@@ -1429,6 +1414,7 @@ pub fn add_channel_creator_member() -> <Test as members::Trait>::MemberId {
 
     channel_creator_member_id
 }
+
 
 pub fn add_member(root_and_controller_account: <Test as system::Trait>::AccountId, handle: Vec<u8>) -> <Test as members::Trait>::MemberId {
     
