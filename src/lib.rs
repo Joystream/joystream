@@ -396,50 +396,25 @@ impl<T: Trait> Module<T> {
             )
         )?;
 
-        // Ensure that all provided application ids are in fact valid
-        let invalid_application_ids = successful_applications
-            .clone()
-            .iter()
-            .filter_map(|application_id| {
-                if !<ApplicationById<T>>::exists(application_id) {
-                    Some(*application_id)
-                } else {
-                    None
-                }
-            })
-            .collect::<BTreeSet<T::ApplicationId>>();
-
-        if !invalid_application_ids.is_empty() {
-            let first_missing_application_id = invalid_application_ids.iter().next();
-
-            if let Some(application_id) = first_missing_application_id {
-                return Err(FillOpeningError::ApplicationDoesNotExist(*application_id));
-            }
+        // Ensure that all successful applications are actually exist.
+        for application_id in &successful_applications {
+            ensure_application_exists!(
+                T,
+                *application_id,
+                FillOpeningError::ApplicationDoesNotExist(*application_id)
+            )?;
         }
 
-        // Ensure that all claimed successful applications actually exist, and collect@
-        // underlying applications into a map.
-        let successful_applications_map = successful_applications
-            .clone()
-            .iter()
-            .map(|application_id| {
-                assert!(<ApplicationById<T>>::exists(application_id));
-
-                let application = <ApplicationById<T>>::get(application_id);
-
-                (*application_id, application)
-            })
-            .collect::<BTreeMap<T::ApplicationId, _>>();
+        let successful_applications_map =
+            Self::application_id_iter_to_map(successful_applications.iter());
 
         // Ensure that all successful applications are actually active.
-        let opt_non_active_application = successful_applications_map
-            .iter()
-            .find(|(_application_id, application)| application.stage != ApplicationStage::Active);
-
-        if let Some((application_id, _application)) = opt_non_active_application {
-            return Err(FillOpeningError::ApplicationNotInActiveStage(
-                *application_id,
-            ));
+        for (application_id, application) in &successful_applications_map {
+            ensure_eq!(
+                application.stage,
+                hiring::ApplicationStage::Active,
+                FillOpeningError::ApplicationNotInActiveStage(*application_id,)
+            );
         }
 
         //
@@ -447,73 +422,42 @@ impl<T: Trait> Module<T> {
         //
 
         // Deactivate all successful applications, with cause being hired
-        for (application_id, application) in &successful_applications_map {
-            Self::try_to_initiate_application_deactivation(
-                &application,
-                *application_id,
-                opt_successful_applicant_application_stake_unstaking_period,
-                None, // <= We do not unstake role stake for successful applicants, opt_successful_applicant_role_stake_unstaking_period,
-                hiring::ApplicationDeactivationCause::Hired,
-            );
-        }
+        Self::initiate_application_deactivations(
+            &successful_applications_map,
+            opt_successful_applicant_application_stake_unstaking_period,
+            None,
+            hiring::ApplicationDeactivationCause::Hired,
+        );
 
         // Deactivate all unsuccessful applications, with cause being not being hired.
 
         // First get all failed applications by their id.
-        let failed_applications_map = applications_added
-            .difference(&successful_applications)
-            .cloned()
-            .map(|application_id| {
-                let application = <ApplicationById<T>>::get(application_id);
+        let failed_applications_map = Self::application_id_iter_to_map(
+            applications_added.difference(&successful_applications),
+        );
 
-                (application_id, application)
-            })
-            .collect::<BTreeMap<_, _>>();
-
-        // Deactivate all successful applications, with cause being hired
-        for (application_id, application) in &failed_applications_map {
-            Self::try_to_initiate_application_deactivation(
-                &application,
-                *application_id,
-                opt_failed_applicant_application_stake_unstaking_period,
-                opt_failed_applicant_role_stake_unstaking_period,
-                hiring::ApplicationDeactivationCause::NotHired,
-            );
-        }
+        // Deactivate all successful applications, with cause being not hired
+        Self::initiate_application_deactivations(
+            &failed_applications_map,
+            opt_failed_applicant_application_stake_unstaking_period,
+            opt_failed_applicant_role_stake_unstaking_period,
+            hiring::ApplicationDeactivationCause::NotHired,
+        );
 
         // Grab current block height
         let current_block_height = <system::Module<T>>::block_number();
         // Get opening with updated counters
         let opening_needed_for_data = <OpeningById<T>>::get(opening_id);
-        let (
-            _,
-            _,
-            active_application_count,
-            unstaking_application_count,
-            deactivated_application_count,
-        ) = ensure_opening_is_active!(
-            opening_needed_for_data.stage,
-            CancelOpeningError::OpeningNotInCancellableStage
-        )
-        .expect("Invariant break: cannot be non-active on this stage");
 
-        // Deactivate opening itself
-        let new_opening = hiring::Opening {
-            stage: hiring::OpeningStage::Active {
-                stage: hiring::ActiveOpeningStage::Deactivated {
-                    cause: OpeningDeactivationCause::Filled,
-                    deactivated_at_block: current_block_height,
-                    started_accepting_applicants_at_block,
-                    started_review_period_at_block: Some(started_review_period_at_block),
-                },
-                //.. <== cant use here, same issue
-                applications_added,
-                active_application_count,
-                unstaking_application_count,
-                deactivated_application_count,
+        // Deactivate opening
+        let new_opening = opening_needed_for_data.clone_with_new_active_opening_stage(
+            hiring::ActiveOpeningStage::Deactivated {
+                cause: OpeningDeactivationCause::Filled,
+                deactivated_at_block: current_block_height,
+                started_accepting_applicants_at_block,
+                started_review_period_at_block: Some(started_review_period_at_block),
             },
-            ..opening
-        };
+        );
 
         // Write back new opening
         <OpeningById<T>>::insert(opening_id, new_opening);
@@ -851,7 +795,6 @@ pub trait ApplicationDeactivatedHandler<T: Trait> {
 /// Helper implementation so we can provide multiple handlers by grouping handlers in tuple pairs.
 /// For example for three handlers, A, B and C we can set the StakingEventHandler type on the trait to:
 /// type StakingEventHandler = ((A, B), C)
-///
 impl<T: Trait> ApplicationDeactivatedHandler<T> for () {
     fn deactivated(
         _application_id: &T::ApplicationId,
