@@ -64,7 +64,7 @@ fn begin_review_succeeds() {
             application_rationing_policy: None,
             application_staking_policy: None,
             role_staking_policy: None,
-            human_readable_text: add_opening::OPENING_HUMAN_READABLE_TEXT.to_vec(),
+            human_readable_text: add_opening::HUMAN_READABLE_TEXT.to_vec(),
         };
 
         assert_eq!(updated_opening, expected_opening_state);

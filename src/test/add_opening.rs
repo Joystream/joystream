@@ -4,7 +4,7 @@ use crate::StakingAmountLimitMode::Exact;
 use rstd::collections::btree_set::BTreeSet;
 
 static FIRST_BLOCK_HEIGHT: <Test as system::Trait>::BlockNumber = 1;
-pub static OPENING_HUMAN_READABLE_TEXT: &[u8] = b"OPENING_HUMAN_READABLE_TEXT!!!!";
+pub static HUMAN_READABLE_TEXT: &[u8] = b"HUMAN_READABLE_TEXT!!!!";
 
 /*
 Not covered:
@@ -12,11 +12,11 @@ Not covered:
 */
 
 pub struct AddOpeningFixture<Balance> {
-    pub activate_at: ActivateOpeningAt<u64>,
-    pub max_review_period_length: u64,
+    pub activate_at: ActivateOpeningAt<BlockNumber>,
+    pub max_review_period_length: BlockNumber,
     pub application_rationing_policy: Option<ApplicationRationingPolicy>,
-    pub application_staking_policy: Option<StakingPolicy<Balance, u64>>,
-    pub role_staking_policy: Option<StakingPolicy<Balance, u64>>,
+    pub application_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
+    pub role_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
     pub human_readable_text: Vec<u8>,
 }
 
@@ -28,13 +28,13 @@ impl<Balance> Default for AddOpeningFixture<Balance> {
             application_rationing_policy: None,
             application_staking_policy: None,
             role_staking_policy: None,
-            human_readable_text: OPENING_HUMAN_READABLE_TEXT.to_vec(),
+            human_readable_text: HUMAN_READABLE_TEXT.to_vec(),
         }
     }
 }
 
-impl AddOpeningFixture<u64> {
-    fn call_and_assert(&self, expected_result: Result<u64, AddOpeningError>) {
+impl AddOpeningFixture<OpeningId> {
+    fn call_and_assert(&self, expected_result: Result<OpeningId, AddOpeningError>) {
         let expected_opening_id = Hiring::next_opening_id();
 
         let add_opening_result = self.add_opening();
@@ -58,7 +58,7 @@ impl AddOpeningFixture<u64> {
         }
     }
 
-    fn assert_opening_content(&self, expected_opening_id: u64) {
+    fn assert_opening_content(&self, expected_opening_id: OpeningId) {
         let expected_opening_stage = match self.activate_at {
             ActivateOpeningAt::CurrentBlock => OpeningStage::Active {
                 stage: ActiveOpeningStage::AcceptingApplications {
@@ -81,14 +81,14 @@ impl AddOpeningFixture<u64> {
             application_rationing_policy: self.application_rationing_policy.clone(),
             application_staking_policy: self.application_staking_policy.clone(),
             role_staking_policy: self.role_staking_policy.clone(),
-            human_readable_text: OPENING_HUMAN_READABLE_TEXT.to_vec(),
+            human_readable_text: HUMAN_READABLE_TEXT.to_vec(),
         };
 
         let found_opening = Hiring::opening_by_id(expected_opening_id);
         assert_eq!(found_opening, expected_opening);
     }
 
-    pub(crate) fn add_opening(&self) -> Result<u64, AddOpeningError> {
+    pub(crate) fn add_opening(&self) -> Result<OpeningId, AddOpeningError> {
         Hiring::add_opening(
             self.activate_at.clone(),
             self.max_review_period_length,

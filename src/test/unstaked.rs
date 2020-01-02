@@ -14,9 +14,9 @@ ii.application.active_application_staking_id;
 */
 
 pub struct UnstakedFixture {
-    pub opening_id: u64,
-    pub application_id: u64,
-    pub stake_id: u64,
+    pub opening_id: OpeningId,
+    pub application_id: ApplicationId,
+    pub stake_id: StakeId,
 }
 
 impl UnstakedFixture {
@@ -39,7 +39,7 @@ impl UnstakedFixture {
 
     fn assert_application_content(
         &self,
-        old_application: Application<u64, u64, u64>,
+        old_application: Application<OpeningId, BlockNumber, StakeId>,
         unstaked_result: UnstakedResult,
     ) {
         let new_application = <ApplicationById<Test>>::get(self.application_id);
@@ -93,7 +93,7 @@ impl UnstakedFixture {
 
     fn assert_opening_content(
         &self,
-        old_opening: Opening<u64, u64, u64>,
+        old_opening: Opening<Balance, BlockNumber, ApplicationId>,
         unstaked_result: UnstakedResult,
     ) {
         let new_opening = <OpeningById<Test>>::get(self.opening_id);

@@ -19,15 +19,15 @@ ii.application.active_application_staking_id;
 */
 
 pub struct FillOpeningFixture {
-    pub opening_id: u64,
+    pub opening_id: OpeningId,
     pub successful_applications: BTreeSet<<mock::Test as Trait>::ApplicationId>,
-    pub opt_successful_applicant_application_stake_unstaking_period: Option<u64>,
-    pub opt_failed_applicant_application_stake_unstaking_period: Option<u64>,
-    pub opt_failed_applicant_role_stake_unstaking_period: Option<u64>,
+    pub opt_successful_applicant_application_stake_unstaking_period: Option<BlockNumber>,
+    pub opt_failed_applicant_application_stake_unstaking_period: Option<BlockNumber>,
+    pub opt_failed_applicant_role_stake_unstaking_period: Option<BlockNumber>,
 }
 
 impl FillOpeningFixture {
-    pub(crate) fn default_for_opening(opening_id: u64) -> Self {
+    pub(crate) fn default_for_opening(opening_id: OpeningId) -> Self {
         FillOpeningFixture {
             opening_id,
             successful_applications: BTreeSet::new(),
@@ -51,7 +51,7 @@ impl FillOpeningFixture {
 
     fn assert_same_applications(
         &self,
-        old_applications: BTreeMap<u64, Application<u64, u64, u64>>,
+        old_applications: BTreeMap<ApplicationId, Application<OpeningId, BlockNumber, StakeId>>,
     ) {
         for (app_id, application) in old_applications {
             let test_application = <ApplicationById<Test>>::get(app_id);
@@ -59,11 +59,11 @@ impl FillOpeningFixture {
         }
     }
 
-    fn extract_successful_applications(&self) -> BTreeMap<u64, Application<u64, u64, u64>> {
+    fn extract_successful_applications(&self) -> BTreeMap<ApplicationId, Application<OpeningId, BlockNumber, StakeId>> {
         self.successful_applications
             .iter()
             .map(|app_id| (*app_id, <ApplicationById<Test>>::get(app_id)))
-            .collect::<BTreeMap<u64, Application<u64, u64, u64>>>()
+            .collect::<BTreeMap<ApplicationId, Application<OpeningId, BlockNumber, StakeId>>>()
     }
 
     pub(crate) fn fill_opening(&self) -> Result<(), FillOpeningError<mock::Test>> {

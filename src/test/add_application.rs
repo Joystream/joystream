@@ -18,23 +18,25 @@ i.infallible_opt_stake_initiation -> infallible_stake_initiation_on_application 
 */
 
 pub struct AddApplicationFixture {
-    pub opening_id: u64,
+    pub opening_id: OpeningId,
     pub opt_role_stake_imbalance: Option<NegativeImbalance<Test>>,
     pub opt_application_stake_imbalance: Option<NegativeImbalance<Test>>,
     pub human_readable_text: Vec<u8>,
 }
 
 impl AddApplicationFixture {
-    pub(crate) fn default_for_opening(opening_id: u64) -> Self {
+    pub(crate) fn default_for_opening(opening_id: OpeningId) -> Self {
         AddApplicationFixture {
             opening_id,
             opt_role_stake_imbalance: None,
             opt_application_stake_imbalance: None,
-            human_readable_text: add_opening::OPENING_HUMAN_READABLE_TEXT.to_vec(),
+            human_readable_text: add_opening::HUMAN_READABLE_TEXT.to_vec(),
         }
     }
 
-    pub(crate) fn add_application(&self) -> Result<ApplicationAdded<u64>, AddApplicationError> {
+    pub(crate) fn add_application(
+        &self,
+    ) -> Result<ApplicationAdded<ApplicationId>, AddApplicationError> {
         let mut opt_role_stake_imbalance = None;
         if let Some(ref imbalance) = self.opt_role_stake_imbalance {
             opt_role_stake_imbalance =
@@ -55,7 +57,10 @@ impl AddApplicationFixture {
         )
     }
 
-    fn call_and_assert(&self, expected_result: Result<ApplicationAdded<u64>, AddApplicationError>) {
+    fn call_and_assert(
+        &self,
+        expected_result: Result<ApplicationAdded<ApplicationId>, AddApplicationError>,
+    ) {
         let expected_application_id = Hiring::next_application_id();
         // save opening state (can be invalid if invalid opening_id provided)
         let old_opening_state = <OpeningById<Test>>::get(self.opening_id);
@@ -90,8 +95,8 @@ impl AddApplicationFixture {
 
     fn assert_application_content(
         &self,
-        add_application_result: Result<ApplicationAdded<u64>, AddApplicationError>,
-        expected_application_id: u64,
+        add_application_result: Result<ApplicationAdded<ApplicationId>, AddApplicationError>,
+        expected_application_id: ApplicationId,
     ) {
         if add_application_result.is_ok() {
             let opening = <OpeningById<Test>>::get(self.opening_id);
@@ -122,7 +127,7 @@ impl AddApplicationFixture {
                 active_role_staking_id: expected_active_role_staking_id,
                 active_application_staking_id: expected_active_application_staking_id,
                 stage: ApplicationStage::Active,
-                human_readable_text: add_opening::OPENING_HUMAN_READABLE_TEXT.to_vec(),
+                human_readable_text: add_opening::HUMAN_READABLE_TEXT.to_vec(),
             };
 
             assert_eq!(found_application, expected_application);
@@ -131,9 +136,9 @@ impl AddApplicationFixture {
 
     fn assert_opening_content(
         &self,
-        old_opening: Opening<u64, u64, u64>,
-        add_application_result: Result<ApplicationAdded<u64>, AddApplicationError>,
-        expected_application_id: u64,
+        old_opening: Opening<Balance, BlockNumber, ApplicationId>,
+        add_application_result: Result<ApplicationAdded<ApplicationId>, AddApplicationError>,
+        expected_application_id: ApplicationId,
     ) {
         let new_opening_state = <OpeningById<Test>>::get(self.opening_id);
 
