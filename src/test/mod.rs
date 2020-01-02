@@ -20,7 +20,7 @@ pub(crate) type ApplicationId = <Test as Trait>::ApplicationId;
 pub(crate) type BlockNumber = <Test as system::Trait>::BlockNumber;
 pub(crate) type StakeId = <Test as stake::Trait>::StakeId;
 pub(crate) type Balance =
-<<Test as stake::Trait>::Currency as Currency<<Test as system::Trait>::AccountId>>::Balance;
+    <<Test as stake::Trait>::Currency as Currency<<Test as system::Trait>::AccountId>>::Balance;
 
 /*
 Add tests:

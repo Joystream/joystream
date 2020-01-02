@@ -59,7 +59,9 @@ impl FillOpeningFixture {
         }
     }
 
-    fn extract_successful_applications(&self) -> BTreeMap<ApplicationId, Application<OpeningId, BlockNumber, StakeId>> {
+    fn extract_successful_applications(
+        &self,
+    ) -> BTreeMap<ApplicationId, Application<OpeningId, BlockNumber, StakeId>> {
         self.successful_applications
             .iter()
             .map(|app_id| (*app_id, <ApplicationById<Test>>::get(app_id)))

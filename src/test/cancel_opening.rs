@@ -57,7 +57,9 @@ impl CancelOpeningFixture {
         }
     }
 
-    fn extract_applications(&self) -> BTreeMap<ApplicationId, Application<OpeningId, BlockNumber, StakeId>> {
+    fn extract_applications(
+        &self,
+    ) -> BTreeMap<ApplicationId, Application<OpeningId, BlockNumber, StakeId>> {
         let opening = <OpeningById<Test>>::get(self.opening_id);
 
         if let OpeningStage::Active {
