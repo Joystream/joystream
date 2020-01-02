@@ -466,9 +466,9 @@ impl<T: Trait> Module<T> {
         let (
             active_stage,
             applications_added,
-            active_application_count,
-            unstaking_application_count,
-            deactivated_application_count,
+            _,
+            _,
+            _,
         ) = ensure_opening_is_active!(
             opening.stage,
             FillOpeningError::OpeningNotInReviewPeriodStage
@@ -610,6 +610,18 @@ impl<T: Trait> Module<T> {
 
         // Grab current block height
         let current_block_height = <system::Module<T>>::block_number();
+        // Get opening with updated counters
+        let opening_needed_for_data = <OpeningById<T>>::get(opening_id);
+        let (
+            _,
+            _,
+            active_application_count,
+            unstaking_application_count,
+            deactivated_application_count,
+        ) = ensure_opening_is_active!(
+            opening_needed_for_data.stage,
+            CancelOpeningError::OpeningNotInCancellableStage
+        ).expect("Invariant break: cannot be non-active on this stage");
 
         // Deactivate opening itself
         let new_opening = hiring::Opening {
