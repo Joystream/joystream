@@ -142,20 +142,23 @@ decl_module! {
                                 ref started_accepting_applicants_at_block,
                                 ref started_review_period_at_block
                             } = stage {
-
-                                Some((
-                                    opening_id,
-                                    opening.clone(),
-                                    (
-                                        stage.clone(),
-                                        applications_added.clone(),
-                                        *active_application_count,
-                                        *unstaking_application_count,
-                                        *deactivated_application_count,
-                                        *started_accepting_applicants_at_block,
-                                        *started_review_period_at_block
-                                    )
-                                ))
+                                if now == opening.max_review_period_length + *started_review_period_at_block {
+                                    Some((
+                                        opening_id,
+                                        opening.clone(),
+                                        (
+                                            stage.clone(),
+                                            applications_added.clone(),
+                                            *active_application_count,
+                                            *unstaking_application_count,
+                                            *deactivated_application_count,
+                                            *started_accepting_applicants_at_block,
+                                            *started_review_period_at_block
+                                        )
+                                    ))
+                                } else {
+                                    None
+                                }
 
                         } else {
                             None
