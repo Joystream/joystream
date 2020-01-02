@@ -26,6 +26,29 @@ mod test;
 pub use hiring::*;
 use stake;
 
+pub trait Trait: system::Trait + stake::Trait + Sized {
+    type OpeningId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    type ApplicationId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    /// Type that will handle various staking events
+    type ApplicationDeactivatedHandler: ApplicationDeactivatedHandler<Self>;
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as Hiring {
 
@@ -156,7 +179,7 @@ decl_module! {
                 )) in openings_in_expired_review_period_iter {
 
                 //
-                // Deactivat all applications that are part of this opening
+                // Deactivate all applications that are part of this opening
                 //
 
                 // Get unstaking periods
@@ -934,29 +957,6 @@ pub trait ApplicationDeactivatedHandler<T: Trait> {
     /// An application, with the given id, was fully deactivated, with the
     /// given cause, and was put in the inactive state.
     fn deactivated(application_id: &T::ApplicationId, cause: hiring::ApplicationDeactivationCause);
-}
-
-pub trait Trait: system::Trait + stake::Trait + Sized {
-    type OpeningId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
-    type ApplicationId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
-    /// Type that will handle various staking events
-    type ApplicationDeactivatedHandler: ApplicationDeactivatedHandler<Self>;
 }
 
 /// Helper implementation so we can provide multiple handlers by grouping handlers in tuple pairs.
