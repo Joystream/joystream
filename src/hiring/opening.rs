@@ -270,9 +270,9 @@ impl<BlockNumber: Clone, ApplicationId: Ord + Clone> OpeningStage<BlockNumber, A
         Err(error)
     }
 
-    /// Clones current stage. Panics if not Active.
-    /// Adds application_id to applications_added collection.
-    /// Increments 'active_application_count' counter.
+    // Clones current stage. Panics if not Active.
+    // Adds application_id to applications_added collection.
+    // Increments 'active_application_count' counter.
     pub(crate) fn clone_with_added_active_application(
         self,
         new_application_id: ApplicationId,
@@ -340,7 +340,7 @@ pub enum ActiveOpeningStage<BlockNumber> {
 }
 
 impl<BlockNumber: Clone> ActiveOpeningStage<BlockNumber> {
-    /// Ensures that active opening stage is accepting applications.
+    // Ensures that active opening stage is accepting applications.
     pub(crate) fn ensure_active_opening_is_accepting_applications<Err>(
         &self,
         error: Err,
@@ -355,7 +355,7 @@ impl<BlockNumber: Clone> ActiveOpeningStage<BlockNumber> {
         Err(error)
     }
 
-    /// Ensures that active opening stage is in review period.
+    // Ensures that active opening stage is in review period.
     pub(crate) fn ensure_active_opening_is_in_review_period<Err>(
         &self,
         error: Err,
@@ -369,6 +369,35 @@ impl<BlockNumber: Clone> ActiveOpeningStage<BlockNumber> {
                 started_review_period_at_block.clone(),
             )), // <= need proper type here in the future, not param
             _ => Err(error),
+        }
+    }
+
+    // Creates new active opening stage on cancel opening
+    pub(crate) fn new_stage_on_cancelling(
+        self,
+        current_block_height: BlockNumber,
+    ) -> Result<ActiveOpeningStage<BlockNumber>, CancelOpeningError> {
+        match self {
+            ActiveOpeningStage::AcceptingApplications {
+                started_accepting_applicants_at_block,
+            } => Ok(ActiveOpeningStage::Deactivated {
+                cause: OpeningDeactivationCause::CancelledAcceptingApplications,
+                deactivated_at_block: current_block_height,
+                started_accepting_applicants_at_block,
+                started_review_period_at_block: None,
+            }),
+            ActiveOpeningStage::ReviewPeriod {
+                started_accepting_applicants_at_block,
+                started_review_period_at_block,
+            } => Ok(ActiveOpeningStage::Deactivated {
+                cause: OpeningDeactivationCause::CancelledInReviewPeriod,
+                deactivated_at_block: current_block_height,
+                started_accepting_applicants_at_block,
+                started_review_period_at_block: Some(started_review_period_at_block),
+            }),
+            ActiveOpeningStage::Deactivated { .. } => {
+                Err(CancelOpeningError::OpeningNotInCancellableStage)
+            }
         }
     }
 }

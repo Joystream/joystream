@@ -73,7 +73,7 @@ decl_storage! {
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn on_finalize(now: T::BlockNumber) {
-        
+
             //
             // == MUTATION SAFE ==
             //
@@ -207,29 +207,7 @@ impl<T: Trait> Module<T> {
 
         //
         let current_block_height = <system::Module<T>>::block_number(); // move later!
-
-        let new_active_stage = match active_stage {
-            ActiveOpeningStage::AcceptingApplications {
-                started_accepting_applicants_at_block,
-            } => Ok(ActiveOpeningStage::Deactivated {
-                cause: OpeningDeactivationCause::CancelledAcceptingApplications,
-                deactivated_at_block: current_block_height,
-                started_accepting_applicants_at_block,
-                started_review_period_at_block: None,
-            }),
-            ActiveOpeningStage::ReviewPeriod {
-                started_accepting_applicants_at_block,
-                started_review_period_at_block,
-            } => Ok(ActiveOpeningStage::Deactivated {
-                cause: OpeningDeactivationCause::CancelledInReviewPeriod,
-                deactivated_at_block: current_block_height,
-                started_accepting_applicants_at_block,
-                started_review_period_at_block: Some(started_review_period_at_block),
-            }),
-            ActiveOpeningStage::Deactivated { .. } => {
-                Err(CancelOpeningError::OpeningNotInCancellableStage)
-            }
-        }?;
+        let new_active_stage = active_stage.new_stage_on_cancelling(current_block_height)?;
 
         // Ensure unstaking periods are OK.
         ensure_opt_unstaking_period_is_ok!(
