@@ -1,13 +1,14 @@
 use super::*;
 use crate::mock::*;
 
+use add_application::AddApplicationFixture;
 use add_opening::AddOpeningFixture;
 use runtime_primitives::traits::OnFinalize;
 
 #[test]
 fn on_finalize_should_work_on_empty_data() {
     build_test_externalities().execute_with(|| {
-        <Module<Test> as OnFinalize<u64>>::on_finalize(42);
+        <Module<Test> as OnFinalize<BlockNumber>>::on_finalize(42);
     });
 }
 
@@ -20,7 +21,7 @@ fn on_finalize_should_not_change_opening_prematurely() {
         let opening_id = add_opening_result.unwrap();
 
         let old_opening = <OpeningById<Test>>::get(opening_id);
-        <Module<Test> as OnFinalize<u64>>::on_finalize(1);
+        <Module<Test> as OnFinalize<BlockNumber>>::on_finalize(1);
         let new_opening = <OpeningById<Test>>::get(opening_id);
 
         assert_eq!(old_opening, new_opening);
@@ -43,7 +44,7 @@ fn on_finalize_should_change_waiting_to_begin_opening_stage_to_active_and_accept
             panic!("planned to be WaitingToBegin")
         }
 
-        <Module<Test> as OnFinalize<u64>>::on_finalize(2);
+        <Module<Test> as OnFinalize<BlockNumber>>::on_finalize(2);
 
         // ensure on_finalize worked
         let new_opening = <OpeningById<Test>>::get(opening_id);
@@ -70,7 +71,7 @@ fn on_finalize_should_not_change_opening_to_begin_review_stage_prematurely() {
         assert!(Hiring::begin_review(opening_id).is_ok());
 
         let old_opening = <OpeningById<Test>>::get(opening_id);
-        <Module<Test> as OnFinalize<u64>>::on_finalize(1);
+        <Module<Test> as OnFinalize<BlockNumber>>::on_finalize(1);
         let new_opening = <OpeningById<Test>>::get(opening_id);
 
         assert_eq!(old_opening, new_opening);
@@ -98,7 +99,7 @@ fn on_finalize_should_deactivate_opening_on_begin_review_stage() {
             panic!("should be Active")
         }
 
-        <Module<Test> as OnFinalize<u64>>::on_finalize(3);
+        <Module<Test> as OnFinalize<BlockNumber>>::on_finalize(3);
 
         let new_opening = <OpeningById<Test>>::get(opening_id);
         if let OpeningStage::Active { stage, .. } = new_opening.stage {
@@ -106,6 +107,41 @@ fn on_finalize_should_deactivate_opening_on_begin_review_stage() {
                 // expected
             } else {
                 panic!("should be Deactivated")
+            }
+        } else {
+            panic!("should be Active")
+        }
+    });
+}
+
+#[test]
+fn on_finalize_should_deactivate_application_with_review_period_expired_cause() {
+    build_test_externalities().execute_with(|| {
+        let mut opening_fixture = AddOpeningFixture::default();
+        opening_fixture.max_review_period_length = 2;
+        let add_opening_result = opening_fixture.add_opening();
+        let opening_id = add_opening_result.unwrap();
+
+        let application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+        let app_application_result = application_fixture.add_application();
+        let application_id = app_application_result.unwrap().application_id_added;
+
+        assert!(Hiring::begin_review(opening_id).is_ok());
+
+        let old_application = <ApplicationById<Test>>::get(application_id);
+        if let ApplicationStage::Active = old_application.stage {
+            // expected
+        } else {
+            panic!("should be Active")
+        }
+        <Module<Test> as OnFinalize<BlockNumber>>::on_finalize(3);
+
+        let new_application = <ApplicationById<Test>>::get(application_id);
+        if let ApplicationStage::Inactive { cause, .. } = new_application.stage {
+            if let ApplicationDeactivationCause::ReviewPeriodExpired = cause {
+                // expected
+            } else {
+                panic!("should be ReviewPeriodExpired")
             }
         } else {
             panic!("should be Active")
