@@ -73,113 +73,29 @@ decl_storage! {
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn on_finalize(now: T::BlockNumber) {
-
+        
             //
             // == MUTATION SAFE ==
             //
 
-            // NB: This routine is plauged by this problem
-            // https://github.com/Joystream/joystream/issues/126#issuecomment-542268343 ,
-            // would be much cleaner otherwise.
-
-            // Compute iterator of openings waiting to begin
-            let openings_ready_to_accept_applications_iter =
-                <OpeningById<T>>::enumerate()
-                .filter_map(|(opening_id, opening)| {
-
-                    if let hiring::OpeningStage::WaitingToBegin {
-                        begins_at_block
-                    } = opening.stage {
-
-                        if begins_at_block == now {
-                            Some((
-                                opening_id,
-                                opening,
-                                begins_at_block
-                            ))
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
+            // Change opening from WaitingToBegin stage to Active::AcceptingApplications stage
+            for (opening_id, opening) in Self::openings_waiting_to_begin_iterator(now) {
+                let opening_accepting_applications = opening.clone_with_new_active_opening_stage(
+                    hiring::ActiveOpeningStage::AcceptingApplications {
+                        started_accepting_applicants_at_block: now
                 });
-
-            // ...
-            for (opening_id, opening, _) in openings_ready_to_accept_applications_iter {
-
-                // NB: Shows issue https://github.com/Joystream/substrate-hiring-module/issues/5
-                let opening_accepting_applications = hiring::Opening{
-                    stage : hiring::OpeningStage::Active {
-                        stage: hiring::ActiveOpeningStage::AcceptingApplications {
-                            started_accepting_applicants_at_block: now
-                        },
-                        applications_added: BTreeSet::new(),
-                        active_application_count: 0,
-                        unstaking_application_count: 0,
-                        deactivated_application_count: 0
-                    },
-                    ..(opening.clone())
-                };
 
                 <OpeningById<T>>::insert(opening_id, opening_accepting_applications);
             }
 
-            // Compute iterator of openings in expired review period
-            let openings_in_expired_review_period_iter =
-                <OpeningById<T>>::enumerate()
-                .filter_map(|(opening_id, opening)| {
-
-                    if let hiring::OpeningStage::Active {
-                        ref stage,
-                        ref applications_added,
-                        ref active_application_count,
-                        ref unstaking_application_count,
-                        ref deactivated_application_count
-                    } = opening.stage {
-
-                        if let hiring::ActiveOpeningStage::ReviewPeriod {
-                                ref started_accepting_applicants_at_block,
-                                ref started_review_period_at_block
-                            } = stage {
-                                if now == opening.max_review_period_length + *started_review_period_at_block {
-                                    Some((
-                                        opening_id,
-                                        opening.clone(),
-                                        (
-                                            stage.clone(),
-                                            applications_added.clone(),
-                                            *active_application_count,
-                                            *unstaking_application_count,
-                                            *deactivated_application_count,
-                                            *started_accepting_applicants_at_block,
-                                            *started_review_period_at_block
-                                        )
-                                    ))
-                                } else {
-                                    None
-                                }
-
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
-                });
-
-            // ...
+            // Deactivate opening
             for (opening_id,
                 opening,
                 (
-                    _stage,
                     applications_added,
-                    _active_application_count,
-                    _unstaking_application_count,
-                    _deactivated_application_count,
                     started_accepting_applicants_at_block,
                     started_review_period_at_block
-                )) in openings_in_expired_review_period_iter {
+                )) in Self::openings_expired_review_period_iterator(now) {
 
                 //
                 // Deactivate all applications that are part of this opening
@@ -189,11 +105,10 @@ decl_module! {
                 let application_stake_unstaking_period = StakingPolicy::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.application_staking_policy);
                 let role_stake_unstaking_period = StakingPolicy::opt_staking_policy_to_review_period_expired_unstaking_period(&opening.role_staking_policy);
 
-
                 // Get applications
                 let applications_map = Self::application_id_iter_to_map(applications_added.iter());
 
-                // Deactivate
+                // Deactivate applications
                 Self::initiate_application_deactivations(
                     &applications_map,
                     application_stake_unstaking_period,
@@ -201,30 +116,16 @@ decl_module! {
                     hiring::ApplicationDeactivationCause::ReviewPeriodExpired
                 );
 
-                // NB: Shows issue https://github.com/Joystream/substrate-hiring-module/issues/5
-                let opening_accepting_applications = hiring::Opening {
-
-                    stage: hiring::OpeningStage::Active {
-
-                        stage: hiring::ActiveOpeningStage::Deactivated {
-
+                let deactivated_opening =
+                    opening.clone_with_new_active_opening_stage(
+                        hiring::ActiveOpeningStage::Deactivated {
                             cause: hiring::OpeningDeactivationCause::ReviewPeriodExpired,
                             deactivated_at_block: now,
                             started_accepting_applicants_at_block: started_accepting_applicants_at_block,
                             started_review_period_at_block: Some(started_review_period_at_block),
-                        },
+                    });
 
-                        applications_added: BTreeSet::new(),
-                        active_application_count: 0,
-                        unstaking_application_count: 0,
-                        deactivated_application_count: 0
-                    },
-
-                    ..(opening.clone())
-                };
-
-                <OpeningById<T>>::insert(opening_id, opening_accepting_applications);
-
+                <OpeningById<T>>::insert(opening_id, deactivated_opening);
             }
         }
     }
@@ -463,13 +364,7 @@ impl<T: Trait> Module<T> {
         // Ensure that the opening exists
         let opening = ensure_opening_exists!(T, opening_id, FillOpeningError::OpeningDoesNotExist)?;
 
-        let (
-            active_stage,
-            applications_added,
-            _,
-            _,
-            _,
-        ) = ensure_opening_is_active!(
+        let (active_stage, applications_added, _, _, _) = ensure_opening_is_active!(
             opening.stage,
             FillOpeningError::OpeningNotInReviewPeriodStage
         )?;
@@ -621,7 +516,8 @@ impl<T: Trait> Module<T> {
         ) = ensure_opening_is_active!(
             opening_needed_for_data.stage,
             CancelOpeningError::OpeningNotInCancellableStage
-        ).expect("Invariant break: cannot be non-active on this stage");
+        )
+        .expect("Invariant break: cannot be non-active on this stage");
 
         // Deactivate opening itself
         let new_opening = hiring::Opening {
@@ -1083,8 +979,9 @@ enum ApplicationDeactivationInitationResult {
     Deactivated,
 }
 
-// Iterate through ApplicationById map
+// Opening and application iterators
 impl<T: Trait> Module<T> {
+    // Iterate through ApplicationById map
     fn application_id_iter_to_map<'a>(
         application_id_iter: impl Iterator<Item = &'a T::ApplicationId>,
     ) -> ApplicationBTreeMap<T> {
@@ -1095,6 +992,72 @@ impl<T: Trait> Module<T> {
                 (*application_id, application)
             })
             .collect::<BTreeMap<_, _>>()
+    }
+
+    // Compute iterator of openings waiting to begin
+    fn openings_waiting_to_begin_iterator(
+        now: T::BlockNumber,
+    ) -> impl Iterator<
+        Item = (
+            T::OpeningId,
+            Opening<BalanceOf<T>, T::BlockNumber, T::ApplicationId>,
+        ),
+    > {
+        <OpeningById<T>>::enumerate().filter_map(move |(opening_id, opening)| {
+            if let hiring::OpeningStage::WaitingToBegin { begins_at_block } = opening.stage {
+                if begins_at_block == now {
+                    Some((opening_id, opening))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+    }
+
+    // Compute iterator of openings in expired review period
+    fn openings_expired_review_period_iterator(
+        now: T::BlockNumber,
+    ) -> impl Iterator<
+        Item = (
+            T::OpeningId,
+            Opening<BalanceOf<T>, T::BlockNumber, T::ApplicationId>,
+            (BTreeSet<T::ApplicationId>, T::BlockNumber, T::BlockNumber),
+        ),
+    > {
+        <OpeningById<T>>::enumerate().filter_map(move |(opening_id, opening)| {
+            if let hiring::OpeningStage::Active {
+                ref stage,
+                ref applications_added,
+                ..
+            } = opening.stage
+            {
+                if let hiring::ActiveOpeningStage::ReviewPeriod {
+                    ref started_accepting_applicants_at_block,
+                    ref started_review_period_at_block,
+                } = stage
+                {
+                    if now == opening.max_review_period_length + *started_review_period_at_block {
+                        Some((
+                            opening_id,
+                            opening.clone(),
+                            (
+                                applications_added.clone(),
+                                *started_accepting_applicants_at_block,
+                                *started_review_period_at_block,
+                            ),
+                        ))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
     }
 }
 
