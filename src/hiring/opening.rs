@@ -4,10 +4,12 @@ use rstd::prelude::*;
 use rstd::vec::Vec;
 
 use codec::{Decode, Encode};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 use srml_support::ensure;
 
-use crate::hiring::StakePurpose;
-use crate::{hiring, ApplicationRationingPolicy, StakingPolicy};
+use crate::hiring;
+use crate::hiring::*;
 
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone)]
 pub struct Opening<Balance, BlockNumber, ApplicationId> {
@@ -380,15 +382,6 @@ pub enum OpeningDeactivationCause {
     Filled,
 }
 
-/// NB:
-/// `OpeningCancelled` does not have the ideal form.
-/// https://github.com/Joystream/substrate-hiring-module/issues/10
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct OpeningCancelled {
-    pub number_of_unstaking_applications: u32,
-    pub number_of_deactivated_applications: u32,
-}
-
 // Safe and explict way of chosing
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum ActivateOpeningAt<BlockNumber> {
@@ -396,36 +389,12 @@ pub enum ActivateOpeningAt<BlockNumber> {
     ExactBlock(BlockNumber),
 }
 
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum AddOpeningError {
-    OpeningMustActivateInTheFuture,
-
-    /// It is not possible to stake less than the minimum balance defined in the
-    /// `Currency` module.
-    StakeAmountLessThanMinimumCurrencyBalance(StakePurpose),
-
-    /// It is not possible to provide application rationing policy with zero
-    /// 'max_active_applicants' parameter.
-    ApplicationRationingZeroMaxApplicants,
-}
-
-/// The possible outcome for an application in an opening which is being filled.
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum ApplicationOutcomeInFilledOpening {
-    Success,
-    Failure,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum CancelOpeningError {
-    UnstakingPeriodTooShort(StakePurpose),
-    RedundantUnstakingPeriodProvided(StakePurpose),
-    OpeningDoesNotExist,
-    OpeningNotInCancellableStage,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum BeginReviewError {
-    OpeningDoesNotExist,
-    OpeningNotInAcceptingApplicationsStage,
+/// How to limit the number of eligible applicants
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
+pub struct ApplicationRationingPolicy {
+    /// The maximum number of applications that can be on the list at any time.
+    pub max_active_applicants: u32,
+    // How applicants will be ranked, in order to respect the maximum simultaneous application limit
+    //pub applicant_ranking: ApplicationRankingPolicy
 }

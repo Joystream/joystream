@@ -1,12 +1,8 @@
 use codec::{Decode, Encode};
-
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
-use crate::hiring::StakePurpose;
-
 use rstd::clone::Clone;
 use rstd::vec::Vec;
+
+use crate::hiring::StakePurpose;
 
 /// An application for an actor to occupy an opening.
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone, PartialOrd, Ord)]
@@ -151,48 +147,4 @@ impl<BlockNumber> Default for ApplicationStage<BlockNumber> {
     fn default() -> Self {
         ApplicationStage::Active
     }
-}
-
-/// How to limit the number of eligible applicants
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
-pub struct ApplicationRationingPolicy {
-    /// The maximum number of applications that can be on the list at any time.
-    pub max_active_applicants: u32,
-    // How applicants will be ranked, in order to respect the maximum simultaneous application limit
-    //pub applicant_ranking: ApplicationRankingPolicy
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum BeginAcceptingApplicationsError {
-    OpeningDoesNotExist,
-    OpeningIsNotInWaitingToBeginStage,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum AddApplicationError {
-    OpeningDoesNotExist,
-    StakeProvidedWhenRedundant(StakePurpose),
-    StakeMissingWhenRequired(StakePurpose),
-    StakeAmountTooLow(StakePurpose),
-    OpeningNotInAcceptingApplicationsStage,
-    NewApplicationWasCrowdedOut,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct ApplicationAdded<ApplicationId> {
-    /// ...
-    pub application_id_added: ApplicationId,
-
-    /// ...
-    pub application_id_crowded_out: Option<ApplicationId>,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum DeactivateApplicationError {
-    ApplicationDoesNotExist,
-    ApplicationNotActive,
-    OpeningNotAcceptingApplications,
-    UnstakingPeriodTooShort(StakePurpose),
-    RedundantUnstakingPeriodProvided(StakePurpose),
 }

@@ -1,21 +1,21 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use codec::Codec;
+use system;
+
 use runtime_primitives::traits::Zero;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 
 use srml_support::traits::Currency;
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
-use crate::sr_api_hidden_includes_decl_storage::hidden_include::traits::Imbalance;
-
 use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::iter::Iterator;
 use rstd::prelude::*;
 
-use codec::Codec;
-use system;
+use crate::sr_api_hidden_includes_decl_storage::hidden_include::traits::Imbalance;
 
 mod hiring;
 #[macro_use]
@@ -25,54 +25,6 @@ mod test;
 
 pub use hiring::*;
 use stake;
-
-/// ...
-pub trait ApplicationDeactivatedHandler<T: Trait> {
-    /// An application, with the given id, was fully deactivated, with the
-    /// given cause, and was put in the inactive state.
-    fn deactivated(application_id: &T::ApplicationId, cause: hiring::ApplicationDeactivationCause);
-}
-
-pub trait Trait: system::Trait + stake::Trait + Sized {
-    type OpeningId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
-    type ApplicationId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
-    /// Type that will handle various staking events
-    type ApplicationDeactivatedHandler: ApplicationDeactivatedHandler<Self>;
-}
-
-/// Helper implementation so we can provide multiple handlers by grouping handlers in tuple pairs.
-/// For example for three handlers, A, B and C we can set the StakingEventHandler type on the trait to:
-/// type StakingEventHandler = ((A, B), C)
-///
-impl<T: Trait> ApplicationDeactivatedHandler<T> for () {
-    fn deactivated(
-        _application_id: &T::ApplicationId,
-        _cause: hiring::ApplicationDeactivationCause,
-    ) {
-    }
-}
-
-pub type BalanceOf<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-
-pub type NegativeImbalance<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Hiring {
@@ -252,44 +204,11 @@ decl_module! {
     }
 }
 
-/// Error due to attempting to fill an opening.
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum FillOpeningError<T: Trait> {
-    OpeningDoesNotExist,
-    OpeningNotInReviewPeriodStage,
-    UnstakingPeriodTooShort(StakePurpose, ApplicationOutcomeInFilledOpening),
-    RedundantUnstakingPeriodProvided(StakePurpose, ApplicationOutcomeInFilledOpening),
-    ApplicationDoesNotExist(T::ApplicationId),
-    ApplicationNotInActiveStage(T::ApplicationId),
-}
+/*
+ *  ======== Main API implementation ========
+ */
 
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
-    pub opening: Opening<BalanceOf<T>, T::BlockNumber, T::ApplicationId>,
-
-    pub active_stage: ActiveOpeningStage<T::BlockNumber>,
-
-    pub applications_added: BTreeSet<T::ApplicationId>,
-
-    pub active_application_count: u32,
-
-    pub unstaking_application_count: u32,
-
-    pub deactivated_application_count: u32,
-
-    pub would_get_added_success: ApplicationAddedSuccess<T>,
-}
-
-impl<T: Trait> DestructuredApplicationCanBeAddedEvaluation<T> {
-    pub(crate) fn calculate_total_application_count(&self) -> u32 {
-        // TODO: fix so that `number_of_appliations_ever_added` can be invoked.
-        // cant do this due to bad design of stage => opening.stage.number_of_appliations_ever_added();
-        self.active_application_count
-            + self.unstaking_application_count
-            + self.deactivated_application_count
-    }
-}
-
+// Public API implementation
 impl<T: Trait> Module<T> {
     pub fn add_opening(
         activate_at: ActivateOpeningAt<T::BlockNumber>,
@@ -1007,13 +926,125 @@ impl<T: Trait> Module<T> {
 }
 
 /*
+ *  === Application Deactivated Handler  ======
+ */
+
+/// ...
+pub trait ApplicationDeactivatedHandler<T: Trait> {
+    /// An application, with the given id, was fully deactivated, with the
+    /// given cause, and was put in the inactive state.
+    fn deactivated(application_id: &T::ApplicationId, cause: hiring::ApplicationDeactivationCause);
+}
+
+pub trait Trait: system::Trait + stake::Trait + Sized {
+    type OpeningId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    type ApplicationId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    /// Type that will handle various staking events
+    type ApplicationDeactivatedHandler: ApplicationDeactivatedHandler<Self>;
+}
+
+/// Helper implementation so we can provide multiple handlers by grouping handlers in tuple pairs.
+/// For example for three handlers, A, B and C we can set the StakingEventHandler type on the trait to:
+/// type StakingEventHandler = ((A, B), C)
+///
+impl<T: Trait> ApplicationDeactivatedHandler<T> for () {
+    fn deactivated(
+        _application_id: &T::ApplicationId,
+        _cause: hiring::ApplicationDeactivationCause,
+    ) {
+    }
+}
+
+/*
+ *  ======== API types bound to the Trait ========
+ */
+
+/// Error due to attempting to fill an opening.
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub enum FillOpeningError<T: Trait> {
+    OpeningDoesNotExist,
+    OpeningNotInReviewPeriodStage,
+    UnstakingPeriodTooShort(StakePurpose, ApplicationOutcomeInFilledOpening),
+    RedundantUnstakingPeriodProvided(StakePurpose, ApplicationOutcomeInFilledOpening),
+    ApplicationDoesNotExist(T::ApplicationId),
+    ApplicationNotInActiveStage(T::ApplicationId),
+}
+
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
+    pub opening: Opening<BalanceOf<T>, T::BlockNumber, T::ApplicationId>,
+
+    pub active_stage: ActiveOpeningStage<T::BlockNumber>,
+
+    pub applications_added: BTreeSet<T::ApplicationId>,
+
+    pub active_application_count: u32,
+
+    pub unstaking_application_count: u32,
+
+    pub deactivated_application_count: u32,
+
+    pub would_get_added_success: ApplicationAddedSuccess<T>,
+}
+
+impl<T: Trait> DestructuredApplicationCanBeAddedEvaluation<T> {
+    pub(crate) fn calculate_total_application_count(&self) -> u32 {
+        // TODO: fix so that `number_of_appliations_ever_added` can be invoked.
+        // cant do this due to bad design of stage => opening.stage.number_of_appliations_ever_added();
+        self.active_application_count
+            + self.unstaking_application_count
+            + self.deactivated_application_count
+    }
+}
+
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub enum ApplicationAddedSuccess<T: Trait> {
+    Unconditionally,
+    CrowdsOutExistingApplication(T::ApplicationId),
+}
+
+impl<T: Trait> ApplicationAddedSuccess<T> {
+    pub(crate) fn crowded_out_application_id(&self) -> Option<T::ApplicationId> {
+        if let ApplicationAddedSuccess::CrowdsOutExistingApplication(id) = self {
+            Some(id.clone())
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub enum ApplicationWouldGetAddedEvaluation<T: Trait> {
+    No,
+    Yes(ApplicationAddedSuccess<T>),
+}
+
+pub type BalanceOf<T> =
+    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+
+pub type NegativeImbalance<T> =
+    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+
+/*
  *  ======== ======== ======== ======== =======
  *  ======== PRIVATE TYPES AND METHODS ========
  *  ======== ======== ======== ======== =======
- */
-
-/*
- * Used by multiple methods.
  */
 
 struct ApplicationsDeactivationsInitiationResult {
@@ -1021,14 +1052,7 @@ struct ApplicationsDeactivationsInitiationResult {
     number_of_deactivated_applications: u32,
 }
 
-#[derive(PartialEq, Debug)]
-enum ApplicationDeactivationInitationResult {
-    Ignored, // <= is there a case for kicking this out, making sure that initation cannot happen when it may fail?
-    Unstaking,
-    Deactivated,
-}
-
-pub type ApplicationBTreeMap<T> = BTreeMap<
+type ApplicationBTreeMap<T> = BTreeMap<
     <T as Trait>::ApplicationId,
     hiring::Application<
         <T as Trait>::OpeningId,
@@ -1037,19 +1061,14 @@ pub type ApplicationBTreeMap<T> = BTreeMap<
     >,
 >;
 
-/// Informational result of the unstaked() method. Can be ignored.
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum UnstakedResult {
-    /// Non-existentent stake id provided
-    StakeIdNonExistent,
-    /// Application is not in 'Unstaking' state
-    ApplicationIsNotUnstaking,
-    /// Fully unstaked
-    Unstaked,
-    /// Unstaking in progress
-    UnstakingInProgress,
+#[derive(PartialEq, Debug)]
+enum ApplicationDeactivationInitationResult {
+    Ignored, // <= is there a case for kicking this out, making sure that initation cannot happen when it may fail?
+    Unstaking,
+    Deactivated,
 }
 
+// Iterate through ApplicationById map
 impl<T: Trait> Module<T> {
     fn application_id_iter_to_map<'a>(
         application_id_iter: impl Iterator<Item = &'a T::ApplicationId>,
@@ -1064,6 +1083,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
+// Application deactivation logic methods.
 impl<T: Trait> Module<T> {
     fn initiate_application_deactivations(
         applications: &ApplicationBTreeMap<T>,
@@ -1246,6 +1266,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
+// Stake initiation
 impl<T: Trait> Module<T> {
     fn infallible_opt_stake_initiation(
         opt_imbalance: Option<NegativeImbalance<T>>,
@@ -1289,32 +1310,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
-/*
- * Used by `add_application` method.
- */
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum ApplicationAddedSuccess<T: Trait> {
-    Unconditionally,
-    CrowdsOutExistingApplication(T::ApplicationId),
-}
-
-impl<T: Trait> ApplicationAddedSuccess<T> {
-    pub(crate) fn crowded_out_application_id(&self) -> Option<T::ApplicationId> {
-        if let ApplicationAddedSuccess::CrowdsOutExistingApplication(id) = self {
-            Some(id.clone())
-        } else {
-            None
-        }
-    }
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum ApplicationWouldGetAddedEvaluation<T: Trait> {
-    No,
-    Yes(ApplicationAddedSuccess<T>),
-}
-
+// Conditions for adding application
 impl<T: Trait> Module<T> {
     /// Evaluates prospects for a new application
     ///
