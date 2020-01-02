@@ -23,7 +23,8 @@ pub(crate) type StakeId = <Test as stake::Trait>::StakeId;
 pub(crate) type Balance =
     <<Test as stake::Trait>::Currency as Currency<<Test as system::Trait>::AccountId>>::Balance;
 
-//Debug test object content
-pub(crate) fn debug_print<T: rstd::fmt::Debug>(obj: T) {
+//Debug test object content. Recurring temporary usage - do not delete.
+#[allow(dead_code)]
+pub fn debug_print<T: rstd::fmt::Debug>(obj: T) {
     println!("{:?}", obj);
 }

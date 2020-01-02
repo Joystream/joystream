@@ -90,18 +90,16 @@ impl FillOpeningFixture {
 
         if fill_opening_result.is_ok() {
             if let hiring::OpeningStage::Active {
-                applications_added,
-                ..
+                applications_added, ..
             } = old_opening.stage
             {
                 // compose expected stage
-                let expected_active_stage =
-                    ActiveOpeningStage::Deactivated {
-                        cause: OpeningDeactivationCause::Filled,
-                        deactivated_at_block: 1,
-                        started_accepting_applicants_at_block: 1,
-                        started_review_period_at_block: Some(1),
-                    };
+                let expected_active_stage = ActiveOpeningStage::Deactivated {
+                    cause: OpeningDeactivationCause::Filled,
+                    deactivated_at_block: 1,
+                    started_accepting_applicants_at_block: 1,
+                    started_review_period_at_block: Some(1),
+                };
 
                 // calculate application counters
                 let mut deactivated_app_count = 0;
