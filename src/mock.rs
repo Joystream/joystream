@@ -121,6 +121,13 @@ pub fn good_rationale() -> Vec<u8> {
     b"This post violates our community rules".to_vec()
 }
 
+pub fn generate_poll_items(len: usize) -> Vec<Vec<u8>> {
+    (0..len)
+        .into_iter()
+        .map(|index| format!("poll item {}", index).as_bytes().to_vec())
+        .collect()
+}
+
 pub fn good_poll_items() -> Vec<Vec<u8>> {
     vec![
         b"poll item A".to_vec(),
@@ -307,6 +314,19 @@ pub fn set_moderator_category_mock(
     account_id
 }
 
+pub fn submit_poll_mock(
+    origin: OriginType,
+    thread_id: ThreadId,
+    poll_value: PollData,
+    result: Result<(), &'static str>,
+) -> ThreadId {
+    assert_eq!(
+        TestForumModule::submit_poll(mock_origin(origin), thread_id, poll_value),
+        result
+    );
+    thread_id
+}
+
 pub fn update_category_mock(
     origin: OriginType,
     category_id: CategoryId,
@@ -324,6 +344,32 @@ pub fn update_category_mock(
         result
     );
     category_id
+}
+
+pub fn update_category_labels_mock(
+    origin: OriginType,
+    category_id: CategoryId,
+    labels: Vec<LabelId>,
+    result: Result<(), &'static str>,
+) -> CategoryId {
+    assert_eq!(
+        TestForumModule::update_category_labels(mock_origin(origin), category_id, labels,),
+        result
+    );
+    category_id
+}
+
+pub fn update_thread_labels_mock(
+    origin: OriginType,
+    thread_id: ThreadId,
+    labels: Vec<LabelId>,
+    result: Result<(), &'static str>,
+) -> ThreadId {
+    assert_eq!(
+        TestForumModule::update_thread_labels(mock_origin(origin), thread_id, labels,),
+        result
+    );
+    thread_id
 }
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
@@ -387,7 +433,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
             max_min_diff: 200,
         },
         poll_items_constraint: InputValidationLengthConstraint {
-            min: 1,
+            min: 4,
             max_min_diff: 20,
         },
         user_name_constraint: InputValidationLengthConstraint {

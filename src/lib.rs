@@ -981,7 +981,7 @@ decl_module! {
             let archive_unchanged = new_archival_status == None || new_archival_status == Some(category.archived);
 
             if deletion_unchanged && archive_unchanged {
-                return Ok(())
+                return Err(ERROR_CATEGORY_NOT_BEING_UPDATED)
             }
 
             // Mutate category, and set possible new change parameters
