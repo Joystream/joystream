@@ -86,7 +86,7 @@ fn fill_opening_fails_due_to_opening_not_existing() {
 }
 
 #[test]
-fn cancel_opening_fails_due_to_opening_is_not_active() {
+fn fill_opening_fails_due_to_opening_is_not_active() {
     build_test_externalities().execute_with(|| {
         let mut opening_fixture = AddOpeningFixture::default();
         opening_fixture.activate_at = ActivateOpeningAt::ExactBlock(5);
@@ -100,7 +100,7 @@ fn cancel_opening_fails_due_to_opening_is_not_active() {
 }
 
 #[test]
-fn cancel_opening_fails_due_to_redundant_successful_application_unstaking_period() {
+fn fill_opening_fails_due_to_redundant_successful_application_unstaking_period() {
     build_test_externalities().execute_with(|| {
         let opening_fixture = AddOpeningFixture::default();
 
@@ -120,7 +120,7 @@ fn cancel_opening_fails_due_to_redundant_successful_application_unstaking_period
 }
 
 #[test]
-fn cancel_opening_fails_due_too_short_successful_application_unstaking_period() {
+fn fill_opening_fails_due_too_short_successful_application_unstaking_period() {
     build_test_externalities().execute_with(|| {
         let opening_fixture = AddOpeningFixture::default();
 
@@ -138,7 +138,7 @@ fn cancel_opening_fails_due_too_short_successful_application_unstaking_period() 
 }
 
 #[test]
-fn cancel_opening_fails_due_to_redundant_failed_application_unstaking_period() {
+fn fill_opening_fails_due_to_redundant_failed_application_unstaking_period() {
     build_test_externalities().execute_with(|| {
         let opening_fixture = AddOpeningFixture::default();
 
@@ -158,7 +158,7 @@ fn cancel_opening_fails_due_to_redundant_failed_application_unstaking_period() {
 }
 
 #[test]
-fn cancel_opening_fails_due_too_short_failed_application_unstaking_period() {
+fn fill_opening_fails_due_too_short_failed_application_unstaking_period() {
     build_test_externalities().execute_with(|| {
         let opening_fixture = AddOpeningFixture::default();
 
@@ -176,7 +176,7 @@ fn cancel_opening_fails_due_too_short_failed_application_unstaking_period() {
 }
 
 #[test]
-fn cancel_opening_fails_due_to_redundant_failed_role_unstaking_period() {
+fn fill_opening_fails_due_to_redundant_failed_role_unstaking_period() {
     build_test_externalities().execute_with(|| {
         let opening_fixture = AddOpeningFixture::default();
 
@@ -196,7 +196,7 @@ fn cancel_opening_fails_due_to_redundant_failed_role_unstaking_period() {
 }
 
 #[test]
-fn cancel_opening_fails_due_too_short_failed_role_unstaking_period() {
+fn fill_opening_fails_due_too_short_failed_role_unstaking_period() {
     build_test_externalities().execute_with(|| {
         let opening_fixture = AddOpeningFixture::default();
 
@@ -214,7 +214,7 @@ fn cancel_opening_fails_due_too_short_failed_role_unstaking_period() {
 }
 
 #[test]
-fn cancel_opening_fails_due_not_existing_application() {
+fn fill_opening_fails_due_not_existing_application() {
     build_test_externalities().execute_with(|| {
         let opening_fixture = AddOpeningFixture::default();
 
@@ -234,7 +234,7 @@ fn cancel_opening_fails_due_not_existing_application() {
 }
 
 #[test]
-fn cancel_opening_fails_due_not_active_application() {
+fn fill_opening_fails_due_not_active_application() {
     build_test_externalities().execute_with(|| {
         let opening_fixture = AddOpeningFixture::default();
 
@@ -265,7 +265,7 @@ fn cancel_opening_fails_due_not_active_application() {
 }
 
 #[test]
-fn cancel_opening_succeeds() {
+fn fill_opening_succeeds() {
     build_test_externalities().execute_with(|| {
         let opening_fixture = AddOpeningFixture::default();
 
