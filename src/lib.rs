@@ -777,7 +777,8 @@ impl<T: Trait> Module<T> {
             T::ApplicationDeactivatedHandler::deactivated(&application_id, cause);
             return UnstakedResult::Unstaked;
         }
-        return UnstakedResult::UnstakingInProgress;
+
+        UnstakedResult::UnstakingInProgress
     }
 }
 
@@ -854,7 +855,7 @@ pub enum ApplicationAddedSuccess<T: Trait> {
 impl<T: Trait> ApplicationAddedSuccess<T> {
     pub(crate) fn crowded_out_application_id(&self) -> Option<T::ApplicationId> {
         if let ApplicationAddedSuccess::CrowdsOutExistingApplication(id) = self {
-            Some(id.clone())
+            Some(*id)
         } else {
             None
         }

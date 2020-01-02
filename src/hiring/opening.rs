@@ -282,15 +282,14 @@ impl<BlockNumber: Clone, ApplicationId: Ord + Clone> OpeningStage<BlockNumber, A
             active_application_count,
             unstaking_application_count,
             deactivated_application_count,
-            applications_added,
-        } = self.clone()
+            mut applications_added,
+        } = self
         {
-            let mut apps_added = applications_added.clone();
-            apps_added.insert(new_application_id);
+            applications_added.insert(new_application_id);
 
             hiring::OpeningStage::Active {
                 stage,
-                applications_added: apps_added,
+                applications_added,
                 active_application_count: active_application_count + 1,
                 unstaking_application_count,
                 deactivated_application_count,

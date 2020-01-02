@@ -59,7 +59,7 @@ impl<OpeningId, BlockNumber, StakeId: PartialEq + Clone>
                 if id == stake_id {
                     None
                 } else {
-                    Some(id.clone())
+                    Some(id)
                 }
             }
             _ => None,
