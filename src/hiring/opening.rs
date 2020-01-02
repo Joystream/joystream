@@ -36,8 +36,8 @@ pub struct Opening<Balance, BlockNumber, ApplicationId> {
 impl<Balance, BlockNumber, ApplicationId> Opening<Balance, BlockNumber, ApplicationId>
 where
     Balance: PartialOrd + Clone,
-    BlockNumber: Clone + PartialOrd,
-    ApplicationId: Ord,
+    BlockNumber: PartialOrd + Clone,
+    ApplicationId: Ord + Clone,
 {
     ///Creates new instance of Opening
     pub(crate) fn new(
@@ -122,6 +122,27 @@ where
                 deactivated_application_count,
             },
             ..self
+        }
+    }
+
+    pub(crate) fn change_opening_stage_after_application_unstaked(&mut self) {
+        if let OpeningStage::Active {
+            ref stage,
+            ref applications_added,
+            active_application_count,
+            unstaking_application_count,
+            deactivated_application_count,
+        } = self.stage
+        {
+            self.stage = hiring::OpeningStage::Active {
+                stage: stage.clone(),
+                applications_added: applications_added.clone(),
+                active_application_count,
+                unstaking_application_count: unstaking_application_count - 1,
+                deactivated_application_count: deactivated_application_count + 1,
+            };
+        } else {
+            panic!("stage MUST be active")
         }
     }
 
@@ -401,11 +422,6 @@ pub enum CancelOpeningError {
     RedundantUnstakingPeriodProvided(StakePurpose),
     OpeningDoesNotExist,
     OpeningNotInCancellableStage,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum RemoveOpeningError {
-    OpeningDoesNotExist,
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]

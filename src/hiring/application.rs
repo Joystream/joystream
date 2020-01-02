@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::hiring::StakePurpose;
 
+use rstd::clone::Clone;
 use rstd::vec::Vec;
 
 /// An application for an actor to occupy an opening.
@@ -46,7 +47,7 @@ impl<OpeningId, BlockNumber, StakeId: PartialEq + Clone>
 {
     /// Compares provided stake_id with internal stake defined by stake_purpose.
     /// Returns None on equality, Some(stake_id) otherwise.
-    pub(crate) fn toggle_stake_id(
+    pub fn toggle_stake_id(
         &self,
         stake_id: StakeId,
         stake_purpose: StakePurpose,
@@ -67,6 +68,40 @@ impl<OpeningId, BlockNumber, StakeId: PartialEq + Clone>
             }
             _ => None,
         }
+    }
+
+    /// Modifies an application and unstake provided stake_id.
+    /// If last stake unstaked - app stage becomes Inactive
+    pub(crate) fn unstake_application(
+        &mut self,
+        current_block_height: BlockNumber,
+        deactivation_initiated: BlockNumber,
+        cause: ApplicationDeactivationCause,
+        stake_id: StakeId,
+    ) -> bool {
+        // New values for application stakes
+        let new_active_role_staking_id = self.toggle_stake_id(stake_id.clone(), StakePurpose::Role);
+        let new_active_application_staking_id =
+            self.toggle_stake_id(stake_id, StakePurpose::Application);
+
+        // Are we now done unstaking?
+        // Is the case if thereare no application stakes set.
+        let is_now_done_unstaking =
+            new_active_role_staking_id.is_none() && new_active_application_staking_id.is_none();
+
+        self.active_role_staking_id = new_active_role_staking_id;
+        self.active_application_staking_id = new_active_application_staking_id;
+
+        // If we are done unstaking, then we go to the inactive stage
+        if is_now_done_unstaking {
+            self.stage = ApplicationStage::Inactive {
+                deactivation_initiated,
+                deactivated: current_block_height,
+                cause,
+            }
+        };
+
+        is_now_done_unstaking
     }
 }
 

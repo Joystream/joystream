@@ -15,13 +15,13 @@ ii.application.active_application_staking_id;
 */
 
 pub struct DeactivateApplicationFixture {
-    pub application_id: u64,
-    pub application_stake_unstaking_period: Option<u64>,
-    pub role_stake_unstaking_period: Option<u64>,
+    pub application_id: ApplicationId,
+    pub application_stake_unstaking_period: Option<BlockNumber>,
+    pub role_stake_unstaking_period: Option<BlockNumber>,
 }
 
 impl DeactivateApplicationFixture {
-    pub(crate) fn default_for_application_id(application_id: u64) -> Self {
+    pub(crate) fn default_for_application_id(application_id: ApplicationId) -> Self {
         DeactivateApplicationFixture {
             application_id,
             application_stake_unstaking_period: None,
@@ -60,7 +60,7 @@ impl DeactivateApplicationFixture {
 
     fn assert_application_content(
         &self,
-        old_application_state: Application<u64, u64, u64>,
+        old_application_state: Application<OpeningId, BlockNumber, StakeId>,
         deactivate_application_result: Result<(), DeactivateApplicationError>,
     ) {
         let actual_application_state = <ApplicationById<Test>>::get(self.application_id);
@@ -84,8 +84,8 @@ impl DeactivateApplicationFixture {
 
     fn assert_opening_content(
         &self,
-        opening_id: u64,
-        old_opening: Opening<u64, u64, u64>,
+        opening_id: OpeningId,
+        old_opening: Opening<Balance, BlockNumber, ApplicationId>,
         add_application_result: Result<(), DeactivateApplicationError>,
     ) {
         // invalid opening stages are not supported

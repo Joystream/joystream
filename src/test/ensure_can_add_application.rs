@@ -3,7 +3,7 @@ use crate::mock::*;
 
 use crate::hiring::*;
 use crate::test::add_application::AddApplicationFixture;
-use add_opening::{AddOpeningFixture, OPENING_HUMAN_READABLE_TEXT};
+use add_opening::{AddOpeningFixture, HUMAN_READABLE_TEXT};
 use rstd::collections::btree_set::BTreeSet;
 
 /*
@@ -271,7 +271,7 @@ fn ensure_can_add_application_succeeds() {
                         crowded_out_unstaking_period_length: None,
                         review_period_expired_unstaking_period_length: None
                     }),
-                    human_readable_text: OPENING_HUMAN_READABLE_TEXT.to_vec()
+                    human_readable_text: HUMAN_READABLE_TEXT.to_vec()
                 },
                 active_stage: hiring::ActiveOpeningStage::AcceptingApplications {
                     started_accepting_applicants_at_block: 1
@@ -311,7 +311,7 @@ fn ensure_can_add_application_new_application_should_be_crowded_out_with_atleast
 }
 
 fn ensure_can_add_application_new_application_should_be_crowded_out_with_staking_policy(
-    staking_policy: StakingPolicy<u64, u64>,
+    staking_policy: StakingPolicy<Balance, BlockNumber>,
 ) {
     build_test_externalities().execute_with(|| {
         let mut opening_fixture = AddOpeningFixture::default();
