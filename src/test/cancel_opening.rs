@@ -191,18 +191,14 @@ fn cancel_opening_succeeds_with_single_crowded_out_application() {
         application_fixture.opt_role_stake_imbalance =
             Some(stake::NegativeImbalance::<Test>::new(100));
 
-        let app_application_result = application_fixture.add_application();
-        assert!(app_application_result.is_ok());
-        let first_application_id = app_application_result.unwrap().application_id_added;
+        assert!(application_fixture.add_application().is_ok());
 
         application_fixture.opt_application_stake_imbalance =
             Some(stake::NegativeImbalance::<Test>::new(101));
         application_fixture.opt_role_stake_imbalance =
             Some(stake::NegativeImbalance::<Test>::new(101));
 
-        let app_application2_result = application_fixture.add_application();
-        assert!(app_application2_result.is_ok());
-        let second_application_id = app_application2_result.unwrap().application_id_added;
+        assert!(application_fixture.add_application().is_ok());
 
         let cancel_opening_fixture = CancelOpeningFixture::default_for_opening(opening_id);
         cancel_opening_fixture.call_and_assert(Ok(OpeningCancelled {

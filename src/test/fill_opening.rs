@@ -11,7 +11,6 @@ use rstd::result::Result;
 Not covered:
 - ApplicationDeactivatedHandler
 - Application content check
-- Opening content check
 
 - staking state checks:
 i.application.active_role_staking_id;
@@ -38,11 +37,14 @@ impl FillOpeningFixture {
     }
 
     fn call_and_assert(&self, expected_result: Result<(), FillOpeningError<mock::Test>>) {
+        let old_opening = <OpeningById<Test>>::get(self.opening_id);
         let old_applications = self.extract_successful_applications();
 
         let fill_opening_result = self.fill_opening();
 
         assert_eq!(fill_opening_result, expected_result);
+
+        self.assert_opening_content(old_opening, fill_opening_result.clone());
 
         if !fill_opening_result.is_ok() {
             self.assert_same_applications(old_applications);
@@ -76,6 +78,60 @@ impl FillOpeningFixture {
             self.opt_failed_applicant_application_stake_unstaking_period,
             self.opt_failed_applicant_role_stake_unstaking_period,
         )
+    }
+
+    fn assert_opening_content(
+        &self,
+        old_opening: Opening<Balance, BlockNumber, ApplicationId>,
+        fill_opening_result: Result<(), FillOpeningError<mock::Test>>,
+    ) {
+        let new_opening = <OpeningById<Test>>::get(self.opening_id);
+        let mut expected_opening = old_opening.clone();
+
+        if fill_opening_result.is_ok() {
+            if let hiring::OpeningStage::Active {
+                applications_added,
+                ..
+            } = old_opening.stage
+            {
+                // compose expected stage
+                let expected_active_stage =
+                    ActiveOpeningStage::Deactivated {
+                        cause: OpeningDeactivationCause::Filled,
+                        deactivated_at_block: 1,
+                        started_accepting_applicants_at_block: 1,
+                        started_review_period_at_block: Some(1),
+                    };
+
+                // calculate application counters
+                let mut deactivated_app_count = 0;
+                let mut unstaking_app_count = 0;
+                for app_id in applications_added.clone() {
+                    let application = <ApplicationById<Test>>::get(app_id);
+
+                    match application.stage {
+                        ApplicationStage::Active => panic!("Cannot be in active stage"),
+                        ApplicationStage::Inactive { .. } => {
+                            deactivated_app_count += 1;
+                        }
+                        ApplicationStage::Unstaking { .. } => {
+                            unstaking_app_count += 1;
+                        }
+                    }
+                }
+
+                expected_opening.stage = hiring::OpeningStage::Active {
+                    stage: expected_active_stage,
+                    applications_added,
+                    active_application_count: 0,
+                    unstaking_application_count: unstaking_app_count,
+                    deactivated_application_count: deactivated_app_count,
+                };
+            } else {
+                panic!("old opening stage MUST be active")
+            }
+        };
+        assert_eq!(expected_opening, new_opening);
     }
 }
 
