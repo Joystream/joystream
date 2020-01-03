@@ -3,9 +3,6 @@
 use super::*;
 use crate::mock::*;
 
-use srml_support::{assert_err, assert_ok};
-use system::{EventRecord, Phase};
-
 /// test cases are arranged as two layers.
 /// first layer is each method in defined in module.
 /// second layer is each parameter of the specific method.
@@ -15,6 +12,7 @@ use system::{EventRecord, Phase};
  */
 
 #[test]
+// test labels' text length
 fn add_labels() {
     let config = default_genesis_config();
     let labels = vec![
@@ -43,7 +41,7 @@ fn add_labels() {
  * create_forum_user
  */
 #[test]
-// test case for check account id
+// test case for create a new forum user
 fn create_forum_user_account_id() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -123,7 +121,7 @@ fn create_forum_user_self_introduction() {
  * create_moderator
  */
 #[test]
-// test case for check account id
+// test case for create a new moderator
 fn create_moderator_account_id() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -144,7 +142,7 @@ fn create_moderator_account_id() {
 }
 
 #[test]
-// test case for check forum user name
+// test case for check moderator's name
 fn create_moderator_name() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -172,7 +170,7 @@ fn create_moderator_name() {
 }
 
 #[test]
-// test case for check self introduction
+// test case for check moderator's self introduction
 fn create_moderator_self_introduction() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -203,6 +201,7 @@ fn create_moderator_self_introduction() {
  * set_max_category_depth
  */
 #[test]
+// test set max category depth works
 fn set_max_category_depth() {
     let config = default_genesis_config();
     let origin = OriginType::Signed(config.forum_sudo);
@@ -327,6 +326,7 @@ fn set_moderator_category_account_id() {
  * set_forum_sudo
  */
 #[test]
+// test the blockchain sudo account can update forum sudo
 fn set_forum_sudo() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -364,7 +364,7 @@ fn create_category_origin() {
 }
 
 #[test]
-// test case for check if origin is forum sudo
+// test case for check if parent category is archived, deleted , not existed.
 fn create_category_parent() {
     let parents = vec![Some(1), Some(2), Some(3), Some(4)];
     let results = vec![
@@ -418,7 +418,7 @@ fn create_category_parent() {
 }
 
 #[test]
-// test case for check if origin is forum sudo
+// test case set category depth
 fn create_category_depth() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -468,7 +468,7 @@ fn create_category_depth() {
 }
 
 #[test]
-// test case for check if origin is forum sudo
+// test category title length
 fn create_category_title() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -499,7 +499,7 @@ fn create_category_title() {
 }
 
 #[test]
-// test case for check if origin is forum sudo
+// test for category description text length
 fn create_category_description() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -530,7 +530,7 @@ fn create_category_description() {
 }
 
 #[test]
-// test case for check if origin is forum sudo
+// test if category labels is valid
 fn create_category_labels() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -562,6 +562,7 @@ fn create_category_labels() {
  ** update_category
  */
 #[test]
+// test if category updator is forum sudo
 fn update_category_origin() {
     let origins = [
         OriginType::Signed(default_genesis_config().forum_sudo),
@@ -587,6 +588,7 @@ fn update_category_origin() {
     }
 }
 #[test]
+// test case for new setting actually not update category status
 fn update_category_without_updates() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -604,6 +606,7 @@ fn update_category_without_updates() {
     });
 }
 #[test]
+// test case for new setting actually not update category status
 fn update_category_without_updates_two() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -628,6 +631,7 @@ fn update_category_without_updates_two() {
 }
 
 #[test]
+// test case for new setting actually not update category status
 fn update_category_without_updates_three() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -653,6 +657,7 @@ fn update_category_without_updates_three() {
 }
 
 #[test]
+// test unarchived not doable after category deleted
 fn update_category_deleted_then_unarchived() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -681,6 +686,7 @@ fn update_category_deleted_then_unarchived() {
  ** update_category_labels
  */
 #[test]
+// test category labels is valid
 fn update_category_labels() {
     let labels = vec![vec![1, 2, 3, 4, 5], vec![1, 2, 3, 4, 5, 6], vec![100]];
     let results = vec![
@@ -714,6 +720,7 @@ fn update_category_labels() {
 }
 
 #[test]
+// test setting category moderator
 fn update_category_labels_moderator() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -736,6 +743,7 @@ fn update_category_labels_moderator() {
  ** create_thread
  */
 #[test]
+// test if thread creator is valid forum user
 fn create_thread_origin() {
     let origins = [
         OriginType::Signed(default_genesis_config().forum_sudo),
@@ -776,6 +784,7 @@ fn create_thread_origin() {
 }
 
 #[test]
+// test thread title length
 fn create_thread_title() {
     let constraint = default_genesis_config().thread_title_constraint;
     let titles = [
@@ -822,6 +831,7 @@ fn create_thread_title() {
 }
 
 #[test]
+// test thread text length
 fn create_thread_text() {
     let constraint = default_genesis_config().post_text_constraint;
     let texts = [
@@ -869,6 +879,7 @@ fn create_thread_text() {
 }
 
 #[test]
+// test thread label setting is valid
 fn create_thread_labels() {
     let labels = vec![vec![1, 2, 3, 4, 5], vec![1, 2, 3, 4, 5, 6], vec![100]];
     let results = vec![
@@ -911,6 +922,7 @@ fn create_thread_labels() {
 }
 
 #[test]
+// test poll items amount is valid
 fn create_thread_poll_items_number() {
     let poll_items_constraint = default_genesis_config().poll_items_constraint;
     let items = vec![
@@ -965,6 +977,7 @@ fn create_thread_poll_items_number() {
 }
 
 #[test]
+// test each poll item text's length
 fn create_thread_poll_items_text() {
     let poll_desc_constraint = default_genesis_config().poll_desc_constraint;
     let items = vec![
@@ -1019,6 +1032,7 @@ fn create_thread_poll_items_text() {
 }
 
 #[test]
+// test if timestamp of poll start time and end time are valid
 fn create_thread_poll_timestamp() {
     // there is other test case as start timestamp is now, and end timestamp as minus
     // but it can not be implemented since the Timestamp::now() return value is zero.
@@ -1082,6 +1096,7 @@ fn create_thread_poll_timestamp() {
  */
 
 #[test]
+// test if thread labels are valid
 fn update_thread_labels() {
     let labels = vec![vec![1, 2, 3, 4, 5], vec![1, 2, 3, 4, 5, 6], vec![100]];
     let results = vec![
@@ -1133,6 +1148,7 @@ fn update_thread_labels() {
  ** submit_poll
  */
 #[test]
+// test if poll submitter is a forum user
 fn submit_poll_origin() {
     let origins = vec![
         OriginType::Signed(default_genesis_config().forum_sudo),
@@ -1181,6 +1197,7 @@ fn submit_poll_origin() {
 }
 
 #[test]
+// test if poll metadata created
 fn submit_poll_exists() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -1214,6 +1231,7 @@ fn submit_poll_exists() {
 }
 
 #[test]
+// test if forum reject poll submit after expiration
 fn submit_poll_expired() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -1256,6 +1274,7 @@ fn submit_poll_expired() {
 }
 
 #[test]
+// test if poll data valid according to poll metadata.
 fn submit_poll_data() {
     // correct data, at least choose two, at most choose three, no such index.
     let poll_data = vec![3, 1, 15, 32];
@@ -1313,6 +1332,7 @@ fn submit_poll_data() {
  */
 
 #[test]
+// test if thread moderator registered as valid moderator
 fn moderate_thread_origin() {
     let origins = vec![
         OriginType::Signed(default_genesis_config().forum_sudo),
@@ -1371,6 +1391,7 @@ fn moderate_thread_origin() {
 }
 
 #[test]
+// test thread moderate rationale's length
 fn moderate_thread_rationale() {
     let constraint = default_genesis_config().thread_moderation_rationale_constraint;
     let rationales = vec![
@@ -1433,6 +1454,7 @@ fn moderate_thread_rationale() {
  */
 
 #[test]
+// test if post origin registered as forum user
 fn add_post_origin() {
     let origins = vec![
         OriginType::Signed(default_genesis_config().forum_sudo),
@@ -1479,6 +1501,7 @@ fn add_post_origin() {
     }
 }
 
+// test post text's length
 fn add_post_text() {
     let constraint = default_genesis_config().post_text_constraint;
     let texts = vec![
@@ -1535,6 +1558,7 @@ fn add_post_text() {
  ** react_post
  */
 #[test]
+// test if post react take effect
 fn react_post() {
     // three reations to post, test them one by one.
     let new_values = vec![
@@ -1594,6 +1618,7 @@ fn react_post() {
  ** edit_post_text
  */
 #[test]
+// test post text's length
 fn edit_post_text() {
     let constraint = default_genesis_config().post_text_constraint;
     let texts = vec![
@@ -1636,7 +1661,7 @@ fn edit_post_text() {
                 None,
                 Ok(()),
             );
-            let post_id = create_post_mock(
+            create_post_mock(
                 origin.clone(),
                 thread_id,
                 texts[index].clone(),
@@ -1651,6 +1676,7 @@ fn edit_post_text() {
  */
 
 #[test]
+// test if post moderator registered
 fn moderate_post_origin() {
     let origins = vec![
         OriginType::Signed(default_genesis_config().forum_sudo),
@@ -1706,6 +1732,7 @@ fn moderate_post_origin() {
 }
 
 #[test]
+// test post rationale text's length
 fn moderate_post_rationale() {
     let constraint = default_genesis_config().post_moderation_rationale_constraint;
     let rationales = vec![
