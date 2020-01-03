@@ -22,7 +22,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
     // React components for form fields:
     MediaText,
-    MediaField,
     MediaDropdown,
     LabelledField,
 
@@ -60,7 +59,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaText field={Fields.channelName} {...props} />
     <MediaText field={Fields.thumbnail} {...props} />
     <MediaText field={Fields.cover} {...props} />
-    <MediaField field={Fields.description} component='textarea' rows={3} disabled={isSubmitting} {...props} />
+    <MediaText field={Fields.description} textarea {...props} />
     <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
   </>;
 

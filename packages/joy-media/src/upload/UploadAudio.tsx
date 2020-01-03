@@ -25,7 +25,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
     // React components for form fields:
     MediaText,
-    MediaField,
     MediaDropdown,
     LabelledField,
 
@@ -59,7 +58,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const basicInfoTab = () => <Tab.Pane as='div'>
     <MediaText field={Fields.title} {...props} />
     <MediaText field={Fields.thumbnail} {...props} />
-    <MediaField field={Fields.description} component='textarea' rows={3} disabled={isSubmitting} {...props} />
+    <MediaText field={Fields.description} textarea {...props} />
     <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
   </Tab.Pane>
 

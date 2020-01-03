@@ -1,17 +1,18 @@
 import React from 'react';
 import { Field, FormikErrors, FormikTouched } from 'formik';
 
-import { BareProps } from '@polkadot/react-components/types';
 import { nonEmptyStr } from '@polkadot/joy-utils/index';
 import { Popup, Icon } from 'semantic-ui-react';
 
-export type LabelledProps<FormValues> = BareProps & {
+export type LabelledProps<FormValues> = {
   name?: keyof FormValues,
   label?: React.ReactNode,
   invisibleLabel?: boolean,
   placeholder?: string,
   tooltip?: React.ReactNode,
+  textarea?: boolean,
   required?: boolean,
+  className?: string,
   style?: React.CSSProperties,
   children?: React.ReactNode,
   errors: FormikErrors<FormValues>,
@@ -59,11 +60,23 @@ export function LabelledField<FormValues> () {
 
 export function LabelledText<FormValues> () {
   const LF = LabelledField<FormValues>();
+
   return (props: LabelledProps<FormValues>) => {
-    const { name, placeholder, className, style, ...otherProps } = props;
-    const fieldProps = { className, style, name, placeholder };
+    const { name, placeholder, textarea = false, className, style, ...otherProps } = props;
+
+    const textareaProps = !textarea ? {} : {
+      component: 'textarea',
+      rows: 3
+    };
+
+    const fieldProps = {
+      id: name, name, placeholder, className, style, 
+      disabled: otherProps.isSubmitting,
+      ...textareaProps
+    };
+
     return <LF name={name} {...otherProps} >
-      <Field id={name} disabled={otherProps.isSubmitting} {...fieldProps} />
+      <Field {...fieldProps} />
     </LF>;
   };
 }

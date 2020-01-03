@@ -29,7 +29,10 @@ type MediaTextProps<OuterProps, FormValues> =
   BaseFieldProps<OuterProps, FormValues> & JoyForms.LabelledProps<FormValues>;
 
 type MediaFieldProps<OuterProps, FormValues> =
-  BaseFieldProps<OuterProps, FormValues> & any;
+  BaseFieldProps<OuterProps, FormValues> &
+  JoyForms.LabelledProps<FormValues> & {
+    fieldProps: any
+  }
 
 type MediaDropdownProps<OuterProps, FormValues> =
   BaseFieldProps<OuterProps, FormValues> &
@@ -64,23 +67,30 @@ export function withMediaForm<OuterProps, FormValues>
   }
 
   const MediaField = (props: MediaFieldProps<OuterProps, FormValues>) => {
-    const { field: f, ...otherProps } = props;
+    const { field: f, fieldProps = {}, placeholder, className, style, ...otherProps } = props;
+
+    const { id } = f;
+
+    const allFieldProps = {
+      name: id, id, placeholder, className, style, 
+      disabled: otherProps.isSubmitting,
+      ...fieldProps
+    };
+
     return !f ? null : (
-      <LabelledField name={f.id} label={f.name} tooltip={f.description}  required={f.required} {...props}>
-        <Field name={f.id} id={f.id} {...otherProps} />
+      <LabelledField name={id} label={f.name} tooltip={f.description} required={f.required} {...props}>
+        <Field {...allFieldProps} />
       </LabelledField>
     );
   }
 
   const MediaDropdown = (props: MediaDropdownProps<OuterProps, FormValues>) => {
-    return !props.field ? null : (
-      <MediaField
-        component={Dropdown}
-        selection
-        disabled={props.isSubmitting}
-        {...props}
-      />
-    );
+    const { options = [] } = props;
+    return <MediaField {...props} fieldProps={{
+      component: Dropdown,
+      selection: true,
+      options
+    }} />
   }
 
   return function (props: MediaFormProps<OuterProps, FormValues>) {
