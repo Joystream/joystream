@@ -1,5 +1,6 @@
 use super::*;
 use crate::mock::*;
+use rstd::collections::btree_map::BTreeMap;
 use stake::NegativeImbalance;
 
 use add_opening::AddOpeningFixture;
@@ -259,5 +260,47 @@ fn add_application_fails() {
         application_fixture.call_and_assert(Err(AddApplicationError::StakeAmountTooLow(
             StakePurpose::Application,
         )));
+    });
+}
+
+#[test]
+fn add_application_succeeds_with_created_application_stake() {
+    build_test_externalities().execute_with(|| {
+        let mut opening_fixture = AddOpeningFixture::default();
+        opening_fixture.application_rationing_policy = Some(hiring::ApplicationRationingPolicy {
+            max_active_applicants: 1,
+        });
+        opening_fixture.application_staking_policy = Some(StakingPolicy {
+            amount: 100,
+            amount_mode: StakingAmountLimitMode::AtLeast,
+            crowded_out_unstaking_period_length: None,
+            review_period_expired_unstaking_period_length: None,
+        });
+
+        let add_opening_result = opening_fixture.add_opening();
+        let opening_id = add_opening_result.unwrap();
+
+        let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+        application_fixture.opt_application_stake_imbalance =
+            Some(stake::NegativeImbalance::<Test>::new(100));
+
+        let app_application_result = application_fixture.add_application();
+        let application_id = app_application_result.unwrap().application_id_added;
+
+        let application = <ApplicationById<Test>>::get(application_id);
+        let application_stake_id = application.active_application_staking_id.unwrap();
+
+        let stake = <stake::Stakes<Test>>::get(application_stake_id);
+        let expected_stake = stake::Stake {
+            created: 1,
+            staking_status: stake::StakingStatus::Staked(stake::StakedState {
+                staked_amount: 100,
+                staked_status: stake::StakedStatus::Normal,
+                next_slash_id: 0,
+                ongoing_slashes: BTreeMap::new(),
+            }),
+        };
+
+        assert_eq!(stake, expected_stake);
     });
 }
