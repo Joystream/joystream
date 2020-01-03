@@ -1312,18 +1312,456 @@ fn submit_poll_data() {
  ** moderate_thread
  */
 
+#[test]
+fn moderate_thread_origin() {
+    let origins = vec![
+        OriginType::Signed(default_genesis_config().forum_sudo),
+        NOT_FORUM_SUDO_ORIGIN,
+    ];
+    let results = vec![Ok(()), Err(ERROR_NOT_MODERATOR_USER)];
+    for index in 0..origins.len() {
+        let config = default_genesis_config();
+        let forum_sudo = config.forum_sudo;
+        let origin = OriginType::Signed(forum_sudo);
+        build_test_externalities(config).execute_with(|| {
+            create_forum_user_mock(
+                NOT_FORUM_SUDO_ORIGIN_ID,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+            create_forum_user_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+            create_moderator_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                Ok(()),
+            );
+            set_moderator_category_mock(origin.clone(), category_id, forum_sudo, true, Ok(()));
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                &vec![],
+                None,
+                Ok(()),
+            );
+            moderate_thread_mock(
+                origins[index].clone(),
+                thread_id,
+                good_rationale(),
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+fn moderate_thread_rationale() {
+    let constraint = default_genesis_config().thread_moderation_rationale_constraint;
+    let rationales = vec![
+        generate_text(constraint.min as usize),
+        generate_text((constraint.min - 1) as usize),
+        generate_text((constraint.max() + 1) as usize),
+    ];
+    let results = vec![
+        Ok(()),
+        Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT),
+        Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG),
+    ];
+    for index in 0..rationales.len() {
+        let config = default_genesis_config();
+        let forum_sudo = config.forum_sudo;
+        let origin = OriginType::Signed(forum_sudo);
+        build_test_externalities(config).execute_with(|| {
+            create_forum_user_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+            create_moderator_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                Ok(()),
+            );
+            set_moderator_category_mock(origin.clone(), category_id, forum_sudo, true, Ok(()));
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                &vec![],
+                None,
+                Ok(()),
+            );
+            moderate_thread_mock(
+                origin.clone(),
+                thread_id,
+                rationales[index].clone(),
+                results[index],
+            );
+        });
+    }
+}
+
 /*
  ** add_post
  */
 
+#[test]
+fn add_post_origin() {
+    let origins = vec![
+        OriginType::Signed(default_genesis_config().forum_sudo),
+        NOT_FORUM_SUDO_ORIGIN,
+    ];
+    let results = vec![Ok(()), Err(ERROR_NOT_FORUM_USER)];
+    for index in 0..origins.len() {
+        let config = default_genesis_config();
+        let forum_sudo = config.forum_sudo;
+        let origin = OriginType::Signed(forum_sudo);
+        build_test_externalities(config).execute_with(|| {
+            create_forum_user_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                Ok(()),
+            );
+
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                &vec![],
+                None,
+                Ok(()),
+            );
+            create_post_mock(
+                origins[index].clone(),
+                thread_id,
+                good_post_text(),
+                results[index],
+            );
+        });
+    }
+}
+
+fn add_post_text() {
+    let constraint = default_genesis_config().post_text_constraint;
+    let texts = vec![
+        generate_text(constraint.min as usize),
+        generate_text((constraint.min - 1) as usize),
+        generate_text((constraint.max() + 1) as usize),
+    ];
+    let results = vec![
+        Ok(()),
+        Err(ERROR_POST_MODERATION_RATIONALE_TOO_SHORT),
+        Err(ERROR_POST_MODERATION_RATIONALE_TOO_LONG),
+    ];
+    for index in 0..texts.len() {
+        let config = default_genesis_config();
+        let forum_sudo = config.forum_sudo;
+        let origin = OriginType::Signed(forum_sudo);
+        build_test_externalities(config).execute_with(|| {
+            create_forum_user_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                Ok(()),
+            );
+
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                &vec![],
+                None,
+                Ok(()),
+            );
+            create_post_mock(
+                origin.clone(),
+                thread_id,
+                texts[index].clone(),
+                results[index],
+            );
+        });
+    }
+}
+
 /*
  ** react_post
  */
+#[test]
+fn react_post() {
+    // three reations to post, test them one by one.
+    let new_values = vec![
+        PostReaction::ThumbUp,
+        PostReaction::ThumbDown,
+        PostReaction::Like,
+    ];
+    for index in 0..new_values.len() {
+        let config = default_genesis_config();
+        let forum_sudo = config.forum_sudo.clone();
+        let origin = OriginType::Signed(config.forum_sudo);
+
+        build_test_externalities(config).execute_with(|| {
+            let forum_user_id = create_forum_user_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                Ok(()),
+            );
+
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                &vec![],
+                None,
+                Ok(()),
+            );
+            let post_id = create_post_mock(origin.clone(), thread_id, good_post_text(), Ok(()));
+            assert_eq!(
+                TestForumModule::react_post(
+                    mock_origin(origin.clone()),
+                    post_id,
+                    new_values[index]
+                ),
+                Ok(())
+            );
+            assert_eq!(
+                TestForumModule::reaction_by_post(post_id, forum_user_id),
+                new_values[index]
+            );
+        });
+    }
+}
 
 /*
  ** edit_post_text
  */
+#[test]
+fn edit_post_text() {
+    let constraint = default_genesis_config().post_text_constraint;
+    let texts = vec![
+        generate_text(constraint.min as usize),
+        generate_text((constraint.min - 1) as usize),
+        generate_text((constraint.max() + 1) as usize),
+    ];
+    let results = vec![
+        Ok(()),
+        Err(ERROR_POST_TEXT_TOO_SHORT),
+        Err(ERROR_POST_TEXT_TOO_LONG),
+    ];
+    for index in 0..texts.len() {
+        let config = default_genesis_config();
+        let forum_sudo = config.forum_sudo;
+        let origin = OriginType::Signed(forum_sudo);
+        build_test_externalities(config).execute_with(|| {
+            create_forum_user_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                Ok(()),
+            );
+
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                &vec![],
+                None,
+                Ok(()),
+            );
+            let post_id = create_post_mock(
+                origin.clone(),
+                thread_id,
+                texts[index].clone(),
+                results[index],
+            );
+        });
+    }
+}
 
 /*
  ** moderate_post
  */
+
+#[test]
+fn moderate_post_origin() {
+    let origins = vec![
+        OriginType::Signed(default_genesis_config().forum_sudo),
+        NOT_FORUM_SUDO_ORIGIN,
+    ];
+    let results = vec![Ok(()), Err(ERROR_NOT_MODERATOR_USER)];
+    for index in 0..origins.len() {
+        let config = default_genesis_config();
+        let forum_sudo = config.forum_sudo;
+        let origin = OriginType::Signed(forum_sudo);
+        build_test_externalities(config).execute_with(|| {
+            create_forum_user_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+            create_moderator_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                Ok(()),
+            );
+            set_moderator_category_mock(origin.clone(), category_id, forum_sudo, true, Ok(()));
+
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                &vec![],
+                None,
+                Ok(()),
+            );
+            let post_id = create_post_mock(origin.clone(), thread_id, good_post_text(), Ok(()));
+            moderate_post_mock(
+                origins[index].clone(),
+                post_id,
+                good_rationale(),
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+fn moderate_post_rationale() {
+    let constraint = default_genesis_config().post_moderation_rationale_constraint;
+    let rationales = vec![
+        generate_text(constraint.min as usize),
+        generate_text((constraint.min - 1) as usize),
+        generate_text((constraint.max() + 1) as usize),
+    ];
+    let results = vec![
+        Ok(()),
+        Err(ERROR_POST_MODERATION_RATIONALE_TOO_SHORT),
+        Err(ERROR_POST_MODERATION_RATIONALE_TOO_LONG),
+    ];
+    for index in 0..rationales.len() {
+        let config = default_genesis_config();
+        let forum_sudo = config.forum_sudo;
+        let origin = OriginType::Signed(forum_sudo);
+        build_test_externalities(config).execute_with(|| {
+            create_forum_user_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+            create_moderator_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &vec![],
+                Ok(()),
+            );
+
+            set_moderator_category_mock(origin.clone(), category_id, forum_sudo, true, Ok(()));
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                &vec![],
+                None,
+                Ok(()),
+            );
+            let post_id = create_post_mock(origin.clone(), thread_id, good_post_text(), Ok(()));
+            moderate_post_mock(
+                origin.clone(),
+                post_id,
+                rationales[index].clone(),
+                results[index],
+            );
+        });
+    }
+}

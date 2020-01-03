@@ -71,7 +71,9 @@ pub fn mock_origin(origin: OriginType) -> mock::Origin {
     }
 }
 
-pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(111);
+pub const NOT_FORUM_SUDO_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 111;
+
+pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_SUDO_ORIGIN_ID);
 
 pub const NOT_MEMBER_ORIGIN: OriginType = OriginType::Signed(222);
 
@@ -178,12 +180,12 @@ pub fn create_forum_user_mock(
     name: Vec<u8>,
     self_introduction: Vec<u8>,
     result: Result<(), &'static str>,
-) -> OriginType {
+) -> ForumUserId {
     assert_eq!(
         TestForumModule::create_forum_user(account_id, name.clone(), self_introduction.clone(),),
         result
     );
-    OriginType::Signed(account_id)
+    TestForumModule::next_forum_user_id() - 1
 }
 
 pub fn create_moderator_mock(
@@ -191,12 +193,12 @@ pub fn create_moderator_mock(
     name: Vec<u8>,
     self_introduction: Vec<u8>,
     result: Result<(), &'static str>,
-) -> OriginType {
+) -> ModeratorId {
     assert_eq!(
         TestForumModule::create_moderator(account_id, name.clone(), self_introduction.clone(),),
         result
     );
-    OriginType::Signed(account_id)
+    TestForumModule::next_moderator_id() - 1
 }
 
 pub fn create_labels_mock() {
@@ -346,6 +348,32 @@ pub fn update_category_mock(
     category_id
 }
 
+pub fn moderate_thread_mock(
+    origin: OriginType,
+    thread_id: ThreadId,
+    rationale: Vec<u8>,
+    result: Result<(), &'static str>,
+) -> ThreadId {
+    assert_eq!(
+        TestForumModule::moderate_thread(mock_origin(origin), thread_id, rationale),
+        result
+    );
+    thread_id
+}
+
+pub fn moderate_post_mock(
+    origin: OriginType,
+    post_id: PostId,
+    rationale: Vec<u8>,
+    result: Result<(), &'static str>,
+) -> PostId {
+    assert_eq!(
+        TestForumModule::moderate_post(mock_origin(origin), post_id, rationale),
+        result
+    );
+    post_id
+}
+
 pub fn update_category_labels_mock(
     origin: OriginType,
     category_id: CategoryId,
@@ -370,6 +398,19 @@ pub fn update_thread_labels_mock(
         result
     );
     thread_id
+}
+
+fn edit_post_text_mock(
+    origin: OriginType,
+    post_id: PostId,
+    new_text: Vec<u8>,
+    result: Result<(), &'static str>,
+) -> PostId {
+    assert_eq!(
+        TestForumModule::edit_post_text(mock_origin(origin), post_id, new_text,),
+        result
+    );
+    post_id
 }
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
