@@ -34,7 +34,7 @@ pub struct Application<OpeningId, BlockNumber, StakeId> {
     /// Status of this application
     pub stage: ApplicationStage<BlockNumber>,
 
-    // ...
+    /// Application note
     pub human_readable_text: Vec<u8>,
 }
 
@@ -109,10 +109,10 @@ pub enum ApplicationStage<BlockNumber> {
 
     /// Waiting for one or more unstakings, with a non-zero unstaking period, to complete.
     Unstaking {
-        // When deactivation was initiated.
+        /// When deactivation was initiated.
         deactivation_initiated: BlockNumber,
 
-        // The cause of the deactivation.
+        /// The cause of the deactivation.
         cause: ApplicationDeactivationCause,
     },
 
@@ -132,12 +132,25 @@ pub enum ApplicationStage<BlockNumber> {
 /// Possible application deactivation causes
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord)]
 pub enum ApplicationDeactivationCause {
+    /// Deactivation initiated from outside
     External, // Add ID here for simplicity?
+
+    /// Applicant was hired
     Hired,
+
+    /// Applicant was not hired
     NotHired,
+
+    /// Application was crowded out by another applicaiton
     CrowdedOut,
+
+    /// Opening was cancelled
     OpeningCancelled,
+
+    /// Review period expired
     ReviewPeriodExpired,
+
+    /// Opening was filled
     OpeningFilled,
 }
 

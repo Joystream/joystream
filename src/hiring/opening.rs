@@ -11,6 +11,7 @@ use srml_support::ensure;
 use crate::hiring;
 use crate::hiring::*;
 
+/// An opening represents the process of hiring one or more new actors into some available role
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone)]
 pub struct Opening<Balance, BlockNumber, ApplicationId> {
     /// Block at which opening was added
@@ -194,13 +195,13 @@ where
 /// The stage at which an `Opening` may be at.
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
 pub enum OpeningStage<BlockNumber, ApplicationId> {
-    // ..
+    /// Opening is not active yet. Will be activated at 'begins_at_block' block number
     WaitingToBegin {
+        /// Becomes active at block number
         begins_at_block: BlockNumber,
     },
 
-    // TODO: Fix this bad name
-    //
+    /// Active opening stage
     Active {
         /// Active stage
         stage: hiring::ActiveOpeningStage<BlockNumber>,
@@ -224,7 +225,7 @@ pub enum OpeningStage<BlockNumber, ApplicationId> {
         // - `unstaking_application_count`
         // - `deactivated_application_count`
         //
-        // equals the total number of applications ever added to the openig via `add_application`.
+        // equals the total number of applications ever added to the opening via `add_application`.
         /// Active NOW
         active_application_count: u32,
 
@@ -310,26 +311,32 @@ impl<BlockNumber: Default, ApplicationId> Default for OpeningStage<BlockNumber, 
     }
 }
 
+/// Substages of an active opening stage
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
 pub enum ActiveOpeningStage<BlockNumber> {
+    /// Active opening accepts application
     AcceptingApplications {
-        //
+        ///Start accepting applications at block number
         started_accepting_applicants_at_block: BlockNumber,
     },
 
-    //
+    /// Active opening is in review period
     ReviewPeriod {
+        /// Start accepting applications at block number
         started_accepting_applicants_at_block: BlockNumber,
-
+        /// Start review application at block number
         started_review_period_at_block: BlockNumber,
     },
 
-    //
+    /// Active opening was deactivated
     Deactivated {
+        /// Deactivation cause
         cause: OpeningDeactivationCause,
 
+        /// Deactivated at block number
         deactivated_at_block: BlockNumber,
 
+        /// Start accepting applications at block number
         started_accepting_applicants_at_block: BlockNumber,
 
         /// Whether the review period had ever been started, and if so, at what block.
@@ -401,19 +408,32 @@ impl<BlockNumber: Clone> ActiveOpeningStage<BlockNumber> {
     }
 }
 
+/// Opening deactivation cause
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
 pub enum OpeningDeactivationCause {
+    /// Opening was cancelled before activation
     CancelledBeforeActivation,
+
+    /// Opening was cancelled during accepting application stage
     CancelledAcceptingApplications,
+
+    /// Opening was cancelled during accepting application stage
     CancelledInReviewPeriod,
+
+    /// Opening was cancelled after review period exprired
     ReviewPeriodExpired,
+
+    /// Opening was filled
     Filled,
 }
 
-// Safe and explict way of chosing
+/// Safe and explict way of chosing
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum ActivateOpeningAt<BlockNumber> {
+    /// Activate opening now (current block)
     CurrentBlock,
+
+    /// Activate opening at block number
     ExactBlock(BlockNumber),
 }
 

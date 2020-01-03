@@ -1,5 +1,21 @@
+//! Hiring substrate module for the Joystream platform
+//!
+//! Public APIs:
+//! - add_opening
+//! - ensure_can_add_application
+//! - add_application
+//! - deactivate_application
+//! - cancel_opening
+//! - fill_opening
+//! - begin_review
+//! - begin_acception_application
+//! - unstaked
+//!
+//! Dependency: Joystream stake module
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+//#![warn(missing_docs)]
 
 use codec::Codec;
 use system;
@@ -26,7 +42,9 @@ mod test;
 pub use hiring::*;
 use stake;
 
+/// Main trait of hiring substrate module
 pub trait Trait: system::Trait + stake::Trait + Sized {
+    /// OpeningId type
     type OpeningId: Parameter
         + Member
         + SimpleArithmetic
@@ -36,6 +54,7 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
         + MaybeSerialize
         + PartialEq;
 
+    /// ApplicationId type
     type ApplicationId: Parameter
         + Member
         + SimpleArithmetic
@@ -70,8 +89,11 @@ decl_storage! {
     }
 }
 
+
 decl_module! {
+    /// Main hiring module definition
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+
         fn on_finalize(now: T::BlockNumber) {
 
             //
@@ -137,6 +159,10 @@ decl_module! {
 
 // Public API implementation
 impl<T: Trait> Module<T> {
+    /// Add new opening based on given inputs policies.
+    /// The new Opening instance has stage WaitingToBegin, and is added to openingsById,
+    /// and has identifier equal to nextOpeningId.
+    /// The latter is incremented. The used identifier is returned.
     pub fn add_opening(
         activate_at: ActivateOpeningAt<T::BlockNumber>,
         max_review_period_length: T::BlockNumber,
@@ -260,6 +286,9 @@ impl<T: Trait> Module<T> {
         })
     }
 
+    /// Transit opening to the accepting application stage.
+    /// Applies when given opening is in WaitingToBegin stage.
+    /// The stage is updated to Active stage with AcceptingApplications substage
     pub fn begin_accepting_applications(
         opening_id: T::OpeningId,
     ) -> Result<(), BeginAcceptingApplicationsError> {
@@ -295,6 +324,9 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Transit opening to the begin review period stage.
+    /// Applies when given opening is in Active stage and AcceptingApplications substage.
+    /// The stage is updated to Active stage and ReviewPeriod substage
     pub fn begin_review(opening_id: T::OpeningId) -> Result<(), BeginReviewError> {
         // Ensure that the opening exists
         let opening = ensure_opening_exists!(T, opening_id, BeginReviewError::OpeningDoesNotExist)?;
@@ -328,9 +360,12 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Fill an opening, identifed with `opening_id`, currently in the review period.
-    ///
-    /// TODO: Name _a bit_ too long? but descriptive though...
+    /// Fill an opening, identified with `opening_id`, currently in the review period.
+    /// Applies when given opening is in ReviewPeriod stage.
+    /// Given list of applications are deactivated to under the Hired,
+    /// all other active applicants are NotHired.
+    /// Separately for each group,
+    /// unstaking periods for any applicable application and/or role stake must be provided.
     pub fn fill_opening(
         opening_id: T::OpeningId,
         successful_applications: BTreeSet<T::ApplicationId>,
@@ -468,8 +503,6 @@ impl<T: Trait> Module<T> {
 
     /// Adds a new application on the given opening, and begins staking for
     /// the role, the application or both possibly.
-    ///
-    /// Returns ..
     pub fn ensure_can_add_application(
         opening_id: T::OpeningId,
         opt_role_stake_balance: Option<BalanceOf<T>>,
@@ -535,8 +568,6 @@ impl<T: Trait> Module<T> {
 
     /// Adds a new application on the given opening, and begins staking for
     /// the role, the application or both possibly.
-    ///
-    /// Returns ..
     pub fn add_application(
         opening_id: T::OpeningId,
         opt_role_stake_imbalance: Option<NegativeImbalance<T>>,
@@ -652,7 +683,6 @@ impl<T: Trait> Module<T> {
     }
 
     /// Deactive an active application.
-    ///
     /// Does currently not support slashing
     pub fn deactive_application(
         application_id: T::ApplicationId,
@@ -786,7 +816,7 @@ impl<T: Trait> Module<T> {
  *  === Application Deactivated Handler  ======
  */
 
-/// ...
+/// Handles application deactivation with a cause
 pub trait ApplicationDeactivatedHandler<T: Trait> {
     /// An application, with the given id, was fully deactivated, with the
     /// given cause, and was put in the inactive state.
@@ -811,28 +841,47 @@ impl<T: Trait> ApplicationDeactivatedHandler<T> for () {
 /// Error due to attempting to fill an opening.
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum FillOpeningError<T: Trait> {
+    /// Opening does not exist
     OpeningDoesNotExist,
+
+    /// Opening is not in review period
     OpeningNotInReviewPeriodStage,
+
+    /// Provided unstaking period is too short
     UnstakingPeriodTooShort(StakePurpose, ApplicationOutcomeInFilledOpening),
+
+    /// Provided redundant unstaking period
     RedundantUnstakingPeriodProvided(StakePurpose, ApplicationOutcomeInFilledOpening),
+
+    /// Application does not exist
     ApplicationDoesNotExist(T::ApplicationId),
+
+    /// Application is not in active stage
     ApplicationNotInActiveStage(T::ApplicationId),
 }
 
+/// Product of ensure_can_add_application()
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct DestructuredApplicationCanBeAddedEvaluation<T: Trait> {
+    /// Opening object
     pub opening: Opening<BalanceOf<T>, T::BlockNumber, T::ApplicationId>,
 
+    /// Active opening stage
     pub active_stage: ActiveOpeningStage<T::BlockNumber>,
 
+    /// Collection of added applicaiton ids
     pub applications_added: BTreeSet<T::ApplicationId>,
 
+    /// Active applications counter
     pub active_application_count: u32,
 
+    /// Unstaking applications counter
     pub unstaking_application_count: u32,
 
+    /// Deactivated applications counter
     pub deactivated_application_count: u32,
 
+    /// Prospects of application adding
     pub would_get_added_success: ApplicationAddedSuccess<T>,
 }
 
@@ -846,9 +895,13 @@ impl<T: Trait> DestructuredApplicationCanBeAddedEvaluation<T> {
     }
 }
 
+/// Adding application result
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum ApplicationAddedSuccess<T: Trait> {
+    /// Application was added without side-effects
     Unconditionally,
+
+    /// Application has crowded out existing application
     CrowdsOutExistingApplication(T::ApplicationId),
 }
 
@@ -862,15 +915,21 @@ impl<T: Trait> ApplicationAddedSuccess<T> {
     }
 }
 
+/// Prospects of application. Whether it would be added to the opening.
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum ApplicationWouldGetAddedEvaluation<T: Trait> {
+    /// Negative prospects
     No,
+
+    /// Positive prospects
     Yes(ApplicationAddedSuccess<T>),
 }
 
+/// Balance alias
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
+/// Balance alias for staking
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
@@ -1076,7 +1135,7 @@ impl<T: Trait> Module<T> {
                  * Issue: https://github.com/Joystream/joystream/issues/36#issuecomment-539567407
                  */
 
-                // Figure out new stage for the applcation
+                // Figure out new stage for the application
                 let new_application_stage = if was_unstaked {
                     ApplicationStage::Unstaking {
                         deactivation_initiated: current_block_height,
