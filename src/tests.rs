@@ -1501,6 +1501,7 @@ fn add_post_origin() {
     }
 }
 
+#[test]
 // test post text's length
 fn add_post_text() {
     let constraint = default_genesis_config().post_text_constraint;
@@ -1511,8 +1512,8 @@ fn add_post_text() {
     ];
     let results = vec![
         Ok(()),
-        Err(ERROR_POST_MODERATION_RATIONALE_TOO_SHORT),
-        Err(ERROR_POST_MODERATION_RATIONALE_TOO_LONG),
+        Err(ERROR_POST_TEXT_TOO_SHORT),
+        Err(ERROR_POST_TEXT_TOO_LONG),
     ];
     for index in 0..texts.len() {
         let config = default_genesis_config();
