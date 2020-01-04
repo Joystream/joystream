@@ -168,8 +168,137 @@ fn update_channel_as_owner_success() {
 
 }
 
+struct UpdateChannelAsCurationActorFixture {
+    pub origin: Origin,
+    pub curation_actor: CurationActor<CuratorId<Test>>,
+    pub new_verified: Option<bool>,
+    pub new_description: Option<Vec<u8>>,
+    pub new_curation_status: Option<ChannelCurationStatus>
+}
+
+impl UpdateChannelAsCurationActorFixture {
+
+    fn update_channel_as_curation_actor(&self, channel_id: ChannelId<Test>) -> Result<(), &'static str> {
+
+        ContentWorkingGroup::update_channel_as_curation_actor(
+            self.origin.clone(),
+            self.curation_actor.clone(),
+            channel_id,
+            self.new_verified,
+            self.new_description.clone(),
+            self.new_curation_status
+        )
+    }
+
+    pub fn call_and_assert_success(&self, channel_id: ChannelId<Test>) {
+
+        let old_channel = ChannelById::<Test>::get(channel_id);
+
+        let expected_updated_channel = lib::Channel::new(
+            old_channel.channel_name,
+            self.new_verified.unwrap_or(old_channel.verified),
+            self.new_description.clone().unwrap_or(old_channel.description),
+            old_channel.content,
+            old_channel.owner,
+            old_channel.role_account,
+            old_channel.publishing_status,
+            self.new_curation_status.unwrap_or(old_channel.curation_status),
+            old_channel.created,
+            old_channel.principal_id
+        );
+
+        // Call and check result
+
+        let call_result = self.update_channel_as_curation_actor(channel_id);
+
+        assert_eq!(
+            call_result,
+            Ok(())
+        );
+
+        // Event triggered
+        let event_channel_id = Self::get_event_deposited();
+
+        assert_eq!(
+            event_channel_id,
+            channel_id
+        );
+
+        // Channel has been updated correctly
+        assert!(ChannelById::<Test>::exists(channel_id));
+
+        let updated_channel = ChannelById::<Test>::get(channel_id);
+
+        assert_eq!(
+            updated_channel,
+            expected_updated_channel
+        );
+    }
+
+    fn get_event_deposited() -> lib::ChannelId<Test> {
+    
+        if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+            if let lib::RawEvent::ChannelUpdatedByCurationActor(ref channel_id) = x {
+                return channel_id.clone();
+            } else {
+                panic!("Event was not ChannelUpdatedByCurationActor.")
+            }
+        } else {
+            panic!("No event deposited.")
+        } 
+    
+    }
+
+}
+
 #[test]
 fn update_channel_as_curation_actor_success() {
+
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
+
+            // Add lead and hire curator
+            let curator_params = AddMemberAndApplyOnOpeningParams::new(
+                2222,
+                to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+                2222*2,
+                2222*3,
+                generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get())
+            );
+
+            // Hire curator
+            let setup_and_fill_opening_result = setup_and_fill_opening(
+                &vec![
+                    FillOpeningApplicantParams::new(
+                    curator_params.clone(),
+                    true)
+                ]);
+
+            let curator_id = 
+                match setup_and_fill_opening_result.application_outomes[0] {
+                    FillOpeningApplicantOutcome::Hired{curator_id} => curator_id,
+                    _ => panic!()
+                };
+
+            // Make channel
+            let channel_creator_member_id = add_channel_creator_member();
+            let channel_id = channel_creator_member_id;
+
+            CreateChannelFixture::make_valid_unpulished_video_channel_for(channel_creator_member_id, None)
+            .call_and_assert_success();
+
+            // Update channel as curator
+            UpdateChannelAsCurationActorFixture {
+                origin: Origin::signed(curator_params.curator_applicant_role_account),
+                curation_actor: CurationActor::Curator(curator_id),
+                new_verified: Some(true),
+                new_description: None, //  don't touch!
+                new_curation_status: Some(ChannelCurationStatus::Censored)
+            }
+            .call_and_assert_success(channel_id);
+
+        });
 
 }
 
@@ -607,75 +736,6 @@ fn update_curator_role_account_success() {
         .build()
         .execute_with(|| {
 
-            /*
-             * Setup
-             */
-
-            let applicants = vec![
-                FillOpeningApplicantParams::new(
-                    AddMemberAndApplyOnOpeningParams::new(
-                        2222,
-                        to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
-                        2222*2,
-                        2222*3,
-                        generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get())
-                    ),
-                    true
-                )
-            ];
-
-            /*
-             * Exercise and assert
-             */
-/*
-            // Create channel
-            let create_channel_params = CreateChannelFixture {
-                channel_creator_member_id: <Test as members::Trait>::MemberId,
-                channel_creator_role_account: <Test as system::Trait>::AccountId,
-                channel_name: Vec<u8>,
-                description: Vec<u8>,
-                content: ChannelContentType,
-                publishing_status: ChannelPublishingStatus
-            };
-
-            let created_channel_id = create_channel(&create_channel_params);
-
-*/
-            // Setup
-            setup_and_fill_opening(&applicants);
-
-
-            /*
-             * Test
-             */
-
-            /*
-                        update_channel_as_curation_actor(
-                            origin,
-                            curation_actor: CurationActor<CuratorId<T>>,
-                            channel_id: ChannelId<T>,
-                            new_verified: Option<bool>,
-                            new_description: Option<Vec<u8>>,
-                            new_curation_status: Option<ChannelCurationStatus>
-                            )
-            
-
-            assert_eq!(
-                ContentWorkingGroup::begin_curator_applicant_review(
-                    Origin::signed(LEAD_ROLE_ACCOUNT),
-                    normal_opening_constructed.curator_opening_id
-                )
-                .unwrap(),
-                ()
-            );
-
-            let event_curator_opening_id = ensure_begancuratorapplicationreview_event_deposited();
-
-            assert_eq!(
-                normal_opening_constructed.curator_opening_id,
-                event_curator_opening_id
-            );
-            */
 
 
         });
@@ -1075,7 +1135,19 @@ fn setup_opening_in_review(applicants: &Vec<AddMemberAndApplyOnOpeningParams>) -
     }
 }
 
-fn setup_and_fill_opening(applicants: &Vec<FillOpeningApplicantParams>) {
+enum FillOpeningApplicantOutcome {
+    NotHired,
+    Hired {
+        curator_id: CuratorId<Test>,
+    },
+}
+
+struct SetupAndFillOpeningResult {
+    setup_opening_in_review: SetupOpeningInReview,
+    application_outomes: Vec<FillOpeningApplicantOutcome>
+}
+
+fn setup_and_fill_opening(applicants: &Vec<FillOpeningApplicantParams>) -> SetupAndFillOpeningResult {
 
     let setup_opening_params = applicants
                                 .iter()
@@ -1111,8 +1183,8 @@ fn setup_and_fill_opening(applicants: &Vec<FillOpeningApplicantParams>) {
     let original_next_principal_id = NextPrincipalId::<Test>::get();
 
     /*
-        * Test
-        */
+    * Call
+    */
 
     assert_eq!(
         ContentWorkingGroup::fill_curator_opening(
@@ -1120,8 +1192,8 @@ fn setup_and_fill_opening(applicants: &Vec<FillOpeningApplicantParams>) {
             setup_opening_in_review.normal_opening_constructed.curator_opening_id,
             successful_curator_application_ids.clone()
         )
-        .unwrap(),
-        ()
+        ,
+        Ok(())
     );
 
     /*
@@ -1240,6 +1312,26 @@ fn setup_and_fill_opening(applicants: &Vec<FillOpeningApplicantParams>) {
     * this is where state of application has fundamentally changed.
     */
 
+    let application_outomes = applicants
+                                .iter()
+                                .enumerate()
+                                .map(|(index, params)| {
+
+                                    if params.hire {
+                                        FillOpeningApplicantOutcome::Hired {
+                                            curator_id: (index as u64) + original_next_curator_id
+                                        }
+                                    } else {
+                                        FillOpeningApplicantOutcome::NotHired
+                                    }
+
+                                })
+                                .collect::<Vec<_>>();
+                                
+    SetupAndFillOpeningResult {
+        setup_opening_in_review,
+        application_outomes
+    }
 }
 
 struct CreateChannelFixture {
