@@ -23,7 +23,7 @@ export class MockTransport extends TransportBase implements ITransport {
         language: undefined,
         firstReleased: 567425967, // 1987 year.
         genre: 'Classical Music',
-        mood: 'Relaxed',
+        mood: 'Relaxing',
         theme: 'Light',
         link: [],
         composerOrSongwriter: 'Mozart',
