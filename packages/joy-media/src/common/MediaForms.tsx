@@ -1,5 +1,5 @@
 import React from 'react';
-import { DropdownItemProps, Dropdown } from 'semantic-ui-react';
+import { Dropdown, DropdownItemProps, DropdownProps } from 'semantic-ui-react';
 import { FormikProps, Field } from 'formik';
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { SubmittableResult } from '@polkadot/api';
@@ -85,11 +85,21 @@ export function withMediaForm<OuterProps, FormValues>
   }
 
   const MediaDropdown = (props: MediaDropdownProps<OuterProps, FormValues>) => {
-    const { options = [] } = props;
+    const { field: f, options = [] } = props;
+    const id = f.id as string;
+    const value = (props.values as any)[id] || '';
+
     return <MediaField {...props} fieldProps={{
       component: Dropdown,
       selection: true,
-      options
+      options,
+      value,
+      onBlur: (_event: any, data: DropdownProps) => {
+        props.setFieldTouched(id, true);
+      },
+      onChange: (_event: any, data: DropdownProps) => {
+        props.setFieldValue(id, data.value || '');
+      }
     }} />
   }
 
