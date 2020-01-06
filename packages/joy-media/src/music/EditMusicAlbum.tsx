@@ -7,7 +7,7 @@ import TxButton from '@polkadot/joy-utils/TxButton';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
 import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumPreviewProps } from './MusicAlbumPreview';
-import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumClass as Fields } from '../schemas/music/MusicAlbum';
+import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumClass as Fields, MusicAlbumFormValues } from '../schemas/music/MusicAlbum';
 import { MusicTrackType } from '../schemas/music/MusicTrack';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import { genreOptions, moodOptions, themeOptions, licenseOptions, visibilityOptions } from '../common/DropdownOptions';
@@ -21,7 +21,7 @@ export type OuterProps = {
   tracks?: MusicTrackType[]
 };
 
-type FormValues = MusicAlbumType;
+type FormValues = MusicAlbumFormValues;
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {

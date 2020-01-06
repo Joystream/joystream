@@ -7,7 +7,7 @@ import TxButton from '@polkadot/joy-utils/TxButton';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
 import * as Opts from '../common/DropdownOptions';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
-import { ChannelType, ChannelClass as Fields, ChannelValidationSchema } from './ChannelFormTypes';
+import { ChannelType, ChannelClass as Fields, ChannelValidationSchema, ChannelFormValues } from '../schemas/channel/Channel';
 import { ChannelId } from './ChannelId';
 
 export type OuterProps = {
@@ -16,7 +16,7 @@ export type OuterProps = {
   entity?: ChannelType
 };
 
-type FormValues = ChannelType;
+type FormValues = ChannelFormValues;
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {

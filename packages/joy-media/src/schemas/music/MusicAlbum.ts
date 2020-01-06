@@ -2,6 +2,14 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { MusicGenreType } from './MusicGenre';
+import { MusicMoodType } from './MusicMood';
+import { MusicThemeType } from './MusicTheme';
+import { MusicTrackType } from './MusicTrack';
+import { LanguageType } from '../general/Language';
+import { PublicationStatusType } from '../general/PublicationStatus';
+import { CurationStatusType } from '../general/CurationStatus';
+import { ContentLicenseType } from '../general/ContentLicense';
 
 export const MusicAlbumValidationSchema = Yup.object().shape({
   title: Yup.string()
@@ -24,25 +32,47 @@ export const MusicAlbumValidationSchema = Yup.object().shape({
     .max(255, 'Text is too long. Maximum length is 255 chars.')
 });
 
+export type MusicAlbumFormValues = {
+  title: string
+  artist: string
+  thumbnail: string
+  description: string
+  firstReleased: string
+  genre: string
+  mood: string
+  theme: string
+  tracks: string
+  language: string
+  link: string
+  lyrics: string
+  composerOrSongwriter: string
+  reviews: string
+  publicationStatus: string
+  curationStatus: string
+  explicit: string
+  license: string
+  attribution: string
+};
+
 export type MusicAlbumType = {
   title: string
   artist: string
   thumbnail: string
   description: string
   firstReleased: number
-  genre?: any
-  mood?: any
-  theme?: any
-  tracks?: any[]
-  language?: any
+  genre?: MusicGenreType
+  mood?: MusicMoodType
+  theme?: MusicThemeType
+  tracks?: MusicTrackType[]
+  language?: LanguageType
   link?: string[]
   lyrics?: string
   composerOrSongwriter?: string
   reviews?: string[]
-  publicationStatus: any
-  curationStatus?: any
+  publicationStatus: PublicationStatusType
+  curationStatus?: CurationStatusType
   explicit: boolean
-  license: any
+  license: ContentLicenseType
   attribution?: string
 };
 

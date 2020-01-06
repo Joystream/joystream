@@ -9,6 +9,10 @@ export const MusicMoodValidationSchema = Yup.object().shape({
     .max(100, 'Text is too long. Maximum length is 100 chars.')
 });
 
+export type MusicMoodFormValues = {
+  mood: string
+};
+
 export type MusicMoodType = {
   mood: string
 };

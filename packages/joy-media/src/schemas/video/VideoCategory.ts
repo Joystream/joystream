@@ -9,6 +9,10 @@ export const VideoCategoryValidationSchema = Yup.object().shape({
     .max(255, 'Text is too long. Maximum length is 255 chars.')
 });
 
+export type VideoCategoryFormValues = {
+  category: string
+};
+
 export type VideoCategoryType = {
   category: string
 };

@@ -9,6 +9,10 @@ export const PublicationStatusValidationSchema = Yup.object().shape({
     .max(50, 'Text is too long. Maximum length is 50 chars.')
 });
 
+export type PublicationStatusFormValues = {
+  status: string
+};
+
 export type PublicationStatusType = {
   status: string
 };

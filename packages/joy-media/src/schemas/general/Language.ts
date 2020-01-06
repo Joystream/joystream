@@ -9,6 +9,10 @@ export const LanguageValidationSchema = Yup.object().shape({
     .max(2, 'Text is too long. Maximum length is 2 chars.')
 });
 
+export type LanguageFormValues = {
+  languageCode: string
+};
+
 export type LanguageType = {
   languageCode: string
 };

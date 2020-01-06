@@ -2,6 +2,8 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { PublicationStatusType } from '../general/PublicationStatus';
+import { CurationStatusType } from '../general/CurationStatus';
 
 export const ChannelValidationSchema = Yup.object().shape({
   content: Yup.string()
@@ -21,14 +23,24 @@ export const ChannelValidationSchema = Yup.object().shape({
     .max(4000, 'Text is too long. Maximum length is 4000 chars.')
 });
 
+export type ChannelFormValues = {
+  content: string
+  channelName: string
+  thumbnail: string
+  cover: string
+  description: string
+  publicationStatus: string
+  curationStatus: string
+};
+
 export type ChannelType = {
   content: string
   channelName: string
   thumbnail: string
   cover: string
   description: string
-  publicationStatus: any
-  curationStatus?: any
+  publicationStatus: PublicationStatusType
+  curationStatus?: CurationStatusType
 };
 
 export type ChannelPropId =

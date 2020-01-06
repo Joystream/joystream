@@ -9,7 +9,7 @@ import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
 import { ChannelId } from './channels/ChannelId';
-import { ChannelType } from './channels/ChannelFormTypes';
+import { ChannelType } from './schemas/channel/Channel';
 
 export class SubstrateTransport extends TransportBase implements ITransport {
 

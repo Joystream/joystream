@@ -6,7 +6,7 @@ import { History } from 'history';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { ContentId } from '@joystream/types/media';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
-import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields } from '../schemas/music/MusicTrack';
+import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields, MusicTrackFormValues } from '../schemas/music/MusicTrack';
 import * as Opts from '../common/DropdownOptions';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
@@ -19,7 +19,7 @@ export type OuterProps = {
   entity?: MusicTrackType
 };
 
-type FormValues = MusicTrackType;
+type FormValues = MusicTrackFormValues;
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {

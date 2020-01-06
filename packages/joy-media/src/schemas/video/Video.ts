@@ -2,6 +2,12 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { LanguageType } from '../general/Language';
+import { VideoCategoryType } from './VideoCategory';
+import { MediaObjectType } from '../general/MediaObject';
+import { PublicationStatusType } from '../general/PublicationStatus';
+import { CurationStatusType } from '../general/CurationStatus';
+import { ContentLicenseType } from '../general/ContentLicense';
 
 export const VideoValidationSchema = Yup.object().shape({
   title: Yup.string()
@@ -17,19 +23,35 @@ export const VideoValidationSchema = Yup.object().shape({
     .max(255, 'Text is too long. Maximum length is 255 chars.')
 });
 
+export type VideoFormValues = {
+  title: string
+  thumbnail: string
+  description: string
+  language: string
+  firstReleased: string
+  category: string
+  link: string
+  object: string
+  publicationStatus: string
+  curationStatus: string
+  explicit: string
+  license: string
+  attribution: string
+};
+
 export type VideoType = {
   title: string
   thumbnail: string
   description: string
-  language: any
+  language: LanguageType
   firstReleased: number
-  category?: any
+  category?: VideoCategoryType
   link?: string[]
-  object?: any
-  publicationStatus: any
-  curationStatus?: any
+  object?: MediaObjectType
+  publicationStatus: PublicationStatusType
+  curationStatus?: CurationStatusType
   explicit: boolean
-  license: any
+  license: ContentLicenseType
   attribution?: string
 };
 

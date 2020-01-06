@@ -8,8 +8,8 @@ import { Entity } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
+import { ChannelType } from './schemas/channel/Channel';
 import { ChannelId } from './channels/ChannelId';
-import { ChannelType } from './channels/ChannelFormTypes';
 
 export class MockTransport extends TransportBase implements ITransport {
 

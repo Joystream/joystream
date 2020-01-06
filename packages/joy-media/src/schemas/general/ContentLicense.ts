@@ -9,6 +9,10 @@ export const ContentLicenseValidationSchema = Yup.object().shape({
     .max(200, 'Text is too long. Maximum length is 200 chars.')
 });
 
+export type ContentLicenseFormValues = {
+  license: string
+};
+
 export type ContentLicenseType = {
   license: string
 };

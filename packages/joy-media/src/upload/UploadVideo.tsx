@@ -6,7 +6,7 @@ import { History } from 'history';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { ContentId } from '@joystream/types/media';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
-import { VideoValidationSchema, VideoType, VideoClass as Fields } from '../schemas/video/Video';
+import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues } from '../schemas/video/Video';
 import { MediaFormProps, withMediaForm } from '../common/MediaForms';
 import { visibilityOptions, licenseOptions } from '../common/DropdownOptions';
 import * as Opts from '../common/DropdownOptions';
@@ -20,7 +20,7 @@ export type OuterProps = {
   entity?: VideoType
 };
 
-type FormValues = VideoType;
+type FormValues = VideoFormValues;
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {

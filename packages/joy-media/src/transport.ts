@@ -4,7 +4,7 @@ import { Entity } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
-import { ChannelType } from './channels/ChannelFormTypes';
+import { ChannelType } from './schemas/channel/Channel';
 import { ChannelId } from './channels/ChannelId';
 
 export interface ITransport {
