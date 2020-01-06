@@ -729,6 +729,81 @@ fn apply_on_curator_opening_success() {
         });
 }
 
+struct UpdateCuratorRoleAccountFixture {
+    pub origin: Origin,
+    pub member_id: <Test as members::Trait>::MemberId,
+    pub curator_id: CuratorId<Test>,
+    pub new_role_account: <Test as system::Trait>::AccountId,
+}
+
+impl UpdateCuratorRoleAccountFixture {
+
+    fn call(&self) -> Result<(),&'static str>{
+
+        ContentWorkingGroup::update_curator_role_account(
+            self.origin.clone(),
+            self.member_id,
+            self.curator_id,
+            self.new_role_account
+        )
+    }
+
+    pub fn call_and_assert_success(&self) {
+
+        let original_curator = CuratorById::<Test>::get(self.curator_id);
+
+        let call_result = self.call();
+
+        assert_eq!(
+            call_result,
+            Ok(())
+        );
+
+        let updated_curator = CuratorById::<Test>::get(self.curator_id);
+
+        assert_eq!(
+            lib::Curator{
+                role_account: self.new_role_account,
+                ..original_curator
+            },
+            updated_curator
+        );
+
+        let (event_curator_id, event_new_role_account) =
+            if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+                if let lib::RawEvent::CuratorRoleAccountUpdated(ref curator_id, ref new_role_account) = x {
+                    (curator_id.clone(), new_role_account.clone())
+                } else {
+                    panic!("Event was not CuratorRoleAccountUpdated.")
+                }
+            } else {
+                panic!("No event deposited.")
+            };
+
+        assert_eq!(
+            self.curator_id,
+            event_curator_id
+        );
+
+        assert_eq!(
+            self.new_role_account,
+            event_new_role_account
+        );
+    }
+
+    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
+
+        let call_result = self.call();
+
+        assert_eq!(
+            call_result,
+            Err(error_message)
+        );
+
+    }
+
+}
+
 #[test]
 fn update_curator_role_account_success() {
 
@@ -736,24 +811,19 @@ fn update_curator_role_account_success() {
         .build()
         .execute_with(|| {
 
+            let result = setup_lead_and_hire_curator();
 
-            /*
-            // Add lead and hire curator
-            let curator_params = AddMemberAndApplyOnOpeningParams::new(
-                2222,
-                to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
-                2222*2,
-                2222*3,
-                generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get())
-            );
+            let fixture = UpdateCuratorRoleAccountFixture{
+                origin: Origin::signed(result.curator_params().curator_applicant_root_and_controller_account),
+                member_id: result.curator_member_id(),
+                curator_id: result.curator_id(),
+                new_role_account: 777777
+            };
 
-            // Hire curator
-            let setup_and_fill_opening_result = setup_and_fill_opening(
-                &vec![
-                    FillOpeningApplicantParams::new(
-                    curator_params.clone(),
-                    true)
-                ]);
+            fixture.call_and_assert_success();
+        });
+
+}
 
 struct UpdateCuratorRewardAccountFixture {
     pub origin: Origin,
