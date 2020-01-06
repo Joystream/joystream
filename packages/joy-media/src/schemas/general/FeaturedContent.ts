@@ -2,15 +2,23 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { VideoType } from '../video/Video';
+import { MusicAlbumType } from '../music/MusicAlbum';
 
 export const FeaturedContentValidationSchema = Yup.object().shape({
   // No validation rules.
 });
 
+export type FeaturedContentFormValues = {
+  topVideo: string
+  featuredVideos: string
+  featuredAlbums: string
+};
+
 export type FeaturedContentType = {
-  topVideo?: any
-  featuredVideos?: any[]
-  featuredAlbums?: any[]
+  topVideo?: VideoType
+  featuredVideos?: VideoType[]
+  featuredAlbums?: MusicAlbumType[]
 };
 
 export type FeaturedContentPropId =
@@ -31,7 +39,7 @@ export type FeaturedContentGenericProp = {
 };
 
 type FeaturedContentClassType = {
-  [id in keyof FeaturedContentType]: FeaturedContentGenericProp
+  [id in FeaturedContentPropId]: FeaturedContentGenericProp
 };
 
 export const FeaturedContentClass: FeaturedContentClassType = {

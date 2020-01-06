@@ -4,37 +4,37 @@ import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { SubmittableResult } from '@polkadot/api';
-
 import { ContentId } from '@joystream/types/media';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
-import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields } from '../schemas/music/MusicTrack';
+import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields, MusicTrackFormValues } from '../schemas/music/MusicTrack';
 import * as Opts from '../common/DropdownOptions';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
+import EntityId from '@joystream/types/versioned-store/EntityId';
 
-type OuterProps = {
-  isStorybook?: boolean,
+export type OuterProps = {
   history?: History,
   contentId: ContentId,
   fileName?: string,
+  id?: EntityId,
   entity?: MusicTrackType
 };
 
-type FormValues = MusicTrackType;
+type FormValues = MusicTrackFormValues;
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
-    
     // React components for form fields:
-    // LabelledText,
-    LabelledField,
     MediaText,
-    MediaField,
     MediaDropdown,
+    LabelledField,
 
-    isStorybook = false,
-    history,
-    contentId,
+    // Callbacks:
+    onSubmit,
+    onTxSuccess,
+    onTxFailed,
+
+    // history,
+    // contentId,
     entity,
 
     // Formik stuff:
@@ -42,37 +42,10 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     dirty,
     isValid,
     isSubmitting,
-    setSubmitting,
     resetForm
   } = props;
 
-  const { trackThumbnail } = values;
-
-  const onSubmit = (sendTx: () => void) => {
-    if (isValid) sendTx();
-  };
-
-  const onTxCancelled = () => {
-    // Nothing yet.
-  };
-
-  const onTxFailed = (txResult: SubmittableResult) => {
-    setSubmitting(false);
-    if (txResult == null) {
-      return onTxCancelled();
-    }
-  };
-
-  const onTxSuccess = (_txResult: SubmittableResult) => {
-    setSubmitting(false);
-    goToPlayerPage();
-  };
-
-  const goToPlayerPage = () => {
-    if (history) {
-      history.push('/media/play/' + contentId.encode());
-    }
-  };
+  const { thumbnail } = values;
 
   const isNew = !entity;
 
@@ -83,14 +56,14 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   };
 
   const basicInfoTab = () => <Tab.Pane as='div'>
-    <MediaText field={Fields.trackTitle} {...props} />
-    <MediaText field={Fields.trackThumbnail} {...props} />
-    <MediaField field={Fields.aboutTheTrack} component='textarea' rows={3} disabled={isSubmitting} {...props} />
+    <MediaText field={Fields.title} {...props} />
+    <MediaText field={Fields.thumbnail} {...props} />
+    <MediaText field={Fields.description} textarea {...props} />
     <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <MediaText field={Fields.trackArtist} {...props} />
+    <MediaText field={Fields.artist} {...props} />
     <MediaText field={Fields.composerOrSongwriter} {...props} />
     <MediaDropdown field={Fields.genre} options={Opts.genreOptions} {...props} />
     <MediaDropdown field={Fields.mood} options={Opts.moodOptions} {...props} />
@@ -113,16 +86,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       ? 'Publish'
       : 'Update';
 
-    if (isStorybook) return (
-      <Button
-        primary
-        type='button'
-        size='large'
-        disabled={isDisabled}
-        content={label}
-      />
-    );
-
     return <TxButton
       type='submit'
       size='large'
@@ -141,7 +104,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
-      {trackThumbnail && <img src={trackThumbnail} onError={onImageError} />}
+      {thumbnail && <img src={thumbnail} onError={onImageError} />}
     </div>
 
     <Form className='ui form JoyForm EditMetaForm'>
@@ -172,19 +135,19 @@ export const EditForm = withFormik<OuterProps, FormValues>({
 
     return {
       // Basic:
-      trackTitle: entity && entity.trackTitle || fileName || '',
-      aboutTheTrack: entity && entity.aboutTheTrack || '',
-      trackThumbnail: entity && entity.trackThumbnail || DEFAULT_THUMBNAIL_URL,
+      title: entity && entity.title || fileName || '',
+      thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
+      description: entity && entity.description || '',
       publicationStatus: entity && entity.publicationStatus || Opts.visibilityOptions[0].value,
-      album: entity && entity.album || '',
+      // album: entity && entity.album || '',
 
       // Additional:
-      trackArtist: entity && entity.trackArtist || '',
+      artist: entity && entity.artist || '',
       composerOrSongwriter: entity && entity.composerOrSongwriter || '',
       genre: entity && entity.genre || Opts.genreOptions[0].value,
       mood: entity && entity.mood || Opts.moodOptions[0].value,
       theme: entity && entity.theme || Opts.themeOptions[0].value,
-      explicit: entity && entity.explicit || false, // TODO explicitOptions[0].value,
+      // explicit: entity && entity.explicit || false, // TODO explicitOptions[0].value,
       license: entity && entity.license || Opts.licenseOptions[0].value,
     };
   },

@@ -9,6 +9,10 @@ export const CurationStatusValidationSchema = Yup.object().shape({
     .max(255, 'Text is too long. Maximum length is 255 chars.')
 });
 
+export type CurationStatusFormValues = {
+  status: string
+};
+
 export type CurationStatusType = {
   status: string
 };
@@ -29,7 +33,7 @@ export type CurationStatusGenericProp = {
 };
 
 type CurationStatusClassType = {
-  [id in keyof CurationStatusType]: CurationStatusGenericProp
+  [id in CurationStatusPropId]: CurationStatusGenericProp
 };
 
 export const CurationStatusClass: CurationStatusClassType = {

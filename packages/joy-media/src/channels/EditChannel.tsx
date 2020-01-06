@@ -1,26 +1,22 @@
 import React from 'react';
-import { Button, Tab } from 'semantic-ui-react';
+import { Button } from 'semantic-ui-react';
 import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { ContentId } from '@joystream/types/media';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
-import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues } from '../schemas/video/Video';
-import { MediaFormProps, withMediaForm } from '../common/MediaForms';
-import { visibilityOptions, licenseOptions } from '../common/DropdownOptions';
 import * as Opts from '../common/DropdownOptions';
-import EntityId from '@joystream/types/versioned-store/EntityId';
+import { withMediaForm, MediaFormProps } from '../common/MediaForms';
+import { ChannelType, ChannelClass as Fields, ChannelValidationSchema, ChannelFormValues } from '../schemas/channel/Channel';
+import { ChannelId } from './ChannelId';
 
 export type OuterProps = {
   history?: History,
-  contentId: ContentId,
-  fileName?: string,
-  id?: EntityId,
-  entity?: VideoType
+  id?: ChannelId,
+  entity?: ChannelType
 };
 
-type FormValues = VideoFormValues;
+type FormValues = ChannelFormValues;
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
@@ -38,6 +34,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     // contentId,
     entity,
 
+    // Formik stuff:
     values,
     dirty,
     isValid,
@@ -52,29 +49,19 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    return [ /* TODO save entity to versioned store */ ];
+    return [ /* TODO save channel updates */ ];
   };
 
-  const basicInfoTab = () => <Tab.Pane as='div'>
-    <MediaText field={Fields.title} {...props} />
+  const formFields = () => <>
+    
+    {/* TODO add channel content type dropdown */}
+    
+    <MediaText field={Fields.channelName} {...props} />
     <MediaText field={Fields.thumbnail} {...props} />
+    <MediaText field={Fields.cover} {...props} />
     <MediaText field={Fields.description} textarea {...props} />
     <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
-  </Tab.Pane>
-
-  const additionalTab = () => <Tab.Pane as='div'>
-    <MediaDropdown field={Fields.category} options={Opts.videoCategoryOptions} {...props} />
-    <MediaDropdown field={Fields.language} options={Opts.languageOptions} {...props} />
-    <MediaDropdown field={Fields.license} options={Opts.licenseOptions} {...props} />
-  </Tab.Pane>
-
-  const tabs = () => <Tab
-    menu={{ secondary: true, pointing: true, color: 'blue' }}
-    panes={[
-      { menuItem: 'Basic info', render: basicInfoTab },
-      { menuItem: 'Additional', render: additionalTab },
-    ]}
-  />;
+  </>;
 
   const MainButton = () => {
     const isDisabled = !dirty || isSubmitting;
@@ -106,7 +93,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     <Form className='ui form JoyForm EditMetaForm'>
       
-      {tabs()}
+      {formFields()}
 
       {/* TODO add metadata status dropdown: Draft, Published */}
 
@@ -128,24 +115,19 @@ export const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
   mapPropsToValues: props => {
-    const { entity, fileName } = props;
+    const { entity } = props;
 
     return {
       // Basic:
-      title: entity && entity.title || fileName || '',
+      channelName: entity && entity.channelName || '',
       thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
+      cover: entity && entity.cover || DEFAULT_THUMBNAIL_URL,
       description: entity && entity.description || '',
-      publicationStatus: visibilityOptions[0].value,
-
-      // Additional:
-      category: Opts.videoCategoryOptions[0].value,
-      language: Opts.languageOptions[0].value,
-      // explicit: '',// TODO explicitOptions[0].value,
-      license: licenseOptions[0].value,
+      publicationStatus: entity && entity.publicationStatus || Opts.visibilityOptions[0].value,
     };
   },
 
-  validationSchema: () => VideoValidationSchema,
+  validationSchema: () => ChannelValidationSchema,
 
   handleSubmit: () => {
     // do submitting things

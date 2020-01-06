@@ -9,6 +9,10 @@ export const MediaObjectValidationSchema = Yup.object().shape({
     .max(68, 'Text is too long. Maximum length is 68 chars.')
 });
 
+export type MediaObjectFormValues = {
+  object: string
+};
+
 export type MediaObjectType = {
   object: string
 };
@@ -29,7 +33,7 @@ export type MediaObjectGenericProp = {
 };
 
 type MediaObjectClassType = {
-  [id in keyof MediaObjectType]: MediaObjectGenericProp
+  [id in MediaObjectPropId]: MediaObjectGenericProp
 };
 
 export const MediaObjectClass: MediaObjectClassType = {

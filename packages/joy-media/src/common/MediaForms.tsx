@@ -1,7 +1,14 @@
 import React from 'react';
-import { DropdownItemProps, Dropdown } from 'semantic-ui-react';
+import { Dropdown, DropdownItemProps, DropdownProps } from 'semantic-ui-react';
 import { FormikProps, Field } from 'formik';
 import * as JoyForms from '@polkadot/joy-utils/forms';
+import { SubmittableResult } from '@polkadot/api';
+
+type FormCallbacks = {
+  onSubmit: (sendTx: () => void) => void,
+  onTxSuccess: (txResult: SubmittableResult) => void,
+  onTxFailed: (txResult: SubmittableResult) => void,
+};
 
 type GenericMediaProp<FormValues> = {
   id: keyof FormValues,
@@ -22,7 +29,10 @@ type MediaTextProps<OuterProps, FormValues> =
   BaseFieldProps<OuterProps, FormValues> & JoyForms.LabelledProps<FormValues>;
 
 type MediaFieldProps<OuterProps, FormValues> =
-  BaseFieldProps<OuterProps, FormValues> & any;
+  BaseFieldProps<OuterProps, FormValues> &
+  JoyForms.LabelledProps<FormValues> & {
+    fieldProps: any
+  }
 
 type MediaDropdownProps<OuterProps, FormValues> =
   BaseFieldProps<OuterProps, FormValues> &
@@ -30,7 +40,7 @@ type MediaDropdownProps<OuterProps, FormValues> =
   options: DropdownItemProps[]
 };
 
-export type MediaFormProps<OuterProps, FormValues> = OuterProps & FormikProps<FormValues> & {
+type FormFields<OuterProps, FormValues> = {
   LabelledText: React.FunctionComponent<JoyForms.LabelledProps<FormValues>>
   LabelledField: React.FunctionComponent<JoyForms.LabelledProps<FormValues>>
   MediaText: React.FunctionComponent<MediaTextProps<OuterProps, FormValues>>
@@ -38,49 +48,99 @@ export type MediaFormProps<OuterProps, FormValues> = OuterProps & FormikProps<Fo
   MediaDropdown: React.FunctionComponent<MediaDropdownProps<OuterProps, FormValues>>
 };
 
+export type MediaFormProps<OuterProps, FormValues> =
+  OuterProps &
+  FormikProps<FormValues> &
+  FormFields<OuterProps, FormValues> &
+  FormCallbacks;
+
 export function withMediaForm<OuterProps, FormValues>
   (Component: React.ComponentType<MediaFormProps<OuterProps, FormValues>>)
 {
-  type FormProps = OuterProps & FormikProps<FormValues>;
-
   const LabelledText = JoyForms.LabelledText<FormValues>();
   
   const LabelledField = JoyForms.LabelledField<FormValues>();
   
   function MediaText (props: MediaTextProps<OuterProps, FormValues>) {
     const { field: f } = props;
-    return !f ? null : <LabelledText name={f.id} label={f.name} tooltip={f.description} {...props} />;
+    return !f ? null : <LabelledText name={f.id} label={f.name} tooltip={f.description} required={f.required} {...props} />;
   }
 
   const MediaField = (props: MediaFieldProps<OuterProps, FormValues>) => {
-    const { field: f, ...otherProps } = props;
+    const { field: f, fieldProps = {}, placeholder, className, style, ...otherProps } = props;
+
+    const { id } = f;
+
+    const allFieldProps = {
+      name: id, id, placeholder, className, style, 
+      disabled: otherProps.isSubmitting,
+      ...fieldProps
+    };
+
     return !f ? null : (
-      <LabelledField name={f.id} label={f.name} tooltip={f.description} {...props}>
-        <Field name={f.id} id={f.id} {...otherProps} />
+      <LabelledField name={id} label={f.name} tooltip={f.description} required={f.required} {...props}>
+        <Field {...allFieldProps} />
       </LabelledField>
     );
   }
 
   const MediaDropdown = (props: MediaDropdownProps<OuterProps, FormValues>) => {
-    return !props.field ? null : (
-      <MediaField
-        component={Dropdown}
-        selection
-        disabled={props.isSubmitting}
-        {...props}
-      />
-    );
+    const { field: f, options = [] } = props;
+    const id = f.id as string;
+    const value = (props.values as any)[id] || '';
+
+    return <MediaField {...props} fieldProps={{
+      component: Dropdown,
+      selection: true,
+      options,
+      value,
+      onBlur: (_event: any, data: DropdownProps) => {
+        props.setFieldTouched(id, true);
+      },
+      onChange: (_event: any, data: DropdownProps) => {
+        props.setFieldValue(id, data.value || '');
+      }
+    }} />
   }
 
-  const components = {
-    LabelledText,
-    LabelledField,
-    MediaText,
-    MediaField,
-    MediaDropdown
-  }
+  return function (props: MediaFormProps<OuterProps, FormValues>) {
+    const {
+      isValid,
+      setSubmitting
+    } = props;
 
-  return function (props: FormProps) {
-    return <Component {...props} {...components} />;
+    const onSubmit = (sendTx: () => void) => {
+      if (isValid) sendTx();
+    };
+    
+    const onTxSuccess = (_txResult: SubmittableResult) => {
+      setSubmitting(false);
+    };
+
+    const onTxFailed = (txResult: SubmittableResult) => {
+      setSubmitting(false);
+      if (txResult === null) {
+        // Tx cancelled
+        return;
+      }
+    };
+
+    const allProps = {
+      ...props,
+
+      // Callbacks:
+      onSubmit,
+      onTxSuccess,
+      onTxFailed,
+
+      // Components:
+      LabelledText,
+      LabelledField,
+      MediaText,
+      MediaField,
+      MediaDropdown
+    }
+
+    return <Component {...allProps} />;
   };
 }

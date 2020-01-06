@@ -9,6 +9,10 @@ export const MusicGenreValidationSchema = Yup.object().shape({
     .max(100, 'Text is too long. Maximum length is 100 chars.')
 });
 
+export type MusicGenreFormValues = {
+  genre: string
+};
+
 export type MusicGenreType = {
   genre: string
 };
@@ -29,7 +33,7 @@ export type MusicGenreGenericProp = {
 };
 
 type MusicGenreClassType = {
-  [id in keyof MusicGenreType]: MusicGenreGenericProp
+  [id in MusicGenrePropId]: MusicGenreGenericProp
 };
 
 export const MusicGenreClass: MusicGenreClassType = {

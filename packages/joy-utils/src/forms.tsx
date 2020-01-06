@@ -1,16 +1,18 @@
 import React from 'react';
-import { Field, ErrorMessage, FormikErrors, FormikTouched } from 'formik';
+import { Field, FormikErrors, FormikTouched } from 'formik';
 
-import { BareProps } from '@polkadot/react-components/types';
 import { nonEmptyStr } from '@polkadot/joy-utils/index';
 import { Popup, Icon } from 'semantic-ui-react';
 
-export type LabelledProps<FormValues> = BareProps & {
+export type LabelledProps<FormValues> = {
   name?: keyof FormValues,
   label?: React.ReactNode,
   invisibleLabel?: boolean,
   placeholder?: string,
   tooltip?: React.ReactNode,
+  textarea?: boolean,
+  required?: boolean,
+  className?: string,
   style?: React.CSSProperties,
   children?: React.ReactNode,
   errors: FormikErrors<FormValues>,
@@ -20,25 +22,37 @@ export type LabelledProps<FormValues> = BareProps & {
 
 export function LabelledField<FormValues> () {
   return (props: LabelledProps<FormValues>) => {
-    const { name, label, invisibleLabel = false, tooltip, touched, errors, children, style } = props;
+    const { name, label, invisibleLabel = false, tooltip, required = false, touched, errors, children, style } = props;
+    
     const hasError = name && touched[name] && errors[name];
 
-    const fieldWithError = <>
-      <div>{children}</div>
-      {name && <ErrorMessage name={name as string} component='div' className='ui pointing red label' />}
-    </>;
+    const errorClass = hasError ? 'error' : ''
+
+    const fieldWithError =
+      <>
+        <div>{children}</div>
+        {name && hasError && <div className='ui pointing red label'>{errors[name]}</div>}
+      </>
+
+    const renderLabel = () =>
+      nonEmptyStr(label)
+        ? <>
+            {required && <b style={{ color: 'red'}} title='This field is required'>* </b>}
+            {label}
+          </>
+        : null
     
     return (label || invisibleLabel)
-      ? <div style={style} className={`ui--Labelled field ${hasError ? 'error' : ''}`}>
+      ? <div style={style} className={`ui--Labelled field ${errorClass}`}>
           <label htmlFor={name as string}>
-            {nonEmptyStr(label) && label}
+            {renderLabel()}
             {tooltip && <FieldTooltip>{tooltip}</FieldTooltip> }
           </label>
           <div className='ui--Labelled-content'>
             {fieldWithError}
           </div>
         </div>
-      : <div style={style} className={`field ${hasError ? 'error' : ''}`}>
+      : <div style={style} className={`field ${errorClass}`}>
           {fieldWithError}
         </div>;
   };
@@ -46,11 +60,23 @@ export function LabelledField<FormValues> () {
 
 export function LabelledText<FormValues> () {
   const LF = LabelledField<FormValues>();
+
   return (props: LabelledProps<FormValues>) => {
-    const { name, placeholder, className, style, ...otherProps } = props;
-    const fieldProps = { className, style, name, placeholder };
+    const { name, placeholder, textarea = false, className, style, ...otherProps } = props;
+
+    const textareaProps = !textarea ? {} : {
+      component: 'textarea',
+      rows: 3
+    };
+
+    const fieldProps = {
+      id: name, name, placeholder, className, style, 
+      disabled: otherProps.isSubmitting,
+      ...textareaProps
+    };
+
     return <LF name={name} {...otherProps} >
-      <Field id={name} disabled={otherProps.isSubmitting} {...fieldProps} />
+      <Field {...fieldProps} />
     </LF>;
   };
 }

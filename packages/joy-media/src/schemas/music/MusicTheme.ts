@@ -9,6 +9,10 @@ export const MusicThemeValidationSchema = Yup.object().shape({
     .max(100, 'Text is too long. Maximum length is 100 chars.')
 });
 
+export type MusicThemeFormValues = {
+  theme: string
+};
+
 export type MusicThemeType = {
   theme: string
 };
@@ -29,7 +33,7 @@ export type MusicThemeGenericProp = {
 };
 
 type MusicThemeClassType = {
-  [id in keyof MusicThemeType]: MusicThemeGenericProp
+  [id in MusicThemePropId]: MusicThemeGenericProp
 };
 
 export const MusicThemeClass: MusicThemeClassType = {

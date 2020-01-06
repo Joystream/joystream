@@ -2,18 +2,26 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { MusicGenreType } from './MusicGenre';
+import { MusicMoodType } from './MusicMood';
+import { MusicThemeType } from './MusicTheme';
+import { MusicTrackType } from './MusicTrack';
+import { LanguageType } from '../general/Language';
+import { PublicationStatusType } from '../general/PublicationStatus';
+import { CurationStatusType } from '../general/CurationStatus';
+import { ContentLicenseType } from '../general/ContentLicense';
 
 export const MusicAlbumValidationSchema = Yup.object().shape({
-  albumTitle: Yup.string()
+  title: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  albumArtist: Yup.string()
+  artist: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  albumCover: Yup.string()
+  thumbnail: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  aboutTheAlbum: Yup.string()
+  description: Yup.string()
     .required('This field is required')
     .max(4000, 'Text is too long. Maximum length is 4000 chars.'),
   lyrics: Yup.string()
@@ -24,33 +32,55 @@ export const MusicAlbumValidationSchema = Yup.object().shape({
     .max(255, 'Text is too long. Maximum length is 255 chars.')
 });
 
+export type MusicAlbumFormValues = {
+  title: string
+  artist: string
+  thumbnail: string
+  description: string
+  firstReleased: string
+  genre: string
+  mood: string
+  theme: string
+  tracks: string
+  language: string
+  link: string
+  lyrics: string
+  composerOrSongwriter: string
+  reviews: string
+  publicationStatus: string
+  curationStatus: string
+  explicit: string
+  license: string
+  attribution: string
+};
+
 export type MusicAlbumType = {
-  albumTitle: string
-  albumArtist: string
-  albumCover: string
-  aboutTheAlbum: string
+  title: string
+  artist: string
+  thumbnail: string
+  description: string
   firstReleased: number
-  genre?: any[]
-  mood?: any[]
-  theme?: any[]
-  tracks?: any[]
-  language?: any[]
+  genre?: MusicGenreType
+  mood?: MusicMoodType
+  theme?: MusicThemeType
+  tracks?: MusicTrackType[]
+  language?: LanguageType
   link?: string[]
   lyrics?: string
   composerOrSongwriter?: string
   reviews?: string[]
-  publicationStatus: any
-  curationStatus?: any
+  publicationStatus: PublicationStatusType
+  curationStatus?: CurationStatusType
   explicit: boolean
-  license: any
+  license: ContentLicenseType
   attribution?: string
 };
 
 export type MusicAlbumPropId =
-  'albumTitle' |
-  'albumArtist' |
-  'albumCover' |
-  'aboutTheAlbum' |
+  'title' |
+  'artist' |
+  'thumbnail' |
+  'description' |
   'firstReleased' |
   'genre' |
   'mood' |
@@ -80,37 +110,37 @@ export type MusicAlbumGenericProp = {
 };
 
 type MusicAlbumClassType = {
-  [id in keyof MusicAlbumType]: MusicAlbumGenericProp
+  [id in MusicAlbumPropId]: MusicAlbumGenericProp
 };
 
 export const MusicAlbumClass: MusicAlbumClassType = {
-  albumTitle: {
-    "id": "albumTitle",
-    "name": "Album Title",
+  title: {
+    "id": "title",
+    "name": "Title",
     "description": "The title of the album",
     "type": "Text",
     "required": true,
     "maxTextLength": 255
   },
-  albumArtist: {
-    "id": "albumArtist",
-    "name": "Album Artist",
+  artist: {
+    "id": "artist",
+    "name": "Artist",
     "description": "The artist, composer, band or group that published the album.",
     "type": "Text",
     "required": true,
     "maxTextLength": 255
   },
-  albumCover: {
-    "id": "albumCover",
-    "name": "Album Cover",
+  thumbnail: {
+    "id": "thumbnail",
+    "name": "Thumbnail",
     "description": "URL to album cover art thumbnail: NOTE: Should be an https link to a square image, between 1400x1400 and 3000x3000 pixels, in JPEG or PNG format.",
     "required": true,
     "type": "Text",
     "maxTextLength": 255
   },
-  aboutTheAlbum: {
-    "id": "aboutTheAlbum",
-    "name": "About the Album",
+  description: {
+    "id": "description",
+    "name": "Description",
     "description": "Information about the album and artist.",
     "required": true,
     "type": "Text",
@@ -119,32 +149,29 @@ export const MusicAlbumClass: MusicAlbumClassType = {
   firstReleased: {
     "id": "firstReleased",
     "name": "First Released",
-    "description": "When the track was first released",
+    "description": "When the album was first released",
     "required": true,
     "type": "Int64"
   },
   genre: {
     "id": "genre",
     "name": "Genre",
-    "description": "The genre(s) of the album.",
-    "type": "InternalVec",
-    "maxItems": 3,
+    "description": "The genre of the album.",
+    "type": "Internal",
     "classId": "Music Genre"
   },
   mood: {
     "id": "mood",
     "name": "Mood",
-    "description": "The mood(s) of the album.",
-    "type": "InternalVec",
-    "maxItems": 3,
+    "description": "The mood of the album.",
+    "type": "Internal",
     "classId": "Music Mood"
   },
   theme: {
     "id": "theme",
     "name": "Theme",
-    "description": "The theme(s) of the album.",
-    "type": "InternalVec",
-    "maxItems": 3,
+    "description": "The theme of the album.",
+    "type": "Internal",
     "classId": "Music Theme"
   },
   tracks: {
@@ -160,8 +187,7 @@ export const MusicAlbumClass: MusicAlbumClassType = {
     "name": "Language",
     "description": "The language of the song lyrics in the album.",
     "required": false,
-    "type": "InternalVec",
-    "maxItems": 5,
+    "type": "Internal",
     "classId": "Language"
   },
   link: {
@@ -212,7 +238,7 @@ export const MusicAlbumClass: MusicAlbumClassType = {
   explicit: {
     "id": "explicit",
     "name": "Explicit",
-    "description": "Indicates whether the track contains explicit material.",
+    "description": "Indicates whether the album contains explicit material.",
     "required": true,
     "type": "Bool"
   },

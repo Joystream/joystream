@@ -181,10 +181,64 @@ export class Entity extends JoyStruct<EntityType> {
     return this.getField('in_class_schema_indexes');
   }
 
-  /** NOTE: rename to `entity_values` because `values` is already in use. */
+  /** NOTE: Renamed to `entity_values` because `values` is already in use. */
   get entity_values (): VecClassPropertyValue {
     return this.getField('values');
   }
+}
+
+// type ProptyIndexAndType = {
+//   index: number,
+//   type: string
+// }
+
+type SubstrateEntity = {
+  [propName: string]: PropertyValue
+};
+
+export class EntityCodec {
+  
+  klass: Class;
+  propNameToIndexMap: Map<string, number> = new Map();
+  propIndexToNameMap: Map<number, string> = new Map();
+  
+  constructor (klass: Class) {
+    this.klass = klass;
+    klass.properties.map((p, idx) => {
+      const propName = p.name.toString();
+      this.propNameToIndexMap.set(propName, idx);
+      this.propIndexToNameMap.set(idx, propName);
+    })
+  }
+
+  toSubstrateObject<T extends SubstrateEntity> (entity: Entity): T | undefined {
+    let res = {} as T;
+    entity.entity_values.forEach(v => {
+      const propIdx = v.in_class_index.toNumber();
+      const propName = this.propIndexToNameMap.get(propIdx);
+      if (propName) {
+        (res[propName] as any) = v.value;
+      }
+    });
+    return res;
+  }
+
+  toPlainObject<T = {}> (entity: Entity): T | undefined {
+    let res = {} as T;
+    const propToValue = this.toSubstrateObject<any>(entity);
+
+    // TODO continue...
+    
+    return res;
+  }
+}
+
+const toPlainEntity = (se: Entity) => {
+  const pe = {};
+  se.entity_values.forEach(v => {
+    v.value.type
+  });
+  return pe;
 }
 
 export function registerVersionedStoreTypes () {

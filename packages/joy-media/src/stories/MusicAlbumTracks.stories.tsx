@@ -1,40 +1,30 @@
 import React from 'react';
 import '../common/index.css';
 
-import { withKnobs } from '@storybook/addon-knobs';
-import { EditMusicAlbum } from '../music/EditMusicAlbum';
+import { EditForm } from '../music/EditMusicAlbum';
 import { MyMusicTracks } from '../music/MyMusicTracks';
 import { MusicAlbumSamples } from './data/MusicAlbumSamples';
-import { MusicAlbumExample, albumTracks, AllMusicTrackSamples } from './data/MusicTrackSamples';
+import { albumTracks, AllMusicTrackSamples } from './data/MusicTrackSamples';
+import { withMockTransport } from './withMockTransport';
+import { EditMusicAlbumView } from '../music/EditMusicAlbum.view';
+import EntityId from '@joystream/types/versioned-store/EntityId';
 
 export default { 
-    title: 'Media | My music tracks',
-    decorators: [withKnobs],
+	title: 'Media | My music tracks',
+	decorators: [ withMockTransport ],
 };
 
-export const EditAlbumStory = () =>
-	<EditMusicAlbum
-		isStorybook={true} 
-		entity={MusicAlbumExample}
+export const DefaultState = () =>
+	<EditForm />;
+
+export const MockEditAlbumView = () =>
+	<EditMusicAlbumView
+		id={new EntityId(1)}
 		tracks={albumTracks}
-	/>
+	/>;
 
 export const MyMusicTracksStory = () =>
 	<MyMusicTracks
 		albums={MusicAlbumSamples}
 		tracks={AllMusicTrackSamples}
-	/>
-
-// export const DefaultState = () => {
-// 	return <TracksOfMyMusicAlbum album={MusicAlbumSample} />;
-// }
-
-// export const AlbumWithTracks = () => {
-// 	return <TracksOfMyMusicAlbum {...AlbumWithTracksProps} />
-// }
-
-// export const ReorderTracks = () =>
-// 	<ReorderableTracks {...AlbumWithTracksProps} />
-
-// export const EditAlbumModalStory = () =>
-// 	<EditAlbumModal {...AlbumWithTracksProps} />
+	/>;

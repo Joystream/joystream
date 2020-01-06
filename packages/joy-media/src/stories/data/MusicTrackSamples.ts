@@ -2,6 +2,16 @@ import { MusicAlbumSample } from "./MusicAlbumSamples";
 import { TracksOfMyMusicAlbumProps } from "@polkadot/joy-media/music/MusicAlbumTracks";
 import { MusicAlbumEntity } from "@polkadot/joy-media/entities/MusicAlbumEntity";
 
+export const trackArtists = [
+	'Man from the Woods',
+	'Liquid Stone'
+];
+
+export const trackThumbnails = [
+	'https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=60',
+	'https://images.unsplash.com/photo-1484352491158-830ef5692bb3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
+];
+
 export const trackNames = [
 	'Arborvitae (Thuja occidentalis)',
 	'Black Ash (Fraxinus nigra)',
@@ -22,8 +32,8 @@ export const trackNames = [
 export const albumTracks = trackNames.map((title, i) => ({
 	id: `${i}`,
 	title,
-	artist: 'Man from the Woods',
-	cover: 'https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=60'
+	artist: trackArtists[0],
+	cover: trackThumbnails[0]
 }));
 
 export const Album1TrackSamples = trackNames
@@ -31,8 +41,8 @@ export const Album1TrackSamples = trackNames
 	.map((title, i) => ({
 		id: `${100 + i}`,
 		title,
-		artist: 'Man from the Woods',
-		cover: 'https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=60'
+		artist: trackArtists[0],
+		cover: trackThumbnails[0]
 	}))
 
 export const Album2TrackSamples = trackNames
@@ -40,8 +50,8 @@ export const Album2TrackSamples = trackNames
 	.map((title, i) => ({
 		id: `${200 + i}`,
 		title,
-		artist: 'Liquid Stone',
-		cover: 'https://images.unsplash.com/photo-1484352491158-830ef5692bb3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+		artist: trackArtists[1],
+		cover: trackThumbnails[1],
 	}))
 
 export const AllMusicTrackSamples = 

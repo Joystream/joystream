@@ -14,4 +14,5 @@ export interface ISubscribable<T> {
 }
 
 export type Subscribable<T> = ISubscribable<T> | RxjsSubscribable<T>
+
 export type Subscription<T> = IUnsubscribable<T> | RxjsUnsubscribable

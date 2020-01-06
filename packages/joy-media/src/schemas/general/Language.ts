@@ -9,6 +9,10 @@ export const LanguageValidationSchema = Yup.object().shape({
     .max(2, 'Text is too long. Maximum length is 2 chars.')
 });
 
+export type LanguageFormValues = {
+  languageCode: string
+};
+
 export type LanguageType = {
   languageCode: string
 };
@@ -29,13 +33,13 @@ export type LanguageGenericProp = {
 };
 
 type LanguageClassType = {
-  [id in keyof LanguageType]: LanguageGenericProp
+  [id in LanguagePropId]: LanguageGenericProp
 };
 
 export const LanguageClass: LanguageClassType = {
   languageCode: {
     "id": "languageCode",
-    "name": "Language code",
+    "name": "Language Code",
     "description": "Language code following the ISO 639-1 two letter standard.",
     "type": "Text",
     "required": true,

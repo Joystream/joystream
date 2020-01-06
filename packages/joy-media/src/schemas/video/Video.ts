@@ -2,46 +2,64 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { LanguageType } from '../general/Language';
+import { VideoCategoryType } from './VideoCategory';
+import { MediaObjectType } from '../general/MediaObject';
+import { PublicationStatusType } from '../general/PublicationStatus';
+import { CurationStatusType } from '../general/CurationStatus';
+import { ContentLicenseType } from '../general/ContentLicense';
 
 export const VideoValidationSchema = Yup.object().shape({
   title: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  videoThumbnail: Yup.string()
-    .required('This field is required')
-    .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  aboutTheVideo: Yup.string()
+  thumbnail: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
   description: Yup.string()
+    .required('This field is required')
     .max(4000, 'Text is too long. Maximum length is 4000 chars.'),
   attribution: Yup.string()
     .max(255, 'Text is too long. Maximum length is 255 chars.')
 });
 
+export type VideoFormValues = {
+  title: string
+  thumbnail: string
+  description: string
+  language: string
+  firstReleased: string
+  category: string
+  link: string
+  object: string
+  publicationStatus: string
+  curationStatus: string
+  explicit: string
+  license: string
+  attribution: string
+};
+
 export type VideoType = {
   title: string
-  videoThumbnail: string
-  aboutTheVideo: string
-  language: any
-  description?: string
+  thumbnail: string
+  description: string
+  language: LanguageType
   firstReleased: number
-  category?: any
+  category?: VideoCategoryType
   link?: string[]
-  object?: any
-  publicationStatus: any
-  curationStatus?: any
+  object?: MediaObjectType
+  publicationStatus: PublicationStatusType
+  curationStatus?: CurationStatusType
   explicit: boolean
-  license: any
+  license: ContentLicenseType
   attribution?: string
 };
 
 export type VideoPropId =
   'title' |
-  'videoThumbnail' |
-  'aboutTheVideo' |
-  'language' |
+  'thumbnail' |
   'description' |
+  'language' |
   'firstReleased' |
   'category' |
   'link' |
@@ -65,7 +83,7 @@ export type VideoGenericProp = {
 };
 
 type VideoClassType = {
-  [id in keyof VideoType]: VideoGenericProp
+  [id in VideoPropId]: VideoGenericProp
 };
 
 export const VideoClass: VideoClassType = {
@@ -77,21 +95,21 @@ export const VideoClass: VideoClassType = {
     "required": true,
     "maxTextLength": 255
   },
-  videoThumbnail: {
-    "id": "videoThumbnail",
-    "name": "Video Thumbnail",
+  thumbnail: {
+    "id": "thumbnail",
+    "name": "Thumbnail",
     "description": "URL to video thumbnail: NOTE: Should be an https link to an image of ratio 16:9, ideally 1280 pixels wide by 720 pixels tall, with a minimum width of 640 pixels, in JPEG or PNG format.",
     "required": true,
     "type": "Text",
     "maxTextLength": 255
   },
-  aboutTheVideo: {
-    "id": "aboutTheVideo",
-    "name": "About the Video",
-    "description": "A short description of the video",
+  description: {
+    "id": "description",
+    "name": "Description",
+    "description": "Information about the video.",
     "required": true,
     "type": "Text",
-    "maxTextLength": 255
+    "maxTextLength": 4000
   },
   language: {
     "id": "language",
@@ -100,13 +118,6 @@ export const VideoClass: VideoClassType = {
     "required": true,
     "type": "Internal",
     "classId": "Language"
-  },
-  description: {
-    "id": "description",
-    "name": "Description",
-    "description": "Full description of the video",
-    "type": "Text",
-    "maxTextLength": 4000
   },
   firstReleased: {
     "id": "firstReleased",

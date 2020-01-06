@@ -2,18 +2,26 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { LanguageType } from '../general/Language';
+import { MusicGenreType } from './MusicGenre';
+import { MusicMoodType } from './MusicMood';
+import { MusicThemeType } from './MusicTheme';
+import { MediaObjectType } from '../general/MediaObject';
+import { PublicationStatusType } from '../general/PublicationStatus';
+import { CurationStatusType } from '../general/CurationStatus';
+import { ContentLicenseType } from '../general/ContentLicense';
 
 export const MusicTrackValidationSchema = Yup.object().shape({
-  trackTitle: Yup.string()
+  title: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  trackArtist: Yup.string()
+  artist: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  trackThumbnail: Yup.string()
+  thumbnail: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  aboutTheTrack: Yup.string()
+  description: Yup.string()
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
   composerOrSongwriter: Yup.string()
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
@@ -23,31 +31,53 @@ export const MusicTrackValidationSchema = Yup.object().shape({
     .max(255, 'Text is too long. Maximum length is 255 chars.')
 });
 
+export type MusicTrackFormValues = {
+  title: string
+  artist: string
+  thumbnail: string
+  description: string
+  language: string
+  firstReleased: string
+  genre: string
+  mood: string
+  theme: string
+  link: string
+  composerOrSongwriter: string
+  lyrics: string
+  object: string
+  publicationStatus: string
+  curationStatus: string
+  explicit: string
+  license: string
+  attribution: string
+};
+
 export type MusicTrackType = {
-  trackTitle: string
-  trackArtist: string
-  trackThumbnail: string
-  aboutTheTrack?: string
-  language?: any
+  title: string
+  artist: string
+  thumbnail: string
+  description?: string
+  language?: LanguageType
   firstReleased: number
-  genre?: any
-  mood?: any
-  theme?: any
+  genre?: MusicGenreType
+  mood?: MusicMoodType
+  theme?: MusicThemeType
   link?: string[]
   composerOrSongwriter?: string
   lyrics?: string
-  object?: any
-  publicationStatus: any
-  curationStatus?: any
-  license: any
+  object?: MediaObjectType
+  publicationStatus: PublicationStatusType
+  curationStatus?: CurationStatusType
+  explicit: boolean
+  license: ContentLicenseType
   attribution?: string
 };
 
 export type MusicTrackPropId =
-  'trackTitle' |
-  'trackArtist' |
-  'trackThumbnail' |
-  'aboutTheTrack' |
+  'title' |
+  'artist' |
+  'thumbnail' |
+  'description' |
   'language' |
   'firstReleased' |
   'genre' |
@@ -59,6 +89,7 @@ export type MusicTrackPropId =
   'object' |
   'publicationStatus' |
   'curationStatus' |
+  'explicit' |
   'license' |
   'attribution'
   ;
@@ -79,33 +110,33 @@ type MusicTrackClassType = {
 };
 
 export const MusicTrackClass: MusicTrackClassType = {
-  trackTitle: {
-    "id": "trackTitle",
-    "name": "Track Title",
+  title: {
+    "id": "title",
+    "name": "Title",
     "description": "The title of the track",
     "type": "Text",
     "required": true,
     "maxTextLength": 255
   },
-  trackArtist: {
-    "id": "trackArtist",
-    "name": "Track Artist",
+  artist: {
+    "id": "artist",
+    "name": "Artist",
     "description": "The artist, composer, band or group that published the track.",
     "type": "Text",
     "required": true,
     "maxTextLength": 255
   },
-  trackThumbnail: {
-    "id": "trackThumbnail",
-    "name": "Track Thumbnail",
+  thumbnail: {
+    "id": "thumbnail",
+    "name": "Thumbnail",
     "description": "URL to track cover art: NOTE: Should be an https link to a square image, between 1400x1400 and 3000x3000 pixels, in JPEG or PNG format.",
     "required": true,
     "type": "Text",
     "maxTextLength": 255
   },
-  aboutTheTrack: {
-    "id": "aboutTheTrack",
-    "name": "About the Track",
+  description: {
+    "id": "description",
+    "name": "Description",
     "description": "Information about the track.",
     "type": "Text",
     "maxTextLength": 255
@@ -177,7 +208,7 @@ export const MusicTrackClass: MusicTrackClassType = {
   publicationStatus: {
     "id": "publicationStatus",
     "name": "Publication Status",
-    "description": "The publication status of the album.",
+    "description": "The publication status of the track.",
     "required": true,
     "type": "Internal",
     "classId": "Publication Status"
@@ -185,9 +216,16 @@ export const MusicTrackClass: MusicTrackClassType = {
   curationStatus: {
     "id": "curationStatus",
     "name": "Curation Status",
-    "description": "The publication status of the album set by the a content curator on the platform.",
+    "description": "The publication status of the track set by the a content curator on the platform.",
     "type": "Internal",
     "classId": "Curation Status"
+  },
+  explicit: {
+    "id": "explicit",
+    "name": "Explicit",
+    "description": "Indicates whether the track contains explicit material.",
+    "required": true,
+    "type": "Bool"
   },
   license: {
     "id": "license",
