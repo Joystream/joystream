@@ -737,6 +737,50 @@ fn update_curator_role_account_success() {
         .execute_with(|| {
 
 
+            /*
+            // Add lead and hire curator
+            let curator_params = AddMemberAndApplyOnOpeningParams::new(
+                2222,
+                to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+                2222*2,
+                2222*3,
+                generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get())
+            );
+
+            // Hire curator
+            let setup_and_fill_opening_result = setup_and_fill_opening(
+                &vec![
+                    FillOpeningApplicantParams::new(
+                    curator_params.clone(),
+                    true)
+                ]);
+
+            let curator_id = 
+                match setup_and_fill_opening_result.application_outomes[0] {
+                    FillOpeningApplicantOutcome::Hired{curator_id} => curator_id,
+                    _ => panic!()
+                };
+
+            // Make channel
+            let channel_creator_member_id = add_channel_creator_member();
+            let channel_id = channel_creator_member_id;
+
+            CreateChannelFixture::make_valid_unpulished_video_channel_for(channel_creator_member_id, None)
+            .call_and_assert_success();
+
+            // Update channel as curator
+            UpdateChannelAsCurationActorFixture {
+                origin: Origin::signed(curator_params.curator_applicant_role_account),
+                curation_actor: CurationActor::Curator(curator_id),
+                new_verified: Some(true),
+                new_description: None, //  don't touch!
+                new_curation_status: Some(ChannelCurationStatus::Censored)
+            }
+            .call_and_assert_success(channel_id);
+            */
+
+
+
 
         });
 
@@ -878,10 +922,8 @@ impl FillOpeningApplicantParams {
     }
 }
 
-
 #[derive(Clone)]
 pub struct AddMemberAndApplyOnOpeningParams {
-    //pub curator_opening_id: CuratorOpeningId<Test>,
     pub curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
     pub handle: Vec<u8>,
     pub curator_applicant_role_account: <Test as system::Trait>::AccountId,
@@ -891,7 +933,6 @@ pub struct AddMemberAndApplyOnOpeningParams {
 
 impl AddMemberAndApplyOnOpeningParams {
     pub fn new(
-        //curator_opening_id: CuratorOpeningId<Test>,
         curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
         handle: Vec<u8>,
         curator_applicant_role_account: <Test as system::Trait>::AccountId,
@@ -900,7 +941,6 @@ impl AddMemberAndApplyOnOpeningParams {
     ) -> Self {
 
         Self{
-            //curator_opening_id,
             curator_applicant_root_and_controller_account,
             handle,
             curator_applicant_role_account,
@@ -908,41 +948,6 @@ impl AddMemberAndApplyOnOpeningParams {
             human_readable_text
         }
     }
-    /*
-    pub fn make_from_seed(TestSeed: seed) -> Self {
-
-        Self{
-            curator_opening_id: curator_opening_id,
-            curator_applicant_root_and_controller_account: 2222,
-            handle: Vec<u8>,
-            curator_applicant_role_account: 2222*2,
-            source_account: 2222*3,
-            human_readable_text: Vec<u8>
-        }
-    }
-    */
-    /*
-    pub toCurator() -> Curator<
-        AccountId,
-        RewardRelationshipId,
-        StakeId,
-        BlockNumber,
-        LeadId,
-        CuratorApplicationId,
-        PrincipalId,
-    > {
-
-        Curator::new(
-            role_account: &AccountId,
-            reward_relationship: &Option<RewardRelationshipId>,
-            role_stake_profile: &Option<CuratorRoleStakeProfile<StakeId, BlockNumber>>,
-            stage: &CuratorRoleStage<BlockNumber>,
-            induction: &CuratorInduction<LeadId, ApplicationId, BlockNumber>,
-            //can_update_channel_curation_status: bool,
-            principal_id: &PrincipalId,
-        )
-    }
-    */
 }
 
 fn add_members_and_apply_on_opening(curator_opening_id: CuratorOpeningId<Test>, applicants: &Vec<AddMemberAndApplyOnOpeningParams>) -> Vec<NewMemberAppliedResult> {
