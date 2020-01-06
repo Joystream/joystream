@@ -755,39 +755,89 @@ fn update_curator_role_account_success() {
                     true)
                 ]);
 
-            let curator_id = 
-                match setup_and_fill_opening_result.application_outomes[0] {
-                    FillOpeningApplicantOutcome::Hired{curator_id} => curator_id,
-                    _ => panic!()
-                };
+struct UpdateCuratorRewardAccountFixture {
+    pub origin: Origin,
+    pub curator_id: CuratorId<Test>,
+    pub new_reward_account: <Test as system::Trait>::AccountId
+}
 
-            // Make channel
-            let channel_creator_member_id = add_channel_creator_member();
-            let channel_id = channel_creator_member_id;
+impl UpdateCuratorRewardAccountFixture {
 
-            CreateChannelFixture::make_valid_unpulished_video_channel_for(channel_creator_member_id, None)
-            .call_and_assert_success();
+    fn call(&self) -> Result<(),&'static str>{
 
-            // Update channel as curator
-            UpdateChannelAsCurationActorFixture {
-                origin: Origin::signed(curator_params.curator_applicant_role_account),
-                curation_actor: CurationActor::Curator(curator_id),
-                new_verified: Some(true),
-                new_description: None, //  don't touch!
-                new_curation_status: Some(ChannelCurationStatus::Censored)
-            }
-            .call_and_assert_success(channel_id);
-            */
+        ContentWorkingGroup::update_curator_reward_account(
+            self.origin.clone(),
+            self.curator_id,
+            self.new_reward_account
+        )
+    }
 
+    pub fn call_and_assert_success(&self) {
 
+        let _original_curator = CuratorById::<Test>::get(self.curator_id);
 
+        let call_result = self.call();
 
-        });
+        assert_eq!(
+            call_result,
+            Ok(())
+        );
 
+        /*
+            Actually checking new reward account requires checking call to token mint module, but we cannot do that properly yet.
+        */
+
+        let (event_curator_id, event_reward_account) =
+            if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+                if let lib::RawEvent::CuratorRewardAccountUpdated(ref curator_id, ref reward_account) = x {
+                    (curator_id.clone(), reward_account.clone())
+                } else {
+                    panic!("Event was not CuratorRewardAccountUpdated.")
+                }
+            } else {
+                panic!("No event deposited.")
+            };
+
+        assert_eq!(
+            self.curator_id,
+            event_curator_id
+        );
+
+        assert_eq!(
+            self.new_reward_account,
+            event_reward_account
+        );
+    }
+
+    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
+
+        let call_result = self.call();
+
+        assert_eq!(
+            call_result,
+            Err(error_message)
+        );
+
+    }
 }
 
 #[test]
 fn update_curator_reward_account_success() {
+
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
+
+            let result = setup_lead_and_hire_curator();
+
+            let fixture = UpdateCuratorRewardAccountFixture {
+                origin: Origin::signed(result.curator_params().curator_applicant_role_account),
+                curator_id: result.curator_id(),
+                new_reward_account: 123321
+            };
+            
+            fixture.call_and_assert_success();
+        });
 
 }
 
