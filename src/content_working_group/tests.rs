@@ -831,6 +831,17 @@ static LEAD_MEMBER_HANDLE: &str = "IamTheLead";
 static CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT: <Test as system::Trait>::AccountId = 11;
 static CHANNEL_CREATOR_HANDLE: &str = "Coolcreator";
 
+fn make_generic_add_member_params() -> AddMemberAndApplyOnOpeningParams {
+
+    AddMemberAndApplyOnOpeningParams::new(
+        2222,
+        to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+        2222*2,
+        2222*3,
+        generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get())
+    )
+}
+
 /// Made into function to avoid having to clone every time we read fields
 pub fn get_baseline_opening_policy() -> OpeningPolicyCommitment<<Test as system::Trait>::BlockNumber, BalanceOf<Test>> {
     
@@ -1338,6 +1349,53 @@ fn setup_and_fill_opening(applicants: &Vec<FillOpeningApplicantParams>) -> Setup
         application_outomes
     }
 }
+
+struct SetupLeadAndHireCuratorResult {
+    pub curator_params: AddMemberAndApplyOnOpeningParams,
+    pub setup_and_fill_opening_result: SetupAndFillOpeningResult
+}
+
+impl SetupLeadAndHireCuratorResult {
+
+    fn curator_params(&self) -> AddMemberAndApplyOnOpeningParams{
+        self.curator_params.clone()
+    }
+
+    pub fn curator_id(&self) -> CuratorId<Test> {
+
+        match self.setup_and_fill_opening_result.application_outomes[0] {
+            FillOpeningApplicantOutcome::Hired{curator_id} => curator_id,
+            _ => panic!()
+        }
+    }
+
+    pub fn curator_member_id(&self) -> <Test as members::Trait>::MemberId {
+
+        self.setup_and_fill_opening_result
+        .setup_opening_in_review
+        .added_members_application_result[0]
+        .member_id
+    }
+}
+
+fn setup_lead_and_hire_curator() -> SetupLeadAndHireCuratorResult {
+
+    let curator_params = make_generic_add_member_params();
+
+    // Hire curator
+    let setup_and_fill_opening_result = setup_and_fill_opening(
+        &vec![
+            FillOpeningApplicantParams::new(
+            curator_params.clone(),
+            true)
+        ]);
+
+    SetupLeadAndHireCuratorResult {
+        curator_params,
+        setup_and_fill_opening_result
+    }
+}
+
 
 struct CreateChannelFixture {
     pub channel_creator_member_id: <Test as members::Trait>::MemberId,
