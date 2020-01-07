@@ -1,7 +1,7 @@
 import { getTypeRegistry, Enum, bool, u8, u32, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
 import { BlockNumber, AccountId } from '@polkadot/types/interfaces';
 import { ActorId, MemberId } from '../members';
-import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring';
+import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index';
 import { Credential } from '../versioned-store/permissions/credentials';
 import { RewardRelationshipId } from '../recurring-rewards';
 import { StakeId } from '../stake';
@@ -206,7 +206,6 @@ export class CuratorApplication extends JoyStruct<ICuratorApplication> {
     }, value);
   }
 };
-
 
 export type ISlashableTerms = {
     max_count: u16,
