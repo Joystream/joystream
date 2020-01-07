@@ -1,7 +1,7 @@
 use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 
-/// Pointer to a specific property of entities of a specfic class.
+/// Pointer to a specific property of a specific class.
 #[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
 pub struct PropertyOfClass<ClassId, PropertyIndex> {
     pub class_id: ClassId,
