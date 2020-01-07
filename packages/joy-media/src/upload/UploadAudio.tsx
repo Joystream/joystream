@@ -79,18 +79,15 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     ]}
   />;
 
-  const MainButton = () => {
-    const isDisabled = !dirty || isSubmitting;
-
-    const label = isNew
-      ? 'Publish'
-      : 'Update';
-
-    return <TxButton
+  const MainButton = () =>
+    <TxButton
       type='submit'
       size='large'
-      isDisabled={isDisabled}
-      label={label}
+      isDisabled={!dirty || isSubmitting}
+      label={isNew
+        ? 'Publish'
+        : 'Update'
+      }
       params={buildTxParams()}
       tx={isNew
         ? 'dataDirectory.addMetadata'
@@ -100,7 +97,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       txFailedCb={onTxFailed}
       txSuccessCb={onTxSuccess}
     />
-  }
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
@@ -130,7 +126,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 export const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
-  mapPropsToValues: props => {
+  mapPropsToValues: (props): FormValues => {
     const { entity, fileName } = props;
 
     return {
@@ -138,18 +134,18 @@ export const EditForm = withFormik<OuterProps, FormValues>({
       title: entity && entity.title || fileName || '',
       thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
       description: entity && entity.description || '',
-      publicationStatus: entity && entity.publicationStatus || Opts.visibilityOptions[0].value,
+      publicationStatus: entity && entity.publicationStatus.value || Opts.visibilityOptions[0].value,
       // album: entity && entity.album || '',
 
       // Additional:
       artist: entity && entity.artist || '',
       composerOrSongwriter: entity && entity.composerOrSongwriter || '',
-      genre: entity && entity.genre || Opts.genreOptions[0].value,
-      mood: entity && entity.mood || Opts.moodOptions[0].value,
-      theme: entity && entity.theme || Opts.themeOptions[0].value,
+      genre: entity && entity.genre?.value || Opts.genreOptions[0].value,
+      mood: entity && entity.mood?.value || Opts.moodOptions[0].value,
+      theme: entity && entity.theme?.value || Opts.themeOptions[0].value,
       // explicit: entity && entity.explicit || false, // TODO explicitOptions[0].value,
-      license: entity && entity.license || Opts.licenseOptions[0].value,
-    };
+      license: entity && entity.license.value || Opts.licenseOptions[0].value,
+    } as FormValues; // TODO remove this hack with casting
   },
 
   validationSchema: () => MusicTrackValidationSchema,
@@ -157,6 +153,6 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   handleSubmit: () => {
     // do submitting things
   }
-})(withMediaForm(InnerForm));
+})(withMediaForm(InnerForm) as any);
 
 export default EditForm;

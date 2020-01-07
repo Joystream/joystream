@@ -63,18 +63,15 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
   </>;
 
-  const MainButton = () => {
-    const isDisabled = !dirty || isSubmitting;
-
-    const label = isNew
-      ? 'Publish'
-      : 'Update';
-
-    return <TxButton
+  const MainButton = () =>
+    <TxButton
       type='submit'
       size='large'
-      isDisabled={isDisabled}
-      label={label}
+      isDisabled={!dirty || isSubmitting}
+      label={isNew
+        ? 'Publish'
+        : 'Update'
+      }
       params={buildTxParams()}
       tx={isNew
         ? 'dataDirectory.addMetadata'
@@ -84,7 +81,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       txFailedCb={onTxFailed}
       txSuccessCb={onTxSuccess}
     />
-  }
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
@@ -114,7 +110,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 export const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
-  mapPropsToValues: props => {
+  mapPropsToValues: (props): FormValues => {
     const { entity } = props;
 
     return {
@@ -123,8 +119,8 @@ export const EditForm = withFormik<OuterProps, FormValues>({
       thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
       cover: entity && entity.cover || DEFAULT_THUMBNAIL_URL,
       description: entity && entity.description || '',
-      publicationStatus: entity && entity.publicationStatus || Opts.visibilityOptions[0].value,
-    };
+      publicationStatus: entity && entity.publicationStatus.value || Opts.visibilityOptions[0].value,
+    } as FormValues; // TODO remove this hack with casting
   },
 
   validationSchema: () => ChannelValidationSchema,
@@ -132,6 +128,6 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   handleSubmit: () => {
     // do submitting things
   }
-})(withMediaForm(InnerForm));
+})(withMediaForm(InnerForm) as any);
 
 export default EditForm;
