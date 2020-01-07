@@ -49,7 +49,7 @@ export class Transport extends TransportBase implements ITransport {
         },
         {
           actor: new Actor({ member_id: 2, account: '5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew' }),
-          profile: mockProfile("bwhm0", "Martin"),
+          profile: mockProfile("bwhm0"),
           title: 'Content curator',
           lead: false,
           stake: new u128(10101),
@@ -96,10 +96,10 @@ export class Transport extends TransportBase implements ITransport {
     return this.promise<StorageAndDistributionProps>(
       {
         balances: new Map<string, Balance>([
-          ['5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp', new u128(101)],
+          ['5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew', new u128(101)],
         ]),
         memos: new Map<string, Text>([
-          ['5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp', new Text("This is a memo")]
+          ['5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew', new Text("This is a memo")]
         ]),
         profiles: new Map<number, Profile>([
           [1, mockProfile("bwhm0")],
@@ -109,7 +109,7 @@ export class Transport extends TransportBase implements ITransport {
           )],
         ]),
         actors: [
-          new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
+          new Actor({ member_id: 1, account: '5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew' }),
           new Actor({ member_id: 2, account: '5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3' }),
         ],
       },
@@ -172,7 +172,7 @@ export class Transport extends TransportBase implements ITransport {
             stake: new u128(10),
           },
           stage: {
-            uri: "/roles/apply/1",
+            uri: "https://some.url/#1",
             state: OpeningState.AcceptingApplications,
             starting_block: 2956498,
             starting_block_hash: "somehash",

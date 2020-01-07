@@ -36,7 +36,6 @@ export class OpportunitiesController extends Observable<State, ITransport> {
   }
 }
 
-
 type Props = {
   // Any props can go here, as normal
 }
