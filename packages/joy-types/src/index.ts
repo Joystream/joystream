@@ -31,7 +31,6 @@ export function getOptionPropOrUndefined <T extends Codec>
   return (struct.get(fieldName) as Option<T>).unwrapOr(undefined);
 }
 
-
 export class OptionText extends Option.with(Text) {
 
   static none (): OptionText {

@@ -18,7 +18,7 @@ export type MusicGenreType = {
   genre: string
 };
 
-export const MusicGenreCodec = new EntityCodec<MusicGenreType>();
+export class MusicGenreCodec extends EntityCodec<MusicGenreType> { }
 
 export type MusicGenrePropId =
   'genre'

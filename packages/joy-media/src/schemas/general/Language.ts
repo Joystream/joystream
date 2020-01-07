@@ -18,7 +18,7 @@ export type LanguageType = {
   languageCode: string
 };
 
-export const LanguageCodec = new EntityCodec<LanguageType>();
+export class LanguageCodec extends EntityCodec<LanguageType> { }
 
 export type LanguagePropId =
   'languageCode'

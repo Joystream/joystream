@@ -22,7 +22,7 @@ export type FeaturedContentType = {
   featuredAlbums?: MusicAlbumType[]
 };
 
-export const FeaturedContentCodec = new EntityCodec<FeaturedContentType>();
+export class FeaturedContentCodec extends EntityCodec<FeaturedContentType> { }
 
 export type FeaturedContentPropId =
   'topVideo' |

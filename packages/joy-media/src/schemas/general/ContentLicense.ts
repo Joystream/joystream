@@ -18,7 +18,7 @@ export type ContentLicenseType = {
   license: string
 };
 
-export const ContentLicenseCodec = new EntityCodec<ContentLicenseType>();
+export class ContentLicenseCodec extends EntityCodec<ContentLicenseType> { }
 
 export type ContentLicensePropId =
   'license'

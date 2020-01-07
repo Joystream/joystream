@@ -77,7 +77,7 @@ export type MusicAlbumType = {
   attribution?: string
 };
 
-export const MusicAlbumCodec = new EntityCodec<MusicAlbumType>();
+export class MusicAlbumCodec extends EntityCodec<MusicAlbumType> { }
 
 export type MusicAlbumPropId =
   'title' |

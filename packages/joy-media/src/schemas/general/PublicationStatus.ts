@@ -18,7 +18,7 @@ export type PublicationStatusType = {
   status: string
 };
 
-export const PublicationStatusCodec = new EntityCodec<PublicationStatusType>();
+export class PublicationStatusCodec extends EntityCodec<PublicationStatusType> { }
 
 export type PublicationStatusPropId =
   'status'

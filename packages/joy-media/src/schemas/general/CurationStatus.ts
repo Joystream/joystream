@@ -18,7 +18,7 @@ export type CurationStatusType = {
   status: string
 };
 
-export const CurationStatusCodec = new EntityCodec<CurationStatusType>();
+export class CurationStatusCodec extends EntityCodec<CurationStatusType> { }
 
 export type CurationStatusPropId =
   'status'

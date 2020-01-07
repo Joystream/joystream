@@ -56,7 +56,7 @@ export type VideoType = {
   attribution?: string
 };
 
-export const VideoCodec = new EntityCodec<VideoType>();
+export class VideoCodec extends EntityCodec<VideoType> { }
 
 export type VideoPropId =
   'title' |

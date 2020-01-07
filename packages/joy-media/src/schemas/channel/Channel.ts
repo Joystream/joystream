@@ -44,7 +44,7 @@ export type ChannelType = {
   curationStatus?: CurationStatusType
 };
 
-export const ChannelCodec = new EntityCodec<ChannelType>();
+export class ChannelCodec extends EntityCodec<ChannelType> { }
 
 export type ChannelPropId =
   'content' |

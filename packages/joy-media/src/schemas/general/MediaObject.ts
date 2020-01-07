@@ -18,7 +18,7 @@ export type MediaObjectType = {
   object: string
 };
 
-export const MediaObjectCodec = new EntityCodec<MediaObjectType>();
+export class MediaObjectCodec extends EntityCodec<MediaObjectType> { }
 
 export type MediaObjectPropId =
   'object'

@@ -74,7 +74,7 @@ export type MusicTrackType = {
   attribution?: string
 };
 
-export const MusicTrackCodec = new EntityCodec<MusicTrackType>();
+export class MusicTrackCodec extends EntityCodec<MusicTrackType> { }
 
 export type MusicTrackPropId =
   'title' |

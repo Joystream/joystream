@@ -18,7 +18,7 @@ export type MusicThemeType = {
   theme: string
 };
 
-export const MusicThemeCodec = new EntityCodec<MusicThemeType>();
+export class MusicThemeCodec extends EntityCodec<MusicThemeType> { }
 
 export type MusicThemePropId =
   'theme'

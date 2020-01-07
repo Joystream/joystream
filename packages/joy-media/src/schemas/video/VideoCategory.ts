@@ -18,7 +18,7 @@ export type VideoCategoryType = {
   category: string
 };
 
-export const VideoCategoryCodec = new EntityCodec<VideoCategoryType>();
+export class VideoCategoryCodec extends EntityCodec<VideoCategoryType> { }
 
 export type VideoCategoryPropId =
   'category'

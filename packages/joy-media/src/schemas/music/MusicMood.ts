@@ -18,7 +18,7 @@ export type MusicMoodType = {
   mood: string
 };
 
-export const MusicMoodCodec = new EntityCodec<MusicMoodType>();
+export class MusicMoodCodec extends EntityCodec<MusicMoodType> { }
 
 export type MusicMoodPropId =
   'mood'
