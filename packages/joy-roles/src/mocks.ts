@@ -15,7 +15,7 @@ export function mockProfile(name: string, avatar_uri: string = ""): Profile {
     subscription: new Option(u64),
     root_account: new AccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
     controller_account: new AccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
-	roles: new Vec<ActorInRole>(ActorInRole),
+    roles: new Vec<ActorInRole>(ActorInRole),
   }
 }
 

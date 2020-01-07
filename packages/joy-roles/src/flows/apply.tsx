@@ -523,7 +523,7 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
   )
 }
 
-export type ConfirmStakes2UpProps = StakeSelectorProps & {
+export type ConfirmStakes2UpProps = {
   applications: OpeningStakeAndApplicationStatus
   step: Balance
   slots: Balance[]
@@ -587,15 +587,15 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
   }
 
   let rankExplanation = <p>This role required a combined stake (application stake plus role stake) of {formatBalance(minStake)}.</p>
-  if (props.maxNumberOfApplications > 0) {
+  if (props.applications.maxNumberOfApplications > 0) {
     rankExplanation = (
       <Container>
         <p>
-          Only the top {props.maxNumberOfApplications} applications, ranked by their combined <strong>application state</strong> and <strong>role stake</strong>, will be considered for this role.
+          Only the top {props.applications.maxNumberOfApplications} applications, ranked by their combined <strong>application state</strong> and <strong>role stake</strong>, will be considered for this role.
                </p>
         <p>
           There is a minimum application stake of {formatBalance(props.applications.requiredApplicationStake.value)} and a minimum role stake of {formatBalance(props.applications.requiredRoleStake.value)} to apply for this role.
-                    However, in order to be in the top {props.maxNumberOfApplications} applications, you wil need to stake a combined total of <strong>{formatBalance(minStake)}</strong>.
+                    However, in order to be in the top {props.applications.maxNumberOfApplications} applications, you wil need to stake a combined total of <strong>{formatBalance(minStake)}</strong>.
                </p>
       </Container>
     )
