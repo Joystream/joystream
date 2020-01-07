@@ -17,6 +17,7 @@ import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withForumCalls } from './calls';
 import { ValidationProps, withReplyValidation } from './validation';
+import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 
 const buildSchema = (props: ValidationProps) => {
   const {
@@ -75,18 +76,15 @@ const InnerForm = (props: FormProps) => {
     if (isValid) sendTx();
   };
 
-  const onTxCancelled = () => {
-
-  };
-
-  const onTxFailed = (txResult: SubmittableResult) => {
+  const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
     if (txResult == null) {
-      return onTxCancelled();
+      // Tx cancelled.
+      return;
     }
   };
 
-  const onTxSuccess = (_txResult: SubmittableResult) => {
+  const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
     setSubmitting(false);
     goToThreadView();
   };

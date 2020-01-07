@@ -17,6 +17,7 @@ import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { onImageError, DEFAULT_THUMBNAIL_URL } from './utils';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
   name: Yup.string()
@@ -88,18 +89,15 @@ const InnerForm = (props: FormProps) => {
     if (isValid) sendTx();
   };
 
-  const onTxCancelled = () => {
-
-  };
-
-  const onTxFailed = (txResult: SubmittableResult) => {
+  const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
     if (txResult == null) {
-      return onTxCancelled();
+      // Tx cancelled.
+      return;
     }
   };
 
-  const onTxSuccess = (_txResult: SubmittableResult) => {
+  const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
     setSubmitting(false);
     goToPlayerPage();
   };

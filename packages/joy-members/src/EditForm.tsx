@@ -16,6 +16,7 @@ import { queryMembershipToProp } from './utils';
 import { withCalls } from '@polkadot/react-api/index';
 import { Button, Message } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
+import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 
 // TODO get next settings from Substrate:
 const HANDLE_REGEX = /^[a-z0-9_]+$/;
@@ -81,18 +82,15 @@ const InnerForm = (props: FormProps) => {
     if (isValid) sendTx();
   };
 
-  const onTxCancelled = () => {
-
-  };
-
-  const onTxFailed = (txResult: SubmittableResult) => {
+  const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
     if (txResult == null) {
-      return onTxCancelled();
+      // Tx cancelled.
+      return;
     }
   };
 
-  const onTxSuccess = (_txResult: SubmittableResult) => {
+  const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
     setSubmitting(false);
   };
 

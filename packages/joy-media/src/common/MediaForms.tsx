@@ -3,11 +3,12 @@ import { Dropdown, DropdownItemProps, DropdownProps } from 'semantic-ui-react';
 import { FormikProps, Field } from 'formik';
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { SubmittableResult } from '@polkadot/api';
+import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 
 type FormCallbacks = {
   onSubmit: (sendTx: () => void) => void,
-  onTxSuccess: (txResult: SubmittableResult) => void,
-  onTxFailed: (txResult: SubmittableResult) => void,
+  onTxSuccess: TxCallback,
+  onTxFailed: TxFailedCallback
 };
 
 type GenericMediaProp<FormValues> = {
@@ -113,11 +114,11 @@ export function withMediaForm<OuterProps, FormValues>
       if (isValid) sendTx();
     };
     
-    const onTxSuccess = (_txResult: SubmittableResult) => {
+    const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
       setSubmitting(false);
     };
 
-    const onTxFailed = (txResult: SubmittableResult) => {
+    const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
       setSubmitting(false);
       if (txResult === null) {
         // Tx cancelled
