@@ -1,7 +1,7 @@
-import { bool, Option, Text, u32, u64 } from '@polkadot/types'
+import { bool, Option, Text, u32, u64, Vec } from '@polkadot/types'
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
-import { Profile, EntryMethod } from '@joystream/types/members';
+import { ActorInRole, Profile, EntryMethod } from '@joystream/types/members';
 
 export function mockProfile(name: string, avatar_uri: string = ""): Profile {
   return {
@@ -15,6 +15,7 @@ export function mockProfile(name: string, avatar_uri: string = ""): Profile {
     subscription: new Option(u64),
     root_account: new AccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
     controller_account: new AccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
+	roles: new Vec<ActorInRole>(ActorInRole),
   }
 }
 
