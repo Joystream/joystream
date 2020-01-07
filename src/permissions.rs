@@ -13,7 +13,7 @@ where
     PropertyIndex: Ord,
 {
     // concrete permissions
-    /// Permissions that are applied to entities of this class, defines who in addition to
+    /// Permissions that are applied to entities of this class, define who in addition to
     /// root origin can update entities of this class.
     pub entity_permissions: EntityPermissions<Credential>,
 
