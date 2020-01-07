@@ -290,7 +290,7 @@ decl_module! {
                 &raw_origin,
                 with_credential,
                 None,
-                ClassPermissions::can_add_schema,
+                ClassPermissions::can_add_class_schema,
                 class_id,
                 |_class_permissions, _access_level| {
                     // If a new property points at another class,
