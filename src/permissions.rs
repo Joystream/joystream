@@ -63,7 +63,7 @@ where
         }
     }
 
-    pub fn can_add_schema(
+    pub fn can_add_class_schema(
         class_permissions: &Self,
         access_level: &AccessLevel<Credential>,
     ) -> dispatch::Result {
