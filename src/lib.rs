@@ -17,7 +17,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 //#![warn(missing_docs)]
 
-//#[cfg(test)]
 #![feature(proc_macro_hygiene)]
 
 use codec::Codec;
@@ -46,7 +45,7 @@ pub use hiring::*;
 use stake;
 
 /// Main trait of hiring substrate module
-pub trait Trait: system::Trait + stake::Trait + Sized {
+pub trait Trait: system::Trait + stake::Trait + Sized + StakeHandler<Self>{
     /// OpeningId type
     type OpeningId: Parameter
         + Member
@@ -70,7 +69,7 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
     /// Type that will handle various staking events
     type ApplicationDeactivatedHandler: ApplicationDeactivatedHandler<Self>;
 
-    type StakeHandler: StakeHandler<Self>;
+//    type StakeHandler: StakeHandler<Self>;
 }
 
 decl_storage! {
@@ -1220,7 +1219,7 @@ impl<T: Trait> Module<T> {
             // `initiate_unstaking` MUST hold, is runtime invariant, false means code is broken.
             // But should we do panic in runtime? Is there safer way?
 
-            assert!(<T as Trait>::StakeHandler::initiate_unstaking(
+            assert!(Self::initiate_unstaking(
                 &stake_id,
                 opt_unstaking_period
             )
@@ -1252,7 +1251,7 @@ impl<T: Trait> Module<T> {
         application_id: &T::ApplicationId,
     ) -> T::StakeId {
         // Create stake
-        let new_stake_id = <T as Trait>::StakeHandler::create_stake();
+        let new_stake_id = Self::create_stake();
 
         // Keep track of this stake id to process unstaking callbacks that may
         // be invoked later.
@@ -1270,7 +1269,7 @@ impl<T: Trait> Module<T> {
         // MUST work, is runtime invariant, false means code is broken.
         // But should we do panic in runtime? Is there safer way?
         assert_eq!(
-            <T as Trait>::StakeHandler::stake(&new_stake_id, imbalance),
+            Self::stake(&new_stake_id, imbalance),
             Ok(())
         );
 
@@ -1365,9 +1364,9 @@ impl<T: Trait> Module<T> {
     fn get_opt_stake_amount(stake_id: Option<T::StakeId>) -> BalanceOf<T> {
         stake_id.map_or(<BalanceOf<T> as Zero>::zero(), |stake_id| {
             // INVARIANT: stake MUST exist in the staking module
-            assert!(<T as Trait>::StakeHandler::stake_exists(stake_id));
+            assert!(Self::stake_exists(stake_id));
 
-            let stake = <T as Trait>::StakeHandler::get_stake(stake_id);
+            let stake = Self::get_stake(stake_id);
 
             match stake.staking_status {
                 // INVARIANT: stake MUST be in the staked state.

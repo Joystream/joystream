@@ -81,7 +81,7 @@ impl Trait for Test {
 
     type ApplicationDeactivatedHandler = ();
 
-    type StakeHandler = Test;
+//    type StakeHandler = Test;
 }
 
 impl stake::Trait for Test {
