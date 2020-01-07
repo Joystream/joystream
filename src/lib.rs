@@ -17,6 +17,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 //#![warn(missing_docs)]
 
+//#[cfg(test)]
+#![feature(proc_macro_hygiene)]
+
 use codec::Codec;
 use system;
 
@@ -66,6 +69,8 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
 
     /// Type that will handle various staking events
     type ApplicationDeactivatedHandler: ApplicationDeactivatedHandler<Self>;
+
+    type StakeHandler: StakeHandler<Self>;
 }
 
 decl_storage! {
@@ -1215,9 +1220,11 @@ impl<T: Trait> Module<T> {
             // `initiate_unstaking` MUST hold, is runtime invariant, false means code is broken.
             // But should we do panic in runtime? Is there safer way?
 
-            assert!(
-                <stake::Module<T>>::initiate_unstaking(&stake_id, opt_unstaking_period).is_ok()
-            );
+            assert!(<T as Trait>::StakeHandler::initiate_unstaking(
+                &stake_id,
+                opt_unstaking_period
+            )
+            .is_ok());
         }
 
         opt_stake_id.is_some()
@@ -1245,7 +1252,7 @@ impl<T: Trait> Module<T> {
         application_id: &T::ApplicationId,
     ) -> T::StakeId {
         // Create stake
-        let new_stake_id = <stake::Module<T>>::create_stake();
+        let new_stake_id = <T as Trait>::StakeHandler::create_stake();
 
         // Keep track of this stake id to process unstaking callbacks that may
         // be invoked later.
@@ -1262,7 +1269,10 @@ impl<T: Trait> Module<T> {
         //
         // MUST work, is runtime invariant, false means code is broken.
         // But should we do panic in runtime? Is there safer way?
-        assert_eq!(<stake::Module<T>>::stake(&new_stake_id, imbalance), Ok(()));
+        assert_eq!(
+            <T as Trait>::StakeHandler::stake(&new_stake_id, imbalance),
+            Ok(())
+        );
 
         new_stake_id
     }
@@ -1355,9 +1365,9 @@ impl<T: Trait> Module<T> {
     fn get_opt_stake_amount(stake_id: Option<T::StakeId>) -> BalanceOf<T> {
         stake_id.map_or(<BalanceOf<T> as Zero>::zero(), |stake_id| {
             // INVARIANT: stake MUST exist in the staking module
-            assert!(<stake::Stakes<T>>::exists(stake_id));
+            assert!(<T as Trait>::StakeHandler::stake_exists(stake_id));
 
-            let stake = <stake::Stakes<T>>::get(stake_id);
+            let stake = <T as Trait>::StakeHandler::get_stake(stake_id);
 
             match stake.staking_status {
                 // INVARIANT: stake MUST be in the staked state.
@@ -1375,5 +1385,51 @@ impl<T: Trait> Module<T> {
         } else {
             None
         }
+    }
+}
+
+pub trait StakeHandler<T: stake::Trait> {
+    fn create_stake() -> T::StakeId;
+
+    fn stake(
+        new_stake_id: &T::StakeId,
+        imbalance: NegativeImbalance<T>,
+    ) -> Result<(), stake::StakeActionError<stake::StakingError>>;
+
+    fn stake_exists(stake_id: T::StakeId) -> bool;
+
+    fn get_stake(stake_id: T::StakeId) -> stake::Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>;
+
+    fn initiate_unstaking(
+        stake_id: &T::StakeId,
+        unstaking_period: Option<T::BlockNumber>,
+    ) -> Result<(), stake::StakeActionError<stake::InitiateUnstakingError>>;
+}
+
+impl<T: Trait> StakeHandler<T> for Module<T> {
+    fn create_stake() -> T::StakeId {
+        <stake::Module<T>>::create_stake()
+    }
+
+    fn stake(
+        new_stake_id: &T::StakeId,
+        imbalance: NegativeImbalance<T>,
+    ) -> Result<(), stake::StakeActionError<stake::StakingError>> {
+        <stake::Module<T>>::stake(new_stake_id, imbalance)
+    }
+
+    fn stake_exists(stake_id: T::StakeId) -> bool {
+        <stake::Stakes<T>>::exists(stake_id)
+    }
+
+    fn get_stake(stake_id: T::StakeId) -> stake::Stake<T::BlockNumber, BalanceOf<T>, T::SlashId> {
+        <stake::Stakes<T>>::get(stake_id)
+    }
+
+    fn initiate_unstaking(
+        stake_id: &T::StakeId,
+        unstaking_period: Option<T::BlockNumber>,
+    ) -> Result<(), stake::StakeActionError<stake::InitiateUnstakingError>> {
+        <stake::Module<T>>::initiate_unstaking(&stake_id, unstaking_period)
     }
 }
