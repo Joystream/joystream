@@ -21,9 +21,12 @@ import {
 } from "./apply"
 import {
   OpeningStakeAndApplicationStatus,
-  StakeType,
 } from '../tabs/Opportunities'
-import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement'
+import { 
+	ApplicationStakeRequirement, 
+	RoleStakeRequirement,
+	StakeType,
+} from '../StakeRequirement'
 
 import { creator } from "../tabs/Opportunities.stories"
 
@@ -180,7 +183,6 @@ export function SelectTwoMinimumStakes() {
   for (let i = 0; i < 20; i++) {
     slots.push(new u128((i * 100) + 10 + i + 1))
   }
-
 
   const props: ConfirmStakes2UpProps & TestProps = {
     _description: "One fixed stake (application), no limit",
