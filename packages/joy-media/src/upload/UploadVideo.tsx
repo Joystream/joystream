@@ -11,7 +11,6 @@ import { MediaFormProps, withMediaForm } from '../common/MediaForms';
 import { visibilityOptions, licenseOptions } from '../common/DropdownOptions';
 import * as Opts from '../common/DropdownOptions';
 import EntityId from '@joystream/types/versioned-store/EntityId';
-import { MusicTrackCodec } from '../schemas/music/MusicTrack';
 
 export type OuterProps = {
   history?: History,
