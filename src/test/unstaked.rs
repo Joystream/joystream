@@ -155,11 +155,13 @@ fn unstaked_returns_application_is_not_unstaking() {
             Some(stake::NegativeImbalance::<Test>::new(100));
         let app_application_result = application_fixture.add_application();
         let application_id = app_application_result.unwrap().application_id_added;
+        let application = <ApplicationById<Test>>::get(application_id);
+        let stake_id = application.active_application_staking_id.unwrap();
 
         let unstaked_fixture = UnstakedFixture {
             opening_id,
             application_id,
-            stake_id: 0,
+            stake_id,
         };
 
         unstaked_fixture.call_and_assert(UnstakedResult::ApplicationIsNotUnstaking);
@@ -206,10 +208,13 @@ fn unstaked_returns_unstaking_in_progress() {
 
         assert!(application_fixture.add_application().is_ok());
 
+        let application = <ApplicationById<Test>>::get(first_application_id);
+        let stake_id = application.active_application_staking_id.unwrap();
+
         let unstaked_fixture = UnstakedFixture {
             opening_id,
             application_id: first_application_id,
-            stake_id: 0,
+            stake_id,
         };
 
         unstaked_fixture.call_and_assert(UnstakedResult::UnstakingInProgress);
@@ -246,10 +251,13 @@ fn unstaked_returns_unstaked() {
 
         assert!(application_fixture.add_application().is_ok());
 
+        let application = <ApplicationById<Test>>::get(first_application_id);
+        let stake_id = application.active_application_staking_id.unwrap();
+
         let unstaked_fixture = UnstakedFixture {
             opening_id,
             application_id: first_application_id,
-            stake_id: 0,
+            stake_id,
         };
 
         unstaked_fixture.call_and_assert(UnstakedResult::Unstaked);
