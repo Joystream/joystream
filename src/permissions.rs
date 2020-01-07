@@ -14,7 +14,7 @@ where
 {
     // concrete permissions
     /// Permissions that are applied to entities of this class, defines who in addition to
-    /// root origin can update and delete entities of this class.
+    /// root origin can update entities of this class.
     pub entity_permissions: EntityPermissions<Credential>,
 
     /// Wether new entities of this class be created or not. Is not enforced for root origin.
