@@ -13,7 +13,6 @@ import { registerHiringTypes } from './hiring';
 import { registerVersionedStoreTypes } from './versioned-store';
 import { registerVersionedStorePermissionsTypes } from './versioned-store/permissions';
 import { registerStakeTypes } from './stake';
-import { registerHiringTypes } from './hiring';
 import { registerMintTypes } from './mint';
 import { registerRecurringRewardsTypes } from './recurring-rewards';
 import { registerContentWorkingGroupTypes } from './content-working-group';
