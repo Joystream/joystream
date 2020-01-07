@@ -2,6 +2,7 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const ContentLicenseValidationSchema = Yup.object().shape({
   license: Yup.string()
@@ -16,6 +17,8 @@ export type ContentLicenseFormValues = {
 export type ContentLicenseType = {
   license: string
 };
+
+export const ContentLicenseCodec = new EntityCodec<ContentLicenseType>();
 
 export type ContentLicensePropId =
   'license'

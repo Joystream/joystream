@@ -2,6 +2,7 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const VideoCategoryValidationSchema = Yup.object().shape({
   category: Yup.string()
@@ -16,6 +17,8 @@ export type VideoCategoryFormValues = {
 export type VideoCategoryType = {
   category: string
 };
+
+export const VideoCategoryCodec = new EntityCodec<VideoCategoryType>();
 
 export type VideoCategoryPropId =
   'category'

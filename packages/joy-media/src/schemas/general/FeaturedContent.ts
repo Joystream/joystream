@@ -2,6 +2,7 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 import { VideoType } from '../video/Video';
 import { MusicAlbumType } from '../music/MusicAlbum';
 
@@ -20,6 +21,8 @@ export type FeaturedContentType = {
   featuredVideos?: VideoType[]
   featuredAlbums?: MusicAlbumType[]
 };
+
+export const FeaturedContentCodec = new EntityCodec<FeaturedContentType>();
 
 export type FeaturedContentPropId =
   'topVideo' |

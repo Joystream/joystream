@@ -2,6 +2,7 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const MediaObjectValidationSchema = Yup.object().shape({
   object: Yup.string()
@@ -16,6 +17,8 @@ export type MediaObjectFormValues = {
 export type MediaObjectType = {
   object: string
 };
+
+export const MediaObjectCodec = new EntityCodec<MediaObjectType>();
 
 export type MediaObjectPropId =
   'object'

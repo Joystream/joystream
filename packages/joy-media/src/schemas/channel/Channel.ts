@@ -2,6 +2,7 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 import { PublicationStatusType } from '../general/PublicationStatus';
 import { CurationStatusType } from '../general/CurationStatus';
 
@@ -42,6 +43,8 @@ export type ChannelType = {
   publicationStatus: PublicationStatusType
   curationStatus?: CurationStatusType
 };
+
+export const ChannelCodec = new EntityCodec<ChannelType>();
 
 export type ChannelPropId =
   'content' |

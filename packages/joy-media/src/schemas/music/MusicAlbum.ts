@@ -2,6 +2,7 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 import { MusicGenreType } from './MusicGenre';
 import { MusicMoodType } from './MusicMood';
 import { MusicThemeType } from './MusicTheme';
@@ -75,6 +76,8 @@ export type MusicAlbumType = {
   license: ContentLicenseType
   attribution?: string
 };
+
+export const MusicAlbumCodec = new EntityCodec<MusicAlbumType>();
 
 export type MusicAlbumPropId =
   'title' |
