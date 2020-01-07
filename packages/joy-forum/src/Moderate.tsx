@@ -13,6 +13,7 @@ import { ReplyId, ThreadId } from '@joystream/types/forum';
 import Section from '@polkadot/joy-utils/Section';
 import { withOnlyForumSudo } from './ForumSudo';
 import { ValidationProps, withPostModerationValidation } from './validation';
+import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 
 const buildSchema = (props: ValidationProps) => {
   const {
@@ -70,18 +71,15 @@ const InnerForm = (props: FormProps) => {
     if (isValid) sendTx();
   };
 
-  const onTxCancelled = () => {
-
-  };
-
-  const onTxFailed = (txResult: SubmittableResult) => {
+  const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
     if (txResult == null) {
-      return onTxCancelled();
+      // Tx cancelled.
+      return;
     }
   };
 
-  const onTxSuccess = (_txResult: SubmittableResult) => {
+  const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
     setSubmitting(false);
     closeForm();
   };

@@ -2,6 +2,7 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const CurationStatusValidationSchema = Yup.object().shape({
   status: Yup.string()
@@ -16,6 +17,8 @@ export type CurationStatusFormValues = {
 export type CurationStatusType = {
   status: string
 };
+
+export class CurationStatusCodec extends EntityCodec<CurationStatusType> { }
 
 export type CurationStatusPropId =
   'status'

@@ -2,6 +2,7 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const MusicGenreValidationSchema = Yup.object().shape({
   genre: Yup.string()
@@ -16,6 +17,8 @@ export type MusicGenreFormValues = {
 export type MusicGenreType = {
   genre: string
 };
+
+export class MusicGenreCodec extends EntityCodec<MusicGenreType> { }
 
 export type MusicGenrePropId =
   'genre'

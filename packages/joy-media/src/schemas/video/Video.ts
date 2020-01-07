@@ -2,6 +2,7 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 import { LanguageType } from '../general/Language';
 import { VideoCategoryType } from './VideoCategory';
 import { MediaObjectType } from '../general/MediaObject';
@@ -54,6 +55,8 @@ export type VideoType = {
   license: ContentLicenseType
   attribution?: string
 };
+
+export class VideoCodec extends EntityCodec<VideoType> { }
 
 export type VideoPropId =
   'title' |

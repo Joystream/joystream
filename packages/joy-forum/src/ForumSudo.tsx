@@ -17,6 +17,7 @@ import { AccountId } from '@polkadot/types/interfaces';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { withForumCalls } from './calls';
+import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 
 const buildSchema = () => Yup.object().shape({});
 
@@ -57,18 +58,15 @@ const InnerForm = (props: FormProps) => {
     if (isValid) sendTx();
   };
 
-  const onTxCancelled = () => {
-
-  };
-
-  const onTxFailed = (txResult: SubmittableResult) => {
+  const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
     if (txResult == null) {
-      return onTxCancelled();
+      // Tx cancelled.
+      return;
     }
   };
 
-  const onTxSuccess = (_txResult: SubmittableResult) => {
+  const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
     setSubmitting(false);
     resetForm();
   };

@@ -20,6 +20,7 @@ import InputStake from '@polkadot/joy-utils/InputStake';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import { saveVote, NewVote } from './myVotesStore';
+import { TxFailedCallback } from '@polkadot/react-components/Status/types';
 
 // TODO use a crypto-prooven generator instead of UUID 4.
 function randomSalt () {
@@ -155,7 +156,7 @@ class Component extends React.PureComponent<Props, State> {
             label='Submit my vote'
             params={[hashedVote, stake]}
             tx='councilElection.vote'
-            txSentCb={this.onFormSubmitted}
+            txStartCb={this.onFormSubmitted}
             txFailedCb={this.onTxFailed}
             txSuccessCb={(txResult: SubmittableResult) => this.onTxSuccess(buildNewVote() as NewVote, txResult)}
           />
@@ -175,7 +176,7 @@ class Component extends React.PureComponent<Props, State> {
     this.setState({ isFormSubmitted: true });
   }
 
-  private onTxFailed = (_txResult: SubmittableResult): void => {
+  private onTxFailed: TxFailedCallback = (_txResult: SubmittableResult | null): void => {
     // TODO Possible UX improvement: tell a user that his vote hasn't been accepted.
   }
 

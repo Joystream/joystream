@@ -2,6 +2,7 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
+import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const MusicMoodValidationSchema = Yup.object().shape({
   mood: Yup.string()
@@ -16,6 +17,8 @@ export type MusicMoodFormValues = {
 export type MusicMoodType = {
   mood: string
 };
+
+export class MusicMoodCodec extends EntityCodec<MusicMoodType> { }
 
 export type MusicMoodPropId =
   'mood'

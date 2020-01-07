@@ -18,7 +18,9 @@ export type MusicAlbumPreviewProps = {
 };
 
 export function MusicAlbumPreview (props: MusicAlbumPreviewProps) {
-  const { channel, size = 200 } = props;
+  const { size = 200 } = props;
+
+  // TODO show the channel this album belongs to.
 
   return <div className='JoyMusicAlbumPreview'>
   

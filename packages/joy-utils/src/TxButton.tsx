@@ -9,14 +9,16 @@ import { assert } from '@polkadot/util';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
 import { useTransportContext } from '@polkadot/joy-media/MediaView';
 import { SubstrateTransport } from '@polkadot/joy-media/transport.substrate';
+import { Button$Sizes } from '@polkadot/react-components/Button/types';
 
 type InjectedProps = {
   queueExtrinsic: QueueTxExtrinsicAdd;
 };
 
-type Props = BareProps & ApiProps & MyAccountProps & PartialQueueTxExtrinsic & {
+type Props = BareProps & MyAccountProps & PartialQueueTxExtrinsic & {
   accountId?: string,
   type?: 'submit' | 'button',
+  size?: Button$Sizes,
   isPrimary?: boolean,
   isDisabled?: boolean,
   label: React.ReactNode,
@@ -25,9 +27,11 @@ type Props = BareProps & ApiProps & MyAccountProps & PartialQueueTxExtrinsic & {
   onClick?: (sendTx: () => void) => void
 };
 
-class TxButtonInner extends React.PureComponent<Props & InjectedProps> {
+type PropsWithApi = Props & ApiProps;
+
+class TxButtonInner extends React.PureComponent<PropsWithApi & InjectedProps> {
   render () {
-    const { myAddress, accountId, isPrimary = true, isDisabled, label, onClick } = this.props;
+    const { myAddress, accountId, isPrimary = true, isDisabled, onClick } = this.props;
     const origin = accountId || myAddress;
 
     return (
@@ -36,7 +40,6 @@ class TxButtonInner extends React.PureComponent<Props & InjectedProps> {
         icon=''
         isDisabled={isDisabled || !origin}
         isPrimary={isPrimary}
-        label={label}
         onClick={() => {
           if (onClick) onClick(this.send);
           else this.send();
@@ -66,7 +69,7 @@ class TxButtonInner extends React.PureComponent<Props & InjectedProps> {
   }
 }
 
-class TxButton extends React.PureComponent<Props> {
+class TxButton extends React.PureComponent<PropsWithApi> {
   render () {
     return (
       <QueueConsumer>
@@ -82,7 +85,7 @@ class TxButton extends React.PureComponent<Props> {
 }
 
 function MockTxButton (props: Props) {
-  const { isPrimary = true, isDisabled, label, onClick  } = props;
+  const { isPrimary = true, onClick } = props;
 
   const mockSendTx = () => {
     console.log('WARN: Cannot send tx in a mock mode');
@@ -92,9 +95,7 @@ function MockTxButton (props: Props) {
     <Button
       {...props}
       icon=''
-      isDisabled={isDisabled}
       isPrimary={isPrimary}
-      label={label}
       onClick={() => {
         if (onClick) onClick(mockSendTx);
         else mockSendTx();

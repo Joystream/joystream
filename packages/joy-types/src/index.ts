@@ -1,4 +1,4 @@
-import { Enum, Option, Struct } from '@polkadot/types/codec';
+import { Enum, Option, Struct, Vec } from '@polkadot/types/codec';
 import { getTypeRegistry, Text } from '@polkadot/types';
 import { BlockNumber, AccountId, Balance, Hash } from '@polkadot/types/interfaces';
 import { u32, bool } from '@polkadot/types/primitive';
@@ -12,6 +12,10 @@ import { registerDiscoveryTypes } from './discovery';
 import { registerHiringTypes } from './hiring';
 import { registerVersionedStoreTypes } from './versioned-store';
 import { registerVersionedStorePermissionsTypes } from './versioned-store/permissions';
+import { registerStakeTypes } from './stake';
+import { registerMintTypes } from './mint';
+import { registerRecurringRewardsTypes } from './recurring-rewards';
+import { registerContentWorkingGroupTypes } from './content-working-group';
 
 export function getTextPropAsString (struct: Struct, fieldName: string): string {
   return (struct.get(fieldName) as Text).toString();
@@ -26,7 +30,6 @@ export function getOptionPropOrUndefined <T extends Codec>
 
   return (struct.get(fieldName) as Option<T>).unwrapOr(undefined);
 }
-
 
 export class OptionText extends Option.with(Text) {
 
@@ -174,10 +177,18 @@ export class VoteKind extends Enum {
 
 export type ProposalVotes = [AccountId, VoteKind][];
 
+// Treat a BTreeSet as a Vec since it is encoded in the same way.
+export class BTreeSet<T extends Codec> extends Vec<T> {};
+
 // TODO Refactor: split this function and move to corresponding modules: election and proposals.
 function registerElectionAndProposalTypes () {
   try {
     const typeRegistry = getTypeRegistry();
+    // Is this enough?
+    typeRegistry.register({
+      BTreeSet
+    });
+
     typeRegistry.register({
       MemoText: 'Text'
     });
@@ -190,7 +201,7 @@ function registerElectionAndProposalTypes () {
       VoteKind
     });
     typeRegistry.register({
-      'Stake': {
+      'ElectionStake': {
         'new': 'Balance',
         'transferred': 'Balance'
       },
@@ -207,7 +218,7 @@ function registerElectionAndProposalTypes () {
       'SealedVote': {
         'voter': 'AccountId',
         'commitment': 'Hash',
-        'stake': 'Stake',
+        'stake': 'ElectionStake',
         'vote': 'Option<AccountId>'
       },
       'TransferableStake': {
@@ -249,4 +260,9 @@ export function registerJoystreamTypes () {
   registerHiringTypes();
   registerVersionedStoreTypes();
   registerVersionedStorePermissionsTypes();
+  registerStakeTypes();
+  registerHiringTypes();
+  registerMintTypes();
+  registerRecurringRewardsTypes();
+  registerContentWorkingGroupTypes();
 }

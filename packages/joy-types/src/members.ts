@@ -1,4 +1,4 @@
-import { Enum, getTypeRegistry, Option, Struct, Null, bool, u64, u128, Text, GenericAccountId } from '@polkadot/types';
+import { Enum, getTypeRegistry, Option, Struct, Null, bool, u64, u128, Text, GenericAccountId, Vec } from '@polkadot/types';
 import { BlockNumber, Moment, BalanceOf } from '@polkadot/types/interfaces';
 import { OptionText } from './index';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
@@ -6,6 +6,7 @@ import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 export class MemberId extends u64 {}
 export class PaidTermId extends u64 {}
 export class SubscriptionId extends u64 {}
+export class ActorId extends u64 {}
 
 export class Paid extends PaidTermId {}
 export class Screening extends GenericAccountId {}
@@ -24,7 +25,7 @@ export class Role extends Enum {
   constructor (value?: any, index?: number) {
     super([
       'StorageProvider',
-      'Publisher',
+      'ChannelOwner',
       'CuratorLead',
       'Curator',
     ], value, index);
@@ -42,7 +43,16 @@ export type Profile = {
   subscription: Option<SubscriptionId>,
   root_account: AccountId,
   controller_account: AccountId,
-  // roles: Vec<ActorInRole>,
+  roles: Vec<ActorInRole>,
+};
+
+export class ActorInRole extends Struct {
+  constructor (value?: any) {
+    super({
+      role: Role,
+      actor_id: ActorId,
+    }, value);
+  }
 };
 
 export class UserInfo extends Struct {
@@ -110,11 +120,8 @@ export function registerMembershipTypes () {
         text: 'Text'
       },
       Role,
-      ActorId: 'u64',
-      ActorInRole: {
-        role: 'Role',
-        actor_id: 'ActorId'
-      },
+      ActorId,
+      ActorInRole,
     });
   } catch (err) {
     console.error('Failed to register custom types of membership module', err);
