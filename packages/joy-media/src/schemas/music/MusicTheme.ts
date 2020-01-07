@@ -5,23 +5,23 @@ import * as Yup from 'yup';
 import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const MusicThemeValidationSchema = Yup.object().shape({
-  theme: Yup.string()
+  value: Yup.string()
     .required('This field is required')
     .max(100, 'Text is too long. Maximum length is 100 chars.')
 });
 
 export type MusicThemeFormValues = {
-  theme: string
+  value: string
 };
 
 export type MusicThemeType = {
-  theme: string
+  value: string
 };
 
 export class MusicThemeCodec extends EntityCodec<MusicThemeType> { }
 
 export type MusicThemePropId =
-  'theme'
+  'value'
   ;
 
 export type MusicThemeGenericProp = {
@@ -40,9 +40,9 @@ type MusicThemeClassType = {
 };
 
 export const MusicThemeClass: MusicThemeClassType = {
-  theme: {
-    "id": "theme",
-    "name": "Theme",
+  value: {
+    "id": "value",
+    "name": "Value",
     "description": "Themes for music.",
     "required": true,
     "type": "Text",

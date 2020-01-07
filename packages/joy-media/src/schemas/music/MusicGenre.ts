@@ -5,23 +5,23 @@ import * as Yup from 'yup';
 import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const MusicGenreValidationSchema = Yup.object().shape({
-  genre: Yup.string()
+  value: Yup.string()
     .required('This field is required')
     .max(100, 'Text is too long. Maximum length is 100 chars.')
 });
 
 export type MusicGenreFormValues = {
-  genre: string
+  value: string
 };
 
 export type MusicGenreType = {
-  genre: string
+  value: string
 };
 
 export class MusicGenreCodec extends EntityCodec<MusicGenreType> { }
 
 export type MusicGenrePropId =
-  'genre'
+  'value'
   ;
 
 export type MusicGenreGenericProp = {
@@ -40,9 +40,9 @@ type MusicGenreClassType = {
 };
 
 export const MusicGenreClass: MusicGenreClassType = {
-  genre: {
-    "id": "genre",
-    "name": "Genre",
+  value: {
+    "id": "value",
+    "name": "Value",
     "description": "Genres for music.",
     "required": true,
     "type": "Text",

@@ -22,17 +22,17 @@ export class MockTransport extends TransportBase implements ITransport {
         description: 'The Requiem in D minor, K. 626, is a requiem mass by Wolfgang Amadeus Mozart (1756–1791). Mozart composed part of the Requiem in Vienna in late 1791, but it was unfinished at his death on 5 December the same year. A completed version dated 1792 by Franz Xaver Süssmayr was delivered to Count Franz von Walsegg, who commissioned the piece for a Requiem service to commemorate the anniversary of his wifes death on 14 February.',
         language: undefined,
         firstReleased: 567425967, // 1987 year.
-        genre: 'Classical Music',
-        mood: 'Relaxing',
-        theme: 'Light',
+        genre: { value: 'Classical Music' },
+        mood: { value: 'Relaxing' },
+        theme: { value: 'Light' },
         link: [],
         composerOrSongwriter: 'Mozart',
         lyrics: undefined,
         object: undefined,
-        publicationStatus: 'Public', // TODO replace w/ const
+        publicationStatus: { value: 'Public' }, // TODO replace w/ const
         curationStatus: undefined, // TODO replace w/ const
         explicit: false,
-        license: 'Public Domain', // TODO replace w/ const
+        license: { value: 'Public Domain' }, // TODO replace w/ const
         attribution: undefined
       }
     )
@@ -46,19 +46,19 @@ export class MockTransport extends TransportBase implements ITransport {
         thumbnail: 'https://images.unsplash.com/photo-1484352491158-830ef5692bb3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
         description: 'Building material is any material which is used for construction purposes. Many naturally occurring substances, such as clay, rocks, sand, and wood, even twigs and leaves, have been used to construct buildings.\n\nApart from naturally occurring materials, many man-made products are in use, some more and some less synthetic.',
         firstReleased: 567425123, // 1987 year.
-        genre: 'Metal',
-        mood: 'Determined',
-        theme: 'Dark',
+        genre: { value: 'Metal' },
+        mood: { value: 'Determined' },
+        theme: { value: 'Dark' },
         tracks: [],
-        language: 'DE',
+        language: { value: 'DE' },
         link: [],
         lyrics: undefined,
         composerOrSongwriter: 'Massive Sand',
         reviews: [],
-        publicationStatus: 'Unlisted',
+        publicationStatus: { value: 'Unlisted' },
         curationStatus: undefined, // TODO replace w/ const
         explicit: false,
-        license: 'No Commercial',
+        license: { value: 'No Commercial' },
         attribution: undefined
       }
     )
@@ -70,15 +70,15 @@ export class MockTransport extends TransportBase implements ITransport {
         title: 'Лесные приключения букашки',
         thumbnail: 'https://images.unsplash.com/photo-1526749837599-b4eba9fd855e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=200&q=60',
         description: 'Путеше́ствие — передвижение по какой-либо территории или акватории с целью их изучения, а также с общеобразовательными, познавательными, спортивными и другими целями.\n\nДо XIX века путешествия были одним из основных источников получения сведений о тех или иных странах (их природе, населении, истории, хозяйстве), общем характере и очертании поверхности Земли.',
-        language: 'RU',
+        language: { value: 'RU' },
         firstReleased: 567425543, // 1987 year.
-        category: 'Travel & Events',
+        category: { value: 'Travel & Events' },
         link: [],
         object: undefined,
-        publicationStatus: 'Unlisted',
+        publicationStatus: { value: 'Unlisted' },
         curationStatus: undefined,
         explicit: true,
-        license: 'Share Alike',
+        license: { value: 'Share Alike' },
         attribution: undefined
       }
     )
@@ -92,7 +92,7 @@ export class MockTransport extends TransportBase implements ITransport {
         thumbnail: 'https://images.unsplash.com/photo-1485561222814-e6c50477491b?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=200&q=60',
         cover: 'https://images.unsplash.com/photo-1514119412350-e174d90d280e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=900&q=80',
         description: 'Music is an art form and cultural activity whose medium is sound organized in time. General definitions of music include common elements such as pitch (which governs melody and harmony), rhythm (and its associated concepts tempo, meter, and articulation), dynamics (loudness and softness), and the sonic qualities of timbre and texture (which are sometimes termed the "color" of a musical sound).',
-        publicationStatus: 'Unlisted',
+        publicationStatus: { value: 'Unlisted' },
         curationStatus: undefined // TODO replace w/ const
       }
     )
