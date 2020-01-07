@@ -172,7 +172,7 @@ export class Transport extends TransportBase implements ITransport {
             stake: new u128(10),
           },
           stage: {
-            uri: "/roles/apply/1",
+            uri: "https://some.url/#1",
             state: OpeningState.AcceptingApplications,
             starting_block: 2956498,
             starting_block_hash: "somehash",
