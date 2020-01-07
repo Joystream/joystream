@@ -9,6 +9,7 @@ import { registerMediaTypes } from './media';
 import { registerMembershipTypes } from './members';
 import { registerRolesTypes } from './roles';
 import { registerDiscoveryTypes } from './discovery';
+import { registerHiringTypes } from './hiring';
 import { registerVersionedStoreTypes } from './versioned-store';
 import { registerVersionedStorePermissionsTypes } from './versioned-store/permissions';
 import { registerStakeTypes } from './stake';
@@ -258,6 +259,7 @@ export function registerJoystreamTypes () {
   registerForumTypes();
   registerElectionAndProposalTypes();
   registerDiscoveryTypes();
+  registerHiringTypes();
   registerVersionedStoreTypes();
   registerVersionedStorePermissionsTypes();
   registerStakeTypes();

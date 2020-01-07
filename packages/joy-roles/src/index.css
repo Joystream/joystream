@@ -1,8 +1,0 @@
-#storage-providers {
-    padding: 1em
-}
-
-#storage-providers::after {
-    color: #dd6655;
-    content: "This text was added by @polkadot/joy-roles/index.css!";
-}

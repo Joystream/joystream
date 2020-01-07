@@ -16,20 +16,13 @@ import translate from './translate';
 import { DiscoveryProviderProps } from './DiscoveryProvider';
 import { DataObject, ContentMetadata, ContentId, DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '@joystream/types/media';
 import { MutedDiv } from '@polkadot/joy-utils/MutedText';
-import { DEFAULT_THUMBNAIL_URL, onImageError } from './utils';
-import { isEmptyStr } from '@polkadot/joy-utils/';
+import { onImageError, DEFAULT_THUMBNAIL_URL } from './utils';
+import { isEmptyStr } from '@polkadot/joy-utils/index';
 import { MyAccountContext, MyAccountContextProps } from '@polkadot/joy-utils/MyAccountContext';
 import { Message } from 'semantic-ui-react';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
 
 import _ from 'lodash';
-
-type Asset = {
-  iAmOwner: boolean,
-  contentId: string,
-  data: DataObject,
-  meta: ContentMetadata
-};
 
 const PLAYER_COMMON_PARAMS = {
   lang: 'en',
@@ -45,6 +38,41 @@ type PartOfPlayer = {
   pause: () => void,
   destroy: () => void
 };
+
+type Asset = {
+  iAmOwner: boolean,
+  contentId: ContentId,
+  data?: DataObject,
+  meta: ContentMetadata
+};
+
+export function ContentPreview ({ iAmOwner, contentId, data, meta }: Asset) {
+  const { added_at } = meta;
+  let { name, thumbnail } = meta.parseJson();
+
+  if (isEmptyStr(thumbnail)) {
+    thumbnail = DEFAULT_THUMBNAIL_URL;
+  }
+
+  return (
+    <Link className={`MediaCell ${iAmOwner ? 'MyContent' : ''}`} to={`/media/play/${contentId}`}>
+      <div className='CellContent'>
+        <div className='ThumbBox'>
+          <img className='ThumbImg' src={thumbnail} onError={onImageError} />
+        </div>
+        {iAmOwner &&
+          <Link className='ui small circular icon inverted primary button' style={{ float: 'right' }} title='Edit' to={`/media/edit/${contentId.encode()}`}>
+            <i className='pencil alternate icon'></i>
+          </Link>
+        }
+        <div><h3>{name}</h3></div>
+        <MemberPreview accountId={meta.owner} style={{ marginBottom: '.5rem' }} />
+        <MutedDiv smaller>{new Date(added_at.time.toNumber()).toLocaleString()}</MutedDiv>
+        {data && <MutedDiv smaller>{formatNumber(data.size_in_bytes)} bytes</MutedDiv>}
+      </div>
+    </Link>
+  );
+}
 
 type ViewProps = ApiProps & I18nProps & DiscoveryProviderProps & {
   contentId: ContentId,
@@ -72,44 +100,16 @@ class InnerView extends React.PureComponent<ViewProps> {
     const meta = metadataOpt.unwrap();
     const iAmOwner: boolean = myAddress !== undefined && myAddress === meta.owner.toString();
 
-    const asset = {
+    const asset: Asset = {
       iAmOwner,
-      contentId: this.props.contentId.encode(),
-      data: dataObjectOpt.unwrap(),
+      contentId: this.props.contentId,
+      data: dataObjectOpt.unwrapOr(undefined),
       meta
     };
 
     return preview
-      ? this.renderPreview(asset)
+      ? ContentPreview(asset)
       : this.renderPlayer(asset);
-  }
-
-  private renderPreview ({ iAmOwner, contentId, data, meta }: Asset) {
-    const { added_at } = meta;
-    let { name, thumbnail } = meta.parseJson();
-
-    if (isEmptyStr(thumbnail)) {
-      thumbnail = DEFAULT_THUMBNAIL_URL;
-    }
-
-    return (
-      <Link className={`MediaCell ${iAmOwner ? 'MyContent' : ''}`} to={`/media/play/${contentId}`}>
-        <div className='CellContent'>
-          <div className='ThumbBox'>
-            <img className='ThumbImg' src={thumbnail} onError={onImageError} />
-          </div>
-          {iAmOwner &&
-            <Link className='ui small circular icon inverted primary button' style={{ float: 'right' }} title='Edit' to={`/media/edit/${contentId}`}>
-              <i className='pencil alternate icon'></i>
-            </Link>
-          }
-          <div><h3>{name}</h3></div>
-          <MemberPreview accountId={meta.owner} style={{ marginBottom: '.5rem' }} />
-          <MutedDiv smaller>{new Date(added_at.time.toNumber()).toLocaleString()}</MutedDiv>
-          <MutedDiv smaller>{formatNumber(data.size_in_bytes)} bytes</MutedDiv>
-        </div>
-      </Link>
-    );
   }
 
   private player?: PartOfPlayer = undefined;

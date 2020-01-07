@@ -1,0 +1,63 @@
+$opening-states: ( active: green, in-review: blue, waiting-to-begin: teal, complete: black, cancelled: grey )
+
+.ui.container.opening
+  @each $name, $colour in $opening-states 
+    &.status-#{$name} 
+      .card.container
+        box-shadow: 0 0 0 1px #d4d4d5, 0 2px 0 0 colour($colour), 0 1px 3px 0 #d4d4d5
+
+      .content.header
+        background-color: colour($colour, trans)
+        .column
+          &.reward
+            .label
+              color: white
+              font-weight: bold
+          &.meta
+            .label 
+              background-color: colour($colour, trans) !important
+              color: colour($colour, darker) 
+
+              a
+                color: colour($colour, darker)
+                border-bottom: 1px dotted colour($colour)
+
+                &:hover
+                  color: colour($colour, dark)
+                  border-color: colour($colour, dark)
+
+          .ribbon
+            background-color: colour($colour) !important
+            color: white
+
+            &:after
+              border-right-color: colour($colour, darker) !important
+
+  .main 
+    .statistic
+      .label, .value
+        text-align: left
+
+    .summary
+      .statistic
+        .value
+
+    .column
+      &.summary
+        h4.headline
+          font-size: 1.5em
+
+      &.details
+        .ribbon
+          left: calc(100% + 1rem + 2.3em + 1px)
+          padding-right: calc(1rem + 2.3em + 1px)
+
+        .button 
+          margin-top: 2em
+          position: relative
+
+    .stake-requirements
+      margin-top: 2em
+
+      .header
+        margin-bottom: 1em

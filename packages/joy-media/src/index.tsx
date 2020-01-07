@@ -6,6 +6,7 @@ import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
 
 import './index.css';
+import './common/index.css';
 
 import translate from './translate';
 import Upload from './Upload';

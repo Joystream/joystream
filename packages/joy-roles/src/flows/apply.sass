@@ -1,0 +1,128 @@
+.ui.dimmer
+  padding: 0 
+
+.ui.modal.fullscreen
+  width: 100% !important
+  margin: 0 !important
+
+.apply-flow 
+  
+  h4
+    color: inherit
+    font-weight: 400
+    margin-bottom: 0.5em
+
+  .statistic
+    .label, .value
+      text-align: left
+
+  .label 
+    &.fluid
+      width: calc(100% + 1rem + 1.2em);
+
+    &.standout
+      margin-bottom: 1.2em
+
+  .column
+    &.cancel
+      text-align: right
+      a
+        color: colour(grey, light)
+        transition: 0.3s;
+        &:hover
+          color: colour(blue)
+
+  .container
+    &.content
+      margin-top: 1em
+    &.cta
+      margin-top: 1.5em
+
+  .accordion
+    background-color: colour(grey, trans)
+    .content
+      padding: 0 1em !important
+
+  .stake
+    .header
+      margin-bottom: 0.75em
+      text-transform: capitalize
+
+  .ranks-and-stake
+    margin-top: 1em
+    margin-bottom: 2em
+
+.keypair
+  display: flex
+  flex-wrap: nowrap
+  justify-content: space-between
+  position: relative
+  white-space: nowrap
+
+  .address, .balance
+    display: inline-block
+    flex: 1
+    font-family: monospace
+    margin-left: 1rem
+    opacity: 0.5
+    overflow: hidden
+    text-overflow: ellipsis
+
+  .name
+    display: inline-block
+    flex: 1 0
+    overflow: hidden
+    text-overflow: ellipsis
+    margin-left: 0.5rem
+
+    &.uppercase
+      text-transform: uppercase
+ 
+.stake-rank-selector, .confirm-stakes-2up
+  margin-top: 1.5em
+
+  .controls
+    margin-bottom: 1em
+
+    p
+      padding-top: 1em
+
+    .input
+      width: 30%
+
+    .input, .button 
+      margin-right: 0.5em
+
+  .ticks
+    margin-left: 10px
+    margin-right: 10px
+
+    .label
+      position: relative
+      transform: translateX(-50%)
+
+    .tick
+      display: inline-block
+      text-align: center
+      border-right: 1px dotted #ccc
+
+      &:first-of-type
+        border-left: 1px dotted #ccc
+
+.confirm-stakes-2up
+  .header
+    margin-bottom: 1em !important
+  .two-up
+    margin-top: 1em
+  .ticks
+    margin-top: 1.5em
+  .center
+    text-align: center
+  .controls
+
+.application-questions
+  .section
+    margin-top: 2em
+
+    h4
+      padding-bottom: 0.5em

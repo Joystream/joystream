@@ -181,7 +181,7 @@ export class Entity extends JoyStruct<EntityType> {
     return this.getField('in_class_schema_indexes');
   }
 
-  /** NOTE: rename to `entity_values` because `values` is already in use. */
+  /** NOTE: Renamed to `entity_values` because `values` is already in use. */
   get entity_values (): VecClassPropertyValue {
     return this.getField('values');
   }

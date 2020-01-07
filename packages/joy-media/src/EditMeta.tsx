@@ -15,7 +15,7 @@ import { ContentId, ContentMetadata, ContentMetadataUpdate, SchemaId, ContentVis
 import { OptionText } from '@joystream/types/';
 import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
-import { onImageError } from './utils';
+import { onImageError, DEFAULT_THUMBNAIL_URL } from './utils';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 
 const buildSchema = (p: ValidationProps) => Yup.object().shape({
@@ -135,9 +135,7 @@ const InnerForm = (props: FormProps) => {
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
-    {thumbnail &&
-      <img src={thumbnail} onError={onImageError} />
-    }
+      {thumbnail && <img src={thumbnail} onError={onImageError} />}
     </div>
     <Form className='ui form JoyForm EditMetaForm'>
       <LabelledText name='name' placeholder={`Name`} {...props} />
@@ -190,7 +188,7 @@ const EditForm = withFormik<OuterProps, FormValues>({
     return {
       name: json && json.name || fileName || '',
       description: json && json.description || '',
-      thumbnail: json && json.thumbnail || '',
+      thumbnail: json && json.thumbnail || DEFAULT_THUMBNAIL_URL,
       keywords: json && json.keywords || ''
     };
   },

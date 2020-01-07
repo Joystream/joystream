@@ -1,83 +1,75 @@
+import React from 'react';
+
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import { ComponentProps } from './props';
-import { Request, Role } from '@joystream/types/roles';
 
-import React from 'react';
-import { Route, Switch } from 'react-router';
-import { AccountId } from '@polkadot/types/interfaces';
+import { Route, Switch, RouteComponentProps } from 'react-router';
 import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
-import accountObservable from '@polkadot/ui-keyring/observable/accounts';
-import { withCalls, withMulti, withObservable } from '@polkadot/react-api/index';
+import { withMulti } from '@polkadot/react-api/index';
 
-import ActorsList from './ActorsList';
-import MyRequests from './MyRequests';
-import AvailableRoles from './AvailableRoles';
+import { ControllerComponent, ViewComponent } from '@polkadot/joy-utils/index'
 
-import './index.css';
+import { ITransport } from './transport'
+import { Transport } from './transport.polkadot'
+import { Transport as MockTransport } from './transport.mock'
+
+import { WorkingGroupsController, } from './tabs/WorkingGroup.controller'
+import { OpportunitiesController, OpportunitiesView } from './tabs/Opportunities.controller'
+import { ApplyController, ApplyView } from './flows/apply.controller'
+import { MyRolesController, MyRolesView } from './tabs/MyRoles.controller'
+
+import './index.sass';
 
 import translate from './translate';
 
 type Props = AppProps & ApiProps & I18nProps & {
-  requests?: Array<Request>,
-  actorAccountIds?: Array<AccountId>,
-  roles?: Array<Role>,
   allAccounts?: SubjectInfo,
 };
 
 type State = {
   tabs: Array<TabItem>,
-  actorAccountIds: Array<string>,
-  requests: Array<Request>,
-  roles: Array<Role>,
 };
 
 class App extends React.PureComponent<Props, State> {
   state: State;
+  transport: ITransport
+  mockTransport: ITransport
+  oppCtrl: OpportunitiesController
+  applyCtrl: ApplyController
+  myRolesCtrl: MyRolesController
 
-  constructor (props: Props) {
+  constructor(props: Props) {
     super(props);
+
+    this.transport = new Transport(props)
+    this.mockTransport = new MockTransport()
+    this.oppCtrl = new OpportunitiesController(this.mockTransport)
+    this.applyCtrl = new ApplyController(this.mockTransport)
+    this.myRolesCtrl = new MyRolesController(this.mockTransport)
 
     const { t } = props;
 
     this.state = {
-      actorAccountIds: [],
-      requests: [],
-      roles: [],
       tabs: [
         {
           isRoot: true,
-          name: 'actors',
-          text: t('Actors')
+          name: 'working-groups',
+          text: t('Working groups')
         },
         {
-          name: 'roles',
-          text: t('Available Roles')
+          name: 'opportunities',
+          text: t('Opportunities')
         },
         {
-          name: 'requests',
-          text: t('My Requests')
+          name: 'my-roles',
+          text: t('My roles')
         },
       ],
     };
   }
 
-  static getDerivedStateFromProps ({ actorAccountIds, requests, roles }: Props): State {
-    return {
-      actorAccountIds: (actorAccountIds || []).map((accountId) =>
-        accountId.toString()
-      ),
-      requests: (requests || []).map((request) =>
-        request
-      ),
-      roles: (roles || []).map((role) =>
-        role
-      ),
-    } as State;
-  }
-
-  render () {
+  render() {
     const { allAccounts } = this.props;
     const { tabs } = this.state;
     const { basePath } = this.props;
@@ -97,37 +89,36 @@ class App extends React.PureComponent<Props, State> {
           />
         </header>
         <Switch>
-          <Route path={`${basePath}/requests`} render={this.renderComponent(MyRequests)} />
-          <Route path={`${basePath}/roles`} render={this.renderComponent(AvailableRoles)} />
-          <Route render={this.renderComponent(ActorsList)} />
+          <Route path={`${basePath}/opportunities`} render={() => this.renderViewComponent(OpportunitiesView(this.oppCtrl))} />
+          <Route path={`${basePath}/my-roles`} render={() => this.renderViewComponent(MyRolesView(this.myRolesCtrl))} />
+          <Route path={`${basePath}/apply/:id`} render={(props) => this.renderViewComponent(ApplyView(this.applyCtrl), props)} />
+          <Route render={() => this.renderComponent(WorkingGroupsController, this.mockTransport)} />
         </Switch>
       </main>
     );
   }
 
-  private renderComponent (Component: React.ComponentType<ComponentProps>) {
-    return (): React.ReactNode => {
-      const { actorAccountIds, requests, roles } = this.state;
+  private renderViewComponent(Component: ViewComponent<any>, props?: RouteComponentProps) {
+    let params = new Map<string, string>()
+    if (typeof props !== 'undefined' && props.match.params) {
+      params = new Map<string, string>(Object.entries(props.match.params))
+    }
 
-      return (
-        <Component
-          actorAccountIds={actorAccountIds}
-          requests={requests}
-          roles={roles}
-        />
-      );
-    };
+    return <Component params={params} />
   }
 
+  private renderComponent(Ctrl: ControllerComponent<ITransport>, transport: ITransport, props?: RouteComponentProps) {
+    let params = new Map<string, string>()
+    if (typeof props !== 'undefined' && props.match.params) {
+      params = new Map<string, string>(Object.entries(props.match.params))
+    }
+    return (
+      <Ctrl transport={transport} params={params} />
+    )
+  }
 }
 
 export default withMulti(
   App,
   translate,
-  withObservable(accountObservable.subject, { propName: 'allAccounts' }),
-  withCalls<Props>(
-    ['query.actors.actorAccountIds', { propName: 'actorAccountIds' }],
-    ['query.actors.roleEntryRequests', { propName: 'requests' }],
-    ['query.actors.availableRoles', { propName: 'roles' }],
-  )
 );
