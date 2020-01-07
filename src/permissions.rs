@@ -115,7 +115,7 @@ where
                 {
                     Ok(())
                 } else {
-                    Err("NotInEntityPermissionsUpdateSet")
+                    Err("CredentialNotInEntityPermissionsUpdateSet")
                 }
             }
             AccessLevel::EntityMaintainer => {
@@ -125,7 +125,7 @@ where
                 {
                     Ok(())
                 } else {
-                    Err("NotInEntityPermissionsUpdateSet")
+                    Err("MaintainerNotGivenAllPermissions")
                 }
             }
             _ => Err("UnknownActor"),

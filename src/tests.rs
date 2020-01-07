@@ -176,7 +176,7 @@ fn create_class_then_entity_with_default_class_permissions() {
                 0, // first schema created
                 simple_test_entity_property_values()
             ),
-            "NotInEntityPermissionsUpdateSet"
+            "CredentialNotInEntityPermissionsUpdateSet"
         );
 
         // default permissions give entity maintainer permission to update and delete

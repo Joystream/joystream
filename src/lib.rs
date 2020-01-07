@@ -524,7 +524,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<ClassPermissionsType<T>, &'static str> {
         ensure!(
             <ClassPermissionsByClassId<T>>::exists(class_id),
-            "ClassIdDoesNotExist"
+            "ClassPermissionsNotFoundByClassId"
         );
         Ok(Self::class_permissions_by_class_id(class_id))
     }
