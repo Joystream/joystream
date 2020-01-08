@@ -2,8 +2,10 @@ import { newEntityId } from './EntityId.mock';
 import { CurationStatusType } from '../schemas/general/CurationStatus';
 
 const values = [
-  'Approved',
-  'Moderated',
+  'Edited',
+  'Updated schema',
+  'Under review',
+  'Removed'
 ];
 
 export const AllCurationStatuss: CurationStatusType[] =

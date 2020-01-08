@@ -6,6 +6,7 @@ import { MusicTheme } from './MusicTheme.moc';
 import { PublicationStatus } from './PublicationStatus.mock';
 import { ContentLicense } from './ContentLicense.mock';
 import { CurationStatus } from './CurationStatus.mock';
+import { Language } from './Language.mock';
 
 export const MusicAlbum: MusicAlbumType = {
   id: newEntityId(),
@@ -18,7 +19,7 @@ export const MusicAlbum: MusicAlbumType = {
   mood: MusicMood,
   theme: MusicTheme,
   tracks: [],
-  language: { value: 'DE' },
+  language: Language,
   link: [],
   lyrics: undefined,
   composerOrSongwriter: 'Massive Sand',

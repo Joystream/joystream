@@ -2,12 +2,27 @@ import { newEntityId } from './EntityId.mock';
 import { MusicGenreType } from '../schemas/music/MusicGenre';
 
 const values = [
-  'Pop',
-  'Rock',
-  'Metal',
+  'Avant-Garde',
+  'Blues',
+  'Children\'s',
+  'Classical',
+  'Comedy/Spoken',
+  'Country',
+  'Easy Listening',
+  'Electronic',
+  'Folk',
+  'Holiday',
+  'International',
+  'Jazz',
+  'Latin',
+  'New Age',
+  'Pop/Rock',
+  'R&B',
   'Rap',
-  'Techno',
-  'Classical Music',
+  'Reggae',
+  'Religious',
+  'Stage & Screen',
+  'Vocal'
 ];
 
 export const AllMusicGenres: MusicGenreType[] =

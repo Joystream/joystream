@@ -11,7 +11,12 @@ const values = [
   'Gaming',
   'People & Blogs',
   'Comedy',
+  'Entertainment',
   'News & Politics',
+  'Howto & Style',
+  'Education',
+  'Science & Technology',
+  'Nonprofits & Activism'
 ];
 
 export const AllVideoCategories: VideoCategoryType[] =

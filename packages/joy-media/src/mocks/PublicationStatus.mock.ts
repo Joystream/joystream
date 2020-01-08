@@ -2,8 +2,8 @@ import { newEntityId } from './EntityId.mock';
 import { PublicationStatusType } from '../schemas/general/PublicationStatus';
 
 const values = [
-  'Public',
-  'Unlisted',
+  'Unpublished',
+  'Published'
 ];
 
 export const AllPublicationStatuses: PublicationStatusType[] =
