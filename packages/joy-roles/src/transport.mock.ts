@@ -24,6 +24,14 @@ import * as faker from 'faker'
 import { mockProfile } from './mocks'
 
 export class Transport extends TransportBase implements ITransport {
+  protected simulateApiResponse<T>(value: T): Promise<T> {
+    return this.promise<T>(value, this.randomTimeout())
+  }
+
+  protected randomTimeout(min: number = 1, max: number = 20): number {
+    return Math.random() * (max - min) + min;
+  }
+
   roles(): Promise<Array<Role>> {
     return this.promise<Array<Role>>(
       [
@@ -33,7 +41,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   curationGroup(): Promise<WorkingGroupProps> {
-    return this.promise<WorkingGroupProps>({
+    return this.simulateApiResponse<WorkingGroupProps>({
       rolesAvailable: true,
       members: [
         {
@@ -93,7 +101,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   storageGroup(): Promise<StorageAndDistributionProps> {
-    return this.promise<StorageAndDistributionProps>(
+    return this.simulateApiResponse<StorageAndDistributionProps>(
       {
         balances: new Map<string, Balance>([
           ['5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew', new u128(101)],
@@ -117,7 +125,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   currentOpportunities(): Promise<Array<WorkingGroupOpening>> {
-    return this.promise<Array<WorkingGroupOpening>>(
+    return this.simulateApiResponse<Array<WorkingGroupOpening>>(
       [
         {
           opening: new Opening({
@@ -198,7 +206,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   opening(id: string): Promise<WorkingGroupOpening> {
-    return this.promise<WorkingGroupOpening>(
+    return this.simulateApiResponse<WorkingGroupOpening>(
       {
         opening: new Opening({
           max_review_period_length: 50000,
@@ -287,7 +295,7 @@ export class Transport extends TransportBase implements ITransport {
       slots.push(new u128((i * 100) + 10 + i + 1))
     }
 
-    return this.promise<Balance[]>(slots)
+    return this.simulateApiResponse<Balance[]>(slots)
   }
 
   expectedBlockTime(): Promise<number> {
@@ -295,7 +303,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   transactionFee(): Promise<Balance> {
-    return this.promise<Balance>(new u128(5))
+    return this.simulateApiResponse<Balance>(new u128(5))
   }
 
   accounts(): Subscribable<keyPairDetails[]> {
