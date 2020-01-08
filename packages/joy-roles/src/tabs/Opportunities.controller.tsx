@@ -36,11 +36,7 @@ export class OpportunitiesController extends Observable<State, ITransport> {
   }
 }
 
-type Props = {
-  // Any props can go here, as normal
-}
-
-export const OpportunitiesView = View<OpportunitiesController, Props, State>(
+export const OpportunitiesView = View<OpportunitiesController, {}, State>(
   (props, state) => (
     <OpeningsView openings={state.opportunities} block_time_in_seconds={state.blockTime} />
   )

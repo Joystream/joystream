@@ -24,14 +24,14 @@ export class WorkingGroupsController extends Observable<State, ITransport> {
   }
 
   getCurationGroup() {
-    this.transport.curationGroup().then((value:WorkingGroupProps) => {
+    this.transport.curationGroup().then((value: WorkingGroupProps) => {
       this.setState({ contentCurators: value })
       this.dispatch()
     })
   }
 
   getStorageGroup() {
-    this.transport.storageGroup().then((value:StorageAndDistributionProps) => {
+    this.transport.storageGroup().then((value: StorageAndDistributionProps) => {
       this.setState({ storageProviders: value })
       this.dispatch()
     })

@@ -63,7 +63,7 @@ export function OpeningHeader(props: OpeningStage) {
           </Label.Detail>
         </Label>
         <a>
-          <CopyToClipboard text={props.meta.uri}>
+          <CopyToClipboard text={window.location.origin + "/#/roles/opportunity/" + props.meta.id}>
             <Label>
               <Icon name="copy" /> Copy link
                         </Label>
@@ -399,39 +399,42 @@ export type WorkingGroupOpening = OpeningStage & DefactoMinimumStake & OpeningMe
 
 type OpeningViewProps = WorkingGroupOpening & BlockTimeProps
 
-export function OpeningView(props: OpeningViewProps) {
-  const hrt = props.opening.human_readable_text
+export const OpeningView = Loadable<OpeningViewProps>(
+  ['opening', 'block_time_in_seconds'],
+  props => {
+    const hrt = props.opening.human_readable_text
 
-  if (typeof hrt === "undefined" || typeof hrt === "string") {
-    return null
+    if (typeof hrt === "undefined" || typeof hrt === "string") {
+      return null
+    }
+
+    const text = hrt as GenericJoyStreamRoleSchema
+
+    return (
+      <Container className={"opening " + openingClass(props.stage.state)}>
+        <h2>{text.job.title}</h2>
+        <Card fluid className="container">
+          <Card.Content className="header">
+            <OpeningHeader stage={props.stage} meta={props.meta} />
+          </Card.Content>
+          <Card.Content className="main">
+            <OpeningBody
+              {...props.applications}
+              text={text}
+              meta={props.meta}
+              opening={props.opening}
+              creator={props.creator}
+              stage={props.stage}
+              applications={props.applications}
+              defactoMinimumStake={props.defactoMinimumStake}
+              block_time_in_seconds={props.block_time_in_seconds}
+            />
+          </Card.Content>
+        </Card>
+      </Container>
+    )
   }
-
-  const text = hrt as GenericJoyStreamRoleSchema
-
-  return (
-    <Container className={"opening " + openingClass(props.stage.state)}>
-      <h2>{text.job.title}</h2>
-      <Card fluid className="container">
-        <Card.Content className="header">
-          <OpeningHeader stage={props.stage} meta={props.meta} />
-        </Card.Content>
-        <Card.Content className="main">
-          <OpeningBody
-            {...props.applications}
-            text={text}
-            meta={props.meta}
-            opening={props.opening}
-            creator={props.creator}
-            stage={props.stage}
-            applications={props.applications}
-            defactoMinimumStake={props.defactoMinimumStake}
-            block_time_in_seconds={props.block_time_in_seconds}
-          />
-        </Card.Content>
-      </Card>
-    </Container>
-  )
-}
+)
 
 export type OpeningsViewProps = {
   openings?: Array<WorkingGroupOpening>
