@@ -26,7 +26,7 @@ import '@polkadot/joy-roles/index.sass'
 export default {
   title: 'Roles / Components / Opportunities groups tab',
   decorators: [withKnobs],
-  excludeStories: ['tomorrow', 'yesterday', 'opening', 'creator', 'stateOptions'],
+  excludeStories: ['tomorrow', 'yesterday', 'opening', 'creator', 'stateOptions', 'newMockHumanReadableText'],
 }
 
 export function tomorrow(): Date {

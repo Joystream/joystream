@@ -21,9 +21,12 @@ import {
 } from "./apply"
 import {
   OpeningStakeAndApplicationStatus,
-  StakeType,
 } from '../tabs/Opportunities'
-import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement'
+import {
+  ApplicationStakeRequirement,
+  RoleStakeRequirement,
+  StakeType,
+} from '../StakeRequirement'
 
 import { creator } from "../tabs/Opportunities.stories"
 
@@ -181,13 +184,14 @@ export function SelectTwoMinimumStakes() {
     slots.push(new u128((i * 100) + 10 + i + 1))
   }
 
-
   const props: ConfirmStakes2UpProps & TestProps = {
     _description: "One fixed stake (application), no limit",
-    requiredApplicationStake: new ApplicationStakeRequirement(new u128(1)),
-    requiredRoleStake: new RoleStakeRequirement(new u128(2)),
-    maxNumberOfApplications: 0,
-    numberOfApplications: 0,
+    applications: {
+      requiredApplicationStake: new ApplicationStakeRequirement(new u128(1)),
+      requiredRoleStake: new RoleStakeRequirement(new u128(2)),
+      maxNumberOfApplications: 0,
+      numberOfApplications: 0,
+    },
     defactoMinimumStake: new u128(0),
     step: new u128(5),
     slots: slots,
@@ -210,126 +214,158 @@ export function StageAConfirmStakes() {
   const permutations: (any & TestProps)[] = [
     {
       _description: "One fixed stake (application), no limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      maxNumberOfApplications: 0,
-      numberOfApplications: 0,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
+        requiredRoleStake: new RoleStakeRequirement(new u128(0)),
+        maxNumberOfApplications: 0,
+        numberOfApplications: 0,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "One fixed stake (role), no limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(1213)),
-      maxNumberOfApplications: 0,
-      numberOfApplications: 0,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
+        requiredRoleStake: new RoleStakeRequirement(new u128(1213)),
+        maxNumberOfApplications: 0,
+        numberOfApplications: 0,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "Two fixed stakes, no limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(10)),
-      maxNumberOfApplications: 0,
-      numberOfApplications: 0,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
+        requiredRoleStake: new RoleStakeRequirement(new u128(10)),
+        maxNumberOfApplications: 0,
+        numberOfApplications: 0,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "One fixed stake (application), 20 applicant limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      maxNumberOfApplications: 20,
-      numberOfApplications: 0,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
+        requiredRoleStake: new RoleStakeRequirement(new u128(0)),
+        maxNumberOfApplications: 20,
+        numberOfApplications: 0,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "One fixed stake (role), 20 applicant limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(456)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      maxNumberOfApplications: 20,
-      numberOfApplications: 0,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(456)),
+        requiredRoleStake: new RoleStakeRequirement(new u128(0)),
+        maxNumberOfApplications: 20,
+        numberOfApplications: 0,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "Two fixed stakes, 20 applicant limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(10)),
-      maxNumberOfApplications: 20,
-      numberOfApplications: 0,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
+        requiredRoleStake: new RoleStakeRequirement(new u128(10)),
+        maxNumberOfApplications: 20,
+        numberOfApplications: 0,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "One minimum stake (application), no limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      maxNumberOfApplications: 0,
-      numberOfApplications: 20,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
+        requiredRoleStake: new RoleStakeRequirement(new u128(0)),
+        maxNumberOfApplications: 0,
+        numberOfApplications: 20,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "One minimum stake (role), no limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
-      maxNumberOfApplications: 0,
-      numberOfApplications: 20,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
+        requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
+        maxNumberOfApplications: 0,
+        numberOfApplications: 20,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "Two minimum stakes, no limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
-      requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
-      maxNumberOfApplications: 0,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
+        requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
+        maxNumberOfApplications: 0,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "Minimum application stake, fixed role stake, no limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
-      requiredRoleStake: new RoleStakeRequirement(new u128(10)),
-      maxNumberOfApplications: 0,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
+        requiredRoleStake: new RoleStakeRequirement(new u128(10)),
+        maxNumberOfApplications: 0,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "Minimum role stake, fixed application stake, no limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
-      maxNumberOfApplications: 0,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
+        requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
+        maxNumberOfApplications: 0,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "One minimum stake (application), 20 applicant limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      maxNumberOfApplications: 0,
-      numberOfApplications: 20,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
+        requiredRoleStake: new RoleStakeRequirement(new u128(0)),
+        maxNumberOfApplications: 0,
+        numberOfApplications: 20,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "One minimum stake (role), 20 applicant limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
-      maxNumberOfApplications: 0,
-      numberOfApplications: 20,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
+        requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
+        maxNumberOfApplications: 0,
+        numberOfApplications: 20,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "Two minimum stakes, 20 applicant limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
-      requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
-      maxNumberOfApplications: 20,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
+        requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
+        maxNumberOfApplications: 20,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "Minimum application stake, fixed role stake, 20 applicant limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
-      requiredRoleStake: new RoleStakeRequirement(new u128(10)),
-      maxNumberOfApplications: 0,
-      numberOfApplications: 20,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(10), StakeType.AtLeast),
+        requiredRoleStake: new RoleStakeRequirement(new u128(10)),
+        maxNumberOfApplications: 0,
+        numberOfApplications: 20,
+      },
       defactoMinimumStake: new u128(0),
     },
     {
       _description: "Minimum role stake, fixed application stake, 20 applicant limit",
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
-      maxNumberOfApplications: 0,
-      numberOfApplications: 20,
+      applications: {
+        requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
+        requiredRoleStake: new RoleStakeRequirement(new u128(10), StakeType.AtLeast),
+        maxNumberOfApplications: 0,
+        numberOfApplications: 20,
+      },
       defactoMinimumStake: new u128(0),
     },
   ]
