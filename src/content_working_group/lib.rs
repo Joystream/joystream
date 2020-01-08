@@ -673,7 +673,7 @@ struct WrappedBeginAcceptingApplicationsError { // can this be made generic, or 
 }
 */
 
-struct WrappedError<E> {
+pub(super) struct WrappedError<E> {
     // can this be made generic, or does that undermine the whole orhpan rule spirit?
     pub error: E,
 }
@@ -717,6 +717,9 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
                         "Application stake amount less than minimum currency balance"
                     }
                 }
+            }
+            hiring::AddOpeningError::ApplicationRationingZeroMaxApplicants => {
+                "Application rationing policy: maximum active applicant number must be greater than zero"
             }
         }
     }
