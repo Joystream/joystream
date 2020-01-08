@@ -1103,7 +1103,7 @@ decl_module! {
 
             Self::update_channel(
                 &channel_id,
-                &None,
+                &new_channel_name,
                 &None,
                 &new_description,
                 &new_publishing_status,
