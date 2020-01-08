@@ -63,7 +63,7 @@ export function OpeningHeader(props: OpeningStage) {
           </Label.Detail>
         </Label>
         <a>
-          <CopyToClipboard text={window.location.origin + "/#/roles/opportunity/" + props.meta.id}>
+          <CopyToClipboard text={window.location.origin + "/#/roles/opportunities/" + props.meta.id}>
             <Label>
               <Icon name="copy" /> Copy link
                         </Label>

@@ -35,9 +35,10 @@ export const App: React.FC<Props> = (props: Props) => {
       name: 'working-groups',
       text: t('Working groups')
     },
-    {
+   {
       name: 'opportunities',
-      text: t('Opportunities')
+      text: t('Opportunities'),
+	  hasParams: true,
     },
     {
       name: 'my-roles',
@@ -71,7 +72,7 @@ export const App: React.FC<Props> = (props: Props) => {
         />
       </header>
       <Switch>
-        <Route path={`${basePath}/opportunity/:id`} render={(props) => renderViewComponent(OpportunityView(oppCtrl), props)} />
+        <Route path={`${basePath}/opportunities/:id`} render={(props) => renderViewComponent(OpportunityView(oppCtrl), props)} />
         <Route path={`${basePath}/opportunities`} render={() => renderViewComponent(OpportunitiesView(oppsCtrl))} />
         <Route path={`${basePath}/my-roles`} render={() => renderViewComponent(MyRolesView(myRolesCtrl))} />
         <Route path={`${basePath}/apply/:id`} render={(props) => renderViewComponent(ApplyView(applyCtrl), props)} />
