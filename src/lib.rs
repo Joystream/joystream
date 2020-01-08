@@ -16,8 +16,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 //#![warn(missing_docs)]
-
-#![feature(proc_macro_hygiene)]
+#![cfg_attr(test, feature(proc_macro_hygiene))]
 
 use codec::Codec;
 use system;
@@ -45,7 +44,7 @@ pub use hiring::*;
 use stake;
 
 /// Main trait of hiring substrate module
-pub trait Trait: system::Trait + stake::Trait + Sized + StakeHandler<Self>{
+pub trait Trait: system::Trait + stake::Trait + Sized {
     /// OpeningId type
     type OpeningId: Parameter
         + Member
@@ -69,7 +68,7 @@ pub trait Trait: system::Trait + stake::Trait + Sized + StakeHandler<Self>{
     /// Type that will handle various staking events
     type ApplicationDeactivatedHandler: ApplicationDeactivatedHandler<Self>;
 
-//    type StakeHandler: StakeHandler<Self>;
+    type StakeHandler: StakeHandler<Self>;
 }
 
 decl_storage! {
@@ -1219,11 +1218,7 @@ impl<T: Trait> Module<T> {
             // `initiate_unstaking` MUST hold, is runtime invariant, false means code is broken.
             // But should we do panic in runtime? Is there safer way?
 
-            assert!(<T as StakeHandler<T>>::initiate_unstaking(
-                &stake_id,
-                opt_unstaking_period
-            )
-            .is_ok());
+            assert!(<T::StakeHandler>::initiate_unstaking(&stake_id, opt_unstaking_period).is_ok());
         }
 
         opt_stake_id.is_some()
@@ -1251,7 +1246,7 @@ impl<T: Trait> Module<T> {
         application_id: &T::ApplicationId,
     ) -> T::StakeId {
         // Create stake
-        let new_stake_id = <T as StakeHandler<T>>::create_stake();
+        let new_stake_id = <T::StakeHandler>::create_stake();
 
         // Keep track of this stake id to process unstaking callbacks that may
         // be invoked later.
@@ -1268,10 +1263,7 @@ impl<T: Trait> Module<T> {
         //
         // MUST work, is runtime invariant, false means code is broken.
         // But should we do panic in runtime? Is there safer way?
-        assert_eq!(
-            <T as StakeHandler<T>>::stake(&new_stake_id, imbalance),
-            Ok(())
-        );
+        assert_eq!(<T::StakeHandler>::stake(&new_stake_id, imbalance), Ok(()));
 
         new_stake_id
     }
@@ -1281,7 +1273,7 @@ impl<T: Trait> Module<T> {
 impl<T: Trait> Module<T> {
     /// Evaluates prospects for a new application
     ///
-    fn would_application_get_added(
+    pub(crate) fn would_application_get_added(
         possible_opening_application_rationing_policy: &Option<ApplicationRationingPolicy>,
         opening_applicants: &BTreeSet<T::ApplicationId>,
         opt_role_stake_balance: &Option<BalanceOf<T>>,
@@ -1364,9 +1356,9 @@ impl<T: Trait> Module<T> {
     fn get_opt_stake_amount(stake_id: Option<T::StakeId>) -> BalanceOf<T> {
         stake_id.map_or(<BalanceOf<T> as Zero>::zero(), |stake_id| {
             // INVARIANT: stake MUST exist in the staking module
-            assert!(<T as StakeHandler<T>>::stake_exists(stake_id));
+            assert!(<T::StakeHandler>::stake_exists(stake_id));
 
-            let stake = <T as StakeHandler<T>>::get_stake(stake_id);
+            let stake = <T::StakeHandler>::get_stake(stake_id);
 
             match stake.staking_status {
                 // INVARIANT: stake MUST be in the staked state.
@@ -1376,7 +1368,7 @@ impl<T: Trait> Module<T> {
         })
     }
 
-    fn create_stake_balance(
+    pub(crate) fn create_stake_balance(
         opt_stake_imbalance: &Option<NegativeImbalance<T>>,
     ) -> Option<BalanceOf<T>> {
         if let Some(ref imbalance) = opt_stake_imbalance {
@@ -1405,6 +1397,10 @@ pub trait StakeHandler<T: stake::Trait> {
     ) -> Result<(), stake::StakeActionError<stake::InitiateUnstakingError>>;
 }
 
+#[cfg(test)]
+use mocktopus::macros::*;
+
+#[cfg_attr(test, mockable)]
 impl<T: Trait> StakeHandler<T> for Module<T> {
     fn create_stake() -> T::StakeId {
         <stake::Module<T>>::create_stake()

@@ -1,9 +1,7 @@
-use super::*;
 use crate::mock::*;
+use crate::test::*;
 use rstd::collections::btree_map::BTreeMap;
 use stake::NegativeImbalance;
-
-use add_opening::AddOpeningFixture;
 
 use mocktopus::mocking::*;
 /*
@@ -32,7 +30,7 @@ impl AddApplicationFixture {
             opening_id,
             opt_role_stake_imbalance: None,
             opt_application_stake_imbalance: None,
-            human_readable_text: add_opening::HUMAN_READABLE_TEXT.to_vec(),
+            human_readable_text: HUMAN_READABLE_TEXT.to_vec(),
         }
     }
 
@@ -129,7 +127,7 @@ impl AddApplicationFixture {
                 active_role_staking_id: expected_active_role_staking_id,
                 active_application_staking_id: expected_active_application_staking_id,
                 stage: ApplicationStage::Active,
-                human_readable_text: add_opening::HUMAN_READABLE_TEXT.to_vec(),
+                human_readable_text: HUMAN_READABLE_TEXT.to_vec(),
             };
 
             assert_eq!(found_application, expected_application);
@@ -258,9 +256,9 @@ fn add_application_succeeds_with_created_application_stake_with_mocks() {
         application_fixture.opt_application_stake_imbalance =
             Some(stake::NegativeImbalance::<Test>::new(100));
 
-        Test::create_stake.mock_safe(|| MockResult::Return(2));
-        Test::stake.mock_safe(|_, _| MockResult::Return(Ok(())));
-        Test::get_stake.mock_safe(|_| {
+        Hiring::create_stake.mock_safe(|| MockResult::Return(2));
+        Hiring::stake.mock_safe(|_, _| MockResult::Return(Ok(())));
+        Hiring::get_stake.mock_safe(|_| {
             MockResult::Return(stake::Stake {
                 created: 1,
                 staking_status: stake::StakingStatus::Staked(stake::StakedState {
@@ -278,7 +276,7 @@ fn add_application_succeeds_with_created_application_stake_with_mocks() {
         let application = <ApplicationById<Test>>::get(application_id);
         let application_stake_id = application.active_application_staking_id.unwrap();
 
-        let stake = <Test as StakeHandler<Test>>::get_stake(application_stake_id);
+        let stake = Hiring::get_stake(application_stake_id);
         let expected_stake = stake::Stake {
             created: 1,
             staking_status: stake::StakingStatus::Staked(stake::StakedState {
@@ -292,8 +290,6 @@ fn add_application_succeeds_with_created_application_stake_with_mocks() {
         assert_eq!(stake, expected_stake);
     });
 }
-
-
 
 #[test]
 fn add_application_fails() {
@@ -349,7 +345,7 @@ fn add_application_succeeds_with_created_application_stake() {
         let application = <ApplicationById<Test>>::get(application_id);
         let application_stake_id = application.active_application_staking_id.unwrap();
 
-        let stake = <Test as StakeHandler<Test>>::get_stake(application_stake_id);
+        let stake = Hiring::get_stake(application_stake_id);
         let expected_stake = stake::Stake {
             created: 1,
             staking_status: stake::StakingStatus::Staked(stake::StakedState {
@@ -363,4 +359,3 @@ fn add_application_succeeds_with_created_application_stake() {
         assert_eq!(stake, expected_stake);
     });
 }
-

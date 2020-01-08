@@ -1,5 +1,5 @@
-use super::*;
 use crate::mock::*;
+use crate::test::*;
 use crate::StakingAmountLimitMode::Exact;
 use rstd::collections::btree_set::BTreeSet;
 

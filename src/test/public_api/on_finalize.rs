@@ -1,8 +1,6 @@
-use super::*;
 use crate::mock::*;
+use crate::test::*;
 
-use add_application::AddApplicationFixture;
-use add_opening::AddOpeningFixture;
 use runtime_primitives::traits::OnFinalize;
 
 #[test]

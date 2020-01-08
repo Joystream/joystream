@@ -7,11 +7,9 @@ use runtime_primitives::{
 };
 use srml_support::{impl_outer_origin, parameter_types};
 
-use crate::{Module, StakeHandler, Trait};
+use crate::{Module, Trait};
 use balances;
 use stake;
-
-use mocktopus::macros::*;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -81,7 +79,7 @@ impl Trait for Test {
 
     type ApplicationDeactivatedHandler = ();
 
-//    type StakeHandler = Test;
+    type StakeHandler = crate::Module<Self>;
 }
 
 impl stake::Trait for Test {
@@ -102,40 +100,3 @@ pub(crate) fn build_test_externalities() -> runtime_io::TestExternalities {
 
 pub type Balances = balances::Module<Test>;
 pub type Hiring = Module<Test>;
-
-#[mockable]
-impl StakeHandler<Test> for Test {
-    fn create_stake() -> <Test as stake::Trait>::StakeId {
-        <crate::Module<Test>>::create_stake()
-    }
-
-    fn stake(
-        new_stake_id: &<Test as stake::Trait>::StakeId,
-        imbalance: crate::NegativeImbalance<Self>,
-    ) -> Result<(), stake::StakeActionError<stake::StakingError>> {
-        <crate::Module<Test>>::stake(new_stake_id, imbalance)
-    }
-
-    fn stake_exists(stake_id: <Test as stake::Trait>::StakeId) -> bool {
-        <crate::Module<Test>>::stake_exists(stake_id)
-    }
-
-    fn get_stake(
-        stake_id: <Test as stake::Trait>::StakeId,
-    ) -> stake::Stake<
-        <Test as system::Trait>::BlockNumber,
-        super::BalanceOf<Test>,
-        <Test as stake::Trait>::SlashId,
-    > {
-        <crate::Module<Test>>::get_stake(stake_id)
-    }
-
-    fn initiate_unstaking(
-        stake_id: &<Test as stake::Trait>::StakeId,
-        unstaking_period: Option<<Test as system::Trait>::BlockNumber>,
-    ) -> Result<(), stake::StakeActionError<stake::InitiateUnstakingError>> {
-        <crate::Module<Test>>::initiate_unstaking(stake_id, unstaking_period)
-    }
-}
-
-

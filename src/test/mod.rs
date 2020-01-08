@@ -1,20 +1,13 @@
 #![cfg(test)]
 
-
-mod add_application;
-mod add_opening;
-mod begin_accepting_applications;
-mod begin_review;
-mod cancel_opening;
-mod deactivate_application;
-mod ensure_can_add_application;
-mod fill_opening;
-mod on_finalize;
+mod public_api;
 mod smoke;
-mod unstaked;
+mod staking_module;
+mod would_application_get_added;
 
-use super::*;
 use crate::mock::Test;
+use crate::*;
+use public_api::*;
 
 pub(crate) type OpeningId = <Test as Trait>::OpeningId;
 pub(crate) type ApplicationId = <Test as Trait>::ApplicationId;

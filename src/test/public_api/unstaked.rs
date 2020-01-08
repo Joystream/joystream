@@ -1,8 +1,5 @@
-use super::*;
 use crate::mock::*;
-
-use add_application::AddApplicationFixture;
-use add_opening::AddOpeningFixture;
+use crate::test::*;
 
 /*
 Not covered:

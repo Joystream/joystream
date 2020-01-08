@@ -1,9 +1,5 @@
-use super::*;
 use crate::mock::*;
-
-use add_application::AddApplicationFixture;
-use add_opening::AddOpeningFixture;
-use deactivate_application::DeactivateApplicationFixture;
+use crate::test::*;
 
 use rstd::collections::btree_set::BTreeSet;
 use rstd::result::Result;
