@@ -56,6 +56,7 @@ export type MusicAlbumFormValues = {
 };
 
 export type MusicAlbumType = {
+  id: number
   title: string
   artist: string
   thumbnail: string

@@ -15,6 +15,7 @@ export type MusicThemeFormValues = {
 };
 
 export type MusicThemeType = {
+  id: number
   value: string
 };
 

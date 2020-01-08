@@ -17,6 +17,7 @@ export type FeaturedContentFormValues = {
 };
 
 export type FeaturedContentType = {
+  id: number
   topVideo?: VideoType
   featuredVideos?: VideoType[]
   featuredAlbums?: MusicAlbumType[]

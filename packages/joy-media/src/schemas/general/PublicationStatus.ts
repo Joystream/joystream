@@ -15,6 +15,7 @@ export type PublicationStatusFormValues = {
 };
 
 export type PublicationStatusType = {
+  id: number
   value: string
 };
 

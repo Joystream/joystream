@@ -15,6 +15,7 @@ export type MusicMoodFormValues = {
 };
 
 export type MusicMoodType = {
+  id: number
   value: string
 };
 

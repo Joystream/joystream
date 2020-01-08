@@ -15,6 +15,7 @@ export type MediaObjectFormValues = {
 };
 
 export type MediaObjectType = {
+  id: number
   value: string
 };
 

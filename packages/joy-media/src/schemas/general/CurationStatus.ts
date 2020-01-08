@@ -15,6 +15,7 @@ export type CurationStatusFormValues = {
 };
 
 export type CurationStatusType = {
+  id: number
   value: string
 };
 

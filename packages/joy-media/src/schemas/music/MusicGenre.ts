@@ -15,6 +15,7 @@ export type MusicGenreFormValues = {
 };
 
 export type MusicGenreType = {
+  id: number
   value: string
 };
 

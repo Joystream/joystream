@@ -15,6 +15,7 @@ export type VideoCategoryFormValues = {
 };
 
 export type VideoCategoryType = {
+  id: number
   value: string
 };
 

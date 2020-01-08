@@ -35,6 +35,7 @@ export type ChannelFormValues = {
 };
 
 export type ChannelType = {
+  id: number
   content: string
   channelName: string
   thumbnail: string

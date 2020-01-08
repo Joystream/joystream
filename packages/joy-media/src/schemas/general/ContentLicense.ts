@@ -15,6 +15,7 @@ export type ContentLicenseFormValues = {
 };
 
 export type ContentLicenseType = {
+  id: number
   value: string
 };
 

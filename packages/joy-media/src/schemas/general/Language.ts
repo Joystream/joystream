@@ -15,6 +15,7 @@ export type LanguageFormValues = {
 };
 
 export type LanguageType = {
+  id: number
   value: string
 };
 
