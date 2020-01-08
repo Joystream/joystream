@@ -26,6 +26,7 @@ import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema
 import { Opening } from "@joystream/types/hiring"
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
+import { OpeningMetadataProps } from "../OpeningMetadata"
 import {
   openingIcon,
   openingClass,
@@ -34,7 +35,7 @@ import {
 
 import { Loadable } from '@polkadot/joy-utils/index'
 
-type OpeningStage = {
+type OpeningStage = OpeningMetadataProps & {
   stage: OpeningStageClassification
 }
 
@@ -62,7 +63,7 @@ export function OpeningHeader(props: OpeningStage) {
           </Label.Detail>
         </Label>
         <a>
-          <CopyToClipboard text={props.stage.uri}>
+          <CopyToClipboard text={props.meta.uri}>
             <Label>
               <Icon name="copy" /> Copy link
                         </Label>
@@ -102,7 +103,7 @@ function OpeningBodyCTAView(props: OpeningBodyCTAProps) {
 
   return (
     <Container>
-      <Link to={props.stage.uri}>
+      <Link to={"/roles/apply/" + props.meta.id}>
         <Button icon fluid positive size="huge">
           APPLY NOW
           <Icon name="angle right" />
@@ -315,7 +316,7 @@ function timeInHumanFormat(block_time_in_seconds: number, blocks: number) {
   return <Moment duration={d1} date={d2} interval={0} />
 }
 
-export type OpeningBodyProps = DefactoMinimumStake & StakeRequirementProps & BlockTimeProps & {
+export type OpeningBodyProps = DefactoMinimumStake & StakeRequirementProps & BlockTimeProps & OpeningMetadataProps & {
   opening: Opening
   text: GenericJoyStreamRoleSchema
   creator: GroupMember
@@ -390,7 +391,7 @@ function OpeningReward(props: OpeningRewardProps) {
   )
 }
 
-export type WorkingGroupOpening = OpeningStage & DefactoMinimumStake & {
+export type WorkingGroupOpening = OpeningStage & DefactoMinimumStake & OpeningMetadataProps & {
   opening: Opening
   creator: GroupMember
   applications: OpeningStakeAndApplicationStatus
@@ -412,12 +413,13 @@ export function OpeningView(props: OpeningViewProps) {
       <h2>{text.job.title}</h2>
       <Card fluid className="container">
         <Card.Content className="header">
-          <OpeningHeader stage={props.stage} />
+          <OpeningHeader stage={props.stage} meta={props.meta} />
         </Card.Content>
         <Card.Content className="main">
           <OpeningBody
             {...props.applications}
             text={text}
+            meta={props.meta}
             opening={props.opening}
             creator={props.creator}
             stage={props.stage}

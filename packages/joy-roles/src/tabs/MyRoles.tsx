@@ -32,6 +32,7 @@ import {
 } from '../openingStateMarkup'
 import { GroupMember, GroupMemberView } from '../elements'
 import { OpeningStageClassification, OpeningState } from "../classifiers"
+import { OpeningMetadata } from "../OpeningMetadata"
 
 type CTACallback = () => void
 
@@ -287,6 +288,7 @@ export type OpeningApplication = {
   stage: OpeningStageClassification
   creator: GroupMember
   opening: Opening
+  meta: OpeningMetadata
   applicationStake: Balance
   roleStake: Balance
   review_end_time?: Date

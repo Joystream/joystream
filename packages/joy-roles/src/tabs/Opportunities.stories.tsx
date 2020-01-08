@@ -17,6 +17,7 @@ import {
 
 import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement'
 import { OpeningStageClassification, OpeningState } from "../classifiers"
+import { OpeningMetadata } from "../OpeningMetadata"
 
 import { mockProfile } from '../mocks'
 
@@ -108,7 +109,6 @@ const stateOptions: any = function() {
 
 export function OpportunitySandbox() {
   const stage: OpeningStageClassification = {
-    uri: text("URL (to copy)", "https://some.url/#1", "Opening"),
     state: select("State", stateOptions, OpeningState.AcceptingApplications, "Opening"),
     starting_block: number("Created block", 2956498, {}, "Opening"),
     starting_block_hash: "somehash",
@@ -145,8 +145,15 @@ export function OpportunitySandbox() {
 
   const defactoMinimumStake: Balance = new u128(number("Dynamic min stake", 0, moneySliderOptions, "Role stakes"))
 
+  const meta: OpeningMetadata = {
+    id: "1",
+    uri: "https://some.url/roles/opportunities/1",
+  }
+
   return (
-    <OpeningView opening={opening}
+    <OpeningView
+      meta={meta}
+      opening={opening}
       creator={creator}
       stage={stage}
       applications={applications}
