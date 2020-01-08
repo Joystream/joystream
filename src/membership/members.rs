@@ -385,10 +385,40 @@ decl_module! {
     }
 }
 
+/// Reason why a given member id does not have a given account as the controller account.
+pub enum ControllerAccountForMemberCheckFailed {
+    NotMember,
+    NotControllerAccount,
+}
+
+pub enum MemberControllerAccountDidNotSign {
+    UnsignedOrigin,
+    MemberIdInvalid,
+    SignerControllerAccountMismatch,
+}
+
 impl<T: Trait> Module<T> {
     /// Provided that the memberid exists return its profile. Returns error otherwise.
     pub fn ensure_profile(id: T::MemberId) -> Result<Profile<T>, &'static str> {
         Self::member_profile(&id).ok_or("member profile not found")
+    }
+
+    /// Ensure that given member has given account as the controller account
+    pub fn ensure_is_controller_account_for_member(
+        member_id: &T::MemberId,
+        account: &T::AccountId,
+    ) -> Result<Profile<T>, ControllerAccountForMemberCheckFailed> {
+        if MemberProfile::<T>::exists(member_id) {
+            let profile = MemberProfile::<T>::get(member_id).unwrap();
+
+            if profile.controller_account == *account {
+                Ok(profile)
+            } else {
+                Err(ControllerAccountForMemberCheckFailed::NotControllerAccount)
+            }
+        } else {
+            Err(ControllerAccountForMemberCheckFailed::NotMember)
+        }
     }
 
     /// Returns true if account is either a member's root or controller account
@@ -546,6 +576,26 @@ impl<T: Trait> Module<T> {
             .map_or(false, |profile| profile.roles.occupies_role(role))
     }
 
+    pub fn ensure_member_controller_account_signed(
+        origin: T::Origin,
+        member_id: &T::MemberId,
+    ) -> Result<T::AccountId, MemberControllerAccountDidNotSign> {
+        // Ensure transaction is signed.
+        let signer_account =
+            ensure_signed(origin).map_err(|_| MemberControllerAccountDidNotSign::UnsignedOrigin)?;
+
+        // Ensure member exists
+        let profile = Self::ensure_profile(member_id.clone())
+            .map_err(|_| MemberControllerAccountDidNotSign::MemberIdInvalid)?;
+
+        ensure!(
+            profile.controller_account == signer_account,
+            MemberControllerAccountDidNotSign::SignerControllerAccountMismatch
+        );
+
+        Ok(signer_account)
+    }
+
     // policy across all roles is:
     // members can only occupy a role at most once at a time
     // members can enter any role
@@ -553,17 +603,18 @@ impl<T: Trait> Module<T> {
     // ** Note ** Role specific policies should be enforced by the client modules
     // this method should handle higher level policies
     pub fn can_register_role_on_member(
-        member_id: T::MemberId,
-        actor_in_role: ActorInRole<T::ActorId>,
-    ) -> Result<(), &'static str> {
-        let profile = Self::ensure_profile(member_id)?;
+        member_id: &T::MemberId,
+        actor_in_role: &ActorInRole<T::ActorId>,
+    ) -> Result<Profile<T>, &'static str> {
+        // Ensure member exists
+        let profile = Self::ensure_profile(*member_id)?;
 
         // ensure is active member
         ensure!(!profile.suspended, "SuspendedMemberCannotEnterRole");
 
         // guard against duplicate ActorInRole
         ensure!(
-            !<MembershipIdByActorInRole<T>>::exists(&actor_in_role),
+            !<MembershipIdByActorInRole<T>>::exists(actor_in_role),
             "ActorInRoleAlreadyExists"
         );
 
@@ -577,22 +628,21 @@ impl<T: Trait> Module<T> {
         // Minimum balance
         // EntryMethod
 
-        Ok(())
+        Ok(profile)
     }
 
     pub fn register_role_on_member(
         member_id: T::MemberId,
-        actor_in_role: ActorInRole<T::ActorId>,
+        actor_in_role: &ActorInRole<T::ActorId>,
     ) -> Result<(), &'static str> {
-        // policy check
-        Self::can_register_role_on_member(member_id, actor_in_role)?;
+        // Policy check
+        let mut profile = Self::can_register_role_on_member(&member_id, actor_in_role)?;
 
-        let mut profile = Self::ensure_profile(member_id)?; // .expect().. ?
-        assert!(profile.roles.register_role(&actor_in_role));
+        assert!(profile.roles.register_role(actor_in_role));
 
         <MemberProfile<T>>::insert(member_id, profile);
-        <MembershipIdByActorInRole<T>>::insert(&actor_in_role, member_id);
-        Self::deposit_event(RawEvent::MemberRegisteredRole(member_id, actor_in_role));
+        <MembershipIdByActorInRole<T>>::insert(actor_in_role, member_id);
+        Self::deposit_event(RawEvent::MemberRegisteredRole(member_id, *actor_in_role));
         Ok(())
     }
 

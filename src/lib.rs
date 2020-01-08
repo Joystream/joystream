@@ -401,6 +401,8 @@ mod traits;
 pub use forum;
 use membership::members;
 
+mod content_working_group;
+
 mod migration;
 mod roles;
 mod service_discovery;

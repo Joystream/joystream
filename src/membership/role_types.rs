@@ -5,7 +5,7 @@ use rstd::prelude::*;
 #[derive(Encode, Decode, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub enum Role {
     StorageProvider,
-    Publisher,
+    ChannelOwner,
     CuratorLead,
     Curator,
 }

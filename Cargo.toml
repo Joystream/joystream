@@ -42,6 +42,12 @@ std = [
     'randomness-collective-flip/std',
     'system-rpc-runtime-api/std',
     'forum/std',
+    'minting/std',
+    'recurringrewards/std',
+    'stake/std',
+    'hiring/std',
+    'versioned_store/std',
+    'versioned_store_permissions/std'
 ]
 
 [dependencies.babe]
@@ -252,8 +258,43 @@ version = '1.0.4'
 
 [dependencies.forum]
 default_features = false
-git = 'https://github.com/mnaamani/substrate-forum-module'
+git = 'https://github.com/Joystream/substrate-forum-module'
 package = 'substrate-forum-module'
-branch = 'use-polkadot-master-substrate-version'
-# Before releasing Rome - finalize and tag release new forum and update this
-# tag = 'v1.0.0'
+rev = '4bdeadaadfcca1fd6e822c520f429d4beacc4c8a'
+
+[dependencies.minting]
+default_features = false
+git = 'https://github.com/Joystream/substrate-token-minting-module/'
+package = 'substrate-token-mint-module'
+rev = '5570e3b56e9caffa7df1dbede6308b2e6ce18217'
+
+[dependencies.recurringrewards]
+default_features = false
+git = 'https://github.com/bedeho/substrate-recurring-reward-module'
+package = 'substrate-recurring-reward-module'
+rev = '6a1dfef112fa6ee1d018c919ccb2c6f075bb2426'
+
+[dependencies.stake]
+default_features = false
+git = 'https://github.com/joystream/substrate-stake-module'
+package = 'substrate-stake-module'
+rev = '0516efe9230da112bc095e28f34a3715c2e03ca8'
+
+[dependencies.hiring]
+default_features = false
+package = 'substrate-hiring-module'
+git = 'https://github.com/joystream/substrate-hiring-module'
+rev = 'cd31dbb71d29ec0d7f14979aaec9c213c2dacfbc'
+
+
+[dependencies.versioned_store]
+default_features = false
+package ='substrate-versioned-store'
+git = 'https://github.com/joystream/substrate-versioned-store-module'
+rev = 'd0c68722405355404840512edf3064d5ced3e1fe'
+
+[dependencies.versioned_store_permissions]
+default_features = false
+git = 'https://github.com/mnaamani/substrate-versioned-store-permissions-module'
+package = 'substrate-versioned-store-permissions-module'
+rev = 'a6f60058ce8cc1123e90172807abb22459916727'

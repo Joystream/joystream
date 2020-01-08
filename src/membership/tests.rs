@@ -319,7 +319,7 @@ fn registering_and_unregistering_roles_on_member() {
             // no initial roles for member
             assert!(!Members::member_is_in_role(
                 member_id_1,
-                members::Role::Publisher
+                members::Role::ChannelOwner
             ));
 
             // REGISTERING
@@ -327,18 +327,18 @@ fn registering_and_unregistering_roles_on_member() {
             // successful registration
             assert_ok!(Members::register_role_on_member(
                 member_id_1,
-                members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID)
+                &members::ActorInRole::new(members::Role::ChannelOwner, DUMMY_ACTOR_ID)
             ));
             assert!(Members::member_is_in_role(
                 member_id_1,
-                members::Role::Publisher
+                members::Role::ChannelOwner
             ));
 
             // enter role a second time should fail
             assert_dispatch_error_message(
                 Members::register_role_on_member(
                     member_id_1,
-                    members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID + 1),
+                    &members::ActorInRole::new(members::Role::ChannelOwner, DUMMY_ACTOR_ID + 1),
                 ),
                 "MemberAlreadyInRole",
             );
@@ -347,7 +347,7 @@ fn registering_and_unregistering_roles_on_member() {
             assert_dispatch_error_message(
                 Members::register_role_on_member(
                     member_id_2,
-                    members::ActorInRole::new(members::Role::Publisher, DUMMY_ACTOR_ID),
+                    &members::ActorInRole::new(members::Role::ChannelOwner, DUMMY_ACTOR_ID),
                 ),
                 "ActorInRoleAlreadyExists",
             );
@@ -362,12 +362,12 @@ fn registering_and_unregistering_roles_on_member() {
 
             // successfully unregister role
             assert_ok!(Members::unregister_role(members::ActorInRole::new(
-                members::Role::Publisher,
+                members::Role::ChannelOwner,
                 DUMMY_ACTOR_ID
             )));
             assert!(!Members::member_is_in_role(
                 member_id_1,
-                members::Role::Publisher
+                members::Role::ChannelOwner
             ));
         });
 }
