@@ -2,7 +2,8 @@ import { newEntityId } from './EntityId.mock';
 import { MusicMoodType } from '../schemas/music/MusicMood';
 
 const values = [
-  ''
+  'Relaxing',
+  'Determined',
 ];
 
 export const AllMusicMoods: MusicMoodType[] =
