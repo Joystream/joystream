@@ -1,8 +1,7 @@
 import React from 'react';
 import { Container } from 'semantic-ui-react';
 
-// Middleware: FIXME: move somewhere outside of hiring package
-import { Controller, controllerProps } from '@polkadot/joy-utils/index'
+import { Observable, View } from '@polkadot/joy-utils/index'
 
 import { ITransport } from '../transport'
 
@@ -17,22 +16,33 @@ type State = {
   storageProviders?: StorageAndDistributionProps,
 }
 
-export class WorkingGroupsController extends Controller<ITransport, State> {
-  constructor(props: controllerProps<ITransport>) {
-    super(props, {});
-
-    props.transport.curationGroup().then(value => this.setState({ contentCurators: value }))
-    props.transport.storageGroup().then(value => this.setState({ storageProviders: value }))
+export class WorkingGroupsController extends Observable<State, ITransport> {
+  constructor(transport: ITransport, initialState: State = {}) {
+    super(transport, {})
+    this.getCurationGroup()
+    this.getStorageGroup()
   }
 
-  render() {
-    return (
-      <Container>
-        <ContentCurators {...this.state.contentCurators as WorkingGroupProps} />
-        <StorageAndDistribution {...this.state.storageProviders as StorageAndDistributionProps} />
-      </Container>
-    )
+  getCurationGroup() {
+    this.transport.curationGroup().then((value:WorkingGroupProps) => {
+      this.setState({ contentCurators: value })
+      this.dispatch()
+    })
+  }
+
+  getStorageGroup() {
+    this.transport.storageGroup().then((value:StorageAndDistributionProps) => {
+      this.setState({ storageProviders: value })
+      this.dispatch()
+    })
   }
 }
 
-
+export const WorkingGroupsView = View<WorkingGroupsController, {}, State>(
+  (props, state) => (
+    <Container>
+      <ContentCurators {...state.contentCurators!} />
+      <StorageAndDistribution {...state.storageProviders!} />
+    </Container>
+  )
+)
