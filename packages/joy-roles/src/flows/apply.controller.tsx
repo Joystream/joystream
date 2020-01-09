@@ -14,7 +14,7 @@ import { keyPairDetails, FlowModal } from './apply'
 
 import { GroupMember } from '../elements'
 import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities'
-import { Min, Step } from "../balances"
+import { Min, Step, Sum } from "../balances"
 
 type State = {
   // Input data from state
@@ -125,9 +125,16 @@ export class ApplyController extends Observable<State, ITransport> {
       console.log("Stake key:", stakeKeyAddress, stakeKeyPassphrase)
       console.log("Tx key:", txKeyAddress, txKeyPassphrase)
 
+	  const totalCommitment = Sum([
+		  this.state.transactionFee!,
+		  applicationStake,
+		  roleStake,
+	  ])
+
       this.state.transactionDetails.set("Transaction fee", formatBalance(this.state.transactionFee))
       this.state.transactionDetails.set("Application stake", formatBalance(applicationStake))
       this.state.transactionDetails.set("Role stake", formatBalance(roleStake))
+      this.state.transactionDetails.set("Total commitment", formatBalance(totalCommitment))
       this.state.transactionDetails.set("Extrinsic hash", "0xae6d24d4d55020c645ddfe2e8d0faf93b1c0c9879f9bf2c439fb6514c6d1292e")
       this.state.roleKeyName = "some-role.key"
 
