@@ -397,6 +397,12 @@ pub enum MemberControllerAccountDidNotSign {
     SignerControllerAccountMismatch,
 }
 
+pub enum MemberRootAccountDidNotSign {
+    UnsignedOrigin,
+    MemberIdInvalid,
+    SignerRootAccountMismatch,
+}
+
 impl<T: Trait> Module<T> {
     /// Provided that the memberid exists return its profile. Returns error otherwise.
     pub fn ensure_profile(id: T::MemberId) -> Result<Profile<T>, &'static str> {
@@ -594,6 +600,38 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(signer_account)
+    }
+
+    pub fn ensure_member_controller_account(
+        signer_account: &T::AccountId,
+        member_id: &T::MemberId,
+    ) -> Result<(), MemberControllerAccountDidNotSign> {
+        // Ensure member exists
+        let profile = Self::ensure_profile(member_id.clone())
+            .map_err(|_| MemberControllerAccountDidNotSign::MemberIdInvalid)?;
+
+        ensure!(
+            profile.controller_account == *signer_account,
+            MemberControllerAccountDidNotSign::SignerControllerAccountMismatch
+        );
+
+        Ok(())
+    }
+
+    pub fn ensure_member_root_account(
+        signer_account: &T::AccountId,
+        member_id: &T::MemberId,
+    ) -> Result<(), MemberRootAccountDidNotSign> {
+        // Ensure member exists
+        let profile = Self::ensure_profile(member_id.clone())
+            .map_err(|_| MemberRootAccountDidNotSign::MemberIdInvalid)?;
+
+        ensure!(
+            profile.root_account == *signer_account,
+            MemberRootAccountDidNotSign::SignerRootAccountMismatch
+        );
+
+        Ok(())
     }
 
     // policy across all roles is:
