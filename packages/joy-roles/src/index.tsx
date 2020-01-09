@@ -36,10 +36,10 @@ export const App: React.FC<Props> = (props: Props) => {
       name: 'working-groups',
       text: t('Working groups')
     },
-   {
+    {
       name: 'opportunities',
       text: t('Opportunities'),
-	  hasParams: true,
+      hasParams: true,
     },
     {
       name: 'my-roles',
