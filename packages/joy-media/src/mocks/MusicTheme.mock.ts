@@ -94,7 +94,6 @@ const values = [
   'Magic',
   'Maverick',
   'Meditation',
-  
   'Memorial',
   'Military',
   'Mischievous',
