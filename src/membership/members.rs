@@ -397,8 +397,11 @@ pub enum MemberControllerAccountDidNotSign {
     SignerControllerAccountMismatch,
 }
 
-pub enum MemberRootAccountDidNotSign {
-    UnsignedOrigin,
+pub enum MemberControllerAccountMismatch {
+    MemberIdInvalid,
+    SignerControllerAccountMismatch,
+}
+pub enum MemberRootAccountMismatch {
     MemberIdInvalid,
     SignerRootAccountMismatch,
 }
@@ -605,14 +608,14 @@ impl<T: Trait> Module<T> {
     pub fn ensure_member_controller_account(
         signer_account: &T::AccountId,
         member_id: &T::MemberId,
-    ) -> Result<(), MemberControllerAccountDidNotSign> {
+    ) -> Result<(), MemberControllerAccountMismatch> {
         // Ensure member exists
         let profile = Self::ensure_profile(member_id.clone())
-            .map_err(|_| MemberControllerAccountDidNotSign::MemberIdInvalid)?;
+            .map_err(|_| MemberControllerAccountMismatch::MemberIdInvalid)?;
 
         ensure!(
             profile.controller_account == *signer_account,
-            MemberControllerAccountDidNotSign::SignerControllerAccountMismatch
+            MemberControllerAccountMismatch::SignerControllerAccountMismatch
         );
 
         Ok(())
@@ -621,14 +624,14 @@ impl<T: Trait> Module<T> {
     pub fn ensure_member_root_account(
         signer_account: &T::AccountId,
         member_id: &T::MemberId,
-    ) -> Result<(), MemberRootAccountDidNotSign> {
+    ) -> Result<(), MemberRootAccountMismatch> {
         // Ensure member exists
         let profile = Self::ensure_profile(member_id.clone())
-            .map_err(|_| MemberRootAccountDidNotSign::MemberIdInvalid)?;
+            .map_err(|_| MemberRootAccountMismatch::MemberIdInvalid)?;
 
         ensure!(
             profile.root_account == *signer_account,
-            MemberRootAccountDidNotSign::SignerRootAccountMismatch
+            MemberRootAccountMismatch::SignerRootAccountMismatch
         );
 
         Ok(())
