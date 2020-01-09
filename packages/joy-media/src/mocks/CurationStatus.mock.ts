@@ -8,7 +8,7 @@ const values = [
   'Removed'
 ];
 
-export const AllCurationStatuss: CurationStatusType[] =
+export const AllCurationStatuses: CurationStatusType[] =
   values.map(value => ({ id: newEntityId(), value }));
 
-export const CurationStatus = AllCurationStatuss[0];
+export const CurationStatus = AllCurationStatuses[0];
