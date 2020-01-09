@@ -1,6 +1,4 @@
-import { ITransport } from './transport'
-import { Transport as TransportBase, Subscribable } from '@polkadot/joy-utils/index'
-
+import { MediaTransport } from './transport';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { Entity } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
@@ -22,7 +20,7 @@ function notImplementedYet (): any {
   throw new Error('Substrate transport is not implemented yet');
 }
 
-export class SubstrateTransport extends TransportBase implements ITransport {
+export class SubstrateTransport extends MediaTransport {
 
   musicTrackById (_id: EntityId): Promise<MusicTrackType> {
     return notImplementedYet(); // TODO impl

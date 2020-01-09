@@ -1,7 +1,6 @@
 import { Observable } from 'rxjs';
-
-import { ITransport } from './transport'
-import { Transport as TransportBase, Subscribable } from '@polkadot/joy-utils/index'
+import { Subscribable } from '@polkadot/joy-utils/index'
+import { MediaTransport } from './transport';
 
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { Entity } from '@joystream/types/versioned-store';
@@ -22,7 +21,7 @@ import { MusicThemeType } from './schemas/music/MusicTheme';
 import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
 
-export class MockTransport extends TransportBase implements ITransport {
+export class MockTransport extends MediaTransport {
 
   musicTrackById (_id: EntityId): Promise<MusicTrackType> {
     return this.promise(mocks.MusicTrack);
