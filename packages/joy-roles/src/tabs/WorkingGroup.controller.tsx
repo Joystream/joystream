@@ -7,13 +7,13 @@ import { ITransport } from '../transport'
 
 import {
   ContentCurators,
-  WorkingGroupProps,
-  StorageAndDistribution, StorageAndDistributionProps,
+  WorkingGroupMembership,
+  StorageAndDistribution, StorageAndDistributionMembership,
 } from './WorkingGroup'
 
 type State = {
-  contentCurators?: WorkingGroupProps,
-  storageProviders?: StorageAndDistributionProps,
+  contentCurators?: WorkingGroupMembership,
+  storageProviders?: StorageAndDistributionMembership,
 }
 
 export class WorkingGroupsController extends Observable<State, ITransport> {
@@ -24,14 +24,14 @@ export class WorkingGroupsController extends Observable<State, ITransport> {
   }
 
   getCurationGroup() {
-    this.transport.curationGroup().then((value: WorkingGroupProps) => {
+    this.transport.curationGroup().then((value: WorkingGroupMembership) => {
       this.setState({ contentCurators: value })
       this.dispatch()
     })
   }
 
   getStorageGroup() {
-    this.transport.storageGroup().then((value: StorageAndDistributionProps) => {
+    this.transport.storageGroup().then((value: StorageAndDistributionMembership) => {
       this.setState({ storageProviders: value })
       this.dispatch()
     })

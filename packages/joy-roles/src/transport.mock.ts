@@ -11,7 +11,7 @@ import { Actor, Role } from '@joystream/types/roles'
 import { Opening } from "@joystream/types/hiring"
 import { Profile } from '@joystream/types/members';
 
-import { WorkingGroupProps, StorageAndDistributionProps } from "./tabs/WorkingGroup"
+import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
 import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
@@ -40,8 +40,8 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
-  curationGroup(): Promise<WorkingGroupProps> {
-    return this.simulateApiResponse<WorkingGroupProps>({
+  curationGroup(): Promise<WorkingGroupMembership> {
+    return this.simulateApiResponse<WorkingGroupMembership>({
       rolesAvailable: true,
       members: [
         {
@@ -100,8 +100,8 @@ export class Transport extends TransportBase implements ITransport {
     })
   }
 
-  storageGroup(): Promise<StorageAndDistributionProps> {
-    return this.simulateApiResponse<StorageAndDistributionProps>(
+  storageGroup(): Promise<StorageAndDistributionMembership> {
+    return this.simulateApiResponse<StorageAndDistributionMembership>(
       {
         balances: new Map<string, Balance>([
           ['5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew', new u128(101)],

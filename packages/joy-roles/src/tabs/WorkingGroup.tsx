@@ -10,12 +10,12 @@ import { Text } from '@polkadot/types';
 import { ActorDetailsView, GroupMember, MemberView, GroupMemberView } from "../elements"
 import { Loadable } from '@polkadot/joy-utils/index'
 
-export type WorkingGroupProps = {
+export type WorkingGroupMembership = {
   members: GroupMember[]
   rolesAvailable: boolean
 }
 
-export const ContentCurators = Loadable<WorkingGroupProps>(
+export const ContentCurators = Loadable<WorkingGroupMembership>(
   ['members'],
   props => {
     let message = (
@@ -59,14 +59,14 @@ export const ContentCurators = Loadable<WorkingGroupProps>(
   }
 )
 
-export type StorageAndDistributionProps = {
+export type StorageAndDistributionMembership = {
   actors: Actor[]
   balances: Map<string, Balance>
   memos: Map<string, Text>
   profiles: Map<number, Profile>
 }
 
-export const StorageAndDistribution = Loadable<StorageAndDistributionProps>(
+export const StorageAndDistribution = Loadable<StorageAndDistributionMembership>(
   ['actors'],
   props => {
     return (

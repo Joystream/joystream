@@ -12,7 +12,7 @@ import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Role } from '@joystream/types/roles';
 
-import { WorkingGroupProps, StorageAndDistributionProps } from "./tabs/WorkingGroup"
+import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
 
 import { keyPairDetails } from './flows/apply'
@@ -32,15 +32,15 @@ export class Transport extends TransportBase implements ITransport {
     return this.promise<Array<Role>>(roles.map((role: Role) => role))
   }
 
-  curationGroup(): Promise<WorkingGroupProps> {
+  curationGroup(): Promise<WorkingGroupMembership> {
     // Imagine this queried the API!
     // TODO: Make this query the API
-    return this.promise<WorkingGroupProps>({} as WorkingGroupProps)
+    return this.promise<WorkingGroupMembership>({} as WorkingGroupMembership)
   }
 
-  storageGroup(): Promise<StorageAndDistributionProps> {
-    return this.promise<StorageAndDistributionProps>(
-      {} as StorageAndDistributionProps,
+  storageGroup(): Promise<StorageAndDistributionMembership> {
+    return this.promise<StorageAndDistributionMembership>(
+      {} as StorageAndDistributionMembership,
     )
   }
 
