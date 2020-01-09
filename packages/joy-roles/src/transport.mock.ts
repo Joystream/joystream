@@ -180,7 +180,6 @@ export class Transport extends TransportBase implements ITransport {
             stake: new u128(10),
           },
           meta: {
-            uri: "https://some.url/#1",
             id: "1",
           },
           stage: {
@@ -267,7 +266,6 @@ export class Transport extends TransportBase implements ITransport {
           stake: new u128(10),
         },
         meta: {
-          uri: "https://some.url/#1",
           id: "1",
         },
         stage: {
@@ -349,7 +347,6 @@ export class Transport extends TransportBase implements ITransport {
               stake: new u128(10),
             },
             meta: {
-              uri: "https://some.url/#1",
               id: "1",
             },
             stage: {

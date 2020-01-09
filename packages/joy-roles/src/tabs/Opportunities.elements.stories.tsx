@@ -33,7 +33,6 @@ type TestProps = {
 }
 
 const meta: OpeningMetadata = {
-  uri: "https://some.url/#1",
   id: "1",
 }
 

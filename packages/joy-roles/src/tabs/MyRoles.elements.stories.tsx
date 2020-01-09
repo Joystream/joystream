@@ -158,7 +158,6 @@ const permutations: (ApplicationProps & TestProps)[] = [
     _description: "1. Application open",
     creator: creator,
     meta: {
-      uri: "https://some.url/#1",
       id: "1",
     },
     stage: {
@@ -178,7 +177,6 @@ const permutations: (ApplicationProps & TestProps)[] = [
     _description: "2. Application open; crowded out",
     creator: creator,
     meta: {
-      uri: "https://some.url/#1",
       id: "1",
     },
     stage: {
@@ -198,7 +196,6 @@ const permutations: (ApplicationProps & TestProps)[] = [
     _description: "3. Application in review",
     creator: creator,
     meta: {
-      uri: "https://some.url/#1",
       id: "1",
     },
     stage: {
@@ -220,7 +217,6 @@ const permutations: (ApplicationProps & TestProps)[] = [
     _description: "4. Application in review; crowded out",
     creator: creator,
     meta: {
-      uri: "https://some.url/#1",
       id: "1",
     },
     stage: {
@@ -242,7 +238,6 @@ const permutations: (ApplicationProps & TestProps)[] = [
     _description: "5. Application review complete; unsuccessful",
     creator: creator,
     meta: {
-      uri: "https://some.url/#1",
       id: "1",
     },
     stage: {
@@ -262,7 +257,6 @@ const permutations: (ApplicationProps & TestProps)[] = [
     _description: "6. Opening cancelled",
     creator: creator,
     meta: {
-      uri: "https://some.url/#1",
       id: "1",
     },
     stage: {

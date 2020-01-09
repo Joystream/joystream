@@ -147,7 +147,6 @@ export function OpportunitySandbox() {
 
   const meta: OpeningMetadata = {
     id: "1",
-    uri: "https://some.url/roles/opportunities/1",
   }
 
   return (
