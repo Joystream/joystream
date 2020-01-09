@@ -1127,18 +1127,23 @@ impl<T: Trait> Module<T> {
         match application.stage {
             ApplicationStage::Active => {
                 // Initiate unstaking of any active application stake
-                let was_unstaked = Self::opt_infallible_unstake(
+                let application_was_unstaked = Self::opt_infallible_unstake(
                     application.active_application_staking_id,
                     application_stake_unstaking_period,
                 );
 
                 // Only unstake role stake for a non successful result ie. not Hired
-                if cause != hiring::ApplicationDeactivationCause::Hired {
+                let role_was_unstaked = if cause != hiring::ApplicationDeactivationCause::Hired {
                     Self::opt_infallible_unstake(
                         application.active_role_staking_id,
                         role_stake_unstaking_period,
-                    );
-                }
+                    )
+                } else {
+                    false
+                };
+
+                // Capture if any unstaking occured at all
+                let was_unstaked = application_was_unstaked || role_was_unstaked;
 
                 // Grab current block height
                 let current_block_height = <system::Module<T>>::block_number();
