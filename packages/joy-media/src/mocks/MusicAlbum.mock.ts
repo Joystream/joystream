@@ -2,7 +2,7 @@ import { newEntityId } from './EntityId.mock';
 import { MusicAlbumType } from '../schemas/music/MusicAlbum';
 import { MusicGenre } from './MusicGenre.mock';
 import { MusicMood } from './MusicMood.mock';
-import { MusicTheme } from './MusicTheme.moc';
+import { MusicTheme } from './MusicTheme.mock';
 import { PublicationStatus } from './PublicationStatus.mock';
 import { ContentLicense } from './ContentLicense.mock';
 import { CurationStatus } from './CurationStatus.mock';
