@@ -15,7 +15,8 @@ srml-support-procedural = { package = 'srml-support-procedural', git = 'https://
 system = { package = 'srml-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
 balances = { package = 'srml-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
 codec = { package = 'parity-scale-codec', version = '1.0.0', default-features = false, features = ['derive'] }
-
+mocktopus = {version = "0.7.0", optional = true}
+mockall = {version = "0.6.0", optional = true}
 
 [dependencies.stake]
 default_features = false
@@ -38,11 +39,12 @@ rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 [dev-dependencies]
 runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
 primitives = { package = 'substrate-primitives', git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
-mocktopus = "0.7.0"
-
+mocktopus =  "0.7.0"
+mockall = "0.6.0"
 
 [features]
 default = ['std']
+test = ['mocktopus', 'mockall']
 std = [
 	'serde',
 	'serde_derive',
@@ -54,5 +56,5 @@ std = [
 	'system/std',
   	'balances/std',
 	'timestamp/std',
-	'stake/std'
+	'stake/std',
 ]

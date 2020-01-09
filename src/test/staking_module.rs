@@ -1,7 +1,9 @@
 use super::*;
 use crate::mock::*;
 
+use mockall::predicate::*;
 use mocktopus::mocking::*;
+use rstd::rc::Rc;
 
 #[test]
 fn get_opt_stake_amount_succeeds_with_empty_stake_id() {
@@ -12,8 +14,6 @@ fn get_opt_stake_amount_succeeds_with_empty_stake_id() {
     })
 }
 
-use std::panic;
-
 #[test]
 #[should_panic]
 fn get_opt_stake_amount_panics_with_non_existing_stake() {
@@ -21,23 +21,6 @@ fn get_opt_stake_amount_panics_with_non_existing_stake() {
         Hiring::get_opt_stake_amount(Some(0));
     });
 }
-
-/*
-Test::create_stake.mock_safe(|| MockResult::Return(2));
-        Test::stake.mock_safe(|_, _| MockResult::Return(Ok(())));
-        Test::get_stake.mock_safe(|_| {
-            MockResult::Return(stake::Stake {
-                created: 1,
-                staking_status: stake::StakingStatus::Staked(stake::StakedState {
-                    staked_amount: 100,
-                    staked_status: stake::StakedStatus::Normal,
-                    next_slash_id: 0,
-                    ongoing_slashes: BTreeMap::new(),
-                }),
-            })
-        });
-
-*/
 
 //// Prevents panic message in console
 //fn panics<F: std::panic::RefUnwindSafe + Fn()>(should_panic_func : F) -> bool {
@@ -59,27 +42,59 @@ Test::create_stake.mock_safe(|| MockResult::Return(2));
 #[should_panic]
 fn get_opt_stake_amount_panics_with_incorrect_stake_status() {
     build_test_externalities().execute_with(|| {
-        Hiring::stake_exists.mock_safe(|_| MockResult::Return(true));
+        let mock = {
+            let mut mock = crate::MockStakeHandler::<Test>::new();
+            mock.expect_stake_exists()
+                .with(eq(0))
+                .times(1)
+                .returning(|_| true);
+
+            mock.expect_get_stake()
+                .with(eq(0))
+                .times(1)
+                .returning(|_| stake::Stake {
+                    created: 1,
+                    staking_status: stake::StakingStatus::NotStaked,
+                });
+
+            Rc::new(mock)
+        };
+        set_mock(mock);
 
         Hiring::get_opt_stake_amount(Some(0));
     })
 }
 
+fn set_mock(mock: Rc<crate::MockStakeHandler<Test>>) {
+    Hiring::staking.mock_safe(move || MockResult::Return(mock.clone()));
+}
+
 #[test]
 fn get_opt_stake_amount_succeeds() {
     build_test_externalities().execute_with(|| {
-        Hiring::stake_exists.mock_safe(|_| MockResult::Return(true));
-        Hiring::get_stake.mock_safe(|_| {
-            MockResult::Return(stake::Stake {
-                created: 1,
-                staking_status: stake::StakingStatus::Staked(stake::StakedState {
-                    staked_amount: 100,
-                    staked_status: stake::StakedStatus::Normal,
-                    next_slash_id: 0,
-                    ongoing_slashes: BTreeMap::new(),
-                }),
-            })
-        });
+        let mock = {
+            let mut mock = crate::MockStakeHandler::<Test>::new();
+            mock.expect_stake_exists()
+                .with(eq(0))
+                .times(1)
+                .returning(|_| true);
+
+            mock.expect_get_stake()
+                .with(eq(0))
+                .times(1)
+                .returning(|_| stake::Stake {
+                    created: 1,
+                    staking_status: stake::StakingStatus::Staked(stake::StakedState {
+                        staked_amount: 100,
+                        staked_status: stake::StakedStatus::Normal,
+                        next_slash_id: 0,
+                        ongoing_slashes: BTreeMap::new(),
+                    }),
+                });
+
+            Rc::new(mock)
+        };
+        set_mock(mock);
 
         assert_eq!(Hiring::get_opt_stake_amount(Some(0)), 100);
     })

@@ -15,8 +15,19 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 #![cfg_attr(test, feature(proc_macro_hygiene))]
+
+// Test feature dependencies
+#[cfg(all(any(test, feature = "test"), not(target_arch = "wasm32")))]
+use mockall::predicate::*;
+#[cfg(all(any(test, feature = "test"), not(target_arch = "wasm32")))]
+use mockall::*;
+#[cfg(all(any(test, feature = "test"), not(target_arch = "wasm32")))]
+use mocktopus::macros::*;
+
+use stake::{InitiateUnstakingError, Stake, StakeActionError, StakingError, Trait as StakeTrait};
 
 use codec::Codec;
 use system;
@@ -68,6 +79,7 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
     /// Type that will handle various staking events
     type ApplicationDeactivatedHandler: ApplicationDeactivatedHandler<Self>;
 
+    /// Marker type for Stake module handler. Indicates that hiring module uses stake module mock.
     type StakeHandler: StakeHandler<Self>;
 }
 
@@ -1218,7 +1230,9 @@ impl<T: Trait> Module<T> {
             // `initiate_unstaking` MUST hold, is runtime invariant, false means code is broken.
             // But should we do panic in runtime? Is there safer way?
 
-            assert!(<T::StakeHandler>::initiate_unstaking(&stake_id, opt_unstaking_period).is_ok());
+            assert!(Self::staking()
+                .initiate_unstaking(&stake_id, opt_unstaking_period)
+                .is_ok());
         }
 
         opt_stake_id.is_some()
@@ -1246,7 +1260,7 @@ impl<T: Trait> Module<T> {
         application_id: &T::ApplicationId,
     ) -> T::StakeId {
         // Create stake
-        let new_stake_id = <T::StakeHandler>::create_stake();
+        let new_stake_id = Self::staking().create_stake();
 
         // Keep track of this stake id to process unstaking callbacks that may
         // be invoked later.
@@ -1263,7 +1277,7 @@ impl<T: Trait> Module<T> {
         //
         // MUST work, is runtime invariant, false means code is broken.
         // But should we do panic in runtime? Is there safer way?
-        assert_eq!(<T::StakeHandler>::stake(&new_stake_id, imbalance), Ok(()));
+        assert_eq!(Self::staking().stake(&new_stake_id, imbalance), Ok(()));
 
         new_stake_id
     }
@@ -1353,12 +1367,12 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn get_opt_stake_amount(stake_id: Option<T::StakeId>) -> BalanceOf<T> {
+    pub fn get_opt_stake_amount(stake_id: Option<T::StakeId>) -> BalanceOf<T> {
         stake_id.map_or(<BalanceOf<T> as Zero>::zero(), |stake_id| {
             // INVARIANT: stake MUST exist in the staking module
-            assert!(<T::StakeHandler>::stake_exists(stake_id));
+            assert!(Self::staking().stake_exists(stake_id));
 
-            let stake = <T::StakeHandler>::get_stake(stake_id);
+            let stake = Self::staking().get_stake(stake_id);
 
             match stake.staking_status {
                 // INVARIANT: stake MUST be in the staked state.
@@ -1379,52 +1393,77 @@ impl<T: Trait> Module<T> {
     }
 }
 
-pub trait StakeHandler<T: stake::Trait> {
-    fn create_stake() -> T::StakeId;
+/// Defines stake module interface
+#[cfg_attr(
+    all(any(test, feature = "test"), not(target_arch = "wasm32")),
+    automock
+)]
+pub trait StakeHandler<T: StakeTrait> {
+    /// Adds a new Stake which is NotStaked, created at given block, into stakes map.
+    fn create_stake(&self) -> T::StakeId;
 
+    /// to the module's account, and the corresponding staked_balance is set to this amount in the new Staked state.
+    /// On error, as the negative imbalance is not returned to the caller, it is the caller's responsibility to return the funds
+    /// back to the source (by creating a new positive imbalance)
     fn stake(
+        &self,
         new_stake_id: &T::StakeId,
         imbalance: NegativeImbalance<T>,
-    ) -> Result<(), stake::StakeActionError<stake::StakingError>>;
+    ) -> Result<(), StakeActionError<stake::StakingError>>;
 
-    fn stake_exists(stake_id: T::StakeId) -> bool;
+    /// Checks whether stake exists by its id
+    fn stake_exists(&self, stake_id: T::StakeId) -> bool;
 
-    fn get_stake(stake_id: T::StakeId) -> stake::Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>;
+    /// Acquires stake by id
+    fn get_stake(&self, stake_id: T::StakeId) -> Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>;
 
+    /// Initiate unstaking of a Staked stake.
     fn initiate_unstaking(
+        &self,
         stake_id: &T::StakeId,
         unstaking_period: Option<T::BlockNumber>,
-    ) -> Result<(), stake::StakeActionError<stake::InitiateUnstakingError>>;
+    ) -> Result<(), StakeActionError<InitiateUnstakingError>>;
 }
 
-#[cfg(test)]
-use mocktopus::macros::*;
+#[cfg_attr(
+    all(any(test, feature = "test"), not(target_arch = "wasm32")),
+    mockable
+)]
+impl<T: Trait> Module<T> {
+    /// Returns StakeHandler. Mock entry point for stake module.
+    pub fn staking() -> rstd::rc::Rc<dyn StakeHandler<T>> {
+        rstd::rc::Rc::new(HiringStakeHandler {})
+    }
+}
 
-#[cfg_attr(test, mockable)]
-impl<T: Trait> StakeHandler<T> for Module<T> {
-    fn create_stake() -> T::StakeId {
+/// Default stake module logic implementation
+pub struct HiringStakeHandler;
+impl<T: Trait> StakeHandler<T> for HiringStakeHandler {
+    fn create_stake(&self) -> T::StakeId {
         <stake::Module<T>>::create_stake()
     }
 
     fn stake(
+        &self,
         new_stake_id: &T::StakeId,
         imbalance: NegativeImbalance<T>,
-    ) -> Result<(), stake::StakeActionError<stake::StakingError>> {
+    ) -> Result<(), StakeActionError<StakingError>> {
         <stake::Module<T>>::stake(new_stake_id, imbalance)
     }
 
-    fn stake_exists(stake_id: T::StakeId) -> bool {
+    fn stake_exists(&self, stake_id: T::StakeId) -> bool {
         <stake::Stakes<T>>::exists(stake_id)
     }
 
-    fn get_stake(stake_id: T::StakeId) -> stake::Stake<T::BlockNumber, BalanceOf<T>, T::SlashId> {
+    fn get_stake(&self, stake_id: T::StakeId) -> Stake<T::BlockNumber, BalanceOf<T>, T::SlashId> {
         <stake::Stakes<T>>::get(stake_id)
     }
 
     fn initiate_unstaking(
+        &self,
         stake_id: &T::StakeId,
         unstaking_period: Option<T::BlockNumber>,
-    ) -> Result<(), stake::StakeActionError<stake::InitiateUnstakingError>> {
+    ) -> Result<(), StakeActionError<InitiateUnstakingError>> {
         <stake::Module<T>>::initiate_unstaking(&stake_id, unstaking_period)
     }
 }

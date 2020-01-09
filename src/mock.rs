@@ -79,7 +79,7 @@ impl Trait for Test {
 
     type ApplicationDeactivatedHandler = ();
 
-    type StakeHandler = crate::Module<Self>;
+    type StakeHandler = crate::HiringStakeHandler;
 }
 
 impl stake::Trait for Test {
