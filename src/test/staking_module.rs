@@ -23,7 +23,7 @@ fn get_opt_stake_amount_panics_with_non_existing_stake() {
 #[test]
 #[should_panic]
 fn get_opt_stake_amount_panics_with_incorrect_stake_status() {
-    handle_mock(false, || {
+    handle_mock(|| {
         build_test_externalities().execute_with(|| {
             let mock = {
                 let mut mock = crate::MockStakeHandler::<Test>::new();
@@ -51,7 +51,7 @@ fn get_opt_stake_amount_panics_with_incorrect_stake_status() {
 
 #[test]
 fn get_opt_stake_amount_succeeds_with_existing_stake() {
-    handle_mock(true, || {
+    handle_mock(|| {
         build_test_externalities().execute_with(|| {
             let mock = {
                 let mut mock = crate::MockStakeHandler::<Test>::new();

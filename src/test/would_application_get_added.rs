@@ -90,7 +90,7 @@ fn would_application_get_added_with_too_low_stake() {
 
 #[test]
 fn would_application_get_added_with_too_low_stake_with_mocks() {
-    handle_mock(true, || {
+    handle_mock(|| {
         build_test_externalities().execute_with(|| {
             let mock = {
                 let mut mock = crate::MockStakeHandler::<Test>::new();
@@ -113,9 +113,10 @@ fn would_application_get_added_with_too_low_stake_with_mocks() {
             set_stake_handler_impl(mock.clone());
 
             let mut opening_fixture = AddOpeningFixture::default();
-            opening_fixture.application_rationing_policy = Some(hiring::ApplicationRationingPolicy {
-                max_active_applicants: 1,
-            });
+            opening_fixture.application_rationing_policy =
+                Some(hiring::ApplicationRationingPolicy {
+                    max_active_applicants: 1,
+                });
             opening_fixture.application_staking_policy = Some(StakingPolicy {
                 amount: 100,
                 amount_mode: StakingAmountLimitMode::AtLeast,

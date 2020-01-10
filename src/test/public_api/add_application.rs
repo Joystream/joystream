@@ -306,7 +306,7 @@ fn add_application_succeeds_with_created_application_stake() {
 
 #[test]
 fn add_application_succeeds_with_crowding_out_with_staking_mocks() {
-    handle_mock(true, || {
+    handle_mock(|| {
         build_test_externalities().execute_with(|| {
             let mock = {
                 let mut mock = crate::MockStakeHandler::<Test>::new();

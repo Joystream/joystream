@@ -5,10 +5,10 @@ mod public_api;
 mod smoke;
 mod staking_module;
 mod would_application_get_added;
+use public_api::*;
 
 use crate::mock::Test;
 use crate::*;
-use public_api::*;
 
 use rstd::cell::RefCell;
 use rstd::rc::Rc;

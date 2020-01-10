@@ -101,18 +101,20 @@ pub type Hiring = Module<Test>;
 
 // Prevents panic message in console
 fn panics<F: std::panic::RefUnwindSafe + Fn()>(could_panic_func: F) -> bool {
-    let default_hook = panic::take_hook();
-    panic::set_hook(Box::new(|info| {
-        println!("{}", info);
-    }));
+    {
+        let default_hook = panic::take_hook();
+        panic::set_hook(Box::new(|info| {
+            println!("{}", info);
+        }));
 
-    // prevent panic message in console
-    let result = panic::catch_unwind(|| could_panic_func());
+        // prevent panic message in console
+        let result = panic::catch_unwind(|| could_panic_func());
 
-    //restore default behaviour
-    panic::set_hook(default_hook);
+        //restore default behaviour
+        panic::set_hook(default_hook);
 
-    result.is_err()
+        result.is_err()
+    }
 }
 
 // Sets stake handler implementation in hiring module. Moctopus-mockall frameworks integration
@@ -132,20 +134,10 @@ pub fn build_test_externalities() -> runtime_io::TestExternalities {
     t.into()
 }
 
-pub(crate) fn handle_mock<F: std::panic::RefUnwindSafe + Fn()>(panic_unexpected: bool, func: F) {
+pub(crate) fn handle_mock<F: std::panic::RefUnwindSafe + Fn()>(func: F) {
     let panicked = panics(func);
 
     test_expectation_and_clear_mock();
 
-
-    if panic_unexpected {
-        // regular test
-        assert!(!panicked);
-    } else {
-        // should panic test
-        assert!(panicked);
-    }
-
-//    println!("br:{} panic:{} unexpected:{}", broken_test, panicked, panic_unexpected);
-
+    assert!(!panicked);
 }
