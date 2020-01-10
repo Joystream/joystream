@@ -120,7 +120,7 @@ pub(crate) fn set_stake_handler_impl(mock: Rc<rstd::cell::RefCell<dyn crate::Sta
     Hiring::staking.mock_safe(move || MockResult::Return(mock.clone()));
 }
 
-pub(crate) fn test_and_clear_mock() {
+pub(crate) fn test_expectation_and_clear_mock() {
     set_stake_handler_impl(Rc::new(RefCell::new(crate::HiringStakeHandler {})));
 }
 
@@ -135,8 +135,17 @@ pub fn build_test_externalities() -> runtime_io::TestExternalities {
 pub(crate) fn handle_mock<F: std::panic::RefUnwindSafe + Fn()>(panic_unexpected: bool, func: F) {
     let panicked = panics(func);
 
-    test_and_clear_mock();
+    test_expectation_and_clear_mock();
 
-    let broken_test = (panicked && panic_unexpected) || (!panicked && !panic_unexpected);
-    assert!(broken_test);
+
+    if panic_unexpected {
+        // regular test
+        assert!(!panicked);
+    } else {
+        // should panic test
+        assert!(panicked);
+    }
+
+//    println!("br:{} panic:{} unexpected:{}", broken_test, panicked, panic_unexpected);
+
 }
