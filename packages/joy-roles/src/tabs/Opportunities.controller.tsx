@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Observable, View } from '@polkadot/joy-utils/index'
+import { Controller, View } from '@polkadot/joy-utils/index'
 
 import { ITransport } from '../transport'
 
@@ -14,7 +14,7 @@ type State = {
   opportunities?: Array<WorkingGroupOpening>,
 }
 
-export class OpportunitiesController extends Observable<State, ITransport> {
+export class OpportunitiesController extends Controller<State, ITransport> {
   constructor(transport: ITransport, initialState: State = {}) {
     super(transport, initialState)
     this.getOpportunities()
@@ -36,8 +36,8 @@ export class OpportunitiesController extends Observable<State, ITransport> {
   }
 }
 
-export const OpportunitiesView = View<OpportunitiesController, {}, State>(
-  (props, state) => (
+export const OpportunitiesView = View<OpportunitiesController, State>(
+  (state) => (
     <OpeningsView openings={state.opportunities} block_time_in_seconds={state.blockTime} />
   )
 )

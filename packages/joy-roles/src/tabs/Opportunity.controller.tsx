@@ -1,43 +1,29 @@
 import React from 'react';
 
-import { Observable, Params, View } from '@polkadot/joy-utils/index'
+import { Controller, Params, View } from '@polkadot/joy-utils/index'
 
 import { ITransport } from '../transport'
 
 import {
   WorkingGroupOpening,
+  OpeningError,
   OpeningView,
 } from './Opportunities'
 
 type State = {
   blockTime?: number,
   opportunity?: WorkingGroupOpening,
-
-  // Error capture and display
-  hasError: boolean
 }
 
-const newEmptyState = (): State => {
-  return {
-    hasError: false,
-  }
-}
-
-export class OpportunityController extends Observable<State, ITransport> {
+export class OpportunityController extends Controller<State, ITransport> {
   protected currentOpeningId: string = ""
 
-  constructor(transport: ITransport, initialState: State = newEmptyState()) {
+  constructor(transport: ITransport, initialState: State = {}) {
     super(transport, initialState)
     this.getBlocktime()
   }
 
-  protected onError(desc: any) {
-    this.state.hasError = true
-    console.error(desc)
-    this.dispatch()
-  }
-
-  getOpportunity(params: Params) {
+  async getOpportunity(params: Params) {
     const id = params.get("id")
     if (typeof id === "undefined") {
       return this.onError("ApplyController: no ID provided in params")
@@ -47,27 +33,24 @@ export class OpportunityController extends Observable<State, ITransport> {
       return
     }
 
-    this.transport.opening(id).then(value => {
-      this.state.opportunity = value
-      this.dispatch()
-    })
-
     this.currentOpeningId = id
+    this.state.opportunity = await this.transport.opening(id)
+    this.dispatch()
   }
 
-  getBlocktime() {
-    this.transport.expectedBlockTime().then(value => {
-      this.state.blockTime = value
-      this.dispatch()
-    })
+  async getBlocktime() {
+    this.state.blockTime = await this.transport.expectedBlockTime()
+    this.dispatch()
   }
 }
 
-export const OpportunityView = View<OpportunityController, {}, State>(
-  (props, state, controller, params) => {
+export const OpportunityView = View<OpportunityController, State>({
+  errorComponent: OpeningError,
+  render: (state, controller, params) => {
     controller.getOpportunity(params)
     return (
       <OpeningView {...state.opportunity!} block_time_in_seconds={state.blockTime!} />
     )
   }
-)
+})
+

@@ -1,28 +1,36 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
-import { Observable } from './Observable'
-
-export interface EmptyProps {}
+import { Controller } from './Controller'
 
 export type Params = Map<string, string>
 
 const newParams = (): Params => {
-	return new Map<string,string>()
+  return new Map<string,string>()
 }
 
-type controllerProps<C, P, S> = P & {
+type viewProps = {
   params?: Params
 }
 
-type controllerFn<C, P, S> = (props: controllerProps<C, P, S>, state: S, controller: C, params: Params) => React.ReactElement | null
+type renderFn<C, S> = (state: S, controller: C, params: Params) => React.ReactElement | null
 
-export type ViewComponent<C, P = any, S = any> = React.FC<controllerProps<C, P, S>>
+export type ViewComponent<C, P = any, S = any> = React.FC<viewProps>
+export type ViewComponentFactory<C, P = any, S = any> = (controller: C) => React.FC<viewProps>
 
-export type ViewComponentFactory<C, P = any, S = any> = (controller: C) => React.FC<controllerProps<C, P, S>>
+type ViewPropsExplicit<C, S> = {
+  errorComponent?: React.ComponentType
+  render: renderFn<C,S>
+}
 
-export function View<C extends Observable<S, any>, P, S>(fn: controllerFn<C, P, S>): ViewComponentFactory<C, P, S> {
+type ViewProps<C, S> = ViewPropsExplicit<C, S> | renderFn<C,S>
+
+function DefaultError() {
+	return <p>There has been an error</p>
+}
+
+export function View<C extends Controller<S, any>, S>(args: ViewProps<C, S>): ViewComponentFactory<C, S> {
   return (controller: C) => {
-    return (props: controllerProps<C, P, S>, ctx: any): React.ReactElement | null => {
+    return (props: viewProps, ctx: any): React.ReactElement | null => {
       const [state, setState] = useState<S>(controller.state)
 
       const onUpdate = (newState: S) => {
@@ -44,7 +52,24 @@ export function View<C extends Observable<S, any>, P, S>(fn: controllerFn<C, P, 
         context = newParams()
       }
 
-      return useMemo(() => fn(props, state, controller, context), [state])
+      let renderFn: renderFn<C,S>
+      let Err: React.ComponentType = DefaultError
+      if (typeof args === "function") {
+        renderFn = args
+      } else {
+        renderFn = args.render
+
+        if (typeof args.errorComponent !== "undefined") {
+          Err = args.errorComponent
+        }
+      }
+
+      return useMemo(() => {
+        if (controller.hasError()) {
+          return Err ? <Err /> : null
+        }
+        return renderFn(state, controller, context)
+      }, [state])
     }
   }
 }

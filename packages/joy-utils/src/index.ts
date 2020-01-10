@@ -138,18 +138,18 @@ export function getUrlParam (location: Location, paramName: string, deflt: strin
 
 // Business logic middleware
 // --------------------------------------
-import { Controller, ControllerComponent, controllerProps } from './Controller';
+import { Controller } from './Controller';
 import { Loadable } from './Loadable';
 import { Observable } from './Observable'
 import { Observer, Subscribable, Subscription } from './Subscribable'
 import { Transport } from './Transport';
-import { View, ViewComponent, Params, EmptyProps } from './View';
+import { View, ViewComponent, Params } from './View';
 
 export { 
-  Controller, ControllerComponent, controllerProps, 
+  Controller, 
   Loadable, 
   Observer, Observable,
 	Subscribable, Subscription,
   Transport,
-  View, ViewComponent, Params, EmptyProps,
+  View, ViewComponent, Params,
 };

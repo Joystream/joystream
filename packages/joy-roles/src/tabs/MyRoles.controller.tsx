@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Container, } from 'semantic-ui-react'
-import { Observable, View } from '@polkadot/joy-utils/index'
+import { Controller, View } from '@polkadot/joy-utils/index'
 import { ITransport } from '../transport'
 import { Opening } from "@joystream/types/hiring"
 import {
@@ -23,7 +23,7 @@ const newEmptyState = (): State => {
   }
 }
 
-export class MyRolesController extends Observable<State, ITransport> {
+export class MyRolesController extends Controller<State, ITransport> {
   constructor(transport: ITransport, initialState: State = newEmptyState()) {
     super(transport, initialState)
 
@@ -96,12 +96,8 @@ export class MyRolesController extends Observable<State, ITransport> {
   }
 }
 
-type Props = {
-  // Any props can go here, as normal
-}
-
-export const MyRolesView = View<MyRolesController, Props, State>(
-  (props, state, controller) => (
+export const MyRolesView = View<MyRolesController, State>(
+  (state, controller) => (
     <Container className="my-roles">
       <CurrentRoles currentRoles={state.currentCurationRoles.concat(state.currentStorageRoles)} />
       <Applications applications={state.applications} cancelCallback={controller.cancelApplication} />

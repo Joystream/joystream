@@ -4,7 +4,7 @@ import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
-import { Observable, EmptyProps, Params, View } from '@polkadot/joy-utils/index'
+import { Controller, Params, View } from '@polkadot/joy-utils/index'
 
 import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
 
@@ -43,19 +43,13 @@ const newEmptyState = (): State => {
   }
 }
 
-export class ApplyController extends Observable<State, ITransport> {
+export class ApplyController extends Controller<State, ITransport> {
   protected currentOpeningId: string = ""
 
   constructor(transport: ITransport, initialState: State = newEmptyState()) {
     super(transport, initialState)
 
     this.transport.accounts().subscribe((keys) => this.updateAccounts(keys))
-  }
-
-  protected onError(desc: any) {
-    this.state.hasError = true
-    console.error(desc)
-    this.dispatch()
   }
 
   protected updateAccounts(keys: keyPairDetails[]) {
@@ -143,7 +137,6 @@ export class ApplyController extends Observable<State, ITransport> {
     })
   }
 
-  // TODO: Move to transport
   async makeApplicationTransaction(): Promise<any> {
     return new Promise<any>((resolve, reject) => {
       console.log("TODO: make tx")
@@ -153,8 +146,8 @@ export class ApplyController extends Observable<State, ITransport> {
   }
 }
 
-export const ApplyView = View<ApplyController, EmptyProps, State>(
-  (props, state, controller, params) => {
+export const ApplyView = View<ApplyController, State>(
+  (state, controller, params) => {
     controller.findOpening(params)
     return (
       // @ts-ignore

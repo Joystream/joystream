@@ -1,7 +1,7 @@
 import React from 'react';
 import { Container } from 'semantic-ui-react';
 
-import { Observable, View } from '@polkadot/joy-utils/index'
+import { Controller, View } from '@polkadot/joy-utils/index'
 
 import { ITransport } from '../transport'
 
@@ -16,7 +16,7 @@ type State = {
   storageProviders?: StorageAndDistributionMembership,
 }
 
-export class WorkingGroupsController extends Observable<State, ITransport> {
+export class WorkingGroupsController extends Controller<State, ITransport> {
   constructor(transport: ITransport, initialState: State = {}) {
     super(transport, {})
     this.getCurationGroup()
@@ -38,8 +38,8 @@ export class WorkingGroupsController extends Observable<State, ITransport> {
   }
 }
 
-export const WorkingGroupsView = View<WorkingGroupsController, {}, State>(
-  (props, state) => (
+export const WorkingGroupsView = View<WorkingGroupsController, State>(
+  (state) => (
     <Container>
       <ContentCurators {...state.contentCurators!} />
       <StorageAndDistribution {...state.storageProviders!} />
