@@ -1,4 +1,5 @@
 #![cfg(test)]
+
 use primitives::H256;
 use runtime_primitives::{
     testing::Header,
@@ -10,6 +11,11 @@ use srml_support::{impl_outer_origin, parameter_types};
 use crate::{Module, Trait};
 use balances;
 use stake;
+
+use mocktopus::mocking::*;
+use std::cell::RefCell;
+use std::panic;
+use std::rc::Rc;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -90,7 +96,35 @@ impl stake::Trait for Test {
     type SlashId = u64;
 }
 
-pub(crate) fn build_test_externalities() -> runtime_io::TestExternalities {
+pub type Balances = balances::Module<Test>;
+pub type Hiring = Module<Test>;
+
+// Prevents panic message in console
+fn panics<F: std::panic::RefUnwindSafe + Fn()>(could_panic_func: F) -> bool {
+    let default_hook = panic::take_hook();
+    panic::set_hook(Box::new(|info| {
+        println!("{}", info);
+    }));
+
+    // prevent panic message in console
+    let result = panic::catch_unwind(|| could_panic_func());
+
+    //restore default behaviour
+    panic::set_hook(default_hook);
+
+    result.is_err()
+}
+
+// Sets stake handler implementation in hiring module. Moctopus-mockall frameworks integration
+pub(crate) fn set_stake_handler_impl(mock: Rc<rstd::cell::RefCell<dyn crate::StakeHandler<Test>>>) {
+    Hiring::staking.mock_safe(move || MockResult::Return(mock.clone()));
+}
+
+pub(crate) fn test_and_clear_mock() {
+    set_stake_handler_impl(Rc::new(RefCell::new(crate::HiringStakeHandler {})));
+}
+
+pub fn build_test_externalities() -> runtime_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
@@ -98,5 +132,11 @@ pub(crate) fn build_test_externalities() -> runtime_io::TestExternalities {
     t.into()
 }
 
-pub type Balances = balances::Module<Test>;
-pub type Hiring = Module<Test>;
+pub(crate) fn handle_mock<F: std::panic::RefUnwindSafe + Fn()>(panic_unexpected: bool, func: F) {
+    let panicked = panics(func);
+
+    test_and_clear_mock();
+
+    let broken_test = (panicked && panic_unexpected) || (!panicked && !panic_unexpected);
+    assert!(broken_test);
+}

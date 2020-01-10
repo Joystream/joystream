@@ -1231,6 +1231,7 @@ impl<T: Trait> Module<T> {
             // But should we do panic in runtime? Is there safer way?
 
             assert!(Self::staking()
+                .borrow()
                 .initiate_unstaking(&stake_id, opt_unstaking_period)
                 .is_ok());
         }
@@ -1260,7 +1261,7 @@ impl<T: Trait> Module<T> {
         application_id: &T::ApplicationId,
     ) -> T::StakeId {
         // Create stake
-        let new_stake_id = Self::staking().create_stake();
+        let new_stake_id = Self::staking().borrow().create_stake();
 
         // Keep track of this stake id to process unstaking callbacks that may
         // be invoked later.
@@ -1277,7 +1278,10 @@ impl<T: Trait> Module<T> {
         //
         // MUST work, is runtime invariant, false means code is broken.
         // But should we do panic in runtime? Is there safer way?
-        assert_eq!(Self::staking().stake(&new_stake_id, imbalance), Ok(()));
+        assert_eq!(
+            Self::staking().borrow().stake(&new_stake_id, imbalance),
+            Ok(())
+        );
 
         new_stake_id
     }
@@ -1370,9 +1374,9 @@ impl<T: Trait> Module<T> {
     pub fn get_opt_stake_amount(stake_id: Option<T::StakeId>) -> BalanceOf<T> {
         stake_id.map_or(<BalanceOf<T> as Zero>::zero(), |stake_id| {
             // INVARIANT: stake MUST exist in the staking module
-            assert!(Self::staking().stake_exists(stake_id));
+            assert!(Self::staking().borrow().stake_exists(stake_id));
 
-            let stake = Self::staking().get_stake(stake_id);
+            let stake = Self::staking().borrow().get_stake(stake_id);
 
             match stake.staking_status {
                 // INVARIANT: stake MUST be in the staked state.
@@ -1431,8 +1435,8 @@ pub trait StakeHandler<T: StakeTrait> {
 )]
 impl<T: Trait> Module<T> {
     /// Returns StakeHandler. Mock entry point for stake module.
-    pub fn staking() -> rstd::rc::Rc<dyn StakeHandler<T>> {
-        rstd::rc::Rc::new(HiringStakeHandler {})
+    pub fn staking() -> rstd::rc::Rc<rstd::cell::RefCell<dyn StakeHandler<T>>> {
+        rstd::rc::Rc::new(rstd::cell::RefCell::new(HiringStakeHandler {}))
     }
 }
 
