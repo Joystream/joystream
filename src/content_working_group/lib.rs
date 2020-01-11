@@ -2420,6 +2420,11 @@ impl<T: Trait> Module<T> {
 
         // Unstake if directions provided
         if let Some(directions) = unstake_directions {
+
+            // Keep track of curator unstaking
+            let unstaker = WorkingGroupUnstaker::Curator(curator_id.clone());
+            UnstakerByStakeId::<T>::insert(directions.0, unstaker);
+
             // Unstake
             stake::Module::<T>::initiate_unstaking(&directions.0, directions.1)
                 .expect("Unstaking must be possible at this time.");
