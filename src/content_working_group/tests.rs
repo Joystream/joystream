@@ -1968,7 +1968,12 @@ impl CreateChannelFixture {
 
         // Assert that event was triggered,
         // keep channel id.
-        let channel_id = ensure_channelcreated_event_deposited();
+        assert_eq!(
+            get_last_event_or_panic(),
+            lib::RawEvent::ChannelCreated(old_next_channel_id)
+        );
+
+        let channel_id = old_next_channel_id;
 
         // Assert that given channel id has been added,
         // and has the right properties.
