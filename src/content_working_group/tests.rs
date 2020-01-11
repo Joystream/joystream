@@ -401,12 +401,10 @@ fn accept_curator_applications_success() {
                 ()
             );
 
-            let event_curator_opening_id = ensure_acceptedcuratorapplications_event_deposited();
-
             assert_eq!(
-                curator_opening_id,
-                event_curator_opening_id
-            );
+                get_last_event_or_panic(),
+                lib::RawEvent::AcceptedCuratorApplications(curator_opening_id)
+            )
 
             /*
              * TODO: add assertion abouot side-effect in hiring module, 
