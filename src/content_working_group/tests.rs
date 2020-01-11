@@ -2073,6 +2073,8 @@ pub fn add_channel_creator_member() -> <Test as members::Trait>::MemberId {
 
 
 pub fn add_member(root_and_controller_account: <Test as system::Trait>::AccountId, handle: Vec<u8>) -> <Test as members::Trait>::MemberId {
+
+    let next_member_id = members::MembersCreated::<Test>::get();
     
     assert_eq!(
         members::Module::<Test>::buy_membership(
@@ -2087,13 +2089,15 @@ pub fn add_member(root_and_controller_account: <Test as system::Trait>::AccountI
         ()
     );
 
-    ensure_memberregistered_event_deposited()
+    next_member_id
 }
 
 pub fn set_lead(member_id: <Test as members::Trait>::MemberId, new_role_account: <Test as system::Trait>::AccountId) -> LeadId<Test> {
 
     // Get controller account
     //let lead_member_controller_account = members::Module::<Test>::ensure_profile(member_id).unwrap().controller_account;
+
+    let expected_lead_id = NextLeadId::<Test>::get();
 
     // Set lead
     assert_eq!(
@@ -2120,6 +2124,8 @@ pub fn add_curator_opening() -> CuratorOpeningId<Test> {
 
     let human_readable_text = generate_valid_length_buffer(&OpeningHumanReadableText::get());
 
+    let expected_curator_opening_id = NextCuratorOpeningId::<Test>::get();
+
     assert_eq!(
         ContentWorkingGroup::add_curator_opening(
             Origin::signed(LEAD_ROLE_ACCOUNT),
@@ -2130,152 +2136,12 @@ pub fn add_curator_opening() -> CuratorOpeningId<Test> {
         ()
     );
 
-    ensure_curatoropeningadded_event_deposited()
-}
-
-/*
- * Event readers
- */
-
-fn ensure_curatoropeningfilled_event_deposited() -> (lib::CuratorOpeningId<Test>, BTreeMap<CuratorApplicationId<Test>, CuratorId<Test>>) {
-
-    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
-        if let lib::RawEvent::CuratorOpeningFilled(ref curator_opening_id, ref successful_curator_application_id_to_curator_id) = x {
-            return (curator_opening_id.clone(), successful_curator_application_id_to_curator_id.clone())
-        } else {
-            panic!("Event was not CuratorOpeningFilled.")
-        }
-    } else {
-        panic!("No event deposited.")
-    }
-}
-
-fn ensure_terminatecuratorapplication_event_deposited() -> lib::CuratorApplicationId<Test> {
-
-    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
-        if let lib::RawEvent::CuratorApplicationTerminated(ref curator_application_id) = x {
-            return curator_application_id.clone()
-        } else {
-            panic!("Event was not CuratorApplicationTerminated.")
-        }
-    } else {
-        panic!("No event deposited.")
-    }
-}
-
-fn ensure_begancuratorapplicationreview_event_deposited() -> lib::CuratorOpeningId<Test> {
-
-    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
-        if let lib::RawEvent::BeganCuratorApplicationReview(ref curator_opening_id) = x {
-            return curator_opening_id.clone()
-        } else {
-            panic!("Event was not BeganCuratorApplicationReview.")
-        }
-    } else {
-        panic!("No event deposited.")
-    }
-}
-
-fn ensure_curatorapplicationwithdrawn_event_deposited() -> lib::CuratorApplicationId<Test> {
-
-    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
-        if let lib::RawEvent::CuratorApplicationWithdrawn(ref curator_application_id) = x {
-            return curator_application_id.clone()
-        } else {
-            panic!("Event was not AppliedOnCuratorOpening.")
-        }
-    } else {
-        panic!("No event deposited.")
-    }
-}
-
-fn ensure_applieadoncuratoropening_event_deposited() -> (lib::CuratorOpeningId<Test>, lib::CuratorApplicationId<Test>) {
-
-    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
-        if let lib::RawEvent::AppliedOnCuratorOpening(ref curator_opening_id, ref new_curator_application_id) = x {
-            return (curator_opening_id.clone(), new_curator_application_id.clone())
-        } else {
-            panic!("Event was not AppliedOnCuratorOpening.")
-        }
-    } else {
-        panic!("No event deposited.")
-    }
-}
-
-// MOVE OUT TO MEMBERSHIP MODULE MOCK LATER?,
-// OR MAKE MACRO OUT OF.
-fn ensure_memberregistered_event_deposited() -> <Test as members::Trait>::MemberId {
-
-    if let mock::TestEvent::members(ref x) = System::events().last().unwrap().event {
-        if let members::RawEvent::MemberRegistered(ref member_id, ref _root_and_controller_account) = x {
-            return member_id.clone();
-        } else {
-            panic!("Event was not MemberRegistered.")
-        }
-    } else {
-        panic!("No event deposited.")
-    }
-}
-
-fn ensure_channelcreated_event_deposited() -> lib::ChannelId<Test> {
-    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
-        if let lib::RawEvent::ChannelCreated(ref channel_id) = x {
-            return channel_id.clone();
-        } else {
-            panic!("Event was not ChannelCreated.")
-        }
-    } else {
-        panic!("No event deposited.")
-    }
-}
-
-fn ensure_lead_set_event_deposited() -> lib::LeadId<Test> {
-
-    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
-        if let lib::RawEvent::LeadSet(ref lead_id) = x {
-            return lead_id.clone();
-        } else {
-            panic!("Event was not LeadSet.")
-        }
-    } else {
-        panic!("No event deposited.")
-    }
-
-}
-
-fn ensure_curatoropeningadded_event_deposited() -> lib::CuratorOpeningId<Test> {
-
-    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
-        if let lib::RawEvent::CuratorOpeningAdded(ref curator_opening_id) = x {
-            return curator_opening_id.clone();
-        } else {
-            panic!("Event was not CuratorOpeningAdded.")
-        }
-    } else {
-        panic!("No event deposited.")
-    } 
-}
-
-fn ensure_acceptedcuratorapplications_event_deposited() -> lib::CuratorOpeningId<Test> {
-    
-    if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
-        if let lib::RawEvent::AcceptedCuratorApplications(ref curator_opening_id) = x {
-            return curator_opening_id.clone();
-        } else {
-            panic!("Event was not AcceptedCuratorApplications.")
-        }
-    } else {
-        panic!("No event deposited.")
-    } 
-}
-
-
-fn assert_no_new_events(number_of_events_before_call: usize) {
-
     assert_eq!(
-        number_of_events_before_call,
-        System::events().len()
+        get_last_event_or_panic(),
+        lib::RawEvent::CuratorOpeningAdded(expected_curator_opening_id)
     );
+
+    expected_curator_opening_id
 }
 
 /*
