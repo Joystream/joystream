@@ -181,14 +181,14 @@ pub static MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID:                      
 pub static MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT:                              &str = "Signer does not match controller account";
 
 /// The exit stage of a lead involvement in the working group.
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub struct ExitedLeadRole<BlockNumber> {
     /// When exit was initiated.
     pub initiated_at_block_number: BlockNumber,
 }
 
 /// The stage of the involvement of a lead in the working group.
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum LeadRoleState<BlockNumber> {
     /// Currently active.
     Active,
@@ -208,7 +208,7 @@ impl<BlockNumber> Default for LeadRoleState<BlockNumber> {
 /// Working group lead: curator lead
 /// For now this role is not staked or inducted through an structured process, like the hiring module,
 /// hence information about this is missing. Recurring rewards is included, somewhat arbitrarily!
-#[derive(Encode, Decode, Default, Debug, Clone)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Lead<AccountId, RewardRelationshipId, BlockNumber> {
     /// Account used to authenticate in this role,
     pub role_account: AccountId,
