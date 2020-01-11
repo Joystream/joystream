@@ -1589,10 +1589,13 @@ fn setup_normal_opening() -> NormalOpeningConstructed {
         ()
     );
 
-    let curator_opening_id = ensure_curatoropeningadded_event_deposited();
+    assert_eq!(
+        get_last_event_or_panic(),
+        lib::RawEvent::CuratorOpeningAdded(expected_curator_opening_id)
+    );
 
     NormalOpeningConstructed {
-        curator_opening_id,
+        curator_opening_id: expected_curator_opening_id,
         new_member_as_lead
     }
 }
