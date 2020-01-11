@@ -173,6 +173,7 @@ pub static MSG_ADD_CURATOR_OPENING_STAKE_MISSING_WHEN_REQUIRED:                 
 pub static MSG_ADD_CURATOR_OPENING_STAKE_AMOUNT_TOO_LOW:                                            &str = "StakeAmountTooLow ...";// <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
 pub static MSG_ADD_CURATOR_OPENING_OPENING_NOT_IN_ACCEPTING_APPLICATION_STAGE:                      &str = "OpeningNotInAcceptingApplicationsStage";
 pub static MSG_ADD_CURATOR_OPENING_NEW_APPLICATION_WAS_CROWDED_OUT:                                 &str = "NewApplicationWasCrowdedOut";
+pub static MSG_ADD_CURATOR_OPENING_ZERO_MAX_APPLICANT_COUNT:                                        &str = "Application rationing has zero max active applicants";
 
 // Errors for `apply_on_curator_opening`
 pub static MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN:                                            &str = "Unsigned origin";
@@ -784,7 +785,8 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
                     hiring::StakePurpose::Role => MSG_ADD_CURATOR_OPENING_ROLE_STAKE_LESS_THAN_MINIMUM,
                     hiring::StakePurpose::Application => MSG_ADD_CURATOR_OPENING_APPLIICATION_STAKE_LESS_THAN_MINIMUM
                 }
-            }
+            },
+            hiring::AddOpeningError::ApplicationRationingZeroMaxApplicants => MSG_ADD_CURATOR_OPENING_ZERO_MAX_APPLICANT_COUNT,
         }
     }
 }
@@ -864,7 +866,7 @@ impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for &str {
             hiring::AddApplicationError::StakeMissingWhenRequired(_stake_purpose) => MSG_ADD_CURATOR_OPENING_STAKE_MISSING_WHEN_REQUIRED,
             hiring::AddApplicationError::StakeAmountTooLow(_stake_purpose) => MSG_ADD_CURATOR_OPENING_STAKE_AMOUNT_TOO_LOW,
             hiring::AddApplicationError::OpeningNotInAcceptingApplicationsStage => MSG_ADD_CURATOR_OPENING_OPENING_NOT_IN_ACCEPTING_APPLICATION_STAGE,
-            hiring::AddApplicationError::NewApplicationWasCrowdedOut => MSG_ADD_CURATOR_OPENING_NEW_APPLICATION_WAS_CROWDED_OUT
+            hiring::AddApplicationError::NewApplicationWasCrowdedOut => MSG_ADD_CURATOR_OPENING_NEW_APPLICATION_WAS_CROWDED_OUT,
         }
     }
 }
