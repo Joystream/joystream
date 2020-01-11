@@ -1301,9 +1301,110 @@ fn unset_lead_success() {
         });
 }
 
-#[test]
-fn unstaked_success() {
+struct UnstakedFixture {
+    pub origin: Origin,
+    pub stake_id: StakeId<Test>
+}
 
+impl UnstakedFixture {
+    fn call(&self) -> Result<(),&'static str>{
+
+        ContentWorkingGroup::unstaked(
+            self.origin.clone(),
+            self.stake_id
+        )
+    }
+
+    pub fn call_and_assert_success(&self) {
+
+        let unstaker = UnstakerByStakeId::<Test>::get(self.stake_id);
+
+        let curator_id = 
+            if let WorkingGroupUnstaker::Curator(curator_id) = unstaker {
+                curator_id
+            } else {
+                panic!("Unstaker not curator")
+            };
+
+        let original_curator = CuratorById::<Test>::get(curator_id);
+
+        let original_exit_summary =
+            if let CuratorRoleStage::Unstaking(exit_summary) = (original_curator.clone()).stage {
+                exit_summary
+            } else {
+                panic!("Curator not unstaking")
+            };
+
+        let call_result = self.call();
+
+        assert_eq!(
+            call_result,
+            Ok(())
+        );
+
+        let expected_curator = Curator {
+            stage: CuratorRoleStage::Exited(original_exit_summary),
+            ..(original_curator.clone())
+        };
+
+        let updated_curator = CuratorById::<Test>::get(curator_id);
+
+        assert_eq!(
+            updated_curator,
+            expected_curator
+        );
+
+        assert_eq!(
+            get_last_event_or_panic(),
+            lib::RawEvent::TerminatedCurator(curator_id)
+        );
+
+        // Unstaker gone
+        assert!(
+            !UnstakerByStakeId::<Test>::exists(self.stake_id)
+        );
+
+    }
+
+    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
+
+        let call_result = self.call();
+
+        assert_eq!(
+            call_result,
+            Err(error_message)
+        );
+
+    }
+}
+
+#[test]
+fn unstaked_curator_success() {
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
+
+            let result = setup_lead_and_hire_curator();
+
+            TerminateCuratorRoleFixture{
+                origin: Origin::signed(LEAD_ROLE_ACCOUNT),
+                curator_id: result.curator_id(),
+                rationale_text: "This curator is a joke!".as_bytes().to_vec()
+            }
+            .call_and_assert_success();
+
+            let curator_role_stake_id = CuratorById::<Test>::get(result.curator_id())
+                                        .role_stake_profile
+                                        .unwrap()
+                                        .stake_id;
+
+            UnstakedFixture{
+                origin: Origin::system(system::RawOrigin::Root),
+                stake_id: curator_role_stake_id
+            }
+            .call_and_assert_success();
+
+        });
 }
 
 #[test]
