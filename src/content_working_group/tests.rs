@@ -317,6 +317,8 @@ fn add_curator_opening_success() {
 
             let expected_opening_id = hiring::NextOpeningId::<Test>::get();
 
+            let expected_curator_opening_id = NextCuratorOpeningId::<Test>::get();
+
             /*
              * Test
              */
@@ -336,13 +338,16 @@ fn add_curator_opening_success() {
                 ()
             );
 
-            let curator_opening_id = ensure_curatoropeningadded_event_deposited();
+            assert_eq!(
+                get_last_event_or_panic(),
+                lib::RawEvent::CuratorOpeningAdded(expected_curator_opening_id)
+            );
 
             // Assert that given opening id has been added,
             // and has the right properties.
-            assert!(lib::CuratorOpeningById::<Test>::exists(curator_opening_id));
+            assert!(lib::CuratorOpeningById::<Test>::exists(expected_curator_opening_id));
 
-            let created_curator_opening = lib::CuratorOpeningById::<Test>::get(curator_opening_id);
+            let created_curator_opening = lib::CuratorOpeningById::<Test>::get(expected_curator_opening_id);
 
             let expected_curator_opening = CuratorOpening{
                 opening_id: expected_opening_id,
