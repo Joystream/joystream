@@ -768,7 +768,7 @@ struct WrappedBeginAcceptingApplicationsError { // can this be made generic, or 
 }
 */
 
-struct WrappedError<E> {
+pub(super) struct WrappedError<E> {
     // can this be made generic, or does that undermine the whole orhpan rule spirit?
     pub error: E,
 }

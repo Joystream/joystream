@@ -59,8 +59,6 @@ const FIRST_PAID_TERMS_ID: u32 = 1;
 
 // Default paid membership terms
 pub const DEFAULT_PAID_TERM_ID: u32 = 0;
-const DEFAULT_PAID_TERM_FEE: u32 = 100; // Can be overidden in genesis config
-const DEFAULT_PAID_TERM_TEXT: &str = "Default Paid Term TOS...";
 
 // Default user info constraints
 const DEFAULT_MIN_HANDLE_LENGTH: u32 = 5;
@@ -142,15 +140,6 @@ pub struct PaidMembershipTerms<T: Trait> {
     pub text: Vec<u8>,
 }
 
-impl<T: Trait> Default for PaidMembershipTerms<T> {
-    fn default() -> Self {
-        PaidMembershipTerms {
-            fee: BalanceOf::<T>::from(DEFAULT_PAID_TERM_FEE),
-            text: DEFAULT_PAID_TERM_TEXT.as_bytes().to_vec(),
-        }
-    }
-}
-
 decl_storage! {
     trait Store for Module<T: Trait> as Membership {
         /// MemberId to assign to next member that is added to the registry, and is also the
@@ -180,8 +169,10 @@ decl_storage! {
             // compiled as native code. (Will be called when building `raw` chainspec)
             // So it can't be relied upon to initialize storage for runtimes updates.
             // Initialization for updated runtime is done in run_migration()
-            let mut terms: PaidMembershipTerms<T> = Default::default();
-            terms.fee = config.default_paid_membership_fee;
+            let terms = PaidMembershipTerms {
+                fee:  config.default_paid_membership_fee,
+                text: Vec::default(),
+            };
             vec![(T::PaidTermId::from(DEFAULT_PAID_TERM_ID), terms)]
         }) : map T::PaidTermId => Option<PaidMembershipTerms<T>>;
 
