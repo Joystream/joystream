@@ -1956,10 +1956,15 @@ impl CreateChannelFixture {
         );
 
         // No new events deposited
-        assert_no_new_events(number_of_events_before_call);
+        assert_eq!(
+            System::events().len(),
+            number_of_events_before_call
+        );
     }
 
     pub fn call_and_assert_success(&self) -> ChannelId<Test> {
+
+        let old_next_channel_id = NextChannelId::<Test>::get();
 
         let call_result = self.create_channel();
 
