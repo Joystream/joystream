@@ -1219,9 +1219,86 @@ fn set_lead_success() {
         });
 
 }
+
+struct UnsetLeadFixture {
+    pub origin: Origin
+}
+
+impl UnsetLeadFixture {
+    fn call(&self) -> Result<(),&'static str>{
+
+        ContentWorkingGroup::unset_lead(
+            self.origin.clone()
+        )
+    }
+
+    pub fn call_and_assert_success(&self) {
+
+        let original_lead_id = CurrentLeadId::<Test>::get().unwrap();
+        let original_lead = LeadById::<Test>::get(original_lead_id);
+
+        let call_result = self.call();
+
+        assert_eq!(
+            call_result,
+            Ok(())
+        );
+
+        assert!(
+            CurrentLeadId::<Test>::get().is_none()
+        );
+
+        let updated_lead = LeadById::<Test>::get(original_lead_id);
+
+        let expected_updated_lead = Lead{
+            stage: LeadRoleState::Exited(ExitedLeadRole{initiated_at_block_number: 1}),
+            ..original_lead
+        };
+
+        assert_eq!(
+            updated_lead,
+            expected_updated_lead
+        );
+
+        assert_eq!(
+            get_last_event_or_panic(),
+            lib::RawEvent::LeadUnset(original_lead_id)
+        );
+        
+    }
+
+    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
+
+        let number_of_events_before_call = System::events().len();
+
+        let call_result = self.call();
+
+        assert_eq!(
+            call_result,
+            Err(error_message)
+        );
+
+        assert_eq!(
+            System::events().len(),
+            number_of_events_before_call
+        );
+    }
+}
+
 #[test]
 fn unset_lead_success() {
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
 
+            let _ = add_member_and_set_as_lead();
+
+            UnsetLeadFixture{
+                origin: Origin::system(system::RawOrigin::Root),
+            }
+            .call_and_assert_success();
+
+        });
 }
 
 #[test]
