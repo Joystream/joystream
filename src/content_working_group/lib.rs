@@ -1708,6 +1708,8 @@ decl_module! {
             // Ensure that member can actually become lead
             let new_lead_id = <NextLeadId<T>>::get();
 
+            let new_lead_role = role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
+
             let _profile = <members::Module<T>>::can_register_role_on_member(
                 &member,
                 &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id)
@@ -1733,6 +1735,11 @@ decl_module! {
 
             // Update next lead counter
             <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
+
+            // Register in role
+            let registered_role = <members::Module<T>>::register_role_on_member(member, &new_lead_role).is_ok();
+
+            assert!(registered_role);
 
             // Trigger event
             Self::deposit_event(RawEvent::LeadSet(new_lead_id));
