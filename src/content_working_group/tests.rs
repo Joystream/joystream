@@ -565,11 +565,9 @@ fn withdraw_curator_application_success() {
             );
 
             // Event was triggered
-            let curator_application_id = ensure_curatorapplicationwithdrawn_event_deposited();
-
             assert_eq!(
-                result.curator_application_id,
-                curator_application_id
+                get_last_event_or_panic(),
+                lib::RawEvent::CuratorApplicationWithdrawn(result.curator_application_id)
             );
 
             /*
