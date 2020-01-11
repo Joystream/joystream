@@ -614,11 +614,9 @@ fn terminate_curator_application_success() {
                 ()
             );
 
-            let event_curator_application_id = ensure_terminatecuratorapplication_event_deposited();
-
             assert_eq!(
-                result.curator_application_id,
-                event_curator_application_id
+                get_last_event_or_panic(),
+                lib::RawEvent::CuratorApplicationTerminated(result.curator_application_id)
             );
 
             /*
