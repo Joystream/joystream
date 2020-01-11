@@ -449,11 +449,9 @@ fn begin_curator_applicant_review_success() {
                 ()
             );
 
-            let event_curator_opening_id = ensure_begancuratorapplicationreview_event_deposited();
-
             assert_eq!(
-                normal_opening_constructed.curator_opening_id,
-                event_curator_opening_id
+                get_last_event_or_panic(),
+                lib::RawEvent::BeganCuratorApplicationReview(normal_opening_constructed.curator_opening_id)
             );
             
             /*
