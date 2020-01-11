@@ -1492,16 +1492,32 @@ fn add_member_and_apply_on_opening(
     );
 
     // Guarantee sufficient stake
-    let role_stake_balance = get_baseline_opening_policy().role_staking_policy.unwrap().amount;
-    let application_stake_balance = get_baseline_opening_policy().application_staking_policy.unwrap().amount;
+    let role_stake_balance = 
+        if let Some(policy) = get_baseline_opening_policy().role_staking_policy {
+            policy.amount
+        } else {
+            0
+        };
+
+    let application_stake_balance = 
+        if let Some(policy) = get_baseline_opening_policy().application_staking_policy {
+            policy.amount
+        } else {
+            0
+        };
+
     let total_balance = role_stake_balance + application_stake_balance;
 
-    // Credit staking source account
-    let _ = balances::Module::<Test>::deposit_creating(&source_account, total_balance);
+    // Credit staking source account if required
+    if total_balance > 0 {
+        let _ = balances::Module::<Test>::deposit_creating(&source_account, total_balance);
+    }
 
     let expected_curator_application_id = NextCuratorApplicationId::<Test>::get();
 
     let old_curator_opening = CuratorOpeningById::<Test>::get(curator_opening_id);
+
+    let new_curator_application_id = NextCuratorApplicationId::<Test>::get();
 
     /*
      * Test
@@ -1578,6 +1594,8 @@ struct NormalOpeningConstructed {
 fn setup_normal_opening() -> NormalOpeningConstructed {
 
     let new_member_as_lead = add_member_and_set_as_lead();
+
+    let expected_curator_opening_id = NextCuratorOpeningId::<Test>::get();
 
     assert_eq!(
         ContentWorkingGroup::add_curator_opening(
@@ -1712,23 +1730,27 @@ fn setup_and_fill_opening(applicants: &Vec<FillOpeningApplicantParams>) -> Setup
     * Asserts
     */
 
-    let (
-        event_curator_opening_id,
-        event_successful_curator_application_id_to_curator_id
-    ) = ensure_curatoropeningfilled_event_deposited();            
-    
-    // Event has correct payload
-    assert_eq!(
-        setup_opening_in_review.normal_opening_constructed.curator_opening_id,
-        event_curator_opening_id
-    );
+    let successful_curator_application_id_to_curator_id =
+        successful_curator_application_ids
+        .iter()
+        .enumerate()
+        .map(|(index, item)| -> (CuratorApplicationId<Test>, CuratorId<Test>) {
+
+            let curator_id = original_next_curator_id + (index as CuratorId<Test>);
+
+            (
+                *item,
+                curator_id
+            )
+        })
+        .collect::<BTreeMap<_,_>>();
 
     assert_eq!(
-        successful_curator_application_ids,
-        event_successful_curator_application_id_to_curator_id
-        .keys()
-        .cloned()
-        .collect::<BTreeSet<_>>()
+        get_last_event_or_panic(),
+        lib::RawEvent::CuratorOpeningFilled(
+            setup_opening_in_review.normal_opening_constructed.curator_opening_id,
+            successful_curator_application_id_to_curator_id
+        )
     );
 
     // The right number of curators have been created
