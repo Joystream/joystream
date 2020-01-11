@@ -2102,8 +2102,12 @@ pub fn set_lead(member_id: <Test as members::Trait>::MemberId, new_role_account:
         ()
     );
 
-    // Grab lead id
-    ensure_lead_set_event_deposited()
+    assert_eq!(
+        get_last_event_or_panic(),
+        lib::RawEvent::LeadSet(expected_lead_id)
+    );
+
+    expected_lead_id
 }
 
 // lead_role_account: <Test as system::Trait>::AccountId
