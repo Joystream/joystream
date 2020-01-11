@@ -3,7 +3,6 @@
 
 //#[cfg(feature = "std")]
 //use serde::{Deserialize, Serialize};
-
 use codec::{Decode, Encode}; // Codec
                              //use rstd::collections::btree_map::BTreeMap;
 use crate::membership::{members, role_types};
@@ -136,11 +135,6 @@ pub static MSG_ACCEPT_CURATOR_APPLICATIONS_OPENING_IS_NOT_WAITING_TO_BEGIN:     
 pub static MSG_BEGIN_CURATOR_APPLICANT_REVIEW_OPENING_DOES_NOT_EXIST:                              &str = "Opening does not exist";
 pub static MSG_BEGIN_CURATOR_APPLICANT_REVIEW_OPENING_OPENING_IS_NOT_WAITING_TO_BEGIN:             &str = "Opening Is Not in Waiting";
 
-// Errors for `add_curator_opening`
-pub static MSG_ADD_CURATOR_OPENING_ACTIVATES_IN_THE_PAST:                                          &str = "Opening does not activate in the future";
-pub static MSG_ADD_CURATOR_OPENING_ROLE_STAKE_LESS_THAN_MINIMUM:                                   &str = "Role stake amount less than minimum currency balance";
-pub static MSG_ADD_CURATOR_OPENING_APPLIICATION_STAKE_LESS_THAN_MINIMUM:                           &str = "Application stake amount less than minimum currency balance";
-
 // Errors for `fill_curator_opening`
 pub static MSG_FULL_CURATOR_OPENING_OPENING_DOES_NOT_EXIST:                                         &str = "OpeningDoesNotExist";
 pub static MSG_FULL_CURATOR_OPENING_OPENING_NOT_IN_REVIEW_PERIOD_STAGE:                             &str = "OpeningNotInReviewPeriodStage";
@@ -167,6 +161,9 @@ pub static MSG_CREATE_CHANNEL_IS_NOT_MEMBER:                                    
 pub static MSG_CREATE_CHANNEL_NOT_CONTROLLER_ACCOUNT:                                               &str = "Account is not controller account of member";
 
 // Errors for `add_curator_opening`
+pub static MSG_ADD_CURATOR_OPENING_ACTIVATES_IN_THE_PAST:                                           &str = "Opening does not activate in the future";
+pub static MSG_ADD_CURATOR_OPENING_ROLE_STAKE_LESS_THAN_MINIMUM:                                    &str = "Role stake amount less than minimum currency balance";
+pub static MSG_ADD_CURATOR_OPENING_APPLIICATION_STAKE_LESS_THAN_MINIMUM:                            &str = "Application stake amount less than minimum currency balance";
 pub static MSG_ADD_CURATOR_OPENING_OPENING_DOES_NOT_EXIST:                                          &str = "OpeningDoesNotExist";
 pub static MSG_ADD_CURATOR_OPENING_STAKE_PROVIDED_WHEN_REDUNDANT:                                   &str = "StakeProvidedWhenRedundant ...";// <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
 pub static MSG_ADD_CURATOR_OPENING_STAKE_MISSING_WHEN_REQUIRED:                                     &str = "StakeMissingWhenRequired ...";// <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
