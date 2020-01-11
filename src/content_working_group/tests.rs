@@ -666,6 +666,9 @@ fn apply_on_curator_opening_success() {
 
             let old_curator_opening = CuratorOpeningById::<Test>::get(normal_opening_constructed.curator_opening_id);
 
+            let new_curator_application_id = NextCuratorApplicationId::<Test>::get();
+
+
             /*
              * Test
              */
@@ -685,7 +688,10 @@ fn apply_on_curator_opening_success() {
                 ()
             );
 
-            let (curator_opening_id, new_curator_application_id) = ensure_applieadoncuratoropening_event_deposited();
+            assert_eq!(
+                get_last_event_or_panic(),
+                lib::RawEvent::AppliedOnCuratorOpening(normal_opening_constructed.curator_opening_id, new_curator_application_id)
+            );
 
             assert!(
                 CuratorApplicationById::<Test>::exists(new_curator_application_id)
@@ -696,7 +702,7 @@ fn apply_on_curator_opening_success() {
 
             let expected_curator_application = CuratorApplication{
                 role_account: curator_applicant_role_account,
-                curator_opening_id: curator_opening_id,
+                curator_opening_id: normal_opening_constructed.curator_opening_id,
                 member_id: curator_applicant_member_id,
                 application_id: expected_curator_application_id,
             };
@@ -717,7 +723,7 @@ fn apply_on_curator_opening_success() {
                 ..old_curator_opening
             };
 
-            let new_curator_opening = CuratorOpeningById::<Test>::get(curator_opening_id);
+            let new_curator_opening = CuratorOpeningById::<Test>::get(normal_opening_constructed.curator_opening_id);
 
             assert_eq!(
                 expected_curator_opening,
