@@ -57,6 +57,25 @@ impl_outer_event! {
     }
 }
 
+pub type RawLibTestEvent = lib::RawEvent<
+        ChannelId<Test>,
+        LeadId<Test>,
+        CuratorOpeningId<Test>,
+        CuratorApplicationId<Test>,
+        CuratorId<Test>,
+        <Test as system::Trait>::AccountId
+        >;
+
+pub fn get_last_event_or_panic() -> RawLibTestEvent {
+
+    if let TestEvent::lib(ref x) = System::events().last().unwrap().event {
+        x.clone()
+    } else {
+        panic!("No event deposited.");
+    }
+
+}
+
 type TestAccountId = u64;
 type TestBlockNumber = u64;
 impl system::Trait for Test {
