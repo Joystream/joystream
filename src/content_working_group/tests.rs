@@ -915,9 +915,106 @@ fn update_curator_reward_account_success() {
 
 }
 
+struct LeaveCuratorRoleFixture {
+    pub origin: Origin,
+    pub curator_id: CuratorId<Test>,
+    pub rationale_text: Vec<u8>
+}
+
+impl LeaveCuratorRoleFixture {
+    fn call(&self) -> Result<(),&'static str>{
+
+        ContentWorkingGroup::leave_curator_role(
+            self.origin.clone(),
+            self.curator_id,
+            self.rationale_text.clone()
+        )
+    }
+
+    pub fn call_and_assert_success(&self) {
+
+        let original_curator = CuratorById::<Test>::get(self.curator_id);
+
+        let call_result = self.call();
+
+        assert_eq!(
+            call_result,
+            Ok(())
+        );
+
+        let expected_curator = Curator {
+            stage: CuratorRoleStage::Unstaking(CuratorExitSummary::new(
+                &CuratorExitInitiationOrigin::Curator,
+                &1,
+                &self.rationale_text
+            )),
+            ..(original_curator.clone())
+        };
+
+        let updated_curator = CuratorById::<Test>::get(self.curator_id);
+
+        assert_eq!(
+            updated_curator,
+            expected_curator
+        );
+
+        assert_eq!(
+            get_last_event_or_panic(),
+            lib::RawEvent::CuratorUnstaking(self.curator_id)
+        );
+
+        // Tracking unstaking
+        let curator_role_stake_id = original_curator
+                                    .role_stake_profile
+                                    .unwrap()
+                                    .stake_id;
+
+        assert!(
+            UnstakerByStakeId::<Test>::exists(curator_role_stake_id)
+        );
+
+        let unstaker = UnstakerByStakeId::<Test>::get(curator_role_stake_id);
+
+        assert_eq!(
+            unstaker,
+            WorkingGroupUnstaker::Curator(self.curator_id)
+        );
+
+        /*
+         * TODO: Missing checks to calls to
+         * recurringrewards, stake
+         */
+    }
+
+    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
+
+        let call_result = self.call();
+
+        assert_eq!(
+            call_result,
+            Err(error_message)
+        );
+
+    }
+}
+
 #[test]
 fn leave_curator_role_success() {
 
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
+
+            let result = setup_lead_and_hire_curator();
+
+            let fixture = LeaveCuratorRoleFixture{
+                origin: Origin::signed(result.curator_params().curator_applicant_role_account),
+                curator_id: result.curator_id(),
+                rationale_text: "I am sick of this horrible thing".as_bytes().to_vec()
+            };
+            
+            fixture.call_and_assert_success();
+        });
 }
 
 #[test]
