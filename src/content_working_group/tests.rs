@@ -1119,11 +1119,106 @@ fn terminate_curator_role_success() {
         });
 }
 
+struct SetLeadFixture {
+    pub origin: Origin,
+    pub member_id: <Test as members::Trait>::MemberId,
+    pub new_role_account: <Test as system::Trait>::AccountId
+}
+
+impl SetLeadFixture {
+    fn call(&self) -> Result<(),&'static str>{
+
+        ContentWorkingGroup::set_lead(
+            self.origin.clone(),
+            self.member_id,
+            self.new_role_account
+        )
+    }
+
+    pub fn call_and_assert_success(&self) {
+
+        let original_next_lead_id = NextLeadId::<Test>::get();
+
+        let call_result = self.call();
+
+        assert_eq!(
+            call_result,
+            Ok(())
+        );
+
+        let updated_next_lead_id = NextLeadId::<Test>::get();
+
+        assert_eq!(
+            original_next_lead_id + 1,
+            updated_next_lead_id
+        );
+
+        let new_lead_id = if let Some(id) = CurrentLeadId::<Test>::get() {
+            id
+        } else {
+            panic!("Lead not set when it must be.")
+        };
+
+        let new_lead = LeadById::<Test>::get(new_lead_id);
+
+        let expected_new_lead = Lead{
+            role_account: self.new_role_account,
+            reward_relationship: None,
+            inducted: 1,// make dynamic later
+            stage: LeadRoleState::Active
+        };
+
+        assert_eq!(
+            new_lead,
+            expected_new_lead
+        );
+
+        assert_eq!(
+            get_last_event_or_panic(),
+            lib::RawEvent::LeadSet(new_lead_id)
+        );
+    }
+
+    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
+
+        let number_of_events_before_call = System::events().len();
+
+        let call_result = self.call();
+
+        assert_eq!(
+            call_result,
+            Err(error_message)
+        );
+
+        assert_eq!(
+            System::events().len(),
+            number_of_events_before_call
+        );
+    }
+}
+
 #[test]
 fn set_lead_success() {
 
-}
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
 
+            let member_id = add_member(
+                LEAD_ROOT_AND_CONTROLLER_ACCOUNT,
+                to_vec(LEAD_MEMBER_HANDLE)
+            );
+
+            SetLeadFixture{
+                origin: Origin::system(system::RawOrigin::Root),
+                member_id,
+                new_role_account: 44444
+            }
+            .call_and_assert_success();
+
+        });
+
+}
 #[test]
 fn unset_lead_success() {
 
