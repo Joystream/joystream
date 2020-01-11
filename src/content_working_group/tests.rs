@@ -1522,7 +1522,10 @@ fn add_member_and_apply_on_opening(
         ()
     );
 
-    let (curator_opening_id, new_curator_application_id) = ensure_applieadoncuratoropening_event_deposited();
+    assert_eq!(
+        get_last_event_or_panic(),
+        lib::RawEvent::AppliedOnCuratorOpening(curator_opening_id, new_curator_application_id)
+    );
 
     assert!(
         CuratorApplicationById::<Test>::exists(new_curator_application_id)
