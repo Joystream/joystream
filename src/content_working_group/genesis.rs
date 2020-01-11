@@ -29,7 +29,7 @@ pub struct GenesisConfigBuilder<T: Trait> {
     next_curator_id: CuratorId<T>,
     principal_by_id: GenesisConfigMap<PrincipalId<T>, Principal<CuratorId<T>, ChannelId<T>>>,
     next_principal_id: PrincipalId<T>,
-    
+
     unstaker_by_stake_id: GenesisConfigMap<TestStakeId, WorkingGroupUnstaker<LeadId<T>, CuratorId<T>>>,
     */
     channel_creation_enabled: bool,
@@ -93,7 +93,6 @@ impl<T: Trait> GenesisConfigBuilder<T> {
 
 impl<T: Trait> Default for GenesisConfigBuilder<T> {
     fn default() -> Self {
-
         let default_constraint = InputValidationLengthConstraint {
             min: 8,
             max_min_diff: 44,
@@ -101,7 +100,7 @@ impl<T: Trait> Default for GenesisConfigBuilder<T> {
 
         Self {
             mint: <T as minting::Trait>::MintId::default(),
-            
+
             /*
             current_lead_id: LeadId::<T>::default(), //Option<LeadId>,
             lead_by_id: map![], //GenesisConfigMap<LeadId, Lead>,
@@ -117,7 +116,7 @@ impl<T: Trait> Default for GenesisConfigBuilder<T> {
             next_curator_id: 0,
             principal_by_id: map![], //GenesisConfigMap<PrinicipalId, Prinicipal>,
             next_principal_id: 0,
-            
+
             unstaker_by_stake_id: map![], //GenesisConfigMap<LeadId, CuratorId>,
             */
             channel_creation_enabled: true,
