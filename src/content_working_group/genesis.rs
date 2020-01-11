@@ -96,7 +96,7 @@ impl<T: Trait> Default for GenesisConfigBuilder<T> {
 
         let default_constraint = InputValidationLengthConstraint {
             min: 8,
-            max_min_diff: 13,
+            max_min_diff: 44,
         };
 
         Self {
