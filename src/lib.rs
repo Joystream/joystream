@@ -1220,7 +1220,6 @@ impl<T: Trait> Module<T> {
     /// Tries to unstake, based on a stake id which, if set, MUST
     /// be ready to be unstaked, with an optional unstaking period.
     ///
-    ///
     /// Returns whether unstaking was actually initiated.
     fn opt_infallible_unstake(
         opt_stake_id: Option<T::StakeId>,
