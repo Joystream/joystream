@@ -99,7 +99,8 @@ impl stake::Trait for Test {
 pub type Balances = balances::Module<Test>;
 pub type Hiring = Module<Test>;
 
-// Prevents panic message in console
+// Intercepts panic method
+// Returns: whether panic occurred
 fn panics<F: std::panic::RefUnwindSafe + Fn()>(could_panic_func: F) -> bool {
     {
         let default_hook = panic::take_hook();
@@ -107,7 +108,7 @@ fn panics<F: std::panic::RefUnwindSafe + Fn()>(could_panic_func: F) -> bool {
             println!("{}", info);
         }));
 
-        // prevent panic message in console
+        // intercept panic
         let result = panic::catch_unwind(|| could_panic_func());
 
         //restore default behaviour
@@ -122,6 +123,7 @@ pub(crate) fn set_stake_handler_impl(mock: Rc<rstd::cell::RefCell<dyn crate::Sta
     Hiring::staking.mock_safe(move || MockResult::Return(mock.clone()));
 }
 
+// Tests mock expectation and restores default behaviour
 pub(crate) fn test_expectation_and_clear_mock() {
     set_stake_handler_impl(Rc::new(RefCell::new(crate::HiringStakeHandler {})));
 }
@@ -134,6 +136,7 @@ pub fn build_test_externalities() -> runtime_io::TestExternalities {
     t.into()
 }
 
+// Intercepts panic in provided function, test mock expectation and restores default behaviour
 pub(crate) fn handle_mock<F: std::panic::RefUnwindSafe + Fn()>(func: F) {
     let panicked = panics(func);
 
