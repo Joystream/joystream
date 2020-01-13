@@ -456,10 +456,10 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
 
 export const OpeningError = () => {
   return (
-      <Container>
-        <Message error>
-          Uh oh! Something went wrong
+    <Container>
+      <Message error>
+        Uh oh! Something went wrong
         </Message>
-      </Container>
+    </Container>
   )
 }
