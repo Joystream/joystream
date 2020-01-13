@@ -3,8 +3,8 @@ import { VideoType } from '../schemas/video/Video';
 import { Language } from './Language.mock';
 import { VideoCategory } from './VideoCategory.mock';
 import { PublicationStatus } from './PublicationStatus.mock';
-import { ContentLicense } from './ContentLicense.mock';
 import { CurationStatus } from './CurationStatus.mock';
+import { ContentLicense } from './ContentLicense.mock';
 
 export const Video: VideoType = {
   id: newEntityId(),

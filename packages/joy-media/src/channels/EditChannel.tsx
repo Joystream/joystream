@@ -4,16 +4,17 @@ import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
-import * as Opts from '../common/DropdownOptions';
+import { onImageError } from '../utils';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
-import { ChannelType, ChannelClass as Fields, ChannelValidationSchema, ChannelFormValues } from '../schemas/channel/Channel';
+import { ChannelType, ChannelClass as Fields, ChannelValidationSchema, ChannelFormValues, ChannelToFormValues } from '../schemas/channel/Channel';
 import { ChannelId } from './ChannelId';
+import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 
 export type OuterProps = {
   history?: History,
   id?: ChannelId,
   entity?: ChannelType
+  opts?: MediaDropdownOptions
 };
 
 type FormValues = ChannelFormValues;
@@ -33,6 +34,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     // history,
     // contentId,
     entity,
+    opts = MediaDropdownOptions.Empty,
 
     // Formik stuff:
     values,
@@ -60,7 +62,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaText field={Fields.thumbnail} {...props} />
     <MediaText field={Fields.cover} {...props} />
     <MediaText field={Fields.description} textarea {...props} />
-    <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
+    <MediaDropdown field={Fields.publicationStatus} options={opts.publicationStatusOptions} {...props} />
   </>;
 
   const MainButton = () =>
@@ -112,15 +114,7 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   // Transform outer props into form values
   mapPropsToValues: (props): FormValues => {
     const { entity } = props;
-
-    return {
-      // Basic:
-      channelName: entity && entity.channelName || '',
-      thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
-      cover: entity && entity.cover || DEFAULT_THUMBNAIL_URL,
-      description: entity && entity.description || '',
-      publicationStatus: entity && entity.publicationStatus.value || Opts.visibilityOptions[0].value,
-    } as FormValues; // TODO remove this hack with casting
+    return ChannelToFormValues(entity);
   },
 
   validationSchema: () => ChannelValidationSchema,

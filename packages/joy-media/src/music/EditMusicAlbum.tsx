@@ -4,21 +4,21 @@ import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
+import { onImageError } from '../utils';
 import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumPreviewProps } from './MusicAlbumPreview';
-import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumClass as Fields, MusicAlbumFormValues } from '../schemas/music/MusicAlbum';
+import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumClass as Fields, MusicAlbumFormValues, MusicAlbumToFormValues } from '../schemas/music/MusicAlbum';
 import { MusicTrackType } from '../schemas/music/MusicTrack';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
-import { genreOptions, moodOptions, themeOptions, licenseOptions, visibilityOptions } from '../common/DropdownOptions';
-import * as Opts from '../common/DropdownOptions';
 import EntityId from '@joystream/types/versioned-store/EntityId';
+import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 
 export type OuterProps = {
   history?: History,
   id?: EntityId,
   entity?: MusicAlbumType,
   tracks?: MusicTrackType[]
+  opts?: MediaDropdownOptions
 };
 
 type FormValues = MusicAlbumFormValues;
@@ -38,6 +38,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     // history,
     entity,
     tracks = [],
+    opts = MediaDropdownOptions.Empty,
 
     values,
     dirty,
@@ -60,16 +61,16 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaText field={Fields.title} {...props} />
     <MediaText field={Fields.thumbnail} {...props} />
     <MediaText field={Fields.description} textarea {...props} />
-    <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
+    <MediaDropdown field={Fields.publicationStatus} options={opts.publicationStatusOptions} {...props} />
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
     <MediaText field={Fields.artist} {...props} />
     <MediaText field={Fields.composerOrSongwriter} {...props} />
-    <MediaDropdown field={Fields.genre} options={Opts.genreOptions} {...props} />
-    <MediaDropdown field={Fields.mood} options={Opts.moodOptions} {...props} />
-    <MediaDropdown field={Fields.theme} options={Opts.themeOptions} {...props} />
-    <MediaDropdown field={Fields.license} options={Opts.licenseOptions} {...props} />
+    <MediaDropdown field={Fields.genre} options={opts.musicGenreOptions} {...props} />
+    <MediaDropdown field={Fields.mood} options={opts.musicMoodOptions} {...props} />
+    <MediaDropdown field={Fields.theme} options={opts.musicThemeOptions} {...props} />
+    <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
   </Tab.Pane>
 
   const tracksTab = () => {
@@ -146,23 +147,7 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   // Transform outer props into form values
   mapPropsToValues: (props): FormValues => {
     const { entity } = props;
-
-    return {
-      // Basic:
-      title: entity && entity.title || '',
-      thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
-      description: entity && entity.description || '',
-      publicationStatus: entity && entity.publicationStatus.value || visibilityOptions[0].value,
-
-      // Additional:
-      artist: entity && entity.artist || '',
-      composerOrSongwriter: entity && entity.composerOrSongwriter || '',
-      genre: entity && entity.genre?.value || genreOptions[0].value,
-      mood: entity && entity.mood?.value || moodOptions[0].value,
-      theme: entity && entity.theme?.value || themeOptions[0].value,
-      // explicit: entity && entity.explicit || false, // TODO explicitOptions[0].value,
-      license: entity && entity.license.value || licenseOptions[0].value,
-    } as FormValues; // TODO remove this hack with casting
+    return MusicAlbumToFormValues(entity);
   },
 
   validationSchema: MusicAlbumValidationSchema,

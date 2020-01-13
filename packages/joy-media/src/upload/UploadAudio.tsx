@@ -5,11 +5,11 @@ import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { ContentId } from '@joystream/types/media';
-import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
-import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields, MusicTrackFormValues } from '../schemas/music/MusicTrack';
-import * as Opts from '../common/DropdownOptions';
+import { onImageError } from '../utils';
+import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields, MusicTrackFormValues, MusicTrackToFormValues } from '../schemas/music/MusicTrack';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
+import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 
 export type OuterProps = {
   history?: History,
@@ -17,6 +17,7 @@ export type OuterProps = {
   fileName?: string,
   id?: EntityId,
   entity?: MusicTrackType
+  opts?: MediaDropdownOptions
 };
 
 type FormValues = MusicTrackFormValues;
@@ -36,6 +37,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     // history,
     // contentId,
     entity,
+    opts = MediaDropdownOptions.Empty,
 
     // Formik stuff:
     values,
@@ -59,16 +61,16 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaText field={Fields.title} {...props} />
     <MediaText field={Fields.thumbnail} {...props} />
     <MediaText field={Fields.description} textarea {...props} />
-    <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
+    <MediaDropdown field={Fields.publicationStatus} options={opts.publicationStatusOptions} {...props} />
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
     <MediaText field={Fields.artist} {...props} />
     <MediaText field={Fields.composerOrSongwriter} {...props} />
-    <MediaDropdown field={Fields.genre} options={Opts.genreOptions} {...props} />
-    <MediaDropdown field={Fields.mood} options={Opts.moodOptions} {...props} />
-    <MediaDropdown field={Fields.theme} options={Opts.themeOptions} {...props} />
-    <MediaDropdown field={Fields.license} options={Opts.licenseOptions} {...props} />
+    <MediaDropdown field={Fields.genre} options={opts.musicGenreOptions} {...props} />
+    <MediaDropdown field={Fields.mood} options={opts.musicMoodOptions} {...props} />
+    <MediaDropdown field={Fields.theme} options={opts.musicThemeOptions} {...props} />
+    <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
   </Tab.Pane>
 
   const tabs = () => <Tab
@@ -128,24 +130,11 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   // Transform outer props into form values
   mapPropsToValues: (props): FormValues => {
     const { entity, fileName } = props;
-
-    return {
-      // Basic:
-      title: entity && entity.title || fileName || '',
-      thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
-      description: entity && entity.description || '',
-      publicationStatus: entity && entity.publicationStatus.value || Opts.visibilityOptions[0].value,
-      // album: entity && entity.album || '',
-
-      // Additional:
-      artist: entity && entity.artist || '',
-      composerOrSongwriter: entity && entity.composerOrSongwriter || '',
-      genre: entity && entity.genre?.value || Opts.genreOptions[0].value,
-      mood: entity && entity.mood?.value || Opts.moodOptions[0].value,
-      theme: entity && entity.theme?.value || Opts.themeOptions[0].value,
-      // explicit: entity && entity.explicit || false, // TODO explicitOptions[0].value,
-      license: entity && entity.license.value || Opts.licenseOptions[0].value,
-    } as FormValues; // TODO remove this hack with casting
+    const res = MusicTrackToFormValues(entity);
+    if (!res.title && fileName) {
+      res.title = fileName;
+    }
+    return res;
   },
 
   validationSchema: () => MusicTrackValidationSchema,

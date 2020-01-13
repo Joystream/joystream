@@ -4,6 +4,7 @@ import { FormikProps, Field } from 'formik';
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
+import { MediaDropdownOptions } from './MediaDropdownOptions';
 
 type FormCallbacks = {
   onSubmit: (sendTx: () => void) => void,
@@ -53,7 +54,9 @@ export type MediaFormProps<OuterProps, FormValues> =
   OuterProps &
   FormikProps<FormValues> &
   FormFields<OuterProps, FormValues> &
-  FormCallbacks;
+  FormCallbacks & {
+    opts: MediaDropdownOptions
+  };
 
 export function withMediaForm<OuterProps, FormValues>
   (Component: React.ComponentType<MediaFormProps<OuterProps, FormValues>>)
@@ -93,13 +96,14 @@ export function withMediaForm<OuterProps, FormValues>
     return <MediaField {...props} fieldProps={{
       component: Dropdown,
       selection: true,
+      search: true,
       options,
       value,
-      onBlur: (_event: any, data: DropdownProps) => {
+      onBlur: (_event: any, _data: DropdownProps) => {
         props.setFieldTouched(id, true);
       },
       onChange: (_event: any, data: DropdownProps) => {
-        props.setFieldValue(id, data.value || '');
+        props.setFieldValue(id, data.value);
       }
     }} />
   }
@@ -107,7 +111,8 @@ export function withMediaForm<OuterProps, FormValues>
   return function (props: MediaFormProps<OuterProps, FormValues>) {
     const {
       isValid,
-      setSubmitting
+      setSubmitting,
+      opts = MediaDropdownOptions.Empty,
     } = props;
 
     const onSubmit = (sendTx: () => void) => {
@@ -139,7 +144,10 @@ export function withMediaForm<OuterProps, FormValues>
       LabelledField,
       MediaText,
       MediaField,
-      MediaDropdown
+      MediaDropdown,
+
+      // Other
+      opts,
     }
 
     return <Component {...allProps} />;

@@ -5,12 +5,11 @@ import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { ContentId } from '@joystream/types/media';
-import { onImageError, DEFAULT_THUMBNAIL_URL } from '../utils';
-import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues } from '../schemas/video/Video';
+import { onImageError } from '../utils';
+import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues, VideoToFormValues } from '../schemas/video/Video';
 import { MediaFormProps, withMediaForm } from '../common/MediaForms';
-import { visibilityOptions, licenseOptions } from '../common/DropdownOptions';
-import * as Opts from '../common/DropdownOptions';
 import EntityId from '@joystream/types/versioned-store/EntityId';
+import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 
 export type OuterProps = {
   history?: History,
@@ -18,6 +17,7 @@ export type OuterProps = {
   fileName?: string,
   id?: EntityId,
   entity?: VideoType
+  opts?: MediaDropdownOptions
 };
 
 type FormValues = VideoFormValues;
@@ -37,6 +37,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     // history,
     // contentId,
     entity,
+    opts,
 
     values,
     dirty,
@@ -59,13 +60,13 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaText field={Fields.title} {...props} />
     <MediaText field={Fields.thumbnail} {...props} />
     <MediaText field={Fields.description} textarea {...props} />
-    <MediaDropdown field={Fields.publicationStatus} options={Opts.visibilityOptions} {...props} />
+    <MediaDropdown field={Fields.publicationStatus} options={opts.publicationStatusOptions} {...props} />
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <MediaDropdown field={Fields.category} options={Opts.videoCategoryOptions} {...props} />
-    <MediaDropdown field={Fields.language} options={Opts.languageOptions} {...props} />
-    <MediaDropdown field={Fields.license} options={Opts.licenseOptions} {...props} />
+    <MediaDropdown field={Fields.category} options={opts.videoCategoryOptions} {...props} />
+    <MediaDropdown field={Fields.language} options={opts.languageOptions} {...props} />
+    <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
   </Tab.Pane>
 
   const tabs = () => <Tab
@@ -125,20 +126,11 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   // Transform outer props into form values
   mapPropsToValues: (props): FormValues => {
     const { entity, fileName } = props;
-
-    return {
-      // Basic:
-      title: entity && entity.title || fileName || '',
-      thumbnail: entity && entity.thumbnail || DEFAULT_THUMBNAIL_URL,
-      description: entity && entity.description || '',
-      publicationStatus: visibilityOptions[0].value,
-
-      // Additional:
-      category: Opts.videoCategoryOptions[0].value,
-      language: Opts.languageOptions[0].value,
-      // explicit: '',// TODO explicitOptions[0].value,
-      license: licenseOptions[0].value,
-    } as FormValues; // TODO remove this hack with casting
+    const res = VideoToFormValues(entity);
+    if (!res.title && fileName) {
+      res.title = fileName;
+    }
+    return res;
   },
 
   validationSchema: () => VideoValidationSchema,

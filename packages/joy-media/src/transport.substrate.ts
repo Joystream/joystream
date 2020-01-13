@@ -1,4 +1,5 @@
 import { MediaTransport } from './transport';
+import { Subscribable } from '@polkadot/joy-utils/Subscribable';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { Entity } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
