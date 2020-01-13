@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Controller, Params, View } from '@polkadot/joy-utils/index'
+import { Controller, memoize, View } from '@polkadot/joy-utils/index'
 
 import { ITransport } from '../transport'
 
@@ -16,24 +16,17 @@ type State = {
 }
 
 export class OpportunityController extends Controller<State, ITransport> {
-  protected currentOpeningId: string = ""
-
   constructor(transport: ITransport, initialState: State = {}) {
     super(transport, initialState)
     this.getBlocktime()
   }
 
-  async getOpportunity(params: Params) {
-    const id = params.get("id")
+  @memoize()
+  async getOpportunity(id: string | undefined) {
     if (typeof id === "undefined") {
       return this.onError("ApplyController: no ID provided in params")
     }
 
-    if (this.currentOpeningId == id) {
-      return
-    }
-
-    this.currentOpeningId = id
     this.state.opportunity = await this.transport.opening(id)
     this.dispatch()
   }
@@ -47,7 +40,7 @@ export class OpportunityController extends Controller<State, ITransport> {
 export const OpportunityView = View<OpportunityController, State>({
   errorComponent: OpeningError,
   render: (state, controller, params) => {
-    controller.getOpportunity(params)
+    controller.getOpportunity(params.get("id"))
     return (
       <OpeningView {...state.opportunity!} block_time_in_seconds={state.blockTime!} />
     )

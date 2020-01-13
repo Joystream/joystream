@@ -138,6 +138,7 @@ export function getUrlParam (location: Location, paramName: string, deflt: strin
 
 // Business logic middleware
 // --------------------------------------
+
 import { Controller } from './Controller';
 import { Loadable } from './Loadable';
 import { Observable } from './Observable'
@@ -153,3 +154,9 @@ export {
   Transport,
   View, ViewComponent, Params,
 };
+
+// Memoization
+// --------------------------------------
+
+import { memoize } from "./memoize"
+export { memoize }
