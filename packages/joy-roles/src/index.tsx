@@ -28,7 +28,7 @@ type Props = AppProps & ApiProps & I18nProps & {
   allAccounts?: SubjectInfo,
 };
 
-export const App: React.FC<Props> = (props: Props) => {
+export const App: React.FC<Props> = React.memo((props: Props) => {
   const { t } = props
   const tabs = [
     {
@@ -55,21 +55,13 @@ export const App: React.FC<Props> = (props: Props) => {
   const applyCtrl = new ApplyController(mockTransport)
   const myRolesCtrl = new MyRolesController(mockTransport)
 
-  const { allAccounts } = props
   const { basePath } = props
-  const hasAccounts = allAccounts && Object.keys(allAccounts).length
-  const filteredTabs = hasAccounts
-    ? tabs
-    : tabs.filter(({ name }) =>
-      !['my-roles'].includes(name)
-    );
-
   return (
     <main className='actors--App'>
       <header>
         <Tabs
           basePath={basePath}
-          items={filteredTabs}
+          items={tabs}
         />
       </header>
       <Switch>
@@ -81,7 +73,7 @@ export const App: React.FC<Props> = (props: Props) => {
       </Switch>
     </main>
   )
-}
+})
 
 const renderViewComponent = (Component: ViewComponent<any>, props?: RouteComponentProps) => {
   let params = new Map<string, string>()
@@ -95,5 +87,4 @@ const renderViewComponent = (Component: ViewComponent<any>, props?: RouteCompone
 export default withMulti(
   App,
   translate,
-  withObservable(accountObservable.subject, { propName: 'allAccounts' }),
 );
