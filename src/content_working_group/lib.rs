@@ -841,6 +841,14 @@ impl rstd::convert::From<WrappedError<members::MemberControllerAccountDidNotSign
     }
 }
 
+/// The recurring reward if any to be assigned to an actor when filling in the position.
+#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug)]
+pub struct RewardPolicy<Balance, BlockNumber> {
+    amount_per_payout: Balance,
+    next_payment_at_block: BlockNumber,
+    payout_interval: Option<BlockNumber>,
+}
+
 // ======================================================================== //
 
 decl_storage! {
@@ -1249,7 +1257,8 @@ decl_module! {
         pub fn fill_curator_opening(
             origin,
             curator_opening_id: CuratorOpeningId<T>,
-            successful_curator_application_ids: BTreeSet<CuratorApplicationId<T>>
+            successful_curator_application_ids: BTreeSet<CuratorApplicationId<T>>,
+            reward_policy: Option<RewardPolicy<minting::BalanceOf<T>, T::BlockNumber>>,
         ) {
             // Ensure lead is set and is origin signer
             let (lead_id, _lead) = Self::ensure_origin_is_set_lead(origin)?;
@@ -1322,8 +1331,20 @@ decl_module! {
             .clone()
             .for_each(|(successful_curator_application, id, _)| {
 
-                // No reward is established by default
-                let reward_relationship: Option<RewardRelationshipId<T>> = None;
+                // Create a reward relationship if lead specifies a reward policy
+                let reward_relationship: Option<RewardRelationshipId<T>> = reward_policy.clone().map(|policy| {
+                    <recurringrewards::Module<T>>::add_reward_relationship(
+                        Self::mint(),
+                        // we are creating a new recipient everytime. Should there be a single recipient
+                        // per member?
+                        <recurringrewards::Module<T>>::add_recipient(),
+                        // rewards are deposited in the member's root account
+                        <members::Module<T>>::member_profile(successful_curator_application.member_id).unwrap().root_account,
+                        policy.amount_per_payout,
+                        policy.next_payment_at_block,
+                        policy.payout_interval,
+                    ).expect("Failed to create reward relationship!")
+                });
 
                 // Get possible stake for role
                 let application = hiring::ApplicationById::<T>::get(successful_curator_application.application_id);
