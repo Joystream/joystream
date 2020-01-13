@@ -43,6 +43,9 @@ use rstd::collections::btree_set::BTreeSet;
 use rstd::iter::Iterator;
 use rstd::prelude::*;
 
+use rstd::cell::RefCell;
+use rstd::rc::Rc;
+
 use crate::sr_api_hidden_includes_decl_storage::hidden_include::traits::Imbalance;
 
 mod hiring;
@@ -1434,8 +1437,8 @@ pub trait StakeHandler<T: StakeTrait> {
 )]
 impl<T: Trait> Module<T> {
     /// Returns StakeHandler. Mock entry point for stake module.
-    pub fn staking() -> rstd::rc::Rc<rstd::cell::RefCell<dyn StakeHandler<T>>> {
-        rstd::rc::Rc::new(rstd::cell::RefCell::new(HiringStakeHandler {}))
+    pub fn staking() -> Rc<RefCell<dyn StakeHandler<T>>> {
+        Rc::new(RefCell::new(HiringStakeHandler {}))
     }
 }
 

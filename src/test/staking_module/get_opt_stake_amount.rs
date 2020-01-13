@@ -61,7 +61,7 @@ fn get_opt_stake_amount_succeeds_with_existing_stake() {
                     .returning(|_| true);
 
                 mock.expect_get_stake()
-                    .with(eq(1))
+                    .with(eq(0))
                     .times(1)
                     .returning(|_| stake::Stake {
                         created: 1,

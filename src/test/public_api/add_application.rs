@@ -350,7 +350,7 @@ fn add_application_succeeds_with_crowding_out_with_staking_mocks() {
                 mock.expect_stake().times(1).returning(|_, _| Ok(()));
 
                 mock.expect_initiate_unstaking()
-                    .times(3)
+                    .times(1)
                     .returning(|_, _| Ok(()));
 
                 mock.expect_create_stake().times(1).returning(|| 1);

@@ -96,11 +96,12 @@ fn would_application_get_added_with_too_low_stake_with_mocks() {
                 let mut mock = crate::MockStakeHandler::<Test>::new();
 
                 mock.expect_stake().times(1).returning(|_, _| Ok(()));
+                mock.expect_stake_exists().times(2).returning(|_| true);
                 mock.expect_create_stake().times(1).returning(|| 0);
                 mock.expect_get_stake().returning(|_| stake::Stake {
                     created: 1,
                     staking_status: stake::StakingStatus::Staked(stake::StakedState {
-                        staked_amount: 98,
+                        staked_amount: 101,
                         staked_status: stake::StakedStatus::Normal,
                         next_slash_id: 0,
                         ongoing_slashes: BTreeMap::new(),
