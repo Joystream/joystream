@@ -11,9 +11,9 @@ export const FeaturedContentValidationSchema = Yup.object().shape({
 });
 
 export type FeaturedContentFormValues = {
-  topVideo: string
-  featuredVideos: string
-  featuredAlbums: string
+  topVideo: number
+  featuredVideos: number[]
+  featuredAlbums: number[]
 };
 
 export type FeaturedContentType = {
@@ -24,6 +24,14 @@ export type FeaturedContentType = {
 };
 
 export class FeaturedContentCodec extends EntityCodec<FeaturedContentType> { }
+
+export function FeaturedContentToFormValues(entity?: FeaturedContentType): FeaturedContentFormValues {
+  return {
+    topVideo: entity && entity.topVideo?.id || 0,
+    featuredVideos: entity && entity.featuredVideos?.map(x => x.id) || [],
+    featuredAlbums: entity && entity.featuredAlbums?.map(x => x.id) || []
+  }
+}
 
 export type FeaturedContentPropId =
   'topVideo' |

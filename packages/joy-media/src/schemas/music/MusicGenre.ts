@@ -21,6 +21,12 @@ export type MusicGenreType = {
 
 export class MusicGenreCodec extends EntityCodec<MusicGenreType> { }
 
+export function MusicGenreToFormValues(entity?: MusicGenreType): MusicGenreFormValues {
+  return {
+    value: entity && entity.value || ''
+  }
+}
+
 export type MusicGenrePropId =
   'value'
   ;

@@ -21,6 +21,12 @@ export type MediaObjectType = {
 
 export class MediaObjectCodec extends EntityCodec<MediaObjectType> { }
 
+export function MediaObjectToFormValues(entity?: MediaObjectType): MediaObjectFormValues {
+  return {
+    value: entity && entity.value || ''
+  }
+}
+
 export type MediaObjectPropId =
   'value'
   ;

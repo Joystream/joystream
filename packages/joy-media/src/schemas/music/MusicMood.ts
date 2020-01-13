@@ -21,6 +21,12 @@ export type MusicMoodType = {
 
 export class MusicMoodCodec extends EntityCodec<MusicMoodType> { }
 
+export function MusicMoodToFormValues(entity?: MusicMoodType): MusicMoodFormValues {
+  return {
+    value: entity && entity.value || ''
+  }
+}
+
 export type MusicMoodPropId =
   'value'
   ;

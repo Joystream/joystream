@@ -37,19 +37,19 @@ export type MusicTrackFormValues = {
   artist: string
   thumbnail: string
   description: string
-  language: string
-  firstReleased: string
-  genre: string
-  mood: string
-  theme: string
-  link: string
+  language: number
+  firstReleased: number
+  genre: number
+  mood: number
+  theme: number
+  link: string[]
   composerOrSongwriter: string
   lyrics: string
-  object: string
-  publicationStatus: string
-  curationStatus: string
-  explicit: string
-  license: string
+  object: number
+  publicationStatus: number
+  curationStatus: number
+  explicit: boolean
+  license: number
   attribution: string
 };
 
@@ -76,6 +76,29 @@ export type MusicTrackType = {
 };
 
 export class MusicTrackCodec extends EntityCodec<MusicTrackType> { }
+
+export function MusicTrackToFormValues(entity?: MusicTrackType): MusicTrackFormValues {
+  return {
+    title: entity && entity.title || '',
+    artist: entity && entity.artist || '',
+    thumbnail: entity && entity.thumbnail || '',
+    description: entity && entity.description || '',
+    language: entity && entity.language?.id || 0,
+    firstReleased: entity && entity.firstReleased || 0,
+    genre: entity && entity.genre?.id || 0,
+    mood: entity && entity.mood?.id || 0,
+    theme: entity && entity.theme?.id || 0,
+    link: entity && entity.link || [],
+    composerOrSongwriter: entity && entity.composerOrSongwriter || '',
+    lyrics: entity && entity.lyrics || '',
+    object: entity && entity.object?.id || 0,
+    publicationStatus: entity && entity.publicationStatus.id || 0,
+    curationStatus: entity && entity.curationStatus?.id || 0,
+    explicit: entity && entity.explicit || false,
+    license: entity && entity.license.id || 0,
+    attribution: entity && entity.attribution || ''
+  }
+}
 
 export type MusicTrackPropId =
   'title' |

@@ -30,8 +30,8 @@ export type ChannelFormValues = {
   thumbnail: string
   cover: string
   description: string
-  publicationStatus: string
-  curationStatus: string
+  publicationStatus: number
+  curationStatus: number
 };
 
 export type ChannelType = {
@@ -46,6 +46,18 @@ export type ChannelType = {
 };
 
 export class ChannelCodec extends EntityCodec<ChannelType> { }
+
+export function ChannelToFormValues(entity?: ChannelType): ChannelFormValues {
+  return {
+    content: entity && entity.content || '',
+    channelName: entity && entity.channelName || '',
+    thumbnail: entity && entity.thumbnail || '',
+    cover: entity && entity.cover || '',
+    description: entity && entity.description || '',
+    publicationStatus: entity && entity.publicationStatus.id || 0,
+    curationStatus: entity && entity.curationStatus?.id || 0
+  }
+}
 
 export type ChannelPropId =
   'content' |

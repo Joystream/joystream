@@ -21,6 +21,12 @@ export type PublicationStatusType = {
 
 export class PublicationStatusCodec extends EntityCodec<PublicationStatusType> { }
 
+export function PublicationStatusToFormValues(entity?: PublicationStatusType): PublicationStatusFormValues {
+  return {
+    value: entity && entity.value || ''
+  }
+}
+
 export type PublicationStatusPropId =
   'value'
   ;

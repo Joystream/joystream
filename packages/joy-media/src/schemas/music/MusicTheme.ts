@@ -21,6 +21,12 @@ export type MusicThemeType = {
 
 export class MusicThemeCodec extends EntityCodec<MusicThemeType> { }
 
+export function MusicThemeToFormValues(entity?: MusicThemeType): MusicThemeFormValues {
+  return {
+    value: entity && entity.value || ''
+  }
+}
+
 export type MusicThemePropId =
   'value'
   ;

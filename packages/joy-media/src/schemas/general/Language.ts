@@ -21,6 +21,12 @@ export type LanguageType = {
 
 export class LanguageCodec extends EntityCodec<LanguageType> { }
 
+export function LanguageToFormValues(entity?: LanguageType): LanguageFormValues {
+  return {
+    value: entity && entity.value || ''
+  }
+}
+
 export type LanguagePropId =
   'value'
   ;

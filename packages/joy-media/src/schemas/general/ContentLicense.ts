@@ -21,6 +21,12 @@ export type ContentLicenseType = {
 
 export class ContentLicenseCodec extends EntityCodec<ContentLicenseType> { }
 
+export function ContentLicenseToFormValues(entity?: ContentLicenseType): ContentLicenseFormValues {
+  return {
+    value: entity && entity.value || ''
+  }
+}
+
 export type ContentLicensePropId =
   'value'
   ;
