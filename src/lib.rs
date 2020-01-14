@@ -879,7 +879,7 @@ decl_module! {
             );
 
             // Get moderator id.
-            Self::ensure_is_moderator(&who, &moderator_id)?;
+            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
 
             // Put moderator into category by moderator map
             <CategoryByModerator<T>>::mutate(category_id, moderator_id, |value|
@@ -1100,7 +1100,7 @@ decl_module! {
                 <CategoryLabels<T>>::insert(category_id, new_labels);
             } else {
                 // is moderator
-                Self::ensure_is_moderator(&who, &moderator_id)?;
+                Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
 
                 // ensure origin can moderate category
                 Self::ensure_moderate_category(&who, &moderator_id, category_id)?;
@@ -1121,7 +1121,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_member(&who, &forum_user_id)?;
+            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
             //
             // let thread = Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels, &poll_data)?;
@@ -1158,7 +1158,7 @@ decl_module! {
             Self::ensure_label_valid(&new_labels)?;
 
             // Ensure author is forum member
-            Self::ensure_is_forum_member(&who, &forum_user_id)?;
+            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
             // Update labels to thread
             <ThreadLabels<T>>::mutate(thread_id, |value| *value = new_labels);
@@ -1186,7 +1186,7 @@ decl_module! {
             Self::ensure_label_valid(&new_labels)?;
 
             // Ensure moderator is registered
-            Self::ensure_is_moderator(&who, &moderator_id)?;
+            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
 
             // Ensure the moderator can moderate the category
             Self::ensure_moderate_category(&who, &moderator_id, thread.category_id)?;
@@ -1203,7 +1203,7 @@ decl_module! {
         //     let who = ensure_signed(origin)?;
 
         //     // get forum user id.
-        //     let forum_user_id = Self::ensure_is_forum_member(&who)?;
+        //     let forum_user_id = Self::ensure_is_forum_member_with_correct_account(&who)?;
 
         //     // Get thread
         //     let thread = Self::ensure_thread_exists(&thread_id)?;
@@ -1236,7 +1236,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Ensure origin is medorator
-            Self::ensure_is_moderator(&who, &moderator_id)?;
+            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
 
             // Get thread
             let mut thread = Self::ensure_thread_exists(&thread_id)?;
@@ -1292,7 +1292,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_member(&who, &forum_user_id)?;
+            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
             // Add new post
             let post = Self::add_new_post(thread_id, &text, forum_user_id)?;
@@ -1309,7 +1309,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_member(&who, &forum_user_id)?;
+            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
             // Make sure there exists a mutable post with post id `post_id`
             let _ = Self::ensure_post_is_mutable(&post_id)?;
@@ -1343,7 +1343,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_member(&who, &forum_user_id)?;
+            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
             // Validate post text
             Self::ensure_post_text_is_valid(&new_text)?;
@@ -1382,7 +1382,7 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // Get moderator id.
-            Self::ensure_is_moderator(&who, &moderator_id)?;
+            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
 
             // Make sure post exists and is mutable
             let post = Self::ensure_post_is_mutable(&post_id)?;
@@ -1959,7 +1959,8 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_is_forum_member(
+    /// Ensure forum user id registered and its account id matched
+    fn ensure_is_forum_member_with_correct_account(
         account_id: &T::AccountId,
         forum_user_id: &T::ForumUserId,
     ) -> dispatch::Result {
@@ -1974,7 +1975,8 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_is_moderator(
+    /// Ensure moderator id registered and its accound id matched
+    fn ensure_is_moderator_with_correct_account(
         account_id: &T::AccountId,
         moderator_id: &T::ModeratorId,
     ) -> dispatch::Result {
@@ -2085,7 +2087,7 @@ impl<T: Trait> Module<T> {
         let category_tree_path = Self::build_category_tree_path(category_id.clone());
 
         // Ensure moderator account registered before
-        Self::ensure_is_moderator(account_id, moderator_id)?;
+        Self::ensure_is_moderator_with_correct_account(account_id, moderator_id)?;
 
         // Iterate path, check all ancient category
         for i in 0..category_tree_path.len() {
