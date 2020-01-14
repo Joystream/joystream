@@ -17,15 +17,15 @@ import { registerMintTypes } from './mint';
 import { registerRecurringRewardsTypes } from './recurring-rewards';
 import { registerContentWorkingGroupTypes } from './content-working-group';
 
-export function getTextPropAsString (struct: Struct, fieldName: string): string {
+export function getTextPropAsString(struct: Struct, fieldName: string): string {
   return (struct.get(fieldName) as Text).toString();
 }
 
-export function getBoolPropAsBoolean (struct: Struct, fieldName: string): boolean {
+export function getBoolPropAsBoolean(struct: Struct, fieldName: string): boolean {
   return (struct.get(fieldName) as bool).valueOf();
 }
 
-export function getOptionPropOrUndefined <T extends Codec>
+export function getOptionPropOrUndefined<T extends Codec>
   (struct: Struct, fieldName: string): T | undefined {
 
   return (struct.get(fieldName) as Option<T>).unwrapOr(undefined);
@@ -33,11 +33,11 @@ export function getOptionPropOrUndefined <T extends Codec>
 
 export class OptionText extends Option.with(Text) {
 
-  static none (): OptionText {
+  static none(): OptionText {
     return new Option(Text, null);
   }
 
-  static some (text: string): OptionText {
+  static some(text: string): OptionText {
     return new Option(Text, text);
   }
 }
@@ -98,12 +98,12 @@ export type TallyResult = {
   finalized_at: BlockNumber
 };
 
-export class Announcing extends u32 {};
-export class Voting extends u32 {};
-export class Revealing extends u32 {};
+export class Announcing extends u32 { };
+export class Voting extends u32 { };
+export class Revealing extends u32 { };
 
 export class ElectionStage extends Enum {
-  constructor (value?: any, index?: number) {
+  constructor(value?: any, index?: number) {
     super(
       {
         Announcing,
@@ -114,38 +114,38 @@ export class ElectionStage extends Enum {
   }
 
   /** Create a new Announcing stage. */
-  static Announcing (endsAt: BlockNumber | number): ElectionStage {
+  static Announcing(endsAt: BlockNumber | number): ElectionStage {
     return this.newElectionStage('Announcing', endsAt);
   }
 
   /** Create a new Voting stage. */
-  static Voting (endsAt: BlockNumber | number): ElectionStage {
+  static Voting(endsAt: BlockNumber | number): ElectionStage {
     return this.newElectionStage('Voting', endsAt);
   }
 
   /** Create a new Revealing stage. */
-  static Revealing (endsAt: BlockNumber | number): ElectionStage {
+  static Revealing(endsAt: BlockNumber | number): ElectionStage {
     return this.newElectionStage('Revealing', endsAt);
   }
 
-  static newElectionStage (stageName: string, endsAt: BlockNumber | number) {
+  static newElectionStage(stageName: string, endsAt: BlockNumber | number) {
     return new ElectionStage({ [stageName]: endsAt });
   }
 }
 
 export type AnyElectionStage = Announcing | Voting | Revealing;
 
-export const ProposalStatuses: { [key: string ]: string } = {
-  Active:    'Active',
+export const ProposalStatuses: { [key: string]: string } = {
+  Active: 'Active',
   Cancelled: 'Cancelled',
-  Expired:   'Expired',
-  Approved:  'Approved',
-  Rejected:  'Rejected',
-  Slashed:   'Slashed'
+  Expired: 'Expired',
+  Approved: 'Approved',
+  Rejected: 'Rejected',
+  Slashed: 'Slashed'
 };
 
 export class ProposalStatus extends Enum {
-  constructor (value?: any) {
+  constructor(value?: any) {
     super([
       'Active',
       'Cancelled',
@@ -157,15 +157,15 @@ export class ProposalStatus extends Enum {
   }
 }
 
-export const VoteKinds: { [key: string ]: string } = {
+export const VoteKinds: { [key: string]: string } = {
   Abstain: 'Abstain',
   Approve: 'Approve',
-  Reject:  'Reject',
-  Slash:   'Slash'
+  Reject: 'Reject',
+  Slash: 'Slash'
 };
 
 export class VoteKind extends Enum {
-  constructor (value?: any) {
+  constructor(value?: any) {
     super([
       'Abstain',
       'Approve',
@@ -178,10 +178,10 @@ export class VoteKind extends Enum {
 export type ProposalVotes = [AccountId, VoteKind][];
 
 // Treat a BTreeSet as a Vec since it is encoded in the same way.
-export class BTreeSet<T extends Codec> extends Vec<T> {};
+export class BTreeSet<T extends Codec> extends Vec<T> { };
 
 // TODO Refactor: split this function and move to corresponding modules: election and proposals.
-function registerElectionAndProposalTypes () {
+function registerElectionAndProposalTypes() {
   try {
     const typeRegistry = getTypeRegistry();
     // Is this enough?
@@ -250,7 +250,7 @@ function registerElectionAndProposalTypes () {
   }
 }
 
-export function registerJoystreamTypes () {
+export function registerJoystreamTypes() {
   registerMembershipTypes();
   registerRolesTypes();
   registerMediaTypes();

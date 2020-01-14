@@ -20,7 +20,7 @@ import { Balance } from '@polkadot/types/interfaces';
 
 import { Loadable } from '@polkadot/joy-utils/index'
 
-import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema'
 import { Opening } from "@joystream/types/hiring"
 
 import {

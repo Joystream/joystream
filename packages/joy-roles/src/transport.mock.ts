@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { Balance } from '@polkadot/types/interfaces'
-import { Text, u128, GenericAccountId } from '@polkadot/types'
+import { Option, Text, u32, u128, GenericAccountId } from '@polkadot/types'
 
 import { Subscribable } from '@polkadot/joy-utils/index'
 
@@ -8,7 +8,13 @@ import { ITransport } from './transport'
 import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Actor, Role } from '@joystream/types/roles'
-import { Opening } from "@joystream/types/hiring"
+import {
+  Opening,
+  AcceptingApplications,
+  ActiveOpeningStage,
+  ApplicationRationingPolicy,
+  StakingPolicy,
+} from "@joystream/types/hiring"
 import { Profile } from '@joystream/types/members';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
@@ -129,7 +135,16 @@ export class Transport extends TransportBase implements ITransport {
       [
         {
           opening: new Opening({
-            max_review_period_length: 50000,
+            created: new u32(50000),
+            stage: new ActiveOpeningStage({
+              acceptingApplications: new AcceptingApplications({
+                started_accepting_applicants_at_block: new u32(100),
+              })
+            }),
+            max_review_period_length: new u32(100),
+            application_rationing_policy: new Option(ApplicationRationingPolicy),
+            application_staking_policy: new Option(StakingPolicy),
+            role_staking_policy: new Option(StakingPolicy),
             human_readable_text: newMockHumanReadableText({
               version: 1,
               headline: "Help us curate awesome content",
@@ -211,7 +226,16 @@ export class Transport extends TransportBase implements ITransport {
     return this.simulateApiResponse<WorkingGroupOpening>(
       {
         opening: new Opening({
-          max_review_period_length: 50000,
+          created: new u32(50000),
+          stage: new ActiveOpeningStage({
+            acceptingApplications: new AcceptingApplications({
+              started_accepting_applicants_at_block: new u32(100),
+            })
+          }),
+          max_review_period_length: new u32(100),
+          application_rationing_policy: new Option(ApplicationRationingPolicy),
+          application_staking_policy: new Option(StakingPolicy),
+          role_staking_policy: new Option(StakingPolicy),
           human_readable_text: newMockHumanReadableText({
             version: 1,
             headline: "Help us curate awesome content",
@@ -356,7 +380,16 @@ export class Transport extends TransportBase implements ITransport {
               created_time: yesterday(),
             },
             opening: new Opening({
-              max_review_period_length: 50000,
+              created: new u32(50000),
+              stage: new ActiveOpeningStage({
+                acceptingApplications: new AcceptingApplications({
+                  started_accepting_applicants_at_block: new u32(100),
+                })
+              }),
+              max_review_period_length: new u32(100),
+              application_rationing_policy: new Option(ApplicationRationingPolicy),
+              application_staking_policy: new Option(StakingPolicy),
+              role_staking_policy: new Option(StakingPolicy),
               human_readable_text: newMockHumanReadableText({
                 version: 1,
                 headline: "Help us curate awesome content",

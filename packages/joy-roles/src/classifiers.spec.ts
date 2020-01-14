@@ -1,4 +1,9 @@
-import { AcceptingApplications, ActiveOpeningStage, OpeningStage, OpeningStageActive } from "@joystream/types/hiring"
+import { u32 } from '@polkadot/types';
+import {
+  AcceptingApplications,
+  ActiveOpeningStage,
+  OpeningStage,
+} from "@joystream/types/hiring"
 import { classifyOpeningStage } from './classifiers'
 
 type Test = {
@@ -13,13 +18,13 @@ describe('publicToAddr', (): void => {
     {
       description: "Accepting applications",
       input: new OpeningStage({
-        openingStageActive: new OpeningStageActive({
+        'Active': {
           stage: new ActiveOpeningStage({
             acceptingApplications: new AcceptingApplications({
-              started_accepting_applicants_at_block: 100,
+              started_accepting_applicants_at_block: new u32(100),
             })
           })
-        })
+        }
       }),
       output: {
         class: "active",

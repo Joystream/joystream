@@ -3,6 +3,10 @@ import { Enum } from '@polkadot/types/codec';
 import { BlockNumber, Balance } from '@polkadot/types/interfaces';
 import { JoyStruct } from '../JoyStruct';
 
+import { GenericJoyStreamRoleSchema } from './schemas/role.schema'
+
+import ajv from 'ajv'
+
 export class ApplicationId extends u64 {};
 export class OpeningId extends u64 {};
 
@@ -225,6 +229,8 @@ export class StakingPolicy extends JoyStruct<IStakingPolicy> {
     }
 };
 
+const schemaValidator = new ajv({allErrors: true}).compile(require('./schemas/role.schema.json'))
+
 export type IOpening = {
     created: BlockNumber,
     stage: OpeningStage,
@@ -247,7 +253,36 @@ export class Opening extends JoyStruct<IOpening> {
         human_readable_text: Text, // Vec.with(u8),
       }, value);
     }
-};
+
+  get human_readable_text(): GenericJoyStreamRoleSchema | string | undefined {
+      const hrt = this.get('human_readable_text')
+
+      if (typeof hrt === "undefined") {
+          return undefined
+      }
+
+      const str = hrt.toString()
+
+      try {
+      const obj = JSON.parse(str)
+      if (schemaValidator(obj) === true) {
+          return obj as unknown as GenericJoyStreamRoleSchema
+      }
+      } catch(e) {
+          console.log("JSON schema validation failed:", e.toString())
+      }
+
+      return str
+  }
+
+  get stage(): OpeningStage {
+    return this.get('stage') as OpeningStage
+  }
+
+  get max_review_period_length(): BlockNumber {
+      return this.get('max_review_period_length') as BlockNumber
+  }
+}
 
 export function registerHiringTypes () {
     try {

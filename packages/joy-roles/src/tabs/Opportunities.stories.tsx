@@ -2,13 +2,20 @@ import React from 'react'
 import { boolean, number, select, text, withKnobs } from '@storybook/addon-knobs'
 import * as faker from 'faker'
 
-import { Text, u128 } from '@polkadot/types'
+import { Option, Text, u32, u128 } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces';
 
 import { Actor } from "@joystream/types/roles"
-import { Opening } from "@joystream/types/hiring"
 import {
-  OpeningView, OpeningStakeAndApplicationStatus,
+  Opening,
+  AcceptingApplications,
+  ActiveOpeningStage,
+  ApplicationRationingPolicy,
+  StakingPolicy,
+} from "@joystream/types/hiring"
+import {
+  OpeningView,
+  OpeningStakeAndApplicationStatus,
 } from "./Opportunities"
 
 import {
@@ -27,7 +34,14 @@ import '@polkadot/joy-roles/index.sass'
 export default {
   title: 'Roles / Components / Opportunities groups tab',
   decorators: [withKnobs],
-  excludeStories: ['tomorrow', 'yesterday', 'opening', 'creator', 'stateOptions', 'newMockHumanReadableText'],
+  excludeStories: [
+    'tomorrow',
+    'yesterday',
+    'opening',
+    'creator',
+    'stateOptions',
+    'newMockHumanReadableText',
+  ],
 }
 
 export function tomorrow(): Date {
@@ -47,7 +61,16 @@ export function newMockHumanReadableText(obj: any) {
 }
 
 export const opening = new Opening({
-  max_review_period_length: 50000,
+  created: new u32(100),
+  stage: new ActiveOpeningStage({
+    acceptingApplications: new AcceptingApplications({
+      started_accepting_applicants_at_block: new u32(100),
+    })
+  }),
+  max_review_period_length: new u32(100),
+  application_rationing_policy: new Option(ApplicationRationingPolicy),
+  application_staking_policy: new Option(StakingPolicy),
+  role_staking_policy: new Option(StakingPolicy),
   human_readable_text: newMockHumanReadableText({
     version: 1,
     headline: text("Headline", "Help us curate awesome content", "Role"),

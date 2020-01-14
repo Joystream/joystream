@@ -6,7 +6,7 @@ import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
 import { Controller, Params, View } from '@polkadot/joy-utils/index'
 
-import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema'
 
 import { ITransport } from '../transport'
 
@@ -119,11 +119,11 @@ export class ApplyController extends Controller<State, ITransport> {
       console.log("Stake key:", stakeKeyAddress, stakeKeyPassphrase)
       console.log("Tx key:", txKeyAddress, txKeyPassphrase)
 
-	  const totalCommitment = Sum([
-		  this.state.transactionFee!,
-		  applicationStake,
-		  roleStake,
-	  ])
+      const totalCommitment = Sum([
+        this.state.transactionFee!,
+        applicationStake,
+        roleStake,
+      ])
 
       this.state.transactionDetails.set("Transaction fee", formatBalance(this.state.transactionFee))
       this.state.transactionDetails.set("Application stake", formatBalance(applicationStake))

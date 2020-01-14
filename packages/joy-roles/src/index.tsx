@@ -6,8 +6,7 @@ import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 import { Route, Switch, RouteComponentProps } from 'react-router';
 import Tabs from '@polkadot/react-components/Tabs';
-import { withMulti, withObservable } from '@polkadot/react-api/index';
-import accountObservable from '@polkadot/ui-keyring/observable/accounts';
+import { withMulti } from '@polkadot/react-api/index';
 
 import { ViewComponent } from '@polkadot/joy-utils/index'
 

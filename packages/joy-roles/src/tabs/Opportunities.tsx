@@ -22,7 +22,7 @@ import { Balance } from '@polkadot/types/interfaces';
 
 import { Countdown, GroupMember, GroupMemberView } from '../elements'
 import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement'
-import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema'
 import { Opening } from "@joystream/types/hiring"
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
