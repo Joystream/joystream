@@ -289,7 +289,7 @@ fn add_application_succeeds_with_created_application_stake() {
         let application = <ApplicationById<Test>>::get(application_id);
         let application_stake_id = application.active_application_staking_id.unwrap();
 
-        let stake = Hiring::staking().borrow().get_stake(application_stake_id);
+        let stake = Hiring::staking().get_stake(application_stake_id);
         let expected_stake = stake::Stake {
             created: 1,
             staking_status: stake::StakingStatus::Staked(stake::StakedState {
