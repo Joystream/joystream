@@ -1369,7 +1369,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub fn get_opt_stake_amount(stake_id: Option<T::StakeId>) -> BalanceOf<T> {
+    fn get_opt_stake_amount(stake_id: Option<T::StakeId>) -> BalanceOf<T> {
         stake_id.map_or(<BalanceOf<T> as Zero>::zero(), |stake_id| {
             // INVARIANT: stake MUST exist in the staking module
             assert!(Self::staking().stake_exists(stake_id));
@@ -1469,7 +1469,6 @@ impl<T: Trait> StakeHandler<T> for HiringStakeHandler {
         <stake::Module<T>>::initiate_unstaking(&stake_id, unstaking_period)
     }
 }
-
 
 // Proxy implementation of StakeHandler trait to simplify calls via staking() method
 // Allows to get rid of borrow() calls,
