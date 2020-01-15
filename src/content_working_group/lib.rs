@@ -494,11 +494,12 @@ impl Default for ChannelCurationStatus {
 /// A channel for publishing content.
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
-    /// Unique channel handle that could be used in channel URL.
-    pub handle: Vec<u8>,
 
     /// Whether channel has been verified, in the normal Web2.0 platform sense of being authenticated.
     pub verified: bool,
+
+    /// Unique channel handle that could be used in channel URL.
+    pub handle: Vec<u8>,
 
     /// Human readable title of channel. Not required to be unique.
     pub title: Vec<u8>,
@@ -1037,10 +1038,10 @@ decl_module! {
 
             // Construct channel
             let new_channel = Channel {
-                handle: handle.clone(),
                 verified: false,
-                description: description,
+                handle: handle.clone(),
                 title: title,
+                description: description,
                 avatar: avatar,
                 banner: banner,
                 content: content,
@@ -1163,8 +1164,8 @@ decl_module! {
 
             Self::update_channel(
                 &channel_id,
-                &new_handle,
                 &None, // verified
+                &new_handle,
                 &new_title,
                 &new_description,
                 &new_avatar,
@@ -1198,8 +1199,8 @@ decl_module! {
 
             Self::update_channel(
                 &channel_id,
-                &None, // handle
                 &new_verified,
+                &None, // handle
                 &None, // title
                 &new_description,
                 &None, // avatar
@@ -2465,8 +2466,8 @@ impl<T: Trait> Module<T> {
 
     fn update_channel(
         channel_id: &ChannelId<T>,
-        new_handle: &Option<Vec<u8>>,
         new_verified: &Option<bool>,
+        new_handle: &Option<Vec<u8>>,
         new_title: &Option<Vec<u8>>,
         new_description: &Option<Vec<u8>>,
         new_avatar: &Option<Vec<u8>>,
@@ -2486,12 +2487,13 @@ impl<T: Trait> Module<T> {
 
         // Update channel
         ChannelById::<T>::mutate(channel_id, |channel| {
-            if let Some(ref handle) = new_handle {
-                channel.handle = handle.clone();
-            }
 
             if let Some(ref verified) = new_verified {
                 channel.verified = *verified;
+            }
+
+            if let Some(ref handle) = new_handle {
+                channel.handle = handle.clone();
             }
 
             if let Some(ref title) = new_title {
