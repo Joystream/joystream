@@ -90,11 +90,19 @@ pub type PrincipalId<T> = <T as versioned_store_permissions::Trait>::PrincipalId
  * MOVE ALL OF THESE OUT TO COMMON LATER
  */
 
-static MSG_CHANNEL_CREATION_DISABLED: &str = "Channel creation currently disabled.";
-static MSG_CHANNEL_HANDLE_TOO_SHORT: &str = "Channel handle too short.";
-static MSG_CHANNEL_HANDLE_TOO_LONG: &str = "Channel handle too long.";
+static MSG_CHANNEL_CREATION_DISABLED: &str = "Channel creation currently disabled";
+static MSG_CHANNEL_HANDLE_ALREADY_TAKEN: &str = "Channel handle is already taken";
+static MSG_CHANNEL_HANDLE_TOO_SHORT: &str = "Channel handle too short";
+static MSG_CHANNEL_HANDLE_TOO_LONG: &str = "Channel handle too long";
+static MSG_CHANNEL_TITLE_TOO_SHORT: &str = "Channel title too short";
+static MSG_CHANNEL_TITLE_TOO_LONG: &str = "Channel title too long";
 static MSG_CHANNEL_DESCRIPTION_TOO_SHORT: &str = "Channel description too short";
 static MSG_CHANNEL_DESCRIPTION_TOO_LONG: &str = "Channel description too long";
+static MSG_CHANNEL_AVATAR_TOO_SHORT: &str = "Channel avatar URL too short";
+static MSG_CHANNEL_AVATAR_TOO_LONG: &str = "Channel avatar URL too long";
+static MSG_CHANNEL_BANNER_TOO_SHORT: &str = "Channel banner URL too short";
+static MSG_CHANNEL_BANNER_TOO_LONG: &str = "Channel banner URL too long";
+
 //static MSG_MEMBER_CANNOT_BECOME_PUBLISHER: &str =
 //    "Member cannot become a publisher";
 static MSG_CHANNEL_ID_INVALID: &str = "Channel id invalid";
@@ -123,15 +131,14 @@ static MSG_MEMBER_NO_LONGER_REGISTRABLE_AS_CURATOR: &str =
     "Member no longer registrable as curator";
 static MSG_CURATOR_DOES_NOT_EXIST: &str = "Curator does not exist";
 static MSG_CURATOR_IS_NOT_ACTIVE: &str = "Curator is not active";
-static MSG_CURATOR_EXIT_RATIOANEL_TEXT_TOO_LONG: &str = "Curator exit rationale text is too long";
-static MSG_CURATOR_EXIT_RATIOANEL_TEXT_TOO_SHORT: &str = "Curator exit rationale text is too short";
+static MSG_CURATOR_EXIT_RATIONALE_TEXT_TOO_LONG: &str = "Curator exit rationale text is too long";
+static MSG_CURATOR_EXIT_RATIONALE_TEXT_TOO_SHORT: &str = "Curator exit rationale text is too short";
 static MSG_CURATOR_APPLICATION_TEXT_TOO_LONG: &str = "Curator application text too long";
 static MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT: &str = "Curator application text too short";
 static MSG_SIGNER_IS_NOT_CURATOR_ROLE_ACCOUNT: &str = "Signer is not curator role account";
 static MSG_UNSTAKER_DOES_NOT_EXIST: &str = "Unstaker does not exist";
 static MSG_CURATOR_HAS_NO_REWARD: &str = "Curator has no recurring reward";
 static MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER: &str = "Curator not controlled by member";
-static MSG_CHANNEL_NAME_ALREADY_TAKEN: &str = "Channel name is already taken";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -487,14 +494,24 @@ impl Default for ChannelCurationStatus {
 /// A channel for publishing content.
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
-    /// Unique human readble channel name.
-    pub channel_name: Vec<u8>,
 
     /// Whether channel has been verified, in the normal Web2.0 platform sense of being authenticated.
     pub verified: bool,
 
+    /// Unique channel handle that could be used in channel URL.
+    pub handle: Vec<u8>,
+
+    /// Human readable title of channel. Not required to be unique.
+    pub title: Vec<u8>,
+
     /// Human readable description of channel purpose and scope.
     pub description: Vec<u8>,
+
+    /// URL of a small avatar (logo) image of this channel.
+    pub avatar: Vec<u8>,
+
+    /// URL of a big background image of this channel.
+    pub banner: Vec<u8>,
 
     /// The type of channel.
     pub content: ChannelContentType,
@@ -879,7 +896,7 @@ decl_storage! {
         /// Maps (unique) channel handle to the corresponding identifier for the channel.
         /// Mapping is required to allow efficient (O(log N)) on-chain verification that a proposed handle is indeed unique
         /// at the time it is being proposed.
-        pub ChannelIdByName get(channel_id_by_handle) config(): linked_map Vec<u8> => ChannelId<T>;
+        pub ChannelIdByHandle get(channel_id_by_handle) config(): linked_map Vec<u8> => ChannelId<T>;
 
         /// Maps identifier to corresponding curator.
         pub CuratorById get(curator_by_id) config(): linked_map CuratorId<T> => Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, CuratorApplicationId<T>, PrincipalId<T>>;
@@ -910,8 +927,11 @@ decl_storage! {
         // Vector length input guards
 
         pub ChannelHandleConstraint get(channel_handle_constraint) config(): InputValidationLengthConstraint;
+        pub ChannelTitleConstraint get(channel_title_constraint) config(): InputValidationLengthConstraint;
         pub ChannelDescriptionConstraint get(channel_description_constraint) config(): InputValidationLengthConstraint;
-        pub OpeningHumanReadableText get(opening_human_readble_text) config(): InputValidationLengthConstraint;
+        pub ChannelAvatarConstraint get(channel_avatar_constraint) config(): InputValidationLengthConstraint;
+        pub ChannelBannerConstraint get(channel_banner_constraint) config(): InputValidationLengthConstraint;
+        pub OpeningHumanReadableText get(opening_human_readable_text) config(): InputValidationLengthConstraint;
         pub CuratorApplicationHumanReadableText get(curator_application_human_readable_text) config(): InputValidationLengthConstraint;
         pub CuratorExitRationaleText get(curator_exit_rationale_text) config(): InputValidationLengthConstraint;
     }
@@ -965,7 +985,17 @@ decl_module! {
          */
 
         /// Create a new channel.
-        pub fn create_channel(origin, owner: T::MemberId, role_account: T::AccountId, channel_name: Vec<u8>, description: Vec<u8>, content: ChannelContentType) {
+        pub fn create_channel(
+            origin,
+            owner: T::MemberId,
+            role_account: T::AccountId,
+            handle: Vec<u8>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            avatar: Vec<u8>,
+            banner: Vec<u8>,
+            content: ChannelContentType
+        ) {
 
             // Ensure that it is signed
             let signer_account = ensure_signed(origin)?;
@@ -984,11 +1014,20 @@ decl_module! {
             // Ensure prospective owner member is currently allowed to become channel owner
             let (member_in_role, next_channel_id) = Self::ensure_can_register_channel_owner_role_on_member(&owner, None)?;
 
-            // Ensure channel name is acceptable length
-            Self::ensure_channel_name_is_valid(&channel_name)?;
+            // Ensure channel handle is acceptable length
+            Self::ensure_channel_handle_is_valid(&handle)?;
+
+            // Ensure title is acceptable length
+            Self::ensure_channel_title_is_valid(&title)?;
 
             // Ensure description is acceptable length
             Self::ensure_channel_description_is_valid(&description)?;
+
+            // Ensure avatar URL is acceptable length
+            Self::ensure_channel_avatar_is_valid(&avatar)?;
+
+            // Ensure banner URL is acceptable length
+            Self::ensure_channel_banner_is_valid(&banner)?;
 
             //
             // == MUTATION SAFE ==
@@ -999,9 +1038,12 @@ decl_module! {
 
             // Construct channel
             let new_channel = Channel {
-                channel_name: channel_name.clone(),
                 verified: false,
+                handle: handle.clone(),
+                title: title,
                 description: description,
+                avatar: avatar,
+                banner: banner,
                 content: content,
                 owner: owner,
                 role_account: role_account,
@@ -1014,8 +1056,8 @@ decl_module! {
             // Add channel to ChannelById under id
             ChannelById::<T>::insert(next_channel_id, new_channel);
 
-            // Add id to ChannelIdByName under handle
-            ChannelIdByName::<T>::insert(channel_name.clone(), next_channel_id);
+            // Add id to ChannelIdByHandle under handle
+            ChannelIdByHandle::<T>::insert(handle.clone(), next_channel_id);
 
             // Increment NextChannelId
             NextChannelId::<T>::mutate(|id| *id += <ChannelId<T> as One>::one());
@@ -1080,21 +1122,40 @@ decl_module! {
         pub fn update_channel_as_owner(
             origin,
             channel_id: ChannelId<T>,
-            new_channel_name: Option<Vec<u8>>,
+            new_handle: Option<Vec<u8>>,
+            new_title: Option<Vec<u8>>,
             new_description: Option<Vec<u8>>,
-            new_publishing_status: Option<ChannelPublishingStatus>) {
+            new_avatar: Option<Vec<u8>>,
+            new_banner: Option<Vec<u8>>,
+            new_publishing_status: Option<ChannelPublishingStatus>
+        ) {
 
             // Ensure channel owner has signed
             Self::ensure_channel_owner_signed(origin, &channel_id)?;
 
             // If set, ensure handle is acceptable length
-            if let Some(ref channel_name) = new_channel_name {
-                Self::ensure_channel_name_is_valid(channel_name)?;
+            if let Some(ref handle) = new_handle {
+                Self::ensure_channel_handle_is_valid(handle)?;
+            }
+
+            // If set, ensure title is acceptable length
+            if let Some(ref title) = new_title {
+                Self::ensure_channel_title_is_valid(title)?;
             }
 
             // If set, ensure description is acceptable length
             if let Some(ref description) = new_description {
                 Self::ensure_channel_description_is_valid(description)?;
+            }
+
+            // If set, ensure avatar image URL is acceptable length
+            if let Some(ref avatar) = new_avatar {
+                Self::ensure_channel_avatar_is_valid(avatar)?;
+            }
+
+            // If set, ensure banner image URL is acceptable length
+            if let Some(ref banner) = new_banner {
+                Self::ensure_channel_banner_is_valid(banner)?;
             }
 
             //
@@ -1103,13 +1164,15 @@ decl_module! {
 
             Self::update_channel(
                 &channel_id,
-                &None,
-                &None,
+                &None, // verified
+                &new_handle,
+                &new_title,
                 &new_description,
+                &new_avatar,
+                &new_banner,
                 &new_publishing_status,
-                &None
+                &None // curation_status
             );
-
         }
 
         /// Update channel as a curation actor
@@ -1120,7 +1183,7 @@ decl_module! {
             new_verified: Option<bool>,
             new_description: Option<Vec<u8>>,
             new_curation_status: Option<ChannelCurationStatus>
-            ) {
+        ) {
 
             // Ensure curation actor signed
             Self::ensure_curation_actor_signed(origin, &curation_actor)?;
@@ -1134,16 +1197,17 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-
             Self::update_channel(
                 &channel_id,
-                &None,
                 &new_verified,
+                &None, // handle
+                &None, // title
                 &new_description,
-                &None,
+                &None, // avatar
+                &None, // banner
+                &None, // publishing_status
                 &new_curation_status
             );
-
         }
 
         /// Add an opening for a curator role.
@@ -1758,7 +1822,7 @@ decl_module! {
                 if let WorkingGroupUnstaker::Curator(curator_id) = unstaker {
                     curator_id
                 } else {
-                    panic!("Should not be possible, only curators unstake in this module currently.");
+                    panic!("Should not be possible, only curators unstake in this module currently");
                 };
 
             // Grab curator from id, unwrap, because this curator _must_ exist.
@@ -1773,7 +1837,7 @@ decl_module! {
                 if let CuratorRoleStage::Unstaking(summary) = unstaking_curator.stage {
                     summary
                 } else {
-                    panic!("Curator must be in unstaking stage.");
+                    panic!("Curator must be in unstaking stage");
                 };
 
             let new_curator = Curator{
@@ -1888,20 +1952,28 @@ impl<T: Trait> Module<T> {
 
     // TODO: convert InputConstraint ensurer routines into macroes
 
-    fn ensure_channel_name_is_valid(channel_name: &Vec<u8>) -> dispatch::Result {
+    fn ensure_channel_handle_is_valid(handle: &Vec<u8>) -> dispatch::Result {
         ChannelHandleConstraint::get().ensure_valid(
-            channel_name.len(),
+            handle.len(),
             MSG_CHANNEL_HANDLE_TOO_SHORT,
             MSG_CHANNEL_HANDLE_TOO_LONG,
         )?;
 
         // Has to not already be occupied
         ensure!(
-            ChannelIdByName::<T>::exists(channel_name),
-            MSG_CHANNEL_NAME_ALREADY_TAKEN
+            ChannelIdByHandle::<T>::exists(handle),
+            MSG_CHANNEL_HANDLE_ALREADY_TAKEN
         );
 
         Ok(())
+    }
+
+    fn ensure_channel_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
+        ChannelTitleConstraint::get().ensure_valid(
+            title.len(),
+            MSG_CHANNEL_TITLE_TOO_SHORT,
+            MSG_CHANNEL_TITLE_TOO_LONG,
+        )
     }
 
     fn ensure_channel_description_is_valid(description: &Vec<u8>) -> dispatch::Result {
@@ -1909,6 +1981,22 @@ impl<T: Trait> Module<T> {
             description.len(),
             MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
             MSG_CHANNEL_DESCRIPTION_TOO_LONG,
+        )
+    }
+
+    fn ensure_channel_avatar_is_valid(avatar: &Vec<u8>) -> dispatch::Result {
+        ChannelAvatarConstraint::get().ensure_valid(
+            avatar.len(),
+            MSG_CHANNEL_AVATAR_TOO_SHORT,
+            MSG_CHANNEL_AVATAR_TOO_LONG,
+        )
+    }
+
+    fn ensure_channel_banner_is_valid(banner: &Vec<u8>) -> dispatch::Result {
+        ChannelBannerConstraint::get().ensure_valid(
+            banner.len(),
+            MSG_CHANNEL_BANNER_TOO_SHORT,
+            MSG_CHANNEL_BANNER_TOO_LONG,
         )
     }
 
@@ -1923,8 +2011,8 @@ impl<T: Trait> Module<T> {
     fn ensure_curator_exit_rationale_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
         CuratorExitRationaleText::get().ensure_valid(
             text.len(),
-            MSG_CURATOR_EXIT_RATIOANEL_TEXT_TOO_SHORT,
-            MSG_CURATOR_EXIT_RATIOANEL_TEXT_TOO_LONG,
+            MSG_CURATOR_EXIT_RATIONALE_TEXT_TOO_SHORT,
+            MSG_CURATOR_EXIT_RATIONALE_TEXT_TOO_LONG,
         )
     }
 
@@ -2354,7 +2442,7 @@ impl<T: Trait> Module<T> {
         if let Some(directions) = unstake_directions {
             // Unstake
             stake::Module::<T>::initiate_unstaking(&directions.0, directions.1)
-                .expect("Unstaking must be possible at this time.");
+                .expect("Unstaking must be possible at this time");
         }
 
         // Trigger event
@@ -2378,35 +2466,50 @@ impl<T: Trait> Module<T> {
 
     fn update_channel(
         channel_id: &ChannelId<T>,
-        new_channel_name: &Option<Vec<u8>>,
         new_verified: &Option<bool>,
-        new_descriptin: &Option<Vec<u8>>,
+        new_handle: &Option<Vec<u8>>,
+        new_title: &Option<Vec<u8>>,
+        new_description: &Option<Vec<u8>>,
+        new_avatar: &Option<Vec<u8>>,
+        new_banner: &Option<Vec<u8>>,
         new_publishing_status: &Option<ChannelPublishingStatus>,
         new_curation_status: &Option<ChannelCurationStatus>,
     ) {
-        // Update name to channel mapping if there is a new name mapping
-        if let Some(ref channel_name) = new_channel_name {
-            // Remove mapping under old name
-            let current_channel_name = ChannelById::<T>::get(channel_id).channel_name;
+        // Update channel id to handle mapping, if there is a new handle.
+        if let Some(ref handle) = new_handle {
+            // Remove mapping under old handle
+            let current_handle = ChannelById::<T>::get(channel_id).handle;
+            ChannelIdByHandle::<T>::remove(current_handle);
 
-            ChannelIdByName::<T>::remove(current_channel_name);
-
-            // Establish mapping under new name
-            ChannelIdByName::<T>::insert(channel_name.clone(), channel_id);
+            // Establish mapping under new handle
+            ChannelIdByHandle::<T>::insert(handle.clone(), channel_id);
         }
 
         // Update channel
         ChannelById::<T>::mutate(channel_id, |channel| {
-            if let Some(ref channel_name) = new_channel_name {
-                channel.channel_name = channel_name.clone();
-            }
 
             if let Some(ref verified) = new_verified {
                 channel.verified = *verified;
             }
 
-            if let Some(ref description) = new_descriptin {
+            if let Some(ref handle) = new_handle {
+                channel.handle = handle.clone();
+            }
+
+            if let Some(ref title) = new_title {
+                channel.title = title.clone();
+            }
+
+            if let Some(ref description) = new_description {
                 channel.description = description.clone();
+            }
+
+            if let Some(ref avatar) = new_avatar {
+                channel.avatar = avatar.clone();
+            }
+
+            if let Some(ref banner) = new_banner {
+                channel.banner = banner.clone();
             }
 
             if let Some(ref publishing_status) = new_publishing_status {
