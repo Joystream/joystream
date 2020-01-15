@@ -276,6 +276,15 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Copy
         + MaybeSerialize
         + PartialEq;
+
+    type PollItemLength: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
 }
 
 /*
@@ -368,11 +377,10 @@ const ERROR_CATEGORY_DOES_NOT_EXIST: &str = "Category does not exist.";
 // Errors about poll.
 const ERROR_POLL_DESC_TOO_SHORT: &str = "Poll description too short.";
 const ERROR_POLL_DESC_TOO_LONG: &str = "Poll description too long.";
-const ERROR_POLL_ITEMS_TOO_SHORT: &str = "Poll items number too short.";
-const ERROR_POLL_ITEMS_TOO_LONG: &str = "Poll items number too long.";
+const ERROR_POLL_ALTERNATIVES_TOO_SHORT: &str = "Poll items number too short.";
+const ERROR_POLL_ALTERNATIVES_TOO_LONG: &str = "Poll items number too long.";
 const ERROR_POLL_NOT_EXIST: &str = "Poll not exist.";
 const ERROR_POLL_TIME_SETTING: &str = "Poll date setting is wrong.";
-const ERROR_POLL_ITEMS_SETTING: &str = "Poll date items setting is wrong.";
 const ERROR_POLL_DATA: &str = "Poll data committed is wrong.";
 const ERROR_POLL_COMMIT_EXPIRED: &str = "Poll data committed after poll expired.";
 
@@ -485,47 +493,33 @@ impl Default for PostReaction {
     }
 }
 
-/// Poll data raw storage, each bit represent an item selected.
-// pub struct PollData<ThreadId> {
-//     pub raw: u128,
-//     pub id: ThreadId,
-// }
+/// Represents all poll alternatives and vote count for each one
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub struct PollAlternative {
+    /// Alternative description
+    alternative_text: Vec<u8>,
 
-// /// Some auxiliary method for PollData
-// impl<ThreadId> PollData<ThreadId> {
-//     pub poll_existed(&self, thread: Thread) -> bool {
-//         self.id == thread.id && thread.poll.is_some()
-//     }
-//     pub poll_data_is_valid(&self, poll: Poll<Timestamp, PollItemLength>) -> bool {
+    /// Vote count for the alternative
+    poll_count: u32,
+}
 
-//     }
-// }
+/// Represents a poll
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub struct Poll<Timestamp> {
+    /// description text for poll
+    poll_description: Vec<u8>,
 
-// pub type PollData = u128;
-// pub type PollItemLength = u8;
+    /// timestamp of poll start
+    start_time: Timestamp,
 
-/// Represents a poll, each item's description not included.
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-// #[derive(Encode, Decode)]
-// pub struct Poll<T: Trait> {
-//     /// description text for poll
-//     poll_description: Vec<u8>,
+    /// timestamp of poll end
+    end_time: Timestamp,
 
-//     /// timestamp of poll start
-//     start_time: Timestamp<T>,
-
-//     /// timestamp of poll end
-//     end_time: Timestamp<T>,
-
-//     /// length of poll.
-//     poll_item_number: PollItemLength,
-
-//     /// min selected items.
-//     min_selected_items: PollItemLength,
-
-//     /// max selected items.
-//     max_selected_items: PollItemLength,
-// }
+    /// Alternative description and count
+    poll_alternatives: Vec<PollAlternative>,
+}
 
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -583,7 +577,7 @@ pub struct Thread<ForumUserId, ModeratorId, CategoryId, ThreadId, BlockNumber, M
     author_id: ForumUserId,
 
     /// poll description.
-    // poll: Option<Poll<Self>>,
+    poll: Option<Poll<Moment>>,
 
     /// The thread number of this thread in its category, i.e. total number of thread added (including this)
     /// to a category when it was added.
@@ -737,15 +731,6 @@ decl_storage! {
         /// Each account 's reaction to a post.
         pub ReactionByPost get(reaction_by_post) config(): double_map T::PostId, blake2_256(T::ForumUserId) => PostReaction;
 
-        /// Description for each item in a poll.
-        //pub PollDesc get(poll_desc) config(): double_map T::ThreadId, blake2_256(u8) => Vec<u8>;
-
-        /// Each account's data record to a poll.
-        //pub PollDataByAccount get(poll_by_account) config(): double_map T::ThreadId, blake2_256(T::ForumUserId) => PollData;
-
-        /// Poll statistics
-        //pub PollStatistics get(poll_statistics) config(): double_map T::ThreadId, blake2_256(PollData) => u64;
-
         /// Input constraints for description text of category title.
         pub CategoryTitleConstraint get(category_title_constraint) config(): InputValidationLengthConstraint;
 
@@ -768,10 +753,10 @@ decl_storage! {
         pub LabelNameConstraint get(label_name_constraint) config(): InputValidationLengthConstraint;
 
         /// Input constraints for description text of each item in poll.
-        //pub PollDescConstraint get(poll_desc_constraint) config(): InputValidationLengthConstraint;
+        pub PollDescConstraint get(poll_desc_constraint) config(): InputValidationLengthConstraint;
 
         /// Input constraints for number of items in poll.
-        //pub PollItemsConstraint get(poll_items_constraint) config(): InputValidationLengthConstraint;
+        pub PollItemsConstraint get(poll_items_constraint) config(): InputValidationLengthConstraint;
 
         /// Input constraints for user name.
         pub UserNameConstraint get(user_name_constraint) config(): InputValidationLengthConstraint;
@@ -1114,8 +1099,8 @@ decl_module! {
 
         /// Create new thread in category with poll
         fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, title: Vec<u8>, text: Vec<u8>, labels: BTreeSet<T::LabelId>,
+            poll: Option<Poll<T::Moment>>,
         ) -> dispatch::Result {
-            // poll_data: Option<(Vec<Vec<u8>>, Vec<u8>, T::Moment, T::Moment, u8, u8)>, ) -> dispatch::Result {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1123,9 +1108,9 @@ decl_module! {
             // Check that account is forum member
             Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
-            //
-            // let thread = Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels, &poll_data)?;
-            let thread = Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels)?;
+            // Create a new thread
+            let thread = Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels, &poll)?;
+
             // Generate event
             Self::deposit_event(RawEvent::ThreadCreated(thread.id));
 
@@ -1198,36 +1183,68 @@ decl_module! {
         }
 
         /// submit a poll
-        // fn submit_poll(origin, thread_id: T::ThreadId, poll_value: PollData) -> dispatch::Result {
-        //     // Check that its a valid signature
-        //     let who = ensure_signed(origin)?;
+        fn submit_poll(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, index: u32) -> dispatch::Result {
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
 
-        //     // get forum user id.
-        //     let forum_user_id = Self::ensure_is_forum_member_with_correct_account(&who)?;
+            // get forum user id.
+            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
-        //     // Get thread
-        //     let thread = Self::ensure_thread_exists(&thread_id)?;
+            // Get thread
+            let thread = Self::ensure_thread_exists(&thread_id)?;
 
-        //     // Make sure poll exist and not expired
-        //     match thread.poll {
-        //         None => Err(ERROR_POLL_NOT_EXIST),
-        //         Some(poll) => {
-        //             if poll.end_time < <timestamp::Module<T>>::now() {
-        //                 Err(ERROR_POLL_COMMIT_EXPIRED)
-        //             } else {
-        //                 Self::ensure_poll_data_valid(&poll, poll_value)?;
-        //                 <PollDataByAccount<T>>::insert(thread_id, forum_user_id, poll_value);
-        //                 if <PollStatistics<T>>::exists(thread_id, poll_value) {
-        //                     <PollStatistics<T>>::insert(thread_id, poll_value, 1);
-        //                 } else {
-        //                     let old_value = <PollStatistics<T>>::get(thread_id, poll_value);
-        //                     <PollStatistics<T>>::insert(thread_id, poll_value, old_value + 1);
-        //                 }
-        //                 Ok(())
-        //             }
-        //         }
-        //     }
-        // }
+            // Make sure poll exist
+            match thread.poll {
+                None => Err(ERROR_POLL_NOT_EXIST),
+                Some(poll) => {
+                    // Poll not expired
+                    if poll.end_time < <timestamp::Module<T>>::now() {
+                        Err(ERROR_POLL_COMMIT_EXPIRED)
+                    } else {
+                        let alternative_length = poll.poll_alternatives.len();
+                        // The selected alternative index is valid
+                        if index as usize >= alternative_length {
+                            Err(ERROR_POLL_DATA)
+                        } else {
+                            // Update thread data
+                            <ThreadById<T>>::mutate(thread_id, |value| {
+                                // Store new poll alternative statistics
+                                let mut new_vote_count = poll.poll_alternatives.clone();
+
+                                new_vote_count[index as usize] = PollAlternative{
+                                    alternative_text: new_vote_count[index as usize].alternative_text.clone(),
+                                    // Increment one
+                                    poll_count: new_vote_count[index as usize].poll_count + 1,
+                                };
+
+                                // Update thread with one object
+                                *value = Thread {
+                                    id: value.id,
+                                    title: value.title.clone(),
+                                    category_id: value.category_id,
+                                    moderation: value.moderation.clone(),
+                                    created_at: value.created_at.clone(),
+                                    author_id: value.author_id,
+
+                                    poll: Some( Poll {
+                                        poll_description: poll.poll_description.clone(),
+                                        start_time: poll.start_time,
+                                        end_time: poll.end_time,
+                                        poll_alternatives: new_vote_count,
+
+                                    }),
+                                    nr_in_category: value.nr_in_category,
+                                    num_unmoderated_posts: value.num_unmoderated_posts,
+                                    num_moderated_posts: value.num_moderated_posts,
+
+                                }
+                            });
+                            Ok(())
+                        }
+                    }
+                }
+            }
+        }
 
         /// Moderate thread
         fn moderate_thread(origin, moderator_id: T::ModeratorId, thread_id: T::ThreadId, rationale: Vec<u8>) -> dispatch::Result {
@@ -1433,7 +1450,7 @@ impl<T: Trait> Module<T> {
         title: &Vec<u8>,
         text: &Vec<u8>,
         labels: &BTreeSet<T::LabelId>,
-        // poll_data: &Option<(Vec<Vec<u8>>, Vec<u8>, T::Moment, T::Moment, u8, u8)>,
+        poll: &Option<Poll<T::Moment>>,
     ) -> Result<
         Thread<
             T::ForumUserId,
@@ -1461,40 +1478,16 @@ impl<T: Trait> Module<T> {
         // Validate labels
         Self::ensure_label_valid(&labels)?;
 
-        // if poll_data.is_some() {
-        //     let data = poll_data.clone().unwrap();
+        // Unwrap poll
+        if poll.is_some() {
+            let data = poll.clone().unwrap();
 
-        //     Self::ensure_poll_items_valid(&data.0)?;
+            // Check all poll alternatives
+            Self::ensure_poll_alternatives_valid(&data.poll_alternatives)?;
 
-        //     Self::ensure_poll_is_valid(data.0.len(), &data.1, data.2, data.3, data.4, data.5)?;
-
-        //     let _ = Self::add_poll_items(new_thread_id, &data.0);
-        // }
-
-        // let poll = if poll_data.is_some() {
-        //     let data = poll_data.clone().unwrap();
-        //     Some(Poll {
-        //         // description for poll
-        //         poll_description: data.1.clone(),
-
-        //         // timestamp of poll start
-        //         start_time: data.2,
-
-        //         // timestamp of poll end
-        //         end_time: data.3,
-
-        //         // length of poll items.
-        //         poll_item_number: data.1.len() as u8,
-
-        //         // min selected items.
-        //         min_selected_items: data.4,
-
-        //         // max selected items.
-        //         max_selected_items: data.5,
-        //     })
-        // } else {
-        //     None
-        // };
+            // Check poll self information
+            Self::ensure_poll_is_valid(&data)?;
+        }
 
         // Get the category
         let category = <CategoryById<T>>::get(category_id);
@@ -1516,7 +1509,7 @@ impl<T: Trait> Module<T> {
             moderation: None,
             created_at: Self::current_block_and_time(),
             author_id: author_id,
-            // poll: poll,
+            poll: poll.clone(),
             nr_in_category: category.num_threads_created() + 1,
             num_unmoderated_posts: 0,
             num_moderated_posts: 0,
@@ -1697,87 +1690,35 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // fn ensure_poll_data_valid(poll: &Poll<T::Moment>, poll_data: PollData) -> dispatch::Result {
-    //     // poll data must be in the scope
-    //     let one: u128 = 1;
-    //     let min_value = one << poll.min_selected_items - 1;
-    //     let max_value = (one << poll.max_selected_items) - min_value;
-    //     if poll_data < min_value || poll_data > max_value {
-    //         return Err(ERROR_POLL_DATA);
-    //     }
+    // Ensure poll is valid
+    fn ensure_poll_is_valid(poll: &Poll<T::Moment>) -> dispatch::Result {
+        // Poll end time must larger than now
+        if poll.end_time < <timestamp::Module<T>>::now() {
+            return Err(ERROR_POLL_TIME_SETTING);
+        }
+        // Check the timestamp setting
+        if poll.start_time > poll.end_time {
+            return Err(ERROR_POLL_TIME_SETTING);
+        }
 
-    //     // Caculate the number of bit 1 in poll data
-    //     let mut data = poll_data;
-    //     let mut bits_num = 0;
-    //     for _ in 0..poll.poll_item_number {
-    //         if data & 0x01 == 1 {
-    //             bits_num += 1;
-    //         }
-    //         data = data >> 1;
-    //     }
+        // Check poll description
+        Self::ensure_poll_desc_is_valid(poll.poll_description.len())?;
+        Ok(())
+    }
 
-    //     // poll data bits number must be in the scope
-    //     if bits_num > poll.max_selected_items || bits_num < poll.min_selected_items {
-    //         Err(ERROR_POLL_DATA)
-    //     } else {
-    //         Ok(())
-    //     }
-    // }
+    // Ensure all poll alternative valid
+    fn ensure_poll_alternatives_valid(alternatives: &Vec<PollAlternative>) -> dispatch::Result {
+        let len = alternatives.len();
+        // Check alternative amount
+        Self::ensure_poll_alternatives_length_is_valid(len)?;
 
-    // fn ensure_poll_is_valid(
-    //     items_number: usize,
-    //     poll_description: &Vec<u8>,
-    //     start_time: T::Moment,
-    //     end_time: T::Moment,
-    //     min_selected_items: u8,
-    //     max_selected_items: u8,
-    // ) -> dispatch::Result {
-    //     if end_time < <timestamp::Module<T>>::now() {
-    //         return Err(ERROR_POLL_TIME_SETTING);
-    //     }
-
-    //     // items number never over 128 since use u128 store raw data
-    //     if items_number > 128 {
-    //         return Err(ERROR_POLL_ITEMS_SETTING);
-    //     }
-
-    //     let items_number = items_number as u8;
-
-    //     // Check the timestamp setting
-    //     if start_time > end_time {
-    //         return Err(ERROR_POLL_TIME_SETTING);
-    //     }
-
-    //     // Check all items number setting
-    //     if items_number < 1 || items_number > 128 {
-    //         return Err(ERROR_POLL_ITEMS_SETTING);
-    //     }
-
-    //     // Check could be selected items number setting
-    //     if min_selected_items < 1 || max_selected_items > 128 || items_number < max_selected_items {
-    //         Err(ERROR_POLL_ITEMS_SETTING)
-    //     } else {
-    //         Self::ensure_poll_desc_is_valid(poll_description.len())?;
-    //         Ok(())
-    //     }
-    // }
-
-    // fn ensure_poll_items_valid(text: &Vec<Vec<u8>>) -> dispatch::Result {
-    //     let len = text.len();
-    //     Self::ensure_poll_items_length_is_valid(len)?;
-    //     for index in 0..len {
-    //         let desc_len = text[index].len();
-    //         Self::ensure_poll_desc_is_valid(desc_len)?;
-    //     }
-    //     Ok(())
-    // }
-
-    // fn add_poll_items(thread_id: T::ThreadId, text: &Vec<Vec<u8>>) -> dispatch::Result {
-    //     for index in 0..text.len() {
-    //         <PollDesc<T>>::insert(thread_id, index as u8, &text[index]);
-    //     }
-    //     Ok(())
-    // }
+        // Check each alternative's text one by one
+        for index in 0..len {
+            let desc_len = alternatives[index].alternative_text.len();
+            Self::ensure_poll_desc_is_valid(desc_len)?;
+        }
+        Ok(())
+    }
 
     fn ensure_user_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
         UserNameConstraint::get().ensure_valid(
@@ -1843,21 +1784,23 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    // fn ensure_poll_desc_is_valid(len: usize) -> dispatch::Result {
-    //     PollDescConstraint::get().ensure_valid(
-    //         len,
-    //         ERROR_POLL_DESC_TOO_SHORT,
-    //         ERROR_POLL_DESC_TOO_LONG,
-    //     )
-    // }
+    // Ensure poll description text is valid
+    fn ensure_poll_desc_is_valid(len: usize) -> dispatch::Result {
+        PollDescConstraint::get().ensure_valid(
+            len,
+            ERROR_POLL_DESC_TOO_SHORT,
+            ERROR_POLL_DESC_TOO_LONG,
+        )
+    }
 
-    // fn ensure_poll_items_length_is_valid(len: usize) -> dispatch::Result {
-    //     PollItemsConstraint::get().ensure_valid(
-    //         len,
-    //         ERROR_POLL_ITEMS_TOO_SHORT,
-    //         ERROR_POLL_ITEMS_TOO_LONG,
-    //     )
-    // }
+    // Ensure poll alternative size is valid
+    fn ensure_poll_alternatives_length_is_valid(len: usize) -> dispatch::Result {
+        PollItemsConstraint::get().ensure_valid(
+            len,
+            ERROR_POLL_ALTERNATIVES_TOO_SHORT,
+            ERROR_POLL_ALTERNATIVES_TOO_LONG,
+        )
+    }
 
     fn current_block_and_time() -> BlockchainTimestamp<T::BlockNumber, T::Moment> {
         BlockchainTimestamp {
