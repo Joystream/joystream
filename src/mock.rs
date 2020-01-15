@@ -100,4 +100,3 @@ pub(crate) fn build_test_externalities() -> runtime_io::TestExternalities {
 pub type Balances = balances::Module<Test>;
 pub type Hiring = Module<Test>;
 pub type System = system::Module<Test>;
-
