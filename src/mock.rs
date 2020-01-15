@@ -12,51 +12,6 @@ use runtime_primitives::{
 };
 use srml_support::{impl_outer_origin, parameter_types};
 
-/// Module which has a full Substrate module for
-/// mocking behaviour of MembershipRegistry
-pub mod registry {
-
-    use super::*;
-    // use srml_support::*;
-
-    #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-    pub struct Member<AccountId> {
-        pub id: AccountId,
-    }
-
-    decl_storage! {
-        trait Store for Module<T: Trait> as MockForumUserRegistry {
-
-            pub ForumUserById get(forum_user_by_id) config(): map T::AccountId => Member<T::AccountId>;
-
-        }
-    }
-
-    decl_module! {
-        pub struct Module<T: Trait> for enum Call where origin: T::Origin {}
-    }
-
-    impl<T: Trait> Module<T> {
-        pub fn add_member(member: &Member<T::AccountId>) {
-            <ForumUserById<T>>::insert(member.id.clone(), member.clone());
-        }
-    }
-
-    impl<T: Trait> ForumUserRegistry<T::AccountId> for Module<T> {
-        fn get_forum_user(id: &T::AccountId) -> Option<ForumUser<T::AccountId>> {
-            if <ForumUserById<T>>::exists(id) {
-                let m = <ForumUserById<T>>::get(id);
-
-                Some(ForumUser { id: m.id })
-            } else {
-                None
-            }
-        }
-    }
-
-    pub type TestMembershipRegistryModule = Module<Runtime>;
-}
-
 impl_outer_origin! {
     pub enum Origin for Runtime {}
 }
@@ -99,7 +54,6 @@ impl timestamp::Trait for Runtime {
 
 impl Trait for Runtime {
     type Event = ();
-    type MembershipRegistry = registry::TestMembershipRegistryModule;
 }
 
 #[derive(Clone)]
@@ -117,7 +71,9 @@ pub fn mock_origin(origin: OriginType) -> mock::Origin {
     }
 }
 
-pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(111);
+pub const NOT_FORUM_SUDO_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 111;
+
+pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_SUDO_ORIGIN_ID);
 
 pub const NOT_MEMBER_ORIGIN: OriginType = OriginType::Signed(222);
 
@@ -127,8 +83,20 @@ pub const INVLAID_THREAD_ID: ThreadId = 444;
 
 pub const INVLAID_POST_ID: ThreadId = 555;
 
+pub fn require_root_origin() -> &'static str {
+    "RequireRootOrigin"
+}
+
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
+}
+
+pub fn good_user_name() -> Vec<u8> {
+    b"good name".to_vec()
+}
+
+pub fn good_self_introduction() -> Vec<u8> {
+    b"good description".to_vec()
 }
 
 pub fn good_category_title() -> Vec<u8> {
@@ -155,253 +123,304 @@ pub fn good_rationale() -> Vec<u8> {
     b"This post violates our community rules".to_vec()
 }
 
-/*
- * These test fixtures can be heavily refactored to avoid repotition, needs macros, and event
- * assertions are also missing.
- */
-
-pub struct CreateCategoryFixture {
-    pub origin: OriginType,
-    pub parent: Option<CategoryId>,
-    pub title: Vec<u8>,
-    pub description: Vec<u8>,
-    pub result: dispatch::Result,
+pub fn generate_poll_items(len: usize) -> Vec<Vec<u8>> {
+    (0..len)
+        .into_iter()
+        .map(|index| format!("poll item {}", index).as_bytes().to_vec())
+        .collect()
 }
 
-impl CreateCategoryFixture {
-    pub fn call_and_assert(&self) {
-        assert_eq!(
-            TestForumModule::create_category(
-                mock_origin(self.origin.clone()),
-                self.parent,
-                self.title.clone(),
-                self.description.clone()
-            ),
-            self.result
-        )
-    }
+pub fn good_poll_items() -> Vec<Vec<u8>> {
+    vec![
+        b"poll item A".to_vec(),
+        b"poll item B".to_vec(),
+        b"poll item C".to_vec(),
+        b"poll item D".to_vec(),
+    ]
 }
 
-pub struct UpdateCategoryFixture {
-    pub origin: OriginType,
-    pub category_id: CategoryId,
-    pub new_archival_status: Option<bool>,
-    pub new_deletion_status: Option<bool>,
-    pub result: dispatch::Result,
+pub fn good_poll_text() -> Vec<u8> {
+    b"It is a poll for you to choose A B C D".to_vec()
 }
 
-impl UpdateCategoryFixture {
-    pub fn call_and_assert(&self) {
-        assert_eq!(
-            TestForumModule::update_category(
-                mock_origin(self.origin.clone()),
-                self.category_id,
-                self.new_archival_status.clone(),
-                self.new_deletion_status.clone()
-            ),
-            self.result
-        )
-    }
+pub fn get_poll_meta() -> Option<(
+    Vec<Vec<u8>>,
+    Vec<u8>,
+    <Runtime as timestamp::Trait>::Moment,
+    <Runtime as timestamp::Trait>::Moment,
+    u8,
+    u8,
+)> {
+    // four items and poll last for 10 seconds for testing purpose.
+    Some((
+        good_poll_items(),
+        good_poll_text(),
+        Timestamp::now(),
+        Timestamp::now() + 10,
+        1,
+        4,
+    ))
 }
 
-pub struct CreateThreadFixture {
-    pub origin: OriginType,
-    pub category_id: CategoryId,
-    pub title: Vec<u8>,
-    pub text: Vec<u8>,
-    pub result: dispatch::Result,
+pub fn good_labels() -> Vec<Vec<u8>> {
+    vec![
+        b"label item A".to_vec(),
+        b"label item B".to_vec(),
+        b"label item C".to_vec(),
+        b"label item D".to_vec(),
+        b"label item E".to_vec(),
+        b"label item F".to_vec(),
+        b"label item G".to_vec(),
+        b"label item H".to_vec(),
+    ]
 }
 
-impl CreateThreadFixture {
-    pub fn call_and_assert(&self) {
-        assert_eq!(
-            TestForumModule::create_thread(
-                mock_origin(self.origin.clone()),
-                self.category_id,
-                self.title.clone(),
-                self.text.clone()
-            ),
-            self.result
-        )
-    }
+pub fn create_forum_user_mock(
+    account_id: <Runtime as system::Trait>::AccountId,
+    name: Vec<u8>,
+    self_introduction: Vec<u8>,
+    result: Result<(), &'static str>,
+) -> ForumUserId {
+    assert_eq!(
+        TestForumModule::create_forum_user(account_id, name.clone(), self_introduction.clone(),),
+        result
+    );
+    TestForumModule::next_forum_user_id() - 1
 }
 
-pub struct CreatePostFixture {
-    pub origin: OriginType,
-    pub thread_id: ThreadId,
-    pub text: Vec<u8>,
-    pub result: dispatch::Result,
+pub fn create_moderator_mock(
+    account_id: <Runtime as system::Trait>::AccountId,
+    name: Vec<u8>,
+    self_introduction: Vec<u8>,
+    result: Result<(), &'static str>,
+) -> ModeratorId {
+    assert_eq!(
+        TestForumModule::create_moderator(account_id, name.clone(), self_introduction.clone(),),
+        result
+    );
+    TestForumModule::next_moderator_id() - 1
 }
 
-impl CreatePostFixture {
-    pub fn call_and_assert(&self) {
-        assert_eq!(
-            TestForumModule::add_post(
-                mock_origin(self.origin.clone()),
-                self.thread_id,
-                self.text.clone()
-            ),
-            self.result
-        )
-    }
+pub fn create_labels_mock() {
+    assert_eq!(TestForumModule::add_labels(good_labels()), Ok(()));
 }
 
-pub fn create_forum_member() -> OriginType {
-    let member_id = 123;
-    let new_member = registry::Member { id: member_id };
-    registry::TestMembershipRegistryModule::add_member(&new_member);
-    OriginType::Signed(member_id)
-}
-
-pub fn assert_create_category(
-    forum_sudo: OriginType,
-    parent_category_id: Option<CategoryId>,
-    expected_result: dispatch::Result,
-) {
-    CreateCategoryFixture {
-        origin: forum_sudo,
-        parent: parent_category_id,
-        title: good_category_title(),
-        description: good_category_description(),
-        result: expected_result,
-    }
-    .call_and_assert();
-}
-
-pub fn assert_create_thread(
-    forum_sudo: OriginType,
-    category_id: CategoryId,
-    expected_result: dispatch::Result,
-) {
-    CreateThreadFixture {
-        origin: forum_sudo,
-        category_id,
-        title: good_thread_title(),
-        text: good_thread_text(),
-        result: expected_result,
-    }
-    .call_and_assert();
-}
-
-pub fn assert_create_post(
-    forum_sudo: OriginType,
-    thread_id: ThreadId,
-    expected_result: dispatch::Result,
-) {
-    CreatePostFixture {
-        origin: forum_sudo,
-        thread_id,
-        text: good_thread_text(),
-        result: expected_result,
-    }
-    .call_and_assert();
-}
-
-pub fn create_category(
-    forum_sudo: OriginType,
-    parent_category_id: Option<CategoryId>,
+pub fn create_category_mock(
+    origin: OriginType,
+    parent: Option<CategoryId>,
+    title: Vec<u8>,
+    description: Vec<u8>,
+    labels: &Vec<LabelId>,
+    result: Result<(), &'static str>,
 ) -> CategoryId {
-    let category_id = TestForumModule::next_category_id();
-    assert_create_category(forum_sudo, parent_category_id, Ok(()));
+    assert_eq!(
+        TestForumModule::create_category(
+            mock_origin(origin),
+            parent,
+            title.clone(),
+            description.clone(),
+            labels.clone(),
+        ),
+        result
+    );
+    TestForumModule::next_category_id() - 1
+}
+
+pub fn create_thread_mock(
+    origin: OriginType,
+    category_id: CategoryId,
+    title: Vec<u8>,
+    text: Vec<u8>,
+    labels: &Vec<LabelId>,
+    poll_data: Option<(
+        Vec<Vec<u8>>,
+        Vec<u8>,
+        <Runtime as timestamp::Trait>::Moment,
+        <Runtime as timestamp::Trait>::Moment,
+        u8,
+        u8,
+    )>,
+    result: Result<(), &'static str>,
+) -> ThreadId {
+    assert_eq!(
+        TestForumModule::create_thread(
+            mock_origin(origin.clone()),
+            category_id,
+            title.clone(),
+            text.clone(),
+            labels.clone(),
+            poll_data.clone(),
+        ),
+        result
+    );
+    TestForumModule::next_thread_id() - 1
+}
+
+pub fn create_post_mock(
+    origin: OriginType,
+    thread_id: ThreadId,
+    text: Vec<u8>,
+    result: Result<(), &'static str>,
+) -> PostId {
+    assert_eq!(
+        TestForumModule::add_post(mock_origin(origin.clone()), thread_id, text.clone(),),
+        result
+    );
+    TestForumModule::next_post_id() - 1
+}
+
+pub fn add_labels_mock(labels: Vec<Vec<u8>>, result: Result<(), &'static str>) -> usize {
+    assert_eq!(TestForumModule::add_labels(labels.clone()), result);
+    labels.len()
+}
+
+pub fn set_forum_sudo_mock(
+    origin: OriginType,
+    new_forum_sudo: Option<<Runtime as system::Trait>::AccountId>,
+    result: Result<(), &'static str>,
+) {
+    assert_eq!(
+        TestForumModule::set_forum_sudo(mock_origin(origin), new_forum_sudo),
+        result
+    );
+}
+
+pub fn set_max_category_depth_mock(
+    origin: OriginType,
+    max_category_depth: u8,
+    result: Result<(), &'static str>,
+) -> u8 {
+    assert_eq!(
+        TestForumModule::set_max_category_depth(mock_origin(origin), max_category_depth),
+        result
+    );
+    max_category_depth
+}
+
+pub fn set_moderator_category_mock(
+    origin: OriginType,
+    category_id: CategoryId,
+    account_id: <Runtime as system::Trait>::AccountId,
+    new_value: bool,
+    result: Result<(), &'static str>,
+) -> <Runtime as system::Trait>::AccountId {
+    assert_eq!(
+        TestForumModule::set_moderator_category(
+            mock_origin(origin),
+            category_id,
+            account_id,
+            new_value
+        ),
+        result
+    );
+    account_id
+}
+
+pub fn submit_poll_mock(
+    origin: OriginType,
+    thread_id: ThreadId,
+    poll_value: PollData,
+    result: Result<(), &'static str>,
+) -> ThreadId {
+    assert_eq!(
+        TestForumModule::submit_poll(mock_origin(origin), thread_id, poll_value),
+        result
+    );
+    thread_id
+}
+
+pub fn update_category_mock(
+    origin: OriginType,
+    category_id: CategoryId,
+    new_archival_status: Option<bool>,
+    new_deletion_status: Option<bool>,
+    result: Result<(), &'static str>,
+) -> CategoryId {
+    assert_eq!(
+        TestForumModule::update_category(
+            mock_origin(origin),
+            category_id,
+            new_archival_status,
+            new_deletion_status
+        ),
+        result
+    );
     category_id
 }
 
-pub fn create_root_category(forum_sudo: OriginType) -> CategoryId {
-    create_category(forum_sudo, None)
-}
-
-pub fn create_root_category_and_thread(
-    forum_sudo: OriginType,
-) -> (OriginType, CategoryId, ThreadId) {
-    let member_origin = create_forum_member();
-    let category_id = create_root_category(forum_sudo);
-    let thread_id = TestForumModule::next_thread_id();
-
-    CreateThreadFixture {
-        origin: member_origin.clone(),
-        category_id,
-        title: good_thread_title(),
-        text: good_thread_text(),
-        result: Ok(()),
-    }
-    .call_and_assert();
-
-    (member_origin, category_id, thread_id)
-}
-
-pub fn create_root_category_and_thread_and_post(
-    forum_sudo: OriginType,
-) -> (OriginType, CategoryId, ThreadId, PostId) {
-    let (member_origin, category_id, thread_id) = create_root_category_and_thread(forum_sudo);
-    let post_id = TestForumModule::next_post_id();
-
-    CreatePostFixture {
-        origin: member_origin.clone(),
-        thread_id: thread_id.clone(),
-        text: good_post_text(),
-        result: Ok(()),
-    }
-    .call_and_assert();
-
-    (member_origin, category_id, thread_id, post_id)
-}
-
-pub fn moderate_thread(
-    forum_sudo: OriginType,
+pub fn moderate_thread_mock(
+    origin: OriginType,
     thread_id: ThreadId,
     rationale: Vec<u8>,
-) -> dispatch::Result {
-    TestForumModule::moderate_thread(mock_origin(forum_sudo), thread_id, rationale)
+    result: Result<(), &'static str>,
+) -> ThreadId {
+    assert_eq!(
+        TestForumModule::moderate_thread(mock_origin(origin), thread_id, rationale),
+        result
+    );
+    thread_id
 }
 
-pub fn moderate_post(
-    forum_sudo: OriginType,
+pub fn moderate_post_mock(
+    origin: OriginType,
     post_id: PostId,
     rationale: Vec<u8>,
-) -> dispatch::Result {
-    TestForumModule::moderate_post(mock_origin(forum_sudo), post_id, rationale)
+    result: Result<(), &'static str>,
+) -> PostId {
+    assert_eq!(
+        TestForumModule::moderate_post(mock_origin(origin), post_id, rationale),
+        result
+    );
+    post_id
 }
 
-pub fn archive_category(forum_sudo: OriginType, category_id: CategoryId) -> dispatch::Result {
-    TestForumModule::update_category(mock_origin(forum_sudo), category_id, Some(true), None)
+pub fn update_category_labels_mock(
+    origin: OriginType,
+    category_id: CategoryId,
+    labels: Vec<LabelId>,
+    result: Result<(), &'static str>,
+) -> CategoryId {
+    assert_eq!(
+        TestForumModule::update_category_labels(mock_origin(origin), category_id, labels,),
+        result
+    );
+    category_id
 }
 
-pub fn unarchive_category(forum_sudo: OriginType, category_id: CategoryId) -> dispatch::Result {
-    TestForumModule::update_category(mock_origin(forum_sudo), category_id, Some(false), None)
+pub fn update_thread_labels_mock(
+    origin: OriginType,
+    thread_id: ThreadId,
+    labels: Vec<LabelId>,
+    result: Result<(), &'static str>,
+) -> ThreadId {
+    assert_eq!(
+        TestForumModule::update_thread_labels(mock_origin(origin), thread_id, labels,),
+        result
+    );
+    thread_id
 }
 
-pub fn delete_category(forum_sudo: OriginType, category_id: CategoryId) -> dispatch::Result {
-    TestForumModule::update_category(mock_origin(forum_sudo), category_id, None, Some(true))
+fn edit_post_text_mock(
+    origin: OriginType,
+    post_id: PostId,
+    new_text: Vec<u8>,
+    result: Result<(), &'static str>,
+) -> PostId {
+    assert_eq!(
+        TestForumModule::edit_post_text(mock_origin(origin), post_id, new_text,),
+        result
+    );
+    post_id
 }
-
-pub fn undelete_category(forum_sudo: OriginType, category_id: CategoryId) -> dispatch::Result {
-    TestForumModule::update_category(mock_origin(forum_sudo), category_id, None, Some(false))
-}
-
-pub fn assert_not_forum_sudo_cannot_update_category(
-    update_operation: fn(OriginType, CategoryId) -> dispatch::Result,
-) {
-    let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
-
-    build_test_externalities(config).execute_with(|| {
-        let category_id = create_root_category(origin.clone());
-        assert_eq!(
-            update_operation(NOT_FORUM_SUDO_ORIGIN, category_id),
-            Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
-        );
-    });
-}
-
-// This function basically just builds a genesis storage key/value store according to
-// our desired mockup.
-
-// refactor
-/// - add each config as parameter, then
-///
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
+        forum_user_by_id: vec![],
+        forum_user_id_by_account: vec![],
+        next_forum_user_id: 1,
+        moderator_by_id: vec![],
+        moderator_id_by_account: vec![],
+        next_moderator_id: 1,
         category_by_id: vec![], // endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
         next_category_id: 1,
         thread_by_id: vec![],
@@ -410,6 +429,12 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         next_post_id: 1,
 
         forum_sudo: 33,
+        category_by_moderator: vec![],
+        max_category_depth: 5,
+        reaction_by_post: vec![],
+        poll_desc: vec![],
+        poll_by_account: vec![],
+        poll_statistics: vec![],
 
         category_title_constraint: InputValidationLengthConstraint {
             min: 10,
@@ -440,69 +465,31 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
             min: 10,
             max_min_diff: 2000,
         }, // JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
-
-           // Extra genesis fields
-           //initial_forum_sudo: Some(143)
-    }
-}
-
-pub type RuntimeMap<K, V> = std::vec::Vec<(K, V)>;
-pub type RuntimeCategory = Category<
-    <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
-    <Runtime as system::Trait>::AccountId,
->;
-pub type RuntimeThread = Thread<
-    <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
-    <Runtime as system::Trait>::AccountId,
->;
-pub type RuntimePost = Post<
-    <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
-    <Runtime as system::Trait>::AccountId,
->;
-pub type RuntimeBlockchainTimestamp = BlockchainTimestamp<
-    <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
->;
-
-pub fn genesis_config(
-    category_by_id: &RuntimeMap<CategoryId, RuntimeCategory>,
-    next_category_id: u64,
-    thread_by_id: &RuntimeMap<ThreadId, RuntimeThread>,
-    next_thread_id: u64,
-    post_by_id: &RuntimeMap<PostId, RuntimePost>,
-    next_post_id: u64,
-    forum_sudo: <Runtime as system::Trait>::AccountId,
-    category_title_constraint: &InputValidationLengthConstraint,
-    category_description_constraint: &InputValidationLengthConstraint,
-    thread_title_constraint: &InputValidationLengthConstraint,
-    post_text_constraint: &InputValidationLengthConstraint,
-    thread_moderation_rationale_constraint: &InputValidationLengthConstraint,
-    post_moderation_rationale_constraint: &InputValidationLengthConstraint,
-) -> GenesisConfig<Runtime> {
-    GenesisConfig::<Runtime> {
-        category_by_id: category_by_id.clone(),
-        next_category_id: next_category_id,
-        thread_by_id: thread_by_id.clone(),
-        next_thread_id: next_thread_id,
-        post_by_id: post_by_id.clone(),
-        next_post_id: next_post_id,
-        forum_sudo: forum_sudo,
-        category_title_constraint: category_title_constraint.clone(),
-        category_description_constraint: category_description_constraint.clone(),
-        thread_title_constraint: thread_title_constraint.clone(),
-        post_text_constraint: post_text_constraint.clone(),
-        thread_moderation_rationale_constraint: thread_moderation_rationale_constraint.clone(),
-        post_moderation_rationale_constraint: post_moderation_rationale_constraint.clone(),
-    }
-}
-
-// MockForumUserRegistry
-pub fn default_mock_forum_user_registry_genesis_config() -> registry::GenesisConfig<Runtime> {
-    registry::GenesisConfig::<Runtime> {
-        forum_user_by_id: vec![],
+        label_name_constraint: InputValidationLengthConstraint {
+            min: 10,
+            max_min_diff: 20,
+        },
+        poll_desc_constraint: InputValidationLengthConstraint {
+            min: 10,
+            max_min_diff: 200,
+        },
+        poll_items_constraint: InputValidationLengthConstraint {
+            min: 4,
+            max_min_diff: 20,
+        },
+        user_name_constraint: InputValidationLengthConstraint {
+            min: 6,
+            max_min_diff: 20,
+        },
+        user_self_introduction_constraint: InputValidationLengthConstraint {
+            min: 10,
+            max_min_diff: 200,
+        },
+        category_thread_labes: vec![],
+        next_label_id: 1,
+        category_labels: vec![],
+        thread_labels: vec![],
+        max_applied_labels: 5,
     }
 }
 
@@ -516,15 +503,12 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::T
 
     config.assimilate_storage(&mut t).unwrap();
 
-    // Add mock registry configuration
-    default_mock_forum_user_registry_genesis_config()
-        .assimilate_storage(&mut t)
-        .unwrap();
-
     t.into()
 }
 
-// pub type System = system::Module<Runtime>;
+pub type System = system::Module<Runtime>;
+
+pub type Timestamp = timestamp::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;
