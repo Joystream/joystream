@@ -488,7 +488,7 @@ impl Default for ChannelCurationStatus {
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
     /// Unique channel handle that could be used in channel URL.
-    pub channel_name: Vec<u8>,
+    pub handle: Vec<u8>,
 
     /// Whether channel has been verified, in the normal Web2.0 platform sense of being authenticated.
     pub verified: bool,
@@ -965,7 +965,7 @@ decl_module! {
          */
 
         /// Create a new channel.
-        pub fn create_channel(origin, owner: T::MemberId, role_account: T::AccountId, channel_name: Vec<u8>, description: Vec<u8>, content: ChannelContentType) {
+        pub fn create_channel(origin, owner: T::MemberId, role_account: T::AccountId, handle: Vec<u8>, description: Vec<u8>, content: ChannelContentType) {
 
             // Ensure that it is signed
             let signer_account = ensure_signed(origin)?;
@@ -985,7 +985,7 @@ decl_module! {
             let (member_in_role, next_channel_id) = Self::ensure_can_register_channel_owner_role_on_member(&owner, None)?;
 
             // Ensure channel name is acceptable length
-            Self::ensure_channel_handle_is_valid(&channel_name)?;
+            Self::ensure_channel_handle_is_valid(&handle)?;
 
             // Ensure description is acceptable length
             Self::ensure_channel_description_is_valid(&description)?;
@@ -999,7 +999,7 @@ decl_module! {
 
             // Construct channel
             let new_channel = Channel {
-                channel_name: channel_name.clone(),
+                handle: handle.clone(),
                 verified: false,
                 description: description,
                 content: content,
@@ -1015,7 +1015,7 @@ decl_module! {
             ChannelById::<T>::insert(next_channel_id, new_channel);
 
             // Add id to ChannelIdByHandle under handle
-            ChannelIdByHandle::<T>::insert(channel_name.clone(), next_channel_id);
+            ChannelIdByHandle::<T>::insert(handle.clone(), next_channel_id);
 
             // Increment NextChannelId
             NextChannelId::<T>::mutate(|id| *id += <ChannelId<T> as One>::one());
@@ -1080,7 +1080,7 @@ decl_module! {
         pub fn update_channel_as_owner(
             origin,
             channel_id: ChannelId<T>,
-            new_channel_name: Option<Vec<u8>>,
+            new_handle: Option<Vec<u8>>,
             new_description: Option<Vec<u8>>,
             new_publishing_status: Option<ChannelPublishingStatus>) {
 
@@ -1088,8 +1088,8 @@ decl_module! {
             Self::ensure_channel_owner_signed(origin, &channel_id)?;
 
             // If set, ensure handle is acceptable length
-            if let Some(ref channel_name) = new_channel_name {
-                Self::ensure_channel_handle_is_valid(channel_name)?;
+            if let Some(ref handle) = new_handle {
+                Self::ensure_channel_handle_is_valid(handle)?;
             }
 
             // If set, ensure description is acceptable length
@@ -1888,16 +1888,16 @@ impl<T: Trait> Module<T> {
 
     // TODO: convert InputConstraint ensurer routines into macroes
 
-    fn ensure_channel_handle_is_valid(channel_name: &Vec<u8>) -> dispatch::Result {
+    fn ensure_channel_handle_is_valid(handle: &Vec<u8>) -> dispatch::Result {
         ChannelHandleConstraint::get().ensure_valid(
-            channel_name.len(),
+            handle.len(),
             MSG_CHANNEL_HANDLE_TOO_SHORT,
             MSG_CHANNEL_HANDLE_TOO_LONG,
         )?;
 
         // Has to not already be occupied
         ensure!(
-            ChannelIdByHandle::<T>::exists(channel_name),
+            ChannelIdByHandle::<T>::exists(handle),
             MSG_CHANNEL_HANDLE_ALREADY_TAKEN
         );
 
@@ -2378,27 +2378,27 @@ impl<T: Trait> Module<T> {
 
     fn update_channel(
         channel_id: &ChannelId<T>,
-        new_channel_name: &Option<Vec<u8>>,
+        new_handle: &Option<Vec<u8>>,
         new_verified: &Option<bool>,
         new_descriptin: &Option<Vec<u8>>,
         new_publishing_status: &Option<ChannelPublishingStatus>,
         new_curation_status: &Option<ChannelCurationStatus>,
     ) {
         // Update name to channel mapping if there is a new name mapping
-        if let Some(ref channel_name) = new_channel_name {
+        if let Some(ref handle) = new_handle {
             // Remove mapping under old name
-            let current_channel_name = ChannelById::<T>::get(channel_id).channel_name;
+            let current_handle = ChannelById::<T>::get(channel_id).handle;
 
-            ChannelIdByHandle::<T>::remove(current_channel_name);
+            ChannelIdByHandle::<T>::remove(current_handle);
 
             // Establish mapping under new name
-            ChannelIdByHandle::<T>::insert(channel_name.clone(), channel_id);
+            ChannelIdByHandle::<T>::insert(handle.clone(), channel_id);
         }
 
         // Update channel
         ChannelById::<T>::mutate(channel_id, |channel| {
-            if let Some(ref channel_name) = new_channel_name {
-                channel.channel_name = channel_name.clone();
+            if let Some(ref handle) = new_handle {
+                channel.handle = handle.clone();
             }
 
             if let Some(ref verified) = new_verified {
