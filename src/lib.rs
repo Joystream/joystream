@@ -2041,3 +2041,4 @@ impl<T: Trait> Module<T> {
         return Err(ERROR_MODERATOR_MODERATE_CATEGORY);
     }
 }
+
