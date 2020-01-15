@@ -90,9 +90,9 @@ pub type PrincipalId<T> = <T as versioned_store_permissions::Trait>::PrincipalId
  * MOVE ALL OF THESE OUT TO COMMON LATER
  */
 
-static MSG_CHANNEL_CREATION_DISABLED: &str = "Channel creation currently disabled.";
-static MSG_CHANNEL_HANDLE_TOO_SHORT: &str = "Channel handle too short.";
-static MSG_CHANNEL_HANDLE_TOO_LONG: &str = "Channel handle too long.";
+static MSG_CHANNEL_CREATION_DISABLED: &str = "Channel creation currently disabled";
+static MSG_CHANNEL_HANDLE_TOO_SHORT: &str = "Channel handle too short";
+static MSG_CHANNEL_HANDLE_TOO_LONG: &str = "Channel handle too long";
 static MSG_CHANNEL_DESCRIPTION_TOO_SHORT: &str = "Channel description too short";
 static MSG_CHANNEL_DESCRIPTION_TOO_LONG: &str = "Channel description too long";
 //static MSG_MEMBER_CANNOT_BECOME_PUBLISHER: &str =
@@ -1758,7 +1758,7 @@ decl_module! {
                 if let WorkingGroupUnstaker::Curator(curator_id) = unstaker {
                     curator_id
                 } else {
-                    panic!("Should not be possible, only curators unstake in this module currently.");
+                    panic!("Should not be possible, only curators unstake in this module currently");
                 };
 
             // Grab curator from id, unwrap, because this curator _must_ exist.
@@ -1773,7 +1773,7 @@ decl_module! {
                 if let CuratorRoleStage::Unstaking(summary) = unstaking_curator.stage {
                     summary
                 } else {
-                    panic!("Curator must be in unstaking stage.");
+                    panic!("Curator must be in unstaking stage");
                 };
 
             let new_curator = Curator{
@@ -2354,7 +2354,7 @@ impl<T: Trait> Module<T> {
         if let Some(directions) = unstake_directions {
             // Unstake
             stake::Module::<T>::initiate_unstaking(&directions.0, directions.1)
-                .expect("Unstaking must be possible at this time.");
+                .expect("Unstaking must be possible at this time");
         }
 
         // Trigger event
