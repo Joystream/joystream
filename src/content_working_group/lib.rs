@@ -131,7 +131,7 @@ static MSG_SIGNER_IS_NOT_CURATOR_ROLE_ACCOUNT: &str = "Signer is not curator rol
 static MSG_UNSTAKER_DOES_NOT_EXIST: &str = "Unstaker does not exist";
 static MSG_CURATOR_HAS_NO_REWARD: &str = "Curator has no recurring reward";
 static MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER: &str = "Curator not controlled by member";
-static MSG_CHANNEL_NAME_ALREADY_TAKEN: &str = "Channel name is already taken";
+static MSG_CHANNEL_HANDLE_ALREADY_TAKEN: &str = "Channel handle is already taken";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone)]
@@ -487,7 +487,7 @@ impl Default for ChannelCurationStatus {
 /// A channel for publishing content.
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
-    /// Unique human readble channel name.
+    /// Unique channel handle that could be used in channel URL.
     pub channel_name: Vec<u8>,
 
     /// Whether channel has been verified, in the normal Web2.0 platform sense of being authenticated.
@@ -985,7 +985,7 @@ decl_module! {
             let (member_in_role, next_channel_id) = Self::ensure_can_register_channel_owner_role_on_member(&owner, None)?;
 
             // Ensure channel name is acceptable length
-            Self::ensure_channel_name_is_valid(&channel_name)?;
+            Self::ensure_channel_handle_is_valid(&channel_name)?;
 
             // Ensure description is acceptable length
             Self::ensure_channel_description_is_valid(&description)?;
@@ -1089,7 +1089,7 @@ decl_module! {
 
             // If set, ensure handle is acceptable length
             if let Some(ref channel_name) = new_channel_name {
-                Self::ensure_channel_name_is_valid(channel_name)?;
+                Self::ensure_channel_handle_is_valid(channel_name)?;
             }
 
             // If set, ensure description is acceptable length
@@ -1888,7 +1888,7 @@ impl<T: Trait> Module<T> {
 
     // TODO: convert InputConstraint ensurer routines into macroes
 
-    fn ensure_channel_name_is_valid(channel_name: &Vec<u8>) -> dispatch::Result {
+    fn ensure_channel_handle_is_valid(channel_name: &Vec<u8>) -> dispatch::Result {
         ChannelHandleConstraint::get().ensure_valid(
             channel_name.len(),
             MSG_CHANNEL_HANDLE_TOO_SHORT,
@@ -1898,7 +1898,7 @@ impl<T: Trait> Module<T> {
         // Has to not already be occupied
         ensure!(
             ChannelIdByHandle::<T>::exists(channel_name),
-            MSG_CHANNEL_NAME_ALREADY_TAKEN
+            MSG_CHANNEL_HANDLE_ALREADY_TAKEN
         );
 
         Ok(())
