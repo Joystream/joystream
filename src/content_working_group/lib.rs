@@ -879,7 +879,7 @@ decl_storage! {
         /// Maps (unique) channel handle to the corresponding identifier for the channel.
         /// Mapping is required to allow efficient (O(log N)) on-chain verification that a proposed handle is indeed unique
         /// at the time it is being proposed.
-        pub ChannelIdByName get(channel_id_by_handle) config(): linked_map Vec<u8> => ChannelId<T>;
+        pub ChannelIdByHandle get(channel_id_by_handle) config(): linked_map Vec<u8> => ChannelId<T>;
 
         /// Maps identifier to corresponding curator.
         pub CuratorById get(curator_by_id) config(): linked_map CuratorId<T> => Curator<T::AccountId, T::RewardRelationshipId, T::StakeId, T::BlockNumber, LeadId<T>, CuratorApplicationId<T>, PrincipalId<T>>;
@@ -1014,8 +1014,8 @@ decl_module! {
             // Add channel to ChannelById under id
             ChannelById::<T>::insert(next_channel_id, new_channel);
 
-            // Add id to ChannelIdByName under handle
-            ChannelIdByName::<T>::insert(channel_name.clone(), next_channel_id);
+            // Add id to ChannelIdByHandle under handle
+            ChannelIdByHandle::<T>::insert(channel_name.clone(), next_channel_id);
 
             // Increment NextChannelId
             NextChannelId::<T>::mutate(|id| *id += <ChannelId<T> as One>::one());
@@ -1897,7 +1897,7 @@ impl<T: Trait> Module<T> {
 
         // Has to not already be occupied
         ensure!(
-            ChannelIdByName::<T>::exists(channel_name),
+            ChannelIdByHandle::<T>::exists(channel_name),
             MSG_CHANNEL_NAME_ALREADY_TAKEN
         );
 
@@ -2389,10 +2389,10 @@ impl<T: Trait> Module<T> {
             // Remove mapping under old name
             let current_channel_name = ChannelById::<T>::get(channel_id).channel_name;
 
-            ChannelIdByName::<T>::remove(current_channel_name);
+            ChannelIdByHandle::<T>::remove(current_channel_name);
 
             // Establish mapping under new name
-            ChannelIdByName::<T>::insert(channel_name.clone(), channel_id);
+            ChannelIdByHandle::<T>::insert(channel_name.clone(), channel_id);
         }
 
         // Update channel
