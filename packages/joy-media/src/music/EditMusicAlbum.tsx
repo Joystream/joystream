@@ -6,18 +6,17 @@ import { History } from 'history';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { onImageError } from '../utils';
 import { ReorderableTracks } from './ReorderableTracks';
-import { MusicAlbumPreviewProps } from './MusicAlbumPreview';
 import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumClass as Fields, MusicAlbumFormValues, MusicAlbumToFormValues } from '../schemas/music/MusicAlbum';
-import { MusicTrackType } from '../schemas/music/MusicTrack';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
+import { MusicTrackReaderPreviewProps } from './MusicTrackReaderPreview';
 
 export type OuterProps = {
   history?: History,
   id?: EntityId,
   entity?: MusicAlbumType,
-  tracks?: MusicTrackType[]
+  tracks?: MusicTrackReaderPreviewProps[]
   opts?: MediaDropdownOptions
 };
 
@@ -73,21 +72,11 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
   </Tab.Pane>
 
-  const tracksTab = () => {
-    const album: MusicAlbumPreviewProps = {
-      id: 'ignore',
-      title: values.title,
-      artist: values.artist,
-      cover: values.thumbnail,
-      tracksCount: tracks.length
-    }
-
-    return <Tab.Pane as='div'>
-      <ReorderableTracks 
-        album={album} tracks={tracks} noTracksView={<em style={{ padding: '1rem 0', display: 'block' }}>This album has no tracks yet.</em>}
-      />
-    </Tab.Pane>
-  }
+  const tracksTab = () => <Tab.Pane as='div'>
+    <ReorderableTracks 
+      tracks={tracks} noTracksView={<em style={{ padding: '1rem 0', display: 'block' }}>This album has no tracks yet.</em>}
+    />
+  </Tab.Pane>
 
   const tabs = () => <Tab
     menu={{ secondary: true, pointing: true, color: 'blue' }}
