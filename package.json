@@ -32,7 +32,6 @@
     "test": "echo \"skipping tests\"",
     "vanitygen": "node packages/app-accounts/scripts/vanitygen.js",
     "start": "cd packages/apps && webpack --config webpack.config.js",
-    "storybook": "start-storybook -p 3001",
     "generate-schemas": "json2ts -i packages/joy-types/src/schemas/role.schema.json -o packages/joy-types/src/schemas/role.schema.ts",
     "build-storybook": "build-storybook -c .storybook",
     "storybook": "start-storybook -s ./packages/apps/public -p 3001"
