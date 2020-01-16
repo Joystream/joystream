@@ -1,5 +1,6 @@
-import React from 'react';
+import React, {useContext} from 'react';
 
+import { ApiContext } from '@polkadot/react-api';
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
@@ -10,7 +11,7 @@ import { withMulti } from '@polkadot/react-api/index';
 
 import { ViewComponent } from '@polkadot/joy-utils/index'
 
-//import { Transport } from './transport.polkadot'
+import { Transport } from './transport.polkadot'
 import { Transport as MockTransport } from './transport.mock'
 
 import { WorkingGroupsController, WorkingGroupsView } from './tabs/WorkingGroup.controller'
@@ -18,6 +19,7 @@ import { OpportunityController, OpportunityView } from './tabs/Opportunity.contr
 import { OpportunitiesController, OpportunitiesView } from './tabs/Opportunities.controller'
 import { ApplyController, ApplyView } from './flows/apply.controller'
 import { MyRolesController, MyRolesView } from './tabs/MyRoles.controller'
+import { AdminController, AdminView } from './tabs/Admin.controller'
 
 import './index.sass';
 
@@ -27,7 +29,7 @@ type Props = AppProps & ApiProps & I18nProps & {
   allAccounts?: SubjectInfo,
 };
 
-export const App: React.FC<Props> = React.memo((props: Props) => {
+export const App: React.FC<Props> = (props: Props) => {
   const { t } = props
   const tabs = [
     {
@@ -44,16 +46,21 @@ export const App: React.FC<Props> = React.memo((props: Props) => {
       name: 'my-roles',
       text: t('My roles')
     },
-  ]
+   ]
 
-  //const transport = new Transport(props)
+
+  const { api } = useContext(ApiContext);
+  const transport = new Transport(api)
+
   const mockTransport = new MockTransport()
   const wgCtrl = new WorkingGroupsController(mockTransport)
-  const oppCtrl = new OpportunityController(mockTransport)
+  const oppCtrl = new OpportunityController(transport)
   const oppsCtrl = new OpportunitiesController(mockTransport)
   const applyCtrl = new ApplyController(mockTransport)
   const myRolesCtrl = new MyRolesController(mockTransport)
+  const adminCtrl = new AdminController(transport, api)
 
+   // FIXME! Move to transport
   const { basePath } = props
   return (
     <main className='actors--App'>
@@ -68,11 +75,12 @@ export const App: React.FC<Props> = React.memo((props: Props) => {
         <Route path={`${basePath}/opportunities`} render={() => renderViewComponent(OpportunitiesView(oppsCtrl))} />
         <Route path={`${basePath}/my-roles`} render={() => renderViewComponent(MyRolesView(myRolesCtrl))} />
         <Route path={`${basePath}/apply/:id`} render={(props) => renderViewComponent(ApplyView(applyCtrl), props)} />
+        <Route path={`${basePath}/admin`} render={() => renderViewComponent(AdminView(adminCtrl))} />
         <Route render={() => renderViewComponent(WorkingGroupsView(wgCtrl))} />
       </Switch>
     </main>
   )
-})
+}
 
 const renderViewComponent = (Component: ViewComponent<any>, props?: RouteComponentProps) => {
   let params = new Map<string, string>()

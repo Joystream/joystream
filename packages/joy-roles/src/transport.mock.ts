@@ -222,7 +222,7 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
-  opening(id: string): Promise<WorkingGroupOpening> {
+  curationGroupOpening(id: number): Promise<WorkingGroupOpening> {
     return this.simulateApiResponse<WorkingGroupOpening>(
       {
         opening: new Opening({

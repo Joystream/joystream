@@ -1,16 +1,18 @@
 import { Observable } from 'rxjs';
 
-import { ApiProps } from '@polkadot/react-api/types';
 import ApiPromise from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces'
-import { u128 } from '@polkadot/types'
+import { u32, u128 } from '@polkadot/types'
 
-import { Subscribable } from '@polkadot/joy-utils/index'
+import { Subscribable, LinkedMapEntry } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
 import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Role } from '@joystream/types/roles';
+import { OpeningId } from '@joystream/types/hiring';
+import { CuratorOpening, LeadId } from '@joystream/types/content-working-group';
+import { Opening } from '@joystream/types/hiring';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
@@ -22,9 +24,9 @@ import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 export class Transport extends TransportBase implements ITransport {
   protected api: ApiPromise
 
-  constructor(apiProps: ApiProps) {
+  constructor(api: ApiPromise) {
     super()
-    this.api = apiProps.api
+    this.api = api
   }
 
   async roles(): Promise<Array<Role>> {
@@ -50,9 +52,48 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
-  opening(id: string): Promise<WorkingGroupOpening> {
-    // @ts-ignore
-    return this.promise<WorkingGroupOpening>({})
+  protected async opening(id: number): Promise<Opening> {
+    return new Promise<Opening>( async (resolve, reject) => {
+       const opening = new LinkedMapEntry<Opening>(
+        Opening, 
+        await this.api.query.hiring.openingById(id),
+      )
+      resolve(opening.value)
+    })
+  }
+
+  async curationGroupOpening(id: number): Promise<WorkingGroupOpening> {
+    return new Promise<WorkingGroupOpening>( async (resolve, reject) => {
+      const nextId = (await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber()
+      if (id < 0 || id >= nextId) {
+        reject("invalid id")
+      }
+
+      const curatorOpening = new LinkedMapEntry<CuratorOpening>(
+        CuratorOpening, 
+        await this.api.query.contentWorkingGroup.curatorOpeningById(id),
+      )
+
+      const opening = await this.opening(
+          curatorOpening.value.getField<OpeningId>("opening_id").toNumber()
+      )
+
+      console.log("opening", opening.toJSON())
+      console.log("curatorO", curatorOpening.value.toJSON())
+
+      // TODO: Load group lead
+      const currentLeadId = await this.api.query.contentWorkingGroup.currentLeadId() as LeadId
+      console.log(currentLeadId)
+
+      reject("WIP")
+
+      // @ts-ignore
+      resolve({
+        creator: {},
+        opening: opening,
+        applications: {},
+      })
+    })
   }
 
   openingApplicationRanks(openingId: string): Promise<Balance[]> {
