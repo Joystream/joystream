@@ -3,17 +3,10 @@ use crate::test::*;
 use rstd::collections::btree_map::BTreeMap;
 use stake::NegativeImbalance;
 
-//use mocktopus::mocking::*;
+use crate::test::public_api::*;
+
 /*
 Most 'ensures' (add_application() fail reasons) covered in ensure_can_add_application_* tests.
-
-Not covered:
-- staking state checks:
-i.application.active_role_staking_id;
-ii.application.active_application_staking_id;
-- stake module calls:
-i.infallible_opt_stake_initiation -> infallible_stake_initiation_on_application -> stake::create_stake()
-
 - ApplicationDeactivatedHandler
 */
 
@@ -308,16 +301,9 @@ fn add_application_succeeds_with_created_application_stake() {
 fn add_application_succeeds_with_crowding_out_with_staking_mocks() {
     handle_mock(|| {
         build_test_externalities().execute_with(|| {
-            let mock = {
-                let mut mock = crate::MockStakeHandler::<Test>::new();
-
-                mock.expect_stake().times(1).returning(|_, _| Ok(()));
-                mock.expect_create_stake().times(1).returning(|| 0);
-
-                Rc::new(rstd::cell::RefCell::new(mock))
-            };
-
+            let mock = default_mock_for_creating_stake();
             set_stake_handler_impl(mock.clone());
+
             let mut opening_fixture = AddOpeningFixture::default();
             opening_fixture.application_rationing_policy =
                 Some(hiring::ApplicationRationingPolicy {
@@ -341,6 +327,70 @@ fn add_application_succeeds_with_crowding_out_with_staking_mocks() {
             mock.borrow_mut().checkpoint();
 
             application_fixture.opt_application_stake_imbalance =
+                Some(stake::NegativeImbalance::<Test>::new(101));
+
+            let mock2 = {
+                let mut mock = crate::MockStakeHandler::<Test>::new();
+                mock.expect_stake_exists().returning(|_| true);
+
+                mock.expect_stake().times(1).returning(|_, _| Ok(()));
+
+                mock.expect_initiate_unstaking()
+                    .times(1)
+                    .returning(|_, _| Ok(()));
+
+                mock.expect_create_stake().times(1).returning(|| 1);
+
+                mock.expect_get_stake().returning(|_| stake::Stake {
+                    created: 1,
+                    staking_status: stake::StakingStatus::Staked(stake::StakedState {
+                        staked_amount: 100,
+                        staked_status: stake::StakedStatus::Normal,
+                        next_slash_id: 0,
+                        ongoing_slashes: BTreeMap::new(),
+                    }),
+                });
+
+                Rc::new(RefCell::new(mock))
+            };
+
+            set_stake_handler_impl(mock2.clone());
+
+            assert!(application_fixture.add_application().is_ok());
+        });
+    });
+}
+
+#[test]
+fn add_application_succeeds_with_crowding_out_with_role_staking_mocks() {
+    handle_mock(|| {
+        build_test_externalities().execute_with(|| {
+            let mock = default_mock_for_creating_stake();
+            set_stake_handler_impl(mock.clone());
+
+            let mut opening_fixture = AddOpeningFixture::default();
+            opening_fixture.application_rationing_policy =
+                Some(hiring::ApplicationRationingPolicy {
+                    max_active_applicants: 1,
+                });
+            opening_fixture.role_staking_policy = Some(StakingPolicy {
+                amount: 100,
+                amount_mode: StakingAmountLimitMode::AtLeast,
+                crowded_out_unstaking_period_length: None,
+                review_period_expired_unstaking_period_length: None,
+            });
+
+            let add_opening_result = opening_fixture.add_opening();
+            let opening_id = add_opening_result.unwrap();
+
+            let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+            application_fixture.opt_role_stake_imbalance =
+                Some(stake::NegativeImbalance::<Test>::new(100));
+
+            assert!(application_fixture.add_application().is_ok());
+            mock.borrow_mut().checkpoint();
+
+            application_fixture.opt_role_stake_imbalance =
                 Some(stake::NegativeImbalance::<Test>::new(101));
 
             let mock2 = {

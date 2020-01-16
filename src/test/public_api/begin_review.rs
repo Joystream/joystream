@@ -1,11 +1,5 @@
 use crate::mock::*;
 use crate::test::*;
-use rstd::collections::btree_set::BTreeSet;
-
-/*
-Not covered:
-- opening has applications
-*/
 
 #[test]
 fn begin_review_fails_with_no_opening() {
@@ -41,29 +35,20 @@ fn begin_review_succeeds() {
 
         let add_opening_result = opening_fixture.add_opening();
         let opening_id = add_opening_result.unwrap();
+        let application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+        assert!(application_fixture.add_application().is_ok());
+
+        let old_opening = <OpeningById<Test>>::get(opening_id);
 
         assert_eq!(Hiring::begin_review(opening_id), Ok(()));
 
         let updated_opening = <OpeningById<Test>>::get(opening_id);
 
-        let expected_opening_state = Opening {
-            created: 1,
-            stage: OpeningStage::Active {
-                stage: ActiveOpeningStage::ReviewPeriod {
-                    started_accepting_applicants_at_block: 1,
-                    started_review_period_at_block: 1,
-                },
-                applications_added: BTreeSet::new(),
-                active_application_count: 0,
-                unstaking_application_count: 0,
-                deactivated_application_count: 0,
-            },
-            max_review_period_length: 672,
-            application_rationing_policy: None,
-            application_staking_policy: None,
-            role_staking_policy: None,
-            human_readable_text: HUMAN_READABLE_TEXT.to_vec(),
-        };
+        let expected_opening_state =
+            old_opening.clone_with_new_active_opening_stage(ActiveOpeningStage::ReviewPeriod {
+                started_accepting_applicants_at_block: 1,
+                started_review_period_at_block: 1,
+            });
 
         assert_eq!(updated_opening, expected_opening_state);
     });

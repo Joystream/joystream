@@ -13,3 +13,38 @@ mod unstaked;
 pub use add_application::AddApplicationFixture;
 pub use add_opening::{AddOpeningFixture, HUMAN_READABLE_TEXT};
 pub use deactivate_application::DeactivateApplicationFixture;
+
+use crate::mock::Test;
+use rstd::cell::RefCell;
+use rstd::collections::btree_map::BTreeMap;
+use rstd::rc::Rc;
+
+fn default_mock_for_creating_stake() -> Rc<RefCell<crate::MockStakeHandler<Test>>> {
+    let mut mock = crate::MockStakeHandler::<Test>::new();
+
+    mock.expect_stake().times(1).returning(|_, _| Ok(()));
+    mock.expect_create_stake().times(1).returning(|| 0);
+
+    Rc::new(rstd::cell::RefCell::new(mock))
+}
+
+fn default_mock_for_unstaking() -> Rc<RefCell<crate::MockStakeHandler<Test>>> {
+    let mut mock = crate::MockStakeHandler::<Test>::new();
+    mock.expect_stake_exists().returning(|_| true);
+
+    mock.expect_initiate_unstaking()
+        .times(1)
+        .returning(|_, _| Ok(()));
+
+    mock.expect_get_stake().returning(|_| stake::Stake {
+        created: 1,
+        staking_status: stake::StakingStatus::Staked(stake::StakedState {
+            staked_amount: 100,
+            staked_status: stake::StakedStatus::Normal,
+            next_slash_id: 0,
+            ongoing_slashes: BTreeMap::new(),
+        }),
+    });
+
+    Rc::new(RefCell::new(mock))
+}

@@ -1,13 +1,10 @@
 use crate::mock::*;
 use crate::test::*;
+use crate::test::public_api::*;
 
 /*
 Not covered:
 - ApplicationDeactivatedHandler
-
-- staking state checks:
-i.application.active_role_staking_id;
-ii.application.active_application_staking_id;
 */
 
 pub struct UnstakedFixture {
@@ -122,7 +119,7 @@ impl UnstakedFixture {
 }
 
 #[test]
-fn unstaked_returns_existent_stake_id() {
+fn unstaked_returns_non_existent_stake_id() {
     build_test_externalities().execute_with(|| {
         let unstaked_fixture = UnstakedFixture {
             opening_id: 0,
@@ -220,6 +217,49 @@ fn unstaked_returns_unstaking_in_progress() {
 
 #[test]
 fn unstaked_returns_unstaked() {
+    build_test_externalities().execute_with(|| {
+        let mut opening_fixture = AddOpeningFixture::default();
+        opening_fixture.application_rationing_policy = Some(hiring::ApplicationRationingPolicy {
+            max_active_applicants: 1,
+        });
+        opening_fixture.application_staking_policy = Some(StakingPolicy {
+            amount: 100,
+            amount_mode: StakingAmountLimitMode::AtLeast,
+            crowded_out_unstaking_period_length: None,
+            review_period_expired_unstaking_period_length: None,
+        });
+
+        let add_opening_result = opening_fixture.add_opening();
+        let opening_id = add_opening_result.unwrap();
+
+        let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+        application_fixture.opt_application_stake_imbalance =
+            Some(stake::NegativeImbalance::<Test>::new(100));
+
+        let app_application_result = application_fixture.add_application();
+        assert!(app_application_result.is_ok());
+        let first_application_id = app_application_result.unwrap().application_id_added;
+
+        application_fixture.opt_application_stake_imbalance =
+            Some(stake::NegativeImbalance::<Test>::new(101));
+
+        assert!(application_fixture.add_application().is_ok());
+
+        let application = <ApplicationById<Test>>::get(first_application_id);
+        let stake_id = application.active_application_staking_id.unwrap();
+
+        let unstaked_fixture = UnstakedFixture {
+            opening_id,
+            application_id: first_application_id,
+            stake_id,
+        };
+
+        unstaked_fixture.call_and_assert(UnstakedResult::Unstaked);
+    });
+}
+
+#[test]
+fn unstaked_returns_unstaked_with_stake_checks() {
     build_test_externalities().execute_with(|| {
         let mut opening_fixture = AddOpeningFixture::default();
         opening_fixture.application_rationing_policy = Some(hiring::ApplicationRationingPolicy {

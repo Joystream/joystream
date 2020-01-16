@@ -1,6 +1,7 @@
 use crate::mock::*;
 use crate::test::*;
 
+use crate::test::public_api::*;
 use rstd::collections::btree_map::BTreeMap;
 
 /*
@@ -8,9 +9,6 @@ Not covered:
 - Application content check
 - ApplicationDeactivatedHandler
 
-- staking state checks:
-i.application.active_role_staking_id;
-ii.application.active_application_staking_id;
 */
 
 pub struct CancelOpeningFixture {
@@ -232,6 +230,7 @@ fn cancel_opening_succeeds_with_single_unstaking_application() {
         }));
     });
 }
+
 #[test]
 fn cancel_opening_succeeds_with_single_deactivated_application() {
     build_test_externalities().execute_with(|| {
@@ -353,5 +352,77 @@ fn cancel_opening_fails_due_to_too_short_role_unstaking_period() {
         cancel_opening_fixture.call_and_assert(Err(CancelOpeningError::UnstakingPeriodTooShort(
             StakePurpose::Role,
         )));
+    });
+}
+
+#[test]
+fn cancel_opening_succeeds_with_single_unstaking_application_with_application_stake_checks() {
+    handle_mock(|| {
+        build_test_externalities().execute_with(|| {
+            let mock = default_mock_for_creating_stake();
+            set_stake_handler_impl(mock.clone());
+
+            let mut opening_fixture = AddOpeningFixture::default();
+            opening_fixture.application_staking_policy = Some(StakingPolicy {
+                amount: 100,
+                amount_mode: StakingAmountLimitMode::AtLeast,
+                crowded_out_unstaking_period_length: None,
+                review_period_expired_unstaking_period_length: None,
+            });
+            let add_opening_result = opening_fixture.add_opening();
+            let opening_id = add_opening_result.unwrap();
+
+            let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+            application_fixture.opt_application_stake_imbalance =
+                Some(stake::NegativeImbalance::<Test>::new(100));
+
+            let app_application_result = application_fixture.add_application();
+            assert!(app_application_result.is_ok());
+
+            let mock2 = default_mock_for_unstaking();
+            set_stake_handler_impl(mock2.clone());
+
+            let cancel_opening_fixture = CancelOpeningFixture::default_for_opening(opening_id);
+            cancel_opening_fixture.call_and_assert(Ok(OpeningCancelled {
+                number_of_unstaking_applications: 1,
+                number_of_deactivated_applications: 0,
+            }));
+        })
+    });
+}
+
+#[test]
+fn cancel_opening_succeeds_with_single_unstaking_application_with_role_stake_checks() {
+    handle_mock(|| {
+        build_test_externalities().execute_with(|| {
+            let mock = default_mock_for_creating_stake();
+            set_stake_handler_impl(mock.clone());
+
+            let mut opening_fixture = AddOpeningFixture::default();
+            opening_fixture.role_staking_policy = Some(StakingPolicy {
+                amount: 100,
+                amount_mode: StakingAmountLimitMode::AtLeast,
+                crowded_out_unstaking_period_length: None,
+                review_period_expired_unstaking_period_length: None,
+            });
+            let add_opening_result = opening_fixture.add_opening();
+            let opening_id = add_opening_result.unwrap();
+
+            let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+            application_fixture.opt_role_stake_imbalance =
+                Some(stake::NegativeImbalance::<Test>::new(100));
+
+            let app_application_result = application_fixture.add_application();
+            assert!(app_application_result.is_ok());
+
+            let mock2 = default_mock_for_unstaking();
+            set_stake_handler_impl(mock2.clone());
+
+            let cancel_opening_fixture = CancelOpeningFixture::default_for_opening(opening_id);
+            cancel_opening_fixture.call_and_assert(Ok(OpeningCancelled {
+                number_of_unstaking_applications: 1,
+                number_of_deactivated_applications: 0,
+            }));
+        })
     });
 }
