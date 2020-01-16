@@ -970,7 +970,7 @@ type ApplicationBTreeMap<T> = BTreeMap<
     >,
 >;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 enum ApplicationDeactivationInitationResult {
     Ignored, // <= is there a case for kicking this out, making sure that initation cannot happen when it may fail?
     Unstaking,
