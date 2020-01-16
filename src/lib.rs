@@ -340,6 +340,8 @@ const ERROR_USER_SELF_DESC_TOO_LONG: &str = "User self introduction too long.";
 const ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT: &str = "Forum user id not match its account.";
 const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its account.";
 const ERROR_FORUM_USER_NOT_THREAD_AUTHOR: &str = "Forum user is not thread author";
+const ERROR_USER_POST_FOOTER_TOO_SHORT: &str = "User post footer too short.";
+const ERROR_USER_POST_FOOTER_TOO_LONG: &str = "User post footer too long.";
 
 // Errors about thread.
 const ERROR_THREAD_TITLE_TOO_SHORT: &str = "Thread title too short.";
@@ -416,6 +418,9 @@ pub struct ForumUser<AccountId> {
 
     /// Forum user's self introduction.
     pub self_introduction: Vec<u8>,
+
+    /// Post footer shown at the end of post
+    pub post_footer: Option<Vec<u8>>,
 }
 
 /// Represents a moderator in this forum.
@@ -689,6 +694,9 @@ type CategoryTreePath<CategoryId, BlockNumber, Moment> =
 
 decl_storage! {
     trait Store for Module<T: Trait> as Forum {
+        /// Input constraints for post footer.
+        pub PostFooterConstraint get(post_footer_constraint) config(): InputValidationLengthConstraint;
+
         /// Map forum user identifier to forum user information.
         pub ForumUserById get(forum_user_by_id) config(): map T::ForumUserId  => ForumUser<T::AccountId>;
 
@@ -1588,6 +1596,7 @@ impl<T: Trait> Module<T> {
         account_id: T::AccountId,
         name: Vec<u8>,
         self_introduction: Vec<u8>,
+        post_footer: Option<Vec<u8>>,
     ) -> dispatch::Result {
         // Ensure user name is valid
         Self::ensure_user_name_is_valid(&name)?;
@@ -1595,11 +1604,17 @@ impl<T: Trait> Module<T> {
         // Ensure self introduction is valid
         Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
 
+        // Ensure post footer is valid
+        if post_footer.is_some() {
+            Self::ensure_post_footer_is_valid(&post_footer.clone().unwrap())?;
+        }
+
         // Create new forum user data
         let new_forum_user = ForumUser {
             role_account: account_id.clone(),
             name: name.clone(),
             self_introduction: self_introduction.clone(),
+            post_footer: post_footer,
         };
 
         // Insert new user data for forum user
@@ -1749,6 +1764,14 @@ impl<T: Trait> Module<T> {
             description.len(),
             ERROR_CATEGORY_DESCRIPTION_TOO_SHORT,
             ERROR_CATEGORY_DESCRIPTION_TOO_LONG,
+        )
+    }
+
+    fn ensure_post_footer_is_valid(footer: &Vec<u8>) -> dispatch::Result {
+        PostFooterConstraint::get().ensure_valid(
+            footer.len(),
+            ERROR_USER_POST_FOOTER_TOO_SHORT,
+            ERROR_USER_POST_FOOTER_TOO_LONG,
         )
     }
 
