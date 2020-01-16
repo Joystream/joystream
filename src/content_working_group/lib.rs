@@ -1181,17 +1181,11 @@ decl_module! {
             curation_actor: CurationActor<CuratorId<T>>,
             channel_id: ChannelId<T>,
             new_verified: Option<bool>,
-            new_description: Option<Vec<u8>>,
             new_curation_status: Option<ChannelCurationStatus>
         ) {
 
             // Ensure curation actor signed
             Self::ensure_curation_actor_signed(origin, &curation_actor)?;
-
-            // If set, ensure description is acceptable length
-            if let Some(ref description) = new_description {
-                Self::ensure_channel_description_is_valid(description)?;
-            }
 
             //
             // == MUTATION SAFE ==
@@ -1202,7 +1196,7 @@ decl_module! {
                 &new_verified,
                 &None, // handle
                 &None, // title
-                &new_description,
+                &None, // description,
                 &None, // avatar
                 &None, // banner
                 &None, // publishing_status
