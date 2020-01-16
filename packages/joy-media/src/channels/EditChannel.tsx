@@ -44,7 +44,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     resetForm
   } = props;
 
-  const { thumbnail } = values;
+  const { avatar } = values;
 
   const isNew = !entity;
 
@@ -58,9 +58,10 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     
     {/* TODO add channel content type dropdown */}
     
-    <MediaText field={Fields.channelName} {...props} />
-    <MediaText field={Fields.thumbnail} {...props} />
-    <MediaText field={Fields.cover} {...props} />
+    <MediaText field={Fields.handle} {...props} />
+    <MediaText field={Fields.title} {...props} />
+    <MediaText field={Fields.avatar} {...props} />
+    <MediaText field={Fields.banner} {...props} />
     <MediaText field={Fields.description} textarea {...props} />
     <MediaDropdown field={Fields.publicationStatus} options={opts.publicationStatusOptions} {...props} />
   </>;
@@ -86,7 +87,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
-      {thumbnail && <img src={thumbnail} onError={onImageError} />}
+      {avatar && <img src={avatar} onError={onImageError} />}
     </div>
 
     <Form className='ui form JoyForm EditMetaForm'>
