@@ -76,7 +76,6 @@ impl DeactivateApplicationFixture {
         };
 
         assert_eq!(expected_application_state, actual_application_state);
-        //       debug_print(new_application_state);
     }
 
     fn assert_opening_content(
