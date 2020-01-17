@@ -9,22 +9,18 @@ import { CurationStatusType } from '../general/CurationStatus';
 export const ChannelValidationSchema = Yup.object().shape({
   content: Yup.string()
     .required('This field is required')
-    .max(255, 'Text is too long. Maximum length is 255 chars.'),
+    .max(100, 'Text is too long. Maximum length is 100 chars.'),
   handle: Yup.string()
     .required('This field is required')
-    .max(40, 'Text is too long. Maximum length is 255 chars.'),
+    .max(40, 'Text is too long. Maximum length is 40 chars.'),
   title: Yup.string()
-    .required('This field is required')
-    .max(100, 'Text is too long. Maximum length is 4000 chars.'),
+    .max(100, 'Text is too long. Maximum length is 100 chars.'),
   description: Yup.string()
-    .required('This field is required')
     .max(4000, 'Text is too long. Maximum length is 4000 chars.'),
   avatar: Yup.string()
-    .required('This field is required')
-    .max(1000, 'Text is too long. Maximum length is 255 chars.'),
+    .max(1000, 'Text is too long. Maximum length is 1000 chars.'),
   banner: Yup.string()
-    .required('This field is required')
-    .max(1000, 'Text is too long. Maximum length is 255 chars.')
+    .max(1000, 'Text is too long. Maximum length is 1000 chars.')
 });
 
 export type ChannelFormValues = {
@@ -44,10 +40,10 @@ export type ChannelType = {
   verified?: boolean
   content: string
   handle: string
-  title: string
-  description: string
-  avatar: string
-  banner: string
+  title?: string
+  description?: string
+  avatar?: string
+  banner?: string
   publicationStatus: PublicationStatusType
   curationStatus?: CurationStatusType
 };
@@ -100,7 +96,6 @@ export const ChannelClass: ChannelClassType = {
     "id": "verified",
     "name": "Verified",
     "description": "Indicates whether the channel is verified by a content curator.",
-    "required": false,
     "type": "Bool"
   },
   content: {
@@ -109,7 +104,7 @@ export const ChannelClass: ChannelClassType = {
     "description": "The type of channel.",
     "type": "Text",
     "required": true,
-    "maxTextLength": 255
+    "maxTextLength": 100
   },
   handle: {
     "id": "handle",
@@ -123,7 +118,6 @@ export const ChannelClass: ChannelClassType = {
     "id": "title",
     "name": "Title",
     "description": "Human readable title of channel.",
-    "required": true,
     "type": "Text",
     "maxTextLength": 100
   },
@@ -131,7 +125,6 @@ export const ChannelClass: ChannelClassType = {
     "id": "description",
     "name": "Description",
     "description": "Human readable description of channel purpose and scope.",
-    "required": true,
     "type": "Text",
     "maxTextLength": 4000
   },
@@ -139,7 +132,6 @@ export const ChannelClass: ChannelClassType = {
     "id": "avatar",
     "name": "Avatar",
     "description": "URL to avatar (logo) iamge: NOTE: Should be an https link to a square image.",
-    "required": true,
     "type": "Text",
     "maxTextLength": 1000
   },
@@ -147,7 +139,6 @@ export const ChannelClass: ChannelClassType = {
     "id": "banner",
     "name": "Banner",
     "description": "URL to banner image: NOTE: Should be an https link to a rectangular image, between 1400x1400 and 3000x3000 pixels, in JPEG or PNG format.",
-    "required": true,
     "type": "Text",
     "maxTextLength": 1000
   },
