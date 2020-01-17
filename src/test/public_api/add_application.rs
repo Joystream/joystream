@@ -7,7 +7,6 @@ use crate::test::public_api::*;
 
 /*
 Most 'ensures' (add_application() fail reasons) covered in ensure_can_add_application_* tests.
-- ApplicationDeactivatedHandler
 */
 
 pub struct AddApplicationFixture {
@@ -216,7 +215,8 @@ fn add_application_succeeds_with_crowding_out() {
         application_fixture.opt_application_stake_imbalance =
             Some(stake::NegativeImbalance::<Test>::new(100));
 
-        assert!(application_fixture.add_application().is_ok());
+        let add_appplication_result = application_fixture.add_application();
+        let application_id = add_appplication_result.unwrap().application_id_added;
 
         application_fixture.opt_application_stake_imbalance =
             Some(stake::NegativeImbalance::<Test>::new(101));
@@ -225,6 +225,11 @@ fn add_application_succeeds_with_crowding_out() {
             application_id_added: 1,
             application_id_crowded_out: Some(0),
         }));
+
+        TestApplicationDeactivatedHandler::assert_deactivated_application(
+            application_id,
+            ApplicationDeactivationCause::CrowdedOut,
+        );
     });
 }
 
@@ -387,7 +392,8 @@ fn add_application_succeeds_with_crowding_out_with_role_staking_mocks() {
             application_fixture.opt_role_stake_imbalance =
                 Some(stake::NegativeImbalance::<Test>::new(100));
 
-            assert!(application_fixture.add_application().is_ok());
+            let add_appplication_result = application_fixture.add_application();
+            let application_id = add_appplication_result.unwrap().application_id_added;
             mock.borrow_mut().checkpoint();
 
             application_fixture.opt_role_stake_imbalance =
@@ -421,6 +427,12 @@ fn add_application_succeeds_with_crowding_out_with_role_staking_mocks() {
             set_stake_handler_impl(mock2.clone());
 
             assert!(application_fixture.add_application().is_ok());
+
+
+            TestApplicationDeactivatedHandler::assert_deactivated_application(
+                application_id,
+                ApplicationDeactivationCause::CrowdedOut,
+            );
         });
     });
 }

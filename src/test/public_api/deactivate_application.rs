@@ -1,11 +1,11 @@
 use crate::mock::*;
 use crate::test::public_api::*;
 use crate::test::*;
+use crate::ApplicationDeactivationCause;
 
 /*
 Not covered:
 - application content checks: deactivation in future blocks
-- ApplicationDeactivatedHandler
 */
 
 pub struct DeactivateApplicationFixture {
@@ -162,7 +162,7 @@ fn deactivate_application_succeeds() {
         let deactivate_application_fixture =
             DeactivateApplicationFixture::default_for_application_id(application_id);
 
-        deactivate_application_fixture.call_and_assert(Ok(()))
+        deactivate_application_fixture.call_and_assert(Ok(()));
     });
 }
 
@@ -337,7 +337,12 @@ fn deactivate_application_succeeds_with_application_stake_checks() {
             let mock2 = default_mock_for_unstaking();
             set_stake_handler_impl(mock2.clone());
 
-            deactivate_application_fixture.call_and_assert(Ok(()))
+            deactivate_application_fixture.call_and_assert(Ok(()));
+
+            TestApplicationDeactivatedHandler::assert_deactivated_application(
+                application_id,
+                ApplicationDeactivationCause::External,
+            );
         });
     });
 }

@@ -2,11 +2,6 @@ use crate::mock::*;
 use crate::test::public_api::*;
 use crate::test::*;
 
-/*
-Not covered:
-- ApplicationDeactivatedHandler
-*/
-
 pub struct UnstakedFixture {
     pub opening_id: OpeningId,
     pub application_id: ApplicationId,
@@ -255,6 +250,11 @@ fn unstaked_returns_unstaked() {
         };
 
         unstaked_fixture.call_and_assert(UnstakedResult::Unstaked);
+
+        TestApplicationDeactivatedHandler::assert_deactivated_application(
+            first_application_id,
+            ApplicationDeactivationCause::CrowdedOut,
+        );
     });
 }
 

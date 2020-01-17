@@ -7,8 +7,6 @@ use rstd::collections::btree_map::BTreeMap;
 /*
 Not covered:
 - Application content check
-- ApplicationDeactivatedHandler
-
 */
 
 pub struct CancelOpeningFixture {
@@ -377,7 +375,7 @@ fn cancel_opening_succeeds_with_single_unstaking_application_with_application_st
                 Some(stake::NegativeImbalance::<Test>::new(100));
 
             let app_application_result = application_fixture.add_application();
-            assert!(app_application_result.is_ok());
+            let application_id = app_application_result.unwrap().application_id_added;
 
             let mock2 = default_mock_for_unstaking();
             set_stake_handler_impl(mock2.clone());
@@ -387,6 +385,11 @@ fn cancel_opening_succeeds_with_single_unstaking_application_with_application_st
                 number_of_unstaking_applications: 1,
                 number_of_deactivated_applications: 0,
             }));
+
+            TestApplicationDeactivatedHandler::assert_deactivated_application(
+                application_id,
+                ApplicationDeactivationCause::OpeningCancelled,
+            );
         })
     });
 }

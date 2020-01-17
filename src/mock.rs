@@ -8,12 +8,14 @@ use runtime_primitives::{
 };
 use srml_support::{impl_outer_origin, parameter_types};
 
+use crate::hiring::ApplicationDeactivationCause;
 use crate::{Module, Trait};
 use balances;
 use stake;
 
 use mocktopus::mocking::*;
 use std::cell::RefCell;
+use std::cell::Cell;
 use std::panic;
 use std::rc::Rc;
 
@@ -83,7 +85,7 @@ impl Trait for Test {
 
     type ApplicationId = u64;
 
-    type ApplicationDeactivatedHandler = ();
+    type ApplicationDeactivatedHandler = TestApplicationDeactivatedHandler;
 
     type StakeHandler = crate::HiringStakeHandler;
 }
@@ -143,4 +145,41 @@ pub(crate) fn handle_mock<F: std::panic::RefUnwindSafe + Fn()>(func: F) {
     test_expectation_and_clear_mock();
 
     assert!(!panicked);
+}
+
+//
+// ******* ApplicationDeactivatedHandler mocks ********************
+//
+thread_local! {
+    pub static LAST_DEACTIVATED_APPLICATION:
+        Cell<Option<(<Test as Trait>::ApplicationId, ApplicationDeactivationCause)>> = Cell::new(None);
+}
+
+pub struct TestApplicationDeactivatedHandler;
+impl crate::ApplicationDeactivatedHandler<Test> for TestApplicationDeactivatedHandler {
+    fn deactivated(
+        application_id: &<Test as Trait>::ApplicationId,
+        cause: ApplicationDeactivationCause,
+    ) {
+        LAST_DEACTIVATED_APPLICATION.with(|f| {
+            f.replace(Some((*application_id, cause)));
+        });
+    }
+}
+
+impl TestApplicationDeactivatedHandler {
+    pub(crate) fn assert_deactivated_application(
+        expected_application_id: <Test as Trait>::ApplicationId,
+        expected_cause: ApplicationDeactivationCause,
+    ) {
+        let mut actual_deactivated_application = None;
+        LAST_DEACTIVATED_APPLICATION.with(|f| {
+			actual_deactivated_application = f.replace(None);
+        });
+
+        assert_eq!(
+            Some((expected_application_id, expected_cause)),
+            actual_deactivated_application
+        );
+    }
 }

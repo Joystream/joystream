@@ -7,7 +7,6 @@ use rstd::result::Result;
 
 /*
 Not covered:
-- ApplicationDeactivatedHandler
 - Application content check
 */
 
@@ -378,6 +377,11 @@ fn fill_opening_succeeds_with_application_stake_checks() {
             set_stake_handler_impl(mock2.clone());
 
             fill_opening_fixture.call_and_assert(Ok(()));
+
+            TestApplicationDeactivatedHandler::assert_deactivated_application(
+                application_id,
+                ApplicationDeactivationCause::Hired,
+            );
         });
     });
 }
