@@ -3,13 +3,13 @@
 
 //#[cfg(feature = "std")]
 //use serde::{Deserialize, Serialize};
-
 use codec::{Decode, Encode}; // Codec
                              //use rstd::collections::btree_map::BTreeMap;
 use crate::membership::{members, role_types};
 use hiring;
 use minting;
 use recurringrewards;
+use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::convert::From;
 use rstd::prelude::*;
@@ -90,14 +90,15 @@ pub type PrincipalId<T> = <T as versioned_store_permissions::Trait>::PrincipalId
  * MOVE ALL OF THESE OUT TO COMMON LATER
  */
 
-static MSG_CHANNEL_CREATION_DISABLED: &str = "Channel creation currently disabled";
+pub static MSG_CHANNEL_HANDLE_TOO_SHORT: &str = "Channel handle too short.";
+pub static MSG_CHANNEL_HANDLE_TOO_LONG: &str = "Channel handle too long.";
+pub static MSG_CHANNEL_DESCRIPTION_TOO_SHORT: &str = "Channel description too short";
+pub static MSG_CHANNEL_DESCRIPTION_TOO_LONG: &str = "Channel description too long";
+pub static MSG_CHANNEL_ID_INVALID: &str = "Channel id invalid";
+pub static MSG_CHANNEL_CREATION_DISABLED: &str = "Channel creation currently disabled";
 static MSG_CHANNEL_HANDLE_ALREADY_TAKEN: &str = "Channel handle is already taken";
-static MSG_CHANNEL_HANDLE_TOO_SHORT: &str = "Channel handle too short";
-static MSG_CHANNEL_HANDLE_TOO_LONG: &str = "Channel handle too long";
 static MSG_CHANNEL_TITLE_TOO_SHORT: &str = "Channel title too short";
 static MSG_CHANNEL_TITLE_TOO_LONG: &str = "Channel title too long";
-static MSG_CHANNEL_DESCRIPTION_TOO_SHORT: &str = "Channel description too short";
-static MSG_CHANNEL_DESCRIPTION_TOO_LONG: &str = "Channel description too long";
 static MSG_CHANNEL_AVATAR_TOO_SHORT: &str = "Channel avatar URL too short";
 static MSG_CHANNEL_AVATAR_TOO_LONG: &str = "Channel avatar URL too long";
 static MSG_CHANNEL_BANNER_TOO_SHORT: &str = "Channel banner URL too short";
@@ -105,50 +106,126 @@ static MSG_CHANNEL_BANNER_TOO_LONG: &str = "Channel banner URL too long";
 
 //static MSG_MEMBER_CANNOT_BECOME_PUBLISHER: &str =
 //    "Member cannot become a publisher";
-static MSG_CHANNEL_ID_INVALID: &str = "Channel id invalid";
 static MSG_ORIGIN_DOES_NOT_MATCH_CHANNEL_ROLE_ACCOUNT: &str =
     "Origin does not match channel role account";
-static MSG_CURRENT_LEAD_ALREADY_SET: &str = "Current lead is already set";
-static MSG_CURRENT_LEAD_NOT_SET: &str = "Current lead is not set";
-//static MSG_MEMBER_CANNOT_BECOME_CURATOR_LEAD: &str =
-//    "The member cannot become curator lead";
-//static MSG_LEAD_IS_NOT_SET: &str =
-//    "Lead is not set";
-static MSG_ORIGIN_IS_NOT_LEAD: &str = "Origin is not lead";
-static MSG_ORIGIN_IS_NOT_APPLICANT: &str = "Origin is not applicant";
-//static MSG_OPENING_CANNOT_ACTIVATE_IN_THE_PAST: &str =
-//    "Opening cannot activate in the past";
-static MSG_CURATOR_OPENING_DOES_NOT_EXIST: &str = "Curator opening does not exist";
-static MSG_CURATOR_APPLICATION_DOES_NOT_EXIST: &str = "Curator application does not exist";
-//static MSG_INSUFFICIENT_BALANCE_TO_COVER_ROLE_STAKE: &str =
-//    "Insufficient balance to cover role stake";
-//static MSG_INSUFFICIENT_BALANCE_TO_COVER_APPLICATION_STAKE: &str =
-//    "Insufficient balance to cover application stake";
-static MSG_INSUFFICIENT_BALANCE_TO_APPLY: &str = "Insufficient balance to apply";
-static MSG_SUCCESSFUL_CURATOR_APPLICATION_DOES_NOT_EXIST: &str =
+pub static MSG_CURRENT_LEAD_ALREADY_SET: &str = "Current lead is already set";
+pub static MSG_CURRENT_LEAD_NOT_SET: &str = "Current lead is not set";
+pub static MSG_ORIGIN_IS_NOT_LEAD: &str = "Origin is not lead";
+pub static MSG_ORIGIN_IS_NOT_APPLICANT: &str = "Origin is not applicant";
+pub static MSG_CURATOR_OPENING_DOES_NOT_EXIST: &str = "Curator opening does not exist";
+pub static MSG_CURATOR_APPLICATION_DOES_NOT_EXIST: &str = "Curator application does not exist";
+pub static MSG_INSUFFICIENT_BALANCE_TO_APPLY: &str = "Insufficient balance to apply";
+pub static MSG_SUCCESSFUL_CURATOR_APPLICATION_DOES_NOT_EXIST: &str =
     "Successful curatora pplication does not exist";
-static MSG_MEMBER_NO_LONGER_REGISTRABLE_AS_CURATOR: &str =
+pub static MSG_MEMBER_NO_LONGER_REGISTRABLE_AS_CURATOR: &str =
     "Member no longer registrable as curator";
-static MSG_CURATOR_DOES_NOT_EXIST: &str = "Curator does not exist";
-static MSG_CURATOR_IS_NOT_ACTIVE: &str = "Curator is not active";
-static MSG_CURATOR_EXIT_RATIONALE_TEXT_TOO_LONG: &str = "Curator exit rationale text is too long";
-static MSG_CURATOR_EXIT_RATIONALE_TEXT_TOO_SHORT: &str = "Curator exit rationale text is too short";
-static MSG_CURATOR_APPLICATION_TEXT_TOO_LONG: &str = "Curator application text too long";
-static MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT: &str = "Curator application text too short";
-static MSG_SIGNER_IS_NOT_CURATOR_ROLE_ACCOUNT: &str = "Signer is not curator role account";
-static MSG_UNSTAKER_DOES_NOT_EXIST: &str = "Unstaker does not exist";
-static MSG_CURATOR_HAS_NO_REWARD: &str = "Curator has no recurring reward";
-static MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER: &str = "Curator not controlled by member";
+pub static MSG_CURATOR_DOES_NOT_EXIST: &str = "Curator does not exist";
+pub static MSG_CURATOR_IS_NOT_ACTIVE: &str = "Curator is not active";
+pub static MSG_CURATOR_EXIT_RATIONALE_TEXT_TOO_LONG: &str =
+    "Curator exit rationale text is too long";
+pub static MSG_CURATOR_EXIT_RATIONALE_TEXT_TOO_SHORT: &str =
+    "Curator exit rationale text is too short";
+pub static MSG_CURATOR_APPLICATION_TEXT_TOO_LONG: &str = "Curator application text too long";
+pub static MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT: &str = "Curator application text too short";
+pub static MSG_SIGNER_IS_NOT_CURATOR_ROLE_ACCOUNT: &str = "Signer is not curator role account";
+pub static MSG_UNSTAKER_DOES_NOT_EXIST: &str = "Unstaker does not exist";
+pub static MSG_CURATOR_HAS_NO_REWARD: &str = "Curator has no recurring reward";
+pub static MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER: &str = "Curator not controlled by member";
+pub static MSG_INSUFFICIENT_BALANCE_TO_COVER_STAKE: &str = "Insuffieicnt balance to cover stake";
+
+/*
+ * The errors below, while in many cases encoding similar outcomes,
+ * are scoped to the specific extrinsic for which they are used.
+ * The reason for this is that it will later to easier to convert this
+ * representation into into the type safe error encoding coming in
+ * later versions of Substrate.
+ */
+
+// Errors for `accept_curator_applications`
+pub static MSG_ACCEPT_CURATOR_APPLICATIONS_OPENING_DOES_NOT_EXIST: &str = "Opening does not exist";
+pub static MSG_ACCEPT_CURATOR_APPLICATIONS_OPENING_IS_NOT_WAITING_TO_BEGIN: &str =
+    "Opening Is Not in Waiting to begin";
+
+// Errors for `begin_curator_applicant_review`
+pub static MSG_BEGIN_CURATOR_APPLICANT_REVIEW_OPENING_DOES_NOT_EXIST: &str =
+    "Opening does not exist";
+pub static MSG_BEGIN_CURATOR_APPLICANT_REVIEW_OPENING_OPENING_IS_NOT_WAITING_TO_BEGIN: &str =
+    "Opening Is Not in Waiting";
+
+// Errors for `fill_curator_opening`
+pub static MSG_FULL_CURATOR_OPENING_OPENING_DOES_NOT_EXIST: &str = "OpeningDoesNotExist";
+pub static MSG_FULL_CURATOR_OPENING_OPENING_NOT_IN_REVIEW_PERIOD_STAGE: &str =
+    "OpeningNotInReviewPeriodStage";
+pub static MSG_FULL_CURATOR_OPENING_UNSUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_TOO_SHORT:
+    &str = "Application stake unstaking period for successful applicants too short";
+pub static MSG_FULL_CURATOR_OPENING_SUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_TOO_SHORT: &str =
+    "Application stake unstaking period for failed applicants too short";
+pub static MSG_FULL_CURATOR_OPENING_SUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_TOO_SHORT: &str =
+    "Role stake unstaking period for successful applicants too short";
+pub static MSG_FULL_CURATOR_OPENING_UNSUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_TOO_SHORT: &str =
+    "Role stake unstaking period for failed applicants too short";
+pub static MSG_FULL_CURATOR_OPENING_SUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_REDUNDANT: &str =
+    "Application stake unstaking period for successful applicants redundant";
+pub static MSG_FULL_CURATOR_OPENING_UNSUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_REDUNDANT:
+    &str = "Application stake unstaking period for failed applicants redundant";
+pub static MSG_FULL_CURATOR_OPENING_SUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_REDUNDANT: &str =
+    "Role stake unstaking period for successful applicants redundant";
+pub static MSG_FULL_CURATOR_OPENING_UNSUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_REDUNDANT: &str =
+    "Role stake unstaking period for failed applicants redundant";
+pub static MSG_FULL_CURATOR_OPENING_APPLICATION_DOES_NOT_EXIST: &str = "ApplicationDoesNotExist";
+pub static MSG_FULL_CURATOR_OPENING_APPLICATION_NOT_ACTIVE: &str = "ApplicationNotInActiveStage";
+
+// Errors for `withdraw_curator_application`
+pub static MSG_WITHDRAW_CURATOR_APPLICATION_APPLICATION_DOES_NOT_EXIST: &str =
+    "ApplicationDoesNotExist";
+pub static MSG_WITHDRAW_CURATOR_APPLICATION_APPLICATION_NOT_ACTIVE: &str = "ApplicationNotActive";
+pub static MSG_WITHDRAW_CURATOR_APPLICATION_OPENING_NOT_ACCEPTING_APPLICATIONS: &str =
+    "OpeningNotAcceptingApplications";
+pub static MSG_WITHDRAW_CURATOR_APPLICATION_UNSTAKING_PERIOD_TOO_SHORT: &str =
+    "UnstakingPeriodTooShort ..."; // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
+pub static MSG_WITHDRAW_CURATOR_APPLICATION_REDUNDANT_UNSTAKING_PERIOD: &str =
+    "RedundantUnstakingPeriodProvided ...";
+
+// Errors for `create_channel`
+pub static MSG_CREATE_CHANNEL_IS_NOT_MEMBER: &str = "Is not a member";
+pub static MSG_CREATE_CHANNEL_NOT_CONTROLLER_ACCOUNT: &str =
+    "Account is not controller account of member";
+
+// Errors for `add_curator_opening`
+pub static MSG_ADD_CURATOR_OPENING_ACTIVATES_IN_THE_PAST: &str =
+    "Opening does not activate in the future";
+pub static MSG_ADD_CURATOR_OPENING_ROLE_STAKE_LESS_THAN_MINIMUM: &str =
+    "Role stake amount less than minimum currency balance";
+pub static MSG_ADD_CURATOR_OPENING_APPLIICATION_STAKE_LESS_THAN_MINIMUM: &str =
+    "Application stake amount less than minimum currency balance";
+pub static MSG_ADD_CURATOR_OPENING_OPENING_DOES_NOT_EXIST: &str = "OpeningDoesNotExist";
+pub static MSG_ADD_CURATOR_OPENING_STAKE_PROVIDED_WHEN_REDUNDANT: &str =
+    "StakeProvidedWhenRedundant ..."; // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
+pub static MSG_ADD_CURATOR_OPENING_STAKE_MISSING_WHEN_REQUIRED: &str =
+    "StakeMissingWhenRequired ..."; // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
+pub static MSG_ADD_CURATOR_OPENING_STAKE_AMOUNT_TOO_LOW: &str = "StakeAmountTooLow ..."; // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
+pub static MSG_ADD_CURATOR_OPENING_OPENING_NOT_IN_ACCEPTING_APPLICATION_STAGE: &str =
+    "OpeningNotInAcceptingApplicationsStage";
+pub static MSG_ADD_CURATOR_OPENING_NEW_APPLICATION_WAS_CROWDED_OUT: &str =
+    "NewApplicationWasCrowdedOut";
+pub static MSG_ADD_CURATOR_OPENING_ZERO_MAX_APPLICANT_COUNT: &str =
+    "Application rationing has zero max active applicants";
+
+// Errors for `apply_on_curator_opening`
+pub static MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN: &str = "Unsigned origin";
+pub static MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID: &str = "Member id is invalid";
+pub static MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
+    "Signer does not match controller account";
 
 /// The exit stage of a lead involvement in the working group.
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub struct ExitedLeadRole<BlockNumber> {
     /// When exit was initiated.
     pub initiated_at_block_number: BlockNumber,
 }
 
 /// The stage of the involvement of a lead in the working group.
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum LeadRoleState<BlockNumber> {
     /// Currently active.
     Active,
@@ -168,7 +245,7 @@ impl<BlockNumber> Default for LeadRoleState<BlockNumber> {
 /// Working group lead: curator lead
 /// For now this role is not staked or inducted through an structured process, like the hiring module,
 /// hence information about this is missing. Recurring rewards is included, somewhat arbitrarily!
-#[derive(Encode, Decode, Default, Debug, Clone)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Lead<AccountId, RewardRelationshipId, BlockNumber> {
     /// Account used to authenticate in this role,
     pub role_account: AccountId,
@@ -185,7 +262,7 @@ pub struct Lead<AccountId, RewardRelationshipId, BlockNumber> {
 }
 
 /// Origin of exit initiation on behalf of a curator.'
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum CuratorExitInitiationOrigin {
     /// Lead is origin.
     Lead,
@@ -195,7 +272,7 @@ pub enum CuratorExitInitiationOrigin {
 }
 
 /// The exit stage of a curators involvement in the working group.
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub struct CuratorExitSummary<BlockNumber> {
     /// Origin for exit.
     pub origin: CuratorExitInitiationOrigin,
@@ -222,7 +299,7 @@ impl<BlockNumber: Clone> CuratorExitSummary<BlockNumber> {
 }
 
 /// The stage of the involvement of a curator in the working group.
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum CuratorRoleStage<BlockNumber> {
     /// Currently active.
     Active,
@@ -243,7 +320,7 @@ impl<BlockNumber> Default for CuratorRoleStage<BlockNumber> {
 }
 
 /// The induction of a curator in the working group.
-#[derive(Encode, Decode, Default, Debug, Clone)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct CuratorInduction<LeadId, CuratorApplicationId, BlockNumber> {
     /// Lead responsible for inducting curator
     pub lead: LeadId,
@@ -272,7 +349,7 @@ impl<LeadId: Clone, CuratorApplicationId: Clone, BlockNumber: Clone>
 }
 
 /// Role stake information for a curator.
-#[derive(Encode, Decode, Default, Debug, Clone)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct CuratorRoleStakeProfile<StakeId, BlockNumber> {
     /// Whether participant is staked, and if so, the identifier for this staking in the staking module.
     pub stake_id: StakeId,
@@ -300,7 +377,7 @@ impl<StakeId: Clone, BlockNumber: Clone> CuratorRoleStakeProfile<StakeId, BlockN
 
 /// Working group participant: curator
 /// This role can be staked, have reward and be inducted through the hiring module.
-#[derive(Encode, Decode, Default, Debug, Clone)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Curator<
     AccountId,
     RewardRelationshipId,
@@ -373,7 +450,7 @@ impl<
 }
 
 /// An opening for a curator role.
-#[derive(Encode, Decode, Default, Debug, Clone)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId: core::cmp::Ord> {
     /// Identifer for underlying opening in the hiring module.
     pub opening_id: OpeningId,
@@ -392,7 +469,7 @@ pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId:
 }
 
 /// An application for the curator role.
-#[derive(Encode, Decode, Default, Debug, Clone)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct CuratorApplication<AccountId, CuratorOpeningId, MemberId, ApplicationId> {
     /// Account used to authenticate in this role,
     pub role_account: AccountId,
@@ -494,7 +571,6 @@ impl Default for ChannelCurationStatus {
 /// A channel for publishing content.
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
-
     /// Whether channel has been verified, in the normal Web2.0 platform sense of being authenticated.
     pub verified: bool,
 
@@ -536,13 +612,49 @@ pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
     pub principal_id: PrincipalId,
 }
 
+impl<MemberId, AccountId, BlockNumber, PrincipalId>
+    Channel<MemberId, AccountId, BlockNumber, PrincipalId>
+{
+    pub fn new(
+        title: Vec<u8>,
+        verified: bool,
+        description: Vec<u8>,
+        content: ChannelContentType,
+        owner: MemberId,
+        role_account: AccountId,
+        publishing_status: ChannelPublishingStatus,
+        curation_status: ChannelCurationStatus,
+        created: BlockNumber,
+        principal_id: PrincipalId,
+        avatar: Vec<u8>,
+        banner: Vec<u8>,
+        handle: Vec<u8>,
+    ) -> Self {
+        Self {
+            title,
+            verified,
+            description,
+            content,
+            owner,
+            role_account,
+            publishing_status,
+            curation_status,
+            created,
+            principal_id,
+            avatar,
+            banner,
+            handle,
+        }
+    }
+}
+
 /*
  * END: =========================================================
  * Channel stuff
  */
 
 /// Permissions module principal
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum Principal<CuratorId, ChannelId> {
     /// Its sloppy to have this here, less safe,
     /// but its not worth the ffort to solve.
@@ -650,6 +762,16 @@ impl<LeadId: Default, CuratorId> Default for WorkingGroupUnstaker<LeadId, Curato
 }
 
 /*
+/// ...
+#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd, Ord)]
+pub struct OpeningHire<CuratorApplicationId, CuratorId, PrincipalId> {
+    curator_application_id: CuratorApplicationId,
+    curator_id: CuratorId,
+    principal_id: PrincipalId
+}
+*/
+
+/*
 pub enum ChannelActor<T: Trait> {
 
     ///
@@ -661,7 +783,7 @@ pub enum ChannelActor<T: Trait> {
 */
 
 // ======================================================================== //
-// Move this out in its own file later //
+// Move section below, this out in its own file later                       //
 // ======================================================================== //
 
 /*
@@ -690,10 +812,10 @@ impl rstd::convert::From<WrappedError<hiring::BeginAcceptingApplicationsError>> 
     fn from(wrapper: WrappedError<hiring::BeginAcceptingApplicationsError>) -> Self {
         match wrapper.error {
             hiring::BeginAcceptingApplicationsError::OpeningDoesNotExist => {
-                "Opening does not exist"
+                MSG_ACCEPT_CURATOR_APPLICATIONS_OPENING_DOES_NOT_EXIST
             }
             hiring::BeginAcceptingApplicationsError::OpeningIsNotInWaitingToBeginStage => {
-                "Opening Is Not in Waiting"
+                MSG_ACCEPT_CURATOR_APPLICATIONS_OPENING_IS_NOT_WAITING_TO_BEGIN
             }
         }
     }
@@ -703,20 +825,20 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
     fn from(wrapper: WrappedError<hiring::AddOpeningError>) -> Self {
         match wrapper.error {
             hiring::AddOpeningError::OpeningMustActivateInTheFuture => {
-                "Opening must activate in the future"
+                MSG_ADD_CURATOR_OPENING_ACTIVATES_IN_THE_PAST
             }
             hiring::AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(purpose) => {
                 match purpose {
                     hiring::StakePurpose::Role => {
-                        "Role stake amount less than minimum currency balance"
+                        MSG_ADD_CURATOR_OPENING_ROLE_STAKE_LESS_THAN_MINIMUM
                     }
                     hiring::StakePurpose::Application => {
-                        "Application stake amount less than minimum currency balance"
+                        MSG_ADD_CURATOR_OPENING_APPLIICATION_STAKE_LESS_THAN_MINIMUM
                     }
                 }
             }
             hiring::AddOpeningError::ApplicationRationingZeroMaxApplicants => {
-                "Application rationing policy: maximum active applicant number must be greater than zero"
+                MSG_ADD_CURATOR_OPENING_ZERO_MAX_APPLICANT_COUNT
             }
         }
     }
@@ -725,9 +847,11 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
 impl rstd::convert::From<WrappedError<hiring::BeginReviewError>> for &str {
     fn from(wrapper: WrappedError<hiring::BeginReviewError>) -> Self {
         match wrapper.error {
-            hiring::BeginReviewError::OpeningDoesNotExist => "Opening does not exist",
+            hiring::BeginReviewError::OpeningDoesNotExist => {
+                MSG_BEGIN_CURATOR_APPLICANT_REVIEW_OPENING_DOES_NOT_EXIST
+            }
             hiring::BeginReviewError::OpeningNotInAcceptingApplicationsStage => {
-                "Opening not in accepting applications stage"
+                MSG_BEGIN_CURATOR_APPLICANT_REVIEW_OPENING_OPENING_IS_NOT_WAITING_TO_BEGIN
             }
         }
     }
@@ -736,29 +860,19 @@ impl rstd::convert::From<WrappedError<hiring::BeginReviewError>> for &str {
 impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError<T>>> for &str {
     fn from(wrapper: WrappedError<hiring::FillOpeningError<T>>) -> Self {
         match wrapper.error {
-            hiring::FillOpeningError::<T>::OpeningDoesNotExist => "OpeningDoesNotExist",
-            hiring::FillOpeningError::<T>::OpeningNotInReviewPeriodStage => {
-                "OpeningNotInReviewPeriodStage"
-            }
+            hiring::FillOpeningError::<T>::OpeningDoesNotExist => MSG_FULL_CURATOR_OPENING_OPENING_DOES_NOT_EXIST,
+            hiring::FillOpeningError::<T>::OpeningNotInReviewPeriodStage => MSG_FULL_CURATOR_OPENING_OPENING_NOT_IN_REVIEW_PERIOD_STAGE,
             hiring::FillOpeningError::<T>::UnstakingPeriodTooShort(
                 stake_purpose,
                 outcome_in_filled_opening,
             ) => match stake_purpose {
                 hiring::StakePurpose::Application => match outcome_in_filled_opening {
-                    hiring::ApplicationOutcomeInFilledOpening::Success => {
-                        "Application stake unstaking period for successful applicants too short"
-                    }
-                    hiring::ApplicationOutcomeInFilledOpening::Failure => {
-                        "Application stake unstaking period for failed applicants too short"
-                    }
+                    hiring::ApplicationOutcomeInFilledOpening::Success => MSG_FULL_CURATOR_OPENING_UNSUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_TOO_SHORT,
+                    hiring::ApplicationOutcomeInFilledOpening::Failure => MSG_FULL_CURATOR_OPENING_SUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_TOO_SHORT
                 },
                 hiring::StakePurpose::Role => match outcome_in_filled_opening {
-                    hiring::ApplicationOutcomeInFilledOpening::Success => {
-                        "Role stake unstaking period for successful applicants too short"
-                    }
-                    hiring::ApplicationOutcomeInFilledOpening::Failure => {
-                        "Role stake unstaking period for failed applicants too short"
-                    }
+                    hiring::ApplicationOutcomeInFilledOpening::Success => MSG_FULL_CURATOR_OPENING_SUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_TOO_SHORT,
+                    hiring::ApplicationOutcomeInFilledOpening::Failure => MSG_FULL_CURATOR_OPENING_UNSUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_TOO_SHORT
                 },
             },
             hiring::FillOpeningError::<T>::RedundantUnstakingPeriodProvided(
@@ -766,28 +880,16 @@ impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError
                 outcome_in_filled_opening,
             ) => match stake_purpose {
                 hiring::StakePurpose::Application => match outcome_in_filled_opening {
-                    hiring::ApplicationOutcomeInFilledOpening::Success => {
-                        "Application stake unstaking period for successful applicants redundant"
-                    }
-                    hiring::ApplicationOutcomeInFilledOpening::Failure => {
-                        "Application stake unstaking period for failed applicants redundant"
-                    }
+                    hiring::ApplicationOutcomeInFilledOpening::Success => MSG_FULL_CURATOR_OPENING_SUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_REDUNDANT,
+                    hiring::ApplicationOutcomeInFilledOpening::Failure => MSG_FULL_CURATOR_OPENING_UNSUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_REDUNDANT
                 },
                 hiring::StakePurpose::Role => match outcome_in_filled_opening {
-                    hiring::ApplicationOutcomeInFilledOpening::Success => {
-                        "Role stake unstaking period for successful applicants redundant"
-                    }
-                    hiring::ApplicationOutcomeInFilledOpening::Failure => {
-                        "Role stake unstaking period for failed applicants redundant"
-                    }
+                    hiring::ApplicationOutcomeInFilledOpening::Success => MSG_FULL_CURATOR_OPENING_SUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_REDUNDANT,
+                    hiring::ApplicationOutcomeInFilledOpening::Failure => MSG_FULL_CURATOR_OPENING_UNSUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_REDUNDANT
                 },
             },
-            hiring::FillOpeningError::<T>::ApplicationDoesNotExist(_application_id) => {
-                "ApplicationDoesNotExist"
-            }
-            hiring::FillOpeningError::<T>::ApplicationNotInActiveStage(_application_id) => {
-                "ApplicationNotInActiveStage"
-            }
+            hiring::FillOpeningError::<T>::ApplicationDoesNotExist(_application_id) => MSG_FULL_CURATOR_OPENING_APPLICATION_DOES_NOT_EXIST,
+            hiring::FillOpeningError::<T>::ApplicationNotInActiveStage(_application_id) => MSG_FULL_CURATOR_OPENING_APPLICATION_NOT_ACTIVE
         }
     }
 }
@@ -796,18 +898,20 @@ impl rstd::convert::From<WrappedError<hiring::DeactivateApplicationError>> for &
     fn from(wrapper: WrappedError<hiring::DeactivateApplicationError>) -> Self {
         match wrapper.error {
             hiring::DeactivateApplicationError::ApplicationDoesNotExist => {
-                "ApplicationDoesNotExist"
+                MSG_WITHDRAW_CURATOR_APPLICATION_APPLICATION_DOES_NOT_EXIST
             }
-            hiring::DeactivateApplicationError::ApplicationNotActive => "ApplicationNotActive",
+            hiring::DeactivateApplicationError::ApplicationNotActive => {
+                MSG_WITHDRAW_CURATOR_APPLICATION_APPLICATION_NOT_ACTIVE
+            }
             hiring::DeactivateApplicationError::OpeningNotAcceptingApplications => {
-                "OpeningNotAcceptingApplications"
+                MSG_WITHDRAW_CURATOR_APPLICATION_OPENING_NOT_ACCEPTING_APPLICATIONS
             }
             hiring::DeactivateApplicationError::UnstakingPeriodTooShort(_stake_purpose) => {
-                "UnstakingPeriodTooShort ..."
+                MSG_WITHDRAW_CURATOR_APPLICATION_UNSTAKING_PERIOD_TOO_SHORT
             }
             hiring::DeactivateApplicationError::RedundantUnstakingPeriodProvided(
                 _stake_purpose,
-            ) => "RedundantUnstakingPeriodProvided ...",
+            ) => MSG_WITHDRAW_CURATOR_APPLICATION_REDUNDANT_UNSTAKING_PERIOD,
         }
     }
 }
@@ -815,9 +919,11 @@ impl rstd::convert::From<WrappedError<hiring::DeactivateApplicationError>> for &
 impl rstd::convert::From<WrappedError<members::ControllerAccountForMemberCheckFailed>> for &str {
     fn from(wrapper: WrappedError<members::ControllerAccountForMemberCheckFailed>) -> Self {
         match wrapper.error {
-            members::ControllerAccountForMemberCheckFailed::NotMember => "Is not a member",
+            members::ControllerAccountForMemberCheckFailed::NotMember => {
+                MSG_CREATE_CHANNEL_IS_NOT_MEMBER
+            }
             members::ControllerAccountForMemberCheckFailed::NotControllerAccount => {
-                "Account is not controller account of member"
+                MSG_CREATE_CHANNEL_NOT_CONTROLLER_ACCOUNT
             }
         }
     }
@@ -826,21 +932,23 @@ impl rstd::convert::From<WrappedError<members::ControllerAccountForMemberCheckFa
 impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for &str {
     fn from(wrapper: WrappedError<hiring::AddApplicationError>) -> Self {
         match wrapper.error {
-            hiring::AddApplicationError::OpeningDoesNotExist => "OpeningDoesNotExist",
+            hiring::AddApplicationError::OpeningDoesNotExist => {
+                MSG_ADD_CURATOR_OPENING_OPENING_DOES_NOT_EXIST
+            }
             hiring::AddApplicationError::StakeProvidedWhenRedundant(_stake_purpose) => {
-                "StakeProvidedWhenRedundant ..."
+                MSG_ADD_CURATOR_OPENING_STAKE_PROVIDED_WHEN_REDUNDANT
             }
             hiring::AddApplicationError::StakeMissingWhenRequired(_stake_purpose) => {
-                "StakeMissingWhenRequired ..."
+                MSG_ADD_CURATOR_OPENING_STAKE_MISSING_WHEN_REQUIRED
             }
             hiring::AddApplicationError::StakeAmountTooLow(_stake_purpose) => {
-                "StakeAmountTooLow ..."
+                MSG_ADD_CURATOR_OPENING_STAKE_AMOUNT_TOO_LOW
             }
             hiring::AddApplicationError::OpeningNotInAcceptingApplicationsStage => {
-                "OpeningNotInAcceptingApplicationsStage"
+                MSG_ADD_CURATOR_OPENING_OPENING_NOT_IN_ACCEPTING_APPLICATION_STAGE
             }
             hiring::AddApplicationError::NewApplicationWasCrowdedOut => {
-                "NewApplicationWasCrowdedOut"
+                MSG_ADD_CURATOR_OPENING_NEW_APPLICATION_WAS_CROWDED_OUT
             }
         }
     }
@@ -849,15 +957,21 @@ impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for &str {
 impl rstd::convert::From<WrappedError<members::MemberControllerAccountDidNotSign>> for &str {
     fn from(wrapper: WrappedError<members::MemberControllerAccountDidNotSign>) -> Self {
         match wrapper.error {
-            members::MemberControllerAccountDidNotSign::UnsignedOrigin => "Unsigned origin",
-            members::MemberControllerAccountDidNotSign::MemberIdInvalid => "Member id is invalid",
+            members::MemberControllerAccountDidNotSign::UnsignedOrigin => {
+                MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN
+            }
+            members::MemberControllerAccountDidNotSign::MemberIdInvalid => {
+                MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID
+            }
             members::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => {
-                "Signer does not match controller account"
+                MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT
             }
         }
     }
 }
 
+// ======================================================================== //
+// Move section above, this out in its own file later                       //
 // ======================================================================== //
 
 decl_storage! {
@@ -867,7 +981,8 @@ decl_storage! {
         pub Mint get(mint) config(): <T as minting::Trait>::MintId;
 
         /// The current lead.
-        pub CurrentLeadId get(current_lead_id) config(): Option<LeadId<T>>;
+        /// Not configurable, because default set value breaks semantics: https://github.com/Joystream/joystream/issues/36#issuecomment-564560373
+        pub CurrentLeadId get(current_lead_id): Option<LeadId<T>>;
 
         /// Maps identifier to corresponding lead.
         pub LeadById get(lead_by_id) config(): linked_map LeadId<T> => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
@@ -951,20 +1066,11 @@ decl_event! {
         LeadSet(LeadId),
         LeadUnset(LeadId),
         CuratorOpeningAdded(CuratorOpeningId),
-        //LeadRewardUpdated
-        //LeadRoleAccountUpdated
-        //LeadRewardAccountUpdated
-        //PermissionGroupAdded
-        //PermissionGroupUpdated
         AcceptedCuratorApplications(CuratorOpeningId),
         BeganCuratorApplicationReview(CuratorOpeningId),
-        CuratorOpeningFilled(CuratorOpeningId, BTreeSet<CuratorApplicationId>),
-        //CuratorSlashed
+        CuratorOpeningFilled(CuratorOpeningId, BTreeMap<CuratorApplicationId, CuratorId>), //BTreeSet<CuratorApplicationId>),
         TerminatedCurator(CuratorId),
         AppliedOnCuratorOpening(CuratorOpeningId, CuratorApplicationId),
-        //CuratorRewardUpdated
-        //CuratorRoleAccountUpdated
-        //CuratorRewardAccountUpdated
         CuratorExited(CuratorId),
         CuratorUnstaking(CuratorId),
         CuratorApplicationTerminated(CuratorApplicationId),
@@ -972,6 +1078,7 @@ decl_event! {
         CuratorRoleAccountUpdated(CuratorId, AccountId),
         CuratorRewardAccountUpdated(CuratorId, AccountId),
         ChannelUpdatedByCurationActor(ChannelId),
+        ChannelCreationEnabledUpdated(bool),
     }
 }
 
@@ -994,7 +1101,8 @@ decl_module! {
             description: Vec<u8>,
             avatar: Vec<u8>,
             banner: Vec<u8>,
-            content: ChannelContentType
+            content: ChannelContentType,
+            publishing_status: ChannelPublishingStatus
         ) {
 
             // Ensure that it is signed
@@ -1047,7 +1155,7 @@ decl_module! {
                 content: content,
                 owner: owner,
                 role_account: role_account,
-                publishing_status: ChannelPublishingStatus::NotPublished,
+                publishing_status: publishing_status,
                 curation_status: ChannelCurationStatus::Normal,
                 created: <system::Module<T>>::block_number(),
                 principal_id: principal_id
@@ -1382,6 +1490,8 @@ decl_module! {
             // - create and hold on to curator
             // - register role with membership module
 
+            let mut curator_application_id_to_curator_id = BTreeMap::new();
+
             successful_iter
             .clone()
             .for_each(|(successful_curator_application, id, _)| {
@@ -1437,10 +1547,12 @@ decl_module! {
 
                 // Update next curator id
                 NextCuratorId::<T>::mutate(|id| *id += <CuratorId<T> as One>::one());
+
+                curator_application_id_to_curator_id.insert(id, new_curator_id);
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorOpeningFilled(curator_opening_id, successful_curator_application_ids));
+            Self::deposit_event(RawEvent::CuratorOpeningFilled(curator_opening_id, curator_application_id_to_curator_id));
 
         }
 
@@ -1735,6 +1847,8 @@ decl_module! {
             // Ensure that member can actually become lead
             let new_lead_id = <NextLeadId<T>>::get();
 
+            let new_lead_role = role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
+
             let _profile = <members::Module<T>>::can_register_role_on_member(
                 &member,
                 &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id)
@@ -1760,6 +1874,11 @@ decl_module! {
 
             // Update next lead counter
             <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
+
+            // Register in role
+            let registered_role = <members::Module<T>>::register_role_on_member(member, &new_lead_role).is_ok();
+
+            assert!(registered_role);
 
             // Trigger event
             Self::deposit_event(RawEvent::LeadSet(new_lead_id));
@@ -1859,6 +1978,22 @@ decl_module! {
             Self::deposit_event(event);
         }
 
+        /// Add an opening for a curator role.
+        pub fn set_channel_creation_enabled(origin, enabled: bool)  {
+
+            // Ensure lead is set and is origin signer
+            Self::ensure_origin_is_set_lead(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update storage value
+            ChannelCreationEnabled::put(enabled);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::ChannelCreationEnabledUpdated(enabled));
+        }
     }
 }
 
@@ -1961,7 +2096,7 @@ impl<T: Trait> Module<T> {
 
         // Has to not already be occupied
         ensure!(
-            ChannelIdByHandle::<T>::exists(handle),
+            !ChannelIdByHandle::<T>::exists(handle),
             MSG_CHANNEL_HANDLE_ALREADY_TAKEN
         );
 
@@ -2333,14 +2468,19 @@ impl<T: Trait> Module<T> {
         });
 
         if total_amount > zero_balance {
-            let new_balance = CurrencyOf::<T>::free_balance(source_account) - total_amount;
+            // Ensure that
+            if CurrencyOf::<T>::free_balance(source_account) < total_amount {
+                Err(MSG_INSUFFICIENT_BALANCE_TO_COVER_STAKE)
+            } else {
+                let new_balance = CurrencyOf::<T>::free_balance(source_account) - total_amount;
 
-            CurrencyOf::<T>::ensure_can_withdraw(
-                source_account,
-                total_amount,
-                WithdrawReasons::all(),
-                new_balance,
-            )
+                CurrencyOf::<T>::ensure_can_withdraw(
+                    source_account,
+                    total_amount,
+                    WithdrawReasons::all(),
+                    new_balance,
+                )
+            }
         } else {
             Ok(())
         }
@@ -2440,6 +2580,10 @@ impl<T: Trait> Module<T> {
 
         // Unstake if directions provided
         if let Some(directions) = unstake_directions {
+            // Keep track of curator unstaking
+            let unstaker = WorkingGroupUnstaker::Curator(curator_id.clone());
+            UnstakerByStakeId::<T>::insert(directions.0, unstaker);
+
             // Unstake
             stake::Module::<T>::initiate_unstaking(&directions.0, directions.1)
                 .expect("Unstaking must be possible at this time");
@@ -2487,7 +2631,6 @@ impl<T: Trait> Module<T> {
 
         // Update channel
         ChannelById::<T>::mutate(channel_id, |channel| {
-
             if let Some(ref verified) = new_verified {
                 channel.verified = *verified;
             }
