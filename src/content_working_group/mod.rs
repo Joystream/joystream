@@ -1,3 +1,4 @@
+pub mod genesis;
 pub mod lib;
 //pub mod types;
 
