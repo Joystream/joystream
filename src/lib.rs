@@ -24,8 +24,6 @@
 use mockall::predicate::*;
 #[cfg(all(any(test, feature = "test"), not(target_arch = "wasm32")))]
 use mockall::*;
-#[cfg(all(any(test, feature = "test"), not(target_arch = "wasm32")))]
-use mocktopus::macros::*;
 
 use stake::{InitiateUnstakingError, Stake, StakeActionError, StakingError, Trait as StakeTrait};
 
@@ -83,7 +81,7 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
     type ApplicationDeactivatedHandler: ApplicationDeactivatedHandler<Self>;
 
     /// Marker type for Stake module handler. Indicates that hiring module uses stake module mock.
-    type StakeHandler: StakeHandler<Self>;
+    type StakeHandlerProvider: StakeHandlerProvider<Self>;
 }
 
 decl_storage! {
@@ -103,7 +101,6 @@ decl_storage! {
 
         /// Internal purpose of given stake, i.e. fro what application, and whether for the role or for the application.
         pub ApplicationIdByStakingId get(stake_purpose_by_staking_id): linked_map T::StakeId => T::ApplicationId;
-
     }
 }
 
@@ -637,7 +634,7 @@ impl<T: Trait> Module<T> {
 
             assert_ne!(
                 deactivation_result,
-                ApplicationDeactivationInitationResult::Ignored
+                ApplicationDeactivationInitiationResult::Ignored
             );
         }
 
@@ -760,7 +757,7 @@ impl<T: Trait> Module<T> {
             hiring::ApplicationDeactivationCause::External,
         );
 
-        assert_ne!(result, ApplicationDeactivationInitationResult::Ignored);
+        assert_ne!(result, ApplicationDeactivationInitiationResult::Ignored);
 
         // DONE
         Ok(())
@@ -972,8 +969,8 @@ type ApplicationBTreeMap<T> = BTreeMap<
 >;
 
 #[derive(PartialEq, Debug, Clone)]
-enum ApplicationDeactivationInitationResult {
-    Ignored, // <= is there a case for kicking this out, making sure that initation cannot happen when it may fail?
+enum ApplicationDeactivationInitiationResult {
+    Ignored, // <= is there a case for kicking this out, making sure that initiation cannot happen when it may fail?
     Unstaking,
     Deactivated,
 }
@@ -1073,7 +1070,7 @@ impl<T: Trait> Module<T> {
         applications
             .iter()
             .map(
-                |(application_id, application)| -> ApplicationDeactivationInitationResult {
+                |(application_id, application)| -> ApplicationDeactivationInitiationResult {
                     // Initiate deactivations!
                     Self::try_to_initiate_application_deactivation(
                         application,
@@ -1093,9 +1090,9 @@ impl<T: Trait> Module<T> {
                 |acc, deactivation_result| {
                     // Update accumulator counters based on what actually happened
                     match deactivation_result {
-                        ApplicationDeactivationInitationResult::Ignored => acc,
+                        ApplicationDeactivationInitiationResult::Ignored => acc,
 
-                        ApplicationDeactivationInitationResult::Unstaking => {
+                        ApplicationDeactivationInitiationResult::Unstaking => {
                             ApplicationsDeactivationsInitiationResult {
                                 number_of_unstaking_applications: 1 + acc
                                     .number_of_unstaking_applications,
@@ -1104,7 +1101,7 @@ impl<T: Trait> Module<T> {
                             }
                         }
 
-                        ApplicationDeactivationInitationResult::Deactivated => {
+                        ApplicationDeactivationInitiationResult::Deactivated => {
                             ApplicationsDeactivationsInitiationResult {
                                 number_of_unstaking_applications: acc
                                     .number_of_unstaking_applications,
@@ -1124,7 +1121,7 @@ impl<T: Trait> Module<T> {
         application_stake_unstaking_period: Option<T::BlockNumber>,
         role_stake_unstaking_period: Option<T::BlockNumber>,
         cause: hiring::ApplicationDeactivationCause,
-    ) -> ApplicationDeactivationInitationResult {
+    ) -> ApplicationDeactivationInitiationResult {
         match application.stage {
             ApplicationStage::Active => {
                 // Initiate unstaking of any active application stake
@@ -1219,12 +1216,12 @@ impl<T: Trait> Module<T> {
 
                 // Return conclusion
                 if was_unstaked {
-                    ApplicationDeactivationInitationResult::Unstaking
+                    ApplicationDeactivationInitiationResult::Unstaking
                 } else {
-                    ApplicationDeactivationInitationResult::Deactivated
+                    ApplicationDeactivationInitiationResult::Deactivated
                 }
             }
-            _ => ApplicationDeactivationInitationResult::Ignored,
+            _ => ApplicationDeactivationInitiationResult::Ignored,
         }
     }
 
@@ -1240,7 +1237,7 @@ impl<T: Trait> Module<T> {
             // `initiate_unstaking` MUST hold, is runtime invariant, false means code is broken.
             // But should we do panic in runtime? Is there safer way?
 
-            assert!(Self::staking()
+            assert!(T::StakeHandlerProvider::staking()
                 .initiate_unstaking(&stake_id, opt_unstaking_period)
                 .is_ok());
         }
@@ -1270,7 +1267,7 @@ impl<T: Trait> Module<T> {
         application_id: &T::ApplicationId,
     ) -> T::StakeId {
         // Create stake
-        let new_stake_id = Self::staking().create_stake();
+        let new_stake_id = T::StakeHandlerProvider::staking().create_stake();
 
         // Keep track of this stake id to process unstaking callbacks that may
         // be invoked later.
@@ -1287,7 +1284,10 @@ impl<T: Trait> Module<T> {
         //
         // MUST work, is runtime invariant, false means code is broken.
         // But should we do panic in runtime? Is there safer way?
-        assert_eq!(Self::staking().stake(&new_stake_id, imbalance), Ok(()));
+        assert_eq!(
+            T::StakeHandlerProvider::staking().stake(&new_stake_id, imbalance),
+            Ok(())
+        );
 
         new_stake_id
     }
@@ -1380,9 +1380,9 @@ impl<T: Trait> Module<T> {
     fn get_opt_stake_amount(stake_id: Option<T::StakeId>) -> BalanceOf<T> {
         stake_id.map_or(<BalanceOf<T> as Zero>::zero(), |stake_id| {
             // INVARIANT: stake MUST exist in the staking module
-            assert!(Self::staking().stake_exists(stake_id));
+            assert!(T::StakeHandlerProvider::staking().stake_exists(stake_id));
 
-            let stake = Self::staking().get_stake(stake_id);
+            let stake = T::StakeHandlerProvider::staking().get_stake(stake_id);
 
             match stake.staking_status {
                 // INVARIANT: stake MUST be in the staked state.
@@ -1439,13 +1439,14 @@ pub trait StakeHandler<T: StakeTrait> {
     ) -> Result<(), StakeActionError<InitiateUnstakingError>>;
 }
 
-#[cfg_attr(
-    all(any(test, feature = "test"), not(target_arch = "wasm32")),
-    mockable
-)]
-impl<T: Trait> Module<T> {
+/// Allows to provide different StakeHandler implementation. Useful for mocks.
+pub trait StakeHandlerProvider<T: Trait> {
+    fn staking() -> Rc<RefCell<dyn StakeHandler<T>>>;
+}
+
+impl<T: Trait> StakeHandlerProvider<T> for Module<T> {
     /// Returns StakeHandler. Mock entry point for stake module.
-    pub fn staking() -> Rc<RefCell<dyn StakeHandler<T>>> {
+    fn staking() -> Rc<RefCell<dyn StakeHandler<T>>> {
         Rc::new(RefCell::new(HiringStakeHandler {}))
     }
 }
@@ -1484,8 +1485,8 @@ impl<T: Trait> StakeHandler<T> for HiringStakeHandler {
 
 // Proxy implementation of StakeHandler trait to simplify calls via staking() method
 // Allows to get rid of borrow() calls,
-// eg.: Self::staking().get_stake(stake_id);
-// instead of Self::staking().borrow().get_stake(stake_id);
+// eg.: T::StakeHandlerProvider::staking().get_stake(stake_id);
+// instead of T::StakeHandlerProvider::staking().borrow().get_stake(stake_id);
 impl<T: Trait> StakeHandler<T> for Rc<RefCell<dyn StakeHandler<T>>> {
     fn create_stake(&self) -> T::StakeId {
         self.borrow().create_stake()

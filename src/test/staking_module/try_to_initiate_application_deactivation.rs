@@ -23,7 +23,7 @@ impl<'a> TryToInitiateApplicationDeactivationFixture<'a> {
         }
     }
 
-    fn call_and_assert(&self, expected_result: ApplicationDeactivationInitationResult) {
+    fn call_and_assert(&self, expected_result: ApplicationDeactivationInitiationResult) {
         let old_application = <ApplicationById<Test>>::get(self.application_id);
         let old_opening_state = <OpeningById<Test>>::get(old_application.opening_id);
 
@@ -36,7 +36,7 @@ impl<'a> TryToInitiateApplicationDeactivationFixture<'a> {
         self.assert_opening_content(old_application.opening_id, old_opening_state, actual_result);
     }
 
-    fn try_to_initiate_application_deactivation(&self) -> ApplicationDeactivationInitationResult {
+    fn try_to_initiate_application_deactivation(&self) -> ApplicationDeactivationInitiationResult {
         Hiring::try_to_initiate_application_deactivation(
             self.application,
             self.application_id,
@@ -49,12 +49,12 @@ impl<'a> TryToInitiateApplicationDeactivationFixture<'a> {
     fn assert_application_content(
         &self,
         old_application_state: Application<OpeningId, BlockNumber, StakeId>,
-        result: ApplicationDeactivationInitationResult,
+        result: ApplicationDeactivationInitiationResult,
     ) {
         let actual_application_state = <ApplicationById<Test>>::get(self.application_id);
 
         let expected_application_state = match result {
-            ApplicationDeactivationInitationResult::Deactivated => Application {
+            ApplicationDeactivationInitiationResult::Deactivated => Application {
                 stage: ApplicationStage::Inactive {
                     deactivation_initiated: 1,
                     deactivated: 1,
@@ -62,14 +62,14 @@ impl<'a> TryToInitiateApplicationDeactivationFixture<'a> {
                 },
                 ..old_application_state
             },
-            ApplicationDeactivationInitationResult::Unstaking => Application {
+            ApplicationDeactivationInitiationResult::Unstaking => Application {
                 stage: ApplicationStage::Unstaking {
                     deactivation_initiated: 1,
                     cause: self.cause,
                 },
                 ..old_application_state
             },
-            ApplicationDeactivationInitationResult::Ignored => old_application_state,
+            ApplicationDeactivationInitiationResult::Ignored => old_application_state,
         };
 
         assert_eq!(expected_application_state, actual_application_state);
@@ -79,7 +79,7 @@ impl<'a> TryToInitiateApplicationDeactivationFixture<'a> {
         &self,
         opening_id: OpeningId,
         old_opening: Opening<Balance, BlockNumber, ApplicationId>,
-        result: ApplicationDeactivationInitationResult,
+        result: ApplicationDeactivationInitiationResult,
     ) {
         // invalid opening stages are not supported
 
@@ -104,15 +104,15 @@ impl<'a> TryToInitiateApplicationDeactivationFixture<'a> {
                 let mut expected_unstaking_application_count = unstaking_application_count;
 
                 match result {
-                    ApplicationDeactivationInitationResult::Deactivated => {
+                    ApplicationDeactivationInitiationResult::Deactivated => {
                         expected_active_application_count -= 1;
                         expected_deactivated_application_count += 1;
                     }
-                    ApplicationDeactivationInitationResult::Unstaking => {
+                    ApplicationDeactivationInitiationResult::Unstaking => {
                         expected_active_application_count -= 1;
                         expected_unstaking_application_count += 1;
                     }
-                    ApplicationDeactivationInitationResult::Ignored => {}
+                    ApplicationDeactivationInitiationResult::Ignored => {}
                 }
 
                 let expected_opening = Opening {
@@ -159,7 +159,7 @@ fn try_to_initiate_application_deactivation_succeeds_with_ignored_result() {
             &application,
         );
 
-        ttiad_fixture.call_and_assert(ApplicationDeactivationInitationResult::Ignored);
+        ttiad_fixture.call_and_assert(ApplicationDeactivationInitiationResult::Ignored);
     });
 }
 
@@ -187,7 +187,7 @@ fn try_to_initiate_application_deactivation_panics_because_of_not_active_opening
             &application,
         );
 
-        ttiad_fixture.call_and_assert(ApplicationDeactivationInitationResult::Ignored);
+        ttiad_fixture.call_and_assert(ApplicationDeactivationInitiationResult::Ignored);
     });
 }
 
@@ -216,7 +216,7 @@ fn try_to_initiate_application_deactivation_panics_because_of_opening_with_no_ap
             &application,
         );
 
-        ttiad_fixture.call_and_assert(ApplicationDeactivationInitationResult::Ignored);
+        ttiad_fixture.call_and_assert(ApplicationDeactivationInitiationResult::Ignored);
     });
 }
 
@@ -238,7 +238,7 @@ fn try_to_initiate_application_deactivation_succeeds_with_deactivated_result() {
             &application,
         );
 
-        ttiad_fixture.call_and_assert(ApplicationDeactivationInitationResult::Deactivated);
+        ttiad_fixture.call_and_assert(ApplicationDeactivationInitiationResult::Deactivated);
     });
 }
 
@@ -280,7 +280,7 @@ fn try_to_initiate_application_deactivation_succeeds_with_single_application_uns
             };
             set_stake_handler_impl(mock);
 
-            ttiad_fixture.call_and_assert(ApplicationDeactivationInitationResult::Unstaking);
+            ttiad_fixture.call_and_assert(ApplicationDeactivationInitiationResult::Unstaking);
         });
     });
 }
@@ -332,7 +332,7 @@ fn try_to_initiate_application_deactivation_succeeds_with_application_and_role_u
             };
             set_stake_handler_impl(mock);
 
-            ttiad_fixture.call_and_assert(ApplicationDeactivationInitationResult::Unstaking);
+            ttiad_fixture.call_and_assert(ApplicationDeactivationInitiationResult::Unstaking);
         });
     });
 }
@@ -385,7 +385,7 @@ fn try_to_initiate_application_deactivation_succeeds_hired_cause_and_application
             };
             set_stake_handler_impl(mock);
 
-            ttiad_fixture.call_and_assert(ApplicationDeactivationInitationResult::Unstaking);
+            ttiad_fixture.call_and_assert(ApplicationDeactivationInitiationResult::Unstaking);
         });
     });
 }

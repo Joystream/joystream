@@ -428,7 +428,6 @@ fn add_application_succeeds_with_crowding_out_with_role_staking_mocks() {
 
             assert!(application_fixture.add_application().is_ok());
 
-
             TestApplicationDeactivatedHandler::assert_deactivated_application(
                 application_id,
                 ApplicationDeactivationCause::CrowdedOut,

@@ -13,9 +13,8 @@ use crate::{Module, Trait};
 use balances;
 use stake;
 
-use mocktopus::mocking::*;
-use std::cell::RefCell;
 use std::cell::Cell;
+use std::cell::RefCell;
 use std::panic;
 use std::rc::Rc;
 
@@ -87,7 +86,7 @@ impl Trait for Test {
 
     type ApplicationDeactivatedHandler = TestApplicationDeactivatedHandler;
 
-    type StakeHandler = crate::HiringStakeHandler;
+    type StakeHandlerProvider = TestStakeHandlerProvider;
 }
 
 impl stake::Trait for Test {
@@ -120,9 +119,28 @@ fn panics<F: std::panic::RefUnwindSafe + Fn()>(could_panic_func: F) -> bool {
     }
 }
 
-// Sets stake handler implementation in hiring module. Moctopus-mockall frameworks integration
+pub struct TestStakeHandlerProvider;
+impl crate::StakeHandlerProvider<Test> for TestStakeHandlerProvider {
+    /// Returns StakeHandler. Mock entry point for stake module.
+    fn staking() -> Rc<RefCell<dyn crate::StakeHandler<Test>>> {
+        THREAD_LOCAL_STAKE_HANDLER.with(|f| f.borrow().clone())
+    }
+}
+
+// 1. RefCell - thread_local! mutation pattern
+// 2. Rc - ability to have multiple references
+// 3. Refcell - interior mutability to provide extra-mock capabilities (like mockall checkpoint).
+thread_local! {
+    pub static THREAD_LOCAL_STAKE_HANDLER:
+      RefCell<Rc<RefCell<dyn crate::StakeHandler<Test>>>> = RefCell::new(Rc::new(RefCell::new(crate::HiringStakeHandler {})));
+}
+
+// Sets stake handler implementation in hiring module. Mockall frameworks integration
 pub(crate) fn set_stake_handler_impl(mock: Rc<rstd::cell::RefCell<dyn crate::StakeHandler<Test>>>) {
-    Hiring::staking.mock_safe(move || MockResult::Return(mock.clone()));
+    // Hiring::staking.mock_safe(move || MockResult::Return(mock.clone()));
+    THREAD_LOCAL_STAKE_HANDLER.with(|f| {
+        *f.borrow_mut() = mock.clone();
+    });
 }
 
 // Tests mock expectation and restores default behaviour
@@ -174,7 +192,7 @@ impl TestApplicationDeactivatedHandler {
     ) {
         let mut actual_deactivated_application = None;
         LAST_DEACTIVATED_APPLICATION.with(|f| {
-			actual_deactivated_application = f.replace(None);
+            actual_deactivated_application = f.replace(None);
         });
 
         assert_eq!(
