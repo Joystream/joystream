@@ -1,6 +1,6 @@
 use crate::mock::*;
-use crate::test::*;
 use crate::test::public_api::*;
+use crate::test::*;
 
 /*
 Not covered:

@@ -1,9 +1,9 @@
 use crate::mock::*;
 use crate::test::*;
 
+use crate::test::public_api::*;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::result::Result;
-use crate::test::public_api::*;
 
 /*
 Not covered:

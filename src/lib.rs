@@ -956,6 +956,7 @@ pub type NegativeImbalance<T> =
  *  ======== ======== ======== ======== =======
  */
 
+#[derive(PartialEq, Debug, Clone)]
 struct ApplicationsDeactivationsInitiationResult {
     number_of_unstaking_applications: u32,
     number_of_deactivated_applications: u32,
@@ -1401,6 +1402,10 @@ impl<T: Trait> Module<T> {
         }
     }
 }
+
+/*
+ *  === Stake module wrappers  ======
+ */
 
 /// Defines stake module interface
 #[cfg_attr(
