@@ -1441,6 +1441,7 @@ pub trait StakeHandler<T: StakeTrait> {
 
 /// Allows to provide different StakeHandler implementation. Useful for mocks.
 pub trait StakeHandlerProvider<T: Trait> {
+    /// Returns StakeHandler. Mock entry point for stake module.
     fn staking() -> Rc<RefCell<dyn StakeHandler<T>>>;
 }
 
