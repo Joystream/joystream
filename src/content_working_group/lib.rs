@@ -2100,33 +2100,50 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_channel_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
+    
+    fn ensure_channel_title_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        if text.is_empty() {
+            return Ok(())
+        }
+
         ChannelTitleConstraint::get().ensure_valid(
-            title.len(),
+            text.len(),
             MSG_CHANNEL_TITLE_TOO_SHORT,
             MSG_CHANNEL_TITLE_TOO_LONG,
         )
     }
 
-    fn ensure_channel_description_is_valid(description: &Vec<u8>) -> dispatch::Result {
+    fn ensure_channel_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        if text.is_empty() {
+            return Ok(())
+        }
+
         ChannelDescriptionConstraint::get().ensure_valid(
-            description.len(),
+            text.len(),
             MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
             MSG_CHANNEL_DESCRIPTION_TOO_LONG,
         )
     }
 
-    fn ensure_channel_avatar_is_valid(avatar: &Vec<u8>) -> dispatch::Result {
+    fn ensure_channel_avatar_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        if text.is_empty() {
+            return Ok(())
+        }
+
         ChannelAvatarConstraint::get().ensure_valid(
-            avatar.len(),
+            text.len(),
             MSG_CHANNEL_AVATAR_TOO_SHORT,
             MSG_CHANNEL_AVATAR_TOO_LONG,
         )
     }
 
-    fn ensure_channel_banner_is_valid(banner: &Vec<u8>) -> dispatch::Result {
+    fn ensure_channel_banner_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        if text.is_empty() {
+            return Ok(())
+        }
+        
         ChannelBannerConstraint::get().ensure_valid(
-            banner.len(),
+            text.len(),
             MSG_CHANNEL_BANNER_TOO_SHORT,
             MSG_CHANNEL_BANNER_TOO_LONG,
         )
