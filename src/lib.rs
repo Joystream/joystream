@@ -276,15 +276,6 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Copy
         + MaybeSerialize
         + PartialEq;
-
-    type PollItemLength: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
 }
 
 /*
