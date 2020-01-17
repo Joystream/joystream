@@ -60,7 +60,6 @@ impl Trait for Runtime {
     type ThreadId = u64;
     type LabelId = u64;
     type PostId = u64;
-    type PollItemLength = u64;
 }
 
 #[derive(Clone)]
