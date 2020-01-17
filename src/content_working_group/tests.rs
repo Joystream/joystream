@@ -104,7 +104,8 @@ fn create_channel_handle_too_long() {
                 None,
             );
 
-            fixture.channel_name = generate_too_long_length_buffer(&ChannelHandleConstraint::get());
+            fixture.channel_handle =
+                generate_too_long_length_buffer(&ChannelHandleConstraint::get());
 
             fixture.call_and_assert_error(MSG_CHANNEL_HANDLE_TOO_LONG);
         });
@@ -122,7 +123,7 @@ fn create_channel_handle_too_short() {
                 None,
             );
 
-            fixture.channel_name =
+            fixture.channel_handle =
                 generate_too_short_length_buffer(&ChannelHandleConstraint::get());
 
             fixture.call_and_assert_error(MSG_CHANNEL_HANDLE_TOO_SHORT);
@@ -200,7 +201,7 @@ impl UpdateChannelAsCurationActorFixture {
         let old_channel = ChannelById::<Test>::get(channel_id);
 
         let expected_updated_channel = lib::Channel::new(
-            old_channel.channel_name,
+            old_channel.title,
             self.new_verified.unwrap_or(old_channel.verified),
             self.new_description
                 .clone()
@@ -213,6 +214,9 @@ impl UpdateChannelAsCurationActorFixture {
                 .unwrap_or(old_channel.curation_status),
             old_channel.created,
             old_channel.principal_id,
+            old_channel.avatar,
+            old_channel.banner,
+            old_channel.handle,
         );
 
         // Call and check result
@@ -1830,8 +1834,11 @@ struct CreateChannelFixture {
     pub channel_creator_member_id: <Test as members::Trait>::MemberId,
     pub controller_account: <Test as system::Trait>::AccountId,
     pub channel_creator_role_account: <Test as system::Trait>::AccountId,
-    pub channel_name: Vec<u8>,
+    pub channel_handle: Vec<u8>,
+    pub channel_title: Vec<u8>,
     pub description: Vec<u8>,
+    pub avatar: Vec<u8>,
+    pub banner: Vec<u8>,
     pub content: ChannelContentType,
     pub publishing_status: ChannelPublishingStatus,
 }
@@ -1853,7 +1860,10 @@ impl CreateChannelFixture {
             channel_creator_member_id,
             controller_account,
             channel_creator_role_account: 527489,
-            channel_name: generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+            channel_handle: generate_valid_length_buffer(&ChannelHandleConstraint::get()),
+            channel_title: generate_valid_length_buffer(&ChannelTitleConstraint::get()),
+            avatar: generate_valid_length_buffer(&ChannelAvatarConstraint::get()),
+            banner: generate_valid_length_buffer(&ChannelBannerConstraint::get()),
             description: generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
             content: ChannelContentType::Video,
             publishing_status: ChannelPublishingStatus::NotPublished,
@@ -1865,8 +1875,11 @@ impl CreateChannelFixture {
             Origin::signed(self.controller_account),
             self.channel_creator_member_id,
             self.channel_creator_role_account,
-            self.channel_name.clone(),
+            self.channel_handle.clone(),
+            self.channel_title.clone(),
             self.description.clone(),
+            self.avatar.clone(),
+            self.banner.clone(),
             self.content.clone(),
             self.publishing_status.clone(),
         )
@@ -1907,8 +1920,11 @@ impl CreateChannelFixture {
         let created_channel = lib::ChannelById::<Test>::get(channel_id);
 
         let expected_channel = Channel {
-            channel_name: self.channel_name.clone(),
             verified: false,
+            handle: self.channel_handle.clone(),
+            title: self.channel_title.clone(),
+            avatar: self.avatar.clone(),
+            banner: self.banner.clone(),
             description: self.description.clone(),
             content: self.content.clone(),
             owner: self.channel_creator_member_id,
@@ -1926,9 +1942,9 @@ impl CreateChannelFixture {
         // Assert that next id incremented.
         assert_eq!(lib::NextChannelId::<Test>::get(), channel_id + 1);
 
-        // Assert that there is a mapping established for name
+        // Assert that there is a mapping established for handle
         assert_eq!(
-            lib::ChannelIdByName::<Test>::get(self.channel_name.clone()),
+            lib::ChannelIdByHandle::<Test>::get(self.channel_handle.clone()),
             channel_id
         );
 

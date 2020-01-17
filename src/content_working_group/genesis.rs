@@ -38,6 +38,10 @@ pub struct GenesisConfigBuilder<T: Trait> {
     opening_human_readble_text: InputValidationLengthConstraint,
     curator_application_human_readable_text: InputValidationLengthConstraint,
     curator_exit_rationale_text: InputValidationLengthConstraint,
+    channel_title_constraint: InputValidationLengthConstraint,
+    channel_avatar_constraint: InputValidationLengthConstraint,
+    channel_banner_constraint: InputValidationLengthConstraint,
+    opening_human_readable_text: InputValidationLengthConstraint,
 }
 
 impl<T: Trait> GenesisConfigBuilder<T> {
@@ -84,9 +88,13 @@ impl<T: Trait> GenesisConfigBuilder<T> {
 
             channel_handle_constraint: self.channel_handle_constraint,
             channel_description_constraint: self.channel_description_constraint,
-            opening_human_readble_text: self.opening_human_readble_text,
             curator_application_human_readable_text: self.curator_application_human_readable_text,
             curator_exit_rationale_text: self.curator_exit_rationale_text,
+
+            channel_title_constraint: self.channel_title_constraint,
+            channel_avatar_constraint: self.channel_avatar_constraint,
+            channel_banner_constraint: self.channel_banner_constraint,
+            opening_human_readable_text: self.opening_human_readable_text,
         }
     }
 }
@@ -125,6 +133,10 @@ impl<T: Trait> Default for GenesisConfigBuilder<T> {
             opening_human_readble_text: default_constraint.clone(),
             curator_application_human_readable_text: default_constraint.clone(),
             curator_exit_rationale_text: default_constraint.clone(),
+            channel_title_constraint: default_constraint.clone(),
+            channel_avatar_constraint: default_constraint.clone(),
+            channel_banner_constraint: default_constraint.clone(),
+            opening_human_readable_text: default_constraint.clone(),
         }
     }
 }
