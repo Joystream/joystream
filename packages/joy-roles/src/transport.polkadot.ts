@@ -2,24 +2,27 @@ import { Observable } from 'rxjs';
 
 import ApiPromise from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces'
-import { u32, u128 } from '@polkadot/types'
+import { GenericAccountId, Option, u32, u128, Vec } from '@polkadot/types'
+import { Codec } from '@polkadot/types/types'
 
-import { Subscribable, LinkedMapEntry } from '@polkadot/joy-utils/index'
+import { LinkedMapEntry } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
 import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 
-import { Role } from '@joystream/types/roles';
+import { Actor, Role } from '@joystream/types/roles';
 import { OpeningId } from '@joystream/types/hiring';
-import { CuratorOpening, LeadId } from '@joystream/types/content-working-group';
+import { CuratorOpening, Lead, LeadId } from '@joystream/types/content-working-group';
 import { Opening } from '@joystream/types/hiring';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
+import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 
 import { keyPairDetails } from './flows/apply'
 
-import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
+import { classifyOpeningStage } from "./classifiers"
+import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
 
 export class Transport extends TransportBase implements ITransport {
   protected api: ApiPromise
@@ -78,20 +81,70 @@ export class Transport extends TransportBase implements ITransport {
           curatorOpening.value.getField<OpeningId>("opening_id").toNumber()
       )
 
-      console.log("opening", opening.toJSON())
-      console.log("curatorO", curatorOpening.value.toJSON())
-
+      /////////////////////////////////
       // TODO: Load group lead
-      const currentLeadId = await this.api.query.contentWorkingGroup.currentLeadId() as LeadId
-      console.log(currentLeadId)
+      const currentLeadId = await this.api.query.contentWorkingGroup.currentLeadId() as Option<LeadId>
+      
+      if (currentLeadId.isNone) {
+        reject("no current lead id")
+      }
 
-      reject("WIP")
+      const lead = new LinkedMapEntry<Lead>(
+        Lead,
+        await this.api.query.contentWorkingGroup.leadById(
+          currentLeadId.unwrap(),
+        ),
+      )
+
+      const leadAccount = lead.value.getField<GenericAccountId>("role_account")
+
+      const memberIds = await this.api.query.members.memberIdsByRootAccountId(leadAccount) as Vec<GenericAccountId>
+      if (memberIds.length == 0) {
+        reject("no member account found")
+      }
+
+      const memberId = memberIds[0]
+
+      const profile = await this.api.query.members.memberProfile(memberId) as Option<Codec>
+      if (profile.isNone) {
+        reject("no profile found")
+      }
+
+      const actor = new Actor({
+        member_id: memberId,
+        account: leadAccount,
+      })
 
       // @ts-ignore
       resolve({
-        creator: {},
+        creator: {
+          actor: actor, 
+          profile: profile.unwrap(),
+          title: 'Group lead',
+          lead: true,
+          //stake?: Balance,
+          //earned?: Balance,
+        },
         opening: opening,
-        applications: {},
+        meta: {
+          id: id.toString(),
+        },
+		stage: classifyOpeningStage(opening.stage),
+
+       //// MOCK data //
+          applications: {
+          numberOfApplications: 0,
+          maxNumberOfApplications: 0,
+          requiredApplicationStake: new ApplicationStakeRequirement(
+            new u128(501),
+            StakeType.AtLeast,
+          ),
+          requiredRoleStake: new RoleStakeRequirement(
+            new u128(502),
+          ),
+          defactoMinimumStake: new u128(0),
+        },
+        defactoMinimumStake: new u128(0)
       })
     })
   }
