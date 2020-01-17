@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use super::members::{self, DEFAULT_PAID_TERM_ID};
+pub use super::members::{self, Trait, DEFAULT_PAID_TERM_ID};
 pub use crate::currency::GovernanceCurrency;
 pub use srml_support::traits::Currency;
 pub use system;
@@ -93,43 +93,44 @@ impl members::Trait for Test {
     type InitialMembersBalance = InitialMembersBalance;
 }
 
-pub struct ExtBuilder {
-    default_paid_membership_fee: u64,
-    members: Vec<(u64)>,
+pub struct TestExternalitiesBuilder<T: Trait> {
+    system_config: Option<system::GenesisConfig>,
+    membership_config: Option<members::GenesisConfig<T>>,
 }
-impl Default for ExtBuilder {
+
+impl<T: Trait> Default for TestExternalitiesBuilder<T> {
     fn default() -> Self {
         Self {
-            default_paid_membership_fee: 100,
-            members: vec![],
+            system_config: None,
+            membership_config: None,
         }
     }
 }
 
-impl ExtBuilder {
-    pub fn default_paid_membership_fee(mut self, default_paid_membership_fee: u64) -> Self {
-        self.default_paid_membership_fee = default_paid_membership_fee;
+impl<T: Trait> TestExternalitiesBuilder<T> {
+    /*
+    pub fn set_system_config(mut self, system_config: system::GenesisConfig) -> Self {
+        self.system_config = Some(system_config);
         self
     }
-    pub fn members(mut self, members: Vec<u64>) -> Self {
-        self.members = members;
+    */
+    pub fn set_membership_config(mut self, membership_config: members::GenesisConfig<T>) -> Self {
+        self.membership_config = Some(membership_config);
         self
     }
     pub fn build(self) -> runtime_io::TestExternalities {
-        let mut t = system::GenesisConfig::default()
-            .build_storage::<Test>()
+        // Add system
+        let mut t = self
+            .system_config
+            .unwrap_or(system::GenesisConfig::default())
+            .build_storage::<T>()
             .unwrap();
 
-        members::GenesisConfig::<Test> {
-            default_paid_membership_fee: self.default_paid_membership_fee,
-            members: self
-                .members
-                .iter()
-                .map(|account_id| (*account_id, "".into(), "".into(), "".into()))
-                .collect(),
-        }
-        .assimilate_storage(&mut t)
-        .unwrap();
+        // Add membership
+        self.membership_config
+            .unwrap_or(members::GenesisConfig::default())
+            .assimilate_storage(&mut t)
+            .unwrap();
 
         t.into()
     }

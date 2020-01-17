@@ -270,22 +270,21 @@ rev = '5570e3b56e9caffa7df1dbede6308b2e6ce18217'
 
 [dependencies.recurringrewards]
 default_features = false
-git = 'https://github.com/bedeho/substrate-recurring-reward-module'
+git = 'https://github.com/Joystream/substrate-recurring-reward-module'
 package = 'substrate-recurring-reward-module'
-rev = '6a1dfef112fa6ee1d018c919ccb2c6f075bb2426'
+rev = '417f7bb5b82ae50f02716ac4eefa2fc7952e0f61'
 
 [dependencies.stake]
 default_features = false
-git = 'https://github.com/joystream/substrate-stake-module'
+git = 'https://github.com/Joystream/substrate-stake-module/'
 package = 'substrate-stake-module'
 rev = '0516efe9230da112bc095e28f34a3715c2e03ca8'
 
 [dependencies.hiring]
 default_features = false
+git = 'https://github.com/Joystream/substrate-hiring-module'
 package = 'substrate-hiring-module'
-git = 'https://github.com/joystream/substrate-hiring-module'
-rev = 'cd31dbb71d29ec0d7f14979aaec9c213c2dacfbc'
-
+rev = '30ac830aecb2e61fb943a8c4327bcf52c289e383'
 
 [dependencies.versioned_store]
 default_features = false
