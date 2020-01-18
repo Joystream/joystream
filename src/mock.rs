@@ -141,7 +141,7 @@ pub fn generate_poll() -> Poll<<Runtime as timestamp::Trait>::Moment> {
             for _ in 0..5 {
                 alternatives.push(PollAlternative {
                     alternative_text: b"poll alternative".to_vec(),
-                    poll_count: 0,
+                    vote_count: 0,
                 });
             }
             alternatives
@@ -160,7 +160,7 @@ pub fn generate_poll_timestamp_cases(index: usize) -> Poll<<Runtime as timestamp
                 for _ in 0..5 {
                     alternatives.push(PollAlternative {
                         alternative_text: b"poll alternative".to_vec(),
-                        poll_count: 0,
+                        vote_count: 0,
                     });
                 }
                 alternatives
@@ -175,7 +175,7 @@ pub fn generate_poll_timestamp_cases(index: usize) -> Poll<<Runtime as timestamp
                 for _ in 0..5 {
                     alternatives.push(PollAlternative {
                         alternative_text: b"poll alternative".to_vec(),
-                        poll_count: 0,
+                        vote_count: 0,
                     });
                 }
                 alternatives
@@ -365,7 +365,7 @@ pub fn set_moderator_category_mock(
     category_id
 }
 
-pub fn submit_poll_mock(
+pub fn vote_on_poll_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
     thread_id: <Runtime as Trait>::ThreadId,
@@ -373,7 +373,7 @@ pub fn submit_poll_mock(
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
     assert_eq!(
-        TestForumModule::submit_poll(mock_origin(origin), forum_user_id, thread_id, index),
+        TestForumModule::vote_on_poll(mock_origin(origin), forum_user_id, thread_id, index),
         result
     );
     thread_id
