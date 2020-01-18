@@ -1088,11 +1088,11 @@ fn update_thread_labels() {
 }
 
 /*
- ** submit_poll
+ ** vote_on_poll
  */
 #[test]
 // test if poll submitter is a forum user
-fn submit_poll_origin() {
+fn vote_on_poll_origin() {
     let origins = vec![
         OriginType::Signed(default_genesis_config().forum_sudo),
         NOT_FORUM_SUDO_ORIGIN,
@@ -1128,7 +1128,7 @@ fn submit_poll_origin() {
                 Ok(()),
             );
 
-            submit_poll_mock(
+            vote_on_poll_mock(
                 origins[index].clone(),
                 forum_user_id,
                 thread_id,
@@ -1141,7 +1141,7 @@ fn submit_poll_origin() {
 
 #[test]
 // test if poll metadata created
-fn submit_poll_exists() {
+fn vote_on_poll_exists() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
     let origin = OriginType::Signed(forum_sudo);
@@ -1170,7 +1170,7 @@ fn submit_poll_exists() {
             None,
             Ok(()),
         );
-        submit_poll_mock(
+        vote_on_poll_mock(
             origin.clone(),
             forum_user_id,
             thread_id,
@@ -1182,7 +1182,7 @@ fn submit_poll_exists() {
 
 #[test]
 // test if forum reject poll submit after expiration
-fn submit_poll_expired() {
+fn vote_on_poll_expired() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
     let origin = OriginType::Signed(forum_sudo);
@@ -1212,8 +1212,8 @@ fn submit_poll_expired() {
             Ok(()),
         );
         // std::thread::sleep(std::time::Duration::new(12, 0));
-        // submit_poll_mock(origin.clone(), thread_id, 1, Err(ERROR_POLL_COMMIT_EXPIRED));
-        submit_poll_mock(origin.clone(), forum_user_id, thread_id, 1, Ok(()));
+        // vote_on_poll_mock(origin.clone(), thread_id, 1, Err(ERROR_POLL_COMMIT_EXPIRED));
+        vote_on_poll_mock(origin.clone(), forum_user_id, thread_id, 1, Ok(()));
     });
 }
 
