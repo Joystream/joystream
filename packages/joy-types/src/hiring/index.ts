@@ -1,6 +1,7 @@
 import { getTypeRegistry, Null, u128, u64, u32, Vec, Option, Text } from '@polkadot/types';
 import { Enum } from '@polkadot/types/codec';
 import { BlockNumber, Balance } from '@polkadot/types/interfaces';
+import { StakeId } from '../stake';
 import { JoyStruct } from '../JoyStruct';
 
 import { GenericJoyStreamRoleSchema } from './schemas/role.schema'
@@ -284,21 +285,37 @@ export class Opening extends JoyStruct<IOpening> {
   }
 }
 
+export type IApplication = {
+	opening_id: OpeningId, 
+	application_index_in_opening: u32,
+	add_to_opening_in_block: BlockNumber,
+	active_role_staking_id: Option<StakeId>,
+	active_application_staking_id: Option<StakeId>,
+	stage: ApplicationStage,
+	human_readable_text: Text,
+}
+
+export class Application extends JoyStruct<IApplication> {
+    constructor (value?: IOpening) {
+      super({
+		  opening_id: OpeningId,
+		  application_index_in_opening: u32,
+		  add_to_opening_in_block: u32,
+		  active_role_staking_id: Option.with(StakeId),
+		  active_application_staking_id: Option.with(StakeId),
+		  stage: ApplicationStage,
+		  human_readable_text: Text,
+	  }, value);
+	}
+}
+
 export function registerHiringTypes () {
     try {
       getTypeRegistry().register({
         ApplicationId,
         OpeningId,
         // Make into a ts type
-        Application: {
-            opening_id: 'OpeningId',
-            application_index_in_opening: 'u32',
-            add_to_opening_in_block: 'BlockNumber',
-            active_role_staking_id: 'Option<StakeId>',
-            active_application_staking_id: 'Option<StakeId>',
-            stage: 'ApplicationStage',
-            human_readable_text: 'Text'
-        },
+        Application,
         ApplicationStage,
         // why the prefix? is there some other identically named type?
         'hiring::ActivateOpeningAt': ActivateOpeningAt,
