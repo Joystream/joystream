@@ -5,20 +5,32 @@ import * as JoyForms from '@polkadot/joy-utils/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 import { MediaDropdownOptions } from './MediaDropdownOptions';
+import { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
 
-type FormCallbacks = {
-  onSubmit: (sendTx: () => void) => void,
+export type FormCallbacks = {
+  onSubmit: OnTxButtonClick,
   onTxSuccess: TxCallback,
   onTxFailed: TxFailedCallback
 };
 
-type GenericMediaProp<FormValues> = {
+export type TabMetaItem = {
+  title: string,
+  fields: string[], // TODO rename to fieldIds?
+}
+
+export type TabsMeta = {
+  [tabId: string]: TabMetaItem
+};
+
+export type GenericMediaProp<FormValues> = {
   id: keyof FormValues,
   type: string,
   name: string,
   description?: string,
   required?: boolean,
+  minItems?: number,
   maxItems?: number,
+  minTextLength?: number,
   maxTextLength?: number,
   classId?: any
 };

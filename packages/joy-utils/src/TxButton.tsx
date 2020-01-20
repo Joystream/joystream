@@ -15,6 +15,8 @@ type InjectedProps = {
   queueExtrinsic: QueueTxExtrinsicAdd;
 };
 
+export type OnTxButtonClick = (sendTx: () => void) => void;
+
 type Props = BareProps & MyAccountProps & PartialQueueTxExtrinsic & {
   accountId?: string,
   type?: 'submit' | 'button',
@@ -24,7 +26,7 @@ type Props = BareProps & MyAccountProps & PartialQueueTxExtrinsic & {
   label: React.ReactNode,
   params: Array<any>,
   tx: string,
-  onClick?: (sendTx: () => void) => void
+  onClick?: OnTxButtonClick
 };
 
 type PropsWithApi = Props & ApiProps;
