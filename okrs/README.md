@@ -1,11 +1,4 @@
-<p align="center"><img src="img/live-okr.svg"></p>
-
-<div align="center">
-  <h4>These are our currently :microphone: live objectives :microphone: and tracked achievement :crown: </h4>
-</div>
-<div align="center">
-  <h5>The line between bureaucracy and rigour is 1px thin, but what are we to do? :pray:</h5>
-</div>
+<p align="center"><img src="img/live-okr_new.svg"></p>
 
 Table of Contents
 =================
