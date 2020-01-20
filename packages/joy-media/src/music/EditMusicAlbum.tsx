@@ -11,6 +11,7 @@ import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { MusicTrackReaderPreviewProps } from './MusicTrackReaderPreview';
+import { newTabsMeta, newTabMenuItemRenderer } from '../common/FormTabs';
 
 export type OuterProps = {
   history?: History,
@@ -41,6 +42,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     values,
     dirty,
+    errors,
     isValid,
     isSubmitting,
     resetForm
@@ -78,14 +80,41 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     />
   </Tab.Pane>
 
-  const tabs = () => <Tab
-    menu={{ secondary: true, pointing: true, color: 'blue' }}
-    panes={[
-      { menuItem: 'Basic info', render: basicInfoTab },
-      { menuItem: 'Additional', render: additionalTab },
-      { menuItem: `Tracks (${tracks.length})`, render: tracksTab },
-    ]}
-  />;
+  const tabTitles = {
+    basic: 'Basic info',
+    additional: 'Additional',
+    tracks: `Tracks (${tracks.length})`,
+  };
+
+  const tabsMeta = newTabsMeta({
+    [tabTitles.basic]: [
+      Fields.title,
+      Fields.thumbnail,
+      Fields.description,
+      Fields.publicationStatus,
+    ],
+    [tabTitles.additional]: [
+      Fields.artist,
+      Fields.composerOrSongwriter,
+      Fields.genre,
+      Fields.mood,
+      Fields.theme,
+      Fields.license,
+    ],
+    [tabTitles.tracks]: [],
+  });
+
+  const tabs = () => {
+    const renderMenuItem = newTabMenuItemRenderer(tabsMeta, errors);
+    return <Tab
+      menu={{ secondary: true, pointing: true, color: 'blue' }}
+      panes={[
+        { menuItem: renderMenuItem(tabTitles.basic), render: basicInfoTab },
+        { menuItem: renderMenuItem(tabTitles.additional), render: additionalTab },
+        { menuItem: renderMenuItem(tabTitles.tracks), render: tracksTab },
+      ]}
+    />;
+  };
 
   const MainButton = () =>
     <TxButton

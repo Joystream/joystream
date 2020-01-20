@@ -10,6 +10,7 @@ import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields, 
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
+import { newTabsMeta, newTabMenuItemRenderer } from '../common/FormTabs';
 
 export type OuterProps = {
   history?: History,
@@ -21,6 +22,28 @@ export type OuterProps = {
 };
 
 type FormValues = MusicTrackFormValues;
+
+const tabTitles = {
+  basic: 'Basic info',
+  additional: 'Additional',
+};
+
+const tabsMeta = newTabsMeta({
+  [tabTitles.basic]: [
+    Fields.title,
+    Fields.thumbnail,
+    Fields.description,
+    Fields.publicationStatus,
+  ],
+  [tabTitles.additional]: [
+    Fields.artist,
+    Fields.composerOrSongwriter,
+    Fields.genre,
+    Fields.mood,
+    Fields.theme,
+    Fields.license,
+  ],
+});
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
@@ -42,6 +65,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     // Formik stuff:
     values,
     dirty,
+    errors,
     isValid,
     isSubmitting,
     resetForm
@@ -73,13 +97,16 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
   </Tab.Pane>
 
-  const tabs = () => <Tab
+const tabs = () => {
+  const renderMenuItem = newTabMenuItemRenderer(tabsMeta, errors);
+  return <Tab
     menu={{ secondary: true, pointing: true, color: 'blue' }}
     panes={[
-      { menuItem: 'Basic info', render: basicInfoTab },
-      { menuItem: 'Additional', render: additionalTab },
+      { menuItem: renderMenuItem(tabTitles.basic), render: basicInfoTab },
+      { menuItem: renderMenuItem(tabTitles.additional), render: additionalTab },
     ]}
   />;
+}
 
   const MainButton = () =>
     <TxButton

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Tab, Menu, Label } from 'semantic-ui-react';
+import { Button, Tab } from 'semantic-ui-react';
 import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
@@ -7,9 +7,10 @@ import TxButton, { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
 import { ContentId } from '@joystream/types/media';
 import { onImageError } from '../utils';
 import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues, VideoToFormValues } from '../schemas/video/Video';
-import { MediaFormProps, withMediaForm, GenericMediaProp, TabsMeta } from '../common/MediaForms';
+import { MediaFormProps, withMediaForm } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
+import { newTabsMeta, newTabMenuItemRenderer } from '../common/FormTabs';
 
 export type OuterProps = {
   history?: History,
@@ -22,7 +23,24 @@ export type OuterProps = {
 
 type FormValues = VideoFormValues;
 
-type FieldType = GenericMediaProp<FormValues>;
+const tabTitles = {
+  basic: 'Basic info',
+  additional: 'Additional',
+};
+
+const tabsMeta = newTabsMeta({
+  [tabTitles.basic]: [
+    Fields.title,
+    Fields.thumbnail,
+    Fields.description,
+    Fields.publicationStatus,
+  ],
+  [tabTitles.additional]: [
+    Fields.category,
+    Fields.language,
+    Fields.license,
+  ],
+});
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
@@ -72,67 +90,16 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
   </Tab.Pane>
 
-  const toFieldIds = (fields: FieldType[]) =>
-    fields.map(x => x.id as string)
-
-  const TabTitles = {
-    basic: 'Basic info',
-    additional: 'Additional',
-  };
-  
-  const tabsMeta: TabsMeta = {
-    [TabTitles.basic]: {
-      title: TabTitles.basic,
-      fields: toFieldIds([
-        Fields.title,
-        Fields.thumbnail,
-        Fields.description,
-        Fields.publicationStatus,
-      ]),
-    },
-    [TabTitles.additional]: {
-      title: TabTitles.additional,
-      fields: toFieldIds([
-        Fields.category,
-        Fields.language,
-        Fields.license,
-      ]),
-    }
-  };
-
-  const renderTabMenuItem = (tabName: string) => {
-    const tab = tabsMeta[tabName];
-    if (!tab) {
-      return null;
-    }
-
-    const { title } = tab;
-
-    const tabErrors: string[] = [];
-    tab.fields.forEach(f => {
-      const err = errors[f];
-      if (err) {
-        tabErrors.push(err);
-      }
-    })
-
-    const errCount = tabErrors.length;
-
-    return (
-      <Menu.Item key={title}>
-        {title}
-        {errCount > 0 && <Label color='red' circular floating title='Number of errors on this tab'>{errCount}</Label>}
-      </Menu.Item>
-    );
+  const tabs = () => {
+    const renderMenuItem = newTabMenuItemRenderer(tabsMeta, errors);
+    return <Tab
+      menu={{ secondary: true, pointing: true, color: 'blue' }}
+      panes={[
+        { menuItem: renderMenuItem(tabTitles.basic), render: basicInfoTab },
+        { menuItem: renderMenuItem(tabTitles.additional), render: additionalTab },
+      ]}
+    />;
   }
-
-  const tabs = () => <Tab
-    menu={{ secondary: true, pointing: true, color: 'blue' }}
-    panes={[
-      { menuItem: renderTabMenuItem(TabTitles.basic), render: basicInfoTab },
-      { menuItem: renderTabMenuItem(TabTitles.additional), render: additionalTab },
-    ]}
-  />;
 
   const newOnSubmit: OnTxButtonClick = (sendTx: () => void) => {
     

@@ -13,15 +13,6 @@ export type FormCallbacks = {
   onTxFailed: TxFailedCallback
 };
 
-export type TabMetaItem = {
-  title: string,
-  fields: string[], // TODO rename to fieldIds?
-}
-
-export type TabsMeta = {
-  [tabId: string]: TabMetaItem
-};
-
 export type GenericMediaProp<FormValues> = {
   id: keyof FormValues,
   type: string,
