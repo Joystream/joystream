@@ -1,56 +1,52 @@
 import React from 'react';
-import { Menu, Label } from 'semantic-ui-react';
+import { Menu, Label, Tab } from 'semantic-ui-react';
 import { FormikErrors } from 'formik';
 import { GenericMediaProp } from './MediaForms';
 
-type TabMetaItem<FormValues> = {
-  title: string,
-  fieldIds: (keyof FormValues)[],
+type FormTab<FormValues> = {
+  id: string,
+  fields?: GenericMediaProp<FormValues>[],
+  renderTitle?: () => React.ReactNode,
+  render?: () => React.ReactNode,
 }
 
-type TabsMeta<FormValues> = {
-  [tabId: string]: TabMetaItem<FormValues>
-};
+type FormTabsProps<FormValues> = {
+  errors: FormikErrors<FormValues>,
+  panes: FormTab<FormValues>[],
+}
 
-type TabToFieldsMap<FormValues> = {
-  [tabName: string]: GenericMediaProp<FormValues>[]
-};
+export function FormTabs <FormValues> (props: FormTabsProps<FormValues>) {
+  const { panes, errors } = props;
 
-export function newTabsMeta <FormValues> (tabs: TabToFieldsMap<FormValues>): TabsMeta<FormValues> {
-  const res = {} as TabsMeta<FormValues>;
-  Object.keys(tabs).forEach(title => {
-    res[title] = {
-      title,
-      fieldIds: tabs[title].map(f => f.id)
-    };
-  });
-  return res;
-};
+  return <Tab
+    menu={{ secondary: true, pointing: true, color: 'blue' }}
+    panes={panes.map(tab => {
 
-export function newTabMenuItemRenderer <FormValues> (tabsMeta: TabsMeta<FormValues>, errors: FormikErrors<FormValues>) {
+      const {
+        id,
+        fields = [],
+        renderTitle = () => id,
+        render = () => null
+      } = tab;
+      
+      const tabErrors: any[] = [];
+      fields.forEach(f => {
+        const err = errors[f.id];
+        if (err) {
+          tabErrors.push(err);
+        }
+      })
+    
+      const errCount = tabErrors.length;
+      const errTooltip = 'Number of errors on this tab';
 
-  return (tabName: string) => {
-    const tab = tabsMeta[tabName];
-    if (!tab) {
-      return null;
-    }
-  
-    const tabErrors: any[] = [];
-    tab.fieldIds.forEach(f => {
-      const err = errors[f];
-      if (err) {
-        tabErrors.push(err);
-      }
-    })
-  
-    const errCount = tabErrors.length;
-    const { title } = tab;
-  
-    return (
-      <Menu.Item key={title}>
-        {title}
-        {errCount > 0 && <Label color='red' circular floating title='Number of errors on this tab'>{errCount}</Label>}
-      </Menu.Item>
-    );
-  };
-};
+      const menuItem =
+        <Menu.Item key={id}>
+          {renderTitle()}
+          {errCount > 0 && <Label color='red' circular floating title={errTooltip}>{errCount}</Label>}
+        </Menu.Item>;
+
+      return { menuItem, render };
+    })}
+  />;
+}

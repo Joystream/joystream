@@ -10,7 +10,7 @@ import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues
 import { MediaFormProps, withMediaForm } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
-import { newTabsMeta, newTabMenuItemRenderer } from '../common/FormTabs';
+import { FormTabs } from '../common/FormTabs';
 
 export type OuterProps = {
   history?: History,
@@ -22,25 +22,6 @@ export type OuterProps = {
 };
 
 type FormValues = VideoFormValues;
-
-const tabTitles = {
-  basic: 'Basic info',
-  additional: 'Additional',
-};
-
-const tabsMeta = newTabsMeta({
-  [tabTitles.basic]: [
-    Fields.title,
-    Fields.thumbnail,
-    Fields.description,
-    Fields.publicationStatus,
-  ],
-  [tabTitles.additional]: [
-    Fields.category,
-    Fields.language,
-    Fields.license,
-  ],
-});
 
 const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const {
@@ -90,16 +71,27 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
   </Tab.Pane>
 
-  const tabs = () => {
-    const renderMenuItem = newTabMenuItemRenderer(tabsMeta, errors);
-    return <Tab
-      menu={{ secondary: true, pointing: true, color: 'blue' }}
-      panes={[
-        { menuItem: renderMenuItem(tabTitles.basic), render: basicInfoTab },
-        { menuItem: renderMenuItem(tabTitles.additional), render: additionalTab },
-      ]}
-    />;
-  }
+  const tabs = <FormTabs errors={errors} panes={[
+    {
+      id: 'Basic info',
+      render: basicInfoTab,
+      fields: [
+        Fields.title,
+        Fields.thumbnail,
+        Fields.description,
+        Fields.publicationStatus,
+      ]
+    },
+    {
+      id: 'Additional',
+      render: additionalTab,
+      fields: [
+        Fields.category,
+        Fields.language,
+        Fields.license,
+      ]
+    }
+  ]} />;
 
   const newOnSubmit: OnTxButtonClick = (sendTx: () => void) => {
     
@@ -136,7 +128,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     <Form className='ui form JoyForm EditMetaForm'>
       
-      {tabs()}
+      {tabs}
 
       {/* TODO add metadata status dropdown: Draft, Published */}
 
