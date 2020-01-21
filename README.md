@@ -1,4 +1,4 @@
-# Joystream Web App
+<p align="center"><img src="img/pioneer_new.svg"></p>
 
 ![Content Directory](https://user-images.githubusercontent.com/4144334/67765742-bbfab280-fa44-11e9-8b13-494b1bfb6014.jpeg)
 
