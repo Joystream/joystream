@@ -803,6 +803,7 @@ decl_event!(
         <T as Trait>::ThreadId, 
         <T as Trait>::PostId,
         <T as Trait>::ForumUserId,
+        <T as Trait>::ModeratorId,
     {
         /// A category was introduced
         CategoryCreated(CategoryId),
@@ -836,6 +837,15 @@ decl_event!(
 
         /// Vote on poll
         VoteOnPoll(ThreadId, u32),
+
+        /// Forum user created
+        ForumUserCreated(ForumUserId),
+
+        /// Moderator created
+        ModeratorCreated(ModeratorId),
+
+        /// Max category depth updated
+        MaxCategoryDepthUpdated(u8),
     }
 );
 
@@ -876,6 +886,9 @@ decl_module! {
 
             // Store new value into runtime
             MaxCategoryDepth::mutate(|value| *value = max_category_depth );
+
+            // Store event into runtime
+            Self::deposit_event(RawEvent::MaxCategoryDepthUpdated(max_category_depth));
 
             Ok(())
         }
@@ -1581,6 +1594,9 @@ impl<T: Trait> Module<T> {
         // Insert new user data for forum user
         <ForumUserById<T>>::mutate(<NextForumUserId<T>>::get(), |value| *value = new_forum_user);
 
+        // Store event to runtime
+        Self::deposit_event(RawEvent::ForumUserCreated(<NextForumUserId<T>>::get()));
+
         // Update forum user index
         <NextForumUserId<T>>::mutate(|n| *n += One::one());
 
@@ -1608,6 +1624,9 @@ impl<T: Trait> Module<T> {
 
         // Insert moderator data into storage
         <ModeratorById<T>>::mutate(<NextModeratorId<T>>::get(), |value| *value = new_moderator);
+
+        // Store event to runtime
+        Self::deposit_event(RawEvent::ModeratorCreated(<NextModeratorId<T>>::get()));
 
         // Update next moderate index
         <NextModeratorId<T>>::mutate(|n| *n += One::one());
