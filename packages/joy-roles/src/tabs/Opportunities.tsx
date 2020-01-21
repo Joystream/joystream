@@ -51,7 +51,7 @@ export function OpeningHeader(props: OpeningStage) {
       <Grid.Column className="meta" textAlign="right">
         <Label>
           <Icon name="history" /> Created&nbsp;
-                        <Moment unix format="DD/MM/YYYY, HH:MM:SS">{props.stage.created_time.getTime() / 1000}</Moment>
+                        <Moment unix format="DD/MM/YYYY, HH:MM:SS">{props.stage.starting_time.getTime() / 1000}</Moment>
           <Label.Detail>
             <Link to={`#/explorer/query/${props.stage.starting_block_hash}`}>
               <Icon name="cube" />

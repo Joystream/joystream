@@ -42,31 +42,31 @@ export function OpeningHeaderByState() {
       state: OpeningState.WaitingToBegin,
       starting_block: 2956498,
       starting_block_hash: "somehash",
-      created_time: yesterday(),
+      starting_time: yesterday(),
     },
     {
       state: OpeningState.AcceptingApplications,
       starting_block: 2956498,
       starting_block_hash: "somehash",
-      created_time: yesterday(),
+      starting_time: yesterday(),
     },
     {
       state: OpeningState.InReview,
       starting_block: 102456,
       starting_block_hash: "somehash",
-      created_time: yesterday(),
+      starting_time: yesterday(),
     },
     {
       state: OpeningState.Complete,
       starting_block: 10345,
       starting_block_hash: "somehash",
-      created_time: yesterday(),
+      starting_time: yesterday(),
     },
     {
       state: OpeningState.Cancelled,
       starting_block: 104,
       starting_block_hash: "somehash",
-      created_time: yesterday(),
+      starting_time: yesterday(),
     },
   ]
 
@@ -263,7 +263,7 @@ export function ReviewInProgress() {
       state: OpeningState.InReview,
       starting_block: 0,
       starting_block_hash: "",
-      created_time: new Date(),
+      starting_time: new Date(),
     },
   ]
 

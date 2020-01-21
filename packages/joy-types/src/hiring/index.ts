@@ -128,6 +128,10 @@ export class AcceptingApplications extends JoyStruct<IAcceptingApplications> {
             started_accepting_applicants_at_block: u32,
         }, value);
     }
+
+	get started_accepting_applicants_at_block(): BlockNumber {
+		return this.getField<BlockNumber>('started_accepting_applicants_at_block')
+	}
 };
 
 export type IReviewPeriod = {
@@ -141,6 +145,14 @@ export class ReviewPeriod extends JoyStruct<IReviewPeriod> {
             started_review_period_at_block: u32,
         }, value);
     }
+
+	get started_accepting_applicants_at_block(): BlockNumber {
+		return this.getField<BlockNumber>('started_accepting_applicants_at_block')
+	}
+
+	get started_review_period_at_block(): BlockNumber {
+		return this.getField<BlockNumber>('started_review_period_at_block')
+	}
 };
 
 export type IDeactivated = {
@@ -160,13 +172,19 @@ export class Deactivated extends JoyStruct<IDeactivated> {
     }
 };
 
+export enum ActiveOpeningStageKeys {
+	AcceptingApplications = 'AcceptingApplications',
+	ReviewPeriod = 'ReviewPeriod',
+	Deactivated = 'Deactivated',
+}
+
 export class ActiveOpeningStage extends Enum {
     constructor (value?: any, index?: number) {
         super(
           {
-            'AcceptingApplications': AcceptingApplications,
-            'ReviewPeriod': ReviewPeriod,
-            'Deactivated': Deactivated,
+            [ActiveOpeningStageKeys.AcceptingApplications]: AcceptingApplications,
+            [ActiveOpeningStageKeys.ReviewPeriod]: ReviewPeriod,
+            [ActiveOpeningStageKeys.Deactivated]: Deactivated,
           },
           value, index);
     }
@@ -189,14 +207,23 @@ export class ActiveOpeningStageVariant extends JoyStruct<ActiveOpeningStageVaria
             deactivated_application_count: u32,
         }, value);
     }
+
+	get stage(): ActiveOpeningStage {
+      return this.getField<ActiveOpeningStage>('stage')
+	}
+}
+
+export enum OpeningStageKeys {
+	WaitingToBegin = 'WaitingToBegin',
+	Active = 'Active', 
 }
 
 export class OpeningStage extends Enum {
     constructor (value?: any, index?: number) {
         super(
           {
-            'WaitingToBegin': WaitingToBeingOpeningStageVariant,
-            'Active': ActiveOpeningStageVariant,
+            [OpeningStageKeys.WaitingToBegin]: WaitingToBeingOpeningStageVariant,
+            [OpeningStageKeys.Active]: ActiveOpeningStageVariant,
           },
           value, index);
     }
@@ -276,6 +303,10 @@ export class Opening extends JoyStruct<IOpening> {
       return str
   }
 
+  get created(): BlockNumber {
+	  return this.getField<BlockNumber>('created')
+  }
+
   get stage(): OpeningStage {
     return this.get('stage') as OpeningStage
   }
@@ -314,7 +345,6 @@ export function registerHiringTypes () {
       getTypeRegistry().register({
         ApplicationId,
         OpeningId,
-        // Make into a ts type
         Application,
         ApplicationStage,
         // why the prefix? is there some other identically named type?
