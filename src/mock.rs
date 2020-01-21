@@ -1,7 +1,6 @@
 #![cfg(test)]
 
 use crate::*;
-
 use primitives::H256;
 
 use crate::{GenesisConfig, Module, Trait};
@@ -10,10 +9,19 @@ use runtime_primitives::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_origin, parameter_types};
+use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
+}
+
+mod forum_mod {
+    pub use crate::Event;
+}
+impl_outer_event! {
+    pub enum TestEvent for Runtime {
+        forum_mod<T>,
+    }
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -38,7 +46,7 @@ impl system::Trait for Runtime {
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     // type WeightMultiplierUpdate = ();
-    type Event = ();
+    type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
     type MaximumBlockLength = MaximumBlockLength;
@@ -53,7 +61,7 @@ impl timestamp::Trait for Runtime {
 }
 
 impl Trait for Runtime {
-    type Event = ();
+    type Event = TestEvent;
     type ForumUserId = u64;
     type ModeratorId = u64;
     type CategoryId = u64;
@@ -229,11 +237,19 @@ pub fn create_forum_user_mock(
     self_introduction: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ForumUserId {
+    let forum_user_id = TestForumModule::next_forum_user_id();
     assert_eq!(
         TestForumModule::create_forum_user(account_id, name.clone(), self_introduction.clone(),),
         result
     );
-    TestForumModule::next_forum_user_id() - 1
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::ForumUserCreated(forum_user_id))
+        );
+    };
+
+    forum_user_id
 }
 
 pub fn create_moderator_mock(
@@ -242,11 +258,18 @@ pub fn create_moderator_mock(
     self_introduction: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ModeratorId {
+    let moderator_id = TestForumModule::next_moderator_id();
     assert_eq!(
         TestForumModule::create_moderator(account_id, name.clone(), self_introduction.clone(),),
         result
     );
-    TestForumModule::next_moderator_id() - 1
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::ModeratorCreated(moderator_id))
+        );
+    };
+    moderator_id
 }
 
 pub fn create_labels_mock() {
@@ -261,6 +284,7 @@ pub fn create_category_mock(
     labels: &BTreeSet<<Runtime as Trait>::LabelId>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::CategoryId {
+    let category_id = TestForumModule::next_category_id();
     assert_eq!(
         TestForumModule::create_category(
             mock_origin(origin),
@@ -271,7 +295,13 @@ pub fn create_category_mock(
         ),
         result
     );
-    TestForumModule::next_category_id() - 1
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::CategoryCreated(category_id))
+        );
+    }
+    category_id
 }
 
 pub fn create_thread_mock(
@@ -284,6 +314,7 @@ pub fn create_thread_mock(
     poll_data: Option<Poll<<Runtime as timestamp::Trait>::Moment>>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
+    let thread_id = TestForumModule::next_thread_id();
     assert_eq!(
         TestForumModule::create_thread(
             mock_origin(origin.clone()),
@@ -296,7 +327,13 @@ pub fn create_thread_mock(
         ),
         result
     );
-    TestForumModule::next_thread_id() - 1
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::ThreadCreated(thread_id))
+        );
+    }
+    thread_id
 }
 
 pub fn create_post_mock(
@@ -306,6 +343,7 @@ pub fn create_post_mock(
     text: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::PostId {
+    let post_id = TestForumModule::next_post_id();
     assert_eq!(
         TestForumModule::add_post(
             mock_origin(origin.clone()),
@@ -315,7 +353,13 @@ pub fn create_post_mock(
         ),
         result
     );
-    TestForumModule::next_post_id() - 1
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::PostAdded(post_id))
+        );
+    };
+    post_id
 }
 
 pub fn add_labels_mock(labels: Vec<Vec<u8>>, result: Result<(), &'static str>) -> usize {
@@ -328,10 +372,19 @@ pub fn set_forum_sudo_mock(
     new_forum_sudo: Option<<Runtime as system::Trait>::AccountId>,
     result: Result<(), &'static str>,
 ) {
+    let old_forum_sudo = TestForumModule::forum_sudo();
+
     assert_eq!(
         TestForumModule::set_forum_sudo(mock_origin(origin), new_forum_sudo),
         result
     );
+
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::ForumSudoSet(old_forum_sudo, new_forum_sudo,))
+        );
+    };
 }
 
 pub fn set_max_category_depth_mock(
@@ -343,6 +396,13 @@ pub fn set_max_category_depth_mock(
         TestForumModule::set_max_category_depth(mock_origin(origin), max_category_depth),
         result
     );
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::MaxCategoryDepthUpdated(max_category_depth,))
+        );
+    };
+
     max_category_depth
 }
 
@@ -376,6 +436,12 @@ pub fn vote_on_poll_mock(
         TestForumModule::vote_on_poll(mock_origin(origin), forum_user_id, thread_id, index),
         result
     );
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::VoteOnPoll(thread_id, index,))
+        );
+    };
     thread_id
 }
 
@@ -395,6 +461,16 @@ pub fn update_category_mock(
         ),
         result
     );
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::CategoryUpdated(
+                category_id,
+                new_archival_status,
+                new_deletion_status
+            ))
+        );
+    };
     category_id
 }
 
@@ -409,6 +485,12 @@ pub fn moderate_thread_mock(
         TestForumModule::moderate_thread(mock_origin(origin), moderator_id, thread_id, rationale),
         result
     );
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id,))
+        );
+    }
     thread_id
 }
 
@@ -423,6 +505,13 @@ pub fn moderate_post_mock(
         TestForumModule::moderate_post(mock_origin(origin), moderator_id, post_id, rationale),
         result
     );
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::PostModerated(post_id,))
+        );
+    }
+
     post_id
 }
 
@@ -494,6 +583,17 @@ fn edit_post_text_mock(
         TestForumModule::edit_post_text(mock_origin(origin), forum_user_id, post_id, new_text,),
         result
     );
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::PostTextUpdated(
+                post_id,
+                TestForumModule::post_by_id(post_id)
+                    .text_change_history
+                    .len() as u64,
+            ))
+        );
+    }
     post_id
 }
 
