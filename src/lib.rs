@@ -685,9 +685,6 @@ type CategoryTreePath<CategoryId, BlockNumber, Moment> =
 
 decl_storage! {
     trait Store for Module<T: Trait> as Forum {
-        /// Input constraints for post footer.
-        pub PostFooterConstraint get(post_footer_constraint) config(): InputValidationLengthConstraint;
-
         /// Map forum user identifier to forum user information.
         pub ForumUserById get(forum_user_by_id) config(): map T::ForumUserId  => ForumUser<T::AccountId>;
 
@@ -762,6 +759,9 @@ decl_storage! {
 
         /// Input constraints for user introduction.
         pub UserSelfIntroductionConstraint get(user_self_introduction_constraint) config(): InputValidationLengthConstraint;
+
+         /// Input constraints for post footer.
+         pub PostFooterConstraint get(post_footer_constraint) config(): InputValidationLengthConstraint;
 
         /// Labels could be applied to category and thread
         pub LabelById get(category_thread_labes) config(): map T::LabelId => Label;

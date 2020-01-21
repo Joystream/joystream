@@ -115,6 +115,10 @@ pub fn good_self_introduction() -> Vec<u8> {
     b"good description".to_vec()
 }
 
+pub fn good_forum_user_footer() -> Option<Vec<u8>> {
+    Some(b"good forum user footer".to_vec())
+}
+
 pub fn good_category_title() -> Vec<u8> {
     b"Great new category".to_vec()
 }
@@ -235,11 +239,17 @@ pub fn create_forum_user_mock(
     account_id: <Runtime as system::Trait>::AccountId,
     name: Vec<u8>,
     self_introduction: Vec<u8>,
+    forum_user_footer: Option<Vec<u8>>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ForumUserId {
     let forum_user_id = TestForumModule::next_forum_user_id();
     assert_eq!(
-        TestForumModule::create_forum_user(account_id, name.clone(), self_introduction.clone(),),
+        TestForumModule::create_forum_user(
+            account_id,
+            name.clone(),
+            self_introduction.clone(),
+            forum_user_footer.clone(),
+        ),
         result
     );
     if result.is_ok() {
@@ -664,6 +674,11 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
             min: 10,
             max_min_diff: 200,
         },
+        post_footer_constraint: InputValidationLengthConstraint {
+            min: 10,
+            max_min_diff: 140,
+        },
+
         category_thread_labes: vec![],
         next_label_id: 1,
         category_labels: vec![],

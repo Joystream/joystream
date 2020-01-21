@@ -50,6 +50,7 @@ fn create_forum_user_account_id() {
             forum_sudo,
             good_user_name(),
             good_self_introduction(),
+            good_forum_user_footer(),
             Ok(()),
         );
         // test use same account id to create multiple forum user
@@ -57,6 +58,7 @@ fn create_forum_user_account_id() {
             forum_sudo,
             good_user_name(),
             good_self_introduction(),
+            good_forum_user_footer(),
             Ok(()),
         );
     });
@@ -84,6 +86,7 @@ fn create_forum_user_name() {
                 forum_sudo,
                 names[index].clone(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 results[index],
             );
         });
@@ -112,6 +115,40 @@ fn create_forum_user_self_introduction() {
                 forum_sudo,
                 good_user_name(),
                 introductions[index].clone(),
+                good_forum_user_footer(),
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+// test case for check self introduction
+fn create_forum_user_post_footer() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let post_footers = vec![
+        Some(generate_text(config.post_footer_constraint.min as usize)),
+        Some(generate_text(
+            (config.post_footer_constraint.min - 1) as usize,
+        )),
+        Some(generate_text(
+            (config.post_footer_constraint.max() + 1) as usize,
+        )),
+    ];
+    let results = vec![
+        Ok(()),
+        Err(ERROR_USER_POST_FOOTER_TOO_SHORT),
+        Err(ERROR_USER_POST_FOOTER_TOO_LONG),
+    ];
+    for index in 0..post_footers.len() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            create_forum_user_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                post_footers[index].clone(),
                 results[index],
             );
         });
@@ -823,6 +860,7 @@ fn create_thread_origin() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
             let category_id = create_category_mock(
@@ -871,6 +909,7 @@ fn create_thread_title() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
             let category_id = create_category_mock(
@@ -920,6 +959,7 @@ fn create_thread_text() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
             let category_id = create_category_mock(
@@ -964,6 +1004,7 @@ fn create_thread_labels() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
             let category_id = create_category_mock(
@@ -1007,6 +1048,7 @@ fn create_thread_poll_timestamp() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
             let category_id = create_category_mock(
@@ -1056,6 +1098,7 @@ fn update_thread_labels() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
             let category_id = create_category_mock(
@@ -1107,6 +1150,7 @@ fn vote_on_poll_origin() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
             let category_id = create_category_mock(
@@ -1150,6 +1194,7 @@ fn vote_on_poll_exists() {
             forum_sudo,
             good_user_name(),
             good_self_introduction(),
+            good_forum_user_footer(),
             Ok(()),
         );
         let category_id = create_category_mock(
@@ -1191,6 +1236,7 @@ fn vote_on_poll_expired() {
             forum_sudo,
             good_user_name(),
             good_self_introduction(),
+            good_forum_user_footer(),
             Ok(()),
         );
         let category_id = create_category_mock(
@@ -1232,6 +1278,7 @@ fn moderate_thread_origin_ok() {
             forum_sudo,
             good_user_name(),
             good_self_introduction(),
+            good_forum_user_footer(),
             Ok(()),
         );
         let moderator_id = create_moderator_mock(
@@ -1286,6 +1333,7 @@ fn moderate_thread_rationale() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
             let moderator_id = create_moderator_mock(
@@ -1345,6 +1393,7 @@ fn add_post_origin() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
 
@@ -1401,6 +1450,7 @@ fn add_post_text() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
 
@@ -1456,6 +1506,7 @@ fn react_post() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
 
@@ -1528,6 +1579,7 @@ fn edit_post_text() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
 
@@ -1582,6 +1634,7 @@ fn moderate_post_origin() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
             let moderator_id = create_moderator_mock(
@@ -1652,6 +1705,7 @@ fn moderate_post_rationale() {
                 forum_sudo,
                 good_user_name(),
                 good_self_introduction(),
+                good_forum_user_footer(),
                 Ok(()),
             );
             let moderator_id = create_moderator_mock(
