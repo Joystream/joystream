@@ -1,4 +1,4 @@
-![Joystream Runtime](./banner.svg)
+![Joystream Runtime](./banner_new.svg)
 
 # Joystream Runtime
 
