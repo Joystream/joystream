@@ -8,6 +8,7 @@ import { StakeId } from '../stake';
 import { JoyStruct } from '../JoyStruct';
 import { BTreeSet } from '../';
 
+export class OptionalText extends Option.with(Text) {};
 export class ChannelId extends ActorId {};
 export class CuratorId extends ActorId {};
 export class CuratorOpeningId extends OpeningId {};
@@ -52,10 +53,10 @@ export class ChannelCurationStatus extends Enum {
 export type IChannel = {
   verified: bool,
   handle: Text, // Vec<u8>,
-  title: Text, // Vec<u8>,
-  description: Text, // Vec<u8>,
-  avatar: Text, // Vec<u8>,
-  banner: Text, // Vec<u8>,
+  title: OptionalText,
+  description: OptionalText,
+  avatar: OptionalText,
+  banner: OptionalText,
   content: ChannelContentType,
   owner: MemberId,
   role_account: AccountId,
@@ -69,10 +70,10 @@ export class Channel extends JoyStruct<IChannel> {
     super({
       verified: bool,
       handle: Text, // Vec.with(u8),
-      title: Text, // Vec.with(u8),
-      description: Text, // Vec.with(u8),
-      avatar: Text, // Vec.with(u8),
-      banner: Text, // Vec.with(u8),
+      title: OptionalText,
+      description: OptionalText,
+      avatar: OptionalText,
+      banner: OptionalText,
       content: ChannelContentType,
       owner: MemberId,
       role_account: GenericAccountId,
@@ -349,6 +350,7 @@ export class CuratorApplicationIdToCuratorIdMap extends BTreeMap<ApplicationId, 
 export function registerContentWorkingGroupTypes () {
     try {
       getTypeRegistry().register({
+        OptionalText,
         ChannelId,
         CuratorId,
         CuratorOpeningId,
