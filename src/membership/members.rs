@@ -207,8 +207,6 @@ decl_storage! {
                 // Give member starting balance
                 T::Currency::deposit_creating(&who, T::InitialMembersBalance::get());
             }
-
-            <MembersCreated<T>>::put(T::MemberId::from(config.members.len() as u32));
         });
     }
 }
