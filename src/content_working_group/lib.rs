@@ -581,16 +581,16 @@ pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
     pub handle: Vec<u8>,
 
     /// Human readable title of channel. Not required to be unique.
-    pub title: Vec<u8>,
+    pub title: Option<Vec<u8>>,
 
     /// Human readable description of channel purpose and scope.
-    pub description: Vec<u8>,
+    pub description: Option<Vec<u8>>,
 
     /// URL of a small avatar (logo) image of this channel.
-    pub avatar: Vec<u8>,
+    pub avatar: Option<Vec<u8>>,
 
     /// URL of a big background image of this channel.
-    pub banner: Vec<u8>,
+    pub banner: Option<Vec<u8>>,
 
     /// The type of channel.
     pub content: ChannelContentType,
@@ -1100,12 +1100,11 @@ decl_module! {
             owner: T::MemberId,
             role_account: T::AccountId,
             handle: Vec<u8>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            avatar: Vec<u8>,
-            banner: Vec<u8>,
-            content: ChannelContentType,
-            publishing_status: ChannelPublishingStatus
+            title: Option<Vec<u8>>,
+            description: Option<Vec<u8>>,
+            avatar: Option<Vec<u8>>,
+            banner: Option<Vec<u8>>,
+            content: ChannelContentType
         ) {
 
             // Ensure that it is signed
@@ -1234,10 +1233,10 @@ decl_module! {
             origin,
             channel_id: ChannelId<T>,
             new_handle: Option<Vec<u8>>,
-            new_title: Option<Vec<u8>>,
-            new_description: Option<Vec<u8>>,
-            new_avatar: Option<Vec<u8>>,
-            new_banner: Option<Vec<u8>>,
+            new_title: Option<Option<Vec<u8>>>,
+            new_description: Option<Option<Vec<u8>>>,
+            new_avatar: Option<Option<Vec<u8>>>,
+            new_banner: Option<Option<Vec<u8>>>,
             new_publishing_status: Option<ChannelPublishingStatus>
         ) {
 
@@ -2101,52 +2100,52 @@ impl<T: Trait> Module<T> {
     }
 
     
-    fn ensure_channel_title_is_valid(text: &Vec<u8>) -> dispatch::Result {
-        if text.is_empty() {
-            return Ok(())
+    fn ensure_channel_title_is_valid(text_opt: &Option<Vec<u8>>) -> dispatch::Result {
+        if let Some(text) = text_opt {
+            ChannelTitleConstraint::get().ensure_valid(
+                text.len(),
+                MSG_CHANNEL_TITLE_TOO_SHORT,
+                MSG_CHANNEL_TITLE_TOO_LONG,
+            )
+        } else {
+            Ok(())
         }
-
-        ChannelTitleConstraint::get().ensure_valid(
-            text.len(),
-            MSG_CHANNEL_TITLE_TOO_SHORT,
-            MSG_CHANNEL_TITLE_TOO_LONG,
-        )
     }
 
-    fn ensure_channel_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
-        if text.is_empty() {
-            return Ok(())
+    fn ensure_channel_description_is_valid(text_opt: &Option<Vec<u8>>) -> dispatch::Result {
+        if let Some(text) = text_opt {
+            ChannelDescriptionConstraint::get().ensure_valid(
+                text.len(),
+                MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
+                MSG_CHANNEL_DESCRIPTION_TOO_LONG,
+            )
+        } else {
+            Ok(())
         }
-
-        ChannelDescriptionConstraint::get().ensure_valid(
-            text.len(),
-            MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
-            MSG_CHANNEL_DESCRIPTION_TOO_LONG,
-        )
     }
 
-    fn ensure_channel_avatar_is_valid(text: &Vec<u8>) -> dispatch::Result {
-        if text.is_empty() {
-            return Ok(())
+    fn ensure_channel_avatar_is_valid(text_opt: &Option<Vec<u8>>) -> dispatch::Result {
+        if let Some(text) = text_opt {
+            ChannelAvatarConstraint::get().ensure_valid(
+                text.len(),
+                MSG_CHANNEL_AVATAR_TOO_SHORT,
+                MSG_CHANNEL_AVATAR_TOO_LONG,
+            )
+        } else {
+            Ok(())
         }
-
-        ChannelAvatarConstraint::get().ensure_valid(
-            text.len(),
-            MSG_CHANNEL_AVATAR_TOO_SHORT,
-            MSG_CHANNEL_AVATAR_TOO_LONG,
-        )
     }
 
-    fn ensure_channel_banner_is_valid(text: &Vec<u8>) -> dispatch::Result {
-        if text.is_empty() {
-            return Ok(())
+    fn ensure_channel_banner_is_valid(text_opt: &Option<Vec<u8>>) -> dispatch::Result {
+        if let Some(text) = text_opt {
+            ChannelBannerConstraint::get().ensure_valid(
+                text.len(),
+                MSG_CHANNEL_BANNER_TOO_SHORT,
+                MSG_CHANNEL_BANNER_TOO_LONG,
+            )
+        } else {
+            Ok(())
         }
-        
-        ChannelBannerConstraint::get().ensure_valid(
-            text.len(),
-            MSG_CHANNEL_BANNER_TOO_SHORT,
-            MSG_CHANNEL_BANNER_TOO_LONG,
-        )
     }
 
     fn ensure_curator_application_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
@@ -2626,10 +2625,10 @@ impl<T: Trait> Module<T> {
         channel_id: &ChannelId<T>,
         new_verified: &Option<bool>,
         new_handle: &Option<Vec<u8>>,
-        new_title: &Option<Vec<u8>>,
-        new_description: &Option<Vec<u8>>,
-        new_avatar: &Option<Vec<u8>>,
-        new_banner: &Option<Vec<u8>>,
+        new_title: &Option<Option<Vec<u8>>>,
+        new_description: &Option<Option<Vec<u8>>>,
+        new_avatar: &Option<Option<Vec<u8>>>,
+        new_banner: &Option<Option<Vec<u8>>>,
         new_publishing_status: &Option<ChannelPublishingStatus>,
         new_curation_status: &Option<ChannelCurationStatus>,
     ) {
