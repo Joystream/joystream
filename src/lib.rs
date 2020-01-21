@@ -1033,9 +1033,9 @@ decl_module! {
             // Get parent category
             let parent_category = <CategoryById<T>>::get(&category_id).position_in_parent_category;
 
-            if parent_category.is_some() {
+            if let Some(unwrapped_parent_category) = parent_category {
                 // Get path from parent to root of category tree.
-                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(parent_category.unwrap().parent_id)?;
+                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(unwrapped_parent_category.parent_id)?;
 
                 if Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
                     // if ancestor archived or deleted, no necessary to set child again.
@@ -1476,9 +1476,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_label_valid(&labels)?;
 
         // Unwrap poll
-        if poll.is_some() {
-            let data = poll.clone().unwrap();
-
+        if let Some(data) = poll {
             // Check all poll alternatives
             Self::ensure_poll_alternatives_valid(&data.poll_alternatives)?;
 
@@ -1594,8 +1592,8 @@ impl<T: Trait> Module<T> {
         Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
 
         // Ensure post footer is valid
-        if post_footer.is_some() {
-            Self::ensure_post_footer_is_valid(&post_footer.clone().unwrap())?;
+        if let Some(ref post_footer_raw) = post_footer {
+            Self::ensure_post_footer_is_valid(post_footer_raw)?;
         }
 
         // Create new forum user data
