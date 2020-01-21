@@ -5,23 +5,30 @@ import * as Yup from 'yup';
 import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const MediaObjectValidationSchema = Yup.object().shape({
-  object: Yup.string()
+  value: Yup.string()
     .required('This field is required')
-    .max(68, 'Text is too long. Maximum length is 68 chars.')
+    .max(66, 'Text is too long. Maximum length is 66 chars.')
 });
 
 export type MediaObjectFormValues = {
-  object: string
+  value: string
 };
 
 export type MediaObjectType = {
-  object: string
+  id: number
+  value: string
 };
 
-export const MediaObjectCodec = new EntityCodec<MediaObjectType>();
+export class MediaObjectCodec extends EntityCodec<MediaObjectType> { }
+
+export function MediaObjectToFormValues(entity?: MediaObjectType): MediaObjectFormValues {
+  return {
+    value: entity && entity.value || ''
+  }
+}
 
 export type MediaObjectPropId =
-  'object'
+  'value'
   ;
 
 export type MediaObjectGenericProp = {
@@ -40,12 +47,12 @@ type MediaObjectClassType = {
 };
 
 export const MediaObjectClass: MediaObjectClassType = {
-  object: {
-    "id": "object",
-    "name": "Object",
-    "description": "ContentId of object in the data directory",
+  value: {
+    "id": "value",
+    "name": "Value",
+    "description": "ContentId of object in the data directory. Hex format expected.",
     "type": "Text",
     "required": true,
-    "maxTextLength": 68
+    "maxTextLength": 66
   }
 };

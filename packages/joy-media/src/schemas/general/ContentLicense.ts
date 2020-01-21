@@ -5,23 +5,30 @@ import * as Yup from 'yup';
 import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const ContentLicenseValidationSchema = Yup.object().shape({
-  license: Yup.string()
+  value: Yup.string()
     .required('This field is required')
     .max(200, 'Text is too long. Maximum length is 200 chars.')
 });
 
 export type ContentLicenseFormValues = {
-  license: string
+  value: string
 };
 
 export type ContentLicenseType = {
-  license: string
+  id: number
+  value: string
 };
 
-export const ContentLicenseCodec = new EntityCodec<ContentLicenseType>();
+export class ContentLicenseCodec extends EntityCodec<ContentLicenseType> { }
+
+export function ContentLicenseToFormValues(entity?: ContentLicenseType): ContentLicenseFormValues {
+  return {
+    value: entity && entity.value || ''
+  }
+}
 
 export type ContentLicensePropId =
-  'license'
+  'value'
   ;
 
 export type ContentLicenseGenericProp = {
@@ -40,9 +47,9 @@ type ContentLicenseClassType = {
 };
 
 export const ContentLicenseClass: ContentLicenseClassType = {
-  license: {
-    "id": "license",
-    "name": "License",
+  value: {
+    "id": "value",
+    "name": "Value",
     "description": "The license of which the content is originally published under.",
     "type": "Text",
     "required": true,

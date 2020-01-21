@@ -1,7 +1,7 @@
 import { getTypeRegistry, Enum, bool, u8, u32, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
 import { BlockNumber, AccountId } from '@polkadot/types/interfaces';
 import { ActorId, MemberId } from '../members';
-import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring';
+import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index';
 import { Credential } from '../versioned-store/permissions/credentials';
 import { RewardRelationshipId } from '../recurring-rewards';
 import { StakeId } from '../stake';
@@ -50,9 +50,12 @@ export class ChannelCurationStatus extends Enum {
 };
 
 export type IChannel = {
-  channel_name: Text, // Vec<u8>,
   verified: bool,
+  handle: Text, // Vec<u8>,
+  title: Text, // Vec<u8>,
   description: Text, // Vec<u8>,
+  avatar: Text, // Vec<u8>,
+  banner: Text, // Vec<u8>,
   content: ChannelContentType,
   owner: MemberId,
   role_account: AccountId,
@@ -64,9 +67,12 @@ export type IChannel = {
 export class Channel extends JoyStruct<IChannel> {
   constructor (value?: IChannel) {
     super({
-      channel_name: Text, // Vec.with(u8),
       verified: bool,
+      handle: Text, // Vec.with(u8),
+      title: Text, // Vec.with(u8),
       description: Text, // Vec.with(u8),
+      avatar: Text, // Vec.with(u8),
+      banner: Text, // Vec.with(u8),
       content: ChannelContentType,
       owner: MemberId,
       role_account: GenericAccountId,
@@ -206,7 +212,6 @@ export class CuratorApplication extends JoyStruct<ICuratorApplication> {
     }, value);
   }
 };
-
 
 export type ISlashableTerms = {
     max_count: u16,

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useContext, createContext } from 'react';
-import { ITransport } from './transport';
+import { MediaTransport } from './transport';
 import { MockTransport } from './transport.mock';
 import { SubstrateTransport } from './transport.substrate';
 
-export const TransportContext = createContext<ITransport>(undefined as unknown as ITransport);
+export const TransportContext = createContext<MediaTransport>(undefined as unknown as MediaTransport);
 
 export const useTransportContext = () =>
   useContext(TransportContext)
@@ -19,7 +19,7 @@ export const SubstrateTransportProvider = (props: React.PropsWithChildren<{}>) =
   </TransportContext.Provider>
 
 type ResolverProps<A> = A & {
-  transport: ITransport
+  transport: MediaTransport
 };
 
 type BaseProps<A, B> = {

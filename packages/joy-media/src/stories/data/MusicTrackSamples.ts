@@ -33,7 +33,7 @@ export const albumTracks = trackNames.map((title, i) => ({
 	id: `${i}`,
 	title,
 	artist: trackArtists[0],
-	cover: trackThumbnails[0]
+	thumbnail: trackThumbnails[0]
 }));
 
 export const Album1TrackSamples = trackNames
@@ -42,7 +42,7 @@ export const Album1TrackSamples = trackNames
 		id: `${100 + i}`,
 		title,
 		artist: trackArtists[0],
-		cover: trackThumbnails[0]
+		thumbnail: trackThumbnails[0]
 	}))
 
 export const Album2TrackSamples = trackNames
@@ -51,7 +51,7 @@ export const Album2TrackSamples = trackNames
 		id: `${200 + i}`,
 		title,
 		artist: trackArtists[1],
-		cover: trackThumbnails[1],
+		thumbnail: trackThumbnails[1],
 	}))
 
 export const AllMusicTrackSamples = 
@@ -65,8 +65,8 @@ export const AlbumWithTracksProps: TracksOfMyMusicAlbumProps = {
 
 export const MusicAlbumExample: MusicAlbumEntity = {
 	title: 'Requiem (Mozart)',
-	about: 'The Requiem in D minor, K. 626, is a requiem mass by Wolfgang Amadeus Mozart (1756–1791). Mozart composed part of the Requiem in Vienna in late 1791, but it was unfinished at his death on 5 December the same year. A completed version dated 1792 by Franz Xaver Süssmayr was delivered to Count Franz von Walsegg, who commissioned the piece for a Requiem service to commemorate the anniversary of his wifes death on 14 February.',
-	cover: 'https://assets.classicfm.com/2017/36/mozart-1504532179-list-handheld-0.jpg',
+	description: 'The Requiem in D minor, K. 626, is a requiem mass by Wolfgang Amadeus Mozart (1756–1791). Mozart composed part of the Requiem in Vienna in late 1791, but it was unfinished at his death on 5 December the same year. A completed version dated 1792 by Franz Xaver Süssmayr was delivered to Count Franz von Walsegg, who commissioned the piece for a Requiem service to commemorate the anniversary of his wifes death on 14 February.',
+	thumbnail: 'https://assets.classicfm.com/2017/36/mozart-1504532179-list-handheld-0.jpg',
 	year: 2019,
 
 	// visibility: 'Public',

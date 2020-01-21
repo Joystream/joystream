@@ -5,23 +5,30 @@ import * as Yup from 'yup';
 import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const CurationStatusValidationSchema = Yup.object().shape({
-  status: Yup.string()
+  value: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.')
 });
 
 export type CurationStatusFormValues = {
-  status: string
+  value: string
 };
 
 export type CurationStatusType = {
-  status: string
+  id: number
+  value: string
 };
 
-export const CurationStatusCodec = new EntityCodec<CurationStatusType>();
+export class CurationStatusCodec extends EntityCodec<CurationStatusType> { }
+
+export function CurationStatusToFormValues(entity?: CurationStatusType): CurationStatusFormValues {
+  return {
+    value: entity && entity.value || ''
+  }
+}
 
 export type CurationStatusPropId =
-  'status'
+  'value'
   ;
 
 export type CurationStatusGenericProp = {
@@ -40,9 +47,9 @@ type CurationStatusClassType = {
 };
 
 export const CurationStatusClass: CurationStatusClassType = {
-  status: {
-    "id": "status",
-    "name": "Status",
+  value: {
+    "id": "value",
+    "name": "Value",
     "description": "The curator publication status of the content in the content directory.",
     "required": true,
     "type": "Text",

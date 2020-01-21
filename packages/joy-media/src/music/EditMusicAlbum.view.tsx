@@ -6,7 +6,8 @@ export const EditMusicAlbumView = MediaView<OuterProps>({
   resolveProps: async (props) => {
     const { transport, id } = props;
     const entity = id ? await transport.musicAlbumById(id) : undefined;
-    return { entity };
+    const opts = await transport.dropdownOptions();
+    return { entity, opts };
   }
 });
 

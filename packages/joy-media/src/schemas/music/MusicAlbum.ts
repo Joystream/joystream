@@ -38,24 +38,25 @@ export type MusicAlbumFormValues = {
   artist: string
   thumbnail: string
   description: string
-  firstReleased: string
-  genre: string
-  mood: string
-  theme: string
-  tracks: string
-  language: string
-  link: string
+  firstReleased: number
+  genre: number
+  mood: number
+  theme: number
+  tracks: number[]
+  language: number
+  link: string[]
   lyrics: string
   composerOrSongwriter: string
-  reviews: string
-  publicationStatus: string
-  curationStatus: string
-  explicit: string
-  license: string
+  reviews: string[]
+  publicationStatus: number
+  curationStatus: number
+  explicit: boolean
+  license: number
   attribution: string
 };
 
 export type MusicAlbumType = {
+  id: number
   title: string
   artist: string
   thumbnail: string
@@ -77,7 +78,31 @@ export type MusicAlbumType = {
   attribution?: string
 };
 
-export const MusicAlbumCodec = new EntityCodec<MusicAlbumType>();
+export class MusicAlbumCodec extends EntityCodec<MusicAlbumType> { }
+
+export function MusicAlbumToFormValues(entity?: MusicAlbumType): MusicAlbumFormValues {
+  return {
+    title: entity && entity.title || '',
+    artist: entity && entity.artist || '',
+    thumbnail: entity && entity.thumbnail || '',
+    description: entity && entity.description || '',
+    firstReleased: entity && entity.firstReleased || 0,
+    genre: entity && entity.genre?.id || 0,
+    mood: entity && entity.mood?.id || 0,
+    theme: entity && entity.theme?.id || 0,
+    tracks: entity && entity.tracks?.map(x => x.id) || [],
+    language: entity && entity.language?.id || 0,
+    link: entity && entity.link || [],
+    lyrics: entity && entity.lyrics || '',
+    composerOrSongwriter: entity && entity.composerOrSongwriter || '',
+    reviews: entity && entity.reviews || [],
+    publicationStatus: entity && entity.publicationStatus.id || 0,
+    curationStatus: entity && entity.curationStatus?.id || 0,
+    explicit: entity && entity.explicit || false,
+    license: entity && entity.license.id || 0,
+    attribution: entity && entity.attribution || ''
+  }
+}
 
 export type MusicAlbumPropId =
   'title' |

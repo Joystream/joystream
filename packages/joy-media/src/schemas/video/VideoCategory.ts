@@ -5,23 +5,30 @@ import * as Yup from 'yup';
 import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const VideoCategoryValidationSchema = Yup.object().shape({
-  category: Yup.string()
+  value: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.')
 });
 
 export type VideoCategoryFormValues = {
-  category: string
+  value: string
 };
 
 export type VideoCategoryType = {
-  category: string
+  id: number
+  value: string
 };
 
-export const VideoCategoryCodec = new EntityCodec<VideoCategoryType>();
+export class VideoCategoryCodec extends EntityCodec<VideoCategoryType> { }
+
+export function VideoCategoryToFormValues(entity?: VideoCategoryType): VideoCategoryFormValues {
+  return {
+    value: entity && entity.value || ''
+  }
+}
 
 export type VideoCategoryPropId =
-  'category'
+  'value'
   ;
 
 export type VideoCategoryGenericProp = {
@@ -40,9 +47,9 @@ type VideoCategoryClassType = {
 };
 
 export const VideoCategoryClass: VideoCategoryClassType = {
-  category: {
-    "id": "category",
-    "name": "Category",
+  value: {
+    "id": "value",
+    "name": "Value",
     "description": "Categories for videos.",
     "type": "Text",
     "required": true,
