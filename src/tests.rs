@@ -123,7 +123,7 @@ fn create_forum_user_self_introduction() {
 }
 
 #[test]
-// test case for check self introduction
+// test case for check post footer 
 fn create_forum_user_post_footer() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
