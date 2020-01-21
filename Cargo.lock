@@ -1349,7 +1349,7 @@ dependencies = [
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex-literal 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "joystream-node-runtime 6.0.0 (git+https://github.com/mnaamani/substrate-runtime-joystream?rev=803f3f058df79352480834a9db7a1555dc7f5e43)",
+ "joystream-node-runtime 6.0.0 (git+https://github.com/mnaamani/substrate-runtime-joystream?rev=53f1cd1ba064a0c5115c19d95b8e81c97e8cf55c)",
  "jsonrpc-core 13.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1386,7 +1386,7 @@ dependencies = [
 [[package]]
 name = "joystream-node-runtime"
 version = "6.0.0"
-source = "git+https://github.com/mnaamani/substrate-runtime-joystream?rev=803f3f058df79352480834a9db7a1555dc7f5e43#803f3f058df79352480834a9db7a1555dc7f5e43"
+source = "git+https://github.com/mnaamani/substrate-runtime-joystream?rev=53f1cd1ba064a0c5115c19d95b8e81c97e8cf55c#53f1cd1ba064a0c5115c19d95b8e81c97e8cf55c"
 dependencies = [
  "parity-scale-codec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "safe-mix 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1420,7 +1420,7 @@ dependencies = [
  "substrate-client 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-consensus-babe-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-forum-module 1.1.0 (git+https://github.com/Joystream/substrate-forum-module?rev=4bdeadaadfcca1fd6e822c520f429d4beacc4c8a)",
- "substrate-hiring-module 1.0.0 (git+https://github.com/joystream/substrate-hiring-module?rev=cd31dbb71d29ec0d7f14979aaec9c213c2dacfbc)",
+ "substrate-hiring-module 1.0.0 (git+https://github.com/Joystream/substrate-hiring-module?rev=30ac830aecb2e61fb943a8c4327bcf52c289e383)",
  "substrate-offchain-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-recurring-reward-module 1.0.0 (git+https://github.com/joystream/substrate-recurring-reward-module?rev=417f7bb5b82ae50f02716ac4eefa2fc7952e0f61)",
@@ -1428,7 +1428,7 @@ dependencies = [
  "substrate-stake-module 1.0.0 (git+https://github.com/joystream/substrate-stake-module?rev=0516efe9230da112bc095e28f34a3715c2e03ca8)",
  "substrate-token-mint-module 1.0.0 (git+https://github.com/joystream/substrate-token-minting-module/?rev=5570e3b56e9caffa7df1dbede6308b2e6ce18217)",
  "substrate-versioned-store 1.1.0 (git+https://github.com/joystream/substrate-versioned-store-module?rev=d0c68722405355404840512edf3064d5ced3e1fe)",
- "substrate-versioned-store-permissions-module 1.0.0 (git+https://github.com/mnaamani/substrate-versioned-store-permissions-module?rev=02cfd53c132f95c99cb936bace4432a064b62b86)",
+ "substrate-versioned-store-permissions-module 1.0.0 (git+https://github.com/joystream/substrate-versioned-store-permissions-module?rev=816b796b1b72bba05eebe128cdaa5e18611ac3ae)",
  "substrate-wasm-builder-runner 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -4321,7 +4321,7 @@ dependencies = [
 [[package]]
 name = "substrate-hiring-module"
 version = "1.0.0"
-source = "git+https://github.com/joystream/substrate-hiring-module?rev=cd31dbb71d29ec0d7f14979aaec9c213c2dacfbc#cd31dbb71d29ec0d7f14979aaec9c213c2dacfbc"
+source = "git+https://github.com/Joystream/substrate-hiring-module?rev=30ac830aecb2e61fb943a8c4327bcf52c289e383#30ac830aecb2e61fb943a8c4327bcf52c289e383"
 dependencies = [
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4842,7 +4842,7 @@ dependencies = [
 [[package]]
 name = "substrate-versioned-store-permissions-module"
 version = "1.0.0"
-source = "git+https://github.com/mnaamani/substrate-versioned-store-permissions-module?rev=02cfd53c132f95c99cb936bace4432a064b62b86#02cfd53c132f95c99cb936bace4432a064b62b86"
+source = "git+https://github.com/joystream/substrate-versioned-store-permissions-module?rev=816b796b1b72bba05eebe128cdaa5e18611ac3ae#816b796b1b72bba05eebe128cdaa5e18611ac3ae"
 dependencies = [
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -5863,7 +5863,7 @@ dependencies = [
 "checksum itertools 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "87fa75c9dea7b07be3138c49abbb83fd4bea199b5cdc76f9804458edc5da0d6e"
 "checksum itoa 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "501266b7edd0174f8530248f87f99c88fbe60ca4ef3dd486835b8d8d53136f7f"
 "checksum jobserver 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)" = "f2b1d42ef453b30b7387e113da1c83ab1605d90c5b4e0eb8e96d016ed3b8c160"
-"checksum joystream-node-runtime 6.0.0 (git+https://github.com/mnaamani/substrate-runtime-joystream?rev=803f3f058df79352480834a9db7a1555dc7f5e43)" = "<none>"
+"checksum joystream-node-runtime 6.0.0 (git+https://github.com/mnaamani/substrate-runtime-joystream?rev=53f1cd1ba064a0c5115c19d95b8e81c97e8cf55c)" = "<none>"
 "checksum js-sys 0.3.31 (registry+https://github.com/rust-lang/crates.io-index)" = "d8657b7ca06a6044ece477f6900bf7670f8b5fd0cce177a1d7094eef51e0adf4"
 "checksum jsonrpc-client-transports 13.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8dbf2466adbf6d5b4e618857f22be40b1e1cc6ed79d72751324358f6b539b06d"
 "checksum jsonrpc-core 13.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "91d767c183a7e58618a609499d359ce3820700b3ebb4823a18c343b4a2a41a0d"
@@ -6120,7 +6120,7 @@ dependencies = [
 "checksum substrate-finality-grandpa-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
 "checksum substrate-forum-module 1.1.0 (git+https://github.com/Joystream/substrate-forum-module?rev=4bdeadaadfcca1fd6e822c520f429d4beacc4c8a)" = "<none>"
 "checksum substrate-header-metadata 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
-"checksum substrate-hiring-module 1.0.0 (git+https://github.com/joystream/substrate-hiring-module?rev=cd31dbb71d29ec0d7f14979aaec9c213c2dacfbc)" = "<none>"
+"checksum substrate-hiring-module 1.0.0 (git+https://github.com/Joystream/substrate-hiring-module?rev=30ac830aecb2e61fb943a8c4327bcf52c289e383)" = "<none>"
 "checksum substrate-inherents 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
 "checksum substrate-keyring 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
 "checksum substrate-keystore 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
@@ -6149,7 +6149,7 @@ dependencies = [
 "checksum substrate-transaction-pool 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
 "checksum substrate-trie 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
 "checksum substrate-versioned-store 1.1.0 (git+https://github.com/joystream/substrate-versioned-store-module?rev=d0c68722405355404840512edf3064d5ced3e1fe)" = "<none>"
-"checksum substrate-versioned-store-permissions-module 1.0.0 (git+https://github.com/mnaamani/substrate-versioned-store-permissions-module?rev=02cfd53c132f95c99cb936bace4432a064b62b86)" = "<none>"
+"checksum substrate-versioned-store-permissions-module 1.0.0 (git+https://github.com/joystream/substrate-versioned-store-permissions-module?rev=816b796b1b72bba05eebe128cdaa5e18611ac3ae)" = "<none>"
 "checksum substrate-wasm-builder-runner 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "bd48273fe9d7f92c1f7d6c1c537bb01c8068f925b47ad2cd8367e11dc32f8550"
 "checksum substrate-wasm-interface 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
 "checksum subtle 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2d67a5a62ba6e01cb2192ff309324cb4875d0c451d55fe2319433abe7a05a8ee"

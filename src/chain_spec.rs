@@ -353,9 +353,12 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
             unstaker_by_stake_id: vec![],
             channel_handle_constraint: crate::forum_config::new_validation(5, 20),
             channel_description_constraint: crate::forum_config::new_validation(1, 1024),
-            opening_human_readble_text: crate::forum_config::new_validation(1, 2048),
+            opening_human_readable_text: crate::forum_config::new_validation(1, 2048),
             curator_application_human_readable_text: crate::forum_config::new_validation(1, 2048),
             curator_exit_rationale_text: crate::forum_config::new_validation(1, 2048),
+            channel_avatar_constraint: crate::forum_config::new_validation(5, 1024),
+            channel_banner_constraint: crate::forum_config::new_validation(5, 1024),
+            channel_title_constraint: crate::forum_config::new_validation(5, 1024),
         }),
     }
 }
@@ -502,9 +505,12 @@ pub fn testnet_genesis(
             unstaker_by_stake_id: vec![],
             channel_handle_constraint: crate::forum_config::new_validation(5, 20),
             channel_description_constraint: crate::forum_config::new_validation(1, 1024),
-            opening_human_readble_text: crate::forum_config::new_validation(1, 2048),
+            opening_human_readable_text: crate::forum_config::new_validation(1, 2048),
             curator_application_human_readable_text: crate::forum_config::new_validation(1, 2048),
             curator_exit_rationale_text: crate::forum_config::new_validation(1, 2048),
+            channel_avatar_constraint: crate::forum_config::new_validation(5, 1024),
+            channel_banner_constraint: crate::forum_config::new_validation(5, 1024),
+            channel_title_constraint: crate::forum_config::new_validation(5, 1024),
         }),
     }
 }
