@@ -8,7 +8,7 @@ import { Codec } from '@polkadot/types/types'
 import { LinkedMapEntry } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
-import { Transport as TransportBase } from '@polkadot/joy-utils/index'
+import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Actor, Role } from '@joystream/types/roles';
 import { OpeningId } from '@joystream/types/hiring';
@@ -21,7 +21,7 @@ import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 
 import { keyPairDetails } from './flows/apply'
 
-import { classifyOpeningStage } from "./classifiers"
+import { OpeningState } from "./classifiers"
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
 
 export class Transport extends TransportBase implements ITransport {
@@ -129,9 +129,15 @@ export class Transport extends TransportBase implements ITransport {
         meta: {
           id: id.toString(),
         },
-		stage: classifyOpeningStage(opening.stage),
+	//	stage: await classifyOpeningStage(this, opening),
 
        //// MOCK data //
+		  stage: {
+        state: OpeningState.AcceptingApplications,
+        starting_block: 100,
+        starting_block_hash: "somehash",
+        starting_time: new Date(),
+      },
           applications: {
           numberOfApplications: 0,
           maxNumberOfApplications: 0,
