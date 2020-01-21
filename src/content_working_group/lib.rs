@@ -571,6 +571,8 @@ impl Default for ChannelCurationStatus {
     }
 }
 
+type OptionalText = Option<Vec<u8>>;
+
 /// A channel for publishing content.
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
@@ -581,16 +583,16 @@ pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
     pub handle: Vec<u8>,
 
     /// Human readable title of channel. Not required to be unique.
-    pub title: Option<Vec<u8>>,
+    pub title: OptionalText,
 
     /// Human readable description of channel purpose and scope.
-    pub description: Option<Vec<u8>>,
+    pub description: OptionalText,
 
     /// URL of a small avatar (logo) image of this channel.
-    pub avatar: Option<Vec<u8>>,
+    pub avatar: OptionalText,
 
     /// URL of a big background image of this channel.
-    pub banner: Option<Vec<u8>>,
+    pub banner: OptionalText,
 
     /// The type of channel.
     pub content: ChannelContentType,
@@ -1100,10 +1102,10 @@ decl_module! {
             owner: T::MemberId,
             role_account: T::AccountId,
             handle: Vec<u8>,
-            title: Option<Vec<u8>>,
-            description: Option<Vec<u8>>,
-            avatar: Option<Vec<u8>>,
-            banner: Option<Vec<u8>>,
+            title: OptionalText,
+            description: OptionalText,
+            avatar: OptionalText,
+            banner: OptionalText,
             content: ChannelContentType
         ) {
 
@@ -1233,10 +1235,10 @@ decl_module! {
             origin,
             channel_id: ChannelId<T>,
             new_handle: Option<Vec<u8>>,
-            new_title: Option<Option<Vec<u8>>>,
-            new_description: Option<Option<Vec<u8>>>,
-            new_avatar: Option<Option<Vec<u8>>>,
-            new_banner: Option<Option<Vec<u8>>>,
+            new_title: Option<OptionalText>,
+            new_description: Option<OptionalText>,
+            new_avatar: Option<OptionalText>,
+            new_banner: Option<OptionalText>,
             new_publishing_status: Option<ChannelPublishingStatus>
         ) {
 
@@ -2100,7 +2102,7 @@ impl<T: Trait> Module<T> {
     }
 
     
-    fn ensure_channel_title_is_valid(text_opt: &Option<Vec<u8>>) -> dispatch::Result {
+    fn ensure_channel_title_is_valid(text_opt: &OptionalText) -> dispatch::Result {
         if let Some(text) = text_opt {
             ChannelTitleConstraint::get().ensure_valid(
                 text.len(),
@@ -2112,7 +2114,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_channel_description_is_valid(text_opt: &Option<Vec<u8>>) -> dispatch::Result {
+    fn ensure_channel_description_is_valid(text_opt: &OptionalText) -> dispatch::Result {
         if let Some(text) = text_opt {
             ChannelDescriptionConstraint::get().ensure_valid(
                 text.len(),
@@ -2124,7 +2126,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_channel_avatar_is_valid(text_opt: &Option<Vec<u8>>) -> dispatch::Result {
+    fn ensure_channel_avatar_is_valid(text_opt: &OptionalText) -> dispatch::Result {
         if let Some(text) = text_opt {
             ChannelAvatarConstraint::get().ensure_valid(
                 text.len(),
@@ -2136,7 +2138,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_channel_banner_is_valid(text_opt: &Option<Vec<u8>>) -> dispatch::Result {
+    fn ensure_channel_banner_is_valid(text_opt: &OptionalText) -> dispatch::Result {
         if let Some(text) = text_opt {
             ChannelBannerConstraint::get().ensure_valid(
                 text.len(),
@@ -2625,10 +2627,10 @@ impl<T: Trait> Module<T> {
         channel_id: &ChannelId<T>,
         new_verified: &Option<bool>,
         new_handle: &Option<Vec<u8>>,
-        new_title: &Option<Option<Vec<u8>>>,
-        new_description: &Option<Option<Vec<u8>>>,
-        new_avatar: &Option<Option<Vec<u8>>>,
-        new_banner: &Option<Option<Vec<u8>>>,
+        new_title: &Option<OptionalText>,
+        new_description: &Option<OptionalText>,
+        new_avatar: &Option<OptionalText>,
+        new_banner: &Option<OptionalText>,
         new_publishing_status: &Option<ChannelPublishingStatus>,
         new_curation_status: &Option<ChannelCurationStatus>,
     ) {
