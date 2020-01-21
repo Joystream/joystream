@@ -1,4 +1,4 @@
-![ Nodes for Joystream](./banner.svg)
+![ Nodes for Joystream](./validator-node_new.svg)
 
 # Joystream Full Node
 
