@@ -276,15 +276,6 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Copy
         + MaybeSerialize
         + PartialEq;
-
-    type PollItemLength: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
 }
 
 /*
@@ -506,7 +497,7 @@ pub struct PollAlternative {
     alternative_text: Vec<u8>,
 
     /// Vote count for the alternative
-    poll_count: u32,
+    vote_count: u32,
 }
 
 /// Represents a poll
@@ -820,6 +811,7 @@ decl_event!(
         <T as Trait>::ThreadId, 
         <T as Trait>::PostId,
         <T as Trait>::ForumUserId,
+        <T as Trait>::ModeratorId,
     {
         /// A category was introduced
         CategoryCreated(CategoryId),
@@ -850,6 +842,18 @@ decl_event!(
 
         /// Thumb up post
         PostReacted(ForumUserId, PostId, PostReaction),
+
+        /// Vote on poll
+        VoteOnPoll(ThreadId, u32),
+
+        /// Forum user created
+        ForumUserCreated(ForumUserId),
+
+        /// Moderator created
+        ModeratorCreated(ModeratorId),
+
+        /// Max category depth updated
+        MaxCategoryDepthUpdated(u8),
     }
 );
 
@@ -890,6 +894,9 @@ decl_module! {
 
             // Store new value into runtime
             MaxCategoryDepth::mutate(|value| *value = max_category_depth );
+
+            // Store event into runtime
+            Self::deposit_event(RawEvent::MaxCategoryDepthUpdated(max_category_depth));
 
             Ok(())
         }
@@ -1191,7 +1198,7 @@ decl_module! {
         }
 
         /// submit a poll
-        fn submit_poll(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, index: u32) -> dispatch::Result {
+        fn vote_on_poll(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, index: u32) -> dispatch::Result {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
@@ -1202,56 +1209,38 @@ decl_module! {
             let thread = Self::ensure_thread_exists(&thread_id)?;
 
             // Make sure poll exist
-            match thread.poll {
-                None => Err(ERROR_POLL_NOT_EXIST),
-                Some(poll) => {
-                    // Poll not expired
-                    if poll.end_time < <timestamp::Module<T>>::now() {
-                        Err(ERROR_POLL_COMMIT_EXPIRED)
-                    } else {
-                        let alternative_length = poll.poll_alternatives.len();
-                        // The selected alternative index is valid
-                        if index as usize >= alternative_length {
-                            Err(ERROR_POLL_DATA)
-                        } else {
-                            // Update thread data
-                            <ThreadById<T>>::mutate(thread_id, |value| {
-                                // Store new poll alternative statistics
-                                let mut new_vote_count = poll.poll_alternatives.clone();
+            Self::ensure_vote_is_valid(&thread, index)?;
 
-                                new_vote_count[index as usize] = PollAlternative{
-                                    alternative_text: new_vote_count[index as usize].alternative_text.clone(),
-                                    // Increment one
-                                    poll_count: new_vote_count[index as usize].poll_count + 1,
-                                };
-
-                                // Update thread with one object
-                                *value = Thread {
-                                    id: value.id,
-                                    title: value.title.clone(),
-                                    category_id: value.category_id,
-                                    moderation: value.moderation.clone(),
-                                    created_at: value.created_at.clone(),
-                                    author_id: value.author_id,
-
-                                    poll: Some( Poll {
-                                        poll_description: poll.poll_description.clone(),
-                                        start_time: poll.start_time,
-                                        end_time: poll.end_time,
-                                        poll_alternatives: new_vote_count,
-
-                                    }),
-                                    nr_in_category: value.nr_in_category,
-                                    num_unmoderated_posts: value.num_unmoderated_posts,
-                                    num_moderated_posts: value.num_moderated_posts,
-
-                                }
-                            });
-                            Ok(())
-                        }
+            // Store new poll alternative statistics
+            let poll = thread.poll.unwrap().clone();
+            let new_poll_alternatives: Vec<PollAlternative> = poll.poll_alternatives
+                .iter()
+                .enumerate()
+                .map(|(old_index, old_value)| if index as usize == old_index
+                    { PollAlternative {
+                        alternative_text: old_value.alternative_text.clone(),
+                        vote_count: old_value.vote_count + 1,
                     }
+                    } else {
+                        old_value.clone()
+                    })
+                .collect();
+
+            // Update thread with one object
+            <ThreadById<T>>::mutate(thread_id, |value| {
+                *value = Thread {
+                    poll: Some( Poll {
+                        poll_alternatives: new_poll_alternatives,
+                        ..poll
+                    }),
+                    ..(value.clone())
                 }
-            }
+            });
+
+            // Store the event
+            Self::deposit_event(RawEvent::VoteOnPoll(thread_id, index));
+
+            Ok(())
         }
 
         /// Moderate thread
@@ -1620,6 +1609,9 @@ impl<T: Trait> Module<T> {
         // Insert new user data for forum user
         <ForumUserById<T>>::mutate(<NextForumUserId<T>>::get(), |value| *value = new_forum_user);
 
+        // Store event to runtime
+        Self::deposit_event(RawEvent::ForumUserCreated(<NextForumUserId<T>>::get()));
+
         // Update forum user index
         <NextForumUserId<T>>::mutate(|n| *n += One::one());
 
@@ -1647,6 +1639,9 @@ impl<T: Trait> Module<T> {
 
         // Insert moderator data into storage
         <ModeratorById<T>>::mutate(<NextModeratorId<T>>::get(), |value| *value = new_moderator);
+
+        // Store event to runtime
+        Self::deposit_event(RawEvent::ModeratorCreated(<NextModeratorId<T>>::get()));
 
         // Update next moderate index
         <NextModeratorId<T>>::mutate(|n| *n += One::one());
@@ -2062,5 +2057,37 @@ impl<T: Trait> Module<T> {
             }
         }
         return Err(ERROR_MODERATOR_MODERATE_CATEGORY);
+    }
+
+    /// Check the vote is valid
+    fn ensure_vote_is_valid(
+        thread: &Thread<
+            T::ForumUserId,
+            T::ModeratorId,
+            T::CategoryId,
+            T::ThreadId,
+            T::BlockNumber,
+            T::Moment,
+        >,
+        index: u32,
+    ) -> Result<(), &'static str> {
+        // Poll not existed
+        if thread.poll.is_none() {
+            return Err(ERROR_POLL_NOT_EXIST);
+        }
+
+        let poll = thread.poll.as_ref().unwrap();
+        // Poll not expired
+        if poll.end_time < <timestamp::Module<T>>::now() {
+            Err(ERROR_POLL_COMMIT_EXPIRED)
+        } else {
+            let alternative_length = poll.poll_alternatives.len();
+            // The selected alternative index is valid
+            if index as usize >= alternative_length {
+                Err(ERROR_POLL_DATA)
+            } else {
+                Ok(())
+            }
+        }
     }
 }
