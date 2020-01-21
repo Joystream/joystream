@@ -5,7 +5,7 @@ export type MusicTrackReaderPreviewProps = {
   id: string,
   title: string,
   artist: string,
-  cover: string,
+  thumbnail: string,
   size?: number,
   orientation?: 'vertical' | 'horizontal',
 };
@@ -20,7 +20,7 @@ export function MusicTrackReaderPreview (props: MusicTrackReaderPreviewProps) {
 
   return <div className={`JoyMusicAlbumPreview ` + orientation}>
 
-    <BgImg className='AlbumCover' url={props.cover} size={size} />
+    <BgImg className='AlbumCover' url={props.thumbnail} size={size} />
 
     <div className='AlbumDescription' style={descStyle}>
       <h3 className='AlbumTitle'>{props.title}</h3>

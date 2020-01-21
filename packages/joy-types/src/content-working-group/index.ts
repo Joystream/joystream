@@ -50,9 +50,12 @@ export class ChannelCurationStatus extends Enum {
 };
 
 export type IChannel = {
-  channel_name: Text, // Vec<u8>,
   verified: bool,
+  handle: Text, // Vec<u8>,
+  title: Text, // Vec<u8>,
   description: Text, // Vec<u8>,
+  avatar: Text, // Vec<u8>,
+  banner: Text, // Vec<u8>,
   content: ChannelContentType,
   owner: MemberId,
   role_account: AccountId,
@@ -64,9 +67,12 @@ export type IChannel = {
 export class Channel extends JoyStruct<IChannel> {
   constructor (value?: IChannel) {
     super({
-      channel_name: Text, // Vec.with(u8),
       verified: bool,
+      handle: Text, // Vec.with(u8),
+      title: Text, // Vec.with(u8),
       description: Text, // Vec.with(u8),
+      avatar: Text, // Vec.with(u8),
+      banner: Text, // Vec.with(u8),
       content: ChannelContentType,
       owner: MemberId,
       role_account: GenericAccountId,

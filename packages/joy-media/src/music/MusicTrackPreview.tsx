@@ -7,7 +7,7 @@ export type EditableMusicTrackPreviewProps = {
   id: string,
   title: string,
   artist: string,
-  cover: string,
+  thumbnail: string,
   position?: number,
   selected?: boolean,
   onSelect?: OnCheckboxChange,
@@ -44,7 +44,7 @@ export function MusicTrackPreview (props: EditableMusicTrackPreviewProps) {
     </div>}
     {props.position && <div className='AlbumNumber'>{props.position}</div>}
     <div className='AlbumCover'>
-      <img src={props.cover} />
+      <img src={props.thumbnail} />
     </div>
     <div className='AlbumDescription'>
       <h3 className='AlbumTitle'>{props.title}</h3>

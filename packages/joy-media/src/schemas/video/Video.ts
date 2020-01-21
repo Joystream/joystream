@@ -28,19 +28,20 @@ export type VideoFormValues = {
   title: string
   thumbnail: string
   description: string
-  language: string
-  firstReleased: string
-  category: string
-  link: string
-  object: string
-  publicationStatus: string
-  curationStatus: string
-  explicit: string
-  license: string
+  language: number
+  firstReleased: number
+  category: number
+  link: string[]
+  object: number
+  publicationStatus: number
+  curationStatus: number
+  explicit: boolean
+  license: number
   attribution: string
 };
 
 export type VideoType = {
+  id: number
   title: string
   thumbnail: string
   description: string
@@ -57,6 +58,24 @@ export type VideoType = {
 };
 
 export class VideoCodec extends EntityCodec<VideoType> { }
+
+export function VideoToFormValues(entity?: VideoType): VideoFormValues {
+  return {
+    title: entity && entity.title || '',
+    thumbnail: entity && entity.thumbnail || '',
+    description: entity && entity.description || '',
+    language: entity && entity.language.id || 0,
+    firstReleased: entity && entity.firstReleased || 0,
+    category: entity && entity.category?.id || 0,
+    link: entity && entity.link || [],
+    object: entity && entity.object?.id || 0,
+    publicationStatus: entity && entity.publicationStatus.id || 0,
+    curationStatus: entity && entity.curationStatus?.id || 0,
+    explicit: entity && entity.explicit || false,
+    license: entity && entity.license.id || 0,
+    attribution: entity && entity.attribution || ''
+  }
+}
 
 export type VideoPropId =
   'title' |
