@@ -63,6 +63,7 @@ pub type RawLibTestEvent = lib::RawEvent<
     CuratorOpeningId<Test>,
     CuratorApplicationId<Test>,
     CuratorId<Test>,
+    CuratorOpeningIdMap<Test>,
     <Test as system::Trait>::AccountId,
 >;
 
