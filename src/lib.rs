@@ -1384,7 +1384,7 @@ decl_module! {
             });
 
             // Generate event
-            Self::deposit_event(RawEvent::PostTextUpdated(post.id, post.text_change_history.len() as u64));
+            Self::deposit_event(RawEvent::PostTextUpdated(post.id, <PostById<T>>::get(post_id).text_change_history.len() as u64));
 
             Ok(())
         }

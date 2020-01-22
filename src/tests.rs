@@ -123,7 +123,7 @@ fn create_forum_user_self_introduction() {
 }
 
 #[test]
-// test case for check post footer 
+// test case for check post footer
 fn create_forum_user_post_footer() {
     let config = default_genesis_config();
     let forum_sudo = config.forum_sudo;
@@ -1075,12 +1075,12 @@ fn create_thread_poll_timestamp() {
 }
 
 /*
- ** update_thread_labels
+ ** update_thread_labels_by_author
  */
 
 #[test]
 // test if thread labels are valid
-fn update_thread_labels() {
+fn update_thread_labels_by_author() {
     let labels = generate_label_index_cases();
     let results = vec![
         Ok(()),
@@ -1122,6 +1122,72 @@ fn update_thread_labels() {
             update_thread_labels_by_author_mock(
                 origin.clone(),
                 forum_user_id,
+                thread_id,
+                labels[index].clone(),
+                results[index],
+            );
+        });
+    }
+}
+
+/*
+ ** update_thread_labels_by_moderator
+ */
+
+#[test]
+// test if thread labels are valid
+fn update_thread_labels_by_moderator() {
+    let labels = generate_label_index_cases();
+    let results = vec![
+        Ok(()),
+        Err(ERROR_TOO_MUCH_LABELS),
+        Err(ERROR_LABEL_INDEX_IS_WRONG),
+    ];
+    for index in 0..labels.len() {
+        let config = default_genesis_config();
+        let forum_sudo = config.forum_sudo;
+        let origin = OriginType::Signed(forum_sudo);
+
+        build_test_externalities(config).execute_with(|| {
+            create_labels_mock();
+            let forum_user_id = create_forum_user_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                good_forum_user_footer(),
+                Ok(()),
+            );
+            let moderator_id = create_moderator_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                Ok(()),
+            );
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &BTreeSet::new(),
+                Ok(()),
+            );
+
+            set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
+
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                forum_user_id,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                &BTreeSet::new(),
+                None,
+                Ok(()),
+            );
+
+            update_thread_labels_by_moderator_mock(
+                origin.clone(),
+                moderator_id,
                 thread_id,
                 labels[index].clone(),
                 results[index],
@@ -1484,6 +1550,71 @@ fn add_post_text() {
     }
 }
 
+#[test]
+// test post text's length
+fn edit_post_text() {
+    let constraint = default_genesis_config().post_text_constraint;
+    let texts = vec![
+        generate_text(constraint.min as usize),
+        generate_text((constraint.min - 1) as usize),
+        generate_text((constraint.max() + 1) as usize),
+    ];
+    let results = vec![
+        Ok(()),
+        Err(ERROR_POST_TEXT_TOO_SHORT),
+        Err(ERROR_POST_TEXT_TOO_LONG),
+    ];
+    for index in 0..texts.len() {
+        let config = default_genesis_config();
+        let forum_sudo = config.forum_sudo;
+        let origin = OriginType::Signed(forum_sudo);
+        build_test_externalities(config).execute_with(|| {
+            let forum_user_id = create_forum_user_mock(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                good_forum_user_footer(),
+                Ok(()),
+            );
+
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                &BTreeSet::new(),
+                Ok(()),
+            );
+
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                forum_user_id,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                &BTreeSet::new(),
+                None,
+                Ok(()),
+            );
+            let post_id = create_post_mock(
+                origin.clone(),
+                forum_user_id,
+                thread_id,
+                good_post_text(),
+                Ok(()),
+            );
+
+            edit_post_text_mock(
+                origin.clone(),
+                forum_user_id,
+                post_id,
+                texts[index].clone(),
+                results[index],
+            );
+        });
+    }
+}
+
 /*
  ** react_post
  */
@@ -1548,66 +1679,6 @@ fn react_post() {
             assert_eq!(
                 TestForumModule::reaction_by_post(post_id, forum_user_id),
                 new_values[index]
-            );
-        });
-    }
-}
-
-/*
- ** edit_post_text
- */
-#[test]
-// test post text's length
-fn edit_post_text() {
-    let constraint = default_genesis_config().post_text_constraint;
-    let texts = vec![
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min - 1) as usize),
-        generate_text((constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_POST_TEXT_TOO_SHORT),
-        Err(ERROR_POST_TEXT_TOO_LONG),
-    ];
-    for index in 0..texts.len() {
-        let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
-        let origin = OriginType::Signed(forum_sudo);
-        build_test_externalities(config).execute_with(|| {
-            let forum_user_id = create_forum_user_mock(
-                forum_sudo,
-                good_user_name(),
-                good_self_introduction(),
-                good_forum_user_footer(),
-                Ok(()),
-            );
-
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                &BTreeSet::new(),
-                Ok(()),
-            );
-
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_user_id,
-                category_id,
-                good_thread_title(),
-                good_thread_text(),
-                &BTreeSet::new(),
-                None,
-                Ok(()),
-            );
-            create_post_mock(
-                origin.clone(),
-                forum_user_id,
-                thread_id,
-                texts[index].clone(),
-                results[index],
             );
         });
     }

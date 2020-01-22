@@ -89,13 +89,7 @@ pub const NOT_FORUM_SUDO_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 111;
 
 pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_SUDO_ORIGIN_ID);
 
-pub const NOT_MEMBER_ORIGIN: OriginType = OriginType::Signed(222);
-
 pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
-
-pub const INVLAID_THREAD_ID: <Runtime as Trait>::ThreadId = 444;
-
-pub const INVLAID_POST_ID: <Runtime as Trait>::ThreadId = 555;
 
 pub const NOT_REGISTER_MODERATOR_ID: <Runtime as Trait>::ModeratorId = 666;
 
@@ -582,7 +576,7 @@ pub fn update_thread_labels_by_moderator_mock(
     thread_id
 }
 
-fn edit_post_text_mock(
+pub fn edit_post_text_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
     post_id: <Runtime as Trait>::PostId,
