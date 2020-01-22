@@ -1,30 +1,35 @@
 import { Observable } from 'rxjs';
 
-import { ApiProps } from '@polkadot/react-api/types';
 import ApiPromise from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces'
-import { u128 } from '@polkadot/types'
+import { GenericAccountId, Option, u32, u128, Vec } from '@polkadot/types'
+import { Codec } from '@polkadot/types/types'
 
-import { Subscribable } from '@polkadot/joy-utils/index'
+import { LinkedMapEntry } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
-import { Transport as TransportBase } from '@polkadot/joy-utils/index'
+import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index'
 
-import { Role } from '@joystream/types/roles';
+import { Actor, Role } from '@joystream/types/roles';
+import { OpeningId } from '@joystream/types/hiring';
+import { CuratorOpening, Lead, LeadId } from '@joystream/types/content-working-group';
+import { Opening } from '@joystream/types/hiring';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
+import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 
 import { keyPairDetails } from './flows/apply'
 
-import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
+import { OpeningState } from "./classifiers"
+import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
 
 export class Transport extends TransportBase implements ITransport {
   protected api: ApiPromise
 
-  constructor(apiProps: ApiProps) {
+  constructor(api: ApiPromise) {
     super()
-    this.api = apiProps.api
+    this.api = api
   }
 
   async roles(): Promise<Array<Role>> {
@@ -50,9 +55,104 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
-  opening(id: string): Promise<WorkingGroupOpening> {
-    // @ts-ignore
-    return this.promise<WorkingGroupOpening>({})
+  protected async opening(id: number): Promise<Opening> {
+    return new Promise<Opening>( async (resolve, reject) => {
+       const opening = new LinkedMapEntry<Opening>(
+        Opening, 
+        await this.api.query.hiring.openingById(id),
+      )
+      resolve(opening.value)
+    })
+  }
+
+  async curationGroupOpening(id: number): Promise<WorkingGroupOpening> {
+    return new Promise<WorkingGroupOpening>( async (resolve, reject) => {
+      const nextId = (await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber()
+      if (id < 0 || id >= nextId) {
+        reject("invalid id")
+      }
+
+      const curatorOpening = new LinkedMapEntry<CuratorOpening>(
+        CuratorOpening, 
+        await this.api.query.contentWorkingGroup.curatorOpeningById(id),
+      )
+
+      const opening = await this.opening(
+          curatorOpening.value.getField<OpeningId>("opening_id").toNumber()
+      )
+
+      /////////////////////////////////
+      // TODO: Load group lead
+      const currentLeadId = await this.api.query.contentWorkingGroup.currentLeadId() as Option<LeadId>
+      
+      if (currentLeadId.isNone) {
+        reject("no current lead id")
+      }
+
+      const lead = new LinkedMapEntry<Lead>(
+        Lead,
+        await this.api.query.contentWorkingGroup.leadById(
+          currentLeadId.unwrap(),
+        ),
+      )
+
+      const leadAccount = lead.value.getField<GenericAccountId>("role_account")
+
+      const memberIds = await this.api.query.members.memberIdsByRootAccountId(leadAccount) as Vec<GenericAccountId>
+      if (memberIds.length == 0) {
+        reject("no member account found")
+      }
+
+      const memberId = memberIds[0]
+
+      const profile = await this.api.query.members.memberProfile(memberId) as Option<Codec>
+      if (profile.isNone) {
+        reject("no profile found")
+      }
+
+      const actor = new Actor({
+        member_id: memberId,
+        account: leadAccount,
+      })
+
+      // @ts-ignore
+      resolve({
+        creator: {
+          actor: actor, 
+          profile: profile.unwrap(),
+          title: 'Group lead',
+          lead: true,
+          //stake?: Balance,
+          //earned?: Balance,
+        },
+        opening: opening,
+        meta: {
+          id: id.toString(),
+        },
+	//	stage: await classifyOpeningStage(this, opening),
+
+       //// MOCK data //
+		  stage: {
+        state: OpeningState.AcceptingApplications,
+        starting_block: 100,
+        starting_block_hash: "somehash",
+        starting_time: new Date(),
+      },
+          applications: {
+          numberOfApplications: 0,
+          maxNumberOfApplications: 0,
+          requiredApplicationStake: new ApplicationStakeRequirement(
+            new u128(501),
+            StakeType.AtLeast,
+          ),
+          requiredRoleStake: new RoleStakeRequirement(
+            new u128(502),
+          ),
+          defactoMinimumStake: new u128(0),
+        },
+        defactoMinimumStake: new u128(0)
+      })
+    })
   }
 
   openingApplicationRanks(openingId: string): Promise<Balance[]> {

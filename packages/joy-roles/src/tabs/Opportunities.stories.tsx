@@ -135,7 +135,7 @@ export function OpportunitySandbox() {
     state: select("State", stateOptions, OpeningState.AcceptingApplications, "Opening"),
     starting_block: number("Created block", 2956498, {}, "Opening"),
     starting_block_hash: "somehash",
-    created_time: yesterday(),
+    starting_time: yesterday(),
     review_end_block: 3956498,
     review_end_time: tomorrow(),
   }

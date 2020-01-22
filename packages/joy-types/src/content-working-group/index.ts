@@ -1,4 +1,4 @@
-import { getTypeRegistry, Enum, bool, u8, u32, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
+import { getTypeRegistry, BTreeMap, Enum, bool, u8, u32, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
 import { BlockNumber, AccountId } from '@polkadot/types/interfaces';
 import { ActorId, MemberId } from '../members';
 import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index';
@@ -336,6 +336,16 @@ export class WorkingGroupUnstaker extends Enum {
   }
 }
 
+export class CuratorApplicationIdToCuratorIdMap extends BTreeMap<ApplicationId, CuratorId> {
+  constructor (value?: any, index?: number) {
+    super(
+      ApplicationId,
+      CuratorId,
+      value,
+    );
+  }
+}
+
 export function registerContentWorkingGroupTypes () {
     try {
       getTypeRegistry().register({
@@ -357,6 +367,7 @@ export function registerContentWorkingGroupTypes () {
         OpeningPolicyCommitment,
         Principal,
         WorkingGroupUnstaker,
+		CuratorApplicationIdToCuratorIdMap, 
       });
     } catch (err) {
       console.error('Failed to register custom types of content working group module', err);

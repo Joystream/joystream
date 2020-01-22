@@ -27,7 +27,7 @@ export class OpportunityController extends Controller<State, ITransport> {
       return this.onError("OpportunityController: no ID provided in params")
     }
 
-    this.state.opportunity = await this.transport.opening(id)
+    this.state.opportunity = await this.transport.curationGroupOpening(parseInt(id))
     this.dispatch()
   }
 
