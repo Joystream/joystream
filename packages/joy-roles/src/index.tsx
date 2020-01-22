@@ -84,7 +84,7 @@ export const App: React.FC<Props> = (props: Props) => {
 
 const renderViewComponent = (Component: ViewComponent<any>, props?: RouteComponentProps) => {
   let params = new Map<string, string>()
-  if (typeof props !== 'undefined' && props.match.params) {
+  if (props && props.match.params) {
     params = new Map<string, string>(Object.entries(props.match.params))
   }
 

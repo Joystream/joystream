@@ -402,7 +402,7 @@ type OpeningViewProps = WorkingGroupOpening & BlockTimeProps
 export const OpeningView = Loadable<OpeningViewProps>(
   ['opening', 'block_time_in_seconds'],
   props => {
-    const hrt = props.opening.human_readable_text
+    const hrt = props.opening.parse_human_readable_text()
 
     if (typeof hrt === "undefined" || typeof hrt === "string") {
       return null

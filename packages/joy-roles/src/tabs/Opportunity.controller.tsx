@@ -23,8 +23,8 @@ export class OpportunityController extends Controller<State, ITransport> {
 
   @memoize()
   async getOpportunity(id: string | undefined) {
-    if (typeof id === "undefined") {
-      return this.onError("ApplyController: no ID provided in params")
+    if (!id) {
+      return this.onError("OpportunityController: no ID provided in params")
     }
 
     this.state.opportunity = await this.transport.curationGroupOpening(parseInt(id))
@@ -46,4 +46,3 @@ export const OpportunityView = View<OpportunityController, State>({
     )
   }
 })
-

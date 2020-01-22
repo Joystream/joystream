@@ -16,8 +16,7 @@ export class Controller<S, T> extends Observable<S & errorProps, T> {
   }
 
   hasError(): boolean {
-    return typeof this.state._hasError !== "undefined" && this.state._hasError
+    return this.state._hasError === true
   }
 }
-
 

@@ -76,7 +76,7 @@ export class ApplyController extends Controller<State, ITransport> {
     )
       .then(
         ([opening, ranks, txFee]) => {
-          const hrt = opening.opening.human_readable_text
+          const hrt = opening.opening.parse_human_readable_text()
           if (typeof hrt !== "object") {
             return this.onError("human_readable_text is not an object")
           }
