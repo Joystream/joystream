@@ -454,23 +454,29 @@ fn begin_curator_applicant_review_success() {
              */
 
             // Assert opening is in opening stage... hiring::ActiveOpeningStage::ReviewPeriod
-            let opening = <hiring::OpeningById<Test>>::get(&normal_opening_constructed.curator_opening_id);
+            let opening =
+                <hiring::OpeningById<Test>>::get(&normal_opening_constructed.curator_opening_id);
             match opening.stage {
                 hiring::OpeningStage::Active {
-                    stage, applications_added, active_application_count, unstaking_application_count, deactivated_application_count
+                    stage,
+                    applications_added,
+                    active_application_count,
+                    unstaking_application_count,
+                    deactivated_application_count,
                 } => {
                     match stage {
                         hiring::ActiveOpeningStage::ReviewPeriod {
                             started_accepting_applicants_at_block,
-                            started_review_period_at_block
-                        } => { /* OK */
+                            started_review_period_at_block,
+                        } => {
+                            /* OK */
                             // assert_eq!(started_accepting_applicants_at_block, 0);
                             assert_eq!(started_review_period_at_block, System::block_number());
-                        },
-                        _ => panic!("ActiveOpeningStage must be in ReviewPeriod")
+                        }
+                        _ => panic!("ActiveOpeningStage must be in ReviewPeriod"),
                     }
-                },
-                _ => panic!("OpeningStage must be Active")
+                }
+                _ => panic!("OpeningStage must be Active"),
             };
         });
 }
