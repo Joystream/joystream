@@ -169,8 +169,8 @@ impl versioned_store::Trait for Test {
 
 type TestPrincipalId = u64;
 impl versioned_store_permissions::Trait for Test {
-    type PrincipalId = TestPrincipalId;
-    type PrincipalIdChecker = ();
+    type Credential = TestPrincipalId;
+    type CredentialChecker = ();
     type CreateClassPermissionsChecker = ();
 }
 

@@ -258,13 +258,13 @@ version = '1.0.4'
 
 [dependencies.forum]
 default_features = false
-git = 'https://github.com/Joystream/substrate-forum-module'
+git = 'https://github.com/joystream/substrate-forum-module'
 package = 'substrate-forum-module'
 rev = '4bdeadaadfcca1fd6e822c520f429d4beacc4c8a'
 
 [dependencies.minting]
 default_features = false
-git = 'https://github.com/Joystream/substrate-token-minting-module/'
+git = 'https://github.com/joystream/substrate-token-minting-module/'
 package = 'substrate-token-mint-module'
 rev = '5570e3b56e9caffa7df1dbede6308b2e6ce18217'
 
@@ -294,6 +294,6 @@ rev = 'd0c68722405355404840512edf3064d5ced3e1fe'
 
 [dependencies.versioned_store_permissions]
 default_features = false
-git = 'https://github.com/mnaamani/substrate-versioned-store-permissions-module'
 package = 'substrate-versioned-store-permissions-module'
-rev = 'a6f60058ce8cc1123e90172807abb22459916727'
+git = 'https://github.com/joystream/substrate-versioned-store-permissions-module'
+rev = '816b796b1b72bba05eebe128cdaa5e18611ac3ae'

@@ -452,6 +452,26 @@ fn begin_curator_applicant_review_success() {
              * TODO: add assertion abouot side-effect in hiring module,
              * this is where state of application has fundamentally changed.
              */
+
+            // Assert opening is in opening stage... hiring::ActiveOpeningStage::ReviewPeriod
+            let opening = <hiring::OpeningById<Test>>::get(&normal_opening_constructed.curator_opening_id);
+            match opening.stage {
+                hiring::OpeningStage::Active {
+                    stage, applications_added, active_application_count, unstaking_application_count, deactivated_application_count
+                } => {
+                    match stage {
+                        hiring::ActiveOpeningStage::ReviewPeriod {
+                            started_accepting_applicants_at_block,
+                            started_review_period_at_block
+                        } => { /* OK */
+                            // assert_eq!(started_accepting_applicants_at_block, 0);
+                            assert_eq!(started_review_period_at_block, System::block_number());
+                        },
+                        _ => panic!("ActiveOpeningStage must be in ReviewPeriod")
+                    }
+                },
+                _ => panic!("OpeningStage must be Active")
+            };
         });
 }
 
@@ -1168,13 +1188,12 @@ fn unset_lead_success() {
 }
 
 struct UnstakedFixture {
-    pub origin: Origin,
     pub stake_id: StakeId<Test>,
 }
 
 impl UnstakedFixture {
-    fn call(&self) -> Result<(), &'static str> {
-        ContentWorkingGroup::unstaked(self.origin.clone(), self.stake_id)
+    fn call(&self) {
+        ContentWorkingGroup::unstaked(self.stake_id);
     }
 
     pub fn call_and_assert_success(&self) {
@@ -1195,9 +1214,7 @@ impl UnstakedFixture {
                 panic!("Curator not unstaking")
             };
 
-        let call_result = self.call();
-
-        assert_eq!(call_result, Ok(()));
+        self.call();
 
         let expected_curator = Curator {
             stage: CuratorRoleStage::Exited(original_exit_summary),
@@ -1217,11 +1234,11 @@ impl UnstakedFixture {
         assert!(!UnstakerByStakeId::<Test>::exists(self.stake_id));
     }
 
-    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
-        let call_result = self.call();
+    // pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
+    //     let call_result = self.call();
 
-        assert_eq!(call_result, Err(error_message));
-    }
+    //     assert_eq!(call_result, Err(error_message));
+    // }
 }
 
 #[test]
@@ -1244,7 +1261,6 @@ fn unstaked_curator_success() {
                 .stake_id;
 
             UnstakedFixture {
-                origin: Origin::system(system::RawOrigin::Root),
                 stake_id: curator_role_stake_id,
             }
             .call_and_assert_success();

@@ -1,8 +1,9 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-//#[cfg(feature = "std")]
-//use serde::{Deserialize, Serialize};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
 use codec::{Decode, Encode}; // Codec
                              //use rstd::collections::btree_map::BTreeMap;
 use crate::membership::{members, role_types};
@@ -84,7 +85,7 @@ pub type RewardRelationshipId<T> = <T as recurringrewards::Trait>::RewardRelatio
 pub type StakeId<T> = <T as stake::Trait>::StakeId;
 
 /// Type of permissions module prinicipal identifiers
-pub type PrincipalId<T> = <T as versioned_store_permissions::Trait>::PrincipalId;
+pub type PrincipalId<T> = <T as versioned_store_permissions::Trait>::Credential;
 
 /*
  * MOVE ALL OF THESE OUT TO COMMON LATER
@@ -218,6 +219,7 @@ pub static MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
     "Signer does not match controller account";
 
 /// The exit stage of a lead involvement in the working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub struct ExitedLeadRole<BlockNumber> {
     /// When exit was initiated.
@@ -225,6 +227,7 @@ pub struct ExitedLeadRole<BlockNumber> {
 }
 
 /// The stage of the involvement of a lead in the working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum LeadRoleState<BlockNumber> {
     /// Currently active.
@@ -245,6 +248,7 @@ impl<BlockNumber> Default for LeadRoleState<BlockNumber> {
 /// Working group lead: curator lead
 /// For now this role is not staked or inducted through an structured process, like the hiring module,
 /// hence information about this is missing. Recurring rewards is included, somewhat arbitrarily!
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Lead<AccountId, RewardRelationshipId, BlockNumber> {
     /// Account used to authenticate in this role,
@@ -262,6 +266,7 @@ pub struct Lead<AccountId, RewardRelationshipId, BlockNumber> {
 }
 
 /// Origin of exit initiation on behalf of a curator.'
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum CuratorExitInitiationOrigin {
     /// Lead is origin.
@@ -272,6 +277,7 @@ pub enum CuratorExitInitiationOrigin {
 }
 
 /// The exit stage of a curators involvement in the working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub struct CuratorExitSummary<BlockNumber> {
     /// Origin for exit.
@@ -299,6 +305,7 @@ impl<BlockNumber: Clone> CuratorExitSummary<BlockNumber> {
 }
 
 /// The stage of the involvement of a curator in the working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum CuratorRoleStage<BlockNumber> {
     /// Currently active.
@@ -320,6 +327,7 @@ impl<BlockNumber> Default for CuratorRoleStage<BlockNumber> {
 }
 
 /// The induction of a curator in the working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct CuratorInduction<LeadId, CuratorApplicationId, BlockNumber> {
     /// Lead responsible for inducting curator
@@ -349,6 +357,7 @@ impl<LeadId: Clone, CuratorApplicationId: Clone, BlockNumber: Clone>
 }
 
 /// Role stake information for a curator.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct CuratorRoleStakeProfile<StakeId, BlockNumber> {
     /// Whether participant is staked, and if so, the identifier for this staking in the staking module.
@@ -377,6 +386,7 @@ impl<StakeId: Clone, BlockNumber: Clone> CuratorRoleStakeProfile<StakeId, BlockN
 
 /// Working group participant: curator
 /// This role can be staked, have reward and be inducted through the hiring module.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Curator<
     AccountId,
@@ -450,6 +460,7 @@ impl<
 }
 
 /// An opening for a curator role.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId: core::cmp::Ord> {
     /// Identifer for underlying opening in the hiring module.
@@ -469,6 +480,7 @@ pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId:
 }
 
 /// An application for the curator role.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct CuratorApplication<AccountId, CuratorOpeningId, MemberId, ApplicationId> {
     /// Account used to authenticate in this role,
@@ -515,6 +527,7 @@ pub enum CurationActor<CuratorId> {
  */
 
 /// Type of channel content.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum ChannelContentType {
     Video,
@@ -533,6 +546,7 @@ impl Default for ChannelContentType {
 /// Status of channel, as set by the owner.
 /// Is only meant to affect visibility, mutation of channel and child content
 /// is unaffected on runtime.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum ChannelPublishingStatus {
     /// Compliant UIs should render.
@@ -554,6 +568,7 @@ impl Default for ChannelPublishingStatus {
 /// Is only meant to affect visibility currently, but in the future
 /// it will also gate publication of new child content,
 /// editing properties, revenue flows, etc.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChannelCurationStatus {
     Normal,
@@ -569,6 +584,7 @@ impl Default for ChannelCurationStatus {
 }
 
 /// A channel for publishing content.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
     /// Whether channel has been verified, in the normal Web2.0 platform sense of being authenticated.
@@ -654,6 +670,7 @@ impl<MemberId, AccountId, BlockNumber, PrincipalId>
  */
 
 /// Permissions module principal
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum Principal<CuratorId, ChannelId> {
     /// Its sloppy to have this here, less safe,
@@ -674,6 +691,7 @@ impl<CuratorId, ChannelId> Default for Principal<CuratorId, ChannelId> {
 }
 
 /// Terms for slashings applied to a given role
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq, Eq)]
 pub struct SlashableTerms {
     /// Maximum number of slashes.
@@ -684,6 +702,7 @@ pub struct SlashableTerms {
 }
 
 /// Terms for what slashing can be applied in some context
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq, Eq)]
 pub enum SlashingTerms {
     Unslashable,
@@ -701,6 +720,7 @@ impl Default for SlashingTerms {
 /// A commitment to the set of policy variables relevant to an opening.
 /// An applicant can observe this commitment and be secure that the terms
 /// of the application process cannot be changed ex-post.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
 pub struct OpeningPolicyCommitment<BlockNumber, Balance> {
     /// Rationing to be used
@@ -744,6 +764,7 @@ pub struct OpeningPolicyCommitment<BlockNumber, Balance> {
 }
 
 /// Represents a possible unstaker in working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
 pub enum WorkingGroupUnstaker<LeadId, CuratorId> {
     ///
@@ -978,17 +999,16 @@ decl_storage! {
     trait Store for Module<T: Trait> as ContentWorkingGroup {
 
         /// The mint currently funding the rewards for this module.
-        pub Mint get(mint) config(): <T as minting::Trait>::MintId;
+        pub Mint get(mint) : <T as minting::Trait>::MintId;
 
         /// The current lead.
-        /// Not configurable, because default set value breaks semantics: https://github.com/Joystream/joystream/issues/36#issuecomment-564560373
-        pub CurrentLeadId get(current_lead_id): Option<LeadId<T>>;
+        pub CurrentLeadId get(current_lead_id) : Option<LeadId<T>>;
 
         /// Maps identifier to corresponding lead.
-        pub LeadById get(lead_by_id) config(): linked_map LeadId<T> => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
+        pub LeadById get(lead_by_id): linked_map LeadId<T> => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
 
         /// Next identifier for new current lead.
-        pub NextLeadId get(next_lead_id) config(): LeadId<T>;
+        pub NextLeadId get(next_lead_id): LeadId<T>;
 
         /// Maps identifeir to curator opening.
         pub CuratorOpeningById get(curator_opening_by_id) config(): linked_map CuratorOpeningId<T> => CuratorOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>>;
@@ -1049,6 +1069,21 @@ decl_storage! {
         pub OpeningHumanReadableText get(opening_human_readable_text) config(): InputValidationLengthConstraint;
         pub CuratorApplicationHumanReadableText get(curator_application_human_readable_text) config(): InputValidationLengthConstraint;
         pub CuratorExitRationaleText get(curator_exit_rationale_text) config(): InputValidationLengthConstraint;
+    }
+    add_extra_genesis {
+        config(initial_lead) : Option<(T::MemberId, T::AccountId)>;
+        config(mint_capacity): minting::BalanceOf<T>;
+        // config(mint_adjustment): minting::Adjustment<BalanceOf<T>, T::BlockNumber> (add serialize/deserialize derivation for type)
+        build(|config: &GenesisConfig<T>| {
+            // create mint
+            let mint_id = <minting::Module<T>>::add_mint(config.mint_capacity, None).expect("Failed to create a mint for the content working group");
+            Mint::<T>::put(mint_id);
+
+            // create lead
+            if let Some((member_id, account_id)) = config.initial_lead.clone() {
+                <Module<T>>::do_set_lead(member_id, account_id).expect("Failed to create the lead for the content working group");
+            }
+        });
     }
 }
 
@@ -1838,50 +1873,7 @@ decl_module! {
             // Ensure root is origin
             ensure_root(origin)?;
 
-            // Ensure there is no current lead
-            ensure!(
-                <CurrentLeadId<T>>::get().is_none(),
-                MSG_CURRENT_LEAD_ALREADY_SET
-            );
-
-            // Ensure that member can actually become lead
-            let new_lead_id = <NextLeadId<T>>::get();
-
-            let new_lead_role = role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
-
-            let _profile = <members::Module<T>>::can_register_role_on_member(
-                &member,
-                &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id)
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Construct lead
-            let new_lead = Lead{
-                role_account: role_account.clone(),
-                reward_relationship: None,
-                inducted: <system::Module<T>>::block_number(),
-                stage: LeadRoleState::Active
-            };
-
-            // Store lead
-            <LeadById<T>>::insert(new_lead_id, new_lead);
-
-            // Update current lead
-            <CurrentLeadId<T>>::put(new_lead_id); // Some(new_lead_id)
-
-            // Update next lead counter
-            <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
-
-            // Register in role
-            let registered_role = <members::Module<T>>::register_role_on_member(member, &new_lead_role).is_ok();
-
-            assert!(registered_role);
-
-            // Trigger event
-            Self::deposit_event(RawEvent::LeadSet(new_lead_id));
+            Self::do_set_lead(member, role_account)?;
         }
 
         /// Evict the currently unset lead
@@ -1924,60 +1916,6 @@ decl_module! {
             Self::deposit_event(RawEvent::LeadUnset(lead_id));
         }
 
-        /// The stake, with the given id, was unstaked.
-        pub fn unstaked(
-            origin,
-            stake_id: StakeId<T>
-        ) {
-            // Ensure its a runtime root origin
-            ensure_root(origin)?;
-
-            // Ensure its an unstaker in this group
-            let unstaker = Self::ensure_unstaker_exists(&stake_id)?;
-
-            // Get curator doing the unstaking,
-            // urrently the only possible unstaker in this module.
-            let curator_id =
-                if let WorkingGroupUnstaker::Curator(curator_id) = unstaker {
-                    curator_id
-                } else {
-                    panic!("Should not be possible, only curators unstake in this module currently");
-                };
-
-            // Grab curator from id, unwrap, because this curator _must_ exist.
-            let unstaking_curator = Self::ensure_curator_exists(&curator_id).unwrap();
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Update stage of curator
-            let curator_exit_summary =
-                if let CuratorRoleStage::Unstaking(summary) = unstaking_curator.stage {
-                    summary
-                } else {
-                    panic!("Curator must be in unstaking stage");
-                };
-
-            let new_curator = Curator{
-                stage: CuratorRoleStage::Exited(curator_exit_summary.clone()),
-                ..unstaking_curator
-            };
-
-            CuratorById::<T>::insert(curator_id, new_curator);
-
-            // Remove from unstaker
-            UnstakerByStakeId::<T>::remove(stake_id);
-
-            // Trigger event
-            let event = match curator_exit_summary.origin {
-                CuratorExitInitiationOrigin::Lead => RawEvent::TerminatedCurator(curator_id),
-                CuratorExitInitiationOrigin::Curator => RawEvent::CuratorExited(curator_id),
-            };
-
-            Self::deposit_event(event);
-        }
-
         /// Add an opening for a curator role.
         pub fn set_channel_creation_enabled(origin, enabled: bool)  {
 
@@ -1997,8 +1935,8 @@ decl_module! {
     }
 }
 
-impl<T: Trait> versioned_store_permissions::PrincipalIdChecker<T> for Module<T> {
-    fn account_can_act_as_principal(account: &T::AccountId, id: PrincipalId<T>) -> bool {
+impl<T: Trait> versioned_store_permissions::CredentialChecker<T> for Module<T> {
+    fn account_has_credential(account: &T::AccountId, id: PrincipalId<T>) -> bool {
         // Check that principal exists
         if !PrincipalById::<T>::exists(&id) {
             return false;
@@ -2666,5 +2604,109 @@ impl<T: Trait> Module<T> {
 
         // Trigger event
         Self::deposit_event(RawEvent::ChannelUpdatedByCurationActor(*channel_id));
+    }
+
+    /// The stake, with the given id, was unstaked.
+    pub fn unstaked(stake_id: StakeId<T>) {
+        // Ignore unstaked
+        if !<UnstakerByStakeId<T>>::exists(stake_id) {
+            return;
+        }
+
+        // Unstaker must be in this group
+        let unstaker = Self::ensure_unstaker_exists(&stake_id).unwrap();
+
+        // Get curator doing the unstaking,
+        // urrently the only possible unstaker in this module.
+        let curator_id = if let WorkingGroupUnstaker::Curator(curator_id) = unstaker {
+            curator_id
+        } else {
+            panic!("Should not be possible, only curators unstake in this module currently.");
+        };
+
+        // Grab curator from id, unwrap, because this curator _must_ exist.
+        let unstaking_curator = Self::ensure_curator_exists(&curator_id).unwrap();
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Update stage of curator
+        let curator_exit_summary =
+            if let CuratorRoleStage::Unstaking(summary) = unstaking_curator.stage {
+                summary
+            } else {
+                panic!("Curator must be in unstaking stage.");
+            };
+
+        let new_curator = Curator {
+            stage: CuratorRoleStage::Exited(curator_exit_summary.clone()),
+            ..unstaking_curator
+        };
+
+        CuratorById::<T>::insert(curator_id, new_curator);
+
+        // Remove from unstaker
+        UnstakerByStakeId::<T>::remove(stake_id);
+
+        // Trigger event
+        let event = match curator_exit_summary.origin {
+            CuratorExitInitiationOrigin::Lead => RawEvent::TerminatedCurator(curator_id),
+            CuratorExitInitiationOrigin::Curator => RawEvent::CuratorExited(curator_id),
+        };
+
+        Self::deposit_event(event);
+    }
+
+    /// Introduce a lead when one is not currently set.
+    pub fn do_set_lead(member: T::MemberId, role_account: T::AccountId) -> dispatch::Result {
+        // Ensure there is no current lead
+        ensure!(
+            <CurrentLeadId<T>>::get().is_none(),
+            MSG_CURRENT_LEAD_ALREADY_SET
+        );
+
+        // Ensure that member can actually become lead
+        let new_lead_id = <NextLeadId<T>>::get();
+
+        let new_lead_role =
+            role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
+
+        let _profile = <members::Module<T>>::can_register_role_on_member(
+            &member,
+            &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id),
+        )?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Construct lead
+        let new_lead = Lead {
+            role_account: role_account.clone(),
+            reward_relationship: None,
+            inducted: <system::Module<T>>::block_number(),
+            stage: LeadRoleState::Active,
+        };
+
+        // Store lead
+        <LeadById<T>>::insert(new_lead_id, new_lead);
+
+        // Update current lead
+        <CurrentLeadId<T>>::put(new_lead_id); // Some(new_lead_id)
+
+        // Update next lead counter
+        <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
+
+        // Register in role
+        let registered_role =
+            <members::Module<T>>::register_role_on_member(member, &new_lead_role).is_ok();
+
+        assert!(registered_role);
+
+        // Trigger event
+        Self::deposit_event(RawEvent::LeadSet(new_lead_id));
+
+        Ok(())
     }
 }
