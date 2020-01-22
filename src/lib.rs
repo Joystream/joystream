@@ -342,6 +342,7 @@ const ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT: &str = "Thread moderation rat
 const ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG: &str = "Thread moderation rationale too long.";
 const ERROR_THREAD_ALREADY_MODERATED: &str = "Thread already moderated.";
 const ERROR_THREAD_MODERATED: &str = "Thread is moderated.";
+const ERROR_STICKY_THREAD_INDEX_INVALID: &str = "Sticky thread index is invalid.";
 
 // Errors about post.
 const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
@@ -621,7 +622,7 @@ pub struct ChildPositionInParentCategory<CategoryId> {
 /// Represents a category
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Category<CategoryId, BlockNumber, Moment> {
+pub struct Category<CategoryId, ThreadId, BlockNumber, Moment> {
     /// Category identifier
     id: CategoryId,
 
@@ -660,10 +661,15 @@ pub struct Category<CategoryId, BlockNumber, Moment> {
 
     /// Position as child in parent, if present, otherwise this category is a root category
     position_in_parent_category: Option<ChildPositionInParentCategory<CategoryId>>,
+
+    /// Sticky threads list
+    sticky_threads_list: Vec<ThreadId>,
 }
 
 /// Implement total thread calcuation for category
-impl<CategoryId, BlockNumber, Moment> Category<CategoryId, BlockNumber, Moment> {
+impl<CategoryId, ThreadId, BlockNumber, Moment>
+    Category<CategoryId, ThreadId, BlockNumber, Moment>
+{
     /// How many threads created both moderated and unmoderated
     fn num_threads_created(&self) -> u32 {
         self.num_direct_unmoderated_threads + self.num_direct_moderated_threads
@@ -680,8 +686,8 @@ pub struct Label {
 
 /// Represents a sequence of categories which have child-parent relatioonship
 /// where last element is final ancestor, or root, in the context of the category tree.
-type CategoryTreePath<CategoryId, BlockNumber, Moment> =
-    Vec<Category<CategoryId, BlockNumber, Moment>>;
+type CategoryTreePath<CategoryId, ThreadId, BlockNumber, Moment> =
+    Vec<Category<CategoryId, ThreadId, BlockNumber, Moment>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Forum {
@@ -698,7 +704,7 @@ decl_storage! {
         pub NextModeratorId get(next_moderator_id) config(): T::ModeratorId;
 
         /// Map category identifier to corresponding category.
-        pub CategoryById get(category_by_id) config(): map T::CategoryId => Category<T::CategoryId, T::BlockNumber, T::Moment>;
+        pub CategoryById get(category_by_id) config(): map T::CategoryId => Category<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment>;
 
         /// Category identifier value to be used for the next Category created.
         pub NextCategoryId get(next_category_id) config(): T::CategoryId;
@@ -760,8 +766,8 @@ decl_storage! {
         /// Input constraints for user introduction.
         pub UserSelfIntroductionConstraint get(user_self_introduction_constraint) config(): InputValidationLengthConstraint;
 
-         /// Input constraints for post footer.
-         pub PostFooterConstraint get(post_footer_constraint) config(): InputValidationLengthConstraint;
+        /// Input constraints for post footer.
+        pub PostFooterConstraint get(post_footer_constraint) config(): InputValidationLengthConstraint;
 
         /// Labels could be applied to category and thread
         pub LabelById get(category_thread_labes) config(): map T::LabelId => Label;
@@ -992,6 +998,7 @@ decl_module! {
                 num_direct_unmoderated_threads: 0,
                 num_direct_moderated_threads: 0,
                 position_in_parent_category: position_in_parent_category_field,
+                sticky_threads_list: vec![],
             };
 
             // Insert category in map
@@ -1114,7 +1121,7 @@ decl_module! {
 
         /// Create new thread in category with poll
         fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, title: Vec<u8>, text: Vec<u8>, labels: BTreeSet<T::LabelId>,
-            poll: Option<Poll<T::Moment>>,
+            poll: Option<Poll<T::Moment>>, sticky_index: Option<u32>,
         ) -> dispatch::Result {
 
             // Check that its a valid signature
@@ -1124,7 +1131,7 @@ decl_module! {
             Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
             // Create a new thread
-            let thread = Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels, &poll)?;
+            let thread = Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels, &poll, &sticky_index)?;
 
             // Generate event
             Self::deposit_event(RawEvent::ThreadCreated(thread.id));
@@ -1448,6 +1455,7 @@ impl<T: Trait> Module<T> {
         text: &Vec<u8>,
         labels: &BTreeSet<T::LabelId>,
         poll: &Option<Poll<T::Moment>>,
+        sticky_index: &Option<u32>,
     ) -> Result<
         Thread<
             T::ForumUserId,
@@ -1487,6 +1495,14 @@ impl<T: Trait> Module<T> {
         // Get the category
         let category = <CategoryById<T>>::get(category_id);
 
+        // If it is a sticky thread
+        if let Some(unwrapped_sticky_index) = sticky_index {
+            // Check sticky thread index
+            if *unwrapped_sticky_index as usize > category.sticky_threads_list.len() {
+                return Err(ERROR_STICKY_THREAD_INDEX_INVALID);
+            }
+        }
+
         // Create and add new thread
         let new_thread_id = <NextThreadId<T>>::get();
 
@@ -1496,7 +1512,7 @@ impl<T: Trait> Module<T> {
         // Add labels to thread
         <ThreadLabels<T>>::mutate(new_thread_id, |value| *value = labels.clone());
 
-        // Build
+        // Build a new thrad
         let new_thread = Thread {
             id: new_thread_id,
             title: title.clone(),
@@ -1516,11 +1532,28 @@ impl<T: Trait> Module<T> {
         // Store labels
         <ThreadLabels<T>>::mutate(new_thread_id, |value| *value = labels.clone());
 
+        // Update category for added thread
+        match sticky_index {
+            Some(index) => {
+                let mut new_sticky_threads_list: Vec<T::ThreadId> =
+                    category.sticky_threads_list.clone();
+
+                // Insert new thread id at index
+                new_sticky_threads_list.insert(*index as usize, <NextThreadId<T>>::get());
+
+                // Update both unmoderated threads number and sticky thread list
+                <CategoryById<T>>::mutate(category_id, |c| {
+                    c.num_direct_unmoderated_threads += 1;
+                    c.sticky_threads_list = new_sticky_threads_list
+                });
+            }
+            None => {
+                // Update both unmoderated threads number
+                <CategoryById<T>>::mutate(category_id, |c| c.num_direct_unmoderated_threads += 1);
+            }
+        }
         // Update next thread id
         <NextThreadId<T>>::mutate(|n| *n += One::one());
-
-        // Update unmoderated thread count in corresponding category
-        <CategoryById<T>>::mutate(category_id, |c| c.num_direct_unmoderated_threads += 1);
 
         Ok(new_thread)
     }
@@ -1957,12 +1990,18 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_can_mutate_in_path_leaf(
-        category_tree_path: &CategoryTreePath<T::CategoryId, T::BlockNumber, T::Moment>,
+        category_tree_path: &CategoryTreePath<
+            T::CategoryId,
+            T::ThreadId,
+            T::BlockNumber,
+            T::Moment,
+        >,
     ) -> dispatch::Result {
         // Is parent category directly or indirectly deleted or archived category
         ensure!(
             !category_tree_path.iter().any(
-                |c: &Category<T::CategoryId, T::BlockNumber, T::Moment>| c.deleted || c.archived
+                |c: &Category<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment>| c.deleted
+                    || c.archived
             ),
             ERROR_ANCESTOR_CATEGORY_IMMUTABLE
         );
@@ -1971,7 +2010,12 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_can_add_subcategory_path_leaf(
-        category_tree_path: &CategoryTreePath<T::CategoryId, T::BlockNumber, T::Moment>,
+        category_tree_path: &CategoryTreePath<
+            T::CategoryId,
+            T::ThreadId,
+            T::BlockNumber,
+            T::Moment,
+        >,
     ) -> dispatch::Result {
         Self::ensure_can_mutate_in_path_leaf(category_tree_path)?;
 
@@ -1989,7 +2033,8 @@ impl<T: Trait> Module<T> {
     /// Build category tree path and validate them
     fn ensure_valid_category_and_build_category_tree_path(
         category_id: T::CategoryId,
-    ) -> Result<CategoryTreePath<T::CategoryId, T::BlockNumber, T::Moment>, &'static str> {
+    ) -> Result<CategoryTreePath<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment>, &'static str>
+    {
         ensure!(
             <CategoryById<T>>::exists(&category_id),
             ERROR_CATEGORY_DOES_NOT_EXIST
@@ -2007,7 +2052,7 @@ impl<T: Trait> Module<T> {
     /// Requires that `category_id` is valid
     fn build_category_tree_path(
         category_id: T::CategoryId,
-    ) -> CategoryTreePath<T::CategoryId, T::BlockNumber, T::Moment> {
+    ) -> CategoryTreePath<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment> {
         // Get path from parent to root of category tree.
         let mut category_tree_path = vec![];
 
@@ -2020,7 +2065,7 @@ impl<T: Trait> Module<T> {
     /// Requires that `category_id` is valid
     fn _build_category_tree_path(
         category_id: T::CategoryId,
-        path: &mut CategoryTreePath<T::CategoryId, T::BlockNumber, T::Moment>,
+        path: &mut CategoryTreePath<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment>,
     ) {
         // Grab category
         let category = <CategoryById<T>>::get(category_id);

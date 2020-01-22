@@ -316,6 +316,7 @@ pub fn create_thread_mock(
     text: Vec<u8>,
     labels: &BTreeSet<<Runtime as Trait>::LabelId>,
     poll_data: Option<Poll<<Runtime as timestamp::Trait>::Moment>>,
+    sticky_index: Option<u32>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();
@@ -328,6 +329,7 @@ pub fn create_thread_mock(
             text.clone(),
             labels.clone(),
             poll_data.clone(),
+            sticky_index,
         ),
         result
     );
