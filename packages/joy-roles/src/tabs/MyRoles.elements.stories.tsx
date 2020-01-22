@@ -1,5 +1,5 @@
 import React from 'react'
-import { text, withKnobs } from '@storybook/addon-knobs'
+import { withKnobs } from '@storybook/addon-knobs'
 
 import {
   Container,
@@ -157,8 +157,10 @@ const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "1. Application open",
     creator: creator,
+    meta: {
+      id: "1",
+    },
     stage: {
-      uri: text("URL (to copy)", "https://some.url/#1", "Opening"),
       state: OpeningState.AcceptingApplications,
       starting_block: 2956498,
       starting_block_hash: "somehash",
@@ -174,8 +176,10 @@ const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "2. Application open; crowded out",
     creator: creator,
+    meta: {
+      id: "1",
+    },
     stage: {
-      uri: text("URL (to copy)", "https://some.url/#1", "Opening"),
       state: OpeningState.AcceptingApplications,
       starting_block: 2956498,
       starting_block_hash: "somehash",
@@ -191,8 +195,10 @@ const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "3. Application in review",
     creator: creator,
+    meta: {
+      id: "1",
+    },
     stage: {
-      uri: text("URL (to copy)", "https://some.url/#1", "Opening"),
       state: OpeningState.InReview,
       starting_block: 2956498,
       starting_block_hash: "somehash",
@@ -210,8 +216,10 @@ const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "4. Application in review; crowded out",
     creator: creator,
+    meta: {
+      id: "1",
+    },
     stage: {
-      uri: text("URL (to copy)", "https://some.url/#1", "Opening"),
       state: OpeningState.InReview,
       starting_block: 2956498,
       starting_block_hash: "somehash",
@@ -229,8 +237,10 @@ const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "5. Application review complete; unsuccessful",
     creator: creator,
+    meta: {
+      id: "1",
+    },
     stage: {
-      uri: text("URL (to copy)", "https://some.url/#1", "Opening"),
       state: OpeningState.Complete,
       starting_block: 2956498,
       starting_block_hash: "somehash",
@@ -246,8 +256,10 @@ const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "6. Opening cancelled",
     creator: creator,
+    meta: {
+      id: "1",
+    },
     stage: {
-      uri: text("URL (to copy)", "https://some.url/#1", "Opening"),
       state: OpeningState.Cancelled,
       starting_block: 2956498,
       starting_block_hash: "somehash",

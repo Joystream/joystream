@@ -1,7 +1,7 @@
 import { ISubscribable, IUnsubscribable, Observer } from './Subscribable'
 
 export abstract class Observable<S extends { [key: string ]: any }, T> implements ISubscribable<S> {
-  public state: S
+  state: S
   protected transport: T
   protected observers: Observer<S>[] = []
 
@@ -32,5 +32,3 @@ export abstract class Observable<S extends { [key: string ]: any }, T> implement
     this.dispatch();
   }
 }
-
-

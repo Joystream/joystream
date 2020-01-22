@@ -20,7 +20,7 @@ import { Balance } from '@polkadot/types/interfaces';
 
 import { Loadable } from '@polkadot/joy-utils/index'
 
-import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema'
 import { Opening } from "@joystream/types/hiring"
 
 import {
@@ -32,6 +32,7 @@ import {
 } from '../openingStateMarkup'
 import { GroupMember, GroupMemberView } from '../elements'
 import { OpeningStageClassification, OpeningState } from "../classifiers"
+import { OpeningMetadata } from "../OpeningMetadata"
 
 type CTACallback = () => void
 
@@ -287,6 +288,7 @@ export type OpeningApplication = {
   stage: OpeningStageClassification
   creator: GroupMember
   opening: Opening
+  meta: OpeningMetadata
   applicationStake: Balance
   roleStake: Balance
   review_end_time?: Date
@@ -305,7 +307,7 @@ export function Application(props: ApplicationProps) {
     countdown = <OpeningBodyReviewInProgress {...props.stage} />
   }
 
-  const application = props.opening.human_readable_text as GenericJoyStreamRoleSchema
+  const application = props.opening.parse_human_readable_text() as GenericJoyStreamRoleSchema
   const appState = applicationState(props)
 
   let CTA = null

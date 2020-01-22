@@ -9,7 +9,6 @@ export enum OpeningState {
 }
 
 export interface OpeningStageClassification {
-  uri: string
   state: OpeningState
   starting_block: number
   starting_block_hash: string
@@ -21,7 +20,6 @@ export interface OpeningStageClassification {
 export function classifyOpeningStage(stage: OpeningStage): OpeningStageClassification {
   // TODO! Implement this properly, based on enum values
   return {
-    uri: "",
     state: OpeningState.AcceptingApplications,
     starting_block: 100,
     starting_block_hash: "",

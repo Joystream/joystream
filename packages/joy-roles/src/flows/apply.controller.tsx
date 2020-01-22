@@ -4,9 +4,9 @@ import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
-import { Observable, EmptyProps, Params, View } from '@polkadot/joy-utils/index'
+import { Controller, Params, View } from '@polkadot/joy-utils/index'
 
-import { GenericJoyStreamRoleSchema } from '@joystream/types/schemas/role.schema'
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema'
 
 import { ITransport } from '../transport'
 
@@ -14,7 +14,7 @@ import { keyPairDetails, FlowModal } from './apply'
 
 import { GroupMember } from '../elements'
 import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities'
-import { Min, Step } from "../balances"
+import { Min, Step, Sum } from "../balances"
 
 type State = {
   // Input data from state
@@ -43,19 +43,13 @@ const newEmptyState = (): State => {
   }
 }
 
-export class ApplyController extends Observable<State, ITransport> {
+export class ApplyController extends Controller<State, ITransport> {
   protected currentOpeningId: string = ""
 
   constructor(transport: ITransport, initialState: State = newEmptyState()) {
     super(transport, initialState)
 
     this.transport.accounts().subscribe((keys) => this.updateAccounts(keys))
-  }
-
-  protected onError(desc: any) {
-    this.state.hasError = true
-    console.error(desc)
-    this.dispatch()
   }
 
   protected updateAccounts(keys: keyPairDetails[]) {
@@ -82,7 +76,7 @@ export class ApplyController extends Observable<State, ITransport> {
     )
       .then(
         ([opening, ranks, txFee]) => {
-          const hrt = opening.opening.human_readable_text
+          const hrt = opening.opening.parse_human_readable_text()
           if (typeof hrt !== "object") {
             return this.onError("human_readable_text is not an object")
           }
@@ -125,9 +119,16 @@ export class ApplyController extends Observable<State, ITransport> {
       console.log("Stake key:", stakeKeyAddress, stakeKeyPassphrase)
       console.log("Tx key:", txKeyAddress, txKeyPassphrase)
 
+      const totalCommitment = Sum([
+        this.state.transactionFee!,
+        applicationStake,
+        roleStake,
+      ])
+
       this.state.transactionDetails.set("Transaction fee", formatBalance(this.state.transactionFee))
       this.state.transactionDetails.set("Application stake", formatBalance(applicationStake))
       this.state.transactionDetails.set("Role stake", formatBalance(roleStake))
+      this.state.transactionDetails.set("Total commitment", formatBalance(totalCommitment))
       this.state.transactionDetails.set("Extrinsic hash", "0xae6d24d4d55020c645ddfe2e8d0faf93b1c0c9879f9bf2c439fb6514c6d1292e")
       this.state.roleKeyName = "some-role.key"
 
@@ -136,7 +137,6 @@ export class ApplyController extends Observable<State, ITransport> {
     })
   }
 
-  // TODO: Move to transport
   async makeApplicationTransaction(): Promise<any> {
     return new Promise<any>((resolve, reject) => {
       console.log("TODO: make tx")
@@ -146,8 +146,8 @@ export class ApplyController extends Observable<State, ITransport> {
   }
 }
 
-export const ApplyView = View<ApplyController, EmptyProps, State>(
-  (props, state, controller, params) => {
+export const ApplyView = View<ApplyController, State>(
+  (state, controller, params) => {
     controller.findOpening(params)
     return (
       // @ts-ignore

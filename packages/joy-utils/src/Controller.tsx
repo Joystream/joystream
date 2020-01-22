@@ -1,43 +1,22 @@
-import React from 'react';
-import { Message } from 'semantic-ui-react'
+import { Observable } from './Observable'
 
-export type controllerProps<T> = {
-  params: Map<string,string>
-  transport: T
+type errorProps = {
+  _hasError?: boolean
 }
 
-export type ControllerComponent<P> = React.ComponentType<controllerProps<P>>
-
-export type errorState = {
-	controllerError?: any[]
-}
-
-type withErrorState<T> = T & errorState
-
-export abstract class Controller<P, S = {}> extends React.PureComponent<controllerProps<P>, withErrorState<S>> {
-  constructor(props: controllerProps<P>, initialState: withErrorState<S>) {
-    super(props);
-    this.state = initialState
+export class Controller<S, T> extends Observable<S & errorProps, T> {
+  constructor(transport: T, initialState: S & { hasError?: boolean }) {
+    super(transport, initialState)
   }
 
-  protected renderWithError(fn: () => any) {
-	  if (typeof this.state.controllerError !== 'undefined') {
-      return (
-<Message negative>
-    <Message.Header>Uh oh! An error has occured</Message.Header>
-  </Message>
-      )
-	  }
-	  return fn()
+  onError(desc: any) {
+    this.state._hasError = true
+    console.log(desc)
+    this.dispatch()
   }
 
-  protected error(err: any) {
-    if (typeof this.state.controllerError === 'undefined') {
-      this.setState({controllerError: []}, () => this.error(err))
-    } else {
-		  console.error("Controller error:", err)
-      this.setState({ controllerError: this.state.controllerError.concat(err)})
-    }
+  hasError(): boolean {
+    return this.state._hasError === true
   }
 }
 

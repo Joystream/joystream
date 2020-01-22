@@ -18,6 +18,7 @@ import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType, } from '.
 import { tomorrow, yesterday } from "./Opportunities.stories"
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
+import { OpeningMetadata } from "../OpeningMetadata"
 
 import 'semantic-ui-css/semantic.min.css'
 import '@polkadot/joy-roles/index.sass'
@@ -31,38 +32,37 @@ type TestProps = {
   _description: string
 }
 
+const meta: OpeningMetadata = {
+  id: "1",
+}
+
 export function OpeningHeaderByState() {
   const stages: OpeningStageClassification[] = [
     {
-      uri: "https://some.url/#1",
       state: OpeningState.WaitingToBegin,
       starting_block: 2956498,
       starting_block_hash: "somehash",
       created_time: yesterday(),
     },
     {
-      uri: "https://some.url/#1",
       state: OpeningState.AcceptingApplications,
       starting_block: 2956498,
       starting_block_hash: "somehash",
       created_time: yesterday(),
     },
     {
-      uri: "https://some.url/#1",
       state: OpeningState.InReview,
       starting_block: 102456,
       starting_block_hash: "somehash",
       created_time: yesterday(),
     },
     {
-      uri: "https://some.url/#1",
       state: OpeningState.Complete,
       starting_block: 10345,
       starting_block_hash: "somehash",
       created_time: yesterday(),
     },
     {
-      uri: "https://some.url/#1",
       state: OpeningState.Cancelled,
       starting_block: 104,
       starting_block_hash: "somehash",
@@ -76,7 +76,7 @@ export function OpeningHeaderByState() {
         <Container className={"inner opening " + openingClass(stage.state)} key={key}>
           <Card fluid className="container">
             <Card.Content className="header">
-              <OpeningHeader stage={stage} />
+              <OpeningHeader stage={stage} meta={meta} />
             </Card.Content>
           </Card>
         </Container>
@@ -260,7 +260,6 @@ export function ReviewInProgress() {
       _description: "Standard control",
       review_end_time: tomorrow(),
       review_end_block: 1000000,
-      uri: "",
       state: OpeningState.InReview,
       starting_block: 0,
       starting_block_hash: "",
@@ -285,4 +284,3 @@ export function ReviewInProgress() {
     </Container>
   )
 }
-

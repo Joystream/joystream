@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { Balance } from '@polkadot/types/interfaces'
-import { Text, u128, GenericAccountId } from '@polkadot/types'
+import { Option, Text, u32, u128, GenericAccountId } from '@polkadot/types'
 
 import { Subscribable } from '@polkadot/joy-utils/index'
 
@@ -8,10 +8,16 @@ import { ITransport } from './transport'
 import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Actor, Role } from '@joystream/types/roles'
-import { Opening } from "@joystream/types/hiring"
+import {
+  Opening,
+  AcceptingApplications,
+  ActiveOpeningStage,
+  ApplicationRationingPolicy,
+  StakingPolicy,
+} from "@joystream/types/hiring"
 import { Profile } from '@joystream/types/members';
 
-import { WorkingGroupProps, StorageAndDistributionProps } from "./tabs/WorkingGroup"
+import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
 import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
@@ -40,8 +46,8 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
-  curationGroup(): Promise<WorkingGroupProps> {
-    return this.simulateApiResponse<WorkingGroupProps>({
+  curationGroup(): Promise<WorkingGroupMembership> {
+    return this.simulateApiResponse<WorkingGroupMembership>({
       rolesAvailable: true,
       members: [
         {
@@ -100,8 +106,8 @@ export class Transport extends TransportBase implements ITransport {
     })
   }
 
-  storageGroup(): Promise<StorageAndDistributionProps> {
-    return this.simulateApiResponse<StorageAndDistributionProps>(
+  storageGroup(): Promise<StorageAndDistributionMembership> {
+    return this.simulateApiResponse<StorageAndDistributionMembership>(
       {
         balances: new Map<string, Balance>([
           ['5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew', new u128(101)],
@@ -129,7 +135,16 @@ export class Transport extends TransportBase implements ITransport {
       [
         {
           opening: new Opening({
-            max_review_period_length: 50000,
+            created: new u32(50000),
+            stage: new ActiveOpeningStage({
+              acceptingApplications: new AcceptingApplications({
+                started_accepting_applicants_at_block: new u32(100),
+              })
+            }),
+            max_review_period_length: new u32(100),
+            application_rationing_policy: new Option(ApplicationRationingPolicy),
+            application_staking_policy: new Option(StakingPolicy),
+            role_staking_policy: new Option(StakingPolicy),
             human_readable_text: newMockHumanReadableText({
               version: 1,
               headline: "Help us curate awesome content",
@@ -179,8 +194,10 @@ export class Transport extends TransportBase implements ITransport {
             lead: true,
             stake: new u128(10),
           },
+          meta: {
+            id: "1",
+          },
           stage: {
-            uri: "https://some.url/#1",
             state: OpeningState.AcceptingApplications,
             starting_block: 2956498,
             starting_block_hash: "somehash",
@@ -209,7 +226,16 @@ export class Transport extends TransportBase implements ITransport {
     return this.simulateApiResponse<WorkingGroupOpening>(
       {
         opening: new Opening({
-          max_review_period_length: 50000,
+          created: new u32(50000),
+          stage: new ActiveOpeningStage({
+            acceptingApplications: new AcceptingApplications({
+              started_accepting_applicants_at_block: new u32(100),
+            })
+          }),
+          max_review_period_length: new u32(100),
+          application_rationing_policy: new Option(ApplicationRationingPolicy),
+          application_staking_policy: new Option(StakingPolicy),
+          role_staking_policy: new Option(StakingPolicy),
           human_readable_text: newMockHumanReadableText({
             version: 1,
             headline: "Help us curate awesome content",
@@ -263,8 +289,10 @@ export class Transport extends TransportBase implements ITransport {
           lead: true,
           stake: new u128(10),
         },
+        meta: {
+          id: "1",
+        },
         stage: {
-          uri: "/roles/apply/1",
           state: OpeningState.AcceptingApplications,
           starting_block: 2956498,
           starting_block_hash: "somehash",
@@ -342,15 +370,26 @@ export class Transport extends TransportBase implements ITransport {
               lead: true,
               stake: new u128(10),
             },
+            meta: {
+              id: "1",
+            },
             stage: {
-              uri: "https://some.url/#1",
               state: OpeningState.AcceptingApplications,
               starting_block: 2956498,
               starting_block_hash: "somehash",
               created_time: yesterday(),
             },
             opening: new Opening({
-              max_review_period_length: 50000,
+              created: new u32(50000),
+              stage: new ActiveOpeningStage({
+                acceptingApplications: new AcceptingApplications({
+                  started_accepting_applicants_at_block: new u32(100),
+                })
+              }),
+              max_review_period_length: new u32(100),
+              application_rationing_policy: new Option(ApplicationRationingPolicy),
+              application_staking_policy: new Option(StakingPolicy),
+              role_staking_policy: new Option(StakingPolicy),
               human_readable_text: newMockHumanReadableText({
                 version: 1,
                 headline: "Help us curate awesome content",
