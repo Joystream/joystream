@@ -24,7 +24,7 @@ export class OpportunityController extends Controller<State, ITransport> {
   @memoize()
   async getOpportunity(id: string | undefined) {
     if (!id) {
-      return this.onError("ApplyController: no ID provided in params")
+      return this.onError("OpportunityController: no ID provided in params")
     }
 
     this.state.opportunity = await this.transport.opening(id)
