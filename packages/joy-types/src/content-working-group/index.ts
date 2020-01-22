@@ -336,7 +336,7 @@ export class WorkingGroupUnstaker extends Enum {
   }
 }
 
-export class CuratorOpeningIdMap extends BTreeMap<ApplicationId, CuratorId> {
+export class CuratorApplicationIdToCuratorIdMap extends BTreeMap<ApplicationId, CuratorId> {
   constructor (value?: any, index?: number) {
     super(
       ApplicationId,
@@ -367,7 +367,7 @@ export function registerContentWorkingGroupTypes () {
         OpeningPolicyCommitment,
         Principal,
         WorkingGroupUnstaker,
-		CuratorOpeningIdMap, 
+		CuratorApplicationIdToCuratorIdMap, 
       });
     } catch (err) {
       console.error('Failed to register custom types of content working group module', err);
