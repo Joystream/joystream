@@ -255,9 +255,9 @@ export class Opening extends JoyStruct<IOpening> {
   }
 
   get human_readable_text(): GenericJoyStreamRoleSchema | string | undefined {
-    const hrt = this.get('human_readable_text')
+    const hrt = this.getField<Text>('human_readable_text')
 
-    if (typeof hrt === "undefined") {
+    if (!hrt) {
       return undefined
     }
 
