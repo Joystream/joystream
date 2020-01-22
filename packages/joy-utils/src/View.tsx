@@ -5,7 +5,7 @@ import { Controller } from './Controller'
 export type Params = Map<string, string>
 
 const newParams = (): Params => {
-  return new Map<string,string>()
+  return new Map<string, string>()
 }
 
 type viewProps = {
@@ -19,13 +19,13 @@ export type ViewComponentFactory<C, P = any, S = any> = (controller: C) => React
 
 type ViewPropsExplicit<C, S> = {
   errorComponent?: React.ComponentType
-  render: renderFn<C,S>
+  render: renderFn<C, S>
 }
 
-type ViewProps<C, S> = ViewPropsExplicit<C, S> | renderFn<C,S>
+type ViewProps<C, S> = ViewPropsExplicit<C, S> | renderFn<C, S>
 
 function DefaultError() {
-	return <p>There has been an error</p>
+  return <p>There has been an error</p>
 }
 
 export function View<C extends Controller<S, any>, S>(args: ViewProps<C, S>): ViewComponentFactory<C, S> {
@@ -52,7 +52,7 @@ export function View<C extends Controller<S, any>, S>(args: ViewProps<C, S>): Vi
         context = newParams()
       }
 
-      let renderFn: renderFn<C,S>
+      let renderFn: renderFn<C, S>
       let Err: React.ComponentType = DefaultError
       if (typeof args === "function") {
         renderFn = args

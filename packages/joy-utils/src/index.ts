@@ -2,7 +2,7 @@ import BN from 'bn.js';
 
 export const ZERO = new BN(0);
 
-export function bnToStr (bn?: BN, dflt: string = ''): string {
+export function bnToStr(bn?: BN, dflt: string = ''): string {
   return bn ? bn.toString() : dflt;
 }
 
@@ -50,7 +50,7 @@ export const isEmptyArr = (x: any): boolean =>
 
 import keyring from '@polkadot/ui-keyring';
 
-export function findNameByAddress (address: string): string | undefined {
+export function findNameByAddress(address: string): string | undefined {
   let keyring_address;
   try {
     keyring_address = keyring.getAccount(address);
@@ -63,7 +63,7 @@ export function findNameByAddress (address: string): string | undefined {
   return keyring_address ? keyring_address.meta.name : undefined;
 }
 
-export function isKnownAddress (address: string): boolean {
+export function isKnownAddress(address: string): boolean {
   return isDefined(findNameByAddress(address));
 }
 
@@ -72,7 +72,7 @@ export function isKnownAddress (address: string): boolean {
 
 import { Stake, Backer } from '@joystream/types/';
 
-export function calcTotalStake (stakes: Stake | Stake[] | undefined): BN {
+export function calcTotalStake(stakes: Stake | Stake[] | undefined): BN {
   if (typeof stakes === 'undefined') {
     return ZERO;
   }
@@ -91,7 +91,7 @@ export function calcTotalStake (stakes: Stake | Stake[] | undefined): BN {
   }
 }
 
-export function calcBackersStake (backers: Backer[]): BN {
+export function calcBackersStake(backers: Backer[]): BN {
   return backers.map(b => b.stake).reduce((accum, stake) => {
     return accum.add(stake);
   }, ZERO);
@@ -103,10 +103,10 @@ export function calcBackersStake (backers: Backer[]): BN {
 import { Options as QueryOptions } from '@polkadot/react-api/with/types';
 
 /** Example of apiQuery: 'query.councilElection.round' */
-export function queryToProp (
+export function queryToProp(
   apiQuery: string,
   paramNameOrOpts?: string | QueryOptions
-): [ string, QueryOptions ] {
+): [string, QueryOptions] {
 
   let paramName: string | undefined;
   let propName: string | undefined;
@@ -123,7 +123,7 @@ export function queryToProp (
     propName = apiQuery.split('.').slice(-1)[0];
   }
 
-  return [ apiQuery, { paramName, propName } ];
+  return [apiQuery, { paramName, propName }];
 }
 
 // Parse URLs
@@ -131,7 +131,7 @@ export function queryToProp (
 
 import queryString from 'query-string';
 
-export function getUrlParam (location: Location, paramName: string, deflt: string | null = null): string | null {
+export function getUrlParam(location: Location, paramName: string, deflt: string | null = null): string | null {
   const params = queryString.parse(location.search);
   return params[paramName] ? params[paramName] as string : deflt;
 }
@@ -146,11 +146,11 @@ import { Observer, Subscribable, Subscription } from './Subscribable'
 import { Transport } from './Transport';
 import { View, ViewComponent, Params } from './View';
 
-export { 
-  Controller, 
-  Loadable, 
+export {
+  Controller,
+  Loadable,
   Observer, Observable,
-	Subscribable, Subscription,
+  Subscribable, Subscription,
   Transport,
   View, ViewComponent, Params,
 };
