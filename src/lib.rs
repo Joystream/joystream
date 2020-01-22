@@ -331,6 +331,8 @@ const ERROR_USER_SELF_DESC_TOO_LONG: &str = "User self introduction too long.";
 const ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT: &str = "Forum user id not match its account.";
 const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its account.";
 const ERROR_FORUM_USER_NOT_THREAD_AUTHOR: &str = "Forum user is not thread author";
+const ERROR_USER_POST_FOOTER_TOO_SHORT: &str = "User post footer too short.";
+const ERROR_USER_POST_FOOTER_TOO_LONG: &str = "User post footer too long.";
 
 // Errors about thread.
 const ERROR_THREAD_TITLE_TOO_SHORT: &str = "Thread title too short.";
@@ -407,6 +409,9 @@ pub struct ForumUser<AccountId> {
 
     /// Forum user's self introduction.
     pub self_introduction: Vec<u8>,
+
+    /// Post footer shown at the end of post
+    pub post_footer: Option<Vec<u8>>,
 }
 
 /// Represents a moderator in this forum.
@@ -755,6 +760,9 @@ decl_storage! {
         /// Input constraints for user introduction.
         pub UserSelfIntroductionConstraint get(user_self_introduction_constraint) config(): InputValidationLengthConstraint;
 
+         /// Input constraints for post footer.
+         pub PostFooterConstraint get(post_footer_constraint) config(): InputValidationLengthConstraint;
+
         /// Labels could be applied to category and thread
         pub LabelById get(category_thread_labes) config(): map T::LabelId => Label;
 
@@ -1025,9 +1033,9 @@ decl_module! {
             // Get parent category
             let parent_category = <CategoryById<T>>::get(&category_id).position_in_parent_category;
 
-            if parent_category.is_some() {
+            if let Some(unwrapped_parent_category) = parent_category {
                 // Get path from parent to root of category tree.
-                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(parent_category.unwrap().parent_id)?;
+                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(unwrapped_parent_category.parent_id)?;
 
                 if Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
                     // if ancestor archived or deleted, no necessary to set child again.
@@ -1376,7 +1384,7 @@ decl_module! {
             });
 
             // Generate event
-            Self::deposit_event(RawEvent::PostTextUpdated(post.id, post.text_change_history.len() as u64));
+            Self::deposit_event(RawEvent::PostTextUpdated(post.id, <PostById<T>>::get(post_id).text_change_history.len() as u64));
 
             Ok(())
         }
@@ -1468,9 +1476,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_label_valid(&labels)?;
 
         // Unwrap poll
-        if poll.is_some() {
-            let data = poll.clone().unwrap();
-
+        if let Some(data) = poll {
             // Check all poll alternatives
             Self::ensure_poll_alternatives_valid(&data.poll_alternatives)?;
 
@@ -1577,6 +1583,7 @@ impl<T: Trait> Module<T> {
         account_id: T::AccountId,
         name: Vec<u8>,
         self_introduction: Vec<u8>,
+        post_footer: Option<Vec<u8>>,
     ) -> dispatch::Result {
         // Ensure user name is valid
         Self::ensure_user_name_is_valid(&name)?;
@@ -1584,11 +1591,17 @@ impl<T: Trait> Module<T> {
         // Ensure self introduction is valid
         Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
 
+        // Ensure post footer is valid
+        if let Some(ref post_footer_raw) = post_footer {
+            Self::ensure_post_footer_is_valid(post_footer_raw)?;
+        }
+
         // Create new forum user data
         let new_forum_user = ForumUser {
             role_account: account_id.clone(),
             name: name.clone(),
             self_introduction: self_introduction.clone(),
+            post_footer: post_footer,
         };
 
         // Insert new user data for forum user
@@ -1744,6 +1757,14 @@ impl<T: Trait> Module<T> {
             description.len(),
             ERROR_CATEGORY_DESCRIPTION_TOO_SHORT,
             ERROR_CATEGORY_DESCRIPTION_TOO_LONG,
+        )
+    }
+
+    fn ensure_post_footer_is_valid(footer: &Vec<u8>) -> dispatch::Result {
+        PostFooterConstraint::get().ensure_valid(
+            footer.len(),
+            ERROR_USER_POST_FOOTER_TOO_SHORT,
+            ERROR_USER_POST_FOOTER_TOO_LONG,
         )
     }
 

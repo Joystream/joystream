@@ -89,13 +89,7 @@ pub const NOT_FORUM_SUDO_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 111;
 
 pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_SUDO_ORIGIN_ID);
 
-pub const NOT_MEMBER_ORIGIN: OriginType = OriginType::Signed(222);
-
 pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
-
-pub const INVLAID_THREAD_ID: <Runtime as Trait>::ThreadId = 444;
-
-pub const INVLAID_POST_ID: <Runtime as Trait>::ThreadId = 555;
 
 pub const NOT_REGISTER_MODERATOR_ID: <Runtime as Trait>::ModeratorId = 666;
 
@@ -113,6 +107,10 @@ pub fn good_user_name() -> Vec<u8> {
 
 pub fn good_self_introduction() -> Vec<u8> {
     b"good description".to_vec()
+}
+
+pub fn good_forum_user_footer() -> Option<Vec<u8>> {
+    Some(b"good forum user footer".to_vec())
 }
 
 pub fn good_category_title() -> Vec<u8> {
@@ -235,11 +233,17 @@ pub fn create_forum_user_mock(
     account_id: <Runtime as system::Trait>::AccountId,
     name: Vec<u8>,
     self_introduction: Vec<u8>,
+    forum_user_footer: Option<Vec<u8>>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ForumUserId {
     let forum_user_id = TestForumModule::next_forum_user_id();
     assert_eq!(
-        TestForumModule::create_forum_user(account_id, name.clone(), self_introduction.clone(),),
+        TestForumModule::create_forum_user(
+            account_id,
+            name.clone(),
+            self_introduction.clone(),
+            forum_user_footer.clone(),
+        ),
         result
     );
     if result.is_ok() {
@@ -572,7 +576,7 @@ pub fn update_thread_labels_by_moderator_mock(
     thread_id
 }
 
-fn edit_post_text_mock(
+pub fn edit_post_text_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
     post_id: <Runtime as Trait>::PostId,
@@ -664,6 +668,11 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
             min: 10,
             max_min_diff: 200,
         },
+        post_footer_constraint: InputValidationLengthConstraint {
+            min: 10,
+            max_min_diff: 140,
+        },
+
         category_thread_labes: vec![],
         next_label_id: 1,
         category_labels: vec![],
