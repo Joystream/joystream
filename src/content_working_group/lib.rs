@@ -87,7 +87,7 @@ pub type StakeId<T> = <T as stake::Trait>::StakeId;
 /// Type of permissions module prinicipal identifiers
 pub type PrincipalId<T> = <T as versioned_store_permissions::Trait>::Credential;
 
-pub type CuratorOpeningIdMap<T> = BTreeMap<CuratorApplicationId<T>, CuratorId<T>>;
+pub type CuratorApplicationIdToCuratorIdMap<T> = BTreeMap<CuratorApplicationId<T>, CuratorId<T>>;
 
 /*
  * MOVE ALL OF THESE OUT TO COMMON LATER
@@ -1096,7 +1096,7 @@ decl_event! {
         CuratorOpeningId = CuratorOpeningId<T>,
         CuratorApplicationId = CuratorApplicationId<T>,
         CuratorId = CuratorId<T>,
-        CuratorOpeningIdMap = CuratorOpeningIdMap<T>,
+        CuratorApplicationIdToCuratorIdMap = CuratorApplicationIdToCuratorIdMap<T>,
         <T as system::Trait>::AccountId,
     {
         ChannelCreated(ChannelId),
@@ -1106,7 +1106,7 @@ decl_event! {
         CuratorOpeningAdded(CuratorOpeningId),
         AcceptedCuratorApplications(CuratorOpeningId),
         BeganCuratorApplicationReview(CuratorOpeningId),
-        CuratorOpeningFilled(CuratorOpeningId, CuratorOpeningIdMap), //BTreeSet<CuratorApplicationId>),
+        CuratorOpeningFilled(CuratorOpeningId, CuratorApplicationIdToCuratorIdMap), //BTreeSet<CuratorApplicationId>),
         TerminatedCurator(CuratorId),
         AppliedOnCuratorOpening(CuratorOpeningId, CuratorApplicationId),
         CuratorExited(CuratorId),
