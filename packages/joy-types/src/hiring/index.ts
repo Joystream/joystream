@@ -254,7 +254,7 @@ export class Opening extends JoyStruct<IOpening> {
     }, value);
   }
 
-  get human_readable_text(): GenericJoyStreamRoleSchema | string | undefined {
+  parse_human_readable_text(): GenericJoyStreamRoleSchema | string | undefined {
     const hrt = this.getField<Text>('human_readable_text')
 
     if (!hrt) {
