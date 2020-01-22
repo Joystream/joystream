@@ -23,7 +23,7 @@ export class OpportunityController extends Controller<State, ITransport> {
 
   @memoize()
   async getOpportunity(id: string | undefined) {
-    if (typeof id === "undefined") {
+    if (!id) {
       return this.onError("ApplyController: no ID provided in params")
     }
 
@@ -46,4 +46,3 @@ export const OpportunityView = View<OpportunityController, State>({
     )
   }
 })
-
