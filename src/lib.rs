@@ -663,7 +663,7 @@ pub struct Category<CategoryId, ThreadId, BlockNumber, Moment> {
     position_in_parent_category: Option<ChildPositionInParentCategory<CategoryId>>,
 
     /// Sticky threads list
-    sticky_threads_list: Vec<ThreadId>,
+    sticky_thread_ids: Vec<ThreadId>,
 }
 
 /// Implement total thread calcuation for category
@@ -998,7 +998,7 @@ decl_module! {
                 num_direct_unmoderated_threads: 0,
                 num_direct_moderated_threads: 0,
                 position_in_parent_category: position_in_parent_category_field,
-                sticky_threads_list: vec![],
+                sticky_thread_ids: vec![],
             };
 
             // Insert category in map
@@ -1498,7 +1498,7 @@ impl<T: Trait> Module<T> {
         // If it is a sticky thread
         if let Some(unwrapped_sticky_index) = sticky_index {
             // Check sticky thread index
-            if *unwrapped_sticky_index as usize > category.sticky_threads_list.len() {
+            if *unwrapped_sticky_index as usize > category.sticky_thread_ids.len() {
                 return Err(ERROR_STICKY_THREAD_INDEX_INVALID);
             }
         }
@@ -1535,16 +1535,16 @@ impl<T: Trait> Module<T> {
         // Update category for added thread
         match sticky_index {
             Some(index) => {
-                let mut new_sticky_threads_list: Vec<T::ThreadId> =
-                    category.sticky_threads_list.clone();
+                let mut new_sticky_thread_ids: Vec<T::ThreadId> =
+                    category.sticky_thread_ids.clone();
 
                 // Insert new thread id at index
-                new_sticky_threads_list.insert(*index as usize, <NextThreadId<T>>::get());
+                new_sticky_thread_ids.insert(*index as usize, <NextThreadId<T>>::get());
 
                 // Update both unmoderated threads number and sticky thread list
                 <CategoryById<T>>::mutate(category_id, |c| {
                     c.num_direct_unmoderated_threads += 1;
-                    c.sticky_threads_list = new_sticky_threads_list
+                    c.sticky_thread_ids = new_sticky_thread_ids
                 });
             }
             None => {
