@@ -5,12 +5,13 @@ import {
   ApplicationRationingPolicy,
   StakingPolicy,
   Opening, OpeningStage,
+  ReviewPeriod,
 } from "@joystream/types/hiring"
 
 import { 
 	OpeningState,
 	IBlockQueryer,
-	classifyOpeningStage 
+	classifyOpeningStage, OpeningStageClassification,
 } from './classifiers'
 
 class mockBlockQueryer {
@@ -44,7 +45,7 @@ type Test = {
     queryer: IBlockQueryer, 
     opening: Opening,
   }
-  output: any//OpeningStageClassification
+  output: OpeningStageClassification
 }
 
 describe('higing.OpeningStage -> OpeningStageClassification', (): void => {
@@ -75,6 +76,36 @@ describe('higing.OpeningStage -> OpeningStageClassification', (): void => {
       },
       output: {
         state: OpeningState.AcceptingApplications,
+        starting_block: 100,
+        starting_block_hash: "somehash",
+        starting_time: now,
+      },
+    },
+    {
+      description: "In review period",
+      input: {
+        opening: new Opening({
+          created: new u32(100),
+          stage: new OpeningStage({
+            'Active': {
+              stage: new ActiveOpeningStage({
+                reviewPeriod: new ReviewPeriod({
+                  started_accepting_applicants_at_block: new u32(100),
+                  started_review_period_at_block: new u32(50),
+                })
+              })
+            }
+          }),
+          max_review_period_length: new u32(100),
+          application_rationing_policy: new Option(ApplicationRationingPolicy),
+          application_staking_policy: new Option(StakingPolicy),
+          role_staking_policy: new Option(StakingPolicy),
+          human_readable_text: new Text(),
+        }),
+        queryer: new mockBlockQueryer("somehash", now),
+      },
+      output: {
+        state: OpeningState.InReview,
         starting_block: 100,
         starting_block_hash: "somehash",
         starting_time: now,
