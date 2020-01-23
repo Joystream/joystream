@@ -7,15 +7,17 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
 pub struct StakingPolicy<Balance, BlockNumber> {
-    // Staking amount
+    /// Staking amount
     pub amount: Balance,
 
-    // How to interpret the amount requirement
+    /// How to interpret the amount requirement
     pub amount_mode: StakingAmountLimitMode,
 
-    // The unstaking period length, if any, deactivation causes that are autonomous,
-    // that is they are triggered internally to this module.
+    /// The unstaking period length, if any, deactivation causes that are autonomous,
+    /// that is they are triggered internally to this module.
     pub crowded_out_unstaking_period_length: Option<BlockNumber>,
+
+    /// The review period length
     pub review_period_expired_unstaking_period_length: Option<BlockNumber>,
 }
 
@@ -69,6 +71,9 @@ impl<Balance: PartialOrd + Clone, BlockNumber: Clone> StakingPolicy<Balance, Blo
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
 pub enum StakingAmountLimitMode {
+    /// Stake should be equal or greater than provided value
     AtLeast,
+
+    /// Stake should be equal to provided value
     Exact,
 }

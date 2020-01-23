@@ -1,12 +1,8 @@
 use codec::{Decode, Encode};
-
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
-use crate::hiring::StakePurpose;
-
 use rstd::clone::Clone;
 use rstd::vec::Vec;
+
+use crate::hiring::StakePurpose;
 
 /// An application for an actor to occupy an opening.
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone, PartialOrd, Ord)]
@@ -38,7 +34,7 @@ pub struct Application<OpeningId, BlockNumber, StakeId> {
     /// Status of this application
     pub stage: ApplicationStage<BlockNumber>,
 
-    // ...
+    /// Application note
     pub human_readable_text: Vec<u8>,
 }
 
@@ -63,7 +59,7 @@ impl<OpeningId, BlockNumber, StakeId: PartialEq + Clone>
                 if id == stake_id {
                     None
                 } else {
-                    Some(id.clone())
+                    Some(id)
                 }
             }
             _ => None,
@@ -113,10 +109,10 @@ pub enum ApplicationStage<BlockNumber> {
 
     /// Waiting for one or more unstakings, with a non-zero unstaking period, to complete.
     Unstaking {
-        // When deactivation was initiated.
+        /// When deactivation was initiated.
         deactivation_initiated: BlockNumber,
 
-        // The cause of the deactivation.
+        /// The cause of the deactivation.
         cause: ApplicationDeactivationCause,
     },
 
@@ -136,12 +132,25 @@ pub enum ApplicationStage<BlockNumber> {
 /// Possible application deactivation causes
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord)]
 pub enum ApplicationDeactivationCause {
+    /// Deactivation initiated from outside
     External, // Add ID here for simplicity?
+
+    /// Applicant was hired
     Hired,
+
+    /// Applicant was not hired
     NotHired,
+
+    /// Application was crowded out by another applicaiton
     CrowdedOut,
+
+    /// Opening was cancelled
     OpeningCancelled,
+
+    /// Review period expired
     ReviewPeriodExpired,
+
+    /// Opening was filled
     OpeningFilled,
 }
 
@@ -151,48 +160,4 @@ impl<BlockNumber> Default for ApplicationStage<BlockNumber> {
     fn default() -> Self {
         ApplicationStage::Active
     }
-}
-
-/// How to limit the number of eligible applicants
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
-pub struct ApplicationRationingPolicy {
-    /// The maximum number of applications that can be on the list at any time.
-    pub max_active_applicants: u32,
-    // How applicants will be ranked, in order to respect the maximum simultaneous application limit
-    //pub applicant_ranking: ApplicationRankingPolicy
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum BeginAcceptingApplicationsError {
-    OpeningDoesNotExist,
-    OpeningIsNotInWaitingToBeginStage,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum AddApplicationError {
-    OpeningDoesNotExist,
-    StakeProvidedWhenRedundant(StakePurpose),
-    StakeMissingWhenRequired(StakePurpose),
-    StakeAmountTooLow(StakePurpose),
-    OpeningNotInAcceptingApplicationsStage,
-    NewApplicationWasCrowdedOut,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct ApplicationAdded<ApplicationId> {
-    /// ...
-    pub application_id_added: ApplicationId,
-
-    /// ...
-    pub application_id_crowded_out: Option<ApplicationId>,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum DeactivateApplicationError {
-    ApplicationDoesNotExist,
-    ApplicationNotActive,
-    OpeningNotAcceptingApplications,
-    UnstakingPeriodTooShort(StakePurpose),
-    RedundantUnstakingPeriodProvided(StakePurpose),
 }

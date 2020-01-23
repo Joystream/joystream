@@ -1,11 +1,6 @@
 #![cfg(test)]
 
-use crate::*;
-
 use primitives::H256;
-
-use crate::{Module, Trait};
-use balances;
 use runtime_primitives::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
@@ -13,15 +8,14 @@ use runtime_primitives::{
 };
 use srml_support::{impl_outer_origin, parameter_types};
 
+use crate::{Module, Trait};
+use balances;
 use stake;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
     pub const MaximumBlockWeight: u32 = 1024;
@@ -29,6 +23,10 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
 }
+
+// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Test;
 
 impl system::Trait for Test {
     type Origin = Origin;
@@ -76,13 +74,9 @@ impl balances::Trait for Test {
 }
 
 impl Trait for Test {
-    //type Event = ();
-
     type OpeningId = u64;
 
     type ApplicationId = u64;
-
-    //type Currency = Balances;
 
     type ApplicationDeactivatedHandler = ();
 }
@@ -103,6 +97,6 @@ pub(crate) fn build_test_externalities() -> runtime_io::TestExternalities {
     t.into()
 }
 
-//pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Hiring = Module<Test>;
+pub type System = system::Module<Test>;

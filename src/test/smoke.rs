@@ -213,9 +213,9 @@ fn full_hiring_workflow_successful_path() {
                         started_review_period_at_block: Some(1)
                     },
                     applications_added: expected_added_apps_in_opening,
-                    active_application_count: 1,
+                    active_application_count: 0,
                     unstaking_application_count: 0,
-                    deactivated_application_count: 0
+                    deactivated_application_count: 1
                 },
                 max_review_period_length,
                 application_rationing_policy: None,

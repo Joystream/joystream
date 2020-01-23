@@ -4,11 +4,14 @@ use rstd::prelude::*;
 use rstd::vec::Vec;
 
 use codec::{Decode, Encode};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 use srml_support::ensure;
 
-use crate::hiring::StakePurpose;
-use crate::{hiring, ApplicationRationingPolicy, StakingPolicy};
+use crate::hiring;
+use crate::hiring::*;
 
+/// An opening represents the process of hiring one or more new actors into some available role
 #[derive(Encode, Decode, Default, Debug, Eq, PartialEq, Clone)]
 pub struct Opening<Balance, BlockNumber, ApplicationId> {
     /// Block at which opening was added
@@ -192,13 +195,13 @@ where
 /// The stage at which an `Opening` may be at.
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
 pub enum OpeningStage<BlockNumber, ApplicationId> {
-    // ..
+    /// Opening is not active yet. Will be activated at 'begins_at_block' block number
     WaitingToBegin {
+        /// Becomes active at block number
         begins_at_block: BlockNumber,
     },
 
-    // TODO: Fix this bad name
-    //
+    /// Active opening stage
     Active {
         /// Active stage
         stage: hiring::ActiveOpeningStage<BlockNumber>,
@@ -222,7 +225,7 @@ pub enum OpeningStage<BlockNumber, ApplicationId> {
         // - `unstaking_application_count`
         // - `deactivated_application_count`
         //
-        // equals the total number of applications ever added to the openig via `add_application`.
+        // equals the total number of applications ever added to the opening via `add_application`.
         /// Active NOW
         active_application_count: u32,
 
@@ -268,9 +271,9 @@ impl<BlockNumber: Clone, ApplicationId: Ord + Clone> OpeningStage<BlockNumber, A
         Err(error)
     }
 
-    /// Clones current stage. Panics if not Active.
-    /// Adds application_id to applications_added collection.
-    /// Increments 'active_application_count' counter.
+    // Clones current stage. Panics if not Active.
+    // Adds application_id to applications_added collection.
+    // Increments 'active_application_count' counter.
     pub(crate) fn clone_with_added_active_application(
         self,
         new_application_id: ApplicationId,
@@ -280,15 +283,14 @@ impl<BlockNumber: Clone, ApplicationId: Ord + Clone> OpeningStage<BlockNumber, A
             active_application_count,
             unstaking_application_count,
             deactivated_application_count,
-            applications_added,
-        } = self.clone()
+            mut applications_added,
+        } = self
         {
-            let mut apps_added = applications_added.clone();
-            apps_added.insert(new_application_id);
+            applications_added.insert(new_application_id);
 
             hiring::OpeningStage::Active {
                 stage,
-                applications_added: apps_added,
+                applications_added,
                 active_application_count: active_application_count + 1,
                 unstaking_application_count,
                 deactivated_application_count,
@@ -309,26 +311,32 @@ impl<BlockNumber: Default, ApplicationId> Default for OpeningStage<BlockNumber, 
     }
 }
 
+/// Substages of an active opening stage
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
 pub enum ActiveOpeningStage<BlockNumber> {
+    /// Active opening accepts application
     AcceptingApplications {
-        //
+        ///Start accepting applications at block number
         started_accepting_applicants_at_block: BlockNumber,
     },
 
-    //
+    /// Active opening is in review period
     ReviewPeriod {
+        /// Start accepting applications at block number
         started_accepting_applicants_at_block: BlockNumber,
-
+        /// Start review application at block number
         started_review_period_at_block: BlockNumber,
     },
 
-    //
+    /// Active opening was deactivated
     Deactivated {
+        /// Deactivation cause
         cause: OpeningDeactivationCause,
 
+        /// Deactivated at block number
         deactivated_at_block: BlockNumber,
 
+        /// Start accepting applications at block number
         started_accepting_applicants_at_block: BlockNumber,
 
         /// Whether the review period had ever been started, and if so, at what block.
@@ -338,7 +346,7 @@ pub enum ActiveOpeningStage<BlockNumber> {
 }
 
 impl<BlockNumber: Clone> ActiveOpeningStage<BlockNumber> {
-    /// Ensures that active opening stage is accepting applications.
+    // Ensures that active opening stage is accepting applications.
     pub(crate) fn ensure_active_opening_is_accepting_applications<Err>(
         &self,
         error: Err,
@@ -353,7 +361,7 @@ impl<BlockNumber: Clone> ActiveOpeningStage<BlockNumber> {
         Err(error)
     }
 
-    /// Ensures that active opening stage is in review period.
+    // Ensures that active opening stage is in review period.
     pub(crate) fn ensure_active_opening_is_in_review_period<Err>(
         &self,
         error: Err,
@@ -369,63 +377,72 @@ impl<BlockNumber: Clone> ActiveOpeningStage<BlockNumber> {
             _ => Err(error),
         }
     }
+
+    // Creates new active opening stage on cancel opening
+    pub(crate) fn new_stage_on_cancelling(
+        self,
+        current_block_height: BlockNumber,
+    ) -> Result<ActiveOpeningStage<BlockNumber>, CancelOpeningError> {
+        match self {
+            ActiveOpeningStage::AcceptingApplications {
+                started_accepting_applicants_at_block,
+            } => Ok(ActiveOpeningStage::Deactivated {
+                cause: OpeningDeactivationCause::CancelledAcceptingApplications,
+                deactivated_at_block: current_block_height,
+                started_accepting_applicants_at_block,
+                started_review_period_at_block: None,
+            }),
+            ActiveOpeningStage::ReviewPeriod {
+                started_accepting_applicants_at_block,
+                started_review_period_at_block,
+            } => Ok(ActiveOpeningStage::Deactivated {
+                cause: OpeningDeactivationCause::CancelledInReviewPeriod,
+                deactivated_at_block: current_block_height,
+                started_accepting_applicants_at_block,
+                started_review_period_at_block: Some(started_review_period_at_block),
+            }),
+            ActiveOpeningStage::Deactivated { .. } => {
+                Err(CancelOpeningError::OpeningNotInCancellableStage)
+            }
+        }
+    }
 }
 
+/// Opening deactivation cause
 #[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
 pub enum OpeningDeactivationCause {
+    /// Opening was cancelled before activation
     CancelledBeforeActivation,
+
+    /// Opening was cancelled during accepting application stage
     CancelledAcceptingApplications,
+
+    /// Opening was cancelled during accepting application stage
     CancelledInReviewPeriod,
+
+    /// Opening was cancelled after review period exprired
     ReviewPeriodExpired,
+
+    /// Opening was filled
     Filled,
 }
 
-/// NB:
-/// `OpeningCancelled` does not have the ideal form.
-/// https://github.com/Joystream/substrate-hiring-module/issues/10
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct OpeningCancelled {
-    pub number_of_unstaking_applications: u32,
-    pub number_of_deactivated_applications: u32,
-}
-
-// Safe and explict way of chosing
+/// Safe and explict way of chosing
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum ActivateOpeningAt<BlockNumber> {
+    /// Activate opening now (current block)
     CurrentBlock,
+
+    /// Activate opening at block number
     ExactBlock(BlockNumber),
 }
 
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum AddOpeningError {
-    OpeningMustActivateInTheFuture,
-
-    /// It is not possible to stake less than the minimum balance defined in the
-    /// `Currency` module.
-    StakeAmountLessThanMinimumCurrencyBalance(StakePurpose),
-
-    /// It is not possible to provide application rationing policy with zero
-    /// 'max_active_applicants' parameter.
-    ApplicationRationingZeroMaxApplicants,
-}
-
-/// The possible outcome for an application in an opening which is being filled.
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum ApplicationOutcomeInFilledOpening {
-    Success,
-    Failure,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum CancelOpeningError {
-    UnstakingPeriodTooShort(StakePurpose),
-    RedundantUnstakingPeriodProvided(StakePurpose),
-    OpeningDoesNotExist,
-    OpeningNotInCancellableStage,
-}
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub enum BeginReviewError {
-    OpeningDoesNotExist,
-    OpeningNotInAcceptingApplicationsStage,
+/// How to limit the number of eligible applicants
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
+pub struct ApplicationRationingPolicy {
+    /// The maximum number of applications that can be on the list at any time.
+    pub max_active_applicants: u32,
+    // How applicants will be ranked, in order to respect the maximum simultaneous application limit
+    //pub applicant_ranking: ApplicationRankingPolicy
 }

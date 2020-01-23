@@ -9,6 +9,7 @@ mod cancel_opening;
 mod deactivate_application;
 mod ensure_can_add_application;
 mod fill_opening;
+mod on_finalize;
 mod smoke;
 mod unstaked;
 
@@ -22,13 +23,8 @@ pub(crate) type StakeId = <Test as stake::Trait>::StakeId;
 pub(crate) type Balance =
     <<Test as stake::Trait>::Currency as Currency<<Test as system::Trait>::AccountId>>::Balance;
 
-/*
-Add tests:
-- on_finalize
-
-*/
-
-//Debug test object content
-//pub(crate) fn debug_print<T: rstd::fmt::Debug>(obj: T) {
-//    println!("{:?}", obj);
-//}
+//Debug test object content. Recurring temporary usage - do not delete.
+#[allow(dead_code)]
+pub fn debug_print<T: rstd::fmt::Debug>(obj: T) {
+    println!("{:?}", obj);
+}
