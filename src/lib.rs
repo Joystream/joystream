@@ -710,7 +710,7 @@ decl_storage! {
         pub NextThreadId get(next_thread_id) config(): T::ThreadId;
 
         /// Map post identifier to corresponding post.
-        pub PostById get(post_by_id) config(): map T::PostId =>  Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>;
+        pub PostById get(post_by_id) config(): map T::PostId => Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>;
 
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): T::PostId;
