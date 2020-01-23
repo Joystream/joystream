@@ -1823,3 +1823,208 @@ fn moderate_post_rationale() {
         });
     }
 }
+
+#[test]
+fn set_stickied_threads_ok() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(forum_sudo);
+    build_test_externalities(config).execute_with(|| {
+        let forum_user_id = create_forum_user_mock(
+            forum_sudo,
+            good_user_name(),
+            good_self_introduction(),
+            good_forum_user_footer(),
+            Ok(()),
+        );
+        let moderator_id = create_moderator_mock(
+            forum_sudo,
+            good_user_name(),
+            good_self_introduction(),
+            Ok(()),
+        );
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            &BTreeSet::new(),
+            Ok(()),
+        );
+        set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_user_id,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            &BTreeSet::new(),
+            None,
+            Ok(()),
+        );
+        set_stickied_threads_mock(origin, moderator_id, category_id, vec![thread_id], Ok(()));
+    });
+}
+
+#[test]
+fn set_stickied_threads_wrong_moderator() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(forum_sudo);
+    build_test_externalities(config).execute_with(|| {
+        let forum_user_id = create_forum_user_mock(
+            forum_sudo,
+            good_user_name(),
+            good_self_introduction(),
+            good_forum_user_footer(),
+            Ok(()),
+        );
+        let moderator_id = create_moderator_mock(
+            forum_sudo,
+            good_user_name(),
+            good_self_introduction(),
+            Ok(()),
+        );
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            &BTreeSet::new(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_user_id,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            &BTreeSet::new(),
+            None,
+            Ok(()),
+        );
+        set_stickied_threads_mock(
+            origin,
+            moderator_id,
+            category_id,
+            vec![thread_id],
+            Err(ERROR_MODERATOR_MODERATE_CATEGORY),
+        );
+    });
+}
+
+#[test]
+fn set_stickied_threads_thread_not_exists() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(forum_sudo);
+    build_test_externalities(config).execute_with(|| {
+        let forum_user_id = create_forum_user_mock(
+            forum_sudo,
+            good_user_name(),
+            good_self_introduction(),
+            good_forum_user_footer(),
+            Ok(()),
+        );
+        let moderator_id = create_moderator_mock(
+            forum_sudo,
+            good_user_name(),
+            good_self_introduction(),
+            Ok(()),
+        );
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            &BTreeSet::new(),
+            Ok(()),
+        );
+        set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_user_id,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            &BTreeSet::new(),
+            None,
+            Ok(()),
+        );
+        let wrong_thread_id = thread_id + 1;
+        set_stickied_threads_mock(
+            origin,
+            moderator_id,
+            category_id,
+            vec![wrong_thread_id],
+            Err(ERROR_THREAD_DOES_NOT_EXIST),
+        );
+    });
+}
+
+#[test]
+fn set_stickied_threads_wrong_category() {
+    let config = default_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(forum_sudo);
+    build_test_externalities(config).execute_with(|| {
+        let forum_user_id = create_forum_user_mock(
+            forum_sudo,
+            good_user_name(),
+            good_self_introduction(),
+            good_forum_user_footer(),
+            Ok(()),
+        );
+        let moderator_id = create_moderator_mock(
+            forum_sudo,
+            good_user_name(),
+            good_self_introduction(),
+            Ok(()),
+        );
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            &BTreeSet::new(),
+            Ok(()),
+        );
+        set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
+        let _ = create_thread_mock(
+            origin.clone(),
+            forum_user_id,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            &BTreeSet::new(),
+            None,
+            Ok(()),
+        );
+        let category_id_2 = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            &BTreeSet::new(),
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_user_id,
+            category_id_2,
+            good_thread_title(),
+            good_thread_text(),
+            &BTreeSet::new(),
+            None,
+            Ok(()),
+        );
+        set_stickied_threads_mock(
+            origin,
+            moderator_id,
+            category_id,
+            vec![thread_id],
+            Err(ERROR_THREAD_WITH_WRONG_CATEGORY_ID),
+        );
+    });
+}

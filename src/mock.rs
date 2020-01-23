@@ -601,6 +601,34 @@ pub fn edit_post_text_mock(
     post_id
 }
 
+pub fn set_stickied_threads_mock(
+    origin: OriginType,
+    moderator_id: <Runtime as Trait>::ModeratorId,
+    category_id: <Runtime as Trait>::CategoryId,
+    stickied_ids: Vec<<Runtime as Trait>::ThreadId>,
+    result: Result<(), &'static str>,
+) -> <Runtime as Trait>::CategoryId {
+    assert_eq!(
+        TestForumModule::set_stickied_threads(
+            mock_origin(origin),
+            moderator_id,
+            category_id,
+            stickied_ids.clone(),
+        ),
+        result
+    );
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::CategoryStickyThreadUpdate(
+                category_id,
+                stickied_ids.clone(),
+            ))
+        );
+    };
+    category_id
+}
+
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
         forum_user_by_id: vec![],
