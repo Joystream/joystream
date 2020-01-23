@@ -231,7 +231,6 @@ export class AdminController extends Controller<State, ITransport> {
   async updateState() {
     this.state.openings = new Map<number, opening>()
 
-
     const nextOpeningId = await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u64
     for (let i = 0; i < nextOpeningId.toNumber(); i++) {
       const curatorOpening = new LinkedMapEntry<CuratorOpening>(
