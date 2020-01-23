@@ -9,10 +9,8 @@ rust:
 #  - cargo
 
 before_script:
-  # Do a self update before installing rustfmt - https://github.com/rust-lang/rustfmt/issues/3271
-  - rustup self update
-  - rustup component add rustfmt
-  - ./setup.sh
+  # https://github.com/rust-lang/rustup/issues/1558#issuecomment-452110409
+  - rustup toolchain remove stable && rustup toolchain install stable
 
 script:
   # Ensure all checked in code is cargo-fmt'ed
