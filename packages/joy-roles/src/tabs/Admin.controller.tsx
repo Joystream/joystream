@@ -249,7 +249,7 @@ export class AdminController extends Controller<State, ITransport> {
       )
 
       let title: string = "unknown"
-      const hrt = baseOpening.value.human_readable_text
+      const hrt = baseOpening.value.parse_human_readable_text()
       if (typeof hrt !== 'undefined') {
         title = (hrt as GenericJoyStreamRoleSchema).job.title
       }
