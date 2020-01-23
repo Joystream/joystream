@@ -231,6 +231,7 @@ export class AdminController extends Controller<State, ITransport> {
   async updateState() {
     this.state.openings = new Map<number, opening>()
 
+
     const nextOpeningId = await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u64
     for (let i = 0; i < nextOpeningId.toNumber(); i++) {
       const curatorOpening = new LinkedMapEntry<CuratorOpening>(
@@ -269,13 +270,15 @@ export class AdminController extends Controller<State, ITransport> {
         CuratorApplication,
         await this.api.query.contentWorkingGroup.curatorApplicationById(i),
       )
+
       const appId = cApplication.value.getField<u32>('application_id')
       const baseApplications = new LinkedMapEntry<Application>(
-        Opening,
+        Application,
         await this.api.query.hiring.applicationById(
           appId,
         )
       )
+
       const curatorOpening = this.state.openings.get(
         cApplication.value.getField<u32>('curator_opening_id').toNumber(),
       ) as opening
