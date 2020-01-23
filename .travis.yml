@@ -3,10 +3,14 @@ language: rust
 rust:
   - 1.40.0
 # Caching saves a lot of time but often causes stalled builds...
+# disabled for now
+# look into solution here: https://levans.fr/rust_travis_cache.html
 # cache:
 #  - cargo
 
 before_script:
+  # Do a self update before installing rustfmt - https://github.com/rust-lang/rustfmt/issues/3271
+  - rustup self update
   - rustup component add rustfmt
   - ./setup.sh
 
