@@ -1,12 +1,19 @@
 language: rust
+
 rust:
-  - 1.38.0
-cache:
-  - cargo
+  - 1.40.0
+# Caching saves a lot of time but often causes stalled builds...
+# cache:
+#  - cargo
+
 before_script:
   - rustup component add rustfmt
   - ./setup.sh
+
 script:
+  # Ensure all checked in code is cargo-fmt'ed
   - cargo fmt --all -- --check
+  # Native build and unit tests check
   - cargo test --verbose --all
+  # WASM build check
   - cargo build
