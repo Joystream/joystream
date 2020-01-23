@@ -10,48 +10,72 @@ export const ChannelValidationSchema = Yup.object().shape({
   content: Yup.string()
     .required('This field is required')
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  channelName: Yup.string()
+  handle: Yup.string()
     .required('This field is required')
-    .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  thumbnail: Yup.string()
+    .max(40, 'Text is too long. Maximum length is 255 chars.'),
+  title: Yup.string()
     .required('This field is required')
-    .max(255, 'Text is too long. Maximum length is 255 chars.'),
-  cover: Yup.string()
-    .required('This field is required')
-    .max(255, 'Text is too long. Maximum length is 255 chars.'),
+    .max(100, 'Text is too long. Maximum length is 4000 chars.'),
   description: Yup.string()
     .required('This field is required')
-    .max(4000, 'Text is too long. Maximum length is 4000 chars.')
+    .max(4000, 'Text is too long. Maximum length is 4000 chars.'),
+  avatar: Yup.string()
+    .required('This field is required')
+    .max(1000, 'Text is too long. Maximum length is 255 chars.'),
+  banner: Yup.string()
+    .required('This field is required')
+    .max(1000, 'Text is too long. Maximum length is 255 chars.')
 });
 
 export type ChannelFormValues = {
+  verified: boolean
   content: string
-  channelName: string
-  thumbnail: string
-  cover: string
+  handle: string
+  title: string
   description: string
-  publicationStatus: string
-  curationStatus: string
+  avatar: string
+  banner: string
+  publicationStatus: number
+  curationStatus: number
 };
 
 export type ChannelType = {
+  id: number
+  verified?: boolean
   content: string
-  channelName: string
-  thumbnail: string
-  cover: string
+  handle: string
+  title: string
   description: string
+  avatar: string
+  banner: string
   publicationStatus: PublicationStatusType
   curationStatus?: CurationStatusType
 };
 
 export class ChannelCodec extends EntityCodec<ChannelType> { }
 
+export function ChannelToFormValues(entity?: ChannelType): ChannelFormValues {
+  return {
+    verified: entity && entity.verified || false,
+    content: entity && entity.content || '',
+    handle: entity && entity.handle || '',
+    title: entity && entity.title || '',
+    description: entity && entity.description || '',
+    avatar: entity && entity.avatar || '',
+    banner: entity && entity.banner || '',
+    publicationStatus: entity && entity.publicationStatus.id || 0,
+    curationStatus: entity && entity.curationStatus?.id || 0
+  }
+}
+
 export type ChannelPropId =
+  'verified' |
   'content' |
-  'channelName' |
-  'thumbnail' |
-  'cover' |
+  'handle' |
+  'title' |
   'description' |
+  'avatar' |
+  'banner' |
   'publicationStatus' |
   'curationStatus'
   ;
@@ -72,6 +96,13 @@ type ChannelClassType = {
 };
 
 export const ChannelClass: ChannelClassType = {
+  verified: {
+    "id": "verified",
+    "name": "Verified",
+    "description": "Indicates whether the channel is verified by a content curator.",
+    "required": false,
+    "type": "Bool"
+  },
   content: {
     "id": "content",
     "name": "Content",
@@ -80,29 +111,21 @@ export const ChannelClass: ChannelClassType = {
     "required": true,
     "maxTextLength": 255
   },
-  channelName: {
-    "id": "channelName",
-    "name": "Channel name",
-    "description": "Unique human readble channel name.",
+  handle: {
+    "id": "handle",
+    "name": "Handle",
+    "description": "Unique URL handle of channel.",
     "type": "Text",
     "required": true,
-    "maxTextLength": 255
+    "maxTextLength": 40
   },
-  thumbnail: {
-    "id": "thumbnail",
-    "name": "Thumbnail",
-    "description": "URL to channel thumbnail: NOTE: Should be an https link to a square image.",
+  title: {
+    "id": "title",
+    "name": "Title",
+    "description": "Human readable title of channel.",
     "required": true,
     "type": "Text",
-    "maxTextLength": 255
-  },
-  cover: {
-    "id": "cover",
-    "name": "Cover",
-    "description": "URL to channel cover art: NOTE: Should be an https link to a square image, between 1400x1400 and 3000x3000 pixels, in JPEG or PNG format.",
-    "required": true,
-    "type": "Text",
-    "maxTextLength": 255
+    "maxTextLength": 100
   },
   description: {
     "id": "description",
@@ -111,6 +134,22 @@ export const ChannelClass: ChannelClassType = {
     "required": true,
     "type": "Text",
     "maxTextLength": 4000
+  },
+  avatar: {
+    "id": "avatar",
+    "name": "Avatar",
+    "description": "URL to avatar (logo) iamge: NOTE: Should be an https link to a square image.",
+    "required": true,
+    "type": "Text",
+    "maxTextLength": 1000
+  },
+  banner: {
+    "id": "banner",
+    "name": "Banner",
+    "description": "URL to banner image: NOTE: Should be an https link to a rectangular image, between 1400x1400 and 3000x3000 pixels, in JPEG or PNG format.",
+    "required": true,
+    "type": "Text",
+    "maxTextLength": 1000
   },
   publicationStatus: {
     "id": "publicationStatus",

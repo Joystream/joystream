@@ -44,11 +44,20 @@ function propNameToJsFieldStyle (humanFriendlyPropName: string): string {
 }
 
 type PropMeta = {
-  index: number,
+  index: number
   type: string
 }
 
-export class EntityCodec<T = { [propName: string]: any }> {
+export type PlainEntity = {
+  id: number
+  [propName: string]: any
+}
+
+export type TextValueEntity = PlainEntity & {
+  value: string
+}
+
+export abstract class EntityCodec<T extends PlainEntity> {
   
   private propNameToMetaMap: Map<string, PropMeta> = new Map();
   private propIndexToNameMap: Map<number, string> = new Map();

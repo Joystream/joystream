@@ -94,10 +94,13 @@ export type GroupMember = {
   lead: boolean
   stake?: Balance
   earned?: Balance
+}
+
+type inset = {
   inset?: boolean
 }
 
-export function GroupMemberView(props: GroupMember) {
+export function GroupMemberView(props: GroupMember & inset) {
   let fluid = false
   if (typeof props.inset !== "undefined") {
     fluid = props.inset

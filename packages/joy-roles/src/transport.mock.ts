@@ -201,7 +201,7 @@ export class Transport extends TransportBase implements ITransport {
             state: OpeningState.AcceptingApplications,
             starting_block: 2956498,
             starting_block_hash: "somehash",
-            created_time: yesterday(),
+            starting_time: yesterday(),
             review_end_block: 3956498,
             review_end_time: tomorrow(),
           },
@@ -222,7 +222,7 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
-  opening(id: string): Promise<WorkingGroupOpening> {
+  curationGroupOpening(id: number): Promise<WorkingGroupOpening> {
     return this.simulateApiResponse<WorkingGroupOpening>(
       {
         opening: new Opening({
@@ -296,7 +296,7 @@ export class Transport extends TransportBase implements ITransport {
           state: OpeningState.AcceptingApplications,
           starting_block: 2956498,
           starting_block_hash: "somehash",
-          created_time: yesterday(),
+          starting_time: yesterday(),
           review_end_block: 3956498,
           review_end_time: tomorrow(),
         },
@@ -377,7 +377,7 @@ export class Transport extends TransportBase implements ITransport {
               state: OpeningState.AcceptingApplications,
               starting_block: 2956498,
               starting_block_hash: "somehash",
-              created_time: yesterday(),
+              starting_time: yesterday(),
             },
             opening: new Opening({
               created: new u32(50000),

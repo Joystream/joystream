@@ -5,23 +5,30 @@ import * as Yup from 'yup';
 import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 
 export const MusicMoodValidationSchema = Yup.object().shape({
-  mood: Yup.string()
+  value: Yup.string()
     .required('This field is required')
     .max(100, 'Text is too long. Maximum length is 100 chars.')
 });
 
 export type MusicMoodFormValues = {
-  mood: string
+  value: string
 };
 
 export type MusicMoodType = {
-  mood: string
+  id: number
+  value: string
 };
 
 export class MusicMoodCodec extends EntityCodec<MusicMoodType> { }
 
+export function MusicMoodToFormValues(entity?: MusicMoodType): MusicMoodFormValues {
+  return {
+    value: entity && entity.value || ''
+  }
+}
+
 export type MusicMoodPropId =
-  'mood'
+  'value'
   ;
 
 export type MusicMoodGenericProp = {
@@ -40,9 +47,9 @@ type MusicMoodClassType = {
 };
 
 export const MusicMoodClass: MusicMoodClassType = {
-  mood: {
-    "id": "mood",
-    "name": "Mood",
+  value: {
+    "id": "value",
+    "name": "Value",
     "description": "Moods for music.",
     "required": true,
     "type": "Text",

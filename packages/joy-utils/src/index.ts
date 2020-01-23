@@ -138,6 +138,11 @@ export function getUrlParam(location: Location, paramName: string, deflt: string
 
 // Business logic middleware
 // --------------------------------------
+import { LinkedMapEntry } from './LinkedMapEntry'
+export { LinkedMapEntry }
+
+// Business logic middleware
+// --------------------------------------
 
 import { Controller } from './Controller';
 import { Loadable } from './Loadable';

@@ -1,8 +1,8 @@
 export type MusicAlbumEntity = {
   title: string,
   artist: string,
-  cover: string,
-  about: string,
+  thumbnail: string,
+  description: string,
 
   explicit: boolean,
   license: string,

@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
+    "test-watch": "jest --watch",
     "lint": "eslint -c ../../tsconfig.eslint.json --ext .js,.jsx,.ts,.tsx . && tsc --noEmit --pretty"
   },
   "author": "Joystream contributors",

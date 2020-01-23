@@ -13,7 +13,7 @@ export interface ITransport {
   curationGroup: () => Promise<WorkingGroupMembership>
   storageGroup: () => Promise<StorageAndDistributionMembership>
   currentOpportunities: () => Promise<Array<WorkingGroupOpening>>
-  opening: (id: string) => Promise<WorkingGroupOpening>
+  curationGroupOpening: (id: number) => Promise<WorkingGroupOpening>
   openingApplicationRanks: (openingId: string) => Promise<Balance[]>
   expectedBlockTime: () => Promise<number>
   transactionFee: () => Promise<Balance>
