@@ -1127,11 +1127,14 @@ decl_module! {
             // Check that account is forum member
             Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
+            // Keep next thread id
+            let next_thread_id = <NextThreadId<T>>::get();
+
             // Create a new thread
             Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels, &poll)?;
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadCreated(<NextThreadId<T>>::get() - One::one()));
+            Self::deposit_event(RawEvent::ThreadCreated(next_thread_id));
 
             Ok(())
         }
@@ -1312,11 +1315,14 @@ decl_module! {
             // Check that account is forum member
             Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
+            // Keep next post id
+            let next_post_id = <NextPostId<T>>::get();
+
             // Add new post
             Self::add_new_post(thread_id, &text, forum_user_id)?;
 
             // Generate event
-            Self::deposit_event(RawEvent::PostAdded(<NextPostId<T>>::get() - One::one()));
+            Self::deposit_event(RawEvent::PostAdded(next_post_id));
 
             Ok(())
         }
@@ -1387,8 +1393,11 @@ decl_module! {
                 p.text_change_history.push(expired_post_text);
             });
 
+            // Get test change history length
+            let text_change_history_len = <PostById<T>>::get(post_id).text_change_history.len() as u64;
+
             // Generate event
-            Self::deposit_event(RawEvent::PostTextUpdated(post_id, <PostById<T>>::get(post_id).text_change_history.len() as u64));
+            Self::deposit_event(RawEvent::PostTextUpdated(post_id, text_change_history_len));
 
             Ok(())
         }
