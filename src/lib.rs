@@ -521,10 +521,7 @@ pub struct Poll<Timestamp> {
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Post<ForumUserId, ModeratorId, ThreadId, PostId, BlockNumber, Moment> {
-    /// Post identifier
-    id: PostId,
-
+pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment> {
     /// Id of thread to which this post corresponds.
     thread_id: ThreadId,
 
@@ -554,10 +551,7 @@ pub struct Post<ForumUserId, ModeratorId, ThreadId, PostId, BlockNumber, Moment>
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Thread<ForumUserId, ModeratorId, CategoryId, ThreadId, BlockNumber, Moment> {
-    /// Thread identifier
-    id: ThreadId,
-
+pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment> {
     /// Title
     title: Vec<u8>,
 
@@ -598,8 +592,8 @@ pub struct Thread<ForumUserId, ModeratorId, CategoryId, ThreadId, BlockNumber, M
 }
 
 /// Implement total posts calculation for thread
-impl<ForumUserId, ModeratorId, CategoryId, ThreadId, BlockNumber, Moment>
-    Thread<ForumUserId, ModeratorId, CategoryId, ThreadId, BlockNumber, Moment>
+impl<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>
+    Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>
 {
     /// How many posts created both unmoderated and moderated
     fn num_posts_ever_created(&self) -> u32 {
@@ -710,13 +704,13 @@ decl_storage! {
         pub NextCategoryId get(next_category_id) config(): T::CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(thread_by_id) config(): map T::ThreadId => Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::ThreadId,T::BlockNumber, T::Moment>;
+        pub ThreadById get(thread_by_id) config(): map T::ThreadId => Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>;
 
         /// Thread identifier value to be used for next Thread in threadById.
         pub NextThreadId get(next_thread_id) config(): T::ThreadId;
 
         /// Map post identifier to corresponding post.
-        pub PostById get(post_by_id) config(): map T::PostId => Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::PostId, T::BlockNumber, T::Moment>;
+        pub PostById get(post_by_id) config(): map T::PostId =>  Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>;
 
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): T::PostId;
@@ -1134,10 +1128,10 @@ decl_module! {
             Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
             // Create a new thread
-            let thread = Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels, &poll)?;
+            Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels, &poll)?;
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadCreated(thread.id));
+            Self::deposit_event(RawEvent::ThreadCreated(<NextThreadId<T>>::get() - One::one()));
 
             Ok(())
         }
@@ -1319,10 +1313,10 @@ decl_module! {
             Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
             // Add new post
-            let post = Self::add_new_post(thread_id, &text, forum_user_id)?;
+            Self::add_new_post(thread_id, &text, forum_user_id)?;
 
             // Generate event
-            Self::deposit_event(RawEvent::PostAdded(post.id));
+            Self::deposit_event(RawEvent::PostAdded(<NextPostId<T>>::get() - One::one()));
 
             Ok(())
         }
@@ -1394,7 +1388,7 @@ decl_module! {
             });
 
             // Generate event
-            Self::deposit_event(RawEvent::PostTextUpdated(post.id, <PostById<T>>::get(post_id).text_change_history.len() as u64));
+            Self::deposit_event(RawEvent::PostTextUpdated(post_id, <PostById<T>>::get(post_id).text_change_history.len() as u64));
 
             Ok(())
         }
@@ -1436,7 +1430,7 @@ decl_module! {
             });
 
             // Generate event
-            Self::deposit_event(RawEvent::PostModerated(post.id));
+            Self::deposit_event(RawEvent::PostModerated(post_id));
 
             Ok(())
         }
@@ -1485,14 +1479,7 @@ impl<T: Trait> Module<T> {
         labels: &BTreeSet<T::LabelId>,
         poll: &Option<Poll<T::Moment>>,
     ) -> Result<
-        Thread<
-            T::ForumUserId,
-            T::ModeratorId,
-            T::CategoryId,
-            T::ThreadId,
-            T::BlockNumber,
-            T::Moment,
-        >,
+        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>,
         &'static str,
     > {
         // Get path from parent to root of category tree.
@@ -1534,7 +1521,6 @@ impl<T: Trait> Module<T> {
 
         // Build a new thread
         let new_thread = Thread {
-            id: new_thread_id,
             title: title.clone(),
             category_id: category_id,
             moderation: None,
@@ -1571,7 +1557,7 @@ impl<T: Trait> Module<T> {
         text: &Vec<u8>,
         author_id: T::ForumUserId,
     ) -> Result<
-        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::PostId, T::BlockNumber, T::Moment>,
+        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>,
         &'static str,
     > {
         // Validate post text
@@ -1592,7 +1578,6 @@ impl<T: Trait> Module<T> {
 
         // Build a post
         let new_post = Post {
-            id: new_post_id,
             thread_id: thread_id,
             current_text: text.clone(),
             moderation: None,
@@ -1864,7 +1849,7 @@ impl<T: Trait> Module<T> {
     fn ensure_post_is_mutable(
         post_id: &T::PostId,
     ) -> Result<
-        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::PostId, T::BlockNumber, T::Moment>,
+        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>,
         &'static str,
     > {
         // Make sure post exists
@@ -1882,7 +1867,7 @@ impl<T: Trait> Module<T> {
     fn ensure_post_exists(
         post_id: &T::PostId,
     ) -> Result<
-        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::PostId, T::BlockNumber, T::Moment>,
+        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>,
         &'static str,
     > {
         if <PostById<T>>::exists(post_id) {
@@ -1895,14 +1880,7 @@ impl<T: Trait> Module<T> {
     fn ensure_thread_is_mutable(
         thread_id: &T::ThreadId,
     ) -> Result<
-        Thread<
-            T::ForumUserId,
-            T::ModeratorId,
-            T::CategoryId,
-            T::ThreadId,
-            T::BlockNumber,
-            T::Moment,
-        >,
+        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>,
         &'static str,
     > {
         // Make sure thread exists
@@ -1920,14 +1898,7 @@ impl<T: Trait> Module<T> {
     fn ensure_thread_exists(
         thread_id: &T::ThreadId,
     ) -> Result<
-        Thread<
-            T::ForumUserId,
-            T::ModeratorId,
-            T::CategoryId,
-            T::ThreadId,
-            T::BlockNumber,
-            T::Moment,
-        >,
+        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>,
         &'static str,
     > {
         if <ThreadById<T>>::exists(thread_id) {
@@ -2107,14 +2078,7 @@ impl<T: Trait> Module<T> {
 
     /// Check the vote is valid
     fn ensure_vote_is_valid(
-        thread: &Thread<
-            T::ForumUserId,
-            T::ModeratorId,
-            T::CategoryId,
-            T::ThreadId,
-            T::BlockNumber,
-            T::Moment,
-        >,
+        thread: &Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>,
         index: u32,
     ) -> Result<(), &'static str> {
         // Poll not existed
