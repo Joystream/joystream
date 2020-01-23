@@ -342,7 +342,7 @@ const ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT: &str = "Thread moderation rat
 const ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG: &str = "Thread moderation rationale too long.";
 const ERROR_THREAD_ALREADY_MODERATED: &str = "Thread already moderated.";
 const ERROR_THREAD_MODERATED: &str = "Thread is moderated.";
-const ERROR_STICKY_THREAD_INDEX_INVALID: &str = "Sticky thread index is invalid.";
+const ERROR_THREAD_WITH_WRONG_CATEGORY_ID: &str = "thread and its category not match.";
 
 // Errors about post.
 const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
@@ -860,6 +860,9 @@ decl_event!(
 
         /// Max category depth updated
         MaxCategoryDepthUpdated(u8),
+
+        /// Sticky thread updated for category
+        CategoryStickyThreadUpdate(CategoryId, Vec<ThreadId>),
     }
 );
 
@@ -1121,7 +1124,7 @@ decl_module! {
 
         /// Create new thread in category with poll
         fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, title: Vec<u8>, text: Vec<u8>, labels: BTreeSet<T::LabelId>,
-            poll: Option<Poll<T::Moment>>, sticky_index: Option<u32>,
+            poll: Option<Poll<T::Moment>>,
         ) -> dispatch::Result {
 
             // Check that its a valid signature
@@ -1131,7 +1134,7 @@ decl_module! {
             Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
 
             // Create a new thread
-            let thread = Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels, &poll, &sticky_index)?;
+            let thread = Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels, &poll)?;
 
             // Generate event
             Self::deposit_event(RawEvent::ThreadCreated(thread.id));
@@ -1437,6 +1440,32 @@ decl_module! {
 
             Ok(())
         }
+
+        /// Set stickied threads for category
+        fn  set_stickied_threads(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, stickied_ids: Vec<T::ThreadId>) -> dispatch::Result {
+
+            // Check that its a valid signature
+            let who = ensure_signed(origin)?;
+
+            // Get moderator id.
+            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
+
+            // ensure the moderator can moderate the category
+            Self::ensure_moderate_category(&who, &moderator_id, category_id)?;
+
+            // Ensure all thread id valid and is under the category
+            for index in 0..stickied_ids.len() {
+                Self::ensure_thread_belongs_to_category(stickied_ids[index], category_id)?;
+            }
+
+            // Update category
+            <CategoryById<T>>::mutate(category_id, |category| category.sticky_thread_ids = stickied_ids.clone());
+
+            // Generate event
+            Self::deposit_event(RawEvent::CategoryStickyThreadUpdate(category_id, stickied_ids));
+
+            Ok(())
+        }
     }
 }
 
@@ -1455,7 +1484,6 @@ impl<T: Trait> Module<T> {
         text: &Vec<u8>,
         labels: &BTreeSet<T::LabelId>,
         poll: &Option<Poll<T::Moment>>,
-        sticky_index: &Option<u32>,
     ) -> Result<
         Thread<
             T::ForumUserId,
@@ -1495,14 +1523,6 @@ impl<T: Trait> Module<T> {
         // Get the category
         let category = <CategoryById<T>>::get(category_id);
 
-        // If it is a sticky thread
-        if let Some(unwrapped_sticky_index) = sticky_index {
-            // Check sticky thread index
-            if *unwrapped_sticky_index as usize > category.sticky_thread_ids.len() {
-                return Err(ERROR_STICKY_THREAD_INDEX_INVALID);
-            }
-        }
-
         // Create and add new thread
         let new_thread_id = <NextThreadId<T>>::get();
 
@@ -1512,7 +1532,7 @@ impl<T: Trait> Module<T> {
         // Add labels to thread
         <ThreadLabels<T>>::mutate(new_thread_id, |value| *value = labels.clone());
 
-        // Build a new thrad
+        // Build a new thread
         let new_thread = Thread {
             id: new_thread_id,
             title: title.clone(),
@@ -1532,28 +1552,11 @@ impl<T: Trait> Module<T> {
         // Store labels
         <ThreadLabels<T>>::mutate(new_thread_id, |value| *value = labels.clone());
 
-        // Update category for added thread
-        match sticky_index {
-            Some(index) => {
-                let mut new_sticky_thread_ids: Vec<T::ThreadId> =
-                    category.sticky_thread_ids.clone();
-
-                // Insert new thread id at index
-                new_sticky_thread_ids.insert(*index as usize, <NextThreadId<T>>::get());
-
-                // Update both unmoderated threads number and sticky thread list
-                <CategoryById<T>>::mutate(category_id, |c| {
-                    c.num_direct_unmoderated_threads += 1;
-                    c.sticky_thread_ids = new_sticky_thread_ids
-                });
-            }
-            None => {
-                // Update both unmoderated threads number
-                <CategoryById<T>>::mutate(category_id, |c| c.num_direct_unmoderated_threads += 1);
-            }
-        }
         // Update next thread id
         <NextThreadId<T>>::mutate(|n| *n += One::one());
+
+        // Update both unmoderated threads number
+        <CategoryById<T>>::mutate(category_id, |c| c.num_direct_unmoderated_threads += 1);
 
         Ok(new_thread)
     }
@@ -2131,6 +2134,28 @@ impl<T: Trait> Module<T> {
             } else {
                 Ok(())
             }
+        }
+    }
+
+    /// Check the thread and category exists and thread in the category
+    fn ensure_thread_belongs_to_category(
+        thread_id: T::ThreadId,
+        category_id: T::CategoryId,
+    ) -> Result<(), &'static str> {
+        // Ensure thread exists
+        Self::ensure_thread_exists(&thread_id)?;
+
+        // ensure category exists.
+        ensure!(
+            <CategoryById<T>>::exists(category_id),
+            ERROR_CATEGORY_DOES_NOT_EXIST
+        );
+
+        // Ensure thread belongs to the category
+        if <ThreadById<T>>::get(thread_id).category_id == category_id {
+            Ok(())
+        } else {
+            Err(ERROR_THREAD_WITH_WRONG_CATEGORY_ID)
         }
     }
 }

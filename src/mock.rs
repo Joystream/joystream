@@ -316,7 +316,6 @@ pub fn create_thread_mock(
     text: Vec<u8>,
     labels: &BTreeSet<<Runtime as Trait>::LabelId>,
     poll_data: Option<Poll<<Runtime as timestamp::Trait>::Moment>>,
-    sticky_index: Option<u32>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();
@@ -329,7 +328,6 @@ pub fn create_thread_mock(
             text.clone(),
             labels.clone(),
             poll_data.clone(),
-            sticky_index,
         ),
         result
     );
@@ -601,6 +599,34 @@ pub fn edit_post_text_mock(
         );
     }
     post_id
+}
+
+pub fn set_stickied_threads_mock(
+    origin: OriginType,
+    moderator_id: <Runtime as Trait>::ModeratorId,
+    category_id: <Runtime as Trait>::CategoryId,
+    stickied_ids: Vec<<Runtime as Trait>::ThreadId>,
+    result: Result<(), &'static str>,
+) -> <Runtime as Trait>::CategoryId {
+    assert_eq!(
+        TestForumModule::set_stickied_threads(
+            mock_origin(origin),
+            moderator_id,
+            category_id,
+            stickied_ids.clone(),
+        ),
+        result
+    );
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::CategoryStickyThreadUpdate(
+                category_id,
+                stickied_ids.clone(),
+            ))
+        );
+    };
+    category_id
 }
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
