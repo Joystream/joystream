@@ -1555,7 +1555,7 @@ impl<T: Trait> Module<T> {
         // Update next thread id
         <NextThreadId<T>>::mutate(|n| *n += One::one());
 
-        // Update both unmoderated threads number
+        // Update unmoderated thread count in corresponding category
         <CategoryById<T>>::mutate(category_id, |c| c.num_direct_unmoderated_threads += 1);
 
         Ok(new_thread)
