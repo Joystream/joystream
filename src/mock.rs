@@ -302,7 +302,7 @@ pub fn create_labels_mock() {
     assert_eq!(TestForumModule::add_labels(good_labels()), Ok(()));
     for index in 0..labels.len() {
         assert_eq!(
-            TestForumModule::category_thread_labels(last_index + index as u64),
+            TestForumModule::label_by_id(last_index + index as u64),
             labels[index]
         );
     }
@@ -415,7 +415,7 @@ pub fn add_labels_mock(labels: Vec<Vec<u8>>, result: Result<(), &'static str>) -
 
         for index in 0..label_list.len() {
             assert_eq!(
-                TestForumModule::category_thread_labels(last_index + index as u64),
+                TestForumModule::label_by_id(last_index + index as u64),
                 label_list[index]
             );
         }
@@ -816,7 +816,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
             max_min_diff: 140,
         },
 
-        category_thread_labels: vec![],
+        label_by_id: vec![],
         next_label_id: 1,
         category_labels: vec![],
         thread_labels: vec![],

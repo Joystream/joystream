@@ -764,7 +764,7 @@ decl_storage! {
         pub PostFooterConstraint get(post_footer_constraint) config(): InputValidationLengthConstraint;
 
         /// Labels could be applied to category and thread
-        pub LabelById get(category_thread_labels) config(): map T::LabelId => Label;
+        pub LabelById get(label_by_id) config(): map T::LabelId => Label;
 
         /// Next label identifier
         pub NextLabelId get(next_label_id) config(): T::LabelId;
