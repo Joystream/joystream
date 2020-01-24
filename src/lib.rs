@@ -764,7 +764,7 @@ decl_storage! {
         pub PostFooterConstraint get(post_footer_constraint) config(): InputValidationLengthConstraint;
 
         /// Labels could be applied to category and thread
-        pub LabelById get(category_thread_labes) config(): map T::LabelId => Label;
+        pub LabelById get(category_thread_labels) config(): map T::LabelId => Label;
 
         /// Next label identifier
         pub NextLabelId get(next_label_id) config(): T::LabelId;
@@ -1097,11 +1097,13 @@ decl_module! {
             // Get path from parent to root of category tree.
             let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
 
+            // Ensure category is mutable.
             Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
 
+            // Update by sudo or moderator
             if Self::ensure_is_forum_sudo(&who).is_ok() {
                 // Update labels to category
-                <CategoryLabels<T>>::insert(category_id, new_labels);
+                <CategoryLabels<T>>::mutate(category_id, |value| *value = new_labels);
             } else {
                 // is moderator
                 Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
@@ -1393,7 +1395,7 @@ decl_module! {
                 p.text_change_history.push(expired_post_text);
             });
 
-            // Get test change history length
+            // Get text change history length
             let text_change_history_len = <PostById<T>>::get(post_id).text_change_history.len() as u64;
 
             // Generate event
