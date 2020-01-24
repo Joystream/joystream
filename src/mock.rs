@@ -247,6 +247,14 @@ pub fn create_forum_user_mock(
         result
     );
     if result.is_ok() {
+        let forum_user = ForumUser {
+            role_account: account_id,
+            name: name.clone(),
+            self_introduction: self_introduction.clone(),
+            post_footer: forum_user_footer.clone(),
+        };
+        assert_eq!(TestForumModule::forum_user_by_id(forum_user_id), forum_user,);
+        assert_eq!(TestForumModule::next_forum_user_id(), forum_user_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ForumUserCreated(forum_user_id))
@@ -268,6 +276,13 @@ pub fn create_moderator_mock(
         result
     );
     if result.is_ok() {
+        let moderator = Moderator {
+            role_account: account_id,
+            name: name.clone(),
+            self_introduction: self_introduction.clone(),
+        };
+        assert_eq!(TestForumModule::moderator_by_id(moderator_id), moderator);
+        assert_eq!(TestForumModule::next_moderator_id(), moderator_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ModeratorCreated(moderator_id))
@@ -277,7 +292,24 @@ pub fn create_moderator_mock(
 }
 
 pub fn create_labels_mock() {
+    let labels: Vec<Label> = good_labels()
+        .iter()
+        .map(|label| Label {
+            text: label.clone(),
+        })
+        .collect();
+    let last_index = TestForumModule::next_label_id();
     assert_eq!(TestForumModule::add_labels(good_labels()), Ok(()));
+    for index in 0..labels.len() {
+        assert_eq!(
+            TestForumModule::label_by_id(last_index + index as u64),
+            labels[index]
+        );
+    }
+    assert_eq!(
+        TestForumModule::next_label_id(),
+        last_index as u64 + labels.len() as u64
+    );
 }
 
 pub fn create_category_mock(
@@ -300,6 +332,7 @@ pub fn create_category_mock(
         result
     );
     if result.is_ok() {
+        assert_eq!(TestForumModule::next_category_id(), category_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::CategoryCreated(category_id))
@@ -332,6 +365,7 @@ pub fn create_thread_mock(
         result
     );
     if result.is_ok() {
+        assert_eq!(TestForumModule::next_thread_id(), thread_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadCreated(thread_id))
@@ -358,6 +392,7 @@ pub fn create_post_mock(
         result
     );
     if result.is_ok() {
+        assert_eq!(TestForumModule::next_post_id(), post_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::PostAdded(post_id))
@@ -367,7 +402,28 @@ pub fn create_post_mock(
 }
 
 pub fn add_labels_mock(labels: Vec<Vec<u8>>, result: Result<(), &'static str>) -> usize {
+    let last_index = TestForumModule::next_label_id();
+
     assert_eq!(TestForumModule::add_labels(labels.clone()), result);
+    if result.is_ok() {
+        let label_list: Vec<Label> = labels
+            .iter()
+            .map(|label| Label {
+                text: label.clone(),
+            })
+            .collect();
+
+        for index in 0..label_list.len() {
+            assert_eq!(
+                TestForumModule::label_by_id(last_index + index as u64),
+                label_list[index]
+            );
+        }
+        assert_eq!(
+            TestForumModule::next_label_id(),
+            last_index as u64 + label_list.len() as u64
+        );
+    };
     labels.len()
 }
 
@@ -384,6 +440,7 @@ pub fn set_forum_sudo_mock(
     );
 
     if result.is_ok() {
+        assert_eq!(TestForumModule::forum_sudo(), new_forum_sudo);
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ForumSudoSet(old_forum_sudo, new_forum_sudo,))
@@ -401,6 +458,7 @@ pub fn set_max_category_depth_mock(
         result
     );
     if result.is_ok() {
+        assert_eq!(TestForumModule::max_category_depth(), max_category_depth);
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::MaxCategoryDepthUpdated(max_category_depth,))
@@ -426,6 +484,12 @@ pub fn set_moderator_category_mock(
         ),
         result
     );
+    if result.is_ok() {
+        assert_eq!(
+            TestForumModule::category_by_moderator(category_id, moderator_id),
+            new_value
+        );
+    };
     category_id
 }
 
@@ -436,11 +500,20 @@ pub fn vote_on_poll_mock(
     index: u32,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
+    let thread = TestForumModule::thread_by_id(thread_id);
     assert_eq!(
         TestForumModule::vote_on_poll(mock_origin(origin), forum_user_id, thread_id, index),
         result
     );
     if result.is_ok() {
+        assert_eq!(
+            TestForumModule::thread_by_id(thread_id)
+                .poll
+                .unwrap()
+                .poll_alternatives[index as usize]
+                .vote_count,
+            thread.poll.unwrap().poll_alternatives[index as usize].vote_count + 1
+        );
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::VoteOnPoll(thread_id, index,))
@@ -491,6 +564,12 @@ pub fn moderate_thread_mock(
     );
     if result.is_ok() {
         assert_eq!(
+            TestForumModule::thread_by_id(thread_id)
+                .moderation
+                .is_some(),
+            true
+        );
+        assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id,))
         );
@@ -510,6 +589,10 @@ pub fn moderate_post_mock(
         result
     );
     if result.is_ok() {
+        assert_eq!(
+            TestForumModule::post_by_id(post_id).moderation.is_some(),
+            true
+        );
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::PostModerated(post_id,))
@@ -531,10 +614,16 @@ pub fn update_category_labels_mock(
             mock_origin(origin),
             moderator_id,
             category_id,
-            labels,
+            labels.clone(),
         ),
         result
     );
+    if result.is_ok() {
+        assert_eq!(
+            TestForumModule::category_labels(category_id),
+            labels.clone()
+        );
+    }
     category_id
 }
 
@@ -550,10 +639,13 @@ pub fn update_thread_labels_by_author_mock(
             mock_origin(origin),
             forum_user_id,
             thread_id,
-            labels,
+            labels.clone(),
         ),
         result
     );
+    if result.is_ok() {
+        assert_eq!(TestForumModule::thread_labels(thread_id), labels.clone());
+    };
     thread_id
 }
 
@@ -569,10 +661,13 @@ pub fn update_thread_labels_by_moderator_mock(
             mock_origin(origin),
             moderator_id,
             thread_id,
-            labels,
+            labels.clone(),
         ),
         result
     );
+    if result.is_ok() {
+        assert_eq!(TestForumModule::thread_labels(thread_id), labels.clone());
+    };
     thread_id
 }
 
@@ -583,11 +678,27 @@ pub fn edit_post_text_mock(
     new_text: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::PostId {
+    let post = TestForumModule::post_by_id(post_id);
     assert_eq!(
-        TestForumModule::edit_post_text(mock_origin(origin), forum_user_id, post_id, new_text,),
+        TestForumModule::edit_post_text(
+            mock_origin(origin),
+            forum_user_id,
+            post_id,
+            new_text.clone(),
+        ),
         result
     );
     if result.is_ok() {
+        assert_eq!(
+            TestForumModule::post_by_id(post_id).current_text,
+            new_text.clone()
+        );
+        assert_eq!(
+            TestForumModule::post_by_id(post_id)
+                .text_change_history
+                .len(),
+            post.text_change_history.len() + 1
+        );
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::PostTextUpdated(
@@ -618,6 +729,10 @@ pub fn set_stickied_threads_mock(
         result
     );
     if result.is_ok() {
+        assert_eq!(
+            TestForumModule::category_by_id(category_id).sticky_thread_ids,
+            stickied_ids.clone()
+        );
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::CategoryStickyThreadUpdate(
@@ -701,7 +816,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
             max_min_diff: 140,
         },
 
-        category_thread_labes: vec![],
+        label_by_id: vec![],
         next_label_id: 1,
         category_labels: vec![],
         thread_labels: vec![],
