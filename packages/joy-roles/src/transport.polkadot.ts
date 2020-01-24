@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import ApiPromise from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces'
 import { GenericAccountId, Option, u32, u128, Vec } from '@polkadot/types'
+import { Moment } from '@polkadot/types/interfaces/runtime';
 import { Codec } from '@polkadot/types/types'
 
 import { LinkedMapEntry } from '@polkadot/joy-utils/index'
@@ -21,7 +22,7 @@ import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 
 import { keyPairDetails } from './flows/apply'
 
-import { OpeningState } from "./classifiers"
+import { classifyOpeningStage } from "./classifiers"
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
 
 export class Transport extends TransportBase implements ITransport {
@@ -129,15 +130,15 @@ export class Transport extends TransportBase implements ITransport {
         meta: {
           id: id.toString(),
         },
-	//	stage: await classifyOpeningStage(this, opening),
+		stage: await classifyOpeningStage(this, opening),
 
        //// MOCK data //
-		  stage: {
+	/*	  stage: {
         state: OpeningState.AcceptingApplications,
         starting_block: 100,
         starting_block_hash: "somehash",
         starting_time: new Date(),
-      },
+      },*/
           applications: {
           numberOfApplications: 0,
           maxNumberOfApplications: 0,
@@ -164,6 +165,19 @@ export class Transport extends TransportBase implements ITransport {
       // @ts-ignore
       this.api.consts.babe.expectedBlockTime.toNumber() / 1000
     )
+  }
+  
+  async blockHash(height: number): Promise<string> {
+    const blockHash = await this.api.query.system.blockHash(height)
+    return blockHash.toString()
+  }
+
+  async blockTimestamp(height: number): Promise<Date> {
+    const blockTime = await this.api.query.timestamp.now.at(
+      await this.blockHash(height)
+    ) as Moment
+
+    return new Date(blockTime.toNumber())
   }
 
   transactionFee(): Promise<Balance> {

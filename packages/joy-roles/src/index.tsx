@@ -51,10 +51,10 @@ export const App: React.FC<Props> = (props: Props) => {
 
   const { api } = useContext(ApiContext);
   const transport = new Transport(api)
-
   const mockTransport = new MockTransport()
+
   const wgCtrl = new WorkingGroupsController(mockTransport)
-  const oppCtrl = new OpportunityController(mockTransport)
+  const oppCtrl = new OpportunityController(transport)
   const oppsCtrl = new OpportunitiesController(mockTransport)
   const applyCtrl = new ApplyController(mockTransport)
   const myRolesCtrl = new MyRolesController(mockTransport)

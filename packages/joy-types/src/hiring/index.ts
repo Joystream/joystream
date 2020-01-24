@@ -103,17 +103,29 @@ export class WaitingToBeingOpeningStageVariant extends JoyStruct<WaitingToBeingO
       begins_at_block: u32,
     }, value);
   }
+
+  get begins_at_block(): BlockNumber {
+    return this.getField<BlockNumber>('begins_at_block')
+  }
 };
+
+export enum OpeningDeactivationCauseKeys {
+  CancelledBeforeActivation = 'CancelledBeforeActivation',
+  CancelledAcceptingApplications = 'CancelledAcceptingApplications',
+  CancelledInReviewPeriod = 'CancelledInReviewPeriod',
+  ReviewPeriodExpired = 'ReviewPeriodExpired',
+  Filled = 'Filled',
+}
 
 export class OpeningDeactivationCause extends Enum {
   constructor(value?: any, index?: number) {
     super(
       [
-        'CancelledBeforeActivation',
-        'CancelledAcceptingApplications',
-        'CancelledInReviewPeriod',
-        'ReviewPeriodExpired',
-        'Filled',
+        OpeningDeactivationCauseKeys.CancelledBeforeActivation,
+        OpeningDeactivationCauseKeys.CancelledAcceptingApplications,
+        OpeningDeactivationCauseKeys.CancelledInReviewPeriod,
+        OpeningDeactivationCauseKeys.ReviewPeriodExpired,
+        OpeningDeactivationCauseKeys.Filled,
       ],
       value, index);
   }
@@ -169,6 +181,22 @@ export class Deactivated extends JoyStruct<IDeactivated> {
       started_accepting_applicants_at_block: u32,
       started_review_period_at_block: Option.with(u32),
     }, value);
+  }
+
+  get cause(): OpeningDeactivationCause {
+    return this.getField<OpeningDeactivationCause>('cause')
+  }
+
+  get deactivated_at_block(): BlockNumber {
+    return this.getField<BlockNumber>('deactivated_at_block')
+  }
+
+  get started_accepting_applicants_at_block(): BlockNumber {
+    return this.getField<BlockNumber>('started_accepting_applicants_at_block')
+  }
+
+  get started_review_period_at_block(): BlockNumber {
+    return this.getField<BlockNumber>('started_review_period_at_block')
   }
 };
 

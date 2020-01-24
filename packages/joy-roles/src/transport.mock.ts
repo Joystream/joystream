@@ -330,6 +330,14 @@ export class Transport extends TransportBase implements ITransport {
     return this.promise<number>(6)
   }
 
+  blockHash(height: number): Promise<string> {
+    return this.promise<string>('somehash')
+  }
+
+  blockTimestamp(height: number): Promise<Date> {
+    return this.promise<Date>(new Date())
+  }
+
   transactionFee(): Promise<Balance> {
     return this.simulateApiResponse<Balance>(new u128(5))
   }

@@ -16,6 +16,8 @@ export interface ITransport {
   curationGroupOpening: (id: number) => Promise<WorkingGroupOpening>
   openingApplicationRanks: (openingId: string) => Promise<Balance[]>
   expectedBlockTime: () => Promise<number>
+  blockHash(height: number): Promise<string>
+  blockTimestamp(height: number): Promise<Date>
   transactionFee: () => Promise<Balance>
   accounts: () => Subscribable<keyPairDetails[]>
   openingApplications: () => Subscribable<OpeningApplication[]>

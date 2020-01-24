@@ -1,11 +1,12 @@
 import moment from 'moment';
 
-import { 
-	AcceptingApplications,
-  ReviewPeriod,
-  ActiveOpeningStageVariant, ActiveOpeningStageKeys, 
+import {
+  AcceptingApplications, ReviewPeriod,
+  WaitingToBeingOpeningStageVariant,
+  ActiveOpeningStageVariant, ActiveOpeningStageKeys,
   Opening,
-  OpeningStageKeys, 
+  OpeningStageKeys,
+  Deactivated, OpeningDeactivationCauseKeys,
 } from "@joystream/types/hiring"
 
 export enum OpeningState {
@@ -33,12 +34,19 @@ export interface IBlockQueryer {
 
 export async function classifyOpeningStage(queryer: IBlockQueryer, opening: Opening): Promise<OpeningStageClassification> {
   switch (opening.stage.type) {
+    case OpeningStageKeys.WaitingToBegin:
+      return classifyWaitingToBeginStage(
+        opening,
+        queryer,
+        opening.stage.value as WaitingToBeingOpeningStageVariant,
+      )
+
     case OpeningStageKeys.Active:
       return classifyActiveOpeningStage(
         opening,
         queryer,
         opening.stage.value as ActiveOpeningStageVariant,
-    )
+      )
   }
 
   throw new Error('Unknown stage type: ' + opening.stage.type)
@@ -46,7 +54,7 @@ export async function classifyOpeningStage(queryer: IBlockQueryer, opening: Open
 
 async function classifyActiveOpeningStage(
   opening: Opening,
-  queryer: IBlockQueryer, 
+  queryer: IBlockQueryer,
   stage: ActiveOpeningStageVariant,
 ): Promise<OpeningStageClassification> {
 
@@ -55,7 +63,7 @@ async function classifyActiveOpeningStage(
       return classifyActiveOpeningStageAcceptingApplications(
         queryer,
         stage.stage.value as AcceptingApplications,
-    )
+      )
 
     case ActiveOpeningStageKeys.ReviewPeriod:
       return classifyActiveOpeningStageReviewPeriod(
@@ -63,13 +71,33 @@ async function classifyActiveOpeningStage(
         queryer,
         stage.stage.value as ReviewPeriod,
       )
+
+    case ActiveOpeningStageKeys.Deactivated:
+      return classifyActiveOpeningStageDeactivated(
+        queryer,
+        stage.stage.value as Deactivated,
+      )
   }
 
   throw new Error('Unknown active opening stage: ' + stage.stage.type)
 }
 
+async function classifyWaitingToBeginStage(
+  opening: Opening,
+  queryer: IBlockQueryer,
+  stage: WaitingToBeingOpeningStageVariant,
+): Promise<OpeningStageClassification> {
+  const blockNumber = opening.created.toNumber()
+  return {
+    state: OpeningState.WaitingToBegin,
+    starting_block: blockNumber,
+    starting_block_hash: await queryer.blockHash(blockNumber),
+    starting_time: await queryer.blockTimestamp(blockNumber),
+  }
+}
+
 async function classifyActiveOpeningStageAcceptingApplications(
-  queryer: IBlockQueryer, 
+  queryer: IBlockQueryer,
   stage: AcceptingApplications,
 ): Promise<OpeningStageClassification> {
   const blockNumber = stage.started_accepting_applicants_at_block.toNumber()
@@ -83,7 +111,7 @@ async function classifyActiveOpeningStageAcceptingApplications(
 
 async function classifyActiveOpeningStageReviewPeriod(
   opening: Opening,
-  queryer: IBlockQueryer, 
+  queryer: IBlockQueryer,
   stage: ReviewPeriod,
 ): Promise<OpeningStageClassification> {
   const blockNumber = stage.started_review_period_at_block.toNumber()
@@ -92,7 +120,7 @@ async function classifyActiveOpeningStageReviewPeriod(
     queryer.blockTimestamp(blockNumber),
     queryer.expectedBlockTime(),
   ])
-  const endDate = moment(startDate).add(maxReviewLengthInBlocks*blockTime, 's')
+  const endDate = moment(startDate).add(maxReviewLengthInBlocks * blockTime, 's')
 
   return {
     state: OpeningState.InReview,
@@ -101,6 +129,42 @@ async function classifyActiveOpeningStageReviewPeriod(
     starting_time: startDate,
     review_end_time: endDate.toDate(),
     review_end_block: blockNumber + maxReviewLengthInBlocks,
+  }
+}
+
+async function classifyActiveOpeningStageDeactivated(
+  queryer: IBlockQueryer,
+  stage: Deactivated,
+): Promise<OpeningStageClassification> {
+  const blockNumber = stage.deactivated_at_block.toNumber()
+  const [startDate] = await Promise.all([
+    queryer.blockTimestamp(blockNumber),
+  ])
+
+  let state: OpeningState
+
+  switch (stage.cause.type) {
+    case OpeningDeactivationCauseKeys.CancelledBeforeActivation:
+    case OpeningDeactivationCauseKeys.CancelledAcceptingApplications:
+    case OpeningDeactivationCauseKeys.CancelledInReviewPeriod:
+    case OpeningDeactivationCauseKeys.ReviewPeriodExpired:
+      state = OpeningState.Cancelled
+      break
+
+    case OpeningDeactivationCauseKeys.Filled:
+      state = OpeningState.Complete
+      break
+
+    default:
+      state = OpeningState.Complete
+      break
+  }
+
+  return {
+    state: state,
+    starting_block: blockNumber,
+    starting_block_hash: await queryer.blockHash(blockNumber),
+    starting_time: startDate,
   }
 }
 

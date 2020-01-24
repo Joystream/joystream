@@ -39,6 +39,22 @@ type OpeningStage = OpeningMetadataProps & {
   stage: OpeningStageClassification
 }
 
+function classificationDescription(state: OpeningState): string {
+  switch (state) {
+    case OpeningState.AcceptingApplications:
+      return "Started"
+
+    case OpeningState.InReview:
+      return "Review started"
+
+    case OpeningState.Complete:
+    case OpeningState.Cancelled:
+      return "Ended"
+  }
+
+  return "Created"
+}
+
 export function OpeningHeader(props: OpeningStage) {
   return (
     <Grid columns="equal">
@@ -50,10 +66,10 @@ export function OpeningHeader(props: OpeningStage) {
       </Grid.Column>
       <Grid.Column className="meta" textAlign="right">
         <Label>
-          <Icon name="history" /> Created&nbsp;
-                        <Moment unix format="DD/MM/YYYY, HH:MM:SS">{props.stage.starting_time.getTime() / 1000}</Moment>
+          <Icon name="history" /> {classificationDescription(props.stage.state)}&nbsp;
+            <Moment unix format="DD/MM/YYYY, hh:mm A">{props.stage.starting_time.getTime() / 1000}</Moment>
           <Label.Detail>
-            <Link to={`#/explorer/query/${props.stage.starting_block_hash}`}>
+            <Link to={`/explorer/query/${props.stage.starting_block_hash}`}>
               <Icon name="cube" />
               <NumberFormat value={props.stage.starting_block}
                 displayType="text"
