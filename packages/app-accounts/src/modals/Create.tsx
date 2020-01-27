@@ -8,6 +8,7 @@ import { CreateResult } from '@polkadot/ui-keyring/types';
 import { KeypairType } from '@polkadot/util-crypto/types';
 import { ModalProps } from '../types';
 
+import { MyAccountContextProps, MyAccountContext } from '@polkadot/joy-utils/MyAccountContext';
 import FileSaver from 'file-saver';
 import React, { useContext, useState } from 'react';
 import styled from 'styled-components';
@@ -125,11 +126,11 @@ function updateAddress (seed: string, derivePath: string, seedType: SeedType, pa
 export function downloadAccount ({ json, pair }: CreateResult): void {
   const blob = new Blob([JSON.stringify(json)], { type: 'application/json; charset=utf-8' });
 
-  FileSaver.saveAs(blob, `${pair.address}.json`);
   InputAddress.setLastValue('account', pair.address);
+  FileSaver.saveAs(blob, `${pair.address}.json`);
 }
 
-function createAccount (suri: string, pairType: KeypairType, name: string, password: string, success: string): ActionStatus {
+function createAccount (context: MyAccountContextProps, suri: string, pairType: KeypairType, name: string, password: string, success: string): ActionStatus {
   // we will fill in all the details below
   const status = { action: 'create' } as ActionStatus;
 
@@ -142,6 +143,7 @@ function createAccount (suri: string, pairType: KeypairType, name: string, passw
     status.message = success;
 
     downloadAccount(result);
+    context.set(address);
   } catch (error) {
     status.status = 'error';
     status.message = error.message;
@@ -173,13 +175,14 @@ function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type:
   };
   const _onChangeName = (name: string): void => setName({ isNameValid: !!name.trim(), name });
   const _toggleConfirmation = (): void => setIsConfirmationOpen(!isConfirmationOpen);
+  const context = useContext<MyAccountContextProps>(MyAccountContext);
 
   const _onCommit = (): void => {
     if (!isValid) {
       return;
     }
 
-    const status = createAccount(`${seed}${derivePath}`, pairType, name, password, t('created account'));
+    const status = createAccount(context, `${seed}${derivePath}`, pairType, name, password, t('created account'));
 
     _toggleConfirmation();
     onStatusChange(status);
