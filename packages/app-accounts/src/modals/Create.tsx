@@ -8,7 +8,7 @@ import { CreateResult } from '@polkadot/ui-keyring/types';
 import { KeypairType } from '@polkadot/util-crypto/types';
 import { ModalProps } from '../types';
 
-import { MyAccountContextProps, MyAccountContext } from '@polkadot/joy-utils/MyAccountContext';
+import { MyAccountContextProps, useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import FileSaver from 'file-saver';
 import React, { useContext, useState } from 'react';
 import styled from 'styled-components';
@@ -130,7 +130,7 @@ export function downloadAccount ({ json, pair }: CreateResult): void {
   InputAddress.setLastValue('account', pair.address);
 }
 
-function createAccount (context: MyAccountContextProps, suri: string, pairType: KeypairType, name: string, password: string, success: string): ActionStatus {
+function createAccount (suri: string, pairType: KeypairType, name: string, password: string, success: string): ActionStatus {
   // we will fill in all the details below
   const status = { action: 'create' } as ActionStatus;
 
@@ -143,7 +143,6 @@ function createAccount (context: MyAccountContextProps, suri: string, pairType: 
     status.message = success;
 
     downloadAccount(result);
-    context.set(address);
   } catch (error) {
     status.status = 'error';
     status.message = error.message;
@@ -175,14 +174,15 @@ function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type:
   };
   const _onChangeName = (name: string): void => setName({ isNameValid: !!name.trim(), name });
   const _toggleConfirmation = (): void => setIsConfirmationOpen(!isConfirmationOpen);
-  const context = useContext<MyAccountContextProps>(MyAccountContext);
 
   const _onCommit = (): void => {
     if (!isValid) {
       return;
     }
 
-    const status = createAccount(context, `${seed}${derivePath}`, pairType, name, password, t('created account'));
+    const status = createAccount(`${seed}${derivePath}`, pairType, name, password, t('created account'));
+    const context = useMyAccount()
+    context.set(status.account as string)
 
     _toggleConfirmation();
     onStatusChange(status);
