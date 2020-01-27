@@ -491,8 +491,8 @@ impl Default for PostReaction {
 }
 
 /// Represents all poll alternatives and vote count for each one
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct PollAlternative {
     /// Alternative description
     alternative_text: Vec<u8>,
@@ -502,8 +502,8 @@ pub struct PollAlternative {
 }
 
 /// Represents a poll
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Poll<Timestamp> {
     /// description text for poll
     poll_description: Vec<u8>,
