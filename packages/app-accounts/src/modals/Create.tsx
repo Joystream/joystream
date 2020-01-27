@@ -126,8 +126,8 @@ function updateAddress (seed: string, derivePath: string, seedType: SeedType, pa
 export function downloadAccount ({ json, pair }: CreateResult): void {
   const blob = new Blob([JSON.stringify(json)], { type: 'application/json; charset=utf-8' });
 
-  InputAddress.setLastValue('account', pair.address);
   FileSaver.saveAs(blob, `${pair.address}.json`);
+  InputAddress.setLastValue('account', pair.address);
 }
 
 function createAccount (context: MyAccountContextProps, suri: string, pairType: KeypairType, name: string, password: string, success: string): ActionStatus {
