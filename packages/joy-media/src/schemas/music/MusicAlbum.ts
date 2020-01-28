@@ -3,6 +3,7 @@
 
 import * as Yup from 'yup';
 import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
+import moment from 'moment';
 import { MusicGenreType } from './MusicGenre';
 import { MusicMoodType } from './MusicMood';
 import { MusicThemeType } from './MusicTheme';
@@ -25,6 +26,11 @@ export const MusicAlbumValidationSchema = Yup.object().shape({
   description: Yup.string()
     .required('This field is required')
     .max(4000, 'Text is too long. Maximum length is 4000 chars.'),
+  firstReleased: Yup.string()
+    .required('This field is required')
+    .test('valid-date', 'Invalid date. Valid formats for date: yyyy-mm-dd or yyyy-mm or yyyy.', (val?: any) => {
+      return moment(val as any).isValid();
+    }),
   lyrics: Yup.string()
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
   composerOrSongwriter: Yup.string()

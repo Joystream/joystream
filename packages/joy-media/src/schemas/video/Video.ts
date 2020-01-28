@@ -3,6 +3,7 @@
 
 import * as Yup from 'yup';
 import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
+import moment from 'moment';
 import { LanguageType } from '../general/Language';
 import { VideoCategoryType } from './VideoCategory';
 import { MediaObjectType } from '../general/MediaObject';
@@ -20,6 +21,11 @@ export const VideoValidationSchema = Yup.object().shape({
   description: Yup.string()
     .required('This field is required')
     .max(4000, 'Text is too long. Maximum length is 4000 chars.'),
+  firstReleased: Yup.string()
+    .required('This field is required')
+    .test('valid-date', 'Invalid date. Valid formats for date: yyyy-mm-dd or yyyy-mm or yyyy.', (val?: any) => {
+      return moment(val as any).isValid();
+    }),
   attribution: Yup.string()
     .max(255, 'Text is too long. Maximum length is 255 chars.')
 });
