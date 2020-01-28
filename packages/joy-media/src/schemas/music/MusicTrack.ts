@@ -44,7 +44,7 @@ export type MusicTrackFormValues = {
   thumbnail: string
   description: string
   language: number
-  firstReleased: number
+  firstReleased: string
   genre: number
   mood: number
   theme: number
@@ -90,7 +90,7 @@ export function MusicTrackToFormValues(entity?: MusicTrackType): MusicTrackFormV
     thumbnail: entity && entity.thumbnail || '',
     description: entity && entity.description || '',
     language: entity && entity.language?.id || 0,
-    firstReleased: entity && entity.firstReleased || 0,
+    firstReleased: entity && moment(entity.firstReleased * 1000).format('YYYY-MM-DD') || '',
     genre: entity && entity.genre?.id || 0,
     mood: entity && entity.mood?.id || 0,
     theme: entity && entity.theme?.id || 0,

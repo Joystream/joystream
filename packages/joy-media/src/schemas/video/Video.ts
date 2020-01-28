@@ -35,7 +35,7 @@ export type VideoFormValues = {
   thumbnail: string
   description: string
   language: number
-  firstReleased: number
+  firstReleased: string
   category: number
   link: string[]
   object: number
@@ -71,7 +71,7 @@ export function VideoToFormValues(entity?: VideoType): VideoFormValues {
     thumbnail: entity && entity.thumbnail || '',
     description: entity && entity.description || '',
     language: entity && entity.language.id || 0,
-    firstReleased: entity && entity.firstReleased || 0,
+    firstReleased: entity && moment(entity.firstReleased * 1000).format('YYYY-MM-DD') || '',
     category: entity && entity.category?.id || 0,
     link: entity && entity.link || [],
     object: entity && entity.object?.id || 0,
