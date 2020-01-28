@@ -62,19 +62,23 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   const basicInfoTab = () => <Tab.Pane as='div'>
     <MediaText field={Fields.title} {...props} />
+    <MediaText field={Fields.artist} {...props} />
     <MediaText field={Fields.thumbnail} {...props} />
-    <MediaText field={Fields.description} textarea {...props} />
-    <MediaText field={Fields.firstReleased} {...props} placeholder={datePlaceholder} />
+    <MediaText field={Fields.firstReleased} placeholder={datePlaceholder} {...props} />
+    <MediaText field={Fields.explicit} {...props} />
+    <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
     <MediaDropdown field={Fields.publicationStatus} options={opts.publicationStatusOptions} {...props} />
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
-    <MediaText field={Fields.artist} {...props} />
+    <MediaText field={Fields.description} textarea {...props} />
     <MediaText field={Fields.composerOrSongwriter} {...props} />
     <MediaDropdown field={Fields.genre} options={opts.musicGenreOptions} {...props} />
     <MediaDropdown field={Fields.mood} options={opts.musicMoodOptions} {...props} />
     <MediaDropdown field={Fields.theme} options={opts.musicThemeOptions} {...props} />
-    <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
+    <MediaDropdown field={Fields.language} options={opts.languageOptions} {...props} />
+    <MediaText field={Fields.lyrics} {...props} />
+    <MediaText field={Fields.attribution} {...props} />
   </Tab.Pane>
 
   const tabs = <FormTabs errors={errors} panes={[
@@ -83,9 +87,11 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       render: basicInfoTab,
       fields: [
         Fields.title,
+        Fields.artist,
         Fields.thumbnail,
-        Fields.description,
         Fields.firstReleased,
+        Fields.explicit,
+        Fields.license,
         Fields.publicationStatus,
       ]
     },
@@ -93,12 +99,14 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       id: 'Additional',
       render: additionalTab,
       fields: [
-        Fields.artist,
+        Fields.description,
         Fields.composerOrSongwriter,
         Fields.genre,
         Fields.mood,
         Fields.theme,
-        Fields.license,
+        Fields.language,
+        Fields.lyrics,
+        Fields.attribution,
       ]
     }
   ]} />;

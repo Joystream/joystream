@@ -63,14 +63,17 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaText field={Fields.title} {...props} />
     <MediaText field={Fields.thumbnail} {...props} />
     <MediaText field={Fields.description} textarea {...props} />
-    <MediaText field={Fields.firstReleased} {...props} placeholder={datePlaceholder} />
+    <MediaDropdown field={Fields.language} options={opts.languageOptions} {...props} />
+    <MediaText field={Fields.firstReleased} placeholder={datePlaceholder} {...props} />
+    <MediaText field={Fields.explicit} {...props} />
+    <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
     <MediaDropdown field={Fields.publicationStatus} options={opts.publicationStatusOptions} {...props} />
   </Tab.Pane>
 
   const additionalTab = () => <Tab.Pane as='div'>
     <MediaDropdown field={Fields.category} options={opts.videoCategoryOptions} {...props} />
-    <MediaDropdown field={Fields.language} options={opts.languageOptions} {...props} />
-    <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
+    <MediaText field={Fields.link} {...props} />
+    <MediaText field={Fields.attribution} {...props} />
   </Tab.Pane>
 
   const tabs = <FormTabs errors={errors} panes={[
@@ -81,7 +84,10 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
         Fields.title,
         Fields.thumbnail,
         Fields.description,
+        Fields.language,
         Fields.firstReleased,
+        Fields.explicit,
+        Fields.license,
         Fields.publicationStatus,
       ]
     },
@@ -90,8 +96,8 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       render: additionalTab,
       fields: [
         Fields.category,
-        Fields.language,
-        Fields.license,
+        Fields.link,
+        Fields.attribution,
       ]
     }
   ]} />;
