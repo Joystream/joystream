@@ -8,7 +8,7 @@ import { CreateResult } from '@polkadot/ui-keyring/types';
 import { KeypairType } from '@polkadot/util-crypto/types';
 import { ModalProps } from '../types';
 
-import { MyAccountContextProps, useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import FileSaver from 'file-saver';
 import React, { useContext, useState } from 'react';
 import styled from 'styled-components';
@@ -174,6 +174,7 @@ function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type:
   };
   const _onChangeName = (name: string): void => setName({ isNameValid: !!name.trim(), name });
   const _toggleConfirmation = (): void => setIsConfirmationOpen(!isConfirmationOpen);
+  const context = useMyAccount()
 
   const _onCommit = (): void => {
     if (!isValid) {
@@ -181,7 +182,6 @@ function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type:
     }
 
     const status = createAccount(`${seed}${derivePath}`, pairType, name, password, t('created account'));
-    const context = useMyAccount()
     context.set(status.account as string)
 
     _toggleConfirmation();

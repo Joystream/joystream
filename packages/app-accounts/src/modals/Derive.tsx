@@ -13,6 +13,8 @@ import { useDebounce } from '@polkadot/react-components/hooks';
 import keyring from '@polkadot/ui-keyring';
 import { keyExtractPath } from '@polkadot/util-crypto';
 
+import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+
 import translate from '../translate';
 import { downloadAccount } from './Create';
 import CreateConfirmation from './CreateConfirmation';
@@ -79,6 +81,7 @@ function Derive ({ className, from, onClose, t }: Props): React.ReactElement {
   const [suri, setSuri] = useState('');
   const debouncedSuri = useDebounce(suri);
   const isValid = !!address && !deriveError && isNameValid && isPassValid;
+  const context = useMyAccount()
 
   useEffect((): void => {
     setIsLocked(source.isLocked);
@@ -118,6 +121,7 @@ function Derive ({ className, from, onClose, t }: Props): React.ReactElement {
     }
 
     const status = createAccount(source, suri, name, password, t('created account'));
+    context.set(status.account as string)
 
     _toggleConfirmation();
     queueAction(status);
