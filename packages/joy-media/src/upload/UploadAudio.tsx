@@ -11,6 +11,7 @@ import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { FormTabs } from '../common/FormTabs';
+import { datePlaceholder } from '../common';
 
 export type OuterProps = {
   history?: History,
@@ -63,6 +64,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaText field={Fields.title} {...props} />
     <MediaText field={Fields.thumbnail} {...props} />
     <MediaText field={Fields.description} textarea {...props} />
+    <MediaText field={Fields.firstReleased} {...props} placeholder={datePlaceholder} />
     <MediaDropdown field={Fields.publicationStatus} options={opts.publicationStatusOptions} {...props} />
   </Tab.Pane>
 
@@ -83,6 +85,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
         Fields.title,
         Fields.thumbnail,
         Fields.description,
+        Fields.firstReleased,
         Fields.publicationStatus,
       ]
     },
