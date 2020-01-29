@@ -1,5 +1,4 @@
 import { Observable } from 'rxjs';
-
 import ApiPromise from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces'
 import { GenericAccountId, Option, u32, u128, Vec } from '@polkadot/types'
@@ -24,6 +23,7 @@ import { keyPairDetails } from './flows/apply'
 
 import { classifyOpeningStage } from "./classifiers"
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
+import { WorkingGroups } from "./working_groups"
 
 export class Transport extends TransportBase implements ITransport {
   protected api: ApiPromise
@@ -57,9 +57,9 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   protected async opening(id: number): Promise<Opening> {
-    return new Promise<Opening>( async (resolve, reject) => {
-       const opening = new LinkedMapEntry<Opening>(
-        Opening, 
+    return new Promise<Opening>(async (resolve, reject) => {
+      const opening = new LinkedMapEntry<Opening>(
+        Opening,
         await this.api.query.hiring.openingById(id),
       )
       resolve(opening.value)
@@ -67,25 +67,25 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   async curationGroupOpening(id: number): Promise<WorkingGroupOpening> {
-    return new Promise<WorkingGroupOpening>( async (resolve, reject) => {
+    return new Promise<WorkingGroupOpening>(async (resolve, reject) => {
       const nextId = (await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber()
       if (id < 0 || id >= nextId) {
         reject("invalid id")
       }
 
       const curatorOpening = new LinkedMapEntry<CuratorOpening>(
-        CuratorOpening, 
+        CuratorOpening,
         await this.api.query.contentWorkingGroup.curatorOpeningById(id),
       )
 
       const opening = await this.opening(
-          curatorOpening.value.getField<OpeningId>("opening_id").toNumber()
+        curatorOpening.value.getField<OpeningId>("opening_id").toNumber()
       )
 
       /////////////////////////////////
       // TODO: Load group lead
       const currentLeadId = await this.api.query.contentWorkingGroup.currentLeadId() as Option<LeadId>
-      
+
       if (currentLeadId.isNone) {
         reject("no current lead id")
       }
@@ -119,7 +119,7 @@ export class Transport extends TransportBase implements ITransport {
       // @ts-ignore
       resolve({
         creator: {
-          actor: actor, 
+          actor: actor,
           profile: profile.unwrap(),
           title: 'Group lead',
           lead: true,
@@ -129,17 +129,18 @@ export class Transport extends TransportBase implements ITransport {
         opening: opening,
         meta: {
           id: id.toString(),
+          group: WorkingGroups.ContentCurators,
         },
-		stage: await classifyOpeningStage(this, opening),
+        stage: await classifyOpeningStage(this, opening),
 
-       //// MOCK data //
-	/*	  stage: {
-        state: OpeningState.AcceptingApplications,
-        starting_block: 100,
-        starting_block_hash: "somehash",
-        starting_time: new Date(),
-      },*/
-          applications: {
+        //// MOCK data //
+        /*	  stage: {
+            state: OpeningState.AcceptingApplications,
+            starting_block: 100,
+            starting_block_hash: "somehash",
+            starting_time: new Date(),
+          },*/
+        applications: {
           numberOfApplications: 0,
           maxNumberOfApplications: 0,
           requiredApplicationStake: new ApplicationStakeRequirement(
@@ -166,7 +167,7 @@ export class Transport extends TransportBase implements ITransport {
       this.api.consts.babe.expectedBlockTime.toNumber() / 1000
     )
   }
-  
+
   async blockHash(height: number): Promise<string> {
     const blockHash = await this.api.query.system.blockHash(height)
     return blockHash.toString()

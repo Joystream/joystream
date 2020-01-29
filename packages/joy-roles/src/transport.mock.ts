@@ -196,6 +196,7 @@ export class Transport extends TransportBase implements ITransport {
           },
           meta: {
             id: "1",
+            group: "somegroup",
           },
           stage: {
             state: OpeningState.AcceptingApplications,
@@ -291,6 +292,7 @@ export class Transport extends TransportBase implements ITransport {
         },
         meta: {
           id: "1",
+          group: "group-name",
         },
         stage: {
           state: OpeningState.AcceptingApplications,
@@ -380,6 +382,7 @@ export class Transport extends TransportBase implements ITransport {
             },
             meta: {
               id: "1",
+              group: "group-name",
             },
             stage: {
               state: OpeningState.AcceptingApplications,

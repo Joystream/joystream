@@ -12,7 +12,7 @@ import {
   Card,
   Checkbox,
   Container,
-  Dropdown, 
+  Dropdown,
   Grid,
   Label,
   Table,
@@ -337,7 +337,7 @@ export const AdminView = View<AdminController, State>(
                         <Table.Cell>{app.account}</Table.Cell>
                         <Table.Cell>{app.memberId}</Table.Cell>
                         <Table.Cell>{JSON.stringify(app.stage)}</Table.Cell>
-                          <Table.Cell><Checkbox /></Table.Cell>
+                        <Table.Cell><Checkbox /></Table.Cell>
                       </Table.Row>
                     ))}
                   </Table.Body>
@@ -346,27 +346,27 @@ export const AdminView = View<AdminController, State>(
               <Card.Content extra>
                 <Grid>
                   <Grid.Row columns={2}>
-<Grid.Column>
-  <Dropdown text='Set stage'>
-    <Dropdown.Menu>
-      <Dropdown.Item 
-        text='Start accepting applications' 
-        onClick={() => { controller.startAcceptingApplications(key) }}
-      />
-      <Dropdown.Item 
-        text='Begin applicant review' 
-        onClick={() => { controller.beginApplicantReview(key) }}
-      />
-      </Dropdown.Menu>
-  </Dropdown>
+                    <Grid.Column>
+                      <Dropdown text='Set stage'>
+                        <Dropdown.Menu>
+                          <Dropdown.Item
+                            text='Start accepting applications'
+                            onClick={() => { controller.startAcceptingApplications(key) }}
+                          />
+                          <Dropdown.Item
+                            text='Begin applicant review'
+                            onClick={() => { controller.beginApplicantReview(key) }}
+                          />
+                        </Dropdown.Menu>
+                      </Dropdown>
 
-  </Grid.Column>
-<Grid.Column align="right">
-                <Button onClick={() => { controller.applyAsACurator(key, 0) }}>Apply as curator</Button>
-                <Button onClick={() => { controller.acceptCuratorApplications(key, [0]) }}>Accept curator applications</Button>
-                </Grid.Column>
+                    </Grid.Column>
+                    <Grid.Column align="right">
+                      <Button onClick={() => { controller.applyAsACurator(key, 0) }}>Apply as curator</Button>
+                      <Button onClick={() => { controller.acceptCuratorApplications(key, [0]) }}>Accept curator applications</Button>
+                    </Grid.Column>
                   </Grid.Row>
-                    </Grid>
+                </Grid>
               </Card.Content>
             </Card>
           )

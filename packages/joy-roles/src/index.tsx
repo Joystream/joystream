@@ -1,4 +1,4 @@
-import React, {useContext} from 'react';
+import React, { useContext } from 'react';
 
 import { ApiContext } from '@polkadot/react-api';
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
@@ -46,7 +46,7 @@ export const App: React.FC<Props> = (props: Props) => {
       name: 'my-roles',
       text: t('My roles')
     },
-   ]
+  ]
 
 
   const { api } = useContext(ApiContext);
@@ -60,7 +60,6 @@ export const App: React.FC<Props> = (props: Props) => {
   const myRolesCtrl = new MyRolesController(mockTransport)
   const adminCtrl = new AdminController(transport, api)
 
-   // FIXME! Move to transport
   const { basePath } = props
   return (
     <main className='actors--App'>
@@ -71,10 +70,10 @@ export const App: React.FC<Props> = (props: Props) => {
         />
       </header>
       <Switch>
-        <Route path={`${basePath}/opportunities/:id`} render={(props) => renderViewComponent(OpportunityView(oppCtrl), props)} />
+        <Route path={`${basePath}/opportunities/:group/:id/apply`} render={(props) => renderViewComponent(ApplyView(applyCtrl), props)} />
+        <Route path={`${basePath}/opportunities/:group/:id`} render={(props) => renderViewComponent(OpportunityView(oppCtrl), props)} />
         <Route path={`${basePath}/opportunities`} render={() => renderViewComponent(OpportunitiesView(oppsCtrl))} />
         <Route path={`${basePath}/my-roles`} render={() => renderViewComponent(MyRolesView(myRolesCtrl))} />
-        <Route path={`${basePath}/apply/:id`} render={(props) => renderViewComponent(ApplyView(applyCtrl), props)} />
         <Route path={`${basePath}/admin`} render={() => renderViewComponent(AdminView(adminCtrl))} />
         <Route render={() => renderViewComponent(WorkingGroupsView(wgCtrl))} />
       </Switch>

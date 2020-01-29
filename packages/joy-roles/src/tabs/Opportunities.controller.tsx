@@ -38,6 +38,9 @@ export class OpportunitiesController extends Controller<State, ITransport> {
 
 export const OpportunitiesView = View<OpportunitiesController, State>(
   (state) => (
-    <OpeningsView openings={state.opportunities} block_time_in_seconds={state.blockTime} />
+    <OpeningsView
+      openings={state.opportunities}
+      block_time_in_seconds={state.blockTime}
+    />
   )
 )

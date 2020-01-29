@@ -159,6 +159,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     creator: creator,
     meta: {
       id: "1",
+      group: "group-name",
     },
     stage: {
       state: OpeningState.AcceptingApplications,
@@ -178,6 +179,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     creator: creator,
     meta: {
       id: "1",
+      group: "group-name",
     },
     stage: {
       state: OpeningState.AcceptingApplications,
@@ -197,6 +199,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     creator: creator,
     meta: {
       id: "1",
+      group: "group-name",
     },
     stage: {
       state: OpeningState.InReview,
@@ -218,6 +221,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     creator: creator,
     meta: {
       id: "1",
+      group: "group-name",
     },
     stage: {
       state: OpeningState.InReview,
@@ -239,6 +243,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     creator: creator,
     meta: {
       id: "1",
+      group: "group-name",
     },
     stage: {
       state: OpeningState.Complete,
@@ -258,6 +263,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     creator: creator,
     meta: {
       id: "1",
+      group: "group-name",
     },
     stage: {
       state: OpeningState.Cancelled,
