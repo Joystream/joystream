@@ -434,10 +434,10 @@ pub struct Moderator<AccountId> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct BlockchainTimestamp<BlockNumber, Moment> {
     /// Current block number
-    block: BlockNumber,
+    pub block: BlockNumber,
 
     /// Time of block created
-    time: Moment,
+    pub time: Moment,
 }
 
 /// Represents a moderation outcome applied to a post or a thread.
@@ -445,13 +445,13 @@ pub struct BlockchainTimestamp<BlockNumber, Moment> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct ModerationAction<ModeratorId, BlockNumber, Moment> {
     /// When action occured.
-    moderated_at: BlockchainTimestamp<BlockNumber, Moment>,
+    pub moderated_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Account forum sudo which acted.
-    moderator_id: ModeratorId,
+    pub moderator_id: ModeratorId,
 
     /// Moderation rationale
-    rationale: Vec<u8>,
+    pub rationale: Vec<u8>,
 }
 
 /// Represents a revision of the text of a Post
@@ -459,10 +459,10 @@ pub struct ModerationAction<ModeratorId, BlockNumber, Moment> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct PostTextChange<BlockNumber, Moment> {
     /// When this expiration occured
-    expired_at: BlockchainTimestamp<BlockNumber, Moment>,
+    pub expired_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Text that expired
-    text: Vec<u8>,
+    pub text: Vec<u8>,
 }
 
 /// Represents a reaction to a post
@@ -495,10 +495,10 @@ impl Default for PostReaction {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct PollAlternative {
     /// Alternative description
-    alternative_text: Vec<u8>,
+    pub alternative_text: Vec<u8>,
 
     /// Vote count for the alternative
-    vote_count: u32,
+    pub vote_count: u32,
 }
 
 /// Represents a poll
@@ -506,16 +506,16 @@ pub struct PollAlternative {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Poll<Timestamp> {
     /// description text for poll
-    poll_description: Vec<u8>,
+    pub poll_description: Vec<u8>,
 
     /// timestamp of poll start
-    start_time: Timestamp,
+    pub start_time: Timestamp,
 
     /// timestamp of poll end
-    end_time: Timestamp,
+    pub end_time: Timestamp,
 
     /// Alternative description and count
-    poll_alternatives: Vec<PollAlternative>,
+    pub poll_alternatives: Vec<PollAlternative>,
 }
 
 /// Represents a thread post
@@ -523,29 +523,29 @@ pub struct Poll<Timestamp> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment> {
     /// Id of thread to which this post corresponds.
-    thread_id: ThreadId,
+    pub thread_id: ThreadId,
 
     /// Current text of post
-    current_text: Vec<u8>,
+    pub current_text: Vec<u8>,
 
     /// Possible moderation of this post
-    moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
+    pub moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
 
     /// Edits of post ordered chronologically by edit time.
-    text_change_history: Vec<PostTextChange<BlockNumber, Moment>>,
+    pub text_change_history: Vec<PostTextChange<BlockNumber, Moment>>,
 
     /// When post was submitted.
-    created_at: BlockchainTimestamp<BlockNumber, Moment>,
+    pub created_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Author of post.
-    author_id: ForumUserId,
+    pub author_id: ForumUserId,
 
     /// The post number of this post in its thread, i.e. total number of posts added (including this)
     /// to a thread when it was added.
     /// Is needed to give light clients assurance about getting all posts in a given range,
     // `created_at` is not sufficient.
     /// Starts at 1 for first post in thread.
-    nr_in_thread: u32,
+    pub nr_in_thread: u32,
 }
 
 /// Represents a thread
@@ -553,29 +553,29 @@ pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment> {
     /// Title
-    title: Vec<u8>,
+    pub title: Vec<u8>,
 
     /// Category in which this thread lives
-    category_id: CategoryId,
+    pub category_id: CategoryId,
 
     /// Possible moderation of this thread
-    moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
+    pub moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
 
     /// When thread was established.
-    created_at: BlockchainTimestamp<BlockNumber, Moment>,
+    pub created_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Author of post.
-    author_id: ForumUserId,
+    pub author_id: ForumUserId,
 
     /// poll description.
-    poll: Option<Poll<Moment>>,
+    pub poll: Option<Poll<Moment>>,
 
     /// The thread number of this thread in its category, i.e. total number of thread added (including this)
     /// to a category when it was added.
     /// Is needed to give light clients assurance about getting all threads in a given range,
     /// `created_at` is not sufficient.
     /// Starts at 1 for first thread in category.
-    nr_in_category: u32,
+    pub nr_in_category: u32,
 
     /// Number of unmoderated and moderated posts in this thread.
     /// The sum of these two only increases, and former is incremented
@@ -587,8 +587,8 @@ pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment> {
     ///
     /// These values are vital for light clients, in order to validate that they are
     /// not being censored from posts in a thread.
-    num_unmoderated_posts: u32,
-    num_moderated_posts: u32,
+    pub num_unmoderated_posts: u32,
+    pub num_moderated_posts: u32,
 }
 
 /// Implement total posts calculation for thread
@@ -596,7 +596,7 @@ impl<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>
     Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>
 {
     /// How many posts created both unmoderated and moderated
-    fn num_posts_ever_created(&self) -> u32 {
+    pub fn num_posts_ever_created(&self) -> u32 {
         self.num_unmoderated_posts + self.num_moderated_posts
     }
 }
@@ -606,11 +606,11 @@ impl<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct ChildPositionInParentCategory<CategoryId> {
     /// Id of parent category
-    parent_id: CategoryId,
+    pub parent_id: CategoryId,
 
     /// Nr of the child in the parent
     /// Starts at 1
-    child_nr_in_parent_category: u32,
+    pub child_nr_in_parent_category: u32,
 }
 
 /// Represents a category
@@ -618,22 +618,22 @@ pub struct ChildPositionInParentCategory<CategoryId> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Category<CategoryId, ThreadId, BlockNumber, Moment> {
     /// Category identifier
-    id: CategoryId,
+    pub id: CategoryId,
 
     /// Title
-    title: Vec<u8>,
+    pub title: Vec<u8>,
 
     /// Description
-    description: Vec<u8>,
+    pub description: Vec<u8>,
 
     /// When category was established.
-    created_at: BlockchainTimestamp<BlockNumber, Moment>,
+    pub created_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Whether category is deleted.
-    deleted: bool,
+    pub deleted: bool,
 
     /// Whether category is archived.
-    archived: bool,
+    pub archived: bool,
 
     /// Number of subcategories (deleted, archived or neither),
     /// unmoderated threads and moderated threads, _directly_ in this category.
@@ -649,15 +649,15 @@ pub struct Category<CategoryId, ThreadId, BlockNumber, Moment> {
     ///
     /// These values are vital for light clients, in order to validate that they are
     /// not being censored from subcategories or threads in a category.
-    num_direct_subcategories: u32,
-    num_direct_unmoderated_threads: u32,
-    num_direct_moderated_threads: u32,
+    pub num_direct_subcategories: u32,
+    pub num_direct_unmoderated_threads: u32,
+    pub num_direct_moderated_threads: u32,
 
     /// Position as child in parent, if present, otherwise this category is a root category
-    position_in_parent_category: Option<ChildPositionInParentCategory<CategoryId>>,
+    pub position_in_parent_category: Option<ChildPositionInParentCategory<CategoryId>>,
 
     /// Sticky threads list
-    sticky_thread_ids: Vec<ThreadId>,
+    pub sticky_thread_ids: Vec<ThreadId>,
 }
 
 /// Implement total thread calcuation for category
@@ -665,7 +665,7 @@ impl<CategoryId, ThreadId, BlockNumber, Moment>
     Category<CategoryId, ThreadId, BlockNumber, Moment>
 {
     /// How many threads created both moderated and unmoderated
-    fn num_threads_created(&self) -> u32 {
+    pub fn num_threads_created(&self) -> u32 {
         self.num_direct_unmoderated_threads + self.num_direct_moderated_threads
     }
 }
@@ -675,7 +675,7 @@ impl<CategoryId, ThreadId, BlockNumber, Moment>
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Label {
     /// Label's text
-    text: Vec<u8>,
+    pub text: Vec<u8>,
 }
 
 /// Represents a sequence of categories which have child-parent relatioonship
