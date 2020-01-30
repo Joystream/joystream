@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 import { ApiPromise } from '@polkadot/api';
-import { GenericAccountId, Option, u32, u64, u128, Text, Vec } from '@polkadot/types'
+import { GenericAccountId, Option, u32, u64, u128, Set, Text, Vec } from '@polkadot/types'
 
 import { LinkedMapEntry } from '@polkadot/joy-utils/index'
 
@@ -15,6 +15,7 @@ import {
   Dropdown,
   Grid,
   Label,
+  Message,
   Table,
 } from 'semantic-ui-react'
 import { Controller, View } from '@polkadot/joy-utils/index'
@@ -29,14 +30,25 @@ import {
   Opening,
   OpeningStage
 } from '@joystream/types/hiring'
+
 import {
   GenericJoyStreamRoleSchema,
 } from '@joystream/types/hiring/schemas/role.schema'
+
 import {
-  CuratorApplication,
+  CuratorApplication, CuratorApplicationId,
   CuratorOpening,
   OpeningPolicyCommitment,
 } from '@joystream/types/content-working-group'
+
+import {
+  classifyOpeningStage,
+	OpeningStageClassification
+} from '../classifiers'
+
+import {
+	openingDescription,
+} from '../openingStateMarkup'
 
 type ids = {
   curatorId: number
@@ -53,6 +65,7 @@ type opening = ids & {
   title: string,
   state: OpeningStage,
   applications: Array<application>,
+  classification: OpeningStageClassification, 
 }
 
 type State = {
@@ -212,7 +225,7 @@ export class AdminController extends Controller<State, ITransport> {
   acceptCuratorApplications(openingId: number, applications: Array<number>) {
     const tx = this.api.tx.contentWorkingGroup.fillCuratorOpening(
       new u32(openingId),
-      new Vec(u64, applications),
+      applications,
     )
     tx.signAndSend(ALICE, ({ events = [], status }) => {
       if (status.isFinalized) {
@@ -259,8 +272,10 @@ export class AdminController extends Controller<State, ITransport> {
         applications: new Array<application>(),
         state: baseOpening.value.stage,
         title: title,
+        classification: await classifyOpeningStage(this.transport, baseOpening.value),
       })
 
+        console.log(await classifyOpeningStage(this.transport, baseOpening.value))
     }
 
     const nextAppid = await this.api.query.contentWorkingGroup.nextCuratorApplicationId() as u64
@@ -315,8 +330,12 @@ export const AdminView = View<AdminController, State>(
                   Working group module ID #{opening.curatorId}, hiring module ID #{opening.openingId}
                 </Card.Meta>
                 <Label ribbon>
-                  {JSON.stringify(opening.state)}
+                  {openingDescription(opening.classification.state)}
                 </Label>
+                  <Message info> 
+                    <Message.Header>Raw state</Message.Header>
+                    {JSON.stringify(opening.classification)}
+                  </Message>
                 <h4>Applications</h4>
                 <Table striped>
                   <Table.Header>

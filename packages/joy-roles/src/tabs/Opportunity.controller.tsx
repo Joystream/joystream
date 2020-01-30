@@ -23,19 +23,16 @@ export class OpportunityController extends Controller<State, ITransport> {
 
   @memoize()
   async getOpportunity(id: string | undefined) {
-    console.log("opn")
     if (!id) {
       return this.onError("OpportunityController: no ID provided in params")
     }
 
     this.state.opportunity = await this.transport.curationGroupOpening(parseInt(id))
-    console.log("opn")
     this.dispatch()
   }
 
   async getBlocktime() {
     this.state.blockTime = await this.transport.expectedBlockTime()
-    console.log("gbt")
     this.dispatch()
   }
 }
