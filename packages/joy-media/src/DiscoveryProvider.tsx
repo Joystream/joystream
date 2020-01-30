@@ -11,7 +11,6 @@ import { Url } from '@joystream/types/discovery'
 
 import { parse as parseUrl } from 'url';
 
-
 export type BootstrapNodes = {
   bootstrapNodes?: Url[],
 };
@@ -151,10 +150,10 @@ function setDiscoveryProvider<P extends DiscoveryProviderProps> (Component: Reac
         // Still loading bootstrap nodes...
         return (
           <Message info className='JoyMainStatus'>
-              <Message.Header>Initializing..</Message.Header>
-              <div style={{ marginTop: '1rem' }}>
-                Bootstrapping discovery service.
-              </div>
+            <Message.Header>Initializing..</Message.Header>
+            <div style={{ marginTop: '1rem' }}>
+              Bootstrapping discovery service.
+            </div>
           </Message>
         );
       } else {
@@ -178,6 +177,6 @@ export function withDiscoveryProvider<P extends DiscoveryProviderProps> (Compone
   return withMulti(
     Component,
     loadBootstrapNodes,
-    setDiscoveryProvider
+    // setDiscoveryProvider // TODO uncomment
   );
 }

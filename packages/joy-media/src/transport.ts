@@ -1,6 +1,7 @@
 import { Transport as TransportBase, Subscribable } from '@polkadot/joy-utils/index'
 import EntityId from '@joystream/types/versioned-store/EntityId';
-import { Entity } from '@joystream/types/versioned-store';
+import { Entity, Class } from '@joystream/types/versioned-store';
+import { MemberId } from '@joystream/types/members';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
@@ -16,8 +17,19 @@ import { MusicThemeType } from './schemas/music/MusicTheme';
 import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
 import { MediaDropdownOptions } from './common/MediaDropdownOptions';
+import { ChannelEntity } from './entities/MusicChannelEntity';
 
 export abstract class MediaTransport extends TransportBase {
+
+  protected notImplementedYet<T> (): T {
+    throw new Error('Substrate transport is not implemented yet');
+  }
+
+  abstract channelsByOwner(memberId: MemberId): Promise<ChannelEntity[]>
+
+  abstract musicTrackClass(): Promise<Class>
+  abstract musicAlbumClass(): Promise<Class>
+  abstract videoClass(): Promise<Class>
   
   abstract musicTrackById(id: EntityId): Promise<MusicTrackType>
   abstract musicAlbumById(id: EntityId): Promise<MusicAlbumType>

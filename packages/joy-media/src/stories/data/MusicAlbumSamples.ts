@@ -56,3 +56,5 @@ export const MusicAlbumSamples = [
 		tracksCount: 5
 	}
 ];
+
+export const FeaturedAlbums = MusicAlbumSamples.slice(0, 3);

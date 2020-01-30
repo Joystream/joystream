@@ -2,7 +2,7 @@ import React from 'react';
 import '../common/index.css';
 
 import { ExploreContent } from '../explore/ExploreContent';
-import { MusicAlbumSamples } from './data/MusicAlbumSamples';
+import { MusicAlbumSamples, FeaturedAlbums } from './data/MusicAlbumSamples';
 import { PlayContent } from '../explore/PlayContent';
 import { Album1TrackSamples } from './data/MusicTrackSamples';
 import { ChannelDataSample } from './data/ChannelSamples';
@@ -12,8 +12,6 @@ export default {
 	title: 'Media | Explore',
 	decorators: [ withMockTransport ],
 };
-
-const FeaturedAlbums = MusicAlbumSamples.slice(0, 3);
 
 export const DefaultState = () =>
 	<ExploreContent />;

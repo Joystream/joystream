@@ -3,7 +3,7 @@ import { Subscribable } from '@polkadot/joy-utils/index'
 import { MediaTransport } from './transport';
 
 import EntityId from '@joystream/types/versioned-store/EntityId';
-import { Entity } from '@joystream/types/versioned-store';
+import { Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
@@ -20,8 +20,27 @@ import { MusicMoodType } from './schemas/music/MusicMood';
 import { MusicThemeType } from './schemas/music/MusicTheme';
 import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
+import { MemberId } from '@joystream/types/members';
+import { ChannelEntity } from './entities/MusicChannelEntity';
+import { ChannelsDataSamples } from './stories/data/ChannelSamples';
 
 export class MockTransport extends MediaTransport {
+
+  channelsByOwner(_memberId: MemberId): Promise<ChannelEntity[]> {
+    return this.promise(ChannelsDataSamples);
+  }
+
+  musicTrackClass(): Promise<Class> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
+  musicAlbumClass(): Promise<Class> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
+  videoClass(): Promise<Class> {
+    return this.notImplementedYet(); // TODO impl
+  }
 
   musicTrackById (_id: EntityId): Promise<MusicTrackType> {
     return this.promise(mocks.MusicTrack);

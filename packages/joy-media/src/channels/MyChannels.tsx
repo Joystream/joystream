@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
-import { Segment, Statistic, Icon, Label, SemanticICONS, SemanticCOLORS, Button, Tab } from 'semantic-ui-react';
+import { Link } from 'react-router-dom';
+import { Segment, Statistic, Icon, Label, SemanticICONS, SemanticCOLORS, Tab } from 'semantic-ui-react';
 import { ChannelEntity } from '../entities/MusicChannelEntity';
 import { YouHaveNoChannels } from './YouHaveNoChannels';
-import Section from '@polkadot/joy-utils/Section';
 import { formatNumber } from '@polkadot/util';
 import { ChannelAvatar } from './ChannelAvatar';
+import { MemberId } from '@joystream/types/members';
 
-type Props = {
+// TODO Add component ChannelsByOwner
+
+export type MyChannelsProps = {
+  memberId: MemberId,
   suspended?: boolean,
   channels?: ChannelEntity[]
 };
 
-const TabsAndChannels = (props: Props) => {
+const TabsAndChannels = (props: MyChannelsProps) => {
   const { channels: allChannels = [] } = props;
   const [ channels, setChannels ] = useState(allChannels);
 
@@ -48,11 +52,14 @@ const TabsAndChannels = (props: Props) => {
     <Tab
       panes={panes}
       menu={{ secondary: true }}
-      style={{ display: 'inline-flex', margin: '1rem 2rem 1rem 0' }}
+      style={{ display: 'inline-flex', margin: '0 2rem 1rem 0' }}
       onTabChange={(_e, data) => switchTab(data.activeIndex as number)}
     />
-    <Button color='blue' icon='plus' content='Create Channel' />
-    {channels.map(x => <ChannelPreview channel={x} />)}
+    <Link to={`/media/channels/new`} className='ui button'>
+      <i className='icon plus' />
+      Create Channel
+    </Link>
+    {channels.map((x, i) => <ChannelPreview key={'my-channel-' + i} channel={x} />)}
   </>
 }
 
@@ -79,7 +86,7 @@ const ChannelPreview = (props: ChannelPreviewProps) => {
     visibilityColor = 'orange'
   }
 
-  return <Segment padded>
+  return <Segment padded style={{ backgroundColor: '#fff' }}>
     <div className='ChannelPreview'>
 
       <ChannelAvatar channel={channel} size='big' />
@@ -122,12 +129,12 @@ const ChannelPreview = (props: ChannelPreviewProps) => {
   </Segment>
 }
 
-export function MyChannels (props: Props) {
+export function MyChannels (props: MyChannelsProps) {
   const { suspended = false, channels = [] } = props;
 
-  return <Section title='My Channels' className='JoyChannels'>
+  return <div className='JoyChannels'>
     {!channels.length
       ? <YouHaveNoChannels suspended={suspended} />
       : <TabsAndChannels {...props} />
-    }</Section>;
+    }</div>;
 }

@@ -1,7 +1,7 @@
 import { MediaTransport } from './transport';
 import { Subscribable } from '@polkadot/joy-utils/Subscribable';
 import EntityId from '@joystream/types/versioned-store/EntityId';
-import { Entity } from '@joystream/types/versioned-store';
+import { Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
@@ -16,66 +16,80 @@ import { MusicMoodType } from './schemas/music/MusicMood';
 import { MusicThemeType } from './schemas/music/MusicTheme';
 import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
-
-function notImplementedYet (): any {
-  throw new Error('Substrate transport is not implemented yet');
-}
+import { MemberId } from 'packages/joy-types/lib/members';
+import { ChannelEntity } from './entities/MusicChannelEntity';
 
 export class SubstrateTransport extends MediaTransport {
 
+  channelsByOwner(_memberId: MemberId): Promise<ChannelEntity[]> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
+  musicTrackClass(): Promise<Class> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
+  musicAlbumClass(): Promise<Class> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
+  videoClass(): Promise<Class> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
   musicTrackById (_id: EntityId): Promise<MusicTrackType> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   musicAlbumById (_id: EntityId): Promise<MusicAlbumType> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   videoById (_id: EntityId): Promise<VideoType> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   channelById (_id: ChannelId): Promise<ChannelType> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   allContentLicenses (): Promise<ContentLicenseType[]> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   allCurationStatuses(): Promise<CurationStatusType[]> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   allLanguages(): Promise<LanguageType[]> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   allMediaObjects(): Promise<MediaObjectType[]> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   allMusicGenres(): Promise<MusicGenreType[]> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   allMusicMoods(): Promise<MusicMoodType[]> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   allMusicThemes(): Promise<MusicThemeType[]> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   allPublicationStatuses(): Promise<PublicationStatusType[]> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   allVideoCategories(): Promise<VideoCategoryType[]> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 
   allEntities (): Subscribable<Entity[]> {
-    return notImplementedYet(); // TODO impl
+    return this.notImplementedYet(); // TODO impl
   }
 }
