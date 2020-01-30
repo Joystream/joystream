@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 import ApiPromise from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces'
-import { GenericAccountId, Option, u32, u128, Vec } from '@polkadot/types'
+import { GenericAccountId, Option, u32, u64, u128, Vec } from '@polkadot/types'
 import { Moment } from '@polkadot/types/interfaces/runtime';
 import { Codec } from '@polkadot/types/types'
 
@@ -11,9 +11,8 @@ import { ITransport } from './transport'
 import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Actor, Role } from '@joystream/types/roles';
-import { OpeningId } from '@joystream/types/hiring';
-import { CuratorOpening, Lead, LeadId } from '@joystream/types/content-working-group';
-import { Opening } from '@joystream/types/hiring';
+import { CuratorApplication, CuratorOpening, Lead, LeadId } from '@joystream/types/content-working-group';
+import { Application, Opening, OpeningId,  } from '@joystream/types/hiring';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
@@ -24,6 +23,11 @@ import { keyPairDetails } from './flows/apply'
 import { classifyOpeningStage } from "./classifiers"
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
 import { WorkingGroups } from "./working_groups"
+
+type WorkingGroupPair<HiringModuleType, WorkingGroupType> = {
+	hiringModule: HiringModuleType,
+	workingGroup: WorkingGroupType,
+}
 
 export class Transport extends TransportBase implements ITransport {
   protected api: ApiPromise
@@ -66,6 +70,37 @@ export class Transport extends TransportBase implements ITransport {
     })
   }
 
+  protected async curatorOpeningApplications(curatorOpeningId: number): Promise<Array<WorkingGroupPair<Application, CuratorApplication>>> {
+	  const output = new Array<WorkingGroupPair<Application, CuratorApplication>>()
+
+    const nextAppid = await this.api.query.contentWorkingGroup.nextCuratorApplicationId() as u64
+    for (let i = 0; i < nextAppid.toNumber(); i++) {
+      const cApplication = new LinkedMapEntry<CuratorApplication>(
+        CuratorApplication,
+        await this.api.query.contentWorkingGroup.curatorApplicationById(i),
+      )
+
+      if (cApplication.value.curator_opening_id.toNumber() !== curatorOpeningId) {
+        continue
+      }
+
+      const appId = cApplication.value.application_id
+      const baseApplications = new LinkedMapEntry<Application>(
+        Application,
+        await this.api.query.hiring.applicationById(
+          appId,
+        )
+      )
+
+      output.push({
+        hiringModule: baseApplications.value,
+        workingGroup: cApplication.value,
+      })
+    }
+
+	  return output
+  }
+  
   async curationGroupOpening(id: number): Promise<WorkingGroupOpening> {
     return new Promise<WorkingGroupOpening>(async (resolve, reject) => {
       const nextId = (await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber()
@@ -116,6 +151,10 @@ export class Transport extends TransportBase implements ITransport {
         account: leadAccount,
       })
 
+      /////////////////////////////////
+      // TODO: Load applications
+      const applications = await this.curatorOpeningApplications(id)
+
       // @ts-ignore
       resolve({
         creator: {
@@ -133,16 +172,11 @@ export class Transport extends TransportBase implements ITransport {
         },
         stage: await classifyOpeningStage(this, opening),
 
-        //// MOCK data //
-        /*	  stage: {
-            state: OpeningState.AcceptingApplications,
-            starting_block: 100,
-            starting_block_hash: "somehash",
-            starting_time: new Date(),
-          },*/
-        applications: {
-          numberOfApplications: 0,
-          maxNumberOfApplications: 0,
+        //// FIXME
+        //// MOCK data
+       applications: {
+          numberOfApplications: applications.length,
+          maxNumberOfApplications: opening.max_applicants, 
           requiredApplicationStake: new ApplicationStakeRequirement(
             new u128(501),
             StakeType.AtLeast,

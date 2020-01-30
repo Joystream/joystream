@@ -92,6 +92,10 @@ export class ApplicationRationingPolicy extends JoyStruct<IApplicationRationingP
       max_active_applicants: u32,
     }, value);
   }
+
+  get max_active_applicants(): u32 {
+    return this.getField<u32>('max_active_applicants')
+  }
 };
 
 export type WaitingToBeingOpeningStageVariantType = {
@@ -341,6 +345,18 @@ export class Opening extends JoyStruct<IOpening> {
 
   get max_review_period_length(): BlockNumber {
     return this.getField<BlockNumber>('max_review_period_length')
+  }
+
+  get application_rationing_policy(): Option<ApplicationRationingPolicy> {
+    return this.getField<Option<ApplicationRationingPolicy>>('application_rationing_policy')
+  }
+
+  get max_applicants(): number {
+    const appPolicy = this.application_rationing_policy
+    if (appPolicy.isNone) {
+      return 0
+    }
+    return appPolicy.unwrap().max_active_applicants.toNumber()
   }
 }
 

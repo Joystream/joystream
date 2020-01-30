@@ -211,6 +211,22 @@ export class CuratorApplication extends JoyStruct<ICuratorApplication> {
       application_id: ApplicationId,
     }, value);
   }
+
+  get role_account(): GenericAccountId {
+    return this.getField<GenericAccountId>('role_account')
+  }
+
+  get curator_opening_id(): CuratorOpeningId {
+    return this.getField<CuratorOpeningId>('curator_opening_id')
+  }
+
+  get member_id(): MemberId {
+    return this.getField<MemberId>('member_id')
+  }
+
+  get application_id(): ApplicationId {
+    return this.getField<ApplicationId>('application_id')
+  }
 };
 
 export type ISlashableTerms = {
