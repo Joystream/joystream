@@ -368,6 +368,7 @@ export function registerContentWorkingGroupTypes () {
         Principal,
         WorkingGroupUnstaker,
 		CuratorApplicationIdToCuratorIdMap, 
+		CuratorApplicationIdSet: Vec.with(CuratorApplicationId), 
       });
     } catch (err) {
       console.error('Failed to register custom types of content working group module', err);
