@@ -86,6 +86,9 @@ pub type StakeId<T> = <T as stake::Trait>::StakeId;
 /// Type of permissions module prinicipal identifiers
 pub type PrincipalId<T> = <T as versioned_store_permissions::Trait>::PrincipalId;
 
+// Workaround for BTreeSet type
+pub type CuratorApplicationIdSet<T> = BTreeSet<CuratorApplicationId<T>>;
+
 /*
  * MOVE ALL OF THESE OUT TO COMMON LATER
  */
@@ -1421,7 +1424,7 @@ decl_module! {
         pub fn fill_curator_opening(
             origin,
             curator_opening_id: CuratorOpeningId<T>,
-            successful_curator_application_ids: BTreeSet<CuratorApplicationId<T>>
+            successful_curator_application_ids: CuratorApplicationIdSet<T>, 
         ) {
             // Ensure lead is set and is origin signer
             let (lead_id, _lead) = Self::ensure_origin_is_set_lead(origin)?;
