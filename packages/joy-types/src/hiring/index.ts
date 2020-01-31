@@ -261,12 +261,17 @@ export class OpeningStage extends Enum {
   }
 };
 
+export enum StakingAmountLimitModeKeys {
+  AtLeast = 'AtLeast',
+  Exact = 'Exact',
+}
+
 export class StakingAmountLimitMode extends Enum {
   constructor(value?: any, index?: number) {
     super(
       [
-        'AtLeast',
-        'Exact',
+        StakingAmountLimitModeKeys.AtLeast,
+        StakingAmountLimitModeKeys.Exact,
       ],
       value, index);
   }
@@ -287,6 +292,23 @@ export class StakingPolicy extends JoyStruct<IStakingPolicy> {
       review_period_expired_unstaking_period_length: Option.with(u32),
     }, value);
   }
+
+  get amount(): u128 {
+    return this.getField<u128>('amount')
+  }
+
+  get amount_mode(): StakingAmountLimitMode {
+    return this.getField<StakingAmountLimitMode>('amount_mode')
+  }
+
+  get crowded_out_unstaking_period_length(): Option<u32> {
+    return this.getField<Option<u32>>('crowded_out_unstaking_period_length')
+  }
+
+  get review_period_expired_unstaking_period_length(): Option<u32> {
+    return this.getField<Option<u32>>('review_period_expired_unstaking_period_length')
+  }
+
 };
 
 const schemaValidator = new ajv({ allErrors: true }).compile(require('./schemas/role.schema.json'))
@@ -349,6 +371,14 @@ export class Opening extends JoyStruct<IOpening> {
 
   get application_rationing_policy(): Option<ApplicationRationingPolicy> {
     return this.getField<Option<ApplicationRationingPolicy>>('application_rationing_policy')
+  }
+
+  get application_staking_policy(): Option<StakingPolicy> {
+    return this.getField<Option<StakingPolicy>>('application_staking_policy')
+  }
+
+  get role_staking_policy(): Option<StakingPolicy> {
+    return this.getField<Option<StakingPolicy>>('role_staking_policy')
   }
 
   get max_applicants(): number {

@@ -1,5 +1,8 @@
 import moment from 'moment';
 
+import { Option, u128 } from '@polkadot/types'
+import { Balance } from '@polkadot/types/interfaces'
+
 import {
   AcceptingApplications, ReviewPeriod,
   WaitingToBeingOpeningStageVariant,
@@ -7,7 +10,16 @@ import {
   Opening,
   OpeningStageKeys,
   Deactivated, OpeningDeactivationCauseKeys,
+  StakingPolicy,
+  StakingAmountLimitMode, StakingAmountLimitModeKeys,
 } from "@joystream/types/hiring"
+
+import {
+  StakeRequirement,
+  ApplicationStakeRequirement,
+  RoleStakeRequirement,
+  StakeType,
+} from './StakeRequirement'
 
 export enum OpeningState {
   WaitingToBegin = 0,
@@ -168,3 +180,54 @@ async function classifyActiveOpeningStageDeactivated(
   }
 }
 
+export type StakeRequirementSetClassification = {
+  application: ApplicationStakeRequirement
+  role: RoleStakeRequirement
+}
+
+interface StakeRequirementConstructor<T extends StakeRequirement> {
+  new(hard: Balance, stakeType?: StakeType): T
+}
+
+export function classifyOpeningStakes(opening: Opening): StakeRequirementSetClassification {
+  return {
+    application: classifyStakeRequirement<ApplicationStakeRequirement>(
+      ApplicationStakeRequirement,
+      opening.application_staking_policy,
+    ),
+    role: classifyStakeRequirement<RoleStakeRequirement>(
+      RoleStakeRequirement,
+      opening.role_staking_policy,
+    ),
+  }
+}
+
+function classifyStakeRequirement<T extends StakeRequirement>(
+  constructor: StakeRequirementConstructor<T>,
+  option: Option<StakingPolicy>,
+): T {
+
+  if (option.isNone) {
+    return new constructor(new u128(0))
+  }
+
+  const policy = option.unwrap()
+
+  return new constructor(
+    policy.amount,
+    classifyStakeType(policy.amount_mode),
+  )
+}
+
+
+function classifyStakeType(mode: StakingAmountLimitMode): StakeType {
+  switch (mode.type) {
+    case StakingAmountLimitModeKeys.AtLeast:
+      return StakeType.AtLeast
+
+    case StakingAmountLimitModeKeys.Exact:
+      return StakeType.Fixed
+  }
+
+  throw new Error("Unknown stake type: " + mode.type)
+}

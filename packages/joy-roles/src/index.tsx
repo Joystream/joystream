@@ -55,7 +55,7 @@ export const App: React.FC<Props> = (props: Props) => {
 
   const wgCtrl = new WorkingGroupsController(mockTransport)
   const oppCtrl = new OpportunityController(transport)
-  const oppsCtrl = new OpportunitiesController(mockTransport)
+  const oppsCtrl = new OpportunitiesController(transport)
   const applyCtrl = new ApplyController(mockTransport)
   const myRolesCtrl = new MyRolesController(mockTransport)
   const adminCtrl = new AdminController(transport, api)

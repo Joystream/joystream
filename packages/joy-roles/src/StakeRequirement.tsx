@@ -17,7 +17,7 @@ export interface IStakeRequirement {
   describe(): any
 }
 
-abstract class StakeRequirement {
+export abstract class StakeRequirement {
   hard: Balance
   type: StakeType
 

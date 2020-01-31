@@ -28,7 +28,9 @@ import {
   ApplicationRationingPolicy,
   CurrentBlock,
   Opening,
-  OpeningStage
+  OpeningStage,
+  StakingPolicy,
+  StakingAmountLimitModeKeys,
 } from '@joystream/types/hiring'
 
 import {
@@ -88,7 +90,6 @@ export class AdminController extends Controller<State, ITransport> {
     this.updateState()
   }
 
-  // FIXME! This should be in the transport
   newOpening() {
 
     const start = new ActivateOpeningAt(CurrentBlock)
@@ -99,6 +100,13 @@ export class AdminController extends Controller<State, ITransport> {
         ApplicationRationingPolicy,
         new ApplicationRationingPolicy({
           max_active_applicants: new u32(10),
+        }),
+      ),
+      application_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.AtLeast,
         }),
       ),
     })
@@ -274,8 +282,6 @@ export class AdminController extends Controller<State, ITransport> {
         title: title,
         classification: await classifyOpeningStage(this.transport, baseOpening.value),
       })
-
-        console.log(await classifyOpeningStage(this.transport, baseOpening.value))
     }
 
     const nextAppid = await this.api.query.contentWorkingGroup.nextCuratorApplicationId() as u64

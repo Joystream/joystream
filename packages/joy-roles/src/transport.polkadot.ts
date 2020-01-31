@@ -12,7 +12,7 @@ import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/in
 
 import { Actor, Role } from '@joystream/types/roles';
 import { CuratorApplication, CuratorOpening, Lead, LeadId } from '@joystream/types/content-working-group';
-import { Application, Opening, OpeningId,  } from '@joystream/types/hiring';
+import { Application, Opening, OpeningId, } from '@joystream/types/hiring';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
@@ -20,13 +20,13 @@ import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 
 import { keyPairDetails } from './flows/apply'
 
-import { classifyOpeningStage } from "./classifiers"
+import { classifyOpeningStage, classifyOpeningStakes } from "./classifiers"
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
 import { WorkingGroups } from "./working_groups"
 
 type WorkingGroupPair<HiringModuleType, WorkingGroupType> = {
-	hiringModule: HiringModuleType,
-	workingGroup: WorkingGroupType,
+  hiringModule: HiringModuleType,
+  workingGroup: WorkingGroupType,
 }
 
 export class Transport extends TransportBase implements ITransport {
@@ -55,9 +55,19 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   currentOpportunities(): Promise<Array<WorkingGroupOpening>> {
-    return this.promise<Array<WorkingGroupOpening>>(
-      [],
-    )
+    return new Promise<Array<WorkingGroupOpening>>(async (resolve, reject) => {
+      const output = new Array<WorkingGroupOpening>()
+      const highestId = (await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber() - 1
+      if (highestId < 0) {
+        resolve([])
+      }
+
+      for (let i = highestId; i >= 0; i--) {
+        output.push(await this.curationGroupOpening(i))
+      }
+
+      resolve(output)
+    })
   }
 
   protected async opening(id: number): Promise<Opening> {
@@ -71,7 +81,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   protected async curatorOpeningApplications(curatorOpeningId: number): Promise<Array<WorkingGroupPair<Application, CuratorApplication>>> {
-	  const output = new Array<WorkingGroupPair<Application, CuratorApplication>>()
+    const output = new Array<WorkingGroupPair<Application, CuratorApplication>>()
 
     const nextAppid = await this.api.query.contentWorkingGroup.nextCuratorApplicationId() as u64
     for (let i = 0; i < nextAppid.toNumber(); i++) {
@@ -98,9 +108,9 @@ export class Transport extends TransportBase implements ITransport {
       })
     }
 
-	  return output
+    return output
   }
-  
+
   async curationGroupOpening(id: number): Promise<WorkingGroupOpening> {
     return new Promise<WorkingGroupOpening>(async (resolve, reject) => {
       const nextId = (await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber()
@@ -155,6 +165,9 @@ export class Transport extends TransportBase implements ITransport {
       // TODO: Load applications
       const applications = await this.curatorOpeningApplications(id)
 
+      // TODO: Calculate stakes
+      const stakes = classifyOpeningStakes(opening)
+
       // @ts-ignore
       resolve({
         creator: {
@@ -162,8 +175,8 @@ export class Transport extends TransportBase implements ITransport {
           profile: profile.unwrap(),
           title: 'Group lead',
           lead: true,
-          //stake?: Balance,
-          //earned?: Balance,
+          //stake?: Balance, // FIXME
+          //earned?: Balance, // FIXME
         },
         opening: opening,
         meta: {
@@ -171,22 +184,14 @@ export class Transport extends TransportBase implements ITransport {
           group: WorkingGroups.ContentCurators,
         },
         stage: await classifyOpeningStage(this, opening),
-
-        //// FIXME
-        //// MOCK data
-       applications: {
+        applications: {
           numberOfApplications: applications.length,
-          maxNumberOfApplications: opening.max_applicants, 
-          requiredApplicationStake: new ApplicationStakeRequirement(
-            new u128(501),
-            StakeType.AtLeast,
-          ),
-          requiredRoleStake: new RoleStakeRequirement(
-            new u128(502),
-          ),
-          defactoMinimumStake: new u128(0),
+          maxNumberOfApplications: opening.max_applicants,
+          requiredApplicationStake: stakes.application,
+          requiredRoleStake: stakes.role,
+          defactoMinimumStake: new u128(0), // FIXME
         },
-        defactoMinimumStake: new u128(0)
+        defactoMinimumStake: new u128(0) // FIXME
       })
     })
   }
