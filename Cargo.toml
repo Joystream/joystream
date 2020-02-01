@@ -28,6 +28,12 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
 rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
+[dependencies.old-forum]
+default_features = false
+git = 'https://github.com/juniuszhou/substrate-forum-module'
+package = 'substrate-forum-module'
+rev = 'a568063d49afc1cac890658db1586031ef5e2886'
+
 [dev-dependencies]
 runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
 primitives = { package = 'substrate-primitives', git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
@@ -45,4 +51,5 @@ std = [
 	'system/std',
   	'balances/std',
 	'timestamp/std',
+	'old-forum/std',
 ]

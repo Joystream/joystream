@@ -212,16 +212,17 @@
 use serde_derive::{Deserialize, Serialize};
 
 use codec::{Codec, Decode, Encode};
+pub use old_forum;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use runtime_primitives;
-use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic, Zero};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 
 mod mock;
 mod tests;
 
-pub trait Trait: system::Trait + timestamp::Trait + Sized {
+pub trait Trait: system::Trait + old_forum::Trait + timestamp::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
     type ForumUserId: Parameter
         + Member
@@ -248,7 +249,8 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + From<u64>;
 
     type ThreadId: Parameter
         + Member
@@ -257,7 +259,8 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + From<u64>;
 
     type LabelId: Parameter
         + Member
@@ -275,7 +278,8 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + From<u64>;
 }
 
 /*
@@ -383,6 +387,13 @@ const ERROR_LABEL_TOO_SHORT: &str = "Label name too short.";
 const ERROR_LABEL_TOO_LONG: &str = "Label name too long.";
 const ERROR_TOO_MUCH_LABELS: &str = "labels number exceed max allowed.";
 const ERROR_LABEL_INDEX_IS_WRONG: &str = "label index is wrong.";
+
+// Error data migration
+const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
+const DEFAULT_FORUM_USER_NAME: &str = "default forum user name";
+const DEFAULT_FORUM_USER_SELF_INTRODUCTION: &str = "default forum user self introduction";
+const DEFAULT_MODERATOR_NAME: &str = "default moderator name";
+const DEFAULT_MODERATOR_SELF_INTRODUCTION: &str = "default moderator self introduction";
 
 //use srml_support::storage::*;
 //use sr_io::{StorageOverlay, ChildrenStorageOverlay};
@@ -683,6 +694,22 @@ pub struct Label {
 type CategoryTreePath<CategoryId, ThreadId, BlockNumber, Moment> =
     Vec<Category<CategoryId, ThreadId, BlockNumber, Moment>>;
 
+/// Data migration stage
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug)]
+pub enum DataMigrationStage {
+    NotStarted,
+    Category,
+    Thread,
+    Post,
+}
+
+impl Default for DataMigrationStage {
+    fn default() -> DataMigrationStage {
+        DataMigrationStage::NotStarted
+    }
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as Forum {
         /// Map forum user identifier to forum user information.
@@ -777,6 +804,30 @@ decl_storage! {
 
         /// Max applied labels for a category or thread
         pub MaxAppliedLabels get(max_applied_labels) config(): u32;
+
+        /// Fork block number
+        pub ForkBlockNumber get(fork_block_number) config(): T::BlockNumber;
+
+        /// Threads imported from old version each block
+        pub ThreadsImportedPerBlock get(threads_imported_per_block) config(): u64;
+
+        /// Post imported from old version each block
+        pub PostsImportedPerBlock get(posts_imported_per_block) config(): u64;
+
+        /// If data migration is done
+        pub DataMigrationDone get(data_migration_done) config(): bool;
+
+        /// Current data migration stage
+        pub CurrentDataMigrationStage get(current_data_migration_stage) config(): DataMigrationStage;
+
+        /// Data migration index
+        pub CurrentDataMigrationIndex get(current_data_migration_index) config(): u64;
+
+        /// Account id to forum user id
+        pub AccountByForumUserId get(account_by_forum_user_id) config(): map T::AccountId => T::ForumUserId;
+
+        /// Account id to moderator id
+        pub AccountByModeratorId get(account_by_moderator_id) config(): map T::AccountId => T::ModeratorId;
     }
     /*
     JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
@@ -1471,10 +1522,97 @@ decl_module! {
 
             Ok(())
         }
+
+        /// Implement on_initialize for data migration
+        fn on_initialize(n: T::BlockNumber) {
+
+            if n >= <ForkBlockNumber<T>>::get() && DataMigrationDone::get() == false {
+                // iterate category from old forum module
+                if old_forum::NextCategoryId::get() > 1 {
+                    for index in 1..old_forum::NextCategoryId::get() {
+                        let old_category = <old_forum::CategoryById<T>>::get(index);
+                        let next_category_id = <NextCategoryId<T>>::get();
+                        let moderator_id = old_category.moderator_id.clone();
+                        Self::get_and_insert_moderator_account_id(moderator_id);
+
+                        // copy and insert into current module
+                        <CategoryById<T>>::mutate(next_category_id, |value| *value = Category {
+                            id: old_category.id.into(),
+                            title: old_category.title.clone(),
+                            description: old_category.description.clone(),
+                            created_at: BlockchainTimestamp {
+                                block: old_category.created_at.block,
+                                time: old_category.created_at.time,
+                            },
+                            deleted: old_category.deleted,
+                            archived: old_category.archived,
+                            num_direct_subcategories: old_category.num_direct_subcategories,
+                            num_direct_unmoderated_threads: old_category.num_direct_unmoderated_threads,
+                            num_direct_moderated_threads: old_category.num_direct_moderated_threads,
+                            position_in_parent_category: old_category.position_in_parent_category.as_ref().map(
+                                |value| ChildPositionInParentCategory {
+                                    parent_id: value.parent_id.into(),
+                                    child_nr_in_parent_category: value.child_nr_in_parent_category,
+                                },
+                            ),
+                            sticky_thread_ids: vec![],
+                        });
+
+                        // remove from old module
+                        <old_forum::CategoryById<T>>::remove(index);
+                    }
+                }
+
+                // set to init value and go to next step, copy threads.
+                old_forum::NextCategoryId::mutate(|value| *value = 1);
+
+
+            }
+        }
     }
 }
 
 impl<T: Trait> Module<T> {
+    fn get_and_insert_forum_user_account_id(forum_user_account: T::AccountId) -> T::ForumUserId {
+        if <AccountByForumUserId<T>>::exists(&forum_user_account) {
+            <AccountByForumUserId<T>>::get(&forum_user_account)
+        } else {
+            <ForumUserById<T>>::mutate(<NextForumUserId<T>>::get(), |value| {
+                *value = ForumUser {
+                    role_account: forum_user_account.clone(),
+                    name: DEFAULT_FORUM_USER_NAME.as_bytes().to_vec().clone(),
+                    self_introduction: DEFAULT_FORUM_USER_SELF_INTRODUCTION
+                        .as_bytes()
+                        .to_vec()
+                        .clone(),
+                    post_footer: None,
+                }
+            });
+            let forum_user_id = <NextForumUserId<T>>::get();
+            <NextForumUserId<T>>::mutate(|value| *value += One::one());
+            forum_user_id
+        }
+    }
+
+    fn get_and_insert_moderator_account_id(moderator_account: T::AccountId) -> T::ModeratorId {
+        if <AccountByModeratorId<T>>::exists(&moderator_account) {
+            <AccountByModeratorId<T>>::get(&moderator_account)
+        } else {
+            <ModeratorById<T>>::mutate(<NextModeratorId<T>>::get(), |value| {
+                *value = Moderator {
+                    role_account: moderator_account.clone(),
+                    name: DEFAULT_MODERATOR_NAME.as_bytes().to_vec().clone(),
+                    self_introduction: DEFAULT_MODERATOR_SELF_INTRODUCTION
+                        .as_bytes()
+                        .to_vec()
+                        .clone(),
+                }
+            });
+            let moderator_id = <NextModeratorId<T>>::get();
+            <NextModeratorId<T>>::mutate(|value| *value += One::one());
+            moderator_id
+        }
+    }
     // TODO need a safer approach for system call
     // Interface to add a new thread.
     // It can be call from other module and this module.
@@ -2131,6 +2269,15 @@ impl<T: Trait> Module<T> {
             Ok(())
         } else {
             Err(ERROR_THREAD_WITH_WRONG_CATEGORY_ID)
+        }
+    }
+
+    /// Ensure data migration is done
+    fn ensure_data_migration_done() -> Result<(), &'static str> {
+        if DataMigrationDone::get() == true {
+            Ok(())
+        } else {
+            Err(ERROR_DATA_MIGRATION_NOT_DONE)
         }
     }
 }
