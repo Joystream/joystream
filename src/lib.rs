@@ -216,7 +216,7 @@ pub use old_forum;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use runtime_primitives;
-use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic, Zero};
+use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 
 mod mock;
@@ -250,7 +250,8 @@ pub trait Trait: system::Trait + old_forum::Trait + timestamp::Trait + Sized {
         + Copy
         + MaybeSerialize
         + PartialEq
-        + From<u64>;
+        + From<u64>
+        + Into<u64>;
 
     type ThreadId: Parameter
         + Member
@@ -260,7 +261,8 @@ pub trait Trait: system::Trait + old_forum::Trait + timestamp::Trait + Sized {
         + Copy
         + MaybeSerialize
         + PartialEq
-        + From<u64>;
+        + From<u64>
+        + Into<u64>;
 
     type LabelId: Parameter
         + Member
@@ -279,7 +281,8 @@ pub trait Trait: system::Trait + old_forum::Trait + timestamp::Trait + Sized {
         + Copy
         + MaybeSerialize
         + PartialEq
-        + From<u64>;
+        + From<u64>
+        + Into<u64>;
 }
 
 /*
@@ -694,22 +697,6 @@ pub struct Label {
 type CategoryTreePath<CategoryId, ThreadId, BlockNumber, Moment> =
     Vec<Category<CategoryId, ThreadId, BlockNumber, Moment>>;
 
-/// Data migration stage
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug)]
-pub enum DataMigrationStage {
-    NotStarted,
-    Category,
-    Thread,
-    Post,
-}
-
-impl Default for DataMigrationStage {
-    fn default() -> DataMigrationStage {
-        DataMigrationStage::NotStarted
-    }
-}
-
 decl_storage! {
     trait Store for Module<T: Trait> as Forum {
         /// Map forum user identifier to forum user information.
@@ -817,12 +804,6 @@ decl_storage! {
         /// If data migration is done
         pub DataMigrationDone get(data_migration_done) config(): bool;
 
-        /// Current data migration stage
-        pub CurrentDataMigrationStage get(current_data_migration_stage) config(): DataMigrationStage;
-
-        /// Data migration index
-        pub CurrentDataMigrationIndex get(current_data_migration_index) config(): u64;
-
         /// Account id to forum user id
         pub AccountByForumUserId get(account_by_forum_user_id) config(): map T::AccountId => T::ForumUserId;
 
@@ -908,6 +889,9 @@ decl_event!(
 
         /// Sticky thread updated for category
         CategoryStickyThreadUpdate(CategoryId, Vec<ThreadId>),
+
+        /// Data migration done
+        DataMigrationDone(),
     }
 );
 
@@ -918,6 +902,9 @@ decl_module! {
 
         /// Enable a moderator can moderate a category and its sub categories.
         fn set_moderator_category(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, new_value: bool) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
             let who = ensure_signed(origin)?;
 
             // Not signed by forum SUDO
@@ -982,6 +969,8 @@ decl_module! {
 
         /// Add a new category.
         fn create_category(origin, parent: Option<T::CategoryId>, title: Vec<u8>, description: Vec<u8>, labels: BTreeSet<T::LabelId>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1066,6 +1055,8 @@ decl_module! {
 
         /// Update category
         fn update_category(origin, category_id: T::CategoryId, new_archival_status: Option<bool>, new_deletion_status: Option<bool>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1138,6 +1129,8 @@ decl_module! {
 
         /// Update category
         fn update_category_labels(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, new_labels: BTreeSet<T::LabelId>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1173,6 +1166,8 @@ decl_module! {
         fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, title: Vec<u8>, text: Vec<u8>, labels: BTreeSet<T::LabelId>,
             poll: Option<Poll<T::Moment>>,
         ) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1194,6 +1189,9 @@ decl_module! {
 
         /// Update category
         fn update_thread_labels_by_author(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, new_labels: BTreeSet<T::LabelId>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
@@ -1227,6 +1225,9 @@ decl_module! {
         }
 
         fn update_thread_labels_by_moderator(origin, moderator_id: T::ModeratorId, thread_id: T::ThreadId, new_labels: BTreeSet<T::LabelId>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
@@ -1259,6 +1260,9 @@ decl_module! {
 
         /// submit a poll
         fn vote_on_poll(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, index: u32) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
@@ -1305,6 +1309,8 @@ decl_module! {
 
         /// Moderate thread
         fn moderate_thread(origin, moderator_id: T::ModeratorId, thread_id: T::ThreadId, rationale: Vec<u8>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1357,6 +1363,8 @@ decl_module! {
 
         /// Edit post text
         fn add_post(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, text: Vec<u8>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             /*
              * Update SPEC with new errors,
@@ -1382,6 +1390,9 @@ decl_module! {
 
         /// like or unlike a post.
         fn react_post(origin, forum_user_id: T::ForumUserId, post_id: T::PostId, react: PostReaction) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
@@ -1410,6 +1421,8 @@ decl_module! {
 
         /// Edit post text
         fn edit_post_text(origin, forum_user_id: T::ForumUserId, post_id: T::PostId, new_text: Vec<u8>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             /* Edit spec.
               - forum member guard missing
@@ -1457,6 +1470,8 @@ decl_module! {
 
         /// Moderate post
         fn moderate_post(origin, moderator_id: T::ModeratorId, post_id: T::PostId, rationale: Vec<u8>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1499,6 +1514,8 @@ decl_module! {
 
         /// Set stickied threads for category
         fn  set_stickied_threads(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, stickied_ids: Vec<T::ThreadId>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1525,54 +1542,140 @@ decl_module! {
 
         /// Implement on_initialize for data migration
         fn on_initialize(n: T::BlockNumber) {
+            // start data migration until it is done.
+            if n < <ForkBlockNumber<T>>::get() || DataMigrationDone::get() == true {
+                return;
+            }
 
-            if n >= <ForkBlockNumber<T>>::get() && DataMigrationDone::get() == false {
-                // iterate category from old forum module
-                if old_forum::NextCategoryId::get() > 1 {
-                    for index in 1..old_forum::NextCategoryId::get() {
-                        let old_category = <old_forum::CategoryById<T>>::get(index);
-                        let next_category_id = <NextCategoryId<T>>::get();
-                        let moderator_id = old_category.moderator_id.clone();
-                        Self::get_and_insert_moderator_account_id(moderator_id);
+            // copy all categories from old forum
+            if old_forum::NextCategoryId::get() > <NextCategoryId<T>>::get().into() {
+                let next_category_id: u64 = <NextCategoryId<T>>::get().into();
+                let old_next_category_id = old_forum::NextCategoryId::get();
 
-                        // copy and insert into current module
-                        <CategoryById<T>>::mutate(next_category_id, |value| *value = Category {
-                            id: old_category.id.into(),
-                            title: old_category.title.clone(),
-                            description: old_category.description.clone(),
-                            created_at: BlockchainTimestamp {
-                                block: old_category.created_at.block,
-                                time: old_category.created_at.time,
-                            },
-                            deleted: old_category.deleted,
-                            archived: old_category.archived,
-                            num_direct_subcategories: old_category.num_direct_subcategories,
-                            num_direct_unmoderated_threads: old_category.num_direct_unmoderated_threads,
-                            num_direct_moderated_threads: old_category.num_direct_moderated_threads,
-                            position_in_parent_category: old_category.position_in_parent_category.as_ref().map(
-                                |value| ChildPositionInParentCategory {
-                                    parent_id: value.parent_id.into(),
-                                    child_nr_in_parent_category: value.child_nr_in_parent_category,
-                                },
-                            ),
-                            sticky_thread_ids: vec![],
-                        });
-
-                        // remove from old module
-                        <old_forum::CategoryById<T>>::remove(index);
-                    }
+                for index in next_category_id..old_next_category_id {
+                    let old_category = <old_forum::CategoryById<T>>::get(index);
+                    let category_id: T::CategoryId = index.into();
+                    // Self::get_and_insert_moderator_account_id(old_category.moderator_id);
+                    <CategoryById<T>>::mutate(category_id, |value| *value = Category {
+                        id: old_category.id.into(),
+                        title: old_category.title.clone(),
+                        description: old_category.description.clone(),
+                        created_at: BlockchainTimestamp {
+                            block: old_category.created_at.block,
+                            time: old_category.created_at.time,
+                        },
+                        deleted: old_category.deleted,
+                        archived: old_category.archived,
+                        num_direct_subcategories: old_category.num_direct_subcategories,
+                        num_direct_unmoderated_threads: old_category.num_direct_unmoderated_threads,
+                        num_direct_moderated_threads: old_category.num_direct_moderated_threads,
+                        position_in_parent_category: match old_category.position_in_parent_category {
+                            Some(position) => Some(ChildPositionInParentCategory {
+                                parent_id: position.parent_id.into(),
+                                child_nr_in_parent_category: position.child_nr_in_parent_category,
+                            }),
+                            None => None,
+                        },
+                        sticky_thread_ids: vec![],
+                    });
+                    // remove migrated category from old forum
+                    <old_forum::CategoryById<T>>::remove(index);
                 }
+                // update next category id
+                <NextCategoryId<T>>::mutate(|value| *value = old_next_category_id.into());
+            // copy all threads from old forum
+            } else if old_forum::NextThreadId::get() > <NextThreadId<T>>::get().into() {
+                let next_thread_id: u64 = <NextThreadId<T>>::get().into();
+                // set migrate threads limit for each block
+                let end_thread_id = std::cmp::min(old_forum::NextThreadId::get(), next_thread_id + ThreadsImportedPerBlock::get());
+                // migrate thread one by one
+                for index in next_thread_id..end_thread_id {
+                    let old_thread = <old_forum::ThreadById<T>>::get(index);
+                    let thread_id: T::ThreadId = index.into();
+                    <ThreadById<T>>::mutate(thread_id, |value| *value = Thread {
+                        title: old_thread.title.clone(),
+                        category_id: old_thread.category_id.into(),
+                        moderation: match old_thread.moderation {
+                            Some(old_moderation) => Some( ModerationAction {
+                                moderated_at: BlockchainTimestamp {
+                                    block: old_moderation.moderated_at.block,
+                                    time: old_moderation.moderated_at.time,
+                                },
+                                moderator_id: Self::get_and_insert_moderator_account_id(old_moderation.moderator_id),
+                                rationale: old_moderation.rationale.clone(),
+                            }),
+                            None => None
+                        },
+                        created_at: BlockchainTimestamp {
+                            block: old_thread.created_at.block,
+                            time: old_thread.created_at.time,
+                        },
+                        author_id: Self::get_and_insert_forum_user_account_id(old_thread.author_id),
+                        poll: None,
+                        nr_in_category: old_thread.nr_in_category,
+                        num_unmoderated_posts: old_thread.num_unmoderated_posts,
+                        num_moderated_posts: old_thread.num_moderated_posts,
+                    });
+                    //remove migrated thread from old forum
+                    <old_forum::ThreadById<T>>::remove(index);
+                }
+                // update next thread id
+                <NextThreadId<T>>::mutate(|value| *value = end_thread_id.into());
+            // copy all posts from old forum
+            } else if old_forum::NextPostId::get() > <NextPostId<T>>::get().into() {
+                let next_post_id: u64 = <NextPostId<T>>::get().into();
+                // set migrate posts limit for each block
+                let end_post_id = std::cmp::min(old_forum::NextPostId::get(), next_post_id + PostsImportedPerBlock::get());
+                // copy post one by one
+                for index in next_post_id..end_post_id {
+                    let old_post = <old_forum::PostById<T>>::get(index);
+                    let post_id: T::PostId = index.into();
+                    <PostById<T>>::mutate(post_id, |value| *value = Post {
+                        thread_id: old_post.thread_id.into(),
+                        current_text: old_post.current_text.clone(),
+                        moderation: match old_post.moderation {
+                            Some(old_moderation) => Some( ModerationAction {
+                                moderated_at: BlockchainTimestamp {
+                                    block: old_moderation.moderated_at.block,
+                                    time: old_moderation.moderated_at.time,
+                                },
+                                moderator_id: Self::get_and_insert_moderator_account_id(old_moderation.moderator_id),
+                                rationale: old_moderation.rationale.clone(),
+                            }),
+                            None => None
+                        },
+                        text_change_history: old_post.text_change_history.iter().map(|histroy| PostTextChange {
+                            expired_at: BlockchainTimestamp {
+                                block: histroy.expired_at.block,
+                                time: histroy.expired_at.time,
+                            },
+                            text: histroy.text.clone(),
+                        }).collect(),
+                        created_at: BlockchainTimestamp {
+                            block: old_post.created_at.block,
+                            time: old_post.created_at.time,
+                        },
+                        author_id: Self::get_and_insert_forum_user_account_id(old_post.author_id.clone()),
+                        nr_in_thread: old_post.nr_in_thread,
+                    });
+                    // remove post in old forum module
+                    <old_forum::PostById<T>>::remove(index);
+                }
+                // update next post id
+                <NextPostId<T>>::mutate(|value| *value = end_post_id.into());
+            } else {
+                // set data migration done
+                DataMigrationDone::mutate(|value| *value = true);
 
-                // set to init value and go to next step, copy threads.
-                old_forum::NextCategoryId::mutate(|value| *value = 1);
-
-
+                // Generate event
+                Self::deposit_event(RawEvent::DataMigrationDone());
             }
         }
     }
 }
 
 impl<T: Trait> Module<T> {
+    // mapping account id in old forum to forum user
     fn get_and_insert_forum_user_account_id(forum_user_account: T::AccountId) -> T::ForumUserId {
         if <AccountByForumUserId<T>>::exists(&forum_user_account) {
             <AccountByForumUserId<T>>::get(&forum_user_account)
@@ -1593,7 +1696,7 @@ impl<T: Trait> Module<T> {
             forum_user_id
         }
     }
-
+    // mapping account id in old forum to moderator
     fn get_and_insert_moderator_account_id(moderator_account: T::AccountId) -> T::ModeratorId {
         if <AccountByModeratorId<T>>::exists(&moderator_account) {
             <AccountByModeratorId<T>>::get(&moderator_account)
@@ -1631,6 +1734,9 @@ impl<T: Trait> Module<T> {
         Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>,
         &'static str,
     > {
+        // Ensure data migration is done
+        Self::ensure_data_migration_done()?;
+
         // Get path from parent to root of category tree.
         let category_tree_path =
             Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
@@ -1709,6 +1815,9 @@ impl<T: Trait> Module<T> {
         Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>,
         &'static str,
     > {
+        // Ensure data migration is done
+        Self::ensure_data_migration_done()?;
+
         // Validate post text
         Self::ensure_post_text_is_valid(text)?;
 
@@ -1755,6 +1864,9 @@ impl<T: Trait> Module<T> {
         self_introduction: Vec<u8>,
         post_footer: Option<Vec<u8>>,
     ) -> dispatch::Result {
+        // Ensure data migration is done
+        Self::ensure_data_migration_done()?;
+
         // Ensure user name is valid
         Self::ensure_user_name_is_valid(&name)?;
 
@@ -1792,6 +1904,9 @@ impl<T: Trait> Module<T> {
         name: Vec<u8>,
         self_introduction: Vec<u8>,
     ) -> dispatch::Result {
+        // Ensure data migration is done
+        Self::ensure_data_migration_done()?;
+
         // Ensure user name is valid
         Self::ensure_user_name_is_valid(&name)?;
 
@@ -1819,6 +1934,9 @@ impl<T: Trait> Module<T> {
 
     // The method only called from other module to add some labels.
     pub fn add_labels(labels: Vec<Vec<u8>>) -> dispatch::Result {
+        // Ensure data migration is done
+        Self::ensure_data_migration_done()?;
+
         // Check label name length
         Self::ensure_label_name_valid(&labels)?;
 
