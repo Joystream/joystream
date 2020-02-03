@@ -6,6 +6,7 @@ import { ApiPromise } from '@polkadot/api';
 import { GenericAccountId, Option, u32, u64, u128, Set, Text, Vec } from '@polkadot/types'
 
 import { LinkedMapEntry } from '@polkadot/joy-utils/index'
+import { MyAccountProvider, useMyAccount } from '@polkadot/joy-utils/MyAccountContext'
 
 import {
   Button,
@@ -32,6 +33,10 @@ import {
   StakingPolicy,
   StakingAmountLimitModeKeys,
 } from '@joystream/types/hiring'
+
+import {
+  MemberId,
+} from '@joystream/types/members'
 
 import {
   GenericJoyStreamRoleSchema,
@@ -80,8 +85,6 @@ const newEmptyState = (): State => {
   }
 }
 
-const ALICE = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
-
 export class AdminController extends Controller<State, ITransport> {
   api: ApiPromise
   constructor(transport: ITransport, api: ApiPromise, initialState: State = newEmptyState()) {
@@ -90,7 +93,7 @@ export class AdminController extends Controller<State, ITransport> {
     this.updateState()
   }
 
-  newOpening() {
+  newOpening(creatorAddress: string) {
 
     const start = new ActivateOpeningAt(CurrentBlock)
 
@@ -158,7 +161,7 @@ export class AdminController extends Controller<State, ITransport> {
     )
 
     // Sign and Send the transaction
-    tx.signAndSend(ALICE, ({ events = [], status }) => {
+    tx.signAndSend(creatorAddress, ({ events = [], status }) => {
       if (status.isFinalized) {
         this.updateState()
         console.log('Successful transfer with hash ' + status.asFinalized.toHex());
@@ -172,9 +175,9 @@ export class AdminController extends Controller<State, ITransport> {
     });
   }
 
-  startAcceptingApplications(id: number = 0) {
+  startAcceptingApplications(creatorAddress: string, id: number = 0) {
     const tx = this.api.tx.contentWorkingGroup.acceptCuratorApplications(new u32(id))
-    tx.signAndSend(ALICE, ({ events = [], status }) => {
+    tx.signAndSend(creatorAddress, ({ events = [], status }) => {
       if (status.isFinalized) {
         this.updateState()
         console.log('Successful transfer with hash ' + status.asFinalized.toHex());
@@ -188,17 +191,22 @@ export class AdminController extends Controller<State, ITransport> {
     });
   }
 
-  applyAsACurator(openingId: number, memberId: number, account: string = ALICE) {
+  async applyAsACurator(creatorAddress: string, openingId: number) {
+    const membershipIds = (await this.api.query.members.memberIdsByControllerAccountId(creatorAddress)) as Vec<MemberId>
+    if (membershipIds.length == 0) {
+      console.error("No membship ID associated with this address")
+      return
+    }
     const tx = this.api.tx.contentWorkingGroup.applyOnCuratorOpening(
-      new u64(memberId),
+      membershipIds[0],
       new u32(openingId),
-      new GenericAccountId(account),
-      new GenericAccountId(account),
+      new GenericAccountId(creatorAddress),
+      new GenericAccountId(creatorAddress),
       new Option(u128, undefined),
-      new Option(u128, undefined),
+      new Option(u128, 100),
       new Text("This is my application"),
     )
-    tx.signAndSend(ALICE, ({ events = [], status }) => {
+    tx.signAndSend(creatorAddress, ({ events = [], status }) => {
       if (status.isFinalized) {
         this.updateState()
         console.log('Successful transfer with hash ' + status.asFinalized.toHex());
@@ -212,11 +220,11 @@ export class AdminController extends Controller<State, ITransport> {
     });
   }
 
-  beginApplicantReview(openingId: number) {
+  beginApplicantReview(creatorAddress: string, openingId: number) {
     const tx = this.api.tx.contentWorkingGroup.beginCuratorApplicantReview(
       new u32(openingId),
     )
-    tx.signAndSend(ALICE, ({ events = [], status }) => {
+    tx.signAndSend(creatorAddress, ({ events = [], status }) => {
       if (status.isFinalized) {
         this.updateState()
         console.log('Successful transfer with hash ' + status.asFinalized.toHex());
@@ -230,12 +238,12 @@ export class AdminController extends Controller<State, ITransport> {
     });
   }
 
-  acceptCuratorApplications(openingId: number, applications: Array<number>) {
+  acceptCuratorApplications(creatorAddress: string, openingId: number, applications: Array<number>) {
     const tx = this.api.tx.contentWorkingGroup.fillCuratorOpening(
       new u32(openingId),
       applications,
     )
-    tx.signAndSend(ALICE, ({ events = [], status }) => {
+    tx.signAndSend(creatorAddress, ({ events = [], status }) => {
       if (status.isFinalized) {
         this.updateState()
         console.log('Successful transfer with hash ' + status.asFinalized.toHex());
@@ -317,7 +325,10 @@ export class AdminController extends Controller<State, ITransport> {
 }
 
 export const AdminView = View<AdminController, State>(
-  (state, controller) => (
+    (state, controller) => {
+    const address = useMyAccount().state.address as string
+    return (
+      <MyAccountProvider>
     <Container className="admin">
       {
         [...state.openings.keys()].map(key => {
@@ -376,19 +387,19 @@ export const AdminView = View<AdminController, State>(
                         <Dropdown.Menu>
                           <Dropdown.Item
                             text='Start accepting applications'
-                            onClick={() => { controller.startAcceptingApplications(key) }}
+                            onClick={() => { controller.startAcceptingApplications(address, key) }}
                           />
                           <Dropdown.Item
                             text='Begin applicant review'
-                            onClick={() => { controller.beginApplicantReview(key) }}
+                            onClick={() => { controller.beginApplicantReview(address, key) }}
                           />
                         </Dropdown.Menu>
                       </Dropdown>
 
                     </Grid.Column>
                     <Grid.Column align="right">
-                      <Button onClick={() => { controller.applyAsACurator(key, 0) }}>Apply as curator</Button>
-                      <Button onClick={() => { controller.acceptCuratorApplications(key, [0]) }}>Accept curator applications</Button>
+                      <Button onClick={() => { controller.applyAsACurator(address, key) }}>Apply as curator</Button>
+                      <Button onClick={() => { controller.acceptCuratorApplications(address, key, [0, 1, 2, 3]) }}>Accept curator applications</Button>
                     </Grid.Column>
                   </Grid.Row>
                 </Grid>
@@ -399,8 +410,10 @@ export const AdminView = View<AdminController, State>(
         )
       }
       <p align="right">
-        <Button positive onClick={() => { controller.newOpening() }}>Create new curator group opening</Button>
+        <Button positive onClick={() => { controller.newOpening(address) }}>Create new curator group opening</Button>
       </p>
     </Container>
+      </MyAccountProvider>
   )
+    }
 )

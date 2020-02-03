@@ -53,7 +53,7 @@ export const App: React.FC<Props> = (props: Props) => {
   const transport = new Transport(api)
   const mockTransport = new MockTransport()
 
-  const wgCtrl = new WorkingGroupsController(mockTransport)
+  const wgCtrl = new WorkingGroupsController(transport)
   const oppCtrl = new OpportunityController(transport)
   const oppsCtrl = new OpportunitiesController(transport)
   const applyCtrl = new ApplyController(mockTransport)

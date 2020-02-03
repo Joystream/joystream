@@ -69,7 +69,7 @@ export function View<C extends Controller<S, any>, S>(args: ViewProps<C, S>): Vi
           return Err ? <Err /> : null
         }
         return renderFn(state, controller, context)
-      }, [state])
+      })
     }
   }
 }

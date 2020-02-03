@@ -243,6 +243,15 @@ export class ActiveOpeningStageVariant extends JoyStruct<ActiveOpeningStageVaria
   get stage(): ActiveOpeningStage {
     return this.getField<ActiveOpeningStage>('stage')
   }
+
+  get is_active(): boolean {
+    switch (this.stage.type) {
+      case ActiveOpeningStageKeys.AcceptingApplications:
+        return true
+    }
+
+	  return false
+  }
 }
 
 export enum OpeningStageKeys {
@@ -387,6 +396,18 @@ export class Opening extends JoyStruct<IOpening> {
       return 0
     }
     return appPolicy.unwrap().max_active_applicants.toNumber()
+  }
+
+  get is_active(): boolean {
+    switch (this.stage.type) {
+      case OpeningStageKeys.WaitingToBegin:
+        return true
+
+      case OpeningStageKeys.Active:
+        return (this.stage.value as ActiveOpeningStageVariant).is_active
+    }
+
+	  return false
   }
 }
 

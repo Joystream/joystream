@@ -8,10 +8,11 @@ import { Codec } from '@polkadot/types/types'
 import { LinkedMapEntry } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
+import { GroupMember } from './elements'
 import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Actor, Role } from '@joystream/types/roles';
-import { CuratorApplication, CuratorOpening, Lead, LeadId } from '@joystream/types/content-working-group';
+import { Curator, CuratorId, CuratorApplication, CuratorOpening, Lead, LeadId } from '@joystream/types/content-working-group';
 import { Application, Opening, OpeningId, } from '@joystream/types/hiring';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
@@ -29,6 +30,10 @@ type WorkingGroupPair<HiringModuleType, WorkingGroupType> = {
   workingGroup: WorkingGroupType,
 }
 
+interface IRoleAccounter {
+  role_account: GenericAccountId
+}
+
 export class Transport extends TransportBase implements ITransport {
   protected api: ApiPromise
 
@@ -42,10 +47,105 @@ export class Transport extends TransportBase implements ITransport {
     return this.promise<Array<Role>>(roles.map((role: Role) => role))
   }
 
-  curationGroup(): Promise<WorkingGroupMembership> {
-    // Imagine this queried the API!
-    // TODO: Make this query the API
-    return this.promise<WorkingGroupMembership>({} as WorkingGroupMembership)
+  protected async groupMember(curator: IRoleAccounter, lead: boolean = false): Promise<GroupMember> {
+    return new Promise<GroupMember>(async (resolve, reject) => {
+      const account = curator.role_account
+
+      const memberIds = await this.api.query.members.memberIdsByRootAccountId(account) as Vec<GenericAccountId>
+      if (memberIds.length == 0) {
+        reject("no member account found")
+      }
+
+      const memberId = memberIds[0]
+
+      const profile = await this.api.query.members.memberProfile(memberId) as Option<Codec>
+      if (profile.isNone) {
+        reject("no profile found")
+      }
+
+      const actor = new Actor({
+        member_id: memberId,
+        account: account,
+      })
+
+      resolve({
+        actor: actor,
+        profile: profile.unwrap(),
+        title: lead ? 'Group lead' : 'Content curator',
+        lead: lead,
+        //stake?: Balance, // FIXME
+        //earned?: Balance, // FIXME
+      })
+    })
+  }
+
+  protected async areAnyCuratorRolesOpen(): Promise<boolean> {
+    const nextId = (await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber()
+
+    for (let i = 0; i < nextId; i++) {
+      const curatorOpening = new LinkedMapEntry<CuratorOpening>(
+        CuratorOpening,
+        await this.api.query.contentWorkingGroup.curatorOpeningById(i),
+      )
+
+      const opening = await this.opening(curatorOpening.value.opening_id.toNumber())
+      if (opening.is_active) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  async curationGroup(): Promise<WorkingGroupMembership> {
+    const [nextId, currentLeadId] = await Promise.all([
+      this.api.query.contentWorkingGroup.nextCuratorId(),
+      this.api.query.contentWorkingGroup.currentLeadId(),
+    ])
+
+    const promises: Array<Promise<Codec>> = []
+    for (let i = 0; i < (nextId as CuratorId).toNumber(); i++) {
+      promises.push(this.api.query.contentWorkingGroup.curatorById(i))
+    }
+
+    let results = await Promise.all(promises)
+    const members = await Promise.all(
+      results.map(
+        result => {
+          const curator = new LinkedMapEntry<Curator>(Curator, result)
+          return curator.value
+        }
+      )
+    )
+
+    // If there's a lead ID, then make sure they're promoted to the top
+    const leadId = currentLeadId as Option<LeadId>
+    if (leadId.isSome) {
+      const lead = new LinkedMapEntry<Lead>(
+        Lead,
+        await this.api.query.contentWorkingGroup.leadById(
+          (currentLeadId as Option<LeadId>).unwrap(),
+        ),
+      )
+      const id = members.findIndex(
+        member => {
+          return member.role_account.eq(lead.value.role_account)
+        }
+      )
+      members.unshift(...members.splice(id, 1))
+    }
+
+    return {
+      members: await Promise.all(
+        members
+          .filter(value => value.is_active)
+          .map((result, k) => {
+            return this.groupMember(result, k === 0)
+          }
+          )
+      ),
+      rolesAvailable: await this.areAnyCuratorRolesOpen(),
+    }
   }
 
   storageGroup(): Promise<StorageAndDistributionMembership> {
@@ -127,8 +227,6 @@ export class Transport extends TransportBase implements ITransport {
         curatorOpening.value.getField<OpeningId>("opening_id").toNumber()
       )
 
-      /////////////////////////////////
-      // TODO: Load group lead
       const currentLeadId = await this.api.query.contentWorkingGroup.currentLeadId() as Option<LeadId>
 
       if (currentLeadId.isNone) {
@@ -142,25 +240,6 @@ export class Transport extends TransportBase implements ITransport {
         ),
       )
 
-      const leadAccount = lead.value.getField<GenericAccountId>("role_account")
-
-      const memberIds = await this.api.query.members.memberIdsByRootAccountId(leadAccount) as Vec<GenericAccountId>
-      if (memberIds.length == 0) {
-        reject("no member account found")
-      }
-
-      const memberId = memberIds[0]
-
-      const profile = await this.api.query.members.memberProfile(memberId) as Option<Codec>
-      if (profile.isNone) {
-        reject("no profile found")
-      }
-
-      const actor = new Actor({
-        member_id: memberId,
-        account: leadAccount,
-      })
-
       /////////////////////////////////
       // TODO: Load applications
       const applications = await this.curatorOpeningApplications(id)
@@ -170,14 +249,7 @@ export class Transport extends TransportBase implements ITransport {
 
       // @ts-ignore
       resolve({
-        creator: {
-          actor: actor,
-          profile: profile.unwrap(),
-          title: 'Group lead',
-          lead: true,
-          //stake?: Balance, // FIXME
-          //earned?: Balance, // FIXME
-        },
+        creator: await this.groupMember(lead.value, true),
         opening: opening,
         meta: {
           id: id.toString(),

@@ -105,7 +105,7 @@ function MockTxButton (props: Props) {
 }
 
 function ResolvedButton (props: Props) {
-  const isSubstrate = useTransportContext() instanceof SubstrateTransport;
+  const isSubstrate = true // useTransportContext() instanceof SubstrateTransport;
 
   const Component = isSubstrate
     ? withApi(withMyAccount(TxButton))
