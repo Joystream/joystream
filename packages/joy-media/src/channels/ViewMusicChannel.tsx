@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChannelEntity } from '../entities/MusicChannelEntity';
+import { ChannelEntity } from '../entities/ChannelEntity';
 import Section from '@polkadot/joy-utils/Section';
 import { ChannelHeader } from './ChannelHeader';
 import { MusicAlbumPreviewProps, MusicAlbumPreview } from '../music/MusicAlbumPreview';

@@ -6,13 +6,13 @@ import { CurationStatus } from './CurationStatus.mock';
 
 export const Channel: ChannelType = {
   id: newEntityId(), // TODO here should be ChannelId
-  content: 'Music Channel',
   verified: false,
-  handle: 'top_notes',
-  title: 'Top Notes',
-  description: 'Music is an art form and cultural activity whose medium is sound organized in time. General definitions of music include common elements such as pitch (which governs melody and harmony), rhythm (and its associated concepts tempo, meter, and articulation), dynamics (loudness and softness), and the sonic qualities of timbre and texture (which are sometimes termed the "color" of a musical sound).',
-  avatar: 'https://images.unsplash.com/photo-1485561222814-e6c50477491b?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=200&q=60',
-  banner: 'https://images.unsplash.com/photo-1514119412350-e174d90d280e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=900&q=80',
+  content: 'video',
+  handle: 'bicycles_rocknroll',
+  title: 'Bicycles and Rock-n-Roll',
+  description: 'A bicycle, also called a cycle or bike, is a human-powered or motor-powered, pedal-driven, single-track vehicle, having two wheels attached to a frame, one behind the other. A is called a cyclist, or bicyclist.',
+  avatar: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=200&q=60',
+  banner: 'https://images.unsplash.com/photo-1494488802316-82250d81cfcc?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=900&q=60',
   publicationStatus: PublicationStatus,
   curationStatus: CurationStatus
 };

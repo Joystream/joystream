@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Segment, Statistic, Icon, Label, SemanticICONS, SemanticCOLORS, Tab } from 'semantic-ui-react';
-import { ChannelEntity } from '../entities/MusicChannelEntity';
+import { ChannelEntity } from '../entities/ChannelEntity';
 import { YouHaveNoChannels } from './YouHaveNoChannels';
 import { formatNumber } from '@polkadot/util';
 import { ChannelAvatar } from './ChannelAvatar';
@@ -22,9 +22,9 @@ const TabsAndChannels = (props: ChannelsByOwnerProps) => {
   let videoChannelsCount = 0;
   let musicChannelsCount = 0;
   allChannels.forEach(x => {
-    if (x.contentType === 'video') {
+    if (x.content === 'video') {
       videoChannelsCount++;
-    } else if (x.contentType === 'music') {
+    } else if (x.content === 'music') {
       musicChannelsCount++;
     }
   });
@@ -43,7 +43,7 @@ const TabsAndChannels = (props: ChannelsByOwnerProps) => {
       setChannels(allChannels)
     } else {
       setChannels(allChannels.filter(
-        x => x.contentType === activeContentType)
+        x => x.content === activeContentType)
       )
     }
   }
@@ -59,7 +59,7 @@ const TabsAndChannels = (props: ChannelsByOwnerProps) => {
       <i className='icon plus' />
       Create Channel
     </Link>
-    {channels.map((x, i) => <ChannelPreview key={'my-channel-' + i} channel={x} />)}
+    {channels.map((x, i) => <ChannelPreview key={'ChannelPreview-' + i} channel={x} />)}
   </>
 }
 
@@ -73,9 +73,9 @@ const ChannelPreview = (props: ChannelPreviewProps) => {
   const statSize = 'tiny';
 
   let itemsPublishedLabel = ''
-  if (channel.contentType === 'video') {
+  if (channel.content === 'video') {
     itemsPublishedLabel = 'Videos'
-  } else if (channel.contentType === 'music') {
+  } else if (channel.content === 'music') {
     itemsPublishedLabel = 'Music tracks'
   }
 
@@ -93,7 +93,9 @@ const ChannelPreview = (props: ChannelPreviewProps) => {
 
       <div className='ChannelDetails'>
         <h2 className='ChannelTitle'>
-          <span style={{ marginRight: '1rem' }}>{channel.title}</span>
+          <Link to={`/media/channels/${channel.id}`} style={{ marginRight: '1rem' }}>
+            {channel.title}
+          </Link>
           <Link to={`/media/channels/${channel.id}/edit`} className='ui button basic'>
             <i className='icon pencil' />
             Edit

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChannelEntity } from '../entities/MusicChannelEntity';
+import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelAvatar, ChannelAvatarSize } from './ChannelAvatar';
 
 type Props = {
@@ -11,9 +11,9 @@ export function ChannelPreview (props: Props) {
   const { channel, size } = props;
 
   let subtitle: string | undefined;
-  if (channel.contentType === 'music') {
+  if (channel.content === 'music') {
     subtitle = 'Music channel'
-  } else if (channel.contentType === 'video') {
+  } else if (channel.content === 'video') {
     subtitle = 'Video channel'
   }
 

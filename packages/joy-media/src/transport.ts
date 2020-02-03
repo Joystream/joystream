@@ -16,7 +16,7 @@ import { MusicThemeType } from './schemas/music/MusicTheme';
 import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
 import { MediaDropdownOptions } from './common/MediaDropdownOptions';
-import { ChannelEntity } from './entities/MusicChannelEntity';
+import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId } from '@joystream/types/content-working-group';
 
 export abstract class MediaTransport extends TransportBase {
@@ -28,6 +28,7 @@ export abstract class MediaTransport extends TransportBase {
   abstract allChannels(): Promise<ChannelEntity[]>
   abstract channelById(id: ChannelId): Promise<ChannelType>
   abstract channelsByOwner(memberId: MemberId): Promise<ChannelEntity[]>
+  abstract videosByChannelId(channelId: ChannelId): Promise<VideoType[]>
 
   abstract musicTrackClass(): Promise<Class>
   abstract musicAlbumClass(): Promise<Class>

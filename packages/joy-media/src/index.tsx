@@ -17,9 +17,10 @@ import { Play } from './View';
 import { EditByContentId } from './EditMeta';
 import { withDiscoveryProvider, DiscoveryProviderProps } from './DiscoveryProvider';
 import { MockTransportProvider } from './MediaView';
-import { ChannelsByOwnerView, ChannelsByOwnerWithRouter } from './channels/ChannelsByOwner.view';
+import { ChannelsByOwnerView } from './channels/ChannelsByOwner.view';
 import { EditChannelView, EditChannelWithRouter } from './channels/EditChannel.view';
 import { ExploreContentView } from './explore/ExploreContent.view';
+import { ViewChannelWithRouter } from './channels/ViewChannel.view';
 
 type Props = AppProps & I18nProps & ApiProps & DiscoveryProviderProps & {};
 
@@ -69,7 +70,7 @@ class App extends React.PureComponent<Props> {
             <Route path={`${basePath}/channels/my`} component={ChannelsByOwnerView} />
             <Route path={`${basePath}/channels/new`} component={EditChannelView} />
             <Route path={`${basePath}/channels/:id/edit`} component={EditChannelWithRouter} />
-            <Route path={`${basePath}/channels/:id/`} component={ChannelsByOwnerWithRouter} />
+            <Route path={`${basePath}/channels/:id`} component={ViewChannelWithRouter} />
             <Route path={`${basePath}/explore`} component={ExploreContentView} />
             <Route component={ExploreContentView} />
           </Switch>

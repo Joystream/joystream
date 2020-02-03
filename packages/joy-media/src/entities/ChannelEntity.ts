@@ -3,7 +3,7 @@ import BN from 'bn.js';
 export type ChannelEntity = {
   id: number,
 
-  contentType: 'video' | 'music',
+  content: 'video' | 'music',
   
   handle: string,
   title: string,

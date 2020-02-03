@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from 'semantic-ui-react';
 import { Pluralize } from '@polkadot/joy-utils/Pluralize';
 import { BgImg } from '../common/BgImg';
-import { ChannelEntity } from '../entities/MusicChannelEntity';
+import { ChannelEntity } from '../entities/ChannelEntity';
 
 export type MusicAlbumPreviewProps = {
   id: string,

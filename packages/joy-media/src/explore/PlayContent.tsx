@@ -3,7 +3,7 @@ import { MusicAlbumPreviewProps, MusicAlbumPreview } from '../music/MusicAlbumPr
 import { MusicTrackReaderPreviewProps, MusicTrackReaderPreview } from '../music/MusicTrackReaderPreview';
 import { Pluralize } from '@polkadot/joy-utils/Pluralize';
 import { Table } from 'semantic-ui-react';
-import { ChannelEntity } from '../entities/MusicChannelEntity';
+import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelPreview } from '../channels/ChannelPreview';
 
 type Props = {

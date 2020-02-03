@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChannelEntity } from '../entities/MusicChannelEntity';
+import { ChannelEntity } from '../entities/ChannelEntity';
 import { BgImg } from '../common/BgImg';
 
 const defaultSizePx = 75;

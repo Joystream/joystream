@@ -1,4 +1,4 @@
-import { ChannelEntity } from "@polkadot/joy-media/entities/MusicChannelEntity";
+import { ChannelEntity } from "@polkadot/joy-media/entities/ChannelEntity";
 
 import { AccountIdSamples } from "./AccountIdSamples";
 import BN from 'bn.js';
@@ -15,7 +15,7 @@ export const ChannelDataSample: ChannelEntity = {
 	visibility: 'Public',
 	blocked: false,
 
-	contentType: 'music',
+	content: 'music',
 	handle: 'easy_notes',
 	title: 'Easy Notes',
 	description: 'A fortepiano is an early piano. In principle, the word "fortepiano" can designate any piano dating from the invention of the instrument by Bartolomeo Cristofori around 1700 up to the early 19th century. Most typically, however, it is used to refer to the late-18th to early-19th century instruments for which Haydn, Mozart, and the younger Beethoven wrote their piano music.',
@@ -35,7 +35,7 @@ export const ChannelsDataSamples: ChannelEntity[] = [
 		visibility: 'Unlisted',
 		blocked: true,
 
-		contentType: 'video',
+		content: 'video',
 		handle: 'bicycles_rocknroll',
 		title: 'Bicycles and Rock-n-Roll',
 		description: 'A bicycle, also called a cycle or bike, is a human-powered or motor-powered, pedal-driven, single-track vehicle, having two wheels attached to a frame, one behind the other. A is called a cyclist, or bicyclist.',

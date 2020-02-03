@@ -20,7 +20,7 @@ import { MusicThemeType } from './schemas/music/MusicTheme';
 import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
 import { MemberId } from '@joystream/types/members';
-import { ChannelEntity } from './entities/MusicChannelEntity';
+import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelsDataSamples } from './stories/data/ChannelSamples';
 import { ChannelId } from '@joystream/types/content-working-group';
 
@@ -36,6 +36,10 @@ export class MockTransport extends MediaTransport {
 
   channelsByOwner(_memberId: MemberId): Promise<ChannelEntity[]> {
     return this.promise(ChannelsDataSamples);
+  }
+
+  videosByChannelId(_channelId: ChannelId): Promise<VideoType[]> {
+    return this.promise(mocks.AllVideos);
   }
 
   musicTrackClass(): Promise<Class> {

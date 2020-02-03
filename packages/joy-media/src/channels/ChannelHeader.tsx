@@ -1,6 +1,6 @@
 import React from 'react';
-import { ChannelEntity } from '../entities/MusicChannelEntity';
 import { BgImg } from '../common/BgImg';
+import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelPreview } from './ChannelPreview';
 
 type Props = {

@@ -16,7 +16,7 @@ import { MusicThemeType } from './schemas/music/MusicTheme';
 import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
 import { MemberId } from 'packages/joy-types/lib/members';
-import { ChannelEntity } from './entities/MusicChannelEntity';
+import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId } from '@joystream/types/content-working-group';
 
 export class SubstrateTransport extends MediaTransport {
@@ -30,6 +30,10 @@ export class SubstrateTransport extends MediaTransport {
   }
 
   channelsByOwner(_memberId: MemberId): Promise<ChannelEntity[]> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
+  videosByChannelId(channelId: ChannelId): Promise<VideoType[]> {
     return this.notImplementedYet(); // TODO impl
   }
 
