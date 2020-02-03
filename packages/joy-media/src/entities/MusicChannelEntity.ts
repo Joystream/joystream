@@ -1,12 +1,15 @@
 import BN from 'bn.js';
 
 export type ChannelEntity = {
+  id: number,
+
   contentType: 'video' | 'music',
   
+  handle: string,
   title: string,
   description: string,
-  avatarUrl: string,
-  coverUrl: string,
+  avatar: string,
+  banner: string,
   
   revenueAccountId: string,
   visibility: 'Public' | 'Unlisted',

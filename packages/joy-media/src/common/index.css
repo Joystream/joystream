@@ -160,6 +160,7 @@ $bgSelected: #c7e7fa;
 
 .ChannelTitle {
   color: $blackFont;
+  display: flex;
 }
 
 .ChannelAvatar {

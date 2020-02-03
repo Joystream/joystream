@@ -8,7 +8,6 @@ import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
 import { ChannelType } from './schemas/channel/Channel';
-import { ChannelId } from './channels/ChannelId';
 
 import * as mocks from './mocks';
 import { ContentLicenseType } from './schemas/general/ContentLicense';
@@ -23,8 +22,17 @@ import { VideoCategoryType } from './schemas/video/VideoCategory';
 import { MemberId } from '@joystream/types/members';
 import { ChannelEntity } from './entities/MusicChannelEntity';
 import { ChannelsDataSamples } from './stories/data/ChannelSamples';
+import { ChannelId } from '@joystream/types/content-working-group';
 
 export class MockTransport extends MediaTransport {
+
+  allChannels(): Promise<ChannelEntity[]> {
+    return this.promise(ChannelsDataSamples);
+  }
+
+  channelById(_id: ChannelId): Promise<ChannelType> {
+    return this.promise(mocks.Channel);
+  }
 
   channelsByOwner(_memberId: MemberId): Promise<ChannelEntity[]> {
     return this.promise(ChannelsDataSamples);
@@ -52,10 +60,6 @@ export class MockTransport extends MediaTransport {
 
   videoById (_id: EntityId): Promise<VideoType> {
     return this.promise(mocks.Video);
-  }
-
-  channelById (_id: ChannelId): Promise<ChannelType> {
-    return this.promise(mocks.Channel);
   }
 
   allContentLicenses (): Promise<ContentLicenseType[]> {

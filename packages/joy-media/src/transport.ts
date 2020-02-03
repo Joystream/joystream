@@ -6,7 +6,6 @@ import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
 import { ChannelType } from './schemas/channel/Channel';
-import { ChannelId } from './channels/ChannelId';
 import { ContentLicenseType } from './schemas/general/ContentLicense';
 import { CurationStatusType } from './schemas/general/CurationStatus';
 import { LanguageType } from './schemas/general/Language';
@@ -18,6 +17,7 @@ import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
 import { MediaDropdownOptions } from './common/MediaDropdownOptions';
 import { ChannelEntity } from './entities/MusicChannelEntity';
+import { ChannelId } from '@joystream/types/content-working-group';
 
 export abstract class MediaTransport extends TransportBase {
 
@@ -25,6 +25,8 @@ export abstract class MediaTransport extends TransportBase {
     throw new Error('Substrate transport is not implemented yet');
   }
 
+  abstract allChannels(): Promise<ChannelEntity[]>
+  abstract channelById(id: ChannelId): Promise<ChannelType>
   abstract channelsByOwner(memberId: MemberId): Promise<ChannelEntity[]>
 
   abstract musicTrackClass(): Promise<Class>
@@ -34,7 +36,6 @@ export abstract class MediaTransport extends TransportBase {
   abstract musicTrackById(id: EntityId): Promise<MusicTrackType>
   abstract musicAlbumById(id: EntityId): Promise<MusicAlbumType>
   abstract videoById(id: EntityId): Promise<VideoType>
-  abstract channelById(id: ChannelId): Promise<ChannelType>
 
   abstract allContentLicenses(): Promise<ContentLicenseType[]>
   abstract allCurationStatuses(): Promise<CurationStatusType[]>

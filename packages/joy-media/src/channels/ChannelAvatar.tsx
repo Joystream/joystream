@@ -25,7 +25,7 @@ export function ChannelAvatar (props: Props) {
 
   return <BgImg
     className={`ChannelAvatar ` + size}
-    url={channel.avatarUrl}
+    url={channel.avatar}
     size={sizeToPx(size)}
   />
 }

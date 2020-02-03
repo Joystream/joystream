@@ -5,7 +5,6 @@ import { Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
-import { ChannelId } from './channels/ChannelId';
 import { ChannelType } from './schemas/channel/Channel';
 import { ContentLicenseType } from './schemas/general/ContentLicense';
 import { CurationStatusType } from './schemas/general/CurationStatus';
@@ -18,8 +17,17 @@ import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
 import { MemberId } from 'packages/joy-types/lib/members';
 import { ChannelEntity } from './entities/MusicChannelEntity';
+import { ChannelId } from '@joystream/types/content-working-group';
 
 export class SubstrateTransport extends MediaTransport {
+
+  allChannels(): Promise<ChannelEntity[]> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
+  channelById (_id: ChannelId): Promise<ChannelType> {
+    return this.notImplementedYet(); // TODO impl
+  }
 
   channelsByOwner(_memberId: MemberId): Promise<ChannelEntity[]> {
     return this.notImplementedYet(); // TODO impl
@@ -46,10 +54,6 @@ export class SubstrateTransport extends MediaTransport {
   }
 
   videoById (_id: EntityId): Promise<VideoType> {
-    return this.notImplementedYet(); // TODO impl
-  }
-
-  channelById (_id: ChannelId): Promise<ChannelType> {
     return this.notImplementedYet(); // TODO impl
   }
 

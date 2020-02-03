@@ -1,28 +1,32 @@
 import React from 'react';
 import '../common/index.css';
 
-import { MyChannels } from '../channels/MyChannels';
+import { ChannelsByOwner } from '../channels/ChannelsByOwner';
 import { ChannelsDataSamples } from './data/ChannelSamples';
 import { withMockTransport } from './withMockTransport';
 import EditForm from '../channels/EditChannel';
 import { EditChannelView } from '../channels/EditChannel.view';
+import { MemberId } from '@joystream/types/members';
+import { ChannelId } from '@joystream/types/content-working-group';
 
 export default { 
 	title: 'Media | My channels',
 	decorators: [ withMockTransport ],
 };
 
+const memberId = new MemberId(1);
+
 export const DefaultState = () =>
-	<MyChannels />;
+	<ChannelsByOwner memberId={memberId} />;
 
 export const ChannelCreationSuspended = () =>
-	<MyChannels suspended={true} />;
+	<ChannelsByOwner memberId={memberId} suspended={true} />;
 
 export const YouHaveChannels = () =>
-	<MyChannels channels={ChannelsDataSamples} />;
+	<ChannelsByOwner memberId={memberId} channels={ChannelsDataSamples} />;
 
 export const DefaultEditForm = () =>
 	<EditForm />;
 
 export const MockEditFormView = () =>
-	<EditChannelView id={1} />;
+	<EditChannelView id={new ChannelId(1)} />;

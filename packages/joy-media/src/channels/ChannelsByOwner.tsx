@@ -9,13 +9,13 @@ import { MemberId } from '@joystream/types/members';
 
 // TODO Add component ChannelsByOwner
 
-export type MyChannelsProps = {
+export type ChannelsByOwnerProps = {
   memberId: MemberId,
   suspended?: boolean,
   channels?: ChannelEntity[]
 };
 
-const TabsAndChannels = (props: MyChannelsProps) => {
+const TabsAndChannels = (props: ChannelsByOwnerProps) => {
   const { channels: allChannels = [] } = props;
   const [ channels, setChannels ] = useState(allChannels);
 
@@ -92,15 +92,22 @@ const ChannelPreview = (props: ChannelPreviewProps) => {
       <ChannelAvatar channel={channel} size='big' />
 
       <div className='ChannelDetails'>
-        <h2 className='ChannelTitle'>{channel.title}</h2>
+        <h2 className='ChannelTitle'>
+          <span style={{ marginRight: '1rem' }}>{channel.title}</span>
+          <Link to={`/media/channels/${channel.id}/edit`} className='ui button basic'>
+            <i className='icon pencil' />
+            Edit
+          </Link>
+        </h2>
+
         <p>{channel.description}</p>
 
-        <Label basic size='large' color={visibilityColor} style={{ marginRight: '1rem' }}>
+        <Label basic color={visibilityColor} style={{ marginRight: '1rem' }}>
           <Icon name={visibilityIcon} />
           {channel.visibility}
         </Label>
 
-        {channel.blocked && <Label basic size='large' color='red'>
+        {channel.blocked && <Label basic color='red'>
           <Icon name='dont' />
           Channel blocked
           {' '}<Icon name='question circle outline' size='small' />
@@ -129,7 +136,7 @@ const ChannelPreview = (props: ChannelPreviewProps) => {
   </Segment>
 }
 
-export function MyChannels (props: MyChannelsProps) {
+export function ChannelsByOwner (props: ChannelsByOwnerProps) {
   const { suspended = false, channels = [] } = props;
 
   return <div className='JoyChannels'>

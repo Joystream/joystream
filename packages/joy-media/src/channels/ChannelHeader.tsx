@@ -12,7 +12,7 @@ export function ChannelHeader (props: Props) {
 
   return (
     <div className='ChannelHeader'>
-      <BgImg className='ChannelCover' url={channel.coverUrl} />
+      <BgImg className='ChannelCover' url={channel.banner} />
       <ChannelPreview channel={channel} size='big' />
     </div>
   );

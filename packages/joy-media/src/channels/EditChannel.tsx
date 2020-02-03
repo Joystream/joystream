@@ -7,8 +7,8 @@ import TxButton from '@polkadot/joy-utils/TxButton';
 import { onImageError } from '../utils';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import { ChannelType, ChannelClass as Fields, ChannelValidationSchema, ChannelFormValues, ChannelToFormValues } from '../schemas/channel/Channel';
-import { ChannelId } from './ChannelId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
+import { ChannelId } from '@joystream/types/content-working-group';
 
 export type OuterProps = {
   history?: History,
