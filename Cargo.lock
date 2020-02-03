@@ -1002,7 +1002,7 @@ dependencies = [
  "substrate-client 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-consensus-babe-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-forum-module 1.1.0 (git+https://github.com/joystream/substrate-forum-module?rev=4bdeadaadfcca1fd6e822c520f429d4beacc4c8a)",
- "substrate-hiring-module 1.0.0 (git+https://github.com/Joystream/substrate-hiring-module?rev=30ac830aecb2e61fb943a8c4327bcf52c289e383)",
+ "substrate-hiring-module 1.0.0 (git+https://github.com/Joystream/substrate-hiring-module?rev=b400e3008c98989da7b310c71b7d6d4e4dca34e4)",
  "substrate-offchain-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-recurring-reward-module 1.0.0 (git+https://github.com/Joystream/substrate-recurring-reward-module?rev=417f7bb5b82ae50f02716ac4eefa2fc7952e0f61)",
@@ -3209,7 +3209,7 @@ dependencies = [
 [[package]]
 name = "substrate-hiring-module"
 version = "1.0.0"
-source = "git+https://github.com/Joystream/substrate-hiring-module?rev=30ac830aecb2e61fb943a8c4327bcf52c289e383#30ac830aecb2e61fb943a8c4327bcf52c289e383"
+source = "git+https://github.com/Joystream/substrate-hiring-module?rev=b400e3008c98989da7b310c71b7d6d4e4dca34e4#b400e3008c98989da7b310c71b7d6d4e4dca34e4"
 dependencies = [
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4511,7 +4511,7 @@ dependencies = [
 "checksum substrate-finality-grandpa-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
 "checksum substrate-forum-module 1.1.0 (git+https://github.com/joystream/substrate-forum-module?rev=4bdeadaadfcca1fd6e822c520f429d4beacc4c8a)" = "<none>"
 "checksum substrate-header-metadata 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
-"checksum substrate-hiring-module 1.0.0 (git+https://github.com/Joystream/substrate-hiring-module?rev=30ac830aecb2e61fb943a8c4327bcf52c289e383)" = "<none>"
+"checksum substrate-hiring-module 1.0.0 (git+https://github.com/Joystream/substrate-hiring-module?rev=b400e3008c98989da7b310c71b7d6d4e4dca34e4)" = "<none>"
 "checksum substrate-inherents 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
 "checksum substrate-keyring 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
 "checksum substrate-offchain-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)" = "<none>"
