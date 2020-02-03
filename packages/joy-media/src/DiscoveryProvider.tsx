@@ -180,3 +180,11 @@ export function withDiscoveryProvider<P extends DiscoveryProviderProps> (Compone
     // setDiscoveryProvider // TODO uncomment
   );
 }
+
+export function DELETE_ME_withDiscoveryProvider<P extends DiscoveryProviderProps> (Component: React.ComponentType<P>) {
+  return withMulti(
+    Component,
+    loadBootstrapNodes,
+    setDiscoveryProvider
+  );
+}
