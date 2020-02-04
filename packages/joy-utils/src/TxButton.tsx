@@ -7,9 +7,8 @@ import { QueueConsumer } from '@polkadot/react-components/Status/Context';
 import { withApi } from '@polkadot/react-api/index';
 import { assert } from '@polkadot/util';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
-
 import { useTransportContext } from '@polkadot/joy-media/TransportContext';
-import { SubstrateTransport } from '@polkadot/joy-media/transport.substrate';
+import { MockTransport } from '@polkadot/joy-media/transport.mock';
 import { Button$Sizes } from '@polkadot/react-components/Button/types';
 
 type InjectedProps = {
@@ -108,11 +107,11 @@ function MockTxButton (props: Props) {
 }
 
 function ResolvedButton (props: Props) {
-  const isSubstrate = useTransportContext() instanceof SubstrateTransport;
+  const isMock = useTransportContext() instanceof MockTransport;
 
-  const Component = isSubstrate
-    ? withApi(withMyAccount(TxButton))
-    : MockTxButton;
+  const Component = isMock
+    ? MockTxButton
+    : withApi(withMyAccount(TxButton));
 
   return <Component {...props} />;
 }
