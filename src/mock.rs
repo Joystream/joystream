@@ -1,12 +1,13 @@
 #![cfg(test)]
 
 use crate::*;
+
 use primitives::H256;
 
 use crate::{GenesisConfig, Module, Trait};
 use runtime_primitives::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+    traits::{BlakeTwo256, IdentityLookup, OnInitialize},
     Perbill,
 };
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -15,11 +16,17 @@ impl_outer_origin! {
     pub enum Origin for Runtime {}
 }
 
+mod old_forum_mod {
+    pub use old_forum::Event;
+}
+
 mod forum_mod {
     pub use crate::Event;
 }
+
 impl_outer_event! {
     pub enum TestEvent for Runtime {
+        old_forum_mod<T>,
         forum_mod<T>,
     }
 }
@@ -58,6 +65,23 @@ impl timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+}
+
+pub struct ShimMembershipRegistry {}
+
+impl old_forum::ForumUserRegistry<<Runtime as system::Trait>::AccountId>
+    for ShimMembershipRegistry
+{
+    fn get_forum_user(
+        _id: &<Runtime as system::Trait>::AccountId,
+    ) -> Option<old_forum::ForumUser<<Runtime as system::Trait>::AccountId>> {
+        None
+    }
+}
+
+impl old_forum::Trait for Runtime {
+    type Event = TestEvent;
+    type MembershipRegistry = ShimMembershipRegistry;
 }
 
 impl Trait for Runtime {
@@ -744,6 +768,22 @@ pub fn set_stickied_threads_mock(
     category_id
 }
 
+pub fn on_initialize_mock(origin: OriginType, n: <Runtime as system::Trait>::BlockNumber) {
+    let category_id = OldForumModule::next_category_id();
+    // OldForumModule::add_new_thread(1, good_category_title(), 1);
+    // category_id: CategoryId,
+    //     title: &Vec<u8>,
+    //     author_id: &T::AccountId,
+
+    // OldForumModule::create_category(
+    //     mock_origin(origin),
+    //     None,
+    //     good_category_title(),
+    //     good_category_description(),
+    // );
+    TestForumModule::on_initialize(n);
+}
+
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
         forum_user_by_id: vec![],
@@ -821,6 +861,14 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         category_labels: vec![],
         thread_labels: vec![],
         max_applied_labels: 5,
+
+        // data migration part
+        fork_block_number: 0,
+        threads_imported_per_block: 10,
+        posts_imported_per_block: 10,
+        data_migration_done: true,
+        account_by_forum_user_id: vec![],
+        account_by_moderator_id: vec![],
     }
 }
 
@@ -843,3 +891,5 @@ pub type Timestamp = timestamp::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;
+
+pub type OldForumModule = old_forum::Module<Runtime>;
