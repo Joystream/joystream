@@ -138,8 +138,8 @@ export function getUrlParam(location: Location, paramName: string, deflt: string
 
 // Business logic middleware
 // --------------------------------------
-import { LinkedMapEntry } from './LinkedMapEntry'
-export { LinkedMapEntry }
+import { MultipleLinkedMapEntry, SingleLinkedMapEntry } from './LinkedMapEntry'
+export { MultipleLinkedMapEntry, SingleLinkedMapEntry }
 
 // Business logic middleware
 // --------------------------------------

@@ -5,14 +5,14 @@ import { GenericAccountId, Option, u32, u64, u128, Vec } from '@polkadot/types'
 import { Moment } from '@polkadot/types/interfaces/runtime';
 import { Codec } from '@polkadot/types/types'
 
-import { LinkedMapEntry } from '@polkadot/joy-utils/index'
+import { MultipleLinkedMapEntry, SingleLinkedMapEntry } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
 import { GroupMember } from './elements'
 import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Actor, Role } from '@joystream/types/roles';
-import { Curator, CuratorId, CuratorApplication, CuratorOpening, Lead, LeadId } from '@joystream/types/content-working-group';
+import { Curator, CuratorId, CuratorApplication, CuratorOpening, CuratorOpeningId, Lead, LeadId } from '@joystream/types/content-working-group';
 import { Application, Opening, OpeningId, } from '@joystream/types/hiring';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
@@ -80,15 +80,15 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   protected async areAnyCuratorRolesOpen(): Promise<boolean> {
-    const nextId = (await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber()
 
-    for (let i = 0; i < nextId; i++) {
-      const curatorOpening = new LinkedMapEntry<CuratorOpening>(
-        CuratorOpening,
-        await this.api.query.contentWorkingGroup.curatorOpeningById(i),
-      )
+    const curatorOpenings = new MultipleLinkedMapEntry<CuratorOpeningId, CuratorOpening>(
+      CuratorOpeningId,
+      CuratorOpening,
+      await this.api.query.contentWorkingGroup.curatorOpeningById(),
+    )
 
-      const opening = await this.opening(curatorOpening.value.opening_id.toNumber())
+    for (let i = 0; i < curatorOpenings.values.length; i++) {
+      const opening = await this.opening(curatorOpenings.values[i].opening_id.toNumber())
       if (opening.is_active) {
         return true
       }
@@ -98,39 +98,25 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   async curationGroup(): Promise<WorkingGroupMembership> {
-    const [nextId, currentLeadId] = await Promise.all([
-      this.api.query.contentWorkingGroup.nextCuratorId(),
-      this.api.query.contentWorkingGroup.currentLeadId(),
-    ])
-
-    const promises: Array<Promise<Codec>> = []
-    for (let i = 0; i < (nextId as CuratorId).toNumber(); i++) {
-      promises.push(this.api.query.contentWorkingGroup.curatorById(i))
-    }
-
-    let results = await Promise.all(promises)
-    const members = await Promise.all(
-      results.map(
-        result => {
-          const curator = new LinkedMapEntry<Curator>(Curator, result)
-          return curator.value
-        }
-      )
+    const values = new MultipleLinkedMapEntry<CuratorId, Curator>(
+      CuratorId,
+      Curator,
+      await this.api.query.contentWorkingGroup.curatorById(),
     )
 
+    const members = values.values.toArray().reverse()
+
     // If there's a lead ID, then make sure they're promoted to the top
-    const leadId = currentLeadId as Option<LeadId>
+    const leadId = (await this.api.query.contentWorkingGroup.currentLeadId()) as Option<LeadId>
     if (leadId.isSome) {
-      const lead = new LinkedMapEntry<Lead>(
+      const lead = new SingleLinkedMapEntry<Lead>(
         Lead,
         await this.api.query.contentWorkingGroup.leadById(
-          (currentLeadId as Option<LeadId>).unwrap(),
+          leadId.unwrap(),
         ),
       )
       const id = members.findIndex(
-        member => {
-          return member.role_account.eq(lead.value.role_account)
-        }
+        member => member.role_account.eq(lead.value.role_account)
       )
       members.unshift(...members.splice(id, 1))
     }
@@ -139,10 +125,7 @@ export class Transport extends TransportBase implements ITransport {
       members: await Promise.all(
         members
           .filter(value => value.is_active)
-          .map((result, k) => {
-            return this.groupMember(result, k === 0)
-          }
-          )
+          .map((result, k) => this.groupMember(result, k === 0))
       ),
       rolesAvailable: await this.areAnyCuratorRolesOpen(),
     }
@@ -172,7 +155,7 @@ export class Transport extends TransportBase implements ITransport {
 
   protected async opening(id: number): Promise<Opening> {
     return new Promise<Opening>(async (resolve, reject) => {
-      const opening = new LinkedMapEntry<Opening>(
+      const opening = new SingleLinkedMapEntry<Opening>(
         Opening,
         await this.api.query.hiring.openingById(id),
       )
@@ -185,7 +168,7 @@ export class Transport extends TransportBase implements ITransport {
 
     const nextAppid = await this.api.query.contentWorkingGroup.nextCuratorApplicationId() as u64
     for (let i = 0; i < nextAppid.toNumber(); i++) {
-      const cApplication = new LinkedMapEntry<CuratorApplication>(
+      const cApplication = new SingleLinkedMapEntry<CuratorApplication>(
         CuratorApplication,
         await this.api.query.contentWorkingGroup.curatorApplicationById(i),
       )
@@ -195,7 +178,7 @@ export class Transport extends TransportBase implements ITransport {
       }
 
       const appId = cApplication.value.application_id
-      const baseApplications = new LinkedMapEntry<Application>(
+      const baseApplications = new SingleLinkedMapEntry<Application>(
         Application,
         await this.api.query.hiring.applicationById(
           appId,
@@ -218,7 +201,7 @@ export class Transport extends TransportBase implements ITransport {
         reject("invalid id")
       }
 
-      const curatorOpening = new LinkedMapEntry<CuratorOpening>(
+      const curatorOpening = new SingleLinkedMapEntry<CuratorOpening>(
         CuratorOpening,
         await this.api.query.contentWorkingGroup.curatorOpeningById(id),
       )
@@ -233,7 +216,7 @@ export class Transport extends TransportBase implements ITransport {
         reject("no current lead id")
       }
 
-      const lead = new LinkedMapEntry<Lead>(
+      const lead = new SingleLinkedMapEntry<Lead>(
         Lead,
         await this.api.query.contentWorkingGroup.leadById(
           currentLeadId.unwrap(),

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { ApiPromise } from '@polkadot/api';
 import { GenericAccountId, Option, u32, u64, u128, Set, Text, Vec } from '@polkadot/types'
 
-import { LinkedMapEntry } from '@polkadot/joy-utils/index'
+import { SingleLinkedMapEntry } from '@polkadot/joy-utils/index'
 import { MyAccountProvider, useMyAccount } from '@polkadot/joy-utils/MyAccountContext'
 
 import {
@@ -262,14 +262,14 @@ export class AdminController extends Controller<State, ITransport> {
 
     const nextOpeningId = await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u64
     for (let i = 0; i < nextOpeningId.toNumber(); i++) {
-      const curatorOpening = new LinkedMapEntry<CuratorOpening>(
+      const curatorOpening = new SingleLinkedMapEntry<CuratorOpening>(
         CuratorOpening,
         await this.api.query.contentWorkingGroup.curatorOpeningById(i),
       )
 
       const openingId = curatorOpening.value.getField<u32>('opening_id')
 
-      const baseOpening = new LinkedMapEntry<Opening>(
+      const baseOpening = new SingleLinkedMapEntry<Opening>(
         Opening,
         await this.api.query.hiring.openingById(
           openingId,
@@ -294,13 +294,13 @@ export class AdminController extends Controller<State, ITransport> {
 
     const nextAppid = await this.api.query.contentWorkingGroup.nextCuratorApplicationId() as u64
     for (let i = 0; i < nextAppid.toNumber(); i++) {
-      const cApplication = new LinkedMapEntry<CuratorApplication>(
+      const cApplication = new SingleLinkedMapEntry<CuratorApplication>(
         CuratorApplication,
         await this.api.query.contentWorkingGroup.curatorApplicationById(i),
       )
 
       const appId = cApplication.value.getField<u32>('application_id')
-      const baseApplications = new LinkedMapEntry<Application>(
+      const baseApplications = new SingleLinkedMapEntry<Application>(
         Application,
         await this.api.query.hiring.applicationById(
           appId,
