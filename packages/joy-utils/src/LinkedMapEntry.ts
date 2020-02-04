@@ -47,7 +47,7 @@ export class MultipleLinkedMapEntry<K extends Codec, V extends Codec> extends Tu
     return this[0] as unknown as Vec<K>
   }
 
-  get values(): Vec<V> {
+  get linked_values(): Vec<V> {
     return this[1] as unknown as Vec<V>
   }
 }

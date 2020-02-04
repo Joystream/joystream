@@ -12,8 +12,10 @@ import { GroupMember } from './elements'
 import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Actor, Role } from '@joystream/types/roles';
-import { Curator, CuratorId, CuratorApplication, CuratorOpening, CuratorOpeningId, Lead, LeadId } from '@joystream/types/content-working-group';
-import { Application, Opening, OpeningId, } from '@joystream/types/hiring';
+import { Curator, CuratorId, CuratorApplication, CuratorInduction, CuratorRoleStakeProfile, CuratorOpening, CuratorOpeningId, Lead, LeadId } from '@joystream/types/content-working-group';
+import { Application, Opening, OpeningId } from '@joystream/types/hiring';
+import { Stake } from '@joystream/types/stake';
+import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
@@ -22,7 +24,6 @@ import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 import { keyPairDetails } from './flows/apply'
 
 import { classifyOpeningStage, classifyOpeningStakes } from "./classifiers"
-import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
 import { WorkingGroups } from "./working_groups"
 
 type WorkingGroupPair<HiringModuleType, WorkingGroupType> = {
@@ -32,6 +33,9 @@ type WorkingGroupPair<HiringModuleType, WorkingGroupType> = {
 
 interface IRoleAccounter {
   role_account: GenericAccountId
+  induction?: CuratorInduction
+  role_stake_profile: Option<CuratorRoleStakeProfile>
+  reward_relationship: Option<RewardRelationshipId>
 }
 
 export class Transport extends TransportBase implements ITransport {
@@ -57,6 +61,9 @@ export class Transport extends TransportBase implements ITransport {
       }
 
       const memberId = memberIds[0]
+	  if (!memberId) {
+		  reject("no member id")
+	  }
 
       const profile = await this.api.query.members.memberProfile(memberId) as Option<Codec>
       if (profile.isNone) {
@@ -68,13 +75,43 @@ export class Transport extends TransportBase implements ITransport {
         account: account,
       })
 
+	  let stakeValue: Balance = new u128(0)
+	  if (curator.role_stake_profile && curator.role_stake_profile.isSome) {
+		  const stakeProfile = curator.role_stake_profile.unwrap()
+		  const stake = new SingleLinkedMapEntry<Stake>(
+			  Stake,
+			  await this.api.query.stake.stakes(
+				  stakeProfile.stake_id,
+			  ),
+		  )
+		  stakeValue = stake.value.value
+	  }
+
+	  let earnedValue: Balance = new u128(0)
+	  if (curator.reward_relationship && curator.reward_relationship.isSome) {
+		  const relationshipId = curator.reward_relationship.unwrap()
+		  const relationship = new SingleLinkedMapEntry<RewardRelationship>(
+			  RewardRelationship,
+			  await this.api.query.recurringRewards.rewardRelationships(
+				  relationshipId,
+			  ),
+		  )
+		  const recipient = new SingleLinkedMapEntry<Recipient>(
+			  Recipient,
+			  await this.api.query.recurringRewards.rewardRelationships(
+				  relationship.value.recipient,
+			  ),
+		  )
+		  earnedValue = recipient.value.total_reward_received
+	  }
+
       resolve({
         actor: actor,
         profile: profile.unwrap(),
         title: lead ? 'Group lead' : 'Content curator',
         lead: lead,
-        //stake?: Balance, // FIXME
-        //earned?: Balance, // FIXME
+        stake: stakeValue,
+        earned: earnedValue,
       })
     })
   }
@@ -87,8 +124,8 @@ export class Transport extends TransportBase implements ITransport {
       await this.api.query.contentWorkingGroup.curatorOpeningById(),
     )
 
-    for (let i = 0; i < curatorOpenings.values.length; i++) {
-      const opening = await this.opening(curatorOpenings.values[i].opening_id.toNumber())
+    for (let i = 0; i < curatorOpenings.linked_values.length; i++) {
+      const opening = await this.opening(curatorOpenings.linked_values[i].opening_id.toNumber())
       if (opening.is_active) {
         return true
       }
@@ -104,7 +141,7 @@ export class Transport extends TransportBase implements ITransport {
       await this.api.query.contentWorkingGroup.curatorById(),
     )
 
-    const members = values.values.toArray().reverse()
+    const members = values.linked_values.toArray().reverse()
 
     // If there's a lead ID, then make sure they're promoted to the top
     const leadId = (await this.api.query.contentWorkingGroup.currentLeadId()) as Option<LeadId>

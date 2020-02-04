@@ -112,6 +112,13 @@ export class AdminController extends Controller<State, ITransport> {
           amount_mode: StakingAmountLimitModeKeys.AtLeast,
         }),
       ),
+      role_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(200),
+          amount_mode: StakingAmountLimitModeKeys.AtLeast,
+        }),
+      ),
     })
 
     const tx = this.api.tx.contentWorkingGroup.addCuratorOpening(
@@ -202,7 +209,7 @@ export class AdminController extends Controller<State, ITransport> {
       new u32(openingId),
       new GenericAccountId(creatorAddress),
       new GenericAccountId(creatorAddress),
-      new Option(u128, undefined),
+      new Option(u128, 200),
       new Option(u128, 100),
       new Text("This is my application"),
     )
@@ -399,7 +406,7 @@ export const AdminView = View<AdminController, State>(
                     </Grid.Column>
                     <Grid.Column align="right">
                       <Button onClick={() => { controller.applyAsACurator(address, key) }}>Apply as curator</Button>
-                      <Button onClick={() => { controller.acceptCuratorApplications(address, key, [0, 1, 2, 3]) }}>Accept curator applications</Button>
+                      <Button onClick={() => { controller.acceptCuratorApplications(address, key, [0]) }}>Accept curator applications</Button>
                     </Grid.Column>
                   </Grid.Row>
                 </Grid>

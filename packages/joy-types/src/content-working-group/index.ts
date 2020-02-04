@@ -120,6 +120,10 @@ export class CuratorRoleStakeProfile extends JoyStruct<ICuratorRoleStakeProfile>
       exit_unstaking_period: Option.with(u32),
     }, value);
   }
+
+  get stake_id(): StakeId {
+    return this.getField<StakeId>('stake_id')
+  }
 };
 
 export class CuratorExitInitiationOrigin extends Enum {
@@ -177,6 +181,18 @@ export class CuratorInduction extends JoyStruct<ICuratorInduction> {
       curator_application_id: CuratorApplicationId,
       at_block: u32,
     }, value);
+  }
+
+  get lead(): LeadId {
+    return this.getField<LeadId>('lead')
+  }
+
+  get curator_application_id(): CuratorApplicationId {
+    return this.getField<CuratorApplicationId>('curator_application_id')
+  }
+
+  get at_block(): u32 {
+    return this.getField<u32>('at_block')
   }
 };
 
