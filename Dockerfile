@@ -7,11 +7,7 @@ ENV TERM=xterm
 
 RUN apt-get update && apt-get install git clang -y \
     && ./init-wasm.sh \
-    && git clone https://github.com/Joystream/substrate-runtime-joystream.git \
-    && cd substrate-runtime-joystream \
-    && git fetch --tags \
-    && git checkout v5.3.0 \
-    && cd ../ \
+    && git clone -b v5.3.0 https://github.com/Joystream/substrate-runtime-joystream.git \
     && ./build-runtime.sh \
     && cargo build --release \
     && cargo install --path ./ \
