@@ -257,12 +257,11 @@ export function registerJoystreamTypes() {
   registerForumTypes();
   registerElectionAndProposalTypes();
   registerDiscoveryTypes();
-  registerHiringTypes();
   registerVersionedStoreTypes();
   registerVersionedStorePermissionsTypes();
   registerStakeTypes();
-  registerHiringTypes();
   registerMintTypes();
   registerRecurringRewardsTypes();
+  registerHiringTypes();
   registerContentWorkingGroupTypes();
 }
