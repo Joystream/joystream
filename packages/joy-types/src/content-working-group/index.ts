@@ -349,12 +349,12 @@ export class CuratorApplicationIdToCuratorIdMap extends BTreeMap<ApplicationId, 
 export function registerContentWorkingGroupTypes () {
     try {
       getTypeRegistry().register({
-        ChannelId,
-        CuratorId,
-        CuratorOpeningId,
-        CuratorApplicationId,
-        LeadId,
-        PrincipalId,
+        ChannelId: 'u64',
+        CuratorId: 'u64',
+        CuratorOpeningId: 'u64',
+        CuratorApplicationId: 'u64',
+        LeadId: 'u64',
+        PrincipalId: 'u64',
         Channel,
         ChannelContentType,
         ChannelCurationStatus,

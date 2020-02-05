@@ -66,7 +66,7 @@ export class Mint extends JoyStruct<IMint> {
 export function registerMintTypes () {
     try {
       getTypeRegistry().register({
-        MintId,
+        MintId: 'u64',
         Mint,
       });
     } catch (err) {

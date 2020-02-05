@@ -344,8 +344,8 @@ export class Application extends JoyStruct<IApplication> {
 export function registerHiringTypes() {
   try {
     getTypeRegistry().register({
-      ApplicationId,
-      OpeningId,
+      ApplicationId: 'u64',
+      OpeningId: 'u64',
       Application,
       ApplicationStage,
       // why the prefix? is there some other identically named type?
