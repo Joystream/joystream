@@ -5,6 +5,8 @@ use crate::*;
 use primitives::H256;
 
 use crate::{GenesisConfig, Module, Trait};
+// use old_forum_mod::GenesisConfig as OldGenesisConfig;
+
 use runtime_primitives::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup, OnInitialize},
@@ -768,23 +770,32 @@ pub fn set_stickied_threads_mock(
     category_id
 }
 
-pub fn on_initialize_mock(origin: OriginType, n: <Runtime as system::Trait>::BlockNumber) {
-    let category_id = OldForumModule::next_category_id();
-    // OldForumModule::add_new_thread(1, good_category_title(), 1);
-    // category_id: CategoryId,
-    //     title: &Vec<u8>,
-    //     author_id: &T::AccountId,
+pub fn generate_old_forum_data(moderator_id: <Runtime as system::Trait>::AccountId) {
+    for _ in 0..100 {
+        TestForumModule::create_migrate_data(moderator_id);
+    }
+}
 
-    // OldForumModule::create_category(
-    //     mock_origin(origin),
-    //     None,
-    //     good_category_title(),
-    //     good_category_description(),
-    // );
+pub fn on_initialize_mock(
+    moderator_id: <Runtime as system::Trait>::AccountId,
+    n: <Runtime as system::Trait>::BlockNumber,
+) {
     TestForumModule::on_initialize(n);
 }
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
+    generate_genesis_config(0, 0, true)
+}
+
+pub fn data_migration_genesis_config() -> GenesisConfig<Runtime> {
+    generate_genesis_config(100, 100, false)
+}
+
+pub fn generate_genesis_config(
+    threads_imported_per_block: u64,
+    posts_imported_per_block: u64,
+    data_migration_done: bool,
+) -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
         forum_user_by_id: vec![],
         next_forum_user_id: 1,
@@ -864,9 +875,9 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 
         // data migration part
         fork_block_number: 0,
-        threads_imported_per_block: 10,
-        posts_imported_per_block: 10,
-        data_migration_done: true,
+        threads_imported_per_block: threads_imported_per_block,
+        posts_imported_per_block: posts_imported_per_block,
+        data_migration_done: data_migration_done,
         account_by_forum_user_id: vec![],
         account_by_moderator_id: vec![],
     }

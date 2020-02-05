@@ -2028,3 +2028,23 @@ fn set_stickied_threads_wrong_category() {
         );
     });
 }
+
+#[test]
+fn data_migration() {
+    let config = data_migration_genesis_config();
+    let forum_sudo = config.forum_sudo;
+    build_test_externalities(config).execute_with(|| {
+        generate_old_forum_data(forum_sudo);
+        for index in 0..10 {
+            println!(
+                "block number is {}, migration done is {}",
+                index,
+                TestForumModule::data_migration_done()
+            );
+            on_initialize_mock(forum_sudo, index);
+            println!("old forum category {}", OldForumModule::next_category_id());
+            assert_eq!(TestForumModule::data_migration_done(), false);
+        }
+        assert_eq!(TestForumModule::data_migration_done(), true);
+    });
+}

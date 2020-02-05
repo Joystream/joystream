@@ -32,7 +32,7 @@ rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 default_features = false
 git = 'https://github.com/juniuszhou/substrate-forum-module'
 package = 'substrate-forum-module'
-rev = 'a568063d49afc1cac890658db1586031ef5e2886'
+rev = '2c664a211c129fa96b3b4923f73cf850d8177006'
 
 [dev-dependencies]
 runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
