@@ -11,7 +11,8 @@
   "maintainers": [],
   "dependencies": {
     "@polkadot/types": "^0.96.1",
-    "@types/vfile": "^4.0.0"
+    "@types/vfile": "^4.0.0",
+    "ajv": "^6.11.0"
   },
   "directories": {
     "lib": "lib"
