@@ -31,7 +31,7 @@ import {
 } from '@joystream/types/hiring'
 import {
   GenericJoyStreamRoleSchema,
-} from '@joystream/types/hiring/schemas/role.schema'
+} from '@joystream/types/hiring/schemas/role.schema.typings'
 import {
   CuratorApplication,
   CuratorOpening,
