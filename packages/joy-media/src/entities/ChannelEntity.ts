@@ -1,16 +1,9 @@
 import BN from 'bn.js';
+import { ChannelType } from '../schemas/channel/Channel';
 
-export type ChannelEntity = {
-  id: number,
+// TODO rename to EnrichedChannelType
+export type ChannelEntity = ChannelType & {
 
-  content: 'video' | 'music',
-  
-  handle: string,
-  title: string,
-  description: string,
-  avatar: string,
-  banner: string,
-  
   revenueAccountId: string,
   visibility: 'Public' | 'Unlisted',
   blocked: boolean,

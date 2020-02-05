@@ -2,7 +2,7 @@ import React from 'react';
 import '../common/index.css';
 
 import { ExploreContent } from '../explore/ExploreContent';
-import { MusicAlbumSamples, FeaturedAlbums } from './data/MusicAlbumSamples';
+import { FeaturedAlbums } from './data/MusicAlbumSamples';
 import { PlayContent } from '../explore/PlayContent';
 import { Album1TrackSamples } from './data/MusicTrackSamples';
 import { ChannelDataSample } from './data/ChannelSamples';
@@ -15,12 +15,6 @@ export default {
 
 export const DefaultState = () =>
 	<ExploreContent />;
-
-export const FeaturedAndLatestAlbums = () =>
-	<ExploreContent 
-		featuredAlbums={FeaturedAlbums}
-		latestAlbums={MusicAlbumSamples.reverse()}
-	/>;
 
 export const PlayAlbum = () =>
 	<PlayContent 

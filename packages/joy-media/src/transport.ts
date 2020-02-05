@@ -18,6 +18,7 @@ import { VideoCategoryType } from './schemas/video/VideoCategory';
 import { MediaDropdownOptions } from './common/MediaDropdownOptions';
 import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId } from '@joystream/types/content-working-group';
+import { isVideoChannel } from './common';
 
 export abstract class MediaTransport extends TransportBase {
 
@@ -28,7 +29,26 @@ export abstract class MediaTransport extends TransportBase {
   abstract allChannels(): Promise<ChannelEntity[]>
   abstract channelById(id: ChannelId): Promise<ChannelType>
   abstract channelsByOwner(memberId: MemberId): Promise<ChannelEntity[]>
+
+  abstract allVideos(): Promise<VideoType[]>
   abstract videosByChannelId(channelId: ChannelId): Promise<VideoType[]>
+  abstract videoById(id: EntityId): Promise<VideoType>
+  
+  async allVideoChannels(): Promise<ChannelEntity[]> {
+    return (await this.allChannels()).filter(isVideoChannel)
+  }
+
+  async latestVideoChannels(limit: number = 5): Promise<ChannelEntity[]> {
+    return (await this.allVideoChannels())
+      .sort(x => -1 * x.id)
+      .slice(0, limit)
+  }
+
+  async latestVideos(limit: number = 5): Promise<VideoType[]> {
+    return (await this.allVideos())
+      .sort(x => -1 * x.id)
+      .slice(0, limit)
+  }
 
   abstract musicTrackClass(): Promise<Class>
   abstract musicAlbumClass(): Promise<Class>
@@ -36,7 +56,6 @@ export abstract class MediaTransport extends TransportBase {
   
   abstract musicTrackById(id: EntityId): Promise<MusicTrackType>
   abstract musicAlbumById(id: EntityId): Promise<MusicAlbumType>
-  abstract videoById(id: EntityId): Promise<VideoType>
 
   abstract allContentLicenses(): Promise<ContentLicenseType[]>
   abstract allCurationStatuses(): Promise<CurationStatusType[]>

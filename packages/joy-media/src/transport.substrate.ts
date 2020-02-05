@@ -33,6 +33,10 @@ export class SubstrateTransport extends MediaTransport {
     return this.notImplementedYet(); // TODO impl
   }
 
+  allVideos(): Promise<VideoType[]> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
   videosByChannelId(channelId: ChannelId): Promise<VideoType[]> {
     return this.notImplementedYet(); // TODO impl
   }

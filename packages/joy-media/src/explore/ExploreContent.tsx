@@ -1,30 +1,30 @@
 import React from 'react';
 import Section from '@polkadot/joy-utils/Section';
-import { MusicAlbumPreviewProps, MusicAlbumPreview } from '../music/MusicAlbumPreview';
+import { VideoPreviewProps, VideoPreview } from '../video/VideoPreview';
+import { ChannelEntity } from '../entities/ChannelEntity';
+import { ChannelPreview } from '../channels/ChannelPreview';
 
 export type ExploreContentProps = {
-  featuredAlbums?: MusicAlbumPreviewProps[],
-  latestAlbums?: MusicAlbumPreviewProps[],
+  latestVideos?: VideoPreviewProps[],
+  latestVideoChannels?: ChannelEntity[],
 };
 
 export function ExploreContent (props: ExploreContentProps) {
-  const { featuredAlbums = [], latestAlbums = [] } = props;
-
-  // TODO show featured videos
-  
-  // TODO show latest videos
+  const { latestVideos = [], latestVideoChannels = [] } = props;
 
   // TODO show pagination for latest videos
 
+  // TODO show pagination for latest channels
+
   return <div>
-    {featuredAlbums.length > 0 &&
-      <Section title={`Featured albums`}>
-        {featuredAlbums.map((x, i) => <MusicAlbumPreview key={'featured-album-' + i} {...x} size={300} />)}
+    {latestVideos.length > 0 &&
+      <Section title={`Latest videos`}>
+        {latestVideos.map((x, i) => <VideoPreview key={'VideoPreview-' + i} {...x} />)}
       </Section>
     }
-    {latestAlbums.length > 0 &&
-      <Section title={`Latest albums`}>
-        {latestAlbums.map((x, i) => <MusicAlbumPreview key={'latest-album-' + i} {...x} size={170} />)}
+    {latestVideoChannels.length > 0 &&
+      <Section title={`Latest video channels`}>
+        {latestVideoChannels.map((x, i) => <ChannelPreview key={'VideoChannelPreview-' + i} channel={x} />)}
       </Section>
     }
   </div>

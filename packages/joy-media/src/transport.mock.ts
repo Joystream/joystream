@@ -38,6 +38,10 @@ export class MockTransport extends MediaTransport {
     return this.promise(ChannelsDataSamples);
   }
 
+  allVideos(): Promise<VideoType[]> {
+    return this.promise(mocks.AllVideos)
+  }
+
   videosByChannelId(_channelId: ChannelId): Promise<VideoType[]> {
     return this.promise(mocks.AllVideos);
   }
