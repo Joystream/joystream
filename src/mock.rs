@@ -5,7 +5,6 @@ use crate::*;
 use primitives::H256;
 
 use crate::{GenesisConfig, Module, Trait};
-// use old_forum_mod::GenesisConfig as OldGenesisConfig;
 
 use runtime_primitives::{
     testing::Header,
@@ -770,16 +769,18 @@ pub fn set_stickied_threads_mock(
     category_id
 }
 
-pub fn generate_old_forum_data(moderator_id: <Runtime as system::Trait>::AccountId) {
-    for _ in 0..100 {
-        TestForumModule::create_migrate_data(moderator_id);
+pub fn generate_old_forum_data(
+    moderator_id: <Runtime as system::Trait>::AccountId,
+    category_number: u32,
+    thread_number: u32,
+    post_number: u32,
+) {
+    for _ in 0..category_number {
+        TestForumModule::create_migrate_data(moderator_id, thread_number, post_number);
     }
 }
 
-pub fn on_initialize_mock(
-    moderator_id: <Runtime as system::Trait>::AccountId,
-    n: <Runtime as system::Trait>::BlockNumber,
-) {
+pub fn on_initialize_mock(n: <Runtime as system::Trait>::BlockNumber) {
     TestForumModule::on_initialize(n);
 }
 
@@ -787,8 +788,11 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     generate_genesis_config(0, 0, true)
 }
 
-pub fn data_migration_genesis_config() -> GenesisConfig<Runtime> {
-    generate_genesis_config(100, 100, false)
+pub fn data_migration_genesis_config(
+    thread_each_block: u64,
+    post_each_block: u64,
+) -> GenesisConfig<Runtime> {
+    generate_genesis_config(thread_each_block, post_each_block, false)
 }
 
 pub fn generate_genesis_config(
@@ -902,5 +906,3 @@ pub type Timestamp = timestamp::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;
-
-pub type OldForumModule = old_forum::Module<Runtime>;

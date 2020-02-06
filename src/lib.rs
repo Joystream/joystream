@@ -1684,7 +1684,7 @@ impl<T: Trait> Module<T> {
     // used for unit test to generate data for old forum
     // this is only way to generate data then could be used
     // could be commented out in release version
-    fn create_migrate_data(account_id: T::AccountId) {
+    fn create_migrate_data(account_id: T::AccountId, thread_number: u32, post_number: u32) {
         let next_category_id: u64 = old_forum::NextCategoryId::get();
         <old_forum::CategoryById<T>>::mutate(next_category_id, |value| {
             *value = old_forum::Category {
@@ -1703,36 +1703,44 @@ impl<T: Trait> Module<T> {
         });
         old_forum::NextCategoryId::mutate(|value| *value += 1);
 
-        let next_thread_id = old_forum::NextThreadId::get();
-        <old_forum::ThreadById<T>>::mutate(next_thread_id, |value| {
-            *value = old_forum::Thread {
-                id: next_thread_id,
-                title: "default thread title".as_bytes().to_vec(),
-                category_id: next_category_id,
-                nr_in_category: 1,
-                moderation: None,
-                num_unmoderated_posts: 0,
-                num_moderated_posts: 0,
-                created_at: Default::default(),
-                author_id: account_id.clone(),
-            }
-        });
-        old_forum::NextThreadId::mutate(|value| *value += 1);
+        let next_thread_id_for_post = old_forum::NextThreadId::get();
 
-        let next_post_id = old_forum::NextPostId::get();
-        <old_forum::PostById<T>>::mutate(next_post_id, |value| {
-            *value = old_forum::Post {
-                id: next_post_id,
-                thread_id: next_thread_id,
-                nr_in_thread: 1,
-                current_text: "default post test".as_bytes().to_vec(),
-                moderation: None,
-                text_change_history: vec![],
-                created_at: Default::default(),
-                author_id: account_id.clone(),
-            }
-        });
-        old_forum::NextPostId::mutate(|value| *value += 1);
+        // insert threads
+        for index in 0..thread_number {
+            let next_thread_id = old_forum::NextThreadId::get();
+            <old_forum::ThreadById<T>>::mutate(next_thread_id, |value| {
+                *value = old_forum::Thread {
+                    id: next_thread_id,
+                    title: "default thread title".as_bytes().to_vec(),
+                    category_id: next_category_id,
+                    nr_in_category: index,
+                    moderation: None,
+                    num_unmoderated_posts: 0,
+                    num_moderated_posts: 0,
+                    created_at: Default::default(),
+                    author_id: account_id.clone(),
+                }
+            });
+            old_forum::NextThreadId::mutate(|value| *value += 1);
+        }
+
+        // insert posts
+        for index in 0..post_number {
+            let next_post_id = old_forum::NextPostId::get();
+            <old_forum::PostById<T>>::mutate(next_post_id, |value| {
+                *value = old_forum::Post {
+                    id: next_post_id,
+                    thread_id: next_thread_id_for_post,
+                    nr_in_thread: index,
+                    current_text: "default post test".as_bytes().to_vec(),
+                    moderation: None,
+                    text_change_history: vec![],
+                    created_at: Default::default(),
+                    author_id: account_id.clone(),
+                }
+            });
+            old_forum::NextPostId::mutate(|value| *value += 1);
+        }
     }
 
     // mapping account id in old forum to forum user

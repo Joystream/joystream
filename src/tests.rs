@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::mock::*;
-
+use std::time::Instant;
 /// test cases are arranged as two layers.
 /// first layer is each method in defined in module.
 /// second layer is each parameter of the specific method.
@@ -2031,20 +2031,66 @@ fn set_stickied_threads_wrong_category() {
 
 #[test]
 fn data_migration() {
-    let config = data_migration_genesis_config();
+    let config = data_migration_genesis_config(10, 10);
     let forum_sudo = config.forum_sudo;
     build_test_externalities(config).execute_with(|| {
-        generate_old_forum_data(forum_sudo);
-        for index in 0..10 {
-            println!(
-                "block number is {}, migration done is {}",
-                index,
-                TestForumModule::data_migration_done()
-            );
-            on_initialize_mock(forum_sudo, index);
-            println!("old forum category {}", OldForumModule::next_category_id());
+        // add on category thread and post, since old forum start from 0 without setting
+        generate_old_forum_data(forum_sudo, 1, 1, 1);
+        generate_old_forum_data(forum_sudo, 1, 10, 10);
+        for index in 0..4 {
             assert_eq!(TestForumModule::data_migration_done(), false);
+            on_initialize_mock(index);
         }
         assert_eq!(TestForumModule::data_migration_done(), true);
+    });
+}
+
+#[test]
+fn data_migration_thread_performance() {
+    // each block can migrate 100,000 threads in 2 seconds at laptop
+    let config = data_migration_genesis_config(100_000, 1);
+    let forum_sudo = config.forum_sudo;
+    build_test_externalities(config).execute_with(|| {
+        // add on category thread and post, since old forum start from 0 without setting
+        generate_old_forum_data(forum_sudo, 1, 1, 1);
+        // add 100,000 threads to old forum for performance test
+        generate_old_forum_data(forum_sudo, 1, 100_000, 1);
+        for index in 0..4 {
+            assert_eq!(TestForumModule::data_migration_done(), false);
+            let start = Instant::now();
+            on_initialize_mock(index);
+            println!(
+                "Time elapsed in on_initialize_mock is: {:?}",
+                start.elapsed()
+            );
+        }
+        assert_eq!(TestForumModule::data_migration_done(), true);
+        // add wrong assertion to print duration for performance test
+        // assert_eq!(true, false);
+    });
+}
+
+#[test]
+fn data_migration_post_performance() {
+    // each block can migrate 100,000 posts in 2 seconds at laptop
+    let config = data_migration_genesis_config(1, 100_000);
+    let forum_sudo = config.forum_sudo;
+    build_test_externalities(config).execute_with(|| {
+        // add on category thread and post, since old forum start from 0 without setting
+        generate_old_forum_data(forum_sudo, 1, 1, 1);
+        // add 100,000 posts to old forum for performance test
+        generate_old_forum_data(forum_sudo, 1, 1, 100_000);
+        for index in 0..4 {
+            assert_eq!(TestForumModule::data_migration_done(), false);
+            let start = Instant::now();
+            on_initialize_mock(index);
+            println!(
+                "Time elapsed in on_initialize_mock is: {:?}",
+                start.elapsed()
+            );
+        }
+        assert_eq!(TestForumModule::data_migration_done(), true);
+        // add wrong assertion to print duration for performance test
+        // assert_eq!(true, false);
     });
 }
