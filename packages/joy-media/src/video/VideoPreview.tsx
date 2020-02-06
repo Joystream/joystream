@@ -1,4 +1,5 @@
 import React, { CSSProperties } from 'react';
+import { Link } from 'react-router-dom';
 import { BgImg } from '../common/BgImg';
 import { VideoType } from '../schemas/video/Video';
 
@@ -13,7 +14,7 @@ export type VideoPreviewProps = {
 };
 
 export function VideoPreview (props: VideoPreviewProps) {
-  const { size = 200, orientation = 'vertical' } = props;
+  const { id, size = 200, orientation = 'vertical' } = props;
 
   let descStyle: CSSProperties = {};
   if (orientation === 'vertical') {
@@ -25,6 +26,14 @@ export function VideoPreview (props: VideoPreviewProps) {
       <BgImg className='AlbumCover' url={props.thumbnail} size={size} />
       <div className='AlbumDescription' style={descStyle}>
         <h3 className='AlbumTitle'>{props.title}</h3>
+
+        {/* Show only if current use is owner of entity: */}
+        <div>
+          <Link to={`/media/video/${id}/edit`} className='ui button basic small'>
+            <i className='icon pencil' />
+            Edit
+          </Link>
+        </div>
       </div>
     </div>
   );

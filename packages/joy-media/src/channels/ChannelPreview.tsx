@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelAvatar, ChannelAvatarSize } from './ChannelAvatar';
+import { isMusicChannel, isVideoChannel } from '../common';
 
 type Props = {
   channel: ChannelEntity,
@@ -11,10 +12,14 @@ export function ChannelPreview (props: Props) {
   const { channel, size } = props;
 
   let subtitle: string | undefined;
-  if (channel.content === 'music') {
-    subtitle = 'Music channel'
-  } else if (channel.content === 'video') {
+  let icon: 'music' | 'film' | undefined;
+
+  if (isMusicChannel(channel)) {
+    subtitle = 'Music channel',
+    icon = 'music'
+  } else if (isVideoChannel(channel)) {
     subtitle = 'Video channel'
+    icon = 'film'
   }
 
   return (
@@ -22,7 +27,11 @@ export function ChannelPreview (props: Props) {
       <ChannelAvatar channel={channel} size={size} />
       <div>
         <h2 className='ChannelTitle'>{channel.title}</h2>
-        {subtitle && <div className='ChannelSubtitle'>{subtitle}</div>}
+        {subtitle &&
+          <div className='ChannelSubtitle'>
+            {icon && <i className={`icon ${icon}`} />}
+            {subtitle}
+          </div>}
       </div>
     </div>
   );

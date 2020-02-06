@@ -4,7 +4,7 @@ import '../index.css';
 
 import { ContentId } from '@joystream/types/media';
 import { withMockTransport } from './withMockTransport';
-import UploadVideoView from '../upload/UploadVideo.view';
+import EditVideoView from '../upload/EditVideo.view';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 
 export default { 
@@ -20,7 +20,7 @@ export const DefaultState = () =>
 	/>;
 
 export const MockEditFormView = () =>
-	<UploadVideoView
+	<EditVideoView
 		contentId={contentId}
 		id={new EntityId(1)}
 	/>;
