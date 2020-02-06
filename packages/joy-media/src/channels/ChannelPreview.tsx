@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelAvatar, ChannelAvatarSize } from './ChannelAvatar';
-import { isMusicChannel, isVideoChannel } from '../common';
+import { isMusicChannel, isVideoChannel } from './ChannelHelpers';
 
 type Props = {
   channel: ChannelEntity,

@@ -18,7 +18,7 @@ import { VideoCategoryType } from './schemas/video/VideoCategory';
 import { MediaDropdownOptions } from './common/MediaDropdownOptions';
 import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId } from '@joystream/types/content-working-group';
-import { isVideoChannel } from './common';
+import { isVideoChannel } from './channels/ChannelHelpers';
 
 export abstract class MediaTransport extends TransportBase {
 

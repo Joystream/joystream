@@ -7,6 +7,8 @@ import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/
 import { MediaDropdownOptions } from './MediaDropdownOptions';
 import { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
 
+export const datePlaceholder = 'Date in format yyyy-mm-dd';
+
 export type FormCallbacks = {
   onSubmit: OnTxButtonClick,
   onTxSuccess: TxCallback,

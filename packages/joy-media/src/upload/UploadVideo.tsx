@@ -7,11 +7,10 @@ import TxButton, { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
 import { ContentId } from '@joystream/types/media';
 import { onImageError } from '../utils';
 import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues, VideoToFormValues } from '../schemas/video/Video';
-import { MediaFormProps, withMediaForm } from '../common/MediaForms';
+import { MediaFormProps, withMediaForm, datePlaceholder } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { FormTabs } from '../common/FormTabs';
-import { datePlaceholder } from '../common';
 
 export type OuterProps = {
   history?: History,

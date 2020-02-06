@@ -7,12 +7,11 @@ import TxButton from '@polkadot/joy-utils/TxButton';
 import { onImageError } from '../utils';
 import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumClass as Fields, MusicAlbumFormValues, MusicAlbumToFormValues } from '../schemas/music/MusicAlbum';
-import { withMediaForm, MediaFormProps } from '../common/MediaForms';
+import { withMediaForm, MediaFormProps, datePlaceholder } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { MusicTrackReaderPreviewProps } from './MusicTrackReaderPreview';
 import { FormTabs } from '../common/FormTabs';
-import { datePlaceholder } from '../common';
 
 export type OuterProps = {
   history?: History,
