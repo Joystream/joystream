@@ -70,8 +70,8 @@ export class ApplyController extends Controller<State, ITransport> {
     Promise.all(
       [
         this.transport.curationGroupOpening(parseInt(id)),
-		this.transport.openingApplicationRanks(id),
-		this.transport.transactionFee(),
+        this.transport.openingApplicationRanks(id),
+        this.transport.transactionFee(),
       ],
     )
       .then(

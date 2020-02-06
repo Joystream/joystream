@@ -158,7 +158,7 @@ export function registerMembershipTypes () {
       MemberId,
       PaidTermId,
       SubscriptionId,
-      Profile: Profile,
+      Profile,
       UserInfo,
       CheckedUserInfo: {
         handle: 'Text',

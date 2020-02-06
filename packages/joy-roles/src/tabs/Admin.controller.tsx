@@ -50,11 +50,11 @@ import {
 
 import {
   classifyOpeningStage,
-	OpeningStageClassification
+  OpeningStageClassification
 } from '../classifiers'
 
 import {
-	openingDescription,
+  openingDescription,
 } from '../openingStateMarkup'
 
 type ids = {
@@ -72,7 +72,7 @@ type opening = ids & {
   title: string,
   state: OpeningStage,
   applications: Array<application>,
-  classification: OpeningStageClassification, 
+  classification: OpeningStageClassification,
 }
 
 type State = {
@@ -332,95 +332,95 @@ export class AdminController extends Controller<State, ITransport> {
 }
 
 export const AdminView = View<AdminController, State>(
-    (state, controller) => {
+  (state, controller) => {
     const address = useMyAccount().state.address as string
     return (
       <MyAccountProvider>
-    <Container className="admin">
-      {
-        [...state.openings.keys()].map(key => {
-          const opening = state.openings.get(key) as opening
-          return (
-            <Card fluid key={key}>
-              <Card.Content>
-                <Card.Header>
-                  <Label attached="top right">Opening</Label>
-                  <Link to={"/roles/opportunities/" + key}>
-                    {opening.title}
-                  </Link>
+        <Container className="admin">
+          {
+            [...state.openings.keys()].map(key => {
+              const opening = state.openings.get(key) as opening
+              return (
+                <Card fluid key={key}>
+                  <Card.Content>
+                    <Card.Header>
+                      <Label attached="top right">Opening</Label>
+                      <Link to={"/roles/opportunities/" + key}>
+                        {opening.title}
+                      </Link>
 
-                </Card.Header>
-                <Card.Meta>
-                  Working group module ID #{opening.curatorId}, hiring module ID #{opening.openingId}
-                </Card.Meta>
-                <Label ribbon>
-                  {openingDescription(opening.classification.state)}
-                </Label>
-                  <Message info> 
-                    <Message.Header>Raw state</Message.Header>
-                    {JSON.stringify(opening.classification)}
-                  </Message>
-                <h4>Applications</h4>
-                <Table striped>
-                  <Table.Header>
-                    <Table.Row>
-                      <Table.HeaderCell>WG ID</Table.HeaderCell>
-                      <Table.HeaderCell>Hiring mod. ID</Table.HeaderCell>
-                      <Table.HeaderCell>Account</Table.HeaderCell>
-                      <Table.HeaderCell>Member ID</Table.HeaderCell>
-                      <Table.HeaderCell>Stage</Table.HeaderCell>
-                      <Table.HeaderCell></Table.HeaderCell>
-                    </Table.Row>
-                  </Table.Header>
-                  <Table.Body>
-                    {opening.applications.map((app, id) => (
-                      <Table.Row key={app.openingId}>
-                        <Table.Cell>{id}</Table.Cell>
-                        <Table.Cell>{app.openingId}</Table.Cell>
-                        <Table.Cell>{app.account}</Table.Cell>
-                        <Table.Cell>{app.memberId}</Table.Cell>
-                        <Table.Cell>{JSON.stringify(app.stage)}</Table.Cell>
-                        <Table.Cell><Checkbox /></Table.Cell>
-                      </Table.Row>
-                    ))}
-                  </Table.Body>
-                </Table>
-              </Card.Content>
-              <Card.Content extra>
-                <Grid>
-                  <Grid.Row columns={2}>
-                    <Grid.Column>
-                      <Dropdown text='Set stage'>
-                        <Dropdown.Menu>
-                          <Dropdown.Item
-                            text='Start accepting applications'
-                            onClick={() => { controller.startAcceptingApplications(address, key) }}
-                          />
-                          <Dropdown.Item
-                            text='Begin applicant review'
-                            onClick={() => { controller.beginApplicantReview(address, key) }}
-                          />
-                        </Dropdown.Menu>
-                      </Dropdown>
+                    </Card.Header>
+                    <Card.Meta>
+                      Working group module ID #{opening.curatorId}, hiring module ID #{opening.openingId}
+                    </Card.Meta>
+                    <Label ribbon>
+                      {openingDescription(opening.classification.state)}
+                    </Label>
+                    <Message info>
+                      <Message.Header>Raw state</Message.Header>
+                      {JSON.stringify(opening.classification)}
+                    </Message>
+                    <h4>Applications</h4>
+                    <Table striped>
+                      <Table.Header>
+                        <Table.Row>
+                          <Table.HeaderCell>WG ID</Table.HeaderCell>
+                          <Table.HeaderCell>Hiring mod. ID</Table.HeaderCell>
+                          <Table.HeaderCell>Account</Table.HeaderCell>
+                          <Table.HeaderCell>Member ID</Table.HeaderCell>
+                          <Table.HeaderCell>Stage</Table.HeaderCell>
+                          <Table.HeaderCell></Table.HeaderCell>
+                        </Table.Row>
+                      </Table.Header>
+                      <Table.Body>
+                        {opening.applications.map((app, id) => (
+                          <Table.Row key={app.openingId}>
+                            <Table.Cell>{id}</Table.Cell>
+                            <Table.Cell>{app.openingId}</Table.Cell>
+                            <Table.Cell>{app.account}</Table.Cell>
+                            <Table.Cell>{app.memberId}</Table.Cell>
+                            <Table.Cell>{JSON.stringify(app.stage)}</Table.Cell>
+                            <Table.Cell><Checkbox /></Table.Cell>
+                          </Table.Row>
+                        ))}
+                      </Table.Body>
+                    </Table>
+                  </Card.Content>
+                  <Card.Content extra>
+                    <Grid>
+                      <Grid.Row columns={2}>
+                        <Grid.Column>
+                          <Dropdown text='Set stage'>
+                            <Dropdown.Menu>
+                              <Dropdown.Item
+                                text='Start accepting applications'
+                                onClick={() => { controller.startAcceptingApplications(address, key) }}
+                              />
+                              <Dropdown.Item
+                                text='Begin applicant review'
+                                onClick={() => { controller.beginApplicantReview(address, key) }}
+                              />
+                            </Dropdown.Menu>
+                          </Dropdown>
 
-                    </Grid.Column>
-                    <Grid.Column align="right">
-                      <Button onClick={() => { controller.applyAsACurator(address, key) }}>Apply as curator</Button>
-                      <Button onClick={() => { controller.acceptCuratorApplications(address, key, [0]) }}>Accept curator applications</Button>
-                    </Grid.Column>
-                  </Grid.Row>
-                </Grid>
-              </Card.Content>
-            </Card>
-          )
-        }
-        )
-      }
-      <p align="right">
-        <Button positive onClick={() => { controller.newOpening(address) }}>Create new curator group opening</Button>
-      </p>
-    </Container>
+                        </Grid.Column>
+                        <Grid.Column align="right">
+                          <Button onClick={() => { controller.applyAsACurator(address, key) }}>Apply as curator</Button>
+                          <Button onClick={() => { controller.acceptCuratorApplications(address, key, [0]) }}>Accept curator applications</Button>
+                        </Grid.Column>
+                      </Grid.Row>
+                    </Grid>
+                  </Card.Content>
+                </Card>
+              )
+            }
+            )
+          }
+          <p align="right">
+            <Button positive onClick={() => { controller.newOpening(address) }}>Create new curator group opening</Button>
+          </p>
+        </Container>
       </MyAccountProvider>
-  )
-    }
+    )
+  }
 )

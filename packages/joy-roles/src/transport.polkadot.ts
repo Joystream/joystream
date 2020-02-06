@@ -1,8 +1,12 @@
 import { Observable } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
+
 import ApiPromise from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces'
 import { GenericAccountId, Option, u32, u64, u128, Vec } from '@polkadot/types'
 import { Moment } from '@polkadot/types/interfaces/runtime';
+
+import keyringOption from '@polkadot/ui-keyring/options';
 
 import { MultipleLinkedMapEntry, SingleLinkedMapEntry } from '@polkadot/joy-utils/index'
 
@@ -288,8 +292,9 @@ export class Transport extends TransportBase implements ITransport {
     })
   }
 
-  openingApplicationRanks(openingId: string): Promise<Balance[]> {
-    return this.promise<Balance[]>([])
+  async openingApplicationRanks(openingId: string): Promise<Balance[]> {
+    const slots: Balance[] = [new u128(0)]
+    return slots
   }
 
   expectedBlockTime(): Promise<number> {
@@ -315,9 +320,22 @@ export class Transport extends TransportBase implements ITransport {
   transactionFee(): Promise<Balance> {
     return this.promise<Balance>(new u128(5))
   }
+
   accounts(): Subscribable<keyPairDetails[]> {
-    return new Observable<keyPairDetails[]>((observer) => {
-    })
+    return keyringOption.optionsSubject.pipe(
+      map(accounts => {
+        return accounts.all
+          .filter(x => x.value)
+          .map(async (result, k) => {
+            return {
+              shortName: result.name,
+              accountId: new GenericAccountId(result.value as string),
+              balance: await this.api.query.balances.freeBalance(result.value as string),
+            }
+          })
+      }),
+      switchMap(async x => Promise.all(x)),
+    ) as Subscribable<keyPairDetails[]>
   }
 
   openingApplications(): Subscribable<OpeningApplication[]> {
