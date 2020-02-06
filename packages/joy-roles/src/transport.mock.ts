@@ -15,7 +15,7 @@ import {
   ApplicationRationingPolicy,
   StakingPolicy,
 } from "@joystream/types/hiring"
-import { Profile } from '@joystream/types/members';
+import { IProfile } from '@joystream/types/members';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
@@ -115,7 +115,7 @@ export class Transport extends TransportBase implements ITransport {
         memos: new Map<string, Text>([
           ['5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew', new Text("This is a memo")]
         ]),
-        profiles: new Map<number, Profile>([
+        profiles: new Map<number, IProfile>([
           [1, mockProfile("bwhm0")],
           [2, mockProfile(
             "benholdencrowther",

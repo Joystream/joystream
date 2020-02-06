@@ -1,7 +1,8 @@
-import { Enum, getTypeRegistry, Option, Struct, Null, bool, u64, u128, Text, GenericAccountId, Vec } from '@polkadot/types';
+import { Enum, getTypeRegistry, Option, Struct, Null, bool, u32, u64, u128, Text, GenericAccountId, Vec } from '@polkadot/types';
 import { BlockNumber, Moment, BalanceOf } from '@polkadot/types/interfaces';
 import { OptionText } from './index';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
+import { JoyStruct } from './JoyStruct';
 
 export class MemberId extends u64 {}
 export class PaidTermId extends u64 {}
@@ -32,7 +33,7 @@ export class Role extends Enum {
   }
 }
 
-export type Profile = {
+export type IProfile = {
   handle: Text,
   avatar_uri: Text,
   about: Text,
@@ -45,6 +46,67 @@ export type Profile = {
   controller_account: AccountId,
   roles: Vec<ActorInRole>,
 };
+export class Profile extends JoyStruct<IProfile> {
+  constructor(value?: IProfile) {
+    super({
+      handle: Text,
+      avatar_uri: Text,
+      about: Text,
+      registered_at_block: u32,
+      registered_at_time: u64,
+      entry: EntryMethod,
+      suspended: bool,
+      subscription: Option.with(SubscriptionId),
+      root_account: AccountId,
+      controller_account: AccountId,
+      roles: Vec.with(ActorInRole),
+    }, value);
+  }
+
+  get handle (): Text {
+    return this.get('handle') as Text;
+  }
+
+  get avatar_uri (): Text {
+    return this.get('avatar_uri') as Text;
+  }
+
+  get about (): Text {
+    return this.get('about') as Text;
+  }
+
+  get registered_at_block (): u32 {
+    return this.get('registered_at_block') as u32;
+  }
+
+  get registered_at_time (): u64 {
+    return this.get('registered_at_time') as u64;
+  }
+
+  get entry (): EntryMethod {
+    return this.get('entry') as EntryMethod;
+  }
+
+  get suspended (): bool {
+    return this.get('suspended') as bool;
+  }
+
+  get subscription (): Option<SubscriptionId> {
+    return this.get('subscription') as Option<SubscriptionId>;
+  }
+
+  get root_account (): AccountId {
+    return this.get('root_account') as AccountId;
+  }
+
+  get controller_account (): AccountId {
+    return this.get('controller_account') as AccountId;
+  }
+
+  get roles (): Vec<ActorInRole> {
+    return this.get('roles') as Vec<ActorInRole>;
+  }
+}
 
 export class ActorInRole extends Struct {
   constructor (value?: any) {
@@ -96,19 +158,7 @@ export function registerMembershipTypes () {
       MemberId,
       PaidTermId,
       SubscriptionId,
-      Profile: {
-        handle: 'Text',
-        avatar_uri: 'Text',
-        about: 'Text',
-        registered_at_block: 'BlockNumber',
-        registered_at_time: 'Moment',
-        entry: 'EntryMethod',
-        suspended: 'bool',
-        subscription: 'Option<SubscriptionId>',
-        root_account: 'AccountId',
-        controller_account: 'AccountId',
-        roles: 'Vec<ActorInRole>' // BTreeSet<ActorInRole>
-      },
+      Profile: Profile,
       UserInfo,
       CheckedUserInfo: {
         handle: 'Text',

@@ -5,7 +5,7 @@ import { Balance } from '@polkadot/types/interfaces'
 import { Text, u128 } from '@polkadot/types'
 
 import { Actor } from '@joystream/types/roles'
-import { Profile } from '@joystream/types/members';
+import { IProfile } from '@joystream/types/members';
 
 import { ContentCurators, StorageAndDistribution } from "@polkadot/joy-roles/tabs/WorkingGroup"
 import { GroupMember } from "@polkadot/joy-roles/elements"
@@ -90,7 +90,7 @@ export const StorageProvidersSection = () => {
     ['5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp', new Text("This is a memo")]
   ])
 
-  const profiles = new Map<number, Profile>([
+  const profiles = new Map<number, IProfile>([
     [1, mockProfile("bwhm0")],
     [2, mockProfile(
       "benholdencrowther",

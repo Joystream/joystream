@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { Balance } from '@polkadot/types/interfaces';
 import { Actor } from '@joystream/types/roles';
-import { Profile } from '@joystream/types/members';
+import { IProfile } from '@joystream/types/members';
 import { Text } from '@polkadot/types';
 
 import { ActorDetailsView, GroupMember, MemberView, GroupMemberView } from "../elements"
@@ -63,7 +63,7 @@ export type StorageAndDistributionMembership = {
   actors: Actor[]
   balances: Map<string, Balance>
   memos: Map<string, Text>
-  profiles: Map<number, Profile>
+  profiles: Map<number, IProfile>
 }
 
 export const StorageAndDistribution = Loadable<StorageAndDistributionMembership>(
@@ -86,7 +86,7 @@ export const StorageAndDistribution = Loadable<StorageAndDistributionMembership>
                   <MemberView
                     actor={actor}
                     balance={props.balances.get(actor.account.toString())}
-                    profile={props.profiles.get(actor.member_id.toNumber()) as Profile}
+                    profile={props.profiles.get(actor.member_id.toNumber()) as IProfile}
                   />
                 </Table.Cell>
                 <Table.Cell>

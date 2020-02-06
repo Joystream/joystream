@@ -3,7 +3,6 @@ import ApiPromise from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces'
 import { GenericAccountId, Option, u32, u64, u128, Vec } from '@polkadot/types'
 import { Moment } from '@polkadot/types/interfaces/runtime';
-import { Codec } from '@polkadot/types/types'
 
 import { MultipleLinkedMapEntry, SingleLinkedMapEntry } from '@polkadot/joy-utils/index'
 
@@ -16,6 +15,7 @@ import { Curator, CuratorId, CuratorApplication, CuratorInduction, CuratorRoleSt
 import { Application, Opening, OpeningId } from '@joystream/types/hiring';
 import { Stake } from '@joystream/types/stake';
 import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
+import { Profile } from '@joystream/types/members';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
@@ -34,7 +34,7 @@ type WorkingGroupPair<HiringModuleType, WorkingGroupType> = {
 interface IRoleAccounter {
   role_account: GenericAccountId
   induction?: CuratorInduction
-  role_stake_profile: Option<CuratorRoleStakeProfile>
+  role_stake_profile?: Option<CuratorRoleStakeProfile>
   reward_relationship: Option<RewardRelationshipId>
 }
 
@@ -61,11 +61,11 @@ export class Transport extends TransportBase implements ITransport {
       }
 
       const memberId = memberIds[0]
-	  if (!memberId) {
-		  reject("no member id")
-	  }
+      if (!memberId) {
+        reject("no member id")
+      }
 
-      const profile = await this.api.query.members.memberProfile(memberId) as Option<Codec>
+      const profile = await this.api.query.members.memberProfile(memberId) as Option<Profile>
       if (profile.isNone) {
         reject("no profile found")
       }
@@ -75,39 +75,39 @@ export class Transport extends TransportBase implements ITransport {
         account: account,
       })
 
-	  let stakeValue: Balance = new u128(0)
-	  if (curator.role_stake_profile && curator.role_stake_profile.isSome) {
-		  const stakeProfile = curator.role_stake_profile.unwrap()
-		  const stake = new SingleLinkedMapEntry<Stake>(
-			  Stake,
-			  await this.api.query.stake.stakes(
-				  stakeProfile.stake_id,
-			  ),
-		  )
-		  stakeValue = stake.value.value
-	  }
+      let stakeValue: Balance = new u128(0)
+      if (curator.role_stake_profile && curator.role_stake_profile.isSome) {
+        const stakeProfile = curator.role_stake_profile.unwrap()
+        const stake = new SingleLinkedMapEntry<Stake>(
+          Stake,
+          await this.api.query.stake.stakes(
+            stakeProfile.stake_id,
+          ),
+        )
+        stakeValue = stake.value.value
+      }
 
-	  let earnedValue: Balance = new u128(0)
-	  if (curator.reward_relationship && curator.reward_relationship.isSome) {
-		  const relationshipId = curator.reward_relationship.unwrap()
-		  const relationship = new SingleLinkedMapEntry<RewardRelationship>(
-			  RewardRelationship,
-			  await this.api.query.recurringRewards.rewardRelationships(
-				  relationshipId,
-			  ),
-		  )
-		  const recipient = new SingleLinkedMapEntry<Recipient>(
-			  Recipient,
-			  await this.api.query.recurringRewards.rewardRelationships(
-				  relationship.value.recipient,
-			  ),
-		  )
-		  earnedValue = recipient.value.total_reward_received
-	  }
+      let earnedValue: Balance = new u128(0)
+      if (curator.reward_relationship && curator.reward_relationship.isSome) {
+        const relationshipId = curator.reward_relationship.unwrap()
+        const relationship = new SingleLinkedMapEntry<RewardRelationship>(
+          RewardRelationship,
+          await this.api.query.recurringRewards.rewardRelationships(
+            relationshipId,
+          ),
+        )
+        const recipient = new SingleLinkedMapEntry<Recipient>(
+          Recipient,
+          await this.api.query.recurringRewards.rewardRelationships(
+            relationship.value.recipient,
+          ),
+        )
+        earnedValue = recipient.value.total_reward_received
+      }
 
       resolve({
         actor: actor,
-        profile: profile.unwrap(),
+        profile: profile.unwrap() as Profile,
         title: lead ? 'Group lead' : 'Content curator',
         lead: lead,
         stake: stakeValue,
