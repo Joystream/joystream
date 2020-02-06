@@ -5,8 +5,8 @@ export const ExploreContentView = MediaView<ExploreContentProps>({
   component: ExploreContent,
   resolveProps: async (props) => {
     const { transport } = props;
-    const latestVideoChannels = await transport.latestVideoChannels();
-    const latestVideos = await transport.latestVideos();
+    const latestVideoChannels = await transport.latestPublicVideoChannels();
+    const latestVideos = await transport.latestPublicVideos();
     
     return { latestVideos, latestVideoChannels };
   }

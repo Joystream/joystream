@@ -18,7 +18,8 @@ import { VideoCategoryType } from './schemas/video/VideoCategory';
 import { MediaDropdownOptions } from './common/MediaDropdownOptions';
 import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId } from '@joystream/types/content-working-group';
-import { isVideoChannel } from './channels/ChannelHelpers';
+import { isVideoChannel, isPublicChannel } from './channels/ChannelHelpers';
+import { isPublicEntity } from './entities/EntityHelpers';
 
 export abstract class MediaTransport extends TransportBase {
 
@@ -33,19 +34,27 @@ export abstract class MediaTransport extends TransportBase {
   abstract allVideos(): Promise<VideoType[]>
   abstract videosByChannelId(channelId: ChannelId): Promise<VideoType[]>
   abstract videoById(id: EntityId): Promise<VideoType>
-  
-  async allVideoChannels(): Promise<ChannelEntity[]> {
-    return (await this.allChannels()).filter(isVideoChannel)
+
+  async allPublicChannels(): Promise<ChannelEntity[]> {
+    return (await this.allChannels())
+      .filter(isPublicChannel)
   }
 
-  async latestVideoChannels(limit: number = 5): Promise<ChannelEntity[]> {
+  async allVideoChannels(): Promise<ChannelEntity[]> {
+    return (await this.allChannels())
+      .filter(isVideoChannel)
+  }
+
+  async latestPublicVideoChannels(limit: number = 5): Promise<ChannelEntity[]> {
     return (await this.allVideoChannels())
+      .filter(isPublicChannel)
       .sort(x => -1 * x.id)
       .slice(0, limit)
   }
 
-  async latestVideos(limit: number = 5): Promise<VideoType[]> {
+  async latestPublicVideos(limit: number = 5): Promise<VideoType[]> {
     return (await this.allVideos())
+      .filter(isPublicEntity)
       .sort(x => -1 * x.id)
       .slice(0, limit)
   }

@@ -1,14 +1,18 @@
 import { newEntityId } from './EntityId.mock';
 import { CurationStatusType } from '../schemas/general/CurationStatus';
 
-const values = [
-  'Edited',
-  'Updated schema',
-  'Under review',
-  'Removed'
-];
+function newEntity (value: string): CurationStatusType {
+  return { id: newEntityId(), value }
+}
+
+export const CurationStatus = {
+  Edited: newEntity('Edited'),
+  UpdatedSchema: newEntity('Updated schema'),
+  UnderReview: newEntity('Under review'),
+  Removed: newEntity('Removed')
+};
 
 export const AllCurationStatuses: CurationStatusType[] =
-  values.map(value => ({ id: newEntityId(), value }));
+  Object.values(CurationStatus);
 
-export const CurationStatus = AllCurationStatuses[0];
+export const DefaultCurationStatus = CurationStatus.Edited;

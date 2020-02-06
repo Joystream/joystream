@@ -1,12 +1,16 @@
 import { newEntityId } from './EntityId.mock';
 import { PublicationStatusType } from '../schemas/general/PublicationStatus';
 
-const values = [
-  'Unpublished',
-  'Published'
-];
+function newEntity (value: string): PublicationStatusType {
+  return { id: newEntityId(), value }
+}
+
+export const PublicationStatus = {
+  Published: newEntity('Published'),
+  Unpublished: newEntity('Unpublished'),
+};
 
 export const AllPublicationStatuses: PublicationStatusType[] =
-  values.map(value => ({ id: newEntityId(), value }));
+  Object.values(PublicationStatus);
 
-export const PublicationStatus = AllPublicationStatuses[0];
+export const DefaultPublicationStatus = PublicationStatus.Published;

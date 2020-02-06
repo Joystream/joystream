@@ -3,9 +3,9 @@ import { MusicAlbumType } from '../schemas/music/MusicAlbum';
 import { MusicGenre } from './MusicGenre.mock';
 import { MusicMood } from './MusicMood.mock';
 import { MusicTheme } from './MusicTheme.mock';
-import { PublicationStatus } from './PublicationStatus.mock';
+import { DefaultPublicationStatus } from './PublicationStatus.mock';
+import { DefaultCurationStatus } from './CurationStatus.mock';
 import { ContentLicense } from './ContentLicense.mock';
-import { CurationStatus } from './CurationStatus.mock';
 import { Language } from './Language.mock';
 
 export const MusicAlbum: MusicAlbumType = {
@@ -24,8 +24,8 @@ export const MusicAlbum: MusicAlbumType = {
   lyrics: undefined,
   composerOrSongwriter: 'Massive Sand',
   reviews: [],
-  publicationStatus: PublicationStatus,
-  curationStatus: CurationStatus,
+  publicationStatus: DefaultPublicationStatus,
+  curationStatus: DefaultCurationStatus,
   explicit: false,
   license: ContentLicense,
   attribution: undefined

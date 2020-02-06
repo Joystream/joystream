@@ -2,8 +2,8 @@ import { newEntityId } from './EntityId.mock';
 import { VideoType } from '../schemas/video/Video';
 import { Language } from './Language.mock';
 import { VideoCategory } from './VideoCategory.mock';
-import { PublicationStatus } from './PublicationStatus.mock';
-import { CurationStatus } from './CurationStatus.mock';
+import { DefaultPublicationStatus } from './PublicationStatus.mock';
+import { DefaultCurationStatus } from './CurationStatus.mock';
 import { ContentLicense } from './ContentLicense.mock';
 
 const titles = [
@@ -43,8 +43,8 @@ export const AllVideos: VideoType[] = thumbnails.map((thumbnail, i) => ({
   category: VideoCategory,
   link: [],
   object: undefined,
-  publicationStatus: PublicationStatus,
-  curationStatus: CurationStatus,
+  publicationStatus: DefaultPublicationStatus,
+  curationStatus: DefaultCurationStatus,
   explicit: true,
   license: ContentLicense,
   attribution: undefined
