@@ -9,6 +9,8 @@ import {
   u128,
 } from '@polkadot/types'
 
+import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext'
+
 import {
   Accordion,
   Button,
@@ -135,7 +137,7 @@ export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCa
           isUppercase={true}
         />
       ),
-      value: v.accountId,
+      value: v.accountId.toString(),
     })
   })
 
@@ -144,6 +146,8 @@ export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCa
       props.addressCallback(new GenericAccountId(pairs[0].accountId))
     }
   }, [])
+
+  const accCtx = useMyAccount()
 
   return (
     <Form className="fund-source-selector">
@@ -155,7 +159,7 @@ export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCa
           selection
           options={pairs}
           onChange={onChangeDropdown}
-          defaultValue={pairs.length > 0 ? pairs[0].value : null}
+          defaultValue={accCtx.state.inited ? accCtx.state.address : undefined}
         />
       </Form.Field>
       <Form.Field>
