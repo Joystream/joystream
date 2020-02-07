@@ -209,8 +209,8 @@ export class AdminController extends Controller<State, ITransport> {
       new u32(openingId),
       new GenericAccountId(creatorAddress),
       new GenericAccountId(creatorAddress),
-      new Option(u128, 200),
-      new Option(u128, 100),
+      new Option(u128, 400),
+      new Option(u128, 400),
       new Text("This is my application"),
     )
     tx.signAndSend(creatorAddress, ({ events = [], status }) => {

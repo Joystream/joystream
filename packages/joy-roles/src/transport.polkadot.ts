@@ -17,7 +17,7 @@ import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/in
 import { Actor, Role } from '@joystream/types/roles';
 import { Curator, CuratorId, CuratorApplication, CuratorInduction, CuratorRoleStakeProfile, CuratorOpening, CuratorOpeningId, Lead, LeadId } from '@joystream/types/content-working-group';
 import { Application, Opening, OpeningId } from '@joystream/types/hiring';
-import { Stake } from '@joystream/types/stake';
+import { Stake, StakeId } from '@joystream/types/stake';
 import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
 import { Profile } from '@joystream/types/members';
 
@@ -29,6 +29,7 @@ import { keyPairDetails } from './flows/apply'
 
 import { classifyOpeningStage, classifyOpeningStakes } from "./classifiers"
 import { WorkingGroups } from "./working_groups"
+import { Sort, Sum } from './balances'
 
 type WorkingGroupPair<HiringModuleType, WorkingGroupType> = {
   hiringModule: HiringModuleType,
@@ -292,9 +293,36 @@ export class Transport extends TransportBase implements ITransport {
     })
   }
 
+  protected async stakeValue(id: StakeId): Promise<Balance> {
+    const stake = new SingleLinkedMapEntry<Stake>(
+      Stake,
+      await this.api.query.stake.stakes(id),
+    )
+    return stake.value.value
+  }
+
+  protected async openingApplicationTotalStake(application: Application): Promise<Balance> {
+    const promises = new Array<Promise<Balance>>()
+
+    if (application.active_application_staking_id.isSome) {
+      promises.push(this.stakeValue(application.active_application_staking_id.unwrap()))
+    }
+
+    if (application.active_role_staking_id.isSome) {
+      promises.push(this.stakeValue(application.active_role_staking_id.unwrap()))
+    }
+
+    return Sum(await Promise.all(promises))
+  }
+
+  // FIXME: ID should be a number.
   async openingApplicationRanks(openingId: string): Promise<Balance[]> {
-    const slots: Balance[] = [new u128(0)]
-    return slots
+    const applications = await this.curatorOpeningApplications(1)
+    return Sort(
+      await Promise.all(
+        applications.map(application => this.openingApplicationTotalStake(application.hiringModule))
+      )
+    )
   }
 
   expectedBlockTime(): Promise<number> {

@@ -433,6 +433,14 @@ export class Application extends JoyStruct<IApplication> {
       human_readable_text: Text,
     }, value);
   }
+
+  get active_role_staking_id(): Option<StakeId> {
+    return this.getField<Option<StakeId>>('active_role_staking_id')
+  }
+
+  get active_application_staking_id(): Option<StakeId> {
+    return this.getField<Option<StakeId>>('active_application_staking_id')
+  }
 }
 
 export function registerHiringTypes() {
