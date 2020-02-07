@@ -4,6 +4,8 @@ $grayFont: #999;
 $bgHover: #f2f2f2;
 $bgSelected: #c7e7fa;
 
+$borderColor: #e4e4e4;
+
 .JoyBgImg {
   background-color: #ccc;
   background-size: cover;
@@ -97,7 +99,8 @@ $bgSelected: #c7e7fa;
       font-size: 1rem;
       font-weight: bold;
       color: $blackFont;
-      margin-bottom: 0.25rem;
+      margin-top: 0;
+      margin-bottom: 0.5rem;
     }
     .AlbumArtist,
     .AlbumTracksCount {
@@ -261,7 +264,7 @@ $bgSelected: #c7e7fa;
   }
 }
 
-/* Play Album */
+/* Play Album, Video */
 /* ------------------------------------------------------ */
 
 .JoyPlayAlbum {
@@ -271,7 +274,7 @@ $bgSelected: #c7e7fa;
   .JoyPlayAlbum_Main {
     display: flex;
     flex-direction: row;
-    margin-right: 2rem;
+    margin-right: 1rem;
 
     .JoyPlayAlbum_CurrentTrack {
       margin-right: 1rem;
@@ -322,4 +325,17 @@ $bgSelected: #c7e7fa;
   .JoyPlayAlbum_Featured {
     max-width: 200px;
   }
+}
+
+.ContentHeader {
+  border-bottom: 1px solid $borderColor;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.PlayVideoDetails {
+  border-top: 1px solid $borderColor;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
 }
