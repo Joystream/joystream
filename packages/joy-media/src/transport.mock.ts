@@ -42,6 +42,10 @@ export class MockTransport extends MediaTransport {
     return this.promise(mocks.AllVideos)
   }
 
+  featuredVideos(): Promise<VideoType[]> {
+    return this.promise(mocks.AllVideos)
+  }
+
   videosByChannelId(_channelId: ChannelId): Promise<VideoType[]> {
     return this.promise(mocks.AllVideos);
   }
@@ -64,10 +68,6 @@ export class MockTransport extends MediaTransport {
 
   musicAlbumById (_id: EntityId): Promise<MusicAlbumType> {
     return this.promise(mocks.MusicAlbum);
-  }
-
-  videoById (_id: EntityId): Promise<VideoType> {
-    return this.promise(mocks.Video);
   }
 
   allContentLicenses (): Promise<ContentLicenseType[]> {

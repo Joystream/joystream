@@ -37,6 +37,10 @@ export class SubstrateTransport extends MediaTransport {
     return this.notImplementedYet(); // TODO impl
   }
 
+  featuredVideos(): Promise<VideoType[]> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
   videosByChannelId(channelId: ChannelId): Promise<VideoType[]> {
     return this.notImplementedYet(); // TODO impl
   }
@@ -58,10 +62,6 @@ export class SubstrateTransport extends MediaTransport {
   }
 
   musicAlbumById (_id: EntityId): Promise<MusicAlbumType> {
-    return this.notImplementedYet(); // TODO impl
-  }
-
-  videoById (_id: EntityId): Promise<VideoType> {
     return this.notImplementedYet(); // TODO impl
   }
 

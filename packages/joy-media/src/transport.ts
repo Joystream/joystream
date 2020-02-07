@@ -32,8 +32,15 @@ export abstract class MediaTransport extends TransportBase {
   abstract channelsByOwner(memberId: MemberId): Promise<ChannelEntity[]>
 
   abstract allVideos(): Promise<VideoType[]>
+
+  abstract featuredVideos(): Promise<VideoType[]>
+
   abstract videosByChannelId(channelId: ChannelId): Promise<VideoType[]>
-  abstract videoById(id: EntityId): Promise<VideoType>
+
+  async videoById(id: EntityId): Promise<VideoType | undefined> {
+    return (await this.allVideos())
+      .find(x => x.id === id.toNumber())
+  }
 
   async allPublicChannels(): Promise<ChannelEntity[]> {
     return (await this.allChannels())
