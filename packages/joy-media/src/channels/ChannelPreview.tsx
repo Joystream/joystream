@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelAvatar, ChannelAvatarSize } from './ChannelAvatar';
 import { isMusicChannel, isVideoChannel } from './ChannelHelpers';
@@ -26,7 +27,9 @@ export function ChannelPreview (props: Props) {
     <div className={`ChannelPreview ` + (size ? size : '')}>
       <ChannelAvatar channel={channel} size={size} />
       <div>
-        <h2 className='ChannelTitle'>{channel.title}</h2>
+        <Link to={`/media/channels/${channel.id}`}>
+          <h2 className='ChannelTitle'>{channel.title}</h2>
+        </Link>
         {subtitle &&
           <div className='ChannelSubtitle'>
             {icon && <i className={`icon ${icon}`} />}
