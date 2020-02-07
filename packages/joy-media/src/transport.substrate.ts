@@ -25,10 +25,6 @@ export class SubstrateTransport extends MediaTransport {
     return this.notImplementedYet(); // TODO impl
   }
 
-  channelById (_id: ChannelId): Promise<ChannelType> {
-    return this.notImplementedYet(); // TODO impl
-  }
-
   channelsByOwner(_memberId: MemberId): Promise<ChannelEntity[]> {
     return this.notImplementedYet(); // TODO impl
   }

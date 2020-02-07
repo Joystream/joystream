@@ -7,7 +7,6 @@ import { Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
-import { ChannelType } from './schemas/channel/Channel';
 
 import * as mocks from './mocks';
 import { ContentLicenseType } from './schemas/general/ContentLicense';
@@ -28,10 +27,6 @@ export class MockTransport extends MediaTransport {
 
   allChannels(): Promise<ChannelEntity[]> {
     return this.promise(ChannelsDataSamples);
-  }
-
-  channelById(_id: ChannelId): Promise<ChannelType> {
-    return this.promise(mocks.Channel);
   }
 
   channelsByOwner(_memberId: MemberId): Promise<ChannelEntity[]> {
