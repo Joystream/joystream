@@ -98,6 +98,7 @@ impl stake::Trait for Test {
 }
 
 pub type Balances = balances::Module<Test>;
+pub type System = system::Module<Test>;
 pub type Hiring = Module<Test>;
 
 // Intercepts panic method
