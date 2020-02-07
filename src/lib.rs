@@ -17,7 +17,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
-#![cfg_attr(test, feature(proc_macro_hygiene))]
 
 // Test feature dependencies
 #[cfg(all(any(test, feature = "test"), not(target_arch = "wasm32")))]
