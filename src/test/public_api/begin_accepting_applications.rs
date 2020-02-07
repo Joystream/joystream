@@ -1,8 +1,6 @@
-use super::*;
 use crate::mock::*;
+use crate::test::*;
 use rstd::collections::btree_set::BTreeSet;
-
-use add_opening::AddOpeningFixture;
 
 #[test]
 fn begin_accepting_applications_fails_with_no_opening() {
@@ -58,7 +56,7 @@ fn begin_accepting_applications_succeeds() {
             application_rationing_policy: None,
             application_staking_policy: None,
             role_staking_policy: None,
-            human_readable_text: add_opening::HUMAN_READABLE_TEXT.to_vec(),
+            human_readable_text: HUMAN_READABLE_TEXT.to_vec(),
         };
 
         assert_eq!(updated_opening, expected_opening_state);

@@ -1,15 +1,10 @@
-use super::*;
 use crate::mock::*;
+use crate::test::*;
 use crate::StakingAmountLimitMode::Exact;
 use rstd::collections::btree_set::BTreeSet;
 
 static FIRST_BLOCK_HEIGHT: <Test as system::Trait>::BlockNumber = 1;
 pub static HUMAN_READABLE_TEXT: &[u8] = b"HUMAN_READABLE_TEXT!!!!";
-
-/*
-Not covered:
-- ApplicationRationingPolicy (no ensures yet in add_opening)
-*/
 
 pub struct AddOpeningFixture<Balance> {
     pub activate_at: ActivateOpeningAt<BlockNumber>,

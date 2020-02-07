@@ -1,20 +1,12 @@
-use super::*;
 use crate::mock::*;
+use crate::test::*;
+use rstd::collections::btree_map::BTreeMap;
 use stake::NegativeImbalance;
 
-use add_opening::AddOpeningFixture;
+use crate::test::public_api::*;
 
 /*
 Most 'ensures' (add_application() fail reasons) covered in ensure_can_add_application_* tests.
-
-Not covered:
-- staking state checks:
-i.application.active_role_staking_id;
-ii.application.active_application_staking_id;
-- stake module calls:
-i.infallible_opt_stake_initiation -> infallible_stake_initiation_on_application -> stake::create_stake()
-
-- ApplicationDeactivatedHandler
 */
 
 pub struct AddApplicationFixture {
@@ -30,7 +22,7 @@ impl AddApplicationFixture {
             opening_id,
             opt_role_stake_imbalance: None,
             opt_application_stake_imbalance: None,
-            human_readable_text: add_opening::HUMAN_READABLE_TEXT.to_vec(),
+            human_readable_text: HUMAN_READABLE_TEXT.to_vec(),
         }
     }
 
@@ -127,7 +119,7 @@ impl AddApplicationFixture {
                 active_role_staking_id: expected_active_role_staking_id,
                 active_application_staking_id: expected_active_application_staking_id,
                 stage: ApplicationStage::Active,
-                human_readable_text: add_opening::HUMAN_READABLE_TEXT.to_vec(),
+                human_readable_text: HUMAN_READABLE_TEXT.to_vec(),
             };
 
             assert_eq!(found_application, expected_application);
@@ -223,7 +215,8 @@ fn add_application_succeeds_with_crowding_out() {
         application_fixture.opt_application_stake_imbalance =
             Some(stake::NegativeImbalance::<Test>::new(100));
 
-        assert!(application_fixture.add_application().is_ok());
+        let add_appplication_result = application_fixture.add_application();
+        let application_id = add_appplication_result.unwrap().application_id_added;
 
         application_fixture.opt_application_stake_imbalance =
             Some(stake::NegativeImbalance::<Test>::new(101));
@@ -232,6 +225,11 @@ fn add_application_succeeds_with_crowding_out() {
             application_id_added: 1,
             application_id_crowded_out: Some(0),
         }));
+
+        TestApplicationDeactivatedHandler::assert_deactivated_application(
+            application_id,
+            ApplicationDeactivationCause::CrowdedOut,
+        );
     });
 }
 
@@ -259,5 +257,181 @@ fn add_application_fails() {
         application_fixture.call_and_assert(Err(AddApplicationError::StakeAmountTooLow(
             StakePurpose::Application,
         )));
+    });
+}
+
+#[test]
+fn add_application_succeeds_with_created_application_stake() {
+    build_test_externalities().execute_with(|| {
+        let mut opening_fixture = AddOpeningFixture::default();
+        opening_fixture.application_rationing_policy = Some(hiring::ApplicationRationingPolicy {
+            max_active_applicants: 1,
+        });
+        opening_fixture.application_staking_policy = Some(StakingPolicy {
+            amount: 100,
+            amount_mode: StakingAmountLimitMode::AtLeast,
+            crowded_out_unstaking_period_length: None,
+            review_period_expired_unstaking_period_length: None,
+        });
+
+        let add_opening_result = opening_fixture.add_opening();
+        let opening_id = add_opening_result.unwrap();
+
+        let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+        application_fixture.opt_application_stake_imbalance =
+            Some(stake::NegativeImbalance::<Test>::new(100));
+
+        let app_application_result = application_fixture.add_application();
+        let application_id = app_application_result.unwrap().application_id_added;
+
+        let application = <ApplicationById<Test>>::get(application_id);
+        let application_stake_id = application.active_application_staking_id.unwrap();
+
+        let stake = Hiring::staking().get_stake(application_stake_id);
+        let expected_stake = stake::Stake {
+            created: 1,
+            staking_status: stake::StakingStatus::Staked(stake::StakedState {
+                staked_amount: 100,
+                staked_status: stake::StakedStatus::Normal,
+                next_slash_id: 0,
+                ongoing_slashes: BTreeMap::new(),
+            }),
+        };
+
+        assert_eq!(stake, expected_stake);
+    });
+}
+
+#[test]
+fn add_application_succeeds_with_crowding_out_with_staking_mocks() {
+    handle_mock(|| {
+        build_test_externalities().execute_with(|| {
+            let mock = default_mock_for_creating_stake();
+            set_stake_handler_impl(mock.clone());
+
+            let mut opening_fixture = AddOpeningFixture::default();
+            opening_fixture.application_rationing_policy =
+                Some(hiring::ApplicationRationingPolicy {
+                    max_active_applicants: 1,
+                });
+            opening_fixture.application_staking_policy = Some(StakingPolicy {
+                amount: 100,
+                amount_mode: StakingAmountLimitMode::AtLeast,
+                crowded_out_unstaking_period_length: None,
+                review_period_expired_unstaking_period_length: None,
+            });
+
+            let add_opening_result = opening_fixture.add_opening();
+            let opening_id = add_opening_result.unwrap();
+
+            let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+            application_fixture.opt_application_stake_imbalance =
+                Some(stake::NegativeImbalance::<Test>::new(100));
+
+            assert!(application_fixture.add_application().is_ok());
+            mock.borrow_mut().checkpoint();
+
+            application_fixture.opt_application_stake_imbalance =
+                Some(stake::NegativeImbalance::<Test>::new(101));
+
+            let mock2 = {
+                let mut mock = crate::MockStakeHandler::<Test>::new();
+                mock.expect_stake_exists().returning(|_| true);
+
+                mock.expect_stake().times(1).returning(|_, _| Ok(()));
+
+                mock.expect_initiate_unstaking()
+                    .times(1)
+                    .returning(|_, _| Ok(()));
+
+                mock.expect_create_stake().times(1).returning(|| 1);
+
+                mock.expect_get_stake().returning(|_| stake::Stake {
+                    created: 1,
+                    staking_status: stake::StakingStatus::Staked(stake::StakedState {
+                        staked_amount: 100,
+                        staked_status: stake::StakedStatus::Normal,
+                        next_slash_id: 0,
+                        ongoing_slashes: BTreeMap::new(),
+                    }),
+                });
+
+                Rc::new(RefCell::new(mock))
+            };
+
+            set_stake_handler_impl(mock2.clone());
+
+            assert!(application_fixture.add_application().is_ok());
+        });
+    });
+}
+
+#[test]
+fn add_application_succeeds_with_crowding_out_with_role_staking_mocks() {
+    handle_mock(|| {
+        build_test_externalities().execute_with(|| {
+            let mock = default_mock_for_creating_stake();
+            set_stake_handler_impl(mock.clone());
+
+            let mut opening_fixture = AddOpeningFixture::default();
+            opening_fixture.application_rationing_policy =
+                Some(hiring::ApplicationRationingPolicy {
+                    max_active_applicants: 1,
+                });
+            opening_fixture.role_staking_policy = Some(StakingPolicy {
+                amount: 100,
+                amount_mode: StakingAmountLimitMode::AtLeast,
+                crowded_out_unstaking_period_length: None,
+                review_period_expired_unstaking_period_length: None,
+            });
+
+            let add_opening_result = opening_fixture.add_opening();
+            let opening_id = add_opening_result.unwrap();
+
+            let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+            application_fixture.opt_role_stake_imbalance =
+                Some(stake::NegativeImbalance::<Test>::new(100));
+
+            let add_appplication_result = application_fixture.add_application();
+            let application_id = add_appplication_result.unwrap().application_id_added;
+            mock.borrow_mut().checkpoint();
+
+            application_fixture.opt_role_stake_imbalance =
+                Some(stake::NegativeImbalance::<Test>::new(101));
+
+            let mock2 = {
+                let mut mock = crate::MockStakeHandler::<Test>::new();
+                mock.expect_stake_exists().returning(|_| true);
+
+                mock.expect_stake().times(1).returning(|_, _| Ok(()));
+
+                mock.expect_initiate_unstaking()
+                    .times(1)
+                    .returning(|_, _| Ok(()));
+
+                mock.expect_create_stake().times(1).returning(|| 1);
+
+                mock.expect_get_stake().returning(|_| stake::Stake {
+                    created: 1,
+                    staking_status: stake::StakingStatus::Staked(stake::StakedState {
+                        staked_amount: 100,
+                        staked_status: stake::StakedStatus::Normal,
+                        next_slash_id: 0,
+                        ongoing_slashes: BTreeMap::new(),
+                    }),
+                });
+
+                Rc::new(RefCell::new(mock))
+            };
+
+            set_stake_handler_impl(mock2.clone());
+
+            assert!(application_fixture.add_application().is_ok());
+
+            TestApplicationDeactivatedHandler::assert_deactivated_application(
+                application_id,
+                ApplicationDeactivationCause::CrowdedOut,
+            );
+        });
     });
 }

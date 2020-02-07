@@ -1,20 +1,13 @@
-use super::*;
 use crate::mock::*;
+use crate::test::*;
 
-use add_application::AddApplicationFixture;
-use add_opening::AddOpeningFixture;
-use deactivate_application::DeactivateApplicationFixture;
-
+use crate::test::public_api::*;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::result::Result;
+
 /*
 Not covered:
-- ApplicationDeactivatedHandler
 - Application content check
-
-- staking state checks:
-i.application.active_role_staking_id;
-ii.application.active_application_staking_id;
 */
 
 pub struct FillOpeningFixture {
@@ -345,5 +338,105 @@ fn fill_opening_succeeds() {
 
         fill_opening_fixture.successful_applications = apps;
         fill_opening_fixture.call_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn fill_opening_succeeds_with_application_stake_checks() {
+    handle_mock(|| {
+        build_test_externalities().execute_with(|| {
+            let mock = default_mock_for_creating_stake();
+            set_stake_handler_impl(mock.clone());
+
+            let mut opening_fixture = AddOpeningFixture::default();
+            opening_fixture.application_staking_policy = Some(StakingPolicy {
+                amount: 100,
+                amount_mode: StakingAmountLimitMode::AtLeast,
+                crowded_out_unstaking_period_length: None,
+                review_period_expired_unstaking_period_length: None,
+            });
+
+            let add_opening_result = opening_fixture.add_opening();
+            let opening_id = add_opening_result.unwrap();
+
+            let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+            application_fixture.opt_application_stake_imbalance =
+                Some(stake::NegativeImbalance::<Test>::new(100));
+            let app_result = application_fixture.add_application();
+            let application_id = app_result.unwrap().application_id_added;
+
+            assert!(Hiring::begin_review(opening_id).is_ok());
+
+            let mut fill_opening_fixture = FillOpeningFixture::default_for_opening(opening_id);
+            let mut apps = BTreeSet::new();
+            apps.insert(application_id);
+
+            fill_opening_fixture.successful_applications = apps;
+
+            let mock2 = default_mock_for_unstaking();
+            set_stake_handler_impl(mock2.clone());
+
+            fill_opening_fixture.call_and_assert(Ok(()));
+
+            TestApplicationDeactivatedHandler::assert_deactivated_application(
+                application_id,
+                ApplicationDeactivationCause::Hired,
+            );
+        });
+    });
+}
+
+#[test]
+fn fill_opening_succeeds_with_not_role_stake_unstaked() {
+    handle_mock(|| {
+        build_test_externalities().execute_with(|| {
+            let mock = default_mock_for_creating_stake();
+            set_stake_handler_impl(mock.clone());
+
+            let mut opening_fixture = AddOpeningFixture::default();
+            opening_fixture.role_staking_policy = Some(StakingPolicy {
+                amount: 100,
+                amount_mode: StakingAmountLimitMode::AtLeast,
+                crowded_out_unstaking_period_length: None,
+                review_period_expired_unstaking_period_length: None,
+            });
+
+            let add_opening_result = opening_fixture.add_opening();
+            let opening_id = add_opening_result.unwrap();
+
+            let mut application_fixture = AddApplicationFixture::default_for_opening(opening_id);
+            application_fixture.opt_role_stake_imbalance =
+                Some(stake::NegativeImbalance::<Test>::new(100));
+            let app_result = application_fixture.add_application();
+            let application_id = app_result.unwrap().application_id_added;
+
+            assert!(Hiring::begin_review(opening_id).is_ok());
+
+            let mut fill_opening_fixture = FillOpeningFixture::default_for_opening(opening_id);
+            let mut apps = BTreeSet::new();
+            apps.insert(application_id);
+
+            fill_opening_fixture.successful_applications = apps;
+
+            let mock2 = {
+                let mut mock = crate::MockStakeHandler::<Test>::new();
+                mock.expect_stake_exists().returning(|_| true);
+
+                mock.expect_get_stake().returning(|_| stake::Stake {
+                    created: 1,
+                    staking_status: stake::StakingStatus::Staked(stake::StakedState {
+                        staked_amount: 100,
+                        staked_status: stake::StakedStatus::Normal,
+                        next_slash_id: 0,
+                        ongoing_slashes: BTreeMap::new(),
+                    }),
+                });
+
+                Rc::new(RefCell::new(mock))
+            };
+            set_stake_handler_impl(mock2.clone());
+
+            fill_opening_fixture.call_and_assert(Ok(()));
+        });
     });
 }

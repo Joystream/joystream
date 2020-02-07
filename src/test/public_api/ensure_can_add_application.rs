@@ -1,16 +1,8 @@
-use super::*;
 use crate::mock::*;
+use crate::test::*;
 
 use crate::hiring::*;
-use crate::test::add_application::AddApplicationFixture;
-use add_opening::{AddOpeningFixture, HUMAN_READABLE_TEXT};
 use rstd::collections::btree_set::BTreeSet;
-
-/*
-Not covered:
-- application deactivation
-- staking state checks
-*/
 
 #[test]
 fn ensure_can_add_application_fails_with_no_opening() {

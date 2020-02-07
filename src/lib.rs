@@ -15,7 +15,16 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
+
+// Test feature dependencies
+#[cfg(all(any(test, feature = "test"), not(target_arch = "wasm32")))]
+use mockall::predicate::*;
+#[cfg(all(any(test, feature = "test"), not(target_arch = "wasm32")))]
+use mockall::*;
+
+use stake::{InitiateUnstakingError, Stake, StakeActionError, StakingError, Trait as StakeTrait};
 
 use codec::Codec;
 use system;
@@ -30,6 +39,9 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::iter::Iterator;
 use rstd::prelude::*;
+
+use rstd::cell::RefCell;
+use rstd::rc::Rc;
 
 use crate::sr_api_hidden_includes_decl_storage::hidden_include::traits::Imbalance;
 
@@ -66,6 +78,9 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
 
     /// Type that will handle various staking events
     type ApplicationDeactivatedHandler: ApplicationDeactivatedHandler<Self>;
+
+    /// Marker type for Stake module handler. Indicates that hiring module uses stake module mock.
+    type StakeHandlerProvider: StakeHandlerProvider<Self>;
 }
 
 decl_storage! {
@@ -85,7 +100,6 @@ decl_storage! {
 
         /// Internal purpose of given stake, i.e. fro what application, and whether for the role or for the application.
         pub ApplicationIdByStakingId get(stake_purpose_by_staking_id): linked_map T::StakeId => T::ApplicationId;
-
     }
 }
 
@@ -619,7 +633,7 @@ impl<T: Trait> Module<T> {
 
             assert_ne!(
                 deactivation_result,
-                ApplicationDeactivationInitationResult::Ignored
+                ApplicationDeactivationInitiationResult::Ignored
             );
         }
 
@@ -742,7 +756,7 @@ impl<T: Trait> Module<T> {
             hiring::ApplicationDeactivationCause::External,
         );
 
-        assert_ne!(result, ApplicationDeactivationInitationResult::Ignored);
+        assert_ne!(result, ApplicationDeactivationInitiationResult::Ignored);
 
         // DONE
         Ok(())
@@ -938,6 +952,7 @@ pub type NegativeImbalance<T> =
  *  ======== ======== ======== ======== =======
  */
 
+#[derive(PartialEq, Debug, Clone)]
 struct ApplicationsDeactivationsInitiationResult {
     number_of_unstaking_applications: u32,
     number_of_deactivated_applications: u32,
@@ -952,9 +967,9 @@ type ApplicationBTreeMap<T> = BTreeMap<
     >,
 >;
 
-#[derive(PartialEq, Debug)]
-enum ApplicationDeactivationInitationResult {
-    Ignored, // <= is there a case for kicking this out, making sure that initation cannot happen when it may fail?
+#[derive(PartialEq, Debug, Clone)]
+enum ApplicationDeactivationInitiationResult {
+    Ignored, // <= is there a case for kicking this out, making sure that initiation cannot happen when it may fail?
     Unstaking,
     Deactivated,
 }
@@ -1054,7 +1069,7 @@ impl<T: Trait> Module<T> {
         applications
             .iter()
             .map(
-                |(application_id, application)| -> ApplicationDeactivationInitationResult {
+                |(application_id, application)| -> ApplicationDeactivationInitiationResult {
                     // Initiate deactivations!
                     Self::try_to_initiate_application_deactivation(
                         application,
@@ -1074,9 +1089,9 @@ impl<T: Trait> Module<T> {
                 |acc, deactivation_result| {
                     // Update accumulator counters based on what actually happened
                     match deactivation_result {
-                        ApplicationDeactivationInitationResult::Ignored => acc,
+                        ApplicationDeactivationInitiationResult::Ignored => acc,
 
-                        ApplicationDeactivationInitationResult::Unstaking => {
+                        ApplicationDeactivationInitiationResult::Unstaking => {
                             ApplicationsDeactivationsInitiationResult {
                                 number_of_unstaking_applications: 1 + acc
                                     .number_of_unstaking_applications,
@@ -1085,7 +1100,7 @@ impl<T: Trait> Module<T> {
                             }
                         }
 
-                        ApplicationDeactivationInitationResult::Deactivated => {
+                        ApplicationDeactivationInitiationResult::Deactivated => {
                             ApplicationsDeactivationsInitiationResult {
                                 number_of_unstaking_applications: acc
                                     .number_of_unstaking_applications,
@@ -1105,7 +1120,7 @@ impl<T: Trait> Module<T> {
         application_stake_unstaking_period: Option<T::BlockNumber>,
         role_stake_unstaking_period: Option<T::BlockNumber>,
         cause: hiring::ApplicationDeactivationCause,
-    ) -> ApplicationDeactivationInitationResult {
+    ) -> ApplicationDeactivationInitiationResult {
         match application.stage {
             ApplicationStage::Active => {
                 // Initiate unstaking of any active application stake
@@ -1200,18 +1215,17 @@ impl<T: Trait> Module<T> {
 
                 // Return conclusion
                 if was_unstaked {
-                    ApplicationDeactivationInitationResult::Unstaking
+                    ApplicationDeactivationInitiationResult::Unstaking
                 } else {
-                    ApplicationDeactivationInitationResult::Deactivated
+                    ApplicationDeactivationInitiationResult::Deactivated
                 }
             }
-            _ => ApplicationDeactivationInitationResult::Ignored,
+            _ => ApplicationDeactivationInitiationResult::Ignored,
         }
     }
 
     /// Tries to unstake, based on a stake id which, if set, MUST
     /// be ready to be unstaked, with an optional unstaking period.
-    ///
     ///
     /// Returns whether unstaking was actually initiated.
     fn opt_infallible_unstake(
@@ -1222,9 +1236,9 @@ impl<T: Trait> Module<T> {
             // `initiate_unstaking` MUST hold, is runtime invariant, false means code is broken.
             // But should we do panic in runtime? Is there safer way?
 
-            assert!(
-                <stake::Module<T>>::initiate_unstaking(&stake_id, opt_unstaking_period).is_ok()
-            );
+            assert!(T::StakeHandlerProvider::staking()
+                .initiate_unstaking(&stake_id, opt_unstaking_period)
+                .is_ok());
         }
 
         opt_stake_id.is_some()
@@ -1252,7 +1266,7 @@ impl<T: Trait> Module<T> {
         application_id: &T::ApplicationId,
     ) -> T::StakeId {
         // Create stake
-        let new_stake_id = <stake::Module<T>>::create_stake();
+        let new_stake_id = T::StakeHandlerProvider::staking().create_stake();
 
         // Keep track of this stake id to process unstaking callbacks that may
         // be invoked later.
@@ -1269,7 +1283,10 @@ impl<T: Trait> Module<T> {
         //
         // MUST work, is runtime invariant, false means code is broken.
         // But should we do panic in runtime? Is there safer way?
-        assert_eq!(<stake::Module<T>>::stake(&new_stake_id, imbalance), Ok(()));
+        assert_eq!(
+            T::StakeHandlerProvider::staking().stake(&new_stake_id, imbalance),
+            Ok(())
+        );
 
         new_stake_id
     }
@@ -1279,7 +1296,7 @@ impl<T: Trait> Module<T> {
 impl<T: Trait> Module<T> {
     /// Evaluates prospects for a new application
     ///
-    fn would_application_get_added(
+    pub(crate) fn would_application_get_added(
         possible_opening_application_rationing_policy: &Option<ApplicationRationingPolicy>,
         opening_applicants: &BTreeSet<T::ApplicationId>,
         opt_role_stake_balance: &Option<BalanceOf<T>>,
@@ -1362,9 +1379,9 @@ impl<T: Trait> Module<T> {
     fn get_opt_stake_amount(stake_id: Option<T::StakeId>) -> BalanceOf<T> {
         stake_id.map_or(<BalanceOf<T> as Zero>::zero(), |stake_id| {
             // INVARIANT: stake MUST exist in the staking module
-            assert!(<stake::Stakes<T>>::exists(stake_id));
+            assert!(T::StakeHandlerProvider::staking().stake_exists(stake_id));
 
-            let stake = <stake::Stakes<T>>::get(stake_id);
+            let stake = T::StakeHandlerProvider::staking().get_stake(stake_id);
 
             match stake.staking_status {
                 // INVARIANT: stake MUST be in the staked state.
@@ -1374,7 +1391,7 @@ impl<T: Trait> Module<T> {
         })
     }
 
-    fn create_stake_balance(
+    pub(crate) fn create_stake_balance(
         opt_stake_imbalance: &Option<NegativeImbalance<T>>,
     ) -> Option<BalanceOf<T>> {
         if let Some(ref imbalance) = opt_stake_imbalance {
@@ -1382,5 +1399,120 @@ impl<T: Trait> Module<T> {
         } else {
             None
         }
+    }
+}
+
+/*
+ *  === Stake module wrappers  ======
+ */
+
+/// Defines stake module interface
+#[cfg_attr(
+    all(any(test, feature = "test"), not(target_arch = "wasm32")),
+    automock
+)]
+pub trait StakeHandler<T: StakeTrait> {
+    /// Adds a new Stake which is NotStaked, created at given block, into stakes map.
+    fn create_stake(&self) -> T::StakeId;
+
+    /// to the module's account, and the corresponding staked_balance is set to this amount in the new Staked state.
+    /// On error, as the negative imbalance is not returned to the caller, it is the caller's responsibility to return the funds
+    /// back to the source (by creating a new positive imbalance)
+    fn stake(
+        &self,
+        new_stake_id: &T::StakeId,
+        imbalance: NegativeImbalance<T>,
+    ) -> Result<(), StakeActionError<stake::StakingError>>;
+
+    /// Checks whether stake exists by its id
+    fn stake_exists(&self, stake_id: T::StakeId) -> bool;
+
+    /// Acquires stake by id
+    fn get_stake(&self, stake_id: T::StakeId) -> Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>;
+
+    /// Initiate unstaking of a Staked stake.
+    fn initiate_unstaking(
+        &self,
+        stake_id: &T::StakeId,
+        unstaking_period: Option<T::BlockNumber>,
+    ) -> Result<(), StakeActionError<InitiateUnstakingError>>;
+}
+
+/// Allows to provide different StakeHandler implementation. Useful for mocks.
+pub trait StakeHandlerProvider<T: Trait> {
+    /// Returns StakeHandler. Mock entry point for stake module.
+    fn staking() -> Rc<RefCell<dyn StakeHandler<T>>>;
+}
+
+impl<T: Trait> StakeHandlerProvider<T> for Module<T> {
+    /// Returns StakeHandler. Mock entry point for stake module.
+    fn staking() -> Rc<RefCell<dyn StakeHandler<T>>> {
+        Rc::new(RefCell::new(HiringStakeHandler {}))
+    }
+}
+
+/// Default stake module logic implementation
+pub struct HiringStakeHandler;
+impl<T: Trait> StakeHandler<T> for HiringStakeHandler {
+    fn create_stake(&self) -> T::StakeId {
+        <stake::Module<T>>::create_stake()
+    }
+
+    fn stake(
+        &self,
+        new_stake_id: &T::StakeId,
+        imbalance: NegativeImbalance<T>,
+    ) -> Result<(), StakeActionError<StakingError>> {
+        <stake::Module<T>>::stake(new_stake_id, imbalance)
+    }
+
+    fn stake_exists(&self, stake_id: T::StakeId) -> bool {
+        <stake::Stakes<T>>::exists(stake_id)
+    }
+
+    fn get_stake(&self, stake_id: T::StakeId) -> Stake<T::BlockNumber, BalanceOf<T>, T::SlashId> {
+        <stake::Stakes<T>>::get(stake_id)
+    }
+
+    fn initiate_unstaking(
+        &self,
+        stake_id: &T::StakeId,
+        unstaking_period: Option<T::BlockNumber>,
+    ) -> Result<(), StakeActionError<InitiateUnstakingError>> {
+        <stake::Module<T>>::initiate_unstaking(&stake_id, unstaking_period)
+    }
+}
+
+// Proxy implementation of StakeHandler trait to simplify calls via staking() method
+// Allows to get rid of borrow() calls,
+// eg.: T::StakeHandlerProvider::staking().get_stake(stake_id);
+// instead of T::StakeHandlerProvider::staking().borrow().get_stake(stake_id);
+impl<T: Trait> StakeHandler<T> for Rc<RefCell<dyn StakeHandler<T>>> {
+    fn create_stake(&self) -> T::StakeId {
+        self.borrow().create_stake()
+    }
+
+    fn stake(
+        &self,
+        new_stake_id: &T::StakeId,
+        imbalance: NegativeImbalance<T>,
+    ) -> Result<(), StakeActionError<StakingError>> {
+        self.borrow().stake(new_stake_id, imbalance)
+    }
+
+    fn stake_exists(&self, stake_id: T::StakeId) -> bool {
+        self.borrow().stake_exists(stake_id)
+    }
+
+    fn get_stake(&self, stake_id: T::StakeId) -> Stake<T::BlockNumber, BalanceOf<T>, T::SlashId> {
+        self.borrow().get_stake(stake_id)
+    }
+
+    fn initiate_unstaking(
+        &self,
+        stake_id: &T::StakeId,
+        unstaking_period: Option<T::BlockNumber>,
+    ) -> Result<(), StakeActionError<InitiateUnstakingError>> {
+        self.borrow().initiate_unstaking(stake_id, unstaking_period)
     }
 }
