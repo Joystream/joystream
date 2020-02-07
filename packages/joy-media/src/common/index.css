@@ -102,6 +102,7 @@ $borderColor: #e4e4e4;
       margin-top: 0;
       margin-bottom: 0.5rem;
     }
+
     .AlbumArtist,
     .AlbumTracksCount {
       color: $grayFont;
@@ -135,24 +136,34 @@ $borderColor: #e4e4e4;
     text-align: left;
     padding: 0;
   }
+
   .AlbumCover {
     width: $size;
     height: $size;
     min-width: $size;
     min-height: $size;
   }
+
   .AlbumTitle {
     @extend .Ellipsis;
 
-    font-size: 1.15rem;
+    font-size: 1rem;
     font-weight: bold;
     color: $blackFont;
-    margin: .25rem 0;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
   }
+  &.vertical {
+    .AlbumTitle {
+      margin-top: 0.5rem;
+    }
+  }
+
   .AlbumArtist {
     color: $grayFont;
     font-size: 1rem;
   }
+
   .AlbumActions {
     opacity: 1;
   }
@@ -245,6 +256,7 @@ $borderColor: #e4e4e4;
 
   .ChannelTitle {
     font-size: 2rem;
+    font-weight: 500;
     margin-bottom: .5rem;
 
     .ChannelHeader & {
