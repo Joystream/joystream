@@ -9,31 +9,58 @@ export type VideoPreviewProps = {
   thumbnail: string,
 
   // Preview-specific props:
-  size?: number,
+  size?: 'normal' | 'small',
   orientation?: 'vertical' | 'horizontal',
 };
 
 export function VideoPreview (props: VideoPreviewProps) {
-  const { id, size = 200, orientation = 'vertical' } = props;
+  const { id, size = 'normal', orientation = 'vertical' } = props;
 
-  let descStyle: CSSProperties = {};
-  if (orientation === 'vertical') {
-    descStyle.maxWidth = size;
+  let width: number = 210;
+  let height: number = 118;
+
+  if (size === 'small') {
+    width = 168;
+    height = 94;
   }
+  
+  let descStyle: CSSProperties = {
+    maxWidth: orientation === 'vertical'
+      ? width
+      : width * 1.5
+  };
+
+  // TODO Do real check if current use is an owner of this entity:
+  const iAmOwner = true;
+  
+  const viewUrl = `/media/video/${id}`;
 
   return (
     <div className={`JoyMusicAlbumPreview ` + orientation}>
-      <BgImg className='AlbumCover' url={props.thumbnail} size={size} />
-      <div className='AlbumDescription' style={descStyle}>
-        <h3 className='AlbumTitle'>{props.title}</h3>
 
-        {/* Show only if current use is owner of entity: */}
-        <div>
-          <Link to={`/media/video/${id}/edit`} className='ui button basic small'>
-            <i className='icon pencil' />
-            Edit
-          </Link>
-        </div>
+      <Link to={viewUrl}>
+        <BgImg
+          url={props.thumbnail}
+          className='AlbumCover'
+          width={width}
+          height={height}
+        />
+      </Link>
+      
+      <div className='AlbumDescription' style={descStyle}>
+
+        <Link to={viewUrl}>
+          <h3 className='AlbumTitle'>{props.title}</h3>
+        </Link>
+
+        {iAmOwner &&
+          <div>
+            <Link to={`/media/video/${id}/edit`} className='ui button basic small'>
+              <i className='icon pencil' />
+              Edit
+            </Link>
+          </div>
+        }
       </div>
     </div>
   );

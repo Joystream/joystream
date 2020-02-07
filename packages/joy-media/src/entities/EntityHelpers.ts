@@ -1,3 +1,4 @@
+import moment from 'moment';
 import { PublicationStatusType } from "../schemas/general/PublicationStatus";
 import { CurationStatusType } from "../schemas/general/CurationStatus";
 import { PublicationStatus, CurationStatus } from "../mocks";
@@ -14,4 +15,12 @@ export function isPublicEntity(entity: HasEntityStatuses): boolean {
     entity.curationStatus?.id !== CurationStatus.UnderReview.id &&
     entity.curationStatus?.id !== CurationStatus.Removed.id
   );
+}
+
+export function printExplicit(explicit?: boolean): string {
+  return explicit === true ? 'Yes' : 'No'
+}
+
+export function printReleaseDate(linuxTimestamp?: number): string {
+  return !linuxTimestamp ? '' : moment(linuxTimestamp * 1000).format('YYYY-MM-DD')
 }

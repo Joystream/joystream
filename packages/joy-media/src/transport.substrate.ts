@@ -5,7 +5,6 @@ import { Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
-import { ChannelType } from './schemas/channel/Channel';
 import { ContentLicenseType } from './schemas/general/ContentLicense';
 import { CurationStatusType } from './schemas/general/CurationStatus';
 import { LanguageType } from './schemas/general/Language';

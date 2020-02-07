@@ -22,6 +22,7 @@ import { EditChannelView, EditChannelWithRouter } from './channels/EditChannel.v
 import { ExploreContentView } from './explore/ExploreContent.view';
 import { ViewChannelWithRouter } from './channels/ViewChannel.view';
 import { EditVideoWithRouter } from './upload/EditVideo.view';
+import { PlayVideoWithRouter } from './video/PlayVideo.view';
 
 type Props = AppProps & I18nProps & ApiProps & DiscoveryProviderProps & {};
 
@@ -73,6 +74,7 @@ class App extends React.PureComponent<Props> {
             <Route path={`${basePath}/channels/:id/edit`} component={EditChannelWithRouter} />
             <Route path={`${basePath}/channels/:id`} component={ViewChannelWithRouter} />
             <Route path={`${basePath}/video/:id/edit`} component={EditVideoWithRouter} />
+            <Route path={`${basePath}/video/:id`} component={PlayVideoWithRouter} />
             <Route path={`${basePath}/explore`} component={ExploreContentView} />
             <Route component={ExploreContentView} />
           </Switch>
