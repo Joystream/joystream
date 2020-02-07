@@ -19,18 +19,18 @@ import { MusicThemeType } from './schemas/music/MusicTheme';
 import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
 import { MemberId } from '@joystream/types/members';
-import { ChannelEntity } from './entities/ChannelEntity';
-import { ChannelsDataSamples } from './stories/data/ChannelSamples';
 import { ChannelId } from '@joystream/types/content-working-group';
+import { ChannelEntity } from './entities/ChannelEntity';
+import { AllMockChannels } from './stories/data/ChannelSamples';
 
 export class MockTransport extends MediaTransport {
 
   allChannels(): Promise<ChannelEntity[]> {
-    return this.promise(ChannelsDataSamples);
+    return this.promise(AllMockChannels);
   }
 
   channelsByOwner(_memberId: MemberId): Promise<ChannelEntity[]> {
-    return this.promise(ChannelsDataSamples);
+    return this.promise(AllMockChannels);
   }
 
   allVideos(): Promise<VideoType[]> {

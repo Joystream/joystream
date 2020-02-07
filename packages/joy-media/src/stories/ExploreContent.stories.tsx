@@ -5,7 +5,7 @@ import { ExploreContent } from '../explore/ExploreContent';
 import { FeaturedAlbums } from './data/MusicAlbumSamples';
 import { PlayContent } from '../explore/PlayContent';
 import { Album1TrackSamples } from './data/MusicTrackSamples';
-import { ChannelDataSample } from './data/ChannelSamples';
+import { MockMusicChannel } from './data/ChannelSamples';
 import { withMockTransport } from './withMockTransport';
 
 export default { 
@@ -18,7 +18,7 @@ export const DefaultState = () =>
 
 export const PlayAlbum = () =>
 	<PlayContent 
-		channel={ChannelDataSample}
+		channel={MockMusicChannel}
 		featuredAlbums={FeaturedAlbums}
 		tracks={Album1TrackSamples}
 		currentTrackIndex={3}

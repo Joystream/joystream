@@ -1,7 +1,7 @@
 import React from 'react';
 import '../common/index.css';
 
-import { ChannelDataSample } from './data/ChannelSamples';
+import { MockMusicChannel } from './data/ChannelSamples';
 import { ViewMusicChannel } from '../channels/ViewMusicChannel';
 import { MusicAlbumSamples } from './data/MusicAlbumSamples';
 import { AllMusicTrackSamples } from './data/MusicTrackSamples';
@@ -13,14 +13,14 @@ export default {
 };
 
 export const EmptyMusicChannel = () =>
-	<ViewMusicChannel channel={ChannelDataSample} />;
+	<ViewMusicChannel channel={MockMusicChannel} />;
 
 export const MusicChannelWithAlbumsOnly = () =>
-	<ViewMusicChannel channel={ChannelDataSample} albums={MusicAlbumSamples} />;
+	<ViewMusicChannel channel={MockMusicChannel} albums={MusicAlbumSamples} />;
 
 export const MusicChannelWithAlbumAndTracks = () =>
 	<ViewMusicChannel
-		channel={ChannelDataSample}
+		channel={MockMusicChannel}
 		albums={MusicAlbumSamples}
 		tracks={AllMusicTrackSamples}
 	/>;

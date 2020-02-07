@@ -2,7 +2,7 @@ import React from 'react';
 import '../common/index.css';
 
 import { ChannelsByOwner } from '../channels/ChannelsByOwner';
-import { ChannelsDataSamples } from './data/ChannelSamples';
+import { AllMockChannels } from './data/ChannelSamples';
 import { withMockTransport } from './withMockTransport';
 import EditForm from '../channels/EditChannel';
 import { EditChannelView } from '../channels/EditChannel.view';
@@ -23,7 +23,7 @@ export const ChannelCreationSuspended = () =>
 	<ChannelsByOwner memberId={memberId} suspended={true} />;
 
 export const YouHaveChannels = () =>
-	<ChannelsByOwner memberId={memberId} channels={ChannelsDataSamples} />;
+	<ChannelsByOwner memberId={memberId} channels={AllMockChannels} />;
 
 export const DefaultEditForm = () =>
 	<EditForm />;
