@@ -63,7 +63,9 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaText field={Fields.avatar} {...props} />
     <MediaText field={Fields.banner} {...props} />
     <MediaText field={Fields.description} textarea {...props} />
-    <MediaDropdown field={Fields.publicationStatus} options={opts.publicationStatusOptions} {...props} />
+
+    {/* TODO Use Channel Specific options for publishingStatus */}
+    <MediaDropdown field={Fields.publishingStatus} options={opts.publicationStatusOptions} {...props} />
   </>;
 
   const MainButton = () =>
