@@ -4,7 +4,7 @@ import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
-import { Controller, Params, View } from '@polkadot/joy-utils/index'
+import { Controller, View } from '@polkadot/joy-utils/index'
 
 import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema'
 
@@ -44,7 +44,7 @@ const newEmptyState = (): State => {
 }
 
 export class ApplyController extends Controller<State, ITransport> {
-  protected currentOpeningId: string = ""
+  protected currentOpeningId: number = -1
 
   constructor(transport: ITransport, initialState: State = newEmptyState()) {
     super(transport, initialState)
@@ -57,11 +57,11 @@ export class ApplyController extends Controller<State, ITransport> {
     this.dispatch()
   }
 
-  findOpening(params: Params) {
-    const id = params.get("id")
-    if (typeof id === "undefined") {
+  findOpening(rawId: string | undefined) {
+    if (!rawId) {
       return this.onError("ApplyController: no ID provided in params")
     }
+    const id = parseInt(rawId)
 
     if (this.currentOpeningId == id) {
       return
@@ -69,7 +69,7 @@ export class ApplyController extends Controller<State, ITransport> {
 
     Promise.all(
       [
-        this.transport.curationGroupOpening(parseInt(id)),
+        this.transport.curationGroupOpening(id),
         this.transport.openingApplicationRanks(id),
         this.transport.transactionFee(),
       ],
@@ -97,7 +97,7 @@ export class ApplyController extends Controller<State, ITransport> {
       )
       .catch(
         (err: any) => {
-          this.currentOpeningId = ""
+          this.currentOpeningId = -1
           this.onError(err)
         }
       )
@@ -148,7 +148,7 @@ export class ApplyController extends Controller<State, ITransport> {
 
 export const ApplyView = View<ApplyController, State>(
   (state, controller, params) => {
-    controller.findOpening(params)
+    controller.findOpening(params.get("id"))
     return (
       // @ts-ignore
       <FlowModal

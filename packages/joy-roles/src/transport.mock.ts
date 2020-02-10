@@ -319,7 +319,7 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
-  openingApplicationRanks(openingId: string): Promise<Balance[]> {
+  openingApplicationRanks(openingId: number): Promise<Balance[]> {
     const slots: Balance[] = []
     for (let i = 0; i < 20; i++) {
       slots.push(new u128((i * 100) + 10 + i + 1))

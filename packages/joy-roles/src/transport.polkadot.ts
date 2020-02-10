@@ -315,9 +315,8 @@ export class Transport extends TransportBase implements ITransport {
     return Sum(await Promise.all(promises))
   }
 
-  // FIXME: ID should be a number.
-  async openingApplicationRanks(openingId: string): Promise<Balance[]> {
-    const applications = await this.curatorOpeningApplications(1)
+  async openingApplicationRanks(openingId: number): Promise<Balance[]> {
+    const applications = await this.curatorOpeningApplications(openingId)
     return Sort(
       await Promise.all(
         applications.map(application => this.openingApplicationTotalStake(application.hiringModule))

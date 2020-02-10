@@ -14,7 +14,7 @@ export interface ITransport {
   storageGroup: () => Promise<StorageAndDistributionMembership>
   currentOpportunities: () => Promise<Array<WorkingGroupOpening>>
   curationGroupOpening: (id: number) => Promise<WorkingGroupOpening>
-  openingApplicationRanks: (openingId: string) => Promise<Balance[]>
+  openingApplicationRanks: (openingId: number) => Promise<Balance[]>
   expectedBlockTime: () => Promise<number>
   blockHash(height: number): Promise<string>
   blockTimestamp(height: number): Promise<Date>
