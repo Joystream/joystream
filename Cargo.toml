@@ -1,55 +1,5 @@
-[package]
-name = 'substrate-forum-module'
-version = '1.1.0'
-authors = ['Bedeho Mender <bedeho.mender@protonmail.com>']
-edition = '2018'
-
-[dependencies]
-hex-literal = '0.1.0'
-serde = { version = '1.0.101', optional = true}
-serde_derive = { version = '1.0.101', optional = true }
-rstd = { package = 'sr-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
-runtime-primitives = { package = 'sr-primitives', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
-srml-support = { package = 'srml-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
-srml-support-procedural = { package = 'srml-support-procedural', git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
-system = { package = 'srml-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
-balances = { package = 'srml-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
-codec = { package = 'parity-scale-codec', version = '1.0.0', default-features = false, features = ['derive'] }
-
-[dependencies.timestamp]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-timestamp'
-rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
-
-[dependencies.runtime-io]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-io'
-rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
-
-[dependencies.old-forum]
-default_features = false
-git = 'https://github.com/juniuszhou/substrate-forum-module'
-package = 'substrate-forum-module'
-rev = '2c664a211c129fa96b3b4923f73cf850d8177006'
-
-[dev-dependencies]
-runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
-primitives = { package = 'substrate-primitives', git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
-
-[features]
-default = ['std']
-std = [
-	'serde',
-	'serde_derive',
-	'codec/std',
-	'rstd/std',
-	'runtime-io/std',
-	'runtime-primitives/std',
-	'srml-support/std',
-	'system/std',
-  	'balances/std',
-	'timestamp/std',
-	'old-forum/std',
+[workspace]
+members = [
+	"forum-module",
+	"data-migration",
 ]

@@ -8,7 +8,7 @@ use crate::{GenesisConfig, Module, Trait};
 
 use runtime_primitives::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup, OnInitialize},
+    traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -769,37 +769,35 @@ pub fn set_stickied_threads_mock(
     category_id
 }
 
-pub fn generate_old_forum_data(
-    moderator_id: <Runtime as system::Trait>::AccountId,
-    category_number: u32,
-    thread_number: u32,
-    post_number: u32,
-) {
-    for _ in 0..category_number {
-        TestForumModule::create_migrate_data(moderator_id, thread_number, post_number);
-    }
-}
+// pub fn generate_old_forum_data(
+//     moderator_id: <Runtime as system::Trait>::AccountId,
+//     category_number: u32,
+//     thread_number: u32,
+//     post_number: u32,
+//     text_size: usize,
+// ) {
+//     for _ in 0..category_number {
+//         TestForumModule::create_migrate_data(
+//             moderator_id,
+//             thread_number,
+//             post_number,
+//             &vec![b'x'; text_size],
+//         );
+//     }
+// }
 
-pub fn on_initialize_mock(n: <Runtime as system::Trait>::BlockNumber) {
-    TestForumModule::on_initialize(n);
-}
+// pub fn default_genesis_config() -> GenesisConfig<Runtime> {
+//     generate_genesis_config(0, 0, true)
+// }
+
+// pub fn data_migration_genesis_config(
+//     thread_each_block: u64,
+//     post_each_block: u64,
+// ) -> GenesisConfig<Runtime> {
+//     generate_genesis_config(thread_each_block, post_each_block, false)
+// }
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
-    generate_genesis_config(0, 0, true)
-}
-
-pub fn data_migration_genesis_config(
-    thread_each_block: u64,
-    post_each_block: u64,
-) -> GenesisConfig<Runtime> {
-    generate_genesis_config(thread_each_block, post_each_block, false)
-}
-
-pub fn generate_genesis_config(
-    threads_imported_per_block: u64,
-    posts_imported_per_block: u64,
-    data_migration_done: bool,
-) -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
         forum_user_by_id: vec![],
         next_forum_user_id: 1,
@@ -878,12 +876,7 @@ pub fn generate_genesis_config(
         max_applied_labels: 5,
 
         // data migration part
-        fork_block_number: 0,
-        threads_imported_per_block: threads_imported_per_block,
-        posts_imported_per_block: posts_imported_per_block,
-        data_migration_done: data_migration_done,
-        account_by_forum_user_id: vec![],
-        account_by_moderator_id: vec![],
+        data_migration_done: true,
     }
 }
 
