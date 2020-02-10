@@ -268,8 +268,6 @@ export class Transport extends TransportBase implements ITransport {
       /////////////////////////////////
       // TODO: Load applications
       const applications = await this.curatorOpeningApplications(id)
-
-      // TODO: Calculate stakes
       const stakes = classifyOpeningStakes(opening)
 
       // @ts-ignore
@@ -286,9 +284,9 @@ export class Transport extends TransportBase implements ITransport {
           maxNumberOfApplications: opening.max_applicants,
           requiredApplicationStake: stakes.application,
           requiredRoleStake: stakes.role,
-          defactoMinimumStake: new u128(0), // FIXME
+          defactoMinimumStake: new u128(0),
         },
-        defactoMinimumStake: new u128(0) // FIXME
+        defactoMinimumStake: new u128(0) 
       })
     })
   }

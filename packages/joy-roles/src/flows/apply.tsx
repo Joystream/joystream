@@ -53,6 +53,7 @@ import {
 } from '@joystream/types/hiring/schemas/role.schema'
 
 import { Loadable } from '@polkadot/joy-utils/index'
+import { Add } from '../balances'
 
 type accordionProps = {
   title: string
@@ -538,7 +539,7 @@ export type ConfirmStakes2UpProps = {
 }
 
 export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
-  const [valid, setValid] = useState(false)
+  const [valid, setValid] = useState(true)
   const slotCount = props.slots.length
   const [rank, setRank] = useState(1);
   const minStake = props.slots[0]
@@ -546,15 +547,26 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
 
   // Watch stake values
   useEffect(() => {
-    const newCombined = new u128(props.selectedApplicationStake.add(props.selectedRoleStake))
+    const newCombined = Add(props.selectedApplicationStake, props.selectedRoleStake)
     setCombined(newCombined)
-    setRank(findRankValue(newCombined))
-    setValid(combined.gt(minStake))
   },
     [props.selectedApplicationStake, props.selectedRoleStake]
   )
 
+  useEffect(() => {
+    setRank(findRankValue(combined))
+    if (slotCount > 0) {
+      setValid(combined.gte(minStake))
+    }
+  },
+    [combined]
+  )
+
   const findRankValue = (newStake: Balance): number => {
+    if (slotCount == 0) {
+      return 0
+    }
+
     if (newStake.gt(props.slots[slotCount - 1])) {
       return slotCount
     }
@@ -590,7 +602,14 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
     )
   }
 
-  let rankExplanation = <p>This role required a combined stake (application stake plus role stake) of {formatBalance(minStake)}.</p>
+  let defactoMinStakeMessage = null
+  if (props.applications.numberOfApplications >= props.applications.maxNumberOfApplications) {
+    defactoMinStakeMessage = (
+      <span>	However, in order to be in the top {props.applications.maxNumberOfApplications} applications, you wil need to stake a combined total of <strong>{formatBalance(minStake)}</strong>.</span>
+    )
+  }
+
+  let rankExplanation = <p>This role requires a combined stake (application stake plus role stake) of {formatBalance(minStake)}.</p>
   if (props.applications.maxNumberOfApplications > 0) {
     rankExplanation = (
       <Container>
@@ -599,8 +618,8 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
                </p>
         <p>
           There is a minimum application stake of {formatBalance(props.applications.requiredApplicationStake.value)} and a minimum role stake of {formatBalance(props.applications.requiredRoleStake.value)} to apply for this role.
-                    However, in order to be in the top {props.applications.maxNumberOfApplications} applications, you wil need to stake a combined total of <strong>{formatBalance(minStake)}</strong>.
-               </p>
+          {defactoMinStakeMessage}
+        </p>
       </Container>
     )
   }
@@ -665,7 +684,7 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
                 <Label color='grey'>
                   <Icon name={rankIcon(rank, slotCount)} />
                   Estimated rank
-                                    <Label.Detail>{rank}/{slotCount}</Label.Detail>
+                                    <Label.Detail>{(slotCount - rank) + 1}/{slotCount + 1}</Label.Detail>
                 </Label>
               </Grid.Column>
             </Grid.Row>
@@ -1076,8 +1095,8 @@ export const FlowModal = Loadable<FlowModalProps>(
   ],
   props => {
     // Capture state
-    const [applicationStake, setApplicationStake] = useState(new u128(0))
-    const [roleStake, setRoleStake] = useState(new u128(0))
+    const [applicationStake, setApplicationStake] = useState(props.applications.requiredApplicationStake.value)
+    const [roleStake, setRoleStake] = useState(props.applications.requiredRoleStake.value)
     const [stakeKeyAddress, setStakeKeyAddress] = useState<AccountId>(new AccountId())
     const [stakeKeyPassphrase, setStakeKeyPassphrase] = useState("")
     const [txKeyAddress, setTxKeyAddress] = useState<AccountId>(new AccountId())
@@ -1118,7 +1137,6 @@ export const FlowModal = Loadable<FlowModalProps>(
     }
 
     const enterDoneState = () => {
-      // FIXME: What if this fails?
       props.makeApplicationTransaction().then(() => {
         setComplete(true)
         setActiveStep(ProgressSteps.Done)
