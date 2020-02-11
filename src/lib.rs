@@ -461,7 +461,9 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
                 {
                     if let content_wg::Principal::Curator(curator_id) = principal {
                         let curator = <content_wg::CuratorById<Runtime>>::get(curator_id);
-                        if curator.role_account == *account {
+                        if curator.role_account == *account
+                            && curator.stage == content_wg::CuratorRoleStage::Active
+                        {
                             return true;
                         }
                     }
