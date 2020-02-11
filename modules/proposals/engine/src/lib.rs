@@ -55,6 +55,7 @@ pub trait Trait: system::Trait + timestamp::Trait {
 }
 
 decl_event!(
+    /// Proposals engine events
     pub enum Event<T>
     where
         <T as system::Trait>::AccountId
@@ -266,7 +267,6 @@ impl<T: Trait> Module<T> {
 
     // Executes approved proposal code
     fn execute_proposal(proposal_id: u32) {
-        //let origin = system::RawOrigin::Root.into();
         let proposal = Self::proposals(proposal_id);
         let proposal_code = Self::proposal_codes(proposal_id);
 

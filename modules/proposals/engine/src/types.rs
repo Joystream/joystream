@@ -79,10 +79,9 @@ pub struct ProposalParameters<BlockNumber> {
 
     /// Quorum percentage of approving voters required to pass a proposal.
     pub approval_quorum_percentage: u32,
-    //    /// Temporary field which defines expected threshold to pass the vote.
-    //    /// Will be changed to percentage
-    //    pub temp_threshold_vote_count: u32,
 
+    /// Approval votes percentage threshold to pass the vote.
+    pub approval_threshold_percentage: u32,
     //pub stake: BalanceOf<T>, //<T: GovernanceCurrency>
 }
 
@@ -152,16 +151,18 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
             total_voters_count,
         };
 
-        let new_status: Option<ProposalStatus> =
-            if proposal_status_decision.is_approval_quorum_reached() {
-                Some(ProposalStatus::Approved)
-            } else if proposal_status_decision.is_expired() {
-                Some(ProposalStatus::Expired)
-            } else if proposal_status_decision.is_voting_completed() {
-                Some(ProposalStatus::Rejected)
-            } else {
-                None
-            };
+        let new_status: Option<ProposalStatus> = if proposal_status_decision
+            .is_approval_quorum_reached()
+            && proposal_status_decision.is_approval_threshold_reached()
+        {
+            Some(ProposalStatus::Approved)
+        } else if proposal_status_decision.is_expired() {
+            Some(ProposalStatus::Expired)
+        } else if proposal_status_decision.is_voting_completed() {
+            Some(ProposalStatus::Rejected)
+        } else {
+            None
+        };
 
         if let Some(status) = new_status {
             Some(TallyResult {
@@ -236,14 +237,26 @@ where
         self.proposal.is_voting_period_expired(self.now)
     }
 
-    // Approval quorum reached for the proposal
+    // Approval quorum reached for the proposal. Compares predefined parameter with actual
+    // votes sum divided by total possible votes count.
     pub fn is_approval_quorum_reached(&self) -> bool {
-        let approval_votes_fraction: f32 = self.approvals as f32 / self.total_voters_count as f32;
+        let actual_votes_fraction: f32 = self.votes_count as f32 / self.total_voters_count as f32;
 
         let approval_quorum_fraction =
             self.proposal.parameters.approval_quorum_percentage as f32 / 100.0;
 
-        approval_votes_fraction >= approval_quorum_fraction
+        actual_votes_fraction >= approval_quorum_fraction
+    }
+
+    // Approval threshold reached for the proposal. Compares predefined parameter with 'approve'
+    // votes sum divided by actual votes count.
+    pub fn is_approval_threshold_reached(&self) -> bool {
+        let approval_votes_fraction: f32 = self.approvals as f32 / self.votes_count as f32;
+
+        let required_threshold_fraction =
+            self.proposal.parameters.approval_threshold_percentage as f32 / 100.0;
+
+        approval_votes_fraction >= required_threshold_fraction
     }
 
     // All voters had voted
@@ -298,7 +311,8 @@ mod tests {
         let now = 5;
         proposal.created = 1;
         proposal.parameters.voting_period = 3;
-        proposal.parameters.approval_quorum_percentage = 60;
+        proposal.parameters.approval_quorum_percentage = 80;
+        proposal.parameters.approval_threshold_percentage = 40;
 
         let votes = vec![
             Vote {
@@ -372,19 +386,20 @@ mod tests {
     }
 
     #[test]
-    fn tally_results_proposal_rejected() {
+    fn tally_results_proposal_rejected_because_of_failed_approval_threshold() {
         let mut proposal = Proposal::<u64, u64>::default();
         let proposal_id = 1;
         let now = 2;
 
         proposal.created = 1;
         proposal.parameters.voting_period = 3;
-        proposal.parameters.approval_quorum_percentage = 60;
+        proposal.parameters.approval_quorum_percentage = 50;
+        proposal.parameters.approval_threshold_percentage = 51;
 
         let votes = vec![
             Vote {
                 voter_id: 1,
-                vote_kind: VoteKind::Reject,
+                vote_kind: VoteKind::Approve,
             },
             Vote {
                 voter_id: 2,
@@ -403,8 +418,8 @@ mod tests {
         let expected_tally_results = TallyResult {
             proposal_id,
             abstentions: 1,
-            approvals: 1,
-            rejections: 2,
+            approvals: 2,
+            rejections: 1,
             status: ProposalStatus::Rejected,
             finalized_at: now,
         };

@@ -30,6 +30,7 @@ impl Default for DummyProposalFixture {
             parameters: ProposalParameters {
                 voting_period: 3,
                 approval_quorum_percentage: 60,
+                approval_threshold_percentage: 60,
             },
             origin: RawOrigin::Signed(1),
             proposal_type: dummy_proposal.proposal_type(),
@@ -245,8 +246,8 @@ fn proposal_execution_succeeds() {
         let parameters = ProposalParameters {
             voting_period: 3,
             approval_quorum_percentage: 60,
+            approval_threshold_percentage: 60,
         };
-
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         dummy_proposal.create_proposal_and_assert(Ok(()));
 
@@ -284,8 +285,8 @@ fn proposal_execution_failed() {
         let parameters = ProposalParameters {
             voting_period: 3,
             approval_quorum_percentage: 60,
+            approval_threshold_percentage: 60,
         };
-
         let faulty_proposal = FaultyExecutable;
 
         let dummy_proposal = DummyProposalFixture::default()
@@ -329,9 +330,9 @@ fn tally_calculation_succeeds() {
     initial_test_ext().execute_with(|| {
         let parameters = ProposalParameters {
             voting_period: 3,
-            approval_quorum_percentage: 49,
+            approval_quorum_percentage: 50,
+            approval_threshold_percentage: 50,
         };
-
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         dummy_proposal.create_proposal_and_assert(Ok(()));
 
@@ -503,6 +504,7 @@ fn cancel_proposal_succeeds() {
         let parameters = ProposalParameters {
             voting_period: 3,
             approval_quorum_percentage: 60,
+            approval_threshold_percentage: 60,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         dummy_proposal.create_proposal_and_assert(Ok(()));
@@ -575,6 +577,7 @@ fn veto_proposal_succeeds() {
         let parameters = ProposalParameters {
             voting_period: 3,
             approval_quorum_percentage: 60,
+            approval_threshold_percentage: 60,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         dummy_proposal.create_proposal_and_assert(Ok(()));
@@ -715,6 +718,7 @@ fn create_proposal_and_expire_it() {
         let parameters = ProposalParameters {
             voting_period: 3,
             approval_quorum_percentage: 49,
+            approval_threshold_percentage: 60,
         };
 
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters.clone());
