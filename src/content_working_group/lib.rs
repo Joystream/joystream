@@ -177,6 +177,9 @@ pub static MSG_FULL_CURATOR_OPENING_UNSUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_RED
     "Role stake unstaking period for failed applicants redundant";
 pub static MSG_FULL_CURATOR_OPENING_APPLICATION_DOES_NOT_EXIST: &str = "ApplicationDoesNotExist";
 pub static MSG_FULL_CURATOR_OPENING_APPLICATION_NOT_ACTIVE: &str = "ApplicationNotInActiveStage";
+pub static MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK: &str =
+    "Reward policy has invalid next payment block number";
+pub static MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST: &str = "Working group mint does not exist";
 
 // Errors for `withdraw_curator_application`
 pub static MSG_WITHDRAW_CURATOR_APPLICATION_APPLICATION_DOES_NOT_EXIST: &str =
@@ -1494,6 +1497,21 @@ decl_module! {
                 )
             )?;
 
+            let create_reward_settings = if let Some(policy) = reward_policy {
+                // A reward will need to be created so ensure our configured mint exists
+                let mint_id = Self::mint();
+
+                ensure!(<minting::Mints<T>>::exists(mint_id), MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST);
+
+                // Make sure valid parameters are selected for next payment at block number
+                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
+
+                // The verified reward settings to use
+                Some((mint_id, policy))
+            } else {
+                None
+            };
+
             //
             // == MUTATION SAFE ==
             //
@@ -1510,20 +1528,32 @@ decl_module! {
             .clone()
             .for_each(|(successful_curator_application, id, _)| {
 
-                // Create a reward relationship if lead specifies a reward policy
-                let reward_relationship: Option<RewardRelationshipId<T>> = reward_policy.clone().map(|policy| {
-                    <recurringrewards::Module<T>>::add_reward_relationship(
-                        Self::mint(),
-                        // we are creating a new recipient everytime. Should there be a single recipient
-                        // per member?
-                        <recurringrewards::Module<T>>::add_recipient(),
-                        // rewards are deposited in the member's root account
-                        <members::Module<T>>::member_profile(successful_curator_application.member_id).unwrap().root_account,
-                        policy.amount_per_payout,
-                        policy.next_payment_at_block,
-                        policy.payout_interval,
-                    ).expect("Failed to create reward relationship!")
-                });
+                // Create a reward relationship
+                let reward_relationship = if let Some((mint_id, checked_policy)) = create_reward_settings.clone() {
+
+                    // Create a new recipient for the new relationship
+                    let recipient = <recurringrewards::Module<T>>::add_recipient();
+
+                    // member must exist, since it was checked that it can enter the role
+                    let member_profile = <members::Module<T>>::member_profile(successful_curator_application.member_id).unwrap();
+
+                    // rewards are deposited in the member's root account
+                    let reward_destination_account = member_profile.root_account;
+
+                    // values have been checked so this should not fail!
+                    let relationship_id = <recurringrewards::Module<T>>::add_reward_relationship(
+                        mint_id,
+                        recipient,
+                        reward_destination_account,
+                        checked_policy.amount_per_payout,
+                        checked_policy.next_payment_at_block,
+                        checked_policy.payout_interval,
+                    ).expect("Failed to create reward relationship!");
+
+                    Some(relationship_id)
+                } else {
+                    None
+                };
 
                 // Get possible stake for role
                 let application = hiring::ApplicationById::<T>::get(successful_curator_application.application_id);
