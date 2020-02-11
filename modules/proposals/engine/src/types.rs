@@ -21,6 +21,9 @@ pub enum ProposalStatus {
     /// must be no less than the quorum value for the given proposal type.
     Approved,
 
+    /// A proposal was approved and grace period is in effect
+    PendingExecution,
+
     /// A proposal was rejected
     Rejected,
 
@@ -77,6 +80,10 @@ pub struct ProposalParameters<BlockNumber> {
     /// During this period, votes can be accepted
     pub voting_period: BlockNumber,
 
+    /// A pause before execution of the approved proposal. Zero means approved proposal would be
+    /// executed immediately.
+    pub grace_period: BlockNumber,
+
     /// Quorum percentage of approving voters required to pass a proposal.
     pub approval_quorum_percentage: u32,
 
@@ -105,7 +112,10 @@ pub struct Proposal<BlockNumber, AccountId> {
     pub body: Vec<u8>,
 
     /// When it was created.
-    pub created: BlockNumber,
+    pub created_at: BlockNumber,
+
+    /// When it was approved.
+    pub approved_at: Option<BlockNumber>,
 
     // Any stake associated with the proposal.
     //pub stake: Option<BalanceOf<T>>
@@ -118,7 +128,16 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
 {
     /// Returns whether voting period expired by now
     pub fn is_voting_period_expired(&self, now: BlockNumber) -> bool {
-        now >= self.created + self.parameters.voting_period
+        now >= self.created_at + self.parameters.voting_period
+    }
+
+    /// Returns whether grace period expired by now. Returns false if not approved.
+    pub fn is_grace_period_expired(&self, now: BlockNumber) -> bool {
+        if let Some(approved_at) = self.approved_at {
+            now >= approved_at + self.parameters.grace_period
+        } else {
+            false
+        }
     }
 
     /// Voting results tally for single proposal.
@@ -288,7 +307,7 @@ mod tests {
     fn proposal_voting_period_expired() {
         let mut proposal = Proposal::<u64, u64>::default();
 
-        proposal.created = 1;
+        proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
 
         assert!(proposal.is_voting_period_expired(4));
@@ -298,10 +317,50 @@ mod tests {
     fn proposal_voting_period_not_expired() {
         let mut proposal = Proposal::<u64, u64>::default();
 
-        proposal.created = 1;
+        proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
 
         assert!(!proposal.is_voting_period_expired(3));
+    }
+
+    #[test]
+    fn proposal_grace_period_expired() {
+        let mut proposal = Proposal::<u64, u64>::default();
+
+        proposal.approved_at = Some(1);
+        proposal.parameters.grace_period = 3;
+
+        assert!(proposal.is_grace_period_expired(4));
+    }
+
+    #[test]
+    fn proposal_grace_period_auto_expired() {
+        let mut proposal = Proposal::<u64, u64>::default();
+
+        proposal.approved_at = Some(1);
+        proposal.parameters.grace_period = 0;
+
+        assert!(proposal.is_grace_period_expired(1));
+    }
+
+    #[test]
+    fn proposal_grace_period_not_expired() {
+        let mut proposal = Proposal::<u64, u64>::default();
+
+        proposal.approved_at = Some(1);
+        proposal.parameters.grace_period = 3;
+
+        assert!(!proposal.is_grace_period_expired(3));
+    }
+
+    #[test]
+    fn proposal_grace_period_not_expired_because_of_not_approved_proposal() {
+        let mut proposal = Proposal::<u64, u64>::default();
+
+        proposal.approved_at = None;
+        proposal.parameters.grace_period = 3;
+
+        assert!(!proposal.is_grace_period_expired(3));
     }
 
     #[test]
@@ -309,7 +368,7 @@ mod tests {
         let mut proposal = Proposal::<u64, u64>::default();
         let proposal_id = 1;
         let now = 5;
-        proposal.created = 1;
+        proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 80;
         proposal.parameters.approval_threshold_percentage = 40;
@@ -347,7 +406,7 @@ mod tests {
     fn tally_results_proposal_approved() {
         let mut proposal = Proposal::<u64, u64>::default();
         let proposal_id = 1;
-        proposal.created = 1;
+        proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
 
@@ -391,7 +450,7 @@ mod tests {
         let proposal_id = 1;
         let now = 2;
 
-        proposal.created = 1;
+        proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 50;
         proposal.parameters.approval_threshold_percentage = 51;
@@ -436,7 +495,7 @@ mod tests {
         let proposal_id = 1;
         let now = 2;
 
-        proposal.created = 1;
+        proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
 

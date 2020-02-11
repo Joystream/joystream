@@ -31,6 +31,7 @@ impl Default for DummyProposalFixture {
                 voting_period: 3,
                 approval_quorum_percentage: 60,
                 approval_threshold_percentage: 60,
+                grace_period: 0,
             },
             origin: RawOrigin::Signed(1),
             proposal_type: dummy_proposal.proposal_type(),
@@ -247,6 +248,7 @@ fn proposal_execution_succeeds() {
             voting_period: 3,
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
+            grace_period: 0,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         dummy_proposal.create_proposal_and_assert(Ok(()));
@@ -270,10 +272,11 @@ fn proposal_execution_succeeds() {
                 proposal_type: 1,
                 parameters,
                 proposer_id: 1,
-                created: 1,
+                created_at: 1,
                 status: ProposalStatus::Executed,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
+                approved_at: Some(1),
             }
         )
     });
@@ -286,6 +289,7 @@ fn proposal_execution_failed() {
             voting_period: 3,
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
+            grace_period: 0,
         };
         let faulty_proposal = FaultyExecutable;
 
@@ -314,12 +318,13 @@ fn proposal_execution_failed() {
                 proposal_type: faulty_proposal.proposal_type(),
                 parameters,
                 proposer_id: 1,
-                created: 1,
+                created_at: 1,
                 status: ProposalStatus::Failed {
                     error: "Failed".as_bytes().to_vec()
                 },
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
+                approved_at: Some(1),
             }
         )
     });
@@ -332,6 +337,7 @@ fn tally_calculation_succeeds() {
             voting_period: 3,
             approval_quorum_percentage: 50,
             approval_threshold_percentage: 50,
+            grace_period: 0,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         dummy_proposal.create_proposal_and_assert(Ok(()));
@@ -505,6 +511,7 @@ fn cancel_proposal_succeeds() {
             voting_period: 3,
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
+            grace_period: 0,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         dummy_proposal.create_proposal_and_assert(Ok(()));
@@ -523,10 +530,11 @@ fn cancel_proposal_succeeds() {
                 proposal_type: 1,
                 parameters,
                 proposer_id: 1,
-                created: 1,
+                created_at: 1,
                 status: ProposalStatus::Canceled,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
+                approved_at: None
             }
         )
     });
@@ -578,6 +586,7 @@ fn veto_proposal_succeeds() {
             voting_period: 3,
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
+            grace_period: 0,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         dummy_proposal.create_proposal_and_assert(Ok(()));
@@ -596,10 +605,11 @@ fn veto_proposal_succeeds() {
                 proposal_type: 1,
                 parameters,
                 proposer_id: 1,
-                created: 1,
+                created_at: 1,
                 status: ProposalStatus::Vetoed,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
+                approved_at: None
             }
         )
     });
@@ -719,6 +729,7 @@ fn create_proposal_and_expire_it() {
             voting_period: 3,
             approval_quorum_percentage: 49,
             approval_threshold_percentage: 60,
+            grace_period: 0,
         };
 
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters.clone());
@@ -736,11 +747,130 @@ fn create_proposal_and_expire_it() {
                 proposal_type: 1,
                 parameters,
                 proposer_id: 1,
-                created: 1,
+                created_at: 1,
                 status: ProposalStatus::Expired,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
+                approved_at: None,
             }
         )
+    });
+}
+
+#[test]
+fn proposal_execution_postponed_because_of_grace_period() {
+    initial_test_ext().execute_with(|| {
+        let parameters = ProposalParameters {
+            voting_period: 3,
+            approval_quorum_percentage: 60,
+            approval_threshold_percentage: 60,
+            grace_period: 2,
+        };
+        let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
+        dummy_proposal.create_proposal_and_assert(Ok(()));
+
+        // last created proposal id equals current proposal count
+        let proposals_id = <ProposalCount>::get();
+
+        let mut vote_generator = VoteGenerator::new(proposals_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block_and_finalize(1);
+        run_to_block_and_finalize(2);
+
+        let pending_proposals_ids = <PendingExecutionProposalIds>::get();
+        assert!(pending_proposals_ids
+            .iter()
+            .find(|&&x| x == proposals_id)
+            .is_some());
+
+        let proposal = <crate::Proposals<Test>>::get(proposals_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                proposal_type: 1,
+                parameters,
+                proposer_id: 1,
+                created_at: 1,
+                status: ProposalStatus::PendingExecution,
+                title: b"title".to_vec(),
+                body: b"body".to_vec(),
+                approved_at: Some(1),
+            }
+        );
+    });
+}
+
+#[test]
+fn proposal_execution_succeeds_after_the_grace_period() {
+    initial_test_ext().execute_with(|| {
+        let parameters = ProposalParameters {
+            voting_period: 3,
+            approval_quorum_percentage: 60,
+            approval_threshold_percentage: 60,
+            grace_period: 1,
+        };
+        let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
+        dummy_proposal.create_proposal_and_assert(Ok(()));
+
+        // last created proposal id equals current proposal count
+        let proposals_id = <ProposalCount>::get();
+
+        let mut vote_generator = VoteGenerator::new(proposals_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block_and_finalize(1);
+
+        let mut pending_proposals_ids = <PendingExecutionProposalIds>::get();
+        assert!(pending_proposals_ids
+            .iter()
+            .find(|&&x| x == proposals_id)
+            .is_some());
+
+        let mut proposal = <crate::Proposals<Test>>::get(proposals_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                proposal_type: 1,
+                parameters,
+                proposer_id: 1,
+                created_at: 1,
+                status: ProposalStatus::PendingExecution,
+                title: b"title".to_vec(),
+                body: b"body".to_vec(),
+                approved_at: Some(1),
+            }
+        );
+
+        run_to_block_and_finalize(2);
+
+        proposal = <crate::Proposals<Test>>::get(proposals_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                proposal_type: 1,
+                parameters,
+                proposer_id: 1,
+                created_at: 1,
+                status: ProposalStatus::Executed,
+                title: b"title".to_vec(),
+                body: b"body".to_vec(),
+                approved_at: Some(1),
+            }
+        );
+        pending_proposals_ids = <PendingExecutionProposalIds>::get();
+        assert!(pending_proposals_ids
+            .iter()
+            .find(|&&x| x == proposals_id)
+            .is_none());
     });
 }

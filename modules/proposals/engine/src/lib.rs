@@ -110,6 +110,9 @@ decl_storage! {
         /// Ids of proposals that are open for voting (have not been finalized yet).
         pub ActiveProposalIds get(fn active_proposal_ids): BTreeSet<u32>;
 
+        /// Ids of proposals that were approved and theirs grace period was not expired.
+        pub PendingExecutionProposalIds get(fn pending_proposal_ids): BTreeSet<u32>;
+
         /// Proposal tally results map
         pub(crate) TallyResults get(fn tally_results): map u32 => TallyResult<T::BlockNumber>;
 
@@ -195,16 +198,25 @@ decl_module! {
             Self::deposit_event(RawEvent::ProposalVetoed(proposal_id));
         }
 
-        /// Block finalization. Perform voting period check and vote result tally.
+        /// Block finalization. Perform voting period check, vote result tally, approved proposals
+        /// grace period checks, and proposal execution.
         fn on_finalize(_n: T::BlockNumber) {
             let tally_results = Self::tally();
+            let executable_proposal_ids =
+                Self::get_approved_proposal_with_expired_grace_period_ids();
 
             // mutation
 
+            // Check vote results
             for  tally_result in tally_results {
                 <TallyResults<T>>::insert(tally_result.proposal_id, &tally_result);
 
                 Self::update_proposal_status(tally_result.proposal_id, tally_result.status);
+            }
+
+            // Execute approved proposals with expired grace period
+            for  proposal_id in executable_proposal_ids {
+                Self::execute_proposal(proposal_id);
             }
         }
     }
@@ -238,13 +250,14 @@ impl<T: Trait> Module<T> {
         let new_proposal_id = next_proposal_count_value;
 
         let new_proposal = Proposal {
-            created: Self::current_block(),
+            created_at: Self::current_block(),
             parameters,
             title,
             body,
             proposer_id: proposer_id.clone(),
             proposal_type,
             status: ProposalStatus::Active,
+            approved_at: None,
         };
 
         // mutation
@@ -331,10 +344,19 @@ impl<T: Trait> Module<T> {
                 // restore active proposal id
                 ActiveProposalIds::mutate(|ids| ids.insert(proposal_id));
             }
-            ProposalStatus::Executed
-            | ProposalStatus::Failed { .. }
-            | ProposalStatus::Vetoed
-            | ProposalStatus::Canceled => {} // do nothing
+            ProposalStatus::PendingExecution => {
+                let proposal = Self::proposals(proposal_id);
+
+                // immediate execution
+                // grace period from proposal parameters was set to zero
+                if proposal.is_grace_period_expired(Self::current_block()) {
+                    Self::execute_proposal(proposal_id);
+                }
+            }
+            ProposalStatus::Executed | ProposalStatus::Failed { .. } => {
+                PendingExecutionProposalIds::mutate(|ids| ids.remove(&proposal_id));
+            }
+            ProposalStatus::Vetoed | ProposalStatus::Canceled => {} // do nothing
         }
     }
 
@@ -343,6 +365,20 @@ impl<T: Trait> Module<T> {
 
     /// Approve a proposal. The staked deposit will be returned.
     fn approve_proposal(proposal_id: u32) {
-        Self::execute_proposal(proposal_id);
+        <Proposals<T>>::mutate(proposal_id, |p| p.approved_at = Some(Self::current_block()));
+        PendingExecutionProposalIds::mutate(|ids| ids.insert(proposal_id));
+        Self::update_proposal_status(proposal_id, ProposalStatus::PendingExecution);
+    }
+
+    fn get_approved_proposal_with_expired_grace_period_ids() -> Vec<u32> {
+        PendingExecutionProposalIds::get()
+            .iter()
+            .filter(|proposal_id| {
+                let proposal = Self::proposals(proposal_id);
+
+                proposal.is_grace_period_expired(Self::current_block())
+            })
+            .map(|proposal_id| *proposal_id)
+            .collect()
     }
 }
