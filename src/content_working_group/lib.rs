@@ -1462,7 +1462,7 @@ decl_module! {
         pub fn fill_curator_opening(
             origin,
             curator_opening_id: CuratorOpeningId<T>,
-            successful_curator_application_ids: CuratorApplicationIdSet<T>, 
+            successful_curator_application_ids: CuratorApplicationIdSet<T>,
         ) {
             // Ensure lead is set and is origin signer
             let (lead_id, _lead) = Self::ensure_origin_is_set_lead(origin)?;
@@ -2116,7 +2116,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_lead_is_set() -> Result<
+    pub fn ensure_lead_is_set() -> Result<
         (
             LeadId<T>,
             Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>,

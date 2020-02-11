@@ -450,8 +450,10 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
         match credential {
             // Credentials from 0..999 represents groups or more complex requirements
             // Current Lead if set
-            0 => <content_wg::Module<Runtime>>::ensure_lead_is_set()
-                .map_or(false, |(_, lead)| lead.role_account == *account),
+            0 => match <content_wg::Module<Runtime>>::ensure_lead_is_set() {
+                Ok((_, lead)) => lead.role_account == *account,
+                _ => false,
+            },
             // Any Active Curator
             1 => {
                 // Look for a Curator with a matching role account
