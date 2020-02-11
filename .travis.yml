@@ -11,6 +11,7 @@ rust:
 before_script:
   - rustup component add rustfmt --toolchain 1.40.0-x86_64-unknown-linux-gnu
   - rustup update nightly
+  - rustup target add wasm32-unknown-unknown --toolchain nightly
   - cargo +nightly install --git https://github.com/alexcrichton/wasm-gc --force
 
 script:
