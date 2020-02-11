@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+use super::genesis;
 use super::mock::*;
 
 use srml_support::*;
@@ -66,9 +67,13 @@ fn initial_state() {
     const DEFAULT_FEE: u64 = 500;
     let initial_members = [1, 2, 3];
 
-    ExtBuilder::default()
-        .default_paid_membership_fee(DEFAULT_FEE)
-        .members(initial_members.to_vec())
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            genesis::GenesisConfigBuilder::default()
+                .default_paid_membership_fee(DEFAULT_FEE)
+                .members(initial_members.to_vec())
+                .build(),
+        )
         .build()
         .execute_with(|| {
             let default_terms = assert_ok_unwrap(
@@ -91,8 +96,12 @@ fn buy_membership() {
     const DEFAULT_FEE: u64 = 500;
     const SURPLUS_BALANCE: u64 = 500;
 
-    ExtBuilder::default()
-        .default_paid_membership_fee(DEFAULT_FEE)
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            genesis::GenesisConfigBuilder::default()
+                .default_paid_membership_fee(DEFAULT_FEE)
+                .build(),
+        )
         .build()
         .execute_with(|| {
             let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
@@ -129,8 +138,12 @@ fn buy_membership() {
 fn buy_membership_fails_without_enough_balance() {
     const DEFAULT_FEE: u64 = 500;
 
-    ExtBuilder::default()
-        .default_paid_membership_fee(DEFAULT_FEE)
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            genesis::GenesisConfigBuilder::default()
+                .default_paid_membership_fee(DEFAULT_FEE)
+                .build(),
+        )
         .build()
         .execute_with(|| {
             let initial_balance = DEFAULT_FEE - 1;
@@ -147,8 +160,12 @@ fn buy_membership_fails_without_enough_balance() {
 fn new_memberships_allowed_flag() {
     const DEFAULT_FEE: u64 = 500;
 
-    ExtBuilder::default()
-        .default_paid_membership_fee(DEFAULT_FEE)
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            genesis::GenesisConfigBuilder::default()
+                .default_paid_membership_fee(DEFAULT_FEE)
+                .build(),
+        )
         .build()
         .execute_with(|| {
             let initial_balance = DEFAULT_FEE + 1;
@@ -168,8 +185,12 @@ fn unique_handles() {
     const DEFAULT_FEE: u64 = 500;
     const SURPLUS_BALANCE: u64 = 500;
 
-    ExtBuilder::default()
-        .default_paid_membership_fee(DEFAULT_FEE)
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            genesis::GenesisConfigBuilder::default()
+                .default_paid_membership_fee(DEFAULT_FEE)
+                .build(),
+        )
         .build()
         .execute_with(|| {
             let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
@@ -191,8 +212,12 @@ fn update_profile() {
     const DEFAULT_FEE: u64 = 500;
     const SURPLUS_BALANCE: u64 = 500;
 
-    ExtBuilder::default()
-        .default_paid_membership_fee(DEFAULT_FEE)
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            genesis::GenesisConfigBuilder::default()
+                .default_paid_membership_fee(DEFAULT_FEE)
+                .build(),
+        )
         .build()
         .execute_with(|| {
             let initial_balance = DEFAULT_FEE + SURPLUS_BALANCE;
@@ -221,31 +246,34 @@ fn update_profile() {
 
 #[test]
 fn add_screened_member() {
-    ExtBuilder::default().build().execute_with(|| {
-        let screening_authority = 5;
-        <members::ScreeningAuthority<Test>>::put(&screening_authority);
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(genesis::GenesisConfigBuilder::default().build())
+        .build()
+        .execute_with(|| {
+            let screening_authority = 5;
+            <members::ScreeningAuthority<Test>>::put(&screening_authority);
 
-        let next_member_id = Members::members_created();
+            let next_member_id = Members::members_created();
 
-        assert_ok!(Members::add_screened_member(
-            Origin::signed(screening_authority),
-            ALICE_ACCOUNT_ID,
-            get_alice_info()
-        ));
+            assert_ok!(Members::add_screened_member(
+                Origin::signed(screening_authority),
+                ALICE_ACCOUNT_ID,
+                get_alice_info()
+            ));
 
-        let profile = assert_ok_unwrap(
-            Members::member_profile(&next_member_id),
-            "member profile not created",
-        );
+            let profile = assert_ok_unwrap(
+                Members::member_profile(&next_member_id),
+                "member profile not created",
+            );
 
-        assert_eq!(Some(profile.handle), get_alice_info().handle);
-        assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
-        assert_eq!(Some(profile.about), get_alice_info().about);
-        assert_eq!(
-            members::EntryMethod::Screening(screening_authority),
-            profile.entry
-        );
-    });
+            assert_eq!(Some(profile.handle), get_alice_info().handle);
+            assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
+            assert_eq!(Some(profile.about), get_alice_info().about);
+            assert_eq!(
+                members::EntryMethod::Screening(screening_authority),
+                profile.entry
+            );
+        });
 }
 
 #[test]
@@ -253,8 +281,12 @@ fn set_controller_key() {
     let initial_members = [ALICE_ACCOUNT_ID];
     const ALICE_CONTROLLER_ID: u64 = 2;
 
-    ExtBuilder::default()
-        .members(initial_members.to_vec())
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            genesis::GenesisConfigBuilder::default()
+                .members(initial_members.to_vec())
+                .build(),
+        )
         .build()
         .execute_with(|| {
             let member_id = Members::member_ids_by_root_account_id(&ALICE_ACCOUNT_ID)[0];
@@ -284,8 +316,12 @@ fn set_root_account() {
     let initial_members = [ALICE_ACCOUNT_ID];
     const ALICE_NEW_ROOT_ACCOUNT: u64 = 2;
 
-    ExtBuilder::default()
-        .members(initial_members.to_vec())
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            genesis::GenesisConfigBuilder::default()
+                .members(initial_members.to_vec())
+                .build(),
+        )
         .build()
         .execute_with(|| {
             let member_id_1 = Members::member_ids_by_root_account_id(&ALICE_ACCOUNT_ID)[0];
@@ -308,8 +344,12 @@ fn set_root_account() {
 fn registering_and_unregistering_roles_on_member() {
     let initial_members = [1, 2];
 
-    ExtBuilder::default()
-        .members(initial_members.to_vec())
+    TestExternalitiesBuilder::<Test>::default()
+        .set_membership_config(
+            genesis::GenesisConfigBuilder::default()
+                .members(initial_members.to_vec())
+                .build(),
+        )
         .build()
         .execute_with(|| {
             const DUMMY_ACTOR_ID: u32 = 100;

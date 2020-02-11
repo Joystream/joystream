@@ -206,8 +206,6 @@ decl_storage! {
                 // Give member starting balance
                 T::Currency::deposit_creating(&who, T::InitialMembersBalance::get());
             }
-
-            <MembersCreated<T>>::put(T::MemberId::from(config.members.len() as u32));
         });
     }
 }
@@ -395,6 +393,15 @@ pub enum MemberControllerAccountDidNotSign {
     UnsignedOrigin,
     MemberIdInvalid,
     SignerControllerAccountMismatch,
+}
+
+pub enum MemberControllerAccountMismatch {
+    MemberIdInvalid,
+    SignerControllerAccountMismatch,
+}
+pub enum MemberRootAccountMismatch {
+    MemberIdInvalid,
+    SignerRootAccountMismatch,
 }
 
 impl<T: Trait> Module<T> {
@@ -594,6 +601,38 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(signer_account)
+    }
+
+    pub fn ensure_member_controller_account(
+        signer_account: &T::AccountId,
+        member_id: &T::MemberId,
+    ) -> Result<(), MemberControllerAccountMismatch> {
+        // Ensure member exists
+        let profile = Self::ensure_profile(member_id.clone())
+            .map_err(|_| MemberControllerAccountMismatch::MemberIdInvalid)?;
+
+        ensure!(
+            profile.controller_account == *signer_account,
+            MemberControllerAccountMismatch::SignerControllerAccountMismatch
+        );
+
+        Ok(())
+    }
+
+    pub fn ensure_member_root_account(
+        signer_account: &T::AccountId,
+        member_id: &T::MemberId,
+    ) -> Result<(), MemberRootAccountMismatch> {
+        // Ensure member exists
+        let profile = Self::ensure_profile(member_id.clone())
+            .map_err(|_| MemberRootAccountMismatch::MemberIdInvalid)?;
+
+        ensure!(
+            profile.root_account == *signer_account,
+            MemberRootAccountMismatch::SignerRootAccountMismatch
+        );
+
+        Ok(())
     }
 
     // policy across all roles is:
