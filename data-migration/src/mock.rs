@@ -1,7 +1,5 @@
 #![cfg(test)]
-
-use crate::*;
-
+use super::*;
 use primitives::H256;
 
 use crate::{GenesisConfig, Module, Trait};
@@ -21,14 +19,21 @@ mod old_forum_mod {
     pub use old_forum::Event;
 }
 
-mod forum_mod {
+mod new_forum_mod {
+    pub use new_forum::Event;
+}
+
+mod migration_mod {
     pub use crate::Event;
 }
+
+pub const FORUM_SUDO: <Runtime as system::Trait>::AccountId = 33;
 
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         old_forum_mod<T>,
-        forum_mod<T>,
+        new_forum_mod<T>,
+        migration_mod<T>,
     }
 }
 
@@ -95,35 +100,47 @@ impl new_forum::Trait for Runtime {
     type PostId = u64;
 }
 
-#[derive(Clone)]
-pub enum OriginType {
-    Signed(<Runtime as system::Trait>::AccountId),
-    //Inherent, <== did not find how to make such an origin yet
-    Root,
+impl Trait for Runtime {
+    type Event = TestEvent;
 }
 
-pub fn mock_origin(origin: OriginType) -> mock::Origin {
-    match origin {
-        OriginType::Signed(account_id) => Origin::signed(account_id),
-        //OriginType::Inherent => Origin::inherent,
-        OriginType::Root => system::RawOrigin::Root.into(), //Origin::root
+pub fn generate_genesis_config() -> GenesisConfig {
+    GenesisConfig {
+        migration_config: Default::default(),
     }
 }
 
-pub fn generate_genesis_config(
-    threads_imported_per_block: u64,
-    posts_imported_per_block: u64,
-    data_migration_done: bool,
-) -> GenesisConfig<Runtime> {
-    GenesisConfig::<Runtime> {
-        account_by_moderator_id: vec![],
-    }
+pub fn set_migration_config_mock(
+    migrate_on_block_number: u32,
+    max_categories_imported_per_block: u64,
+    max_threads_imported_per_block: u64,
+    max_posts_imported_per_block: u64,
+) {
+    TestModule::set_migration_config(DataMigrationConfigStruct {
+        migrate_on_block_number: migrate_on_block_number,
+        max_categories_imported_per_block: max_categories_imported_per_block,
+        max_threads_imported_per_block: max_threads_imported_per_block,
+        max_posts_imported_per_block: max_posts_imported_per_block,
+    })
+}
+
+pub fn create_migration_data_mock(
+    account_id: <Runtime as system::Trait>::AccountId,
+    thread_number: u32,
+    post_number: u32,
+    text: Vec<u8>,
+) {
+    TestModule::create_migration_data(account_id, thread_number, post_number, text);
+}
+
+pub fn on_initialize_mock(n: <Runtime as system::Trait>::BlockNumber) {
+    TestModule::on_initialize(n);
 }
 
 // NB!:
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
-pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities {
+pub fn build_test_externalities(config: GenesisConfig) -> runtime_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -132,10 +149,6 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::T
 
     t.into()
 }
-
-pub type System = system::Module<Runtime>;
-
-pub type Timestamp = timestamp::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestModule = Module<Runtime>;

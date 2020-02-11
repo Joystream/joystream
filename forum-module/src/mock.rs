@@ -769,34 +769,6 @@ pub fn set_stickied_threads_mock(
     category_id
 }
 
-// pub fn generate_old_forum_data(
-//     moderator_id: <Runtime as system::Trait>::AccountId,
-//     category_number: u32,
-//     thread_number: u32,
-//     post_number: u32,
-//     text_size: usize,
-// ) {
-//     for _ in 0..category_number {
-//         TestForumModule::create_migrate_data(
-//             moderator_id,
-//             thread_number,
-//             post_number,
-//             &vec![b'x'; text_size],
-//         );
-//     }
-// }
-
-// pub fn default_genesis_config() -> GenesisConfig<Runtime> {
-//     generate_genesis_config(0, 0, true)
-// }
-
-// pub fn data_migration_genesis_config(
-//     thread_each_block: u64,
-//     post_each_block: u64,
-// ) -> GenesisConfig<Runtime> {
-//     generate_genesis_config(thread_each_block, post_each_block, false)
-// }
-
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
         forum_user_by_id: vec![],
