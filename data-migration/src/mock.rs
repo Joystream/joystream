@@ -116,7 +116,7 @@ pub fn set_migration_config_mock(
     max_threads_imported_per_block: u64,
     max_posts_imported_per_block: u64,
 ) {
-    TestModule::set_migration_config(DataMigrationConfigStruct {
+    TestModule::set_migration_config(MigrationConfig {
         migrate_on_block_number: migrate_on_block_number,
         max_categories_imported_per_block: max_categories_imported_per_block,
         max_threads_imported_per_block: max_threads_imported_per_block,
@@ -157,7 +157,7 @@ pub fn build_test_externalities(config: GenesisConfig) -> runtime_io::TestExtern
     t.into()
 }
 
-pub type System = system::Module<Runtime>;
+// pub type System = system::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestModule = Module<Runtime>;

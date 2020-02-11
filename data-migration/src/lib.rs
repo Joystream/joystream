@@ -27,7 +27,7 @@ mod tests;
 /// Structure include all configuration related to data migration
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
-pub struct DataMigrationConfigStruct {
+pub struct MigrationConfig {
     pub migrate_on_block_number: u32,
     pub max_categories_imported_per_block: u64,
     pub max_threads_imported_per_block: u64,
@@ -35,9 +35,9 @@ pub struct DataMigrationConfigStruct {
 }
 
 // Implement default to set a high block number to avoid migration start immediately
-impl Default for DataMigrationConfigStruct {
-    fn default() -> DataMigrationConfigStruct {
-        DataMigrationConfigStruct {
+impl Default for MigrationConfig {
+    fn default() -> MigrationConfig {
+        MigrationConfig {
             migrate_on_block_number: std::u32::MAX,
             max_categories_imported_per_block: std::u64::MAX,
             max_threads_imported_per_block: std::u64::MAX,
@@ -65,7 +65,7 @@ decl_event!(
 decl_storage! {
     trait Store for Module<T: Trait> as ForumDataMigration {
         /// Block number to start migration
-        pub DataMigrationConfig get(migration_config) config(): DataMigrationConfigStruct;
+        pub DataMigrationConfig get(migration_config) config(): MigrationConfig;
 
         /// Account id to forum user id
         pub AccountByForumUserId get(account_by_forum_user_id): map T::AccountId => T::ForumUserId;
@@ -107,6 +107,7 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    // this method just for unit test, which create data in old forum module
     pub fn create_migration_data(
         account_id: T::AccountId,
         thread_number: u32,
@@ -171,7 +172,7 @@ impl<T: Trait> Module<T> {
         }
     }
     // set migration configuration
-    fn set_migration_config(config: DataMigrationConfigStruct) {
+    fn set_migration_config(config: MigrationConfig) {
         DataMigrationConfig::mutate(|value| *value = config);
     }
 
