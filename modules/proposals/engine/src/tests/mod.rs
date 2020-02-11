@@ -67,7 +67,7 @@ impl DummyProposalFixture {
         }
     }
 
-    fn create_proposal_and_assert(self, result: dispatch::Result) {
+    fn create_proposal_and_assert(self, result: dispatch::Result) -> Option<u32> {
         assert_eq!(
             ProposalsEngine::create_proposal(
                 self.origin.into(),
@@ -79,6 +79,15 @@ impl DummyProposalFixture {
             ),
             result
         );
+
+        if result.is_ok() {
+            // last created proposal id equals current proposal count
+            let proposal_id = <ProposalCount>::get();
+
+            Some(proposal_id)
+        } else {
+            None
+        }
     }
 }
 
@@ -221,10 +230,7 @@ fn create_dummy_proposal_fails_with_insufficient_rights() {
 fn vote_succeeds() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -251,12 +257,9 @@ fn proposal_execution_succeeds() {
             grace_period: 0,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
-        dummy_proposal.create_proposal_and_assert(Ok(()));
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
-        // last created proposal id equals current proposal count
-        let proposals_id = <ProposalCount>::get();
-
-        let mut vote_generator = VoteGenerator::new(proposals_id);
+        let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -264,7 +267,7 @@ fn proposal_execution_succeeds() {
 
         run_to_block_and_finalize(2);
 
-        let proposal = <crate::Proposals<Test>>::get(proposals_id);
+        let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
             proposal,
@@ -297,12 +300,9 @@ fn proposal_execution_failed() {
             .with_parameters(parameters)
             .with_proposal_type_and_code(faulty_proposal.proposal_type(), faulty_proposal.encode());
 
-        dummy_proposal.create_proposal_and_assert(Ok(()));
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
-        // last created proposal id equals current proposal count
-        let proposals_id = <ProposalCount>::get();
-
-        let mut vote_generator = VoteGenerator::new(proposals_id);
+        let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -310,7 +310,7 @@ fn proposal_execution_failed() {
 
         run_to_block_and_finalize(2);
 
-        let proposal = <crate::Proposals<Test>>::get(proposals_id);
+        let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
             proposal,
@@ -340,12 +340,9 @@ fn tally_calculation_succeeds() {
             grace_period: 0,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
-        dummy_proposal.create_proposal_and_assert(Ok(()));
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
-        // last created proposal id equals current proposal count
-        let proposals_id = <ProposalCount>::get();
-
-        let mut vote_generator = VoteGenerator::new(proposals_id);
+        let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Reject);
@@ -353,12 +350,12 @@ fn tally_calculation_succeeds() {
 
         run_to_block_and_finalize(2);
 
-        let tally_result = <TallyResults<Test>>::get(proposals_id);
+        let tally_result = <TallyResults<Test>>::get(proposal_id);
 
         assert_eq!(
             tally_result,
             TallyResult {
-                proposal_id: proposals_id,
+                proposal_id,
                 abstentions: 1,
                 approvals: 2,
                 rejections: 1,
@@ -373,10 +370,7 @@ fn tally_calculation_succeeds() {
 fn rejected_tally_results_and_remove_proposal_id_from_active_succeeds() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Reject);
@@ -438,10 +432,7 @@ fn create_proposal_fails_with_invalid_body_or_title() {
 fn vote_fails_with_expired_voting_period() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         run_to_block_and_finalize(6);
 
@@ -457,10 +448,7 @@ fn vote_fails_with_expired_voting_period() {
 fn vote_fails_with_not_active_proposal() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Reject);
@@ -488,10 +476,7 @@ fn vote_fails_with_absent_proposal() {
 fn vote_fails_on_double_voting() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.auto_increment_voter_id = false;
@@ -514,10 +499,7 @@ fn cancel_proposal_succeeds() {
             grace_period: 0,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let cancel_proposal = CancelProposalFixture::new(proposal_id);
         cancel_proposal.cancel_and_assert(Ok(()));
@@ -544,10 +526,7 @@ fn cancel_proposal_succeeds() {
 fn cancel_proposal_fails_with_not_active_proposal() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         run_to_block_and_finalize(6);
 
@@ -568,10 +547,7 @@ fn cancel_proposal_fails_with_not_existing_proposal() {
 fn cancel_proposal_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let cancel_proposal =
             CancelProposalFixture::new(proposal_id).with_origin(RawOrigin::Signed(2));
@@ -589,10 +565,7 @@ fn veto_proposal_succeeds() {
             grace_period: 0,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let veto_proposal = VetoProposalFixture::new(proposal_id);
         veto_proposal.veto_and_assert(Ok(()));
@@ -619,10 +592,7 @@ fn veto_proposal_succeeds() {
 fn veto_proposal_fails_with_not_active_proposal() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         run_to_block_and_finalize(6);
 
@@ -643,10 +613,7 @@ fn veto_proposal_fails_with_not_existing_proposal() {
 fn veto_proposal_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let veto_proposal = VetoProposalFixture::new(proposal_id).with_origin(RawOrigin::Signed(2));
         veto_proposal.veto_and_assert(Err("RequireRootOrigin"));
@@ -667,10 +634,7 @@ fn create_proposal_event_emitted() {
 fn veto_proposal_event_emitted() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let veto_proposal = VetoProposalFixture::new(proposal_id);
         veto_proposal.veto_and_assert(Ok(()));
@@ -687,10 +651,7 @@ fn veto_proposal_event_emitted() {
 fn cancel_proposal_event_emitted() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let cancel_proposal = CancelProposalFixture::new(proposal_id);
         cancel_proposal.cancel_and_assert(Ok(()));
@@ -707,10 +668,7 @@ fn cancel_proposal_event_emitted() {
 fn vote_proposal_event_emitted() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
-
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -733,12 +691,10 @@ fn create_proposal_and_expire_it() {
         };
 
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters.clone());
-        dummy_proposal.create_proposal_and_assert(Ok(()));
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         run_to_block_and_finalize(8);
 
-        // last created proposal id equals current proposal count
-        let proposal_id = <ProposalCount>::get();
         let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
@@ -767,12 +723,9 @@ fn proposal_execution_postponed_because_of_grace_period() {
             grace_period: 2,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
-        dummy_proposal.create_proposal_and_assert(Ok(()));
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
-        // last created proposal id equals current proposal count
-        let proposals_id = <ProposalCount>::get();
-
-        let mut vote_generator = VoteGenerator::new(proposals_id);
+        let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -784,10 +737,10 @@ fn proposal_execution_postponed_because_of_grace_period() {
         let pending_proposals_ids = <PendingExecutionProposalIds>::get();
         assert!(pending_proposals_ids
             .iter()
-            .find(|&&x| x == proposals_id)
+            .find(|&&x| x == proposal_id)
             .is_some());
 
-        let proposal = <crate::Proposals<Test>>::get(proposals_id);
+        let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
             proposal,
@@ -815,12 +768,9 @@ fn proposal_execution_succeeds_after_the_grace_period() {
             grace_period: 1,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
-        dummy_proposal.create_proposal_and_assert(Ok(()));
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
-        // last created proposal id equals current proposal count
-        let proposals_id = <ProposalCount>::get();
-
-        let mut vote_generator = VoteGenerator::new(proposals_id);
+        let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -831,10 +781,10 @@ fn proposal_execution_succeeds_after_the_grace_period() {
         let mut pending_proposals_ids = <PendingExecutionProposalIds>::get();
         assert!(pending_proposals_ids
             .iter()
-            .find(|&&x| x == proposals_id)
+            .find(|&&x| x == proposal_id)
             .is_some());
 
-        let mut proposal = <crate::Proposals<Test>>::get(proposals_id);
+        let mut proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
             proposal,
@@ -852,7 +802,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
 
         run_to_block_and_finalize(2);
 
-        proposal = <crate::Proposals<Test>>::get(proposals_id);
+        proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
             proposal,
@@ -870,7 +820,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
         pending_proposals_ids = <PendingExecutionProposalIds>::get();
         assert!(pending_proposals_ids
             .iter()
-            .find(|&&x| x == proposals_id)
+            .find(|&&x| x == proposal_id)
             .is_none());
     });
 }
