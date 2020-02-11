@@ -219,6 +219,8 @@ pub static MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN: &str = "Unsigned origin
 pub static MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID: &str = "Member id is invalid";
 pub static MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
     "Signer does not match controller account";
+static MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT: &str =
+    "Origin must be controller or root account of member";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
@@ -1644,15 +1646,22 @@ decl_module! {
             member_id: T::MemberId,
             curator_opening_id: CuratorOpeningId<T>,
             role_account: T::AccountId,
-            source_account: T::AccountId,
             opt_role_stake_balance: Option<BalanceOf<T>>,
             opt_application_stake_balance: Option<BalanceOf<T>>,
             human_readable_text: Vec<u8>
         ) {
-            // Ensure that origin is signed by member with given id.
-            ensure_on_wrapped_error!(
-                members::Module::<T>::ensure_member_controller_account_signed(origin, &member_id)
-            )?;
+            // Ensure origin which will server as the source account for staked funds is signed
+            let source_account = ensure_signed(origin)?;
+
+            // In absense of a more general key delegation system which allows an account with some funds to
+            // grant another account permission to stake from its funds, the origin of this call must have the funds
+            // and cannot specify another arbitrary account as the source account.
+            // Ensure the source_account is either the controller or root account of member with given id
+            ensure!(
+                members::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
+                members::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
+                MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT
+            );
 
             // Ensure curator opening exists
             let (curator_opening, _opening) = Self::ensure_curator_opening_exists(&curator_opening_id)?;

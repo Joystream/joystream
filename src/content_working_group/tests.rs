@@ -261,7 +261,6 @@ fn update_channel_as_curation_actor_success() {
                 2222,
                 to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                 2222 * 2,
-                2222 * 3,
                 generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
             );
 
@@ -424,7 +423,6 @@ fn begin_curator_applicant_review_success() {
                 333,
                 to_vec("CuratorWannabe"),
                 11111,
-                91000,
                 generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
             );
 
@@ -470,7 +468,6 @@ fn fill_curator_opening_success() {
                         2222,
                         to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                         2222 * 2,
-                        2222 * 3,
                         generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
                     ),
                     true,
@@ -480,7 +477,6 @@ fn fill_curator_opening_success() {
                         3333,
                         to_vec("yoyoyo1"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                         3333 * 2,
-                        3333 * 3,
                         generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
                     ),
                     true,
@@ -490,7 +486,6 @@ fn fill_curator_opening_success() {
                         5555,
                         to_vec("yoyoyo2"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                         5555 * 2,
-                        5555 * 3,
                         generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
                     ),
                     false,
@@ -500,7 +495,6 @@ fn fill_curator_opening_success() {
                         6666,
                         to_vec("yoyoyo3"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                         6666 * 2,
-                        6666 * 3,
                         generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
                     ),
                     true,
@@ -536,7 +530,6 @@ fn withdraw_curator_application_success() {
                 curator_applicant_root_and_controller_account,
                 to_vec("CuratorWannabe"),
                 curator_applicant_role_account,
-                91000,
                 human_readable_text,
             );
 
@@ -582,7 +575,6 @@ fn terminate_curator_application_success() {
                 333,
                 to_vec("CuratorWannabe"),
                 11111,
-                91000,
                 generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
             );
 
@@ -643,7 +635,7 @@ fn apply_on_curator_opening_success() {
                 .amount;
             let total_balance = role_stake_balance + application_stake_balance;
 
-            let source_account = 918111;
+            let source_account = curator_applicant_root_and_controller_account;
 
             // Credit staking source account
             let _ = balances::Module::<Test>::deposit_creating(&source_account, total_balance);
@@ -667,7 +659,6 @@ fn apply_on_curator_opening_success() {
                     curator_applicant_member_id,
                     normal_opening_constructed.curator_opening_id,
                     curator_applicant_role_account,
-                    source_account,
                     Some(role_stake_balance),
                     Some(application_stake_balance),
                     human_readable_text
@@ -1269,7 +1260,6 @@ fn make_generic_add_member_params() -> AddMemberAndApplyOnOpeningParams {
         2222,
         to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
         2222 * 2,
-        2222 * 3,
         generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
     )
 }
@@ -1364,7 +1354,6 @@ pub struct AddMemberAndApplyOnOpeningParams {
     pub curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
     pub handle: Vec<u8>,
     pub curator_applicant_role_account: <Test as system::Trait>::AccountId,
-    pub source_account: <Test as system::Trait>::AccountId,
     pub human_readable_text: Vec<u8>,
 }
 
@@ -1373,14 +1362,12 @@ impl AddMemberAndApplyOnOpeningParams {
         curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
         handle: Vec<u8>,
         curator_applicant_role_account: <Test as system::Trait>::AccountId,
-        source_account: <Test as system::Trait>::AccountId,
         human_readable_text: Vec<u8>,
     ) -> Self {
         Self {
             curator_applicant_root_and_controller_account,
             handle,
             curator_applicant_role_account,
-            source_account,
             human_readable_text,
         }
     }
@@ -1399,7 +1386,6 @@ fn add_members_and_apply_on_opening(
                 params.curator_applicant_root_and_controller_account,
                 params.handle,
                 params.curator_applicant_role_account,
-                params.source_account,
                 params.human_readable_text,
             )
         })
@@ -1417,7 +1403,6 @@ fn add_member_and_apply_on_opening(
     curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
     handle: Vec<u8>,
     curator_applicant_role_account: <Test as system::Trait>::AccountId,
-    source_account: <Test as system::Trait>::AccountId,
     human_readable_text: Vec<u8>,
 ) -> NewMemberAppliedResult {
     // Make membership
@@ -1441,6 +1426,8 @@ fn add_member_and_apply_on_opening(
 
     let total_balance = role_stake_balance + application_stake_balance;
 
+    let source_account = curator_applicant_root_and_controller_account;
+
     // Credit staking source account if required
     if total_balance > 0 {
         let _ = balances::Module::<Test>::deposit_creating(&source_account, total_balance);
@@ -1462,7 +1449,6 @@ fn add_member_and_apply_on_opening(
             curator_applicant_member_id,
             curator_opening_id,
             curator_applicant_role_account,
-            source_account,
             Some(role_stake_balance),
             Some(application_stake_balance),
             human_readable_text
