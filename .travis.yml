@@ -9,8 +9,7 @@ rust:
 #  - cargo
 
 before_script:
-  # https://github.com/rust-lang/rustup/issues/1558#issuecomment-452110409
-  - rustup toolchain remove stable && rustup toolchain install stable
+  - rustup component add rustfmt --toolchain 1.40.0-x86_64-unknown-linux-gnu
 
 script:
   # Ensure all checked in code is cargo-fmt'ed
