@@ -1936,60 +1936,6 @@ decl_module! {
             Self::deposit_event(RawEvent::LeadUnset(lead_id));
         }
 
-        /// The stake, with the given id, was unstaked.
-        pub fn unstaked(
-            origin,
-            stake_id: StakeId<T>
-        ) {
-            // Ensure its a runtime root origin
-            ensure_root(origin)?;
-
-            // Ensure its an unstaker in this group
-            let unstaker = Self::ensure_unstaker_exists(&stake_id)?;
-
-            // Get curator doing the unstaking,
-            // urrently the only possible unstaker in this module.
-            let curator_id =
-                if let WorkingGroupUnstaker::Curator(curator_id) = unstaker {
-                    curator_id
-                } else {
-                    panic!("Should not be possible, only curators unstake in this module currently");
-                };
-
-            // Grab curator from id, unwrap, because this curator _must_ exist.
-            let unstaking_curator = Self::ensure_curator_exists(&curator_id).unwrap();
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Update stage of curator
-            let curator_exit_summary =
-                if let CuratorRoleStage::Unstaking(summary) = unstaking_curator.stage {
-                    summary
-                } else {
-                    panic!("Curator must be in unstaking stage");
-                };
-
-            let new_curator = Curator{
-                stage: CuratorRoleStage::Exited(curator_exit_summary.clone()),
-                ..unstaking_curator
-            };
-
-            CuratorById::<T>::insert(curator_id, new_curator);
-
-            // Remove from unstaker
-            UnstakerByStakeId::<T>::remove(stake_id);
-
-            // Trigger event
-            let event = match curator_exit_summary.origin {
-                CuratorExitInitiationOrigin::Lead => RawEvent::TerminatedCurator(curator_id),
-                CuratorExitInitiationOrigin::Curator => RawEvent::CuratorExited(curator_id),
-            };
-
-            Self::deposit_event(event);
-        }
-
         /// Add an opening for a curator role.
         pub fn set_channel_creation_enabled(origin, enabled: bool)  {
 
@@ -2678,5 +2624,58 @@ impl<T: Trait> Module<T> {
 
         // Trigger event
         Self::deposit_event(RawEvent::ChannelUpdatedByCurationActor(*channel_id));
+    }
+
+    /// The stake, with the given id, was unstaked. Infalliable. Has no side effects if stake_id is not relevant
+    /// to this module.
+    pub fn unstaked(stake_id: StakeId<T>) {
+        // Ignore if unstaked doesn't exist
+        if !<UnstakerByStakeId<T>>::exists(stake_id) {
+            return;
+        }
+
+        // Unstaker must be in this group
+        let unstaker = Self::ensure_unstaker_exists(&stake_id).unwrap();
+
+        // Get curator doing the unstaking,
+        // urrently the only possible unstaker in this module.
+        let curator_id = if let WorkingGroupUnstaker::Curator(curator_id) = unstaker {
+            curator_id
+        } else {
+            panic!("Should not be possible, only curators unstake in this module currently.");
+        };
+
+        // Grab curator from id, unwrap, because this curator _must_ exist.
+        let unstaking_curator = Self::ensure_curator_exists(&curator_id).unwrap();
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Update stage of curator
+        let curator_exit_summary =
+            if let CuratorRoleStage::Unstaking(summary) = unstaking_curator.stage {
+                summary
+            } else {
+                panic!("Curator must be in unstaking stage.");
+            };
+
+        let new_curator = Curator {
+            stage: CuratorRoleStage::Exited(curator_exit_summary.clone()),
+            ..unstaking_curator
+        };
+
+        CuratorById::<T>::insert(curator_id, new_curator);
+
+        // Remove from unstaker
+        UnstakerByStakeId::<T>::remove(stake_id);
+
+        // Trigger event
+        let event = match curator_exit_summary.origin {
+            CuratorExitInitiationOrigin::Lead => RawEvent::TerminatedCurator(curator_id),
+            CuratorExitInitiationOrigin::Curator => RawEvent::CuratorExited(curator_id),
+        };
+
+        Self::deposit_event(event);
     }
 }
