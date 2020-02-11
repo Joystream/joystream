@@ -812,16 +812,16 @@ We kept quite strictly to the schedule laid out [here](sprint-in-london.md) for 
 
 #### Item 5 - Infrastructure
 
-1) We agreed to change the maximum file size of videos to be hosted by storage providers to greater than 100MB. This needs to be updated in both Pioneer and the Storage API.
-2) We won't be implementing support for "cleaning" content from storage nodes until after release.
-3) Mokhtar is still working on migration and genesis configuration.
-4) We also agreed that Aracus should be killed and replaced with some new Joystream-hosted nodes.
+1. We agreed to change the maximum file size of videos to be hosted by storage providers to greater than 100MB. This needs to be updated in both Pioneer and the Storage API.
+2. We won't be implementing support for "cleaning" content from storage nodes until after release.
+3. Mokhtar is still working on migration and genesis configuration.
+4. We also agreed that Aracus should be killed and replaced with some new Joystream-hosted nodes.
 
 #### Item 6 - Community
 
-1) We agreed that testers should be sourced from our Telegram group.
-2) We also agreed that incentives for Rome should be made dynamic to avoid making roles too lucrative.
-3) Assets for newsletters, blog posts and everything else relating to the release are to be prepared.
+1. We agreed that testers should be sourced from our Telegram group.
+2. We also agreed that incentives for Rome should be made dynamic to avoid making roles too lucrative.
+3. Assets for newsletters, blog posts and everything else relating to the release are to be prepared.
 
 
 **Other topics raised:**
