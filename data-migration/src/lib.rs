@@ -88,14 +88,16 @@ decl_module! {
                 return;
             }
 
-            println!("compare category id {:?}, {:?}", old_forum::NextCategoryId::get(), <new_forum::NextCategoryId<T>>::get());
-            println!("compare thread id {:?}, {:?}", old_forum::NextThreadId::get(), <new_forum::NextThreadId<T>>::get());
-            println!("compare post id {:?}, {:?}", old_forum::NextPostId::get(), <new_forum::NextPostId<T>>::get());
+            // for debug
+            // println!("compare category id {:?}, {:?}", old_forum::NextCategoryId::get(), <new_forum::NextCategoryId<T>>::get());
+            // println!("compare thread id {:?}, {:?}", old_forum::NextThreadId::get(), <new_forum::NextThreadId<T>>::get());
+            // println!("compare post id {:?}, {:?}", old_forum::NextPostId::get(), <new_forum::NextPostId<T>>::get());
 
             // Check if all data migrated from old forum.
             if Self::migrate_category() && Self::migrate_thread() && Self::migrate_post() {
                 // set data migration done
                 DataMigrationDone::mutate(|value| *value = true);
+                new_forum::DataMigrationDone::mutate(|value| *value = true);
 
                 // Generate event
                 Self::deposit_event(RawEvent::DataMigrationDone(n));

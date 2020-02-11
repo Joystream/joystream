@@ -31,9 +31,9 @@ pub const FORUM_SUDO: <Runtime as system::Trait>::AccountId = 33;
 
 impl_outer_event! {
     pub enum TestEvent for Runtime {
+        migration_mod<T>,
         old_forum_mod<T>,
         new_forum_mod<T>,
-        migration_mod<T>,
     }
 }
 
@@ -133,8 +133,15 @@ pub fn create_migration_data_mock(
     TestModule::create_migration_data(account_id, thread_number, post_number, text);
 }
 
-pub fn on_initialize_mock(n: <Runtime as system::Trait>::BlockNumber) {
+pub fn on_initialize_mock(n: <Runtime as system::Trait>::BlockNumber, data_migration_done: bool) {
     TestModule::on_initialize(n);
+    if data_migration_done {
+        // TODO can't pass compilation
+        // assert_eq!(
+        //     System::events().last().unwrap().event,
+        //     TestEvent::migration_mod(RawEvent::DataMigrationDone(n)),
+        // );
+    };
 }
 
 // NB!:
@@ -149,6 +156,8 @@ pub fn build_test_externalities(config: GenesisConfig) -> runtime_io::TestExtern
 
     t.into()
 }
+
+pub type System = system::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestModule = Module<Runtime>;

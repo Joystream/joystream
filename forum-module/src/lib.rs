@@ -871,9 +871,6 @@ decl_event!(
 
         /// Sticky thread updated for category
         CategoryStickyThreadUpdate(CategoryId, Vec<ThreadId>),
-
-        /// Data migration done
-        DataMigrationDone(),
     }
 );
 
@@ -2201,7 +2198,7 @@ impl<T: Trait> Module<T> {
 
     /// Ensure data migration is done
     fn ensure_data_migration_done() -> Result<(), &'static str> {
-        if DataMigrationDone::get() == true {
+        if DataMigrationDone::get() {
             Ok(())
         } else {
             Err(ERROR_DATA_MIGRATION_NOT_DONE)
