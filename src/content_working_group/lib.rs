@@ -571,7 +571,7 @@ impl Default for ChannelCurationStatus {
     }
 }
 
-type OptionalText = Option<Vec<u8>>;
+pub type OptionalText = Option<Vec<u8>>;
 
 /// A channel for publishing content.
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
@@ -621,9 +621,9 @@ impl<MemberId, AccountId, BlockNumber, PrincipalId>
     Channel<MemberId, AccountId, BlockNumber, PrincipalId>
 {
     pub fn new(
-        title: Vec<u8>,
+        title: OptionalText,
         verified: bool,
-        description: Vec<u8>,
+        description: OptionalText,
         content: ChannelContentType,
         owner: MemberId,
         role_account: AccountId,
@@ -631,8 +631,8 @@ impl<MemberId, AccountId, BlockNumber, PrincipalId>
         curation_status: ChannelCurationStatus,
         created: BlockNumber,
         principal_id: PrincipalId,
-        avatar: Vec<u8>,
-        banner: Vec<u8>,
+        avatar: OptionalText,
+        banner: OptionalText,
         handle: Vec<u8>,
     ) -> Self {
         Self {
@@ -1101,12 +1101,13 @@ decl_module! {
             origin,
             owner: T::MemberId,
             role_account: T::AccountId,
+            content: ChannelContentType,
             handle: Vec<u8>,
             title: OptionalText,
             description: OptionalText,
             avatar: OptionalText,
             banner: OptionalText,
-            content: ChannelContentType
+            publishing_status: ChannelPublishingStatus
         ) {
 
             // Ensure that it is signed

@@ -142,8 +142,9 @@ fn create_channel_description_too_long() {
                 None,
             );
 
-            fixture.description =
-                generate_too_long_length_buffer(&ChannelDescriptionConstraint::get());
+            fixture.description = Some(
+                generate_too_long_length_buffer(&ChannelDescriptionConstraint::get())
+            );
 
             fixture.call_and_assert_error(MSG_CHANNEL_DESCRIPTION_TOO_LONG);
         });
@@ -161,8 +162,9 @@ fn create_channel_description_too_short() {
                 None,
             );
 
-            fixture.description =
-                generate_too_short_length_buffer(&ChannelDescriptionConstraint::get());
+            fixture.description = Some(
+                generate_too_short_length_buffer(&ChannelDescriptionConstraint::get())
+            );
 
             fixture.call_and_assert_error(MSG_CHANNEL_DESCRIPTION_TOO_SHORT);
         });
@@ -178,7 +180,7 @@ struct UpdateChannelAsCurationActorFixture {
     pub origin: Origin,
     pub curation_actor: CurationActor<CuratorId<Test>>,
     pub new_verified: Option<bool>,
-    pub new_description: Option<Vec<u8>>,
+    pub new_description: Option<OptionalText>,
     pub new_curation_status: Option<ChannelCurationStatus>,
 }
 
@@ -192,7 +194,6 @@ impl UpdateChannelAsCurationActorFixture {
             self.curation_actor.clone(),
             channel_id,
             self.new_verified,
-            self.new_description.clone(),
             self.new_curation_status,
         )
     }
@@ -1835,10 +1836,10 @@ struct CreateChannelFixture {
     pub controller_account: <Test as system::Trait>::AccountId,
     pub channel_creator_role_account: <Test as system::Trait>::AccountId,
     pub channel_handle: Vec<u8>,
-    pub channel_title: Vec<u8>,
-    pub description: Vec<u8>,
-    pub avatar: Vec<u8>,
-    pub banner: Vec<u8>,
+    pub channel_title: OptionalText,
+    pub description: OptionalText,
+    pub avatar: OptionalText,
+    pub banner: OptionalText,
     pub content: ChannelContentType,
     pub publishing_status: ChannelPublishingStatus,
 }
@@ -1861,10 +1862,10 @@ impl CreateChannelFixture {
             controller_account,
             channel_creator_role_account: 527489,
             channel_handle: generate_valid_length_buffer(&ChannelHandleConstraint::get()),
-            channel_title: generate_valid_length_buffer(&ChannelTitleConstraint::get()),
-            avatar: generate_valid_length_buffer(&ChannelAvatarConstraint::get()),
-            banner: generate_valid_length_buffer(&ChannelBannerConstraint::get()),
-            description: generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
+            channel_title: Some(generate_valid_length_buffer(&ChannelTitleConstraint::get())),
+            avatar: Some(generate_valid_length_buffer(&ChannelAvatarConstraint::get())),
+            banner: Some(generate_valid_length_buffer(&ChannelBannerConstraint::get())),
+            description: Some(generate_valid_length_buffer(&ChannelDescriptionConstraint::get())),
             content: ChannelContentType::Video,
             publishing_status: ChannelPublishingStatus::NotPublished,
         }
@@ -1875,12 +1876,12 @@ impl CreateChannelFixture {
             Origin::signed(self.controller_account),
             self.channel_creator_member_id,
             self.channel_creator_role_account,
+            self.content.clone(),
             self.channel_handle.clone(),
             self.channel_title.clone(),
             self.description.clone(),
             self.avatar.clone(),
             self.banner.clone(),
-            self.content.clone(),
             self.publishing_status.clone(),
         )
     }
