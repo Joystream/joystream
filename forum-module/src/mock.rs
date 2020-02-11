@@ -770,6 +770,14 @@ pub fn set_stickied_threads_mock(
 }
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
+    create_genesis_config(true)
+}
+
+pub fn migration_not_done_config() -> GenesisConfig<Runtime> {
+    create_genesis_config(false)
+}
+
+pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
         forum_user_by_id: vec![],
         next_forum_user_id: 1,
@@ -848,7 +856,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         max_applied_labels: 5,
 
         // data migration part
-        data_migration_done: true,
+        data_migration_done: data_migration_done,
     }
 }
 

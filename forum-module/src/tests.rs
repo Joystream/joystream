@@ -2027,3 +2027,90 @@ fn set_stickied_threads_wrong_category() {
         );
     });
 }
+
+#[test]
+fn test_migration_not_done() {
+    let config = migration_not_done_config();
+    let forum_sudo = config.forum_sudo;
+    let origin = OriginType::Signed(forum_sudo);
+    build_test_externalities(config).execute_with(|| {
+        let forum_user_id = 1;
+        let moderator_id = 1;
+        let category_id = 1;
+        let thread_id = 1;
+        let post_id = 1;
+
+        assert_eq!(
+            TestForumModule::create_forum_user(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+                good_forum_user_footer(),
+            ),
+            Err(ERROR_DATA_MIGRATION_NOT_DONE),
+        );
+
+        assert_eq!(
+            TestForumModule::create_moderator(
+                forum_sudo,
+                good_user_name(),
+                good_self_introduction(),
+            ),
+            Err(ERROR_DATA_MIGRATION_NOT_DONE),
+        );
+
+        assert_eq!(
+            TestForumModule::create_category(
+                mock_origin(origin.clone()),
+                None,
+                good_category_title(),
+                good_category_description(),
+                BTreeSet::new(),
+            ),
+            Err(ERROR_DATA_MIGRATION_NOT_DONE),
+        );
+
+        assert_eq!(
+            TestForumModule::create_thread(
+                mock_origin(origin.clone()),
+                forum_user_id,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                BTreeSet::new(),
+                None,
+            ),
+            Err(ERROR_DATA_MIGRATION_NOT_DONE),
+        );
+
+        assert_eq!(
+            TestForumModule::add_post(
+                mock_origin(origin.clone()),
+                forum_user_id,
+                thread_id,
+                good_post_text(),
+            ),
+            Err(ERROR_DATA_MIGRATION_NOT_DONE),
+        );
+
+        assert_eq!(
+            TestForumModule::moderate_thread(
+                mock_origin(origin.clone()),
+                moderator_id,
+                thread_id,
+                good_rationale(),
+            ),
+            Err(ERROR_DATA_MIGRATION_NOT_DONE),
+        );
+
+        assert_eq!(
+            TestForumModule::moderate_post(
+                mock_origin(origin.clone()),
+                moderator_id,
+                post_id,
+                good_rationale(),
+            ),
+            Err(ERROR_DATA_MIGRATION_NOT_DONE),
+        );
+    });
+}
