@@ -407,7 +407,7 @@ pub use forum;
 use membership::members;
 
 mod content_working_group;
-use content_working_group::lib as content_wg;
+pub use content_working_group::lib as content_wg;
 mod migration;
 mod roles;
 mod service_discovery;
@@ -427,7 +427,7 @@ impl versioned_store::Trait for Runtime {
 
 impl versioned_store_permissions::Trait for Runtime {
     type Credential = u64;
-    type CredentialChecker = (ContentWorkingGroup, SudoKeyHasAllCredentials);
+    type CredentialChecker = (ContentWorkingGroupCredentials, SudoKeyHasAllCredentials);
     type CreateClassPermissionsChecker = ContentLeadOrSudoKeyCanCreateClasses;
 }
 
@@ -441,6 +441,56 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for SudoKeyHasAllCr
         <sudo::Module<Runtime>>::key() == *account
     }
 }
+pub struct ContentWorkingGroupCredentials {}
+impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingGroupCredentials {
+    fn account_has_credential(
+        account: &AccountId,
+        credential: <Runtime as versioned_store_permissions::Trait>::Credential,
+    ) -> bool {
+        match credential {
+            // Credentials from 0..999 represents groups or more complex requirements
+            // Current Lead if set
+            0 => <content_wg::Module<Runtime>>::ensure_lead_is_set()
+                .map_or(false, |(_, lead)| lead.role_account == *account),
+            // Any Active Curator
+            1 => {
+                // Look for a Curator with a matching role account
+                for (_principal_id, principal) in <content_wg::PrincipalById<Runtime>>::enumerate()
+                {
+                    if let content_wg::Principal::Curator(curator_id) = principal {
+                        let curator = <content_wg::CuratorById<Runtime>>::get(curator_id);
+                        if curator.role_account == *account {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+            // Any Active Channel Owner
+            2 => {
+                // Look for a ChannelOwner with a matching role account
+                for (_principal_id, principal) in <content_wg::PrincipalById<Runtime>>::enumerate()
+                {
+                    if let content_wg::Principal::ChannelOwner(channel_id) = principal {
+                        let channel = <content_wg::ChannelById<Runtime>>::get(channel_id);
+                        if channel.role_account == *account {
+                            return true; // should we also take publishing_status/curation_status into account ?
+                        }
+                    }
+                }
+
+                return false;
+            }
+            // Above 999 - shifted one-to-one mapping to workging group principal id
+            n if n >= 1000 => {
+                <content_wg::Module<Runtime>>::account_has_credential(account, n - 1000)
+            }
+            _ => false,
+        }
+    }
+}
+
 // Allow sudo key holder permission to create classes
 pub struct SudoKeyCanCreateClasses {}
 impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
