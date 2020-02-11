@@ -32,8 +32,10 @@ decl_module! {
         /// Create text (signal) proposal type. On approval prints its content.
         pub fn create_text_proposal(origin, title: Vec<u8>, body: Vec<u8>) {
             let parameters = crate::ProposalParameters {
-                voting_period: T::BlockNumber::from(3u32),
-                approval_quorum_percentage: 49,
+                voting_period: T::BlockNumber::from(50000u32),
+                grace_period: T::BlockNumber::from(10000u32),
+                approval_quorum_percentage: 40,
+                approval_threshold_percentage: 51,
             };
 
             let text_proposal = TextProposalExecutable{
