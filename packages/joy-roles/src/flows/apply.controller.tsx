@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { formatBalance } from '@polkadot/util';
+import { u128 } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
@@ -8,9 +9,11 @@ import { Controller, View } from '@polkadot/joy-utils/index'
 
 import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema'
 
+import { Container } from 'semantic-ui-react'
+
 import { ITransport } from '../transport'
 
-import { keyPairDetails, FlowModal } from './apply'
+import { keyPairDetails, FlowModal, ProgressSteps } from './apply'
 
 import { GroupMember } from '../elements'
 import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities'
@@ -21,11 +24,17 @@ type State = {
   role?: GenericJoyStreamRoleSchema
   applications?: OpeningStakeAndApplicationStatus
   creator?: GroupMember
-  transactionFee?: Balance
   keypairs?: keyPairDetails[] // <- Where does this come from?
   hasConfirmStep?: boolean
   step?: Balance
   slots?: Balance[]
+
+  // Data captured from form
+  applicationStake: Balance
+  roleStake: Balance
+  appDetails: any
+  txKeyAddress: AccountId
+  activeStep: ProgressSteps
 
   // Data generated for transaction
   transactionDetails: Map<string, string>
@@ -37,9 +46,14 @@ type State = {
 
 const newEmptyState = (): State => {
   return {
+    applicationStake: new u128(0),
+    roleStake: new u128(0),
+    appDetails: {},
     hasError: false,
     transactionDetails: new Map<string, string>(),
     roleKeyName: "",
+    txKeyAddress: new AccountId(),
+    activeStep: 0,
   }
 }
 
@@ -71,11 +85,10 @@ export class ApplyController extends Controller<State, ITransport> {
       [
         this.transport.curationGroupOpening(id),
         this.transport.openingApplicationRanks(id),
-        this.transport.transactionFee(),
       ],
     )
       .then(
-        ([opening, ranks, txFee]) => {
+        ([opening, ranks]) => {
           const hrt = opening.opening.parse_human_readable_text()
           if (typeof hrt !== "object") {
             return this.onError("human_readable_text is not an object")
@@ -84,12 +97,18 @@ export class ApplyController extends Controller<State, ITransport> {
           this.state.role = hrt
           this.state.applications = opening.applications
           this.state.creator = opening.creator
-          this.state.transactionFee = txFee
           this.state.slots = ranks
           this.state.step = Min(Step(ranks, ranks.length))
           this.state.hasConfirmStep =
             opening.applications.requiredApplicationStake.anyRequirement() ||
             opening.applications.requiredRoleStake.anyRequirement()
+
+          this.state.applicationStake = opening.applications.requiredApplicationStake.value
+          this.state.roleStake = opening.applications.requiredRoleStake.value
+
+          this.state.activeStep = this.state.hasConfirmStep ?
+            ProgressSteps.ConfirmStakes :
+            ProgressSteps.ApplicationDetails
 
           // When everything is collected, update the view
           this.dispatch()
@@ -105,44 +124,62 @@ export class ApplyController extends Controller<State, ITransport> {
     this.currentOpeningId = id
   }
 
+  setApplicationStake(b: Balance): void {
+    this.state.applicationStake = b
+    this.dispatch()
+  }
+
+  setRoleStake(b: Balance): void {
+    this.state.roleStake = b
+    this.dispatch()
+  }
+
+  setAppDetails(v: any): void {
+    this.state.appDetails = v
+    this.dispatch()
+  }
+
+  setTxKeyAddress(v: any): void {
+    this.state.txKeyAddress = v
+    this.dispatch()
+  }
+
+  setActiveStep(v: ProgressSteps): void {
+    this.state.activeStep = v
+    this.dispatch()
+  }
+
   // TODO: Move to transport
   async prepareApplicationTransaction(
     applicationStake: Balance,
     roleStake: Balance,
     questionResponses: any,
-    stakeKeyAddress: AccountId, stakeKeyPassphrase: string,
-    txKeyAddress: AccountId, txKeyPassphrase: string,
+    txKeyAddress: AccountId,
   ): Promise<any> {
-    return new Promise<any>((resolve, reject) => {
-      console.log("Selected stake:", applicationStake.toString(), roleStake)
-      console.log("Questions:", JSON.stringify(questionResponses))
-      console.log("Stake key:", stakeKeyAddress, stakeKeyPassphrase)
-      console.log("Tx key:", txKeyAddress, txKeyPassphrase)
+    const totalCommitment = Sum([
+      applicationStake,
+      roleStake,
+    ])
 
-      const totalCommitment = Sum([
-        this.state.transactionFee!,
-        applicationStake,
-        roleStake,
-      ])
+    this.state.transactionDetails.set("Application stake", formatBalance(this.state.applicationStake))
+    this.state.transactionDetails.set("Role stake", formatBalance(roleStake))
+    this.state.transactionDetails.set("Total commitment", formatBalance(totalCommitment))
+    this.state.roleKeyName = "some-role.key"
 
-      this.state.transactionDetails.set("Transaction fee", formatBalance(this.state.transactionFee))
-      this.state.transactionDetails.set("Application stake", formatBalance(applicationStake))
-      this.state.transactionDetails.set("Role stake", formatBalance(roleStake))
-      this.state.transactionDetails.set("Total commitment", formatBalance(totalCommitment))
-      this.state.transactionDetails.set("Extrinsic hash", "0xae6d24d4d55020c645ddfe2e8d0faf93b1c0c9879f9bf2c439fb6514c6d1292e")
-      this.state.roleKeyName = "some-role.key"
-
-      this.dispatch()
-      resolve()
-    })
+    this.dispatch()
+    return true
   }
 
-  async makeApplicationTransaction(): Promise<any> {
-    return new Promise<any>((resolve, reject) => {
-      console.log("TODO: make tx")
-      this.dispatch()
-      resolve()
-    })
+  async makeApplicationTransaction(): Promise<number> {
+    return this.transport.applyToCuratorOpening(
+      this.currentOpeningId,
+      0, // FIXME: member id?
+      this.state.txKeyAddress.toString(), // FIXME: this should be the role ID
+      this.state.txKeyAddress.toString(),
+      this.state.applicationStake,
+      this.state.roleStake,
+      JSON.stringify(this.state.appDetails),
+    )
   }
 }
 
@@ -150,21 +187,33 @@ export const ApplyView = View<ApplyController, State>(
   (state, controller, params) => {
     controller.findOpening(params.get("id"))
     return (
-      // @ts-ignore
-      <FlowModal
-        role={state.role!}
-        applications={state.applications!}
-        creator={state.creator!}
-        transactionFee={state.transactionFee!}
-        keypairs={state.keypairs!}
-        hasConfirmStep={state.hasConfirmStep!}
-        step={state.step!}
-        slots={state.slots!}
-        transactionDetails={state.transactionDetails!}
-        roleKeyName={state.roleKeyName}
-        prepareApplicationTransaction={(...args) => controller.prepareApplicationTransaction(...args)}
-        makeApplicationTransaction={() => controller.makeApplicationTransaction()}
-      />
+      <Container className="apply-flow">
+        <div className="dimmer"></div>
+        // @ts-ignore
+        <FlowModal
+          role={state.role!}
+          applications={state.applications!}
+          creator={state.creator!}
+          keypairs={state.keypairs!}
+          hasConfirmStep={state.hasConfirmStep!}
+          step={state.step!}
+          slots={state.slots!}
+          transactionDetails={state.transactionDetails!}
+          roleKeyName={state.roleKeyName}
+          prepareApplicationTransaction={(...args) => controller.prepareApplicationTransaction(...args)}
+          makeApplicationTransaction={() => controller.makeApplicationTransaction()}
+          applicationStake={state.applicationStake}
+          setApplicationStake={(v) => controller.setApplicationStake(v)}
+          roleStake={state.roleStake}
+          setRoleStake={(v) => controller.setRoleStake(v)}
+          appDetails={state.appDetails}
+          setAppDetails={(v) => controller.setAppDetails(v)}
+          txKeyAddress={state.txKeyAddress}
+          setTxKeyAddress={(v) => controller.setTxKeyAddress(v)}
+          activeStep={state.activeStep}
+          setActiveStep={(v) => controller.setActiveStep(v)}
+        />
+      </Container>
     )
   }
 )

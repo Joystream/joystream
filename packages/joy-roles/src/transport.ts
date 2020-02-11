@@ -16,11 +16,18 @@ export interface ITransport {
   curationGroupOpening: (id: number) => Promise<WorkingGroupOpening>
   openingApplicationRanks: (openingId: number) => Promise<Balance[]>
   expectedBlockTime: () => Promise<number>
-  blockHash(height: number): Promise<string>
-  blockTimestamp(height: number): Promise<Date>
+  blockHash: (height: number) => Promise<string>
+  blockTimestamp: (height: number) => Promise<Date>
   transactionFee: () => Promise<Balance>
   accounts: () => Subscribable<keyPairDetails[]>
   openingApplications: () => Subscribable<OpeningApplication[]>
   myCurationGroupRoles: () => Subscribable<ActiveRole[]>
   myStorageGroupRoles: () => Subscribable<ActiveRole[]>
+  applyToCuratorOpening: (id: number,
+    memberId: number,
+    roleAccount: string,
+    sourceAccount: string,
+    appStake: Balance,
+    roleStake: Balance,
+    applicationText: string) => Promise<number>
 }

@@ -22,7 +22,6 @@ import {
   Input,
   Label,
   Message,
-  Modal,
   Segment,
   SemanticICONS,
   Step,
@@ -99,7 +98,6 @@ export type keyPairDetails = {
 }
 
 export type FundSourceSelectorProps = {
-  transactionFee: Balance
   keypairs: keyPairDetails[]
 }
 
@@ -118,16 +116,12 @@ export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCa
   }
 
   const onChangeInput = (e: any, { value }: any) => {
-    if (typeof props.passphraseCallback !== "undefined") {
+    if (props.passphraseCallback) {
       props.passphraseCallback(value)
     }
   }
 
   props.keypairs.map((v) => {
-    if (v.balance.lt(props.transactionFee)) {
-      return
-    }
-
     pairs.push({
       key: v.shortName,
       text: (
@@ -149,6 +143,18 @@ export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCa
   }, [])
 
   const accCtx = useMyAccount()
+  let passphraseCallback = null
+  if (props.passphraseCallback) {
+    passphraseCallback = (
+      <Form.Field>
+        <label>Unlock key with passphrase</label>
+        <Input placeholder='Passphrase'
+          type="password"
+          onChange={onChangeInput}
+        />
+      </Form.Field>
+    )
+  }
 
   return (
     <Form className="fund-source-selector">
@@ -163,13 +169,7 @@ export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCa
           defaultValue={accCtx.state.inited ? accCtx.state.address : undefined}
         />
       </Form.Field>
-      <Form.Field>
-        <label>Unlock key with passphrase</label>
-        <Input placeholder='Passphrase'
-          type="password"
-          onChange={onChangeInput}
-        />
-      </Form.Field>
+      {passphraseCallback}
     </Form>
   )
 }
@@ -429,7 +429,6 @@ export type ConfirmStakesStageProps =
     setSelectedRoleStake: (b: Balance) => void
   }
 
-//TODO! Set state
 export function ConfirmStakesStage(props: ConfirmStakesStageProps & StageTransitionProps) {
   const ctaContinue = (zeroOrTwoStakes(props.applications)) ?
     'Confirm stakes and continue' :
@@ -442,16 +441,6 @@ export function ConfirmStakesStage(props: ConfirmStakesStageProps & StageTransit
   return (
     <Container className="content">
       <ConfirmStakes {...props} />
-      <Segment padding>
-        <Label attached='top'>Source of stake funds</Label>
-        <p>Please select the account that will be used as the source of stake funds.</p>
-        <FundSourceSelector {...props}
-          transactionFee={new u128(props.selectedApplicationStake.add(props.selectedRoleStake))}
-          addressCallback={props.setKeyAddress}
-          passphraseCallback={props.setKeyPassphrase}
-        />
-      </Segment>
-
       <CTA
         negativeLabel='Cancel'
         negativeIcon='cancel'
@@ -968,7 +957,6 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps & St
 export type SubmitApplicationStageProps = FundSourceSelectorProps &
   StageTransitionProps &
   CaptureKeyAndPassphraseProps & {
-    transactionFee: Balance
     transactionDetails: Map<string, string>
   }
 
@@ -981,7 +969,6 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
     <Container className="content">
       <p>
         You need to make a transaction to apply for this role.
-              There is a fee of <strong>{formatBalance(props.transactionFee)}</strong> for this transaction.
           </p>
       <ModalAccordion title="Transaction details">
         <Table basic='very'>
@@ -996,12 +983,11 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
         </Table>
       </ModalAccordion>
 
-      <Segment padding>
+      <Segment>
         <Label attached='top'>Source of transaction fee funds</Label>
         <p>Please select the account that will be used as the source of transaction fee funds.</p>
         <FundSourceSelector {...props}
           addressCallback={props.setKeyAddress}
-          passphraseCallback={props.setKeyPassphrase}
         />
       </Segment>
 
@@ -1071,17 +1057,27 @@ export type FlowModalProps = ConfirmStakesStageProps & FundSourceSelectorProps &
   applications: OpeningStakeAndApplicationStatus,
   creator: GroupMember
   hasConfirmStep: boolean
-  transactionFee: Balance
   prepareApplicationTransaction: (
     applicationStake: Balance,
     roleStake: Balance,
     questionResponses: any,
-    stakeKeyAddress: AccountId, stakeKeyPassphrase: string,
-    txKeyAddress: AccountId, txKeyPassphrase: string,
+    txKeyAddress: AccountId,
   ) => Promise<any>
   makeApplicationTransaction: () => Promise<any>
   transactionDetails: Map<string, string>
   roleKeyName: string
+
+  // IN PROGRESS: state fix
+  applicationStake: Balance
+  setApplicationStake: (b: Balance) => void
+  roleStake: Balance
+  setRoleStake: (b: Balance) => void
+  appDetails: any
+  setAppDetails: (v: any) => void
+  txKeyAddress: AccountId
+  setTxKeyAddress: (v: AccountId) => void
+  activeStep: ProgressSteps
+  setActiveStep: (v: ProgressSteps) => void
 }
 
 export const FlowModal = Loadable<FlowModalProps>(
@@ -1089,24 +1085,23 @@ export const FlowModal = Loadable<FlowModalProps>(
     'role',
     'applications',
     'creator',
-    'transactionFee',
     'keypairs',
     'slots',
   ],
   props => {
-    // Capture state
-    const [applicationStake, setApplicationStake] = useState(props.applications.requiredApplicationStake.value)
-    const [roleStake, setRoleStake] = useState(props.applications.requiredRoleStake.value)
-    const [stakeKeyAddress, setStakeKeyAddress] = useState<AccountId>(new AccountId())
-    const [stakeKeyPassphrase, setStakeKeyPassphrase] = useState("")
-    const [txKeyAddress, setTxKeyAddress] = useState<AccountId>(new AccountId())
-    const [txKeyPassphrase, setTxKeyPassphrase] = useState("")
-    const [appDetails, setAppDetails] = useState<any>({})
+    const {
+      applicationStake, setApplicationStake,
+      roleStake, setRoleStake,
+      appDetails, setAppDetails,
+      txKeyAddress, setTxKeyAddress,
+      activeStep, setActiveStep,
+    } = props
 
-    // Presentation state
-    const [activeStep, setActiveStep] = useState(props.hasConfirmStep ?
-      ProgressSteps.ConfirmStakes :
-      ProgressSteps.ApplicationDetails)
+    const accCtx = useMyAccount()
+    if (txKeyAddress.isEmpty) {
+      setTxKeyAddress(new AccountId(accCtx.state.address))
+    }
+
     const [complete, setComplete] = useState(false)
 
     const history = useHistory()
@@ -1117,30 +1112,43 @@ export const FlowModal = Loadable<FlowModalProps>(
       history.push('/roles/')
     }
 
+    const scrollToTop = () => window.scrollTo(0, 0)
+
     const enterConfirmStakeState = () => {
+      scrollToTop()
       setActiveStep(ProgressSteps.ConfirmStakes)
     }
 
     const enterApplicationDetailsState = () => {
+      scrollToTop()
       setActiveStep(ProgressSteps.ApplicationDetails)
     }
 
     const enterSubmitApplicationState = () => {
+      scrollToTop()
       props.prepareApplicationTransaction(
-        applicationStake, roleStake,
+        applicationStake,
+        roleStake,
         appDetails,
-        stakeKeyAddress, stakeKeyPassphrase,
-        txKeyAddress, txKeyPassphrase,
-      ).then(() => {
-        setActiveStep(ProgressSteps.SubmitApplication)
-      })
+        txKeyAddress,
+      )
+        .then(() => {
+          setActiveStep(ProgressSteps.SubmitApplication)
+        })
+        .catch((e) => {
+          console.log(e)
+        })
     }
 
     const enterDoneState = () => {
+      scrollToTop()
       props.makeApplicationTransaction().then(() => {
         setComplete(true)
         setActiveStep(ProgressSteps.Done)
       })
+        .catch((e) => {
+          console.error("makeApplicationTransaction", e)
+        })
     }
 
     const setStakeProps = {
@@ -1156,10 +1164,6 @@ export const FlowModal = Loadable<FlowModalProps>(
         nextTransition={enterApplicationDetailsState}
         prevTransition={cancel}
         {...setStakeProps}
-        keyAddress={stakeKeyAddress}
-        setKeyAddress={setStakeKeyAddress}
-        keyPassphrase={stakeKeyPassphrase}
-        setKeyPassphrase={setStakeKeyPassphrase}
       />],
 
       [ProgressSteps.ApplicationDetails, <ApplicationDetailsStage
@@ -1176,8 +1180,6 @@ export const FlowModal = Loadable<FlowModalProps>(
         prevTransition={enterApplicationDetailsState}
         keyAddress={txKeyAddress}
         setKeyAddress={setTxKeyAddress}
-        keyPassphrase={txKeyPassphrase}
-        setKeyPassphrase={setTxKeyPassphrase}
         transactionDetails={props.transactionDetails}
       />],
 
@@ -1185,41 +1187,40 @@ export const FlowModal = Loadable<FlowModalProps>(
     ])
 
     return (
-      <Modal size='fullscreen' open={true} dimmer='inverted' className="apply-flow">
-        <Modal.Content>
-          <Container>
-            <Grid columns="equal">
-              <Grid.Column width={11} className="title">
-                <Label as='h1' color='green' size='huge' ribbon>
-                  <Icon name='heart' />
-                  Applying for
+      <Container className="apply-flow">
+        <div className="dimmer"></div>
+        <Container className="content">
+          <Grid columns="equal">
+            <Grid.Column width={11} className="title">
+              <Label as='h1' color='green' size='huge' ribbon>
+                <Icon name='heart' />
+                Applying for
                   <Label.Detail>{props.role.job.title}</Label.Detail>
-                </Label>
-              </Grid.Column>
-              <Grid.Column width={5} className="cancel">
-                <a onClick={() => cancel()}>
-                  <Icon name='cancel' /> Cancel application
+              </Label>
+            </Grid.Column>
+            <Grid.Column width={5} className="cancel">
+              <a onClick={() => cancel()}>
+                <Icon name='cancel' /> Cancel application
                           </a>
-              </Grid.Column>
-            </Grid>
-            <Grid columns="equal">
-              <Grid.Column width={11} className="main">
-                <ProgressStepsView activeStep={activeStep} hasConfirmStep={props.hasConfirmStep} />
-                {stages.get(activeStep)}
-              </Grid.Column>
-              <Grid.Column width={5} className="summary">
-                <Header as='h3'>{props.role.headline}</Header>
-                <Label as='h1' size='large' ribbon='right' className="fluid standout">
-                  Reward
+            </Grid.Column>
+          </Grid>
+          <Grid columns="equal">
+            <Grid.Column width={11} className="main">
+              <ProgressStepsView activeStep={activeStep} hasConfirmStep={props.hasConfirmStep} />
+              {stages.get(activeStep)}
+            </Grid.Column>
+            <Grid.Column width={5} className="summary">
+              <Header as='h3'>{props.role.headline}</Header>
+              <Label as='h1' size='large' ribbon='right' className="fluid standout">
+                Reward
                         <Label.Detail>{props.role.reward}</Label.Detail>
-                </Label>
-                <OpeningBodyApplicationsStatus {...props.applications} applied={complete} />
-                <h5>Group lead</h5>
-                <GroupMemberView {...props.creator} inset={true} />
-              </Grid.Column>
-            </Grid>
-          </Container>
-        </Modal.Content>
-      </Modal>
+              </Label>
+              <OpeningBodyApplicationsStatus {...props.applications} applied={complete} />
+              <h5>Group lead</h5>
+              <GroupMemberView {...props.creator} inset={true} />
+            </Grid.Column>
+          </Grid>
+        </Container>
+      </Container>
     )
   })

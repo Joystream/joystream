@@ -5,7 +5,8 @@ import ApiPromise from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces'
 import { GenericAccountId, Option, u32, u64, u128, Vec } from '@polkadot/types'
 import { Moment } from '@polkadot/types/interfaces/runtime';
-
+import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
+import { SubmittableExtrinsic } from '@polkadot/api/promise/types';
 import keyringOption from '@polkadot/ui-keyring/options';
 
 import { MultipleLinkedMapEntry, SingleLinkedMapEntry } from '@polkadot/joy-utils/index'
@@ -45,10 +46,12 @@ interface IRoleAccounter {
 
 export class Transport extends TransportBase implements ITransport {
   protected api: ApiPromise
+  protected queueExtrinsic: QueueTxExtrinsicAdd
 
-  constructor(api: ApiPromise) {
+  constructor(api: ApiPromise, queueExtrinsic: QueueTxExtrinsicAdd) {
     super()
     this.api = api
+    this.queueExtrinsic = queueExtrinsic
   }
 
   async roles(): Promise<Array<Role>> {
@@ -286,7 +289,7 @@ export class Transport extends TransportBase implements ITransport {
           requiredRoleStake: stakes.role,
           defactoMinimumStake: new u128(0),
         },
-        defactoMinimumStake: new u128(0) 
+        defactoMinimumStake: new u128(0)
       })
     })
   }
@@ -381,4 +384,41 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
+  async applyToCuratorOpening(
+    id: number,
+    memberId: number,
+    roleAccount: string,
+    sourceAccount: string,
+    appStake: Balance,
+    roleStake: Balance,
+    applicationText: string): Promise<number> {
+    return new Promise<number>((resolve, reject) => {
+      const tx = this.api.tx.contentWorkingGroup.applyOnCuratorOpening(
+        memberId,
+        new u32(id),
+        new GenericAccountId(roleAccount),
+        roleStake,
+        appStake,
+        new Text(applicationText),
+      ) as unknown as SubmittableExtrinsic
+
+      const txFailedCb = () => {
+        reject("transaction failed")
+      }
+
+      const txSuccessCb = () => {
+        console.log("success")
+        resolve(1)
+      }
+
+      this.queueExtrinsic({
+        accountId: sourceAccount,
+        extrinsic: tx,
+        txFailedCb,
+        txSuccessCb,
+      });
+
+      // TODO: On success, the form state must be flushed
+    })
+  }
 }
