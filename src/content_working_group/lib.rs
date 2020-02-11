@@ -617,42 +617,6 @@ pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
     pub principal_id: PrincipalId,
 }
 
-impl<MemberId, AccountId, BlockNumber, PrincipalId>
-    Channel<MemberId, AccountId, BlockNumber, PrincipalId>
-{
-    pub fn new(
-        title: OptionalText,
-        verified: bool,
-        description: OptionalText,
-        content: ChannelContentType,
-        owner: MemberId,
-        role_account: AccountId,
-        publishing_status: ChannelPublishingStatus,
-        curation_status: ChannelCurationStatus,
-        created: BlockNumber,
-        principal_id: PrincipalId,
-        avatar: OptionalText,
-        banner: OptionalText,
-        handle: Vec<u8>,
-    ) -> Self {
-        Self {
-            title,
-            verified,
-            description,
-            content,
-            owner,
-            role_account,
-            publishing_status,
-            curation_status,
-            created,
-            principal_id,
-            avatar,
-            banner,
-            handle,
-        }
-    }
-}
-
 /*
  * END: =========================================================
  * Channel stuff

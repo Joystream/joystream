@@ -201,24 +201,25 @@ impl UpdateChannelAsCurationActorFixture {
     pub fn call_and_assert_success(&self, channel_id: ChannelId<Test>) {
         let old_channel = ChannelById::<Test>::get(channel_id);
 
-        let expected_updated_channel = lib::Channel::new(
-            old_channel.title,
-            self.new_verified.unwrap_or(old_channel.verified),
-            self.new_description
-                .clone()
-                .unwrap_or(old_channel.description),
-            old_channel.content,
-            old_channel.owner,
-            old_channel.role_account,
-            old_channel.publishing_status,
-            self.new_curation_status
-                .unwrap_or(old_channel.curation_status),
-            old_channel.created,
-            old_channel.principal_id,
-            old_channel.avatar,
-            old_channel.banner,
-            old_channel.handle,
-        );
+        let upd_verified = self.new_verified.unwrap_or(old_channel.verified);
+        let upd_description = self.new_description.clone().unwrap_or(old_channel.description);
+        let upd_curation_status = self.new_curation_status.unwrap_or(old_channel.curation_status);
+
+        let expected_updated_channel = Channel {
+            verified: upd_verified,
+            handle: old_channel.handle,
+            title: old_channel.title,
+            description: upd_description,
+            avatar: old_channel.avatar,
+            banner: old_channel.banner,
+            content: old_channel.content,
+            owner: old_channel.owner,
+            role_account: old_channel.role_account,
+            publishing_status: old_channel.publishing_status,
+            curation_status: upd_curation_status,
+            created: old_channel.created,
+            principal_id: old_channel.principal_id,
+        };
 
         // Call and check result
 
