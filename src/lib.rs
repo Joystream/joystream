@@ -550,6 +550,7 @@ impl hiring::Trait for Runtime {
     type OpeningId = u64;
     type ApplicationId = u64;
     type ApplicationDeactivatedHandler = (); // TODO - what needs to happen?
+    type StakeHandlerProvider = hiring::Module<Self>;
 }
 
 impl minting::Trait for Runtime {

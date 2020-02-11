@@ -162,6 +162,7 @@ impl hiring::Trait for Test {
     type OpeningId = TestOpeningId;
     type ApplicationId = TestApplicationId;
     type ApplicationDeactivatedHandler = ();
+    type StakeHandlerProvider = hiring::Module<Self>;
 }
 
 impl versioned_store::Trait for Test {

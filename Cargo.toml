@@ -286,7 +286,7 @@ rev = '0516efe9230da112bc095e28f34a3715c2e03ca8'
 default_features = false
 git = 'https://github.com/Joystream/substrate-hiring-module'
 package = 'substrate-hiring-module'
-rev = 'b400e3008c98989da7b310c71b7d6d4e4dca34e4'
+rev = '485c8be73891183910721e874cf9741dec6d824a'
 
 [dependencies.versioned_store]
 default_features = false
