@@ -86,6 +86,9 @@ pub type StakeId<T> = <T as stake::Trait>::StakeId;
 /// Type of permissions module prinicipal identifiers
 pub type PrincipalId<T> = <T as versioned_store_permissions::Trait>::PrincipalId;
 
+// Workaround for BTreeSet type
+pub type CuratorApplicationIdSet<T> = BTreeSet<CuratorApplicationId<T>>;
+
 /*
  * MOVE ALL OF THESE OUT TO COMMON LATER
  */
@@ -216,6 +219,8 @@ pub static MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN: &str = "Unsigned origin
 pub static MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID: &str = "Member id is invalid";
 pub static MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
     "Signer does not match controller account";
+static MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT: &str =
+    "Origin must be controller or root account of member";
 
 /// The exit stage of a lead involvement in the working group.
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
@@ -1435,7 +1440,7 @@ decl_module! {
         pub fn fill_curator_opening(
             origin,
             curator_opening_id: CuratorOpeningId<T>,
-            successful_curator_application_ids: BTreeSet<CuratorApplicationId<T>>
+            successful_curator_application_ids: CuratorApplicationIdSet<T>,
         ) {
             // Ensure lead is set and is origin signer
             let (lead_id, _lead) = Self::ensure_origin_is_set_lead(origin)?;
@@ -1655,15 +1660,22 @@ decl_module! {
             member_id: T::MemberId,
             curator_opening_id: CuratorOpeningId<T>,
             role_account: T::AccountId,
-            source_account: T::AccountId,
             opt_role_stake_balance: Option<BalanceOf<T>>,
             opt_application_stake_balance: Option<BalanceOf<T>>,
             human_readable_text: Vec<u8>
         ) {
-            // Ensure that origin is signed by member with given id.
-            ensure_on_wrapped_error!(
-                members::Module::<T>::ensure_member_controller_account_signed(origin, &member_id)
-            )?;
+            // Ensure origin which will server as the source account for staked funds is signed
+            let source_account = ensure_signed(origin)?;
+
+            // In absense of a more general key delegation system which allows an account with some funds to
+            // grant another account permission to stake from its funds, the origin of this call must have the funds
+            // and cannot specify another arbitrary account as the source account.
+            // Ensure the source_account is either the controller or root account of member with given id
+            ensure!(
+                members::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
+                members::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
+                MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT
+            );
 
             // Ensure curator opening exists
             let (curator_opening, _opening) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
@@ -1893,60 +1905,6 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::LeadUnset(lead_id));
-        }
-
-        /// The stake, with the given id, was unstaked.
-        pub fn unstaked(
-            origin,
-            stake_id: StakeId<T>
-        ) {
-            // Ensure its a runtime root origin
-            ensure_root(origin)?;
-
-            // Ensure its an unstaker in this group
-            let unstaker = Self::ensure_unstaker_exists(&stake_id)?;
-
-            // Get curator doing the unstaking,
-            // urrently the only possible unstaker in this module.
-            let curator_id =
-                if let WorkingGroupUnstaker::Curator(curator_id) = unstaker {
-                    curator_id
-                } else {
-                    panic!("Should not be possible, only curators unstake in this module currently");
-                };
-
-            // Grab curator from id, unwrap, because this curator _must_ exist.
-            let unstaking_curator = Self::ensure_curator_exists(&curator_id).unwrap();
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Update stage of curator
-            let curator_exit_summary =
-                if let CuratorRoleStage::Unstaking(summary) = unstaking_curator.stage {
-                    summary
-                } else {
-                    panic!("Curator must be in unstaking stage");
-                };
-
-            let new_curator = Curator{
-                stage: CuratorRoleStage::Exited(curator_exit_summary.clone()),
-                ..unstaking_curator
-            };
-
-            CuratorById::<T>::insert(curator_id, new_curator);
-
-            // Remove from unstaker
-            UnstakerByStakeId::<T>::remove(stake_id);
-
-            // Trigger event
-            let event = match curator_exit_summary.origin {
-                CuratorExitInitiationOrigin::Lead => RawEvent::TerminatedCurator(curator_id),
-                CuratorExitInitiationOrigin::Curator => RawEvent::CuratorExited(curator_id),
-            };
-
-            Self::deposit_event(event);
         }
 
         /// Add an opening for a curator role.
@@ -2689,5 +2647,58 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::LeadSet(new_lead_id));
 
         Ok(())
+    }
+
+    /// The stake, with the given id, was unstaked. Infalliable. Has no side effects if stake_id is not relevant
+    /// to this module.
+    pub fn unstaked(stake_id: StakeId<T>) {
+        // Ignore if unstaked doesn't exist
+        if !<UnstakerByStakeId<T>>::exists(stake_id) {
+            return;
+        }
+
+        // Unstaker must be in this group
+        let unstaker = Self::ensure_unstaker_exists(&stake_id).unwrap();
+
+        // Get curator doing the unstaking,
+        // urrently the only possible unstaker in this module.
+        let curator_id = if let WorkingGroupUnstaker::Curator(curator_id) = unstaker {
+            curator_id
+        } else {
+            panic!("Should not be possible, only curators unstake in this module currently.");
+        };
+
+        // Grab curator from id, unwrap, because this curator _must_ exist.
+        let unstaking_curator = Self::ensure_curator_exists(&curator_id).unwrap();
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Update stage of curator
+        let curator_exit_summary =
+            if let CuratorRoleStage::Unstaking(summary) = unstaking_curator.stage {
+                summary
+            } else {
+                panic!("Curator must be in unstaking stage.");
+            };
+
+        let new_curator = Curator {
+            stage: CuratorRoleStage::Exited(curator_exit_summary.clone()),
+            ..unstaking_curator
+        };
+
+        CuratorById::<T>::insert(curator_id, new_curator);
+
+        // Remove from unstaker
+        UnstakerByStakeId::<T>::remove(stake_id);
+
+        // Trigger event
+        let event = match curator_exit_summary.origin {
+            CuratorExitInitiationOrigin::Lead => RawEvent::TerminatedCurator(curator_id),
+            CuratorExitInitiationOrigin::Curator => RawEvent::CuratorExited(curator_id),
+        };
+
+        Self::deposit_event(event);
     }
 }
