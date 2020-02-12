@@ -331,13 +331,6 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
         }),
         content_wg: Some(ContentWorkingGroupConfig {
             mint_capacity: 100000,
-            // Ben - Not safest way to assign. Revisit how to ensure we are selecting correct memberid
-            initial_lead: Some((
-                7,
-                crate::members_config::decode_address(String::from(
-                    "5H8kTuZp2T2geceCuaEQ29Jg8fFjCJkwGQgZjRhhGLxFVMSC",
-                )),
-            )),
             curator_opening_by_id: vec![],
             next_curator_opening_id: 0,
             curator_application_by_id: vec![],
@@ -489,7 +482,6 @@ pub fn testnet_genesis(
         }),
         content_wg: Some(ContentWorkingGroupConfig {
             mint_capacity: 100000,
-            initial_lead: Some((0, root_key)),
             curator_opening_by_id: vec![],
             next_curator_opening_id: 0,
             curator_application_by_id: vec![],

@@ -60,7 +60,7 @@ rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 [dependencies.node-runtime]
 package = 'joystream-node-runtime'
 git = 'https://github.com/mnaamani/substrate-runtime-joystream'
-rev = 'cd83dcfee3fdd98c2b8fafc7eaf1b03d9f61fd65' # working group integration branch
+rev = '0e0a3a5ec0563f5d6d819897f063c9bf73e97d25' # working group integration branch
 # local development...
 # path = 'substrate-runtime-joystream'
 
