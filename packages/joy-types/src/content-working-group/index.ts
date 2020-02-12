@@ -8,13 +8,14 @@ import { StakeId } from '../stake';
 import { JoyStruct } from '../JoyStruct';
 import { BTreeSet } from '../';
 
-export class OptionalText extends Option.with(Text) {};
 export class ChannelId extends ActorId {};
 export class CuratorId extends ActorId {};
 export class CuratorOpeningId extends OpeningId {};
 export class CuratorApplicationId extends ApplicationId {};
 export class LeadId extends ActorId {};
 export class PrincipalId extends Credential {};
+
+export class OptionalText extends Option.with(Text) {};
 
 export class ChannelContentType extends Enum {
   constructor (value?: any, index?: number) {
@@ -348,30 +349,31 @@ export class CuratorApplicationIdToCuratorIdMap extends BTreeMap<ApplicationId, 
 }
 
 export function registerContentWorkingGroupTypes () {
-    try {
-      getTypeRegistry().register({
-        OptionalText,
-        ChannelId,
-        CuratorId,
-        CuratorOpeningId,
-        CuratorApplicationId,
-        LeadId,
-        PrincipalId,
-        Channel,
-        ChannelContentType,
-        ChannelCurationStatus,
-        ChannelPublicationStatus,
-        CurationActor,
-        Curator,
-        CuratorApplication,
-        CuratorOpening,
-        Lead,
-        OpeningPolicyCommitment,
-        Principal,
-        WorkingGroupUnstaker,
-		CuratorApplicationIdToCuratorIdMap, 
-      });
-    } catch (err) {
-      console.error('Failed to register custom types of content working group module', err);
-    }
+  try {
+    getTypeRegistry().register({
+      ChannelId: 'u64',
+      CuratorId: 'u64',
+      CuratorOpeningId: 'u64',
+      CuratorApplicationId: 'u64',
+      LeadId: 'u64',
+      PrincipalId: 'u64',
+      OptionalText,
+      Channel,
+      ChannelContentType,
+      ChannelCurationStatus,
+      ChannelPublicationStatus,
+      CurationActor,
+      Curator,
+      CuratorApplication,
+      CuratorOpening,
+      Lead,
+      OpeningPolicyCommitment,
+      Principal,
+      WorkingGroupUnstaker,
+      CuratorApplicationIdToCuratorIdMap,
+      CuratorApplicationIdSet: Vec.with(CuratorApplicationId),
+    });
+  } catch (err) {
+    console.error('Failed to register custom types of content working group module', err);
+  }
 }
