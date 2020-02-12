@@ -15,6 +15,8 @@ export class CuratorApplicationId extends ApplicationId {};
 export class LeadId extends ActorId {};
 export class PrincipalId extends Credential {};
 
+export class OptionalText extends Option.with(Text) {};
+
 export class ChannelContentType extends Enum {
   constructor (value?: any, index?: number) {
     super(
@@ -27,12 +29,12 @@ export class ChannelContentType extends Enum {
   }
 };
 
-export class ChannelPublishingStatus extends Enum {
+export class ChannelPublicationStatus extends Enum {
   constructor (value?: any, index?: number) {
     super(
       [
-        'Published',
-        'NotPunblished',
+        'Public',
+        'Unlisted',
       ],
       value, index);
   }
@@ -52,14 +54,14 @@ export class ChannelCurationStatus extends Enum {
 export type IChannel = {
   verified: bool,
   handle: Text, // Vec<u8>,
-  title: Text, // Vec<u8>,
-  description: Text, // Vec<u8>,
-  avatar: Text, // Vec<u8>,
-  banner: Text, // Vec<u8>,
+  title: OptionalText,
+  description: OptionalText,
+  avatar: OptionalText,
+  banner: OptionalText,
   content: ChannelContentType,
   owner: MemberId,
   role_account: AccountId,
-  publishing_status: ChannelPublishingStatus,
+  publication_status: ChannelPublicationStatus,
   curation_status: ChannelCurationStatus,
   created: BlockNumber,
   principal_id: PrincipalId,
@@ -69,14 +71,14 @@ export class Channel extends JoyStruct<IChannel> {
     super({
       verified: bool,
       handle: Text, // Vec.with(u8),
-      title: Text, // Vec.with(u8),
-      description: Text, // Vec.with(u8),
-      avatar: Text, // Vec.with(u8),
-      banner: Text, // Vec.with(u8),
+      title: OptionalText,
+      description: OptionalText,
+      avatar: OptionalText,
+      banner: OptionalText,
       content: ChannelContentType,
       owner: MemberId,
       role_account: GenericAccountId,
-      publishing_status: ChannelPublishingStatus,
+      publication_status: ChannelPublicationStatus,
       curation_status: ChannelCurationStatus,
       created: u32, // BlockNumber,
       principal_id: PrincipalId,
@@ -347,30 +349,31 @@ export class CuratorApplicationIdToCuratorIdMap extends BTreeMap<ApplicationId, 
 }
 
 export function registerContentWorkingGroupTypes () {
-    try {
-      getTypeRegistry().register({
-        ChannelId: 'u64',
-        CuratorId: 'u64',
-        CuratorOpeningId: 'u64',
-        CuratorApplicationId: 'u64',
-        LeadId: 'u64',
-        PrincipalId: 'u64',
-        Channel,
-        ChannelContentType,
-        ChannelCurationStatus,
-        ChannelPublishingStatus,
-        CurationActor,
-        Curator,
-        CuratorApplication,
-        CuratorOpening,
-        Lead,
-        OpeningPolicyCommitment,
-        Principal,
-        WorkingGroupUnstaker,
-		CuratorApplicationIdToCuratorIdMap, 
-		CuratorApplicationIdSet: Vec.with(CuratorApplicationId), 
-      });
-    } catch (err) {
-      console.error('Failed to register custom types of content working group module', err);
-    }
+  try {
+    getTypeRegistry().register({
+      ChannelId: 'u64',
+      CuratorId: 'u64',
+      CuratorOpeningId: 'u64',
+      CuratorApplicationId: 'u64',
+      LeadId: 'u64',
+      PrincipalId: 'u64',
+      OptionalText,
+      Channel,
+      ChannelContentType,
+      ChannelCurationStatus,
+      ChannelPublicationStatus,
+      CurationActor,
+      Curator,
+      CuratorApplication,
+      CuratorOpening,
+      Lead,
+      OpeningPolicyCommitment,
+      Principal,
+      WorkingGroupUnstaker,
+      CuratorApplicationIdToCuratorIdMap,
+      CuratorApplicationIdSet: Vec.with(CuratorApplicationId),
+    });
+  } catch (err) {
+    console.error('Failed to register custom types of content working group module', err);
+  }
 }
