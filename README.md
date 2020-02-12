@@ -1,4 +1,4 @@
-![ Nodes for Joystream](./banner.svg)
+![ Nodes for Joystream](./validator-node_new.svg)
 
 # Joystream Full Node
 
@@ -73,4 +73,3 @@ docker build . -t joystream-node
 # run a development chain by launching a new docker container, publishing the websocket port
 docker run -p 9944:9944 joystream-node --dev --ws-external
 ```
-
