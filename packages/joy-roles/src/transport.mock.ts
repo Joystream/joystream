@@ -489,5 +489,15 @@ export class Transport extends TransportBase implements ITransport {
     }
     )
   }
+
+  async applyToCuratorOpening(
+    id: number,
+    roleAccountName: string,
+    sourceAccount: string,
+    appStake: Balance,
+    roleStake: Balance,
+    applicationText: string): Promise<number> {
+      return 0
+  }
 }
 

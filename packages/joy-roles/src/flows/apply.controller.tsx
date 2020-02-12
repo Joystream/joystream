@@ -35,6 +35,8 @@ type State = {
   appDetails: any
   txKeyAddress: AccountId
   activeStep: ProgressSteps
+  txInProgress: boolean
+  complete: boolean
 
   // Data generated for transaction
   transactionDetails: Map<string, string>
@@ -54,6 +56,8 @@ const newEmptyState = (): State => {
     roleKeyName: "",
     txKeyAddress: new AccountId(),
     activeStep: 0,
+    txInProgress: false,
+    complete: false,
   }
 }
 
@@ -110,6 +114,8 @@ export class ApplyController extends Controller<State, ITransport> {
             ProgressSteps.ConfirmStakes :
             ProgressSteps.ApplicationDetails
 
+          this.state.roleKeyName = hrt.job.title + " role key"
+
           // When everything is collected, update the view
           this.dispatch()
         }
@@ -149,7 +155,16 @@ export class ApplyController extends Controller<State, ITransport> {
     this.dispatch()
   }
 
-  // TODO: Move to transport
+  setTxInProgress(v: boolean): void {
+    this.state.txInProgress = v
+    this.dispatch()
+  }
+
+  setComplete(v: boolean): void {
+    this.state.complete = v
+    this.dispatch()
+  }
+
   async prepareApplicationTransaction(
     applicationStake: Balance,
     roleStake: Balance,
@@ -164,7 +179,6 @@ export class ApplyController extends Controller<State, ITransport> {
     this.state.transactionDetails.set("Application stake", formatBalance(this.state.applicationStake))
     this.state.transactionDetails.set("Role stake", formatBalance(roleStake))
     this.state.transactionDetails.set("Total commitment", formatBalance(totalCommitment))
-    this.state.roleKeyName = "some-role.key"
 
     this.dispatch()
     return true
@@ -173,8 +187,7 @@ export class ApplyController extends Controller<State, ITransport> {
   async makeApplicationTransaction(): Promise<number> {
     return this.transport.applyToCuratorOpening(
       this.currentOpeningId,
-      0, // FIXME: member id?
-      this.state.txKeyAddress.toString(), // FIXME: this should be the role ID
+      this.state.roleKeyName,
       this.state.txKeyAddress.toString(),
       this.state.applicationStake,
       this.state.roleStake,
@@ -212,6 +225,10 @@ export const ApplyView = View<ApplyController, State>(
           setTxKeyAddress={(v) => controller.setTxKeyAddress(v)}
           activeStep={state.activeStep}
           setActiveStep={(v) => controller.setActiveStep(v)}
+          txInProgress={state.txInProgress}
+          setTxInProgress={(v) => controller.setTxInProgress(v)}
+          complete={state.complete}
+          setComplete={(v) => controller.setComplete(v)}
         />
       </Container>
     )

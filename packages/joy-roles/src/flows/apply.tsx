@@ -969,7 +969,11 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
     <Container className="content">
       <p>
         You need to make a transaction to apply for this role.
-          </p>
+      </p>
+      <p>
+        Before the transaction, a new account key, called a <em>role key</em>, will be generated and downloaded automatically.
+        You probably won't need to use the role key directly, but you will need it in order to perform any duties in the role, so be sure to keep a backup.
+      </p>
       <ModalAccordion title="Transaction details">
         <Table basic='very'>
           <Table.Body>
@@ -1026,28 +1030,26 @@ directly.
       <h4>Your new role key</h4>
       <p>
         This role requires a new sub-key to be associated with your account.
-        You'll never have to use the key directly, but you will need it in order
+        You'll probably won't use the key directly, but you will need it in order
         to perform any duties in the role.
 	  </p>
       <p>
-        We've generated a new role key, <strong>{props.roleKeyName}</strong>, automatically. You can
-              download its backup file using the button below, or from the <Link to="#accounts">My account</Link>
-        &nbsp; section.
+        We've generated a new role key, <strong>{props.roleKeyName}</strong>, automatically.
+        A copy of the backup file should have been downloaded, or you can
+        get a backup from the <Link to="/accounts">My account</Link> section.
 	  </p>
-      <Message warning>
+      <Message warning icon>
+        <Icon name='warning sign' />
         <strong>Please make sure to save this file in a secure location as it is the only
-              way to restore your role key!</strong>
+          way to restore your role key!</strong>
       </Message>
-      <Container className="cta">
-        <Button content='Download role key backup' icon='download' labelPosition='left' primary />
-        <Button
-          content='Go to My Roles'
-          icon='right arrow'
-          labelPosition='right'
-          color='teal'
-        />
-      </Container>
-
+      <Message warning icon>
+        <Icon name='unlock' />
+        <strong>
+          This role key has been generated with no password!
+          We strongly recommend that you set a password for it in the <Link to="/accounts">My account</Link> section.
+        </strong>
+      </Message>
     </Container>
   )
 }
@@ -1078,6 +1080,10 @@ export type FlowModalProps = ConfirmStakesStageProps & FundSourceSelectorProps &
   setTxKeyAddress: (v: AccountId) => void
   activeStep: ProgressSteps
   setActiveStep: (v: ProgressSteps) => void
+  txInProgress: boolean
+  setTxInProgress: (v: boolean) => void
+  complete: boolean
+  setComplete: (v: boolean) => void
 }
 
 export const FlowModal = Loadable<FlowModalProps>(
@@ -1095,14 +1101,14 @@ export const FlowModal = Loadable<FlowModalProps>(
       appDetails, setAppDetails,
       txKeyAddress, setTxKeyAddress,
       activeStep, setActiveStep,
+      txInProgress, setTxInProgress,
+      complete, setComplete,
     } = props
 
     const accCtx = useMyAccount()
     if (txKeyAddress.isEmpty) {
       setTxKeyAddress(new AccountId(accCtx.state.address))
     }
-
-    const [complete, setComplete] = useState(false)
 
     const history = useHistory()
     const cancel = () => {
@@ -1142,11 +1148,14 @@ export const FlowModal = Loadable<FlowModalProps>(
 
     const enterDoneState = () => {
       scrollToTop()
+      setTxInProgress(true)
       props.makeApplicationTransaction().then(() => {
         setComplete(true)
+        setTxInProgress(false)
         setActiveStep(ProgressSteps.Done)
       })
         .catch((e) => {
+          setTxInProgress(false)
           console.error("makeApplicationTransaction", e)
         })
     }
@@ -1221,6 +1230,11 @@ export const FlowModal = Loadable<FlowModalProps>(
             </Grid.Column>
           </Grid>
         </Container>
+        {txInProgress &&
+          <div className="loading">
+            <div className="spinner"></div>
+          </div>
+        }
       </Container>
     )
   })

@@ -20,7 +20,10 @@ import { Curator, CuratorId, CuratorApplication, CuratorInduction, CuratorRoleSt
 import { Application, Opening, OpeningId } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
 import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
-import { Profile } from '@joystream/types/members';
+import { Profile, MemberId } from '@joystream/types/members';
+
+// FIXME: Move these functions to a dedicayed utils package
+import { createAccount, generateSeed } from '@polkadot/joy-utils/accounts'
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
@@ -384,19 +387,42 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
+  protected generateRoleAccount(name: string, password: string = ''): string | null {
+    const { address, deriveError, derivePath, isSeedValid, pairType, seed } = generateSeed(null, '', 'bip')
+
+    const isValid = !!address && !deriveError && isSeedValid;
+    if (!isValid) {
+      return null
+    }
+
+    const status = createAccount(`${seed}${derivePath}`, pairType, name, password, 'created account');
+    return status.account as string
+  }
+
   async applyToCuratorOpening(
     id: number,
-    memberId: number,
-    roleAccount: string,
+    roleAccountName: string,
     sourceAccount: string,
     appStake: Balance,
     roleStake: Balance,
     applicationText: string): Promise<number> {
-    return new Promise<number>((resolve, reject) => {
+    return new Promise<number>(async (resolve, reject) => {
+      const membershipIds = (
+        await this.api.query.members.memberIdsByControllerAccountId(sourceAccount)
+      ) as Vec<MemberId>
+      if (membershipIds.length == 0) {
+        reject("No membship ID associated with this address")
+      }
+
+      const roleAccount = this.generateRoleAccount(roleAccountName)
+      if (!roleAccount) {
+        reject('failed to create role account')
+      }
+
       const tx = this.api.tx.contentWorkingGroup.applyOnCuratorOpening(
-        memberId,
+        membershipIds[0],
         new u32(id),
-        new GenericAccountId(roleAccount),
+        new GenericAccountId(roleAccount as string),
         roleStake,
         appStake,
         new Text(applicationText),
@@ -417,8 +443,7 @@ export class Transport extends TransportBase implements ITransport {
         txFailedCb,
         txSuccessCb,
       });
-
-      // TODO: On success, the form state must be flushed
-    })
+    }
+    )
   }
 }

@@ -24,8 +24,7 @@ export interface ITransport {
   myCurationGroupRoles: () => Subscribable<ActiveRole[]>
   myStorageGroupRoles: () => Subscribable<ActiveRole[]>
   applyToCuratorOpening: (id: number,
-    memberId: number,
-    roleAccount: string,
+    roleAccountName: string,
     sourceAccount: string,
     appStake: Balance,
     roleStake: Balance,
