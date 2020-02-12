@@ -2106,7 +2106,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-
     fn ensure_channel_title_is_valid(text_opt: &OptionalText) -> dispatch::Result {
         if let Some(text) = text_opt {
             ChannelTitleConstraint::get().ensure_valid(
