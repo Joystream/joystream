@@ -1636,7 +1636,8 @@ fn setup_and_fill_opening(
             setup_opening_in_review
                 .normal_opening_constructed
                 .curator_opening_id,
-            successful_curator_application_ids.clone()
+            successful_curator_application_ids.clone(),
+            None
         ),
         Ok(())
     );
