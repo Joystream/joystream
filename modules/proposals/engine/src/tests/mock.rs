@@ -40,7 +40,8 @@ mod engine {
 
 impl_outer_event! {
     pub enum TestEvent for Test {
-        balances<T>, engine<T>,
+//        balances<T>,
+        engine<T>,
     }
 }
 
@@ -93,23 +94,6 @@ parameter_types! {
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
     pub const InitialMembersBalance: u32 = 0;
-}
-
-impl balances::Trait for Test {
-    /// The type for recording an account's balance.
-    type Balance = u64;
-    /// What to do if an account's free balance gets zeroed.
-    type OnFreeBalanceZero = ();
-    /// What to do if a new account is created.
-    type OnNewAccount = ();
-
-    type Event = TestEvent;
-
-    type DustRemoval = ();
-    type TransferPayment = ();
-    type ExistentialDeposit = ExistentialDeposit;
-    type TransferFee = TransferFee;
-    type CreationFee = CreationFee;
 }
 
 // TODO add a Hook type to capture TriggerElection and CouncilElected hooks

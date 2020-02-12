@@ -8,12 +8,9 @@ edition = '2018'
 default = ['std']
 no_std = []
 std = [
-    'sr-staking-primitives/std',
-    'staking/std',
     'codec/std',
     'rstd/std',
     'srml-support/std',
-    'balances/std',
     'primitives/std',
     'runtime-primitives/std',
     'system/std',
@@ -55,12 +52,6 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-primitives'
 rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
-[dependencies.sr-staking-primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-staking-primitives'
-rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
-
 [dependencies.srml-support]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
@@ -77,18 +68,6 @@ rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-timestamp'
-rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
-
-[dependencies.staking]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-staking'
-rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
-
-[dependencies.balances]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-balances'
 rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
 
 [dev-dependencies.runtime-io]
