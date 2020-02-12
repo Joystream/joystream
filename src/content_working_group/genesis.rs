@@ -65,7 +65,6 @@ impl<T: Trait> GenesisConfigBuilder<T> {
     pub fn build(self) -> GenesisConfig<T> {
         GenesisConfig {
             mint_capacity: self.mint_capacity,
-            initial_lead: None,
             curator_opening_by_id: map![], //GenesisConfigMap<CuratorOpeningId, Opening>,
             next_curator_opening_id: CuratorOpeningId::<T>::default(),
             curator_application_by_id: map![], //GenesisConfigMap<CuratorApplicationId,CuratorApplication>,
