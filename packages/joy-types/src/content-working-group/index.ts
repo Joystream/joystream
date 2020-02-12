@@ -28,12 +28,12 @@ export class ChannelContentType extends Enum {
   }
 };
 
-export class ChannelPublishingStatus extends Enum {
+export class ChannelPublicationStatus extends Enum {
   constructor (value?: any, index?: number) {
     super(
       [
-        'Published',
-        'NotPunblished',
+        'Public',
+        'Unlisted',
       ],
       value, index);
   }
@@ -60,7 +60,7 @@ export type IChannel = {
   content: ChannelContentType,
   owner: MemberId,
   role_account: AccountId,
-  publishing_status: ChannelPublishingStatus,
+  publication_status: ChannelPublicationStatus,
   curation_status: ChannelCurationStatus,
   created: BlockNumber,
   principal_id: PrincipalId,
@@ -77,7 +77,7 @@ export class Channel extends JoyStruct<IChannel> {
       content: ChannelContentType,
       owner: MemberId,
       role_account: GenericAccountId,
-      publishing_status: ChannelPublishingStatus,
+      publication_status: ChannelPublicationStatus,
       curation_status: ChannelCurationStatus,
       created: u32, // BlockNumber,
       principal_id: PrincipalId,
@@ -360,7 +360,7 @@ export function registerContentWorkingGroupTypes () {
         Channel,
         ChannelContentType,
         ChannelCurationStatus,
-        ChannelPublishingStatus,
+        ChannelPublicationStatus,
         CurationActor,
         Curator,
         CuratorApplication,
