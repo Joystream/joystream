@@ -447,6 +447,7 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
         account: &AccountId,
         credential: <Runtime as versioned_store_permissions::Trait>::Credential,
     ) -> bool {
+        // use parameter_types! to name credentials instead of directly using numbers
         match credential {
             // Credentials from 0..999 represents groups or more complex requirements
             // Current Lead if set
