@@ -994,17 +994,16 @@ decl_storage! {
     trait Store for Module<T: Trait> as ContentWorkingGroup {
 
         /// The mint currently funding the rewards for this module.
-        pub Mint get(mint) config(): <T as minting::Trait>::MintId;
+        pub Mint get(mint) : <T as minting::Trait>::MintId;
 
         /// The current lead.
-        /// Not configurable, because default set value breaks semantics: https://github.com/Joystream/joystream/issues/36#issuecomment-564560373
-        pub CurrentLeadId get(current_lead_id): Option<LeadId<T>>;
+        pub CurrentLeadId get(current_lead_id) : Option<LeadId<T>>;
 
         /// Maps identifier to corresponding lead.
-        pub LeadById get(lead_by_id) config(): linked_map LeadId<T> => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
+        pub LeadById get(lead_by_id): linked_map LeadId<T> => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
 
         /// Next identifier for new current lead.
-        pub NextLeadId get(next_lead_id) config(): LeadId<T>;
+        pub NextLeadId get(next_lead_id): LeadId<T>;
 
         /// Maps identifeir to curator opening.
         pub CuratorOpeningById get(curator_opening_by_id) config(): linked_map CuratorOpeningId<T> => CuratorOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>>;
@@ -1065,6 +1064,15 @@ decl_storage! {
         pub OpeningHumanReadableText get(opening_human_readable_text) config(): InputValidationLengthConstraint;
         pub CuratorApplicationHumanReadableText get(curator_application_human_readable_text) config(): InputValidationLengthConstraint;
         pub CuratorExitRationaleText get(curator_exit_rationale_text) config(): InputValidationLengthConstraint;
+    }
+    add_extra_genesis {
+        config(mint_capacity): minting::BalanceOf<T>;
+        // config(mint_adjustment): minting::Adjustment<BalanceOf<T>, T::BlockNumber> (add serialize/deserialize derivation for type)
+        build(|config: &GenesisConfig<T>| {
+            // create mint
+            let mint_id = <minting::Module<T>>::add_mint(config.mint_capacity, None).expect("Failed to create a mint for the content working group");
+            Mint::<T>::put(mint_id);
+        });
     }
 }
 
@@ -1901,7 +1909,7 @@ decl_module! {
             // Ensure root is origin
             ensure_root(origin)?;
 
-            // Ensure there is no current lead
+                    // Ensure there is no current lead
             ensure!(
                 <CurrentLeadId<T>>::get().is_none(),
                 MSG_CURRENT_LEAD_ALREADY_SET
@@ -1910,11 +1918,12 @@ decl_module! {
             // Ensure that member can actually become lead
             let new_lead_id = <NextLeadId<T>>::get();
 
-            let new_lead_role = role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
+            let new_lead_role =
+                role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
 
             let _profile = <members::Module<T>>::can_register_role_on_member(
                 &member,
-                &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id)
+                &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id),
             )?;
 
             //
@@ -1922,11 +1931,11 @@ decl_module! {
             //
 
             // Construct lead
-            let new_lead = Lead{
+            let new_lead = Lead {
                 role_account: role_account.clone(),
                 reward_relationship: None,
                 inducted: <system::Module<T>>::block_number(),
-                stage: LeadRoleState::Active
+                stage: LeadRoleState::Active,
             };
 
             // Store lead
@@ -1939,7 +1948,8 @@ decl_module! {
             <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
 
             // Register in role
-            let registered_role = <members::Module<T>>::register_role_on_member(member, &new_lead_role).is_ok();
+            let registered_role =
+                <members::Module<T>>::register_role_on_member(member, &new_lead_role).is_ok();
 
             assert!(registered_role);
 
