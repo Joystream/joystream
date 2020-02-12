@@ -11,7 +11,7 @@ type HasEntityStatuses = {
 // TODO values of PublicationStatus and CurationStatus should be loaded from versioned store (Substrate)
 export function isPublicEntity(entity: HasEntityStatuses): boolean {
   return (
-    entity.publicationStatus?.id === PublicationStatus.Published.id &&
+    entity.publicationStatus?.id === PublicationStatus.Publiс.id &&
     entity.curationStatus?.id !== CurationStatus.UnderReview.id &&
     entity.curationStatus?.id !== CurationStatus.Removed.id
   );

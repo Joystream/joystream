@@ -64,8 +64,8 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaText field={Fields.banner} {...props} />
     <MediaText field={Fields.description} textarea {...props} />
 
-    {/* TODO Use Channel Specific options for publishingStatus */}
-    <MediaDropdown field={Fields.publishingStatus} options={opts.publicationStatusOptions} {...props} />
+    {/* TODO Use Channel Specific options for publicationStatus */}
+    <MediaDropdown field={Fields.publicationStatus} options={opts.publicationStatusOptions} {...props} />
   </>;
 
   const MainButton = () =>
@@ -74,8 +74,8 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       size='large'
       isDisabled={!dirty || isSubmitting}
       label={isNew
-        ? 'Publish'
-        : 'Update'
+        ? 'Create channel'
+        : 'Update channel'
       }
       params={buildTxParams()}
       tx={isNew
@@ -95,8 +95,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <Form className='ui form JoyForm EditMetaForm'>
       
       {formFields()}
-
-      {/* TODO add metadata status dropdown: Draft, Published */}
 
       <LabelledField style={{ marginTop: '1rem' }} {...props}>
         <MainButton />

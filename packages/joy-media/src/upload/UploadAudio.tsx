@@ -138,8 +138,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       
       {tabs}
 
-      {/* TODO add metadata status dropdown: Draft, Published */}
-
       <LabelledField style={{ marginTop: '1rem' }} {...props}>
         <MainButton />
         <Button

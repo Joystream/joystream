@@ -18,7 +18,7 @@ export const MockMusicChannel: ChannelEntity =
 	avatar: 'https://images.unsplash.com/photo-1485561222814-e6c50477491b?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=200&q=60',
 	banner: 'https://images.unsplash.com/photo-1514119412350-e174d90d280e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=900&q=80',
 
-	publishingStatus: DefaultPublicationStatus,
+	publicationStatus: DefaultPublicationStatus,
 	curationStatus: DefaultCurationStatus,
 	
 	revenueAccountId: AccountIdSamples.Alice,
@@ -40,7 +40,7 @@ export const MockVideoChannel: ChannelEntity =
 	avatar: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=200&q=60',
 	banner: 'https://images.unsplash.com/photo-1494488802316-82250d81cfcc?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=900&q=60',
 
-	publishingStatus: DefaultPublicationStatus,
+	publicationStatus: DefaultPublicationStatus,
 	curationStatus: DefaultCurationStatus,
 	
 	revenueAccountId: AccountIdSamples.Bob,

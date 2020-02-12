@@ -6,11 +6,11 @@ function newEntity (value: string): PublicationStatusType {
 }
 
 export const PublicationStatus = {
-  Published: newEntity('Published'),
-  Unpublished: newEntity('Unpublished'),
+  Publiс: newEntity('Publiс'),
+  Unlisted: newEntity('Unlisted'),
 };
 
 export const AllPublicationStatuses: PublicationStatusType[] =
   Object.values(PublicationStatus);
 
-export const DefaultPublicationStatus = PublicationStatus.Published;
+export const DefaultPublicationStatus = PublicationStatus.Publiс;

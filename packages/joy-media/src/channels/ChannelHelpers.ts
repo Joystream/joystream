@@ -9,10 +9,10 @@ export const isMusicChannel = (channel: ChannelEntity) => {
   return channel.content === 'music';
 };
 
-// TODO use joy-types/content-working-group/index#ChannelPublishingStatus
-const PublishingStatusValue = {
-  Published: 'Published',
-  NotPunblished: 'NotPunblished'
+// TODO use joy-types/content-working-group/index#PublicationStatusValue
+const PublicationStatusValue = {
+  Public: 'Public',
+  Unlisted: 'Unlisted'
 };
 
 // TODO use joy-types/content-working-group/index#ChannelCurationStatus
@@ -24,7 +24,7 @@ const CurationStatusValue = {
 export function isPublicChannel(channel: ChannelType): boolean {
   return (
     channel.verified === true &&
-    channel.publishingStatus?.value === PublishingStatusValue.Published &&
+    channel.publicationStatus?.value === PublicationStatusValue.Public &&
     channel.curationStatus?.value !== CurationStatusValue.Censored
   );
 }

@@ -31,7 +31,7 @@ export type ChannelFormValues = {
   description: string
   avatar: string
   banner: string
-  publishingStatus: number
+  publicationStatus: number
   curationStatus: number
 };
 
@@ -44,7 +44,7 @@ export type ChannelType = {
   description?: string
   avatar?: string
   banner?: string
-  publishingStatus: PublicationStatusType
+  publicationStatus: PublicationStatusType
   curationStatus?: CurationStatusType
 };
 
@@ -59,7 +59,7 @@ export function ChannelToFormValues(entity?: ChannelType): ChannelFormValues {
     description: entity && entity.description || '',
     avatar: entity && entity.avatar || '',
     banner: entity && entity.banner || '',
-    publishingStatus: entity && entity.publishingStatus.id || 0,
+    publicationStatus: entity && entity.publicationStatus.id || 0,
     curationStatus: entity && entity.curationStatus?.id || 0
   }
 }
@@ -72,7 +72,7 @@ export type ChannelPropId =
   'description' |
   'avatar' |
   'banner' |
-  'publishingStatus' |
+  'publicationStatus' |
   'curationStatus'
   ;
 
@@ -142,8 +142,8 @@ export const ChannelClass: ChannelClassType = {
     "type": "Text",
     "maxTextLength": 1000
   },
-  publishingStatus: {
-    "id": "publishingStatus",
+  publicationStatus: {
+    "id": "publicationStatus",
     "name": "Publication Status",
     "description": "The publication status of the channel.",
     "required": true,
@@ -153,7 +153,7 @@ export const ChannelClass: ChannelClassType = {
   curationStatus: {
     "id": "curationStatus",
     "name": "Curation Status",
-    "description": "The publication status of the channel.",
+    "description": "The curation status of the channel.",
     "type": "Internal",
     "classId": "Curation Status"
   }

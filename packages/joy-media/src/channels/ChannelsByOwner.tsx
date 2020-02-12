@@ -6,6 +6,7 @@ import { YouHaveNoChannels } from './YouHaveNoChannels';
 import { formatNumber } from '@polkadot/util';
 import { ChannelAvatar } from './ChannelAvatar';
 import { MemberId } from '@joystream/types/members';
+import { isPublicChannel } from './ChannelHelpers';
 
 // TODO Add component ChannelsByOwner
 
@@ -69,7 +70,6 @@ type ChannelPreviewProps = {
 
 const ChannelPreview = (props: ChannelPreviewProps) => {
   const { channel } = props;
-
   const statSize = 'tiny';
 
   let itemsPublishedLabel = ''
@@ -81,9 +81,12 @@ const ChannelPreview = (props: ChannelPreviewProps) => {
 
   let visibilityIcon: SemanticICONS = 'eye';
   let visibilityColor: SemanticCOLORS = 'green';
-  if (channel.visibility === 'Unlisted') {
+  let visibilityText = 'Public';
+
+  if (!isPublicChannel(channel)) {
     visibilityIcon = 'eye slash';
-    visibilityColor = 'orange'
+    visibilityColor = 'orange';
+    visibilityText = 'Unlisted';
   }
 
   return <Segment padded style={{ backgroundColor: '#fff' }}>
@@ -106,7 +109,7 @@ const ChannelPreview = (props: ChannelPreviewProps) => {
 
         <Label basic color={visibilityColor} style={{ marginRight: '1rem' }}>
           <Icon name={visibilityIcon} />
-          {channel.visibility}
+          {visibilityText}
         </Label>
 
         {channel.blocked && <Label basic color='red'>
