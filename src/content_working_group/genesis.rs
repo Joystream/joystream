@@ -14,7 +14,6 @@ use forum::InputValidationLengthConstraint;
 /// Builder of genesis configuration of content working group.
 pub struct GenesisConfigBuilder<T: Trait> {
     mint_capacity: minting::BalanceOf<T>,
-
     /*
     lead_by_id: GenesisConfigMap<LeadId<T>, Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>>,
     next_lead_id: LeadId<T>,
@@ -66,7 +65,6 @@ impl<T: Trait> GenesisConfigBuilder<T> {
     pub fn build(self) -> GenesisConfig<T> {
         GenesisConfig {
             mint_capacity: self.mint_capacity,
-            initial_lead: None,
             curator_opening_by_id: map![], //GenesisConfigMap<CuratorOpeningId, Opening>,
             next_curator_opening_id: CuratorOpeningId::<T>::default(),
             curator_application_by_id: map![], //GenesisConfigMap<CuratorApplicationId,CuratorApplication>,

@@ -142,8 +142,9 @@ fn create_channel_description_too_long() {
                 None,
             );
 
-            fixture.description =
-                generate_too_long_length_buffer(&ChannelDescriptionConstraint::get());
+            fixture.description = Some(
+                generate_too_long_length_buffer(&ChannelDescriptionConstraint::get())
+            );
 
             fixture.call_and_assert_error(MSG_CHANNEL_DESCRIPTION_TOO_LONG);
         });
@@ -161,8 +162,9 @@ fn create_channel_description_too_short() {
                 None,
             );
 
-            fixture.description =
-                generate_too_short_length_buffer(&ChannelDescriptionConstraint::get());
+            fixture.description = Some(
+                generate_too_short_length_buffer(&ChannelDescriptionConstraint::get())
+            );
 
             fixture.call_and_assert_error(MSG_CHANNEL_DESCRIPTION_TOO_SHORT);
         });
@@ -178,7 +180,7 @@ struct UpdateChannelAsCurationActorFixture {
     pub origin: Origin,
     pub curation_actor: CurationActor<CuratorId<Test>>,
     pub new_verified: Option<bool>,
-    pub new_description: Option<Vec<u8>>,
+    pub new_description: Option<OptionalText>,
     pub new_curation_status: Option<ChannelCurationStatus>,
 }
 
@@ -192,7 +194,6 @@ impl UpdateChannelAsCurationActorFixture {
             self.curation_actor.clone(),
             channel_id,
             self.new_verified,
-            self.new_description.clone(),
             self.new_curation_status,
         )
     }
@@ -200,24 +201,25 @@ impl UpdateChannelAsCurationActorFixture {
     pub fn call_and_assert_success(&self, channel_id: ChannelId<Test>) {
         let old_channel = ChannelById::<Test>::get(channel_id);
 
-        let expected_updated_channel = lib::Channel::new(
-            old_channel.title,
-            self.new_verified.unwrap_or(old_channel.verified),
-            self.new_description
-                .clone()
-                .unwrap_or(old_channel.description),
-            old_channel.content,
-            old_channel.owner,
-            old_channel.role_account,
-            old_channel.publishing_status,
-            self.new_curation_status
-                .unwrap_or(old_channel.curation_status),
-            old_channel.created,
-            old_channel.principal_id,
-            old_channel.avatar,
-            old_channel.banner,
-            old_channel.handle,
-        );
+        let upd_verified = self.new_verified.unwrap_or(old_channel.verified);
+        let upd_description = self.new_description.clone().unwrap_or(old_channel.description);
+        let upd_curation_status = self.new_curation_status.unwrap_or(old_channel.curation_status);
+
+        let expected_updated_channel = Channel {
+            verified: upd_verified,
+            handle: old_channel.handle,
+            title: old_channel.title,
+            description: upd_description,
+            avatar: old_channel.avatar,
+            banner: old_channel.banner,
+            content: old_channel.content,
+            owner: old_channel.owner,
+            role_account: old_channel.role_account,
+            publishing_status: old_channel.publishing_status,
+            curation_status: upd_curation_status,
+            created: old_channel.created,
+            principal_id: old_channel.principal_id,
+        };
 
         // Call and check result
 
@@ -261,7 +263,6 @@ fn update_channel_as_curation_actor_success() {
                 2222,
                 to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                 2222 * 2,
-                2222 * 3,
                 generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
             );
 
@@ -424,7 +425,6 @@ fn begin_curator_applicant_review_success() {
                 333,
                 to_vec("CuratorWannabe"),
                 11111,
-                91000,
                 generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
             );
 
@@ -496,7 +496,6 @@ fn fill_curator_opening_success() {
                         2222,
                         to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                         2222 * 2,
-                        2222 * 3,
                         generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
                     ),
                     true,
@@ -506,7 +505,6 @@ fn fill_curator_opening_success() {
                         3333,
                         to_vec("yoyoyo1"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                         3333 * 2,
-                        3333 * 3,
                         generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
                     ),
                     true,
@@ -516,7 +514,6 @@ fn fill_curator_opening_success() {
                         5555,
                         to_vec("yoyoyo2"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                         5555 * 2,
-                        5555 * 3,
                         generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
                     ),
                     false,
@@ -526,7 +523,6 @@ fn fill_curator_opening_success() {
                         6666,
                         to_vec("yoyoyo3"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
                         6666 * 2,
-                        6666 * 3,
                         generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
                     ),
                     true,
@@ -562,7 +558,6 @@ fn withdraw_curator_application_success() {
                 curator_applicant_root_and_controller_account,
                 to_vec("CuratorWannabe"),
                 curator_applicant_role_account,
-                91000,
                 human_readable_text,
             );
 
@@ -608,7 +603,6 @@ fn terminate_curator_application_success() {
                 333,
                 to_vec("CuratorWannabe"),
                 11111,
-                91000,
                 generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
             );
 
@@ -669,7 +663,7 @@ fn apply_on_curator_opening_success() {
                 .amount;
             let total_balance = role_stake_balance + application_stake_balance;
 
-            let source_account = 918111;
+            let source_account = curator_applicant_root_and_controller_account;
 
             // Credit staking source account
             let _ = balances::Module::<Test>::deposit_creating(&source_account, total_balance);
@@ -693,7 +687,6 @@ fn apply_on_curator_opening_success() {
                     curator_applicant_member_id,
                     normal_opening_constructed.curator_opening_id,
                     curator_applicant_role_account,
-                    source_account,
                     Some(role_stake_balance),
                     Some(application_stake_balance),
                     human_readable_text
@@ -1291,7 +1284,6 @@ fn make_generic_add_member_params() -> AddMemberAndApplyOnOpeningParams {
         2222,
         to_vec("yoyoyo0"), // generate_valid_length_buffer(&ChannelHandleConstraint::get()),
         2222 * 2,
-        2222 * 3,
         generate_valid_length_buffer(&CuratorApplicationHumanReadableText::get()),
     )
 }
@@ -1386,7 +1378,6 @@ pub struct AddMemberAndApplyOnOpeningParams {
     pub curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
     pub handle: Vec<u8>,
     pub curator_applicant_role_account: <Test as system::Trait>::AccountId,
-    pub source_account: <Test as system::Trait>::AccountId,
     pub human_readable_text: Vec<u8>,
 }
 
@@ -1395,14 +1386,12 @@ impl AddMemberAndApplyOnOpeningParams {
         curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
         handle: Vec<u8>,
         curator_applicant_role_account: <Test as system::Trait>::AccountId,
-        source_account: <Test as system::Trait>::AccountId,
         human_readable_text: Vec<u8>,
     ) -> Self {
         Self {
             curator_applicant_root_and_controller_account,
             handle,
             curator_applicant_role_account,
-            source_account,
             human_readable_text,
         }
     }
@@ -1421,7 +1410,6 @@ fn add_members_and_apply_on_opening(
                 params.curator_applicant_root_and_controller_account,
                 params.handle,
                 params.curator_applicant_role_account,
-                params.source_account,
                 params.human_readable_text,
             )
         })
@@ -1439,7 +1427,6 @@ fn add_member_and_apply_on_opening(
     curator_applicant_root_and_controller_account: <Test as system::Trait>::AccountId,
     handle: Vec<u8>,
     curator_applicant_role_account: <Test as system::Trait>::AccountId,
-    source_account: <Test as system::Trait>::AccountId,
     human_readable_text: Vec<u8>,
 ) -> NewMemberAppliedResult {
     // Make membership
@@ -1463,6 +1450,8 @@ fn add_member_and_apply_on_opening(
 
     let total_balance = role_stake_balance + application_stake_balance;
 
+    let source_account = curator_applicant_root_and_controller_account;
+
     // Credit staking source account if required
     if total_balance > 0 {
         let _ = balances::Module::<Test>::deposit_creating(&source_account, total_balance);
@@ -1484,7 +1473,6 @@ fn add_member_and_apply_on_opening(
             curator_applicant_member_id,
             curator_opening_id,
             curator_applicant_role_account,
-            source_account,
             Some(role_stake_balance),
             Some(application_stake_balance),
             human_readable_text
@@ -1676,7 +1664,8 @@ fn setup_and_fill_opening(
             setup_opening_in_review
                 .normal_opening_constructed
                 .curator_opening_id,
-            successful_curator_application_ids.clone()
+            successful_curator_application_ids.clone(),
+            None
         ),
         Ok(())
     );
@@ -1857,10 +1846,10 @@ struct CreateChannelFixture {
     pub controller_account: <Test as system::Trait>::AccountId,
     pub channel_creator_role_account: <Test as system::Trait>::AccountId,
     pub channel_handle: Vec<u8>,
-    pub channel_title: Vec<u8>,
-    pub description: Vec<u8>,
-    pub avatar: Vec<u8>,
-    pub banner: Vec<u8>,
+    pub channel_title: OptionalText,
+    pub description: OptionalText,
+    pub avatar: OptionalText,
+    pub banner: OptionalText,
     pub content: ChannelContentType,
     pub publishing_status: ChannelPublishingStatus,
 }
@@ -1883,10 +1872,10 @@ impl CreateChannelFixture {
             controller_account,
             channel_creator_role_account: 527489,
             channel_handle: generate_valid_length_buffer(&ChannelHandleConstraint::get()),
-            channel_title: generate_valid_length_buffer(&ChannelTitleConstraint::get()),
-            avatar: generate_valid_length_buffer(&ChannelAvatarConstraint::get()),
-            banner: generate_valid_length_buffer(&ChannelBannerConstraint::get()),
-            description: generate_valid_length_buffer(&ChannelDescriptionConstraint::get()),
+            channel_title: Some(generate_valid_length_buffer(&ChannelTitleConstraint::get())),
+            avatar: Some(generate_valid_length_buffer(&ChannelAvatarConstraint::get())),
+            banner: Some(generate_valid_length_buffer(&ChannelBannerConstraint::get())),
+            description: Some(generate_valid_length_buffer(&ChannelDescriptionConstraint::get())),
             content: ChannelContentType::Video,
             publishing_status: ChannelPublishingStatus::NotPublished,
         }
@@ -1897,12 +1886,12 @@ impl CreateChannelFixture {
             Origin::signed(self.controller_account),
             self.channel_creator_member_id,
             self.channel_creator_role_account,
+            self.content.clone(),
             self.channel_handle.clone(),
             self.channel_title.clone(),
             self.description.clone(),
             self.avatar.clone(),
             self.banner.clone(),
-            self.content.clone(),
             self.publishing_status.clone(),
         )
     }

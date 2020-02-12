@@ -180,6 +180,9 @@ pub static MSG_FULL_CURATOR_OPENING_UNSUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_RED
     "Role stake unstaking period for failed applicants redundant";
 pub static MSG_FULL_CURATOR_OPENING_APPLICATION_DOES_NOT_EXIST: &str = "ApplicationDoesNotExist";
 pub static MSG_FULL_CURATOR_OPENING_APPLICATION_NOT_ACTIVE: &str = "ApplicationNotInActiveStage";
+pub static MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK: &str =
+    "Reward policy has invalid next payment block number";
+pub static MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST: &str = "Working group mint does not exist";
 
 // Errors for `withdraw_curator_application`
 pub static MSG_WITHDRAW_CURATOR_APPLICATION_APPLICATION_DOES_NOT_EXIST: &str =
@@ -222,6 +225,8 @@ pub static MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN: &str = "Unsigned origin
 pub static MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID: &str = "Member id is invalid";
 pub static MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
     "Signer does not match controller account";
+static MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT: &str =
+    "Origin must be controller or root account of member";
 
 /// The exit stage of a lead involvement in the working group.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -588,6 +593,8 @@ impl Default for ChannelCurationStatus {
     }
 }
 
+pub type OptionalText = Option<Vec<u8>>;
+
 /// A channel for publishing content.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
@@ -599,16 +606,16 @@ pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
     pub handle: Vec<u8>,
 
     /// Human readable title of channel. Not required to be unique.
-    pub title: Vec<u8>,
+    pub title: OptionalText,
 
     /// Human readable description of channel purpose and scope.
-    pub description: Vec<u8>,
+    pub description: OptionalText,
 
     /// URL of a small avatar (logo) image of this channel.
-    pub avatar: Vec<u8>,
+    pub avatar: OptionalText,
 
     /// URL of a big background image of this channel.
-    pub banner: Vec<u8>,
+    pub banner: OptionalText,
 
     /// The type of channel.
     pub content: ChannelContentType,
@@ -631,42 +638,6 @@ pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
 
     /// Permissions module principal id
     pub principal_id: PrincipalId,
-}
-
-impl<MemberId, AccountId, BlockNumber, PrincipalId>
-    Channel<MemberId, AccountId, BlockNumber, PrincipalId>
-{
-    pub fn new(
-        title: Vec<u8>,
-        verified: bool,
-        description: Vec<u8>,
-        content: ChannelContentType,
-        owner: MemberId,
-        role_account: AccountId,
-        publishing_status: ChannelPublishingStatus,
-        curation_status: ChannelCurationStatus,
-        created: BlockNumber,
-        principal_id: PrincipalId,
-        avatar: Vec<u8>,
-        banner: Vec<u8>,
-        handle: Vec<u8>,
-    ) -> Self {
-        Self {
-            title,
-            verified,
-            description,
-            content,
-            owner,
-            role_account,
-            publishing_status,
-            curation_status,
-            created,
-            principal_id,
-            avatar,
-            banner,
-            handle,
-        }
-    }
 }
 
 /*
@@ -996,6 +967,14 @@ impl rstd::convert::From<WrappedError<members::MemberControllerAccountDidNotSign
     }
 }
 
+/// The recurring reward if any to be assigned to an actor when filling in the position.
+#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug)]
+pub struct RewardPolicy<Balance, BlockNumber> {
+    amount_per_payout: Balance,
+    next_payment_at_block: BlockNumber,
+    payout_interval: Option<BlockNumber>,
+}
+
 // ======================================================================== //
 // Move section above, this out in its own file later                       //
 // ======================================================================== //
@@ -1076,18 +1055,12 @@ decl_storage! {
         pub CuratorExitRationaleText get(curator_exit_rationale_text) config(): InputValidationLengthConstraint;
     }
     add_extra_genesis {
-        config(initial_lead) : Option<(T::MemberId, T::AccountId)>;
         config(mint_capacity): minting::BalanceOf<T>;
         // config(mint_adjustment): minting::Adjustment<BalanceOf<T>, T::BlockNumber> (add serialize/deserialize derivation for type)
         build(|config: &GenesisConfig<T>| {
             // create mint
             let mint_id = <minting::Module<T>>::add_mint(config.mint_capacity, None).expect("Failed to create a mint for the content working group");
             Mint::<T>::put(mint_id);
-
-            // create lead
-            if let Some((member_id, account_id)) = config.initial_lead.clone() {
-                <Module<T>>::do_set_lead(member_id, account_id).expect("Failed to create the lead for the content working group");
-            }
         });
     }
 }
@@ -1137,12 +1110,12 @@ decl_module! {
             origin,
             owner: T::MemberId,
             role_account: T::AccountId,
-            handle: Vec<u8>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            avatar: Vec<u8>,
-            banner: Vec<u8>,
             content: ChannelContentType,
+            handle: Vec<u8>,
+            title: OptionalText,
+            description: OptionalText,
+            avatar: OptionalText,
+            banner: OptionalText,
             publishing_status: ChannelPublishingStatus
         ) {
 
@@ -1272,10 +1245,10 @@ decl_module! {
             origin,
             channel_id: ChannelId<T>,
             new_handle: Option<Vec<u8>>,
-            new_title: Option<Vec<u8>>,
-            new_description: Option<Vec<u8>>,
-            new_avatar: Option<Vec<u8>>,
-            new_banner: Option<Vec<u8>>,
+            new_title: Option<OptionalText>,
+            new_description: Option<OptionalText>,
+            new_avatar: Option<OptionalText>,
+            new_banner: Option<OptionalText>,
             new_publishing_status: Option<ChannelPublishingStatus>
         ) {
 
@@ -1330,17 +1303,11 @@ decl_module! {
             curation_actor: CurationActor<CuratorId<T>>,
             channel_id: ChannelId<T>,
             new_verified: Option<bool>,
-            new_description: Option<Vec<u8>>,
             new_curation_status: Option<ChannelCurationStatus>
         ) {
 
             // Ensure curation actor signed
             Self::ensure_curation_actor_signed(origin, &curation_actor)?;
-
-            // If set, ensure description is acceptable length
-            if let Some(ref description) = new_description {
-                Self::ensure_channel_description_is_valid(description)?;
-            }
 
             //
             // == MUTATION SAFE ==
@@ -1351,7 +1318,7 @@ decl_module! {
                 &new_verified,
                 &None, // handle
                 &None, // title
-                &new_description,
+                &None, // description,
                 &None, // avatar
                 &None, // banner
                 &None, // publishing_status
@@ -1463,6 +1430,7 @@ decl_module! {
             origin,
             curator_opening_id: CuratorOpeningId<T>,
             successful_curator_application_ids: CuratorApplicationIdSet<T>,
+            reward_policy: Option<RewardPolicy<minting::BalanceOf<T>, T::BlockNumber>>
         ) {
             // Ensure lead is set and is origin signer
             let (lead_id, _lead) = Self::ensure_origin_is_set_lead(origin)?;
@@ -1521,6 +1489,21 @@ decl_module! {
                 )
             )?;
 
+            let create_reward_settings = if let Some(policy) = reward_policy {
+                // A reward will need to be created so ensure our configured mint exists
+                let mint_id = Self::mint();
+
+                ensure!(<minting::Mints<T>>::exists(mint_id), MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST);
+
+                // Make sure valid parameters are selected for next payment at block number
+                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
+
+                // The verified reward settings to use
+                Some((mint_id, policy))
+            } else {
+                None
+            };
+
             //
             // == MUTATION SAFE ==
             //
@@ -1537,8 +1520,32 @@ decl_module! {
             .clone()
             .for_each(|(successful_curator_application, id, _)| {
 
-                // No reward is established by default
-                let reward_relationship: Option<RewardRelationshipId<T>> = None;
+                // Create a reward relationship
+                let reward_relationship = if let Some((mint_id, checked_policy)) = create_reward_settings.clone() {
+
+                    // Create a new recipient for the new relationship
+                    let recipient = <recurringrewards::Module<T>>::add_recipient();
+
+                    // member must exist, since it was checked that it can enter the role
+                    let member_profile = <members::Module<T>>::member_profile(successful_curator_application.member_id).unwrap();
+
+                    // rewards are deposited in the member's root account
+                    let reward_destination_account = member_profile.root_account;
+
+                    // values have been checked so this should not fail!
+                    let relationship_id = <recurringrewards::Module<T>>::add_reward_relationship(
+                        mint_id,
+                        recipient,
+                        reward_destination_account,
+                        checked_policy.amount_per_payout,
+                        checked_policy.next_payment_at_block,
+                        checked_policy.payout_interval,
+                    ).expect("Failed to create reward relationship!");
+
+                    Some(relationship_id)
+                } else {
+                    None
+                };
 
                 // Get possible stake for role
                 let application = hiring::ApplicationById::<T>::get(successful_curator_application.application_id);
@@ -1682,15 +1689,22 @@ decl_module! {
             member_id: T::MemberId,
             curator_opening_id: CuratorOpeningId<T>,
             role_account: T::AccountId,
-            source_account: T::AccountId,
             opt_role_stake_balance: Option<BalanceOf<T>>,
             opt_application_stake_balance: Option<BalanceOf<T>>,
             human_readable_text: Vec<u8>
         ) {
-            // Ensure that origin is signed by member with given id.
-            ensure_on_wrapped_error!(
-                members::Module::<T>::ensure_member_controller_account_signed(origin, &member_id)
-            )?;
+            // Ensure origin which will server as the source account for staked funds is signed
+            let source_account = ensure_signed(origin)?;
+
+            // In absense of a more general key delegation system which allows an account with some funds to
+            // grant another account permission to stake from its funds, the origin of this call must have the funds
+            // and cannot specify another arbitrary account as the source account.
+            // Ensure the source_account is either the controller or root account of member with given id
+            ensure!(
+                members::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
+                members::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
+                MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT
+            );
 
             // Ensure curator opening exists
             let (curator_opening, _opening) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
@@ -1879,7 +1893,52 @@ decl_module! {
             // Ensure root is origin
             ensure_root(origin)?;
 
-            Self::do_set_lead(member, role_account)?;
+            // Ensure there is no current lead
+            ensure!(
+                <CurrentLeadId<T>>::get().is_none(),
+                MSG_CURRENT_LEAD_ALREADY_SET
+            );
+
+            // Ensure that member can actually become lead
+            let new_lead_id = <NextLeadId<T>>::get();
+
+            let new_lead_role =
+                role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
+
+            let _profile = <members::Module<T>>::can_register_role_on_member(
+                &member,
+                &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id),
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Construct lead
+            let new_lead = Lead {
+                role_account: role_account.clone(),
+                reward_relationship: None,
+                inducted: <system::Module<T>>::block_number(),
+                stage: LeadRoleState::Active,
+            };
+
+            // Store lead
+            <LeadById<T>>::insert(new_lead_id, new_lead);
+
+            // Update current lead
+            <CurrentLeadId<T>>::put(new_lead_id); // Some(new_lead_id)
+
+            // Update next lead counter
+            <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
+
+            // Register in role
+            let registered_role =
+                <members::Module<T>>::register_role_on_member(member, &new_lead_role).is_ok();
+
+            assert!(registered_role);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::LeadSet(new_lead_id));
         }
 
         /// Evict the currently unset lead
@@ -2047,36 +2106,53 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_channel_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
-        ChannelTitleConstraint::get().ensure_valid(
-            title.len(),
-            MSG_CHANNEL_TITLE_TOO_SHORT,
-            MSG_CHANNEL_TITLE_TOO_LONG,
-        )
+
+    fn ensure_channel_title_is_valid(text_opt: &OptionalText) -> dispatch::Result {
+        if let Some(text) = text_opt {
+            ChannelTitleConstraint::get().ensure_valid(
+                text.len(),
+                MSG_CHANNEL_TITLE_TOO_SHORT,
+                MSG_CHANNEL_TITLE_TOO_LONG,
+            )
+        } else {
+            Ok(())
+        }
     }
 
-    fn ensure_channel_description_is_valid(description: &Vec<u8>) -> dispatch::Result {
-        ChannelDescriptionConstraint::get().ensure_valid(
-            description.len(),
-            MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
-            MSG_CHANNEL_DESCRIPTION_TOO_LONG,
-        )
+    fn ensure_channel_description_is_valid(text_opt: &OptionalText) -> dispatch::Result {
+        if let Some(text) = text_opt {
+            ChannelDescriptionConstraint::get().ensure_valid(
+                text.len(),
+                MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
+                MSG_CHANNEL_DESCRIPTION_TOO_LONG,
+            )
+        } else {
+            Ok(())
+        }
     }
 
-    fn ensure_channel_avatar_is_valid(avatar: &Vec<u8>) -> dispatch::Result {
-        ChannelAvatarConstraint::get().ensure_valid(
-            avatar.len(),
-            MSG_CHANNEL_AVATAR_TOO_SHORT,
-            MSG_CHANNEL_AVATAR_TOO_LONG,
-        )
+    fn ensure_channel_avatar_is_valid(text_opt: &OptionalText) -> dispatch::Result {
+        if let Some(text) = text_opt {
+            ChannelAvatarConstraint::get().ensure_valid(
+                text.len(),
+                MSG_CHANNEL_AVATAR_TOO_SHORT,
+                MSG_CHANNEL_AVATAR_TOO_LONG,
+            )
+        } else {
+            Ok(())
+        }
     }
 
-    fn ensure_channel_banner_is_valid(banner: &Vec<u8>) -> dispatch::Result {
-        ChannelBannerConstraint::get().ensure_valid(
-            banner.len(),
-            MSG_CHANNEL_BANNER_TOO_SHORT,
-            MSG_CHANNEL_BANNER_TOO_LONG,
-        )
+    fn ensure_channel_banner_is_valid(text_opt: &OptionalText) -> dispatch::Result {
+        if let Some(text) = text_opt {
+            ChannelBannerConstraint::get().ensure_valid(
+                text.len(),
+                MSG_CHANNEL_BANNER_TOO_SHORT,
+                MSG_CHANNEL_BANNER_TOO_LONG,
+            )
+        } else {
+            Ok(())
+        }
     }
 
     fn ensure_curator_application_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
@@ -2556,10 +2632,10 @@ impl<T: Trait> Module<T> {
         channel_id: &ChannelId<T>,
         new_verified: &Option<bool>,
         new_handle: &Option<Vec<u8>>,
-        new_title: &Option<Vec<u8>>,
-        new_description: &Option<Vec<u8>>,
-        new_avatar: &Option<Vec<u8>>,
-        new_banner: &Option<Vec<u8>>,
+        new_title: &Option<OptionalText>,
+        new_description: &Option<OptionalText>,
+        new_avatar: &Option<OptionalText>,
+        new_banner: &Option<OptionalText>,
         new_publishing_status: &Option<ChannelPublishingStatus>,
         new_curation_status: &Option<ChannelCurationStatus>,
     ) {
@@ -2612,9 +2688,10 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::ChannelUpdatedByCurationActor(*channel_id));
     }
 
-    /// The stake, with the given id, was unstaked.
+    /// The stake, with the given id, was unstaked. Infalliable. Has no side effects if stake_id is not relevant
+    /// to this module.
     pub fn unstaked(stake_id: StakeId<T>) {
-        // Ignore unstaked
+        // Ignore if unstaked doesn't exist
         if !<UnstakerByStakeId<T>>::exists(stake_id) {
             return;
         }
@@ -2662,57 +2739,5 @@ impl<T: Trait> Module<T> {
         };
 
         Self::deposit_event(event);
-    }
-
-    /// Introduce a lead when one is not currently set.
-    pub fn do_set_lead(member: T::MemberId, role_account: T::AccountId) -> dispatch::Result {
-        // Ensure there is no current lead
-        ensure!(
-            <CurrentLeadId<T>>::get().is_none(),
-            MSG_CURRENT_LEAD_ALREADY_SET
-        );
-
-        // Ensure that member can actually become lead
-        let new_lead_id = <NextLeadId<T>>::get();
-
-        let new_lead_role =
-            role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
-
-        let _profile = <members::Module<T>>::can_register_role_on_member(
-            &member,
-            &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id),
-        )?;
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        // Construct lead
-        let new_lead = Lead {
-            role_account: role_account.clone(),
-            reward_relationship: None,
-            inducted: <system::Module<T>>::block_number(),
-            stage: LeadRoleState::Active,
-        };
-
-        // Store lead
-        <LeadById<T>>::insert(new_lead_id, new_lead);
-
-        // Update current lead
-        <CurrentLeadId<T>>::put(new_lead_id); // Some(new_lead_id)
-
-        // Update next lead counter
-        <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
-
-        // Register in role
-        let registered_role =
-            <members::Module<T>>::register_role_on_member(member, &new_lead_role).is_ok();
-
-        assert!(registered_role);
-
-        // Trigger event
-        Self::deposit_event(RawEvent::LeadSet(new_lead_id));
-
-        Ok(())
     }
 }
