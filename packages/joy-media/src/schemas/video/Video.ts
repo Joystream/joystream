@@ -44,6 +44,7 @@ export type VideoFormValues = {
   explicit: boolean
   license: number
   attribution: string
+  channelId: number
 };
 
 export type VideoType = {
@@ -61,6 +62,7 @@ export type VideoType = {
   explicit: boolean
   license: ContentLicenseType
   attribution?: string
+  channelId?: number
 };
 
 export class VideoCodec extends EntityCodec<VideoType> { }
@@ -79,7 +81,8 @@ export function VideoToFormValues(entity?: VideoType): VideoFormValues {
     curationStatus: entity && entity.curationStatus?.id || 0,
     explicit: entity && entity.explicit || false,
     license: entity && entity.license.id || 0,
-    attribution: entity && entity.attribution || ''
+    attribution: entity && entity.attribution || '',
+    channelId: entity && entity.channelId || 0
   }
 }
 
@@ -96,7 +99,8 @@ export type VideoPropId =
   'curationStatus' |
   'explicit' |
   'license' |
-  'attribution'
+  'attribution' |
+  'channelId'
   ;
 
 export type VideoGenericProp = {
@@ -212,5 +216,11 @@ export const VideoClass: VideoClassType = {
     "description": "If the License requires attribution, add this here.",
     "type": "Text",
     "maxTextLength": 255
+  },
+  channelId: {
+    "id": "channelId",
+    "name": "Channel Id",
+    "description": "Id of the channel this video is published to.",
+    "type": "Uint64"
   }
 };

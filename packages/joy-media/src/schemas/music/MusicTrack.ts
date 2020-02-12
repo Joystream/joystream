@@ -57,6 +57,7 @@ export type MusicTrackFormValues = {
   explicit: boolean
   license: number
   attribution: string
+  channelId: number
 };
 
 export type MusicTrackType = {
@@ -79,6 +80,7 @@ export type MusicTrackType = {
   explicit: boolean
   license: ContentLicenseType
   attribution?: string
+  channelId?: number
 };
 
 export class MusicTrackCodec extends EntityCodec<MusicTrackType> { }
@@ -102,7 +104,8 @@ export function MusicTrackToFormValues(entity?: MusicTrackType): MusicTrackFormV
     curationStatus: entity && entity.curationStatus?.id || 0,
     explicit: entity && entity.explicit || false,
     license: entity && entity.license.id || 0,
-    attribution: entity && entity.attribution || ''
+    attribution: entity && entity.attribution || '',
+    channelId: entity && entity.channelId || 0
   }
 }
 
@@ -124,7 +127,8 @@ export type MusicTrackPropId =
   'curationStatus' |
   'explicit' |
   'license' |
-  'attribution'
+  'attribution' |
+  'channelId'
   ;
 
 export type MusicTrackGenericProp = {
@@ -274,5 +278,11 @@ export const MusicTrackClass: MusicTrackClassType = {
     "description": "If the License requires attribution, add this here.",
     "type": "Text",
     "maxTextLength": 255
+  },
+  channelId: {
+    "id": "channelId",
+    "name": "Channel Id",
+    "description": "Id of the channel this music track is published to.",
+    "type": "Uint64"
   }
 };
