@@ -5,8 +5,8 @@ use crate::mock::*;
 
 #[test]
 fn data_migration_test() {
-    let config = generate_genesis_config();
-    build_test_externalities(config).execute_with(|| {
+    // let config = generate_genesis_config();
+    build_test_externalities().execute_with(|| {
         // set configuration
         set_migration_config_mock(0, 10, 10, 10);
         // create data for old forum

@@ -2,7 +2,7 @@
 use super::*;
 use primitives::H256;
 
-use crate::{GenesisConfig, Module, Trait};
+use crate::{Module, Trait};
 
 use runtime_primitives::{
     testing::Header,
@@ -46,6 +46,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
+    pub const DefaultMigrationConfig: MigrationConfig = Default::default();
 }
 
 impl system::Trait for Runtime {
@@ -102,12 +103,7 @@ impl new_forum::Trait for Runtime {
 
 impl Trait for Runtime {
     type Event = TestEvent;
-}
-
-pub fn generate_genesis_config() -> GenesisConfig {
-    GenesisConfig {
-        migration_config: Default::default(),
-    }
+    type MigrationConfig = DefaultMigrationConfig;
 }
 
 pub fn set_migration_config_mock(
@@ -147,13 +143,10 @@ pub fn on_initialize_mock(n: <Runtime as system::Trait>::BlockNumber, data_migra
 // NB!:
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
-pub fn build_test_externalities(config: GenesisConfig) -> runtime_io::TestExternalities {
-    let mut t = system::GenesisConfig::default()
+pub fn build_test_externalities() -> runtime_io::TestExternalities {
+    let t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
-
-    config.assimilate_storage(&mut t).unwrap();
-
     t.into()
 }
 

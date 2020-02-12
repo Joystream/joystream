@@ -14,8 +14,7 @@ use rstd::prelude::*;
 pub use runtime_io::clear_prefix;
 use runtime_primitives;
 use runtime_primitives::traits::One;
-use srml_support::{decl_event, decl_module, decl_storage};
-
+use srml_support::{decl_event, decl_module, decl_storage, traits::Get};
 const DEFAULT_FORUM_USER_NAME: &str = "default forum user name";
 const DEFAULT_FORUM_USER_SELF_INTRODUCTION: &str = "default forum user self introduction";
 const DEFAULT_MODERATOR_NAME: &str = "default moderator name";
@@ -50,6 +49,8 @@ pub trait Trait:
     system::Trait + old_forum::Trait + new_forum::Trait + timestamp::Trait + Sized
 {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    /// Initial balance of members created at genesis
+    type MigrationConfig: Get<MigrationConfig>;
 }
 
 decl_event!(
@@ -65,7 +66,7 @@ decl_event!(
 decl_storage! {
     trait Store for Module<T: Trait> as ForumDataMigration {
         /// Block number to start migration
-        pub DataMigrationConfig get(migration_config) config(): MigrationConfig;
+        pub DataMigrationConfig get(migration_config): MigrationConfig;
 
         /// Account id to forum user id
         pub AccountByForumUserId get(account_by_forum_user_id): map T::AccountId => T::ForumUserId;
@@ -75,6 +76,11 @@ decl_storage! {
 
         /// Data migration process finished
         pub DataMigrationDone get(data_migration_done): bool;
+    }
+    add_extra_genesis {
+        build(|_config: &GenesisConfig| {
+            DataMigrationConfig::mutate(|value| *value = T::MigrationConfig::get());
+        });
     }
 }
 
