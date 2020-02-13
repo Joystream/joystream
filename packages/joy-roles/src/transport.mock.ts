@@ -497,7 +497,7 @@ export class Transport extends TransportBase implements ITransport {
     appStake: Balance,
     roleStake: Balance,
     applicationText: string): Promise<number> {
-      return 0
+    return 0
   }
 }
 

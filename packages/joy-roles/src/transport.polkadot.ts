@@ -66,7 +66,7 @@ export class Transport extends TransportBase implements ITransport {
     return new Promise<GroupMember>(async (resolve, reject) => {
       const account = curator.role_account
 
-      const memberIds = await this.api.query.members.memberIdsByRootAccountId(account) as Vec<GenericAccountId>
+      const memberIds = await this.api.query.members.memberIdsByRootAccountId(account) as Vec<MemberId>
       if (memberIds.length == 0) {
         reject("no member account found")
       }
@@ -271,12 +271,9 @@ export class Transport extends TransportBase implements ITransport {
         ),
       )
 
-      /////////////////////////////////
-      // TODO: Load applications
       const applications = await this.curatorOpeningApplications(id)
       const stakes = classifyOpeningStakes(opening)
 
-      // @ts-ignore
       resolve({
         creator: await this.groupMember(lead.value, true),
         opening: opening,

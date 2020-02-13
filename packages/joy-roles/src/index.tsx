@@ -8,6 +8,7 @@ import { Route, Switch, RouteComponentProps } from 'react-router';
 import Tabs from '@polkadot/react-components/Tabs';
 import { withMulti } from '@polkadot/react-api/index';
 import QueueContext from '@polkadot/react-components/Status/Context';
+import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount'
 
 import { ViewComponent } from '@polkadot/joy-utils/index'
 
@@ -25,11 +26,11 @@ import './index.sass';
 
 import translate from './translate';
 
-type Props = AppProps & ApiProps & I18nProps
+type Props = AppProps & ApiProps & I18nProps & MyAccountProps
 
 export const App: React.FC<Props> = (props: Props) => {
   const { t } = props
-  const tabs = [
+  const tabs: Array<any> = [
     {
       isRoot: true,
       name: 'working-groups',
@@ -40,10 +41,6 @@ export const App: React.FC<Props> = (props: Props) => {
       text: t('Opportunities'),
       hasParams: true,
     },
-    {
-      name: 'my-roles',
-      text: t('My roles')
-    },
   ]
 
 
@@ -53,14 +50,23 @@ export const App: React.FC<Props> = (props: Props) => {
 
   const mockTransport = new MockTransport()
 
-  const wgCtrl = new WorkingGroupsController(transport)
-  const oppCtrl = new OpportunityController(transport)
-  const oppsCtrl = new OpportunitiesController(transport)
+  const [wgCtrl] = useState(new WorkingGroupsController(transport))
+  const oppCtrl = new OpportunityController(transport, props.myMemberId)
+  const oppsCtrl = new OpportunitiesController(transport, props.myMemberId)
   const [applyCtrl] = useState(new ApplyController(transport))
-  const myRolesCtrl = new MyRolesController(mockTransport)
-  const adminCtrl = new AdminController(transport, api)
+  const [myRolesCtrl] = useState(new MyRolesController(mockTransport))
+  const [adminCtrl] = useState(new AdminController(transport, api))
 
   const { basePath } = props
+
+  let myRoles = null
+  if (props.myAddress) {
+    myRoles = <Route path={`${basePath}/my-roles`} render={() => renderViewComponent(MyRolesView(myRolesCtrl))} />
+    tabs.push({
+      name: 'my-roles',
+      text: t('My roles')
+    })
+  }
 
   return (
     <main className='roles--App'>
@@ -74,7 +80,7 @@ export const App: React.FC<Props> = (props: Props) => {
         <Route path={`${basePath}/opportunities/:group/:id/apply`} render={(props) => renderViewComponent(ApplyView(applyCtrl), props)} />
         <Route path={`${basePath}/opportunities/:group/:id`} render={(props) => renderViewComponent(OpportunityView(oppCtrl), props)} />
         <Route path={`${basePath}/opportunities`} render={() => renderViewComponent(OpportunitiesView(oppsCtrl))} />
-        <Route path={`${basePath}/my-roles`} render={() => renderViewComponent(MyRolesView(myRolesCtrl))} />
+        {myRoles}
         <Route path={`${basePath}/admin`} render={() => renderViewComponent(AdminView(adminCtrl))} />
         <Route render={() => renderViewComponent(WorkingGroupsView(wgCtrl))} />
       </Switch>
@@ -94,4 +100,5 @@ const renderViewComponent = (Component: ViewComponent<any>, props?: RouteCompone
 export default withMulti(
   App,
   translate,
+  withMyAccount,
 );

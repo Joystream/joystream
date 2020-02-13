@@ -20,10 +20,13 @@ import {
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 
+import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext'
+
 import { Countdown, GroupMember, GroupMemberView } from '../elements'
 import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement'
 import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema'
 import { Opening } from "@joystream/types/hiring"
+import { MemberId } from '@joystream/types/members';
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
 import { OpeningMetadataProps } from "../OpeningMetadata"
@@ -94,7 +97,11 @@ type DefactoMinimumStake = {
   defactoMinimumStake: Balance
 }
 
-type OpeningBodyCTAProps = OpeningStakeAndApplicationStatus & OpeningStage & OpeningBodyProps
+type MemberIdProps = {
+  member_id?: MemberId
+}
+
+type OpeningBodyCTAProps = OpeningStakeAndApplicationStatus & OpeningStage & OpeningBodyProps & MemberIdProps
 
 function OpeningBodyCTAView(props: OpeningBodyCTAProps) {
   if (props.stage.state != OpeningState.AcceptingApplications || applicationImpossible(props.applications)) {
@@ -111,20 +118,51 @@ function OpeningBodyCTAView(props: OpeningBodyCTAProps) {
     const balance = !props.defactoMinimumStake.isZero() ? props.defactoMinimumStake : props.requiredApplicationStake.hard.add(props.requiredRoleStake.hard)
     const plural = (props.requiredApplicationStake.anyRequirement() && props.requiredRoleStake.anyRequirement()) ? "s totalling" : " of"
     message = (
-      <Message warning>
-        <Icon name="warning sign" /> Stake{plural} at least <strong>{formatBalance(balance)}</strong> required!
-            </Message>
+      <Message warning icon>
+        <Icon name="warning sign" />
+        <Message.Content>
+          Stake{plural} at least <strong>{formatBalance(balance)}</strong> required!
+        </Message.Content>
+      </Message>
     )
+  }
+
+  let applyButton = (
+    <Link to={"/roles/opportunities/" + props.meta.group + "/" + props.meta.id + "/apply"}>
+      <Button icon fluid positive size="huge">
+        APPLY NOW
+        <Icon name="angle right" />
+      </Button>
+    </Link>
+  )
+
+  const accountCtx = useMyAccount()
+  if (!accountCtx.state.address) {
+    applyButton = (
+      <Message error icon>
+        <Icon name="info circle" />
+        <Message.Content>
+          You will need an account to apply for this role. You can generate one in the <Link to="/accounts">Accounts</Link> section.
+        </Message.Content>
+      </Message>
+    )
+    message = <p></p>
+  } else if (!props.member_id) {
+    applyButton = (
+      <Message error icon>
+        <Icon name="info circle" />
+        <Message.Content>
+          You will need a membership to apply for this role. You can sign up in the <Link to="/members">Membership</Link> section.
+        </Message.Content>
+      </Message>
+    )
+    message = <p></p>
+
   }
 
   return (
     <Container>
-      <Link to={"/roles/opportunities/" + props.meta.group + "/" + props.meta.id + "/apply"}>
-        <Button icon fluid positive size="huge">
-          APPLY NOW
-          <Icon name="angle right" />
-        </Button>
-      </Link>
+      {applyButton}
       {message}
     </Container>
   )
@@ -332,7 +370,7 @@ function timeInHumanFormat(block_time_in_seconds: number, blocks: number) {
   return <Moment duration={d1} date={d2} interval={0} />
 }
 
-export type OpeningBodyProps = DefactoMinimumStake & StakeRequirementProps & BlockTimeProps & OpeningMetadataProps & {
+export type OpeningBodyProps = DefactoMinimumStake & StakeRequirementProps & BlockTimeProps & OpeningMetadataProps & MemberIdProps & {
   opening: Opening
   text: GenericJoyStreamRoleSchema
   creator: GroupMember
@@ -413,7 +451,7 @@ export type WorkingGroupOpening = OpeningStage & DefactoMinimumStake & OpeningMe
   applications: OpeningStakeAndApplicationStatus
 }
 
-type OpeningViewProps = WorkingGroupOpening & BlockTimeProps
+type OpeningViewProps = WorkingGroupOpening & BlockTimeProps & MemberIdProps
 
 export const OpeningView = Loadable<OpeningViewProps>(
   ['opening', 'block_time_in_seconds'],
@@ -444,6 +482,7 @@ export const OpeningView = Loadable<OpeningViewProps>(
               applications={props.applications}
               defactoMinimumStake={props.defactoMinimumStake}
               block_time_in_seconds={props.block_time_in_seconds}
+              member_id={props.member_id}
             />
           </Card.Content>
         </Card>
@@ -452,7 +491,7 @@ export const OpeningView = Loadable<OpeningViewProps>(
   }
 )
 
-export type OpeningsViewProps = {
+export type OpeningsViewProps = MemberIdProps & {
   openings?: Array<WorkingGroupOpening>
   block_time_in_seconds?: number
 }
@@ -463,7 +502,7 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
     return (
       <Container>
         {props.openings && props.openings.map((opening, key) => (
-          <OpeningView key={key} {...opening} block_time_in_seconds={props.block_time_in_seconds as number} />
+          <OpeningView key={key} {...opening} block_time_in_seconds={props.block_time_in_seconds as number} member_id={props.member_id} />
         ))}
       </Container>
     )

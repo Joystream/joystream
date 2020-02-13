@@ -1195,6 +1195,8 @@ export const FlowModal = Loadable<FlowModalProps>(
       [ProgressSteps.Done, <DoneStage {...props} roleKeyName={props.roleKeyName} />],
     ])
 
+    const cancelText = complete ? "Close" : "Cancel application"
+
     return (
       <Container className="apply-flow">
         <div className="dimmer"></div>
@@ -1209,8 +1211,8 @@ export const FlowModal = Loadable<FlowModalProps>(
             </Grid.Column>
             <Grid.Column width={5} className="cancel">
               <a onClick={() => cancel()}>
-                <Icon name='cancel' /> Cancel application
-                          </a>
+                <Icon name='cancel' /> {cancelText}
+              </a>
             </Grid.Column>
           </Grid>
           <Grid columns="equal">
