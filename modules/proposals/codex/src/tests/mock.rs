@@ -45,6 +45,8 @@ impl proposal_engine::Trait for Test {
     type TotalVotersCounter = MockVotersParameters;
 
     type ProposalCodeDecoder = crate::ProposalType;
+
+    type ProposalId = u32;
 }
 
 pub struct MockVotersParameters;

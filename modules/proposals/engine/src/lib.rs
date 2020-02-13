@@ -29,10 +29,10 @@ mod tests;
 
 use rstd::prelude::*;
 use runtime_primitives::traits::EnsureOrigin;
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, StorageDoubleMap, Parameter};
+use srml_support::{
+    decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
+};
 use system::ensure_root;
-
-
 
 const DEFAULT_TITLE_MAX_LEN: u32 = 100;
 const DEFAULT_BODY_MAX_LEN: u32 = 10_000;
@@ -55,7 +55,7 @@ pub trait Trait: system::Trait + timestamp::Trait {
     type ProposalCodeDecoder: ProposalCodeDecoder;
 
     /// Proposal Id type
-    type ProposalId : From<u32> + Parameter + Default + Copy;
+    type ProposalId: From<u32> + Parameter + Default + Copy;
 }
 
 decl_event!(

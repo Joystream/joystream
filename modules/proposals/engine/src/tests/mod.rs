@@ -166,7 +166,7 @@ impl VoteGenerator {
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u64>>) {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u64, u32>>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
@@ -377,11 +377,7 @@ fn rejected_tally_results_and_remove_proposal_id_from_active_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
-        let mut active_proposals_id = <ActiveProposalIds>::get();
-
-        let mut active_proposals_set = BTreeSet::new();
-        active_proposals_set.insert(proposal_id);
-        assert_eq!(active_proposals_id, active_proposals_set);
+        assert!(<ActiveProposalIds<Test>>::exists(proposal_id));
 
         run_to_block_and_finalize(2);
 
@@ -399,8 +395,7 @@ fn rejected_tally_results_and_remove_proposal_id_from_active_succeeds() {
             }
         );
 
-        active_proposals_id = <ActiveProposalIds>::get();
-        assert_eq!(active_proposals_id, BTreeSet::new());
+        assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
     });
 }
 
