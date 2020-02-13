@@ -220,7 +220,7 @@ impl UpdateChannelAsCurationActorFixture {
             content: old_channel.content,
             owner: old_channel.owner,
             role_account: old_channel.role_account,
-            publishing_status: old_channel.publishing_status,
+            publication_status: old_channel.publication_status,
             curation_status: upd_curation_status,
             created: old_channel.created,
             principal_id: old_channel.principal_id,
@@ -1856,7 +1856,7 @@ struct CreateChannelFixture {
     pub avatar: OptionalText,
     pub banner: OptionalText,
     pub content: ChannelContentType,
-    pub publishing_status: ChannelPublishingStatus,
+    pub publication_status: ChannelPublicationStatus,
 }
 
 impl CreateChannelFixture {
@@ -1884,7 +1884,7 @@ impl CreateChannelFixture {
                 &ChannelDescriptionConstraint::get(),
             )),
             content: ChannelContentType::Video,
-            publishing_status: ChannelPublishingStatus::NotPublished,
+            publication_status: ChannelPublicationStatus::Unlisted,
         }
     }
 
@@ -1899,7 +1899,7 @@ impl CreateChannelFixture {
             self.description.clone(),
             self.avatar.clone(),
             self.banner.clone(),
-            self.publishing_status.clone(),
+            self.publication_status.clone(),
         )
     }
 
@@ -1947,7 +1947,7 @@ impl CreateChannelFixture {
             content: self.content.clone(),
             owner: self.channel_creator_member_id,
             role_account: self.channel_creator_role_account,
-            publishing_status: self.publishing_status.clone(),
+            publication_status: self.publication_status.clone(),
             curation_status: ChannelCurationStatus::Normal,
             created: 1, // <== replace with now()
 
