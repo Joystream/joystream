@@ -178,7 +178,7 @@ impl<T: Trait> Module<T> {
         }
     }
     // set migration configuration
-    fn set_migration_config(config: MigrationConfig) {
+    pub fn set_migration_config(config: MigrationConfig) {
         DataMigrationConfig::mutate(|value| *value = config);
     }
 

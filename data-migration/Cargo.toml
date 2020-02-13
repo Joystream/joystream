@@ -42,6 +42,7 @@ path = '../forum-module'
 [dev-dependencies]
 runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
 primitives = { package = 'substrate-primitives', git = 'https://github.com/paritytech/substrate.git', rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'}
+criterion = "0.2.11"
 
 [features]
 default = ['std']
@@ -59,3 +60,7 @@ std = [
 	'old-forum/std',
     'new-forum/std'
 ]
+
+[[bench]]
+name = "data-migration"
+harness = false
