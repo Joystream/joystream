@@ -14,7 +14,7 @@ import { MusicMoodType } from './schemas/music/MusicMood';
 import { MusicThemeType } from './schemas/music/MusicTheme';
 import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
-import { MemberId } from 'packages/joy-types/lib/members';
+import { MemberId } from '@joystream/types/members';
 import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId } from '@joystream/types/content-working-group';
 
