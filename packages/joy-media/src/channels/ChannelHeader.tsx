@@ -9,10 +9,11 @@ type Props = {
 
 export function ChannelHeader (props: Props) {
   const { channel } = props;
+  const { banner } = channel;
 
   return (
     <div className='ChannelHeader'>
-      <BgImg className='ChannelCover' url={channel.banner} />
+      {banner && <BgImg className='ChannelCover' url={banner} />}
       <ChannelPreview channel={channel} size='big' />
     </div>
   );
