@@ -27,11 +27,12 @@ mod types;
 #[cfg(test)]
 mod tests;
 
-use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use runtime_primitives::traits::EnsureOrigin;
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, StorageDoubleMap};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, StorageDoubleMap, Parameter};
 use system::ensure_root;
+
+
 
 const DEFAULT_TITLE_MAX_LEN: u32 = 100;
 const DEFAULT_BODY_MAX_LEN: u32 = 10_000;
@@ -52,42 +53,46 @@ pub trait Trait: system::Trait + timestamp::Trait {
 
     /// Converts proposal code binary to executable representation
     type ProposalCodeDecoder: ProposalCodeDecoder;
+
+    /// Proposal Id type
+    type ProposalId : From<u32> + Parameter + Default + Copy;
 }
 
 decl_event!(
     pub enum Event<T>
     where
-        <T as system::Trait>::AccountId
+        <T as system::Trait>::AccountId,
+        <T as Trait>::ProposalId
     {
     	/// Emits on proposal creation.
         /// Params:
         /// * Account id of a proposer.
         /// * Id of a newly created proposal after it was saved in storage.
-        ProposalCreated(AccountId, u32),
+        ProposalCreated(AccountId, ProposalId),
 
         /// Emits on proposal cancellation.
         /// Params:
         /// * Account id of a proposer.
         /// * Id of a cancelled proposal.
-        ProposalCanceled(AccountId, u32),
+        ProposalCanceled(AccountId, ProposalId),
 
         /// Emits on proposal veto.
         /// Params:
         /// * Id of a vetoed proposal.
-        ProposalVetoed(u32),
+        ProposalVetoed(ProposalId),
 
         /// Emits on proposal status change.
         /// Params:
         /// * Id of a updated proposal.
         /// * New proposal status
-        ProposalStatusUpdated(u32, ProposalStatus),
+        ProposalStatusUpdated(ProposalId, ProposalStatus),
 
         /// Emits on voting for the proposal
         /// Params:
         /// * Voter - an account id of a voter.
         /// * Id of a proposal.
         /// * Kind of vote.
-        Voted(AccountId, u32, VoteKind),
+        Voted(AccountId, ProposalId, VoteKind),
     }
 );
 
@@ -95,26 +100,27 @@ decl_event!(
 decl_storage! {
     trait Store for Module<T: Trait> as ProposalsEngine{
         /// Map proposal by its id.
-        pub Proposals get(fn proposals): map u32 => Proposal<T::BlockNumber, T::AccountId>;
+        pub Proposals get(fn proposals): map T::ProposalId => Proposal<T::BlockNumber, T::AccountId>;
 
         /// Count of all proposals that have been created.
         pub ProposalCount get(fn proposal_count): u32;
 
         /// Map proposal executable code by proposal id.
-        ProposalCode get(fn proposal_codes): map u32 =>  Vec<u8>;
+        ProposalCode get(fn proposal_codes): map T::ProposalId =>  Vec<u8>;
 
         /// Map votes by proposal id.
-        VotesByProposalId get(fn votes_by_proposal): map u32 => Vec<Vote<T::AccountId>>;
+        VotesByProposalId get(fn votes_by_proposal): map T::ProposalId => Vec<Vote<T::AccountId>>;
 
         /// Ids of proposals that are open for voting (have not been finalized yet).
-        pub ActiveProposalIds get(fn active_proposal_ids): BTreeSet<u32>;
+        pub ActiveProposalIds get(fn active_proposal_ids): linked_map T::ProposalId => ();
 
         /// Proposal tally results map
-        pub(crate) TallyResults get(fn tally_results): map u32 => TallyResult<T::BlockNumber>;
+        pub(crate) TallyResults get(fn tally_results): map T::ProposalId =>
+            TallyResult<T::BlockNumber, T::ProposalId>;
 
         /// Double map for preventing duplicate votes
         VoteExistsByAccountByProposal get(fn vote_by_proposal_by_account):
-            double_map T::AccountId, twox_256(u32) => ();
+            double_map T::AccountId, twox_256(T::ProposalId) => ();
 
 
         /// Defines max allowed proposal title length. Can be configured.
@@ -133,7 +139,7 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Vote extrinsic. Conditions:  origin must allow votes.
-        pub fn vote(origin, proposal_id: u32, vote: VoteKind)  {
+        pub fn vote(origin, proposal_id: T::ProposalId, vote: VoteKind)  {
             let voter_id = T::VoteOrigin::ensure_origin(origin)?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
@@ -164,7 +170,7 @@ decl_module! {
         }
 
         /// Cancel a proposal by its original proposer.
-        pub fn cancel_proposal(origin, proposal_id: u32) {
+        pub fn cancel_proposal(origin, proposal_id: T::ProposalId) {
             let proposer_id = T::ProposalOrigin::ensure_origin(origin)?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
@@ -180,7 +186,7 @@ decl_module! {
         }
 
         /// Veto a proposal. Must be root.
-        pub fn veto_proposal(origin, proposal_id: u32) {
+        pub fn veto_proposal(origin, proposal_id: T::ProposalId) {
             ensure_root(origin)?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
@@ -247,12 +253,13 @@ impl<T: Trait> Module<T> {
         };
 
         // mutation
-        <Proposals<T>>::insert(new_proposal_id, new_proposal);
-        <ProposalCode>::insert(new_proposal_id, proposal_code);
-        ActiveProposalIds::mutate(|ids| ids.insert(new_proposal_id));
+        let proposal_id = T::ProposalId::from(new_proposal_id);
+        <Proposals<T>>::insert(proposal_id, new_proposal);
+        <ProposalCode<T>>::insert(proposal_id, proposal_code);
+        <ActiveProposalIds<T>>::insert(proposal_id, ());
         ProposalCount::put(next_proposal_count_value);
 
-        Self::deposit_event(RawEvent::ProposalCreated(proposer_id, new_proposal_id));
+        Self::deposit_event(RawEvent::ProposalCreated(proposer_id, proposal_id));
 
         Ok(())
     }
@@ -265,7 +272,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Executes approved proposal code
-    fn execute_proposal(proposal_id: u32) {
+    fn execute_proposal(proposal_id: T::ProposalId) {
         //let origin = system::RawOrigin::Root.into();
         let proposal = Self::proposals(proposal_id);
         let proposal_code = Self::proposal_codes(proposal_id);
@@ -291,11 +298,12 @@ impl<T: Trait> Module<T> {
         Self::update_proposal_status(proposal_id, new_proposal_status)
     }
 
+    // TODO convert to map-filter style
     /// Voting results tally.
     /// Returns proposals with changed status and tally results
-    fn tally() -> Vec<TallyResult<T::BlockNumber>> {
+    fn tally() -> Vec<TallyResult<T::BlockNumber, T::ProposalId>> {
         let mut results = Vec::new();
-        for &proposal_id in Self::active_proposal_ids().iter() {
+        for (proposal_id, _) in <ActiveProposalIds<T>>::enumerate() {
             let votes = Self::votes_by_proposal(proposal_id);
             let proposal = Self::proposals(proposal_id);
 
@@ -313,9 +321,9 @@ impl<T: Trait> Module<T> {
     }
 
     /// Updates proposal status and removes proposal id from active id set.
-    fn update_proposal_status(proposal_id: u32, new_status: ProposalStatus) {
+    fn update_proposal_status(proposal_id: T::ProposalId, new_status: ProposalStatus) {
         <Proposals<T>>::mutate(proposal_id, |p| p.status = new_status.clone());
-        ActiveProposalIds::mutate(|ids| ids.remove(&proposal_id));
+        <ActiveProposalIds<T>>::remove(&proposal_id);
 
         Self::deposit_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
@@ -329,7 +337,7 @@ impl<T: Trait> Module<T> {
             ProposalStatus::Approved => Self::approve_proposal(proposal_id),
             ProposalStatus::Active => {
                 // restore active proposal id
-                ActiveProposalIds::mutate(|ids| ids.insert(proposal_id));
+                <ActiveProposalIds<T>>::insert(proposal_id, ());
             }
             ProposalStatus::Executed
             | ProposalStatus::Failed { .. }
@@ -339,10 +347,10 @@ impl<T: Trait> Module<T> {
     }
 
     /// Reject a proposal. The staked deposit will be returned to a proposer.
-    fn reject_proposal(_proposal_id: u32) {}
+    fn reject_proposal(_proposal_id: T::ProposalId) {}
 
     /// Approve a proposal. The staked deposit will be returned.
-    fn approve_proposal(proposal_id: u32) {
+    fn approve_proposal(proposal_id: T::ProposalId) {
         Self::execute_proposal(proposal_id);
     }
 }

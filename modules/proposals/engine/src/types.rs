@@ -125,13 +125,13 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
     /// Voting results tally for single proposal.
     /// Parameters: own proposal id, current time, votes.
     /// Returns tally results if proposal status will should change
-    pub fn tally_results(
+    pub fn tally_results<ProposalId>(
         self,
-        proposal_id: u32,
+        proposal_id: ProposalId,
         votes: Vec<Vote<AccountId>>,
         total_voters_count: u32,
         now: BlockNumber,
-    ) -> Option<TallyResult<BlockNumber>> {
+    ) -> Option<TallyResult<BlockNumber, ProposalId>> {
         let mut abstentions: u32 = 0;
         let mut approvals: u32 = 0;
         let mut rejections: u32 = 0;
@@ -192,9 +192,9 @@ pub struct Vote<AccountId> {
 /// Tally result for the proposal
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct TallyResult<BlockNumber> {
+pub struct TallyResult<BlockNumber, ProposalId> {
     /// Proposal Id
-    pub proposal_id: u32,
+    pub proposal_id: ProposalId,
 
     /// 'Abstention' votes count
     pub abstentions: u32,
