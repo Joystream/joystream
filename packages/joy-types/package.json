@@ -1,6 +1,6 @@
 {
   "name": "@joystream/types",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Types for Joystream Substrate Runtime 6.0.0 (Rome)",
   "main": "lib/index.js",
   "scripts": {
