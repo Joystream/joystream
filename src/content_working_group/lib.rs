@@ -542,19 +542,19 @@ impl Default for ChannelContentType {
 /// Is only meant to affect visibility, mutation of channel and child content
 /// is unaffected on runtime.
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
-pub enum ChannelPublishingStatus {
+pub enum ChannelPublicationStatus {
     /// Compliant UIs should render.
-    Published,
+    Public,
 
     /// Compliant UIs should not render it or any child content.
-    NotPublished,
+    Unlisted,
 }
 
 /// Must be default constructible because it indirectly is a value in a storage map.
 /// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
-impl Default for ChannelPublishingStatus {
+impl Default for ChannelPublicationStatus {
     fn default() -> Self {
-        ChannelPublishingStatus::Published
+        ChannelPublicationStatus::Public
     }
 }
 
@@ -610,7 +610,7 @@ pub struct Channel<MemberId, AccountId, BlockNumber, PrincipalId> {
     pub role_account: AccountId,
 
     /// Publication status of channel.
-    pub publishing_status: ChannelPublishingStatus,
+    pub publication_status: ChannelPublicationStatus,
 
     /// Curation status of channel.
     pub curation_status: ChannelCurationStatus,
@@ -1092,7 +1092,7 @@ decl_module! {
             description: OptionalText,
             avatar: OptionalText,
             banner: OptionalText,
-            publishing_status: ChannelPublishingStatus
+            publication_status: ChannelPublicationStatus
         ) {
 
             // Ensure that it is signed
@@ -1145,7 +1145,7 @@ decl_module! {
                 content: content,
                 owner: owner,
                 role_account: role_account,
-                publishing_status: publishing_status,
+                publication_status: publication_status,
                 curation_status: ChannelCurationStatus::Normal,
                 created: <system::Module<T>>::block_number(),
                 principal_id: principal_id
@@ -1175,7 +1175,7 @@ decl_module! {
         /// An owner transfers channel ownership to a new owner.
         ///
         /// Notice that working group participants cannot do this.
-        /// Notice that censored or unpublished channel may still be transferred.
+        /// Notice that censored or unlisted channel may still be transferred.
         /// Notice that transfers are unilateral, so new owner cannot block. This may be problematic: https://github.com/Joystream/substrate-runtime-joystream/issues/95
         pub fn transfer_channel_ownership(origin, channel_id: ChannelId<T>, new_owner: T::MemberId, new_role_account: T::AccountId) {
 
@@ -1225,7 +1225,7 @@ decl_module! {
             new_description: Option<OptionalText>,
             new_avatar: Option<OptionalText>,
             new_banner: Option<OptionalText>,
-            new_publishing_status: Option<ChannelPublishingStatus>
+            new_publication_status: Option<ChannelPublicationStatus>
         ) {
 
             // Ensure channel owner has signed
@@ -1268,7 +1268,7 @@ decl_module! {
                 &new_description,
                 &new_avatar,
                 &new_banner,
-                &new_publishing_status,
+                &new_publication_status,
                 &None // curation_status
             );
         }
@@ -1297,7 +1297,7 @@ decl_module! {
                 &None, // description,
                 &None, // avatar
                 &None, // banner
-                &None, // publishing_status
+                &None, // publication_status
                 &new_curation_status
             );
         }
@@ -2612,7 +2612,7 @@ impl<T: Trait> Module<T> {
         new_description: &Option<OptionalText>,
         new_avatar: &Option<OptionalText>,
         new_banner: &Option<OptionalText>,
-        new_publishing_status: &Option<ChannelPublishingStatus>,
+        new_publication_status: &Option<ChannelPublicationStatus>,
         new_curation_status: &Option<ChannelCurationStatus>,
     ) {
         // Update channel id to handle mapping, if there is a new handle.
@@ -2651,8 +2651,8 @@ impl<T: Trait> Module<T> {
                 channel.banner = banner.clone();
             }
 
-            if let Some(ref publishing_status) = new_publishing_status {
-                channel.publishing_status = publishing_status.clone();
+            if let Some(ref publication_status) = new_publication_status {
+                channel.publication_status = publication_status.clone();
             }
 
             if let Some(ref curation_status) = new_curation_status {
