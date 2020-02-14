@@ -89,7 +89,7 @@ There is a maximum depth to a category tree. This is because doing any mutation 
 
 - `postById`: Map `Post` identifier to corresponding instance.
 
-- `nextPostId`: Identifier value to be used for for next `Post` created.
+- `nextPostId`: Identifier value to be used for next `Post` created.
 
 - `forumSudo`: Optional `ForumSudoId` of forum sudo.
 

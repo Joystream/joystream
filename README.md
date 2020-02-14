@@ -90,10 +90,10 @@ The core team, maintainers and outside contributors are encouraged to follow the
 * Do not create arbitrary branches or push directly to the central repo `master` or `development` branches.
 * Do not force push branches.
 * Avoid rebasing branches of open PRs to help preserve conversation history.
-* Authors must always request a review for their PRs, Exception: It does not alter any logic (e.g. comments, dependencies, docs, file organisation), then it may merged once CI checks are complete.
+* Authors must always request a review for their PRs, Exception: It does not alter any logic (e.g. comments, dependencies, docs, file organisation), then it may be merged once CI checks are complete.
 * Author should avoid merging their own PR, if it hasn't been reviewed and approved.
 * If travis or other CI integrations are configured for the repo, avoid merging PRs that fail checks.
-* When the maintainer is opening a PRs they must still request review from a core team member.
+* When the maintainer is opening a PRs they must still request a review from a core team member.
 
 Each repository may have contributing guidelines detailed in their README files.
 The maintainer must ensure this contribution section is linked to as the base guideline.
@@ -173,8 +173,7 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 | Mesopotamia     | 21.12.18          |   28.02.19    |       N/A        |
 
 <br />
-<
-src="img/pm-section_new.svg" id="project-management"/>
+<img src="img/pm-section_new.svg" id="project-management"/>
 
 ## Why is this on GitHub?
 
@@ -362,7 +361,7 @@ In addition to the weekly follow-up meetings addressed above, each release cycle
 
 - `Launch Meeting`
 - `User Stories Meeting`
-- `Release Plan Finalization Meeting]`
+- `Release Plan Finalization Meeting`
 - `Release Checklist Meeting`
 - `Lessons Learned`
 
