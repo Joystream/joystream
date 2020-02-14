@@ -263,6 +263,18 @@ pub trait ProposalCodeDecoder {
     ) -> Result<Box<dyn ProposalExecutable>, &'static str>;
 }
 
+/// Data container for the finalized proposal results
+pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, AccountId> {
+    /// Proposal id
+    pub proposal_id: ProposalId,
+
+    /// Proposal to be finalized
+    pub proposal: Proposal<BlockNumber, AccountId>,
+
+    /// Proposal finalization status
+    pub status: ProposalStatus,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::*;

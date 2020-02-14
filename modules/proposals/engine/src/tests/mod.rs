@@ -784,11 +784,17 @@ fn voting_internal_cache_works_and_got_cleaned_successfully() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
         // cache exists
-        assert!(<crate::VoteExistsByProposalByAccount<Test>>::exists(proposal_id, 1));
+        assert!(<crate::VoteExistsByProposalByAccount<Test>>::exists(
+            proposal_id,
+            1
+        ));
 
         run_to_block_and_finalize(2);
 
         // cache cleared
-        assert!(!<crate::VoteExistsByProposalByAccount<Test>>::exists(proposal_id, 1));
+        assert!(!<crate::VoteExistsByProposalByAccount<Test>>::exists(
+            proposal_id,
+            1
+        ));
     });
 }

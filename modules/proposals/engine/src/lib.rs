@@ -16,6 +16,7 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
+use types::FinalizedProposalData;
 pub use types::TallyResult;
 pub use types::{Proposal, ProposalParameters, ProposalStatus};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
@@ -34,7 +35,9 @@ use srml_support::{
 };
 use system::ensure_root;
 
+// Max allowed proposal title length. Can be used if config value is not filled.
 const DEFAULT_TITLE_MAX_LEN: u32 = 100;
+// Max allowed proposal body length. Can be used if config value is not filled.
 const DEFAULT_BODY_MAX_LEN: u32 = 10_000;
 
 /// Proposals engine trait.
@@ -197,12 +200,12 @@ decl_module! {
 
         /// Block finalization. Perform voting period check and vote result tally.
         fn on_finalize(_n: T::BlockNumber) {
-            let proposals_with_ready_result = Self::tally();
+            let finalized_proposals_data = Self::get_finalized_proposals_data();
 
             // mutation
-            for  (proposal_id, proposal, new_status) in proposals_with_ready_result {
-                <Proposals<T>>::insert(proposal_id, proposal);
-                Self::update_proposal_status(proposal_id, new_status);
+            for  proposal_data in finalized_proposals_data {
+                <Proposals<T>>::insert(proposal_data.proposal_id, proposal_data.proposal);
+                Self::update_proposal_status(proposal_data.proposal_id, proposal_data.status);
             }
         }
     }
@@ -293,31 +296,46 @@ impl<T: Trait> Module<T> {
         Self::update_proposal_status(proposal_id, new_proposal_status)
     }
 
-    // TODO convert to map-filter style
-    /// Voting results tally.
-    /// Returns proposals with changed status and tally results
-    fn tally() -> Vec<(
-        T::ProposalId,
-        Proposal<T::BlockNumber, T::AccountId>,
-        ProposalStatus,
-    )> {
-        let mut results = Vec::new();
-        for (proposal_id, _) in <ActiveProposalIds<T>>::enumerate() {
-            let mut proposal = Self::proposals(proposal_id);
+    /// Enumerates through active proposals. Tally Voting results.
+    /// Returns proposals with changed status, id and calculated tally results
+    fn get_finalized_proposals_data(
+    ) -> Vec<FinalizedProposalData<T::ProposalId, T::BlockNumber, T::AccountId>> {
+        // enumerate active proposals id and gather finalization data
+        <ActiveProposalIds<T>>::enumerate()
+            .map(|(proposal_id, _)| {
+                // load current proposal
+                let mut proposal = Self::proposals(proposal_id);
 
-            proposal.update_tally_results(
-                T::TotalVotersCounter::total_voters_count(),
-                Self::current_block(),
-            );
+                // calculates voting results
+                proposal.update_tally_results(
+                    T::TotalVotersCounter::total_voters_count(),
+                    Self::current_block(),
+                );
 
-            if let Some(tally_results) = proposal.tally_results.clone() {
-                results.push((proposal_id, proposal, tally_results.status));
-            }
-        }
+                // get new status from tally results
+                let mut new_status = ProposalStatus::Active;
+                if let Some(tally_results) = proposal.tally_results.clone() {
+                    new_status = tally_results.status;
+                }
+                // proposal is finalized if not active
+                let finalized = new_status != ProposalStatus::Active;
 
-        results
+                (
+                    FinalizedProposalData {
+                        proposal_id,
+                        proposal,
+                        status: new_status,
+                    },
+                    finalized,
+                )
+            })
+            .filter(|(_, finalized)| *finalized) // filter only finalized proposals
+            .map(|(data, _)| data) // get rid of used 'finalized' flag
+            .collect() // compose output vector
     }
 
+    // TODO: to be refactored or removed after introducing stakes. Events should be fired on actions
+    // such as 'rejected' or 'approved'.
     /// Updates proposal status and removes proposal id from active id set.
     fn update_proposal_status(proposal_id: T::ProposalId, new_status: ProposalStatus) {
         if new_status != ProposalStatus::Active {
@@ -336,7 +354,7 @@ impl<T: Trait> Module<T> {
                 Self::reject_proposal(proposal_id)
             }
             ProposalStatus::Approved => Self::approve_proposal(proposal_id),
-           _ => {} // do nothing
+            _ => {} // do nothing
         }
     }
 
