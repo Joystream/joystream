@@ -62,14 +62,17 @@ pub trait Trait: system::Trait + timestamp::Trait {
 
     /// Type for the proposer id. Should be authenticated by account id.
     type ProposerId: From<Self::AccountId> + Parameter + Default;
+
+    /// Type for the voter id. Should be authenticated by account id.
+    type VoterId: From<Self::AccountId> + Parameter + Default + Clone;
 }
 
 decl_event!(
     pub enum Event<T>
     where
-        <T as system::Trait>::AccountId,
         <T as Trait>::ProposalId,
         <T as Trait>::ProposerId,
+        <T as Trait>::VoterId,
     {
     	/// Emits on proposal creation.
         /// Params:
@@ -99,7 +102,7 @@ decl_event!(
         /// * Voter - an account id of a voter.
         /// * Id of a proposal.
         /// * Kind of vote.
-        Voted(AccountId, ProposalId, VoteKind),
+        Voted(VoterId, ProposalId, VoteKind),
     }
 );
 
@@ -108,7 +111,7 @@ decl_storage! {
     trait Store for Module<T: Trait> as ProposalsEngine{
         /// Map proposal by its id.
         pub Proposals get(fn proposals): map T::ProposalId =>
-            Proposal<T::BlockNumber, T::AccountId, T::ProposerId>;
+            Proposal<T::BlockNumber, T::VoterId, T::ProposerId>;
 
         /// Count of all proposals that have been created.
         pub ProposalCount get(fn proposal_count): u32;
@@ -120,9 +123,8 @@ decl_storage! {
         pub ActiveProposalIds get(fn active_proposal_ids): linked_map T::ProposalId => ();
 
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
-        pub(crate) VoteExistsByProposalByAccount get(fn vote_by_proposal_by_account):
-            double_map T::ProposalId, twox_256(T::AccountId) => ();
-
+        pub(crate) VoteExistsByProposalByVoter get(fn vote_by_proposal_by_voter):
+            double_map T::ProposalId, twox_256(T::VoterId) => ();
 
         /// Defines max allowed proposal title length. Can be configured.
         TitleMaxLen get(title_max_len) config(): u32 = DEFAULT_TITLE_MAX_LEN;
@@ -141,7 +143,8 @@ decl_module! {
 
         /// Vote extrinsic. Conditions:  origin must allow votes.
         pub fn vote(origin, proposal_id: T::ProposalId, vote: VoteKind)  {
-            let voter_id = T::VoteOrigin::ensure_origin(origin)?;
+            let account_id = T::VoteOrigin::ensure_origin(origin)?;
+            let voter_id = T::VoterId::from(account_id);
 
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
             let mut proposal = Self::proposals(proposal_id);
@@ -151,7 +154,7 @@ decl_module! {
 
             ensure!(proposal.status == ProposalStatus::Active, errors::MSG_PROPOSAL_FINALIZED);
 
-            let did_not_vote_before = !<VoteExistsByProposalByAccount<T>>::exists(
+            let did_not_vote_before = !<VoteExistsByProposalByVoter<T>>::exists(
                 proposal_id,
                 voter_id.clone(),
             );
@@ -168,7 +171,7 @@ decl_module! {
             // mutation
 
             <Proposals<T>>::insert(proposal_id, proposal);
-            <VoteExistsByProposalByAccount<T>>::insert( proposal_id, voter_id.clone(), ());
+            <VoteExistsByProposalByVoter<T>>::insert( proposal_id, voter_id.clone(), ());
             Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote));
         }
 
@@ -306,7 +309,7 @@ impl<T: Trait> Module<T> {
     /// Enumerates through active proposals. Tally Voting results.
     /// Returns proposals with changed status, id and calculated tally results
     fn get_finalized_proposals_data(
-    ) -> Vec<FinalizedProposalData<T::ProposalId, T::BlockNumber, T::AccountId, T::ProposerId>>
+    ) -> Vec<FinalizedProposalData<T::ProposalId, T::BlockNumber, T::VoterId, T::ProposerId>>
     {
         // enumerate active proposals id and gather finalization data
         <ActiveProposalIds<T>>::enumerate()
@@ -348,7 +351,7 @@ impl<T: Trait> Module<T> {
     fn update_proposal_status(proposal_id: T::ProposalId, new_status: ProposalStatus) {
         if new_status != ProposalStatus::Active {
             <ActiveProposalIds<T>>::remove(&proposal_id);
-            <VoteExistsByProposalByAccount<T>>::remove_prefix(&proposal_id);
+            <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
         }
         <Proposals<T>>::mutate(proposal_id, |p| p.status = new_status.clone());
 

@@ -89,7 +89,7 @@ pub struct ProposalParameters<BlockNumber> {
 /// 'Proposal' contains information necessary for the proposal system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Proposal<BlockNumber, AccountId, ProposerId> {
+pub struct Proposal<BlockNumber, VoterId, ProposerId> {
     /// Proposal type id
     pub proposal_type: u32,
 
@@ -117,10 +117,10 @@ pub struct Proposal<BlockNumber, AccountId, ProposerId> {
     pub tally_results: Option<TallyResult<BlockNumber>>,
 
     /// Votes for the proposal
-    pub votes: Vec<Vote<AccountId>>,
+    pub votes: Vec<Vote<VoterId>>,
 }
 
-impl<BlockNumber, AccountId, ProposerId> Proposal<BlockNumber, AccountId, ProposerId>
+impl<BlockNumber, VoterId, ProposerId> Proposal<BlockNumber, VoterId, ProposerId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
 {
@@ -181,9 +181,9 @@ where
 /// Vote. Characterized by voter and vote kind.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Vote<AccountId> {
+pub struct Vote<VoterId> {
     /// Origin of the vote
-    pub voter_id: AccountId,
+    pub voter_id: VoterId,
 
     /// Vote kind
     pub vote_kind: VoteKind,
@@ -216,16 +216,16 @@ pub trait VotersParameters {
 }
 
 // Calculates quorum, votes threshold, expiration status
-struct ProposalStatusDecision<'a, BlockNumber, AccountId, ProposerId> {
-    proposal: &'a Proposal<BlockNumber, AccountId, ProposerId>,
+struct ProposalStatusDecision<'a, BlockNumber, VoterId, ProposerId> {
+    proposal: &'a Proposal<BlockNumber, VoterId, ProposerId>,
     now: BlockNumber,
     votes_count: u32,
     total_voters_count: u32,
     approvals: u32,
 }
 
-impl<'a, BlockNumber, AccountId, ProposerId>
-    ProposalStatusDecision<'a, BlockNumber, AccountId, ProposerId>
+impl<'a, BlockNumber, VoterId, ProposerId>
+    ProposalStatusDecision<'a, BlockNumber, VoterId, ProposerId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
 {
@@ -266,20 +266,17 @@ pub trait ProposalCodeDecoder {
 }
 
 /// Data container for the finalized proposal results
-pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, AccountId, ProposerId> {
+pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, VoterId, ProposerId> {
     /// Proposal id
     pub proposal_id: ProposalId,
 
     /// Proposal to be finalized
-    pub proposal: Proposal<BlockNumber, AccountId, ProposerId>,
+    pub proposal: Proposal<BlockNumber, VoterId, ProposerId>,
 
     /// Proposal finalization status
     pub status: ProposalStatus,
 }
 
-//pub trait Proposer {
-//    ensure_origin(T::)
-//}
 
 #[cfg(test)]
 mod tests {

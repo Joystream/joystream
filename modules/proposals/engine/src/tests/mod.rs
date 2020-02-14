@@ -172,7 +172,7 @@ impl VoteGenerator {
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u64, u32, u64>>) {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64>>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
@@ -784,7 +784,7 @@ fn voting_internal_cache_works_and_got_cleaned_successfully() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
         // cache exists
-        assert!(<crate::VoteExistsByProposalByAccount<Test>>::exists(
+        assert!(<crate::VoteExistsByProposalByVoter<Test>>::exists(
             proposal_id,
             1
         ));
@@ -792,7 +792,7 @@ fn voting_internal_cache_works_and_got_cleaned_successfully() {
         run_to_block_and_finalize(2);
 
         // cache cleared
-        assert!(!<crate::VoteExistsByProposalByAccount<Test>>::exists(
+        assert!(!<crate::VoteExistsByProposalByVoter<Test>>::exists(
             proposal_id,
             1
         ));

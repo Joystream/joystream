@@ -58,6 +58,8 @@ impl crate::Trait for Test {
     type ProposalId = u32;
 
     type ProposerId = u64;
+
+    type VoterId = u64;
 }
 
 impl VotersParameters for () {

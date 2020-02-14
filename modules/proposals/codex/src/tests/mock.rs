@@ -49,6 +49,8 @@ impl proposal_engine::Trait for Test {
     type ProposalId = u32;
 
     type ProposerId = u64;
+
+    type VoterId = u64;
 }
 
 pub struct MockVotersParameters;
