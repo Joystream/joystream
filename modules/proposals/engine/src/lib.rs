@@ -114,10 +114,6 @@ decl_storage! {
         /// Ids of proposals that are open for voting (have not been finalized yet).
         pub ActiveProposalIds get(fn active_proposal_ids): linked_map T::ProposalId => ();
 
-        /// Proposal tally results map
-        pub(crate) TallyResults get(fn tally_results): map T::ProposalId =>
-            TallyResult<T::BlockNumber, T::ProposalId>;
-
         /// Double map for preventing duplicate votes
         VoteExistsByAccountByProposal get(fn vote_by_proposal_by_account):
             double_map T::AccountId, twox_256(T::ProposalId) => ();
@@ -202,14 +198,12 @@ decl_module! {
 
         /// Block finalization. Perform voting period check and vote result tally.
         fn on_finalize(_n: T::BlockNumber) {
-            let tally_results = Self::tally();
+            let proposals_with_ready_result = Self::tally();
 
             // mutation
-
-            for  tally_result in tally_results {
-                <TallyResults<T>>::insert(tally_result.proposal_id, &tally_result);
-
-                Self::update_proposal_status(tally_result.proposal_id, tally_result.status);
+            for  (proposal_id, proposal, new_status) in proposals_with_ready_result {
+                <Proposals<T>>::insert(proposal_id, proposal);
+                Self::update_proposal_status(proposal_id, new_status);
             }
         }
     }
@@ -250,6 +244,7 @@ impl<T: Trait> Module<T> {
             proposer_id: proposer_id.clone(),
             proposal_type,
             status: ProposalStatus::Active,
+            tally_results: None,
         };
 
         // mutation
@@ -301,19 +296,24 @@ impl<T: Trait> Module<T> {
     // TODO convert to map-filter style
     /// Voting results tally.
     /// Returns proposals with changed status and tally results
-    fn tally() -> Vec<TallyResult<T::BlockNumber, T::ProposalId>> {
+    fn tally() -> Vec<(
+        T::ProposalId,
+        Proposal<T::BlockNumber, T::AccountId>,
+        ProposalStatus,
+    )> {
         let mut results = Vec::new();
         for (proposal_id, _) in <ActiveProposalIds<T>>::enumerate() {
             let votes = Self::votes_by_proposal(proposal_id);
-            let proposal = Self::proposals(proposal_id);
+            let mut proposal = Self::proposals(proposal_id);
 
-            if let Some(tally_result) = proposal.tally_results(
-                proposal_id,
+            proposal.update_tally_results(
                 votes,
                 T::TotalVotersCounter::total_voters_count(),
                 Self::current_block(),
-            ) {
-                results.push(tally_result);
+            );
+
+            if let Some(tally_results) = proposal.tally_results.clone() {
+                results.push((proposal_id, proposal, tally_results.status));
             }
         }
 

@@ -112,6 +112,9 @@ pub struct Proposal<BlockNumber, AccountId> {
     //pub stake: Option<BalanceOf<T>>
     /// Current proposal status
     pub status: ProposalStatus,
+
+    /// Tally result for the proposal
+    pub tally_results: Option<TallyResult<BlockNumber>>,
 }
 
 impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
@@ -122,16 +125,15 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
         now >= self.created + self.parameters.voting_period
     }
 
-    /// Voting results tally for single proposal.
-    /// Parameters: own proposal id, current time, votes.
-    /// Returns tally results if proposal status will should change
-    pub fn tally_results<ProposalId>(
-        self,
-        proposal_id: ProposalId,
+    /// Calculates and updates voting results tally for current proposal.
+    /// Parameters: current time, votes, total voters number involved (council size)
+    /// Returns whether tally results are ready.
+    pub fn update_tally_results(
+        &mut self,
         votes: Vec<Vote<AccountId>>,
         total_voters_count: u32,
         now: BlockNumber,
-    ) -> Option<TallyResult<BlockNumber, ProposalId>> {
+    ) {
         let mut abstentions: u32 = 0;
         let mut approvals: u32 = 0;
         let mut rejections: u32 = 0;
@@ -145,7 +147,7 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
         }
 
         let proposal_status_decision = ProposalStatusDecision {
-            proposal: &self,
+            proposal: self,
             approvals,
             now,
             votes_count: votes.len() as u32,
@@ -163,9 +165,8 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
                 None
             };
 
-        if let Some(status) = new_status {
+        self.tally_results = if let Some(status) = new_status {
             Some(TallyResult {
-                proposal_id,
                 abstentions,
                 approvals,
                 rejections,
@@ -174,7 +175,7 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
             })
         } else {
             None
-        }
+        };
     }
 }
 
@@ -192,10 +193,7 @@ pub struct Vote<AccountId> {
 /// Tally result for the proposal
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct TallyResult<BlockNumber, ProposalId> {
-    /// Proposal Id
-    pub proposal_id: ProposalId,
-
+pub struct TallyResult<BlockNumber> {
     /// 'Abstention' votes count
     pub abstentions: u32,
 
@@ -294,7 +292,6 @@ mod tests {
     #[test]
     fn tally_results_proposal_expired() {
         let mut proposal = Proposal::<u64, u64>::default();
-        let proposal_id = 1;
         let now = 5;
         proposal.created = 1;
         proposal.parameters.voting_period = 3;
@@ -316,7 +313,6 @@ mod tests {
         ];
 
         let expected_tally_results = TallyResult {
-            proposal_id,
             abstentions: 0,
             approvals: 2,
             rejections: 1,
@@ -324,15 +320,12 @@ mod tests {
             finalized_at: now,
         };
 
-        assert_eq!(
-            proposal.tally_results(proposal_id, votes, 5, now),
-            Some(expected_tally_results)
-        );
+        proposal.update_tally_results(votes, 5, now);
+        assert_eq!(proposal.tally_results, Some(expected_tally_results));
     }
     #[test]
     fn tally_results_proposal_approved() {
         let mut proposal = Proposal::<u64, u64>::default();
-        let proposal_id = 1;
         proposal.created = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
@@ -357,7 +350,6 @@ mod tests {
         ];
 
         let expected_tally_results = TallyResult {
-            proposal_id,
             abstentions: 0,
             approvals: 3,
             rejections: 1,
@@ -365,16 +357,13 @@ mod tests {
             finalized_at: 2,
         };
 
-        assert_eq!(
-            proposal.tally_results(proposal_id, votes, 5, 2),
-            Some(expected_tally_results)
-        );
+        proposal.update_tally_results(votes, 5, 2);
+        assert_eq!(proposal.tally_results, Some(expected_tally_results));
     }
 
     #[test]
     fn tally_results_proposal_rejected() {
         let mut proposal = Proposal::<u64, u64>::default();
-        let proposal_id = 1;
         let now = 2;
 
         proposal.created = 1;
@@ -401,7 +390,6 @@ mod tests {
         ];
 
         let expected_tally_results = TallyResult {
-            proposal_id,
             abstentions: 1,
             approvals: 1,
             rejections: 2,
@@ -409,16 +397,13 @@ mod tests {
             finalized_at: now,
         };
 
-        assert_eq!(
-            proposal.tally_results(proposal_id, votes, 4, now),
-            Some(expected_tally_results)
-        );
+        proposal.update_tally_results(votes, 4, now);
+        assert_eq!(proposal.tally_results, Some(expected_tally_results));
     }
 
     #[test]
     fn tally_results_are_empty_with_not_expired_voting_period() {
         let mut proposal = Proposal::<u64, u64>::default();
-        let proposal_id = 1;
         let now = 2;
 
         proposal.created = 1;
@@ -430,6 +415,7 @@ mod tests {
             vote_kind: VoteKind::Abstain,
         }];
 
-        assert_eq!(proposal.tally_results(proposal_id, votes, 5, now), None);
+        proposal.update_tally_results(votes, 5, now);
+        assert_eq!(proposal.tally_results, None);
     }
 }

@@ -4,7 +4,6 @@ use crate::*;
 use mock::*;
 
 use codec::Encode;
-use rstd::collections::btree_set::BTreeSet;
 use runtime_primitives::traits::{OnFinalize, OnInitialize};
 use srml_support::{dispatch, StorageMap, StorageValue};
 use system::RawOrigin;
@@ -273,6 +272,13 @@ fn proposal_execution_succeeds() {
                 status: ProposalStatus::Executed,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
+                tally_results: Some(TallyResult {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                    status: ProposalStatus::Approved,
+                    finalized_at: 1
+                }),
             }
         )
     });
@@ -319,6 +325,13 @@ fn proposal_execution_failed() {
                 },
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
+                tally_results: Some(TallyResult {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                    status: ProposalStatus::Approved,
+                    finalized_at: 1
+                }),
             }
         )
     });
@@ -346,18 +359,17 @@ fn tally_calculation_succeeds() {
 
         run_to_block_and_finalize(2);
 
-        let tally_result = <TallyResults<Test>>::get(proposals_id);
+        let proposal = <crate::Proposals<Test>>::get(proposals_id);
 
         assert_eq!(
-            tally_result,
-            TallyResult {
-                proposal_id: proposals_id,
+            proposal.tally_results,
+            Some(TallyResult {
                 abstentions: 1,
                 approvals: 2,
                 rejections: 1,
                 status: ProposalStatus::Approved,
                 finalized_at: 1
-            }
+            })
         )
     });
 }
@@ -381,18 +393,17 @@ fn rejected_tally_results_and_remove_proposal_id_from_active_succeeds() {
 
         run_to_block_and_finalize(2);
 
-        let tally_result = <TallyResults<Test>>::get(proposal_id);
+        let proposal = <Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
-            tally_result,
-            TallyResult {
-                proposal_id,
+            proposal.tally_results,
+            Some(TallyResult {
                 abstentions: 2,
                 approvals: 0,
                 rejections: 2,
                 status: ProposalStatus::Rejected,
                 finalized_at: 1
-            }
+            })
         );
 
         assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
@@ -520,6 +531,7 @@ fn cancel_proposal_succeeds() {
                 status: ProposalStatus::Canceled,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
+                tally_results: None,
             }
         )
     });
@@ -592,6 +604,7 @@ fn veto_proposal_succeeds() {
                 status: ProposalStatus::Vetoed,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
+                tally_results: None,
             }
         )
     });
@@ -731,6 +744,13 @@ fn create_proposal_and_expire_it() {
                 status: ProposalStatus::Expired,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
+                tally_results: Some(TallyResult {
+                    abstentions: 0,
+                    approvals: 0,
+                    rejections: 0,
+                    status: ProposalStatus::Expired,
+                    finalized_at: 4
+                }),
             }
         )
     });
