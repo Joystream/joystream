@@ -16,6 +16,9 @@ std = [
     'system/std',
     'timestamp/std',
     'serde',
+    'proposal_engine/std',
+    'stake/std',
+    'balances/std',
 ]
 
 
@@ -69,6 +72,19 @@ default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-timestamp'
 rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
+
+[dependencies.balances]
+package = 'srml-balances'
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
+
+[dependencies.stake]
+default_features = false
+git = 'https://github.com/joystream/substrate-stake-module'
+package = 'substrate-stake-module'
+rev = '0516efe9230da112bc095e28f34a3715c2e03ca8'
+
 
 [dependencies.proposal_engine]
 default_features = false

@@ -26,6 +26,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
+    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl_outer_dispatch! {
@@ -33,6 +34,38 @@ impl_outer_dispatch! {
         codex::ProposalCodex,
         proposals::ProposalsEngine,
     }
+}
+
+parameter_types! {
+    pub const ExistentialDeposit: u32 = 0;
+    pub const TransferFee: u32 = 0;
+    pub const CreationFee: u32 = 0;
+}
+
+impl balances::Trait for Test {
+    /// The type for recording an account's balance.
+    type Balance = u64;
+    /// What to do if an account's free balance gets zeroed.
+    type OnFreeBalanceZero = ();
+    /// What to do if a new account is created.
+    type OnNewAccount = ();
+
+    type Event = ();
+
+    type DustRemoval = ();
+    type TransferPayment = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type TransferFee = TransferFee;
+    type CreationFee = CreationFee;
+}
+
+
+impl stake::Trait for Test {
+    type Currency = Balances;
+    type StakePoolId = StakePoolId;
+    type StakingEventsHandler = ();
+    type StakeId = u64;
+    type SlashId = u64;
 }
 
 impl proposal_engine::Trait for Test {
@@ -80,20 +113,8 @@ impl timestamp::Trait for Test {
     type MinimumPeriod = MinimumPeriod;
 }
 
-parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
-    pub const TransferFee: u32 = 0;
-    pub const CreationFee: u32 = 0;
-    pub const TransactionBaseFee: u32 = 1;
-    pub const TransactionByteFee: u32 = 0;
-    pub const InitialMembersBalance: u32 = 0;
-}
-
-
 // TODO add a Hook type to capture TriggerElection and CouncilElected hooks
 
-// This function basically just builds a genesis storage key/value store according to
-// our desired mockup.
 pub fn initial_test_ext() -> runtime_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
@@ -104,3 +125,4 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
 
 pub type ProposalCodex = crate::Module<Test>;
 pub type ProposalsEngine = proposal_engine::Module<Test>;
+pub type Balances = balances::Module<Test>;

@@ -11,7 +11,7 @@ use system::RawOrigin;
 use system::{EventRecord, Phase};
 
 struct DummyProposalFixture {
-    parameters: ProposalParameters<u64>,
+    parameters: ProposalParameters<u64, u64>,
     origin: RawOrigin<u64>,
     proposal_type: u32,
     proposal_code: Vec<u8>,
@@ -32,6 +32,7 @@ impl Default for DummyProposalFixture {
                 approval_quorum_percentage: 60,
                 approval_threshold_percentage: 60,
                 grace_period: 0,
+                stake: None,
             },
             origin: RawOrigin::Signed(1),
             proposal_type: dummy_proposal.proposal_type(),
@@ -51,7 +52,7 @@ impl DummyProposalFixture {
         }
     }
 
-    fn with_parameters(self, parameters: ProposalParameters<u64>) -> Self {
+    fn with_parameters(self, parameters: ProposalParameters<u64, u64>) -> Self {
         DummyProposalFixture { parameters, ..self }
     }
 
@@ -255,6 +256,7 @@ fn proposal_execution_succeeds() {
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
             grace_period: 0,
+            stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -293,6 +295,7 @@ fn proposal_execution_failed() {
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
             grace_period: 0,
+            stake: None,
         };
         let faulty_proposal = FaultyExecutable;
 
@@ -338,6 +341,7 @@ fn tally_calculation_succeeds() {
             approval_quorum_percentage: 50,
             approval_threshold_percentage: 50,
             grace_period: 0,
+            stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -497,6 +501,7 @@ fn cancel_proposal_succeeds() {
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
             grace_period: 0,
+            stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -563,6 +568,7 @@ fn veto_proposal_succeeds() {
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
             grace_period: 0,
+            stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -688,6 +694,7 @@ fn create_proposal_and_expire_it() {
             approval_quorum_percentage: 49,
             approval_threshold_percentage: 60,
             grace_period: 0,
+            stake: None,
         };
 
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters.clone());
@@ -721,6 +728,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
             grace_period: 2,
+            stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -766,6 +774,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
             grace_period: 1,
+            stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();

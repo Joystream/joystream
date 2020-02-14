@@ -1,7 +1,6 @@
 #![cfg(test)]
 
 pub use system;
-
 pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
@@ -9,24 +8,17 @@ pub use runtime_primitives::{
     weights::Weight,
     BuildStorage, Perbill,
 };
-
-use crate::VotersParameters;
 use srml_support::{impl_outer_dispatch, impl_outer_event, impl_outer_origin, parameter_types};
+
+
+// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Test;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
-parameter_types! {
-    pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
-    pub const MinimumPeriod: u64 = 5;
-}
 
 impl_outer_dispatch! {
     pub enum Call for Test where origin: Origin {
@@ -40,9 +32,41 @@ mod engine {
 
 impl_outer_event! {
     pub enum TestEvent for Test {
-//        balances<T>,
+        balances<T>,
         engine<T>,
     }
+}
+
+parameter_types! {
+    pub const ExistentialDeposit: u32 = 0;
+    pub const TransferFee: u32 = 0;
+    pub const CreationFee: u32 = 0;
+}
+
+impl balances::Trait for Test {
+    /// The type for recording an account's balance.
+    type Balance = u64;
+    /// What to do if an account's free balance gets zeroed.
+    type OnFreeBalanceZero = ();
+    /// What to do if a new account is created.
+    type OnNewAccount = ();
+
+    type Event = TestEvent;
+
+    type DustRemoval = ();
+    type TransferPayment = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type TransferFee = TransferFee;
+    type CreationFee = CreationFee;
+}
+
+
+impl stake::Trait for Test {
+    type Currency = Balances;
+    type StakePoolId = StakePoolId;
+    type StakingEventsHandler = ();
+    type StakeId = u64;
+    type SlashId = u64;
 }
 
 impl crate::Trait for Test {
@@ -57,10 +81,19 @@ impl crate::Trait for Test {
     type ProposalCodeDecoder = ProposalType;
 }
 
-impl VotersParameters for () {
+impl crate::VotersParameters for () {
     fn total_voters_count() -> u32 {
         4
     }
+}
+
+parameter_types! {
+    pub const BlockHashCount: u64 = 250;
+    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockLength: u32 = 2 * 1024;
+    pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const MinimumPeriod: u64 = 5;
+    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl system::Trait for Test {
@@ -87,19 +120,8 @@ impl timestamp::Trait for Test {
     type MinimumPeriod = MinimumPeriod;
 }
 
-parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
-    pub const TransferFee: u32 = 0;
-    pub const CreationFee: u32 = 0;
-    pub const TransactionBaseFee: u32 = 1;
-    pub const TransactionByteFee: u32 = 0;
-    pub const InitialMembersBalance: u32 = 0;
-}
-
 // TODO add a Hook type to capture TriggerElection and CouncilElected hooks
 
-// This function basically just builds a genesis storage key/value store according to
-// our desired mockup.
 pub fn initial_test_ext() -> runtime_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
@@ -110,6 +132,7 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
 
 pub type ProposalsEngine = crate::Module<Test>;
 pub type System = system::Module<Test>;
+pub type Balances = balances::Module<Test>;
 
 use codec::{Decode, Encode};
 use num_enum::{IntoPrimitive, TryFromPrimitive};

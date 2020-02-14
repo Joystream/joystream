@@ -37,7 +37,7 @@ const DEFAULT_TITLE_MAX_LEN: u32 = 100;
 const DEFAULT_BODY_MAX_LEN: u32 = 10_000;
 
 /// Proposals engine trait.
-pub trait Trait: system::Trait + timestamp::Trait {
+pub trait Trait: system::Trait + timestamp::Trait + stake::Trait{
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -94,18 +94,18 @@ decl_event!(
 
 // Storage for the proposals module
 decl_storage! {
-    trait Store for Module<T: Trait> as ProposalsEngine{
+    pub trait Store for Module<T: Trait> as ProposalsEngine{
         /// Map proposal by its id.
-        pub Proposals get(fn proposals): map u32 => Proposal<T::BlockNumber, T::AccountId>;
+        pub Proposals get(fn proposals): map u32 => Proposal<T::BlockNumber, T::AccountId, types::BalanceOf<T>>;
 
         /// Count of all proposals that have been created.
         pub ProposalCount get(fn proposal_count): u32;
 
         /// Map proposal executable code by proposal id.
-        ProposalCode get(fn proposal_codes): map u32 =>  Vec<u8>;
+        pub ProposalCode get(fn proposal_codes): map u32 =>  Vec<u8>;
 
         /// Map votes by proposal id.
-        VotesByProposalId get(fn votes_by_proposal): map u32 => Vec<Vote<T::AccountId>>;
+        pub VotesByProposalId get(fn votes_by_proposal): map u32 => Vec<Vote<T::AccountId>>;
 
         /// Ids of proposals that are open for voting (have not been finalized yet).
         pub ActiveProposalIds get(fn active_proposal_ids): BTreeSet<u32>;
@@ -114,18 +114,18 @@ decl_storage! {
         pub PendingExecutionProposalIds get(fn pending_proposal_ids): BTreeSet<u32>;
 
         /// Proposal tally results map
-        pub(crate) TallyResults get(fn tally_results): map u32 => TallyResult<T::BlockNumber>;
+        pub TallyResults get(fn tally_results): map u32 => TallyResult<T::BlockNumber>;
 
         /// Double map for preventing duplicate votes
-        VoteExistsByAccountByProposal get(fn vote_by_proposal_by_account):
+        pub VoteExistsByAccountByProposal get(fn vote_by_proposal_by_account):
             double_map T::AccountId, twox_256(u32) => ();
 
 
         /// Defines max allowed proposal title length. Can be configured.
-        TitleMaxLen get(title_max_len) config(): u32 = DEFAULT_TITLE_MAX_LEN;
+        pub TitleMaxLen get(title_max_len) config(): u32 = DEFAULT_TITLE_MAX_LEN;
 
         /// Defines max allowed proposal body length. Can be configured.
-        BodyMaxLen get(body_max_len) config(): u32 = DEFAULT_BODY_MAX_LEN;
+        pub BodyMaxLen get(body_max_len) config(): u32 = DEFAULT_BODY_MAX_LEN;
     }
 }
 
@@ -226,7 +226,7 @@ impl<T: Trait> Module<T> {
     /// Create proposal. Requires 'proposal origin' membership.
     pub fn create_proposal(
         origin: T::Origin,
-        parameters: ProposalParameters<T::BlockNumber>,
+        parameters: ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
         title: Vec<u8>,
         body: Vec<u8>,
         proposal_type: u32,
@@ -261,6 +261,11 @@ impl<T: Trait> Module<T> {
         };
 
         // mutation
+
+        // Lock proposer's stake:
+        //        T::Currency::reserve(&proposer_id, stake)
+        //            .map_err(|_| errors::MSG_STAKE_IS_GREATER_THAN_BALANCE)?;
+
         <Proposals<T>>::insert(new_proposal_id, new_proposal);
         <ProposalCode>::insert(new_proposal_id, proposal_code);
         ActiveProposalIds::mutate(|ids| ids.insert(new_proposal_id));
@@ -271,6 +276,8 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 }
+
+impl<T: Trait> Module<T> {}
 
 impl<T: Trait> Module<T> {
     // Wrapper-function over system::block_number()

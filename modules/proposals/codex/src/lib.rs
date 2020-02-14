@@ -22,9 +22,14 @@ use proposal_engine::*;
 use rstd::clone::Clone;
 use rstd::vec::Vec;
 use srml_support::decl_module;
+use rstd::prelude::*;
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait: system::Trait + proposal_engine::Trait {}
+
+use srml_support::traits::{Currency};
+pub type BalanceOf<T> =
+<<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 decl_module! {
     /// 'Proposal codex' substrate module
@@ -36,6 +41,7 @@ decl_module! {
                 grace_period: T::BlockNumber::from(10000u32),
                 approval_quorum_percentage: 40,
                 approval_threshold_percentage: 51,
+                stake: Some(<BalanceOf<T>>::from(500u32))
             };
 
             let text_proposal = TextProposalExecutable{
