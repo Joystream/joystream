@@ -132,6 +132,7 @@ struct VoteGenerator {
     proposal_id: u32,
     current_account_id: u64,
     pub auto_increment_voter_id: bool,
+    pub saved_votes: Vec<Vote<u64>>
 }
 
 impl VoteGenerator {
@@ -140,14 +141,17 @@ impl VoteGenerator {
             proposal_id,
             current_account_id: 0,
             auto_increment_voter_id: true,
+            saved_votes: Vec::new(),
         }
     }
     fn vote_and_assert_ok(&mut self, vote_kind: VoteKind) {
-        assert_eq!(self.vote(vote_kind), Ok(()));
+        self.vote_and_assert(vote_kind, Ok(()));
     }
 
     fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: dispatch::Result) {
-        assert_eq!(self.vote(vote_kind), expected_result);
+        assert_eq!(self.vote(vote_kind.clone()), expected_result);
+
+        self.saved_votes.push( Vote{voter_id: self.current_account_id, vote_kind});
     }
 
     fn vote(&mut self, vote_kind: VoteKind) -> dispatch::Result {
@@ -279,6 +283,7 @@ fn proposal_execution_succeeds() {
                     status: ProposalStatus::Approved,
                     finalized_at: 1
                 }),
+                votes: vote_generator.saved_votes,
             }
         )
     });
@@ -332,6 +337,7 @@ fn proposal_execution_failed() {
                     status: ProposalStatus::Approved,
                     finalized_at: 1
                 }),
+                votes: vote_generator.saved_votes,
             }
         )
     });
@@ -532,6 +538,7 @@ fn cancel_proposal_succeeds() {
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 tally_results: None,
+                votes: Vec::new(),
             }
         )
     });
@@ -605,6 +612,7 @@ fn veto_proposal_succeeds() {
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 tally_results: None,
+                votes: Vec::new(),
             }
         )
     });
@@ -751,6 +759,7 @@ fn create_proposal_and_expire_it() {
                     status: ProposalStatus::Expired,
                     finalized_at: 4
                 }),
+                votes: Vec::new(),
             }
         )
     });

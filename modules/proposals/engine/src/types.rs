@@ -115,6 +115,9 @@ pub struct Proposal<BlockNumber, AccountId> {
 
     /// Tally result for the proposal
     pub tally_results: Option<TallyResult<BlockNumber>>,
+
+    /// Votes for the proposal
+    pub votes: Vec<Vote<AccountId>>,
 }
 
 impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
@@ -130,7 +133,6 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
     /// Returns whether tally results are ready.
     pub fn update_tally_results(
         &mut self,
-        votes: Vec<Vote<AccountId>>,
         total_voters_count: u32,
         now: BlockNumber,
     ) {
@@ -138,7 +140,7 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
         let mut approvals: u32 = 0;
         let mut rejections: u32 = 0;
 
-        for vote in votes.iter() {
+        for vote in self.votes.iter() {
             match vote.vote_kind {
                 VoteKind::Abstain => abstentions += 1,
                 VoteKind::Approve => approvals += 1,
@@ -150,7 +152,7 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
             proposal: self,
             approvals,
             now,
-            votes_count: votes.len() as u32,
+            votes_count: self.votes.len() as u32,
             total_voters_count,
         };
 
@@ -297,7 +299,7 @@ mod tests {
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
 
-        let votes = vec![
+        proposal.votes = vec![
             Vote {
                 voter_id: 1,
                 vote_kind: VoteKind::Approve,
@@ -320,7 +322,7 @@ mod tests {
             finalized_at: now,
         };
 
-        proposal.update_tally_results(votes, 5, now);
+        proposal.update_tally_results(5, now);
         assert_eq!(proposal.tally_results, Some(expected_tally_results));
     }
     #[test]
@@ -330,7 +332,7 @@ mod tests {
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
 
-        let votes = vec![
+        proposal.votes = vec![
             Vote {
                 voter_id: 1,
                 vote_kind: VoteKind::Approve,
@@ -357,7 +359,7 @@ mod tests {
             finalized_at: 2,
         };
 
-        proposal.update_tally_results(votes, 5, 2);
+        proposal.update_tally_results(5, 2);
         assert_eq!(proposal.tally_results, Some(expected_tally_results));
     }
 
@@ -370,7 +372,7 @@ mod tests {
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
 
-        let votes = vec![
+        proposal.votes = vec![
             Vote {
                 voter_id: 1,
                 vote_kind: VoteKind::Reject,
@@ -397,7 +399,7 @@ mod tests {
             finalized_at: now,
         };
 
-        proposal.update_tally_results(votes, 4, now);
+        proposal.update_tally_results(4, now);
         assert_eq!(proposal.tally_results, Some(expected_tally_results));
     }
 
@@ -410,12 +412,12 @@ mod tests {
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
 
-        let votes = vec![Vote {
+        proposal.votes = vec![Vote {
             voter_id: 1,
             vote_kind: VoteKind::Abstain,
         }];
 
-        proposal.update_tally_results(votes, 5, now);
+        proposal.update_tally_results(5, now);
         assert_eq!(proposal.tally_results, None);
     }
 }

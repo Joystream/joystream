@@ -108,9 +108,6 @@ decl_storage! {
         /// Map proposal executable code by proposal id.
         ProposalCode get(fn proposal_codes): map T::ProposalId =>  Vec<u8>;
 
-        /// Map votes by proposal id.
-        VotesByProposalId get(fn votes_by_proposal): map T::ProposalId => Vec<Vote<T::AccountId>>;
-
         /// Ids of proposals that are open for voting (have not been finalized yet).
         pub ActiveProposalIds get(fn active_proposal_ids): linked_map T::ProposalId => ();
 
@@ -139,7 +136,7 @@ decl_module! {
             let voter_id = T::VoteOrigin::ensure_origin(origin)?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
-            let proposal = Self::proposals(proposal_id);
+            let mut proposal = Self::proposals(proposal_id);
 
             let not_expired = !proposal.is_voting_period_expired(Self::current_block());
             ensure!(not_expired, errors::MSG_PROPOSAL_EXPIRED);
@@ -158,9 +155,11 @@ decl_module! {
                 vote_kind: vote.clone(),
             };
 
+            proposal.votes.push(new_vote);
+
             // mutation
 
-            <VotesByProposalId<T>>::mutate(proposal_id, |votes| votes.push(new_vote));
+            <Proposals<T>>::insert(proposal_id, proposal);
             <VoteExistsByAccountByProposal<T>>::insert(voter_id.clone(), proposal_id, ());
             Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote));
         }
@@ -245,6 +244,7 @@ impl<T: Trait> Module<T> {
             proposal_type,
             status: ProposalStatus::Active,
             tally_results: None,
+            votes: Vec::new(),
         };
 
         // mutation
@@ -303,11 +303,9 @@ impl<T: Trait> Module<T> {
     )> {
         let mut results = Vec::new();
         for (proposal_id, _) in <ActiveProposalIds<T>>::enumerate() {
-            let votes = Self::votes_by_proposal(proposal_id);
             let mut proposal = Self::proposals(proposal_id);
 
             proposal.update_tally_results(
-                votes,
                 T::TotalVotersCounter::total_voters_count(),
                 Self::current_block(),
             );
