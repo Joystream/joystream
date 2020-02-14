@@ -35,6 +35,8 @@ use srml_support::{
 };
 use system::ensure_root;
 
+// TODO: add maximum allowed active proposals
+
 // Max allowed proposal title length. Can be used if config value is not filled.
 const DEFAULT_TITLE_MAX_LEN: u32 = 100;
 // Max allowed proposal body length. Can be used if config value is not filled.
