@@ -1,4 +1,4 @@
-<img src="img/rome-cover.svg"/>
+<img src="img/rome-cover_new.svg"/>
 
 <div align="center">
   <h3>

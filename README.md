@@ -1,4 +1,4 @@
-<p align="center"><img src="img/landing-cover.svg"></p>
+<p align="center"><img src="img/landing-cover_new.svg"></p>
 
 <div align="center">
   <h4>Eventually, this all goes on-chain, read our :scroll: <a href="https://github.com/Joystream/whitepaper/blob/master/paper.pdf">whitepaper</a> :scroll:, we are on-chain governance maximalists!<h4>
@@ -150,7 +150,7 @@ This is the set of active repos to which this document refers:
 | [status-endpoint-joystream](https://github.com/Joystream/status-endpoint-joystream)                             | The status endpoint for the Joystream network.    | @bwhm           |
 
 <br />
-<img src="img/testnet-releases.svg" id="testnet-releases"/>
+<img src="img/testnet-releases_new.svg" id="testnet-releases"/>
 
 
 Until the Joystream mainnet goes live, a sequence of test networks will be rolled out and deployed, and this section covers this activity.
@@ -173,7 +173,8 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 | Mesopotamia     | 21.12.18          |   28.02.19    |       N/A        |
 
 <br />
-<img src="img/pm-section.svg" id="project-management"/>
+<
+src="img/pm-section_new.svg" id="project-management"/>
 
 ## Why is this on GitHub?
 
@@ -185,7 +186,7 @@ The reason this is placed in public view on GitHub is two fold:
 
 
 <br />
-<img src="img/meetings.svg" id="meetings"/>
+<img src="img/meetings_new.svg" id="meetings"/>
 
 ### Itinerary
 
@@ -222,7 +223,7 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
 - **Record&Publish:** YES, if no participant objects.
 
 <br />
-<img src="img/okr-section.svg" id="okr-system"/>
+<img src="img/okr-section_new.svg" id="okr-system"/>
 
 Project management is primarily centred around planning and tracking OKRs. OKRs is a planning and project management system, which can be reviewed in further detail [here](https://en.wikipedia.org/wiki/OKR).
 
@@ -307,7 +308,7 @@ The template used for recording and tracking OKRs has the following form:
 | `<date2>` | (`<... assignment set scores>`)  **Total KR score**  | ... |  **Tracking comments** |
 
 <br />
-<img src="img/testnet-planning.svg" id="testnet-planning"/>
+<img src="img/testnet-planning_new.svg" id="testnet-planning"/>
 
 ### Branding
 
@@ -372,7 +373,7 @@ The **RM** is responsible for scheduling, conducting and taking minutes. Go [her
 TODO
 
 <br />
-<img src="img/github-policy.svg" id="github-policy"/>
+<img src="img/github-policy_new.svg" id="github-policy"/>
 
 WIP: describe how we use GitHub, in particular
 

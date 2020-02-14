@@ -1,11 +1,4 @@
-<p align="center"><img src="img/live-okr.svg"></p>
-
-<div align="center">
-  <h4>These are our currently :microphone: live objectives :microphone: and tracked achievement :crown: </h4>
-</div>
-<div align="center">
-  <h5>The line between bureaucracy and rigour is 1px thin, but what are we to do? :pray:</h5>
-</div>
+<p align="center"><img src="img/live-okr_new.svg"></p>
 
 Table of Contents
 =================
@@ -89,12 +82,20 @@ TBD
 | 15.10.19     |  0.30  |  0.67  |  0.68  |  0.38  |  0.25  |           -            |
 | 22.10.19     |  0.35  |  0.69  |  0.68  |  0.64  |  0.25  |           -            |
 | 29.10.19     |  0.47  |  0.72  |  0.68  |  0.51  |  0.25  |           -            |
-| 05.11.19     |        |        |        |        |        |           -            |
+| 05.11.19     |  0.47  |  0.73  |  0.68  |  0.51  |  0.25  |           -            |
+| 12.11.19     |  0.53  |  0.73  | 0.45`*`|  0.51  |  0.25  |  `*` See note 2.       |
+| 19.11.19     |  0.53  |  0.73  |  0.45  |  0.51  |  0.25  |           -            |
+| 26.11.19     |  0.53  |  0.76  |  0.45  |  0.51  |  0.25  |           -            |
+| 03.12.19     |  0.61  |  0.78  |  0.45  |  0.51  |  0.25  |           -            |
+| 10.12.19     |  0.61  |  0.78  |  0.45  |  0.51  |  0.25  |     No updates         |
+| 17.12.19     |  0.63  |  0.78  |  0.45  |  0.51  |  0.25  |           -            |
+| 24.12.19     |        |        |        |        |        |           -            |
 | dd.mm.yy     |        |        |        |        |        |           -            |
 
 #### Tracking Notes
 
-* Some tweaks to the tracking should be expected. In this case, these changes will be reflected in the comments.
+1. Some tweaks to the tracking should be expected. In this case, these changes will be reflected in the comments.
+2. It was decided to only launch with two content types, thus the tracked score of KR3 was adjusted by **2/3**.
 
 <br />
 
@@ -129,7 +130,14 @@ TBD
 | 15.10.19     |   0    |   0    |   0    |   0    |           -            |
 | 22.10.19     |   0    |   0    |   0    |   0    |           -            |
 | 29.10.19     |   0    |   0    |   0    |   0    |           -            |
-| 05.11.19     |        |        |        |        |           -            |
+| 05.11.19     |   0    |   0    |   0    |   0    |           -            |
+| 12.11.19     |   0    |   0    |   0    |   0    |           -            |
+| 19.11.19     |   0    |   0    |   0    |   0    |           -            |
+| 26.11.19     |   0    |   0    |   0    |   0    |           -            |
+| 03.12.19     |   0    |   0    |   0    |   0    |           -            |
+| 10.12.19     |   0    |   0    |   0    |   0    |           -            |
+| 17.12.19     |   0    |   0    |   0    |   0    |           -            |
+| 24.12.19     |        |        |        |        |           -            |
 | dd.mm.yy     |        |        |        |        |           -            |
 
 #### Tracking Notes
