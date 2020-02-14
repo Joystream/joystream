@@ -172,7 +172,7 @@ impl VoteGenerator {
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u64, u32>>) {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u64, u32, u64>>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {

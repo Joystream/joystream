@@ -59,25 +59,29 @@ pub trait Trait: system::Trait + timestamp::Trait {
 
     /// Proposal Id type
     type ProposalId: From<u32> + Parameter + Default + Copy;
+
+    /// Type for the proposer id. Should be authenticated by account id.
+    type ProposerId: From<Self::AccountId> + Parameter + Default;
 }
 
 decl_event!(
     pub enum Event<T>
     where
         <T as system::Trait>::AccountId,
-        <T as Trait>::ProposalId
+        <T as Trait>::ProposalId,
+        <T as Trait>::ProposerId,
     {
     	/// Emits on proposal creation.
         /// Params:
         /// * Account id of a proposer.
         /// * Id of a newly created proposal after it was saved in storage.
-        ProposalCreated(AccountId, ProposalId),
+        ProposalCreated(ProposerId, ProposalId),
 
         /// Emits on proposal cancellation.
         /// Params:
         /// * Account id of a proposer.
         /// * Id of a cancelled proposal.
-        ProposalCanceled(AccountId, ProposalId),
+        ProposalCanceled(ProposerId, ProposalId),
 
         /// Emits on proposal veto.
         /// Params:
@@ -103,7 +107,8 @@ decl_event!(
 decl_storage! {
     trait Store for Module<T: Trait> as ProposalsEngine{
         /// Map proposal by its id.
-        pub Proposals get(fn proposals): map T::ProposalId => Proposal<T::BlockNumber, T::AccountId>;
+        pub Proposals get(fn proposals): map T::ProposalId =>
+            Proposal<T::BlockNumber, T::AccountId, T::ProposerId>;
 
         /// Count of all proposals that have been created.
         pub ProposalCount get(fn proposal_count): u32;
@@ -169,7 +174,8 @@ decl_module! {
 
         /// Cancel a proposal by its original proposer.
         pub fn cancel_proposal(origin, proposal_id: T::ProposalId) {
-            let proposer_id = T::ProposalOrigin::ensure_origin(origin)?;
+            let account_id = T::ProposalOrigin::ensure_origin(origin)?;
+            let proposer_id = T::ProposerId::from(account_id);
 
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
             let proposal = Self::proposals(proposal_id);
@@ -221,7 +227,8 @@ impl<T: Trait> Module<T> {
         proposal_type: u32,
         proposal_code: Vec<u8>,
     ) -> dispatch::Result {
-        let proposer_id = T::ProposalOrigin::ensure_origin(origin)?;
+        let account_id = T::ProposalOrigin::ensure_origin(origin)?;
+        let proposer_id = T::ProposerId::from(account_id);
 
         ensure!(!title.is_empty(), errors::MSG_EMPTY_TITLE_PROVIDED);
         ensure!(
@@ -299,7 +306,8 @@ impl<T: Trait> Module<T> {
     /// Enumerates through active proposals. Tally Voting results.
     /// Returns proposals with changed status, id and calculated tally results
     fn get_finalized_proposals_data(
-    ) -> Vec<FinalizedProposalData<T::ProposalId, T::BlockNumber, T::AccountId>> {
+    ) -> Vec<FinalizedProposalData<T::ProposalId, T::BlockNumber, T::AccountId, T::ProposerId>>
+    {
         // enumerate active proposals id and gather finalization data
         <ActiveProposalIds<T>>::enumerate()
             .map(|(proposal_id, _)| {

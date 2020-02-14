@@ -89,7 +89,7 @@ pub struct ProposalParameters<BlockNumber> {
 /// 'Proposal' contains information necessary for the proposal system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Proposal<BlockNumber, AccountId> {
+pub struct Proposal<BlockNumber, AccountId, ProposerId> {
     /// Proposal type id
     pub proposal_type: u32,
 
@@ -97,7 +97,7 @@ pub struct Proposal<BlockNumber, AccountId> {
     pub parameters: ProposalParameters<BlockNumber>,
 
     /// Identifier of member proposing.
-    pub proposer_id: AccountId,
+    pub proposer_id: ProposerId,
 
     /// Proposal title
     pub title: Vec<u8>,
@@ -120,8 +120,9 @@ pub struct Proposal<BlockNumber, AccountId> {
     pub votes: Vec<Vote<AccountId>>,
 }
 
-impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
-    Proposal<BlockNumber, AccountId>
+impl<BlockNumber, AccountId, ProposerId> Proposal<BlockNumber, AccountId, ProposerId>
+where
+    BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
 {
     /// Returns whether voting period expired by now
     pub fn is_voting_period_expired(&self, now: BlockNumber) -> bool {
@@ -215,15 +216,16 @@ pub trait VotersParameters {
 }
 
 // Calculates quorum, votes threshold, expiration status
-struct ProposalStatusDecision<'a, BlockNumber, AccountId> {
-    proposal: &'a Proposal<BlockNumber, AccountId>,
+struct ProposalStatusDecision<'a, BlockNumber, AccountId, ProposerId> {
+    proposal: &'a Proposal<BlockNumber, AccountId, ProposerId>,
     now: BlockNumber,
     votes_count: u32,
     total_voters_count: u32,
     approvals: u32,
 }
 
-impl<'a, BlockNumber, AccountId> ProposalStatusDecision<'a, BlockNumber, AccountId>
+impl<'a, BlockNumber, AccountId, ProposerId>
+    ProposalStatusDecision<'a, BlockNumber, AccountId, ProposerId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
 {
@@ -264,16 +266,20 @@ pub trait ProposalCodeDecoder {
 }
 
 /// Data container for the finalized proposal results
-pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, AccountId> {
+pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, AccountId, ProposerId> {
     /// Proposal id
     pub proposal_id: ProposalId,
 
     /// Proposal to be finalized
-    pub proposal: Proposal<BlockNumber, AccountId>,
+    pub proposal: Proposal<BlockNumber, AccountId, ProposerId>,
 
     /// Proposal finalization status
     pub status: ProposalStatus,
 }
+
+//pub trait Proposer {
+//    ensure_origin(T::)
+//}
 
 #[cfg(test)]
 mod tests {
@@ -281,7 +287,7 @@ mod tests {
 
     #[test]
     fn proposal_voting_period_expired() {
-        let mut proposal = Proposal::<u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64>::default();
 
         proposal.created = 1;
         proposal.parameters.voting_period = 3;
@@ -291,7 +297,7 @@ mod tests {
 
     #[test]
     fn proposal_voting_period_not_expired() {
-        let mut proposal = Proposal::<u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64>::default();
 
         proposal.created = 1;
         proposal.parameters.voting_period = 3;
@@ -301,7 +307,7 @@ mod tests {
 
     #[test]
     fn tally_results_proposal_expired() {
-        let mut proposal = Proposal::<u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64>::default();
         let now = 5;
         proposal.created = 1;
         proposal.parameters.voting_period = 3;
@@ -335,7 +341,7 @@ mod tests {
     }
     #[test]
     fn tally_results_proposal_approved() {
-        let mut proposal = Proposal::<u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64>::default();
         proposal.created = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
@@ -373,7 +379,7 @@ mod tests {
 
     #[test]
     fn tally_results_proposal_rejected() {
-        let mut proposal = Proposal::<u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64>::default();
         let now = 2;
 
         proposal.created = 1;
@@ -413,7 +419,7 @@ mod tests {
 
     #[test]
     fn tally_results_are_empty_with_not_expired_voting_period() {
-        let mut proposal = Proposal::<u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64>::default();
         let now = 2;
 
         proposal.created = 1;
