@@ -21,7 +21,7 @@ export interface ITransport {
   transactionFee: () => Promise<Balance>
   accounts: () => Subscribable<keyPairDetails[]>
   openingApplications: () => Subscribable<OpeningApplication[]>
-  myCurationGroupRoles: () => Subscribable<ActiveRole[]>
+  myCurationGroupRoles: (address: string) => Promise<ActiveRole[]>
   myStorageGroupRoles: () => Subscribable<ActiveRole[]>
   applyToCuratorOpening: (id: number,
     roleAccountName: string,
@@ -29,4 +29,5 @@ export interface ITransport {
     appStake: Balance,
     roleStake: Balance,
     applicationText: string) => Promise<number>
+  leaveCurationRole: (sourceAccount: string, id: number, rationale: string) => void
 }

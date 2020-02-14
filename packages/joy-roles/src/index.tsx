@@ -13,7 +13,6 @@ import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount'
 import { ViewComponent } from '@polkadot/joy-utils/index'
 
 import { Transport } from './transport.polkadot'
-import { Transport as MockTransport } from './transport.mock'
 
 import { WorkingGroupsController, WorkingGroupsView } from './tabs/WorkingGroup.controller'
 import { OpportunityController, OpportunityView } from './tabs/Opportunity.controller'
@@ -48,20 +47,16 @@ export const App: React.FC<Props> = (props: Props) => {
   const { queueExtrinsic } = useContext(QueueContext)
   const transport = new Transport(api, queueExtrinsic)
 
-  const mockTransport = new MockTransport()
-
   const [wgCtrl] = useState(new WorkingGroupsController(transport))
   const oppCtrl = new OpportunityController(transport, props.myMemberId)
   const oppsCtrl = new OpportunitiesController(transport, props.myMemberId)
   const [applyCtrl] = useState(new ApplyController(transport))
-  const [myRolesCtrl] = useState(new MyRolesController(mockTransport))
+  const myRolesCtrl = new MyRolesController(transport, props.myAddress)
   const [adminCtrl] = useState(new AdminController(transport, api))
 
   const { basePath } = props
 
-  let myRoles = null
   if (props.myAddress) {
-    myRoles = <Route path={`${basePath}/my-roles`} render={() => renderViewComponent(MyRolesView(myRolesCtrl))} />
     tabs.push({
       name: 'my-roles',
       text: t('My roles')
@@ -80,7 +75,7 @@ export const App: React.FC<Props> = (props: Props) => {
         <Route path={`${basePath}/opportunities/:group/:id/apply`} render={(props) => renderViewComponent(ApplyView(applyCtrl), props)} />
         <Route path={`${basePath}/opportunities/:group/:id`} render={(props) => renderViewComponent(OpportunityView(oppCtrl), props)} />
         <Route path={`${basePath}/opportunities`} render={() => renderViewComponent(OpportunitiesView(oppsCtrl))} />
-        {myRoles}
+        <Route path={`${basePath}/my-roles`} render={() => renderViewComponent(MyRolesView(myRolesCtrl))} />
         <Route path={`${basePath}/admin`} render={() => renderViewComponent(AdminView(adminCtrl))} />
         <Route render={() => renderViewComponent(WorkingGroupsView(wgCtrl))} />
       </Switch>

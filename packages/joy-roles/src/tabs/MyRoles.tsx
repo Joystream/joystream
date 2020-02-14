@@ -1,13 +1,15 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom';
 import {
   Button,
   Container,
   Icon,
+  Form,
   Grid,
   Label,
   List,
   Message,
+  Modal,
   Segment,
   Statistic,
   Table,
@@ -33,8 +35,9 @@ import {
 import { GroupMember, GroupMemberView } from '../elements'
 import { OpeningStageClassification, OpeningState } from "../classifiers"
 import { OpeningMetadata } from "../OpeningMetadata"
+import { CuratorId } from '@joystream/types/content-working-group';
 
-type CTACallback = () => void
+type CTACallback = (rationale: string) => void
 
 type CTA = {
   title: string
@@ -42,11 +45,48 @@ type CTA = {
 }
 
 function CTAButton(props: CTA) {
+  const [open, setOpen] = useState<boolean>(false)
+  const [rationale, setRationale] = useState<string>("")
+  const handleOpen = () => setOpen(true)
+  const handleClose = () => setOpen(false)
+  const leaveRole = () => {
+    props.callback(rationale)
+    handleClose()
+  }
+  const handleChange = (e: any, value: any) => setRationale(value.value)
+
   return (
-    <Button negative icon labelPosition='left' onClick={props.callback}>
-      <Icon name='warning sign' />
-      {props.title}
-    </Button>
+    <Modal trigger={
+      <Button negative icon labelPosition='left' onClick={handleOpen}>
+        <Icon name='warning sign' />
+        {props.title}
+      </Button>
+    }
+      open={open}
+      onClose={handleClose}
+    >
+      <Modal.Header>Are you sure you want to leave this role?</Modal.Header>
+      <Modal.Content>
+        <Message warning>
+          This operation cannot be reversed!
+        </Message>
+        <Form>
+          <Form.TextArea label='Rational'
+            placeholder='(optional) Reason for withdrawing'
+            value={rationale}
+            onChange={handleChange}
+          />
+        </Form>
+      </Modal.Content>
+      <Modal.Actions>
+        <Button onClick={handleClose}>
+          Cancel
+          </Button>
+        <Button color='yellow' onClick={leaveRole} negative>
+          Leave role
+          </Button>
+      </Modal.Actions>
+    </Modal>
   )
 }
 
@@ -63,7 +103,8 @@ function RoleName(props: nameAndURL) {
 }
 
 export interface ActiveRole extends nameAndURL {
-  reward: string
+  curatorId: CuratorId
+  reward: Balance
   stake: Balance
 }
 
@@ -78,43 +119,44 @@ export type CurrentRolesProps = {
 export const CurrentRoles = Loadable<CurrentRolesProps>(
   ['currentRoles'],
   props => {
-    if (props.currentRoles.length === 0) {
-      return null
-    }
-
     return (
       <Container className="current-roles">
         <h2>Current roles</h2>
-        <Table basic='very'>
-          <Table.Header>
-            <Table.Row>
-              <Table.HeaderCell>Role</Table.HeaderCell>
-              <Table.HeaderCell>Reward</Table.HeaderCell>
-              <Table.HeaderCell>Stake</Table.HeaderCell>
-              <Table.HeaderCell></Table.HeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {props.currentRoles.map((role, key) => (
-              <Table.Row key={key}>
-                <Table.Cell>
-                  <RoleName name={role.name} url={role.url} />
-                </Table.Cell>
-                <Table.Cell>
-                  {role.reward}
-                </Table.Cell>
-                <Table.Cell>
-                  {formatBalance(role.stake)}
-                </Table.Cell>
-                <Table.Cell>
-                  {role.CTAs.map((cta, key2) => (
-                    <CTAButton {...cta} key={key2} />
-                  ))}
-                </Table.Cell>
+        {props.currentRoles.length > 0 &&
+          <Table basic='very'>
+            <Table.Header>
+              <Table.Row>
+                <Table.HeaderCell>Role</Table.HeaderCell>
+                <Table.HeaderCell>Earned</Table.HeaderCell>
+                <Table.HeaderCell>Stake</Table.HeaderCell>
+                <Table.HeaderCell></Table.HeaderCell>
               </Table.Row>
-            ))}
-          </Table.Body>
-        </Table>
+            </Table.Header>
+            <Table.Body>
+              {props.currentRoles.map((role, key) => (
+                <Table.Row key={key}>
+                  <Table.Cell>
+                    <RoleName name={role.name} url={role.url} />
+                  </Table.Cell>
+                  <Table.Cell>
+                    {formatBalance(role.reward)}
+                  </Table.Cell>
+                  <Table.Cell>
+                    {formatBalance(role.stake)}
+                  </Table.Cell>
+                  <Table.Cell>
+                    {role.CTAs.map((cta, key2) => (
+                      <CTAButton {...cta} key={key2} />
+                    ))}
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table>
+        }
+        {props.currentRoles.length == 0 &&
+          <p>You are not currently in any working group roles.</p>
+        }
       </Container>
     )
   })
@@ -417,6 +459,9 @@ export const Applications = Loadable<ApplicationsProps>(
       {props.applications.map((app, key) => (
         <Application key={key} cancelCallback={props.cancelCallback} {...app} />
       ))}
+      {props.applications.length == 0 &&
+        <p>You have no active applications.</p>
+      }
     </Container>
   )
 )

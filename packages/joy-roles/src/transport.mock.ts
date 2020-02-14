@@ -18,6 +18,7 @@ import {
 import { IProfile } from '@joystream/types/members';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
+import { CuratorId } from '@joystream/types/content-working-group';
 import { WorkingGroupOpening } from "./tabs/Opportunities"
 import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
@@ -458,36 +459,20 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
-  myCurationGroupRoles(): Subscribable<ActiveRole[]> {
-    return new Observable<ActiveRole[]>(observer => {
-      observer.next(
-        [
-          {
-            name: "My curation group role",
-            url: "some URL",
-            reward: "10 JOY per block",
-            stake: new u128(12343200),
-          }
-        ]
-      )
-    }
-    )
+  async myCurationGroupRoles(): Promise<ActiveRole[]> {
+    return [
+      {
+        curatorId: new CuratorId(1),
+        name: "My curation group role",
+        url: "some URL",
+        reward: new u128(321),
+        stake: new u128(12343200),
+      }
+    ]
   }
 
   myStorageGroupRoles(): Subscribable<ActiveRole[]> {
-    return new Observable<ActiveRole[]>(observer => {
-      observer.next(
-        [
-          {
-            name: "Storage provider",
-            url: "some URL",
-            reward: "10 JOY per block",
-            stake: new u128(12343200),
-          }
-        ]
-      )
-    }
-    )
+    return new Observable<ActiveRole[]>(observer => {})
   }
 
   async applyToCuratorOpening(
@@ -498,6 +483,9 @@ export class Transport extends TransportBase implements ITransport {
     roleStake: Balance,
     applicationText: string): Promise<number> {
     return 0
+  }
+
+  leaveCurationRole(sourceAccount: string, id: number, rationale: string) {
   }
 }
 

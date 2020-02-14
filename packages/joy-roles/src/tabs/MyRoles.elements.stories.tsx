@@ -29,6 +29,10 @@ import { OpeningState } from "../classifiers"
 
 import { Opening } from "@joystream/types/hiring"
 
+import { CuratorId } from '@joystream/types/content-working-group';
+
+
+
 export default {
   title: 'Roles / Components / My roles tab / Elements',
   decorators: [withKnobs],
@@ -42,8 +46,9 @@ export function CurrentRolesFragment() {
   const props: CurrentRolesProps = {
     currentRoles: [
       {
+        curatorId: new CuratorId(1),
         name: "Storage provider",
-        reward: "10 JOY per block",
+        reward: new u128(321),
         stake: new u128(100),
         CTAs: [
           {
@@ -53,9 +58,10 @@ export function CurrentRolesFragment() {
         ]
       },
       {
+        curatorId: new CuratorId(1),
         name: "Some other role",
         url: "some URL",
-        reward: "10 JOY per block",
+        reward: new u128(321),
         stake: new u128(12343200),
         CTAs: [
           {

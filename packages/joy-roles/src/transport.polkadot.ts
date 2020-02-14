@@ -16,7 +16,15 @@ import { GroupMember } from './elements'
 import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index'
 
 import { Actor, Role } from '@joystream/types/roles';
-import { Curator, CuratorId, CuratorApplication, CuratorInduction, CuratorRoleStakeProfile, CuratorOpening, CuratorOpeningId, Lead, LeadId } from '@joystream/types/content-working-group';
+import {
+  Curator, CuratorId,
+  CuratorApplication,
+  CuratorInduction,
+  CuratorRoleStakeProfile,
+  CuratorOpening, CuratorOpeningId,
+  Lead, LeadId
+} from '@joystream/types/content-working-group';
+
 import { Application, Opening, OpeningId } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
 import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
@@ -62,6 +70,32 @@ export class Transport extends TransportBase implements ITransport {
     return this.promise<Array<Role>>(roles.map((role: Role) => role))
   }
 
+  protected async curatorStake(stakeProfile: CuratorRoleStakeProfile): Promise<Balance> {
+    const stake = new SingleLinkedMapEntry<Stake>(
+      Stake,
+      await this.api.query.stake.stakes(
+        stakeProfile.stake_id,
+      ),
+    )
+    return stake.value.value
+  }
+
+  protected async curatorTotalReward(relationshipId: RewardRelationshipId): Promise<Balance> {
+    const relationship = new SingleLinkedMapEntry<RewardRelationship>(
+      RewardRelationship,
+      await this.api.query.recurringRewards.rewardRelationships(
+        relationshipId,
+      ),
+    )
+    const recipient = new SingleLinkedMapEntry<Recipient>(
+      Recipient,
+      await this.api.query.recurringRewards.rewardRelationships(
+        relationship.value.recipient,
+      ),
+    )
+    return recipient.value.total_reward_received
+  }
+
   protected async groupMember(curator: IRoleAccounter, lead: boolean = false): Promise<GroupMember> {
     return new Promise<GroupMember>(async (resolve, reject) => {
       const account = curator.role_account
@@ -88,32 +122,12 @@ export class Transport extends TransportBase implements ITransport {
 
       let stakeValue: Balance = new u128(0)
       if (curator.role_stake_profile && curator.role_stake_profile.isSome) {
-        const stakeProfile = curator.role_stake_profile.unwrap()
-        const stake = new SingleLinkedMapEntry<Stake>(
-          Stake,
-          await this.api.query.stake.stakes(
-            stakeProfile.stake_id,
-          ),
-        )
-        stakeValue = stake.value.value
+        stakeValue = await this.curatorStake(curator.role_stake_profile.unwrap())
       }
 
       let earnedValue: Balance = new u128(0)
       if (curator.reward_relationship && curator.reward_relationship.isSome) {
-        const relationshipId = curator.reward_relationship.unwrap()
-        const relationship = new SingleLinkedMapEntry<RewardRelationship>(
-          RewardRelationship,
-          await this.api.query.recurringRewards.rewardRelationships(
-            relationshipId,
-          ),
-        )
-        const recipient = new SingleLinkedMapEntry<Recipient>(
-          Recipient,
-          await this.api.query.recurringRewards.rewardRelationships(
-            relationship.value.recipient,
-          ),
-        )
-        earnedValue = recipient.value.total_reward_received
+        earnedValue = await this.curatorTotalReward(curator.reward_relationship.unwrap())
       }
 
       resolve({
@@ -128,7 +142,6 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   protected async areAnyCuratorRolesOpen(): Promise<boolean> {
-
     const curatorOpenings = new MultipleLinkedMapEntry<CuratorOpeningId, CuratorOpening>(
       CuratorOpeningId,
       CuratorOpening,
@@ -367,14 +380,51 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   openingApplications(): Subscribable<OpeningApplication[]> {
+    /*
+    const curatorApps = new MultipleLinkedMapEntry<CuratorApplicationId, CuratorApplication>(
+      CuratorApplicationId,
+      CuratorApplication,
+      await this.api.query.contentWorkingGroup.curatorApplicationById(),
+    )
+
+    console.log(curatorApps.toJSON())
+    */
+
     return new Observable<OpeningApplication[]>(observer => {
     }
     )
   }
 
-  myCurationGroupRoles(): Subscribable<ActiveRole[]> {
-    return new Observable<ActiveRole[]>(observer => {
-    }
+  async myCurationGroupRoles(roleKeyId: string): Promise<ActiveRole[]> {
+    const curators = new MultipleLinkedMapEntry<CuratorId, Curator>(
+      CuratorId,
+      Curator,
+      await this.api.query.contentWorkingGroup.curatorById(),
+    )
+
+    return Promise.all(
+      curators
+        .linked_values
+        .toArray()
+        .filter(curator => curator.role_account.eq(roleKeyId) && curator.is_active)
+        .map(async (curator, key) => {
+          let stakeValue: Balance = new u128(0)
+          if (curator.role_stake_profile && curator.role_stake_profile.isSome) {
+            stakeValue = await this.curatorStake(curator.role_stake_profile.unwrap())
+          }
+
+          let earnedValue: Balance = new u128(0)
+          if (curator.reward_relationship && curator.reward_relationship.isSome) {
+            earnedValue = await this.curatorTotalReward(curator.reward_relationship.unwrap())
+          }
+
+          return {
+            curatorId: curators.linked_keys[key],
+            name: "Content curator",
+            reward: earnedValue,
+            stake: stakeValue,
+          }
+        })
     )
   }
 
@@ -439,8 +489,19 @@ export class Transport extends TransportBase implements ITransport {
         extrinsic: tx,
         txFailedCb,
         txSuccessCb,
-      });
-    }
-    )
+      })
+    })
+  }
+
+  leaveCurationRole(sourceAccount: string, id: number, rationale: string) {
+    const tx = this.api.tx.contentWorkingGroup.leaveCuratorRole(
+      id,
+      rationale,
+    ) as unknown as SubmittableExtrinsic
+
+    this.queueExtrinsic({
+      accountId: sourceAccount,
+      extrinsic: tx,
+    })
   }
 }

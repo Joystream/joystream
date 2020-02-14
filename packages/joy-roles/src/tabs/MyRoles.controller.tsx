@@ -12,32 +12,25 @@ import {
 type State = {
   applications: OpeningApplication[]
   currentCurationRoles: ActiveRoleWithCTAs[]
-  currentStorageRoles: ActiveRoleWithCTAs[]
+  myAddress: string
 }
 
 const newEmptyState = (): State => {
   return {
     applications: [],
     currentCurationRoles: [],
-    currentStorageRoles: [],
+    myAddress: "",
   }
 }
 
 export class MyRolesController extends Controller<State, ITransport> {
-  constructor(transport: ITransport, initialState: State = newEmptyState()) {
+  constructor(transport: ITransport, myAddress: string | undefined, initialState: State = newEmptyState()) {
     super(transport, initialState)
 
-    this.transport.openingApplications().subscribe(
-      apps => this.updateApplications(apps)
-    )
-
-    this.transport.myCurationGroupRoles().subscribe(
-      roles => this.updateCurationGroupRoles(roles)
-    )
-
-    this.transport.myStorageGroupRoles().subscribe(
-      roles => this.updateStorageGroupRoles(roles)
-    )
+    if (typeof myAddress == "string") {
+      this.state.myAddress = myAddress
+      this.updateCurationGroupRoles(myAddress)
+    }
   }
 
   protected updateApplications(apps: OpeningApplication[]) {
@@ -45,50 +38,23 @@ export class MyRolesController extends Controller<State, ITransport> {
     this.dispatch()
   }
 
-  protected updateCurationGroupRoles(roles: ActiveRole[]) {
-    const newRoles: ActiveRoleWithCTAs[] = []
-
-    roles.forEach(
-      role => newRoles.push({
-        ...role,
-        CTAs: [
-          {
-            title: "Leave role",
-            callback: () => { this.leaveCurationRole(role) },
-          }
-        ],
-      })
+  protected async updateCurationGroupRoles(myAddress: string) {
+    const roles = await this.transport.myCurationGroupRoles(myAddress)
+    this.state.currentCurationRoles = roles.map(role => ({
+      ...role,
+      CTAs: [
+        {
+          title: "Leave role",
+          callback: (rationale: string) => { this.leaveCurationRole(role, rationale) },
+        }
+      ],
+    })
     )
-
-    this.state.currentCurationRoles = newRoles
     this.dispatch()
   }
 
-  protected updateStorageGroupRoles(roles: ActiveRole[]) {
-    const newRoles: ActiveRoleWithCTAs[] = []
-
-    roles.forEach(
-      role => newRoles.push({
-        ...role,
-        CTAs: [
-          {
-            title: "Unstake",
-            callback: () => { this.leaveStorageRole(role) },
-          }
-        ],
-      })
-    )
-
-    this.state.currentStorageRoles = newRoles
-    this.dispatch()
-  }
-
-  leaveCurationRole(role: ActiveRole) {
-    // TODO
-  }
-
-  leaveStorageRole(role: ActiveRole) {
-    // TODO
+  leaveCurationRole(role: ActiveRole, rationale: string) {
+    this.transport.leaveCurationRole(this.state.myAddress, role.curatorId.toNumber(), rationale)
   }
 
   cancelApplication(opening: Opening) {
@@ -99,7 +65,7 @@ export class MyRolesController extends Controller<State, ITransport> {
 export const MyRolesView = View<MyRolesController, State>(
   (state, controller) => (
     <Container className="my-roles">
-      <CurrentRoles currentRoles={state.currentCurationRoles.concat(state.currentStorageRoles)} />
+      <CurrentRoles currentRoles={state.currentCurationRoles} />
       <Applications applications={state.applications} cancelCallback={controller.cancelApplication} />
     </Container>
   )
