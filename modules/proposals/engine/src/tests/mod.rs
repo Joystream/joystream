@@ -132,7 +132,7 @@ struct VoteGenerator {
     proposal_id: u32,
     current_account_id: u64,
     pub auto_increment_voter_id: bool,
-    pub saved_votes: Vec<Vote<u64>>
+    pub saved_votes: Vec<Vote<u64>>,
 }
 
 impl VoteGenerator {
@@ -151,7 +151,10 @@ impl VoteGenerator {
     fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: dispatch::Result) {
         assert_eq!(self.vote(vote_kind.clone()), expected_result);
 
-        self.saved_votes.push( Vote{voter_id: self.current_account_id, vote_kind});
+        self.saved_votes.push(Vote {
+            voter_id: self.current_account_id,
+            vote_kind,
+        });
     }
 
     fn vote(&mut self, vote_kind: VoteKind) -> dispatch::Result {
@@ -762,5 +765,30 @@ fn create_proposal_and_expire_it() {
                 votes: Vec::new(),
             }
         )
+    });
+}
+
+#[test]
+fn voting_internal_cache_works_and_got_cleaned_successfully() {
+    initial_test_ext().execute_with(|| {
+        let dummy_proposal = DummyProposalFixture::default();
+        dummy_proposal.create_proposal_and_assert(Ok(()));
+
+        // last created proposal id equals current proposal count
+        let proposal_id = <ProposalCount>::get();
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Reject);
+        vote_generator.vote_and_assert_ok(VoteKind::Reject);
+        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
+        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
+
+        // cache exists
+        assert!(<crate::VoteExistsByProposalByAccount<Test>>::exists(proposal_id, 1));
+
+        run_to_block_and_finalize(2);
+
+        // cache cleared
+        assert!(!<crate::VoteExistsByProposalByAccount<Test>>::exists(proposal_id, 1));
     });
 }

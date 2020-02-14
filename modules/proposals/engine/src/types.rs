@@ -131,11 +131,7 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId>
     /// Calculates and updates voting results tally for current proposal.
     /// Parameters: current time, votes, total voters number involved (council size)
     /// Returns whether tally results are ready.
-    pub fn update_tally_results(
-        &mut self,
-        total_voters_count: u32,
-        now: BlockNumber,
-    ) {
+    pub fn update_tally_results(&mut self, total_voters_count: u32, now: BlockNumber) {
         let mut abstentions: u32 = 0;
         let mut approvals: u32 = 0;
         let mut rejections: u32 = 0;

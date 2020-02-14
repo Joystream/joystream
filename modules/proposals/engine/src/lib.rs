@@ -111,9 +111,9 @@ decl_storage! {
         /// Ids of proposals that are open for voting (have not been finalized yet).
         pub ActiveProposalIds get(fn active_proposal_ids): linked_map T::ProposalId => ();
 
-        /// Double map for preventing duplicate votes
-        VoteExistsByAccountByProposal get(fn vote_by_proposal_by_account):
-            double_map T::AccountId, twox_256(T::ProposalId) => ();
+        /// Double map for preventing duplicate votes. Should be cleaned after usage.
+        pub(crate) VoteExistsByProposalByAccount get(fn vote_by_proposal_by_account):
+            double_map T::ProposalId, twox_256(T::AccountId) => ();
 
 
         /// Defines max allowed proposal title length. Can be configured.
@@ -143,9 +143,9 @@ decl_module! {
 
             ensure!(proposal.status == ProposalStatus::Active, errors::MSG_PROPOSAL_FINALIZED);
 
-            let did_not_vote_before = !<VoteExistsByAccountByProposal<T>>::exists(
+            let did_not_vote_before = !<VoteExistsByProposalByAccount<T>>::exists(
+                proposal_id,
                 voter_id.clone(),
-                proposal_id
             );
 
             ensure!(did_not_vote_before, errors::MSG_YOU_ALREADY_VOTED);
@@ -160,7 +160,7 @@ decl_module! {
             // mutation
 
             <Proposals<T>>::insert(proposal_id, proposal);
-            <VoteExistsByAccountByProposal<T>>::insert(voter_id.clone(), proposal_id, ());
+            <VoteExistsByProposalByAccount<T>>::insert( proposal_id, voter_id.clone(), ());
             Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote));
         }
 
@@ -320,8 +320,11 @@ impl<T: Trait> Module<T> {
 
     /// Updates proposal status and removes proposal id from active id set.
     fn update_proposal_status(proposal_id: T::ProposalId, new_status: ProposalStatus) {
+        if new_status != ProposalStatus::Active {
+            <ActiveProposalIds<T>>::remove(&proposal_id);
+            <VoteExistsByProposalByAccount<T>>::remove_prefix(&proposal_id);
+        }
         <Proposals<T>>::mutate(proposal_id, |p| p.status = new_status.clone());
-        <ActiveProposalIds<T>>::remove(&proposal_id);
 
         Self::deposit_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
@@ -333,14 +336,7 @@ impl<T: Trait> Module<T> {
                 Self::reject_proposal(proposal_id)
             }
             ProposalStatus::Approved => Self::approve_proposal(proposal_id),
-            ProposalStatus::Active => {
-                // restore active proposal id
-                <ActiveProposalIds<T>>::insert(proposal_id, ());
-            }
-            ProposalStatus::Executed
-            | ProposalStatus::Failed { .. }
-            | ProposalStatus::Vetoed
-            | ProposalStatus::Canceled => {} // do nothing
+           _ => {} // do nothing
         }
     }
 
