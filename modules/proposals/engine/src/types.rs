@@ -189,8 +189,8 @@ pub struct Vote<AccountId> {
 }
 
 /// Tally result for the proposal
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct TallyResult<BlockNumber> {
     /// 'Abstention' votes count
     pub abstentions: u32,
