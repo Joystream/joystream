@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Segment, Statistic, Icon, Label, SemanticICONS, SemanticCOLORS, Tab } from 'semantic-ui-react';
+import { Segment, Icon, Label, SemanticICONS, SemanticCOLORS, Tab } from 'semantic-ui-react';
+
+import { AccountId } from '@polkadot/types/interfaces';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { YouHaveNoChannels } from './YouHaveNoChannels';
-import { formatNumber } from '@polkadot/util';
 import { ChannelAvatar } from './ChannelAvatar';
-import { MemberId } from '@joystream/types/members';
 import { isPublicChannel } from './ChannelHelpers';
-
-// TODO Add component ChannelsByOwner
+import { ChannelContentTypeValue } from '@joystream/types/content-working-group';
 
 export type ChannelsByOwnerProps = {
-  memberId: MemberId,
+  accountId: AccountId,
   suspended?: boolean,
   channels?: ChannelEntity[]
 };
@@ -23,20 +22,21 @@ const TabsAndChannels = (props: ChannelsByOwnerProps) => {
   let videoChannelsCount = 0;
   let musicChannelsCount = 0;
   allChannels.forEach(x => {
-    if (x.content === 'video') {
+    if (x.content === 'Video') {
       videoChannelsCount++;
-    } else if (x.content === 'music') {
+    } else if (x.content === 'Music') {
       musicChannelsCount++;
     }
   });
 
   const panes = [
-    { menuItem: `All (${allChannels.length})` },
-    { menuItem: `Video (${videoChannelsCount})` },
-    { menuItem: `Music (${musicChannelsCount})` }
+    { menuItem: `All channels (${allChannels.length})` },
+    { menuItem: `Video channels (${videoChannelsCount})` },
+    { menuItem: `Music channels (${musicChannelsCount})` }
   ];
 
-  const contentTypeByTabIndex = [ undefined, 'video', 'music' ];
+  const contentTypeByTabIndex: Array<ChannelContentTypeValue | undefined> =
+    [ undefined, 'Video', 'Music' ];
 
   const switchTab = (activeIndex: number) => {
     const activeContentType = contentTypeByTabIndex[activeIndex];
@@ -44,7 +44,7 @@ const TabsAndChannels = (props: ChannelsByOwnerProps) => {
       setChannels(allChannels)
     } else {
       setChannels(allChannels.filter(
-        x => x.content === activeContentType)
+        (x) => x.content === activeContentType)
       )
     }
   }
@@ -70,14 +70,6 @@ type ChannelPreviewProps = {
 
 const ChannelPreview = (props: ChannelPreviewProps) => {
   const { channel } = props;
-  const statSize = 'tiny';
-
-  let itemsPublishedLabel = ''
-  if (channel.content === 'video') {
-    itemsPublishedLabel = 'Videos'
-  } else if (channel.content === 'music') {
-    itemsPublishedLabel = 'Music tracks'
-  }
 
   let visibilityIcon: SemanticICONS = 'eye';
   let visibilityColor: SemanticCOLORS = 'green';
@@ -112,31 +104,18 @@ const ChannelPreview = (props: ChannelPreviewProps) => {
           {visibilityText}
         </Label>
 
-        {channel.blocked && <Label basic color='red'>
-          <Icon name='dont' />
-          Channel blocked
-          {' '}<Icon name='question circle outline' size='small' />
-        </Label>}
+        {channel.curationStatus !== 'Normal' &&
+          <Label basic color='red'>
+            <Icon name='dont' />
+            Channel {channel.curationStatus}
+            {' '}<Icon name='question circle outline' size='small' />
+          </Label>
+        }
       </div>
 
-      <div className='ChannelStats'>
-        <div>
-          <Statistic size={statSize}>
-            <Statistic.Label>Reward earned</Statistic.Label>
-            <Statistic.Value>
-              {formatNumber(channel.rewardEarned)}
-              &nbsp;<span style={{ fontSize: '1.5rem' }}>JOY</span>
-            </Statistic.Value>
-          </Statistic>
-        </div>
+      {/* // TODO uncomment when we calculate reward and count of videos in channel: */}
+      {/* <ChannelStats channel={channel} /> */}
 
-        <div style={{ marginTop: '1rem' }}>
-          <Statistic size={statSize}>
-            <Statistic.Label>{itemsPublishedLabel}</Statistic.Label>
-            <Statistic.Value>{formatNumber(channel.contentItemsCount)}</Statistic.Value>
-          </Statistic>
-        </div>
-      </div>
     </div>
   </Segment>
 }

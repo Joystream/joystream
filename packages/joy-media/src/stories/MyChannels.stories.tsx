@@ -1,29 +1,31 @@
 import React from 'react';
 import '../common/index.css';
 
+import { GenericAccountId } from '@polkadot/types';
 import { ChannelsByOwner } from '../channels/ChannelsByOwner';
 import { AllMockChannels } from './data/ChannelSamples';
 import { withMockTransport } from './withMockTransport';
 import EditForm from '../channels/EditChannel';
 import { EditChannelView } from '../channels/EditChannel.view';
-import { MemberId } from '@joystream/types/members';
 import { ChannelId } from '@joystream/types/content-working-group';
+import { AccountIdSamples } from './data/AccountIdSamples';
 
 export default { 
 	title: 'Media | My channels',
 	decorators: [ withMockTransport ],
 };
 
-const memberId = new MemberId(1);
+// TODO pass to mocked MyMembershipContext provider via Stories decorators:
+const accountId = new GenericAccountId(AccountIdSamples.Alice);
 
 export const DefaultState = () =>
-	<ChannelsByOwner memberId={memberId} />;
+	<ChannelsByOwner accountId={accountId} />;
 
 export const ChannelCreationSuspended = () =>
-	<ChannelsByOwner memberId={memberId} suspended={true} />;
+	<ChannelsByOwner accountId={accountId} suspended={true} />;
 
 export const YouHaveChannels = () =>
-	<ChannelsByOwner memberId={memberId} channels={AllMockChannels} />;
+	<ChannelsByOwner accountId={accountId} channels={AllMockChannels} />;
 
 export const DefaultEditForm = () =>
 	<EditForm />;

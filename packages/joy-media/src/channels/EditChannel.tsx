@@ -3,12 +3,15 @@ import { Button } from 'semantic-ui-react';
 import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
+import { Text } from '@polkadot/types';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { onImageError } from '../utils';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import { ChannelType, ChannelClass as Fields, ChannelValidationSchema, ChannelFormValues, ChannelToFormValues } from '../schemas/channel/Channel';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
-import { ChannelId } from '@joystream/types/content-working-group';
+import { ChannelId, ChannelContentType, ChannelPublicationStatus } from '@joystream/types/content-working-group';
+import { newOptionalText } from '@polkadot/joy-utils/';
+import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 
 export type OuterProps = {
   history?: History,
@@ -44,20 +47,49 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     resetForm
   } = props;
 
+  const { myAddress, myMemberId } = useMyMembership();
   const { avatar } = values;
-
   const isNew = !entity;
 
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    return [ /* TODO save channel updates */ ];
+    // TODO get value from the form:
+    const publicationStatus = new ChannelPublicationStatus('Public');
+
+    if (isNew) {
+      // Create a new channel
+
+      const channelOwner = myMemberId;
+      const roleAccount = myAddress;
+
+      // TODO get value from the form:
+      const contentType = new ChannelContentType(values.content);
+
+      return [
+        channelOwner,
+        roleAccount,
+        contentType,
+        new Text(values.handle),
+        newOptionalText(values.title),
+        newOptionalText(values.description),
+        newOptionalText(values.avatar),
+        newOptionalText(values.banner),
+        publicationStatus
+      ];
+    } else {
+      // Update an existing channel
+
+      return [
+        // TODO provide params for Update an existing channel
+      ];
+    }
   };
 
   const formFields = () => <>
     
     {/* TODO add channel content type dropdown */}
-    
+
     <MediaText field={Fields.handle} {...props} />
     <MediaText field={Fields.title} {...props} />
     <MediaText field={Fields.avatar} {...props} />
@@ -79,8 +111,8 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       }
       params={buildTxParams()}
       tx={isNew
-        ? 'dataDirectory.addMetadata'
-        : 'dataDirectory.updateMetadata'
+        ? 'contentWorkingGroup.createChannel'
+        : 'contentWorkingGroup.updateChannelAsOwner'
       }
       onClick={onSubmit}
       txFailedCb={onTxFailed}

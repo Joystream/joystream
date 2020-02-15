@@ -1,10 +1,8 @@
 
-/** This file is generated based on JSON schema. Do not modify. */
-
 import * as Yup from 'yup';
-import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
-import { PublicationStatusType } from '../general/PublicationStatus';
-import { CurationStatusType } from '../general/CurationStatus';
+import { BlockNumber, AccountId } from '@polkadot/types/interfaces';
+import { ChannelContentTypeValue, PrincipalId, Channel, ChannelId, ChannelPublicationStatusValue, ChannelCurationStatusValue } from '@joystream/types/content-working-group';
+import { MemberId } from '@joystream/types/members';
 
 export const ChannelValidationSchema = Yup.object().shape({
   content: Yup.string()
@@ -24,56 +22,73 @@ export const ChannelValidationSchema = Yup.object().shape({
 });
 
 export type ChannelFormValues = {
-  verified: boolean
-  content: string
+  content: ChannelContentTypeValue
   handle: string
   title: string
   description: string
   avatar: string
   banner: string
-  publicationStatus: number
-  curationStatus: number
+  publicationStatus: ChannelPublicationStatusValue
 };
 
 export type ChannelType = {
   id: number
-  verified?: boolean
-  content: string
+  verified: boolean
   handle: string
   title?: string
   description?: string
   avatar?: string
   banner?: string
-  publicationStatus: PublicationStatusType
-  curationStatus?: CurationStatusType
+  content: ChannelContentTypeValue
+  owner: MemberId
+  roleAccount: AccountId
+  publicationStatus: ChannelPublicationStatusValue
+  curationStatus: ChannelCurationStatusValue
+  created: BlockNumber
+  principalId: PrincipalId
 };
 
-export class ChannelCodec extends EntityCodec<ChannelType> { }
+export class ChannelCodec {
+  static fromSubstrate(id: ChannelId, sub: Channel): ChannelType {
+    return {
+      id: id.toNumber(),
+      verified: sub.getBoolean('verified'),
+      handle: sub.getString('handle'),
+      title: sub.getOptionalString('title'),
+      description: sub.getOptionalString('description'),
+      avatar: sub.getOptionalString('avatar'),
+      banner: sub.getOptionalString('banner'),
+      content: sub.getEnumAsString<ChannelContentTypeValue>('content'),
+      owner: sub.getField('owner'),
+      roleAccount: sub.getField('role_account'),
+      publicationStatus: sub.getEnumAsString<ChannelPublicationStatusValue>('publication_status'),
+      curationStatus: sub.getEnumAsString<ChannelCurationStatusValue>('curation_status'),
+      created: sub.getField('created'),
+      principalId: sub.getField('principal_id')
+    }
+  }
+}
 
 export function ChannelToFormValues(entity?: ChannelType): ChannelFormValues {
   return {
-    verified: entity && entity.verified || false,
-    content: entity && entity.content || '',
+    content: entity && entity.content || 'Video',
     handle: entity && entity.handle || '',
     title: entity && entity.title || '',
     description: entity && entity.description || '',
     avatar: entity && entity.avatar || '',
     banner: entity && entity.banner || '',
-    publicationStatus: entity && entity.publicationStatus.id || 0,
-    curationStatus: entity && entity.curationStatus?.id || 0
+    publicationStatus: entity && entity.publicationStatus || 'Public'
   }
 }
 
 export type ChannelPropId =
-  'verified' |
   'content' |
   'handle' |
   'title' |
   'description' |
   'avatar' |
   'banner' |
-  'publicationStatus' |
-  'curationStatus'
+  'publicationStatus'
   ;
 
 export type ChannelGenericProp = {
@@ -92,12 +107,6 @@ type ChannelClassType = {
 };
 
 export const ChannelClass: ChannelClassType = {
-  verified: {
-    "id": "verified",
-    "name": "Verified",
-    "description": "Indicates whether the channel is verified by a content curator.",
-    "type": "Bool"
-  },
   content: {
     "id": "content",
     "name": "Content",
@@ -149,12 +158,5 @@ export const ChannelClass: ChannelClassType = {
     "required": true,
     "type": "Internal",
     "classId": "Publication Status"
-  },
-  curationStatus: {
-    "id": "curationStatus",
-    "name": "Curation Status",
-    "description": "The curation status of the channel.",
-    "type": "Internal",
-    "classId": "Curation Status"
   }
 };

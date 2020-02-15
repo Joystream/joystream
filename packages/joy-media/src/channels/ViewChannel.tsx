@@ -7,6 +7,7 @@ import { MusicTrackReaderPreviewProps } from '../music/MusicTrackReaderPreview';
 import { ViewVideoChannel } from './ViewVideoChannel';
 import { ViewMusicChannel } from './ViewMusicChannel';
 import { toVideoPreviews } from '../video/VideoPreview';
+import { isVideoChannel, isMusicChannel } from './ChannelHelpers';
 
 export type ViewChannelProps = {
   id: ChannelId,
@@ -27,10 +28,10 @@ export function ViewChannel (props: ViewChannelProps) {
     return <em>Channel is not found</em>;
   }
 
-  if (channel.content === 'video') {
+  if (isVideoChannel(channel)) {
     const previews = toVideoPreviews(videos);
     return <ViewVideoChannel channel={channel} videos={previews} />;
-  } else if (channel.content === 'music') {
+  } else if (isMusicChannel(channel)) {
     return <ViewMusicChannel channel={channel} albums={albums} tracks={tracks} />;
   } else {
     return <em>Unsupported channel type: {channel.content}</em>

@@ -115,13 +115,18 @@ export function withMediaForm<OuterProps, FormValues>
 
   return function (props: MediaFormProps<OuterProps, FormValues>) {
     const {
+      errors,
       isValid,
       setSubmitting,
       opts = MediaDropdownOptions.Empty,
     } = props;
 
     const onSubmit = (sendTx: () => void) => {
-      if (isValid) sendTx();
+      if (isValid) {
+        sendTx();
+      } else {
+        console.log('Form is invalid. Errors:', errors)
+      }
     };
     
     const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {

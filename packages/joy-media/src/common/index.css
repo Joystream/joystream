@@ -254,6 +254,10 @@ $borderColor: #e4e4e4;
     margin: .5rem 0;
   }
 
+  .ChannelDetails {
+    width: 100%;
+  }
+
   .ChannelTitle {
     font-size: 2rem;
     font-weight: 500;

@@ -1,7 +1,7 @@
 import { Transport as TransportBase, Subscribable } from '@polkadot/joy-utils/index'
+import { AccountId } from '@polkadot/types/interfaces';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { Entity, Class } from '@joystream/types/versioned-store';
-import { MemberId } from '@joystream/types/members';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
@@ -30,10 +30,13 @@ export abstract class MediaTransport extends TransportBase {
 
   async channelById(id: ChannelId): Promise<ChannelEntity | undefined> {
     return (await this.allChannels())
-      .find(x => x.id === id.toNumber())
+      .find(x => id && id.eq(x.id))
   }
 
-  abstract channelsByOwner(memberId: MemberId): Promise<ChannelEntity[]>
+  async channelsByAccount(accountId: AccountId): Promise<ChannelEntity[]> {
+    return (await this.allChannels())
+      .filter(x => accountId && accountId.eq(x.roleAccount))
+  }
 
   abstract allVideos(): Promise<VideoType[]>
 
@@ -41,9 +44,17 @@ export abstract class MediaTransport extends TransportBase {
 
   abstract videosByChannelId(channelId: ChannelId): Promise<VideoType[]>
 
+  async videosByAccount(accountId: AccountId): Promise<VideoType[]> {
+    const channels = await this.channelsByAccount(accountId)
+    const channelIds = new Set(channels.map(x => x.id))
+
+    return (await this.allVideos())
+      .filter(x => x.channelId && channelIds.has(x.channelId))
+  }
+
   async videoById(id: EntityId): Promise<VideoType | undefined> {
     return (await this.allVideos())
-      .find(x => x.id === id.toNumber())
+      .find(x => id && id.eq(x.id))
   }
 
   async allPublicChannels(): Promise<ChannelEntity[]> {
@@ -77,10 +88,11 @@ export abstract class MediaTransport extends TransportBase {
   abstract musicTrackById(id: EntityId): Promise<MusicTrackType>
   abstract musicAlbumById(id: EntityId): Promise<MusicAlbumType>
 
+  abstract allMediaObjects(): Promise<MediaObjectType[]>
+
   abstract allContentLicenses(): Promise<ContentLicenseType[]>
   abstract allCurationStatuses(): Promise<CurationStatusType[]>
   abstract allLanguages(): Promise<LanguageType[]>
-  abstract allMediaObjects(): Promise<MediaObjectType[]>
   abstract allMusicGenres(): Promise<MusicGenreType[]>
   abstract allMusicMoods(): Promise<MusicMoodType[]>
   abstract allMusicThemes(): Promise<MusicThemeType[]>
@@ -91,15 +103,17 @@ export abstract class MediaTransport extends TransportBase {
   abstract allEntities(): Subscribable<Entity[]>
 
   async dropdownOptions(): Promise<MediaDropdownOptions> {
-    return new MediaDropdownOptions({
-      languages: await this.allLanguages(),
+    const res = new MediaDropdownOptions({
       contentLicenses: await this.allContentLicenses(),
       curationStatuses: await this.allCurationStatuses(),
+      languages: await this.allLanguages(),
       musicGenres: await this.allMusicGenres(),
       musicMoods: await this.allMusicMoods(),
       musicThemes: await this.allMusicThemes(),
       publicationStatuses: await this.allPublicationStatuses(),
       videoCategories: await this.allVideoCategories()
     });
+    //console.log('Transport.dropdownOptions', res);
+    return res;
   }
 }

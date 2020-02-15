@@ -17,8 +17,13 @@ export class PrincipalId extends Credential {};
 
 export class OptionalText extends Option.with(Text) {};
 
+export type ChannelContentTypeValue =
+  'Video' |
+  'Music' |
+  'Ebook';
+
 export class ChannelContentType extends Enum {
-  constructor (value?: any, index?: number) {
+  constructor (value?: ChannelContentTypeValue, index?: number) {
     super(
       [
         'Video',
@@ -29,8 +34,12 @@ export class ChannelContentType extends Enum {
   }
 };
 
+export type ChannelPublicationStatusValue =
+  'Public' |
+  'Unlisted';
+
 export class ChannelPublicationStatus extends Enum {
-  constructor (value?: any, index?: number) {
+  constructor (value?: ChannelPublicationStatusValue, index?: number) {
     super(
       [
         'Public',
@@ -40,8 +49,12 @@ export class ChannelPublicationStatus extends Enum {
   }
 };
 
+export type ChannelCurationStatusValue =
+  'Normal' |
+  'Censored';
+
 export class ChannelCurationStatus extends Enum {
-  constructor (value?: any, index?: number) {
+  constructor (value?: ChannelCurationStatusValue, index?: number) {
     super(
       [
         'Normal',

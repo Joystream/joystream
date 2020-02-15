@@ -1,4 +1,6 @@
 import BN from 'bn.js';
+import { Text, Option } from '@polkadot/types';
+import { OptionalText } from '@joystream/types/content-working-group';
 
 export const ZERO = new BN(0);
 
@@ -65,6 +67,11 @@ export function findNameByAddress(address: string): string | undefined {
 
 export function isKnownAddress(address: string): boolean {
   return isDefined(findNameByAddress(address));
+}
+
+export function newOptionalText(str?: string): OptionalText {
+  const text = isEmptyStr(str) ? null : str;
+  return new Option(Text, text);
 }
 
 // Joystream Stake utils

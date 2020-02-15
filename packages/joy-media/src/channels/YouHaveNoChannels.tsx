@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Message } from 'semantic-ui-react';
 
 type Props = {
@@ -20,20 +21,22 @@ export function YouHaveNoChannels (props: Props) {
   )
 
   const renderCreateButton = () => (
-    <Message
-      compact
-      success
-      icon='plus circle'
-      header='Create Channel'
-      content='and start publishing'
-      className='JoyInlineMsg CreateBtn'
-    />
+    <Link to={`/media/channels/new`}>
+      <Message
+        compact
+        success
+        icon='plus circle'
+        header='Create Channel'
+        content='and start publishing'
+        className='JoyInlineMsg CreateBtn'
+      />
+    </Link>
   )
 
   return <>
-    <h3 style={{ marginTop: '2rem', marginBottom: '.5rem' }}>
+    <h2 style={{ marginTop: '2rem', marginBottom: '.5rem' }}>
       Build your following on Joystream
-    </h3>
+    </h2>
     
     <p style={{ marginBottom: '2rem' }}>
       A channel is a way to organize related content for the benefit 
