@@ -16,6 +16,7 @@ import translate from '../translate';
 import NotFound from './NotFound';
 import TopBar from '../TopBar';
 import { MyAccountProvider } from '@polkadot/joy-utils/MyAccountContext';
+import { MyMembershipProvider } from '@polkadot/joy-utils/MyMembershipContext';
 
 interface Props extends I18nProps, RouteComponentProps {}
 
@@ -56,9 +57,9 @@ function Content ({ className, location, t }: Props): React.ReactElement<Props> 
       {needsApi && (!isApiReady || !isApiConnected)
         ? <div className='connecting'>{t('Waiting for API to be connected and ready.')}</div>
         : (
-          <>
           <Wrapper>
           <MyAccountProvider>
+          <MyMembershipProvider>
             <TopBar />
             <Component
               basePath={`/${name}`}
@@ -70,9 +71,9 @@ function Content ({ className, location, t }: Props): React.ReactElement<Props> 
               stqueue={stqueue}
               txqueue={txqueue}
             />
-            </MyAccountProvider>
-            </Wrapper>
-          </>
+          </MyMembershipProvider>
+          </MyAccountProvider>
+          </Wrapper>
         )
       }
     </div>

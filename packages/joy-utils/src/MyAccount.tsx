@@ -15,8 +15,8 @@ export type MyAddressProps = {
 
 export type MyAccountProps = MyAddressProps & {
   myMemberId?: MemberId,
-  memberIdsByRootAccountId? :Vec<MemberId>,
-  memberIdsByControllerAccountId? :Vec<MemberId>,
+  memberIdsByRootAccountId?: Vec<MemberId>,
+  memberIdsByControllerAccountId?: Vec<MemberId>,
   myMemberIdChecked?: boolean,
   iAmMember?: boolean
 };
@@ -28,7 +28,7 @@ function withMyAddress<P extends MyAccountProps> (Component: React.ComponentType
   };
 }
 
-const withMyMemberId = withCalls<MyAccountProps>(
+const withMyMemberIds = withCalls<MyAccountProps>(
   queryMembershipToProp('memberIdsByRootAccountId', 'myAddress'),
   queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress')
 );
@@ -39,7 +39,7 @@ function withMyMembership<P extends MyAccountProps> (Component: React.ComponentT
 
     const myMemberIdChecked = memberIdsByRootAccountId && memberIdsByControllerAccountId;
 
-    let myMemberId;
+    let myMemberId: MemberId | undefined;
     if (memberIdsByRootAccountId && memberIdsByControllerAccountId) {
       memberIdsByRootAccountId.concat(memberIdsByControllerAccountId);
       if (memberIdsByRootAccountId.length) {
@@ -63,7 +63,7 @@ export const withMyAccount = <P extends MyAccountProps> (Component: React.Compon
 withMulti(
   Component,
   withMyAddress,
-  withMyMemberId,
+  withMyMemberIds,
   withMyMembership
 );
 
