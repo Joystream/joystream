@@ -22,14 +22,16 @@ export type ChannelContentTypeValue =
   'Music' |
   'Ebook';
 
+export const ChannelContentTypeAllValues: ChannelContentTypeValue[] = [
+  'Video',
+  'Music',
+  'Ebook'
+];
+
 export class ChannelContentType extends Enum {
   constructor (value?: ChannelContentTypeValue, index?: number) {
     super(
-      [
-        'Video',
-        'Music',
-        'Ebook',
-      ],
+      ChannelContentTypeAllValues,
       value, index);
   }
 };
@@ -38,13 +40,15 @@ export type ChannelPublicationStatusValue =
   'Public' |
   'Unlisted';
 
+export const ChannelPublicationStatusAllValues: ChannelPublicationStatusValue[] = [
+  'Public',
+  'Unlisted'
+];
+
 export class ChannelPublicationStatus extends Enum {
   constructor (value?: ChannelPublicationStatusValue, index?: number) {
     super(
-      [
-        'Public',
-        'Unlisted',
-      ],
+      ChannelPublicationStatusAllValues,
       value, index);
   }
 };
@@ -53,13 +57,15 @@ export type ChannelCurationStatusValue =
   'Normal' |
   'Censored';
 
+export const ChannelCurationStatusAllValues: ChannelCurationStatusValue[] = [
+  'Normal',
+  'Censored'
+];
+
 export class ChannelCurationStatus extends Enum {
   constructor (value?: ChannelCurationStatusValue, index?: number) {
     super(
-      [
-        'Normal',
-        'Censored',
-      ],
+      ChannelCurationStatusAllValues,
       value, index);
   }
 };

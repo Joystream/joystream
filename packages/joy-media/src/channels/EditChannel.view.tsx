@@ -11,8 +11,7 @@ export const EditChannelView = MediaView<Props>({
   resolveProps: async (props) => {
     const { transport, id } = props;
     const entity = id ? await transport.channelById(id) : undefined;
-    const opts = await transport.dropdownOptions();
-    return { entity, opts };
+    return { entity };
   }
 });
 

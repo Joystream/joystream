@@ -17,6 +17,7 @@ import { withCalls } from '@polkadot/react-api/index';
 import { Button, Message } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
+import isEqual from 'lodash/isEqual'
 
 // TODO get next settings from Substrate:
 const HANDLE_REGEX = /^[a-z0-9_]+$/;
@@ -96,7 +97,7 @@ const InnerForm = (props: FormProps) => {
 
   // TODO extract to forms.tsx
   const isFieldChanged = (field: FieldName): boolean => {
-    return dirty && touched[field] === true && values[field] !== initialValues[field];
+    return dirty && touched[field] === true && !isEqual(values[field], initialValues[field]);
   };
 
   // TODO extract to forms.tsx

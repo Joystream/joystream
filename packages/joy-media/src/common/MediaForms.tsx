@@ -6,6 +6,7 @@ import { SubmittableResult } from '@polkadot/api';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 import { MediaDropdownOptions } from './MediaDropdownOptions';
 import { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
+import isEqual from 'lodash/isEqual'
 
 export const datePlaceholder = 'Date in format yyyy-mm-dd';
 
@@ -61,6 +62,7 @@ export type MediaFormProps<OuterProps, FormValues> =
   FormFields<OuterProps, FormValues> &
   FormCallbacks & {
     opts: MediaDropdownOptions
+    isFieldChanged: (field: GenericMediaProp<FormValues>) => boolean 
   };
 
 export function withMediaForm<OuterProps, FormValues>
@@ -115,11 +117,24 @@ export function withMediaForm<OuterProps, FormValues>
 
   return function (props: MediaFormProps<OuterProps, FormValues>) {
     const {
+      initialValues,
+      values,
+      dirty,
+      touched,
       errors,
       isValid,
       setSubmitting,
       opts = MediaDropdownOptions.Empty,
     } = props;
+
+    const isFieldChanged = (field: GenericMediaProp<FormValues>): boolean => {
+      const fieldName = field.id
+      return (
+        dirty &&
+        touched[fieldName] === true &&
+        !isEqual(values[fieldName], initialValues[fieldName])
+      );
+    };
 
     const onSubmit = (sendTx: () => void) => {
       if (isValid) {
@@ -158,6 +173,7 @@ export function withMediaForm<OuterProps, FormValues>
 
       // Other
       opts,
+      isFieldChanged
     }
 
     return <Component {...allProps} />;
