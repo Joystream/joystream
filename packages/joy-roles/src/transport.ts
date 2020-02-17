@@ -20,7 +20,7 @@ export interface ITransport {
   blockTimestamp: (height: number) => Promise<Date>
   transactionFee: () => Promise<Balance>
   accounts: () => Subscribable<keyPairDetails[]>
-  openingApplications: () => Subscribable<OpeningApplication[]>
+  openingApplications: (address: string) => Promise<OpeningApplication[]>
   myCurationGroupRoles: (address: string) => Promise<ActiveRole[]>
   myStorageGroupRoles: () => Subscribable<ActiveRole[]>
   applyToCuratorOpening: (id: number,

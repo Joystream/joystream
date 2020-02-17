@@ -472,7 +472,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   myStorageGroupRoles(): Subscribable<ActiveRole[]> {
-    return new Observable<ActiveRole[]>(observer => {})
+    return new Observable<ActiveRole[]>(observer => { })
   }
 
   async applyToCuratorOpening(

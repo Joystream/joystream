@@ -294,7 +294,7 @@ function ApplicationStatusHired(props: ApplicationStatusProps) {
 export function ApplicationStatus(props: ApplicationStatusProps) {
   if (typeof props.hired !== "undefined" && props.hired) {
     return ApplicationStatusHired(props)
-  } else if (typeof props.cancelledReason !== "undefined") {
+  } else if (props.cancelledReason) {
     return ApplicationCancelledStatus(props)
   }
 

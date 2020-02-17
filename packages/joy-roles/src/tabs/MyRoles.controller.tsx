@@ -30,11 +30,12 @@ export class MyRolesController extends Controller<State, ITransport> {
     if (typeof myAddress == "string") {
       this.state.myAddress = myAddress
       this.updateCurationGroupRoles(myAddress)
+      this.updateApplications(myAddress)
     }
   }
 
-  protected updateApplications(apps: OpeningApplication[]) {
-    this.state.applications = apps
+  protected async updateApplications(myAddress: string) {
+    this.state.applications = await this.transport.openingApplications(myAddress)
     this.dispatch()
   }
 

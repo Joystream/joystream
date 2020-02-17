@@ -18,19 +18,17 @@ import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/in
 import { Actor, Role } from '@joystream/types/roles';
 import {
   Curator, CuratorId,
-  CuratorApplication,
+  CuratorApplication, CuratorApplicationId,
   CuratorInduction,
   CuratorRoleStakeProfile,
   CuratorOpening, CuratorOpeningId,
   Lead, LeadId
 } from '@joystream/types/content-working-group';
 
-import { Application, Opening, OpeningId } from '@joystream/types/hiring';
+import { Application, ApplicationId, Opening, OpeningId } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
 import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
 import { Profile, MemberId } from '@joystream/types/members';
-
-// FIXME: Move these functions to a dedicayed utils package
 import { createAccount, generateSeed } from '@polkadot/joy-utils/accounts'
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
@@ -41,11 +39,16 @@ import { keyPairDetails } from './flows/apply'
 
 import { classifyOpeningStage, classifyOpeningStakes } from "./classifiers"
 import { WorkingGroups } from "./working_groups"
-import { Sort, Sum } from './balances'
+import { Add, Sort, Sum, Zero } from './balances'
 
 type WorkingGroupPair<HiringModuleType, WorkingGroupType> = {
   hiringModule: HiringModuleType,
   workingGroup: WorkingGroupType,
+}
+
+type StakePair<T = Balance> = {
+  application: T,
+  role: T,
 }
 
 interface IRoleAccounter {
@@ -70,14 +73,18 @@ export class Transport extends TransportBase implements ITransport {
     return this.promise<Array<Role>>(roles.map((role: Role) => role))
   }
 
-  protected async curatorStake(stakeProfile: CuratorRoleStakeProfile): Promise<Balance> {
+  protected async stakeValue(stakeId: StakeId): Promise<Balance> {
     const stake = new SingleLinkedMapEntry<Stake>(
       Stake,
       await this.api.query.stake.stakes(
-        stakeProfile.stake_id,
+        stakeId,
       ),
     )
     return stake.value.value
+  }
+
+  protected async curatorStake(stakeProfile: CuratorRoleStakeProfile): Promise<Balance> {
+    return this.stakeValue(stakeProfile.stake_id)
   }
 
   protected async curatorTotalReward(relationshipId: RewardRelationshipId): Promise<Balance> {
@@ -307,14 +314,6 @@ export class Transport extends TransportBase implements ITransport {
     })
   }
 
-  protected async stakeValue(id: StakeId): Promise<Balance> {
-    const stake = new SingleLinkedMapEntry<Stake>(
-      Stake,
-      await this.api.query.stake.stakes(id),
-    )
-    return stake.value.value
-  }
-
   protected async openingApplicationTotalStake(application: Application): Promise<Balance> {
     const promises = new Array<Promise<Balance>>()
 
@@ -379,19 +378,103 @@ export class Transport extends TransportBase implements ITransport {
     ) as Subscribable<keyPairDetails[]>
   }
 
-  openingApplications(): Subscribable<OpeningApplication[]> {
-    /*
+  protected async applicationStakes(app: Application): Promise<StakePair<Balance>> {
+    const stakes = {
+      application: Zero,
+      role: Zero,
+    }
+
+    const appStake = app.active_application_staking_id
+    if (appStake.isSome) {
+      stakes.application = await this.stakeValue(appStake.unwrap())
+    }
+
+    const roleStake = app.active_role_staking_id
+    if (roleStake.isSome) {
+      stakes.role = await this.stakeValue(roleStake.unwrap())
+    }
+
+    return stakes
+  }
+
+  protected async myApplicationRank(myApp: Application, applications: Array<Application>): Promise<number> {
+    const stakes = await Promise.all(
+      applications.map(app => this.openingApplicationTotalStake(app))
+    )
+
+    const appvalues = applications.map((app, key) => {
+      return {
+        app: app,
+        value: stakes[key],
+      }
+    })
+
+    appvalues.sort((a, b): number => {
+      if (a.value.eq(b.value)) {
+        return 0
+      } else if (a.value.gt(b.value)) {
+        return 1
+      }
+
+      return 0
+    })
+
+    return appvalues.findIndex(v => v.app.eq(myApp)) + 1
+  }
+
+  async openingApplications(roleKeyId: string): Promise<OpeningApplication[]> {
     const curatorApps = new MultipleLinkedMapEntry<CuratorApplicationId, CuratorApplication>(
       CuratorApplicationId,
       CuratorApplication,
       await this.api.query.contentWorkingGroup.curatorApplicationById(),
     )
 
-    console.log(curatorApps.toJSON())
-    */
+    const myApps = curatorApps.linked_values.filter(app => app.role_account.eq(roleKeyId))
 
-    return new Observable<OpeningApplication[]>(observer => {
-    }
+    const hiringAppPairs = await Promise.all(
+      myApps.map(
+        async app => new SingleLinkedMapEntry<Application>(
+          Application,
+          await this.api.query.hiring.applicationById(
+            app.application_id,
+          ),
+        )
+      )
+    )
+
+    const hiringApps = hiringAppPairs.map(app => app.value)
+
+    const stakes = await Promise.all(
+      hiringApps.map(app => this.applicationStakes(app))
+    )
+
+    const wgs = await Promise.all(
+      myApps.map(curatorOpening => {
+        return this.curationGroupOpening(curatorOpening.curator_opening_id.toNumber())
+      })
+    )
+
+    const allAppsByOpening = (await Promise.all(
+      myApps.map(curatorOpening => {
+        return this.curatorOpeningApplications(curatorOpening.curator_opening_id.toNumber())
+      })
+    ))
+
+    return await Promise.all(
+      wgs.map(async (wg, key) => {
+        return {
+          rank: await this.myApplicationRank(hiringApps[key], allAppsByOpening[key].map(a => a.hiringModule)),
+          capacity: wg.applications.maxNumberOfApplications,
+          stage: wg.stage,
+          creator: wg.creator,
+          opening: wg.opening,
+          meta: wg.meta,
+          applicationStake: stakes[key].application,
+          roleStake: stakes[key].role,
+          review_end_time: wg.stage.review_end_time,
+          review_end_block: wg.stage.review_end_block,
+        }
+      })
     )
   }
 
@@ -480,7 +563,6 @@ export class Transport extends TransportBase implements ITransport {
       }
 
       const txSuccessCb = () => {
-        console.log("success")
         resolve(1)
       }
 
