@@ -15,7 +15,7 @@ Table of Contents
 
 # Overview
 This directory contains data on [live](#live-testnet), [next](#next-testnet) and [past](#past-testnets) testnets.
-It also contains templates for for planning releases.
+It also contains templates for planning releases.
 
 # Testnet Releases
 

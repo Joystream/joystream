@@ -150,7 +150,7 @@ Schedule [user stories meeting](#user-stories-meeting)
 
 #### Item 3
 
-This was not addresssed.
+This was not addressed.
 
 **Other topics raised:**
 NA
@@ -329,7 +329,7 @@ PodcastGuestAppearance {
 - to be able to participate in competitions and win real money.
 - to be able to propose increasing participation payouts.
 - a forum category to discuss and evaluate proposals.
-- insight on what Council Members thinks about proposals.
+- insight on what Council Members think about proposals.
 
 ##### As a Council Member candidate, I want
 - to communicate to stakeholders how I would allocate the resources as part of my campaign.
@@ -649,7 +649,7 @@ We kept quite strictly to the schedule laid out [here](sprint-in-london.md) for 
 - It would have been nicer to have a more comprehensive plan for the sprint. This would have allowed for preparing in advance the things which could be shared with others (e.g. mockups).
 - We (eventually) got to spend valuable time on problems that are easier solved together: standing in front of a shared screen/whiteboard discussing design and data models.
 - We should have avoided excessive focus on tracking progress, no fun, adds little value.
-- We should have had daily "standup" at a specific time to help efficiently starting collabration each day.
+- We should have had daily "standup" at a specific time to help efficiently starting collaboration each day.
 - Best time for a sprint is perhaps super early in a release, or with more RnD/experimental focus, rather than tied to shipping.
 - We didn't always stick to schedule.
 - It was very good for morale for everyone to meet each other.
