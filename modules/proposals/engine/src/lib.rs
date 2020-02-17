@@ -36,6 +36,7 @@ use srml_support::{
 use system::ensure_root;
 
 // TODO: add maximum allowed active proposals
+// TODO: update proposal.finalized_at - update on all proposal finalization points.
 
 // Max allowed proposal title length. Can be used if config value is not filled.
 const DEFAULT_TITLE_MAX_LEN: u32 = 100;
@@ -301,12 +302,12 @@ impl<T: Trait> Module<T> {
     }
 
     /// Enumerates through active proposals. Tally Voting results.
-    /// Returns proposals with changed status, id and calculated tally results
+    /// Returns proposals with finalized status and id
     fn get_finalized_proposals_data(
     ) -> Vec<FinalizedProposalData<T::ProposalId, T::BlockNumber, T::ProposerId>> {
         // enumerate active proposals id and gather finalization data
         <ActiveProposalIds<T>>::enumerate()
-            .map(|(proposal_id, _)| {
+            .filter_map(|(proposal_id, _)| {
                 // load current proposal
                 let proposal = Self::proposals(proposal_id);
 
@@ -315,25 +316,17 @@ impl<T: Trait> Module<T> {
                     Self::current_block(),
                 );
 
-                let mut new_status = ProposalStatus::Active;
                 if let Some(status) = decision_status {
-                    new_status = status;
-                }
-                // proposal is finalized if not active
-                let finalized = new_status != ProposalStatus::Active;
-
-                (
-                    FinalizedProposalData {
+                    Some(FinalizedProposalData {
                         proposal_id,
                         proposal,
-                        status: new_status,
+                        status,
                         finalized_at: Self::current_block(),
-                    },
-                    finalized,
-                )
+                    })
+                } else {
+                    None
+                }
             })
-            .filter(|(_, finalized)| *finalized) // filter only finalized proposals
-            .map(|(data, _)| data) // get rid of used 'finalized' flag
             .collect() // compose output vector
     }
 

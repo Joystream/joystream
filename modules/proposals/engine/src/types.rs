@@ -86,15 +86,22 @@ pub struct ProposalParameters<BlockNumber> {
     //pub stake: BalanceOf<T>, //<T: GovernanceCurrency>
 }
 
+/// Contains current voting results
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VotingResults {
+    /// 'Abstain' votes counter
     pub abstentions: u32,
+
+    /// 'Approve' votes counter
     pub approvals: u32,
+
+    /// 'Reject' votes counter
     pub rejections: u32,
 }
 
 impl VotingResults {
+    /// Add vote to the related counter
     pub fn add_vote(&mut self, vote: VoteKind) {
         match vote {
             VoteKind::Abstain => self.abstentions += 1,
@@ -103,6 +110,7 @@ impl VotingResults {
         }
     }
 
+    /// Calculates number of votes so far
     pub fn votes_number(&self) -> u32 {
         self.abstentions + self.approvals + self.rejections
     }
