@@ -286,12 +286,11 @@ fn proposal_execution_succeeds() {
                     status: ProposalStatus::Approved,
                     finalized_at: 1
                 }),
-                voting_results : VotingResults {
+                voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
                     rejections: 0,
                 },
-                votes: vote_generator.saved_votes,
             }
         )
     });
@@ -345,8 +344,7 @@ fn proposal_execution_failed() {
                     status: ProposalStatus::Approved,
                     finalized_at: 1
                 }),
-                votes: vote_generator.saved_votes,
-                voting_results : VotingResults {
+                voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
                     rejections: 0,
@@ -548,8 +546,7 @@ fn cancel_proposal_succeeds() {
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 tally_results: None,
-                votes: Vec::new(),
-                voting_results : VotingResults::default(),
+                voting_results: VotingResults::default(),
             }
         )
     });
@@ -623,8 +620,7 @@ fn veto_proposal_succeeds() {
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 tally_results: None,
-                votes: Vec::new(),
-                voting_results : VotingResults::default(),
+                voting_results: VotingResults::default(),
             }
         )
     });
@@ -771,12 +767,11 @@ fn create_proposal_and_expire_it() {
                     status: ProposalStatus::Expired,
                     finalized_at: 4
                 }),
-                voting_results : VotingResults {
+                voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 0,
                     rejections: 0,
                 },
-                votes: Vec::new(),
             }
         )
     });

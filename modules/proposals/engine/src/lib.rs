@@ -113,7 +113,7 @@ decl_storage! {
     trait Store for Module<T: Trait> as ProposalsEngine{
         /// Map proposal by its id.
         pub Proposals get(fn proposals): map T::ProposalId =>
-            Proposal<T::BlockNumber, T::VoterId, T::ProposerId>;
+            Proposal<T::BlockNumber, T::ProposerId>;
 
         /// Count of all proposals that have been created.
         pub ProposalCount get(fn proposal_count): u32;
@@ -160,12 +160,6 @@ decl_module! {
 
             ensure!(did_not_vote_before, errors::MSG_YOU_ALREADY_VOTED);
 
-            let new_vote = Vote {
-                voter_id: voter_id.clone(),
-                vote_kind: vote.clone(),
-            };
-
-            proposal.votes.push(new_vote);
             proposal.voting_results.add_vote(vote.clone());
 
             // mutation
@@ -257,7 +251,6 @@ impl<T: Trait> Module<T> {
             proposal_type,
             status: ProposalStatus::Active,
             tally_results: None,
-            votes: Vec::new(),
             voting_results: VotingResults::default(),
         };
 
@@ -310,7 +303,7 @@ impl<T: Trait> Module<T> {
     /// Enumerates through active proposals. Tally Voting results.
     /// Returns proposals with changed status, id and calculated tally results
     fn get_finalized_proposals_data(
-    ) -> Vec<FinalizedProposalData<T::ProposalId, T::BlockNumber, T::VoterId, T::ProposerId>> {
+    ) -> Vec<FinalizedProposalData<T::ProposalId, T::BlockNumber, T::ProposerId>> {
         // enumerate active proposals id and gather finalization data
         <ActiveProposalIds<T>>::enumerate()
             .map(|(proposal_id, _)| {
