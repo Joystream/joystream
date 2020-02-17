@@ -86,6 +86,24 @@ pub struct ProposalParameters<BlockNumber> {
     //pub stake: BalanceOf<T>, //<T: GovernanceCurrency>
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct VotingResults {
+    pub abstentions: u32,
+    pub approvals: u32,
+    pub rejections: u32,
+}
+
+impl VotingResults {
+    pub fn add_vote(&mut self, vote: VoteKind) {
+        match vote {
+            VoteKind::Abstain => self.abstentions += 1,
+            VoteKind::Approve => self.approvals += 1,
+            VoteKind::Reject => self.rejections += 1,
+        }
+    }
+}
+
 /// 'Proposal' contains information necessary for the proposal system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -118,6 +136,8 @@ pub struct Proposal<BlockNumber, VoterId, ProposerId> {
 
     /// Votes for the proposal
     pub votes: Vec<Vote<VoterId>>,
+
+    pub voting_results: VotingResults,
 }
 
 impl<BlockNumber, VoterId, ProposerId> Proposal<BlockNumber, VoterId, ProposerId>
@@ -133,21 +153,9 @@ where
     /// Parameters: current time, votes, total voters number involved (council size)
     /// Returns whether tally results are ready.
     pub fn update_tally_results(&mut self, total_voters_count: u32, now: BlockNumber) {
-        let mut abstentions: u32 = 0;
-        let mut approvals: u32 = 0;
-        let mut rejections: u32 = 0;
-
-        for vote in self.votes.iter() {
-            match vote.vote_kind {
-                VoteKind::Abstain => abstentions += 1,
-                VoteKind::Approve => approvals += 1,
-                VoteKind::Reject => rejections += 1,
-            }
-        }
-
         let proposal_status_decision = ProposalStatusDecision {
             proposal: self,
-            approvals,
+            approvals: self.voting_results.approvals,
             now,
             votes_count: self.votes.len() as u32,
             total_voters_count,
@@ -166,9 +174,9 @@ where
 
         self.tally_results = if let Some(status) = new_status {
             Some(TallyResult {
-                abstentions,
-                approvals,
-                rejections,
+                abstentions: self.voting_results.abstentions,
+                approvals: self.voting_results.approvals,
+                rejections: self.voting_results.rejections,
                 status,
                 finalized_at: now,
             })
@@ -277,7 +285,6 @@ pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, VoterId, Propos
     pub status: ProposalStatus,
 }
 
-
 #[cfg(test)]
 mod tests {
     use crate::*;
@@ -325,6 +332,12 @@ mod tests {
             },
         ];
 
+        proposal.voting_results = VotingResults {
+            abstentions: 0,
+            approvals: 2,
+            rejections: 1,
+        };
+
         let expected_tally_results = TallyResult {
             abstentions: 0,
             approvals: 2,
@@ -361,6 +374,12 @@ mod tests {
                 vote_kind: VoteKind::Reject,
             },
         ];
+
+        proposal.voting_results = VotingResults {
+            abstentions: 0,
+            approvals: 3,
+            rejections: 1,
+        };
 
         let expected_tally_results = TallyResult {
             abstentions: 0,
@@ -401,6 +420,12 @@ mod tests {
                 vote_kind: VoteKind::Approve,
             },
         ];
+
+        proposal.voting_results = VotingResults {
+            abstentions: 1,
+            approvals: 1,
+            rejections: 2,
+        };
 
         let expected_tally_results = TallyResult {
             abstentions: 1,

@@ -17,9 +17,9 @@
 //#![warn(missing_docs)]
 
 use types::FinalizedProposalData;
-pub use types::TallyResult;
 pub use types::{Proposal, ProposalParameters, ProposalStatus};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
+pub use types::{TallyResult, VotingResults};
 pub use types::{Vote, VoteKind, VotersParameters};
 
 mod errors;
@@ -126,7 +126,7 @@ decl_storage! {
 
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
         pub(crate) VoteExistsByProposalByVoter get(fn vote_by_proposal_by_voter):
-            double_map T::ProposalId, twox_256(T::VoterId) => ();
+            double_map T::ProposalId, twox_256(T::VoterId) => VoteKind;
 
         /// Defines max allowed proposal title length. Can be configured.
         TitleMaxLen get(title_max_len) config(): u32 = DEFAULT_TITLE_MAX_LEN;
@@ -166,11 +166,12 @@ decl_module! {
             };
 
             proposal.votes.push(new_vote);
+            proposal.voting_results.add_vote(vote.clone());
 
             // mutation
 
             <Proposals<T>>::insert(proposal_id, proposal);
-            <VoteExistsByProposalByVoter<T>>::insert( proposal_id, voter_id.clone(), ());
+            <VoteExistsByProposalByVoter<T>>::insert( proposal_id, voter_id.clone(), vote.clone());
             Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote));
         }
 
@@ -257,6 +258,7 @@ impl<T: Trait> Module<T> {
             status: ProposalStatus::Active,
             tally_results: None,
             votes: Vec::new(),
+            voting_results: VotingResults::default(),
         };
 
         // mutation
@@ -308,8 +310,7 @@ impl<T: Trait> Module<T> {
     /// Enumerates through active proposals. Tally Voting results.
     /// Returns proposals with changed status, id and calculated tally results
     fn get_finalized_proposals_data(
-    ) -> Vec<FinalizedProposalData<T::ProposalId, T::BlockNumber, T::VoterId, T::ProposerId>>
-    {
+    ) -> Vec<FinalizedProposalData<T::ProposalId, T::BlockNumber, T::VoterId, T::ProposerId>> {
         // enumerate active proposals id and gather finalization data
         <ActiveProposalIds<T>>::enumerate()
             .map(|(proposal_id, _)| {

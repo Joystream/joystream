@@ -286,6 +286,11 @@ fn proposal_execution_succeeds() {
                     status: ProposalStatus::Approved,
                     finalized_at: 1
                 }),
+                voting_results : VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                },
                 votes: vote_generator.saved_votes,
             }
         )
@@ -341,6 +346,11 @@ fn proposal_execution_failed() {
                     finalized_at: 1
                 }),
                 votes: vote_generator.saved_votes,
+                voting_results : VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                },
             }
         )
     });
@@ -454,10 +464,7 @@ fn vote_fails_with_expired_voting_period() {
         run_to_block_and_finalize(6);
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
-        vote_generator.vote_and_assert(
-            VoteKind::Approve,
-            Err("Proposal is finalized already"),
-        );
+        vote_generator.vote_and_assert(VoteKind::Approve, Err("Proposal is finalized already"));
     });
 }
 
@@ -542,6 +549,7 @@ fn cancel_proposal_succeeds() {
                 body: b"body".to_vec(),
                 tally_results: None,
                 votes: Vec::new(),
+                voting_results : VotingResults::default(),
             }
         )
     });
@@ -616,6 +624,7 @@ fn veto_proposal_succeeds() {
                 body: b"body".to_vec(),
                 tally_results: None,
                 votes: Vec::new(),
+                voting_results : VotingResults::default(),
             }
         )
     });
@@ -762,6 +771,11 @@ fn create_proposal_and_expire_it() {
                     status: ProposalStatus::Expired,
                     finalized_at: 4
                 }),
+                voting_results : VotingResults {
+                    abstentions: 0,
+                    approvals: 0,
+                    rejections: 0,
+                },
                 votes: Vec::new(),
             }
         )
