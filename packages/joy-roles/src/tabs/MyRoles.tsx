@@ -33,7 +33,7 @@ import {
   openingDescription,
 } from '../openingStateMarkup'
 import { GroupMember, GroupMemberView } from '../elements'
-import { OpeningStageClassification, OpeningState } from "../classifiers"
+import { CancelledReason, OpeningStageClassification, OpeningState } from "../classifiers"
 import { OpeningMetadata } from "../OpeningMetadata"
 import { CuratorId } from '@joystream/types/content-working-group';
 
@@ -184,13 +184,6 @@ function RankAndCapacity(props: RankAndCapacityProps) {
   )
 }
 
-export enum CancelledReason {
-  ApplicantCancelled = 0,
-  HirerCancelledApplication,
-  HirerCancelledOpening,
-  NoOneHired,
-}
-
 export type ApplicationStatusProps = RankAndCapacityProps & {
   openingStatus: OpeningState
   cancelledReason?: CancelledReason
@@ -294,7 +287,7 @@ function ApplicationStatusHired(props: ApplicationStatusProps) {
 export function ApplicationStatus(props: ApplicationStatusProps) {
   if (typeof props.hired !== "undefined" && props.hired) {
     return ApplicationStatusHired(props)
-  } else if (props.cancelledReason) {
+  } else if (typeof props.cancelledReason !== "undefined") {
     return ApplicationCancelledStatus(props)
   }
 
@@ -323,6 +316,7 @@ function applicationState(props: OpeningApplication): ApplicationState {
 }
 
 export type OpeningApplication = {
+  id: number
   rank: number
   capacity: number
   cancelledReason?: CancelledReason
@@ -338,10 +332,54 @@ export type OpeningApplication = {
 }
 
 export type CancelCallback = {
-  cancelCallback: (opening: Opening) => void
+  cancelCallback: (app: OpeningApplication) => void
 }
 
 export type ApplicationProps = OpeningApplication & CancelCallback
+
+function CancelButton(props: ApplicationProps) {
+  const [open, setOpen] = useState<boolean>(false)
+  const handleOpen = () => setOpen(true)
+  const handleClose = () => setOpen(false)
+  const cancelApplication = () => {
+    props.cancelCallback(props)
+    handleClose()
+  }
+
+  return (
+    <Modal trigger={
+      <Button fluid
+        icon
+        labelPosition='left'
+        negative
+        className='cta'
+        onClick={handleOpen}
+      >
+        <Icon name='warning sign' />
+        Cancel and withdraw stake
+ </Button>
+    }
+      open={open}
+      onClose={handleClose}
+    >
+      <Modal.Header>Are you sure you want to cancel this application?</Modal.Header>
+      <Modal.Content>
+        <Message warning>
+          This operation cannot be reversed!
+        </Message>
+      </Modal.Content>
+      <Modal.Actions>
+        <Button onClick={handleClose}>
+          Cancel
+          </Button>
+        <Button color='yellow' onClick={cancelApplication} negative>
+          Cancel application
+          </Button>
+      </Modal.Actions>
+
+    </Modal>
+  )
+}
 
 export function Application(props: ApplicationProps) {
   let countdown = null
@@ -353,17 +391,8 @@ export function Application(props: ApplicationProps) {
   const appState = applicationState(props)
 
   let CTA = null
-  if (appState == ApplicationState.Positive) {
-    CTA = <Button fluid
-      icon
-      labelPosition='left'
-      negative
-      className='cta'
-      onClick={() => { props.cancelCallback(props.opening) }}
-    >
-      <Icon name='warning sign' />
-      Cancel and withdraw stake
-     </Button>
+  if (appState == ApplicationState.Positive && props.stage.state != OpeningState.Complete) {
+    CTA = <CancelButton {...props} />
   }
 
   return (

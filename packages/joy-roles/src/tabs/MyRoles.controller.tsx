@@ -3,7 +3,6 @@ import React from 'react';
 import { Container, } from 'semantic-ui-react'
 import { Controller, View } from '@polkadot/joy-utils/index'
 import { ITransport } from '../transport'
-import { Opening } from "@joystream/types/hiring"
 import {
   Applications, OpeningApplication,
   CurrentRoles, ActiveRole, ActiveRoleWithCTAs,
@@ -58,8 +57,8 @@ export class MyRolesController extends Controller<State, ITransport> {
     this.transport.leaveCurationRole(this.state.myAddress, role.curatorId.toNumber(), rationale)
   }
 
-  cancelApplication(opening: Opening) {
-    // TODO
+  cancelApplication(application: OpeningApplication) {
+    this.transport.withdrawCuratorApplication(this.state.myAddress, application.id)
   }
 }
 
@@ -67,7 +66,7 @@ export const MyRolesView = View<MyRolesController, State>(
   (state, controller) => (
     <Container className="my-roles">
       <CurrentRoles currentRoles={state.currentCurationRoles} />
-      <Applications applications={state.applications} cancelCallback={controller.cancelApplication} />
+      <Applications applications={state.applications} cancelCallback={(a) => controller.cancelApplication(a)} />
     </Container>
   )
 )

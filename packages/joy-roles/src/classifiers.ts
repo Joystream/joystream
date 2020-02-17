@@ -4,6 +4,7 @@ import { Option, u128 } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces'
 
 import {
+  Application,
   AcceptingApplications, ReviewPeriod,
   WaitingToBeingOpeningStageVariant,
   ActiveOpeningStageVariant, ActiveOpeningStageKeys,
@@ -12,6 +13,10 @@ import {
   Deactivated, OpeningDeactivationCauseKeys,
   StakingPolicy,
   StakingAmountLimitMode, StakingAmountLimitModeKeys,
+  ApplicationStageKeys,
+  ApplicationDeactivationCause, ApplicationDeactivationCauseKeys,
+  UnstakingApplicationStage,
+  InactiveApplicationStage,
 } from "@joystream/types/hiring"
 
 import {
@@ -20,6 +25,13 @@ import {
   RoleStakeRequirement,
   StakeType,
 } from './StakeRequirement'
+
+export enum CancelledReason {
+  ApplicantCancelled = 0,
+  HirerCancelledApplication,
+  HirerCancelledOpening,
+  NoOneHired,
+}
 
 export enum OpeningState {
   WaitingToBegin = 0,
@@ -231,3 +243,50 @@ function classifyStakeType(mode: StakingAmountLimitMode): StakeType {
 
   throw new Error("Unknown stake type: " + mode.type)
 }
+
+export function classifyApplicationCancellation(a: Application): CancelledReason | undefined {
+  switch (a.stage.type) {
+    case ApplicationStageKeys.Unstaking:
+      return classifyApplicationCancellationFromCause(
+        (a.stage.value as UnstakingApplicationStage).cause
+      )
+
+    case ApplicationStageKeys.Inactive:
+      return classifyApplicationCancellationFromCause(
+        (a.stage.value as InactiveApplicationStage).cause
+      )
+  }
+
+  return undefined
+}
+
+function classifyApplicationCancellationFromCause(cause: ApplicationDeactivationCause): CancelledReason | undefined {
+  console.log(cause.type)
+  switch (cause.type) {
+    case ApplicationDeactivationCauseKeys.External:
+      return CancelledReason.ApplicantCancelled
+
+    case ApplicationDeactivationCauseKeys.OpeningCancelled:
+    case ApplicationDeactivationCauseKeys.OpeningFilled:
+      return CancelledReason.HirerCancelledOpening
+
+    case ApplicationDeactivationCauseKeys.ReviewPeriodExpired:
+      return CancelledReason.NoOneHired
+  }
+
+  return undefined
+}
+
+export function isApplicationHired(a: Application): boolean {
+  switch (a.stage.type) {
+    case ApplicationStageKeys.Unstaking:
+      return (a.stage.value as UnstakingApplicationStage).cause.type == ApplicationDeactivationCauseKeys.Hired
+
+    case ApplicationStageKeys.Inactive:
+      return (a.stage.value as InactiveApplicationStage).cause.type == ApplicationDeactivationCauseKeys.Hired
+  }
+
+  return false
+}
+
+

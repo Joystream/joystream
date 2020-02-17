@@ -25,7 +25,7 @@ import {
   Lead, LeadId
 } from '@joystream/types/content-working-group';
 
-import { Application, ApplicationId, Opening, OpeningId } from '@joystream/types/hiring';
+import { Application, Opening, OpeningId } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
 import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
 import { Profile, MemberId } from '@joystream/types/members';
@@ -37,9 +37,14 @@ import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 
 import { keyPairDetails } from './flows/apply'
 
-import { classifyOpeningStage, classifyOpeningStakes } from "./classifiers"
+import {
+  classifyApplicationCancellation,
+  classifyOpeningStage,
+  classifyOpeningStakes,
+  isApplicationHired,
+} from "./classifiers"
 import { WorkingGroups } from "./working_groups"
-import { Add, Sort, Sum, Zero } from './balances'
+import { Sort, Sum, Zero } from './balances'
 
 type WorkingGroupPair<HiringModuleType, WorkingGroupType> = {
   hiringModule: HiringModuleType,
@@ -430,6 +435,7 @@ export class Transport extends TransportBase implements ITransport {
     )
 
     const myApps = curatorApps.linked_values.filter(app => app.role_account.eq(roleKeyId))
+    const myAppIds = curatorApps.linked_keys.filter((id, key) => curatorApps.linked_values[key].role_account.eq(roleKeyId))
 
     const hiringAppPairs = await Promise.all(
       myApps.map(
@@ -463,6 +469,9 @@ export class Transport extends TransportBase implements ITransport {
     return await Promise.all(
       wgs.map(async (wg, key) => {
         return {
+          id: myAppIds[key].toNumber(),
+          hired: isApplicationHired(hiringApps[key]),
+          cancelledReason: classifyApplicationCancellation(hiringApps[key]),
           rank: await this.myApplicationRank(hiringApps[key], allAppsByOpening[key].map(a => a.hiringModule)),
           capacity: wg.applications.maxNumberOfApplications,
           stage: wg.stage,
@@ -579,6 +588,18 @@ export class Transport extends TransportBase implements ITransport {
     const tx = this.api.tx.contentWorkingGroup.leaveCuratorRole(
       id,
       rationale,
+    ) as unknown as SubmittableExtrinsic
+
+    this.queueExtrinsic({
+      accountId: sourceAccount,
+      extrinsic: tx,
+    })
+  }
+
+  withdrawCuratorApplication(sourceAccount: string, id: number) {
+    console.log("A")
+    const tx = this.api.tx.contentWorkingGroup.withdrawCuratorApplication(
+      id
     ) as unknown as SubmittableExtrinsic
 
     this.queueExtrinsic({

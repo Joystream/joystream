@@ -487,5 +487,8 @@ export class Transport extends TransportBase implements ITransport {
 
   leaveCurationRole(sourceAccount: string, id: number, rationale: string) {
   }
+
+  withdrawCuratorApplication(sourceAccount: string, id: number) {
+  }
 }
 

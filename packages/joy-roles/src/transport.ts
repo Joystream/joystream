@@ -30,4 +30,5 @@ export interface ITransport {
     roleStake: Balance,
     applicationText: string) => Promise<number>
   leaveCurationRole: (sourceAccount: string, id: number, rationale: string) => void
+  withdrawCuratorApplication: (sourceAccount: string, id: number) => void
 }

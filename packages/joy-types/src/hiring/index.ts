@@ -25,17 +25,27 @@ export class ActivateOpeningAt extends Enum {
   }
 }
 
+export enum ApplicationDeactivationCauseKeys {
+  External = 'External',
+  Hired = 'Hired',
+  NotHired = 'NotHired',
+  CrowdedOut = 'CrowdedOut',
+  OpeningCancelled = 'OpeningCancelled',
+  ReviewPeriodExpired = 'ReviewPeriodExpired',
+  OpeningFilled = 'OpeningFilled',
+}
+
 export class ApplicationDeactivationCause extends Enum {
   constructor(value?: any, index?: number) {
     super(
       [
-        'External',
-        'Hired',
-        'NotHired',
-        'CrowdedOut',
-        'OpeningCancelled',
-        'ReviewPeriodExpired',
-        'OpeningFilled',
+        ApplicationDeactivationCauseKeys.External,
+        ApplicationDeactivationCauseKeys.Hired,
+        ApplicationDeactivationCauseKeys.NotHired,
+        ApplicationDeactivationCauseKeys.CrowdedOut,
+        ApplicationDeactivationCauseKeys.OpeningCancelled,
+        ApplicationDeactivationCauseKeys.ReviewPeriodExpired,
+        ApplicationDeactivationCauseKeys.OpeningFilled,
       ],
       value, index);
   }
@@ -43,7 +53,7 @@ export class ApplicationDeactivationCause extends Enum {
 
 export type UnstakingApplicationStageType = {
   deactivation_initiated: BlockNumber,
-  case: ApplicationDeactivationCause
+  cause: ApplicationDeactivationCause
 };
 export class UnstakingApplicationStage extends JoyStruct<UnstakingApplicationStageType> {
   constructor(value?: UnstakingApplicationStageType) {
@@ -52,12 +62,16 @@ export class UnstakingApplicationStage extends JoyStruct<UnstakingApplicationSta
       cause: ApplicationDeactivationCause,
     }, value);
   }
+
+  get cause(): ApplicationDeactivationCause {
+    return this.getField<ApplicationDeactivationCause>('cause')
+  }
 };
 
 export type InactiveApplicationStageType = {
   deactivation_initiated: BlockNumber,
   deactivated: BlockNumber,
-  case: ApplicationDeactivationCause
+  cause: ApplicationDeactivationCause
 };
 export class InactiveApplicationStage extends JoyStruct<InactiveApplicationStageType> {
   constructor(value?: InactiveApplicationStageType) {
@@ -67,17 +81,27 @@ export class InactiveApplicationStage extends JoyStruct<InactiveApplicationStage
       cause: ApplicationDeactivationCause,
     }, value);
   }
+
+  get cause(): ApplicationDeactivationCause {
+    return this.getField<ApplicationDeactivationCause>('cause')
+  }
 };
 
 export class ActiveApplicationStage extends Null { };
+
+export enum ApplicationStageKeys {
+  Active = 'Active',
+  Unstaking = 'Unstaking',
+  Inactive = 'Inactive',
+}
 
 export class ApplicationStage extends Enum {
   constructor(value?: any, index?: number) {
     super(
       {
-        'Active': Null,
-        'Unstaking': UnstakingApplicationStage,
-        'Inactive': InactiveApplicationStage,
+        [ApplicationStageKeys.Active]: Null,
+        [ApplicationStageKeys.Unstaking]: UnstakingApplicationStage,
+        [ApplicationStageKeys.Inactive]: InactiveApplicationStage,
       },
       value, index);
   }
@@ -432,6 +456,10 @@ export class Application extends JoyStruct<IApplication> {
       stage: ApplicationStage,
       human_readable_text: Text,
     }, value);
+  }
+
+  get stage(): ApplicationStage {
+    return this.getField<ApplicationStage>('stage')
   }
 
   get active_role_staking_id(): Option<StakeId> {
