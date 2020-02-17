@@ -29,6 +29,7 @@ mod tests;
 
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
+
 use runtime_primitives::traits::EnsureOrigin;
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, StorageDoubleMap};
 use system::ensure_root;
@@ -36,8 +37,11 @@ use system::ensure_root;
 const DEFAULT_TITLE_MAX_LEN: u32 = 100;
 const DEFAULT_BODY_MAX_LEN: u32 = 10_000;
 
+// Max simultaneous active proposals number.
+const MAX_ACTIVE_PROPOSALS_NUMBER: u32 = 100;
+
 /// Proposals engine trait.
-pub trait Trait: system::Trait + timestamp::Trait + stake::Trait{
+pub trait Trait: system::Trait + timestamp::Trait + stake::Trait {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -244,6 +248,11 @@ impl<T: Trait> Module<T> {
         ensure!(
             body.len() as u32 <= Self::body_max_len(),
             errors::MSG_TOO_LONG_BODY
+        );
+
+        ensure!(
+            (Self::active_proposal_ids().len() as u32) < MAX_ACTIVE_PROPOSALS_NUMBER,
+            errors::MSG_MAX_ACTIVE_PROPOSAL_NUMBER_EXCEEDED
         );
 
         let next_proposal_count_value = Self::proposal_count() + 1;

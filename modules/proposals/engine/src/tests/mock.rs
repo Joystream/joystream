@@ -1,6 +1,5 @@
 #![cfg(test)]
 
-pub use system;
 pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
@@ -9,7 +8,7 @@ pub use runtime_primitives::{
     BuildStorage, Perbill,
 };
 use srml_support::{impl_outer_dispatch, impl_outer_event, impl_outer_origin, parameter_types};
-
+pub use system;
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -18,7 +17,6 @@ pub struct Test;
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
-
 
 impl_outer_dispatch! {
     pub enum Call for Test where origin: Origin {
@@ -59,7 +57,6 @@ impl balances::Trait for Test {
     type TransferFee = TransferFee;
     type CreationFee = CreationFee;
 }
-
 
 impl stake::Trait for Test {
     type Currency = Balances;

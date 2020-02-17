@@ -833,3 +833,16 @@ fn proposal_execution_succeeds_after_the_grace_period() {
             .is_none());
     });
 }
+
+#[test]
+fn create_proposal_fails_on_exceeding_max_active_proposals_count() {
+    initial_test_ext().execute_with(|| {
+        for _ in 0..100 {
+            let dummy_proposal = DummyProposalFixture::default();
+            dummy_proposal.create_proposal_and_assert(Ok(()));
+        }
+
+        let dummy_proposal = DummyProposalFixture::default();
+        dummy_proposal.create_proposal_and_assert(Err("Max active proposals number exceeded"));
+    });
+}

@@ -7,6 +7,7 @@ pub const MSG_PROPOSAL_EXPIRED: &str = "Voting period is expired for this propos
 pub const MSG_PROPOSAL_FINALIZED: &str = "Proposal is finalized already";
 pub const MSG_YOU_ALREADY_VOTED: &str = "You have already voted on this proposal";
 pub const MSG_YOU_DONT_OWN_THIS_PROPOSAL: &str = "You do not own this proposal";
+pub const MSG_MAX_ACTIVE_PROPOSAL_NUMBER_EXCEEDED: &str = "Max active proposals number exceeded";
 //pub const MSG_STAKE_IS_GREATER_THAN_BALANCE: &str = "Balance is too low to be staked";
 
 //pub const MSG_ONLY_MEMBERS_CAN_PROPOSE: &str = "Only members can make a proposal";
