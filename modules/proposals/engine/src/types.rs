@@ -188,7 +188,6 @@ where
     }
 }
 
-
 /// Provides data for voting.
 pub trait VotersParameters {
     /// Defines maximum voters count for the proposal
