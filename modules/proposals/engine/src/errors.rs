@@ -3,7 +3,6 @@ pub const MSG_EMPTY_BODY_PROVIDED: &str = "Proposal cannot have an empty body";
 pub const MSG_TOO_LONG_TITLE: &str = "Title is too long";
 pub const MSG_TOO_LONG_BODY: &str = "Body is too long";
 pub const MSG_PROPOSAL_NOT_FOUND: &str = "This proposal does not exist";
-pub const MSG_PROPOSAL_EXPIRED: &str = "Voting period is expired for this proposal";
 pub const MSG_PROPOSAL_FINALIZED: &str = "Proposal is finalized already";
 pub const MSG_YOU_ALREADY_VOTED: &str = "You have already voted on this proposal";
 pub const MSG_YOU_DONT_OWN_THIS_PROPOSAL: &str = "You do not own this proposal";

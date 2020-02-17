@@ -456,7 +456,7 @@ fn vote_fails_with_expired_voting_period() {
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert(
             VoteKind::Approve,
-            Err("Voting period is expired for this proposal"),
+            Err("Proposal is finalized already"),
         );
     });
 }

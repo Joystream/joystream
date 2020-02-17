@@ -151,9 +151,6 @@ decl_module! {
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
             let mut proposal = Self::proposals(proposal_id);
 
-            let not_expired = !proposal.is_voting_period_expired(Self::current_block());
-            ensure!(not_expired, errors::MSG_PROPOSAL_EXPIRED);
-
             ensure!(proposal.status == ProposalStatus::Active, errors::MSG_PROPOSAL_FINALIZED);
 
             let did_not_vote_before = !<VoteExistsByProposalByVoter<T>>::exists(
