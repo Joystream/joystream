@@ -46,8 +46,11 @@ pub struct TextProposalExecutable {
     /// Text proposal title
     pub title: Vec<u8>,
 
-    /// Text proposal body
+    /// Text proposal body (description)
     pub body: Vec<u8>,
+
+    /// Text proposal main text
+    pub text: Vec<u8>,
 }
 
 impl TextProposalExecutable {

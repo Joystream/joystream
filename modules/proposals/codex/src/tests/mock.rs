@@ -59,7 +59,6 @@ impl balances::Trait for Test {
     type CreationFee = CreationFee;
 }
 
-
 impl stake::Trait for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;

@@ -20,22 +20,35 @@ mod tests;
 use codec::Encode;
 use proposal_engine::*;
 use rstd::clone::Clone;
-use rstd::vec::Vec;
-use srml_support::decl_module;
 use rstd::prelude::*;
+use rstd::vec::Vec;
+use srml_support::{decl_error, decl_module, ensure};
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait: system::Trait + proposal_engine::Trait {}
 
-use srml_support::traits::{Currency};
+use srml_support::traits::Currency;
 pub type BalanceOf<T> =
-<<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+
+//TODO: make configurable
+const DEFAULT_TEXT_PROPOSAL_MAX_LEN: u32 = 20_000;
+
+decl_error! {
+    pub enum Error {
+        /// The size of the provided text for text proposal exceeded the limit
+        TextProposalSizeExceeded,
+    }
+}
 
 decl_module! {
     /// 'Proposal codex' substrate module
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        /// Predefined errors
+        type Error = Error;
+
         /// Create text (signal) proposal type. On approval prints its content.
-        pub fn create_text_proposal(origin, title: Vec<u8>, body: Vec<u8>) {
+        pub fn create_text_proposal(origin, title: Vec<u8>, body: Vec<u8>, text: Vec<u8>) {
             let parameters = crate::ProposalParameters {
                 voting_period: T::BlockNumber::from(50000u32),
                 grace_period: T::BlockNumber::from(10000u32),
@@ -44,16 +57,20 @@ decl_module! {
                 stake: Some(<BalanceOf<T>>::from(500u32))
             };
 
+            ensure!(text.len() as u32 <= DEFAULT_TEXT_PROPOSAL_MAX_LEN,
+                Error::TextProposalSizeExceeded);
+
             let text_proposal = TextProposalExecutable{
                 title: title.clone(),
-                 body: body.clone()
+                body: body.clone(),
+                text: text.clone(),
                };
             let proposal_code = text_proposal.encode();
 
             <proposal_engine::Module<T>>::create_proposal(
                 origin,
                 parameters,
-                 title,
+                title,
                 body,
                 text_proposal.proposal_type(),
                 proposal_code
