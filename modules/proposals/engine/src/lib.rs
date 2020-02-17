@@ -55,7 +55,7 @@ pub trait Trait: system::Trait + timestamp::Trait + stake::Trait {
     type TotalVotersCounter: VotersParameters;
 
     /// Converts proposal code binary to executable representation
-    type ProposalCodeDecoder: ProposalCodeDecoder;
+    type ProposalCodeDecoder: ProposalCodeDecoder<Self>;
 }
 
 decl_event!(

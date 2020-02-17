@@ -294,7 +294,7 @@ pub trait ProposalExecutable {
 }
 
 /// Proposal code binary converter
-pub trait ProposalCodeDecoder {
+pub trait ProposalCodeDecoder<T : system::Trait> {
     /// Converts proposal code binary to executable representation
     fn decode_proposal(
         proposal_type: u32,

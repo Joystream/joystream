@@ -167,7 +167,7 @@ impl ProposalType {
     }
 }
 
-impl ProposalCodeDecoder for ProposalType {
+impl ProposalCodeDecoder<Test> for ProposalType {
     fn decode_proposal(
         proposal_type: u32,
         proposal_code: Vec<u8>,
