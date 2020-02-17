@@ -185,6 +185,30 @@ where
             None
         };
     }
+
+    pub fn define_proposal_decision_status(
+        &self,
+        total_voters_count: u32,
+        now: BlockNumber,
+    ) -> Option<ProposalStatus> {
+        let proposal_status_decision = ProposalStatusDecision {
+            proposal: self,
+            approvals: self.voting_results.approvals,
+            now,
+            votes_count: self.voting_results.votes_number(),
+            total_voters_count,
+        };
+
+        if proposal_status_decision.is_approval_quorum_reached() {
+            Some(ProposalStatus::Approved)
+        } else if proposal_status_decision.is_expired() {
+            Some(ProposalStatus::Expired)
+        } else if proposal_status_decision.is_voting_completed() {
+            Some(ProposalStatus::Rejected)
+        } else {
+            None
+        }
+    }
 }
 
 /// Vote. Characterized by voter and vote kind.

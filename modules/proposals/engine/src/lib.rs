@@ -316,10 +316,14 @@ impl<T: Trait> Module<T> {
                     Self::current_block(),
                 );
 
-                // get new status from tally results
+                let decision_status = proposal.define_proposal_decision_status(
+                    T::TotalVotersCounter::total_voters_count(),
+                    Self::current_block(),
+                );
+
                 let mut new_status = ProposalStatus::Active;
-                if let Some(tally_results) = proposal.tally_results.clone() {
-                    new_status = tally_results.status;
+                if let Some(status) = decision_status {
+                    new_status = status;
                 }
                 // proposal is finalized if not active
                 let finalized = new_status != ProposalStatus::Active;
