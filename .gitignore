@@ -16,3 +16,5 @@ joystream_runtime.wasm
 
 # Vim
 .*.sw*
+
+/modules/**/*.lock
