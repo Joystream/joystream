@@ -132,7 +132,6 @@ struct VoteGenerator {
     proposal_id: u32,
     current_account_id: u64,
     pub auto_increment_voter_id: bool,
-    pub saved_votes: Vec<Vote<u64>>,
 }
 
 impl VoteGenerator {
@@ -141,7 +140,6 @@ impl VoteGenerator {
             proposal_id,
             current_account_id: 0,
             auto_increment_voter_id: true,
-            saved_votes: Vec::new(),
         }
     }
     fn vote_and_assert_ok(&mut self, vote_kind: VoteKind) {
@@ -150,11 +148,6 @@ impl VoteGenerator {
 
     fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: dispatch::Result) {
         assert_eq!(self.vote(vote_kind.clone()), expected_result);
-
-        self.saved_votes.push(Vote {
-            voter_id: self.current_account_id,
-            vote_kind,
-        });
     }
 
     fn vote(&mut self, vote_kind: VoteKind) -> dispatch::Result {
@@ -279,18 +272,12 @@ fn proposal_execution_succeeds() {
                 status: ProposalStatus::Executed,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                tally_results: Some(TallyResult {
-                    abstentions: 0,
-                    approvals: 4,
-                    rejections: 0,
-                    status: ProposalStatus::Approved,
-                    finalized_at: 1
-                }),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
                     rejections: 0,
                 },
+                finalized_at: None,
             }
         )
     });
@@ -337,25 +324,19 @@ fn proposal_execution_failed() {
                 },
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                tally_results: Some(TallyResult {
-                    abstentions: 0,
-                    approvals: 4,
-                    rejections: 0,
-                    status: ProposalStatus::Approved,
-                    finalized_at: 1
-                }),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
                     rejections: 0,
                 },
+                finalized_at: None,
             }
         )
     });
 }
 
 #[test]
-fn tally_calculation_succeeds() {
+fn voting_results_calculation_succeeds() {
     initial_test_ext().execute_with(|| {
         let parameters = ProposalParameters {
             voting_period: 3,
@@ -379,20 +360,18 @@ fn tally_calculation_succeeds() {
         let proposal = <crate::Proposals<Test>>::get(proposals_id);
 
         assert_eq!(
-            proposal.tally_results,
-            Some(TallyResult {
+            proposal.voting_results,
+            VotingResults {
                 abstentions: 1,
                 approvals: 2,
                 rejections: 1,
-                status: ProposalStatus::Approved,
-                finalized_at: 1
-            })
+            }
         )
     });
 }
 
 #[test]
-fn rejected_tally_results_and_remove_proposal_id_from_active_succeeds() {
+fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
         dummy_proposal.create_proposal_and_assert(Ok(()));
@@ -413,15 +392,15 @@ fn rejected_tally_results_and_remove_proposal_id_from_active_succeeds() {
         let proposal = <Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
-            proposal.tally_results,
-            Some(TallyResult {
+            proposal.voting_results,
+            VotingResults {
                 abstentions: 2,
                 approvals: 0,
                 rejections: 2,
-                status: ProposalStatus::Rejected,
-                finalized_at: 1
-            })
+            }
         );
+
+        assert_eq!(proposal.status, ProposalStatus::Rejected,);
 
         assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
     });
@@ -545,8 +524,8 @@ fn cancel_proposal_succeeds() {
                 status: ProposalStatus::Canceled,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                tally_results: None,
                 voting_results: VotingResults::default(),
+                finalized_at: None,
             }
         )
     });
@@ -619,8 +598,8 @@ fn veto_proposal_succeeds() {
                 status: ProposalStatus::Vetoed,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                tally_results: None,
                 voting_results: VotingResults::default(),
+                finalized_at: None,
             }
         )
     });
@@ -760,25 +739,19 @@ fn create_proposal_and_expire_it() {
                 status: ProposalStatus::Expired,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                tally_results: Some(TallyResult {
-                    abstentions: 0,
-                    approvals: 0,
-                    rejections: 0,
-                    status: ProposalStatus::Expired,
-                    finalized_at: 4
-                }),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 0,
                     rejections: 0,
                 },
+                finalized_at: None,
             }
         )
     });
 }
 
 #[test]
-fn voting_internal_cache_works_and_got_cleaned_successfully() {
+fn voting_internal_cache_exists_after_proposal_finalization() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
         dummy_proposal.create_proposal_and_assert(Ok(()));
@@ -800,8 +773,8 @@ fn voting_internal_cache_works_and_got_cleaned_successfully() {
 
         run_to_block_and_finalize(2);
 
-        // cache cleared
-        assert!(!<crate::VoteExistsByProposalByVoter<Test>>::exists(
+        // cache still exists and is not cleared
+        assert!(<crate::VoteExistsByProposalByVoter<Test>>::exists(
             proposal_id,
             1
         ));

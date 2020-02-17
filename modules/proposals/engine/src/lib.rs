@@ -17,10 +17,10 @@
 //#![warn(missing_docs)]
 
 use types::FinalizedProposalData;
+pub use types::VotingResults;
 pub use types::{Proposal, ProposalParameters, ProposalStatus};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
-pub use types::{TallyResult, VotingResults};
-pub use types::{Vote, VoteKind, VotersParameters};
+pub use types::{VoteKind, VotersParameters};
 
 mod errors;
 mod types;
@@ -250,8 +250,8 @@ impl<T: Trait> Module<T> {
             proposer_id: proposer_id.clone(),
             proposal_type,
             status: ProposalStatus::Active,
-            tally_results: None,
             voting_results: VotingResults::default(),
+            finalized_at: None,
         };
 
         // mutation
@@ -308,13 +308,7 @@ impl<T: Trait> Module<T> {
         <ActiveProposalIds<T>>::enumerate()
             .map(|(proposal_id, _)| {
                 // load current proposal
-                let mut proposal = Self::proposals(proposal_id);
-
-                // calculates voting results
-                proposal.update_tally_results(
-                    T::TotalVotersCounter::total_voters_count(),
-                    Self::current_block(),
-                );
+                let proposal = Self::proposals(proposal_id);
 
                 let decision_status = proposal.define_proposal_decision_status(
                     T::TotalVotersCounter::total_voters_count(),
@@ -333,6 +327,7 @@ impl<T: Trait> Module<T> {
                         proposal_id,
                         proposal,
                         status: new_status,
+                        finalized_at: Self::current_block(),
                     },
                     finalized,
                 )
@@ -342,13 +337,13 @@ impl<T: Trait> Module<T> {
             .collect() // compose output vector
     }
 
+    // TODO: update proposal.finalized_at
     // TODO: to be refactored or removed after introducing stakes. Events should be fired on actions
     // such as 'rejected' or 'approved'.
     /// Updates proposal status and removes proposal id from active id set.
     fn update_proposal_status(proposal_id: T::ProposalId, new_status: ProposalStatus) {
         if new_status != ProposalStatus::Active {
             <ActiveProposalIds<T>>::remove(&proposal_id);
-            <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
         }
         <Proposals<T>>::mutate(proposal_id, |p| p.status = new_status.clone());
 
