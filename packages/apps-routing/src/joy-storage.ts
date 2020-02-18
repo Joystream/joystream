@@ -1,19 +1,20 @@
 import { Routes } from './types';
 
-import Roles from '@polkadot/joy-roles/index';
+import Storage from '@polkadot/joy-storage/index';
 
 export default ([
   {
-    Component: Roles,
+    Component: Storage,
     display: {
+      needsAccounts: true,
       needsApi: [
         'query.actors.actorAccountIds'
       ]
     },
     i18n: {
-      defaultValue: 'Working groups'
+      defaultValue: 'Storage'
     },
-    icon: 'users',
-    name: 'roles'
+    icon: 'database',
+    name: 'storage'
   }
 ] as Routes);
