@@ -2,18 +2,19 @@ import BN from 'bn.js';
 import { camelCase, upperFirst } from 'lodash'
 import { MediaTransport } from './transport';
 import { ClassId, Class, EntityId, Entity } from '@joystream/types/versioned-store';
-import { MusicTrackType } from './schemas/music/MusicTrack';
-import { MusicAlbumType } from './schemas/music/MusicAlbum';
-import { VideoType } from './schemas/video/Video';
-import { ContentLicenseType } from './schemas/general/ContentLicense';
-import { CurationStatusType } from './schemas/general/CurationStatus';
-import { LanguageType } from './schemas/general/Language';
-import { MediaObjectType } from './schemas/general/MediaObject';
-import { MusicGenreType } from './schemas/music/MusicGenre';
-import { MusicMoodType } from './schemas/music/MusicMood';
-import { MusicThemeType } from './schemas/music/MusicTheme';
-import { PublicationStatusType } from './schemas/general/PublicationStatus';
-import { VideoCategoryType } from './schemas/video/VideoCategory';
+import { PlainEntity, AnyEntityCodec } from '@joystream/types/versioned-store/EntityCodec';
+import { MusicTrackType, MusicTrackCodec } from './schemas/music/MusicTrack';
+import { MusicAlbumType, MusicAlbumCodec } from './schemas/music/MusicAlbum';
+import { VideoType, VideoCodec } from './schemas/video/Video';
+import { ContentLicenseType, ContentLicenseCodec } from './schemas/general/ContentLicense';
+import { CurationStatusType, CurationStatusCodec } from './schemas/general/CurationStatus';
+import { LanguageType, LanguageCodec } from './schemas/general/Language';
+import { MediaObjectType, MediaObjectCodec } from './schemas/general/MediaObject';
+import { MusicGenreType, MusicGenreCodec } from './schemas/music/MusicGenre';
+import { MusicMoodType, MusicMoodCodec } from './schemas/music/MusicMood';
+import { MusicThemeType, MusicThemeCodec } from './schemas/music/MusicTheme';
+import { PublicationStatusType, PublicationStatusCodec } from './schemas/general/PublicationStatus';
+import { VideoCategoryType, VideoCategoryCodec } from './schemas/video/VideoCategory';
 import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId, Channel } from '@joystream/types/content-working-group';
 import { ApiPromise } from '@polkadot/api/index';
@@ -21,10 +22,6 @@ import { ApiProps } from '@polkadot/react-api/types';
 import { Vec } from '@polkadot/types';
 import { LinkageResult } from '@polkadot/types/codec/Linkage';
 import { ChannelCodec } from './schemas/channel/Channel';
-import { MockTransport } from './transport.mock';
-
-// TODO Delete this mock, when all methods here will be implemented using Substrate
-const mock = new MockTransport();
 
 const FIRST_CHANNEL_ID = 0;
 const FIRST_CLASS_ID = 1;
@@ -46,6 +43,25 @@ interface ClassIdByNameMap {
 }
 
 type ClassName = keyof ClassIdByNameMap
+
+function unifyClassName(className: string): ClassName {
+  return upperFirst(camelCase(className)) as ClassName
+}
+
+const EntityCodecByClassNameMap = {
+  ContentLicense: ContentLicenseCodec,
+  CurationStatus: CurationStatusCodec,
+  Language: LanguageCodec,
+  MediaObject: MediaObjectCodec,
+  MusicAlbum: MusicAlbumCodec,
+  MusicGenre: MusicGenreCodec,
+  MusicMood: MusicMoodCodec,
+  MusicTheme: MusicThemeCodec,
+  MusicTrack: MusicTrackCodec,
+  PublicationStatus: PublicationStatusCodec,
+  Video: VideoCodec,
+  VideoCategory: VideoCategoryCodec,
+}
 
 export class SubstrateTransport extends MediaTransport {
 
@@ -130,9 +146,15 @@ export class SubstrateTransport extends MediaTransport {
     return allIds
   }
 
+  // TODO Think wisely how to optimize/memoize the result of this func
   async allClasses(): Promise<Class[]> {
     const ids = await this.allClassIds()
     return await this.vsQuery().classById.multi<Vec<Class>>(ids) as unknown as Class[]
+  }
+
+  async classByName(className: ClassName): Promise<Class | undefined> {
+    return (await this.allClasses())
+      .find((x) => className === unifyClassName(x.name))
   }
 
   // TODO Save result of this func in context state and subscribe to updates from Substrate.
@@ -140,7 +162,7 @@ export class SubstrateTransport extends MediaTransport {
     const map: ClassIdByNameMap = {}
     const classes = await this.allClasses()
     classes.forEach((x) => {
-      const className = upperFirst(camelCase(x.name)) as ClassName
+      const className = unifyClassName(x.name)
       map[className] = x.id
     });
     return map
@@ -170,79 +192,97 @@ export class SubstrateTransport extends MediaTransport {
     return await this.vsQuery().entityById.multi<Vec<Entity>>(ids) as unknown as Entity[]
   }
 
+  async allEntitiesByClassName(className: ClassName): Promise<Entity[]> {
+    const classId = (await this.classIdByNameMap())[className]
+
+    if (!classId) {
+      console.log(`No entities found by class name '${className}'`)
+      return []
+    }
+
+    return (await this.allEntities())
+      .filter((e) => classId.eq(e.class_id))
+  }
+
+  async findPlainEntitiesByClassName<T extends PlainEntity> (className: ClassName): Promise<T[]> {
+    const entities = await this.allEntitiesByClassName(className)
+
+    const klass = await this.classByName(className)
+    if (!klass) {
+      console.log(`No class found by name '${className}'`)
+      return []
+    }
+    
+    const CodecClass = EntityCodecByClassNameMap[className] as typeof AnyEntityCodec
+    if (!CodecClass) {
+      console.log(`Entity codec not found by class name '${className}'`)
+      return []
+    }
+
+    return (new CodecClass(klass)).toPlainObjects(entities)
+  }
+
   async allVideos(): Promise<VideoType[]> {
+    return await this.findPlainEntitiesByClassName('Video')
+  }
+
+  async featuredVideos(): Promise<VideoType[]> {
     return this.notImplementedYet(); // TODO impl
   }
 
-  featuredVideos(): Promise<VideoType[]> {
+  async musicTrackClass(): Promise<Class> {
     return this.notImplementedYet(); // TODO impl
   }
 
-  videosByChannelId(channelId: ChannelId): Promise<VideoType[]> {
+  async musicAlbumClass(): Promise<Class> {
     return this.notImplementedYet(); // TODO impl
   }
 
-  musicTrackClass(): Promise<Class> {
+  async videoClass(): Promise<Class> {
     return this.notImplementedYet(); // TODO impl
   }
 
-  musicAlbumClass(): Promise<Class> {
+  async musicTrackById (_id: EntityId): Promise<MusicTrackType> {
     return this.notImplementedYet(); // TODO impl
   }
 
-  videoClass(): Promise<Class> {
+  async musicAlbumById (_id: EntityId): Promise<MusicAlbumType> {
     return this.notImplementedYet(); // TODO impl
   }
 
-  musicTrackById (_id: EntityId): Promise<MusicTrackType> {
-    return this.notImplementedYet(); // TODO impl
+  async allMediaObjects(): Promise<MediaObjectType[]> {
+    return this.notImplementedYet(); // TODO impl: get from data storafe module (Substrate)
   }
 
-  musicAlbumById (_id: EntityId): Promise<MusicAlbumType> {
-    return this.notImplementedYet(); // TODO impl
+  async allContentLicenses (): Promise<ContentLicenseType[]> {
+    return await this.findPlainEntitiesByClassName('ContentLicense')
   }
 
-  allMediaObjects(): Promise<MediaObjectType[]> {
-    return this.notImplementedYet(); // TODO impl
+  async allCurationStatuses(): Promise<CurationStatusType[]> {
+    return await this.findPlainEntitiesByClassName('CurationStatus')
   }
 
-  allContentLicenses (): Promise<ContentLicenseType[]> {
-    // TODO impl Substrate version:
-    return mock.allContentLicenses();
+  async allLanguages(): Promise<LanguageType[]> {
+    return await this.findPlainEntitiesByClassName('Language')
   }
 
-  allCurationStatuses(): Promise<CurationStatusType[]> {
-    // TODO impl Substrate version:
-    return mock.allCurationStatuses();
+  async allMusicGenres(): Promise<MusicGenreType[]> {
+    return await this.findPlainEntitiesByClassName('MusicGenre')
   }
 
-  allLanguages(): Promise<LanguageType[]> {
-    // TODO impl Substrate version:
-    return mock.allLanguages();
+  async allMusicMoods(): Promise<MusicMoodType[]> {
+    return await this.findPlainEntitiesByClassName('MusicMood')
   }
 
-  allMusicGenres(): Promise<MusicGenreType[]> {
-    // TODO impl Substrate version:
-    return mock.allMusicGenres();
+  async allMusicThemes(): Promise<MusicThemeType[]> {
+    return await this.findPlainEntitiesByClassName('MusicTheme')
   }
 
-  allMusicMoods(): Promise<MusicMoodType[]> {
-    // TODO impl Substrate version:
-    return mock.allMusicMoods();
+  async allPublicationStatuses(): Promise<PublicationStatusType[]> {
+    return await this.findPlainEntitiesByClassName('PublicationStatus')
   }
 
-  allMusicThemes(): Promise<MusicThemeType[]> {
-    // TODO impl Substrate version:
-    return mock.allMusicThemes();
-  }
-
-  allPublicationStatuses(): Promise<PublicationStatusType[]> {
-    // TODO impl Substrate version:
-    return mock.allPublicationStatuses();
-  }
-
-  allVideoCategories(): Promise<VideoCategoryType[]> {
-    // TODO impl Substrate version:
-    return mock.allVideoCategories();
+  async allVideoCategories(): Promise<VideoCategoryType[]> {
+    return await this.findPlainEntitiesByClassName('VideoCategory')
   }
 }

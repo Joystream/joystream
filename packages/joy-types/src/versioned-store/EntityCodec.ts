@@ -62,7 +62,7 @@ export abstract class EntityCodec<T extends PlainEntity> {
   private propNameToMetaMap: Map<string, PropMeta> = new Map();
   private propIndexToNameMap: Map<number, string> = new Map();
   
-  constructor (entityClass: Class) {
+  public constructor (entityClass: Class) {
     entityClass.properties.map((p, index) => {
       const propName = propNameToJsFieldStyle(p.name.toString());
       const propMeta = { index, type: p.prop_type.toString() };
@@ -75,16 +75,21 @@ export abstract class EntityCodec<T extends PlainEntity> {
    * Converts an entity of Substrate codec type to a plain JS object.
    */
   toPlainObject (entity: Entity): T | undefined {
-    let res: any = {};
+    const res: PlainEntity = { id: entity.id.toNumber() };
     entity.entity_values.forEach(v => {
       const propIdx = v.in_class_index.toNumber();
       const propName = this.propIndexToNameMap.get(propIdx);
       if (propName) {
-        // TODO Check with runtime: v.value or v.value.value ?
         res[propName] = substrateToPlain(v.value.value);
       }
     });
     return res as T;
+  }
+  
+  toPlainObjects (entities: Entity[]): T[] {
+    return entities
+      .map((e) => this.toPlainObject(e))
+      .filter((e) => typeof e !== undefined) as T[]
   }
 
   /**
@@ -93,6 +98,7 @@ export abstract class EntityCodec<T extends PlainEntity> {
    * of Substrate runtime module `substrate-versioned-store`.
    */
   toSubstrateUpdate (updatedProps: Partial<T>): VecClassPropertyValue {
+
     // TODO check required fields! save prop metadata in constructor?
 
     const res = new VecClassPropertyValue();
@@ -110,3 +116,6 @@ export abstract class EntityCodec<T extends PlainEntity> {
     return res;
   }
 }
+
+/** This class is created just to satisfy TypeScript in some cases */
+export class AnyEntityCodec extends EntityCodec<any> {}

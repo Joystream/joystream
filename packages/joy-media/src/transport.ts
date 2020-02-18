@@ -41,14 +41,17 @@ export abstract class MediaTransport extends TransportBase {
 
   abstract featuredVideos(): Promise<VideoType[]>
 
-  abstract videosByChannelId(channelId: ChannelId): Promise<VideoType[]>
+  async videosByChannelId(channelId: ChannelId): Promise<VideoType[]> {
+    return (await this.allVideos())
+      .filter(x => channelId && channelId.eq(x.channelId))
+  }
 
   async videosByAccount(accountId: AccountId): Promise<VideoType[]> {
-    const channels = await this.channelsByAccount(accountId)
-    const channelIds = new Set(channels.map(x => x.id))
+    const accountChannels = await this.channelsByAccount(accountId)
+    const accountChannelIds = new Set(accountChannels.map(x => x.id))
 
     return (await this.allVideos())
-      .filter(x => x.channelId && channelIds.has(x.channelId))
+      .filter(x => x.channelId && accountChannelIds.has(x.channelId))
   }
 
   async videoById(id: EntityId): Promise<VideoType | undefined> {
