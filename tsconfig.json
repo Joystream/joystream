@@ -5,6 +5,9 @@
     "**/build/**/*"
   ],
   "compilerOptions": {
+    "target": "esnext",
+    "module": "commonjs",
+    "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
       "@joystream/types/": [ "packages/joy-types/src/" ],

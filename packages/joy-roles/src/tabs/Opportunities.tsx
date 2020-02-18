@@ -24,7 +24,7 @@ import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext'
 
 import { Countdown, GroupMember, GroupMemberView } from '../elements'
 import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement'
-import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema'
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings'
 import { Opening } from "@joystream/types/hiring"
 import { MemberId } from '@joystream/types/members';
 
