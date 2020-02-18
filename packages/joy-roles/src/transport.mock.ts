@@ -369,94 +369,88 @@ export class Transport extends TransportBase implements ITransport {
     })
   }
 
-  openingApplications(): Subscribable<OpeningApplication[]> {
-    return new Observable<OpeningApplication[]>(observer => {
-      observer.next(
-        [
-          {
-            creator: {
-              actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
-              profile: mockProfile('benholdencrowther'),
-              title: 'Group lead',
-              lead: true,
-              stake: new u128(10),
-            },
-            meta: {
-              id: "1",
-              group: "group-name",
-            },
-            stage: {
-              state: OpeningState.AcceptingApplications,
-              starting_block: 2956498,
-              starting_block_hash: "somehash",
-              starting_time: yesterday(),
-            },
-            opening: new Opening({
-              created: new u32(50000),
-              stage: new ActiveOpeningStage({
-                acceptingApplications: new AcceptingApplications({
-                  started_accepting_applicants_at_block: new u32(100),
-                })
-              }),
-              max_review_period_length: new u32(100),
-              application_rationing_policy: new Option(ApplicationRationingPolicy),
-              application_staking_policy: new Option(StakingPolicy),
-              role_staking_policy: new Option(StakingPolicy),
-              human_readable_text: newMockHumanReadableText({
-                version: 1,
-                headline: "Help us curate awesome content",
-                job: {
-                  title: "Content curator",
-                  description: faker.lorem.paragraphs(4),
-                },
-                application: {
-                  sections: [
-                    {
-                      title: "About you",
-                      questions: [
-                        {
-                          title: "Your name",
-                          type: "text"
-                        },
-                        {
-                          title: "Your e-mail address",
-                          type: "text"
-                        }
-                      ]
-                    },
-                    {
-                      title: "Your experience",
-                      questions: [
-                        {
-                          title: "Why would you be good for this role?",
-                          type: "text area"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                reward: "10 JOY per block",
-                creator: {
-                  membership: {
-                    handle: "ben",
-                  }
-                },
-                process: {
-                  details: [
-                    "Some custom detail"
-                  ]
-                }
-              }),
-            }),
-            applicationStake: new u128(5),
-            roleStake: new u128(15),
-            rank: 21,
-            capacity: 20,
+  async openingApplications(): Promise<OpeningApplication[]> {
+    return [{
+      id: 1,
+      creator: {
+        actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
+        profile: mockProfile('benholdencrowther'),
+        title: 'Group lead',
+        lead: true,
+        stake: new u128(10),
+      },
+      meta: {
+        id: "1",
+        group: "group-name",
+      },
+      stage: {
+        state: OpeningState.AcceptingApplications,
+        starting_block: 2956498,
+        starting_block_hash: "somehash",
+        starting_time: yesterday(),
+      },
+      opening: new Opening({
+        created: new u32(50000),
+        stage: new ActiveOpeningStage({
+          acceptingApplications: new AcceptingApplications({
+            started_accepting_applicants_at_block: new u32(100),
+          })
+        }),
+        max_review_period_length: new u32(100),
+        application_rationing_policy: new Option(ApplicationRationingPolicy),
+        application_staking_policy: new Option(StakingPolicy),
+        role_staking_policy: new Option(StakingPolicy),
+        human_readable_text: newMockHumanReadableText({
+          version: 1,
+          headline: "Help us curate awesome content",
+          job: {
+            title: "Content curator",
+            description: faker.lorem.paragraphs(4),
           },
-        ]
-      )
-    }
-    )
+          application: {
+            sections: [
+              {
+                title: "About you",
+                questions: [
+                  {
+                    title: "Your name",
+                    type: "text"
+                  },
+                  {
+                    title: "Your e-mail address",
+                    type: "text"
+                  }
+                ]
+              },
+              {
+                title: "Your experience",
+                questions: [
+                  {
+                    title: "Why would you be good for this role?",
+                    type: "text area"
+                  }
+                ]
+              }
+            ]
+          },
+          reward: "10 JOY per block",
+          creator: {
+            membership: {
+              handle: "ben",
+            }
+          },
+          process: {
+            details: [
+              "Some custom detail"
+            ]
+          }
+        }),
+      }),
+      applicationStake: new u128(5),
+      roleStake: new u128(15),
+      rank: 21,
+      capacity: 20,
+    }]
   }
 
   async myCurationGroupRoles(): Promise<ActiveRole[]> {
