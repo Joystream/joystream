@@ -22,6 +22,9 @@ Table of Contents
   - [Sprint in London](#sprint-in-london)
     - [Agenda](#agenda-5)
     - [Minutes](#minutes-5)
+  - [Rome Release Status Meeting](#rome-release-status-meeting)
+    - [Agenda](#agenda-6)
+    - [Minutes](#minutes-6)
 <!-- TOC END -->
 
 # Planned Meetings
@@ -607,6 +610,8 @@ NA
 
 **Ended at:** `12:50 GMT+2`
 
+---
+
 ## Sprint in London
 
 - **ID:** `Rome Sprint in London`
@@ -654,3 +659,182 @@ We kept quite strictly to the schedule laid out [here](sprint-in-london.md) for 
 - We didn't always stick to schedule.
 - It was very good for morale for everyone to meet each other.
 - Some of the early meetings involved people who were not relevant to the topics discussed, wasting time.
+
+---
+
+## Rome Release Status Meeting
+
+- **ID:** `Rome Release Status Meeting`
+- **Date:** `10.02.20`
+- **Starts:** `12:00 GMT+1`
+- **Scheduled Duration:** `1h30m`
+- **Venue:** `ZOOM`
+- **Lead**: `Martin`
+- **Minutes**: `Ben`
+- **Participants**:
+  - `Alex`
+  - `Bedeho`
+  - `Ben`
+  - `Martin`
+  - `Mokhtar`
+  - `Paul`
+
+### Agenda
+
+#### Item 1 - Runtime
+
+- Status of the modules:
+  1. staking module
+  2. rewards (recurring) module
+  3. minting module
+  4. hiring module
+  5. membership module
+  6. versioned data store module
+  7. permissions module
+  8. content directory working group module
+
+
+#### Item 2 - Curation
+
+- Curator Group and tooling:
+  1. Tools for content
+  2. Joining flow
+  3. View status of curator group
+  4. Policing and editing flow
+
+
+#### Item 3 - Content
+
+- Non-pioneer
+  1. Schemas
+  2. Channels
+
+- Pioneer (video)
+  1. Channel creation/editing
+  2. Channel curation/moderation
+  3. Content creation/editing (upload)
+  4. Content curation/moderation
+  5. Content consumption and exploration
+
+#### Item 4 - Testing
+
+- Launch reckless chain(s)
+  1. One to rule them all?
+  2. One for each sub-system?
+
+- Testing (sub-system)
+  1. Curator Group (target date)
+  2. Channels + Content (target date)
+  3. Validator (target date)
+  4. Unchanged functionality  (target date)
+    - Forum
+    - Membership
+    - Council
+    - Runtime upgrades
+
+#### Item 5 - Infrastructure
+
+- Storage node
+  1. Change max file size
+  2. Support for "cleaning" content?
+
+- Migration and genesis config
+  1. Migration (still) working
+  2. Change genesis parameters and consequences
+    - Starting balance
+    - Faucet payout
+    - JOY rewards (Storage/Validation)
+    - Use telegram as "main faucet"?
+
+#### Item 6 - Community
+
+- Hire testers
+  1. How many/who?
+  2. Lead(s)
+
+- Incentives (prep for Constantinople)
+  1. Make them dynamic
+  2. Review, and re-align w/genesis config
+
+- Release
+  1. Assets
+  2. Coordination
+  3. Posts
+  4. Newsletters
+
+### Minutes
+**Started at:** `12:00 GMT+1`
+**Present:**
+  - `Alex`
+  - `Bedeho`
+  - `Ben`
+  - `Martin`
+  - `Mokhtar`
+  - `Paul`
+
+#### Item 1
+1. Staking Module: `Done, no open PRs, ready unless any bugs found`
+2. Rewards (Recurring) Module: `Done, no open PRs, ready unless any bugs found`
+3. Minting Module: `Done, no open PRs, ready unless any bugs found`
+4. Hiring Module: `Done, but some additional work being done here by Shamil`
+5. Membership Module: `Done, no open PRs, ready unless any bugs found`
+6. Versioned Data Store Module: `Done, no open PRs, ready unless any bugs found`
+7. Permissions Module: `Done, no open PRs, ready unless any bugs found`
+8. Content Directory Working Group Module:`Done, but there are open PRs with bugfixes and enhancements`
+
+#### Item 2 - Curation
+
+1. We first discussed the status of the tools connected to `versioned-store-js`. These will need Joystream types to be updated in order to allow them to work with the newest version of the runtime. Between three hours and one day will be required to update these.
+2. Paul estimated that if there are no more issues, the basic joining flow should be done this week within 6-7 working days.
+3. Viewing the status of the curator group is now done.
+4. We agreed that the editing flow here should be kept the same as for content creators, for simplicity and ease of development.
+
+
+#### Item 3 - Content
+
+1. In terms of `schemas`, we still need to implement channel as a property of a video (`channel-id`).
+2. Alex needs 1-2 more days of work on channel creation/editing for Pioneer.
+3. Channel curation and moderation does not need to be implemented in Pioneer. The ability to delete channels through `sudo` will be added post Rome release.
+4. Content creation and editing in Pioneer needs 3 more days of work by Alex. The UI and styling is already complete.
+5. Content consumption and exploration on Pioneer will need about half a day more work. We will not be including pagination on launch.
+
+
+#### Item 4 - Testing
+
+1. We agreed that for now one of the most important things is to have some sort of staging environment for Alex to test with. This would not be a local dev-chain, but rather a chain we all can test/connect to, with a working storage-node and validators.
+
+2. The following target dates were agreed for sub-system tests:
+
+ - Curator Group (22/02/20)
+ - Channels + Content (22/02/20)
+ - Validator (21/02/20)
+ - Unchanged functionality (21/02/20)
+
+#### Item 5 - Infrastructure
+
+1. We agreed to change the maximum file size of videos to be hosted by storage providers to greater than 100MB. This needs to be updated in both Pioneer and the Storage API.
+2. We won't be implementing support for "cleaning" content from storage nodes until after release.
+3. Mokhtar has finished migration.
+4. We also agreed that Aracus should be killed and replaced with some new Joystream-hosted nodes. Provisionally we agreed that these might be made up of 2 bootnodes, 1 also performing media discovery, 1 also acting as our storage provider and 1 or more nodes hosting Pioneer, with load balancing if applicable.
+5. The following `genesis config paramaters` need to be re-evaluated:
+- Balances for existing members
+- Payouts (JOY) for Storage Providers, Validators and Curators
+- Open slots for Storage Providers, Validators and Curators
+- Staking requirements (JOY) for Storage Providers, Validators? and Curators
+- Smaller (relative) size of faucet tokens -> Use telegram for larger (JOY) token payouts, to avoid faucet abuse.
+- Perhaps more to consider
+
+#### Item 6 - Community
+
+1. We agreed that testers should be sourced from our Telegram group.
+2. We also agreed that incentives for Rome should be made dynamic to avoid making roles too lucrative.
+3. Assets for newsletters, blog posts and everything else relating to the release are to be prepared.
+
+
+**Other topics raised:**
+NA
+
+**Ended at:** `13:40 GMT+1`
+
+---
+
