@@ -96,9 +96,9 @@ decl_event!(
     }
 );
 
-// Storage for the proposals module
+// Storage for the proposals engine module
 decl_storage! {
-    pub trait Store for Module<T: Trait> as ProposalsEngine{
+    pub trait Store for Module<T: Trait> as ProposalEngine{
         /// Map proposal by its id.
         pub Proposals get(fn proposals): map u32 => Proposal<T::BlockNumber, T::AccountId, types::BalanceOf<T>>;
 

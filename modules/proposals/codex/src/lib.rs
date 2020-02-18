@@ -23,7 +23,7 @@ use rstd::clone::Clone;
 use rstd::marker::PhantomData;
 use rstd::prelude::*;
 use rstd::vec::Vec;
-use srml_support::{decl_error, decl_module, ensure};
+use srml_support::{decl_error, decl_module, decl_storage, ensure};
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait: system::Trait + proposal_engine::Trait {}
@@ -32,8 +32,9 @@ use srml_support::traits::Currency;
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
-//TODO: make configurable
+// Defines max allowed text proposal text length. Can be override in the config.
 const DEFAULT_TEXT_PROPOSAL_MAX_LEN: u32 = 20_000;
+// Defines max allowed text proposal text length. Can be override in the config.
 const DEFAULT_RUNTIME_PROPOSAL_WASM_MAX_LEN: u32 = 20_000;
 
 decl_error! {
@@ -49,6 +50,17 @@ decl_error! {
 
         /// Provided WASM code for the runtime upgrade proposal is empty
         RuntimeProposalIsEmpty,
+    }
+}
+
+// Storage for the proposals codex module
+decl_storage! {
+    pub trait Store for Module<T: Trait> as ProposalCodex{
+        /// Defines max allowed text proposal text length.
+        pub TextProposalMaxLen get(text_max_len) config(): u32 = DEFAULT_TEXT_PROPOSAL_MAX_LEN;
+
+        /// Defines max allowed runtime upgrade proposal wasm code length.
+        pub RuntimeUpgradeMaxLen get(wasm_max_len) config(): u32 = DEFAULT_RUNTIME_PROPOSAL_WASM_MAX_LEN;
     }
 }
 
@@ -69,7 +81,7 @@ decl_module! {
             };
 
             ensure!(!text.is_empty(), Error::TextProposalIsEmpty);
-            ensure!(text.len() as u32 <= DEFAULT_TEXT_PROPOSAL_MAX_LEN,
+            ensure!(text.len() as u32 <=  Self::text_max_len(),
                 Error::TextProposalSizeExceeded);
 
             let text_proposal = TextProposalExecutable{
@@ -105,7 +117,7 @@ decl_module! {
             };
 
             ensure!(!wasm.is_empty(), Error::RuntimeProposalIsEmpty);
-            ensure!(wasm.len() as u32 <= DEFAULT_RUNTIME_PROPOSAL_WASM_MAX_LEN,
+            ensure!(wasm.len() as u32 <= Self::wasm_max_len(),
                 Error::RuntimeProposalSizeExceeded);
 
             let proposal = RuntimeUpgradeProposalExecutable{
