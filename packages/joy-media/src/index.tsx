@@ -17,7 +17,7 @@ import Explore from './Explore';
 import { Play } from './View';
 import { EditByContentId } from './EditMeta';
 import { withDiscoveryProvider, DiscoveryProviderProps } from './DiscoveryProvider';
-import { SubstrateTransportProvider } from './MediaView';
+import { SubstrateTransportProvider } from './TransportContext';
 import { ChannelsByOwnerWithRouter } from './channels/ChannelsByOwner.view';
 import { EditChannelView, EditChannelWithRouter } from './channels/EditChannel.view';
 import { ExploreContentView } from './explore/ExploreContent.view';
