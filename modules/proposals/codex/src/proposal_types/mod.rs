@@ -1,15 +1,15 @@
-use codec::{Decode};
+use codec::Decode;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use rstd::convert::TryFrom;
 use rstd::prelude::*;
 
 use crate::{ProposalCodeDecoder, ProposalExecutable};
 
-mod text_proposal;
 mod runtime_upgrade;
+mod text_proposal;
 
-pub use text_proposal::TextProposalExecutable;
 pub use runtime_upgrade::RuntimeUpgradeProposalExecutable;
+pub use text_proposal::TextProposalExecutable;
 
 /// Defines allowed proposals types. Integer value serves as proposal_type_id.
 #[derive(Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
@@ -31,9 +31,11 @@ impl ProposalType {
             ProposalType::Text => TextProposalExecutable::decode(&mut &proposal_data[..])
                 .map_err(|err| err.what())
                 .map(|obj| Box::new(obj) as Box<dyn ProposalExecutable>),
-            ProposalType::RuntimeUpgrade => <RuntimeUpgradeProposalExecutable<T>>::decode(&mut &proposal_data[..])
-                .map_err(|err| err.what())
-                .map(|obj| Box::new(obj) as Box<dyn ProposalExecutable>),
+            ProposalType::RuntimeUpgrade => {
+                <RuntimeUpgradeProposalExecutable<T>>::decode(&mut &proposal_data[..])
+                    .map_err(|err| err.what())
+                    .map(|obj| Box::new(obj) as Box<dyn ProposalExecutable>)
+            }
         }
     }
 }
@@ -48,4 +50,3 @@ impl<T: system::Trait> ProposalCodeDecoder<T> for ProposalType {
             .compose_executable::<T>(proposal_code)
     }
 }
-

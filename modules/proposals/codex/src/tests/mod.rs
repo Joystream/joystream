@@ -63,8 +63,6 @@ fn create_text_proposal_codex_call_fails_with_insufficient_rights() {
     });
 }
 
-
-
 #[test]
 fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
     initial_test_ext().execute_with(|| {
@@ -93,7 +91,6 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
     });
 }
 
-
 #[test]
 fn create_upgrade_runtime_proposal_codex_call_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
@@ -105,7 +102,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_insufficient_rights() {
             b"body".to_vec(),
             b"wasm".to_vec(),
         )
-            .is_err());
+        .is_err());
     });
 }
 

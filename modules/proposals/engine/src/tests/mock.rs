@@ -76,6 +76,12 @@ impl crate::Trait for Test {
     type TotalVotersCounter = ();
 
     type ProposalCodeDecoder = ProposalType;
+
+    type ProposalId = u32;
+
+    type ProposerId = u64;
+
+    type VoterId = u64;
 }
 
 impl crate::VotersParameters for () {

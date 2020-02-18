@@ -47,6 +47,20 @@ pub enum ProposalStatus {
     Vetoed,
 }
 
+impl ProposalStatus {
+    /// Defines whether proposal status is 'point of the proposal decision'  (the decision about
+    /// this proposal was made).
+    pub fn is_decision_status(&self) -> bool {
+        match self {
+            ProposalStatus::Approved
+            | ProposalStatus::Vetoed
+            | ProposalStatus::Canceled
+            | ProposalStatus::Expired
+            | ProposalStatus::Rejected => true,
+            _ => false,
+        }
+    }
+}
 impl Default for ProposalStatus {
     fn default() -> Self {
         ProposalStatus::Active
@@ -94,10 +108,40 @@ pub struct ProposalParameters<BlockNumber, Balance> {
     pub stake: Option<Balance>,
 }
 
+/// Contains current voting results
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct VotingResults {
+    /// 'Abstain' votes counter
+    pub abstentions: u32,
+
+    /// 'Approve' votes counter
+    pub approvals: u32,
+
+    /// 'Reject' votes counter
+    pub rejections: u32,
+}
+
+impl VotingResults {
+    /// Add vote to the related counter
+    pub fn add_vote(&mut self, vote: VoteKind) {
+        match vote {
+            VoteKind::Abstain => self.abstentions += 1,
+            VoteKind::Approve => self.approvals += 1,
+            VoteKind::Reject => self.rejections += 1,
+        }
+    }
+
+    /// Calculates number of votes so far
+    pub fn votes_number(&self) -> u32 {
+        self.abstentions + self.approvals + self.rejections
+    }
+}
+
 /// 'Proposal' contains information necessary for the proposal system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Proposal<BlockNumber, AccountId, Balance> {
+pub struct Proposal<BlockNumber, ProposerId, Balance> {
     /// Proposal type id
     pub proposal_type: u32,
 
@@ -105,7 +149,7 @@ pub struct Proposal<BlockNumber, AccountId, Balance> {
     pub parameters: ProposalParameters<BlockNumber, Balance>,
 
     /// Identifier of member proposing.
-    pub proposer_id: AccountId,
+    pub proposer_id: ProposerId,
 
     /// Proposal title
     pub title: Vec<u8>,
@@ -123,10 +167,18 @@ pub struct Proposal<BlockNumber, AccountId, Balance> {
     //pub stake: Option<BalanceOf<T>>
     /// Current proposal status
     pub status: ProposalStatus,
+
+    /// Curring voting result for the proposal
+    pub voting_results: VotingResults,
+
+    // TODO: update proposal.finalized_at
+    /// Proposal finalization block number
+    pub finalized_at: Option<BlockNumber>,
 }
 
-impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId, Balance>
-    Proposal<BlockNumber, AccountId, Balance>
+impl<BlockNumber, ProposerId, Balance> Proposal<BlockNumber, ProposerId, Balance>
+where
+    BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
 {
     /// Returns whether voting period expired by now
     pub fn is_voting_period_expired(&self, now: BlockNumber) -> bool {
@@ -142,38 +194,23 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId, Bala
         }
     }
 
-    /// Voting results tally for single proposal.
-    /// Parameters: own proposal id, current time, votes.
-    /// Returns tally results if proposal status will should change
-    pub fn tally_results(
-        self,
-        proposal_id: u32,
-        votes: Vec<Vote<AccountId>>,
+    /// Determines the finalized proposal status using voting results tally for current proposal.
+    /// Parameters: current time, total voters number involved (council size)
+    /// Returns whether the proposal has finalized status
+    pub fn define_proposal_decision_status(
+        &self,
         total_voters_count: u32,
         now: BlockNumber,
-    ) -> Option<TallyResult<BlockNumber>> {
-        let mut abstentions: u32 = 0;
-        let mut approvals: u32 = 0;
-        let mut rejections: u32 = 0;
-
-        for vote in votes.iter() {
-            match vote.vote_kind {
-                VoteKind::Abstain => abstentions += 1,
-                VoteKind::Approve => approvals += 1,
-                VoteKind::Reject => rejections += 1,
-            }
-        }
-
+    ) -> Option<ProposalStatus> {
         let proposal_status_decision = ProposalStatusDecision {
-            proposal: &self,
-            approvals,
+            proposal: self,
+            approvals: self.voting_results.approvals,
             now,
-            votes_count: votes.len() as u32,
+            votes_count: self.voting_results.votes_number(),
             total_voters_count,
         };
 
-        let new_status: Option<ProposalStatus> = if proposal_status_decision
-            .is_approval_quorum_reached()
+        if proposal_status_decision.is_approval_quorum_reached()
             && proposal_status_decision.is_approval_threshold_reached()
         {
             Some(ProposalStatus::Approved)
@@ -183,55 +220,8 @@ impl<BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy, AccountId, Bala
             Some(ProposalStatus::Rejected)
         } else {
             None
-        };
-
-        if let Some(status) = new_status {
-            Some(TallyResult {
-                proposal_id,
-                abstentions,
-                approvals,
-                rejections,
-                status,
-                finalized_at: now,
-            })
-        } else {
-            None
         }
     }
-}
-
-/// Vote. Characterized by voter and vote kind.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Vote<AccountId> {
-    /// Origin of the vote
-    pub voter_id: AccountId,
-
-    /// Vote kind
-    pub vote_kind: VoteKind,
-}
-
-/// Tally result for the proposal
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct TallyResult<BlockNumber> {
-    /// Proposal Id
-    pub proposal_id: u32,
-
-    /// 'Abstention' votes count
-    pub abstentions: u32,
-
-    /// 'Approve' votes count
-    pub approvals: u32,
-
-    /// 'Reject' votes count
-    pub rejections: u32,
-
-    /// Proposal status after tally
-    pub status: ProposalStatus,
-
-    /// Proposal finalization block number
-    pub finalized_at: BlockNumber,
 }
 
 /// Provides data for voting.
@@ -241,16 +231,16 @@ pub trait VotersParameters {
 }
 
 // Calculates quorum, votes threshold, expiration status
-struct ProposalStatusDecision<'a, BlockNumber, AccountId, Balance> {
-    proposal: &'a Proposal<BlockNumber, AccountId, Balance>,
+struct ProposalStatusDecision<'a, BlockNumber, ProposerId, Balance> {
+    proposal: &'a Proposal<BlockNumber, ProposerId, Balance>,
     now: BlockNumber,
     votes_count: u32,
     total_voters_count: u32,
     approvals: u32,
 }
 
-impl<'a, BlockNumber, AccountId, Balance>
-    ProposalStatusDecision<'a, BlockNumber, AccountId, Balance>
+impl<'a, BlockNumber, ProposerId, Balance>
+    ProposalStatusDecision<'a, BlockNumber, ProposerId, Balance>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
 {
@@ -294,7 +284,7 @@ pub trait ProposalExecutable {
 }
 
 /// Proposal code binary converter
-pub trait ProposalCodeDecoder<T : system::Trait> {
+pub trait ProposalCodeDecoder<T: system::Trait> {
     /// Converts proposal code binary to executable representation
     fn decode_proposal(
         proposal_type: u32,
@@ -309,6 +299,21 @@ pub type BalanceOf<T> =
 ///// Balance alias for staking
 //pub type NegativeImbalance<T> =
 //    <<T as StakeTrait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+
+/// Data container for the finalized proposal results
+pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, ProposerId, Balance> {
+    /// Proposal id
+    pub proposal_id: ProposalId,
+
+    /// Proposal to be finalized
+    pub proposal: Proposal<BlockNumber, ProposerId, Balance>,
+
+    /// Proposal finalization status
+    pub status: ProposalStatus,
+
+    /// Proposal finalization block number
+    pub finalized_at: BlockNumber,
+}
 
 #[cfg(test)]
 mod tests {
@@ -375,90 +380,60 @@ mod tests {
     }
 
     #[test]
-    fn tally_results_proposal_expired() {
+    fn define_proposal_decision_status_returns_expired() {
         let mut proposal = Proposal::<u64, u64, u64>::default();
-        let proposal_id = 1;
         let now = 5;
         proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 80;
         proposal.parameters.approval_threshold_percentage = 40;
 
-        let votes = vec![
-            Vote {
-                voter_id: 1,
-                vote_kind: VoteKind::Approve,
-            },
-            Vote {
-                voter_id: 2,
-                vote_kind: VoteKind::Approve,
-            },
-            Vote {
-                voter_id: 4,
-                vote_kind: VoteKind::Reject,
-            },
-        ];
-
-        let expected_tally_results = TallyResult {
-            proposal_id,
-            abstentions: 0,
-            approvals: 2,
-            rejections: 1,
-            status: ProposalStatus::Expired,
-            finalized_at: now,
-        };
+        proposal.voting_results.add_vote(VoteKind::Reject);
+        proposal.voting_results.add_vote(VoteKind::Approve);
+        proposal.voting_results.add_vote(VoteKind::Approve);
 
         assert_eq!(
-            proposal.tally_results(proposal_id, votes, 5, now),
-            Some(expected_tally_results)
+            proposal.voting_results,
+            VotingResults {
+                abstentions: 0,
+                approvals: 2,
+                rejections: 1,
+            }
         );
+
+        let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
+        assert_eq!(expected_proposal_status, Some(ProposalStatus::Expired));
     }
+
     #[test]
-    fn tally_results_proposal_approved() {
+    fn define_proposal_decision_status_returns_approved() {
+        let now = 2;
         let mut proposal = Proposal::<u64, u64, u64>::default();
-        let proposal_id = 1;
         proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
 
-        let votes = vec![
-            Vote {
-                voter_id: 1,
-                vote_kind: VoteKind::Approve,
-            },
-            Vote {
-                voter_id: 2,
-                vote_kind: VoteKind::Approve,
-            },
-            Vote {
-                voter_id: 3,
-                vote_kind: VoteKind::Approve,
-            },
-            Vote {
-                voter_id: 4,
-                vote_kind: VoteKind::Reject,
-            },
-        ];
-
-        let expected_tally_results = TallyResult {
-            proposal_id,
-            abstentions: 0,
-            approvals: 3,
-            rejections: 1,
-            status: ProposalStatus::Approved,
-            finalized_at: 2,
-        };
+        proposal.voting_results.add_vote(VoteKind::Reject);
+        proposal.voting_results.add_vote(VoteKind::Approve);
+        proposal.voting_results.add_vote(VoteKind::Approve);
+        proposal.voting_results.add_vote(VoteKind::Approve);
 
         assert_eq!(
-            proposal.tally_results(proposal_id, votes, 5, 2),
-            Some(expected_tally_results)
+            proposal.voting_results,
+            VotingResults {
+                abstentions: 0,
+                approvals: 3,
+                rejections: 1,
+            }
         );
+
+        let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
+        assert_eq!(expected_proposal_status, Some(ProposalStatus::Approved));
     }
 
     #[test]
-    fn tally_results_proposal_rejected_because_of_failed_approval_threshold() {
+    fn define_proposal_decision_status_returns_rejected() {
         let mut proposal = Proposal::<u64, u64, u64>::default();
-        let proposal_id = 1;
         let now = 2;
 
         proposal.created_at = 1;
@@ -466,55 +441,57 @@ mod tests {
         proposal.parameters.approval_quorum_percentage = 50;
         proposal.parameters.approval_threshold_percentage = 51;
 
-        let votes = vec![
-            Vote {
-                voter_id: 1,
-                vote_kind: VoteKind::Approve,
-            },
-            Vote {
-                voter_id: 2,
-                vote_kind: VoteKind::Reject,
-            },
-            Vote {
-                voter_id: 3,
-                vote_kind: VoteKind::Abstain,
-            },
-            Vote {
-                voter_id: 4,
-                vote_kind: VoteKind::Approve,
-            },
-        ];
-
-        let expected_tally_results = TallyResult {
-            proposal_id,
-            abstentions: 1,
-            approvals: 2,
-            rejections: 1,
-            status: ProposalStatus::Rejected,
-            finalized_at: now,
-        };
+        proposal.voting_results.add_vote(VoteKind::Reject);
+        proposal.voting_results.add_vote(VoteKind::Reject);
+        proposal.voting_results.add_vote(VoteKind::Abstain);
+        proposal.voting_results.add_vote(VoteKind::Approve);
 
         assert_eq!(
-            proposal.tally_results(proposal_id, votes, 4, now),
-            Some(expected_tally_results)
+            proposal.voting_results,
+            VotingResults {
+                abstentions: 1,
+                approvals: 1,
+                rejections: 2,
+            }
         );
+
+        let expected_proposal_status = proposal.define_proposal_decision_status(4, now);
+        assert_eq!(expected_proposal_status, Some(ProposalStatus::Rejected));
     }
 
     #[test]
-    fn tally_results_are_empty_with_not_expired_voting_period() {
+    fn define_proposal_decision_status_returns_none() {
         let mut proposal = Proposal::<u64, u64, u64>::default();
-        let proposal_id = 1;
         let now = 2;
 
         proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
 
-        let votes = vec![Vote {
-            voter_id: 1,
-            vote_kind: VoteKind::Abstain,
-        }];
+        proposal.voting_results.add_vote(VoteKind::Abstain);
+        assert_eq!(
+            proposal.voting_results,
+            VotingResults {
+                abstentions: 1,
+                approvals: 0,
+                rejections: 0,
+            }
+        );
 
-        assert_eq!(proposal.tally_results(proposal_id, votes, 5, now), None);
+        let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
+        assert_eq!(expected_proposal_status, None);
+    }
+
+    #[test]
+    fn proposal_status_is_decision_status_check_works() {
+        assert!(ProposalStatus::Approved.is_decision_status());
+        assert!(ProposalStatus::Rejected.is_decision_status());
+        assert!(ProposalStatus::Vetoed.is_decision_status());
+        assert!(ProposalStatus::Canceled.is_decision_status());
+        assert!(ProposalStatus::Expired.is_decision_status());
+        assert!(!(ProposalStatus::Active.is_decision_status()));
+        assert!(!(ProposalStatus::PendingExecution.is_decision_status()));
+        assert!(!(ProposalStatus::Executed.is_decision_status()));
+        assert!(!(ProposalStatus::Failed { error: Vec::new() }.is_decision_status()));
     }
 }

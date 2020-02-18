@@ -11,7 +11,7 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-pub use proposal_types::{ProposalType, TextProposalExecutable, RuntimeUpgradeProposalExecutable};
+pub use proposal_types::{ProposalType, RuntimeUpgradeProposalExecutable, TextProposalExecutable};
 
 mod proposal_types;
 #[cfg(test)]

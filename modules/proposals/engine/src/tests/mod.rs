@@ -4,7 +4,6 @@ use crate::*;
 use mock::*;
 
 use codec::Encode;
-use rstd::collections::btree_set::BTreeSet;
 use runtime_primitives::traits::{OnFinalize, OnInitialize};
 use srml_support::{dispatch, StorageMap, StorageValue};
 use system::RawOrigin;
@@ -156,11 +155,11 @@ impl VoteGenerator {
         }
     }
     fn vote_and_assert_ok(&mut self, vote_kind: VoteKind) {
-        assert_eq!(self.vote(vote_kind), Ok(()));
+        self.vote_and_assert(vote_kind, Ok(()));
     }
 
     fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: dispatch::Result) {
-        assert_eq!(self.vote(vote_kind), expected_result);
+        assert_eq!(self.vote(vote_kind.clone()), expected_result);
     }
 
     fn vote(&mut self, vote_kind: VoteKind) -> dispatch::Result {
@@ -178,7 +177,7 @@ impl VoteGenerator {
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u64>>) {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64>>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
@@ -261,6 +260,9 @@ fn proposal_execution_succeeds() {
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -282,8 +284,17 @@ fn proposal_execution_succeeds() {
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: Some(1),
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                },
+                finalized_at: None,
             }
-        )
+        );
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
     });
 }
 
@@ -328,13 +339,19 @@ fn proposal_execution_failed() {
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: Some(1),
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                },
+                finalized_at: None,
             }
         )
     });
 }
 
 #[test]
-fn tally_calculation_succeeds() {
+fn voting_results_calculation_succeeds() {
     initial_test_ext().execute_with(|| {
         let parameters = ProposalParameters {
             voting_period: 3,
@@ -354,24 +371,21 @@ fn tally_calculation_succeeds() {
 
         run_to_block_and_finalize(2);
 
-        let tally_result = <TallyResults<Test>>::get(proposal_id);
+        let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
-            tally_result,
-            TallyResult {
-                proposal_id,
+            proposal.voting_results,
+            VotingResults {
                 abstentions: 1,
                 approvals: 2,
                 rejections: 1,
-                status: ProposalStatus::Approved,
-                finalized_at: 1
             }
         )
     });
 }
 
 #[test]
-fn rejected_tally_results_and_remove_proposal_id_from_active_succeeds() {
+fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -382,30 +396,23 @@ fn rejected_tally_results_and_remove_proposal_id_from_active_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
-        let mut active_proposals_id = <ActiveProposalIds>::get();
-
-        let mut active_proposals_set = BTreeSet::new();
-        active_proposals_set.insert(proposal_id);
-        assert_eq!(active_proposals_id, active_proposals_set);
+        assert!(<ActiveProposalIds<Test>>::exists(proposal_id));
 
         run_to_block_and_finalize(2);
 
-        let tally_result = <TallyResults<Test>>::get(proposal_id);
+        let proposal = <Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
-            tally_result,
-            TallyResult {
-                proposal_id,
+            proposal.voting_results,
+            VotingResults {
                 abstentions: 2,
                 approvals: 0,
                 rejections: 2,
-                status: ProposalStatus::Rejected,
-                finalized_at: 1
             }
         );
 
-        active_proposals_id = <ActiveProposalIds>::get();
-        assert_eq!(active_proposals_id, BTreeSet::new());
+        assert_eq!(proposal.status, ProposalStatus::Rejected);
+        assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
     });
 }
 
@@ -441,10 +448,7 @@ fn vote_fails_with_expired_voting_period() {
         run_to_block_and_finalize(6);
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
-        vote_generator.vote_and_assert(
-            VoteKind::Approve,
-            Err("Voting period is expired for this proposal"),
-        );
+        vote_generator.vote_and_assert(VoteKind::Approve, Err("Proposal is finalized already"));
     });
 }
 
@@ -521,7 +525,9 @@ fn cancel_proposal_succeeds() {
                 status: ProposalStatus::Canceled,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                approved_at: None
+                approved_at: None,
+                voting_results: VotingResults::default(),
+                finalized_at: None,
             }
         )
     });
@@ -563,6 +569,9 @@ fn cancel_proposal_fails_with_insufficient_rights() {
 #[test]
 fn veto_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+
         let parameters = ProposalParameters {
             voting_period: 3,
             approval_quorum_percentage: 60,
@@ -572,6 +581,9 @@ fn veto_proposal_succeeds() {
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
 
         let veto_proposal = VetoProposalFixture::new(proposal_id);
         veto_proposal.veto_and_assert(Ok(()));
@@ -588,9 +600,14 @@ fn veto_proposal_succeeds() {
                 status: ProposalStatus::Vetoed,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                approved_at: None
+                approved_at: None,
+                voting_results: VotingResults::default(),
+                finalized_at: None,
             }
-        )
+        );
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
     });
 }
 
@@ -715,6 +732,12 @@ fn create_proposal_and_expire_it() {
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: None,
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 0,
+                    rejections: 0,
+                },
+                finalized_at: None,
             }
         )
     });
@@ -742,10 +765,9 @@ fn proposal_execution_postponed_because_of_grace_period() {
         run_to_block_and_finalize(1);
         run_to_block_and_finalize(2);
 
-        let pending_proposals_ids = <PendingExecutionProposalIds>::get();
-        assert!(pending_proposals_ids
-            .iter()
-            .find(|&&x| x == proposal_id)
+        // check internal cache for proposal_id presense
+        assert!(<PendingExecutionProposalIds<Test>>::enumerate()
+            .find(|(x, _)| *x == proposal_id)
             .is_some());
 
         let proposal = <crate::Proposals<Test>>::get(proposal_id);
@@ -761,6 +783,12 @@ fn proposal_execution_postponed_because_of_grace_period() {
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: Some(1),
+                finalized_at: None,
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                },
             }
         );
     });
@@ -787,49 +815,42 @@ fn proposal_execution_succeeds_after_the_grace_period() {
 
         run_to_block_and_finalize(1);
 
-        let mut pending_proposals_ids = <PendingExecutionProposalIds>::get();
-        assert!(pending_proposals_ids
-            .iter()
-            .find(|&&x| x == proposal_id)
+        // check internal cache for proposal_id presense
+        assert!(<PendingExecutionProposalIds<Test>>::enumerate()
+            .find(|(x, _)| *x == proposal_id)
             .is_some());
 
         let mut proposal = <crate::Proposals<Test>>::get(proposal_id);
 
-        assert_eq!(
-            proposal,
-            Proposal {
-                proposal_type: 1,
-                parameters,
-                proposer_id: 1,
-                created_at: 1,
-                status: ProposalStatus::PendingExecution,
-                title: b"title".to_vec(),
-                body: b"body".to_vec(),
-                approved_at: Some(1),
-            }
-        );
+        let mut expected_proposal = Proposal {
+            proposal_type: 1,
+            parameters,
+            proposer_id: 1,
+            created_at: 1,
+            status: ProposalStatus::PendingExecution,
+            title: b"title".to_vec(),
+            body: b"body".to_vec(),
+            approved_at: Some(1),
+            finalized_at: None,
+            voting_results: VotingResults {
+                abstentions: 0,
+                approvals: 4,
+                rejections: 0,
+            },
+        };
+
+        assert_eq!(proposal, expected_proposal);
 
         run_to_block_and_finalize(2);
 
         proposal = <crate::Proposals<Test>>::get(proposal_id);
 
-        assert_eq!(
-            proposal,
-            Proposal {
-                proposal_type: 1,
-                parameters,
-                proposer_id: 1,
-                created_at: 1,
-                status: ProposalStatus::Executed,
-                title: b"title".to_vec(),
-                body: b"body".to_vec(),
-                approved_at: Some(1),
-            }
-        );
-        pending_proposals_ids = <PendingExecutionProposalIds>::get();
-        assert!(pending_proposals_ids
-            .iter()
-            .find(|&&x| x == proposal_id)
+        expected_proposal.status = ProposalStatus::Executed;
+        assert_eq!(proposal, expected_proposal);
+
+        // check internal cache for proposal_id absense
+        assert!(<PendingExecutionProposalIds<Test>>::enumerate()
+            .find(|(x, _)| *x == proposal_id)
             .is_none());
     });
 }
@@ -837,12 +858,47 @@ fn proposal_execution_succeeds_after_the_grace_period() {
 #[test]
 fn create_proposal_fails_on_exceeding_max_active_proposals_count() {
     initial_test_ext().execute_with(|| {
-        for _ in 0..100 {
+        for idx in 0..100 {
             let dummy_proposal = DummyProposalFixture::default();
             dummy_proposal.create_proposal_and_assert(Ok(()));
+            // internal active proposal counter check
+            assert_eq!(<ActiveProposalCount>::get(), idx + 1);
         }
 
         let dummy_proposal = DummyProposalFixture::default();
         dummy_proposal.create_proposal_and_assert(Err("Max active proposals number exceeded"));
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 100);
+    });
+}
+
+#[test]
+fn voting_internal_cache_exists_after_proposal_finalization() {
+    initial_test_ext().execute_with(|| {
+        let dummy_proposal = DummyProposalFixture::default();
+        dummy_proposal.create_proposal_and_assert(Ok(()));
+
+        // last created proposal id equals current proposal count
+        let proposal_id = <ProposalCount>::get();
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Reject);
+        vote_generator.vote_and_assert_ok(VoteKind::Reject);
+        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
+        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
+
+        // cache exists
+        assert!(<crate::VoteExistsByProposalByVoter<Test>>::exists(
+            proposal_id,
+            1
+        ));
+
+        run_to_block_and_finalize(2);
+
+        // cache still exists and is not cleared
+        assert!(<crate::VoteExistsByProposalByVoter<Test>>::exists(
+            proposal_id,
+            1
+        ));
     });
 }
