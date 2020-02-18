@@ -1,9 +1,5 @@
-import { Observable } from 'rxjs';
-import { Subscribable } from '@polkadot/joy-utils/index'
 import { MediaTransport } from './transport';
-
-import EntityId from '@joystream/types/versioned-store/EntityId';
-import { Entity, Class } from '@joystream/types/versioned-store';
+import { EntityId, Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
@@ -24,8 +20,16 @@ import { AllMockChannels } from './stories/data/ChannelSamples';
 
 export class MockTransport extends MediaTransport {
 
+  protected notImplementedYet<T> (): T {
+    throw new Error('Mock transport: Requested function is not implemented yet')
+  }
+
   allChannels(): Promise<ChannelEntity[]> {
     return this.promise(AllMockChannels);
+  }
+
+  allClasses(): Promise<Class[]> {
+    return this.notImplementedYet(); // TODO impl
   }
 
   allVideos(): Promise<VideoType[]> {
@@ -96,11 +100,7 @@ export class MockTransport extends MediaTransport {
     return this.promise(mocks.AllVideoCategories);
   }
   
-  allEntities (): Subscribable<Entity[]> {
-    return new Observable<Entity[]>(observer => {
-      observer.next(
-        [] // TODO create mock data
-      );
-    });
+  allEntities (): Promise<Entity[]> {
+    return this.notImplementedYet(); // TODO impl
   }
 }

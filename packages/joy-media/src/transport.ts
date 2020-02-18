@@ -1,7 +1,6 @@
-import { Transport as TransportBase, Subscribable } from '@polkadot/joy-utils/index'
+import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 import { AccountId } from '@polkadot/types/interfaces';
-import EntityId from '@joystream/types/versioned-store/EntityId';
-import { Entity, Class } from '@joystream/types/versioned-store';
+import { EntityId, Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
@@ -22,9 +21,7 @@ import { isPublicEntity } from './entities/EntityHelpers';
 
 export abstract class MediaTransport extends TransportBase {
 
-  protected notImplementedYet<T> (): T {
-    throw new Error('Substrate transport is not implemented yet');
-  }
+  protected abstract notImplementedYet<T> (): T
 
   abstract allChannels(): Promise<ChannelEntity[]>
 
@@ -37,6 +34,8 @@ export abstract class MediaTransport extends TransportBase {
     return (await this.allChannels())
       .filter(x => accountId && accountId.eq(x.roleAccount))
   }
+
+  abstract allClasses(): Promise<Class[]>
 
   abstract allVideos(): Promise<VideoType[]>
 
@@ -99,8 +98,7 @@ export abstract class MediaTransport extends TransportBase {
   abstract allPublicationStatuses(): Promise<PublicationStatusType[]>
   abstract allVideoCategories(): Promise<VideoCategoryType[]>
 
-  // State
-  abstract allEntities(): Subscribable<Entity[]>
+  abstract allEntities(): Promise<Entity[]>
 
   async dropdownOptions(): Promise<MediaDropdownOptions> {
     const res = new MediaDropdownOptions({
