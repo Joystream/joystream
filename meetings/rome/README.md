@@ -785,7 +785,7 @@ We kept quite strictly to the schedule laid out [here](sprint-in-london.md) for 
 #### Item 2 - Curation
 
 1. We first discussed the status of the tools connected to `versioned-store-js`. These will need Joystream types to be updated in order to allow them to work with the newest version of the runtime. Between three hours and one day will be required to update these.
-2. Paul estimated that if there are no more issues, the basic joining flow should be done this week with some QA next week.
+2. Paul estimated that if there are no more issues, the basic joining flow should be done this week within 6-7 working days.
 3. Viewing the status of the curator group is now done.
 4. We agreed that the editing flow here should be kept the same as for content creators, for simplicity and ease of development.
 
@@ -793,7 +793,7 @@ We kept quite strictly to the schedule laid out [here](sprint-in-london.md) for 
 #### Item 3 - Content
 
 1. In terms of `schemas`, we still need to implement channel as a property of a video (`channel-id`).
-2. Alex needs 1/2 more days of work on channel creation/editing for Pioneer.
+2. Alex needs 1-2 more days of work on channel creation/editing for Pioneer.
 3. Channel curation and moderation does not need to be implemented in Pioneer. The ability to delete channels through `sudo` will be added post Rome release.
 4. Content creation and editing in Pioneer needs 3 more days of work by Alex. The UI and styling is already complete.
 5. Content consumption and exploration on Pioneer will need about half a day more work. We will not be including pagination on launch.
@@ -801,9 +801,9 @@ We kept quite strictly to the schedule laid out [here](sprint-in-london.md) for 
 
 #### Item 4 - Testing
 
-1. We agreed that for now one of the most important things is to have some sort of staging environment for Alex to test with storage providers etc.
+1. We agreed that for now one of the most important things is to have some sort of staging environment for Alex to test with. This would not be a local dev-chain, but rather a chain we all can test/connect to, with a working storage-node and validators.
 
-2. The following dates were agreed for sub-system tests:
+2. The following target dates were agreed for sub-system tests:
 
  - Curator Group (22/02/20)
  - Channels + Content (22/02/20)
@@ -814,8 +814,15 @@ We kept quite strictly to the schedule laid out [here](sprint-in-london.md) for 
 
 1. We agreed to change the maximum file size of videos to be hosted by storage providers to greater than 100MB. This needs to be updated in both Pioneer and the Storage API.
 2. We won't be implementing support for "cleaning" content from storage nodes until after release.
-3. Mokhtar is still working on migration and genesis configuration.
-4. We also agreed that Aracus should be killed and replaced with some new Joystream-hosted nodes.
+3. Mokhtar has finished migration.
+4. We also agreed that Aracus should be killed and replaced with some new Joystream-hosted nodes. Provisionally we agreed that these might be made up of 2 bootnodes, 1 also performing media discovery, 1 also acting as our storage provider and 1 or more nodes hosting Pioneer, with load balancing if applicable.
+5. The following `genesis config paramaters` need to be re-evaluated:
+- Balances for existing members
+- Payouts (JOY) for Storage Providers, Validators and Curators
+- Open slots for Storage Providers, Validators and Curators
+- Staking requirements (JOY) for Storage Providers, Validators? and Curators
+- Smaller (relative) size of faucet tokens -> Use telegram for larger (JOY) token payouts, to avoid faucet abuse.
+- Perhaps more to consider
 
 #### Item 6 - Community
 
