@@ -22,8 +22,6 @@ pub use types::{Proposal, ProposalParameters, ProposalStatus};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
 pub use types::{VoteKind, VotersParameters};
 
-pub use rstd::collections::btree_set::BTreeSet; //TODO change to linked_map
-
 mod errors;
 mod types;
 
@@ -38,15 +36,12 @@ use srml_support::{
 };
 use system::ensure_root;
 
-// TODO: add maximum allowed active proposals
 // TODO: update proposal.finalized_at - update on all proposal finalization points.
 
 // Max allowed proposal title length. Can be used if config value is not filled.
 const DEFAULT_TITLE_MAX_LEN: u32 = 100;
 // Max allowed proposal body length. Can be used if config value is not filled.
 const DEFAULT_BODY_MAX_LEN: u32 = 10_000;
-
-// TODO add to config
 // Max simultaneous active proposals number.
 const MAX_ACTIVE_PROPOSALS_NUMBER: u32 = 100;
 
@@ -65,7 +60,6 @@ pub trait Trait: system::Trait + timestamp::Trait + stake::Trait {
     type TotalVotersCounter: VotersParameters;
 
     /// Converts proposal code binary to executable representation
-
     type ProposalCodeDecoder: ProposalCodeDecoder<Self>;
 
     /// Proposal Id type
@@ -148,6 +142,9 @@ decl_storage! {
 
         /// Defines max allowed proposal body length. Can be configured.
         pub BodyMaxLen get(body_max_len) config(): u32 = DEFAULT_BODY_MAX_LEN;
+
+        /// Defines max simultaneous active proposals number. Can be configured.
+        pub MaxActiveProposals get(max_active_proposals) config(): u32 = MAX_ACTIVE_PROPOSALS_NUMBER;
     }
 }
 
@@ -221,12 +218,13 @@ decl_module! {
         fn on_finalize(_n: T::BlockNumber) {
             let executable_proposal_ids =
                 Self::get_approved_proposal_with_expired_grace_period_ids();
-            let finalized_proposals_data = Self::get_finalized_proposals_data();
+
+            let finalized_proposals = Self::get_finalized_proposals();
 
             // mutation
 
             // Check vote results
-            for  proposal_data in finalized_proposals_data {
+            for  proposal_data in finalized_proposals {
                 <Proposals<T>>::insert(proposal_data.proposal_id, proposal_data.proposal);
                 Self::update_proposal_status(proposal_data.proposal_id, proposal_data.status);
             }
@@ -265,7 +263,7 @@ impl<T: Trait> Module<T> {
         );
 
         ensure!(
-            (Self::active_proposal_count()) < MAX_ACTIVE_PROPOSALS_NUMBER,
+            (Self::active_proposal_count()) < Self::max_active_proposals(),
             errors::MSG_MAX_ACTIVE_PROPOSAL_NUMBER_EXCEEDED
         );
 
@@ -333,9 +331,7 @@ impl<T: Trait> Module<T> {
 
     /// Enumerates through active proposals. Tally Voting results.
     /// Returns proposals with finalized status and id
-    fn get_finalized_proposals_data(
-    ) -> Vec<FinalizedProposalData<T::ProposalId, T::BlockNumber, T::ProposerId, types::BalanceOf<T>>>
-    {
+    fn get_finalized_proposals() -> Vec<FinalizedProposal<T>> {
         // enumerate active proposals id and gather finalization data
         <ActiveProposalIds<T>>::enumerate()
             .filter_map(|(proposal_id, _)| {
@@ -412,6 +408,7 @@ impl<T: Trait> Module<T> {
         Self::update_proposal_status(proposal_id, ProposalStatus::PendingExecution);
     }
 
+    /// Enumerates approved proposals and checks their grace period expiration
     fn get_approved_proposal_with_expired_grace_period_ids() -> Vec<T::ProposalId> {
         <PendingExecutionProposalIds<T>>::enumerate()
             .filter_map(|(proposal_id, _)| {
@@ -437,8 +434,16 @@ impl<T: Trait> Module<T> {
         let current_active_proposal_counter = Self::active_proposal_count();
 
         if current_active_proposal_counter > 0 {
-            let next_active_proposal_count_value =  current_active_proposal_counter - 1;
+            let next_active_proposal_count_value = current_active_proposal_counter - 1;
             ActiveProposalCount::put(next_active_proposal_count_value);
         };
     }
 }
+
+/// Simplification of the 'FinalizedProposalData' type
+type FinalizedProposal<T> = FinalizedProposalData<
+    <T as Trait>::ProposalId,
+    <T as system::Trait>::BlockNumber,
+    <T as Trait>::ProposerId,
+    types::BalanceOf<T>,
+>;

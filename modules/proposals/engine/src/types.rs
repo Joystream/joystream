@@ -105,6 +105,7 @@ pub struct ProposalParameters<BlockNumber, Balance> {
     /// Approval votes percentage threshold to pass the vote.
     pub approval_threshold_percentage: u32,
 
+    /// Proposal stake
     pub stake: Option<Balance>,
 }
 
@@ -163,8 +164,6 @@ pub struct Proposal<BlockNumber, ProposerId, Balance> {
     /// When it was approved.
     pub approved_at: Option<BlockNumber>,
 
-    // Any stake associated with the proposal.
-    //pub stake: Option<BalanceOf<T>>
     /// Current proposal status
     pub status: ProposalStatus,
 
