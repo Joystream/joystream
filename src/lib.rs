@@ -80,6 +80,9 @@ pub type DigestItem = generic::DigestItem<Hash>;
 /// Moment type
 pub type Moment = u64;
 
+/// Credential type
+pub type Credential = u64;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -426,7 +429,7 @@ impl versioned_store::Trait for Runtime {
 }
 
 impl versioned_store_permissions::Trait for Runtime {
-    type Credential = u64;
+    type Credential = Credential;
     type CredentialChecker = (ContentWorkingGroupCredentials, SudoKeyHasAllCredentials);
     type CreateClassPermissionsChecker = ContentLeadOrSudoKeyCanCreateClasses;
 }
@@ -441,22 +444,31 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for SudoKeyHasAllCr
         <sudo::Module<Runtime>>::key() == *account
     }
 }
+
+parameter_types! {
+    pub const CurrentLeadCredential: Credential = 0;
+    pub const AnyActiveCuratorCredential: Credential = 1;
+    pub const AnyActiveChannelOwnerCredential: Credential = 2;
+    pub const PrincipalIdMappingStartsAtCredential: Credential = 1000;
+}
+
 pub struct ContentWorkingGroupCredentials {}
 impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingGroupCredentials {
     fn account_has_credential(
         account: &AccountId,
         credential: <Runtime as versioned_store_permissions::Trait>::Credential,
     ) -> bool {
-        // use parameter_types! to name credentials instead of directly using numbers
         match credential {
             // Credentials from 0..999 represents groups or more complex requirements
             // Current Lead if set
-            0 => match <content_wg::Module<Runtime>>::ensure_lead_is_set() {
-                Ok((_, lead)) => lead.role_account == *account,
-                _ => false,
-            },
+            credential if credential == CurrentLeadCredential::get() => {
+                match <content_wg::Module<Runtime>>::ensure_lead_is_set() {
+                    Ok((_, lead)) => lead.role_account == *account,
+                    _ => false,
+                }
+            }
             // Any Active Curator
-            1 => {
+            credential if credential == AnyActiveCuratorCredential::get() => {
                 // Look for a Curator with a matching role account
                 for (_principal_id, principal) in <content_wg::PrincipalById<Runtime>>::enumerate()
                 {
@@ -473,7 +485,7 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
                 return false;
             }
             // Any Active Channel Owner
-            2 => {
+            credential if credential == AnyActiveChannelOwnerCredential::get() => {
                 // Look for a ChannelOwner with a matching role account
                 for (_principal_id, principal) in <content_wg::PrincipalById<Runtime>>::enumerate()
                 {
@@ -487,9 +499,12 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
 
                 return false;
             }
-            // Above 999 - shifted one-to-one mapping to workging group principal id
-            n if n >= 1000 => {
-                <content_wg::Module<Runtime>>::account_has_credential(account, n - 1000)
+            // mapping to workging group principal id
+            n if n >= PrincipalIdMappingStartsAtCredential::get() => {
+                <content_wg::Module<Runtime>>::account_has_credential(
+                    account,
+                    n - PrincipalIdMappingStartsAtCredential::get(),
+                )
             }
             _ => false,
         }
