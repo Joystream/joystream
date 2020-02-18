@@ -1,5 +1,5 @@
-import { getTypeRegistry, BTreeMap, Enum, bool, u8, u32, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
-import { BlockNumber, AccountId } from '@polkadot/types/interfaces';
+import { getTypeRegistry, BTreeMap, Enum, bool, u8, u32, u128, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
+import { BlockNumber, AccountId, Balance } from '@polkadot/types/interfaces';
 import { ActorId, MemberId } from '../members';
 import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index';
 import { Credential } from '../versioned-store/permissions/credentials';
@@ -15,6 +15,8 @@ export class CuratorApplicationId extends ApplicationId {};
 export class LeadId extends ActorId {};
 export class PrincipalId extends Credential {};
 
+export class OptionalText extends Option.with(Text) {};
+
 export class ChannelContentType extends Enum {
   constructor (value?: any, index?: number) {
     super(
@@ -27,12 +29,12 @@ export class ChannelContentType extends Enum {
   }
 };
 
-export class ChannelPublishingStatus extends Enum {
+export class ChannelPublicationStatus extends Enum {
   constructor (value?: any, index?: number) {
     super(
       [
-        'Published',
-        'NotPunblished',
+        'Public',
+        'Unlisted',
       ],
       value, index);
   }
@@ -52,14 +54,14 @@ export class ChannelCurationStatus extends Enum {
 export type IChannel = {
   verified: bool,
   handle: Text, // Vec<u8>,
-  title: Text, // Vec<u8>,
-  description: Text, // Vec<u8>,
-  avatar: Text, // Vec<u8>,
-  banner: Text, // Vec<u8>,
+  title: OptionalText,
+  description: OptionalText,
+  avatar: OptionalText,
+  banner: OptionalText,
   content: ChannelContentType,
   owner: MemberId,
   role_account: AccountId,
-  publishing_status: ChannelPublishingStatus,
+  publication_status: ChannelPublicationStatus,
   curation_status: ChannelCurationStatus,
   created: BlockNumber,
   principal_id: PrincipalId,
@@ -69,14 +71,14 @@ export class Channel extends JoyStruct<IChannel> {
     super({
       verified: bool,
       handle: Text, // Vec.with(u8),
-      title: Text, // Vec.with(u8),
-      description: Text, // Vec.with(u8),
-      avatar: Text, // Vec.with(u8),
-      banner: Text, // Vec.with(u8),
+      title: OptionalText,
+      description: OptionalText,
+      avatar: OptionalText,
+      banner: OptionalText,
       content: ChannelContentType,
       owner: MemberId,
       role_account: GenericAccountId,
-      publishing_status: ChannelPublishingStatus,
+      publication_status: ChannelPublicationStatus,
       curation_status: ChannelCurationStatus,
       created: u32, // BlockNumber,
       principal_id: PrincipalId,
@@ -424,31 +426,48 @@ export class CuratorApplicationIdToCuratorIdMap extends BTreeMap<ApplicationId, 
   }
 }
 
+export type IRewardPolicy = {
+  amount_per_payout: Balance,
+  next_payment_at_block: BlockNumber,
+  payout_interval: Option<BlockNumber>,
+};
+export class RewardPolicy extends JoyStruct<IRewardPolicy> {
+  constructor (value?: IRewardPolicy) {
+    super({
+      amount_per_payout: u128,
+      next_payment_at_block: u32,
+      payout_interval: Option.with(u32),
+    }, value);
+  }
+};
+
 export function registerContentWorkingGroupTypes () {
-    try {
-      getTypeRegistry().register({
-        ChannelId,
-        CuratorId,
-        CuratorOpeningId,
-        CuratorApplicationId,
-        LeadId,
-        PrincipalId,
-        Channel,
-        ChannelContentType,
-        ChannelCurationStatus,
-        ChannelPublishingStatus,
-        CurationActor,
-        Curator,
-        CuratorApplication,
-        CuratorOpening,
-        Lead,
-        OpeningPolicyCommitment,
-        Principal,
-        WorkingGroupUnstaker,
-        CuratorApplicationIdToCuratorIdMap, 
-        CuratorApplicationIdSet: Vec.with(CuratorApplicationId), 
-      });
-    } catch (err) {
-      console.error('Failed to register custom types of content working group module', err);
-    }
+  try {
+    getTypeRegistry().register({
+      ChannelId: 'u64',
+      CuratorId: 'u64',
+      CuratorOpeningId: 'u64',
+      CuratorApplicationId: 'u64',
+      LeadId: 'u64',
+      PrincipalId: 'u64',
+      OptionalText,
+      Channel,
+      ChannelContentType,
+      ChannelCurationStatus,
+      ChannelPublicationStatus,
+      CurationActor,
+      Curator,
+      CuratorApplication,
+      CuratorOpening,
+      Lead,
+      OpeningPolicyCommitment,
+      Principal,
+      WorkingGroupUnstaker,
+      CuratorApplicationIdToCuratorIdMap,
+      CuratorApplicationIdSet: Vec.with(CuratorApplicationId),
+      RewardPolicy,
+    });
+  } catch (err) {
+    console.error('Failed to register custom types of content working group module', err);
+  }
 }

@@ -59,8 +59,8 @@ export class RewardRelationship extends JoyStruct<IRewardRelationship> {
 export function registerRecurringRewardsTypes () {
     try {
       getTypeRegistry().register({
-        RecipientId,
-        RewardRelationshipId,
+        RecipientId: 'u64',
+        RewardRelationshipId: 'u64',
         Recipient,
         RewardRelationship
       });
