@@ -82,7 +82,7 @@ export function OpeningHeader(props: OpeningStage) {
           </Label.Detail>
         </Label>
         <a>
-          <CopyToClipboard text={window.location.origin + "/#/roles/opportunities/" + props.meta.group + "/" + props.meta.id}>
+          <CopyToClipboard text={window.location.origin + "/#/working-groups/opportunities/" + props.meta.group + "/" + props.meta.id}>
             <Label>
               <Icon name="copy" /> Copy link
                         </Label>
@@ -128,7 +128,7 @@ function OpeningBodyCTAView(props: OpeningBodyCTAProps) {
   }
 
   let applyButton = (
-    <Link to={"/roles/opportunities/" + props.meta.group + "/" + props.meta.id + "/apply"}>
+    <Link to={"/working-groups/opportunities/" + props.meta.group + "/" + props.meta.id + "/apply"}>
       <Button icon fluid positive size="huge">
         APPLY NOW
         <Icon name="angle right" />

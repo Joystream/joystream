@@ -28,7 +28,7 @@ import {
 import { Application, Opening, OpeningId } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
 import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
-import { Profile, MemberId } from '@joystream/types/members';
+import { ActorInRole, Profile, MemberId, Role as MemberRole, RoleKeys } from '@joystream/types/members';
 import { createAccount, generateSeed } from '@polkadot/joy-utils/accounts'
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
@@ -108,19 +108,17 @@ export class Transport extends TransportBase implements ITransport {
     return recipient.value.total_reward_received
   }
 
-  protected async groupMember(curator: IRoleAccounter, lead: boolean = false): Promise<GroupMember> {
+  protected async groupMember(id: CuratorId, curator: IRoleAccounter, lead: boolean = false): Promise<GroupMember> {
     return new Promise<GroupMember>(async (resolve, reject) => {
       const account = curator.role_account
-
-      const memberIds = await this.api.query.members.memberIdsByRootAccountId(account) as Vec<MemberId>
-      if (memberIds.length == 0) {
-        reject("no member account found")
-      }
-
-      const memberId = memberIds[0]
-      if (!memberId) {
-        reject("no member id")
-      }
+      const memberId = (
+        await this.api.query.members.membershipIdByActorInRole(
+          new ActorInRole({
+            role: new MemberRole(RoleKeys.Curator),
+            actor_id: id,
+          })
+        )
+      ) as MemberId
 
       const profile = await this.api.query.members.memberProfile(memberId) as Option<Profile>
       if (profile.isNone) {
@@ -177,7 +175,10 @@ export class Transport extends TransportBase implements ITransport {
       await this.api.query.contentWorkingGroup.curatorById(),
     )
 
-    const members = values.linked_values.toArray().reverse()
+    const members = values.linked_values.filter(value => value.is_active).reverse()
+    const memberIds = values.linked_keys.filter((v, k) => values.linked_values[k].is_active).reverse()
+
+    let leadExists = false
 
     // If there's a lead ID, then make sure they're promoted to the top
     const leadId = (await this.api.query.contentWorkingGroup.currentLeadId()) as Option<LeadId>
@@ -188,17 +189,20 @@ export class Transport extends TransportBase implements ITransport {
           leadId.unwrap(),
         ),
       )
+
       const id = members.findIndex(
         member => member.role_account.eq(lead.value.role_account)
       )
-      members.unshift(...members.splice(id, 1))
+      if (id >= 0) {
+        leadExists = true
+        members.unshift(...members.splice(id, 1))
+        memberIds.unshift(...memberIds.splice(id, 1))
+      }
     }
 
     return {
       members: await Promise.all(
-        members
-          .filter(value => value.is_active)
-          .map((result, k) => this.groupMember(result, k === 0))
+        members.map((member, k) => this.groupMember(memberIds[k], member, leadExists && k === 0))
       ),
       rolesAvailable: await this.areAnyCuratorRolesOpen(),
     }
@@ -300,7 +304,7 @@ export class Transport extends TransportBase implements ITransport {
       const stakes = classifyOpeningStakes(opening)
 
       resolve({
-        creator: await this.groupMember(lead.value, true),
+        creator: await this.groupMember(currentLeadId.unwrap(), lead.value, true),
         opening: opening,
         meta: {
           id: id.toString(),

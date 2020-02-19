@@ -343,7 +343,7 @@ export const AdminView = View<AdminController, State>(
                   <Card.Content>
                     <Card.Header>
                       <Label attached="top right">Opening</Label>
-                      <Link to={"/roles/opportunities/" + key}>
+                      <Link to={"/working-groups/opportunities/" + key}>
                         {opening.title}
                       </Link>
 
@@ -404,7 +404,7 @@ export const AdminView = View<AdminController, State>(
                         </Grid.Column>
                         <Grid.Column align="right">
                           <Button onClick={() => { controller.applyAsACurator(address, key) }}>Apply as curator</Button>
-                          <Button onClick={() => { controller.acceptCuratorApplications(address, key, [0]) }}>Accept curator applications</Button>
+                          <Button onClick={() => { controller.acceptCuratorApplications(address, key, [1]) }}>Accept curator applications</Button>
                         </Grid.Column>
                       </Grid.Row>
                     </Grid>

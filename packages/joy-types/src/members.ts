@@ -22,13 +22,20 @@ export class EntryMethod extends Enum {
   }
 }
 
+export enum RoleKeys {
+  StorageProvider = 'StorageProvider',
+    ChannelOwner = 'ChannelOwner',
+    CuratorLead = 'CuratorLead',
+    Curator = 'Curator', 
+}
+
 export class Role extends Enum {
   constructor (value?: any, index?: number) {
     super([
-      'StorageProvider',
-      'ChannelOwner',
-      'CuratorLead',
-      'Curator',
+      RoleKeys.StorageProvider,
+      RoleKeys.ChannelOwner,
+      RoleKeys.CuratorLead,
+      RoleKeys.Curator,
     ], value, index);
   }
 }

@@ -32,7 +32,7 @@ export const ContentCurators = Loadable<WorkingGroupMembership>(
           <p>
             Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
           </p>
-          <Link to="/roles/opportunities">
+          <Link to="/working-groups/opportunities">
             <Button icon labelPosition="right" color="green" positive>
               Find out more
 			  <Icon name={'right arrow' as SemanticICONS} />

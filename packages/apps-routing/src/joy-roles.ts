@@ -14,6 +14,6 @@ export default ([
       defaultValue: 'Working groups'
     },
     icon: 'users',
-    name: 'roles'
+    name: 'working-groups'
   }
 ] as Routes);

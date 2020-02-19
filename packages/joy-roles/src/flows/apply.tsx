@@ -1022,7 +1022,7 @@ export function DoneStage(props: DoneStageProps) {
 	  </p>
       <p>
         You can track the progress of your
-              application in the <Link to="#roles/my-roles">My roles</Link> section. If you have any issues,
+              application in the <Link to="#working-group/my-roles">My roles</Link> section. If you have any issues,
                   you can raise them in in the <Link to="#forum">Forum</Link> or contact the group lead
 directly.
 	  </p>
@@ -1115,7 +1115,7 @@ export const FlowModal = Loadable<FlowModalProps>(
       if (history.length > 1) {
         history.goBack()
       }
-      history.push('/roles/')
+      history.push('/working-groups/')
     }
 
     const scrollToTop = () => window.scrollTo(0, 0)
