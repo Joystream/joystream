@@ -1,9 +1,11 @@
 #![cfg(test)]
 
 use crate::*;
+
 use primitives::H256;
 
 use crate::{GenesisConfig, Module, Trait};
+
 use runtime_primitives::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
@@ -15,11 +17,17 @@ impl_outer_origin! {
     pub enum Origin for Runtime {}
 }
 
+mod old_forum_mod {
+    pub use old_forum::Event;
+}
+
 mod forum_mod {
     pub use crate::Event;
 }
+
 impl_outer_event! {
     pub enum TestEvent for Runtime {
+        old_forum_mod<T>,
         forum_mod<T>,
     }
 }
@@ -58,6 +66,23 @@ impl timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+}
+
+pub struct ShimMembershipRegistry {}
+
+impl old_forum::ForumUserRegistry<<Runtime as system::Trait>::AccountId>
+    for ShimMembershipRegistry
+{
+    fn get_forum_user(
+        _id: &<Runtime as system::Trait>::AccountId,
+    ) -> Option<old_forum::ForumUser<<Runtime as system::Trait>::AccountId>> {
+        None
+    }
+}
+
+impl old_forum::Trait for Runtime {
+    type Event = TestEvent;
+    type MembershipRegistry = ShimMembershipRegistry;
 }
 
 impl Trait for Runtime {
@@ -745,6 +770,14 @@ pub fn set_stickied_threads_mock(
 }
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
+    create_genesis_config(true)
+}
+
+pub fn migration_not_done_config() -> GenesisConfig<Runtime> {
+    create_genesis_config(false)
+}
+
+pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
         forum_user_by_id: vec![],
         next_forum_user_id: 1,
@@ -821,6 +854,9 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         category_labels: vec![],
         thread_labels: vec![],
         max_applied_labels: 5,
+
+        // data migration part
+        data_migration_done: data_migration_done,
     }
 }
 

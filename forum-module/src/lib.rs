@@ -212,8 +212,10 @@
 use serde_derive::{Deserialize, Serialize};
 
 use codec::{Codec, Decode, Encode};
+pub use old_forum;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
+pub use runtime_io::clear_prefix;
 use runtime_primitives;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
@@ -221,7 +223,7 @@ use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Para
 mod mock;
 mod tests;
 
-pub trait Trait: system::Trait + timestamp::Trait + Sized {
+pub trait Trait: system::Trait + old_forum::Trait + timestamp::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
     type ForumUserId: Parameter
         + Member
@@ -248,7 +250,9 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + From<u64>
+        + Into<u64>;
 
     type ThreadId: Parameter
         + Member
@@ -257,7 +261,9 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + From<u64>
+        + Into<u64>;
 
     type LabelId: Parameter
         + Member
@@ -275,7 +281,9 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + From<u64>
+        + Into<u64>;
 }
 
 /*
@@ -384,6 +392,9 @@ const ERROR_LABEL_TOO_LONG: &str = "Label name too long.";
 const ERROR_TOO_MUCH_LABELS: &str = "labels number exceed max allowed.";
 const ERROR_LABEL_INDEX_IS_WRONG: &str = "label index is wrong.";
 
+// Error data migration
+const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
+
 //use srml_support::storage::*;
 //use sr_io::{StorageOverlay, ChildrenStorageOverlay};
 //#[cfg(feature = "std")]
@@ -434,10 +445,10 @@ pub struct Moderator<AccountId> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct BlockchainTimestamp<BlockNumber, Moment> {
     /// Current block number
-    block: BlockNumber,
+    pub block: BlockNumber,
 
     /// Time of block created
-    time: Moment,
+    pub time: Moment,
 }
 
 /// Represents a moderation outcome applied to a post or a thread.
@@ -445,13 +456,13 @@ pub struct BlockchainTimestamp<BlockNumber, Moment> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct ModerationAction<ModeratorId, BlockNumber, Moment> {
     /// When action occured.
-    moderated_at: BlockchainTimestamp<BlockNumber, Moment>,
+    pub moderated_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Account forum sudo which acted.
-    moderator_id: ModeratorId,
+    pub moderator_id: ModeratorId,
 
     /// Moderation rationale
-    rationale: Vec<u8>,
+    pub rationale: Vec<u8>,
 }
 
 /// Represents a revision of the text of a Post
@@ -459,10 +470,10 @@ pub struct ModerationAction<ModeratorId, BlockNumber, Moment> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct PostTextChange<BlockNumber, Moment> {
     /// When this expiration occured
-    expired_at: BlockchainTimestamp<BlockNumber, Moment>,
+    pub expired_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Text that expired
-    text: Vec<u8>,
+    pub text: Vec<u8>,
 }
 
 /// Represents a reaction to a post
@@ -491,31 +502,31 @@ impl Default for PostReaction {
 }
 
 /// Represents all poll alternatives and vote count for each one
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct PollAlternative {
     /// Alternative description
-    alternative_text: Vec<u8>,
+    pub alternative_text: Vec<u8>,
 
     /// Vote count for the alternative
-    vote_count: u32,
+    pub vote_count: u32,
 }
 
 /// Represents a poll
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Poll<Timestamp> {
     /// description text for poll
-    poll_description: Vec<u8>,
+    pub poll_description: Vec<u8>,
 
     /// timestamp of poll start
-    start_time: Timestamp,
+    pub start_time: Timestamp,
 
     /// timestamp of poll end
-    end_time: Timestamp,
+    pub end_time: Timestamp,
 
     /// Alternative description and count
-    poll_alternatives: Vec<PollAlternative>,
+    pub poll_alternatives: Vec<PollAlternative>,
 }
 
 /// Represents a thread post
@@ -523,29 +534,29 @@ pub struct Poll<Timestamp> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment> {
     /// Id of thread to which this post corresponds.
-    thread_id: ThreadId,
+    pub thread_id: ThreadId,
 
     /// Current text of post
-    current_text: Vec<u8>,
+    pub current_text: Vec<u8>,
 
     /// Possible moderation of this post
-    moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
+    pub moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
 
     /// Edits of post ordered chronologically by edit time.
-    text_change_history: Vec<PostTextChange<BlockNumber, Moment>>,
+    pub text_change_history: Vec<PostTextChange<BlockNumber, Moment>>,
 
     /// When post was submitted.
-    created_at: BlockchainTimestamp<BlockNumber, Moment>,
+    pub created_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Author of post.
-    author_id: ForumUserId,
+    pub author_id: ForumUserId,
 
     /// The post number of this post in its thread, i.e. total number of posts added (including this)
     /// to a thread when it was added.
     /// Is needed to give light clients assurance about getting all posts in a given range,
     // `created_at` is not sufficient.
     /// Starts at 1 for first post in thread.
-    nr_in_thread: u32,
+    pub nr_in_thread: u32,
 }
 
 /// Represents a thread
@@ -553,29 +564,29 @@ pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment> {
     /// Title
-    title: Vec<u8>,
+    pub title: Vec<u8>,
 
     /// Category in which this thread lives
-    category_id: CategoryId,
+    pub category_id: CategoryId,
 
     /// Possible moderation of this thread
-    moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
+    pub moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
 
     /// When thread was established.
-    created_at: BlockchainTimestamp<BlockNumber, Moment>,
+    pub created_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Author of post.
-    author_id: ForumUserId,
+    pub author_id: ForumUserId,
 
     /// poll description.
-    poll: Option<Poll<Moment>>,
+    pub poll: Option<Poll<Moment>>,
 
     /// The thread number of this thread in its category, i.e. total number of thread added (including this)
     /// to a category when it was added.
     /// Is needed to give light clients assurance about getting all threads in a given range,
     /// `created_at` is not sufficient.
     /// Starts at 1 for first thread in category.
-    nr_in_category: u32,
+    pub nr_in_category: u32,
 
     /// Number of unmoderated and moderated posts in this thread.
     /// The sum of these two only increases, and former is incremented
@@ -587,8 +598,8 @@ pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment> {
     ///
     /// These values are vital for light clients, in order to validate that they are
     /// not being censored from posts in a thread.
-    num_unmoderated_posts: u32,
-    num_moderated_posts: u32,
+    pub num_unmoderated_posts: u32,
+    pub num_moderated_posts: u32,
 }
 
 /// Implement total posts calculation for thread
@@ -596,7 +607,7 @@ impl<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>
     Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>
 {
     /// How many posts created both unmoderated and moderated
-    fn num_posts_ever_created(&self) -> u32 {
+    pub fn num_posts_ever_created(&self) -> u32 {
         self.num_unmoderated_posts + self.num_moderated_posts
     }
 }
@@ -606,11 +617,11 @@ impl<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct ChildPositionInParentCategory<CategoryId> {
     /// Id of parent category
-    parent_id: CategoryId,
+    pub parent_id: CategoryId,
 
     /// Nr of the child in the parent
     /// Starts at 1
-    child_nr_in_parent_category: u32,
+    pub child_nr_in_parent_category: u32,
 }
 
 /// Represents a category
@@ -618,22 +629,22 @@ pub struct ChildPositionInParentCategory<CategoryId> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Category<CategoryId, ThreadId, BlockNumber, Moment> {
     /// Category identifier
-    id: CategoryId,
+    pub id: CategoryId,
 
     /// Title
-    title: Vec<u8>,
+    pub title: Vec<u8>,
 
     /// Description
-    description: Vec<u8>,
+    pub description: Vec<u8>,
 
     /// When category was established.
-    created_at: BlockchainTimestamp<BlockNumber, Moment>,
+    pub created_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Whether category is deleted.
-    deleted: bool,
+    pub deleted: bool,
 
     /// Whether category is archived.
-    archived: bool,
+    pub archived: bool,
 
     /// Number of subcategories (deleted, archived or neither),
     /// unmoderated threads and moderated threads, _directly_ in this category.
@@ -649,15 +660,15 @@ pub struct Category<CategoryId, ThreadId, BlockNumber, Moment> {
     ///
     /// These values are vital for light clients, in order to validate that they are
     /// not being censored from subcategories or threads in a category.
-    num_direct_subcategories: u32,
-    num_direct_unmoderated_threads: u32,
-    num_direct_moderated_threads: u32,
+    pub num_direct_subcategories: u32,
+    pub num_direct_unmoderated_threads: u32,
+    pub num_direct_moderated_threads: u32,
 
     /// Position as child in parent, if present, otherwise this category is a root category
-    position_in_parent_category: Option<ChildPositionInParentCategory<CategoryId>>,
+    pub position_in_parent_category: Option<ChildPositionInParentCategory<CategoryId>>,
 
     /// Sticky threads list
-    sticky_thread_ids: Vec<ThreadId>,
+    pub sticky_thread_ids: Vec<ThreadId>,
 }
 
 /// Implement total thread calcuation for category
@@ -665,7 +676,7 @@ impl<CategoryId, ThreadId, BlockNumber, Moment>
     Category<CategoryId, ThreadId, BlockNumber, Moment>
 {
     /// How many threads created both moderated and unmoderated
-    fn num_threads_created(&self) -> u32 {
+    pub fn num_threads_created(&self) -> u32 {
         self.num_direct_unmoderated_threads + self.num_direct_moderated_threads
     }
 }
@@ -675,7 +686,7 @@ impl<CategoryId, ThreadId, BlockNumber, Moment>
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Label {
     /// Label's text
-    text: Vec<u8>,
+    pub text: Vec<u8>,
 }
 
 /// Represents a sequence of categories which have child-parent relatioonship
@@ -684,12 +695,12 @@ type CategoryTreePath<CategoryId, ThreadId, BlockNumber, Moment> =
     Vec<Category<CategoryId, ThreadId, BlockNumber, Moment>>;
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Forum {
+    trait Store for Module<T: Trait> as Forum_1_1 {
         /// Map forum user identifier to forum user information.
         pub ForumUserById get(forum_user_by_id) config(): map T::ForumUserId  => ForumUser<T::AccountId>;
 
         /// Forum user identifier value for next new forum user.
-        pub NextForumUserId get(next_forum_user_id) config(): T::ForumUserId ;
+        pub NextForumUserId get(next_forum_user_id) config(): T::ForumUserId;
 
         /// Map forum moderator identifier to moderator information.
         pub ModeratorById get(moderator_by_id) config(): map T::ModeratorId => Moderator<T::AccountId>;
@@ -777,6 +788,9 @@ decl_storage! {
 
         /// Max applied labels for a category or thread
         pub MaxAppliedLabels get(max_applied_labels) config(): u32;
+
+        /// If data migration is done, set as configible for unit test purpose
+        pub DataMigrationDone get(data_migration_done) config(): bool;
     }
     /*
     JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
@@ -862,11 +876,14 @@ decl_event!(
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-
         fn deposit_event() = default;
 
         /// Enable a moderator can moderate a category and its sub categories.
         fn set_moderator_category(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, new_value: bool) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+            clear_prefix(b"Forum ForumUserById");
+
             let who = ensure_signed(origin)?;
 
             // Not signed by forum SUDO
@@ -931,6 +948,8 @@ decl_module! {
 
         /// Add a new category.
         fn create_category(origin, parent: Option<T::CategoryId>, title: Vec<u8>, description: Vec<u8>, labels: BTreeSet<T::LabelId>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1015,6 +1034,8 @@ decl_module! {
 
         /// Update category
         fn update_category(origin, category_id: T::CategoryId, new_archival_status: Option<bool>, new_deletion_status: Option<bool>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1087,6 +1108,8 @@ decl_module! {
 
         /// Update category
         fn update_category_labels(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, new_labels: BTreeSet<T::LabelId>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1122,6 +1145,8 @@ decl_module! {
         fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, title: Vec<u8>, text: Vec<u8>, labels: BTreeSet<T::LabelId>,
             poll: Option<Poll<T::Moment>>,
         ) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1143,6 +1168,9 @@ decl_module! {
 
         /// Update category
         fn update_thread_labels_by_author(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, new_labels: BTreeSet<T::LabelId>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
@@ -1176,6 +1204,9 @@ decl_module! {
         }
 
         fn update_thread_labels_by_moderator(origin, moderator_id: T::ModeratorId, thread_id: T::ThreadId, new_labels: BTreeSet<T::LabelId>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
@@ -1208,6 +1239,9 @@ decl_module! {
 
         /// submit a poll
         fn vote_on_poll(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, index: u32) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
@@ -1254,6 +1288,8 @@ decl_module! {
 
         /// Moderate thread
         fn moderate_thread(origin, moderator_id: T::ModeratorId, thread_id: T::ThreadId, rationale: Vec<u8>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1306,6 +1342,8 @@ decl_module! {
 
         /// Edit post text
         fn add_post(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, text: Vec<u8>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             /*
              * Update SPEC with new errors,
@@ -1331,6 +1369,9 @@ decl_module! {
 
         /// like or unlike a post.
         fn react_post(origin, forum_user_id: T::ForumUserId, post_id: T::PostId, react: PostReaction) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
@@ -1359,6 +1400,8 @@ decl_module! {
 
         /// Edit post text
         fn edit_post_text(origin, forum_user_id: T::ForumUserId, post_id: T::PostId, new_text: Vec<u8>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             /* Edit spec.
               - forum member guard missing
@@ -1406,6 +1449,8 @@ decl_module! {
 
         /// Moderate post
         fn moderate_post(origin, moderator_id: T::ModeratorId, post_id: T::PostId, rationale: Vec<u8>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1448,6 +1493,8 @@ decl_module! {
 
         /// Set stickied threads for category
         fn  set_stickied_threads(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, stickied_ids: Vec<T::ThreadId>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -1493,6 +1540,9 @@ impl<T: Trait> Module<T> {
         Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>,
         &'static str,
     > {
+        // Ensure data migration is done
+        Self::ensure_data_migration_done()?;
+
         // Get path from parent to root of category tree.
         let category_tree_path =
             Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
@@ -1571,6 +1621,9 @@ impl<T: Trait> Module<T> {
         Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>,
         &'static str,
     > {
+        // Ensure data migration is done
+        Self::ensure_data_migration_done()?;
+
         // Validate post text
         Self::ensure_post_text_is_valid(text)?;
 
@@ -1617,6 +1670,9 @@ impl<T: Trait> Module<T> {
         self_introduction: Vec<u8>,
         post_footer: Option<Vec<u8>>,
     ) -> dispatch::Result {
+        // Ensure data migration is done
+        Self::ensure_data_migration_done()?;
+
         // Ensure user name is valid
         Self::ensure_user_name_is_valid(&name)?;
 
@@ -1654,6 +1710,9 @@ impl<T: Trait> Module<T> {
         name: Vec<u8>,
         self_introduction: Vec<u8>,
     ) -> dispatch::Result {
+        // Ensure data migration is done
+        Self::ensure_data_migration_done()?;
+
         // Ensure user name is valid
         Self::ensure_user_name_is_valid(&name)?;
 
@@ -1681,6 +1740,9 @@ impl<T: Trait> Module<T> {
 
     // The method only called from other module to add some labels.
     pub fn add_labels(labels: Vec<Vec<u8>>) -> dispatch::Result {
+        // Ensure data migration is done
+        Self::ensure_data_migration_done()?;
+
         // Check label name length
         Self::ensure_label_name_valid(&labels)?;
 
@@ -2131,6 +2193,15 @@ impl<T: Trait> Module<T> {
             Ok(())
         } else {
             Err(ERROR_THREAD_WITH_WRONG_CATEGORY_ID)
+        }
+    }
+
+    /// Ensure data migration is done
+    fn ensure_data_migration_done() -> Result<(), &'static str> {
+        if DataMigrationDone::get() {
+            Ok(())
+        } else {
+            Err(ERROR_DATA_MIGRATION_NOT_DONE)
         }
     }
 }
