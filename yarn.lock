@@ -1086,7 +1086,7 @@
   dependencies:
     regenerator-runtime "^0.13.2"
 
-"@babel/runtime@^7.6.0", "@babel/runtime@^7.8.4":
+"@babel/runtime@^7.6.0":
   version "7.8.4"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.8.4.tgz#d79f5a2040f7caa24d53e563aad49cbc05581308"
   integrity sha512-neAp3zt80trRVBI1x0azq6c57aNBqYZH8KhMm3TaB7wEI5Q4A2SHfBHE8w9gOhI/lrqxtEbXZgQIrHP+wvSGwQ==
@@ -2710,14 +2710,6 @@
   dependencies:
     "@babel/runtime" "^7.7.4"
     "@types/store" "^2.0.2"
-    store "^2.0.12"
-
-"@polkadot/ui-settings@^0.51.1":
-  version "0.51.1"
-  resolved "https://registry.yarnpkg.com/@polkadot/ui-settings/-/ui-settings-0.51.1.tgz#49a61a1ea1f4bc92c2eb31974d422a335dd84e5d"
-  integrity sha512-ZtXSp3IJJH1r1BxvU0Qs/+2JEErhX7pmWGIhCK9WxTXnDRGGrmDC117BGxHSYByY8MTSDkeFqoAc8hqiR7XYrg==
-  dependencies:
-    "@babel/runtime" "^7.8.4"
     store "^2.0.12"
 
 "@polkadot/ui-shared@^0.46.1":
