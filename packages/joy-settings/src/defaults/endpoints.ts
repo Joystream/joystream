@@ -32,7 +32,7 @@ const CHAIN_INFO: Record<ChainName, ChainData> = {
   joystream: {
     chainDisplay: 'Joystream',
     logo: 'joystream',
-    type: 'Joystream Testnet'
+    type: 'Rome Reckless Testnet'
   },
 };
 
@@ -41,7 +41,7 @@ const PROVIDERS: Record<ProviderName, PoviderData> = {
   'joystream_org': {
     providerDisplay: 'Joystream.org',
     nodes: {
-      'joystream': 'wss://testnet.joystream.org/acropolis/rpc/',
+      'joystream': 'wss://rome-reckless.joystream.org/reckless/rpc/',
     }
   }
 };
