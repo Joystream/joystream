@@ -9,6 +9,9 @@ use srml_support::{dispatch, StorageMap, StorageValue};
 use system::RawOrigin;
 use system::{EventRecord, Phase};
 
+use srml_support::traits::Currency;
+
+#[derive(Clone)]
 struct DummyProposalFixture {
     parameters: ProposalParameters<u64, u64>,
     origin: RawOrigin<u64>,
@@ -427,7 +430,10 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
             }
         );
 
-        assert_eq!(proposal.status, ProposalStatus::Finalized(ProposalDecisionStatus::Rejected));
+        assert_eq!(
+            proposal.status,
+            ProposalStatus::Finalized(ProposalDecisionStatus::Rejected)
+        );
         assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
     });
 }
@@ -931,5 +937,105 @@ fn voting_internal_cache_exists_after_proposal_finalization() {
             proposal_id,
             1
         ));
+    });
+}
+
+
+#[test]
+fn create_dummy_proposal_succeeds_with_stake() {
+    initial_test_ext().execute_with(|| {
+        let account_id = 1;
+
+        let parameters = ProposalParameters {
+            voting_period: 3,
+            approval_quorum_percentage: 50,
+            approval_threshold_percentage: 60,
+            grace_period: 5,
+            required_stake: Some(200),
+        };
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters)
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_stake(200);
+
+        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 500);
+
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+
+        let proposal = <crate::Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                proposal_type: 1,
+                parameters,
+                proposer_id: 1,
+                created_at: 1,
+                status: ProposalStatus::Active,
+                title: b"title".to_vec(),
+                body: b"body".to_vec(),
+                approved_at: None,
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 0,
+                    rejections: 0,
+                },
+                finalized_at: None,
+                stake_id: Some(0), // valid stake_id
+            }
+        )
+    });
+}
+
+#[test]
+fn create_dummy_proposal_fail_with_stake_on_empty_account() {
+    initial_test_ext().execute_with(|| {
+        let account_id = 1;
+
+        let parameters = ProposalParameters {
+            voting_period: 3,
+            approval_quorum_percentage: 50,
+            approval_threshold_percentage: 60,
+            grace_period: 0,
+            required_stake: Some(200),
+        };
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters)
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_stake(200);
+
+        dummy_proposal.create_proposal_and_assert(Err("too few free funds in account"));
+    });
+}
+
+#[test]
+fn create_proposal_fais_with_invalid_stake_parameters() {
+    initial_test_ext().execute_with(|| {
+        let mut parameters = ProposalParameters {
+            voting_period: 3,
+            approval_quorum_percentage: 50,
+            approval_threshold_percentage: 60,
+            grace_period: 0,
+            required_stake: None,
+        };
+
+        let mut dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters.clone())
+            .with_stake(200);
+
+        dummy_proposal.create_proposal_and_assert(Err("Stake should be empty for this proposal"));
+
+        parameters.required_stake = Some(200);
+        dummy_proposal = DummyProposalFixture::default().with_parameters(parameters.clone());
+
+        dummy_proposal.create_proposal_and_assert(Err("Stake cannot be empty with this proposal"));
+
+        parameters.required_stake = Some(300);
+        dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters.clone())
+            .with_stake(200);
+
+        dummy_proposal
+            .create_proposal_and_assert(Err("Stake differs from the proposal requirements"));
     });
 }

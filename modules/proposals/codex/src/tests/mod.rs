@@ -1,12 +1,19 @@
 mod mock;
 
-use mock::*;
+use srml_support::traits::Currency;
 use system::RawOrigin;
+
+use crate::{BalanceOf, Error};
+use mock::*;
 
 #[test]
 fn create_text_proposal_codex_call_succeeds() {
     initial_test_ext().execute_with(|| {
-        let origin = RawOrigin::Signed(1).into();
+        let account_id = 1;
+        let origin = RawOrigin::Signed(account_id).into();
+
+        let required_stake = Some(<BalanceOf<Test>>::from(500u32));
+        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
 
         assert_eq!(
             ProposalCodex::create_text_proposal(
@@ -14,9 +21,42 @@ fn create_text_proposal_codex_call_succeeds() {
                 b"title".to_vec(),
                 b"body".to_vec(),
                 b"text".to_vec(),
-                None,
+                required_stake,
             ),
             Ok(())
+        );
+    });
+}
+
+#[test]
+fn create_text_proposal_codex_call_fails_with_invalid_stake() {
+    initial_test_ext().execute_with(|| {
+        assert_eq!(
+            ProposalCodex::create_text_proposal(
+                RawOrigin::Signed(1).into(),
+                b"title".to_vec(),
+                b"body".to_vec(),
+                b"text".to_vec(),
+                None,
+            ),
+            Err(Error::Other(
+                "Stake cannot be empty with this proposal"
+            ))
+        );
+
+        let invalid_stake = Some(<BalanceOf<Test>>::from(5000u32));
+
+        assert_eq!(
+            ProposalCodex::create_text_proposal(
+                RawOrigin::Signed(1).into(),
+                b"title".to_vec(),
+                b"body".to_vec(),
+                b"text".to_vec(),
+                invalid_stake,
+            ),
+            Err(Error::Other(
+                "Stake differs from the proposal requirements"
+            ))
         );
     });
 }
@@ -35,7 +75,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
                 long_text,
                 None,
             ),
-            Err(crate::Error::TextProposalSizeExceeded)
+            Err(Error::TextProposalSizeExceeded)
         );
 
         assert_eq!(
@@ -46,7 +86,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
                 Vec::new(),
                 None,
             ),
-            Err(crate::Error::TextProposalIsEmpty)
+            Err(Error::TextProposalIsEmpty)
         );
     });
 }
@@ -81,7 +121,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
                 long_wasm,
                 None,
             ),
-            Err(crate::Error::RuntimeProposalSizeExceeded)
+            Err(Error::RuntimeProposalSizeExceeded)
         );
 
         assert_eq!(
@@ -92,7 +132,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
                 Vec::new(),
                 None,
             ),
-            Err(crate::Error::RuntimeProposalIsEmpty)
+            Err(Error::RuntimeProposalIsEmpty)
         );
     });
 }
@@ -114,9 +154,46 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_insufficient_rights() {
 }
 
 #[test]
+fn create_runtime_upgrade_proposal_codex_call_fails_with_invalid_stake() {
+    initial_test_ext().execute_with(|| {
+        assert_eq!(
+            ProposalCodex::create_runtime_upgrade_proposal(
+                RawOrigin::Signed(1).into(),
+                b"title".to_vec(),
+                b"body".to_vec(),
+                b"wasm".to_vec(),
+                None,
+            ),
+            Err(Error::Other(
+                "Stake cannot be empty with this proposal"
+            ))
+        );
+
+        let invalid_stake = Some(<BalanceOf<Test>>::from(500u32));
+
+        assert_eq!(
+            ProposalCodex::create_runtime_upgrade_proposal(
+                RawOrigin::Signed(1).into(),
+                b"title".to_vec(),
+                b"body".to_vec(),
+                b"wasm".to_vec(),
+                invalid_stake,
+            ),
+            Err(Error::Other(
+                "Stake differs from the proposal requirements"
+            ))
+        );
+    });
+}
+
+#[test]
 fn create_runtime_upgrade_proposal_codex_call_succeeds() {
     initial_test_ext().execute_with(|| {
-        let origin = RawOrigin::Signed(1).into();
+        let account_id = 1;
+        let origin = RawOrigin::Signed(account_id).into();
+
+        let required_stake = Some(<BalanceOf<Test>>::from(50000u32));
+        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
 
         assert_eq!(
             ProposalCodex::create_runtime_upgrade_proposal(
@@ -124,7 +201,7 @@ fn create_runtime_upgrade_proposal_codex_call_succeeds() {
                 b"title".to_vec(),
                 b"body".to_vec(),
                 b"wasm".to_vec(),
-                None,
+                required_stake,
             ),
             Ok(())
         );

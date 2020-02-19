@@ -261,13 +261,30 @@ impl<T: Trait> Module<T> {
             errors::MSG_MAX_ACTIVE_PROPOSAL_NUMBER_EXCEEDED
         );
 
-        // TODO: ensure 4 cases of stakes (parameters.required_stake)
+        // check stake parameters
+        if let Some(required_stake) = parameters.required_stake {
+            if let Some(staked_balance) = stake_balance {
+                ensure!(
+                    required_stake == staked_balance,
+                    errors::MSG_STAKE_DIFFERS_FROM_REQUIRED
+                );
+            } else {
+                return Err(errors::MSG_STAKE_IS_EMPTY);
+            }
+        }
+
+        if stake_balance.is_some() && parameters.required_stake.is_none() {
+            return Err(errors::MSG_STAKE_SHOULD_BE_EMPTY);
+        }
+
+        // checks passed
+        // mutation
 
         let next_proposal_count_value = Self::proposal_count() + 1;
         let new_proposal_id = next_proposal_count_value;
 
-        // mutation
-
+        // Check stake_balance for value and create stake if value exists, else take None
+        // If create_stake() returns error - return error from extrinsic
         let stake_id = stake_balance
             .map(|stake_amount| {
                 T::StakeHandlerProvider::stakes().create_stake(stake_amount, account_id)
@@ -321,16 +338,13 @@ impl<T: Trait> Module<T> {
                     Self::current_block(),
                 );
 
-                if let Some(status) = decision_status {
-                    Some(FinalizedProposalData {
-                        proposal_id,
-                        proposal,
-                        status,
-                        finalized_at: Self::current_block(),
-                    })
-                } else {
-                    None
-                }
+                // map to FinalizedProposalData or None
+                decision_status.map(|status| FinalizedProposalData {
+                    proposal_id,
+                    proposal,
+                    status,
+                    finalized_at: Self::current_block(),
+                })
             })
             .collect() // compose output vector
     }
@@ -383,7 +397,7 @@ impl<T: Trait> Module<T> {
         });
 
         Self::deposit_event(RawEvent::ProposalStatusUpdated(
-            proposal_id.clone(),
+            proposal_id,
             new_proposal_status,
         ));
 

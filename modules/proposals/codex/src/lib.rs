@@ -36,7 +36,7 @@ pub type BalanceOf<T> =
 
 /// Balance alias for staking
 pub type NegativeImbalance<T> =
-<<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
 // Defines max allowed text proposal text length. Can be override in the config.
 const DEFAULT_TEXT_PROPOSAL_MAX_LEN: u32 = 20_000;
