@@ -22,12 +22,36 @@ pub enum ProposalStatus {
     /// A new proposal that is available for voting.
     Active,
 
-    /// To clear the quorum requirement, the percentage of council members with revealed votes
-    /// must be no less than the quorum value for the given proposal type.
-    Approved,
+    /// The proposal decision was made.
+    Finalized(ProposalDecisionStatus),
+}
 
+/// Status of the approved proposal. Defines execution stages.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum ApprovedProposalStatus {
     /// A proposal was approved and grace period is in effect
     PendingExecution,
+
+    /// Proposal was successfully executed
+    Executed,
+
+    /// Proposal was executed and failed with an error
+    ExecutionFailed {
+        /// Error message
+        error: Vec<u8>,
+    },
+}
+
+/// Status for the proposal with finalized decision
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum ProposalDecisionStatus {
+    /// Proposal was withdrawn by its proposer.
+    Canceled,
+
+    /// Proposal was vetoed by root.
+    Vetoed,
 
     /// A proposal was rejected
     Rejected,
@@ -35,36 +59,11 @@ pub enum ProposalStatus {
     /// Not enough votes and voting period expired.
     Expired,
 
-    /// Proposal was successfully executed
-    Executed,
-
-    /// Proposal was executed and failed with an error
-    Failed {
-        /// Error message
-        error: Vec<u8>,
-    },
-
-    /// Proposal was withdrawn by its proposer.
-    Canceled,
-
-    /// Proposal was vetoed by root.
-    Vetoed,
+    /// To clear the quorum requirement, the percentage of council members with revealed votes
+    /// must be no less than the quorum value for the given proposal type.
+    Approved(ApprovedProposalStatus),
 }
 
-impl ProposalStatus {
-    /// Defines whether proposal status is 'point of the proposal decision'  (the decision about
-    /// this proposal was made).
-    pub fn is_decision_status(&self) -> bool {
-        match self {
-            ProposalStatus::Approved
-            | ProposalStatus::Vetoed
-            | ProposalStatus::Canceled
-            | ProposalStatus::Expired
-            | ProposalStatus::Rejected => true,
-            _ => false,
-        }
-    }
-}
 impl Default for ProposalStatus {
     fn default() -> Self {
         ProposalStatus::Active
@@ -174,7 +173,6 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId> {
     /// Curring voting result for the proposal
     pub voting_results: VotingResults,
 
-    // TODO: update proposal.finalized_at
     /// Proposal finalization block number
     pub finalized_at: Option<BlockNumber>,
 
@@ -207,8 +205,8 @@ where
         &self,
         total_voters_count: u32,
         now: BlockNumber,
-    ) -> Option<ProposalStatus> {
-        let proposal_status_decision = ProposalStatusDecision {
+    ) -> Option<ProposalDecisionStatus> {
+        let proposal_status_resolution = ProposalStatusResolution {
             proposal: self,
             approvals: self.voting_results.approvals,
             now,
@@ -216,14 +214,16 @@ where
             total_voters_count,
         };
 
-        if proposal_status_decision.is_approval_quorum_reached()
-            && proposal_status_decision.is_approval_threshold_reached()
+        if proposal_status_resolution.is_approval_quorum_reached()
+            && proposal_status_resolution.is_approval_threshold_reached()
         {
-            Some(ProposalStatus::Approved)
-        } else if proposal_status_decision.is_expired() {
-            Some(ProposalStatus::Expired)
-        } else if proposal_status_decision.is_voting_completed() {
-            Some(ProposalStatus::Rejected)
+            Some(ProposalDecisionStatus::Approved(
+                ApprovedProposalStatus::PendingExecution,
+            ))
+        } else if proposal_status_resolution.is_expired() {
+            Some(ProposalDecisionStatus::Expired)
+        } else if proposal_status_resolution.is_voting_completed() {
+            Some(ProposalDecisionStatus::Rejected)
         } else {
             None
         }
@@ -237,7 +237,7 @@ pub trait VotersParameters {
 }
 
 // Calculates quorum, votes threshold, expiration status
-struct ProposalStatusDecision<'a, BlockNumber, ProposerId, Balance, StakeId> {
+struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId> {
     proposal: &'a Proposal<BlockNumber, ProposerId, Balance, StakeId>,
     now: BlockNumber,
     votes_count: u32,
@@ -246,7 +246,7 @@ struct ProposalStatusDecision<'a, BlockNumber, ProposerId, Balance, StakeId> {
 }
 
 impl<'a, BlockNumber, ProposerId, Balance, StakeId>
-    ProposalStatusDecision<'a, BlockNumber, ProposerId, Balance, StakeId>
+    ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
 {
@@ -318,7 +318,7 @@ pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, ProposerId, Bal
     pub proposal: Proposal<BlockNumber, ProposerId, Balance, StakeId>,
 
     /// Proposal finalization status
-    pub status: ProposalStatus,
+    pub status: ProposalDecisionStatus,
 
     /// Proposal finalization block number
     pub finalized_at: BlockNumber,
@@ -411,7 +411,10 @@ mod tests {
         );
 
         let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
-        assert_eq!(expected_proposal_status, Some(ProposalStatus::Expired));
+        assert_eq!(
+            expected_proposal_status,
+            Some(ProposalDecisionStatus::Expired)
+        );
     }
 
     #[test]
@@ -437,7 +440,12 @@ mod tests {
         );
 
         let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
-        assert_eq!(expected_proposal_status, Some(ProposalStatus::Approved));
+        assert_eq!(
+            expected_proposal_status,
+            Some(ProposalDecisionStatus::Approved(
+                ApprovedProposalStatus::PendingExecution
+            ))
+        );
     }
 
     #[test]
@@ -465,7 +473,10 @@ mod tests {
         );
 
         let expected_proposal_status = proposal.define_proposal_decision_status(4, now);
-        assert_eq!(expected_proposal_status, Some(ProposalStatus::Rejected));
+        assert_eq!(
+            expected_proposal_status,
+            Some(ProposalDecisionStatus::Rejected)
+        );
     }
 
     #[test]
@@ -489,18 +500,5 @@ mod tests {
 
         let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
         assert_eq!(expected_proposal_status, None);
-    }
-
-    #[test]
-    fn proposal_status_is_decision_status_check_works() {
-        assert!(ProposalStatus::Approved.is_decision_status());
-        assert!(ProposalStatus::Rejected.is_decision_status());
-        assert!(ProposalStatus::Vetoed.is_decision_status());
-        assert!(ProposalStatus::Canceled.is_decision_status());
-        assert!(ProposalStatus::Expired.is_decision_status());
-        assert!(!(ProposalStatus::Active.is_decision_status()));
-        assert!(!(ProposalStatus::PendingExecution.is_decision_status()));
-        assert!(!(ProposalStatus::Executed.is_decision_status()));
-        assert!(!(ProposalStatus::Failed { error: Vec::new() }.is_decision_status()));
     }
 }

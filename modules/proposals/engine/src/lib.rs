@@ -14,13 +14,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
-#![warn(missing_docs)]
+//#![warn(missing_docs)]
 
-use types::FinalizedProposalData;
 pub use types::BalanceOf;
+use types::FinalizedProposalData;
 pub use types::VotingResults;
+pub use types::{
+    ApprovedProposalStatus, Proposal, ProposalDecisionStatus, ProposalParameters, ProposalStatus,
+};
 pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
-pub use types::{Proposal, ProposalParameters, ProposalStatus};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
 pub use types::{VoteKind, VotersParameters};
 mod errors;
@@ -36,8 +38,6 @@ use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
 };
 use system::ensure_root;
-
-// TODO: update proposal.finalized_at - update on all proposal finalization points.
 
 // Max allowed proposal title length. Can be used if config value is not filled.
 const DEFAULT_TITLE_MAX_LEN: u32 = 100;
@@ -86,32 +86,21 @@ decl_event!(
     {
     	/// Emits on proposal creation.
         /// Params:
-        /// * Account id of a proposer.
-        /// * Id of a newly created proposal after it was saved in storage.
+        /// - Account id of a proposer.
+        /// - Id of a newly created proposal after it was saved in storage.
         ProposalCreated(ProposerId, ProposalId),
-
-        /// Emits on proposal cancellation.
-        /// Params:
-        /// * Account id of a proposer.
-        /// * Id of a cancelled proposal.
-        ProposalCanceled(ProposerId, ProposalId),
-
-        /// Emits on proposal veto.
-        /// Params:
-        /// * Id of a vetoed proposal.
-        ProposalVetoed(ProposalId),
 
         /// Emits on proposal status change.
         /// Params:
-        /// * Id of a updated proposal.
-        /// * New proposal status
+        /// - Id of a updated proposal.
+        /// - New proposal status
         ProposalStatusUpdated(ProposalId, ProposalStatus),
 
         /// Emits on voting for the proposal
         /// Params:
-        /// * Voter - an account id of a voter.
-        /// * Id of a proposal.
-        /// * Kind of vote.
+        /// - Voter - an account id of a voter.
+        /// - Id of a proposal.
+        /// - Kind of vote.
         Voted(VoterId, ProposalId, VoteKind),
     }
 );
@@ -199,8 +188,7 @@ decl_module! {
 
             // mutation
 
-            Self::update_proposal_status(proposal_id, ProposalStatus::Canceled);
-            Self::deposit_event(RawEvent::ProposalCanceled(proposer_id, proposal_id));
+            Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Canceled);
         }
 
         /// Veto a proposal. Must be root.
@@ -214,25 +202,25 @@ decl_module! {
 
             // mutation
 
-            Self::update_proposal_status(proposal_id, ProposalStatus::Vetoed);
-            Self::deposit_event(RawEvent::ProposalVetoed(proposal_id));
+            Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Vetoed);
         }
 
         /// Block finalization. Perform voting period check, vote result tally, approved proposals
         /// grace period checks, and proposal execution.
         fn on_finalize(_n: T::BlockNumber) {
-            let executable_proposal_ids =
-                Self::get_approved_proposal_with_expired_grace_period_ids();
-
             let finalized_proposals = Self::get_finalized_proposals();
 
             // mutation
 
-            // Check vote results
+            // Check vote results. Approved proposals with zero grace period will be
+            // transitioned to the PendingExecution status.
             for  proposal_data in finalized_proposals {
                 <Proposals<T>>::insert(proposal_data.proposal_id, proposal_data.proposal);
-                Self::update_proposal_status(proposal_data.proposal_id, proposal_data.status);
+                Self::finalize_proposal(proposal_data.proposal_id, proposal_data.status);
             }
+
+            let executable_proposal_ids =
+                Self::get_approved_proposal_with_expired_grace_period_ids();
 
             // Execute approved proposals with expired grace period
             for  proposal_id in executable_proposal_ids {
@@ -273,20 +261,12 @@ impl<T: Trait> Module<T> {
             errors::MSG_MAX_ACTIVE_PROPOSAL_NUMBER_EXCEEDED
         );
 
-        // ensure 4 cases of stakes (parameters.required_stake)
+        // TODO: ensure 4 cases of stakes (parameters.required_stake)
 
         let next_proposal_count_value = Self::proposal_count() + 1;
         let new_proposal_id = next_proposal_count_value;
 
         // mutation
-
-        //        let stake_id = if let Some(stake_amount) = stake_balance {
-        //            let stake_id = T::StakeHandlerProvider::stakes().create_stake(stake_amount)?;
-        //
-        //            Some(stake_id)
-        //        } else {
-        //            None
-        //        };
 
         let stake_id = stake_balance
             .map(|stake_amount| {
@@ -327,32 +307,6 @@ impl<T: Trait> Module<T> {
         <system::Module<T>>::block_number()
     }
 
-    // Executes approved proposal code
-    fn execute_proposal(proposal_id: T::ProposalId) {
-        let proposal = Self::proposals(proposal_id);
-        let proposal_code = Self::proposal_codes(proposal_id);
-
-        let proposal_code_result =
-            T::ProposalCodeDecoder::decode_proposal(proposal.proposal_type, proposal_code);
-
-        let new_proposal_status = match proposal_code_result {
-            Ok(proposal_code) => {
-                if let Err(error) = proposal_code.execute() {
-                    ProposalStatus::Failed {
-                        error: error.as_bytes().to_vec(),
-                    }
-                } else {
-                    ProposalStatus::Executed
-                }
-            }
-            Err(error) => ProposalStatus::Failed {
-                error: error.as_bytes().to_vec(),
-            },
-        };
-
-        Self::update_proposal_status(proposal_id, new_proposal_status)
-    }
-
     /// Enumerates through active proposals. Tally Voting results.
     /// Returns proposals with finalized status and id
     fn get_finalized_proposals() -> Vec<FinalizedProposal<T>> {
@@ -381,44 +335,64 @@ impl<T: Trait> Module<T> {
             .collect() // compose output vector
     }
 
-    // TODO: update proposal.finalized_at
-    // TODO: to be refactored or removed after introducing stakes. Events should be fired on actions
-    // such as 'rejected' or 'approved'.
-    /// Updates proposal status and removes proposal id from active id set.
-    fn update_proposal_status(proposal_id: T::ProposalId, new_status: ProposalStatus) {
-        if new_status != ProposalStatus::Active {
-            <ActiveProposalIds<T>>::remove(&proposal_id);
-        }
-        <Proposals<T>>::mutate(proposal_id, |p| p.status = new_status.clone());
+    // Executes approved proposal code
+    fn execute_proposal(proposal_id: T::ProposalId) {
+        let mut proposal = Self::proposals(proposal_id);
+        let proposal_code = Self::proposal_codes(proposal_id);
+
+        let proposal_code_result =
+            T::ProposalCodeDecoder::decode_proposal(proposal.proposal_type, proposal_code);
+
+        let approved_proposal_status = match proposal_code_result {
+            Ok(proposal_code) => {
+                if let Err(error) = proposal_code.execute() {
+                    ApprovedProposalStatus::ExecutionFailed {
+                        error: error.as_bytes().to_vec(),
+                    }
+                } else {
+                    ApprovedProposalStatus::Executed
+                }
+            }
+            Err(error) => ApprovedProposalStatus::ExecutionFailed {
+                error: error.as_bytes().to_vec(),
+            },
+        };
+
+        let proposal_execution_status =
+            ProposalStatus::Finalized(ProposalDecisionStatus::Approved(approved_proposal_status));
+
+        proposal.status = proposal_execution_status.clone();
+        <Proposals<T>>::insert(proposal_id, proposal);
 
         Self::deposit_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
-            new_status.clone(),
+            proposal_execution_status,
         ));
 
-        if new_status.is_decision_status() {
-            Self::decrease_active_proposal_counter();
-        }
+        <PendingExecutionProposalIds<T>>::remove(&proposal_id);
+    }
 
-        match new_status {
-            ProposalStatus::Rejected | ProposalStatus::Expired => {
+    fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
+        Self::decrease_active_proposal_counter();
+        <ActiveProposalIds<T>>::remove(&proposal_id.clone());
+
+        let new_proposal_status = ProposalStatus::Finalized(decision_status.clone());
+        <Proposals<T>>::mutate(proposal_id, |p| {
+            p.status = new_proposal_status.clone();
+            p.finalized_at = Some(Self::current_block());
+        });
+
+        Self::deposit_event(RawEvent::ProposalStatusUpdated(
+            proposal_id.clone(),
+            new_proposal_status,
+        ));
+
+        match decision_status {
+            ProposalDecisionStatus::Rejected | ProposalDecisionStatus::Expired => {
                 Self::reject_proposal(proposal_id)
             }
-            ProposalStatus::Approved => Self::approve_proposal(proposal_id),
-            ProposalStatus::Active => {}
-            ProposalStatus::PendingExecution => {
-                let proposal = Self::proposals(proposal_id);
-
-                // immediate execution
-                // grace period from proposal parameters was set to zero
-                if proposal.is_grace_period_expired(Self::current_block()) {
-                    Self::execute_proposal(proposal_id);
-                }
-            }
-            ProposalStatus::Executed | ProposalStatus::Failed { .. } => {
-                <PendingExecutionProposalIds<T>>::remove(&proposal_id);
-            }
-            ProposalStatus::Vetoed | ProposalStatus::Canceled => {} // do nothing
+            ProposalDecisionStatus::Approved { .. } => Self::approve_proposal(proposal_id),
+            ProposalDecisionStatus::Vetoed | ProposalDecisionStatus::Canceled => {} //TODO add actions after stakes
         }
     }
 
@@ -429,7 +403,6 @@ impl<T: Trait> Module<T> {
     fn approve_proposal(proposal_id: T::ProposalId) {
         <Proposals<T>>::mutate(proposal_id, |p| p.approved_at = Some(Self::current_block()));
         <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
-        Self::update_proposal_status(proposal_id, ProposalStatus::PendingExecution);
     }
 
     /// Enumerates approved proposals and checks their grace period expiration

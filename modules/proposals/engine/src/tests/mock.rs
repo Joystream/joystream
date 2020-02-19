@@ -210,7 +210,7 @@ impl ProposalExecutable for DummyExecutable {
 pub struct FaultyExecutable;
 impl ProposalExecutable for FaultyExecutable {
     fn execute(&self) -> dispatch::Result {
-        Err("Failed")
+        Err("ExecutionFailed")
     }
 }
 
