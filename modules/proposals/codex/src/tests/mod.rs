@@ -14,6 +14,7 @@ fn create_text_proposal_codex_call_succeeds() {
                 b"title".to_vec(),
                 b"body".to_vec(),
                 b"text".to_vec(),
+                None,
             ),
             Ok(())
         );
@@ -32,6 +33,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
                 b"title".to_vec(),
                 b"body".to_vec(),
                 long_text,
+                None,
             ),
             Err(crate::Error::TextProposalSizeExceeded)
         );
@@ -42,6 +44,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
                 b"title".to_vec(),
                 b"body".to_vec(),
                 Vec::new(),
+                None,
             ),
             Err(crate::Error::TextProposalIsEmpty)
         );
@@ -58,6 +61,7 @@ fn create_text_proposal_codex_call_fails_with_insufficient_rights() {
             b"title".to_vec(),
             b"body".to_vec(),
             b"text".to_vec(),
+            None,
         )
         .is_err());
     });
@@ -75,6 +79,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
                 b"title".to_vec(),
                 b"body".to_vec(),
                 long_wasm,
+                None,
             ),
             Err(crate::Error::RuntimeProposalSizeExceeded)
         );
@@ -85,6 +90,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
                 b"title".to_vec(),
                 b"body".to_vec(),
                 Vec::new(),
+                None,
             ),
             Err(crate::Error::RuntimeProposalIsEmpty)
         );
@@ -101,6 +107,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_insufficient_rights() {
             b"title".to_vec(),
             b"body".to_vec(),
             b"wasm".to_vec(),
+            None,
         )
         .is_err());
     });
@@ -117,6 +124,7 @@ fn create_runtime_upgrade_proposal_codex_call_succeeds() {
                 b"title".to_vec(),
                 b"body".to_vec(),
                 b"wasm".to_vec(),
+                None,
             ),
             Ok(())
         );

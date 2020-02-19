@@ -14,14 +14,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
-//#![warn(missing_docs)]
+#![warn(missing_docs)]
 
 use types::FinalizedProposalData;
+pub use types::BalanceOf;
 pub use types::VotingResults;
+pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
 pub use types::{Proposal, ProposalParameters, ProposalStatus};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
 pub use types::{VoteKind, VotersParameters};
-
 mod errors;
 mod types;
 
@@ -70,6 +71,9 @@ pub trait Trait: system::Trait + timestamp::Trait + stake::Trait {
 
     /// Type for the voter id. Should be authenticated by account id.
     type VoterId: From<Self::AccountId> + Parameter + Default + Clone;
+
+    /// Provides stake logic implementation. Can be used to mock stake logic.
+    type StakeHandlerProvider: StakeHandlerProvider<Self>;
 }
 
 decl_event!(
@@ -116,7 +120,8 @@ decl_event!(
 decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalEngine{
         /// Map proposal by its id.
-        pub Proposals get(fn proposals): map T::ProposalId => Proposal<T::BlockNumber, T::ProposerId, types::BalanceOf<T>>;
+        pub Proposals get(fn proposals): map T::ProposalId =>
+            Proposal<T::BlockNumber, T::ProposerId, types::BalanceOf<T>, T::StakeId>;
 
         /// Count of all proposals that have been created.
         pub ProposalCount get(fn proposal_count): u32;
@@ -244,11 +249,12 @@ impl<T: Trait> Module<T> {
         parameters: ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
         title: Vec<u8>,
         body: Vec<u8>,
+        stake_balance: Option<types::BalanceOf<T>>,
         proposal_type: u32,
         proposal_code: Vec<u8>,
     ) -> dispatch::Result {
         let account_id = T::ProposalOrigin::ensure_origin(origin)?;
-        let proposer_id = T::ProposerId::from(account_id);
+        let proposer_id = T::ProposerId::from(account_id.clone());
 
         ensure!(!title.is_empty(), errors::MSG_EMPTY_TITLE_PROVIDED);
         ensure!(
@@ -267,8 +273,26 @@ impl<T: Trait> Module<T> {
             errors::MSG_MAX_ACTIVE_PROPOSAL_NUMBER_EXCEEDED
         );
 
+        // ensure 4 cases of stakes (parameters.required_stake)
+
         let next_proposal_count_value = Self::proposal_count() + 1;
         let new_proposal_id = next_proposal_count_value;
+
+        // mutation
+
+        //        let stake_id = if let Some(stake_amount) = stake_balance {
+        //            let stake_id = T::StakeHandlerProvider::stakes().create_stake(stake_amount)?;
+        //
+        //            Some(stake_id)
+        //        } else {
+        //            None
+        //        };
+
+        let stake_id = stake_balance
+            .map(|stake_amount| {
+                T::StakeHandlerProvider::stakes().create_stake(stake_amount, account_id)
+            })
+            .transpose()?;
 
         let new_proposal = Proposal {
             created_at: Self::current_block(),
@@ -281,9 +305,9 @@ impl<T: Trait> Module<T> {
             approved_at: None,
             voting_results: VotingResults::default(),
             finalized_at: None,
+            stake_id,
         };
 
-        // mutation
         let proposal_id = T::ProposalId::from(new_proposal_id);
         <Proposals<T>>::insert(proposal_id, new_proposal);
         <ProposalCode<T>>::insert(proposal_id, proposal_code);
@@ -446,4 +470,5 @@ type FinalizedProposal<T> = FinalizedProposalData<
     <T as system::Trait>::BlockNumber,
     <T as Trait>::ProposerId,
     types::BalanceOf<T>,
+    <T as stake::Trait>::StakeId,
 >;

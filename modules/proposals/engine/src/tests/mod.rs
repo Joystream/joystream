@@ -16,6 +16,7 @@ struct DummyProposalFixture {
     proposal_code: Vec<u8>,
     title: Vec<u8>,
     body: Vec<u8>,
+    stake_balance: Option<BalanceOf<Test>>,
 }
 
 impl Default for DummyProposalFixture {
@@ -31,13 +32,14 @@ impl Default for DummyProposalFixture {
                 approval_quorum_percentage: 60,
                 approval_threshold_percentage: 60,
                 grace_period: 0,
-                stake: None,
+                required_stake: None,
             },
             origin: RawOrigin::Signed(1),
             proposal_type: dummy_proposal.proposal_type(),
             proposal_code: dummy_proposal.encode(),
             title: dummy_proposal.title,
             body: dummy_proposal.body,
+            stake_balance: None,
         }
     }
 }
@@ -59,6 +61,13 @@ impl DummyProposalFixture {
         DummyProposalFixture { origin, ..self }
     }
 
+    fn with_stake(self, stake_balance: BalanceOf<Test>) -> Self {
+        DummyProposalFixture {
+            stake_balance: Some(stake_balance),
+            ..self
+        }
+    }
+
     fn with_proposal_type_and_code(self, proposal_type: u32, proposal_code: Vec<u8>) -> Self {
         DummyProposalFixture {
             proposal_type,
@@ -74,6 +83,7 @@ impl DummyProposalFixture {
                 self.parameters,
                 self.title,
                 self.body,
+                self.stake_balance,
                 self.proposal_type,
                 self.proposal_code,
             ),
@@ -255,7 +265,7 @@ fn proposal_execution_succeeds() {
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
             grace_period: 0,
-            stake: None,
+            required_stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -290,6 +300,7 @@ fn proposal_execution_succeeds() {
                     rejections: 0,
                 },
                 finalized_at: None,
+                stake_id: None,
             }
         );
 
@@ -306,7 +317,7 @@ fn proposal_execution_failed() {
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
             grace_period: 0,
-            stake: None,
+            required_stake: None,
         };
         let faulty_proposal = FaultyExecutable;
 
@@ -345,6 +356,7 @@ fn proposal_execution_failed() {
                     rejections: 0,
                 },
                 finalized_at: None,
+                stake_id: None,
             }
         )
     });
@@ -358,7 +370,7 @@ fn voting_results_calculation_succeeds() {
             approval_quorum_percentage: 50,
             approval_threshold_percentage: 50,
             grace_period: 0,
-            stake: None,
+            required_stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -505,7 +517,7 @@ fn cancel_proposal_succeeds() {
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
             grace_period: 0,
-            stake: None,
+            required_stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -528,6 +540,7 @@ fn cancel_proposal_succeeds() {
                 approved_at: None,
                 voting_results: VotingResults::default(),
                 finalized_at: None,
+                stake_id: None,
             }
         )
     });
@@ -577,7 +590,7 @@ fn veto_proposal_succeeds() {
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
             grace_period: 0,
-            stake: None,
+            required_stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -603,6 +616,7 @@ fn veto_proposal_succeeds() {
                 approved_at: None,
                 voting_results: VotingResults::default(),
                 finalized_at: None,
+                stake_id: None,
             }
         );
 
@@ -711,7 +725,7 @@ fn create_proposal_and_expire_it() {
             approval_quorum_percentage: 49,
             approval_threshold_percentage: 60,
             grace_period: 0,
-            stake: None,
+            required_stake: None,
         };
 
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters.clone());
@@ -738,6 +752,7 @@ fn create_proposal_and_expire_it() {
                     rejections: 0,
                 },
                 finalized_at: None,
+                stake_id: None,
             }
         )
     });
@@ -751,7 +766,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
             grace_period: 2,
-            stake: None,
+            required_stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -789,6 +804,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
                     approvals: 4,
                     rejections: 0,
                 },
+                stake_id: None,
             }
         );
     });
@@ -802,7 +818,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
             grace_period: 1,
-            stake: None,
+            required_stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -837,6 +853,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
                 approvals: 4,
                 rejections: 0,
             },
+            stake_id: None,
         };
 
         assert_eq!(proposal, expected_proposal);

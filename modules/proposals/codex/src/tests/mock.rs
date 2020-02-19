@@ -83,6 +83,8 @@ impl proposal_engine::Trait for Test {
     type ProposerId = u64;
 
     type VoterId = u64;
+
+    type StakeHandlerProvider = proposal_engine::DefaultStakeHandlerProvider;
 }
 
 pub struct MockVotersParameters;

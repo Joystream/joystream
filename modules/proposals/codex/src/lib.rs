@@ -29,8 +29,14 @@ use srml_support::{decl_error, decl_module, decl_storage, ensure};
 pub trait Trait: system::Trait + proposal_engine::Trait {}
 
 use srml_support::traits::Currency;
+
+/// Balance alias
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+
+/// Balance alias for staking
+pub type NegativeImbalance<T> =
+<<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
 // Defines max allowed text proposal text length. Can be override in the config.
 const DEFAULT_TEXT_PROPOSAL_MAX_LEN: u32 = 20_000;
@@ -71,13 +77,19 @@ decl_module! {
         type Error = Error;
 
         /// Create text (signal) proposal type. On approval prints its content.
-        pub fn create_text_proposal(origin, title: Vec<u8>, body: Vec<u8>, text: Vec<u8>) {
+        pub fn create_text_proposal(
+            origin,
+            title: Vec<u8>,
+            body: Vec<u8>,
+            text: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+        ) {
             let parameters = crate::ProposalParameters {
                 voting_period: T::BlockNumber::from(50000u32),
                 grace_period: T::BlockNumber::from(10000u32),
                 approval_quorum_percentage: 40,
                 approval_threshold_percentage: 51,
-                stake: Some(<BalanceOf<T>>::from(500u32))
+                required_stake: Some(<BalanceOf<T>>::from(500u32))
             };
 
             ensure!(!text.is_empty(), Error::TextProposalIsEmpty);
@@ -96,6 +108,7 @@ decl_module! {
                 parameters,
                 title,
                 body,
+                stake_balance,
                 text_proposal.proposal_type(),
                 proposal_code
             )?;
@@ -106,14 +119,15 @@ decl_module! {
             origin,
             title: Vec<u8>,
             body: Vec<u8>,
-            wasm: Vec<u8>
+            wasm: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
         ) {
             let parameters = crate::ProposalParameters {
                 voting_period: T::BlockNumber::from(50000u32),
                 grace_period: T::BlockNumber::from(10000u32),
                 approval_quorum_percentage: 80,
                 approval_threshold_percentage: 80,
-                stake: Some(<BalanceOf<T>>::from(50000u32))
+                required_stake: Some(<BalanceOf<T>>::from(50000u32))
             };
 
             ensure!(!wasm.is_empty(), Error::RuntimeProposalIsEmpty);
@@ -133,6 +147,7 @@ decl_module! {
                 parameters,
                 title,
                 body,
+                stake_balance,
                 proposal.proposal_type(),
                 proposal_code
             )?;

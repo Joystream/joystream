@@ -82,6 +82,8 @@ impl crate::Trait for Test {
     type ProposerId = u64;
 
     type VoterId = u64;
+
+    type StakeHandlerProvider = crate::DefaultStakeHandlerProvider;
 }
 
 impl crate::VotersParameters for () {
