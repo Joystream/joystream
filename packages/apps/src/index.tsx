@@ -19,6 +19,8 @@ import { Api } from '@polkadot/react-api';
 import { QueueConsumer } from '@polkadot/react-components/Status/Context';
 import Queue from '@polkadot/react-components/Status/Queue';
 import { BlockAuthors, Events } from '@polkadot/react-query';
+import { MyAccountProvider } from '@polkadot/joy-utils/MyAccountContext';
+import { MyMembershipProvider } from '@polkadot/joy-utils/MyMembershipContext';
 
 import Apps from './Apps';
 
@@ -65,27 +67,31 @@ if (!rootElement) {
 
 ReactDOM.render(
   <Suspense fallback='...'>
-    <Queue>
-      <QueueConsumer>
-        {({ queuePayload, queueSetTxStatus }): React.ReactNode => (
-          <Api
-            queuePayload={queuePayload}
-            queueSetTxStatus={queueSetTxStatus}
-            url={wsEndpoint}
-          >
-            <BlockAuthors>
-              <Events>
-                <HashRouter>
-                  <ThemeProvider theme={theme}>
-                    <Apps />
-                  </ThemeProvider>
-                </HashRouter>
-              </Events>
-            </BlockAuthors>
-          </Api>
-        )}
-      </QueueConsumer>
-    </Queue>
+    <MyAccountProvider>
+      <Queue>
+        <QueueConsumer>
+          {({ queuePayload, queueSetTxStatus }): React.ReactNode => (
+            <Api
+              queuePayload={queuePayload}
+              queueSetTxStatus={queueSetTxStatus}
+              url={wsEndpoint}
+            >
+              <MyMembershipProvider>
+                <BlockAuthors>
+                  <Events>
+                    <HashRouter>
+                      <ThemeProvider theme={theme}>
+                        <Apps />
+                      </ThemeProvider>
+                    </HashRouter>
+                  </Events>
+                </BlockAuthors>
+              </MyMembershipProvider>
+            </Api>
+          )}
+        </QueueConsumer>
+      </Queue>
+    </MyAccountProvider>
   </Suspense>,
   rootElement
 );
