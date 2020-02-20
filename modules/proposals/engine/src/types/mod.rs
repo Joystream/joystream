@@ -15,6 +15,9 @@ mod stakes;
 
 pub use stakes::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
 
+#[cfg(test)]
+pub(crate) use stakes::DefaultStakeHandler;
+
 /// Current status of the proposal
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]

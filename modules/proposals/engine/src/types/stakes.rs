@@ -2,12 +2,19 @@ use super::{BalanceOf, CurrencyOf, NegativeImbalance};
 use crate::Trait;
 use rstd::convert::From;
 use rstd::marker::PhantomData;
+use rstd::rc::Rc;
 use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
+
+// Mocking dependencies for testing
+#[cfg(test)]
+use mockall::predicate::*;
+#[cfg(test)]
+use mockall::*;
 
 /// Returns registered stake handler. This is scaffolds for the mocking of the stake module.
 pub trait StakeHandlerProvider<T: Trait> {
     /// Returns stake logic handler
-    fn stakes() -> Box<dyn StakeHandler<T>>;
+    fn stakes() -> Rc<dyn StakeHandler<T>>;
 }
 
 /// Default implementation of the stake module logic provider. Returns actual implementation
@@ -15,14 +22,15 @@ pub trait StakeHandlerProvider<T: Trait> {
 pub struct DefaultStakeHandlerProvider;
 impl<T: Trait> StakeHandlerProvider<T> for DefaultStakeHandlerProvider {
     /// Returns stake logic handler
-    fn stakes() -> Box<dyn StakeHandler<T>> {
-        Box::new(DefaultStakeHandler {
+    fn stakes() -> Rc<dyn StakeHandler<T>> {
+        Rc::new(DefaultStakeHandler {
             marker: PhantomData::<T>::default(),
         })
     }
 }
 
 /// Stake logic handler.
+#[cfg_attr(test, automock)] // attributes creates mocks in tesing environment
 pub trait StakeHandler<T: Trait> {
     /// Creates a stake using stake balance and source account.
     /// Returns created stake id or an error.
@@ -38,8 +46,8 @@ pub trait StakeHandler<T: Trait> {
 
 /// Default implementation of the stake logic. Uses actual stake module.
 /// 'marker' responsible for the 'Trait' binding.
-pub struct DefaultStakeHandler<T> {
-    marker: PhantomData<T>,
+pub(crate) struct DefaultStakeHandler<T> {
+    pub marker: PhantomData<T>,
 }
 
 impl<T: Trait> StakeHandler<T> for DefaultStakeHandler<T> {
