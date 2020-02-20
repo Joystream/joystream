@@ -30,7 +30,7 @@ export const ContentCurators = Loadable<WorkingGroupMembership>(
         <Message positive>
           <Message.Header>Join us and get paid to curate!</Message.Header>
           <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            There are openings for new content curators. This is a great way to support Joystream!
           </p>
           <Link to="/working-groups/opportunities">
             <Button icon labelPosition="right" color="green" positive>
@@ -46,7 +46,7 @@ export const ContentCurators = Loadable<WorkingGroupMembership>(
       <section id="content-curators">
         <h2>Content curators</h2>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+          Content Curators are responsible for ensuring that all content is uploaded correctly and in line with the terms of service.
       </p>
         <Card.Group>
           {props.members.map((member, key) => (
