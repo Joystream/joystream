@@ -59,6 +59,10 @@ function classificationDescription(state: OpeningState): string {
 }
 
 export function OpeningHeader(props: OpeningStage) {
+  let time = null
+  if (props.stage.starting_time.getTime() > 0) {
+    time = <Moment unix format="DD/MM/YYYY, hh:mm A">{props.stage.starting_time.getTime() / 1000}</Moment>
+  }
   return (
     <Grid columns="equal">
       <Grid.Column className="status">
@@ -70,7 +74,7 @@ export function OpeningHeader(props: OpeningStage) {
       <Grid.Column className="meta" textAlign="right">
         <Label>
           <Icon name="history" /> {classificationDescription(props.stage.state)}&nbsp;
-            <Moment unix format="DD/MM/YYYY, hh:mm A">{props.stage.starting_time.getTime() / 1000}</Moment>
+            {time}
           <Label.Detail>
             <Link to={`/explorer/query/${props.stage.starting_block_hash}`}>
               <Icon name="cube" />
@@ -332,8 +336,18 @@ export function OpeningBodyApplicationsStatus(props: OpeningStakeAndApplicationS
 
 export function OpeningBodyReviewInProgress(props: OpeningStageClassification) {
   let countdown = null
-  if (typeof props.review_end_time !== "undefined") {
+  let expected = null
+  if (props.review_end_time && props.starting_time.getTime() > 0) {
     countdown = <Countdown end={props.review_end_time} />
+    expected = (
+      <span>
+        &nbsp;(expected on&nbsp;
+        <strong>
+          <Moment format="MMM DD, YYYY  HH:mm:ss" date={props.review_end_time} interval={0} />
+        </strong>
+        )
+      </span>
+    )
   }
 
   return (
@@ -343,16 +357,14 @@ export function OpeningBodyReviewInProgress(props: OpeningStageClassification) {
 
       <p>
         <span>Candidates will be selected by block&nbsp;
-      <NumberFormat value={props.review_end_block}
-            displayType="text"
-            thousandSeparator={true}
-          />
-          &nbsp;(expected on&nbsp;
-                </span>
-        <strong>
-          <Moment format="MMM DD, YYYY  HH:mm:ss" date={props.review_end_time} interval={0} />
-        </strong>
-        )
+          <strong>
+            <NumberFormat value={props.review_end_block}
+              displayType="text"
+              thousandSeparator={true}
+            />
+          </strong>
+        </span>
+        {expected}
         <span> at the latest.</span>
       </p>
     </Message>
