@@ -1,4 +1,3 @@
-export * from './Channel.mock';
 export * from './ContentLicense.mock';
 export * from './CurationStatus.mock';
 export * from './EntityId.mock';
