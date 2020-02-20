@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Segment, Icon, Label, SemanticICONS, SemanticCOLORS, Tab } from 'semantic-ui-react';
-
+import { Segment, Tab } from 'semantic-ui-react';
 import { AccountId } from '@polkadot/types/interfaces';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { YouHaveNoChannels } from './YouHaveNoChannels';
-import { ChannelAvatar } from './ChannelAvatar';
-import { isPublicChannel } from './ChannelHelpers';
 import { ChannelContentTypeValue } from '@joystream/types/content-working-group';
+import { ChannelPreview } from './ChannelPreview';
 
 export type ChannelsByOwnerProps = {
   accountId: AccountId,
@@ -60,64 +58,12 @@ const TabsAndChannels = (props: ChannelsByOwnerProps) => {
       <i className='icon plus' />
       Create Channel
     </Link>
-    {channels.map((x, i) => <ChannelPreview key={'ChannelPreview-' + i} channel={x} />)}
+    {channels.map((channel) =>
+      <Segment key={'ChannelPreview-' + channel.id} padded style={{ backgroundColor: '#fff' }}>
+        <ChannelPreview channel={channel} />
+      </Segment>
+    )}
   </>
-}
-
-type ChannelPreviewProps = {
-  channel: ChannelEntity
-};
-
-const ChannelPreview = (props: ChannelPreviewProps) => {
-  const { channel } = props;
-
-  let visibilityIcon: SemanticICONS = 'eye';
-  let visibilityColor: SemanticCOLORS = 'green';
-  let visibilityText = 'Public';
-
-  if (!isPublicChannel(channel)) {
-    visibilityIcon = 'eye slash';
-    visibilityColor = 'orange';
-    visibilityText = 'Unlisted';
-  }
-
-  return <Segment padded style={{ backgroundColor: '#fff' }}>
-    <div className='ChannelPreview'>
-
-      <ChannelAvatar channel={channel} size='big' />
-
-      <div className='ChannelDetails'>
-        <h2 className='ChannelTitle'>
-          <Link to={`/media/channels/${channel.id}`} style={{ marginRight: '1rem' }}>
-            {channel.title}
-          </Link>
-          <Link to={`/media/channels/${channel.id}/edit`} className='ui button basic'>
-            <i className='icon pencil' />
-            Edit
-          </Link>
-        </h2>
-
-        <p>{channel.description}</p>
-
-        <Label basic color={visibilityColor} style={{ marginRight: '1rem' }}>
-          <Icon name={visibilityIcon} />
-          {visibilityText}
-        </Label>
-
-        {channel.curationStatus !== 'Normal' &&
-          <Label basic color='red'>
-            <Icon name='dont' />
-            Channel {channel.curationStatus}
-            {' '}<Icon name='question circle outline' size='small' />
-          </Label>
-        }
-      </div>
-
-      {/* // TODO uncomment when we calculate reward and count of videos in channel: */}
-      {/* <ChannelStats channel={channel} /> */}
-
-    </div>
-  </Segment>
 }
 
 export function ChannelsByOwner (props: ChannelsByOwnerProps) {

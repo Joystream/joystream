@@ -2,7 +2,8 @@ import React from 'react';
 import { Message } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
-import { Vec } from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
+import { Vec, GenericAccountId } from '@polkadot/types';
 import { withCalls, withMulti } from '@polkadot/react-api/with';
 
 import { MemberId } from '@joystream/types/members';
@@ -14,6 +15,7 @@ export type MyAddressProps = {
 };
 
 export type MyAccountProps = MyAddressProps & {
+  myAccountId?: AccountId,
   myMemberId?: MemberId,
   memberIdsByRootAccountId?: Vec<MemberId>,
   memberIdsByControllerAccountId?: Vec<MemberId>,
@@ -24,7 +26,8 @@ export type MyAccountProps = MyAddressProps & {
 function withMyAddress<P extends MyAccountProps> (Component: React.ComponentType<P>) {
   return function (props: P) {
     const { state: { address } } = useMyAccount();
-    return <Component myAddress={address} {...props} />;
+    const myAccountId = address ? new GenericAccountId(address) : undefined
+    return <Component myAddress={address} myAccountId={myAccountId} {...props} />;
   };
 }
 

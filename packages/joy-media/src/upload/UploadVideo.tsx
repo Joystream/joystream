@@ -11,11 +11,15 @@ import { MediaFormProps, withMediaForm, datePlaceholder } from '../common/MediaF
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { FormTabs } from '../common/FormTabs';
+import { ChannelId } from '@joystream/types/content-working-group';
+import { ChannelEntity } from '../entities/ChannelEntity';
 
 export type OuterProps = {
   history?: History,
   contentId: ContentId,
   fileName?: string,
+  channelId?: ChannelId,
+  channel?: ChannelEntity,
   id?: EntityId,
   entity?: VideoType
   opts?: MediaDropdownOptions

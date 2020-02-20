@@ -1,3 +1,4 @@
+import { AccountId } from '@polkadot/types/interfaces';
 import { ChannelEntity } from "../entities/ChannelEntity";
 import { ChannelType } from "../schemas/channel/Channel";
 import { ChannelPublicationStatusAllValues } from "@joystream/types/content-working-group";
@@ -12,6 +13,10 @@ export const isVideoChannel = (channel: ChannelEntity) => {
 
 export const isMusicChannel = (channel: ChannelEntity) => {
   return channel.content === 'Music';
+};
+
+export const isAccountAChannelOwner = (channel: ChannelEntity, account?: AccountId): boolean => {
+  return account ? channel.roleAccount.eq(account) : false
 };
 
 export function isPublicChannel(channel: ChannelType): boolean {

@@ -285,6 +285,7 @@ $borderColor: #e4e4e4;
     color: $grayFont;
     font-size: .9rem;
     text-transform: uppercase;
+    margin-bottom: 1rem;
 
     .icon {
       margin-right: .5rem;
