@@ -1997,6 +1997,19 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::ChannelCreationEnabledUpdated(enabled));
         }
+
+        /// Add to capacity of current acive mint
+        pub fn increase_mint_capacity(
+            origin,
+            additional_capacity: minting::BalanceOf<T>
+        ) {
+            ensure_root(origin)?;
+
+            let mint_id = Self::mint();
+            let mint = <minting::Module<T>>::mints(mint_id); // must exist
+            let new_capacity = mint.capacity() + additional_capacity;
+            let _ = <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity);
+        }
     }
 }
 
