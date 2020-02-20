@@ -27,7 +27,7 @@ pub(crate) fn panics<F: std::panic::RefUnwindSafe + Fn()>(could_panic_func: F) -
 }
 
 // Test StakeHandlerProvider implementation based on local thread static variables
-pub(crate) struct TestStakeHandlerProvider;
+pub struct TestStakeHandlerProvider;
 impl crate::StakeHandlerProvider<Test> for TestStakeHandlerProvider {
     /// Returns StakeHandler. Mock entry point for stake module.
     fn stakes() -> Rc<dyn crate::StakeHandler<Test>> {

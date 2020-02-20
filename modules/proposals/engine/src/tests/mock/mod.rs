@@ -16,7 +16,7 @@ mod stakes;
 
 use balance_restorator::*;
 pub use proposals::*;
-use stakes::*;
+pub use stakes::*;
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -91,7 +91,8 @@ impl crate::Trait for Test {
 
     type VoterId = u64;
 
-    type StakeHandlerProvider = crate::DefaultStakeHandlerProvider;
+    type StakeHandlerProvider = stakes::TestStakeHandlerProvider;
+    //    type StakeHandlerProvider = crate::DefaultStakeHandlerProvider;
 }
 
 impl crate::VotersParameters for () {
@@ -141,15 +142,6 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
         .unwrap();
 
     t.into()
-}
-
-// Intercepts panic in provided function, test mock expectation and restores default behaviour
-pub(crate) fn handle_mock<F: std::panic::RefUnwindSafe + Fn()>(func: F) {
-    let panicked = panics(func);
-
-    test_expectation_and_clear_mock();
-
-    assert!(!panicked);
 }
 
 pub type ProposalsEngine = crate::Module<Test>;

@@ -4,6 +4,7 @@ use crate::*;
 use mock::*;
 
 use codec::Encode;
+use rstd::rc::Rc;
 use runtime_primitives::traits::{OnFinalize, OnInitialize};
 use srml_support::{dispatch, StorageMap, StorageValue};
 use system::RawOrigin;
@@ -1071,7 +1072,7 @@ fn create_proposal_fais_with_invalid_stake_parameters() {
 }
 
 #[test]
-fn finalization_proposal_and_stake_removing_with_balance_checks_succeeds() {
+fn finalize_proposal_and_check_stake_removing_with_balance_checks_succeeds() {
     initial_test_ext().execute_with(|| {
         let account_id = 1;
 
@@ -1141,5 +1142,41 @@ fn finalization_proposal_and_stake_removing_with_balance_checks_succeeds() {
         });
 
         assert_eq!(proposal, expected_proposal);
+    });
+}
+
+#[test]
+fn finalize_proposal_using_stake_mocks() {
+    handle_mock(|| {
+        initial_test_ext().execute_with(|| {
+            let mock = {
+                let mut mock = crate::types::MockStakeHandler::<Test>::new();
+                mock.expect_create_stake().times(1).returning(|_, _| Ok(1));
+
+                mock.expect_remove_stake().times(1).returning(|_| Ok(()));
+
+                Rc::new(mock)
+            };
+            set_stake_handler_impl(mock.clone());
+
+            let account_id = 1;
+
+            let stake_amount = 200;
+            let parameters = ProposalParameters {
+                voting_period: 3,
+                approval_quorum_percentage: 50,
+                approval_threshold_percentage: 60,
+                grace_period: 5,
+                required_stake: Some(stake_amount),
+            };
+            let dummy_proposal = DummyProposalFixture::default()
+                .with_parameters(parameters)
+                .with_origin(RawOrigin::Signed(account_id))
+                .with_stake(stake_amount);
+
+            let _proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+
+            run_to_block_and_finalize(5);
+        });
     });
 }

@@ -26,8 +26,9 @@ pub use types::{
 pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
 pub use types::{VoteKind, VotersParameters};
+
 mod errors;
-mod types;
+pub(crate) mod types;
 
 #[cfg(test)]
 mod tests;
