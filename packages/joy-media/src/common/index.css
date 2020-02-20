@@ -6,6 +6,11 @@ $bgSelected: #c7e7fa;
 
 $borderColor: #e4e4e4;
 
+.NoContentYet {
+  padding: 2rem 0;
+  color: $grayFont;
+}
+
 .JoyBgImg {
   background-color: #ccc;
   background-size: cover;
@@ -240,6 +245,9 @@ $borderColor: #e4e4e4;
 }
 
 .JoyViewChannel {
+  .ChannelHeader {
+    margin-bottom: 1rem;
+  }
   .ChannelCover {
     background-size: cover;
     margin-bottom: 2rem;
@@ -277,6 +285,10 @@ $borderColor: #e4e4e4;
     color: $grayFont;
     font-size: .9rem;
     text-transform: uppercase;
+
+    .icon {
+      margin-right: .5rem;
+    }
   }
 }
 

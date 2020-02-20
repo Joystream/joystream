@@ -3,14 +3,15 @@ import Section from '@polkadot/joy-utils/Section';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelHeader } from './ChannelHeader';
 import { VideoPreview, VideoPreviewProps } from '../video/VideoPreview';
+import NoContentYet from '../common/NoContentYet';
 
 type Props = {
   channel: ChannelEntity,
   videos?: VideoPreviewProps[]
 };
 
-function NoTracks () {
-  return null
+function NoVideosYet () {
+  return <NoContentYet>Channel has no videos yet.</NoContentYet>
 }
 
 export function ViewVideoChannel (props: Props) {
@@ -18,7 +19,7 @@ export function ViewVideoChannel (props: Props) {
 
   const renderVideosSection = () => (
     !videos.length
-      ? <NoTracks />
+      ? <NoVideosYet />
       : <Section title={`Videos`}>
           {videos.map((x, i) => <VideoPreview key={'VideoPreview-' + i} {...x} />)}
         </Section>

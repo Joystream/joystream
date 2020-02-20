@@ -4,6 +4,7 @@ import Section from '@polkadot/joy-utils/Section';
 import { ChannelHeader } from './ChannelHeader';
 import { MusicAlbumPreviewProps, MusicAlbumPreview } from '../music/MusicAlbumPreview';
 import { MusicTrackReaderPreview, MusicTrackReaderPreviewProps } from '../music/MusicTrackReaderPreview';
+import NoContentYet from '../common/NoContentYet';
 
 type Props = {
   channel: ChannelEntity,
@@ -12,11 +13,11 @@ type Props = {
 };
 
 function NoAlbums () {
-  return null
+  return <NoContentYet>Channel has no music albums yet.</NoContentYet>
 }
 
 function NoTracks () {
-  return null
+  return <NoContentYet>Channel has no music tracks yet.</NoContentYet>
 }
 
 export function ViewMusicChannel (props: Props) {
