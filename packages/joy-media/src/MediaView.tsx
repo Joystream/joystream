@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MediaTransport } from './transport';
 import { MemberId } from '@joystream/types/members';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
+import { useTransportContext } from './TransportContext';
 
 type ResolverProps<A> = A & {
   transport: MediaTransport
