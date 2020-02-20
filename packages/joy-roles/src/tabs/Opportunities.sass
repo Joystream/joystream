@@ -1,6 +1,8 @@
 $opening-states: ( active: green, in-review: blue, waiting-to-begin: teal, complete: black, cancelled: grey )
 
 .ui.container.opening
+  margin-bottom: 3em
+
   @each $name, $colour in $opening-states 
     &.status-#{$name} 
       .card.container
@@ -32,6 +34,20 @@ $opening-states: ( active: green, in-review: blue, waiting-to-begin: teal, compl
 
             &:after
               border-right-color: colour($colour, darker) !important
+
+  h2, h3, h4, h5
+    font-family: Lato,'Helvetica Neue',Arial,Helvetica,sans-serif
+
+  h2
+    font-weight: 400
+    text-transform: capitalize
+    margin-left: 0.1em
+
+  h4
+    font-style: italic
+
+  h5
+    font-weight: bold !important
 
   .main 
     .statistic
