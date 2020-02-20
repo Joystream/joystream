@@ -12,7 +12,7 @@ import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount'
 
 import { ViewComponent } from '@polkadot/joy-utils/index'
 
-import { Transport } from './transport.polkadot'
+import { Transport } from './transport.substrate'
 
 import { WorkingGroupsController, WorkingGroupsView } from './tabs/WorkingGroup.controller'
 import { OpportunityController, OpportunityView } from './tabs/Opportunity.controller'
