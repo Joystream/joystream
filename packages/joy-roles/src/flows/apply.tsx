@@ -972,7 +972,7 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
       </p>
       <p>
         Before the transaction, a new account key, called a <em>role key</em>, will be generated and downloaded automatically.
-        You probably won't need to use the role key directly, but you will need it in order to perform any duties in the role, so be sure to keep a backup.
+        You will need this role key to perform any duties in the role, so be sure to keep a backup.
       </p>
       <ModalAccordion title="Transaction details">
         <Table basic='very'>
@@ -1022,21 +1022,22 @@ export function DoneStage(props: DoneStageProps) {
 	  </p>
       <p>
         You can track the progress of your
-              application in the <Link to="#working-group/my-roles">My roles</Link> section. If you have any issues,
-                  you can raise them in in the <Link to="#forum">Forum</Link> or contact the group lead
-directly.
+		application in the <Link to="#working-group/my-roles">My roles</Link> section. Note that your application is attached
+		to your role key (see below).  If you have any issues, you can message the group lead in in the <Link to="#forum">Forum</Link> or contact the them directly.
 	  </p>
 
       <h4>Your new role key</h4>
       <p>
-        This role requires a new sub-key to be associated with your account.
-        You'll probably won't use the key directly, but you will need it in order
-        to perform any duties in the role.
+        This role requires a new account, called a <em>role key</em>, which will be used to carry out any duties associated with the role.
 	  </p>
       <p>
         We've generated a new role key, <strong>{props.roleKeyName}</strong>, automatically.
         A copy of the backup file should have been downloaded, or you can
-        get a backup from the <Link to="/accounts">My account</Link> section.
+		get a backup from the <Link to="/accounts">My account</Link> section. 	  </p>
+      <p>
+        You can also switch your role key using the Accounts selector in the top right of the screen. It works like
+		  any other account. The application you just completed is associated with your new role key, so you'll need to
+		select <strong>{props.roleKeyName}</strong> in the accounts selector in order to track its progress.
 	  </p>
       <Message warning icon>
         <Icon name='warning sign' />
