@@ -940,7 +940,6 @@ fn voting_internal_cache_exists_after_proposal_finalization() {
     });
 }
 
-
 #[test]
 fn create_dummy_proposal_succeeds_with_stake() {
     initial_test_ext().execute_with(|| {

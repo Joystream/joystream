@@ -30,6 +30,9 @@ pub trait StakeHandler<T: Trait> {
         stake_balance: BalanceOf<T>,
         source_account_id: T::AccountId,
     ) -> Result<T::StakeId, &'static str>;
+
+    /// Execute unstaking and removes stake
+    fn remove_stake(&self, stake_id: T::StakeId) -> Result<(), &'static str>;
 }
 
 /// Default implementation of the stake logic. Uses actual stake module.
@@ -46,30 +49,39 @@ impl<T: Trait> StakeHandler<T> for DefaultStakeHandler<T> {
         stake_balance: BalanceOf<T>,
         source_account_id: T::AccountId,
     ) -> Result<T::StakeId, &'static str> {
-        // error conversion for the stake() operation
-        fn convert_stake_action_error(
-            err: stake::StakeActionError<stake::StakingError>,
-        ) -> &'static str {
-            match err {
-                stake::StakeActionError::StakeNotFound => "StakeNotFound",
-                stake::StakeActionError::Error(e) => match e {
-                    stake::StakingError::CannotStakeZero => "CannotStakeZero",
-                    stake::StakingError::CannotStakeLessThanMinimumBalance => {
-                        "CannotStakeLessThanMinimumBalance"
-                    }
-                    stake::StakingError::AlreadyStaked => "AlreadyStaked",
-                },
-            }
-        };
-
         let stake_id = stake::Module::<T>::create_stake();
 
         let stake_imbalance = Self::make_stake_imbalance(stake_balance, &source_account_id)?;
 
         stake::Module::<T>::stake(&stake_id, stake_imbalance)
-            .map_err(convert_stake_action_error)?;
+            .map_err(|err| Self::convert_stake_action_error(err, Self::convert_staking_error))?;
 
         Ok(stake_id)
+    }
+
+    /// Execute unstaking and removes the stake
+    fn remove_stake(&self, stake_id: T::StakeId) -> Result<(), &'static str> {
+        // error conversion for the initiate_unstaking() operation
+        fn convert_unstaking_error(err: stake::InitiateUnstakingError) -> &'static str {
+            match err {
+                stake::InitiateUnstakingError::UnstakingPeriodShouldBeGreaterThanZero => {
+                    "UnstakingPeriodShouldBeGreaterThanZero"
+                }
+                stake::InitiateUnstakingError::UnstakingError(e) => match e {
+                    stake::UnstakingError::NotStaked => "NotStaked",
+                    stake::UnstakingError::AlreadyUnstaking => "AlreadyUnstaking",
+                    stake::UnstakingError::CannotUnstakeWhileSlashesOngoing => {
+                        "CannotUnstakeWhileSlashesOngoing"
+                    }
+                },
+            }
+        };
+
+        stake::Module::<T>::initiate_unstaking(&stake_id, None)
+            .map_err(|err| Self::convert_stake_action_error(err, convert_unstaking_error))?;
+
+        stake::Module::<T>::remove_stake(&stake_id)
+            .map_err(|err| Self::convert_stake_action_error(err, Self::convert_staking_error))
     }
 }
 
@@ -85,5 +97,30 @@ impl<T: Trait> DefaultStakeHandler<T> {
             WithdrawReasons::all(),
             ExistenceRequirement::AllowDeath,
         )
+    }
+
+    // error conversion for the generic StakeActionError
+    fn convert_stake_action_error<E, F>(
+        err: stake::StakeActionError<E>,
+        convert_exact_stake_error: F,
+    ) -> &'static str
+    where
+        F: Fn(E) -> &'static str,
+    {
+        match err {
+            stake::StakeActionError::StakeNotFound => "StakeNotFound",
+            stake::StakeActionError::Error(e) => convert_exact_stake_error(e),
+        }
+    }
+
+    // error conversion for the stake() and remove_stake() operations
+    fn convert_staking_error(err: stake::StakingError) -> &'static str {
+        match err {
+            stake::StakingError::CannotStakeZero => "CannotStakeZero",
+            stake::StakingError::CannotStakeLessThanMinimumBalance => {
+                "CannotStakeLessThanMinimumBalance"
+            }
+            stake::StakingError::AlreadyStaked => "AlreadyStaked",
+        }
     }
 }
