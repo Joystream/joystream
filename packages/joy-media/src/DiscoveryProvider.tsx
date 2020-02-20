@@ -116,31 +116,23 @@ type State = {
 }
 
 function setDiscoveryProvider<P extends DiscoveryProviderProps> (Component: React.ComponentType<P>) {
-  console.log('setDiscoveryProvider called!');
-
   return class extends React.Component<P & BootstrapNodes, State> {
     state: State = {}
 
-    componentWillReceiveProps() {
-      let { discoveryProvider } = this.state;
+    static getDerivedStateFromProps(props: BootstrapNodes, state: State) {
+      let { discoveryProvider } = state;
 
       // only set the discovery provider once
-      if (discoveryProvider) {
-        return
-      } else {
-        const { bootstrapNodes } = this.props;
-        const discoveryProvider = newDiscoveryProvider({bootstrapNodes});
+      if (!discoveryProvider) {
+        const { bootstrapNodes } = props;
+        const discoveryProvider = newDiscoveryProvider({ bootstrapNodes });
         if (discoveryProvider) {
-          this.setState({discoveryProvider})
+          return ({ discoveryProvider })
         }
       }
-    }
 
-    componentWillUnmount() {
-      let { discoveryProvider } = this.state;
-      if (discoveryProvider) {
-
-      }
+      // no state change
+      return null
     }
 
     render () {
@@ -177,14 +169,6 @@ export function withDiscoveryProvider<P extends DiscoveryProviderProps> (Compone
   return withMulti(
     Component,
     loadBootstrapNodes,
-    // setDiscoveryProvider // TODO uncomment
-  );
-}
-
-export function DELETE_ME_withDiscoveryProvider<P extends DiscoveryProviderProps> (Component: React.ComponentType<P>) {
-  return withMulti(
-    Component,
-    loadBootstrapNodes,
-    setDiscoveryProvider
+    setDiscoveryProvider,
   );
 }
