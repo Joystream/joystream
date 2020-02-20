@@ -1069,3 +1069,77 @@ fn create_proposal_fais_with_invalid_stake_parameters() {
             .create_proposal_and_assert(Err("Stake differs from the proposal requirements"));
     });
 }
+
+#[test]
+fn finalization_proposal_and_stake_removing_with_balance_checks_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let account_id = 1;
+
+        let stake_amount = 200;
+        let parameters = ProposalParameters {
+            voting_period: 3,
+            approval_quorum_percentage: 50,
+            approval_threshold_percentage: 60,
+            grace_period: 5,
+            required_stake: Some(stake_amount),
+        };
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters)
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_stake(stake_amount);
+
+        let account_balance = 500;
+        let _imbalance =
+            <Test as stake::Trait>::Currency::deposit_creating(&account_id, account_balance);
+
+        assert_eq!(
+            <Test as stake::Trait>::Currency::total_balance(&account_id),
+            account_balance
+        );
+
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        assert_eq!(
+            <Test as stake::Trait>::Currency::total_balance(&account_id),
+            account_balance - stake_amount
+        );
+
+        let mut proposal = <crate::Proposals<Test>>::get(proposal_id);
+
+        let mut expected_proposal = Proposal {
+            proposal_type: 1,
+            parameters,
+            proposer_id: 1,
+            created_at: 1,
+            status: ProposalStatus::Active,
+            title: b"title".to_vec(),
+            body: b"body".to_vec(),
+            approved_at: None,
+            voting_results: VotingResults {
+                abstentions: 0,
+                approvals: 0,
+                rejections: 0,
+            },
+            finalized_at: None,
+            stake_id: Some(0), // valid stake_id
+        };
+
+        assert_eq!(proposal, expected_proposal);
+
+        run_to_block_and_finalize(5);
+
+        assert_eq!(
+            <Test as stake::Trait>::Currency::total_balance(&account_id),
+            account_balance
+        );
+        proposal = <crate::Proposals<Test>>::get(proposal_id);
+
+        expected_proposal.stake_id = None;
+        expected_proposal.finalized_at = Some(4);
+        expected_proposal.status = ProposalStatus::Finalized(FinalizationStatus {
+            proposal_status: ProposalDecisionStatus::Expired,
+            finalization_error: None,
+        });
+
+        assert_eq!(proposal, expected_proposal);
+    });
+}
