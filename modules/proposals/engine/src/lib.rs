@@ -20,7 +20,8 @@ pub use types::BalanceOf;
 use types::FinalizedProposalData;
 pub use types::VotingResults;
 pub use types::{
-    ApprovedProposalStatus, Proposal, ProposalDecisionStatus, ProposalParameters, ProposalStatus,
+    ApprovedProposalStatus, FinalizationStatus, Proposal, ProposalDecisionStatus,
+    ProposalParameters, ProposalStatus,
 };
 pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
@@ -372,8 +373,10 @@ impl<T: Trait> Module<T> {
             },
         };
 
-        let proposal_execution_status =
-            ProposalStatus::Finalized(ProposalDecisionStatus::Approved(approved_proposal_status));
+        let proposal_execution_status = ProposalStatus::Finalized(FinalizationStatus {
+            proposal_status: ProposalDecisionStatus::Approved(approved_proposal_status),
+            finalization_error: None,
+        });
 
         proposal.status = proposal_execution_status.clone();
         <Proposals<T>>::insert(proposal_id, proposal);
@@ -390,11 +393,33 @@ impl<T: Trait> Module<T> {
         Self::decrease_active_proposal_counter();
         <ActiveProposalIds<T>>::remove(&proposal_id.clone());
 
-        let new_proposal_status = ProposalStatus::Finalized(decision_status.clone());
-        <Proposals<T>>::mutate(proposal_id, |p| {
-            p.status = new_proposal_status.clone();
-            p.finalized_at = Some(Self::current_block());
+        let mut new_proposal_status = ProposalStatus::Finalized(FinalizationStatus {
+            proposal_status: decision_status.clone(),
+            finalization_error: None,
         });
+        let mut proposal = Self::proposals(proposal_id);
+        proposal.finalized_at = Some(Self::current_block());
+
+        if let Some(stake_id) = proposal.stake_id {
+            let unstaking_result = T::StakeHandlerProvider::stakes().remove_stake(stake_id);
+
+            let mut finalization_error = None;
+            match unstaking_result {
+                Ok(()) => {
+                    proposal.stake_id = None;
+                }
+                Err(err) => {
+                    finalization_error = Some(err.as_bytes().to_vec());
+                }
+            };
+
+            new_proposal_status = ProposalStatus::Finalized(FinalizationStatus {
+                proposal_status: decision_status.clone(),
+                finalization_error,
+            });
+        }
+        proposal.status = new_proposal_status.clone();
+        <Proposals<T>>::insert(proposal_id, proposal);
 
         Self::deposit_event(RawEvent::ProposalStatusUpdated(
             proposal_id,

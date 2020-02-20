@@ -23,7 +23,18 @@ pub enum ProposalStatus {
     Active,
 
     /// The proposal decision was made.
-    Finalized(ProposalDecisionStatus),
+    Finalized(FinalizationStatus),
+}
+
+/// Final proposal status and potential error.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct FinalizationStatus {
+    /// Final proposal status
+    pub proposal_status: ProposalDecisionStatus,
+
+    /// Error occured during the proposal finalization
+    pub finalization_error: Option<Vec<u8>>,
 }
 
 /// Status of the approved proposal. Defines execution stages.

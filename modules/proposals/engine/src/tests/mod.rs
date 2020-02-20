@@ -293,9 +293,12 @@ fn proposal_execution_succeeds() {
                 parameters,
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Finalized(ProposalDecisionStatus::Approved(
-                    ApprovedProposalStatus::Executed
-                )),
+                status: ProposalStatus::Finalized(FinalizationStatus {
+                    proposal_status: ProposalDecisionStatus::Approved(
+                        ApprovedProposalStatus::Executed
+                    ),
+                    finalization_error: None,
+                }),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: Some(1),
@@ -349,11 +352,14 @@ fn proposal_execution_failed() {
                 parameters,
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Finalized(ProposalDecisionStatus::Approved(
-                    ApprovedProposalStatus::ExecutionFailed {
-                        error: "ExecutionFailed".as_bytes().to_vec()
-                    }
-                )),
+                status: ProposalStatus::Finalized(FinalizationStatus {
+                    proposal_status: ProposalDecisionStatus::Approved(
+                        ApprovedProposalStatus::ExecutionFailed {
+                            error: "ExecutionFailed".as_bytes().to_vec()
+                        }
+                    ),
+                    finalization_error: None,
+                }),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: Some(1),
@@ -432,7 +438,10 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
 
         assert_eq!(
             proposal.status,
-            ProposalStatus::Finalized(ProposalDecisionStatus::Rejected)
+            ProposalStatus::Finalized(FinalizationStatus {
+                proposal_status: ProposalDecisionStatus::Rejected,
+                finalization_error: None,
+            }),
         );
         assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
     });
@@ -544,7 +553,10 @@ fn cancel_proposal_succeeds() {
                 parameters,
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Finalized(ProposalDecisionStatus::Canceled),
+                status: ProposalStatus::Finalized(FinalizationStatus {
+                    proposal_status: ProposalDecisionStatus::Canceled,
+                    finalization_error: None,
+                }),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: None,
@@ -620,7 +632,10 @@ fn veto_proposal_succeeds() {
                 parameters,
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Finalized(ProposalDecisionStatus::Vetoed),
+                status: ProposalStatus::Finalized(FinalizationStatus {
+                    proposal_status: ProposalDecisionStatus::Vetoed,
+                    finalization_error: None,
+                }),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: None,
@@ -690,7 +705,10 @@ fn veto_proposal_event_emitted() {
             RawEvent::ProposalCreated(1, 1),
             RawEvent::ProposalStatusUpdated(
                 1,
-                ProposalStatus::Finalized(ProposalDecisionStatus::Vetoed),
+                ProposalStatus::Finalized(FinalizationStatus {
+                    proposal_status: ProposalDecisionStatus::Vetoed,
+                    finalization_error: None,
+                }),
             ),
         ]);
     });
@@ -709,7 +727,10 @@ fn cancel_proposal_event_emitted() {
             RawEvent::ProposalCreated(1, 1),
             RawEvent::ProposalStatusUpdated(
                 1,
-                ProposalStatus::Finalized(ProposalDecisionStatus::Canceled),
+                ProposalStatus::Finalized(FinalizationStatus {
+                    proposal_status: ProposalDecisionStatus::Canceled,
+                    finalization_error: None,
+                }),
             ),
         ]);
     });
@@ -756,7 +777,10 @@ fn create_proposal_and_expire_it() {
                 parameters,
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Finalized(ProposalDecisionStatus::Expired),
+                status: ProposalStatus::Finalized(FinalizationStatus {
+                    proposal_status: ProposalDecisionStatus::Expired,
+                    finalization_error: None,
+                }),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: None,
@@ -808,9 +832,12 @@ fn proposal_execution_postponed_because_of_grace_period() {
                 parameters,
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Finalized(ProposalDecisionStatus::Approved(
-                    ApprovedProposalStatus::PendingExecution
-                )),
+                status: ProposalStatus::Finalized(FinalizationStatus {
+                    proposal_status: ProposalDecisionStatus::Approved(
+                        ApprovedProposalStatus::PendingExecution
+                    ),
+                    finalization_error: None,
+                }),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: Some(1),
@@ -859,9 +886,12 @@ fn proposal_execution_succeeds_after_the_grace_period() {
             parameters,
             proposer_id: 1,
             created_at: 1,
-            status: ProposalStatus::Finalized(ProposalDecisionStatus::Approved(
-                ApprovedProposalStatus::PendingExecution,
-            )),
+            status: ProposalStatus::Finalized(FinalizationStatus {
+                proposal_status: ProposalDecisionStatus::Approved(
+                    ApprovedProposalStatus::PendingExecution,
+                ),
+                finalization_error: None,
+            }),
             title: b"title".to_vec(),
             body: b"body".to_vec(),
             approved_at: Some(1),
@@ -880,9 +910,10 @@ fn proposal_execution_succeeds_after_the_grace_period() {
 
         proposal = <crate::Proposals<Test>>::get(proposal_id);
 
-        expected_proposal.status = ProposalStatus::Finalized(ProposalDecisionStatus::Approved(
-            ApprovedProposalStatus::Executed,
-        ));
+        expected_proposal.status = ProposalStatus::Finalized(FinalizationStatus {
+            proposal_status: ProposalDecisionStatus::Approved(ApprovedProposalStatus::Executed),
+            finalization_error: None,
+        });
         assert_eq!(proposal, expected_proposal);
 
         // check internal cache for proposal_id absense

@@ -54,16 +54,16 @@ impl<T: Trait> StakeHandler<T> for DefaultStakeHandler<T> {
 
         let stake_imbalance = Self::make_stake_imbalance(stake_balance, &source_account_id)?;
 
-        stake::Module::<T>::stake(&stake_id, stake_imbalance).map_err(|err| WrappedError(err))?;
+        stake::Module::<T>::stake(&stake_id, stake_imbalance).map_err(WrappedError)?;
 
         Ok(stake_id)
     }
 
     /// Execute unstaking and removes the stake
     fn remove_stake(&self, stake_id: T::StakeId) -> Result<(), &'static str> {
-        stake::Module::<T>::initiate_unstaking(&stake_id, None).map_err(|err| WrappedError(err))?;
+        stake::Module::<T>::initiate_unstaking(&stake_id, None).map_err(WrappedError)?;
 
-        stake::Module::<T>::remove_stake(&stake_id).map_err(|err| WrappedError(err))?;
+        stake::Module::<T>::remove_stake(&stake_id).map_err(WrappedError)?;
 
         Ok(())
     }
