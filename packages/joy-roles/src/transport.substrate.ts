@@ -565,8 +565,8 @@ export class Transport extends TransportBase implements ITransport {
         membershipIds[0],
         new u32(id),
         new GenericAccountId(roleAccount as string),
-        roleStake,
-        appStake,
+        roleStake.eq(Zero) ? null : roleStake,
+        appStake.eq(Zero) ? null : appStake,
         applicationText,
       ) as unknown as SubmittableExtrinsic
 

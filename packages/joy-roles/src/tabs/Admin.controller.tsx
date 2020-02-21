@@ -711,7 +711,7 @@ export class AdminController extends Controller<State, ITransport> {
 
       curatorOpening.applications.push({
         openingId: appId.toNumber(),
-        curatorId: cApplication.value.getField<u32>('curator_opening_id').toNumber(),
+        curatorId: i,
         stage: baseApplications.value.getField<ApplicationStage>('stage'),
         account: cApplication.value.getField('role_account').toString(),
         memberId: cApplication.value.getField<u32>('member_id').toNumber(),
@@ -834,7 +834,7 @@ const OpeningView = (props: OpeningViewProps) => {
               <Table.Body>
                 {props.opening.applications.map((app, id) => (
                   <Table.Row key={app.openingId}>
-                    <Table.Cell>{id}</Table.Cell>
+                    <Table.Cell>{app.curatorId}</Table.Cell>
                     <Table.Cell>{app.openingId}</Table.Cell>
                     <Table.Cell>
                       <Link to={"/members/" + app.profile.handle}>
