@@ -864,7 +864,7 @@ const OpeningView = (props: OpeningViewProps) => {
                       </Modal>
                     </Table.Cell>
                     <Table.Cell>
-                      <Checkbox onChange={() => toggleApplication(id)} checked={selected.indexOf(id) > -1} />
+                      <Checkbox onChange={() => toggleApplication(app.curatorId)} checked={selected.indexOf(app.curatorId) > -1} />
                     </Table.Cell>
                   </Table.Row>
                 ))}
@@ -882,11 +882,11 @@ const OpeningView = (props: OpeningViewProps) => {
                 <Dropdown.Menu>
                   <Dropdown.Item
                     text='Start accepting applications'
-                    onClick={() => { props.controller.startAcceptingApplications(address, key) }}
+                    onClick={() => { props.controller.startAcceptingApplications(address, props.opening.curatorId) }}
                   />
                   <Dropdown.Item
                     text='Begin applicant review'
-                    onClick={() => { props.controller.beginApplicantReview(address, key) }}
+                    onClick={() => { props.controller.beginApplicantReview(address, props.opening.curatorId) }}
                   />
                 </Dropdown.Menu>
               </Dropdown>
