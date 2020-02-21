@@ -1,5 +1,12 @@
-#![cfg(test)]
+//! Mock runtime for the module testing.
+//!
+//! Submodules:
+//! - stakes: contains support for mocking external 'stake' module
+//! - balance_restorator: restores balances after unstaking
+//! - proposals: provides types for proposal execution tests
+//!
 
+#![cfg(test)]
 pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
@@ -92,9 +99,10 @@ impl crate::Trait for Test {
     type VoterId = u64;
 
     type StakeHandlerProvider = stakes::TestStakeHandlerProvider;
-    //    type StakeHandlerProvider = crate::DefaultStakeHandlerProvider;
 }
 
+// If changing count is required, we can upgrade the implementation as shown here:
+// https://substrate.dev/recipes/3-entrees/testing/externalities.html
 impl crate::VotersParameters for () {
     fn total_voters_count() -> u32 {
         4

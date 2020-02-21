@@ -5,6 +5,7 @@ use srml_support::traits::{Currency, Imbalance};
 
 use super::*;
 
+/// StakingEventsHandler implementation for the stake::Trait. Restores balances after the unstaking.
 pub struct BalanceRestoratorStakingEventsHandler;
 impl stake::StakingEventsHandler<Test> for BalanceRestoratorStakingEventsHandler {
     fn unstaked(

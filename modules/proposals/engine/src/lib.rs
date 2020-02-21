@@ -16,6 +16,9 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
+//TODO: - refactor on_finalize (proposal actions)
+//TODO: - add proposal status helpers
+
 pub use types::BalanceOf;
 use types::FinalizedProposalData;
 pub use types::VotingResults;
