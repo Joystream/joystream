@@ -35,6 +35,8 @@ impl Default for DummyProposalFixture {
                 voting_period: 3,
                 approval_quorum_percentage: 60,
                 approval_threshold_percentage: 60,
+                slashing_quorum_percentage: 60,
+                slashing_threshold_percentage: 60,
                 grace_period: 0,
                 required_stake: None,
             },
@@ -268,6 +270,8 @@ fn proposal_execution_succeeds() {
             voting_period: 3,
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
             grace_period: 0,
             required_stake: None,
         };
@@ -307,6 +311,7 @@ fn proposal_execution_succeeds() {
                     abstentions: 0,
                     approvals: 4,
                     rejections: 0,
+                    slashes: 0,
                 },
                 finalized_at: Some(1),
                 stake_id: None,
@@ -325,6 +330,8 @@ fn proposal_execution_failed() {
             voting_period: 3,
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
             grace_period: 0,
             required_stake: None,
         };
@@ -368,6 +375,7 @@ fn proposal_execution_failed() {
                     abstentions: 0,
                     approvals: 4,
                     rejections: 0,
+                    slashes: 0,
                 },
                 finalized_at: Some(1),
                 stake_id: None,
@@ -383,6 +391,8 @@ fn voting_results_calculation_succeeds() {
             voting_period: 3,
             approval_quorum_percentage: 50,
             approval_threshold_percentage: 50,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
             grace_period: 0,
             required_stake: None,
         };
@@ -405,6 +415,7 @@ fn voting_results_calculation_succeeds() {
                 abstentions: 1,
                 approvals: 2,
                 rejections: 1,
+                slashes: 0,
             }
         )
     });
@@ -434,6 +445,7 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
                 abstentions: 2,
                 approvals: 0,
                 rejections: 2,
+                slashes: 0,
             }
         );
 
@@ -536,6 +548,8 @@ fn cancel_proposal_succeeds() {
             voting_period: 3,
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
             grace_period: 0,
             required_stake: None,
         };
@@ -612,6 +626,8 @@ fn veto_proposal_succeeds() {
             voting_period: 3,
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
             grace_period: 0,
             required_stake: None,
         };
@@ -760,6 +776,8 @@ fn create_proposal_and_expire_it() {
             voting_period: 3,
             approval_quorum_percentage: 49,
             approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
             grace_period: 0,
             required_stake: None,
         };
@@ -785,11 +803,7 @@ fn create_proposal_and_expire_it() {
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: None,
-                voting_results: VotingResults {
-                    abstentions: 0,
-                    approvals: 0,
-                    rejections: 0,
-                },
+                voting_results: VotingResults::default(),
                 finalized_at: Some(4),
                 stake_id: None,
             }
@@ -804,6 +818,8 @@ fn proposal_execution_postponed_because_of_grace_period() {
             voting_period: 3,
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
             grace_period: 2,
             required_stake: None,
         };
@@ -847,6 +863,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
                     abstentions: 0,
                     approvals: 4,
                     rejections: 0,
+                    slashes: 0,
                 },
                 stake_id: None,
             }
@@ -861,6 +878,8 @@ fn proposal_execution_succeeds_after_the_grace_period() {
             voting_period: 3,
             approval_quorum_percentage: 60,
             approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
             grace_period: 1,
             required_stake: None,
         };
@@ -875,7 +894,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
 
         run_to_block_and_finalize(1);
 
-        // check internal cache for proposal_id presense
+        // check internal cache for proposal_id presence
         assert!(<PendingExecutionProposalIds<Test>>::enumerate()
             .find(|(x, _)| *x == proposal_id)
             .is_some());
@@ -901,6 +920,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
                 abstentions: 0,
                 approvals: 4,
                 rejections: 0,
+                slashes: 0,
             },
             stake_id: None,
         };
@@ -981,6 +1001,8 @@ fn create_dummy_proposal_succeeds_with_stake() {
             voting_period: 3,
             approval_quorum_percentage: 50,
             approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: Some(200),
         };
@@ -1006,11 +1028,7 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: None,
-                voting_results: VotingResults {
-                    abstentions: 0,
-                    approvals: 0,
-                    rejections: 0,
-                },
+                voting_results: VotingResults::default(),
                 finalized_at: None,
                 stake_id: Some(0), // valid stake_id
             }
@@ -1027,6 +1045,8 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
             voting_period: 3,
             approval_quorum_percentage: 50,
             approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
             grace_period: 0,
             required_stake: Some(200),
         };
@@ -1046,6 +1066,8 @@ fn create_proposal_fais_with_invalid_stake_parameters() {
             voting_period: 3,
             approval_quorum_percentage: 50,
             approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
             grace_period: 0,
             required_stake: None,
         };
@@ -1081,6 +1103,8 @@ fn finalize_proposal_and_check_stake_removing_with_balance_checks_succeeds() {
             voting_period: 3,
             approval_quorum_percentage: 50,
             approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: Some(stake_amount),
         };
@@ -1115,11 +1139,7 @@ fn finalize_proposal_and_check_stake_removing_with_balance_checks_succeeds() {
             title: b"title".to_vec(),
             body: b"body".to_vec(),
             approved_at: None,
-            voting_results: VotingResults {
-                abstentions: 0,
-                approvals: 0,
-                rejections: 0,
-            },
+            voting_results: VotingResults::default(),
             finalized_at: None,
             stake_id: Some(0), // valid stake_id
         };
@@ -1166,6 +1186,8 @@ fn finalize_proposal_using_stake_mocks() {
                 voting_period: 3,
                 approval_quorum_percentage: 50,
                 approval_threshold_percentage: 60,
+                slashing_quorum_percentage: 60,
+                slashing_threshold_percentage: 60,
                 grace_period: 5,
                 required_stake: Some(stake_amount),
             };
@@ -1178,5 +1200,44 @@ fn finalize_proposal_using_stake_mocks() {
 
             run_to_block_and_finalize(5);
         });
+    });
+}
+
+#[test]
+fn proposal_slashing_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let dummy_proposal = DummyProposalFixture::default();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Reject);
+        vote_generator.vote_and_assert_ok(VoteKind::Slash);
+        vote_generator.vote_and_assert_ok(VoteKind::Slash);
+        vote_generator.vote_and_assert_ok(VoteKind::Slash);
+
+        assert!(<ActiveProposalIds<Test>>::exists(proposal_id));
+
+        run_to_block_and_finalize(2);
+
+        let proposal = <Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            proposal.voting_results,
+            VotingResults {
+                abstentions: 0,
+                approvals: 0,
+                rejections: 1,
+                slashes: 3,
+            }
+        );
+
+        assert_eq!(
+            proposal.status,
+            ProposalStatus::Finalized(FinalizationStatus {
+                proposal_status: ProposalDecisionStatus::Slashed,
+                finalization_error: None,
+            }),
+        );
+        assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
     });
 }

@@ -436,6 +436,7 @@ impl<T: Trait> Module<T> {
             }
             ProposalDecisionStatus::Approved { .. } => Self::approve_proposal(proposal_id),
             ProposalDecisionStatus::Vetoed | ProposalDecisionStatus::Canceled => {} //TODO add actions after stakes
+            ProposalDecisionStatus::Slashed => {} //TODO
         }
     }
 
