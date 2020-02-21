@@ -1,22 +1,27 @@
 // @ts-nocheck
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { formatBalance } from '@polkadot/util';
 
 import { ApiPromise } from '@polkadot/api';
+import { Balance } from '@polkadot/types/interfaces'
 import { GenericAccountId, Option, u32, u64, u128, Set, Text, Vec } from '@polkadot/types'
 
 import { SingleLinkedMapEntry } from '@polkadot/joy-utils/index'
 import { MyAccountProvider, useMyAccount } from '@polkadot/joy-utils/MyAccountContext'
 
 import {
+  Accordion,
   Button,
   Card,
   Checkbox,
   Container,
   Dropdown,
   Grid,
+  Icon,
   Label,
   Message,
+  Modal,
   Table,
 } from 'semantic-ui-react'
 import { Controller, View } from '@polkadot/joy-utils/index'
@@ -35,8 +40,11 @@ import {
 } from '@joystream/types/hiring'
 
 import {
+  Profile,
   MemberId,
 } from '@joystream/types/members'
+
+import { Stake, StakeId } from '@joystream/types/stake'
 
 import {
   GenericJoyStreamRoleSchema,
@@ -49,12 +57,15 @@ import {
 
 import {
   classifyOpeningStage,
-  OpeningStageClassification
+  OpeningStageClassification,
+  OpeningState,
 } from '../classifiers'
 
 import {
   openingDescription,
 } from '../openingStateMarkup'
+
+import { Add, Sort, Sum, Zero } from '../balances'
 
 type ids = {
   curatorId: number
@@ -64,7 +75,11 @@ type ids = {
 type application = ids & {
   account: string,
   memberId: number,
+  profile: Profile,
   stage: ApplicationStage,
+  applicationStake: Balance,
+  roleStake: Balance,
+  application: Application,
 }
 
 type opening = ids & {
@@ -84,19 +99,296 @@ const newEmptyState = (): State => {
   }
 }
 
-export class AdminController extends Controller<State, ITransport> {
-  api: ApiPromise
-  constructor(transport: ITransport, api: ApiPromise, initialState: State = newEmptyState()) {
-    super(transport, initialState)
-    this.api = api
-    this.updateState()
-  }
+// TODO: Make a list of stock openings
+type openingDescriptor = {
+  title: string,
+  start: ActivateOpeningAt,
+  policy: OpeningPolicyCommitment,
+  text: Text,
+}
 
-  newOpening(creatorAddress: string) {
+function newHRT(title: string): Text {
+  return new Text(JSON.stringify({
+    version: 1,
+    headline: "some headline",
+    job: {
+      title: title,
+      description: "some job description",
+    },
+    application: {
+      sections: [
+        {
+          title: "About you",
+          questions: [
+            {
+              title: "your name",
+              type: "text"
+            }
+          ]
+        },
+        {
+          title: "Something else",
+          questions: [
+            {
+              title: "another thing",
+              type: "text area"
+            }
+          ]
+        }
+      ]
+    },
+    reward: "10 JOY per block",
+    creator: {
+      membership: {
+        handle: "ben",
+      }
+    },
+    process: {
+      details: [
+        "Some custom detail"
+      ]
+    }
+  })
+  )
+}
 
-    const start = new ActivateOpeningAt(CurrentBlock)
-
-    const policy = new OpeningPolicyCommitment({
+const stockOpenings: openingDescriptor[] = [
+  {
+    title: "Test config A: no application state, no role stake, no applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+    }),
+    text: newHRT("Test configuration A"),
+  },
+  {
+    title: "Test config B: no application state, no role stake, 10 applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+    }),
+    text: newHRT("Test configuration B"),
+  },
+  {
+    title: "Test config C: fixed application state (100), no role stake, no applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+      application_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.Exact,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration C"),
+  },
+  {
+    title: "Test config D: fixed application state (100), no role stake, 10 applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+      application_rationing_policy: new Option<ApplicationRationingPolicy>(
+        ApplicationRationingPolicy,
+        new ApplicationRationingPolicy({
+          max_active_applicants: new u32(10),
+        }),
+      ),
+      application_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.Exact,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration D"),
+  },
+  {
+    title: "Test config E: no application state, fixed role stake (100), no applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+      role_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.Exact,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration E"),
+  },
+  {
+    title: "Test config F: no application state, fixed role stake (100), 10 applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+      application_rationing_policy: new Option<ApplicationRationingPolicy>(
+        ApplicationRationingPolicy,
+        new ApplicationRationingPolicy({
+          max_active_applicants: new u32(10),
+        }),
+      ),
+      role_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.Exact,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration F"),
+  },
+  {
+    title: "Test config G: minimum application state (100), no role stake, no applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+      application_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.AtLeast,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration G"),
+  },
+  {
+    title: "Test config H: minimum application state (100), no role stake, 10 applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+      application_rationing_policy: new Option<ApplicationRationingPolicy>(
+        ApplicationRationingPolicy,
+        new ApplicationRationingPolicy({
+          max_active_applicants: new u32(10),
+        }),
+      ),
+      application_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.AtLeast,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration H"),
+  },
+  {
+    title: "Test config I: no application state, minimum role stake (100), no applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+      role_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.AtLeast,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration I"),
+  },
+  {
+    title: "Test config J: no application state, minimum role stake (100), 10 applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+      application_rationing_policy: new Option<ApplicationRationingPolicy>(
+        ApplicationRationingPolicy,
+        new ApplicationRationingPolicy({
+          max_active_applicants: new u32(10),
+        }),
+      ),
+      role_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.AtLeast,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration J"),
+  },
+  {
+    title: "Test config K: fixed application state (100), fixed role stake (200), no applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+     max_review_period_length: new u32(99999),
+     application_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.Exact,
+        }),
+      ),
+      role_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(200),
+          amount_mode: StakingAmountLimitModeKeys.Exact,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration K"),
+  },
+  {
+    title: "Test config L: fixed application state (100), fixed role stake (200), 10 applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+      application_rationing_policy: new Option<ApplicationRationingPolicy>(
+        ApplicationRationingPolicy,
+        new ApplicationRationingPolicy({
+          max_active_applicants: new u32(10),
+        }),
+      ),
+      application_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.Exact,
+        }),
+      ),
+      role_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(200),
+          amount_mode: StakingAmountLimitModeKeys.Exact,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration L"),
+  },
+  {
+    title: "Test config M: Minimum application state (100), minimum role stake (200), no applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+     max_review_period_length: new u32(99999),
+     application_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.AtLeast,
+        }),
+      ),
+      role_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(200),
+          amount_mode: StakingAmountLimitModeKeys.AtLeast,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration M"),
+  },
+  {
+    title: "Test config N: Minimum application state (100), minimum role stake (200), 10 applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
       application_rationing_policy: new Option<ApplicationRationingPolicy>(
         ApplicationRationingPolicy,
@@ -118,55 +410,126 @@ export class AdminController extends Controller<State, ITransport> {
           amount_mode: StakingAmountLimitModeKeys.AtLeast,
         }),
       ),
-    })
+    }),
+    text: newHRT("Test configuration N"),
+  },
+  {
+    title: "Test config O: Fixed application state (100), minimum role stake (200), no applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+     max_review_period_length: new u32(99999),
+     application_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.Exact,
+        }),
+      ),
+      role_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(200),
+          amount_mode: StakingAmountLimitModeKeys.AtLeast,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration O"),
+  },
+  {
+    title: "Test config P: Fixed application state (100), minimum role stake (200), 10 applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+      application_rationing_policy: new Option<ApplicationRationingPolicy>(
+        ApplicationRationingPolicy,
+        new ApplicationRationingPolicy({
+          max_active_applicants: new u32(10),
+        }),
+      ),
+      application_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.Exact,
+        }),
+      ),
+      role_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(200),
+          amount_mode: StakingAmountLimitModeKeys.AtLeast,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration P"),
+  },
+ {
+    title: "Test config Q: Minimum application state (100), fixed role stake (200), no applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+     max_review_period_length: new u32(99999),
+     application_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.AtLeast,
+        }),
+      ),
+      role_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(200),
+          amount_mode: StakingAmountLimitModeKeys.Exact,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration Q"),
+  },
+  {
+    title: "Test config R: Minimum application state (100), fixed role stake (200), 10 applicant limit",
+    start: new ActivateOpeningAt(CurrentBlock),
+    policy: new OpeningPolicyCommitment({
+      max_review_period_length: new u32(99999),
+      application_rationing_policy: new Option<ApplicationRationingPolicy>(
+        ApplicationRationingPolicy,
+        new ApplicationRationingPolicy({
+          max_active_applicants: new u32(10),
+        }),
+      ),
+      application_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(100),
+          amount_mode: StakingAmountLimitModeKeys.AtLeast,
+        }),
+      ),
+      role_staking_policy: new Option<StakingPolicy>(
+        StakingPolicy,
+        new StakingPolicy({
+          amount: new u128(200),
+          amount_mode: StakingAmountLimitModeKeys.Exact,
+        }),
+      ),
+    }),
+    text: newHRT("Test configuration R"),
+  },
+]
 
+export class AdminController extends Controller<State, ITransport> {
+  api: ApiPromise
+  constructor(transport: ITransport, api: ApiPromise, initialState: State = newEmptyState()) {
+    super(transport, initialState)
+    this.api = api
+    this.updateState()
+  }
+
+  newOpening(creatorAddress: string, desc: openingDescriptor) {
     const tx = this.api.tx.contentWorkingGroup.addCuratorOpening(
-      start,
-      policy,
-      new Text(JSON.stringify({
-        version: 1,
-        headline: "some headline",
-        job: {
-          title: "some job title",
-          description: "some job description",
-        },
-        application: {
-          sections: [
-            {
-              title: "About you",
-              questions: [
-                {
-                  title: "your name",
-                  type: "text"
-                }
-              ]
-            },
-            {
-              title: "About you",
-              questions: [
-                {
-                  title: "your name",
-                  type: "text area"
-                }
-              ]
-            }
-          ]
-        },
-        reward: "10 JOY per block",
-        creator: {
-          membership: {
-            handle: "ben",
-          }
-        },
-        process: {
-          details: [
-            "Some custom detail"
-          ]
-        }
-      })),
+      desc.start,
+      desc.policy,
+      desc.text,
     )
 
-    // Sign and Send the transaction
     tx.signAndSend(creatorAddress, ({ events = [], status }) => {
       if (status.isFinalized) {
         this.updateState()
@@ -262,11 +625,41 @@ export class AdminController extends Controller<State, ITransport> {
     });
   }
 
+  protected async profile(id: MemberId): Promise<Profile> {
+    return (await this.api.query.members.memberProfile(id)) as Profile
+  }
+
+  protected async stakeValue(stakeId: StakeId): Promise<Balance> {
+    const stake = new SingleLinkedMapEntry<Stake>(
+      Stake,
+      await this.api.query.stake.stakes(
+        stakeId,
+      ),
+    )
+    return stake.value.value
+  }
+
+  protected async roleStake(application: Application): Promise<Balance> {
+    if (application.active_role_staking_id.isNone) {
+      return Zero
+    }
+
+    return this.stakeValue(application.active_role_staking_id.unwrap())
+  }
+
+  protected async applicationStake(application: Application): Promise<Balance> {
+    if (application.active_application_staking_id.isNone) {
+      return Zero
+    }
+
+    return this.stakeValue(application.active_application_staking_id.unwrap())
+  }
+
   async updateState() {
     this.state.openings = new Map<number, opening>()
 
     const nextOpeningId = await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u64
-    for (let i = 0; i < nextOpeningId.toNumber(); i++) {
+    for (let i = nextOpeningId.toNumber()-1; i >= 0; i--) {
       const curatorOpening = new SingleLinkedMapEntry<CuratorOpening>(
         CuratorOpening,
         await this.api.query.contentWorkingGroup.curatorOpeningById(i),
@@ -322,6 +715,10 @@ export class AdminController extends Controller<State, ITransport> {
         stage: baseApplications.value.getField<ApplicationStage>('stage'),
         account: cApplication.value.getField('role_account').toString(),
         memberId: cApplication.value.getField<u32>('member_id').toNumber(),
+        profile: (await this.profile(cApplication.value.getField<u32>('member_id'))).unwrap(),
+        applicationStake: await this.applicationStake(baseApplications.value),
+        roleStake: await this.roleStake(baseApplications.value),
+        application: baseApplications.value,
       })
     }
 
@@ -335,90 +732,170 @@ export const AdminView = View<AdminController, State>(
     return (
       <MyAccountProvider>
         <Container className="admin">
+          <Card fluid color='orange'>
+            <Card.Content>
+              <Dropdown text='Create new opening...'>
+                <Dropdown.Menu>
+                  {
+                    stockOpenings.map((value, key) => {
+                      return (
+                        <Dropdown.Item
+                          text={value.title}
+                          onClick={() => controller.newOpening(address, value)}
+                        />
+                      )
+                    })
+                  }
+                </Dropdown.Menu>
+              </Dropdown>
+            </Card.Content>
+          </Card>
           {
-            [...state.openings.keys()].map(key => {
-              const opening = state.openings.get(key) as opening
-              return (
-                <Card fluid key={key}>
-                  <Card.Content>
-                    <Card.Header>
-                      <Label attached="top right">Opening</Label>
-                      <Link to={"/working-groups/opportunities/" + key}>
-                        {opening.title}
-                      </Link>
-
-                    </Card.Header>
-                    <Card.Meta>
-                      Working group module ID #{opening.curatorId}, hiring module ID #{opening.openingId}
-                    </Card.Meta>
-                    <Label ribbon>
-                      {openingDescription(opening.classification.state)}
-                    </Label>
-                    <Message info>
-                      <Message.Header>Raw state</Message.Header>
-                      {JSON.stringify(opening.classification)}
-                    </Message>
-                    <h4>Applications</h4>
-                    <Table striped>
-                      <Table.Header>
-                        <Table.Row>
-                          <Table.HeaderCell>WG ID</Table.HeaderCell>
-                          <Table.HeaderCell>Hiring mod. ID</Table.HeaderCell>
-                          <Table.HeaderCell>Account</Table.HeaderCell>
-                          <Table.HeaderCell>Member ID</Table.HeaderCell>
-                          <Table.HeaderCell>Stage</Table.HeaderCell>
-                          <Table.HeaderCell></Table.HeaderCell>
-                        </Table.Row>
-                      </Table.Header>
-                      <Table.Body>
-                        {opening.applications.map((app, id) => (
-                          <Table.Row key={app.openingId}>
-                            <Table.Cell>{id}</Table.Cell>
-                            <Table.Cell>{app.openingId}</Table.Cell>
-                            <Table.Cell>{app.account}</Table.Cell>
-                            <Table.Cell>{app.memberId}</Table.Cell>
-                            <Table.Cell>{JSON.stringify(app.stage)}</Table.Cell>
-                            <Table.Cell><Checkbox /></Table.Cell>
-                          </Table.Row>
-                        ))}
-                      </Table.Body>
-                    </Table>
-                  </Card.Content>
-                  <Card.Content extra>
-                    <Grid>
-                      <Grid.Row columns={2}>
-                        <Grid.Column>
-                          <Dropdown text='Set stage'>
-                            <Dropdown.Menu>
-                              <Dropdown.Item
-                                text='Start accepting applications'
-                                onClick={() => { controller.startAcceptingApplications(address, key) }}
-                              />
-                              <Dropdown.Item
-                                text='Begin applicant review'
-                                onClick={() => { controller.beginApplicantReview(address, key) }}
-                              />
-                            </Dropdown.Menu>
-                          </Dropdown>
-
-                        </Grid.Column>
-                        <Grid.Column align="right">
-                          <Button onClick={() => { controller.applyAsACurator(address, key) }}>Apply as curator</Button>
-                          <Button onClick={() => { controller.acceptCuratorApplications(address, key, [1]) }}>Accept curator applications</Button>
-                        </Grid.Column>
-                      </Grid.Row>
-                    </Grid>
-                  </Card.Content>
-                </Card>
-              )
-            }
-            )
+            [...state.openings.keys()].map(key => <OpeningView key={key} opening={state.openings.get(key) as opening} controller={controller} />)
           }
-          <p align="right">
-            <Button positive onClick={() => { controller.newOpening(address) }}>Create new curator group opening</Button>
-          </p>
+          <br />
         </Container>
       </MyAccountProvider>
     )
   }
 )
+
+type OpeningViewProps = {
+  controller: AdminController
+  opening: opening
+}
+
+const OpeningView = (props: OpeningViewProps) => {
+  const address = useMyAccount().state.address as string
+  const [applicationsOpen, setApplicationsOpen] = useState(true)
+  const [selected, setSelected] = useState<number[]>([])
+
+  const toggleApplication = (id: number) => {
+    if (selected.indexOf(id) >= 0) {
+      setSelected(selected.filter(v => v != id))
+    } else {
+      setSelected([...selected, id])
+    }
+  }
+
+  let CTAs = null
+
+  switch (props.opening.classification.state) {
+    case OpeningState.InReview:
+      CTAs = (
+        <Container align="right">
+          <Button onClick={() => { props.controller.acceptCuratorApplications(address, props.opening.curatorId, selected.sort()) }}>Accept curator applications</Button>
+        </Container>
+      )
+  }
+
+  return (
+    <Card fluid>
+      <Card.Content>
+        <Card.Header>
+          <Label attached="top right">Opening</Label>
+          <Link to={"/working-groups/opportunities/curators/" + props.opening.curatorId}>
+            {props.opening.title}
+          </Link>
+
+        </Card.Header>
+        <Card.Meta>
+          Working group module ID #{props.opening.curatorId}, hiring module ID #{props.opening.openingId}
+        </Card.Meta>
+        <Label ribbon>
+          {openingDescription(props.opening.classification.state)}
+        </Label>
+      </Card.Content>
+      <Card.Content extra>
+        <Accordion>
+          <Accordion.Title
+            active={applicationsOpen}
+            index={0}
+            onClick={() => setApplicationsOpen(!applicationsOpen)}
+          >
+            <Icon name='dropdown' />
+            Applications
+        </Accordion.Title>
+          <Accordion.Content active={applicationsOpen}>
+            <Table striped>
+              <Table.Header>
+                <Table.Row>
+                  <Table.HeaderCell>WG ID</Table.HeaderCell>
+                  <Table.HeaderCell>Hiring ID</Table.HeaderCell>
+                  <Table.HeaderCell>Member</Table.HeaderCell>
+                  <Table.HeaderCell>Stage</Table.HeaderCell>
+                  <Table.HeaderCell>App stake</Table.HeaderCell>
+                  <Table.HeaderCell>Role stake</Table.HeaderCell>
+                  <Table.HeaderCell>Total stake</Table.HeaderCell>
+                  <Table.HeaderCell>Details</Table.HeaderCell>
+                  <Table.HeaderCell></Table.HeaderCell>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {props.opening.applications.map((app, id) => (
+                  <Table.Row key={app.openingId}>
+                    <Table.Cell>{id}</Table.Cell>
+                    <Table.Cell>{app.openingId}</Table.Cell>
+                    <Table.Cell>
+                      <Link to={"/members/" + app.profile.handle}>
+                        {app.profile.handle}
+                      </Link>
+                    </Table.Cell>
+                    <Table.Cell>{app.stage.type}</Table.Cell>
+                    <Table.Cell>{formatBalance(app.applicationStake)}</Table.Cell>
+                    <Table.Cell>{formatBalance(app.roleStake)}</Table.Cell>
+                    <Table.Cell>{formatBalance(Add(app.applicationStake, app.roleStake))}</Table.Cell>
+                    <Table.Cell>
+                      <Modal trigger={
+                        <Button>view</Button>
+                      }>
+                        <Modal.Header>Application details</Modal.Header>
+                        <Modal.Content>
+                          <h3>Raw JSON</h3>
+                          <Message info>
+                            {JSON.stringify(app.application.toJSON())}
+                          </Message>
+
+                          <h3>Application form</h3>
+                          <Message info>
+                            {app.application.human_readable_text.toString()}
+                          </Message>
+                        </Modal.Content>
+                      </Modal>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Checkbox onChange={() => toggleApplication(id)} checked={selected.indexOf(id) > -1} />
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table>
+            {CTAs}
+          </Accordion.Content>
+        </Accordion>
+      </Card.Content>
+      <Card.Content extra>
+        <Grid>
+          <Grid.Row columns={2}>
+            <Grid.Column>
+              <Dropdown text='Set stage'>
+                <Dropdown.Menu>
+                  <Dropdown.Item
+                    text='Start accepting applications'
+                    onClick={() => { props.controller.startAcceptingApplications(address, key) }}
+                  />
+                  <Dropdown.Item
+                    text='Begin applicant review'
+                    onClick={() => { props.controller.beginApplicantReview(address, key) }}
+                  />
+                </Dropdown.Menu>
+              </Dropdown>
+            </Grid.Column>
+            <Grid.Column align="right">
+            </Grid.Column>
+          </Grid.Row>
+        </Grid>
+      </Card.Content>
+    </Card>
+  )
+}

@@ -268,20 +268,20 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
     <Container className="stake-rank-selector">
       <h4>Choose a stake</h4>
       <Container className="controls">
-        <Button circular icon='angle double left' onClick={() => { setRank(1) }} />
-        <Button circular icon='angle left' onClick={() => { rank > 1 && setRank(rank - 1) }} />
+        {props.slots.length > 0 && <Button circular icon='angle double left' onClick={() => { setRank(1) }} />}
+        {props.slots.length > 0 && <Button circular icon='angle left' onClick={() => { rank > 1 && setRank(rank - 1) }} />}
         <Input label="JOY"
           labelPosition="right"
           onChange={changeValue}
           type="number"
           onBlur={() => { setFocused(false) }}
           onFocus={() => { setFocused(true) }}
-          step={props.step.toNumber()}
+          step={slotCount > 1 ? props.step.toNumber() :  1}
           value={props.stake.toNumber() > 0 ? props.stake.toNumber() : 0}
-          min={props.slots[0].toNumber()}
+          min={props.slots.length > 0 ? props.slots[0].toNumber() : 0}
         />
-        <Button circular icon='angle right' onClick={() => { rank <= slotCount && setRank(rank + 1) }} />
-        <Button circular icon='angle double right' onClick={() => { rank < slotCount && setRank(slotCount) }} />
+        {props.slots.length > 0 && <Button circular icon='angle right' onClick={() => { rank <= slotCount && setRank(rank + 1) }} /> }
+        {props.slots.length > 0 && <Button circular icon='angle double right' onClick={() => { rank < slotCount && setRank(slotCount) }} /> }
         <Container className='ranks-and-stake'>
           <Label size='large'>
             <Icon name={rankIcon(rank, slotCount)} />

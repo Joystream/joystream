@@ -470,6 +470,10 @@ export class Application extends JoyStruct<IApplication> {
   get active_application_staking_id(): Option<StakeId> {
     return this.getField<Option<StakeId>>('active_application_staking_id')
   }
+
+  get human_readable_text(): Text {
+    return this.getField<Text>('human_readable_text')
+  }
 }
 
 export function registerHiringTypes() {

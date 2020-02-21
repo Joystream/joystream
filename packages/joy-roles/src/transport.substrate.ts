@@ -561,14 +561,13 @@ export class Transport extends TransportBase implements ITransport {
       if (!roleAccount) {
         reject('failed to create role account')
       }
-
       const tx = this.api.tx.contentWorkingGroup.applyOnCuratorOpening(
         membershipIds[0],
         new u32(id),
         new GenericAccountId(roleAccount as string),
         roleStake,
         appStake,
-        new Text(applicationText),
+        applicationText,
       ) as unknown as SubmittableExtrinsic
 
       const txFailedCb = () => {
