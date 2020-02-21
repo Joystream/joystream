@@ -592,7 +592,6 @@ mod tests {
         proposal.parameters.approval_quorum_percentage = 60;
         proposal.parameters.slashing_quorum_percentage = 50;
 
-
         proposal.voting_results.add_vote(VoteKind::Abstain);
         assert_eq!(
             proposal.voting_results,

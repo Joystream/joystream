@@ -249,38 +249,12 @@ impl<T: Trait> Module<T> {
         let account_id = T::ProposalOrigin::ensure_origin(origin)?;
         let proposer_id = T::ProposerId::from(account_id.clone());
 
-        ensure!(!title.is_empty(), errors::MSG_EMPTY_TITLE_PROVIDED);
-        ensure!(
-            title.len() as u32 <= Self::title_max_len(),
-            errors::MSG_TOO_LONG_TITLE
-        );
-
-        ensure!(!body.is_empty(), errors::MSG_EMPTY_BODY_PROVIDED);
-        ensure!(
-            body.len() as u32 <= Self::body_max_len(),
-            errors::MSG_TOO_LONG_BODY
-        );
-
-        ensure!(
-            (Self::active_proposal_count()) < Self::max_active_proposals(),
-            errors::MSG_MAX_ACTIVE_PROPOSAL_NUMBER_EXCEEDED
-        );
-
-        // check stake parameters
-        if let Some(required_stake) = parameters.required_stake {
-            if let Some(staked_balance) = stake_balance {
-                ensure!(
-                    required_stake == staked_balance,
-                    errors::MSG_STAKE_DIFFERS_FROM_REQUIRED
-                );
-            } else {
-                return Err(errors::MSG_STAKE_IS_EMPTY);
-            }
-        }
-
-        if stake_balance.is_some() && parameters.required_stake.is_none() {
-            return Err(errors::MSG_STAKE_SHOULD_BE_EMPTY);
-        }
+        Self::ensure_create_proposal_parameters_are_valid(
+            &parameters,
+            &title,
+            &body,
+            stake_balance,
+        )?;
 
         // checks passed
         // mutation
@@ -436,7 +410,7 @@ impl<T: Trait> Module<T> {
             }
             ProposalDecisionStatus::Approved { .. } => Self::approve_proposal(proposal_id),
             ProposalDecisionStatus::Vetoed | ProposalDecisionStatus::Canceled => {} //TODO add actions after stakes
-            ProposalDecisionStatus::Slashed => {} //TODO
+            ProposalDecisionStatus::Slashed => {}                                   //TODO
         }
     }
 
@@ -478,6 +452,58 @@ impl<T: Trait> Module<T> {
             let next_active_proposal_count_value = current_active_proposal_counter - 1;
             ActiveProposalCount::put(next_active_proposal_count_value);
         };
+    }
+
+    fn ensure_create_proposal_parameters_are_valid(
+        parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
+        title: &[u8],
+        body: &[u8],
+        stake_balance: Option<types::BalanceOf<T>>,
+    ) -> dispatch::Result {
+        ensure!(!title.is_empty(), errors::MSG_EMPTY_TITLE_PROVIDED);
+        ensure!(
+            title.len() as u32 <= Self::title_max_len(),
+            errors::MSG_TOO_LONG_TITLE
+        );
+
+        ensure!(!body.is_empty(), errors::MSG_EMPTY_BODY_PROVIDED);
+        ensure!(
+            body.len() as u32 <= Self::body_max_len(),
+            errors::MSG_TOO_LONG_BODY
+        );
+
+        ensure!(
+            (Self::active_proposal_count()) < Self::max_active_proposals(),
+            errors::MSG_MAX_ACTIVE_PROPOSAL_NUMBER_EXCEEDED
+        );
+
+        ensure!(
+            parameters.approval_threshold_percentage > 0,
+            errors::MSG_INVALID_PARAMETER_APPROVAL_THRESHOLD
+        );
+
+        ensure!(
+            parameters.slashing_threshold_percentage > 0,
+            errors::MSG_INVALID_PARAMETER_SLASHING_THRESHOLD
+        );
+
+        // check stake parameters
+        if let Some(required_stake) = parameters.required_stake {
+            if let Some(staked_balance) = stake_balance {
+                ensure!(
+                    required_stake == staked_balance,
+                    errors::MSG_STAKE_DIFFERS_FROM_REQUIRED
+                );
+            } else {
+                return Err(errors::MSG_STAKE_IS_EMPTY);
+            }
+        }
+
+        if stake_balance.is_some() && parameters.required_stake.is_none() {
+            return Err(errors::MSG_STAKE_SHOULD_BE_EMPTY);
+        }
+
+        Ok(())
     }
 }
 
