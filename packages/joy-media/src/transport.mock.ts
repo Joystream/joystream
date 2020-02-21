@@ -1,4 +1,4 @@
-import { MediaTransport } from './transport';
+import { MediaTransport, ClassIdByNameMap } from './transport';
 import { EntityId, Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
@@ -28,6 +28,10 @@ export class MockTransport extends MediaTransport {
   }
 
   allClasses(): Promise<Class[]> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
+  classIdByNameMap(): Promise<ClassIdByNameMap> {
     return this.notImplementedYet(); // TODO impl
   }
 

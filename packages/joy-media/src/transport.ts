@@ -1,23 +1,55 @@
 import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 import { AccountId } from '@polkadot/types/interfaces';
-import { EntityId, Entity, Class } from '@joystream/types/versioned-store';
-import { MusicTrackType } from './schemas/music/MusicTrack';
-import { MusicAlbumType } from './schemas/music/MusicAlbum';
-import { VideoType } from './schemas/video/Video';
-import { ContentLicenseType } from './schemas/general/ContentLicense';
-import { CurationStatusType } from './schemas/general/CurationStatus';
-import { LanguageType } from './schemas/general/Language';
-import { MediaObjectType } from './schemas/general/MediaObject';
-import { MusicGenreType } from './schemas/music/MusicGenre';
-import { MusicMoodType } from './schemas/music/MusicMood';
-import { MusicThemeType } from './schemas/music/MusicTheme';
-import { PublicationStatusType } from './schemas/general/PublicationStatus';
-import { VideoCategoryType } from './schemas/video/VideoCategory';
+import { EntityId, Entity, Class, ClassId } from '@joystream/types/versioned-store';
+import { MusicTrackType, MusicTrackCodec } from './schemas/music/MusicTrack';
+import { MusicAlbumType, MusicAlbumCodec } from './schemas/music/MusicAlbum';
+import { VideoType, VideoCodec } from './schemas/video/Video';
+import { ContentLicenseType, ContentLicenseCodec } from './schemas/general/ContentLicense';
+import { CurationStatusType, CurationStatusCodec } from './schemas/general/CurationStatus';
+import { LanguageType, LanguageCodec } from './schemas/general/Language';
+import { MediaObjectType, MediaObjectCodec } from './schemas/general/MediaObject';
+import { MusicGenreType, MusicGenreCodec } from './schemas/music/MusicGenre';
+import { MusicMoodType, MusicMoodCodec } from './schemas/music/MusicMood';
+import { MusicThemeType, MusicThemeCodec } from './schemas/music/MusicTheme';
+import { PublicationStatusType, PublicationStatusCodec } from './schemas/general/PublicationStatus';
+import { VideoCategoryType, VideoCategoryCodec } from './schemas/video/VideoCategory';
 import { MediaDropdownOptions } from './common/MediaDropdownOptions';
 import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { isVideoChannel, isPublicChannel } from './channels/ChannelHelpers';
 import { isPublicEntity } from './entities/EntityHelpers';
+
+export interface ClassIdByNameMap {
+  ContentLicense?: ClassId
+  CurationStatus?: ClassId
+  Language?: ClassId
+  MediaObject?: ClassId
+  MusicAlbum?: ClassId
+  MusicGenre?: ClassId
+  MusicMood?: ClassId
+  MusicTheme?: ClassId
+  MusicTrack?: ClassId
+  PublicationStatus?: ClassId
+  Video?: ClassId
+  VideoCategory?: ClassId
+}
+
+export const EntityCodecByClassNameMap = {
+  ContentLicense: ContentLicenseCodec,
+  CurationStatus: CurationStatusCodec,
+  Language: LanguageCodec,
+  MediaObject: MediaObjectCodec,
+  MusicAlbum: MusicAlbumCodec,
+  MusicGenre: MusicGenreCodec,
+  MusicMood: MusicMoodCodec,
+  MusicTheme: MusicThemeCodec,
+  MusicTrack: MusicTrackCodec,
+  PublicationStatus: PublicationStatusCodec,
+  Video: VideoCodec,
+  VideoCategory: VideoCategoryCodec,
+}
+
+export type ClassName = keyof ClassIdByNameMap
 
 export abstract class MediaTransport extends TransportBase {
 
@@ -36,6 +68,12 @@ export abstract class MediaTransport extends TransportBase {
   }
 
   abstract allClasses(): Promise<Class[]>
+
+  abstract classIdByNameMap(): Promise<ClassIdByNameMap>
+
+  async classIdByName(className: ClassName): Promise<ClassId | undefined> {
+    return (await this.classIdByNameMap())[className]
+  }
 
   abstract allVideos(): Promise<VideoType[]>
 

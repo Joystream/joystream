@@ -13,6 +13,8 @@ import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { FormTabs } from '../common/FormTabs';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { ChannelEntity } from '../entities/ChannelEntity';
+import { Credential } from '@joystream/types/versioned-store/permissions/credentials';
+import { ClassId } from '@joystream/types/versioned-store';
 
 export type OuterProps = {
   history?: History,
@@ -20,6 +22,7 @@ export type OuterProps = {
   fileName?: string,
   channelId?: ChannelId,
   channel?: ChannelEntity,
+  entityClassId: ClassId,
   id?: EntityId,
   entity?: VideoType
   opts?: MediaDropdownOptions
@@ -41,6 +44,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     // history,
     // contentId,
+    entityClassId,
     entity,
     opts,
 
@@ -57,9 +61,22 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const isNew = !entity;
 
   const buildTxParams = () => {
-    if (!isValid) return [];
+    if (!entity) {
 
-    return [ /* TODO save entity to versioned store */ ];
+      // TODO Create a new entity
+
+      const withCredential = new Credential(2)
+      
+      return [
+        withCredential,
+        entityClassId
+      ];
+    } else {
+
+      // TODO Update properties of existing entity
+
+      return [];
+    }
   };
 
   const basicInfoTab = () => <Tab.Pane as='div'>
@@ -114,20 +131,27 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     }
   }
 
-  const MainButton = () =>
+  const CreateEntityButton = () =>
     <TxButton
       type='submit'
       size='large'
       isDisabled={!dirty || isSubmitting}
-      label={isNew
-        ? 'Publish'
-        : 'Update'
-      }
+      label='Create video entity'
+      tx='versionedStorePermissions.createEntity'
       params={buildTxParams()}
-      tx={isNew
-        ? 'dataDirectory.addMetadata'
-        : 'dataDirectory.updateMetadata'
-      }
+      onClick={newOnSubmit}
+      txFailedCb={onTxFailed}
+      txSuccessCb={onTxSuccess}
+    />
+
+  const UpdateEntityButton = () =>
+    <TxButton
+      type='submit'
+      size='large'
+      isDisabled={!dirty || isSubmitting}
+      label='Update video entity'
+      tx='versionedStorePermissions.updateEntityPropertyValues'      
+      params={buildTxParams()}
       onClick={newOnSubmit}
       txFailedCb={onTxFailed}
       txSuccessCb={onTxSuccess}
@@ -143,7 +167,8 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       {tabs}
 
       <LabelledField style={{ marginTop: '1rem' }} {...props}>
-        <MainButton />
+        <CreateEntityButton />
+        <UpdateEntityButton />
         <Button
           type='button'
           size='large'
