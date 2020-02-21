@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button, Tab } from 'semantic-ui-react';
 import { Form, withFormik } from 'formik';
 import { History } from 'history';
@@ -15,6 +15,9 @@ import { ChannelId } from '@joystream/types/content-working-group';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { Credential } from '@joystream/types/versioned-store/permissions/credentials';
 import { ClassId } from '@joystream/types/versioned-store';
+import { TxCallback } from '@polkadot/react-components/Status/types';
+import { SubmittableResult } from '@polkadot/api';
+import { findFirstParamOfSubstrateEvent } from '@polkadot/joy-utils/';
 
 export type OuterProps = {
   history?: History,
@@ -39,34 +42,39 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     // Callbacks:
     onSubmit,
-    onTxSuccess,
+    // onTxSuccess,
     onTxFailed,
 
-    // history,
+    history,
     // contentId,
     entityClassId,
+    id,
     entity,
     opts,
 
     values,
     dirty,
     errors,
-    isValid,
+    // isValid,
     isSubmitting,
+    setSubmitting,
     resetForm
   } = props;
 
+  const [ entityId, setEntityId ] = useState<EntityId | undefined>(id)
   const { thumbnail } = values;
 
-  const isNew = !entity;
+  // const isNew = !entity;
 
   const buildTxParams = () => {
+    const withCredential = new Credential(2)
+
+    // TODO Batch create + update entity operations with versionedStorePermissions.transaction function
+
     if (!entity) {
 
       // TODO Create a new entity
 
-      const withCredential = new Credential(2)
-      
       return [
         withCredential,
         entityClassId
@@ -78,6 +86,26 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       return [];
     }
   };
+
+  const onCreateEntitySuccess: TxCallback = (txResult: SubmittableResult) => {
+    setSubmitting(false)
+
+    // Get id of newly created entity:
+    const newId = findFirstParamOfSubstrateEvent<EntityId>(txResult, 'EntityCreated')
+    setEntityId(newId)
+
+    console.log('New video entity id:', newId && newId.toString())
+  }
+
+  const onUpdateEntitySuccess: TxCallback = (_txResult: SubmittableResult) => {
+    setSubmitting(false)
+    if (!history) return
+
+    // Redirect to playback video page:
+    if (entity) {
+      history.push('/media/video/' + entity.id.toString())
+    }
+  }
 
   const basicInfoTab = () => <Tab.Pane as='div'>
     <MediaText field={Fields.title} {...props} />
@@ -141,7 +169,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       params={buildTxParams()}
       onClick={newOnSubmit}
       txFailedCb={onTxFailed}
-      txSuccessCb={onTxSuccess}
+      txSuccessCb={onCreateEntitySuccess}
     />
 
   const UpdateEntityButton = () =>
@@ -154,7 +182,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       params={buildTxParams()}
       onClick={newOnSubmit}
       txFailedCb={onTxFailed}
-      txSuccessCb={onTxSuccess}
+      txSuccessCb={onUpdateEntitySuccess}
     />
 
   return <div className='EditMetaBox'>

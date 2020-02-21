@@ -22,6 +22,7 @@ import { ChannelsByOwnerWithRouter } from './channels/ChannelsByOwner.view';
 import { EditChannelView, EditChannelWithRouter } from './channels/EditChannel.view';
 import { ExploreContentView } from './explore/ExploreContent.view';
 import { ViewChannelWithRouter } from './channels/ViewChannel.view';
+import { UploadVideoWithRouter } from './upload/EditVideo.view';
 import { EditVideoWithRouter } from './upload/EditVideo.view';
 import { PlayVideoWithRouter } from './video/PlayVideo.view';
 // import { VideosByOwner } from './video/VideosByOwner';
@@ -51,7 +52,7 @@ function App(props: Props) {
       text: t('My videos')
     },
     {
-      name: 'media',
+      name: 'deprecated-explore',
       text: t('OLD: Explore')
     },
     {
@@ -74,6 +75,7 @@ function App(props: Props) {
           <Route path={`${basePath}/account/:account/channels`} component={ChannelsByOwnerWithRouter} />
           <Route path={`${basePath}/channels/new`} component={EditChannelView} />
           <Route path={`${basePath}/channels/:id/edit`} component={EditChannelWithRouter} />
+          <Route path={`${basePath}/channels/:channelId/upload`} component={UploadVideoWithRouter} />
           <Route path={`${basePath}/channels/:id`} component={ViewChannelWithRouter} />
           {/* <Route path={`${basePath}/video/my`} component={VideosByOwnerView} /> */}
           <Route path={`${basePath}/video/:id/edit`} component={EditVideoWithRouter} />
