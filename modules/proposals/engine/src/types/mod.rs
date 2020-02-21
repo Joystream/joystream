@@ -32,6 +32,30 @@ pub enum ProposalStatus {
     Finalized(FinalizationStatus),
 }
 
+impl ProposalStatus {
+    /// ProposalStatus helper, creates ExecutionFailed approved proposal status
+    pub fn approved(approved_status: ApprovedProposalStatus) -> ProposalStatus {
+        ProposalStatus::Finalized(FinalizationStatus {
+            proposal_status: ProposalDecisionStatus::Approved(approved_status),
+            finalization_error: None,
+        })
+    }
+
+    pub fn finalized(decision_status: ProposalDecisionStatus) -> ProposalStatus {
+        Self::finalized_with_error(decision_status, None)
+    }
+
+    pub fn finalized_with_error(
+        decision_status: ProposalDecisionStatus,
+        finalization_error: Option<&str>,
+    ) -> ProposalStatus {
+        ProposalStatus::Finalized(FinalizationStatus {
+            proposal_status: decision_status,
+            finalization_error: finalization_error.map(|err| err.as_bytes().to_vec()),
+        })
+    }
+}
+
 /// Final proposal status and potential error.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -58,6 +82,15 @@ pub enum ApprovedProposalStatus {
         /// Error message
         error: Vec<u8>,
     },
+}
+
+impl ApprovedProposalStatus {
+    /// ApprovedProposalStatus helper, creates ExecutionFailed approved proposal status
+    pub fn failed_execution(err: &str) -> ApprovedProposalStatus {
+        ApprovedProposalStatus::ExecutionFailed {
+            error: err.as_bytes().to_vec(),
+        }
+    }
 }
 
 /// Status for the proposal with finalized decision

@@ -16,9 +16,6 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-//TODO: - refactor on_finalize (proposal actions)
-//TODO: - add proposal status helpers
-
 pub use types::BalanceOf;
 use types::FinalizedProposalData;
 pub use types::VotingResults;
@@ -351,22 +348,15 @@ impl<T: Trait> Module<T> {
         let approved_proposal_status = match proposal_code_result {
             Ok(proposal_code) => {
                 if let Err(error) = proposal_code.execute() {
-                    ApprovedProposalStatus::ExecutionFailed {
-                        error: error.as_bytes().to_vec(),
-                    }
+                    ApprovedProposalStatus::failed_execution(error)
                 } else {
                     ApprovedProposalStatus::Executed
                 }
             }
-            Err(error) => ApprovedProposalStatus::ExecutionFailed {
-                error: error.as_bytes().to_vec(),
-            },
+            Err(error) => ApprovedProposalStatus::failed_execution(error),
         };
 
-        let proposal_execution_status = ProposalStatus::Finalized(FinalizationStatus {
-            proposal_status: ProposalDecisionStatus::Approved(approved_proposal_status),
-            finalization_error: None,
-        });
+        let proposal_execution_status = ProposalStatus::approved(approved_proposal_status);
 
         proposal.status = proposal_execution_status.clone();
         <Proposals<T>>::insert(proposal_id, proposal);
@@ -379,72 +369,80 @@ impl<T: Trait> Module<T> {
         <PendingExecutionProposalIds<T>>::remove(&proposal_id);
     }
 
+    /// Performs all actions on proposal finalization:
+    /// - clean active proposal cache
+    /// - update proposal status fields (status, finalized_at, approved_at)
+    /// - add to pending execution proposal cache if approved
+    /// - slash and unstake proposal stake if stake exists
+    /// - fire an event
     fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
         Self::decrease_active_proposal_counter();
         <ActiveProposalIds<T>>::remove(&proposal_id.clone());
 
-        let mut new_proposal_status = ProposalStatus::Finalized(FinalizationStatus {
-            proposal_status: decision_status.clone(),
-            finalization_error: None,
-        });
         let mut proposal = Self::proposals(proposal_id);
-        proposal.finalized_at = Some(Self::current_block());
 
-        let slash_balance = match decision_status {
-            ProposalDecisionStatus::Rejected | ProposalDecisionStatus::Expired => {
-                Self::rejection_fee()
-            }
-            ProposalDecisionStatus::Approved { .. } => {
-                proposal.approved_at = Some(Self::current_block());
-                <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
-
-                BalanceOf::<T>::zero()
-            }
-            ProposalDecisionStatus::Vetoed => BalanceOf::<T>::zero(),
-            ProposalDecisionStatus::Canceled => Self::cancellation_fee(),
-            ProposalDecisionStatus::Slashed => proposal
-                .parameters
-                .required_stake
-                .unwrap_or(BalanceOf::<T>::zero()),
-        };
-
-        if let Some(stake_id) = proposal.stake_id {
-            let mut finalization_error = None;
-            if !slash_balance.is_zero() {
-                let slash_result = T::StakeHandlerProvider::stakes().slash(stake_id, slash_balance);
-
-                if let Err(err) = slash_result {
-                    println!("{:?}", err);
-                    finalization_error = Some(err.as_bytes().to_vec());
-                }
-            }
-
-            if finalization_error.is_none() {
-                let unstaking_result = T::StakeHandlerProvider::stakes().remove_stake(stake_id);
-
-                match unstaking_result {
-                    Ok(()) => {
-                        proposal.stake_id = None;
-                    }
-                    Err(err) => {
-                        println!("{:?}", err);
-                        finalization_error = Some(err.as_bytes().to_vec());
-                    }
-                };
-            }
-
-            new_proposal_status = ProposalStatus::Finalized(FinalizationStatus {
-                proposal_status: decision_status.clone(),
-                finalization_error,
-            });
+        if let ProposalDecisionStatus::Approved { .. } = decision_status {
+            proposal.approved_at = Some(Self::current_block());
+            <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
         }
+
+        // deal with stakes if necessary
+        let slash_balance = Self::calculate_slash_balance(&decision_status, &proposal.parameters);
+        let slash_and_unstake_result = Self::slash_and_unstake(proposal.stake_id, slash_balance);
+
+        if slash_and_unstake_result.is_ok() {
+            proposal.stake_id = None;
+        }
+
+        // create finalized proposal status with error if any
+        let new_proposal_status =
+            ProposalStatus::finalized_with_error(decision_status, slash_and_unstake_result.err());
+
         proposal.status = new_proposal_status.clone();
+        proposal.finalized_at = Some(Self::current_block());
         <Proposals<T>>::insert(proposal_id, proposal);
 
         Self::deposit_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
             new_proposal_status,
         ));
+    }
+
+    /// Slashes the stake and perform unstake only in case of existing stake
+    fn slash_and_unstake(
+        current_stake_id: Option<T::StakeId>,
+        slash_balance: BalanceOf<T>,
+    ) -> Result<(), &'static str> {
+        // only if stake exists
+        if let Some(stake_id) = current_stake_id {
+            if !slash_balance.is_zero() {
+                T::StakeHandlerProvider::stakes().slash(stake_id, slash_balance)?;
+            }
+
+            T::StakeHandlerProvider::stakes().remove_stake(stake_id)?;
+        }
+
+        Ok(())
+    }
+
+    /// Calculates required slash based on finalization ProposalDecisionStatus and proposal parameters.
+    fn calculate_slash_balance(
+        decision_status: &ProposalDecisionStatus,
+        proposal_parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
+    ) -> types::BalanceOf<T> {
+        match decision_status {
+            ProposalDecisionStatus::Rejected | ProposalDecisionStatus::Expired => {
+                Self::rejection_fee()
+            }
+            ProposalDecisionStatus::Approved { .. } | ProposalDecisionStatus::Vetoed => {
+                BalanceOf::<T>::zero()
+            }
+            ProposalDecisionStatus::Canceled => Self::cancellation_fee(),
+            ProposalDecisionStatus::Slashed => proposal_parameters
+                .required_stake
+                .clone()
+                .unwrap_or_else(BalanceOf::<T>::zero), // stake if set or zero
+        }
     }
 
     /// Enumerates approved proposals and checks their grace period expiration

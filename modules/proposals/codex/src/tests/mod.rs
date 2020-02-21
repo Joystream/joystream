@@ -39,9 +39,7 @@ fn create_text_proposal_codex_call_fails_with_invalid_stake() {
                 b"text".to_vec(),
                 None,
             ),
-            Err(Error::Other(
-                "Stake cannot be empty with this proposal"
-            ))
+            Err(Error::Other("Stake cannot be empty with this proposal"))
         );
 
         let invalid_stake = Some(<BalanceOf<Test>>::from(5000u32));
@@ -54,9 +52,7 @@ fn create_text_proposal_codex_call_fails_with_invalid_stake() {
                 b"text".to_vec(),
                 invalid_stake,
             ),
-            Err(Error::Other(
-                "Stake differs from the proposal requirements"
-            ))
+            Err(Error::Other("Stake differs from the proposal requirements"))
         );
     });
 }
@@ -164,9 +160,7 @@ fn create_runtime_upgrade_proposal_codex_call_fails_with_invalid_stake() {
                 b"wasm".to_vec(),
                 None,
             ),
-            Err(Error::Other(
-                "Stake cannot be empty with this proposal"
-            ))
+            Err(Error::Other("Stake cannot be empty with this proposal"))
         );
 
         let invalid_stake = Some(<BalanceOf<Test>>::from(500u32));
@@ -179,9 +173,7 @@ fn create_runtime_upgrade_proposal_codex_call_fails_with_invalid_stake() {
                 b"wasm".to_vec(),
                 invalid_stake,
             ),
-            Err(Error::Other(
-                "Stake differs from the proposal requirements"
-            ))
+            Err(Error::Other("Stake differs from the proposal requirements"))
         );
     });
 }

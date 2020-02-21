@@ -12,6 +12,49 @@ use system::{EventRecord, Phase};
 
 use srml_support::traits::Currency;
 
+struct ProposalParametersFixture {
+    parameters: ProposalParameters<u64, u64>,
+}
+
+impl ProposalParametersFixture {
+    fn with_required_stake(&self, required_stake: BalanceOf<Test>) -> Self {
+        ProposalParametersFixture {
+            parameters: ProposalParameters {
+                required_stake: Some(required_stake),
+                ..self.parameters
+            },
+        }
+    }
+    fn with_grace_period(&self, grace_period: u64) -> Self {
+        ProposalParametersFixture {
+            parameters: ProposalParameters {
+                grace_period,
+                ..self.parameters
+            },
+        }
+    }
+
+    fn params(&self) -> ProposalParameters<u64, u64> {
+        self.parameters.clone()
+    }
+}
+
+impl Default for ProposalParametersFixture {
+    fn default() -> Self {
+        ProposalParametersFixture {
+            parameters: ProposalParameters {
+                voting_period: 3,
+                approval_quorum_percentage: 60,
+                approval_threshold_percentage: 60,
+                slashing_quorum_percentage: 60,
+                slashing_threshold_percentage: 60,
+                grace_period: 0,
+                required_stake: None,
+            },
+        }
+    }
+}
+
 #[derive(Clone)]
 struct DummyProposalFixture {
     parameters: ProposalParameters<u64, u64>,
@@ -266,16 +309,9 @@ fn vote_fails_with_insufficient_rights() {
 #[test]
 fn proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
-        let parameters = ProposalParameters {
-            voting_period: 3,
-            approval_quorum_percentage: 60,
-            approval_threshold_percentage: 60,
-            slashing_quorum_percentage: 60,
-            slashing_threshold_percentage: 60,
-            grace_period: 0,
-            required_stake: None,
-        };
-        let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
+        let parameters_fixture = ProposalParametersFixture::default();
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         // internal active proposal counter check
@@ -295,15 +331,10 @@ fn proposal_execution_succeeds() {
             proposal,
             Proposal {
                 proposal_type: 1,
-                parameters,
+                parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Finalized(FinalizationStatus {
-                    proposal_status: ProposalDecisionStatus::Approved(
-                        ApprovedProposalStatus::Executed
-                    ),
-                    finalization_error: None,
-                }),
+                status: ProposalStatus::approved(ApprovedProposalStatus::Executed),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: Some(1),
@@ -326,19 +357,11 @@ fn proposal_execution_succeeds() {
 #[test]
 fn proposal_execution_failed() {
     initial_test_ext().execute_with(|| {
-        let parameters = ProposalParameters {
-            voting_period: 3,
-            approval_quorum_percentage: 60,
-            approval_threshold_percentage: 60,
-            slashing_quorum_percentage: 60,
-            slashing_threshold_percentage: 60,
-            grace_period: 0,
-            required_stake: None,
-        };
+        let parameters_fixture = ProposalParametersFixture::default();
         let faulty_proposal = FaultyExecutable;
 
         let dummy_proposal = DummyProposalFixture::default()
-            .with_parameters(parameters)
+            .with_parameters(parameters_fixture.params())
             .with_proposal_type_and_code(faulty_proposal.proposal_type(), faulty_proposal.encode());
 
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
@@ -357,17 +380,12 @@ fn proposal_execution_failed() {
             proposal,
             Proposal {
                 proposal_type: faulty_proposal.proposal_type(),
-                parameters,
+                parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Finalized(FinalizationStatus {
-                    proposal_status: ProposalDecisionStatus::Approved(
-                        ApprovedProposalStatus::ExecutionFailed {
-                            error: "ExecutionFailed".as_bytes().to_vec()
-                        }
-                    ),
-                    finalization_error: None,
-                }),
+                status: ProposalStatus::approved(ApprovedProposalStatus::failed_execution(
+                    "ExecutionFailed"
+                )),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: Some(1),
@@ -451,10 +469,7 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
 
         assert_eq!(
             proposal.status,
-            ProposalStatus::Finalized(FinalizationStatus {
-                proposal_status: ProposalDecisionStatus::Rejected,
-                finalization_error: None,
-            }),
+            ProposalStatus::finalized(ProposalDecisionStatus::Rejected),
         );
         assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
     });
@@ -544,16 +559,9 @@ fn vote_fails_on_double_voting() {
 #[test]
 fn cancel_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
-        let parameters = ProposalParameters {
-            voting_period: 3,
-            approval_quorum_percentage: 60,
-            approval_threshold_percentage: 60,
-            slashing_quorum_percentage: 60,
-            slashing_threshold_percentage: 60,
-            grace_period: 0,
-            required_stake: None,
-        };
-        let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
+        let parameters_fixture = ProposalParametersFixture::default();
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let cancel_proposal = CancelProposalFixture::new(proposal_id);
@@ -565,13 +573,10 @@ fn cancel_proposal_succeeds() {
             proposal,
             Proposal {
                 proposal_type: 1,
-                parameters,
+                parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Finalized(FinalizationStatus {
-                    proposal_status: ProposalDecisionStatus::Canceled,
-                    finalization_error: None,
-                }),
+                status: ProposalStatus::finalized(ProposalDecisionStatus::Canceled),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: None,
@@ -622,16 +627,9 @@ fn veto_proposal_succeeds() {
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 0);
 
-        let parameters = ProposalParameters {
-            voting_period: 3,
-            approval_quorum_percentage: 60,
-            approval_threshold_percentage: 60,
-            slashing_quorum_percentage: 60,
-            slashing_threshold_percentage: 60,
-            grace_period: 0,
-            required_stake: None,
-        };
-        let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
+        let parameters_fixture = ProposalParametersFixture::default();
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         // internal active proposal counter check
@@ -646,13 +644,10 @@ fn veto_proposal_succeeds() {
             proposal,
             Proposal {
                 proposal_type: 1,
-                parameters,
+                parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Finalized(FinalizationStatus {
-                    proposal_status: ProposalDecisionStatus::Vetoed,
-                    finalization_error: None,
-                }),
+                status: ProposalStatus::finalized(ProposalDecisionStatus::Vetoed),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: None,
@@ -722,10 +717,7 @@ fn veto_proposal_event_emitted() {
             RawEvent::ProposalCreated(1, 1),
             RawEvent::ProposalStatusUpdated(
                 1,
-                ProposalStatus::Finalized(FinalizationStatus {
-                    proposal_status: ProposalDecisionStatus::Vetoed,
-                    finalization_error: None,
-                }),
+                ProposalStatus::finalized(ProposalDecisionStatus::Vetoed),
             ),
         ]);
     });
@@ -772,17 +764,9 @@ fn vote_proposal_event_emitted() {
 #[test]
 fn create_proposal_and_expire_it() {
     initial_test_ext().execute_with(|| {
-        let parameters = ProposalParameters {
-            voting_period: 3,
-            approval_quorum_percentage: 49,
-            approval_threshold_percentage: 60,
-            slashing_quorum_percentage: 60,
-            slashing_threshold_percentage: 60,
-            grace_period: 0,
-            required_stake: None,
-        };
-
-        let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters.clone());
+        let parameters_fixture = ProposalParametersFixture::default();
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         run_to_block_and_finalize(8);
@@ -793,13 +777,10 @@ fn create_proposal_and_expire_it() {
             proposal,
             Proposal {
                 proposal_type: 1,
-                parameters,
+                parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Finalized(FinalizationStatus {
-                    proposal_status: ProposalDecisionStatus::Expired,
-                    finalization_error: None,
-                }),
+                status: ProposalStatus::finalized(ProposalDecisionStatus::Expired),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: None,
@@ -814,16 +795,10 @@ fn create_proposal_and_expire_it() {
 #[test]
 fn proposal_execution_postponed_because_of_grace_period() {
     initial_test_ext().execute_with(|| {
-        let parameters = ProposalParameters {
-            voting_period: 3,
-            approval_quorum_percentage: 60,
-            approval_threshold_percentage: 60,
-            slashing_quorum_percentage: 60,
-            slashing_threshold_percentage: 60,
-            grace_period: 2,
-            required_stake: None,
-        };
-        let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(2);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
@@ -846,15 +821,10 @@ fn proposal_execution_postponed_because_of_grace_period() {
             proposal,
             Proposal {
                 proposal_type: 1,
-                parameters,
+                parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Finalized(FinalizationStatus {
-                    proposal_status: ProposalDecisionStatus::Approved(
-                        ApprovedProposalStatus::PendingExecution
-                    ),
-                    finalization_error: None,
-                }),
+                status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 approved_at: Some(1),
@@ -874,16 +844,9 @@ fn proposal_execution_postponed_because_of_grace_period() {
 #[test]
 fn proposal_execution_succeeds_after_the_grace_period() {
     initial_test_ext().execute_with(|| {
-        let parameters = ProposalParameters {
-            voting_period: 3,
-            approval_quorum_percentage: 60,
-            approval_threshold_percentage: 60,
-            slashing_quorum_percentage: 60,
-            slashing_threshold_percentage: 60,
-            grace_period: 1,
-            required_stake: None,
-        };
-        let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(1);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
@@ -903,15 +866,10 @@ fn proposal_execution_succeeds_after_the_grace_period() {
 
         let mut expected_proposal = Proposal {
             proposal_type: 1,
-            parameters,
+            parameters: parameters_fixture.params(),
             proposer_id: 1,
             created_at: 1,
-            status: ProposalStatus::Finalized(FinalizationStatus {
-                proposal_status: ProposalDecisionStatus::Approved(
-                    ApprovedProposalStatus::PendingExecution,
-                ),
-                finalization_error: None,
-            }),
+            status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution),
             title: b"title".to_vec(),
             body: b"body".to_vec(),
             approved_at: Some(1),
@@ -931,10 +889,8 @@ fn proposal_execution_succeeds_after_the_grace_period() {
 
         proposal = <crate::Proposals<Test>>::get(proposal_id);
 
-        expected_proposal.status = ProposalStatus::Finalized(FinalizationStatus {
-            proposal_status: ProposalDecisionStatus::Approved(ApprovedProposalStatus::Executed),
-            finalization_error: None,
-        });
+        expected_proposal.status = ProposalStatus::approved(ApprovedProposalStatus::Executed);
+
         assert_eq!(proposal, expected_proposal);
 
         // check internal cache for proposal_id absense
@@ -997,17 +953,12 @@ fn create_dummy_proposal_succeeds_with_stake() {
     initial_test_ext().execute_with(|| {
         let account_id = 1;
 
-        let parameters = ProposalParameters {
-            voting_period: 3,
-            approval_quorum_percentage: 50,
-            approval_threshold_percentage: 60,
-            slashing_quorum_percentage: 60,
-            slashing_threshold_percentage: 60,
-            grace_period: 5,
-            required_stake: Some(200),
-        };
+        let required_stake = 200;
+        let parameters_fixture =
+            ProposalParametersFixture::default().with_required_stake(required_stake);
+
         let dummy_proposal = DummyProposalFixture::default()
-            .with_parameters(parameters)
+            .with_parameters(parameters_fixture.params())
             .with_origin(RawOrigin::Signed(account_id))
             .with_stake(200);
 
@@ -1021,7 +972,7 @@ fn create_dummy_proposal_succeeds_with_stake() {
             proposal,
             Proposal {
                 proposal_type: 1,
-                parameters,
+                parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
                 status: ProposalStatus::Active,
@@ -1041,19 +992,13 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
     initial_test_ext().execute_with(|| {
         let account_id = 1;
 
-        let parameters = ProposalParameters {
-            voting_period: 3,
-            approval_quorum_percentage: 50,
-            approval_threshold_percentage: 60,
-            slashing_quorum_percentage: 60,
-            slashing_threshold_percentage: 60,
-            grace_period: 0,
-            required_stake: Some(200),
-        };
+        let required_stake = 200;
+        let parameters_fixture =
+            ProposalParametersFixture::default().with_required_stake(required_stake);
         let dummy_proposal = DummyProposalFixture::default()
-            .with_parameters(parameters)
+            .with_parameters(parameters_fixture.params())
             .with_origin(RawOrigin::Signed(account_id))
-            .with_stake(200);
+            .with_stake(required_stake);
 
         dummy_proposal.create_proposal_and_assert(Err("too few free funds in account"));
     });
@@ -1062,30 +1007,23 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
 #[test]
 fn create_proposal_fais_with_invalid_stake_parameters() {
     initial_test_ext().execute_with(|| {
-        let mut parameters = ProposalParameters {
-            voting_period: 3,
-            approval_quorum_percentage: 50,
-            approval_threshold_percentage: 60,
-            slashing_quorum_percentage: 60,
-            slashing_threshold_percentage: 60,
-            grace_period: 0,
-            required_stake: None,
-        };
+        let parameters_fixture = ProposalParametersFixture::default();
 
         let mut dummy_proposal = DummyProposalFixture::default()
-            .with_parameters(parameters.clone())
+            .with_parameters(parameters_fixture.params())
             .with_stake(200);
 
         dummy_proposal.create_proposal_and_assert(Err("Stake should be empty for this proposal"));
 
-        parameters.required_stake = Some(200);
-        dummy_proposal = DummyProposalFixture::default().with_parameters(parameters.clone());
+        let parameters_fixture_stake_200 = parameters_fixture.with_required_stake(200);
+        dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture_stake_200.params());
 
         dummy_proposal.create_proposal_and_assert(Err("Stake cannot be empty with this proposal"));
 
-        parameters.required_stake = Some(300);
+        let parameters_fixture_stake_300 = parameters_fixture.with_required_stake(300);
         dummy_proposal = DummyProposalFixture::default()
-            .with_parameters(parameters.clone())
+            .with_parameters(parameters_fixture_stake_300.params())
             .with_stake(200);
 
         dummy_proposal
@@ -1177,7 +1115,7 @@ fn finalize_proposal_using_stake_mocks() {
 
                 mock.expect_remove_stake().times(1).returning(|_| Ok(()));
 
-                mock.expect_slash().times(1).returning(|_,_| Ok(()));
+                mock.expect_slash().times(1).returning(|_, _| Ok(()));
 
                 Rc::new(mock)
             };
@@ -1186,17 +1124,10 @@ fn finalize_proposal_using_stake_mocks() {
             let account_id = 1;
 
             let stake_amount = 200;
-            let parameters = ProposalParameters {
-                voting_period: 3,
-                approval_quorum_percentage: 50,
-                approval_threshold_percentage: 60,
-                slashing_quorum_percentage: 60,
-                slashing_threshold_percentage: 60,
-                grace_period: 5,
-                required_stake: Some(stake_amount),
-            };
+            let parameters_fixture =
+                ProposalParametersFixture::default().with_required_stake(stake_amount);
             let dummy_proposal = DummyProposalFixture::default()
-                .with_parameters(parameters)
+                .with_parameters(parameters_fixture.params())
                 .with_origin(RawOrigin::Signed(account_id))
                 .with_stake(stake_amount);
 
@@ -1243,5 +1174,61 @@ fn proposal_slashing_succeeds() {
             }),
         );
         assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
+    });
+}
+
+#[test]
+fn finalize_proposal_failed_using_stake_mocks() {
+    handle_mock(|| {
+        initial_test_ext().execute_with(|| {
+            let mock = {
+                let mut mock = crate::types::MockStakeHandler::<Test>::new();
+                mock.expect_create_stake().times(1).returning(|_, _| Ok(1));
+
+                mock.expect_remove_stake()
+                    .times(1)
+                    .returning(|_| Err("Cannot remove stake"));
+
+                mock.expect_slash().times(1).returning(|_, _| Ok(()));
+
+                Rc::new(mock)
+            };
+            set_stake_handler_impl(mock.clone());
+
+            let account_id = 1;
+
+            let stake_amount = 200;
+            let parameters_fixture =
+                ProposalParametersFixture::default().with_required_stake(stake_amount);
+            let dummy_proposal = DummyProposalFixture::default()
+                .with_parameters(parameters_fixture.params())
+                .with_origin(RawOrigin::Signed(account_id))
+                .with_stake(stake_amount);
+
+            let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+
+            run_to_block_and_finalize(5);
+
+            let proposal = <Proposals<Test>>::get(proposal_id);
+            assert_eq!(
+                proposal,
+                Proposal {
+                    proposal_type: 1,
+                    parameters: parameters_fixture.params(),
+                    proposer_id: 1,
+                    created_at: 1,
+                    status: ProposalStatus::finalized_with_error(
+                        ProposalDecisionStatus::Expired,
+                        Some("Cannot remove stake")
+                    ),
+                    title: b"title".to_vec(),
+                    body: b"body".to_vec(),
+                    approved_at: None,
+                    finalized_at: Some(4),
+                    voting_results: VotingResults::default(),
+                    stake_id: Some(1),
+                }
+            );
+        });
     });
 }
