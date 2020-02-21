@@ -89,6 +89,8 @@ decl_module! {
                 grace_period: T::BlockNumber::from(10000u32),
                 approval_quorum_percentage: 40,
                 approval_threshold_percentage: 51,
+                slashing_quorum_percentage: 80,
+                slashing_threshold_percentage: 80,
                 required_stake: Some(<BalanceOf<T>>::from(500u32))
             };
 
@@ -127,6 +129,8 @@ decl_module! {
                 grace_period: T::BlockNumber::from(10000u32),
                 approval_quorum_percentage: 80,
                 approval_threshold_percentage: 80,
+                slashing_quorum_percentage: 80,
+                slashing_threshold_percentage: 80,
                 required_stake: Some(<BalanceOf<T>>::from(50000u32))
             };
 

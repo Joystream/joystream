@@ -17,11 +17,11 @@ pub use runtime_primitives::{
 use srml_support::{impl_outer_dispatch, impl_outer_event, impl_outer_origin, parameter_types};
 pub use system;
 
-mod balance_restorator;
+mod balance_manager;
 mod proposals;
 mod stakes;
 
-use balance_restorator::*;
+use balance_manager::*;
 pub use proposals::*;
 pub use stakes::*;
 
@@ -76,7 +76,7 @@ impl balances::Trait for Test {
 impl stake::Trait for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;
-    type StakingEventsHandler = BalanceRestoratorStakingEventsHandler;
+    type StakingEventsHandler = BalanceManagerStakingEventsHandler;
     type StakeId = u64;
     type SlashId = u64;
 }

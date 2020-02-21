@@ -38,7 +38,7 @@ mod tests;
 
 use rstd::prelude::*;
 
-use runtime_primitives::traits::EnsureOrigin;
+use runtime_primitives::traits::{EnsureOrigin, Zero};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
 };
@@ -50,6 +50,10 @@ const DEFAULT_TITLE_MAX_LEN: u32 = 100;
 const DEFAULT_BODY_MAX_LEN: u32 = 10_000;
 // Max simultaneous active proposals number.
 const MAX_ACTIVE_PROPOSALS_NUMBER: u32 = 100;
+// Default proposal cancellation fee to prevent spamming.
+const DEFAULT_CANCELLATION_FEE: u32 = 5;
+// Default proposal rejection fee to prevent spamming.
+const DEFAULT_REJECTION_FEE: u32 = 17;
 
 /// Proposals engine trait.
 pub trait Trait: system::Trait + timestamp::Trait + stake::Trait {
@@ -144,6 +148,14 @@ decl_storage! {
 
         /// Defines max simultaneous active proposals number. Can be configured.
         pub MaxActiveProposals get(max_active_proposals) config(): u32 = MAX_ACTIVE_PROPOSALS_NUMBER;
+
+        /// A fee to be slashed (burn) in case a proposer decides to cancel a proposal.
+        pub CancellationFee get(cancellation_fee) config(): BalanceOf<T> =
+            BalanceOf::<T>::from(DEFAULT_CANCELLATION_FEE);
+
+        /// A fee to be slashed (burn) in case a proposal was rejected.
+        pub RejectionFee get(rejection_fee) config(): BalanceOf<T> =
+            BalanceOf::<T>::from(DEFAULT_REJECTION_FEE);
     }
 }
 
@@ -378,18 +390,48 @@ impl<T: Trait> Module<T> {
         let mut proposal = Self::proposals(proposal_id);
         proposal.finalized_at = Some(Self::current_block());
 
-        if let Some(stake_id) = proposal.stake_id {
-            let unstaking_result = T::StakeHandlerProvider::stakes().remove_stake(stake_id);
+        let slash_balance = match decision_status {
+            ProposalDecisionStatus::Rejected | ProposalDecisionStatus::Expired => {
+                Self::rejection_fee()
+            }
+            ProposalDecisionStatus::Approved { .. } => {
+                proposal.approved_at = Some(Self::current_block());
+                <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
 
+                BalanceOf::<T>::zero()
+            }
+            ProposalDecisionStatus::Vetoed => BalanceOf::<T>::zero(),
+            ProposalDecisionStatus::Canceled => Self::cancellation_fee(),
+            ProposalDecisionStatus::Slashed => proposal
+                .parameters
+                .required_stake
+                .unwrap_or(BalanceOf::<T>::zero()),
+        };
+
+        if let Some(stake_id) = proposal.stake_id {
             let mut finalization_error = None;
-            match unstaking_result {
-                Ok(()) => {
-                    proposal.stake_id = None;
-                }
-                Err(err) => {
+            if !slash_balance.is_zero() {
+                let slash_result = T::StakeHandlerProvider::stakes().slash(stake_id, slash_balance);
+
+                if let Err(err) = slash_result {
+                    println!("{:?}", err);
                     finalization_error = Some(err.as_bytes().to_vec());
                 }
-            };
+            }
+
+            if finalization_error.is_none() {
+                let unstaking_result = T::StakeHandlerProvider::stakes().remove_stake(stake_id);
+
+                match unstaking_result {
+                    Ok(()) => {
+                        proposal.stake_id = None;
+                    }
+                    Err(err) => {
+                        println!("{:?}", err);
+                        finalization_error = Some(err.as_bytes().to_vec());
+                    }
+                };
+            }
 
             new_proposal_status = ProposalStatus::Finalized(FinalizationStatus {
                 proposal_status: decision_status.clone(),
@@ -403,24 +445,6 @@ impl<T: Trait> Module<T> {
             proposal_id,
             new_proposal_status,
         ));
-
-        match decision_status {
-            ProposalDecisionStatus::Rejected | ProposalDecisionStatus::Expired => {
-                Self::reject_proposal(proposal_id)
-            }
-            ProposalDecisionStatus::Approved { .. } => Self::approve_proposal(proposal_id),
-            ProposalDecisionStatus::Vetoed | ProposalDecisionStatus::Canceled => {} //TODO add actions after stakes
-            ProposalDecisionStatus::Slashed => {}                                   //TODO
-        }
-    }
-
-    /// Reject a proposal. The staked deposit will be returned to a proposer.
-    fn reject_proposal(_proposal_id: T::ProposalId) {}
-
-    /// Approve a proposal. The staked deposit will be returned.
-    fn approve_proposal(proposal_id: T::ProposalId) {
-        <Proposals<T>>::mutate(proposal_id, |p| p.approved_at = Some(Self::current_block()));
-        <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
     }
 
     /// Enumerates approved proposals and checks their grace period expiration
@@ -454,6 +478,11 @@ impl<T: Trait> Module<T> {
         };
     }
 
+    /// Performs all checks for the proposal creation:
+    /// - title, body lengths
+    /// - mac active proposal
+    /// - provided parameters: approval_threshold_percentage and slashing_threshold_percentage > 0
+    /// - provided stake balance and parameters.required_stake are valid
     fn ensure_create_proposal_parameters_are_valid(
         parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
         title: &[u8],
