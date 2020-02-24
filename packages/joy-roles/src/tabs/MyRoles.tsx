@@ -71,7 +71,7 @@ function CTAButton(props: CTA) {
           This operation cannot be reversed!
         </Message>
         <Form>
-          <Form.TextArea label='Rational'
+          <Form.TextArea label='Rationale'
             placeholder='(optional) Reason for withdrawing'
             value={rationale}
             onChange={handleChange}
