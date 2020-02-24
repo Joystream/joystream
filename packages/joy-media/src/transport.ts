@@ -20,6 +20,19 @@ import { isVideoChannel, isPublicChannel } from './channels/ChannelHelpers';
 import { isPublicEntity } from './entities/EntityHelpers';
 import { camelCase, upperFirst } from 'lodash'
 
+export interface ValidationConstraint {
+  min: number
+  max: number
+}
+
+export interface ChannelValidationConstraints {
+  handle: ValidationConstraint
+  title: ValidationConstraint
+  description: ValidationConstraint
+  avatar: ValidationConstraint
+  banner: ValidationConstraint
+}
+
 export interface ClassIdByNameMap {
   ContentLicense?: ClassId
   CurationStatus?: ClassId
@@ -71,6 +84,8 @@ export abstract class MediaTransport extends TransportBase {
     return (await this.allChannels())
       .filter(x => accountId && accountId.eq(x.roleAccount))
   }
+
+  abstract channelValidationConstraints(): Promise<ChannelValidationConstraints>
 
   abstract allClasses(): Promise<Class[]>
 

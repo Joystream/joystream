@@ -7,17 +7,21 @@ import { Text, Option } from '@polkadot/types';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { onImageError } from '../utils';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
-import { ChannelType, ChannelClass as Fields, ChannelValidationSchema, ChannelFormValues, ChannelToFormValues, ChannelGenericProp } from '../schemas/channel/Channel';
+import { ChannelType, ChannelClass as Fields, buildChannelValidationSchema, ChannelFormValues, ChannelToFormValues, ChannelGenericProp } from '../schemas/channel/Channel';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { ChannelId, ChannelContentType, ChannelPublicationStatus, OptionalText } from '@joystream/types/content-working-group';
-import { newOptionalText } from '@polkadot/joy-utils/';
+import { newOptionalText, findFirstParamOfSubstrateEvent } from '@polkadot/joy-utils/';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 import { ChannelPublicationStatusDropdownOptions } from './ChannelHelpers';
+import { TxCallback } from '@polkadot/react-components/Status/types';
+import { SubmittableResult } from '@polkadot/api';
+import { ChannelValidationConstraints } from '../transport';
 
 export type OuterProps = {
   history?: History,
   id?: ChannelId,
-  entity?: ChannelType
+  entity?: ChannelType,
+  constraints?: ChannelValidationConstraints,
   opts?: MediaDropdownOptions
 };
 
@@ -32,10 +36,11 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     // Callbacks:
     onSubmit,
-    onTxSuccess,
+    // onTxSuccess,
     onTxFailed,
 
-    // history,
+    history,
+    id: existingId,
     entity,
     isFieldChanged,
 
@@ -44,6 +49,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     dirty,
     isValid,
     isSubmitting,
+    setSubmitting,
     resetForm
   } = props;
 
@@ -51,7 +57,20 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const { avatar } = values;
   const isNew = !entity;
 
-  // TODO redirect to channel's page on successful creation or update
+  const onTxSuccess: TxCallback = (txResult: SubmittableResult) => {
+    setSubmitting(false)
+    if (!history) return
+
+    const id = existingId
+      ? existingId
+      : findFirstParamOfSubstrateEvent<ChannelId>(txResult, 'ChannelCreated')
+
+    console.log('Channel id:', id?.toString())
+
+    if (id) {
+      history.push('/media/channels/' + id.toString())
+    }
+  }
 
   const buildTxParams = () => {
     if (!isValid) return [];
@@ -178,7 +197,12 @@ export const EditForm = withFormik<OuterProps, FormValues>({
     return ChannelToFormValues(entity);
   },
 
-  validationSchema: () => ChannelValidationSchema,
+  validationSchema: (props: OuterProps): any => {
+    const { constraints } = props
+    if (!constraints) return null
+
+    return buildChannelValidationSchema(constraints)
+  },
 
   handleSubmit: () => {
     // do submitting things

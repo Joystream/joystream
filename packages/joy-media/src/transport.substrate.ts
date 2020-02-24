@@ -1,6 +1,7 @@
 import BN from 'bn.js';
-import { MediaTransport, EntityCodecByClassNameMap, ClassName } from './transport';
+import { MediaTransport, EntityCodecByClassNameMap, ClassName, ChannelValidationConstraints, ValidationConstraint } from './transport';
 import { ClassId, Class, EntityId, Entity } from '@joystream/types/versioned-store';
+import { InputValidationLengthConstraint } from '@joystream/types/forum';
 import { PlainEntity, AnyEntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
@@ -89,6 +90,24 @@ export class SubstrateTransport extends MediaTransport {
         contentItemsCount: 0,    // TODO calc this value based on chain data
       }
     })
+  }
+
+  protected async getValidationConstraint(constraintName: string): Promise<ValidationConstraint> {
+    const constraint = await this.cwgQuery()[constraintName]<InputValidationLengthConstraint>()
+    return {
+      min: constraint.min.toNumber(),
+      max: constraint.max.toNumber()
+    }
+  }
+
+  async channelValidationConstraints(): Promise<ChannelValidationConstraints> {
+    return {
+      handle: await this.getValidationConstraint('channelHandleConstraint'),
+      title: await this.getValidationConstraint('channelTitleConstraint'),
+      description: await this.getValidationConstraint('channelDescriptionConstraint'),
+      avatar: await this.getValidationConstraint('channelAvatarConstraint'),
+      banner: await this.getValidationConstraint('channelBannerConstraint'),
+    }
   }
 
   // Classes (Versioned Store module)

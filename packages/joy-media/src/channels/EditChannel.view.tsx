@@ -10,8 +10,9 @@ export const EditChannelView = MediaView<Props>({
   component: EditForm,
   resolveProps: async (props) => {
     const { transport, id } = props;
-    const entity = id ? await transport.channelById(id) : undefined;
-    return { entity };
+    const entity = id && await transport.channelById(id);
+    const constraints = await transport.channelValidationConstraints()
+    return { entity, constraints };
   }
 });
 

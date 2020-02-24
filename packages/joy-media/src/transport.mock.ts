@@ -1,4 +1,4 @@
-import { MediaTransport, ClassIdByNameMap } from './transport';
+import { MediaTransport, ClassIdByNameMap, ChannelValidationConstraints } from './transport';
 import { EntityId, Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
@@ -25,6 +25,10 @@ export class MockTransport extends MediaTransport {
 
   allChannels(): Promise<ChannelEntity[]> {
     return this.promise(AllMockChannels);
+  }
+
+  channelValidationConstraints(): Promise<ChannelValidationConstraints> {
+    return this.notImplementedYet(); // TODO impl
   }
 
   allClasses(): Promise<Class[]> {

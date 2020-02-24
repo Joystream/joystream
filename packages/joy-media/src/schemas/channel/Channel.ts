@@ -3,23 +3,26 @@ import * as Yup from 'yup';
 import { BlockNumber, AccountId } from '@polkadot/types/interfaces';
 import { ChannelContentTypeValue, PrincipalId, Channel, ChannelId, ChannelPublicationStatusValue, ChannelCurationStatusValue } from '@joystream/types/content-working-group';
 import { MemberId } from '@joystream/types/members';
+import { ChannelValidationConstraints, ValidationConstraint } from '@polkadot/joy-media/transport';
 
-export const ChannelValidationSchema = Yup.object().shape({
-  content: Yup.string()
-    .required('This field is required')
-    .max(100, 'Text is too long. Maximum length is 100 chars.'),
-  handle: Yup.string()
-    .required('This field is required')
-    .max(40, 'Text is too long. Maximum length is 40 chars.'),
-  title: Yup.string()
-    .max(100, 'Text is too long. Maximum length is 100 chars.'),
-  description: Yup.string()
-    .max(4000, 'Text is too long. Maximum length is 4000 chars.'),
-  avatar: Yup.string()
-    .max(1000, 'Text is too long. Maximum length is 1000 chars.'),
-  banner: Yup.string()
-    .max(1000, 'Text is too long. Maximum length is 1000 chars.')
-});
+function textValidation (constraint?: ValidationConstraint) {
+  if (!constraint) {
+    return Yup.string()
+  }
+  
+  const { min, max } = constraint
+  return Yup.string()
+    .min(min, `Text is too short. Minimum length is ${min} chars.`)
+    .max(max, `Text is too long. Maximum length is ${max} chars.`)
+}
+export const buildChannelValidationSchema = (constraints?: ChannelValidationConstraints) =>
+  Yup.object().shape({
+    handle: textValidation(constraints?.handle).required('This field is required'),
+    title: textValidation(constraints?.title),
+    description: textValidation(constraints?.description),
+    avatar: textValidation(constraints?.avatar),
+    banner: textValidation(constraints?.banner)
+  });
 
 export type ChannelFormValues = {
   content: ChannelContentTypeValue
