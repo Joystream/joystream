@@ -41,10 +41,12 @@ impl ProposalStatus {
         })
     }
 
+    /// Creates finalized proposal status with provided ProposalDecisionStatus
     pub fn finalized(decision_status: ProposalDecisionStatus) -> ProposalStatus {
         Self::finalized_with_error(decision_status, None)
     }
 
+    /// Creates finalized proposal status with provided ProposalDecisionStatus and error
     pub fn finalized_with_error(
         decision_status: ProposalDecisionStatus,
         finalization_error: Option<&str>,

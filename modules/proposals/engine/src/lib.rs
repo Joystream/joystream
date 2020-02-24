@@ -1,13 +1,14 @@
 //! Proposals engine module for the Joystream platform. Version 2.
-//! Provides methods and extrinsics to create and vote for proposals.
+//! Provides methods and extrinsics to create and vote for proposals,
+//! inspired by Parity **Democracy module**.
 //!
 //! Supported extrinsics:
-//! - vote
-//! - cancel_proposal
-//! - veto_proposal
+//! - vote - registers a vote for the proposal
+//! - cancel_proposal - cancels the proposal (can be canceled only by owner)
+//! - veto_proposal - vetoes the proposal
 //!
 //! Public API (requires root origin):
-//! - create_proposal
+//! - create_proposal - creates proposal using provided parameters
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
@@ -312,8 +313,8 @@ impl<T: Trait> Module<T> {
         <system::Module<T>>::block_number()
     }
 
-    /// Enumerates through active proposals. Tally Voting results.
-    /// Returns proposals with finalized status and id
+    // Enumerates through active proposals. Tally Voting results.
+    // Returns proposals with finalized status and id
     fn get_finalized_proposals() -> Vec<FinalizedProposal<T>> {
         // enumerate active proposals id and gather finalization data
         <ActiveProposalIds<T>>::enumerate()
@@ -369,12 +370,12 @@ impl<T: Trait> Module<T> {
         <PendingExecutionProposalIds<T>>::remove(&proposal_id);
     }
 
-    /// Performs all actions on proposal finalization:
-    /// - clean active proposal cache
-    /// - update proposal status fields (status, finalized_at, approved_at)
-    /// - add to pending execution proposal cache if approved
-    /// - slash and unstake proposal stake if stake exists
-    /// - fire an event
+    // Performs all actions on proposal finalization:
+    // - clean active proposal cache
+    // - update proposal status fields (status, finalized_at, approved_at)
+    // - add to pending execution proposal cache if approved
+    // - slash and unstake proposal stake if stake exists
+    // - fire an event
     fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
         Self::decrease_active_proposal_counter();
         <ActiveProposalIds<T>>::remove(&proposal_id.clone());
@@ -408,7 +409,7 @@ impl<T: Trait> Module<T> {
         ));
     }
 
-    /// Slashes the stake and perform unstake only in case of existing stake
+    // Slashes the stake and perform unstake only in case of existing stake
     fn slash_and_unstake(
         current_stake_id: Option<T::StakeId>,
         slash_balance: BalanceOf<T>,
@@ -425,7 +426,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Calculates required slash based on finalization ProposalDecisionStatus and proposal parameters.
+    // Calculates required slash based on finalization ProposalDecisionStatus and proposal parameters.
     fn calculate_slash_balance(
         decision_status: &ProposalDecisionStatus,
         proposal_parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
@@ -445,7 +446,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Enumerates approved proposals and checks their grace period expiration
+    // Enumerates approved proposals and checks their grace period expiration
     fn get_approved_proposal_with_expired_grace_period_ids() -> Vec<T::ProposalId> {
         <PendingExecutionProposalIds<T>>::enumerate()
             .filter_map(|(proposal_id, _)| {
@@ -460,13 +461,13 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    /// Increases active proposal counter.
+    // Increases active proposal counter.
     fn increase_active_proposal_counter() {
         let next_active_proposal_count_value = Self::active_proposal_count() + 1;
         ActiveProposalCount::put(next_active_proposal_count_value);
     }
 
-    /// Decreases active proposal counter down to zero. Decreasing below zero has no effect.
+    // Decreases active proposal counter down to zero. Decreasing below zero has no effect.
     fn decrease_active_proposal_counter() {
         let current_active_proposal_counter = Self::active_proposal_count();
 
@@ -476,11 +477,11 @@ impl<T: Trait> Module<T> {
         };
     }
 
-    /// Performs all checks for the proposal creation:
-    /// - title, body lengths
-    /// - mac active proposal
-    /// - provided parameters: approval_threshold_percentage and slashing_threshold_percentage > 0
-    /// - provided stake balance and parameters.required_stake are valid
+    // Performs all checks for the proposal creation:
+    // - title, body lengths
+    // - mac active proposal
+    // - provided parameters: approval_threshold_percentage and slashing_threshold_percentage > 0
+    // - provided stake balance and parameters.required_stake are valid
     fn ensure_create_proposal_parameters_are_valid(
         parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
         title: &[u8],
@@ -534,7 +535,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
-/// Simplification of the 'FinalizedProposalData' type
+// Simplification of the 'FinalizedProposalData' type
 type FinalizedProposal<T> = FinalizedProposalData<
     <T as Trait>::ProposalId,
     <T as system::Trait>::BlockNumber,
