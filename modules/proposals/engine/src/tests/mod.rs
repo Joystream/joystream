@@ -1030,7 +1030,8 @@ fn create_proposal_fais_with_invalid_stake_parameters() {
             .create_proposal_and_assert(Err("Stake differs from the proposal requirements"));
     });
 }
-/* TODO: restore
+/* TODO: restore after the https://github.com/Joystream/substrate-runtime-joystream/issues/161
+// issue will be fixed: "Fix stake module and allow slashing and unstaking in the same block."
 #[test]
 fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succeeds() {
     initial_test_ext().execute_with(|| {
