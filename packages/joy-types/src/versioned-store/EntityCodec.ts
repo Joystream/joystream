@@ -120,7 +120,7 @@ export abstract class EntityCodec<T extends PlainEntity> {
   public constructor (entityClass: Class) {
     entityClass.properties.map((p, index) => {
       const propName = propNameToJsFieldStyle(p.name.toString());
-      const propMeta = { index, type: p.prop_type.toString() };
+      const propMeta = { index, type: p.prop_type.type.toString() };
       this.propNameToMetaMap.set(propName, propMeta);
       this.propIndexToNameMap.set(index, propName);
     })
