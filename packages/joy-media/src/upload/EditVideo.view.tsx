@@ -12,10 +12,10 @@ export const EditVideoView = MediaView<Props>({
   resolveProps: async (props) => {
     const { transport, channelId, id } = props;
     const channel = channelId && await transport.channelById(channelId);
-    const entityClassId = await transport.classIdByName('Video');
+    const entityClass = await transport.classByName('Video');
     const entity = id && await transport.videoById(id);
     const opts = await transport.dropdownOptions();
-    return { channel, entityClassId, entity, opts };
+    return { channel, entityClass, entity, opts };
   }
 });
 

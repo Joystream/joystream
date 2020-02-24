@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { Button, Tab } from 'semantic-ui-react';
 import { Form, withFormik } from 'formik';
 import { History } from 'history';
+import moment from 'moment';
 
 import TxButton, { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
 import { ContentId } from '@joystream/types/media';
 import { onImageError } from '../utils';
-import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues, VideoToFormValues } from '../schemas/video/Video';
+import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues, VideoToFormValues, VideoCodec, VideoPropId } from '../schemas/video/Video';
 import { MediaFormProps, withMediaForm, datePlaceholder } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
@@ -14,10 +15,19 @@ import { FormTabs } from '../common/FormTabs';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { Credential } from '@joystream/types/versioned-store/permissions/credentials';
-import { ClassId } from '@joystream/types/versioned-store';
+import { Class } from '@joystream/types/versioned-store';
 import { TxCallback } from '@polkadot/react-components/Status/types';
 import { SubmittableResult } from '@polkadot/api';
-import { findFirstParamOfSubstrateEvent } from '@polkadot/joy-utils/';
+import { findFirstParamOfSubstrateEvent, nonEmptyStr } from '@polkadot/joy-utils/';
+
+/** Example: "2019-01-23" -> 1548201600 */
+function humanDateToUnixTs(humanFriendlyDate: string): number | undefined {
+  return nonEmptyStr(humanFriendlyDate) ? moment(humanFriendlyDate).unix() : undefined
+}
+
+function isDateField(field: VideoPropId): boolean {
+  return field === Fields.firstReleased.id
+}
 
 export type OuterProps = {
   history?: History,
@@ -25,7 +35,7 @@ export type OuterProps = {
   fileName?: string,
   channelId?: ChannelId,
   channel?: ChannelEntity,
-  entityClassId: ClassId,
+  entityClass: Class,
   id?: EntityId,
   entity?: VideoType
   opts?: MediaDropdownOptions
@@ -47,10 +57,11 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     history,
     // contentId,
-    entityClassId,
+    entityClass,
     id,
     entity,
     opts,
+    isFieldChanged,
 
     values,
     dirty,
@@ -63,28 +74,49 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   const [ entityId, setEntityId ] = useState<EntityId | undefined>(id)
   const { thumbnail } = values;
-
+  const withCredential = new Credential(2)
   // const isNew = !entity;
 
-  const buildTxParams = () => {
-    const withCredential = new Credential(2)
+  const getValuesOfUpdatedFields = (): Partial<FormValues> => {
+    const res: Partial<FormValues> = {}
+    Object.keys(values).forEach((prop) => {
+      const fieldName = prop as VideoPropId
+      if (isFieldChanged(fieldName)) {
+        let fieldValue = values[fieldName] as any
+        if (typeof fieldValue === 'string') {
+          fieldValue = fieldValue.trim()
+        }
+        if (isDateField(fieldName)) {
+          fieldValue = humanDateToUnixTs(fieldValue)
+        }
+        res[fieldName] = fieldValue
+      }
+    })
+    return res
+  }
 
-    // TODO Batch create + update entity operations with versionedStorePermissions.transaction function
+  // TODO Batch create + update entity operations with versionedStorePermissions.transaction function
 
-    if (!entity) {
+  const buildCreateTxParams = () => {
+    return [
+      withCredential,
+      entityClass.id
+    ]
+  }
 
-      // TODO Create a new entity
+  const buildUpdateTxParams = () => {
+    const asEntityMaintainer = false
 
-      return [
-        withCredential,
-        entityClassId
-      ];
-    } else {
+    const codec = new VideoCodec(entityClass)
+    const updatedProps = codec.toSubstrateUpdate(getValuesOfUpdatedFields())
+    // console.log('buildUpdateTxParams updatedProps:', updatedProps)
 
-      // TODO Update properties of existing entity
-
-      return [];
-    }
+    return [
+      withCredential,
+      asEntityMaintainer,
+      entityId,
+      updatedProps
+    ]
   };
 
   const onCreateEntitySuccess: TxCallback = (txResult: SubmittableResult) => {
@@ -166,7 +198,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       isDisabled={!dirty || isSubmitting}
       label='Create video entity'
       tx='versionedStorePermissions.createEntity'
-      params={buildTxParams()}
+      params={buildCreateTxParams()}
       onClick={newOnSubmit}
       txFailedCb={onTxFailed}
       txSuccessCb={onCreateEntitySuccess}
@@ -179,7 +211,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       isDisabled={!dirty || isSubmitting}
       label='Update video entity'
       tx='versionedStorePermissions.updateEntityPropertyValues'      
-      params={buildTxParams()}
+      params={buildUpdateTxParams()}
       onClick={newOnSubmit}
       txFailedCb={onTxFailed}
       txSuccessCb={onUpdateEntitySuccess}
