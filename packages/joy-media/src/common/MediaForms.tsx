@@ -62,12 +62,16 @@ export type MediaFormProps<OuterProps, FormValues> =
   FormFields<OuterProps, FormValues> &
   FormCallbacks & {
     opts: MediaDropdownOptions
-    isFieldChanged: (field: GenericMediaProp<FormValues>) => boolean 
+    isFieldChanged: (field: keyof FormValues | GenericMediaProp<FormValues>) => boolean 
   };
 
 export function withMediaForm<OuterProps, FormValues>
   (Component: React.ComponentType<MediaFormProps<OuterProps, FormValues>>)
 {
+  type FieldName = keyof FormValues
+
+  type FieldObject = GenericMediaProp<FormValues>
+
   const LabelledText = JoyForms.LabelledText<FormValues>();
   
   const LabelledField = JoyForms.LabelledField<FormValues>();
@@ -127,8 +131,8 @@ export function withMediaForm<OuterProps, FormValues>
       opts = MediaDropdownOptions.Empty,
     } = props;
 
-    const isFieldChanged = (field: GenericMediaProp<FormValues>): boolean => {
-      const fieldName = field.id
+    const isFieldChanged = (field: FieldName | FieldObject): boolean => {
+      const fieldName = typeof field === 'string' ? field : (field as FieldObject).id
       return (
         dirty &&
         touched[fieldName] === true &&
