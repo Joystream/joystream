@@ -2,6 +2,8 @@
 authors = ['Joystream']
 edition = '2018'
 name = 'joystream-node-runtime'
+# Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
+# {Authoring}.{Spec}.{Impl} of the RuntimeVersion
 version = '6.0.0'
 
 [features]
@@ -258,13 +260,13 @@ version = '1.0.4'
 
 [dependencies.forum]
 default_features = false
-git = 'https://github.com/Joystream/substrate-forum-module'
+git = 'https://github.com/joystream/substrate-forum-module'
 package = 'substrate-forum-module'
 rev = '4bdeadaadfcca1fd6e822c520f429d4beacc4c8a'
 
 [dependencies.minting]
 default_features = false
-git = 'https://github.com/Joystream/substrate-token-minting-module/'
+git = 'https://github.com/joystream/substrate-token-minting-module/'
 package = 'substrate-token-mint-module'
 rev = '5570e3b56e9caffa7df1dbede6308b2e6ce18217'
 
@@ -284,7 +286,7 @@ rev = '0516efe9230da112bc095e28f34a3715c2e03ca8'
 default_features = false
 git = 'https://github.com/Joystream/substrate-hiring-module'
 package = 'substrate-hiring-module'
-rev = 'b400e3008c98989da7b310c71b7d6d4e4dca34e4'
+rev = '485c8be73891183910721e874cf9741dec6d824a'
 
 [dependencies.versioned_store]
 default_features = false
@@ -294,6 +296,6 @@ rev = 'd0c68722405355404840512edf3064d5ced3e1fe'
 
 [dependencies.versioned_store_permissions]
 default_features = false
-git = 'https://github.com/mnaamani/substrate-versioned-store-permissions-module'
 package = 'substrate-versioned-store-permissions-module'
-rev = 'a6f60058ce8cc1123e90172807abb22459916727'
+git = 'https://github.com/joystream/substrate-versioned-store-permissions-module'
+rev = '816b796b1b72bba05eebe128cdaa5e18611ac3ae'

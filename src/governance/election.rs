@@ -83,6 +83,9 @@ pub struct TransferableStake<Balance> {
     backing: Balance,
 }
 
+// can we use a type alias to overcome name clashes of public types with other modules?
+pub type ElectionStake<T: Trait> = Stake<BalanceOf<T>>;
+
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilElection {
         // Flag for wether to automatically start an election after a council term ends
@@ -98,12 +101,12 @@ decl_storage! {
         TransferableStakes get(transferable_stakes): map T::AccountId => TransferableStake<BalanceOf<T>>;
 
         Applicants get(applicants): Vec<T::AccountId>;
-        ApplicantStakes get(applicant_stakes): map T::AccountId => Stake<BalanceOf<T>>;
+        ApplicantStakes get(applicant_stakes): map T::AccountId => ElectionStake<T>;
 
         Commitments get(commitments): Vec<T::Hash>;
 
         // TODO value type of this map looks scary, is there any way to simplify the notation?
-        Votes get(votes): map T::Hash => SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>;
+        Votes get(votes): map T::Hash => SealedVote<T::AccountId, ElectionStake<T>, T::Hash, T::AccountId>;
 
         // Current Election Parameters - default "zero" values are not meaningful. Running an election without
         // settings reasonable values is a bad idea. Parameters can be set in the TriggerElection hook.

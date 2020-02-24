@@ -63,6 +63,7 @@ pub type RawLibTestEvent = lib::RawEvent<
     CuratorOpeningId<Test>,
     CuratorApplicationId<Test>,
     CuratorId<Test>,
+    CuratorApplicationIdToCuratorIdMap<Test>,
     <Test as system::Trait>::AccountId,
 >;
 
@@ -161,6 +162,7 @@ impl hiring::Trait for Test {
     type OpeningId = TestOpeningId;
     type ApplicationId = TestApplicationId;
     type ApplicationDeactivatedHandler = ();
+    type StakeHandlerProvider = hiring::Module<Self>;
 }
 
 impl versioned_store::Trait for Test {
@@ -169,8 +171,8 @@ impl versioned_store::Trait for Test {
 
 type TestPrincipalId = u64;
 impl versioned_store_permissions::Trait for Test {
-    type PrincipalId = TestPrincipalId;
-    type PrincipalIdChecker = ();
+    type Credential = TestPrincipalId;
+    type CredentialChecker = ();
     type CreateClassPermissionsChecker = ();
 }
 

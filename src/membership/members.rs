@@ -195,12 +195,13 @@ decl_storage! {
     }
     add_extra_genesis {
         config(default_paid_membership_fee): BalanceOf<T>;
-        config(members) : Vec<(T::AccountId, Vec<u8>, Vec<u8>, Vec<u8>)>;
+        config(members) : Vec<(T::AccountId, String, String, String)>;
         build(|config: &GenesisConfig<T>| {
             for (who, handle, avatar_uri, about) in &config.members {
                 let user_info = CheckedUserInfo {
-                    handle: handle.clone(), avatar_uri: avatar_uri.clone(), about: about.clone()
+                    handle: handle.clone().into_bytes(), avatar_uri: avatar_uri.clone().into_bytes(), about: about.clone().into_bytes()
                 };
+
                 <Module<T>>::insert_member(&who, &user_info, EntryMethod::Genesis);
 
                 // Give member starting balance

@@ -142,9 +142,9 @@ fn create_channel_description_too_long() {
                 None,
             );
 
-            fixture.description = Some(
-                generate_too_long_length_buffer(&ChannelDescriptionConstraint::get())
-            );
+            fixture.description = Some(generate_too_long_length_buffer(
+                &ChannelDescriptionConstraint::get(),
+            ));
 
             fixture.call_and_assert_error(MSG_CHANNEL_DESCRIPTION_TOO_LONG);
         });
@@ -162,9 +162,9 @@ fn create_channel_description_too_short() {
                 None,
             );
 
-            fixture.description = Some(
-                generate_too_short_length_buffer(&ChannelDescriptionConstraint::get())
-            );
+            fixture.description = Some(generate_too_short_length_buffer(
+                &ChannelDescriptionConstraint::get(),
+            ));
 
             fixture.call_and_assert_error(MSG_CHANNEL_DESCRIPTION_TOO_SHORT);
         });
@@ -202,8 +202,13 @@ impl UpdateChannelAsCurationActorFixture {
         let old_channel = ChannelById::<Test>::get(channel_id);
 
         let upd_verified = self.new_verified.unwrap_or(old_channel.verified);
-        let upd_description = self.new_description.clone().unwrap_or(old_channel.description);
-        let upd_curation_status = self.new_curation_status.unwrap_or(old_channel.curation_status);
+        let upd_description = self
+            .new_description
+            .clone()
+            .unwrap_or(old_channel.description);
+        let upd_curation_status = self
+            .new_curation_status
+            .unwrap_or(old_channel.curation_status);
 
         let expected_updated_channel = Channel {
             verified: upd_verified,
@@ -452,6 +457,32 @@ fn begin_curator_applicant_review_success() {
              * TODO: add assertion abouot side-effect in hiring module,
              * this is where state of application has fundamentally changed.
              */
+
+            // Assert opening is in opening stage... hiring::ActiveOpeningStage::ReviewPeriod
+            let opening =
+                <hiring::OpeningById<Test>>::get(&normal_opening_constructed.curator_opening_id);
+            match opening.stage {
+                hiring::OpeningStage::Active {
+                    stage,
+                    applications_added,
+                    active_application_count,
+                    unstaking_application_count,
+                    deactivated_application_count,
+                } => {
+                    match stage {
+                        hiring::ActiveOpeningStage::ReviewPeriod {
+                            started_accepting_applicants_at_block,
+                            started_review_period_at_block,
+                        } => {
+                            /* OK */
+                            // assert_eq!(started_accepting_applicants_at_block, 0);
+                            assert_eq!(started_review_period_at_block, System::block_number());
+                        }
+                        _ => panic!("ActiveOpeningStage must be in ReviewPeriod"),
+                    }
+                }
+                _ => panic!("OpeningStage must be Active"),
+            };
         });
 }
 
@@ -1849,7 +1880,9 @@ impl CreateChannelFixture {
             channel_title: Some(generate_valid_length_buffer(&ChannelTitleConstraint::get())),
             avatar: Some(generate_valid_length_buffer(&ChannelAvatarConstraint::get())),
             banner: Some(generate_valid_length_buffer(&ChannelBannerConstraint::get())),
-            description: Some(generate_valid_length_buffer(&ChannelDescriptionConstraint::get())),
+            description: Some(generate_valid_length_buffer(
+                &ChannelDescriptionConstraint::get(),
+            )),
             content: ChannelContentType::Video,
             publication_status: ChannelPublicationStatus::Unlisted,
         }
