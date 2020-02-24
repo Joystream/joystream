@@ -31,10 +31,6 @@ export class MockTransport extends MediaTransport {
     return this.notImplementedYet(); // TODO impl
   }
 
-  classIdByNameMap(): Promise<ClassIdByNameMap> {
-    return this.notImplementedYet(); // TODO impl
-  }
-
   allVideos(): Promise<VideoType[]> {
     return this.promise(mocks.AllVideos)
   }

@@ -18,6 +18,7 @@ import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { isVideoChannel, isPublicChannel } from './channels/ChannelHelpers';
 import { isPublicEntity } from './entities/EntityHelpers';
+import { camelCase, upperFirst } from 'lodash'
 
 export interface ClassIdByNameMap {
   ContentLicense?: ClassId
@@ -51,6 +52,10 @@ export const EntityCodecByClassNameMap = {
 
 export type ClassName = keyof ClassIdByNameMap
 
+export function unifyClassName(className: string): ClassName {
+  return upperFirst(camelCase(className)) as ClassName
+}
+
 export abstract class MediaTransport extends TransportBase {
 
   protected abstract notImplementedYet<T> (): T
@@ -69,10 +74,20 @@ export abstract class MediaTransport extends TransportBase {
 
   abstract allClasses(): Promise<Class[]>
 
-  abstract classIdByNameMap(): Promise<ClassIdByNameMap>
+  async classByName(className: ClassName): Promise<Class | undefined> {
+    return (await this.allClasses())
+      .find((x) => className === unifyClassName(x.name))
+  }
 
-  async classIdByName(className: ClassName): Promise<ClassId | undefined> {
-    return (await this.classIdByNameMap())[className]
+  // TODO Save result of this func in context state and subscribe to updates from Substrate.
+  async classIdByNameMap(): Promise<ClassIdByNameMap> {
+    const map: ClassIdByNameMap = {}
+    const classes = await this.allClasses()
+    classes.forEach((x) => {
+      const className = unifyClassName(x.name)
+      map[className] = x.id
+    });
+    return map
   }
 
   abstract allVideos(): Promise<VideoType[]>

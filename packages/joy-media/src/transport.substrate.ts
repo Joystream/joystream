@@ -1,6 +1,5 @@
 import BN from 'bn.js';
-import { camelCase, upperFirst } from 'lodash'
-import { MediaTransport, ClassIdByNameMap, EntityCodecByClassNameMap, ClassName } from './transport';
+import { MediaTransport, EntityCodecByClassNameMap, ClassName } from './transport';
 import { ClassId, Class, EntityId, Entity } from '@joystream/types/versioned-store';
 import { PlainEntity, AnyEntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 import { MusicTrackType } from './schemas/music/MusicTrack';
@@ -26,10 +25,6 @@ import { ChannelCodec } from './schemas/channel/Channel';
 const FIRST_CHANNEL_ID = 0;
 const FIRST_CLASS_ID = 1;
 const FIRST_ENTITY_ID = 1;
-
-function unifyClassName(className: string): ClassName {
-  return upperFirst(camelCase(className)) as ClassName
-}
 
 export class SubstrateTransport extends MediaTransport {
 
@@ -118,22 +113,6 @@ export class SubstrateTransport extends MediaTransport {
   async allClasses(): Promise<Class[]> {
     const ids = await this.allClassIds()
     return await this.vsQuery().classById.multi<Vec<Class>>(ids) as unknown as Class[]
-  }
-
-  async classByName(className: ClassName): Promise<Class | undefined> {
-    return (await this.allClasses())
-      .find((x) => className === unifyClassName(x.name))
-  }
-
-  // TODO Save result of this func in context state and subscribe to updates from Substrate.
-  async classIdByNameMap(): Promise<ClassIdByNameMap> {
-    const map: ClassIdByNameMap = {}
-    const classes = await this.allClasses()
-    classes.forEach((x) => {
-      const className = unifyClassName(x.name)
-      map[className] = x.id
-    });
-    return map
   }
 
   // Entities (Versioned Store module)
