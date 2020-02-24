@@ -154,7 +154,7 @@ function newHRT(title: string): Text {
 
 const stockOpenings: openingDescriptor[] = [
   {
-    title: "Test config A: no application state, no role stake, no applicant limit",
+    title: "Test config A: no application stake, no role stake, no applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -162,7 +162,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration A"),
   },
   {
-    title: "Test config B: no application state, no role stake, 10 applicant limit",
+    title: "Test config B: no application stake, no role stake, 10 applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -170,7 +170,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration B"),
   },
   {
-    title: "Test config C: fixed application state (100), no role stake, no applicant limit",
+    title: "Test config C: fixed application stake (100), no role stake, no applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -185,7 +185,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration C"),
   },
   {
-    title: "Test config D: fixed application state (100), no role stake, 10 applicant limit",
+    title: "Test config D: fixed application stake (100), no role stake, 10 applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -206,7 +206,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration D"),
   },
   {
-    title: "Test config E: no application state, fixed role stake (100), no applicant limit",
+    title: "Test config E: no application stake, fixed role stake (100), no applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -221,7 +221,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration E"),
   },
   {
-    title: "Test config F: no application state, fixed role stake (100), 10 applicant limit",
+    title: "Test config F: no application stake, fixed role stake (100), 10 applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -242,7 +242,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration F"),
   },
   {
-    title: "Test config G: minimum application state (100), no role stake, no applicant limit",
+    title: "Test config G: minimum application stake (100), no role stake, no applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -257,7 +257,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration G"),
   },
   {
-    title: "Test config H: minimum application state (100), no role stake, 10 applicant limit",
+    title: "Test config H: minimum application stake (100), no role stake, 10 applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -278,7 +278,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration H"),
   },
   {
-    title: "Test config I: no application state, minimum role stake (100), no applicant limit",
+    title: "Test config I: no application stake, minimum role stake (100), no applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -293,7 +293,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration I"),
   },
   {
-    title: "Test config J: no application state, minimum role stake (100), 10 applicant limit",
+    title: "Test config J: no application stake, minimum role stake (100), 10 applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -314,7 +314,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration J"),
   },
   {
-    title: "Test config K: fixed application state (100), fixed role stake (200), no applicant limit",
+    title: "Test config K: fixed application stake (100), fixed role stake (200), no applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
      max_review_period_length: new u32(99999),
@@ -336,7 +336,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration K"),
   },
   {
-    title: "Test config L: fixed application state (100), fixed role stake (200), 10 applicant limit",
+    title: "Test config L: fixed application stake (100), fixed role stake (200), 10 applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -364,7 +364,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration L"),
   },
   {
-    title: "Test config M: Minimum application state (100), minimum role stake (200), no applicant limit",
+    title: "Test config M: Minimum application stake (100), minimum role stake (200), no applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
      max_review_period_length: new u32(99999),
@@ -386,7 +386,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration M"),
   },
   {
-    title: "Test config N: Minimum application state (100), minimum role stake (200), 10 applicant limit",
+    title: "Test config N: Minimum application stake (100), minimum role stake (200), 10 applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -414,7 +414,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration N"),
   },
   {
-    title: "Test config O: Fixed application state (100), minimum role stake (200), no applicant limit",
+    title: "Test config O: Fixed application stake (100), minimum role stake (200), no applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
      max_review_period_length: new u32(99999),
@@ -436,7 +436,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration O"),
   },
   {
-    title: "Test config P: Fixed application state (100), minimum role stake (200), 10 applicant limit",
+    title: "Test config P: Fixed application stake (100), minimum role stake (200), 10 applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
@@ -464,7 +464,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration P"),
   },
  {
-    title: "Test config Q: Minimum application state (100), fixed role stake (200), no applicant limit",
+    title: "Test config Q: Minimum application stake (100), fixed role stake (200), no applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
      max_review_period_length: new u32(99999),
@@ -486,7 +486,7 @@ const stockOpenings: openingDescriptor[] = [
     text: newHRT("Test configuration Q"),
   },
   {
-    title: "Test config R: Minimum application state (100), fixed role stake (200), 10 applicant limit",
+    title: "Test config R: Minimum application stake (100), fixed role stake (200), 10 applicant limit",
     start: new ActivateOpeningAt(CurrentBlock),
     policy: new OpeningPolicyCommitment({
       max_review_period_length: new u32(99999),
