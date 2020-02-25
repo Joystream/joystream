@@ -335,6 +335,54 @@ export class OpeningPolicyCommitment extends JoyStruct<IOpeningPolicyCommitment>
       exit_curator_role_stake_unstaking_period: Option.with(u32),
     }, value);
   }
+
+  get application_rationing_policy(): Option<ApplicationRationingPolicy> {
+    return this.getField<Option<ApplicationRationingPolicy>>('application_rationing_policy')
+  }
+
+  get max_review_period_length(): u32 {
+    return this.getField<u32>('max_review_period_length')
+  }
+
+  get application_staking_policy(): Option<StakingPolicy> {
+    return this.getField<Option<StakingPolicy>>('application_staking_policy')
+  }
+
+  get role_staking_policy(): Option<StakingPolicy> {
+    return this.getField<Option<StakingPolicy>>('role_staking_policy')
+  }
+
+  get role_slashing_terms(): SlashingTerms {
+    return this.getField<SlashingTerms>('role_slashing_terms')
+  }
+
+  get fill_opening_successful_applicant_application_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('fill_opening_successful_applicant_application_stake_unstaking_period')
+  }
+
+  get fill_opening_failed_applicant_application_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('fill_opening_failed_applicant_application_stake_unstaking_period')
+  }
+
+  get fill_opening_failed_applicant_role_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('fill_opening_failed_applicant_role_stake_unstaking_period')
+  }
+
+  get terminate_curator_application_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('terminate_curator_application_stake_unstaking_period')
+  }
+
+  get terminate_curator_role_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('terminate_curator_role_stake_unstaking_period')
+  }
+
+  get exit_curator_role_application_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('exit_curator_role_application_stake_unstaking_period')
+  }
+
+  get exit_curator_role_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('exit_curator_role_stake_unstaking_period')
+  }
 };
 
 // Not entierly sure that using BTreeSet will work correctly when reading/decoding this type from chain state

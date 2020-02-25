@@ -276,12 +276,12 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
           type="number"
           onBlur={() => { setFocused(false) }}
           onFocus={() => { setFocused(true) }}
-          step={slotCount > 1 ? props.step.toNumber() :  1}
+          step={slotCount > 1 ? props.step.toNumber() : 1}
           value={props.stake.toNumber() > 0 ? props.stake.toNumber() : 0}
           min={props.slots.length > 0 ? props.slots[0].toNumber() : 0}
         />
-        {props.slots.length > 0 && <Button circular icon='angle right' onClick={() => { rank <= slotCount && setRank(rank + 1) }} /> }
-        {props.slots.length > 0 && <Button circular icon='angle double right' onClick={() => { rank < slotCount && setRank(slotCount) }} /> }
+        {props.slots.length > 0 && <Button circular icon='angle right' onClick={() => { rank <= slotCount && setRank(rank + 1) }} />}
+        {props.slots.length > 0 && <Button circular icon='angle double right' onClick={() => { rank < slotCount && setRank(slotCount) }} />}
         <Container className='ranks-and-stake'>
           <Label size='large'>
             <Icon name={rankIcon(rank, slotCount)} />
