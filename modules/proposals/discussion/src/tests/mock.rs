@@ -29,9 +29,12 @@ parameter_types! {
 }
 
 impl crate::Trait for Test {
-    type AuthorOrigin = system::EnsureSigned<Self::AccountId>;
+    type ThreadAuthorOrigin = system::EnsureSigned<Self::AccountId>;
+    type PostAuthorOrigin = system::EnsureSigned<Self::AccountId>;
     type ThreadId = u32;
-    type AuthorId = u64;
+    type PostId = u32;
+    type ThreadAuthorId = u64;
+    type PostAuthorId =  u64;
 }
 
 impl system::Trait for Test {
