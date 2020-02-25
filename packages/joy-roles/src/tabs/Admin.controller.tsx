@@ -890,7 +890,7 @@ const NewOpening = (props: NewOpeningProps) => {
     props.fn({
       start: start,
       policy: policy,
-      text: props.desc.text, // FIXME
+      text: new Text(text),
     })
   }
 
