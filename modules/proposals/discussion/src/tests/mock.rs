@@ -10,7 +10,7 @@ pub use runtime_primitives::{
     BuildStorage, Perbill,
 };
 
-use srml_support::{impl_outer_dispatch, impl_outer_origin, parameter_types};
+use srml_support::{impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -28,7 +28,11 @@ parameter_types! {
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
-impl crate::Trait for Test {}
+impl crate::Trait for Test {
+    type AuthorOrigin = system::EnsureSigned<Self::AccountId>;
+    type ThreadId = u32;
+    type AuthorId = u64;
+}
 
 impl system::Trait for Test {
     type Origin = Origin;
@@ -54,7 +58,6 @@ impl timestamp::Trait for Test {
     type MinimumPeriod = MinimumPeriod;
 }
 
-
 pub fn initial_test_ext() -> runtime_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
@@ -63,3 +66,4 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
     t.into()
 }
 
+pub type Discussions = crate::Module<Test>;
