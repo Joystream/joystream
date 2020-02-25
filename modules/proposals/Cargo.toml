@@ -1,0 +1,6 @@
+[workspace]
+members = [
+	"engine",
+	"codex",
+	"discussion",
+]
