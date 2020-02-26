@@ -2,7 +2,10 @@
 //! Contains discussion subsystem for the proposals engine.
 //!
 //! Supported extrinsics:
+//! - add_post - adds a post to existing discussion thread
 //!
+//! Public API:
+//! - create_discussion - creates a discussion
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
