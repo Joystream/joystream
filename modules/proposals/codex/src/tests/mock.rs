@@ -85,6 +85,17 @@ impl proposal_engine::Trait for Test {
     type VoterId = u64;
 
     type StakeHandlerProvider = proposal_engine::DefaultStakeHandlerProvider;
+
+    type DiscussionThreadId = u32;
+}
+
+impl proposal_discussion::Trait for Test {
+    type ThreadAuthorOrigin = system::EnsureSigned<Self::AccountId>;
+    type PostAuthorOrigin = system::EnsureSigned<Self::AccountId>;
+    type ThreadId = u32;
+    type PostId = u32;
+    type ThreadAuthorId = u64;
+    type PostAuthorId = u64;
 }
 
 pub struct MockVotersParameters;

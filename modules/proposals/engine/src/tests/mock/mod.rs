@@ -99,6 +99,8 @@ impl crate::Trait for Test {
     type VoterId = u64;
 
     type StakeHandlerProvider = stakes::TestStakeHandlerProvider;
+
+    type DiscussionThreadId = u32;
 }
 
 // If changing count is required, we can upgrade the implementation as shown here:

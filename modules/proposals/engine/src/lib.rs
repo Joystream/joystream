@@ -84,6 +84,9 @@ pub trait Trait: system::Trait + timestamp::Trait + stake::Trait {
 
     /// Provides stake logic implementation. Can be used to mock stake logic.
     type StakeHandlerProvider: StakeHandlerProvider<Self>;
+
+    /// Discussion thread Id type
+    type DiscussionThreadId: From<u32> + Parameter + Default + Copy;
 }
 
 decl_event!(
@@ -119,8 +122,7 @@ decl_event!(
 decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalEngine{
         /// Map proposal by its id.
-        pub Proposals get(fn proposals): map T::ProposalId =>
-            Proposal<T::BlockNumber, T::ProposerId, types::BalanceOf<T>, T::StakeId>;
+        pub Proposals get(fn proposals): map T::ProposalId => ProposalObject<T>;
 
         /// Count of all proposals that have been created.
         pub ProposalCount get(fn proposal_count): u32;
@@ -258,6 +260,7 @@ impl<T: Trait> Module<T> {
         stake_balance: Option<types::BalanceOf<T>>,
         proposal_type: u32,
         proposal_code: Vec<u8>,
+        discussion_thread_id: Option<T::DiscussionThreadId>,
     ) -> dispatch::Result {
         let account_id = T::ProposalOrigin::ensure_origin(origin)?;
         let proposer_id = T::ProposerId::from(account_id.clone());
@@ -295,6 +298,7 @@ impl<T: Trait> Module<T> {
             voting_results: VotingResults::default(),
             finalized_at: None,
             stake_id,
+            discussion_thread_id,
         };
 
         let proposal_id = T::ProposalId::from(new_proposal_id);
@@ -545,4 +549,14 @@ type FinalizedProposal<T> = FinalizedProposalData<
     <T as Trait>::ProposerId,
     types::BalanceOf<T>,
     <T as stake::Trait>::StakeId,
+    <T as Trait>::DiscussionThreadId,
+>;
+
+// Simplification of the 'Proposal' type
+type ProposalObject<T> = Proposal<
+    <T as system::Trait>::BlockNumber,
+    <T as Trait>::ProposerId,
+    types::BalanceOf<T>,
+    <T as stake::Trait>::StakeId,
+    <T as Trait>::DiscussionThreadId,
 >;

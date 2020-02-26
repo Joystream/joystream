@@ -12,14 +12,14 @@ struct DiscussionFixture {
 
 impl Default for DiscussionFixture {
     fn default() -> Self {
-        DiscussionFixture{
+        DiscussionFixture {
             title: b"text".to_vec(),
             origin: RawOrigin::Signed(1),
         }
     }
 }
 
-impl DiscussionFixture{
+impl DiscussionFixture {
     fn create_discussion_and_assert(&self, result: Result<(), &'static str>) -> Option<u32> {
         let create_discussion_result =
             Discussions::create_discussion(self.origin.clone().into(), self.title.clone());
@@ -51,8 +51,9 @@ fn create_post_call_succeeds() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default();
 
-        let thread_id = discussion_fixture.create_discussion_and_assert(Ok(())).unwrap();
-
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(()))
+            .unwrap();
 
         let origin = RawOrigin::Signed(1);
         let create_discussion_result =

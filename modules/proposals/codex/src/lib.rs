@@ -24,9 +24,10 @@ use rstd::marker::PhantomData;
 use rstd::prelude::*;
 use rstd::vec::Vec;
 use srml_support::{decl_error, decl_module, decl_storage, ensure};
+use system::RawOrigin;
 
 /// 'Proposals codex' substrate module Trait
-pub trait Trait: system::Trait + proposal_engine::Trait {}
+pub trait Trait: system::Trait + proposal_engine::Trait + proposal_discussion::Trait {}
 
 use srml_support::traits::Currency;
 
@@ -105,14 +106,22 @@ decl_module! {
                };
             let proposal_code = text_proposal.encode();
 
+            let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
+
+            let discussion_thread_id = <proposal_discussion::Module<T>>::create_discussion(
+                cloned_origin1,
+                title.clone(),
+            )?;
+
             <proposal_engine::Module<T>>::create_proposal(
-                origin,
+                cloned_origin2,
                 parameters,
                 title,
                 body,
                 stake_balance,
                 text_proposal.proposal_type(),
-                proposal_code
+                proposal_code,
+                Some(From::<u32>::from(discussion_thread_id.into())),
             )?;
         }
 
@@ -146,15 +155,44 @@ decl_module! {
                };
             let proposal_code = proposal.encode();
 
+            let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
+
+            let discussion_thread_id = <proposal_discussion::Module<T>>::create_discussion(
+                cloned_origin1,
+                title.clone(),
+            )?;
+
             <proposal_engine::Module<T>>::create_proposal(
-                origin,
+                cloned_origin2,
                 parameters,
                 title,
                 body,
                 stake_balance,
                 proposal.proposal_type(),
-                proposal_code
+                proposal_code,
+                Some(From::<u32>::from(discussion_thread_id.into())),
             )?;
         }
+    }
+}
+
+impl<T: Trait> Module<T> {
+    // Multiplies the T::Origin.
+    // In our current substrate version system::Origin doesn't support clone(),
+    // but it will be supported in latest up-to-date substrate version.
+    // TODO: delete when T::Origin will support the clone()
+    fn double_origin(origin: T::Origin) -> (T::Origin, T::Origin) {
+        let coerced_origin = origin.into().ok().unwrap_or(RawOrigin::None);
+
+        let (cloned_origin1, cloned_origin2) = match coerced_origin {
+            RawOrigin::None => (RawOrigin::None, RawOrigin::None),
+            RawOrigin::Root => (RawOrigin::Root, RawOrigin::Root),
+            RawOrigin::Signed(account_id) => (
+                RawOrigin::Signed(account_id.clone()),
+                RawOrigin::Signed(account_id),
+            ),
+        };
+
+        (cloned_origin1.into(), cloned_origin2.into())
     }
 }

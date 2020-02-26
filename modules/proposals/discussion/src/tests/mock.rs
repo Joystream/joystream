@@ -34,7 +34,7 @@ impl crate::Trait for Test {
     type ThreadId = u32;
     type PostId = u32;
     type ThreadAuthorId = u64;
-    type PostAuthorId =  u64;
+    type PostAuthorId = u64;
 }
 
 impl system::Trait for Test {

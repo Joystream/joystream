@@ -21,11 +21,12 @@ use rstd::vec::Vec;
 use runtime_primitives::traits::EnsureOrigin;
 use srml_support::{decl_module, decl_storage, Parameter};
 
-use types::{Thread, Post};
+use types::{Post, Thread};
 
 //TODO: create_thread() ensures
 //TODO: create_post() ensures
 //TODO: select storage container for the posts (double map, inside thread)?
+//TODO: events?
 
 /// 'Proposal discussion' substrate module Trait
 pub trait Trait: system::Trait {
@@ -36,7 +37,7 @@ pub trait Trait: system::Trait {
     type PostAuthorOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
 
     /// Discussion thread Id type
-    type ThreadId: From<u32> + Parameter + Default + Copy;
+    type ThreadId: From<u32> + Into<u32> + Parameter + Default + Copy;
 
     /// Post Id type
     type PostId: From<u32> + Parameter + Default + Copy;
@@ -56,11 +57,11 @@ decl_storage! {
             Thread<T::ThreadAuthorId, T::BlockNumber>;
 
         /// Count of all threads that have been created.
-        pub ThreadCount get(fn thread_count): u32;        
-        
+        pub ThreadCount get(fn thread_count): u32;
+
         /// Map post id to corresponding post.
         pub PostById get(post_by_id): map T::PostId =>
-         	Post<T::PostAuthorId, T::BlockNumber, T::ThreadId>;
+             Post<T::PostAuthorId, T::BlockNumber, T::ThreadId>;
 
         /// Count of all posts that have been created.
         pub PostCount get(fn post_count): u32;
@@ -98,7 +99,10 @@ impl<T: Trait> Module<T> {
     }
 
     /// Create the discussion
-    pub fn create_discussion(origin: T::Origin, title: Vec<u8>) -> Result<(), &'static str> {
+    pub fn create_discussion(
+        origin: T::Origin,
+        title: Vec<u8>,
+    ) -> Result<T::ThreadId, &'static str> {
         let account_id = T::ThreadAuthorOrigin::ensure_origin(origin)?;
         let thread_author_id = T::ThreadAuthorId::from(account_id);
 
@@ -115,6 +119,6 @@ impl<T: Trait> Module<T> {
         <ThreadById<T>>::insert(thread_id, new_thread);
         ThreadCount::put(next_thread_count_value);
 
-        Ok(())
+        Ok(thread_id)
     }
 }

@@ -17,6 +17,7 @@ std = [
     'timestamp/std',
     'serde',
     'proposal_engine/std',
+    'proposal_discussion/std',
     'stake/std',
     'balances/std',
 ]
@@ -90,6 +91,11 @@ rev = '0516efe9230da112bc095e28f34a3715c2e03ca8'
 default_features = false
 package = 'substrate-proposals-engine-module'
 path = '../engine'
+
+[dependencies.proposal_discussion]
+default_features = false
+package = 'substrate-proposals-discussion-module'
+path = '../discussion'
 
 [dev-dependencies.runtime-io]
 default_features = false

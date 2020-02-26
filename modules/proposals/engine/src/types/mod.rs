@@ -213,7 +213,7 @@ impl VotingResults {
 /// 'Proposal' contains information necessary for the proposal system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId> {
+pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId, DiscussionThreadId> {
     /// Proposal type id
     pub proposal_type: u32,
 
@@ -246,9 +246,13 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId> {
 
     /// Created stake id for the proposal
     pub stake_id: Option<StakeId>,
+
+    /// Created discussion thread id for the proposal
+    pub discussion_thread_id: Option<DiscussionThreadId>,
 }
 
-impl<BlockNumber, ProposerId, Balance, StakeId> Proposal<BlockNumber, ProposerId, Balance, StakeId>
+impl<BlockNumber, ProposerId, Balance, StakeId, DiscussionThreadId>
+    Proposal<BlockNumber, ProposerId, Balance, StakeId, DiscussionThreadId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
 {
@@ -310,8 +314,8 @@ pub trait VotersParameters {
 }
 
 // Calculates quorum, votes threshold, expiration status
-struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId> {
-    proposal: &'a Proposal<BlockNumber, ProposerId, Balance, StakeId>,
+struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId, DiscussionThreadId> {
+    proposal: &'a Proposal<BlockNumber, ProposerId, Balance, StakeId, DiscussionThreadId>,
     now: BlockNumber,
     votes_count: u32,
     total_voters_count: u32,
@@ -319,8 +323,8 @@ struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId> {
     slashes: u32,
 }
 
-impl<'a, BlockNumber, ProposerId, Balance, StakeId>
-    ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId>
+impl<'a, BlockNumber, ProposerId, Balance, StakeId, DiscussionThreadId>
+    ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId, DiscussionThreadId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
 {
@@ -406,12 +410,19 @@ pub type NegativeImbalance<T> =
 pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
 
 /// Data container for the finalized proposal results
-pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, ProposerId, Balance, StakeId> {
+pub(crate) struct FinalizedProposalData<
+    ProposalId,
+    BlockNumber,
+    ProposerId,
+    Balance,
+    StakeId,
+    DiscussionThreadId,
+> {
     /// Proposal id
     pub proposal_id: ProposalId,
 
     /// Proposal to be finalized
-    pub proposal: Proposal<BlockNumber, ProposerId, Balance, StakeId>,
+    pub proposal: Proposal<BlockNumber, ProposerId, Balance, StakeId, DiscussionThreadId>,
 
     /// Proposal finalization status
     pub status: ProposalDecisionStatus,
@@ -426,7 +437,7 @@ mod tests {
 
     #[test]
     fn proposal_voting_period_expired() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
 
         proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
@@ -436,7 +447,7 @@ mod tests {
 
     #[test]
     fn proposal_voting_period_not_expired() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
 
         proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
@@ -446,7 +457,7 @@ mod tests {
 
     #[test]
     fn proposal_grace_period_expired() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
 
         proposal.approved_at = Some(1);
         proposal.parameters.grace_period = 3;
@@ -456,7 +467,7 @@ mod tests {
 
     #[test]
     fn proposal_grace_period_auto_expired() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
 
         proposal.approved_at = Some(1);
         proposal.parameters.grace_period = 0;
@@ -466,7 +477,7 @@ mod tests {
 
     #[test]
     fn proposal_grace_period_not_expired() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
 
         proposal.approved_at = Some(1);
         proposal.parameters.grace_period = 3;
@@ -476,7 +487,7 @@ mod tests {
 
     #[test]
     fn proposal_grace_period_not_expired_because_of_not_approved_proposal() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
 
         proposal.approved_at = None;
         proposal.parameters.grace_period = 3;
@@ -486,7 +497,7 @@ mod tests {
 
     #[test]
     fn define_proposal_decision_status_returns_expired() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
         let now = 5;
         proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
@@ -519,7 +530,7 @@ mod tests {
     #[test]
     fn define_proposal_decision_status_returns_approved() {
         let now = 2;
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
         proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
@@ -552,7 +563,7 @@ mod tests {
 
     #[test]
     fn define_proposal_decision_status_returns_rejected() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
         let now = 2;
 
         proposal.created_at = 1;
@@ -585,7 +596,7 @@ mod tests {
     }
     #[test]
     fn define_proposal_decision_status_returns_slashed() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
         let now = 2;
 
         proposal.created_at = 1;
@@ -619,7 +630,7 @@ mod tests {
 
     #[test]
     fn define_proposal_decision_status_returns_none() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
         let now = 2;
 
         proposal.created_at = 1;
@@ -645,7 +656,7 @@ mod tests {
 
 #[test]
 fn define_proposal_decision_status_returns_approved_before_slashing_before_rejection() {
-    let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+    let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
     let now = 2;
 
     proposal.created_at = 1;
@@ -684,7 +695,7 @@ fn define_proposal_decision_status_returns_approved_before_slashing_before_rejec
 
 #[test]
 fn define_proposal_decision_status_returns_slashed_before_rejection() {
-    let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+    let mut proposal = Proposal::<u64, u64, u64, u64, u32>::default();
     let now = 2;
 
     proposal.created_at = 1;
