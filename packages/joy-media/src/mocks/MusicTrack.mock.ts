@@ -29,3 +29,5 @@ export const MusicTrack: MusicTrackType = {
   license: ContentLicense,
   attribution: undefined
 };
+
+export const AllMusicTracks: MusicTrackType[] = [ MusicTrack ]

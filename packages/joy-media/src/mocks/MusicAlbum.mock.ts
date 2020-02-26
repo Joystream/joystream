@@ -30,3 +30,5 @@ export const MusicAlbum: MusicAlbumType = {
   license: ContentLicense,
   attribution: undefined
 };
+
+export const AllMusicAlbums: MusicAlbumType[] = [ MusicAlbum ]

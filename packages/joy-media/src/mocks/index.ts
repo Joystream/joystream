@@ -1,6 +1,7 @@
 export * from './ContentLicense.mock';
 export * from './CurationStatus.mock';
 export * from './EntityId.mock';
+export * from './FeaturedContent.mock';
 export * from './Language.mock';
 export * from './MediaObject.mock';
 export * from './MusicAlbum.mock';
