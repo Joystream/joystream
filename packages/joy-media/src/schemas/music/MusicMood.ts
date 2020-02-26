@@ -15,6 +15,8 @@ export type MusicMoodFormValues = {
 };
 
 export type MusicMoodType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   value: string
 };

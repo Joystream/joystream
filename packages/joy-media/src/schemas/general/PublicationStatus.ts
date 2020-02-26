@@ -15,6 +15,8 @@ export type PublicationStatusFormValues = {
 };
 
 export type PublicationStatusType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   value: string
 };

@@ -15,6 +15,8 @@ export type LanguageFormValues = {
 };
 
 export type LanguageType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   value: string
 };

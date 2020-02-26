@@ -48,6 +48,8 @@ export type VideoFormValues = {
 };
 
 export type VideoType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   title: string
   thumbnail: string
@@ -72,15 +74,15 @@ export function VideoToFormValues(entity?: VideoType): VideoFormValues {
     title: entity && entity.title || '',
     thumbnail: entity && entity.thumbnail || '',
     description: entity && entity.description || '',
-    language: entity && entity.language.id || 0,
+    language: entity && entity.language?.id || 0,
     firstReleased: entity && moment(entity.firstReleased * 1000).format('YYYY-MM-DD') || '',
     category: entity && entity.category?.id || 0,
     link: entity && entity.link || [],
     object: entity && entity.object?.id || 0,
-    publicationStatus: entity && entity.publicationStatus.id || 0,
+    publicationStatus: entity && entity.publicationStatus?.id || 0,
     curationStatus: entity && entity.curationStatus?.id || 0,
     explicit: entity && entity.explicit || false,
-    license: entity && entity.license.id || 0,
+    license: entity && entity.license?.id || 0,
     attribution: entity && entity.attribution || '',
     channelId: entity && entity.channelId || 0
   }

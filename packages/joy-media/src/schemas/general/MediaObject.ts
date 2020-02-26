@@ -15,6 +15,8 @@ export type MediaObjectFormValues = {
 };
 
 export type MediaObjectType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   value: string
 };

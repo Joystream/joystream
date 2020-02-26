@@ -15,6 +15,8 @@ export type ContentLicenseFormValues = {
 };
 
 export type ContentLicenseType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   value: string
 };

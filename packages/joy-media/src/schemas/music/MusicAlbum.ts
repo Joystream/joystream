@@ -63,6 +63,8 @@ export type MusicAlbumFormValues = {
 };
 
 export type MusicAlbumType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   title: string
   artist: string
@@ -107,7 +109,7 @@ export function MusicAlbumToFormValues(entity?: MusicAlbumType): MusicAlbumFormV
     publicationStatus: entity && entity.publicationStatus.id || 0,
     curationStatus: entity && entity.curationStatus?.id || 0,
     explicit: entity && entity.explicit || false,
-    license: entity && entity.license.id || 0,
+    license: entity && entity.license?.id || 0,
     attribution: entity && entity.attribution || '',
     channelId: entity && entity.channelId || 0
   }

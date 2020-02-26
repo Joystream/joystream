@@ -15,6 +15,8 @@ export type VideoCategoryFormValues = {
 };
 
 export type VideoCategoryType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   value: string
 };

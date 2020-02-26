@@ -61,6 +61,8 @@ export type MusicTrackFormValues = {
 };
 
 export type MusicTrackType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   title: string
   artist: string
@@ -100,10 +102,10 @@ export function MusicTrackToFormValues(entity?: MusicTrackType): MusicTrackFormV
     composerOrSongwriter: entity && entity.composerOrSongwriter || '',
     lyrics: entity && entity.lyrics || '',
     object: entity && entity.object?.id || 0,
-    publicationStatus: entity && entity.publicationStatus.id || 0,
+    publicationStatus: entity && entity.publicationStatus?.id || 0,
     curationStatus: entity && entity.curationStatus?.id || 0,
     explicit: entity && entity.explicit || false,
-    license: entity && entity.license.id || 0,
+    license: entity && entity.license?.id || 0,
     attribution: entity && entity.attribution || '',
     channelId: entity && entity.channelId || 0
   }
