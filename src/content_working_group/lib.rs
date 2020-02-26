@@ -1444,7 +1444,12 @@ decl_module! {
                                     // recover curator application from id
                                     .map(|curator_application_id| { Self::ensure_curator_application_exists(curator_application_id) })
                                     // remove Err cases, i.e. non-existing applications
-                                    .filter_map(|result| result.ok());
+                                    // or applications that are not in Active stage
+                                    .filter_map(|result| result.ok())
+                                    .filter(|(curator_application,_,_)| {
+                                        let application = <hiring::ApplicationById<T>>::get(curator_application.application_id);
+                                        application.stage == hiring::ApplicationStage::Active
+                                    });
 
             // Count number of successful curators provided
             let num_provided_successful_curator_application_ids = successful_curator_application_ids.len();
