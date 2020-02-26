@@ -1,4 +1,4 @@
-import { MediaTransport, ClassIdByNameMap, ChannelValidationConstraints } from './transport';
+import { MediaTransport, ChannelValidationConstraints } from './transport';
 import { EntityId, Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
