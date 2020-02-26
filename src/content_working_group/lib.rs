@@ -1728,8 +1728,11 @@ decl_module! {
                 hiring::Module::<T>::ensure_can_add_application(curator_opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
             )?;
 
-            // Ensure member does not have an application to this opening
-            Self::ensure_member_has_no_active_application_on_opening(curator_opening.opening_id, member_id)?;
+            // Ensure member does not have an active application to this opening
+            Self::ensure_member_has_no_active_application_on_opening(
+                curator_opening.curator_applications,
+                member_id
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -2061,14 +2064,12 @@ impl<T: Trait> versioned_store_permissions::CredentialChecker<T> for Module<T> {
 
 impl<T: Trait> Module<T> {
     fn ensure_member_has_no_active_application_on_opening(
-        opening_id: CuratorOpeningId<T>,
+        curator_applications: CuratorApplicationIdSet<T>,
         member_id: T::MemberId,
     ) -> Result<(), &'static str> {
-        for (_id, curator_application) in <CuratorApplicationById<T>>::enumerate() {
+        for curator_application_id in curator_applications {
+            let curator_application = CuratorApplicationById::<T>::get(curator_application_id);
             // Look for application by the member for the opening
-            if curator_application.curator_opening_id != opening_id {
-                continue;
-            }
             if curator_application.member_id != member_id {
                 continue;
             }
