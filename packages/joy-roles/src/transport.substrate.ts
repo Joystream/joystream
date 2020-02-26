@@ -179,7 +179,7 @@ export class Transport extends TransportBase implements ITransport {
     const memberIds = values.linked_keys.filter((v, k) => values.linked_values[k].is_active).reverse()
 
     let leadExists = false
-
+	
     // If there's a lead ID, then make sure they're promoted to the top
     const leadId = (await this.api.query.contentWorkingGroup.currentLeadId()) as Option<LeadId>
     if (leadId.isSome) {

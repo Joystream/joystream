@@ -618,6 +618,7 @@ export class AdminController extends Controller<State, ITransport> {
     const tx = this.api.tx.contentWorkingGroup.fillCuratorOpening(
       new u32(openingId),
       applications,
+	  null,
     )
     tx.signAndSend(creatorAddress, ({ events = [], status }) => {
       if (status.isFinalized) {
