@@ -194,6 +194,10 @@ export class SubstrateTransport extends MediaTransport {
     return arr && arr.length ? arr[0] : undefined
   }
 
+  async allMediaObjects(): Promise<MediaObjectType[]> {
+    return await this.findPlainEntitiesByClassName('MediaObject')
+  }
+
   async allVideos(): Promise<VideoType[]> {
     return await this.findPlainEntitiesByClassName('Video')
   }
@@ -204,10 +208,6 @@ export class SubstrateTransport extends MediaTransport {
 
   async allMusicAlbums(): Promise<MusicAlbumType[]> {
     return await this.findPlainEntitiesByClassName('MusicAlbum')
-  }
-
-  async allMediaObjects(): Promise<MediaObjectType[]> {
-    return this.notImplementedYet(); // TODO impl: get from data storafe module (Substrate)
   }
 
   async allContentLicenses (): Promise<ContentLicenseType[]> {

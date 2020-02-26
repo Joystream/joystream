@@ -125,6 +125,8 @@ export abstract class MediaTransport extends TransportBase {
     return content?.featuredAlbums || []
   }
 
+  abstract allMediaObjects(): Promise<MediaObjectType[]>
+
   abstract allVideos(): Promise<VideoType[]>
 
   abstract allMusicTracks(): Promise<MusicTrackType[]>
@@ -142,6 +144,11 @@ export abstract class MediaTransport extends TransportBase {
 
     return (await this.allVideos())
       .filter(x => x.channelId && accountChannelIds.has(x.channelId))
+  }
+
+  async mediaObjectById(id: EntityId): Promise<MediaObjectType | undefined> {
+    return (await this.allMediaObjects())
+      .find(x => id && id.eq(x.id))
   }
 
   async videoById(id: EntityId): Promise<VideoType | undefined> {
@@ -183,6 +190,10 @@ export abstract class MediaTransport extends TransportBase {
       .slice(0, limit)
   }
 
+  async mediaObjectClass() {
+    return await this.classByName('MediaObject')
+  }
+
   async videoClass() {
     return await this.classByName('Video')
   }
@@ -194,8 +205,6 @@ export abstract class MediaTransport extends TransportBase {
   async musicAlbumClass() {
     return await this.classByName('MusicAlbum')
   }
-
-  abstract allMediaObjects(): Promise<MediaObjectType[]>
 
   abstract allContentLicenses(): Promise<ContentLicenseType[]>
   abstract allCurationStatuses(): Promise<CurationStatusType[]>
