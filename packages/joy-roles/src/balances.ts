@@ -37,7 +37,7 @@ export const Sort = (xs: Balance[]): Balance[] => {
     } else if (a.gt(b)) {
       return 1
     }
-    return 0
+    return -1
   })
   return xs
 }

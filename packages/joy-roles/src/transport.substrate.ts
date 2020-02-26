@@ -340,9 +340,10 @@ export class Transport extends TransportBase implements ITransport {
   async openingApplicationRanks(openingId: number): Promise<Balance[]> {
     const applications = await this.curatorOpeningApplications(openingId)
     return Sort(
-      await Promise.all(
+      (await Promise.all(
         applications.map(application => this.openingApplicationTotalStake(application.hiringModule))
-      )
+      ))
+	  .filter( (b) => !b.eq(Zero) )
     )
   }
 

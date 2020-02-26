@@ -618,7 +618,7 @@ export class AdminController extends Controller<State, ITransport> {
     const tx = this.api.tx.contentWorkingGroup.fillCuratorOpening(
       new u32(openingId),
       applications,
-	  null,
+      null,
     )
     tx.signAndSend(creatorAddress, ({ events = [], status }) => {
       if (status.isFinalized) {
@@ -768,7 +768,7 @@ export const AdminView = View<AdminController, State>(
                   }
                 </Dropdown.Menu>
               </Dropdown>
-                <Modal open={state.modalOpen} onClose={() => controller.closeModal()}>
+              <Modal open={state.modalOpen} onClose={() => controller.closeModal()}>
                 <Modal.Content image>
                   <Modal.Description>
                     <NewOpening desc={state.openingDescriptor} fn={(desc) => controller.newOpening(address, desc)} />
@@ -970,7 +970,7 @@ const NewOpening = (props: NewOpeningProps) => {
       </Form.Field>
       <Form.Field>
         <label>Role staking policy</label>
-        <TextArea value={text} rows={10} onChange={(e:any, {value}:any) => setText(value)} />
+        <TextArea value={text} rows={10} onChange={(e: any, { value }: any) => setText(value)} />
       </Form.Field>
 
       <Form.Field align="right">

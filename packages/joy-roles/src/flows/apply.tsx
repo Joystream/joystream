@@ -192,45 +192,27 @@ export type StakeRankSelectorProps = {
   stake: Balance
   setStake: (b: Balance) => void
   step: Balance
+  otherStake: Balance
+  requirement: IStakeRequirement
 }
 
 export function StakeRankSelector(props: StakeRankSelectorProps) {
   const slotCount = props.slots.length
   const [rank, setRank] = useState(1);
-  const settings = {
-    min: 0,
-    max: slotCount,
-    step: 1,
-    onChange: (value: any) => {
-      if (value >= props.slots.length) {
-        value = props.slots.length
-        props.setStake(props.slots[value - 1])
-      } else if (value > 0 && !focused) {
-        props.setStake(props.slots[value - 1])
-      } else if (!focused) {
-        props.setStake(props.slots[0])
-      }
-      setRank(value)
-    }
-  };
+  const minStake = props.requirement.value
 
   const ticks = []
   for (var i = 0; i < slotCount; i++) {
     ticks.push(<div key={i} className="tick" style={{ width: (100 / slotCount) + '%' }}>{slotCount - i}</div>)
   }
 
-  const tickLabel = <div className="ui pointing above label" style={{ left: ((100 / slotCount) * rank) + '%' }}>
-    Your rank
-        <div className="detail">{(slotCount - rank) + 1}</div>
-  </div>
-
   const findRankValue = (newStake: Balance): number => {
-    if (newStake.gt(props.slots[slotCount - 1])) {
+    if (newStake.add(props.otherStake).gt(props.slots[slotCount - 1])) {
       return slotCount
     }
 
     for (let i = slotCount; i--; i >= 0) {
-      if (newStake.gt(props.slots[i])) {
+      if (newStake.add(props.otherStake).gt(props.slots[i])) {
         return i + 1
       }
     }
@@ -238,7 +220,9 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
     return 0
   }
 
-  const [focused, setFocused] = useState(false)
+  for (let i = 0; i < props.slots.length; i++) {
+    console.log(i, props.slots[i].toNumber())
+  }
 
   const changeValue = (e: any, { value }: any) => {
     const newStake = new u128(value)
@@ -250,50 +234,29 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
   }, [])
 
   let slider = null
-  if (slotCount > 1) {
-    slider = (
-      <div>
-        <Slider discrete className="labeled" value={rank} color="teal" settings={settings} />
-        <div className="ticks">
-          <div className="scale">
-            {ticks}
-          </div>
-          {tickLabel}
-        </div>
-      </div>
-    )
-  }
-
   return (
     <Container className="stake-rank-selector">
       <h4>Choose a stake</h4>
       <Container className="controls">
-        {props.slots.length > 0 && <Button circular icon='angle double left' onClick={() => { setRank(1) }} />}
-        {props.slots.length > 0 && <Button circular icon='angle left' onClick={() => { rank > 1 && setRank(rank - 1) }} />}
         <Input label="JOY"
           labelPosition="right"
           onChange={changeValue}
           type="number"
-          onBlur={() => { setFocused(false) }}
-          onFocus={() => { setFocused(true) }}
           step={slotCount > 1 ? props.step.toNumber() : 1}
           value={props.stake.toNumber() > 0 ? props.stake.toNumber() : 0}
-          min={props.slots.length > 0 ? props.slots[0].toNumber() : 0}
+          min={props.slots.length > 0 ? props.slots[0].sub(props.otherStake).toNumber() : 0}
+          error={props.stake.lt(minStake)}
         />
-        {props.slots.length > 0 && <Button circular icon='angle right' onClick={() => { rank <= slotCount && setRank(rank + 1) }} />}
-        {props.slots.length > 0 && <Button circular icon='angle double right' onClick={() => { rank < slotCount && setRank(slotCount) }} />}
-        <Container className='ranks-and-stake'>
-          <Label size='large'>
-            <Icon name={rankIcon(rank, slotCount)} />
-            Estimated rank
+        <Label size='large'>
+          <Icon name={rankIcon(rank, slotCount)} />
+          Estimated rank
                         <Label.Detail>{(slotCount + 1) - rank} / {slotCount}</Label.Detail>
-          </Label>
-          <Label size='large'>
-            <Icon name="shield" />
-            Your stake
+        </Label>
+        <Label size='large'>
+          <Icon name="shield" />
+          Your stake
                         <Label.Detail>{formatBalance(props.stake)}</Label.Detail>
-          </Label>
-        </Container>
+        </Label>
       </Container>
       {slider}
     </Container>
@@ -490,6 +453,7 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
       setValue={props.setSelectedApplicationStake}
       maxNumberOfApplications={props.applications.maxNumberOfApplications}
       numberOfApplications={props.applications.numberOfApplications}
+      otherStake={props.selectedRoleStake}
       {...props}
     />
   }
@@ -505,6 +469,7 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
       setValue={props.setSelectedRoleStake}
       maxNumberOfApplications={props.applications.maxNumberOfApplications}
       numberOfApplications={props.applications.numberOfApplications}
+      otherStake={props.selectedApplicationStake}
       {...props}
     />
   }
@@ -576,7 +541,7 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
 
   const tickLabel = <div className="ui pointing below label" style={{ left: ((100 / slotCount) * rank) + '%' }}>
     Your rank
-        <div className="detail">{(slotCount - rank) + 1}</div>
+	  <div className="detail">{(slotCount - rank) + 1}/{props.applications.maxNumberOfApplications}</div>
   </div>
 
   let tickContainer = null
@@ -594,7 +559,7 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
   let defactoMinStakeMessage = null
   if (props.applications.numberOfApplications >= props.applications.maxNumberOfApplications) {
     defactoMinStakeMessage = (
-      <span>	However, in order to be in the top {props.applications.maxNumberOfApplications} applications, you wil need to stake a combined total of <strong>{formatBalance(minStake)}</strong>.</span>
+      <span>	However, in order to be in the top {props.applications.maxNumberOfApplications} applications, you wil need to stake a combined total of more than <strong>{formatBalance(minStake)}</strong>.</span>
     )
   }
 
@@ -673,7 +638,7 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
                 <Label color='grey'>
                   <Icon name={rankIcon(rank, slotCount)} />
                   Estimated rank
-                                    <Label.Detail>{(slotCount - rank) + 1}/{slotCount + 1}</Label.Detail>
+                                    <Label.Detail>{(slotCount - rank) + 1}/{props.applications.maxNumberOfApplications}</Label.Detail>
                 </Label>
               </Grid.Column>
             </Grid.Row>
@@ -711,6 +676,7 @@ function StakeRankMiniSelector(props: StakeRankMiniSelectorProps) {
         min={props.min.toNumber()}
         step={props.step.toNumber()}
         value={props.value.toNumber() > 0 ? props.value.toNumber() : null}
+        error={props.value.lt(props.min)}
       />
     </Container>
   )
@@ -726,6 +692,7 @@ type CaptureStake1UpProps = ApplicationStatusProps & {
   maxNumberOfApplications: number
   slots: Balance[] // List of stakes to beat
   step: Balance
+  otherStake: Balance
 }
 
 // This is not a perfect generator! 'User' would return 'an', for example,
