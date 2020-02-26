@@ -6,6 +6,7 @@ import { MusicAlbumType, MusicAlbumCodec } from './schemas/music/MusicAlbum';
 import { VideoType, VideoCodec } from './schemas/video/Video';
 import { ContentLicenseType, ContentLicenseCodec } from './schemas/general/ContentLicense';
 import { CurationStatusType, CurationStatusCodec } from './schemas/general/CurationStatus';
+import { FeaturedContentType, FeaturedContentCodec } from './schemas/general/FeaturedContent';
 import { LanguageType, LanguageCodec } from './schemas/general/Language';
 import { MediaObjectType, MediaObjectCodec } from './schemas/general/MediaObject';
 import { MusicGenreType, MusicGenreCodec } from './schemas/music/MusicGenre';
@@ -36,6 +37,7 @@ export interface ChannelValidationConstraints {
 export interface ClassIdByNameMap {
   ContentLicense?: ClassId
   CurationStatus?: ClassId
+  FeaturedContent?: ClassId
   Language?: ClassId
   MediaObject?: ClassId
   MusicAlbum?: ClassId
@@ -51,6 +53,7 @@ export interface ClassIdByNameMap {
 export const EntityCodecByClassNameMap = {
   ContentLicense: ContentLicenseCodec,
   CurationStatus: CurationStatusCodec,
+  FeaturedContent: FeaturedContentCodec,
   Language: LanguageCodec,
   MediaObject: MediaObjectCodec,
   MusicAlbum: MusicAlbumCodec,
@@ -105,9 +108,28 @@ export abstract class MediaTransport extends TransportBase {
     return map
   }
 
+  abstract featuredContent(): Promise<FeaturedContentType | undefined>
+
+  async topVideo(): Promise<VideoType | undefined> {
+    const content = await this.featuredContent()
+    return content?.topVideo
+  }
+
+  async featuredVideos(): Promise<VideoType[]> {
+    const content = await this.featuredContent()
+    return content?.featuredVideos || []
+  }
+
+  async featuredAlbums(): Promise<MusicAlbumType[]> {
+    const content = await this.featuredContent()
+    return content?.featuredAlbums || []
+  }
+
   abstract allVideos(): Promise<VideoType[]>
 
-  abstract featuredVideos(): Promise<VideoType[]>
+  abstract allMusicTracks(): Promise<MusicTrackType[]>
+
+  abstract allMusicAlbums(): Promise<MusicAlbumType[]>
 
   async videosByChannelId(channelId: ChannelId): Promise<VideoType[]> {
     return (await this.allVideos())
@@ -124,6 +146,16 @@ export abstract class MediaTransport extends TransportBase {
 
   async videoById(id: EntityId): Promise<VideoType | undefined> {
     return (await this.allVideos())
+      .find(x => id && id.eq(x.id))
+  }
+
+  async musicTrackById(id: EntityId): Promise<MusicTrackType | undefined> {
+    return (await this.allMusicTracks())
+      .find(x => id && id.eq(x.id))
+  }
+
+  async musicAlbumById(id: EntityId): Promise<MusicAlbumType | undefined> {
+    return (await this.allMusicAlbums())
       .find(x => id && id.eq(x.id))
   }
 
@@ -151,6 +183,10 @@ export abstract class MediaTransport extends TransportBase {
       .slice(0, limit)
   }
 
+  async videoClass() {
+    return await this.classByName('Video')
+  }
+
   async musicTrackClass() {
     return await this.classByName('MusicTrack')
   }
@@ -158,13 +194,6 @@ export abstract class MediaTransport extends TransportBase {
   async musicAlbumClass() {
     return await this.classByName('MusicAlbum')
   }
-
-  async videoClass() {
-    return await this.classByName('Video')
-  }
-  
-  abstract musicTrackById(id: EntityId): Promise<MusicTrackType>
-  abstract musicAlbumById(id: EntityId): Promise<MusicAlbumType>
 
   abstract allMediaObjects(): Promise<MediaObjectType[]>
 

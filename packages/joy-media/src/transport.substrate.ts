@@ -22,6 +22,7 @@ import { ApiProps } from '@polkadot/react-api/types';
 import { Vec } from '@polkadot/types';
 import { LinkageResult } from '@polkadot/types/codec/Linkage';
 import { ChannelCodec } from './schemas/channel/Channel';
+import { FeaturedContentType } from './schemas/general/FeaturedContent';
 
 const FIRST_CHANNEL_ID = 0;
 const FIRST_CLASS_ID = 1;
@@ -188,20 +189,21 @@ export class SubstrateTransport extends MediaTransport {
     return (new CodecClass(klass)).toPlainObjects(entities)
   }
 
+  async featuredContent(): Promise<FeaturedContentType | undefined> {
+    const arr = await this.findPlainEntitiesByClassName('FeaturedContent')
+    return arr && arr.length ? arr[0] : undefined
+  }
+
   async allVideos(): Promise<VideoType[]> {
     return await this.findPlainEntitiesByClassName('Video')
   }
 
-  async featuredVideos(): Promise<VideoType[]> {
-    return this.notImplementedYet(); // TODO impl
+  async allMusicTracks(): Promise<MusicTrackType[]> {
+    return await this.findPlainEntitiesByClassName('MusicTrack')
   }
 
-  async musicTrackById (_id: EntityId): Promise<MusicTrackType> {
-    return this.notImplementedYet(); // TODO impl
-  }
-
-  async musicAlbumById (_id: EntityId): Promise<MusicAlbumType> {
-    return this.notImplementedYet(); // TODO impl
+  async allMusicAlbums(): Promise<MusicAlbumType[]> {
+    return await this.findPlainEntitiesByClassName('MusicAlbum')
   }
 
   async allMediaObjects(): Promise<MediaObjectType[]> {

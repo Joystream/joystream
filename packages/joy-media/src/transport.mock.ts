@@ -1,5 +1,5 @@
 import { MediaTransport, ChannelValidationConstraints } from './transport';
-import { EntityId, Entity, Class } from '@joystream/types/versioned-store';
+import { Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
@@ -7,6 +7,7 @@ import { VideoType } from './schemas/video/Video';
 import * as mocks from './mocks';
 import { ContentLicenseType } from './schemas/general/ContentLicense';
 import { CurationStatusType } from './schemas/general/CurationStatus';
+import { FeaturedContentType } from './schemas/general/FeaturedContent';
 import { LanguageType } from './schemas/general/Language';
 import { MediaObjectType } from './schemas/general/MediaObject';
 import { MusicGenreType } from './schemas/music/MusicGenre';
@@ -35,20 +36,24 @@ export class MockTransport extends MediaTransport {
     return this.notImplementedYet(); // TODO impl
   }
 
+  allEntities (): Promise<Entity[]> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
   allVideos(): Promise<VideoType[]> {
     return this.promise(mocks.AllVideos)
   }
 
-  featuredVideos(): Promise<VideoType[]> {
-    return this.promise(mocks.AllVideos)
+  allMusicTracks(): Promise<MusicTrackType[]> {
+    return this.promise(mocks.AllMusicTracks)
   }
 
-  musicTrackById (_id: EntityId): Promise<MusicTrackType> {
-    return this.promise(mocks.MusicTrack);
+  allMusicAlbums(): Promise<MusicAlbumType[]> {
+    return this.promise(mocks.AllMusicAlbums)
   }
 
-  musicAlbumById (_id: EntityId): Promise<MusicAlbumType> {
-    return this.promise(mocks.MusicAlbum);
+  featuredContent(): Promise<FeaturedContentType | undefined> {
+    return this.promise(mocks.FeaturedContent)
   }
 
   allContentLicenses (): Promise<ContentLicenseType[]> {
@@ -85,9 +90,5 @@ export class MockTransport extends MediaTransport {
 
   allVideoCategories(): Promise<VideoCategoryType[]> {
     return this.promise(mocks.AllVideoCategories);
-  }
-  
-  allEntities (): Promise<Entity[]> {
-    return this.notImplementedYet(); // TODO impl
   }
 }
