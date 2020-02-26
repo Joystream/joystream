@@ -1462,7 +1462,7 @@ fn add_member_and_apply_on_opening(
         let _ = balances::Module::<Test>::deposit_creating(&source_account, total_balance);
     }
 
-    let expected_curator_application_id = NextCuratorApplicationId::<Test>::get();
+    let expected_hiring_application_id = <hiring::NextApplicationId<Test>>::get();
 
     let old_curator_opening = CuratorOpeningById::<Test>::get(curator_opening_id);
 
@@ -1502,7 +1502,7 @@ fn add_member_and_apply_on_opening(
         role_account: curator_applicant_role_account,
         curator_opening_id: curator_opening_id,
         member_id: curator_applicant_member_id,
-        application_id: expected_curator_application_id,
+        application_id: expected_hiring_application_id,
     };
 
     assert_eq!(expected_curator_application, new_curator_application);
