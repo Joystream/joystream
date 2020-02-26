@@ -9,13 +9,14 @@ import { isMusicChannel, isVideoChannel, isAccountAChannelOwner } from './Channe
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 
 type ChannelPreviewProps = {
-  channel: ChannelEntity,
+  channel: ChannelEntity
   size?: ChannelAvatarSize
+  withDescription?: boolean
 };
 
 export const ChannelPreview = (props: ChannelPreviewProps) => {
   const { myAccountId } = useMyMembership();
-  const { channel, size } = props;
+  const { channel, size, withDescription } = props;
 
   let subtitle: string | undefined;
   let icon: 'music' | 'film' | undefined;
@@ -89,7 +90,9 @@ export const ChannelPreview = (props: ChannelPreviewProps) => {
           </div>
         }
 
-        <ReactMarkdown className='JoyMemo--full' source={channel.description} linkTarget='_blank' />
+        {withDescription &&
+          <ReactMarkdown className='JoyMemo--full' source={channel.description} linkTarget='_blank' />
+        }
       </div>
 
       {/* // TODO uncomment when we calculate reward and count of videos in channel: */}

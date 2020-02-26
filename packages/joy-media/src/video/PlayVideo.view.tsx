@@ -4,27 +4,22 @@ import { MediaView } from '../MediaView';
 import { PlayVideoProps, PlayVideo } from './PlayVideo';
 import { ChannelId } from '@joystream/types/content-working-group';
 import EntityId from '@joystream/types/versioned-store/EntityId';
-import { MockVideoChannel } from '../stories/data/ChannelSamples';
 
 type Props = PlayVideoProps;
 
 export const PlayVideoView = MediaView<Props>({
   component: PlayVideo,
   resolveProps: async (props) => {
-    const { transport, id } = props;
-    const video = await transport.videoById(id);
+    const { transport, id } = props
 
-    if (!video) {
-      return {};
-    }
+    const video = await transport.videoById(id)
+    if (!video) return {}
 
-    // TODO get channel id from video object!
-    const channelId = new ChannelId(MockVideoChannel.id);
-    
-    const channel = await transport.channelById(channelId);
-    const featuredVideos = await transport.featuredVideos();
+    const channelId = new ChannelId(video.channelId)
+    const channel = await transport.channelById(channelId)
+    const featuredVideos = await transport.featuredVideos()
 
-    return { video, channel, featuredVideos };
+    return { video, channel, featuredVideos }
   }
 });
 
@@ -39,5 +34,5 @@ export const PlayVideoWithRouter = (props: Props & RouteComponentProps<any>) => 
     }
   }
 
-  return <em>ERROR: Invalid channel id in URL: ${id}</em>;
+  return <em>ERROR: Invalid video id in URL: ${id}</em>;
 }

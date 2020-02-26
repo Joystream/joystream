@@ -50,7 +50,7 @@ export function PlayVideo (props: PlayVideoProps) {
     </Table.Row>
 
   const metaTable = <>
-    <h3>Details</h3>
+    <h3>Video details</h3>
     <Table basic='very' compact className='JoyPlayAlbum_MetaInfo'>
       <Table.Body>
         {metaField(Fields.firstReleased, printReleaseDate(video.firstReleased))}
