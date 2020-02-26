@@ -196,18 +196,6 @@ export class SubstrateTransport extends MediaTransport {
     return this.notImplementedYet(); // TODO impl
   }
 
-  async musicTrackClass(): Promise<Class> {
-    return this.notImplementedYet(); // TODO impl
-  }
-
-  async musicAlbumClass(): Promise<Class> {
-    return this.notImplementedYet(); // TODO impl
-  }
-
-  async videoClass(): Promise<Class> {
-    return this.notImplementedYet(); // TODO impl
-  }
-
   async musicTrackById (_id: EntityId): Promise<MusicTrackType> {
     return this.notImplementedYet(); // TODO impl
   }

@@ -43,18 +43,6 @@ export class MockTransport extends MediaTransport {
     return this.promise(mocks.AllVideos)
   }
 
-  musicTrackClass(): Promise<Class> {
-    return this.notImplementedYet(); // TODO impl
-  }
-
-  musicAlbumClass(): Promise<Class> {
-    return this.notImplementedYet(); // TODO impl
-  }
-
-  videoClass(): Promise<Class> {
-    return this.notImplementedYet(); // TODO impl
-  }
-
   musicTrackById (_id: EntityId): Promise<MusicTrackType> {
     return this.promise(mocks.MusicTrack);
   }

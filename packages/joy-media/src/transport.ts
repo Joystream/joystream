@@ -151,9 +151,17 @@ export abstract class MediaTransport extends TransportBase {
       .slice(0, limit)
   }
 
-  abstract musicTrackClass(): Promise<Class>
-  abstract musicAlbumClass(): Promise<Class>
-  abstract videoClass(): Promise<Class>
+  async musicTrackClass() {
+    return await this.classByName('MusicTrack')
+  }
+
+  async musicAlbumClass() {
+    return await this.classByName('MusicAlbum')
+  }
+
+  async videoClass() {
+    return await this.classByName('Video')
+  }
   
   abstract musicTrackById(id: EntityId): Promise<MusicTrackType>
   abstract musicAlbumById(id: EntityId): Promise<MusicAlbumType>
