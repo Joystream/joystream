@@ -35,6 +35,8 @@ function substrateToPlain<T> (x: Codec): T | undefined {
  * 
  * Based on code of transformPropertyValue from another Joystream repo:
  * /versioned-store-js/src/transformPropertyValue.ts
+ * 
+ * @throws Error
  */
 function plainToSubstrate(propType: string, value: any): PropertyValue {
 
@@ -88,8 +90,7 @@ function plainToSubstrate(propType: string, value: any): PropertyValue {
     case 'InternalVec': return ok(new PV.InternalVec(value as string[]))
 
     default: {
-      console.log(`Unknown property type name: ${propType}`)
-      return undefined
+      throw new Error(`Unknown property type name: ${propType}`)
     }
   }
 }
@@ -98,13 +99,30 @@ function propNameToJsFieldStyle (humanFriendlyPropName: string): string {
   return camelCase(humanFriendlyPropName);
 }
 
+interface HasTypeField {
+  type: string
+}
+
+export function isInternalProp (field: HasTypeField): boolean {
+  return field.type === 'Internal'
+}
+
+export function isInternalVecProp (field: HasTypeField): boolean {
+  return field.type === 'InternalVec'
+}
+
 type PropMeta = {
   index: number
   type: string
 }
 
 export type PlainEntity = {
+  // Fields common for every entity class:
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
+
+  // Unique fields per entity class:
   [propName: string]: any
 }
 
@@ -130,14 +148,20 @@ export abstract class EntityCodec<T extends PlainEntity> {
    * Converts an entity of Substrate codec type to a plain JS object.
    */
   toPlainObject (entity: Entity): T | undefined {
-    const res: PlainEntity = { id: entity.id.toNumber() };
+    const res: PlainEntity = {
+      classId: entity.class_id.toNumber(),
+      inClassSchemaIndexes: entity.in_class_schema_indexes.map(x => x.toNumber()),
+      id: entity.id.toNumber()
+    }
+
     entity.entity_values.forEach(v => {
       const propIdx = v.in_class_index.toNumber();
       const propName = this.propIndexToNameMap.get(propIdx);
       if (propName) {
         res[propName] = substrateToPlain(v.value.value);
       }
-    });
+    })
+
     return res as T;
   }
   
@@ -156,16 +180,29 @@ export abstract class EntityCodec<T extends PlainEntity> {
 
     // TODO check required fields! save prop metadata in constructor?
 
+    // console.log('propNameToMetaMap propNameToMetaMap', this.propNameToMetaMap)
+    // console.log('toSubstrateUpdate updatedProps', updatedProps)
+
     const res = new VecClassPropertyValue();
     Object.keys(updatedProps).map(propName => {
       const meta = this.propNameToMetaMap.get(propName);
       if (meta) {
         const propType = meta.type as PropertyTypeName;
-        const propValue = (updatedProps as any)[propName];
-        res.push(new ClassPropertyValue({
-          in_class_index: new u16(meta.index),
-          value: plainToSubstrate(propType, propValue)
-        }));
+        const plainValue = (updatedProps as any)[propName];
+  
+        let codecValue: PropertyValue | undefined
+        try {
+          codecValue = plainToSubstrate(propType, plainValue)
+        } catch (err) {
+          console.error(`Failed to convert plain value '${plainValue}' to Substrate codec. Error:`, err)
+        }
+
+        if (codecValue) {
+          res.push(new ClassPropertyValue({
+            in_class_index: new u16(meta.index),
+            value: codecValue
+          }))
+        }
       }
     });
     return res;
