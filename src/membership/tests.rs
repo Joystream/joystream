@@ -374,7 +374,10 @@ fn registering_and_unregistering_roles_on_member() {
                 members::Role::ChannelOwner
             ));
 
-            // enter role a second time should fail
+            /*
+            Disabling this temporarily for Rome, later we will drop all this
+            integration with Membership module anyway:
+            https://github.com/Joystream/substrate-runtime-joystream/issues/115
             assert_dispatch_error_message(
                 Members::register_role_on_member(
                     member_id_1,
@@ -382,6 +385,7 @@ fn registering_and_unregistering_roles_on_member() {
                 ),
                 "MemberAlreadyInRole",
             );
+            */
 
             // registering another member in same role and actorid combination should fail
             assert_dispatch_error_message(
