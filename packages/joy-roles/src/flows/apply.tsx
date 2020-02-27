@@ -990,7 +990,7 @@ export function DoneStage(props: DoneStageProps) {
       <p>
         You can track the progress of your
 		application in the <Link to="#working-group/my-roles">My roles</Link> section. Note that your application is attached
-		to your role key (see below).  If you have any issues, you can message the group lead in in the <Link to="#forum">Forum</Link> or contact the them directly.
+		to your role key (see below).  If you have any issues, you can message the group lead in in the <Link to="#forum">Forum</Link> or contact them directly.
 	  </p>
 
       <h4>Your new role key</h4>
@@ -1123,8 +1123,7 @@ export const FlowModal = Loadable<FlowModalProps>(
         setActiveStep(ProgressSteps.Done)
       })
         .catch((e) => {
-          setTxInProgress(false)
-          console.error("makeApplicationTransaction", e)
+          setTimeout(() => setTxInProgress(false), 100);
         })
     }
 
