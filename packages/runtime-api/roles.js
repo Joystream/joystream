@@ -142,9 +142,8 @@ class RolesApi
     if (memberId == undefined) {
       throw new Error('Account is not a member!');
     }
-    const converted = memberId.raw;
 
-    const tx = this.base.api.tx.actors.roleEntryRequest(role, converted);
+    const tx = this.base.api.tx.actors.roleEntryRequest(role, memberId);
     return await this.base.signAndSend(roleAccountId, tx);
   }
 
