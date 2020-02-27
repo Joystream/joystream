@@ -1349,7 +1349,7 @@ dependencies = [
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex-literal 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "joystream-node-runtime 6.1.0 (git+https://github.com/mnaamani/substrate-runtime-joystream?rev=8267837a3b2020bd55e46eed250f58630523eaa0)",
+ "joystream-node-runtime 6.1.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=b161c0c4ef847978a715c6beeaeadac0fadc9a72)",
  "jsonrpc-core 13.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1386,7 +1386,7 @@ dependencies = [
 [[package]]
 name = "joystream-node-runtime"
 version = "6.1.0"
-source = "git+https://github.com/mnaamani/substrate-runtime-joystream?rev=8267837a3b2020bd55e46eed250f58630523eaa0#8267837a3b2020bd55e46eed250f58630523eaa0"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=b161c0c4ef847978a715c6beeaeadac0fadc9a72#b161c0c4ef847978a715c6beeaeadac0fadc9a72"
 dependencies = [
  "parity-scale-codec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "safe-mix 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -5863,7 +5863,7 @@ dependencies = [
 "checksum itertools 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "87fa75c9dea7b07be3138c49abbb83fd4bea199b5cdc76f9804458edc5da0d6e"
 "checksum itoa 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "501266b7edd0174f8530248f87f99c88fbe60ca4ef3dd486835b8d8d53136f7f"
 "checksum jobserver 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)" = "f2b1d42ef453b30b7387e113da1c83ab1605d90c5b4e0eb8e96d016ed3b8c160"
-"checksum joystream-node-runtime 6.1.0 (git+https://github.com/mnaamani/substrate-runtime-joystream?rev=8267837a3b2020bd55e46eed250f58630523eaa0)" = "<none>"
+"checksum joystream-node-runtime 6.1.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=b161c0c4ef847978a715c6beeaeadac0fadc9a72)" = "<none>"
 "checksum js-sys 0.3.31 (registry+https://github.com/rust-lang/crates.io-index)" = "d8657b7ca06a6044ece477f6900bf7670f8b5fd0cce177a1d7094eef51e0adf4"
 "checksum jsonrpc-client-transports 13.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8dbf2466adbf6d5b4e618857f22be40b1e1cc6ed79d72751324358f6b539b06d"
 "checksum jsonrpc-core 13.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "91d767c183a7e58618a609499d359ce3820700b3ebb4823a18c343b4a2a41a0d"
