@@ -33,7 +33,7 @@ import { Slider } from "react-semantic-ui-range";
 import Identicon from '@polkadot/react-identicon';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
-import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema'
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings'
 
 import {
   GroupMemberView, GroupMember,
@@ -48,7 +48,7 @@ import {
   ApplicationDetails,
   QuestionField,
   QuestionSection,
-} from '@joystream/types/hiring/schemas/role.schema'
+} from '@joystream/types/hiring/schemas/role.schema.typings'
 
 import { Loadable } from '@polkadot/joy-utils/index'
 

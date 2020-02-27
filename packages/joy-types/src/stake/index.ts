@@ -98,7 +98,7 @@ export class Stake extends JoyStruct<IStake> {
 export function registerStakeTypes () {
     try {
       getTypeRegistry().register({
-        StakeId,
+        StakeId: 'u64',
         Stake,
       });
     } catch (err) {

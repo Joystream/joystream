@@ -6,7 +6,7 @@ import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
 import { Controller, Params, View } from '@polkadot/joy-utils/index'
 
-import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema'
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings'
 
 import { ITransport } from '../transport'
 

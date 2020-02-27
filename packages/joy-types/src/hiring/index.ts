@@ -4,7 +4,7 @@ import { BlockNumber, Balance } from '@polkadot/types/interfaces';
 import { StakeId } from '../stake';
 import { JoyStruct } from '../JoyStruct';
 
-import { GenericJoyStreamRoleSchema } from './schemas/role.schema'
+import { GenericJoyStreamRoleSchema } from './schemas/role.schema.typings'
 
 import ajv from 'ajv'
 
@@ -257,7 +257,8 @@ export class StakingPolicy extends JoyStruct<IStakingPolicy> {
   }
 };
 
-const schemaValidator = new ajv({ allErrors: true }).compile(require('./schemas/role.schema.json'))
+import * as role_schema_json from './schemas/role.schema.json'
+const schemaValidator = new ajv({ allErrors: true }).compile(role_schema_json)
 
 export type IOpening = {
   created: BlockNumber,
@@ -343,8 +344,8 @@ export class Application extends JoyStruct<IApplication> {
 export function registerHiringTypes() {
   try {
     getTypeRegistry().register({
-      ApplicationId,
-      OpeningId,
+      ApplicationId: 'u64',
+      OpeningId: 'u64',
       Application,
       ApplicationStage,
       // why the prefix? is there some other identically named type?
