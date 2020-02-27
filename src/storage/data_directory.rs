@@ -79,24 +79,6 @@ impl Default for ContentVisibility {
     }
 }
 
-#[derive(Clone, Encode, Decode, PartialEq, Debug)]
-pub struct ContentMetadata<T: Trait> {
-    pub owner: T::AccountId,
-    pub added_at: BlockAndTime<T>,
-    pub children_ids: Vec<T::ContentId>,
-    pub visibility: ContentVisibility,
-    pub schema: T::SchemaId,
-    pub json: Vec<u8>,
-}
-
-#[derive(Clone, Encode, Decode, PartialEq, Debug)]
-pub struct ContentMetadataUpdate<ContentId, SchemaId> {
-    pub children_ids: Option<Vec<ContentId>>,
-    pub visibility: Option<ContentVisibility>,
-    pub schema: Option<SchemaId>,
-    pub json: Option<Vec<u8>>,
-}
-
 decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
 
@@ -108,9 +90,6 @@ decl_storage! {
 
         pub DataObjectByContentId get(data_object_by_content_id):
             map T::ContentId => Option<DataObject<T>>;
-
-        pub MetadataByContentId get(metadata_by_content_id):
-            map T::ContentId => Option<ContentMetadata<T>>;
 
         // Default storage provider account id, overrides all active storage providers as liason if set
         pub PrimaryLiaisonAccountId get(primary_liaison_account_id): Option<T::AccountId>;
@@ -128,10 +107,6 @@ decl_event! {
         // The account is the liaison - only they can reject or accept
         ContentAccepted(ContentId, AccountId),
         ContentRejected(ContentId, AccountId),
-
-        // The account is the owner of the content.
-        MetadataAdded(ContentId, AccountId),
-        MetadataUpdated(ContentId, AccountId),
     }
 }
 
@@ -183,6 +158,7 @@ decl_module! {
         fn accept_content(origin, content_id: T::ContentId) {
             let who = ensure_signed(origin)?;
             Self::update_content_judgement(&who, content_id.clone(), LiaisonJudgement::Accepted)?;
+            <KnownContentIds<T>>::mutate(|ids| ids.push(content_id));
             Self::deposit_event(RawEvent::ContentAccepted(content_id, who));
         }
 
@@ -190,76 +166,6 @@ decl_module! {
             let who = ensure_signed(origin)?;
             Self::update_content_judgement(&who, content_id.clone(), LiaisonJudgement::Rejected)?;
             Self::deposit_event(RawEvent::ContentRejected(content_id, who));
-        }
-
-        fn add_metadata(
-            origin,
-            content_id: T::ContentId,
-            update: ContentMetadataUpdate<T::ContentId, T::SchemaId>
-        ) {
-            let who = ensure_signed(origin)?;
-            ensure!(<membership::members::Module<T>>::is_member_account(&who),
-                "Only active members can add content metadata");
-
-            ensure!(!<MetadataByContentId<T>>::exists(&content_id),
-                "Metadata aready added under this content id");
-
-            let schema = update.schema.ok_or("Schema is required")?;
-            Self::validate_metadata_schema(&schema)?;
-
-            let json = update.json.ok_or("JSON is required")?;
-            Self::validate_metadata_json(&json)?;
-
-            let meta = ContentMetadata {
-                owner: who.clone(),
-                added_at: Self::current_block_and_time(),
-                children_ids: vec![],
-                visibility: update.visibility.unwrap_or_default(),
-                schema,
-                json,
-            };
-
-            // TODO temporary hack!!!
-            // TODO create Storage Relationship. ready = true
-
-            <MetadataByContentId<T>>::insert(&content_id, meta);
-            <KnownContentIds<T>>::mutate(|ids| ids.push(content_id));
-            Self::deposit_event(RawEvent::MetadataAdded(content_id, who));
-        }
-
-        fn update_metadata(
-            origin,
-            content_id: T::ContentId,
-            update: ContentMetadataUpdate<T::ContentId, T::SchemaId>
-        ) {
-            let who = ensure_signed(origin)?;
-
-            // Even if origin is an owner of metadata, they stil need to be an active member.
-            ensure!(<membership::members::Module<T>>::is_member_account(&who),
-                "Only active members can update content metadata");
-
-            let has_updates = update.schema.is_some() || update.json.is_some();
-            ensure!(has_updates, "No updates provided");
-
-            let mut meta = Self::metadata_by_content_id(&content_id)
-                .ok_or("No metadata found by content id")?;
-
-            ensure!(meta.owner == who.clone(), "Only owner can update content metadata");
-
-            if let Some(schema) = update.schema {
-                Self::validate_metadata_schema(&schema)?;
-                meta.schema = schema;
-            }
-            if let Some(json) = update.json {
-                Self::validate_metadata_json(&json)?;
-                meta.json = json;
-            }
-            if let Some(visibility) = update.visibility {
-                meta.visibility = visibility;
-            }
-
-            <MetadataByContentId<T>>::insert(&content_id, meta);
-            Self::deposit_event(RawEvent::MetadataUpdated(content_id, who));
         }
 
         // Sudo methods
@@ -309,16 +215,6 @@ impl<T: Trait> Module<T> {
             block: <system::Module<T>>::block_number(),
             time: <timestamp::Module<T>>::now(),
         }
-    }
-
-    fn validate_metadata_schema(_schema: &T::SchemaId) -> dispatch::Result {
-        // TODO validate that schema id is registered.
-        Ok(())
-    }
-
-    fn validate_metadata_json(_json: &Vec<u8>) -> dispatch::Result {
-        // TODO validate a max length of JSON.
-        Ok(())
     }
 
     fn update_content_judgement(
@@ -427,45 +323,4 @@ mod tests {
             assert!(res.is_ok());
         });
     }
-
-    // TODO update and add more tests for metadata
-
-    // #[test]
-    // fn add_metadata() {
-    //     with_default_mock_builder(|| {
-    //         let res =
-    //             TestContentDirectory::add_metadata(Origin::signed(1), 1, "foo".as_bytes().to_vec());
-    //         assert!(res.is_ok());
-    //     });
-    // }
-
-    // #[test]
-    // fn publish_metadata() {
-    //     with_default_mock_builder(|| {
-    //         let res =
-    //             TestContentDirectory::add_metadata(Origin::signed(1), 1, "foo".as_bytes().to_vec());
-    //         assert!(res.is_ok());
-
-    //         // Grab ID from event
-    //         let metadata_id = match System::events().last().unwrap().event {
-    //             MetaEvent::content_directory(
-    //                 content_directory::RawEvent::MetadataDraftCreated(metadata_id),
-    //             ) => metadata_id,
-    //             _ => 0xdeadbeefu64, // invalid value, unlikely to match
-    //         };
-    //         assert_ne!(metadata_id, 0xdeadbeefu64);
-
-    //         // Publishing a bad ID should fail
-    //         let res = TestContentDirectory::publish_metadata(Origin::signed(1), metadata_id + 1);
-    //         assert!(res.is_err());
-
-    //         // Publishing should not work for non-owners
-    //         let res = TestContentDirectory::publish_metadata(Origin::signed(2), metadata_id);
-    //         assert!(res.is_err());
-
-    //         // For the owner, it should work however
-    //         let res = TestContentDirectory::publish_metadata(Origin::signed(1), metadata_id);
-    //         assert!(res.is_ok());
-    //     });
-    // }
 }
