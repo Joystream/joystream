@@ -236,7 +236,7 @@ impl VoteGenerator {
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64>>) {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64, u64>>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
@@ -334,7 +334,7 @@ fn proposal_execution_succeeds() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::approved(ApprovedProposalStatus::Executed),
+                status: ProposalStatus::approved(ApprovedProposalStatus::Executed, 1),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 voting_results: VotingResults {
@@ -343,7 +343,6 @@ fn proposal_execution_succeeds() {
                     rejections: 0,
                     slashes: 0,
                 },
-                finalized_at: Some(1),
                 stake_id: None,
             }
         );
@@ -382,9 +381,10 @@ fn proposal_execution_failed() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::approved(ApprovedProposalStatus::failed_execution(
-                    "ExecutionFailed"
-                )),
+                status: ProposalStatus::approved(
+                    ApprovedProposalStatus::failed_execution("ExecutionFailed"),
+                    1
+                ),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 voting_results: VotingResults {
@@ -393,7 +393,6 @@ fn proposal_execution_failed() {
                     rejections: 0,
                     slashes: 0,
                 },
-                finalized_at: Some(1),
                 stake_id: None,
             }
         )
@@ -467,7 +466,7 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
 
         assert_eq!(
             proposal.status,
-            ProposalStatus::finalized(ProposalDecisionStatus::Rejected),
+            ProposalStatus::finalized(ProposalDecisionStatus::Rejected, 1),
         );
         assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
     });
@@ -574,11 +573,10 @@ fn cancel_proposal_succeeds() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::finalized(ProposalDecisionStatus::Canceled),
+                status: ProposalStatus::finalized(ProposalDecisionStatus::Canceled, 1),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 voting_results: VotingResults::default(),
-                finalized_at: Some(1),
                 stake_id: None,
             }
         )
@@ -644,11 +642,10 @@ fn veto_proposal_succeeds() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::finalized(ProposalDecisionStatus::Vetoed),
+                status: ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, 1),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 voting_results: VotingResults::default(),
-                finalized_at: Some(1),
                 stake_id: None,
             }
         );
@@ -713,7 +710,7 @@ fn veto_proposal_event_emitted() {
             RawEvent::ProposalCreated(1, 1),
             RawEvent::ProposalStatusUpdated(
                 1,
-                ProposalStatus::finalized(ProposalDecisionStatus::Vetoed),
+                ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, 1),
             ),
         ]);
     });
@@ -732,9 +729,10 @@ fn cancel_proposal_event_emitted() {
             RawEvent::ProposalCreated(1, 1),
             RawEvent::ProposalStatusUpdated(
                 1,
-                ProposalStatus::Finalized(FinalizationStatus {
+                ProposalStatus::Finalized(FinalizationData {
                     proposal_status: ProposalDecisionStatus::Canceled,
                     finalization_error: None,
+                    finalized_at: 1,
                 }),
             ),
         ]);
@@ -776,11 +774,10 @@ fn create_proposal_and_expire_it() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::finalized(ProposalDecisionStatus::Expired),
+                status: ProposalStatus::finalized(ProposalDecisionStatus::Expired, 4),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 voting_results: VotingResults::default(),
-                finalized_at: Some(4),
                 stake_id: None,
             }
         )
@@ -819,10 +816,9 @@ fn proposal_execution_postponed_because_of_grace_period() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution),
+                status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 1),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                finalized_at: Some(1),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -863,10 +859,9 @@ fn proposal_execution_succeeds_after_the_grace_period() {
             parameters: parameters_fixture.params(),
             proposer_id: 1,
             created_at: 1,
-            status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution),
+            status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 1),
             title: b"title".to_vec(),
             body: b"body".to_vec(),
-            finalized_at: Some(1),
             voting_results: VotingResults {
                 abstentions: 0,
                 approvals: 4,
@@ -882,7 +877,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
 
         proposal = <crate::Proposals<Test>>::get(proposal_id);
 
-        expected_proposal.status = ProposalStatus::approved(ApprovedProposalStatus::Executed);
+        expected_proposal.status = ProposalStatus::approved(ApprovedProposalStatus::Executed, 1);
 
         assert_eq!(proposal, expected_proposal);
 
@@ -972,7 +967,6 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
                 voting_results: VotingResults::default(),
-                finalized_at: None,
                 stake_id: Some(0), // valid stake_id
             }
         )
@@ -1161,9 +1155,10 @@ fn proposal_slashing_succeeds() {
 
         assert_eq!(
             proposal.status,
-            ProposalStatus::Finalized(FinalizationStatus {
+            ProposalStatus::Finalized(FinalizationData {
                 proposal_status: ProposalDecisionStatus::Slashed,
                 finalization_error: None,
+                finalized_at: 1,
             }),
         );
         assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
@@ -1212,11 +1207,11 @@ fn finalize_proposal_failed_using_stake_mocks() {
                     created_at: 1,
                     status: ProposalStatus::finalized_with_error(
                         ProposalDecisionStatus::Expired,
-                        Some("Cannot remove stake")
+                        Some("Cannot remove stake"),
+                        4,
                     ),
                     title: b"title".to_vec(),
                     body: b"body".to_vec(),
-                    finalized_at: Some(4),
                     voting_results: VotingResults::default(),
                     stake_id: Some(1),
                 }

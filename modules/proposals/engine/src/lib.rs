@@ -24,8 +24,8 @@ pub use types::BalanceOf;
 use types::FinalizedProposalData;
 pub use types::VotingResults;
 pub use types::{
-    ApprovedProposalStatus, FinalizationStatus, Proposal, ProposalDecisionStatus,
-    ProposalParameters, ProposalStatus,
+    ApprovedProposalStatus, FinalizationData, Proposal, ProposalDecisionStatus, ProposalParameters,
+    ProposalStatus,
 };
 pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
@@ -93,6 +93,7 @@ decl_event!(
         <T as Trait>::ProposalId,
         <T as Trait>::ProposerId,
         <T as Trait>::VoterId,
+        <T as system::Trait>::BlockNumber,
     {
     	/// Emits on proposal creation.
         /// Params:
@@ -104,7 +105,7 @@ decl_event!(
         /// Params:
         /// - Id of a updated proposal.
         /// - New proposal status
-        ProposalStatusUpdated(ProposalId, ProposalStatus),
+        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber>),
 
         /// Emits on voting for the proposal
         /// Params:
@@ -292,7 +293,6 @@ impl<T: Trait> Module<T> {
             proposal_type,
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
-            finalized_at: None,
             stake_id,
         };
 
@@ -343,32 +343,39 @@ impl<T: Trait> Module<T> {
     // Executes approved proposal code
     fn execute_proposal(proposal_id: T::ProposalId) {
         let mut proposal = Self::proposals(proposal_id);
-        let proposal_code = Self::proposal_codes(proposal_id);
 
-        let proposal_code_result =
-            T::ProposalCodeDecoder::decode_proposal(proposal.proposal_type, proposal_code);
+        // Execute only proposals with correct status
+        if let ProposalStatus::Finalized(finalized_status) = proposal.status.clone() {
+            let proposal_code = Self::proposal_codes(proposal_id);
 
-        let approved_proposal_status = match proposal_code_result {
-            Ok(proposal_code) => {
-                if let Err(error) = proposal_code.execute() {
-                    ApprovedProposalStatus::failed_execution(error)
-                } else {
-                    ApprovedProposalStatus::Executed
+            let proposal_code_result =
+                T::ProposalCodeDecoder::decode_proposal(proposal.proposal_type, proposal_code);
+
+            let approved_proposal_status = match proposal_code_result {
+                Ok(proposal_code) => {
+                    if let Err(error) = proposal_code.execute() {
+                        ApprovedProposalStatus::failed_execution(error)
+                    } else {
+                        ApprovedProposalStatus::Executed
+                    }
                 }
-            }
-            Err(error) => ApprovedProposalStatus::failed_execution(error),
-        };
+                Err(error) => ApprovedProposalStatus::failed_execution(error),
+            };
 
-        let proposal_execution_status = ProposalStatus::approved(approved_proposal_status);
+            let proposal_execution_status =
+                finalized_status.create_approved_proposal_status(approved_proposal_status);
 
-        proposal.status = proposal_execution_status.clone();
-        <Proposals<T>>::insert(proposal_id, proposal);
+            proposal.status = proposal_execution_status.clone();
+            <Proposals<T>>::insert(proposal_id, proposal);
 
-        Self::deposit_event(RawEvent::ProposalStatusUpdated(
-            proposal_id,
-            proposal_execution_status,
-        ));
+            Self::deposit_event(RawEvent::ProposalStatusUpdated(
+                proposal_id,
+                proposal_execution_status,
+            ));
+        }
 
+        // Remove proposals from the 'pending execution' queue even in case of not finalized status
+        // to prevent eternal cycles.
         <PendingExecutionProposalIds<T>>::remove(&proposal_id);
     }
 
@@ -397,11 +404,10 @@ impl<T: Trait> Module<T> {
         }
 
         // create finalized proposal status with error if any
-        let new_proposal_status =
-            ProposalStatus::finalized_with_error(decision_status, slash_and_unstake_result.err());
+        let new_proposal_status = //TODO rename without an error
+            ProposalStatus::finalized_with_error(decision_status, slash_and_unstake_result.err(), Self::current_block());
 
         proposal.status = new_proposal_status.clone();
-        proposal.finalized_at = Some(Self::current_block());
         <Proposals<T>>::insert(proposal_id, proposal);
 
         Self::deposit_event(RawEvent::ProposalStatusUpdated(
