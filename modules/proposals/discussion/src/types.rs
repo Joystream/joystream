@@ -26,11 +26,17 @@ pub struct Post<PostAuthorId, BlockNumber, ThreadId> {
     pub text: Vec<u8>,
 
     /// When post was added.
-    pub created_at: BlockNumber, //TODO rename to updated_at?
+    pub created_at: BlockNumber,
+
+    /// When post was updated last time.
+    pub updated_at: BlockNumber,
 
     /// Author of the post.
     pub author_id: PostAuthorId,
 
     /// Parent thread id for this post
     pub thread_id: ThreadId,
+
+    /// Defines how many times this post was edited. Zero on creation.
+    pub edition_number: u32,
 }

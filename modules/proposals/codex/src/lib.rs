@@ -108,7 +108,7 @@ decl_module! {
 
             let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
 
-            let discussion_thread_id = <proposal_discussion::Module<T>>::create_discussion(
+            let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
                 cloned_origin1,
                 title.clone(),
             )?;
@@ -157,7 +157,7 @@ decl_module! {
 
             let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
 
-            let discussion_thread_id = <proposal_discussion::Module<T>>::create_discussion(
+            let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
                 cloned_origin1,
                 title.clone(),
             )?;
