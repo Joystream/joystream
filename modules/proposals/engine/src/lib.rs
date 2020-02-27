@@ -318,18 +318,21 @@ impl<T: Trait> Module<T> {
     // Enumerates through active proposals. Tally Voting results.
     // Returns proposals with finalized status and id
     fn get_finalized_proposals() -> Vec<FinalizedProposal<T>> {
-        // enumerate active proposals id and gather finalization data
+        // Enumerate active proposals id and gather finalization data.
+        // Skip proposals with unfinished voting.
         <ActiveProposalIds<T>>::enumerate()
             .filter_map(|(proposal_id, _)| {
                 // load current proposal
                 let proposal = Self::proposals(proposal_id);
 
+                // Calculates votes, takes in account voting period expiration.
+                // If voting process is in progress, then decision status is None.
                 let decision_status = proposal.define_proposal_decision_status(
                     T::TotalVotersCounter::total_voters_count(),
                     Self::current_block(),
                 );
 
-                // map to FinalizedProposalData or None
+                // map to FinalizedProposalData if decision for the proposal is made or return None
                 decision_status.map(|status| FinalizedProposalData {
                     proposal_id,
                     proposal,

@@ -165,8 +165,10 @@ where
     }
 
     /// Determines the finalized proposal status using voting results tally for current proposal.
-    /// Parameters: current time, total voters number involved (council size)
-    /// Returns whether the proposal has finalized status
+    /// Calculates votes, takes in account voting period expiration.
+    /// If voting process is in progress, then decision status is None.
+    /// Parameters: current time, total voters number involved (council size).
+    /// Returns the proposal finalized status if any.
     pub fn define_proposal_decision_status(
         &self,
         total_voters_count: u32,
