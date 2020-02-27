@@ -291,7 +291,6 @@ impl<T: Trait> Module<T> {
             proposer_id: proposer_id.clone(),
             proposal_type,
             status: ProposalStatus::Active,
-            approved_at: None,
             voting_results: VotingResults::default(),
             finalized_at: None,
             stake_id,
@@ -375,7 +374,7 @@ impl<T: Trait> Module<T> {
 
     // Performs all actions on proposal finalization:
     // - clean active proposal cache
-    // - update proposal status fields (status, finalized_at, approved_at)
+    // - update proposal status fields (status, finalized_at)
     // - add to pending execution proposal cache if approved
     // - slash and unstake proposal stake if stake exists
     // - fire an event
@@ -386,7 +385,6 @@ impl<T: Trait> Module<T> {
         let mut proposal = Self::proposals(proposal_id);
 
         if let ProposalDecisionStatus::Approved { .. } = decision_status {
-            proposal.approved_at = Some(Self::current_block());
             <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
         }
 

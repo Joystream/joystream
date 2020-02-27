@@ -232,9 +232,6 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId> {
     /// When it was created.
     pub created_at: BlockNumber,
 
-    /// When it was approved.
-    pub approved_at: Option<BlockNumber>,
-
     /// Current proposal status
     pub status: ProposalStatus,
 
@@ -259,11 +256,11 @@ where
 
     /// Returns whether grace period expired by now. Returns false if not approved.
     pub fn is_grace_period_expired(&self, now: BlockNumber) -> bool {
-        if let Some(approved_at) = self.approved_at {
-            now >= approved_at + self.parameters.grace_period
-        } else {
-            false
+        if let Some(approved_at) = self.finalized_at {
+            return now >= approved_at + self.parameters.grace_period;
         }
+
+        false
     }
 
     /// Determines the finalized proposal status using voting results tally for current proposal.
@@ -424,9 +421,12 @@ pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, ProposerId, Bal
 mod tests {
     use crate::*;
 
+    // Alias introduced for simplicity of changing Proposal exact types.
+    pub type ProposalObject = Proposal<u64, u64, u64, u64>;
+
     #[test]
     fn proposal_voting_period_expired() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = ProposalObject::default();
 
         proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
@@ -436,7 +436,7 @@ mod tests {
 
     #[test]
     fn proposal_voting_period_not_expired() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = ProposalObject::default();
 
         proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
@@ -446,9 +446,9 @@ mod tests {
 
     #[test]
     fn proposal_grace_period_expired() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = ProposalObject::default();
 
-        proposal.approved_at = Some(1);
+        proposal.finalized_at = Some(1);
         proposal.parameters.grace_period = 3;
 
         assert!(proposal.is_grace_period_expired(4));
@@ -456,9 +456,9 @@ mod tests {
 
     #[test]
     fn proposal_grace_period_auto_expired() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = ProposalObject::default();
 
-        proposal.approved_at = Some(1);
+        proposal.finalized_at = Some(1);
         proposal.parameters.grace_period = 0;
 
         assert!(proposal.is_grace_period_expired(1));
@@ -466,9 +466,9 @@ mod tests {
 
     #[test]
     fn proposal_grace_period_not_expired() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = ProposalObject::default();
 
-        proposal.approved_at = Some(1);
+        proposal.finalized_at = Some(1);
         proposal.parameters.grace_period = 3;
 
         assert!(!proposal.is_grace_period_expired(3));
@@ -476,9 +476,9 @@ mod tests {
 
     #[test]
     fn proposal_grace_period_not_expired_because_of_not_approved_proposal() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = ProposalObject::default();
 
-        proposal.approved_at = None;
+        proposal.finalized_at = None;
         proposal.parameters.grace_period = 3;
 
         assert!(!proposal.is_grace_period_expired(3));
@@ -486,7 +486,7 @@ mod tests {
 
     #[test]
     fn define_proposal_decision_status_returns_expired() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = ProposalObject::default();
         let now = 5;
         proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
@@ -519,7 +519,7 @@ mod tests {
     #[test]
     fn define_proposal_decision_status_returns_approved() {
         let now = 2;
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = ProposalObject::default();
         proposal.created_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
@@ -552,7 +552,7 @@ mod tests {
 
     #[test]
     fn define_proposal_decision_status_returns_rejected() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = ProposalObject::default();
         let now = 2;
 
         proposal.created_at = 1;
@@ -585,7 +585,7 @@ mod tests {
     }
     #[test]
     fn define_proposal_decision_status_returns_slashed() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = ProposalObject::default();
         let now = 2;
 
         proposal.created_at = 1;
@@ -619,7 +619,7 @@ mod tests {
 
     #[test]
     fn define_proposal_decision_status_returns_none() {
-        let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+        let mut proposal = ProposalObject::default();
         let now = 2;
 
         proposal.created_at = 1;
@@ -645,7 +645,7 @@ mod tests {
 
 #[test]
 fn define_proposal_decision_status_returns_approved_before_slashing_before_rejection() {
-    let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+    let mut proposal = tests::ProposalObject::default();
     let now = 2;
 
     proposal.created_at = 1;
@@ -684,7 +684,7 @@ fn define_proposal_decision_status_returns_approved_before_slashing_before_rejec
 
 #[test]
 fn define_proposal_decision_status_returns_slashed_before_rejection() {
-    let mut proposal = Proposal::<u64, u64, u64, u64>::default();
+    let mut proposal = tests::ProposalObject::default();
     let now = 2;
 
     proposal.created_at = 1;

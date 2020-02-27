@@ -337,7 +337,6 @@ fn proposal_execution_succeeds() {
                 status: ProposalStatus::approved(ApprovedProposalStatus::Executed),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                approved_at: Some(1),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -388,7 +387,6 @@ fn proposal_execution_failed() {
                 )),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                approved_at: Some(1),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -579,7 +577,6 @@ fn cancel_proposal_succeeds() {
                 status: ProposalStatus::finalized(ProposalDecisionStatus::Canceled),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                approved_at: None,
                 voting_results: VotingResults::default(),
                 finalized_at: Some(1),
                 stake_id: None,
@@ -650,7 +647,6 @@ fn veto_proposal_succeeds() {
                 status: ProposalStatus::finalized(ProposalDecisionStatus::Vetoed),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                approved_at: None,
                 voting_results: VotingResults::default(),
                 finalized_at: Some(1),
                 stake_id: None,
@@ -783,7 +779,6 @@ fn create_proposal_and_expire_it() {
                 status: ProposalStatus::finalized(ProposalDecisionStatus::Expired),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                approved_at: None,
                 voting_results: VotingResults::default(),
                 finalized_at: Some(4),
                 stake_id: None,
@@ -827,7 +822,6 @@ fn proposal_execution_postponed_because_of_grace_period() {
                 status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution),
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                approved_at: Some(1),
                 finalized_at: Some(1),
                 voting_results: VotingResults {
                     abstentions: 0,
@@ -872,7 +866,6 @@ fn proposal_execution_succeeds_after_the_grace_period() {
             status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution),
             title: b"title".to_vec(),
             body: b"body".to_vec(),
-            approved_at: Some(1),
             finalized_at: Some(1),
             voting_results: VotingResults {
                 abstentions: 0,
@@ -978,7 +971,6 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 status: ProposalStatus::Active,
                 title: b"title".to_vec(),
                 body: b"body".to_vec(),
-                approved_at: None,
                 voting_results: VotingResults::default(),
                 finalized_at: None,
                 stake_id: Some(0), // valid stake_id
@@ -1224,7 +1216,6 @@ fn finalize_proposal_failed_using_stake_mocks() {
                     ),
                     title: b"title".to_vec(),
                     body: b"body".to_vec(),
-                    approved_at: None,
                     finalized_at: Some(4),
                     voting_results: VotingResults::default(),
                     stake_id: Some(1),
