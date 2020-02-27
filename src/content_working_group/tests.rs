@@ -8,7 +8,7 @@ use hiring;
 use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use runtime_primitives::traits::One;
-use srml_support::{StorageLinkedMap, StorageValue};
+use srml_support::{assert_err, assert_ok, StorageLinkedMap, StorageValue};
 
 /// DIRTY IMPORT BECAUSE
 /// InputValidationLengthConstraint has not been factored out yet!!!
@@ -744,6 +744,78 @@ fn apply_on_curator_opening_success() {
                 CuratorOpeningById::<Test>::get(normal_opening_constructed.curator_opening_id);
 
             assert_eq!(expected_curator_opening, new_curator_opening);
+        });
+}
+
+#[test]
+fn multiple_applications_by_same_member_to_opening_fails() {
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
+            /*
+             * Setup
+             */
+
+            let normal_opening_constructed = setup_normal_accepting_opening();
+
+            // Add curator membership
+
+            let curator_applicant_root_and_controller_account = 72618;
+
+            let curator_applicant_member_id = add_member(
+                curator_applicant_root_and_controller_account,
+                to_vec("IwillTrytoapplyhere"),
+            );
+
+            let curator_applicant_role_account = 8881111;
+
+            let role_stake_balance = get_baseline_opening_policy()
+                .role_staking_policy
+                .unwrap()
+                .amount;
+            let application_stake_balance = get_baseline_opening_policy()
+                .application_staking_policy
+                .unwrap()
+                .amount;
+            let total_balance = role_stake_balance + application_stake_balance;
+
+            let source_account = curator_applicant_root_and_controller_account;
+
+            // Credit staking source account with enough funds for two applications,
+            // because we don't want our second application to fail for lack of funds
+            let _ = balances::Module::<Test>::deposit_creating(&source_account, total_balance * 2);
+
+            let human_readable_text = generate_valid_length_buffer(&ChannelHandleConstraint::get());
+
+            /*
+             * Test
+             */
+
+            // First application should work
+            assert_ok!(ContentWorkingGroup::apply_on_curator_opening(
+                Origin::signed(curator_applicant_root_and_controller_account),
+                curator_applicant_member_id,
+                normal_opening_constructed.curator_opening_id,
+                curator_applicant_role_account,
+                Some(role_stake_balance),
+                Some(application_stake_balance),
+                human_readable_text.clone()
+            ));
+
+            // Second application should fail since
+            // first application is still active
+            assert_err!(
+                ContentWorkingGroup::apply_on_curator_opening(
+                    Origin::signed(curator_applicant_root_and_controller_account),
+                    curator_applicant_member_id,
+                    normal_opening_constructed.curator_opening_id,
+                    curator_applicant_role_account,
+                    Some(role_stake_balance),
+                    Some(application_stake_balance),
+                    human_readable_text
+                ),
+                MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING
+            );
         });
 }
 

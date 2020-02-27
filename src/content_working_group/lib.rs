@@ -225,8 +225,10 @@ pub static MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN: &str = "Unsigned origin
 pub static MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID: &str = "Member id is invalid";
 pub static MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
     "Signer does not match controller account";
-static MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT: &str =
+pub static MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT: &str =
     "Origin must be controller or root account of member";
+pub static MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING: &str =
+    "Member already has an active application on the opening";
 
 /// The exit stage of a lead involvement in the working group.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -1726,6 +1728,12 @@ decl_module! {
                 hiring::Module::<T>::ensure_can_add_application(curator_opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
             )?;
 
+            // Ensure member does not have an active application to this opening
+            Self::ensure_member_has_no_active_application_on_opening(
+                curator_opening.curator_applications,
+                member_id
+            )?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -2055,6 +2063,27 @@ impl<T: Trait> versioned_store_permissions::CredentialChecker<T> for Module<T> {
 }
 
 impl<T: Trait> Module<T> {
+    fn ensure_member_has_no_active_application_on_opening(
+        curator_applications: CuratorApplicationIdSet<T>,
+        member_id: T::MemberId,
+    ) -> Result<(), &'static str> {
+        for curator_application_id in curator_applications {
+            let curator_application = CuratorApplicationById::<T>::get(curator_application_id);
+            // Look for application by the member for the opening
+            if curator_application.member_id != member_id {
+                continue;
+            }
+            // Get application details
+            let application = <hiring::ApplicationById<T>>::get(curator_application.application_id);
+            // Return error if application is in active stage
+            if application.stage == hiring::ApplicationStage::Active {
+                return Err(MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING);
+            }
+        }
+        // Member does not have any active applications to the opening
+        Ok(())
+    }
+
     fn ensure_can_register_role_on_member(
         member_id: &T::MemberId,
         role: role_types::Role,
