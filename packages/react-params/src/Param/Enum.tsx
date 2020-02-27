@@ -85,6 +85,7 @@ export default function EnumParam (props: Props): React.ReactElement<Props> {
         onChange={_onChange}
         withEllipsis
         withLabel={withLabel}
+        value={current ? current[0].name as string : null}
       />
       {current && (
         <Params
