@@ -31,21 +31,33 @@ impl<T: Trait> StakeHandlerProvider<T> for DefaultStakeHandlerProvider {
 }
 
 /// Stake logic handler.
-#[cfg_attr(test, automock)] // attributes creates mocks in tesing environment
+#[cfg_attr(test, automock)] // attributes creates mocks in testing environment
 pub trait StakeHandler<T: Trait> {
-    /// Creates a stake using stake balance and source account.
-    /// Returns created stake id or an error.
-    fn create_stake(
-        &self,
-        stake_balance: BalanceOf<T>,
-        source_account_id: T::AccountId,
-    ) -> Result<T::StakeId, &'static str>;
+    /// Creates a stake. Returns created stake id or an error.
+    fn create_stake(&self) -> Result<T::StakeId, &'static str>;
 
-    /// Execute unstaking and removes stake
+    /// Stake the imbalance
+    fn stake(
+        &self,
+        stake_id: &T::StakeId,
+        stake_imbalance: NegativeImbalance<T>,
+    ) -> Result<(), &'static str>;
+
+    /// Removes stake
     fn remove_stake(&self, stake_id: T::StakeId) -> Result<(), &'static str>;
+
+    /// Execute unstaking
+    fn unstake(&self, stake_id: T::StakeId) -> Result<(), &'static str>;
 
     /// Slash balance from the existing stake
     fn slash(&self, stake_id: T::StakeId, slash_balance: BalanceOf<T>) -> Result<(), &'static str>;
+
+    /// Withdraw some balance from the source account and create stake imbalance
+    fn make_stake_imbalance(
+        &self,
+        balance: BalanceOf<T>,
+        source_account_id: &T::AccountId,
+    ) -> Result<NegativeImbalance<T>, &'static str>;
 }
 
 /// Default implementation of the stake logic. Uses actual stake module.
@@ -55,45 +67,53 @@ pub(crate) struct DefaultStakeHandler<T> {
 }
 
 impl<T: Trait> StakeHandler<T> for DefaultStakeHandler<T> {
-    /// Creates a stake using stake balance and source account.
-    /// Returns created stake id or an error.
-    fn create_stake(
-        &self,
-        stake_balance: BalanceOf<T>,
-        source_account_id: T::AccountId,
-    ) -> Result<T::StakeId, &'static str> {
-        let stake_id = stake::Module::<T>::create_stake();
-
-        let stake_imbalance = Self::make_stake_imbalance(stake_balance, &source_account_id)?;
-
-        stake::Module::<T>::stake(&stake_id, stake_imbalance).map_err(WrappedError)?;
-
-        Ok(stake_id)
+    /// Creates a stake. Returns created stake id or an error.
+    fn create_stake(&self) -> Result<<T as stake::Trait>::StakeId, &'static str> {
+        Ok(stake::Module::<T>::create_stake())
     }
 
-    /// Execute unstaking and removes the stake
-    fn remove_stake(&self, stake_id: T::StakeId) -> Result<(), &'static str> {
-        stake::Module::<T>::initiate_unstaking(&stake_id, Some(T::BlockNumber::zero()))
-            .map_err(WrappedError)?;
+    /// Stake the imbalance
+    fn stake(
+        &self,
+        stake_id: &<T as stake::Trait>::StakeId,
+        stake_imbalance: NegativeImbalance<T>,
+    ) -> Result<(), &'static str> {
+        stake::Module::<T>::stake(&stake_id, stake_imbalance).map_err(WrappedError)?;
 
+        Ok(())
+    }
+
+    /// Removes stake
+    fn remove_stake(&self, stake_id: <T as stake::Trait>::StakeId) -> Result<(), &'static str> {
         stake::Module::<T>::remove_stake(&stake_id).map_err(WrappedError)?;
 
         Ok(())
     }
 
+    /// Execute unstaking
+    fn unstake(&self, stake_id: <T as stake::Trait>::StakeId) -> Result<(), &'static str> {
+        stake::Module::<T>::initiate_unstaking(&stake_id, Some(T::BlockNumber::zero()))
+            .map_err(WrappedError)?;
+
+        Ok(())
+    }
+
     /// Slash balance from the existing stake
-    fn slash(&self, stake_id: T::StakeId, slash_balance: BalanceOf<T>) -> Result<(), &'static str> {
+    fn slash(
+        &self,
+        stake_id: <T as stake::Trait>::StakeId,
+        slash_balance: BalanceOf<T>,
+    ) -> Result<(), &'static str> {
         let _slash_id =
             stake::Module::<T>::initiate_slashing(&stake_id, slash_balance, T::BlockNumber::zero())
                 .map_err(WrappedError)?;
 
         Ok(())
     }
-}
 
-impl<T: Trait> DefaultStakeHandler<T> {
-    // Withdraw some balance from the source account and create stake imbalance
+    /// Withdraw some balance from the source account and create stake imbalance
     fn make_stake_imbalance(
+        &self,
         balance: BalanceOf<T>,
         source_account_id: &T::AccountId,
     ) -> Result<NegativeImbalance<T>, &'static str> {
@@ -103,6 +123,44 @@ impl<T: Trait> DefaultStakeHandler<T> {
             WithdrawReasons::all(),
             ExistenceRequirement::AllowDeath,
         )
+    }
+}
+
+/// Proposal implementation of the stake logic.
+/// 'marker' responsible for the 'Trait' binding.
+pub(crate) struct ProposalStakeManager<T> {
+    pub marker: PhantomData<T>,
+}
+
+impl<T: Trait> ProposalStakeManager<T> {
+    /// Creates a stake using stake balance and source account.
+    /// Returns created stake id or an error.
+    pub fn create_stake(
+        stake_balance: BalanceOf<T>,
+        source_account_id: T::AccountId,
+    ) -> Result<T::StakeId, &'static str> {
+        let stake_id = T::StakeHandlerProvider::stakes().create_stake()?;
+
+        let stake_imbalance = T::StakeHandlerProvider::stakes()
+            .make_stake_imbalance(stake_balance, &source_account_id)?;
+
+        T::StakeHandlerProvider::stakes().stake(&stake_id, stake_imbalance)?;
+
+        Ok(stake_id)
+    }
+
+    /// Execute unstaking and removes the stake
+    pub fn remove_stake(stake_id: T::StakeId) -> Result<(), &'static str> {
+        T::StakeHandlerProvider::stakes().unstake(stake_id)?;
+
+        T::StakeHandlerProvider::stakes().remove_stake(stake_id)?;
+
+        Ok(())
+    }
+
+    /// Slash balance from the existing stake
+    pub fn slash(stake_id: T::StakeId, slash_balance: BalanceOf<T>) -> Result<(), &'static str> {
+        T::StakeHandlerProvider::stakes().slash(stake_id, slash_balance)
     }
 }
 

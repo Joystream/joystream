@@ -1093,14 +1093,22 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
 }
 */
 #[test]
-fn finalize_proposal_using_stake_mocks() {
+fn finalize_proposal_using_stake_mocks_succeeds() {
     handle_mock(|| {
         initial_test_ext().execute_with(|| {
             let mock = {
                 let mut mock = crate::types::MockStakeHandler::<Test>::new();
-                mock.expect_create_stake().times(1).returning(|_, _| Ok(1));
+                mock.expect_create_stake().times(1).returning(|| Ok(1));
+
+                mock.expect_make_stake_imbalance()
+                    .times(1)
+                    .returning(|_, _| Ok(crate::types::NegativeImbalance::<Test>::new(200)));
+
+                mock.expect_stake().times(1).returning(|_, _| Ok(()));
 
                 mock.expect_remove_stake().times(1).returning(|_| Ok(()));
+
+                mock.expect_unstake().times(1).returning(|_| Ok(()));
 
                 mock.expect_slash().times(1).returning(|_, _| Ok(()));
 
@@ -1166,16 +1174,24 @@ fn proposal_slashing_succeeds() {
 }
 
 #[test]
-fn finalize_proposal_failed_using_stake_mocks() {
+fn finalize_proposal_using_stake_mocks_failed() {
     handle_mock(|| {
         initial_test_ext().execute_with(|| {
             let mock = {
                 let mut mock = crate::types::MockStakeHandler::<Test>::new();
-                mock.expect_create_stake().times(1).returning(|_, _| Ok(1));
+                mock.expect_create_stake().times(1).returning(|| Ok(1));
 
                 mock.expect_remove_stake()
                     .times(1)
                     .returning(|_| Err("Cannot remove stake"));
+
+                mock.expect_make_stake_imbalance()
+                    .times(1)
+                    .returning(|_, _| Ok(crate::types::NegativeImbalance::<Test>::new(200)));
+
+                mock.expect_stake().times(1).returning(|_, _| Ok(()));
+
+                mock.expect_unstake().times(1).returning(|_| Ok(()));
 
                 mock.expect_slash().times(1).returning(|_, _| Ok(()));
 

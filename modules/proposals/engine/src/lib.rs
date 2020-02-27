@@ -22,6 +22,7 @@
 
 pub use types::BalanceOf;
 use types::FinalizedProposalData;
+use types::ProposalStakeManager;
 pub use types::VotingResults;
 pub use types::{
     ApprovedProposalStatus, FinalizationData, Proposal, ProposalDecisionStatus, ProposalParameters,
@@ -279,9 +280,7 @@ impl<T: Trait> Module<T> {
         // Check stake_balance for value and create stake if value exists, else take None
         // If create_stake() returns error - return error from extrinsic
         let stake_id = stake_balance
-            .map(|stake_amount| {
-                T::StakeHandlerProvider::stakes().create_stake(stake_amount, account_id)
-            })
+            .map(|stake_amount| ProposalStakeManager::<T>::create_stake(stake_amount, account_id))
             .transpose()?;
 
         let new_proposal = Proposal {
@@ -427,10 +426,10 @@ impl<T: Trait> Module<T> {
         // only if stake exists
         if let Some(stake_id) = current_stake_id {
             if !slash_balance.is_zero() {
-                T::StakeHandlerProvider::stakes().slash(stake_id, slash_balance)?;
+                ProposalStakeManager::<T>::slash(stake_id, slash_balance)?;
             }
 
-            T::StakeHandlerProvider::stakes().remove_stake(stake_id)?;
+            ProposalStakeManager::<T>::remove_stake(stake_id)?;
         }
 
         Ok(())
