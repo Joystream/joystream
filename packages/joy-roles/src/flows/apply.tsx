@@ -99,6 +99,7 @@ export type keyPairDetails = {
 
 export type FundSourceSelectorProps = {
   keypairs: keyPairDetails[]
+  totalStake?: Balance
 }
 
 type FundSourceCallbackProps = {
@@ -122,6 +123,10 @@ export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCa
   }
 
   props.keypairs.map((v) => {
+    if (props.totalStake && v.balance.lt(props.totalStake)) {
+      return
+    }
+
     pairs.push({
       key: v.shortName,
       text: (
@@ -339,7 +344,7 @@ type CTAProps = {
   negativeCallback: CTACallback
   positiveLabel: string
   positiveIcon: SemanticICONS
-  positiveCallback: CTACallback
+  positiveCallback?: CTACallback
 }
 
 function CTA(props: CTAProps) {
@@ -357,6 +362,7 @@ function CTA(props: CTAProps) {
         labelPosition='right'
         positive
         onClick={props.positiveCallback}
+        disabled={!props.positiveCallback}
       />
     </Container>
   )
@@ -932,6 +938,18 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
     props.nextTransition()
   }
 
+  const balanceIsEnough = (): boolean => {
+    if (!props.totalStake) {
+      return true
+    }
+
+    const idx = props.keypairs.findIndex((a: keyPairDetails) => a.accountId.eq(props.keyAddress))
+    if (idx === -1) {
+      return false
+    }
+    return props.keypairs[idx].balance.gte(props.totalStake)
+  }
+
   return (
     <Container className="content">
       <p>
@@ -955,8 +973,8 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
       </ModalAccordion>
 
       <Segment>
-        <Label attached='top'>Source of transaction fee funds</Label>
-        <p>Please select the account that will be used as the source of transaction fee funds.</p>
+        <Label attached='top'>Source of funds</Label>
+        <p>Please select the account that will be used as the source of funds.</p>
         <FundSourceSelector {...props}
           addressCallback={props.setKeyAddress}
         />
@@ -968,7 +986,7 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
         negativeCallback={props.prevTransition}
         positiveLabel='Make transaction and submit application'
         positiveIcon={'right arrow' as SemanticICONS}
-        positiveCallback={onSubmit}
+        positiveCallback={balanceIsEnough() ? onSubmit : undefined}
       />
     </Container>
   )
@@ -1158,6 +1176,7 @@ export const FlowModal = Loadable<FlowModalProps>(
         keyAddress={txKeyAddress}
         setKeyAddress={setTxKeyAddress}
         transactionDetails={props.transactionDetails}
+        totalStake={Add(applicationStake, roleStake)}
       />],
 
       [ProgressSteps.Done, <DoneStage {...props} roleKeyName={props.roleKeyName} />],
