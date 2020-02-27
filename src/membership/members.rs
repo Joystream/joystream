@@ -658,10 +658,15 @@ impl<T: Trait> Module<T> {
             "ActorInRoleAlreadyExists"
         );
 
+        /*
+        Disabling this temporarily for Rome, later we will drop all this
+        integration with Membership module anyway:
+        https://github.com/Joystream/substrate-runtime-joystream/issues/115
         ensure!(
             !profile.roles.occupies_role(actor_in_role.role),
             "MemberAlreadyInRole"
         );
+        */
 
         // Other possible checks:
         // How long the member has been registered
