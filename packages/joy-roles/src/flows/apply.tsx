@@ -1082,6 +1082,7 @@ export const FlowModal = Loadable<FlowModalProps>(
     const cancel = () => {
       if (history.length > 1) {
         history.goBack()
+        return
       }
       history.push('/working-groups/')
     }
