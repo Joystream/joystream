@@ -365,18 +365,20 @@ pub fn testnet_genesis(
     const ENDOWMENT: Balance = 10_000_000;
 
     // Static members
-    let mut initial_members = vec![
-        // Make Root a member
-        (
-            root_key.clone(),
-            String::from("system"),
-            String::from("http://joystream.org/avatar.png"),
-            String::from("I am root!"),
-        ),
-    ];
+    let initial_members = crate::members_config::initial_members();
 
-    // Additional initial members
-    initial_members.append(&mut crate::members_config::initial_members());
+    // let mut additional_members = vec![
+    //     // Make Root a member
+    //     (
+    //         root_key.clone(),
+    //         String::from("system"),
+    //         String::from("http://joystream.org/avatar.png"),
+    //         String::from("I am root!"),
+    //     ),
+    // ];
+
+    // // Additional members
+    // initial_members.append(&mut additional_members);
 
     GenesisConfig {
         //substrate modules
