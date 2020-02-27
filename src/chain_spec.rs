@@ -190,13 +190,12 @@ pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
 /// Staging testnet config
 pub fn staging_testnet_config() -> ChainSpec {
     let boot_nodes = vec![
-		String::from("/dns4/bootnode1.joystream.org/tcp/30333/p2p/QmeDa8jASqMRpTh4YCkeVEuHo6nbMcFDzD9pkUxTr3WxhM"),
-		String::from("/dns4/bootnode2.joystream.org/tcp/30333/p2p/QmbjzmNMjzQUMHpzqcPHW5DnFeUjM3x4hbiDSMkYv1McD3"),
+        String::from("/dns4/rome-reckless.joystream.org/tcp/30333/p2p/QmaTTdEF6YVCtynSjsXmGPSGcEesAahoZ8pmcCmmBwSE7S")
     ];
 
     ChainSpec::from_genesis(
-        "Joystream Staging Testnet",
-        "joy_staging_6",
+        "Joystream Rome Reckless Testnet",
+        "joy_rome_reckless_N",
         staging_testnet_config_genesis,
         boot_nodes,
         Some(TelemetryEndpoints::new(vec![(
@@ -204,7 +203,7 @@ pub fn staging_testnet_config() -> ChainSpec {
             0,
         )])),
         // protocol_id
-        Some(&*"joy.staging"),
+        Some(&*"/joy/rome/reckless/N"),
         // Properties
         Some(chain_spec_properties()),
         // Extensions
@@ -214,19 +213,19 @@ pub fn staging_testnet_config() -> ChainSpec {
 
 fn staging_testnet_config_genesis() -> GenesisConfig {
     let initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId, ImOnlineId)> = vec![(
-        hex!["0610d1a2b1d704723e588c842a934737491688b18b052baae1286f12e96adb65"].into(), // stash
-        hex!["609cee3edd9900e69be44bcbf7a1892cad10408840a2d72d563811d72d9bb339"].into(), // controller
-        hex!["65179fd9c39ec301457d1ee47a13f3bb0fef65812a57b6c93212e609b10d35d2"].unchecked_into(), // session key
-        hex!["8acbf7448d96592e61881c5ef0f0ab18da6955cf4824534eb19b26f03df56b5a"].unchecked_into(),
-        hex!["8acbf7448d96592e61881c5ef0f0ab18da6955cf4824534eb19b26f03df56b5a"].unchecked_into(),
+        hex!["4430a31121fc174b1c361b365580c54ef393813171e59542f5d2ce3d8b171a2d"].into(), // stash
+        hex!["58a743f1bab2f472fb99af98b6591e23a56fd84bc9c2a62037ed8867caae7c21"].into(), // controller
+        hex!["af5286fb1e403afd44d92ae3fb0b371a0f4f8faf3e6b2ff50ea91fb426b0015f"].unchecked_into(), // session - grandpa
+        hex!["d69529ed1549644977cec8dc027e71e1e2ae7aab99833a7f7dc08677a8d36307"].unchecked_into(), // session - babe
+        hex!["56bfd27715ce6c76e4d884c31374b9928391e461727ffaf27b94b6ce48570d39"].unchecked_into(), // session - im-online
     )];
     let endowed_accounts =
-        vec![hex!["0ae55282e669fc55cb9529c0b12b989f2c5bf636d0de7630b5a4850055ed9c30"].into()];
+        vec![hex!["00680fb81473784017291ef0afd968b986966daa7842d5b5063c8427c2b62577"].into()];
 
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;
-    const STASH: Balance = 50 * DOLLARS;
-    const ENDOWMENT: Balance = 100_000_000 * DOLLARS;
+    const STASH: Balance = 20 * DOLLARS;
+    const ENDOWMENT: Balance = 100_000 * DOLLARS;
 
     GenesisConfig {
         system: Some(SystemConfig {
@@ -362,8 +361,8 @@ pub fn testnet_genesis(
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
 ) -> GenesisConfig {
-    const STASH: Balance = 10000;
-    const ENDOWMENT: Balance = 100_000_000;
+    const STASH: Balance = 2000;
+    const ENDOWMENT: Balance = 10_000_000;
 
     // Static members
     let mut initial_members = vec![
