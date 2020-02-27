@@ -7,6 +7,7 @@ use crate::{ProposalCodeDecoder, ProposalExecutable};
 
 mod runtime_upgrade;
 mod text_proposal;
+pub mod parameters;
 
 pub use runtime_upgrade::RuntimeUpgradeProposalExecutable;
 pub use text_proposal::TextProposalExecutable;
@@ -50,3 +51,4 @@ impl<T: system::Trait> ProposalCodeDecoder<T> for ProposalType {
             .compose_executable::<T>(proposal_code)
     }
 }
+

@@ -84,15 +84,7 @@ decl_module! {
             text: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
         ) {
-            let parameters = crate::ProposalParameters {
-                voting_period: T::BlockNumber::from(50000u32),
-                grace_period: T::BlockNumber::from(10000u32),
-                approval_quorum_percentage: 40,
-                approval_threshold_percentage: 51,
-                slashing_quorum_percentage: 80,
-                slashing_threshold_percentage: 80,
-                required_stake: Some(<BalanceOf<T>>::from(500u32))
-            };
+            let parameters = proposal_types::parameters::text_proposal::<T>();
 
             ensure!(!text.is_empty(), Error::TextProposalIsEmpty);
             ensure!(text.len() as u32 <=  Self::text_max_len(),
@@ -124,15 +116,7 @@ decl_module! {
             wasm: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
         ) {
-            let parameters = crate::ProposalParameters {
-                voting_period: T::BlockNumber::from(50000u32),
-                grace_period: T::BlockNumber::from(10000u32),
-                approval_quorum_percentage: 80,
-                approval_threshold_percentage: 80,
-                slashing_quorum_percentage: 80,
-                slashing_threshold_percentage: 80,
-                required_stake: Some(<BalanceOf<T>>::from(50000u32))
-            };
+            let parameters = proposal_types::parameters::upgrade_runtime::<T>();
 
             ensure!(!wasm.is_empty(), Error::RuntimeProposalIsEmpty);
             ensure!(wasm.len() as u32 <= Self::wasm_max_len(),
