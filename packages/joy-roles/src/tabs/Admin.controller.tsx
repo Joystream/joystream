@@ -683,9 +683,9 @@ export class AdminController extends Controller<State, ITransport> {
         )
       )
 
-      let title: string = "unknown"
+      let title: string = "unknown (JSON schema invalid)"
       const hrt = baseOpening.value.parse_human_readable_text()
-      if (typeof hrt !== 'undefined') {
+      if (typeof hrt === 'object') {
         title = (hrt as GenericJoyStreamRoleSchema).job.title
       }
 
