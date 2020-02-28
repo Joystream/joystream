@@ -2050,6 +2050,8 @@ impl CreateChannelFixture {
             Principal::Curator(_) => false,
             Principal::ChannelOwner(created_principal_channel_id) =>
                 created_principal_channel_id == channel_id,
+            Principal::AnyActiveCurator => false,
+            Principal::AnyActiveChannelOwner => false,
         });
 
         channel_id

@@ -430,7 +430,7 @@ impl versioned_store::Trait for Runtime {
 
 impl versioned_store_permissions::Trait for Runtime {
     type Credential = Credential;
-    type CredentialChecker = (ContentWorkingGroupCredentials, SudoKeyHasAllCredentials);
+    type CredentialChecker = (ContentWorkingGroup, SudoKeyHasAllCredentials);
     type CreateClassPermissionsChecker = ContentLeadOrSudoKeyCanCreateClasses;
 }
 
@@ -449,66 +449,7 @@ parameter_types! {
     pub const CurrentLeadCredential: Credential = 0;
     pub const AnyActiveCuratorCredential: Credential = 1;
     pub const AnyActiveChannelOwnerCredential: Credential = 2;
-    pub const PrincipalIdMappingStartsAtCredential: Credential = 1000;
-}
-
-pub struct ContentWorkingGroupCredentials {}
-impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingGroupCredentials {
-    fn account_has_credential(
-        account: &AccountId,
-        credential: <Runtime as versioned_store_permissions::Trait>::Credential,
-    ) -> bool {
-        match credential {
-            // Credentials from 0..999 represents groups or more complex requirements
-            // Current Lead if set
-            credential if credential == CurrentLeadCredential::get() => {
-                match <content_wg::Module<Runtime>>::ensure_lead_is_set() {
-                    Ok((_, lead)) => lead.role_account == *account,
-                    _ => false,
-                }
-            }
-            // Any Active Curator
-            credential if credential == AnyActiveCuratorCredential::get() => {
-                // Look for a Curator with a matching role account
-                for (_principal_id, principal) in <content_wg::PrincipalById<Runtime>>::enumerate()
-                {
-                    if let content_wg::Principal::Curator(curator_id) = principal {
-                        let curator = <content_wg::CuratorById<Runtime>>::get(curator_id);
-                        if curator.role_account == *account
-                            && curator.stage == content_wg::CuratorRoleStage::Active
-                        {
-                            return true;
-                        }
-                    }
-                }
-
-                return false;
-            }
-            // Any Active Channel Owner
-            credential if credential == AnyActiveChannelOwnerCredential::get() => {
-                // Look for a ChannelOwner with a matching role account
-                for (_principal_id, principal) in <content_wg::PrincipalById<Runtime>>::enumerate()
-                {
-                    if let content_wg::Principal::ChannelOwner(channel_id) = principal {
-                        let channel = <content_wg::ChannelById<Runtime>>::get(channel_id);
-                        if channel.role_account == *account {
-                            return true; // should we also take publishing_status/curation_status into account ?
-                        }
-                    }
-                }
-
-                return false;
-            }
-            // mapping to workging group principal id
-            n if n >= PrincipalIdMappingStartsAtCredential::get() => {
-                <content_wg::Module<Runtime>>::account_has_credential(
-                    account,
-                    n - PrincipalIdMappingStartsAtCredential::get(),
-                )
-            }
-            _ => false,
-        }
-    }
+    pub const DynamicCredentialsStartAt: Credential = 1000;
 }
 
 // Allow sudo key holder permission to create classes
@@ -661,6 +602,10 @@ impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHan
 
 impl content_wg::Trait for Runtime {
     type Event = Event;
+    type CurrentLeadPrincipalId = CurrentLeadCredential;
+    type AnyActiveCuratorPrincipalId = AnyActiveCuratorCredential;
+    type AnyActiveChannelOwnerPrincipalId = AnyActiveChannelOwnerCredential;
+    type DynamicPrincipalIdsStartAt = DynamicCredentialsStartAt;
 }
 
 impl currency::GovernanceCurrency for Runtime {

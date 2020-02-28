@@ -15,7 +15,7 @@ use rstd::collections::btree_set::BTreeSet;
 use rstd::convert::From;
 use rstd::prelude::*;
 use runtime_primitives::traits::{One, Zero}; // Member, SimpleArithmetic, MaybeSerialize
-use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
+use srml_support::traits::{Currency, ExistenceRequirement, Get, WithdrawReasons};
 use srml_support::{
     decl_event,
     decl_module,
@@ -45,6 +45,11 @@ pub trait Trait:
 
     /// The event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
+    type CurrentLeadPrincipalId: Get<PrincipalId<Self>>;
+    type AnyActiveCuratorPrincipalId: Get<PrincipalId<Self>>;
+    type AnyActiveChannelOwnerPrincipalId: Get<PrincipalId<Self>>;
+    type DynamicPrincipalIdsStartAt: Get<PrincipalId<Self>>;
 }
 
 /// Type constraint for identifer used for actors in members module in this runtime.
@@ -658,6 +663,10 @@ pub enum Principal<CuratorId, ChannelId> {
     Curator(CuratorId),
 
     ChannelOwner(ChannelId),
+
+    AnyActiveCurator,
+
+    AnyActiveChannelOwner,
 }
 
 /// Must be default constructible because it indirectly is a value in a storage map.
@@ -1026,10 +1035,16 @@ decl_storage! {
         pub NextCuratorId get(next_curator_id) config(): CuratorId<T>;
 
         /// Maps identifier to principal.
-        pub PrincipalById get(principal_by_id) config(): linked_map PrincipalId<T> => Principal<CuratorId<T>, ChannelId<T>>;
+        pub PrincipalById get(principal_by_id) build(|config: &GenesisConfig<T>| {
+            vec![
+                (T::CurrentLeadPrincipalId::get(), Principal::Lead),
+                (T::AnyActiveCuratorPrincipalId::get(), Principal::AnyActiveCurator),
+                (T::AnyActiveChannelOwnerPrincipalId::get(), Principal::AnyActiveChannelOwner),
+            ]
+        }): linked_map PrincipalId<T> => Principal<CuratorId<T>, ChannelId<T>>;
 
         /// Next identifier for
-        pub NextPrincipalId get(next_principal_id) config(): PrincipalId<T>;
+        pub NextPrincipalId get(next_principal_id) config(): PrincipalId<T> = T::DynamicPrincipalIdsStartAt::get();
 
         /// Whether it is currently possible to create a channel via `create_channel` extrinsic.
         pub ChannelCreationEnabled get(channel_creation_enabled) config(): bool;
@@ -2032,31 +2047,49 @@ impl<T: Trait> versioned_store_permissions::CredentialChecker<T> for Module<T> {
         let principal = PrincipalById::<T>::get(&id);
 
         // Get possible
-        let opt_prinicipal_account = match principal {
+        let opt_prinicipal_accounts = match principal {
             Principal::Lead => {
                 // Try to get lead
                 match Self::ensure_lead_is_set() {
-                    Ok((_, lead)) => Some(lead.role_account),
+                    Ok((_, lead)) => Some(vec![lead.role_account]),
                     Err(_) => None,
                 }
             }
 
-            Principal::Curator(curator_id) => Some(
+            Principal::Curator(curator_id) => Some(vec![
                 Self::ensure_curator_exists(&curator_id)
                     .expect("Curator must exist")
                     .role_account,
-            ),
+            ]),
 
-            Principal::ChannelOwner(channel_id) => Some(
+            Principal::ChannelOwner(channel_id) => Some(vec![
                 Self::ensure_channel_id_is_valid(&channel_id)
                     .expect("Channel must exist")
                     .role_account,
-            ),
+            ]),
+
+            Principal::AnyActiveCurator => {
+                let mut curator_role_accounts = vec![];
+                for (_id, curator) in CuratorById::<T>::enumerate() {
+                    if curator.stage == CuratorRoleStage::Active {
+                        curator_role_accounts.push(curator.role_account);
+                    }
+                }
+                Some(curator_role_accounts)
+            }
+
+            Principal::AnyActiveChannelOwner => {
+                let mut channel_owners_role_accounts = vec![];
+                for (_id, channel) in ChannelById::<T>::enumerate() {
+                    channel_owners_role_accounts.push(channel.role_account);
+                }
+                Some(channel_owners_role_accounts)
+            }
         };
 
-        // Compare, possibly set, principal account with the given account
-        match opt_prinicipal_account {
-            Some(principal_account) => *account == principal_account,
+        // Compare, possibly set, principal accounts with the given account
+        match opt_prinicipal_accounts {
+            Some(principal_accounts) => principal_accounts.as_slice().contains(account),
             None => false,
         }
     }

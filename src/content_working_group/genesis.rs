@@ -75,7 +75,7 @@ impl<T: Trait> GenesisConfigBuilder<T> {
             channel_id_by_handle: map![], //GenesisConfigMap<Vec<u8>, ChannelId>,
             curator_by_id: map![],        //GenesisConfigMap<CuratorId, Curator>,
             next_curator_id: CuratorId::<T>::default(),
-            principal_by_id: map![], //GenesisConfigMap<PrinicipalId, Prinicipal>,
+            //principal_by_id: map![], //GenesisConfigMap<PrinicipalId, Prinicipal>,
             next_principal_id: PrincipalId::<T>::default(),
             channel_creation_enabled: self.channel_creation_enabled,
             unstaker_by_stake_id: map![], //GenesisConfigMap<LeadId, CuratorId>,

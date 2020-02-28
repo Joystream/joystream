@@ -38,6 +38,10 @@ parameter_types! {
     pub const TransactionByteFee: u32 = 0;
     pub const InitialMembersBalance: u64 = 2000;
     pub const StakePoolId: [u8; 8] = *b"joystake";
+    pub const CurrentLeadCredential: PrincipalId<Test> = 0;
+    pub const AnyActiveCuratorCredential: PrincipalId<Test> = 1;
+    pub const AnyActiveChannelOwnerCredential: PrincipalId<Test> = 2;
+    pub const DynamicCredentialsStartAt: PrincipalId<Test> = 1000;
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -188,6 +192,10 @@ impl members::Trait for Test {
 
 impl Trait for Test {
     type Event = TestEvent;
+    type CurrentLeadPrincipalId = CurrentLeadCredential;
+    type AnyActiveCuratorPrincipalId = AnyActiveCuratorCredential;
+    type AnyActiveChannelOwnerPrincipalId = AnyActiveChannelOwnerCredential;
+    type DynamicPrincipalIdsStartAt = DynamicCredentialsStartAt;
 }
 
 pub struct TestExternalitiesBuilder<T: Trait> {
