@@ -57,6 +57,7 @@ impl PostFixture {
         let add_post_result = Discussions::update_post(
             self.origin.clone().into(),
             self.thread_id,
+            self.post_id.unwrap(),
             self.text.clone(),
         );
 

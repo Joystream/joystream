@@ -27,9 +27,12 @@ use srml_support::{decl_module, decl_storage, ensure, Parameter};
 use types::{Post, Thread};
 use srml_support::traits::Get;
 
-//TODO: create_thread() ensures
-//TODO: create_post() ensures
-//TODO: create events
+// TODO: create_thread() ensures
+// TODO: create_post() ensures
+// TODO: create events
+// TODO: test thread content
+// TODO: test post content
+// TODO: move errors to decl_error macro
 
 
 const MSG_NOT_AUTHOR: &str = "Author should match the post creator";
@@ -69,8 +72,8 @@ decl_storage! {
         /// Count of all threads that have been created.
         pub ThreadCount get(fn thread_count): u32;
 
-        /// Map post id to corresponding post.
-        pub PostById get(post_by_id): map T::PostId =>
+        /// Map thread id and post id to corresponding post.
+        pub PostThreadIdByPostId: double_map T::ThreadId, twox_128(T::PostId) =>
              Post<T::PostAuthorId, T::BlockNumber, T::ThreadId>;
 
         /// Count of all posts that have been created.
@@ -100,16 +103,16 @@ decl_module! {
             };
 
             let post_id = T::PostId::from(new_post_id);
-            <PostById<T>>::insert(post_id, new_post);
+            <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
             PostCount::put(next_post_count_value);
        }
 
        /// Updates a post with author origin check. Update attempts number is limited.
-      pub fn update_post(origin, post_id : T::PostId, text : Vec<u8>) {
+      pub fn update_post(origin, thread_id: T::ThreadId,  post_id : T::PostId, text : Vec<u8>) {
             let account_id = T::ThreadAuthorOrigin::ensure_origin(origin)?;
             let post_author_id = T::PostAuthorId::from(account_id);
 
-            let post = <PostById<T>>::get(&post_id);
+            let post = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id);
 
             ensure!(post.author_id == post_author_id, MSG_NOT_AUTHOR);
             ensure!(post.edition_number < T::MaxPostEditionNumber::get(),
@@ -122,7 +125,7 @@ decl_module! {
                 ..post
             };
 
-            <PostById<T>>::insert(post_id, new_post);
+            <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
        }
     }
 }
