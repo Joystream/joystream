@@ -19,6 +19,7 @@
 
 // TODO: Test module after the https://github.com/Joystream/substrate-runtime-joystream/issues/161
 // issue will be fixed: "Fix stake module and allow slashing and unstaking in the same block."
+// TODO: Test cancellation, rejection fees
 
 pub use types::BalanceOf;
 use types::FinalizedProposalData;
@@ -44,18 +45,8 @@ use runtime_primitives::traits::{EnsureOrigin, Zero};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
 };
+use srml_support::traits::Get;
 use system::ensure_root;
-
-// Max allowed proposal title length. Can be used if config value is not filled.
-const DEFAULT_TITLE_MAX_LEN: u32 = 100;
-// Max allowed proposal body length. Can be used if config value is not filled.
-const DEFAULT_BODY_MAX_LEN: u32 = 10_000;
-// Max simultaneous active proposals number.
-const MAX_ACTIVE_PROPOSALS_NUMBER: u32 = 100;
-// Default proposal cancellation fee to prevent spamming.
-const DEFAULT_CANCELLATION_FEE: u32 = 5;
-// Default proposal rejection fee to prevent spamming.
-const DEFAULT_REJECTION_FEE: u32 = 17;
 
 /// Proposals engine trait.
 pub trait Trait: system::Trait + timestamp::Trait + stake::Trait {
@@ -85,6 +76,21 @@ pub trait Trait: system::Trait + timestamp::Trait + stake::Trait {
 
     /// Provides stake logic implementation. Can be used to mock stake logic.
     type StakeHandlerProvider: StakeHandlerProvider<Self>;
+
+    /// The fee is applied when cancel the proposal. A fee would be slashed (burned).
+    type CancellationFee: Get<BalanceOf<Self>>;
+
+    /// The fee is applied when the proposal gets rejected. A fee would be slashed (burned).
+    type RejectionFee: Get<BalanceOf<Self>>;
+
+    /// Defines max allowed proposal title length.
+    type TitleMaxLength: Get<u32>;
+
+    /// Defines max allowed proposal description length.
+    type DescriptionMaxLength: Get<u32>;
+
+    /// Defines max simultaneous active proposals number.
+    type MaxActiveProposalLimit: Get<u32>;
 }
 
 decl_event!(
@@ -142,23 +148,6 @@ decl_storage! {
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
         pub VoteExistsByProposalByVoter get(fn vote_by_proposal_by_voter):
             double_map T::ProposalId, twox_256(T::VoterId) => VoteKind;
-
-        /// Defines max allowed proposal title length. Can be configured.
-        pub TitleMaxLen get(title_max_len) config(): u32 = DEFAULT_TITLE_MAX_LEN;
-
-        /// Defines max allowed proposal body length. Can be configured.
-        pub BodyMaxLen get(body_max_len) config(): u32 = DEFAULT_BODY_MAX_LEN;
-
-        /// Defines max simultaneous active proposals number. Can be configured.
-        pub MaxActiveProposals get(max_active_proposals) config(): u32 = MAX_ACTIVE_PROPOSALS_NUMBER;
-
-        /// A fee to be slashed (burn) in case a proposer decides to cancel a proposal.
-        pub CancellationFee get(cancellation_fee) config(): BalanceOf<T> =
-            BalanceOf::<T>::from(DEFAULT_CANCELLATION_FEE);
-
-        /// A fee to be slashed (burn) in case a proposal was rejected.
-        pub RejectionFee get(rejection_fee) config(): BalanceOf<T> =
-            BalanceOf::<T>::from(DEFAULT_REJECTION_FEE);
     }
 }
 
@@ -256,7 +245,7 @@ impl<T: Trait> Module<T> {
         origin: T::Origin,
         parameters: ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
         title: Vec<u8>,
-        body: Vec<u8>,
+        description: Vec<u8>,
         stake_balance: Option<types::BalanceOf<T>>,
         proposal_type: u32,
         proposal_code: Vec<u8>,
@@ -267,7 +256,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_create_proposal_parameters_are_valid(
             &parameters,
             &title,
-            &body,
+            &description,
             stake_balance,
         )?;
 
@@ -287,7 +276,7 @@ impl<T: Trait> Module<T> {
             created_at: Self::current_block(),
             parameters,
             title,
-            body,
+            description,
             proposer_id: proposer_id.clone(),
             proposal_type,
             status: ProposalStatus::Active,
@@ -442,12 +431,12 @@ impl<T: Trait> Module<T> {
     ) -> types::BalanceOf<T> {
         match decision_status {
             ProposalDecisionStatus::Rejected | ProposalDecisionStatus::Expired => {
-                Self::rejection_fee()
+                T::RejectionFee::get()
             }
             ProposalDecisionStatus::Approved { .. } | ProposalDecisionStatus::Vetoed => {
                 BalanceOf::<T>::zero()
             }
-            ProposalDecisionStatus::Canceled => Self::cancellation_fee(),
+            ProposalDecisionStatus::Canceled => T::CancellationFee::get(),
             ProposalDecisionStatus::Slashed => proposal_parameters
                 .required_stake
                 .clone()
@@ -499,18 +488,18 @@ impl<T: Trait> Module<T> {
     ) -> dispatch::Result {
         ensure!(!title.is_empty(), errors::MSG_EMPTY_TITLE_PROVIDED);
         ensure!(
-            title.len() as u32 <= Self::title_max_len(),
+            title.len() as u32 <= T::TitleMaxLength::get(),
             errors::MSG_TOO_LONG_TITLE
         );
 
         ensure!(!body.is_empty(), errors::MSG_EMPTY_BODY_PROVIDED);
         ensure!(
-            body.len() as u32 <= Self::body_max_len(),
+            body.len() as u32 <= T::DescriptionMaxLength::get(),
             errors::MSG_TOO_LONG_BODY
         );
 
         ensure!(
-            (Self::active_proposal_count()) < Self::max_active_proposals(),
+            (Self::active_proposal_count()) < T::MaxActiveProposalLimit::get(),
             errors::MSG_MAX_ACTIVE_PROPOSAL_NUMBER_EXCEEDED
         );
 

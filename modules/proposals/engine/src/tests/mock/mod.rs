@@ -81,6 +81,14 @@ impl stake::Trait for Test {
     type SlashId = u64;
 }
 
+parameter_types! {
+    pub const CancellationFee: u64 = 5;
+    pub const RejectionFee: u64 = 3;
+    pub const TitleMaxLength: u32 = 100;
+    pub const DescriptionMaxLength: u32 = 10000;
+    pub const MaxActiveProposalLimit: u32 = 100;
+}
+
 impl crate::Trait for Test {
     type Event = TestEvent;
 
@@ -99,6 +107,16 @@ impl crate::Trait for Test {
     type VoterId = u64;
 
     type StakeHandlerProvider = stakes::TestStakeHandlerProvider;
+
+    type CancellationFee = CancellationFee;
+
+    type RejectionFee = RejectionFee;
+
+    type TitleMaxLength = TitleMaxLength;
+
+    type DescriptionMaxLength = DescriptionMaxLength;
+
+    type MaxActiveProposalLimit = MaxActiveProposalLimit;
 }
 
 // If changing count is required, we can upgrade the implementation as shown here:

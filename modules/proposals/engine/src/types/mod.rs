@@ -124,11 +124,11 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId> {
     /// Identifier of member proposing.
     pub proposer_id: ProposerId,
 
-    /// Proposal title
+    /// Proposal description
     pub title: Vec<u8>,
 
     /// Proposal body
-    pub body: Vec<u8>,
+    pub description: Vec<u8>,
 
     /// When it was created.
     pub created_at: BlockNumber,
