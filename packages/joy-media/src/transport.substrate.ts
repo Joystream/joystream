@@ -24,7 +24,7 @@ import { LinkageResult } from '@polkadot/types/codec/Linkage';
 import { ChannelCodec } from './schemas/channel/Channel';
 import { FeaturedContentType } from './schemas/general/FeaturedContent';
 
-const FIRST_CHANNEL_ID = 0;
+const FIRST_CHANNEL_ID = 1;
 const FIRST_CLASS_ID = 1;
 const FIRST_ENTITY_ID = 1;
 
