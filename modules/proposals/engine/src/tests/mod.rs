@@ -125,29 +125,19 @@ impl DummyProposalFixture {
         }
     }
 
-    fn create_proposal_and_assert(self, result: dispatch::Result) -> Option<u32> {
-        assert_eq!(
-            ProposalsEngine::create_proposal(
-                self.origin.into(),
-                self.parameters,
-                self.title,
-                self.body,
-                self.stake_balance,
-                self.proposal_type,
-                self.proposal_code,
-                None,
-            ),
-            result
+    fn create_proposal_and_assert(self, result: Result<u32, &'static str>) -> Option<u32> {
+        let proposal_id_result = ProposalsEngine::create_proposal(
+            self.origin.into(),
+            self.parameters,
+            self.title,
+            self.body,
+            self.stake_balance,
+            self.proposal_type,
+            self.proposal_code,
         );
+        assert_eq!(proposal_id_result, result);
 
-        if result.is_ok() {
-            // last created proposal id equals current proposal count
-            let proposal_id = <ProposalCount>::get();
-
-            Some(proposal_id)
-        } else {
-            None
-        }
+        proposal_id_result.ok()
     }
 }
 
@@ -273,7 +263,7 @@ fn create_dummy_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
 
-        dummy_proposal.create_proposal_and_assert(Ok(()));
+        dummy_proposal.create_proposal_and_assert(Ok(1));
     });
 }
 
@@ -290,7 +280,7 @@ fn create_dummy_proposal_fails_with_insufficient_rights() {
 fn vote_succeeds() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -313,7 +303,7 @@ fn proposal_execution_succeeds() {
         let parameters_fixture = ProposalParametersFixture::default();
         let dummy_proposal =
             DummyProposalFixture::default().with_parameters(parameters_fixture.params());
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 1);
@@ -347,7 +337,6 @@ fn proposal_execution_succeeds() {
                 },
                 finalized_at: Some(1),
                 stake_id: None,
-                discussion_thread_id: None,
             }
         );
 
@@ -366,7 +355,7 @@ fn proposal_execution_failed() {
             .with_parameters(parameters_fixture.params())
             .with_proposal_type_and_code(faulty_proposal.proposal_type(), faulty_proposal.encode());
 
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -399,7 +388,6 @@ fn proposal_execution_failed() {
                 },
                 finalized_at: Some(1),
                 stake_id: None,
-                discussion_thread_id: None,
             }
         )
     });
@@ -418,7 +406,7 @@ fn voting_results_calculation_succeeds() {
             required_stake: None,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -446,7 +434,7 @@ fn voting_results_calculation_succeeds() {
 fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Reject);
@@ -505,7 +493,7 @@ fn create_proposal_fails_with_invalid_body_or_title() {
 fn vote_fails_with_expired_voting_period() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         run_to_block_and_finalize(6);
 
@@ -518,7 +506,7 @@ fn vote_fails_with_expired_voting_period() {
 fn vote_fails_with_not_active_proposal() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Reject);
@@ -546,7 +534,7 @@ fn vote_fails_with_absent_proposal() {
 fn vote_fails_on_double_voting() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.auto_increment_voter_id = false;
@@ -565,7 +553,7 @@ fn cancel_proposal_succeeds() {
         let parameters_fixture = ProposalParametersFixture::default();
         let dummy_proposal =
             DummyProposalFixture::default().with_parameters(parameters_fixture.params());
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let cancel_proposal = CancelProposalFixture::new(proposal_id);
         cancel_proposal.cancel_and_assert(Ok(()));
@@ -586,7 +574,6 @@ fn cancel_proposal_succeeds() {
                 voting_results: VotingResults::default(),
                 finalized_at: Some(1),
                 stake_id: None,
-                discussion_thread_id: None,
             }
         )
     });
@@ -596,7 +583,7 @@ fn cancel_proposal_succeeds() {
 fn cancel_proposal_fails_with_not_active_proposal() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         run_to_block_and_finalize(6);
 
@@ -617,7 +604,7 @@ fn cancel_proposal_fails_with_not_existing_proposal() {
 fn cancel_proposal_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let cancel_proposal =
             CancelProposalFixture::new(proposal_id).with_origin(RawOrigin::Signed(2));
@@ -634,7 +621,7 @@ fn veto_proposal_succeeds() {
         let parameters_fixture = ProposalParametersFixture::default();
         let dummy_proposal =
             DummyProposalFixture::default().with_parameters(parameters_fixture.params());
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 1);
@@ -658,7 +645,6 @@ fn veto_proposal_succeeds() {
                 voting_results: VotingResults::default(),
                 finalized_at: Some(1),
                 stake_id: None,
-                discussion_thread_id: None,
             }
         );
 
@@ -671,7 +657,7 @@ fn veto_proposal_succeeds() {
 fn veto_proposal_fails_with_not_active_proposal() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         run_to_block_and_finalize(6);
 
@@ -692,7 +678,7 @@ fn veto_proposal_fails_with_not_existing_proposal() {
 fn veto_proposal_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let veto_proposal = VetoProposalFixture::new(proposal_id).with_origin(RawOrigin::Signed(2));
         veto_proposal.veto_and_assert(Err("RequireRootOrigin"));
@@ -703,7 +689,7 @@ fn veto_proposal_fails_with_insufficient_rights() {
 fn create_proposal_event_emitted() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
+        dummy_proposal.create_proposal_and_assert(Ok(1));
 
         EventFixture::assert_events(vec![RawEvent::ProposalCreated(1, 1)]);
     });
@@ -713,7 +699,7 @@ fn create_proposal_event_emitted() {
 fn veto_proposal_event_emitted() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let veto_proposal = VetoProposalFixture::new(proposal_id);
         veto_proposal.veto_and_assert(Ok(()));
@@ -732,7 +718,7 @@ fn veto_proposal_event_emitted() {
 fn cancel_proposal_event_emitted() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let cancel_proposal = CancelProposalFixture::new(proposal_id);
         cancel_proposal.cancel_and_assert(Ok(()));
@@ -754,7 +740,7 @@ fn cancel_proposal_event_emitted() {
 fn vote_proposal_event_emitted() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -772,7 +758,7 @@ fn create_proposal_and_expire_it() {
         let parameters_fixture = ProposalParametersFixture::default();
         let dummy_proposal =
             DummyProposalFixture::default().with_parameters(parameters_fixture.params());
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         run_to_block_and_finalize(8);
 
@@ -792,7 +778,6 @@ fn create_proposal_and_expire_it() {
                 voting_results: VotingResults::default(),
                 finalized_at: Some(4),
                 stake_id: None,
-                discussion_thread_id: None,
             }
         )
     });
@@ -805,7 +790,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
         let dummy_proposal =
             DummyProposalFixture::default().with_parameters(parameters_fixture.params());
 
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -842,7 +827,6 @@ fn proposal_execution_postponed_because_of_grace_period() {
                     slashes: 0,
                 },
                 stake_id: None,
-                discussion_thread_id: None,
             }
         );
     });
@@ -854,7 +838,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
         let parameters_fixture = ProposalParametersFixture::default().with_grace_period(1);
         let dummy_proposal =
             DummyProposalFixture::default().with_parameters(parameters_fixture.params());
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -888,7 +872,6 @@ fn proposal_execution_succeeds_after_the_grace_period() {
                 slashes: 0,
             },
             stake_id: None,
-            discussion_thread_id: None,
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -911,11 +894,11 @@ fn proposal_execution_succeeds_after_the_grace_period() {
 #[test]
 fn create_proposal_fails_on_exceeding_max_active_proposals_count() {
     initial_test_ext().execute_with(|| {
-        for idx in 0..100 {
+        for idx in 1..101 {
             let dummy_proposal = DummyProposalFixture::default();
-            dummy_proposal.create_proposal_and_assert(Ok(()));
+            dummy_proposal.create_proposal_and_assert(Ok(idx));
             // internal active proposal counter check
-            assert_eq!(<ActiveProposalCount>::get(), idx + 1);
+            assert_eq!(<ActiveProposalCount>::get(), idx);
         }
 
         let dummy_proposal = DummyProposalFixture::default();
@@ -929,7 +912,7 @@ fn create_proposal_fails_on_exceeding_max_active_proposals_count() {
 fn voting_internal_cache_exists_after_proposal_finalization() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Ok(()));
+        dummy_proposal.create_proposal_and_assert(Ok(1));
 
         // last created proposal id equals current proposal count
         let proposal_id = <ProposalCount>::get();
@@ -972,7 +955,7 @@ fn create_dummy_proposal_succeeds_with_stake() {
 
         let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 500);
 
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
@@ -990,7 +973,6 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 voting_results: VotingResults::default(),
                 finalized_at: None,
                 stake_id: Some(0), // valid stake_id
-                discussion_thread_id: None,
             }
         )
     });
@@ -1141,7 +1123,7 @@ fn finalize_proposal_using_stake_mocks() {
                 .with_origin(RawOrigin::Signed(account_id))
                 .with_stake(stake_amount);
 
-            let _proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+            let _proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
             run_to_block_and_finalize(5);
         });
@@ -1152,7 +1134,7 @@ fn finalize_proposal_using_stake_mocks() {
 fn proposal_slashing_succeeds() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default();
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Reject);
@@ -1215,7 +1197,7 @@ fn finalize_proposal_failed_using_stake_mocks() {
                 .with_origin(RawOrigin::Signed(account_id))
                 .with_stake(stake_amount);
 
-            let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+            let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
             run_to_block_and_finalize(5);
 
@@ -1237,7 +1219,6 @@ fn finalize_proposal_failed_using_stake_mocks() {
                     finalized_at: Some(4),
                     voting_results: VotingResults::default(),
                     stake_id: Some(1),
-                    discussion_thread_id: None,
                 }
             );
         });

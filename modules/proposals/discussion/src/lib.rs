@@ -24,8 +24,8 @@ use rstd::vec::Vec;
 use runtime_primitives::traits::EnsureOrigin;
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
-use types::{Post, Thread};
 use srml_support::traits::Get;
+use types::{Post, Thread};
 
 // TODO: create_thread() ensures
 // TODO: create_post() ensures
@@ -33,7 +33,6 @@ use srml_support::traits::Get;
 // TODO: test thread content
 // TODO: test post content
 // TODO: move errors to decl_error macro
-
 
 const MSG_NOT_AUTHOR: &str = "Author should match the post creator";
 const MSG_POST_EDITION_NUMBER_EXCEEDED: &str = "Post edition limit reached.";

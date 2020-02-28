@@ -85,8 +85,10 @@ impl proposal_engine::Trait for Test {
     type VoterId = u64;
 
     type StakeHandlerProvider = proposal_engine::DefaultStakeHandlerProvider;
+}
 
-    type DiscussionThreadId = u32;
+parameter_types! {
+    pub const MaxPostEditionNumber: u32 = 5;
 }
 
 impl proposal_discussion::Trait for Test {
@@ -96,6 +98,7 @@ impl proposal_discussion::Trait for Test {
     type PostId = u32;
     type ThreadAuthorId = u64;
     type PostAuthorId = u64;
+    type MaxPostEditionNumber = MaxPostEditionNumber;
 }
 
 pub struct MockVotersParameters;

@@ -68,6 +68,10 @@ decl_storage! {
 
         /// Defines max allowed runtime upgrade proposal wasm code length.
         pub RuntimeUpgradeMaxLen get(wasm_max_len) config(): u32 = DEFAULT_RUNTIME_PROPOSAL_WASM_MAX_LEN;
+
+        /// Map proposal id to its discussion thread id
+        pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
+            map T::ProposalId => T::ThreadId;
     }
 }
 
@@ -113,7 +117,7 @@ decl_module! {
                 title.clone(),
             )?;
 
-            <proposal_engine::Module<T>>::create_proposal(
+            let proposal_id = <proposal_engine::Module<T>>::create_proposal(
                 cloned_origin2,
                 parameters,
                 title,
@@ -121,8 +125,9 @@ decl_module! {
                 stake_balance,
                 text_proposal.proposal_type(),
                 proposal_code,
-                Some(From::<u32>::from(discussion_thread_id.into())),
             )?;
+
+             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         }
 
         /// Create runtime upgrade proposal type. On approval prints its content.
@@ -162,7 +167,7 @@ decl_module! {
                 title.clone(),
             )?;
 
-            <proposal_engine::Module<T>>::create_proposal(
+            let proposal_id = <proposal_engine::Module<T>>::create_proposal(
                 cloned_origin2,
                 parameters,
                 title,
@@ -170,8 +175,9 @@ decl_module! {
                 stake_balance,
                 proposal.proposal_type(),
                 proposal_code,
-                Some(From::<u32>::from(discussion_thread_id.into())),
             )?;
+
+            <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         }
     }
 }
