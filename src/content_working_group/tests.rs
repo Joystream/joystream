@@ -7,7 +7,7 @@ use super::mock::{self, *};
 use hiring;
 use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
-use runtime_primitives::traits::One;
+use sr_primitives::traits::One;
 use srml_support::{assert_err, assert_ok, StorageLinkedMap, StorageValue};
 
 /// DIRTY IMPORT BECAUSE

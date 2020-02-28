@@ -6,7 +6,7 @@ use system::{self, ensure_root, ensure_signed};
 use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
-use runtime_primitives::traits::{Hash, Zero};
+use sr_primitives::traits::{Hash, Zero};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 

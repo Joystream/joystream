@@ -14,8 +14,8 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::convert::From;
 use rstd::prelude::*;
-use runtime_primitives::traits::{One, Zero}; // Member, SimpleArithmetic, MaybeSerialize
-use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
+use sr_primitives::traits::{One, Zero}; // Member, SimpleArithmetic, MaybeSerialize
+use srml_support::traits::{Currency, ExistenceRequirement, Get, WithdrawReasons};
 use srml_support::{
     decl_event,
     decl_module,

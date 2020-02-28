@@ -18,14 +18,14 @@ use codec::{Decode, Encode};
 use grandpa::fg_primitives;
 use grandpa::{AuthorityId as GrandpaId, AuthorityWeight as GrandpaWeight};
 use im_online::sr25519::AuthorityId as ImOnlineId;
-use primitives::{crypto::key_types, OpaqueMetadata};
+use primitives::{OpaqueMetadata};
 use rstd::prelude::*;
-use runtime_primitives::curve::PiecewiseLinear;
-use runtime_primitives::traits::{
+use sr_primitives::curve::PiecewiseLinear;
+use sr_primitives::traits::{
     BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, StaticLookup, Verify,
 };
-use runtime_primitives::weights::Weight;
-use runtime_primitives::{
+use sr_primitives::weights::Weight;
+use sr_primitives::{
     create_runtime_str, generic, impl_opaque_keys, transaction_validity::TransactionValidity,
     ApplyResult, MultiSignature,
 };
@@ -41,8 +41,8 @@ use version::RuntimeVersion;
 // A few exports that help ease life for downstream crates.
 pub use balances::Call as BalancesCall;
 #[cfg(any(feature = "std", test))]
-pub use runtime_primitives::BuildStorage;
-pub use runtime_primitives::{Perbill, Permill};
+pub use sr_primitives::BuildStorage;
+pub use sr_primitives::{Perbill, Permill};
 
 pub use srml_support::{
     construct_runtime, parameter_types, traits::Currency, traits::Imbalance, traits::Randomness,
@@ -90,7 +90,7 @@ pub type Credential = u64;
 pub mod opaque {
     use super::*;
 
-    pub use runtime_primitives::OpaqueExtrinsic as UncheckedExtrinsic;
+    pub use sr_primitives::OpaqueExtrinsic as UncheckedExtrinsic;
 
     /// Opaque block header type.
     pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
@@ -103,12 +103,9 @@ pub mod opaque {
 
     impl_opaque_keys! {
         pub struct SessionKeys {
-            #[id(key_types::GRANDPA)]
-            pub grandpa: GrandpaId,
-            #[id(key_types::BABE)]
-            pub babe: BabeId,
-            #[id(key_types::IM_ONLINE)]
-            pub im_online: ImOnlineId,
+            pub grandpa: Grandpa,
+            pub babe: Babe,
+            pub im_online: ImOnline,
         }
     }
 }
@@ -299,12 +296,9 @@ type SessionHandlers = (Grandpa, Babe, ImOnline);
 
 impl_opaque_keys! {
     pub struct SessionKeys {
-        #[id(key_types::GRANDPA)]
-        pub grandpa: GrandpaId,
-        #[id(key_types::BABE)]
-        pub babe: BabeId,
-        #[id(key_types::IM_ONLINE)]
-        pub im_online: ImOnlineId,
+        pub grandpa: Grandpa,
+        pub babe: Babe,
+        pub im_online: ImOnline,
     }
 }
 
@@ -355,7 +349,7 @@ impl staking::Trait for Runtime {
     type Currency = Balances;
     type Time = Timestamp;
     type CurrencyToVote = currency::CurrencyToVoteHandler;
-    type OnRewardMinted = ();
+    type RewardRemainder = ();
     type Event = Event;
     type Slash = (); // where to send the slashed funds.
     type Reward = (); // rewards are minted from the void
@@ -367,12 +361,17 @@ impl staking::Trait for Runtime {
 
 type SubmitTransaction = TransactionSubmitter<ImOnlineId, Runtime, UncheckedExtrinsic>;
 
+parameter_types! {
+	pub const SessionDuration: BlockNumber = EPOCH_DURATION_IN_SLOTS as _;
+}
+
 impl im_online::Trait for Runtime {
     type AuthorityId = ImOnlineId;
     type Call = Call;
     type Event = Event;
     type SubmitTransaction = SubmitTransaction;
     type ReportUnresponsiveness = Offences;
+    type SessionDuration = SessionDuration;
 }
 
 impl offences::Trait for Runtime {
