@@ -3,7 +3,7 @@ import { RouteComponentProps } from 'react-router';
 import { MediaView } from '../MediaView';
 import { PlayVideoProps, PlayVideo } from './PlayVideo';
 import { ChannelId } from '@joystream/types/content-working-group';
-import EntityId from '@joystream/types/versioned-store/EntityId';
+import { EntityId } from '@joystream/types/versioned-store';
 
 type Props = PlayVideoProps;
 
@@ -19,7 +19,16 @@ export const PlayVideoView = MediaView<Props>({
     const channel = await transport.channelById(channelId)
     const featuredVideos = await transport.featuredVideos()
 
-    return { video, channel, featuredVideos }
+    // TODO Fix this type-casting hack.
+    // Video.object field should be either number on the Video type
+    // or there shoudl be a way to get to video.object.id,
+    // but for this we need to load all fileds internally refered by video?
+    // This doesn'r sound as the best approach.
+    const objectId = new EntityId((video.object || 0) as number)
+
+    const mediaObject = await transport.mediaObjectById(objectId)
+
+    return { mediaObject, video, channel, featuredVideos }
   }
 });
 
@@ -28,7 +37,7 @@ export const PlayVideoWithRouter = (props: Props & RouteComponentProps<any>) => 
 
   if (id) {
     try {
-      return <PlayVideoView {...props} id={new EntityId(id)} />;
+      return <PlayVideoView {...props} id={new EntityId(id)} />
     } catch (err) {
       console.log('PlayVideoWithRouter failed:', err);
     }

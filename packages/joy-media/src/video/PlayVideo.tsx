@@ -1,41 +1,31 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import DPlayer from 'react-dplayer';
 import { Table } from 'semantic-ui-react';
+import { ApiProps } from '@polkadot/react-api/types';
+import { ApiConsumer } from '@polkadot/react-api/ApiContext';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelPreview } from '../channels/ChannelPreview';
 import { VideoPreview } from './VideoPreview';
 import { VideoType, VideoClass as Fields, VideoGenericProp } from '../schemas/video/Video';
 import { printExplicit, printReleaseDate } from '../entities/EntityHelpers';
-
-const PLAYER_COMMON_PARAMS = {
-  lang: 'en',
-  autoplay: true,
-  theme: '#2185d0'
-};
-
-// This is just a part of Player's methods that are used in this component.
-// To see all the methods available on APlayer and DPlayer visit the next URLs:
-// http://aplayer.js.org/#/home?id=api
-// http://dplayer.js.org/#/home?id=api
-type PartOfPlayer = {
-  pause: () => void,
-  destroy: () => void
-};
+import { MediaObjectType } from '../schemas/general/MediaObject';
+import { MediaPlayerWithResolver } from '../common/MediaPlayerWithResolver';
+import { ContentId } from '@joystream/types/media';
 
 export type PlayVideoProps = {
+  mediaObject?: MediaObjectType
   id: EntityId
-  video?: VideoType,
-  channel?: ChannelEntity,
-  featuredVideos?: VideoType[],
+  video?: VideoType
+  channel?: ChannelEntity
+  featuredVideos?: VideoType[]
 };
 
 export function PlayVideo (props: PlayVideoProps) {
-  const { channel, video, featuredVideos = [] } = props;
+  const { mediaObject, video, channel, featuredVideos = [] } = props;
 
-  if (!video) {
+  if (!mediaObject || !video) {
     return <em>Video was not found</em>
   }
 
@@ -65,49 +55,29 @@ export function PlayVideo (props: PlayVideoProps) {
   // TODO show video only to its owner, if the video is not public.
   // see isPublicVideo() function.
 
-  //--------
-  // TODO Resolve DPlayer callback to destroy it on component unmount
-
-  // let player: PartOfPlayer = undefined;
-
-  const onPlayerCreated = (_player: PartOfPlayer) => {
-    // player = player;
-  }
-
-  // componentWillUnmount () {
-  //   const { player } = this;
-  //   if (player) {
-  //     console.log('Destroy the current player');
-  //     player.pause();
-  //     player.destroy();
-  //   }
-  // }
-
-  //--------
-
-  // TODO: resolve video asset URL
+  // TODO: resolve video asset URL !!!
   const assetUrl = 'http://fake-asset-url.com';
 
   // TODO Do real check if current use is an owner of this entity:
   const iAmOwner = true;
+
+  const contentId = ContentId.decode(mediaObject.value)
+
+  // console.log('PlayVideo: props', props)
 
   return <div className='JoyPlayAlbum'>
     <div className='JoyPlayAlbum_Main'>
       <div className='JoyPlayAlbum_CurrentTrack'>
         <div className='PlayBox'>
 
-          <DPlayer
-            {...PLAYER_COMMON_PARAMS}
-            video={{
-              url: assetUrl,
-              name: video.title,
-              pic: video.thumbnail
-            }}
-            loop={false}
-            onLoad={onPlayerCreated} // Note that DPlayer has onLoad, but APlayer - onInit.
-          />
+          <ApiConsumer>
+            {(apiProps?: ApiProps): React.ReactNode => 
+              <MediaPlayerWithResolver {...props} contentId={contentId} api={apiProps?.api} />
+            }
+          </ApiConsumer>
 
           <div className='ContentHeader'>
+
             <a className='ui button outline DownloadBtn' href={`${assetUrl}?download`}><i className='cloud download icon'></i> Download</a>
             {iAmOwner &&
               <Link to={`/media/video/${video.id}/edit`} className='ui button' style={{ float: 'right' }}>
@@ -138,7 +108,7 @@ export function PlayVideo (props: PlayVideoProps) {
       <div className='JoyPlayAlbum_Featured'>
         <h3 style={{ marginBottom: '1rem' }}>Featured videos</h3>
         {featuredVideos.map((x, i) =>
-          <VideoPreview key={`VideoPreview${i}`} {...x} size='small' orientation='horizontal' />
+          <VideoPreview key={`VideoPreview-${x.id}`} {...x} size='small' orientation='horizontal' />
         )}
       </div>
     }
