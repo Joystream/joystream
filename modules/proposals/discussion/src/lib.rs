@@ -34,6 +34,8 @@ use types::{Post, Thread};
 
 const MSG_NOT_AUTHOR: &str = "Author should match the post creator";
 const MSG_POST_EDITION_NUMBER_EXCEEDED: &str = "Post edition limit reached.";
+pub const MSG_EMPTY_TITLE_PROVIDED: &str = "Proposal cannot have an empty title";
+pub const MSG_TOO_LONG_TITLE: &str = "Title is too long";
 
 /// 'Proposal discussion' substrate module Trait
 pub trait Trait: system::Trait {
@@ -57,6 +59,9 @@ pub trait Trait: system::Trait {
 
     /// Defines post edition number limit.
     type MaxPostEditionNumber: Get<u32>;
+
+    // Defines thread title length limit.
+    type ThreadTitleLengthLimit: Get<u32>;
 }
 
 // Storage for the proposals discussion module
@@ -108,7 +113,7 @@ decl_module! {
       pub fn update_post(origin, thread_id: T::ThreadId,  post_id : T::PostId, text : Vec<u8>) {
             let account_id = T::ThreadAuthorOrigin::ensure_origin(origin)?;
             let post_author_id = T::PostAuthorId::from(account_id);
-
+            // thread not exist ensure!, post !
             let post = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id);
 
             ensure!(post.author_id == post_author_id, MSG_NOT_AUTHOR);
@@ -137,6 +142,12 @@ impl<T: Trait> Module<T> {
     pub fn create_thread(origin: T::Origin, title: Vec<u8>) -> Result<T::ThreadId, &'static str> {
         let account_id = T::ThreadAuthorOrigin::ensure_origin(origin)?;
         let thread_author_id = T::ThreadAuthorId::from(account_id);
+
+        ensure!(!title.is_empty(), MSG_EMPTY_TITLE_PROVIDED);
+        ensure!(
+            title.len() as u32 <= T::ThreadTitleLengthLimit::get(),
+            MSG_TOO_LONG_TITLE
+        );
 
         let next_thread_count_value = Self::thread_count() + 1;
         let new_thread_id = next_thread_count_value;

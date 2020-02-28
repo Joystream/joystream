@@ -30,6 +30,7 @@ parameter_types! {
 
 parameter_types! {
     pub const MaxPostEditionNumber: u32 = 5;
+    pub const ThreadTitleLengthLimit: u32 = 200;
 }
 
 impl crate::Trait for Test {
@@ -40,6 +41,7 @@ impl crate::Trait for Test {
     type ThreadAuthorId = u64;
     type PostAuthorId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;
+    type ThreadTitleLengthLimit = ThreadTitleLengthLimit;
 }
 
 impl system::Trait for Test {

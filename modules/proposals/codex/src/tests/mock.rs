@@ -89,6 +89,7 @@ impl proposal_engine::Trait for Test {
 
 parameter_types! {
     pub const MaxPostEditionNumber: u32 = 5;
+    pub const ThreadTitleLengthLimit: u32 = 200;
 }
 
 impl proposal_discussion::Trait for Test {
@@ -99,6 +100,7 @@ impl proposal_discussion::Trait for Test {
     type ThreadAuthorId = u64;
     type PostAuthorId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;
+    type ThreadTitleLengthLimit = ThreadTitleLengthLimit;
 }
 
 pub struct MockVotersParameters;

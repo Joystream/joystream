@@ -5,9 +5,6 @@ use mock::*;
 use crate::*;
 use system::RawOrigin;
 
-//TODO: create discussion content check
-//TODO: add post content check
-//TODO: update post content check
 //TODO: update post ensures check
 
 struct TestPostEntry {
@@ -16,17 +13,31 @@ struct TestPostEntry {
     pub edition_number: u32,
 }
 
-fn assert_thread_content(thread_id: u32, post_entries: Vec<TestPostEntry>) {
-    assert!(<ThreadById<Test>>::exists(thread_id));
+struct TestThreadEntry {
+    pub thread_id: u32,
+    pub title: Vec<u8>,
+}
+
+fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPostEntry>) {
+    assert!(<ThreadById<Test>>::exists(thread_entry.thread_id));
+
+    let actual_thread = <ThreadById<Test>>::get(thread_entry.thread_id);
+    let expected_thread = Thread {
+        title: thread_entry.title,
+        created_at: 1,
+        author_id: 1,
+    };
+    assert_eq!(actual_thread, expected_thread);
 
     for post_entry in post_entries {
-        let actual_post = <PostThreadIdByPostId<Test>>::get(thread_id, post_entry.post_id);
+        let actual_post =
+            <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
         let expected_post = Post {
             text: post_entry.text,
             created_at: 1,
             updated_at: 1,
             author_id: 1,
-            thread_id,
+            thread_id: thread_entry.thread_id,
             edition_number: post_entry.edition_number,
         };
 
@@ -45,6 +56,12 @@ impl Default for DiscussionFixture {
             title: b"title".to_vec(),
             origin: RawOrigin::Signed(1),
         }
+    }
+}
+
+impl DiscussionFixture {
+    fn with_title(self, title: Vec<u8>) -> Self {
+        DiscussionFixture { title, ..self }
     }
 }
 
@@ -188,7 +205,10 @@ fn thread_content_check_succeeded() {
         post_fixture1.update_post_with_text_and_assert(b"new_text".to_vec(), Ok(()));
 
         assert_thread_content(
-            thread_id,
+            TestThreadEntry {
+                thread_id,
+                title: b"title".to_vec(),
+            },
             vec![
                 TestPostEntry {
                     post_id: post_id1,
@@ -202,5 +222,16 @@ fn thread_content_check_succeeded() {
                 },
             ],
         );
+    });
+}
+
+#[test]
+fn create_discussion_call_with_bad_title_failed() {
+    initial_test_ext().execute_with(|| {
+        let mut discussion_fixture = DiscussionFixture::default().with_title(Vec::new());
+        discussion_fixture.create_discussion_and_assert(Err(crate::MSG_EMPTY_TITLE_PROVIDED));
+
+        discussion_fixture = DiscussionFixture::default().with_title([0; 201].to_vec());
+        discussion_fixture.create_discussion_and_assert(Err(crate::MSG_TOO_LONG_TITLE));
     });
 }
