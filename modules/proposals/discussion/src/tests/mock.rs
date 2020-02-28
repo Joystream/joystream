@@ -28,6 +28,10 @@ parameter_types! {
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
+parameter_types! {
+    pub const MaxPostEditionNumber: u32 = 5;
+}
+
 impl crate::Trait for Test {
     type ThreadAuthorOrigin = system::EnsureSigned<Self::AccountId>;
     type PostAuthorOrigin = system::EnsureSigned<Self::AccountId>;
@@ -35,6 +39,7 @@ impl crate::Trait for Test {
     type PostId = u32;
     type ThreadAuthorId = u64;
     type PostAuthorId = u64;
+    type MaxPostEditionNumber = MaxPostEditionNumber;
 }
 
 impl system::Trait for Test {

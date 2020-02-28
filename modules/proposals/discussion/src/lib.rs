@@ -25,14 +25,12 @@ use runtime_primitives::traits::EnsureOrigin;
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
 use types::{Post, Thread};
+use srml_support::traits::Get;
 
 //TODO: create_thread() ensures
 //TODO: create_post() ensures
-//TODO: select storage container for the posts (double map, inside thread)?
-//TODO: events?
+//TODO: create events
 
-// Post edition number limit.
-const MAX_POST_EDITION_NUMBER: u32 = 5;
 
 const MSG_NOT_AUTHOR: &str = "Author should match the post creator";
 const MSG_POST_EDITION_NUMBER_EXCEEDED: &str = "Post edition limit reached.";
@@ -56,6 +54,9 @@ pub trait Trait: system::Trait {
 
     /// Type for the post author id. Should be authenticated by account id.
     type PostAuthorId: From<Self::AccountId> + Parameter + Default;
+
+    /// Defines post edition number limit.
+    type MaxPostEditionNumber: Get<u32>;
 }
 
 // Storage for the proposals discussion module
@@ -74,9 +75,6 @@ decl_storage! {
 
         /// Count of all posts that have been created.
         pub PostCount get(fn post_count): u32;
-
-        /// Defines max post active edition number (edition number limit). Can be configured.
-        pub MaxPostEditionNumber get(max_post_edition_number) config(): u32 = MAX_POST_EDITION_NUMBER;
     }
 }
 
@@ -114,7 +112,7 @@ decl_module! {
             let post = <PostById<T>>::get(&post_id);
 
             ensure!(post.author_id == post_author_id, MSG_NOT_AUTHOR);
-            ensure!(post.edition_number < Self::max_post_edition_number(),
+            ensure!(post.edition_number < T::MaxPostEditionNumber::get(),
                 MSG_POST_EDITION_NUMBER_EXCEEDED);
 
             let new_post = Post {
