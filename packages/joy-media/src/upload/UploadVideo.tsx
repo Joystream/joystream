@@ -21,6 +21,7 @@ import { SubmittableResult } from '@polkadot/api';
 import { findFirstParamOfSubstrateEvent, nonEmptyStr } from '@polkadot/joy-utils/';
 import { u16, Option } from '@polkadot/types';
 import { isInternalProp } from '@joystream/types/versioned-store/EntityCodec';
+import { MediaObjectCodec } from '../schemas/general/MediaObject';
 
 /** Example: "2019-01-23" -> 1548201600 */
 function humanDateToUnixTs(humanFriendlyDate: string): number | undefined {
@@ -33,11 +34,12 @@ function isDateField(field: VideoPropId): boolean {
 
 export type OuterProps = {
   history?: History,
-  contentId: ContentId,
+  contentId?: ContentId,
   fileName?: string,
   channelId?: ChannelId,
   channel?: ChannelEntity,
-  entityClass: Class,
+  mediaObjectClass?: Class,
+  entityClass?: Class,
   id?: EntityId,
   entity?: VideoType
   opts?: MediaDropdownOptions
@@ -58,7 +60,8 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     onTxFailed,
 
     history,
-    // contentId,
+    contentId,
+    mediaObjectClass,
     entityClass,
     id,
     entity,
@@ -76,6 +79,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   const initialSupportedSchemaIds: number[] = entity?.inClassSchemaIndexes || []
 
+  const [ mediaObjectId, setMediaObjectId ] = useState<EntityId | undefined>()
   const [ entityId, setEntityId ] = useState<EntityId | undefined>(id)
   const [ supportsSchema, setSupportsSchema ] = useState<boolean>(initialSupportedSchemaIds.length > 0)
   const { thumbnail } = values
@@ -83,12 +87,16 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const withCredential = new Option(Credential, new Credential(2))
   const asEntityMaintainer = false
   const firstSchemaId = new u16(0)
-  const codec = new VideoCodec(entityClass)
+  
+  const entityCodec = new VideoCodec(entityClass!)
+  const mediaObjectCodec = new MediaObjectCodec(mediaObjectClass!)
 
   const getFieldsValues = (): Partial<FormValues> => {
     const res: Partial<FormValues> = {}
 
-    // TODO return media object id here, if entity doesn't have media object id yet
+    if (!entity && mediaObjectId) {
+      res.object = mediaObjectId.toNumber()
+    }
 
     Object.keys(values).forEach((prop) => {
       const fieldName = prop as VideoPropId
@@ -128,21 +136,44 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
         res[fieldName] = fieldValue
       }
     })
+    
     return res
   }
 
   // TODO Batch create + update entity operations with versionedStorePermissions.transaction function
 
-  const buildCreateEntityTxParams = () => {
+  const buildCreateMediaObjectTxParams = () => {
     return [
       withCredential,
-      entityClass.id
+      mediaObjectClass!.id
     ]
   }
 
-  const buildAddSchemaSupportTxParams = () => {
-    const propValues = codec.toSubstrateUpdate(getFieldsValues())
-    // console.log('buildAddSchemaSupportTxParams propValues:', propValues)
+  const buildAddSchemaToMediaObjectTxParams = () => {
+    const propValues = mediaObjectCodec.toSubstrateUpdate({
+      value: contentId!.encode()
+    })
+    // console.log('buildAddSchemaToMediaObjectTxParams:', propValues)
+
+    return [
+      withCredential,
+      asEntityMaintainer,
+      mediaObjectId,
+      firstSchemaId,
+      propValues
+    ]
+  }
+
+  const buildCreateEntityTxParams = () => {
+    return [
+      withCredential,
+      entityClass!.id
+    ]
+  }
+
+  const buildAddSchemaToEntityTxParams = () => {
+    const propValues = entityCodec.toSubstrateUpdate(getFieldsValues())
+    // console.log('buildAddSchemaSupportTxParams:', propValues)
 
     return [
       withCredential,
@@ -154,8 +185,8 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   }
 
   const buildUpdateEntityTxParams = () => {
-    const updatedPropValues = codec.toSubstrateUpdate(getFieldsValues())
-    // console.log('buildUpdateEntityTxParams updatedPropValues:', updatedPropValues)
+    const updatedPropValues = entityCodec.toSubstrateUpdate(getFieldsValues())
+    // console.log('buildUpdateEntityTxParams:', updatedPropValues)
 
     return [
       withCredential,
@@ -164,6 +195,21 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       updatedPropValues
     ]
   };
+
+  const onCreateMediaObjectSuccess: TxCallback = (txResult: SubmittableResult) => {
+    setSubmitting(false)
+
+    // Get id of newly created media object:
+    const newId = findFirstParamOfSubstrateEvent<EntityId>(txResult, 'EntityCreated')
+    setMediaObjectId(newId)
+
+    console.log('New media object entity id:', newId && newId.toString())
+  }
+
+  const onAddSchemaToMediaObjectSuccess: TxCallback = (_txResult: SubmittableResult) => {
+    setSubmitting(false)
+    // Nothing yet
+  }
 
   const onCreateEntitySuccess: TxCallback = (txResult: SubmittableResult) => {
     setSubmitting(false)
@@ -181,7 +227,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     }
   }
 
-  const onAddSchemaSupportSuccess: TxCallback = (_txResult: SubmittableResult) => {
+  const onAddSchemaToEntitySuccess: TxCallback = (_txResult: SubmittableResult) => {
     setSubmitting(false)
     setSupportsSchema(true)
     redirectToPlaybackPage()
@@ -244,6 +290,32 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     }
   }
 
+  const CreateMediaObjectButton = () =>
+    <TxButton
+      type='submit'
+      size='large'
+      isDisabled={isSubmitting}
+      label='Create media object'
+      tx='versionedStorePermissions.createEntity'
+      params={buildCreateMediaObjectTxParams()}
+      onClick={newOnSubmit}
+      txFailedCb={onTxFailed}
+      txSuccessCb={onCreateMediaObjectSuccess}
+    />
+
+  const AddSchemaToMediaObjectButton = () =>
+    <TxButton
+      type='submit'
+      size='large'
+      isDisabled={isSubmitting}
+      label='Add schema to media object'
+      tx='versionedStorePermissions.addSchemaSupportToEntity'
+      params={buildAddSchemaToMediaObjectTxParams()}
+      onClick={newOnSubmit}
+      txFailedCb={onTxFailed}
+      txSuccessCb={onAddSchemaToMediaObjectSuccess}
+    />
+
   const CreateEntityButton = () =>
     <TxButton
       type='submit'
@@ -257,17 +329,17 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       txSuccessCb={onCreateEntitySuccess}
     />
 
-  const AddSchemaSupportButton = () =>
+  const AddSchemaToEntityButton = () =>
     <TxButton
       type='submit'
       size='large'
       isDisabled={!(dirty && isValid && !isSubmitting)}
-      label='Add schema support'
+      label='Add schema to video entity'
       tx='versionedStorePermissions.addSchemaSupportToEntity'
-      params={buildAddSchemaSupportTxParams()}
+      params={buildAddSchemaToEntityTxParams()}
       onClick={newOnSubmit}
       txFailedCb={onTxFailed}
-      txSuccessCb={onAddSchemaSupportSuccess}
+      txSuccessCb={onAddSchemaToEntitySuccess}
     />
 
   const UpdateEntityButton = () =>
@@ -283,25 +355,37 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       txSuccessCb={onUpdateEntitySuccess}
     />
 
+  const MediaObjectButtons = () => <>
+    {!mediaObjectId &&
+      <CreateMediaObjectButton />
+    }
+    {mediaObjectId && !entityId &&
+      <AddSchemaToMediaObjectButton />
+    }
+  </>
+
+  const EntityButtons = () => <>
+    {!entity && !entityId &&
+      <CreateEntityButton />
+    }
+    {entityId && !supportsSchema &&
+      <AddSchemaToEntityButton />
+    }
+    {entityId && supportsSchema &&
+      <UpdateEntityButton />
+    }
+  </>
+
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
       {thumbnail && <img src={thumbnail} onError={onImageError} />}
     </div>
 
-    <Form className='ui form JoyForm EditMetaForm'>
-      
+    <Form className='ui form JoyForm EditMetaForm'>      
       {tabs}
-
       <LabelledField style={{ marginTop: '1rem' }} {...props}>
-        {!entity && !entityId &&
-          <CreateEntityButton />
-        }
-        {entityId && !supportsSchema &&
-          <AddSchemaSupportButton />
-        }
-        {entityId && supportsSchema &&
-          <UpdateEntityButton />
-        }
+        <MediaObjectButtons />
+        {mediaObjectId && <EntityButtons />}
         <Button
           type='button'
           size='large'

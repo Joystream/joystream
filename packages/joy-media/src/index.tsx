@@ -12,7 +12,7 @@ import './common/index.css';
 
 import translate from './translate';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
-import Upload from './Upload';
+import { UploadWithRouter } from './Upload';
 import Explore from './Explore';
 import { Play } from './View';
 import { EditByContentId } from './EditMeta';
@@ -22,7 +22,6 @@ import { ChannelsByOwnerWithRouter } from './channels/ChannelsByOwner.view';
 import { EditChannelView, EditChannelWithRouter } from './channels/EditChannel.view';
 import { ExploreContentView } from './explore/ExploreContent.view';
 import { ViewChannelWithRouter } from './channels/ViewChannel.view';
-import { UploadVideoWithRouter } from './upload/EditVideo.view';
 import { EditVideoWithRouter } from './upload/EditVideo.view';
 import { PlayVideoWithRouter } from './video/PlayVideo.view';
 // import { VideosByOwner } from './video/VideosByOwner';
@@ -54,10 +53,6 @@ function App(props: Props) {
     {
       name: 'deprecated-explore',
       text: t('OLD: Explore')
-    },
-    {
-      name: 'upload',
-      text: t('OLD: Upload')
     }
   ].filter(x => x !== undefined) as TabItem[];
 
@@ -70,12 +65,11 @@ function App(props: Props) {
         <Switch>
           <Route path={`${basePath}/deprecated-explore`} component={Explore} />
           <Route path={`${basePath}/play/:assetName`} render={(props) => <Play {...props} discoveryProvider={discoveryProvider} api={api} />} />
-          <Route path={`${basePath}/upload`} render={(props) => <Upload {...props} discoveryProvider={discoveryProvider} api={api} />} />
           <Route path={`${basePath}/edit/:assetName`} component={EditByContentId} />
           <Route path={`${basePath}/account/:account/channels`} component={ChannelsByOwnerWithRouter} />
           <Route path={`${basePath}/channels/new`} component={EditChannelView} />
           <Route path={`${basePath}/channels/:id/edit`} component={EditChannelWithRouter} />
-          <Route path={`${basePath}/channels/:channelId/upload`} component={UploadVideoWithRouter} />
+          <Route path={`${basePath}/channels/:channelId/upload`} render={(props) => <UploadWithRouter {...props} discoveryProvider={discoveryProvider} api={api} />} />
           <Route path={`${basePath}/channels/:id`} component={ViewChannelWithRouter} />
           {/* <Route path={`${basePath}/video/my`} component={VideosByOwnerView} /> */}
           <Route path={`${basePath}/video/:id/edit`} component={EditVideoWithRouter} />

@@ -18,15 +18,22 @@ import { fileNameWoExt } from './utils';
 import { ContentId, DataObject } from '@joystream/types/media';
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import { DiscoveryProviderProps } from './DiscoveryProvider';
-import EditMeta from './EditMeta';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import IpfsHash from 'ipfs-only-hash';
+import { ChannelId } from '@joystream/types/content-working-group';
+import { EditVideoView } from './upload/EditVideo.view';
 
-const MAX_FILE_SIZE_MB = 100;
+const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 type Props = ApiProps & I18nProps & MyAccountProps & DiscoveryProviderProps & {
+  channelId: ChannelId
   history?: History
+  match: {
+    params: {
+      channelId: string
+    }
+  }
 };
 
 type State = {
@@ -106,10 +113,18 @@ class Component extends React.PureComponent<Props, State> {
     if (!file_name) return <em>Loading...</em>;
 
     const success = !error && progress >= 100;
+    const { history, match: { params: { channelId } } } = this.props
 
     return <div style={{ width: '100%' }}>
       {this.renderProgress()}
-      {success && <EditMeta contentId={newContentId} fileName={fileNameWoExt(file_name)} history={this.props.history} />}
+      {success &&
+        <EditVideoView
+          channelId={new ChannelId(channelId)}
+          contentId={newContentId}
+          fileName={fileNameWoExt(file_name)}
+          history={history}
+        />
+      }
     </div>;
   }
 
@@ -295,8 +310,8 @@ class Component extends React.PureComponent<Props, State> {
   }
 }
 
-export default withMulti(
+export const UploadWithRouter = withMulti(
   Component,
   translate,
   withOnlyMembers
-);
+)
