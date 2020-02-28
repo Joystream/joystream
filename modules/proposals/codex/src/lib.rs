@@ -32,7 +32,6 @@ pub trait Trait: system::Trait + proposal_engine::Trait {
 
     /// Defines max wasm code length of the runtime upgrade proposal.
     type RuntimeUpgradeWasmProposalMaxLength: Get<u32>;
-
 }
 use srml_support::traits::{Currency, Get};
 
