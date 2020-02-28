@@ -13,14 +13,14 @@ import { queryMembershipToProp } from '@polkadot/joy-members/utils';
 import TxButton from '@polkadot/joy-utils/TxButton';
 
 type MemberIdProps = {
-  memberIdByAccountId?: Option<MemberId>,
+  memberIdsByControllerAccountId?: Option<MemberId>,
 };
 
 type Props = BareProps & ComponentProps & MyAccountProps & MemberIdProps;
 
 class ActorsList extends React.PureComponent<Props> {
   render() {
-    const { actorAccountIds, memberIdByAccountId } = this.props;
+    const { actorAccountIds, memberIdsByControllerAccountId } = this.props;
 
     return (
       <Table>
@@ -33,7 +33,7 @@ class ActorsList extends React.PureComponent<Props> {
           </Table.Row>
         </Table.Header>
         <Table.Body>{actorAccountIds.map((account: string) =>
-          <ActorDisplay key={account} account={account} memberIdByAccountId={memberIdByAccountId} />
+          <ActorDisplay key={account} account={account} memberIdsByControllerAccountId={memberIdsByControllerAccountId} />
         )}
         </Table.Body>
       </Table>
@@ -49,7 +49,7 @@ type ActorProps = BareProps & MemberIdProps & {
 
 class ActorInner extends React.PureComponent<ActorProps> {
   render() {
-    const { actor: actorOpt, memberIdByAccountId: memberIdOpt } = this.props;
+    const { actor: actorOpt, memberIdsByControllerAccountId: memberIdOpt } = this.props;
 
     if (!actorOpt || actorOpt.isNone || !memberIdOpt) return null;
 
@@ -81,7 +81,7 @@ const ActorDisplay = withCalls<ActorProps>(
 
 
 const ActionableActorsList = withMyAccount(withCalls<Props>(
-  queryMembershipToProp('memberIdByAccountId', 'myAddress')
+  queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress')
 )(ActorsList));
 
 export default ActionableActorsList;
