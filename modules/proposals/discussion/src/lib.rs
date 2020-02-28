@@ -30,8 +30,6 @@ use types::{Post, Thread};
 // TODO: create_thread() ensures
 // TODO: create_post() ensures
 // TODO: create events
-// TODO: test thread content
-// TODO: test post content
 // TODO: move errors to decl_error macro
 
 const MSG_NOT_AUTHOR: &str = "Author should match the post creator";
