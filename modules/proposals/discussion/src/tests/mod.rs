@@ -5,8 +5,6 @@ use mock::*;
 use crate::*;
 use system::RawOrigin;
 
-//TODO: update post ensures check
-
 struct TestPostEntry {
     pub post_id: u32,
     pub text: Vec<u8>,
@@ -82,6 +80,25 @@ impl PostFixture {
         }
     }
 
+    fn with_text(self, text: Vec<u8>) -> Self {
+        PostFixture { text, ..self }
+    }
+
+    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        PostFixture { origin, ..self }
+    }
+
+    fn change_thread_id(self, thread_id: u32) -> Self {
+        PostFixture { thread_id, ..self }
+    }
+
+    fn change_post_id(self, post_id: u32) -> Self {
+        PostFixture {
+            post_id: Some(post_id),
+            ..self
+        }
+    }
+
     fn add_post_and_assert(&mut self, result: Result<(), &'static str>) -> Option<u32> {
         let add_post_result = Discussions::add_post(
             self.origin.clone().into(),
@@ -91,7 +108,9 @@ impl PostFixture {
 
         assert_eq!(add_post_result, result);
 
-        self.post_id = Some(<PostCount>::get());
+        if result.is_ok() {
+            self.post_id = Some(<PostCount>::get());
+        }
 
         self.post_id
     }
@@ -184,7 +203,26 @@ fn update_post_call_failes_because_of_post_edition_limit() {
             post_fixture.update_post_and_assert(Ok(()));
         }
 
-        post_fixture.update_post_and_assert(Err("Post edition limit reached."));
+        post_fixture.update_post_and_assert(Err(MSG_POST_EDITION_NUMBER_EXCEEDED));
+    });
+}
+
+#[test]
+fn update_post_call_failes_because_of_the_wrong_author() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(thread_id);
+
+        post_fixture.add_post_and_assert(Ok(()));
+
+        post_fixture = post_fixture.with_origin(RawOrigin::Signed(2));
+
+        post_fixture.update_post_and_assert(Err(MSG_NOT_AUTHOR));
     });
 }
 
@@ -233,5 +271,86 @@ fn create_discussion_call_with_bad_title_failed() {
 
         discussion_fixture = DiscussionFixture::default().with_title([0; 201].to_vec());
         discussion_fixture.create_discussion_and_assert(Err(crate::MSG_TOO_LONG_TITLE));
+    });
+}
+
+#[test]
+fn add_post_call_with_invalid_thread_failed() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+        discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(2);
+        post_fixture.add_post_and_assert(Err(MSG_THREAD_DOESNT_EXIST));
+    });
+}
+
+#[test]
+fn update_post_call_with_invalid_post_failed() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture1 = PostFixture::default_for_thread(thread_id);
+        post_fixture1.add_post_and_assert(Ok(())).unwrap();
+
+        let mut post_fixture2 = post_fixture1.change_post_id(2);
+        post_fixture2.update_post_and_assert(Err(MSG_POST_DOESNT_EXIST));
+    });
+}
+
+#[test]
+fn update_post_call_with_invalid_thread_failed() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture1 = PostFixture::default_for_thread(thread_id);
+        post_fixture1.add_post_and_assert(Ok(())).unwrap();
+
+        let mut post_fixture2 = post_fixture1.change_thread_id(2);
+        post_fixture2.update_post_and_assert(Err(MSG_THREAD_DOESNT_EXIST));
+    });
+}
+
+#[test]
+fn add_post_call_with_invalid_text_failed() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture1 = PostFixture::default_for_thread(thread_id).with_text(Vec::new());
+        post_fixture1.add_post_and_assert(Err(MSG_EMPTY_POST_PROVIDED));
+
+        let mut post_fixture2 =
+            PostFixture::default_for_thread(thread_id).with_text([0; 2001].to_vec());
+        post_fixture2.add_post_and_assert(Err(MSG_TOO_LONG_POST));
+    });
+}
+
+#[test]
+fn update_post_call_with_invalid_text_failed() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture1 = PostFixture::default_for_thread(thread_id);
+        post_fixture1.add_post_and_assert(Ok(()));
+
+        let mut post_fixture2 = post_fixture1.with_text(Vec::new());
+        post_fixture2.update_post_and_assert(Err(MSG_EMPTY_POST_PROVIDED));
+
+        let mut post_fixture3 = post_fixture2.with_text([0; 2001].to_vec());
+        post_fixture3.update_post_and_assert(Err(MSG_TOO_LONG_POST));
     });
 }

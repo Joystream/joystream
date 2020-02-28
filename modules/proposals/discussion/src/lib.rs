@@ -27,15 +27,17 @@ use srml_support::{decl_module, decl_storage, ensure, Parameter};
 use srml_support::traits::Get;
 use types::{Post, Thread};
 
-// TODO: create_thread() ensures
-// TODO: create_post() ensures
 // TODO: create events
 // TODO: move errors to decl_error macro
 
-const MSG_NOT_AUTHOR: &str = "Author should match the post creator";
-const MSG_POST_EDITION_NUMBER_EXCEEDED: &str = "Post edition limit reached.";
-pub const MSG_EMPTY_TITLE_PROVIDED: &str = "Proposal cannot have an empty title";
-pub const MSG_TOO_LONG_TITLE: &str = "Title is too long";
+pub(crate) const MSG_NOT_AUTHOR: &str = "Author should match the post creator";
+pub(crate) const MSG_POST_EDITION_NUMBER_EXCEEDED: &str = "Post edition limit reached.";
+pub(crate) const MSG_EMPTY_TITLE_PROVIDED: &str = "Discussion cannot have an empty title";
+pub(crate) const MSG_TOO_LONG_TITLE: &str = "Title is too long";
+pub(crate) const MSG_THREAD_DOESNT_EXIST: &str = "Thread doesn't exist";
+pub(crate) const MSG_POST_DOESNT_EXIST: &str = "Post doesn't exist";
+pub(crate) const MSG_EMPTY_POST_PROVIDED: &str = "Post cannot be empty";
+pub(crate) const MSG_TOO_LONG_POST: &str = "Post is too long";
 
 /// 'Proposal discussion' substrate module Trait
 pub trait Trait: system::Trait {
@@ -60,8 +62,11 @@ pub trait Trait: system::Trait {
     /// Defines post edition number limit.
     type MaxPostEditionNumber: Get<u32>;
 
-    // Defines thread title length limit.
+    /// Defines thread title length limit.
     type ThreadTitleLengthLimit: Get<u32>;
+
+    /// Defines post length limit.
+    type PostLengthLimit: Get<u32>;
 }
 
 // Storage for the proposals discussion module
@@ -92,6 +97,16 @@ decl_module! {
             let account_id = T::ThreadAuthorOrigin::ensure_origin(origin)?;
             let post_author_id = T::PostAuthorId::from(account_id);
 
+            ensure!(<ThreadById<T>>::exists(thread_id), MSG_THREAD_DOESNT_EXIST);
+
+            ensure!(!text.is_empty(), MSG_EMPTY_POST_PROVIDED);
+            ensure!(
+                text.len() as u32 <= T::PostLengthLimit::get(),
+                MSG_TOO_LONG_POST
+            );
+
+            // mutation
+
             let next_post_count_value = Self::post_count() + 1;
             let new_post_id = next_post_count_value;
 
@@ -113,7 +128,16 @@ decl_module! {
       pub fn update_post(origin, thread_id: T::ThreadId,  post_id : T::PostId, text : Vec<u8>) {
             let account_id = T::ThreadAuthorOrigin::ensure_origin(origin)?;
             let post_author_id = T::PostAuthorId::from(account_id);
-            // thread not exist ensure!, post !
+
+            ensure!(<ThreadById<T>>::exists(thread_id), MSG_THREAD_DOESNT_EXIST);
+            ensure!(<PostThreadIdByPostId<T>>::exists(thread_id, post_id), MSG_POST_DOESNT_EXIST);
+
+            ensure!(!text.is_empty(), MSG_EMPTY_POST_PROVIDED);
+            ensure!(
+                text.len() as u32 <= T::PostLengthLimit::get(),
+                MSG_TOO_LONG_POST
+            );
+
             let post = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id);
 
             ensure!(post.author_id == post_author_id, MSG_NOT_AUTHOR);
@@ -126,6 +150,8 @@ decl_module! {
                 edition_number: post.edition_number + 1,
                 ..post
             };
+
+            // mutation
 
             <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
        }
@@ -157,6 +183,8 @@ impl<T: Trait> Module<T> {
             created_at: Self::current_block(),
             author_id: thread_author_id,
         };
+
+        // mutation
 
         let thread_id = T::ThreadId::from(new_thread_id);
         <ThreadById<T>>::insert(thread_id, new_thread);
