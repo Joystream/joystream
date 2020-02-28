@@ -13,8 +13,8 @@ pub struct RuntimeUpgradeProposalExecutable<T> {
     /// Proposal title
     pub title: Vec<u8>,
 
-    /// Proposal body (description)
-    pub body: Vec<u8>,
+    /// Proposal description
+    pub description: Vec<u8>,
 
     /// Text proposal main text
     pub wasm: Vec<u8>,

@@ -42,10 +42,10 @@ mod tests;
 use rstd::prelude::*;
 
 use runtime_primitives::traits::{EnsureOrigin, Zero};
+use srml_support::traits::Get;
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
 };
-use srml_support::traits::Get;
 use system::ensure_root;
 
 /// Proposals engine trait.
