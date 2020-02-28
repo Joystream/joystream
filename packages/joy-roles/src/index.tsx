@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 
 import { ApiContext } from '@polkadot/react-api';
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
@@ -53,6 +53,12 @@ export const App: React.FC<Props> = (props: Props) => {
   const [applyCtrl] = useState(new ApplyController(transport))
   const myRolesCtrl = new MyRolesController(transport, props.myAddress)
   const [adminCtrl] = useState(new AdminController(transport, api))
+
+  useEffect(() => {
+    return () => {
+      transport.unsubscribe()
+    }
+  })
 
   const { basePath } = props
 

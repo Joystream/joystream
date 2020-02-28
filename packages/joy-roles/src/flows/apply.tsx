@@ -225,10 +225,6 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
     return 0
   }
 
-  for (let i = 0; i < props.slots.length; i++) {
-    console.log(i, props.slots[i].toNumber())
-  }
-
   const changeValue = (e: any, { value }: any) => {
     const newStake = new u128(value)
     props.setStake(newStake)

@@ -126,6 +126,9 @@ export function queryToProp(
   return [apiQuery, { paramName, propName }];
 }
 
+import { APIQueryCache } from './APIQueryCache' 
+export { APIQueryCache }
+
 // Parse URLs
 // --------------------------------------
 

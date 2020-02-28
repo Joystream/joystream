@@ -9,7 +9,7 @@ import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
 import { SubmittableExtrinsic } from '@polkadot/api/promise/types';
 import keyringOption from '@polkadot/ui-keyring/options';
 
-import { MultipleLinkedMapEntry, SingleLinkedMapEntry } from '@polkadot/joy-utils/index'
+import { APIQueryCache, MultipleLinkedMapEntry, SingleLinkedMapEntry } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
 import { GroupMember } from './elements'
@@ -65,23 +65,29 @@ interface IRoleAccounter {
 
 export class Transport extends TransportBase implements ITransport {
   protected api: ApiPromise
+  protected cachedApi: APIQueryCache
   protected queueExtrinsic: QueueTxExtrinsicAdd
 
   constructor(api: ApiPromise, queueExtrinsic: QueueTxExtrinsicAdd) {
     super()
     this.api = api
+    this.cachedApi = new APIQueryCache(api)
     this.queueExtrinsic = queueExtrinsic
   }
 
+  unsubscribe() {
+    this.cachedApi.unsubscribe()
+  }
+
   async roles(): Promise<Array<Role>> {
-    const roles: any = await this.api.query.actors.availableRoles()
+    const roles: any = await this.cachedApi.query.actors.availableRoles()
     return this.promise<Array<Role>>(roles.map((role: Role) => role))
   }
 
   protected async stakeValue(stakeId: StakeId): Promise<Balance> {
     const stake = new SingleLinkedMapEntry<Stake>(
       Stake,
-      await this.api.query.stake.stakes(
+      await this.cachedApi.query.stake.stakes(
         stakeId,
       ),
     )
@@ -95,13 +101,13 @@ export class Transport extends TransportBase implements ITransport {
   protected async curatorTotalReward(relationshipId: RewardRelationshipId): Promise<Balance> {
     const relationship = new SingleLinkedMapEntry<RewardRelationship>(
       RewardRelationship,
-      await this.api.query.recurringRewards.rewardRelationships(
+      await this.cachedApi.query.recurringRewards.rewardRelationships(
         relationshipId,
       ),
     )
     const recipient = new SingleLinkedMapEntry<Recipient>(
       Recipient,
-      await this.api.query.recurringRewards.rewardRelationships(
+      await this.cachedApi.query.recurringRewards.rewardRelationships(
         relationship.value.recipient,
       ),
     )
@@ -112,7 +118,7 @@ export class Transport extends TransportBase implements ITransport {
     return new Promise<GroupMember>(async (resolve, reject) => {
       const account = curator.role_account
       const memberId = (
-        await this.api.query.members.membershipIdByActorInRole(
+        await this.cachedApi.query.members.membershipIdByActorInRole(
           new ActorInRole({
             role: new MemberRole(RoleKeys.Curator),
             actor_id: id,
@@ -120,7 +126,7 @@ export class Transport extends TransportBase implements ITransport {
         )
       ) as MemberId
 
-      const profile = await this.api.query.members.memberProfile(memberId) as Option<Profile>
+      const profile = await this.cachedApi.query.members.memberProfile(memberId) as Option<Profile>
       if (profile.isNone) {
         reject("no profile found")
       }
@@ -155,7 +161,7 @@ export class Transport extends TransportBase implements ITransport {
     const curatorOpenings = new MultipleLinkedMapEntry<CuratorOpeningId, CuratorOpening>(
       CuratorOpeningId,
       CuratorOpening,
-      await this.api.query.contentWorkingGroup.curatorOpeningById(),
+      await this.cachedApi.query.contentWorkingGroup.curatorOpeningById(),
     )
 
     for (let i = 0; i < curatorOpenings.linked_values.length; i++) {
@@ -172,20 +178,20 @@ export class Transport extends TransportBase implements ITransport {
     const values = new MultipleLinkedMapEntry<CuratorId, Curator>(
       CuratorId,
       Curator,
-      await this.api.query.contentWorkingGroup.curatorById(),
+      await this.cachedApi.query.contentWorkingGroup.curatorById(),
     )
 
     const members = values.linked_values.filter(value => value.is_active).reverse()
     const memberIds = values.linked_keys.filter((v, k) => values.linked_values[k].is_active).reverse()
 
     let leadExists = false
-	
+
     // If there's a lead ID, then make sure they're promoted to the top
-    const leadId = (await this.api.query.contentWorkingGroup.currentLeadId()) as Option<LeadId>
+    const leadId = (await this.cachedApi.query.contentWorkingGroup.currentLeadId()) as Option<LeadId>
     if (leadId.isSome) {
       const lead = new SingleLinkedMapEntry<Lead>(
         Lead,
-        await this.api.query.contentWorkingGroup.leadById(
+        await this.cachedApi.query.contentWorkingGroup.leadById(
           leadId.unwrap(),
         ),
       )
@@ -217,7 +223,7 @@ export class Transport extends TransportBase implements ITransport {
   currentOpportunities(): Promise<Array<WorkingGroupOpening>> {
     return new Promise<Array<WorkingGroupOpening>>(async (resolve, reject) => {
       const output = new Array<WorkingGroupOpening>()
-      const highestId = (await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber() - 1
+      const highestId = (await this.cachedApi.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber() - 1
       if (highestId < 0) {
         resolve([])
       }
@@ -234,7 +240,7 @@ export class Transport extends TransportBase implements ITransport {
     return new Promise<Opening>(async (resolve, reject) => {
       const opening = new SingleLinkedMapEntry<Opening>(
         Opening,
-        await this.api.query.hiring.openingById(id),
+        await this.cachedApi.query.hiring.openingById(id),
       )
       resolve(opening.value)
     })
@@ -243,11 +249,11 @@ export class Transport extends TransportBase implements ITransport {
   protected async curatorOpeningApplications(curatorOpeningId: number): Promise<Array<WorkingGroupPair<Application, CuratorApplication>>> {
     const output = new Array<WorkingGroupPair<Application, CuratorApplication>>()
 
-    const nextAppid = await this.api.query.contentWorkingGroup.nextCuratorApplicationId() as u64
+    const nextAppid = await this.cachedApi.query.contentWorkingGroup.nextCuratorApplicationId() as u64
     for (let i = 0; i < nextAppid.toNumber(); i++) {
       const cApplication = new SingleLinkedMapEntry<CuratorApplication>(
         CuratorApplication,
-        await this.api.query.contentWorkingGroup.curatorApplicationById(i),
+        await this.cachedApi.query.contentWorkingGroup.curatorApplicationById(i),
       )
 
       if (cApplication.value.curator_opening_id.toNumber() !== curatorOpeningId) {
@@ -257,7 +263,7 @@ export class Transport extends TransportBase implements ITransport {
       const appId = cApplication.value.application_id
       const baseApplications = new SingleLinkedMapEntry<Application>(
         Application,
-        await this.api.query.hiring.applicationById(
+        await this.cachedApi.query.hiring.applicationById(
           appId,
         )
       )
@@ -273,21 +279,21 @@ export class Transport extends TransportBase implements ITransport {
 
   async curationGroupOpening(id: number): Promise<WorkingGroupOpening> {
     return new Promise<WorkingGroupOpening>(async (resolve, reject) => {
-      const nextId = (await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber()
+      const nextId = (await this.cachedApi.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber()
       if (id < 0 || id >= nextId) {
         reject("invalid id")
       }
 
       const curatorOpening = new SingleLinkedMapEntry<CuratorOpening>(
         CuratorOpening,
-        await this.api.query.contentWorkingGroup.curatorOpeningById(id),
+        await this.cachedApi.query.contentWorkingGroup.curatorOpeningById(id),
       )
 
       const opening = await this.opening(
         curatorOpening.value.getField<OpeningId>("opening_id").toNumber()
       )
 
-      const currentLeadId = await this.api.query.contentWorkingGroup.currentLeadId() as Option<LeadId>
+      const currentLeadId = await this.cachedApi.query.contentWorkingGroup.currentLeadId() as Option<LeadId>
 
       if (currentLeadId.isNone) {
         reject("no current lead id")
@@ -295,7 +301,7 @@ export class Transport extends TransportBase implements ITransport {
 
       const lead = new SingleLinkedMapEntry<Lead>(
         Lead,
-        await this.api.query.contentWorkingGroup.leadById(
+        await this.cachedApi.query.contentWorkingGroup.leadById(
           currentLeadId.unwrap(),
         ),
       )
@@ -343,7 +349,7 @@ export class Transport extends TransportBase implements ITransport {
       (await Promise.all(
         applications.map(application => this.openingApplicationTotalStake(application.hiringModule))
       ))
-	  .filter( (b) => !b.eq(Zero) )
+        .filter((b) => !b.eq(Zero))
     )
   }
 
@@ -355,7 +361,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   async blockHash(height: number): Promise<string> {
-    const blockHash = await this.api.query.system.blockHash(height)
+    const blockHash = await this.cachedApi.query.system.blockHash(height)
     return blockHash.toString()
   }
 
@@ -380,7 +386,7 @@ export class Transport extends TransportBase implements ITransport {
             return {
               shortName: result.name,
               accountId: new GenericAccountId(result.value as string),
-              balance: await this.api.query.balances.freeBalance(result.value as string),
+              balance: await this.cachedApi.query.balances.freeBalance(result.value as string),
             }
           })
       }),
@@ -436,7 +442,7 @@ export class Transport extends TransportBase implements ITransport {
     const curatorApps = new MultipleLinkedMapEntry<CuratorApplicationId, CuratorApplication>(
       CuratorApplicationId,
       CuratorApplication,
-      await this.api.query.contentWorkingGroup.curatorApplicationById(),
+      await this.cachedApi.query.contentWorkingGroup.curatorApplicationById(),
     )
 
     const myApps = curatorApps.linked_values.filter(app => app.role_account.eq(roleKeyId))
@@ -446,7 +452,7 @@ export class Transport extends TransportBase implements ITransport {
       myApps.map(
         async app => new SingleLinkedMapEntry<Application>(
           Application,
-          await this.api.query.hiring.applicationById(
+          await this.cachedApi.query.hiring.applicationById(
             app.application_id,
           ),
         )
@@ -496,7 +502,7 @@ export class Transport extends TransportBase implements ITransport {
     const curators = new MultipleLinkedMapEntry<CuratorId, Curator>(
       CuratorId,
       Curator,
-      await this.api.query.contentWorkingGroup.curatorById(),
+      await this.cachedApi.query.contentWorkingGroup.curatorById(),
     )
 
     return Promise.all(
@@ -552,7 +558,7 @@ export class Transport extends TransportBase implements ITransport {
     applicationText: string): Promise<number> {
     return new Promise<number>(async (resolve, reject) => {
       const membershipIds = (
-        await this.api.query.members.memberIdsByControllerAccountId(sourceAccount)
+        await this.cachedApi.query.members.memberIdsByControllerAccountId(sourceAccount)
       ) as Vec<MemberId>
       if (membershipIds.length == 0) {
         reject("No membship ID associated with this address")
@@ -601,7 +607,6 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   withdrawCuratorApplication(sourceAccount: string, id: number) {
-    console.log("A")
     const tx = this.api.tx.contentWorkingGroup.withdrawCuratorApplication(
       id
     ) as unknown as SubmittableExtrinsic
