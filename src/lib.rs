@@ -18,7 +18,7 @@ use codec::{Decode, Encode};
 use grandpa::fg_primitives;
 use grandpa::{AuthorityId as GrandpaId, AuthorityWeight as GrandpaWeight};
 use im_online::sr25519::AuthorityId as ImOnlineId;
-use primitives::{OpaqueMetadata};
+use primitives::OpaqueMetadata;
 use rstd::prelude::*;
 use sr_primitives::curve::PiecewiseLinear;
 use sr_primitives::traits::{
@@ -362,7 +362,7 @@ impl staking::Trait for Runtime {
 type SubmitTransaction = TransactionSubmitter<ImOnlineId, Runtime, UncheckedExtrinsic>;
 
 parameter_types! {
-	pub const SessionDuration: BlockNumber = EPOCH_DURATION_IN_SLOTS as _;
+    pub const SessionDuration: BlockNumber = EPOCH_DURATION_IN_SLOTS as _;
 }
 
 impl im_online::Trait for Runtime {
