@@ -1043,7 +1043,7 @@ checksum = "b8b7a7c0c47db5545ed3fef7468ee7bb5b74691498139e4b3f6a20685dc6dd8e"
 
 [[package]]
 name = "joystream-node-runtime"
-version = "6.1.0"
+version = "6.2.0"
 dependencies = [
  "parity-scale-codec",
  "safe-mix",
@@ -3354,6 +3354,7 @@ dependencies = [
 [[package]]
 name = "substrate-forum-module"
 version = "1.1.0"
+source = "git+https://github.com/mnaamani/substrate-forum-module?branch=upgrade-libp2p#a403cb2994790e2f29b2e9886a1f35ba5bdaf181"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3382,6 +3383,7 @@ dependencies = [
 [[package]]
 name = "substrate-hiring-module"
 version = "1.0.0"
+source = "git+https://github.com/mnaamani/substrate-hiring-module?branch=upgrade-libp2p#ac45de704e0147dfb9ad7fb8d3375a01fe9df6ad"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3501,6 +3503,7 @@ dependencies = [
 [[package]]
 name = "substrate-recurring-reward-module"
 version = "1.0.0"
+source = "git+https://github.com/mnaamani/substrate-recurring-reward-module?branch=upgrade-libp2p#84bc180bdff6709ad952135fff1cb13d4426758c"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3540,6 +3543,7 @@ dependencies = [
 [[package]]
 name = "substrate-stake-module"
 version = "1.0.0"
+source = "git+https://github.com/mnaamani/substrate-stake-module/?branch=upgrade-libp2p#1829dfb79b5d26cc34619065bd12a38a9b0b4783"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3599,6 +3603,7 @@ dependencies = [
 [[package]]
 name = "substrate-token-mint-module"
 version = "1.0.0"
+source = "git+https://github.com/mnaamani/substrate-token-minting-module/?branch=upgrade-libp2p#bec7a1b121eff86d5d1c8a8de11ac09094b6fe78"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3631,6 +3636,7 @@ dependencies = [
 [[package]]
 name = "substrate-versioned-store"
 version = "1.1.0"
+source = "git+https://github.com/mnaamani/substrate-versioned-store-module?branch=upgrade-libp2p#025734d46efaddf4aed0f6ed4c4a4beff0cc5403"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3649,6 +3655,7 @@ dependencies = [
 [[package]]
 name = "substrate-versioned-store-permissions-module"
 version = "1.0.0"
+source = "git+https://github.com/mnaamani/substrate-versioned-store-permissions-module?branch=upgrade-libp2p#f981a6000eb210764c8e3b48d2142bc23af59fff"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",

@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '6.1.0'
+version = '6.2.0'
 
 [features]
 default = ['std']
@@ -261,48 +261,62 @@ version = '1.0.4'
 [dependencies.forum]
 default_features = false
 # git = 'https://github.com/joystream/substrate-forum-module'
+git = 'https://github.com/mnaamani/substrate-forum-module'
 package = 'substrate-forum-module'
 # rev = '4bdeadaadfcca1fd6e822c520f429d4beacc4c8a'
-path = '/Users/mokhtar/joystream/substrate-forum-module'
+# path = '/Users/mokhtar/joystream/substrate-forum-module'
+branch = 'upgrade-libp2p'
 
 [dependencies.minting]
 default_features = false
 # git = 'https://github.com/joystream/substrate-token-minting-module/'
+git = 'https://github.com/mnaamani/substrate-token-minting-module/'
 package = 'substrate-token-mint-module'
 # rev = '5570e3b56e9caffa7df1dbede6308b2e6ce18217'
-path = '/Users/mokhtar/joystream/substrate-token-mint-module'
+# path = '/Users/mokhtar/joystream/substrate-token-mint-module'
+branch = 'upgrade-libp2p'
 
 [dependencies.recurringrewards]
 default_features = false
 # git = 'https://github.com/Joystream/substrate-recurring-reward-module'
+git = 'https://github.com/mnaamani/substrate-recurring-reward-module'
 package = 'substrate-recurring-reward-module'
 # rev = '417f7bb5b82ae50f02716ac4eefa2fc7952e0f61'
-path = '/Users/mokhtar/joystream/substrate-recurring-reward-module'
+# path = '/Users/mokhtar/joystream/substrate-recurring-reward-module'
+branch = 'upgrade-libp2p'
 
 [dependencies.stake]
 default_features = false
 # git = 'https://github.com/Joystream/substrate-stake-module/'
+git = 'https://github.com/mnaamani/substrate-stake-module/'
 package = 'substrate-stake-module'
 # rev = '0516efe9230da112bc095e28f34a3715c2e03ca8'
-path = '/Users/mokhtar/joystream/substrate-stake-module'
+# path = '/Users/mokhtar/joystream/substrate-stake-module'
+branch = 'upgrade-libp2p'
 
 [dependencies.hiring]
 default_features = false
 # git = 'https://github.com/Joystream/substrate-hiring-module'
+git = 'https://github.com/mnaamani/substrate-hiring-module'
 package = 'substrate-hiring-module'
 # rev = '485c8be73891183910721e874cf9741dec6d824a'
-path = '/Users/mokhtar/joystream/substrate-hiring-module'
+# path = '/Users/mokhtar/joystream/substrate-hiring-module'
+branch = 'upgrade-libp2p'
 
 [dependencies.versioned_store]
 default_features = false
 package ='substrate-versioned-store'
 # git = 'https://github.com/joystream/substrate-versioned-store-module'
+git = 'https://github.com/mnaamani/substrate-versioned-store-module'
 # rev = 'd0c68722405355404840512edf3064d5ced3e1fe'
-path = '/Users/mokhtar/joystream/substrate-versioned-store'
+# path = '/Users/mokhtar/joystream/substrate-versioned-store'
+branch = 'upgrade-libp2p'
 
 [dependencies.versioned_store_permissions]
 default_features = false
 package = 'substrate-versioned-store-permissions-module'
 # git = 'https://github.com/joystream/substrate-versioned-store-permissions-module'
+git = 'https://github.com/mnaamani/substrate-versioned-store-permissions-module'
 # rev = '816b796b1b72bba05eebe128cdaa5e18611ac3ae'
-path = '/Users/mokhtar/joystream/substrate-versioned-store-permissions-module'
+# path = '/Users/mokhtar/joystream/substrate-versioned-store-permissions-module'
+branch = 'upgrade-libp2p'
