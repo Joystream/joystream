@@ -14,7 +14,6 @@ import translate from './translate';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { UploadWithRouter } from './Upload';
 import Explore from './Explore';
-import { EditByContentId } from './EditMeta';
 import { DiscoveryProviderProps, DiscoveryProviderProvider } from './DiscoveryProvider';
 import { SubstrateTransportProvider } from './TransportContext';
 import { ChannelsByOwnerWithRouter } from './channels/ChannelsByOwner.view';
@@ -64,7 +63,6 @@ function App(props: Props) {
           </header>
           <Switch>
             <Route path={`${basePath}/deprecated-explore`} component={Explore} />
-            <Route path={`${basePath}/edit/:assetName`} component={EditByContentId} />
             <Route path={`${basePath}/account/:account/channels`} component={ChannelsByOwnerWithRouter} />
             <Route path={`${basePath}/channels/new`} component={EditChannelView} />
             <Route path={`${basePath}/channels/:id/edit`} component={EditChannelWithRouter} />
