@@ -76,18 +76,6 @@ export function PlayVideo (props: PlayVideoProps) {
             }
           </ApiConsumer>
 
-          <div className='ContentHeader'>
-
-            <a className='ui button outline DownloadBtn' href={`${assetUrl}?download`}><i className='cloud download icon'></i> Download</a>
-            {iAmOwner &&
-              <Link to={`/media/video/${video.id}/edit`} className='ui button' style={{ float: 'right' }}>
-                <i className='pencil alternate icon'></i>
-                Edit
-              </Link>
-            }
-            <h1>{video.title}</h1>
-          </div>
-
           <ChannelPreview channel={channel} />
 
           {video.description &&

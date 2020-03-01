@@ -110,7 +110,7 @@ class InnerComponent extends React.PureComponent<Props> {
           <a className='ui button outline DownloadBtn' href={`${url}?download`}><i className='cloud download icon'></i> Download</a>
 
           {iAmOwner &&
-            <Link className='ui button' style={{ float: 'right' }} to={`/media/video/${video.id}/edit`}>
+            <Link to={`/media/video/${video.id}/edit`} className='ui button' style={{ float: 'right' }}>
               <i className='pencil alternate icon'></i>
               Edit
             </Link>
