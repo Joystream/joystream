@@ -17,7 +17,7 @@ import translate from './translate';
 import { fileNameWoExt } from './utils';
 import { ContentId, DataObject } from '@joystream/types/media';
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import { DiscoveryProviderProps } from './DiscoveryProvider';
+import { DiscoveryProviderProps, withDiscoveryProvider } from './DiscoveryProvider';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import IpfsHash from 'ipfs-only-hash';
 import { ChannelId } from '@joystream/types/content-working-group';
@@ -313,5 +313,6 @@ class Component extends React.PureComponent<Props, State> {
 export const UploadWithRouter = withMulti(
   Component,
   translate,
-  withOnlyMembers
+  withOnlyMembers,
+  withDiscoveryProvider
 )

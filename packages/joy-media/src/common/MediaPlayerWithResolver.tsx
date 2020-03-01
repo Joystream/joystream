@@ -9,7 +9,7 @@ import { Option } from '@polkadot/types/codec';
 import { AccountId } from '@polkadot/types/interfaces';
 
 import translate from '../translate';
-import { DiscoveryProviderProps } from '../DiscoveryProvider';
+import { DiscoveryProviderProps, withDiscoveryProvider } from '../DiscoveryProvider';
 import { DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '@joystream/types/media';
 import { Message } from 'semantic-ui-react';
 import { MediaPlayerView, RequiredMediaPlayerProps } from './MediaPlayerView';
@@ -90,6 +90,7 @@ class InnerComponent extends React.PureComponent<Props, State> {
 
       try {
         var resolvedAssetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.encode(), cancelSource.token);
+        console.log({ resolvedAssetUrl })
       } catch (err) {
         if (axios.isCancel(err)) {
           return;
@@ -99,8 +100,8 @@ class InnerComponent extends React.PureComponent<Props, State> {
       }
 
       try {
-        console.log('trying', resolvedAssetUrl);
-        let response = await axios.head(resolvedAssetUrl, { cancelToken: cancelSource.token });
+        console.log('Checking an URL of resolved asset:', resolvedAssetUrl);
+        const response = await axios.head(resolvedAssetUrl, { cancelToken: cancelSource.token });
         const contentType = response.headers['content-type'] || 'video/video';
         this.setState({ contentType, resolvedAssetUrl, resolvingAsset: false });
         return;
@@ -150,5 +151,6 @@ class InnerComponent extends React.PureComponent<Props, State> {
 
 export const MediaPlayerWithResolver = withMulti(
   InnerComponent,
-  translate
+  translate,
+  withDiscoveryProvider
 )
