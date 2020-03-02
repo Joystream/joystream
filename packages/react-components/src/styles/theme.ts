@@ -4,9 +4,6 @@
 
 import { css } from 'styled-components';
 
-/* default buttons, dark gray */
-const colorBtnDefault = '#666';
-
 /* highlighted buttons, orange */
 const colorBtnHighlight = '#f19135';
 
@@ -27,24 +24,6 @@ export default css`
       }
     }
 
-    .ui.button,
-    .ui.buttons .button {
-      background-color: ${colorBtnDefault};
-      color: ${colorBtnText};
-
-      &.active,
-      &:active,
-      &:focus,
-      &:hover {
-        background-color: ${colorBtnDefault};
-        color: ${colorBtnText};
-      }
-
-      &:hover {
-        opacity: 0.8;
-      }
-    }
-
     .ui.basic.negative.button {
       box-shadow: 0 0 0 1px ${colorBtnHighlight} inset !important;
       color: ${colorBtnHighlight} !important;
@@ -60,23 +39,6 @@ export default css`
       &:hover {
         background-color: ${colorBtnHighlight};
       }
-    }
-
-    .ui.primary.button,
-    .ui.buttons .primary.button
-    /*, .ui.primary.buttons .button (for dropdowns) */ {
-      background-color: ${colorBtnPrimary};
-
-      &.active,
-      &:active,
-      &:focus,
-      &:hover {
-        background-color: ${colorBtnPrimary};
-      }
-    }
-
-    .ui.blue.progress .bar {
-      background-color: ${colorBtnHighlight};
     }
 
     .ui.modal > .header:not(.ui) {

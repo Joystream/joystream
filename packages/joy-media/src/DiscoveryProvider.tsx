@@ -1,16 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect, useContext, createContext } from 'react';
 import { Message } from 'semantic-ui-react';
-
 import axios, { CancelToken } from 'axios';
-
-import { AccountId } from '@polkadot/types/interfaces';
-import { withCalls, withMulti } from '@polkadot/react-api/with';
-
-import { queryToProp } from '@polkadot/joy-utils/index';
-import { Url } from '@joystream/types/discovery'
-
 import { parse as parseUrl } from 'url';
 
+import { AccountId } from '@polkadot/types/interfaces';
+import { Vec } from '@polkadot/types';
+import { Url } from '@joystream/types/discovery'
+import ApiContext from '@polkadot/react-api/ApiContext';
+import { ApiProps } from '@polkadot/react-api/types';
 
 export type BootstrapNodes = {
   bootstrapNodes?: Url[],
@@ -26,7 +23,7 @@ export type DiscoveryProviderProps = {
 };
 
 // return string Url with last `/` removed
-function normalizeUrl(url: string | Url) : string {
+function normalizeUrl(url: string | Url): string {
   let st = new String(url)
   if (st.endsWith('/')) {
     return st.substring(0, st.length - 1);
@@ -40,12 +37,7 @@ type ProviderStats = {
   resolvedAt: number,
 }
 
-function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryProvider | undefined {
-
-  if (!bootstrapNodes || bootstrapNodes.length == 0) {
-    return undefined;
-  }
-
+function newDiscoveryProvider({ bootstrapNodes }: BootstrapNodes): DiscoveryProvider {
   let stats: Map<string, ProviderStats> = new Map();
 
   const resolveAssetEndpoint = async (storageProvider: AccountId, contentId?: string, cancelToken?: CancelToken) => {
@@ -54,21 +46,21 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
     let stat = stats.get(providerKey);
 
     if (!stat || (stat && (Date.now() > (stat.resolvedAt + (10 * 60 * 1000))))) {
-      for(let n = 0; bootstrapNodes && n < bootstrapNodes.length; n++) {
+      for (let n = 0; bootstrapNodes && n < bootstrapNodes.length; n++) {
         let discoveryUrl = normalizeUrl(bootstrapNodes[n])
 
         try {
           parseUrl(discoveryUrl);
-        } catch(err) {
+        } catch (err) {
           continue;
         }
 
         const serviceInfoQuery = `${discoveryUrl}/discover/v0/${storageProvider.toString()}`;
 
         try {
-          console.log(`resolving ${providerKey} using ${discoveryUrl}`);
+          console.log(`Resolving ${providerKey} using ${discoveryUrl}`);
 
-          const serviceInfo = await axios.get(serviceInfoQuery, {cancelToken}) as any
+          const serviceInfo = await axios.get(serviceInfoQuery, { cancelToken }) as any
 
           if (!serviceInfo) {
             continue;
@@ -112,72 +104,64 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
   return { resolveAssetEndpoint, reportUnreachable };
 }
 
-type State = {
-  discoveryProvider?: DiscoveryProvider
+const DiscoveryProviderContext = createContext<DiscoveryProvider>(undefined as unknown as DiscoveryProvider)
+
+export const DiscoveryProviderProvider = (props: React.PropsWithChildren<{}>) => {
+  const api: ApiProps = useContext(ApiContext);
+  const [provider, setProvider] = useState<DiscoveryProvider | undefined>()
+  const [loaded, setLoaded] = useState<boolean | undefined>()
+
+  useEffect(() => {
+    const load = async () => {
+      if (loaded || !api) return
+
+      console.log('Discovery Provider: Loading bootstrap node from Substrate...')
+      const bootstrapNodes = await api.api.query.discovery.bootstrapEndpoints() as Vec<Url>;
+      setProvider(newDiscoveryProvider({ bootstrapNodes }))
+      setLoaded(true)
+      console.log('Discovery Provider: Initialized')
+    }
+
+    load();
+  }, [loaded])
+
+  if (!api || !api.isApiReady) {
+    // Substrate API is not ready yet.
+    return null
+  }
+
+  if (!provider) {
+    return (
+      <Message info className='JoyMainStatus'>
+        <Message.Header>Initializing Content Discovery Provider</Message.Header>
+        <div style={{ marginTop: '1rem' }}>
+          Loading bootstrap nodes... Please wait.
+        </div>
+      </Message>
+    )
+  }
+
+  return (
+    <DiscoveryProviderContext.Provider value={provider}>
+      {props.children}
+    </DiscoveryProviderContext.Provider>
+  )
 }
 
-function setDiscoveryProvider<P extends DiscoveryProviderProps> (Component: React.ComponentType<P>) {
-  console.log('setDiscoveryProvider called!');
+export const useDiscoveryProvider = () =>
+  useContext(DiscoveryProviderContext)
 
-  return class extends React.Component<P & BootstrapNodes, State> {
-    state: State = {}
-
-    componentWillReceiveProps() {
-      let { discoveryProvider } = this.state;
-
-      // only set the discovery provider once
-      if (discoveryProvider) {
-        return
-      } else {
-        const { bootstrapNodes } = this.props;
-        const discoveryProvider = newDiscoveryProvider({bootstrapNodes});
-        if (discoveryProvider) {
-          this.setState({discoveryProvider})
-        }
-      }
+export function withDiscoveryProvider(Component: React.ComponentType<DiscoveryProviderProps>) {
+  return (props: React.PropsWithChildren<{}>) => {
+    const discoveryProvider = useDiscoveryProvider()
+    if (!discoveryProvider) {
+      return <em>Loading discovery provider. Please wait...</em>
     }
 
-    componentWillUnmount() {
-      let { discoveryProvider } = this.state;
-      if (discoveryProvider) {
-
-      }
-    }
-
-    render () {
-      const { discoveryProvider } = this.state;
-
-      if (!discoveryProvider) {
-        // Still loading bootstrap nodes...
-        return (
-          <Message info className='JoyMainStatus'>
-              <Message.Header>Initializing..</Message.Header>
-              <div style={{ marginTop: '1rem' }}>
-                Bootstrapping discovery service.
-              </div>
-          </Message>
-        );
-      } else {
-        return (
-          <Component
-            {...this.props}
-            discoveryProvider={discoveryProvider}
-          />
-        );
-      }
-    }
-  };
-}
-
-const loadBootstrapNodes = withCalls<BootstrapNodes>(
-  queryToProp('query.discovery.bootstrapEndpoints',
-    { propName: 'bootstrapNodes' }),
-);
-
-export function withDiscoveryProvider<P extends DiscoveryProviderProps> (Component: React.ComponentType<P>) {
-  return withMulti(
-    Component,
-    loadBootstrapNodes,
-    setDiscoveryProvider
-  );
+    return (
+      <Component {...props} discoveryProvider={discoveryProvider}>
+        {props.children}
+      </Component>
+    )
+  }
 }

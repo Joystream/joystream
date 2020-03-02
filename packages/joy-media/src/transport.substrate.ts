@@ -1,12 +1,11 @@
-import { MediaTransport } from './transport';
-import { Subscribable } from '@polkadot/joy-utils/Subscribable';
-import EntityId from '@joystream/types/versioned-store/EntityId';
-import { Entity } from '@joystream/types/versioned-store';
+import BN from 'bn.js';
+import { MediaTransport, EntityCodecByClassNameMap, ClassName, ChannelValidationConstraints, ValidationConstraint } from './transport';
+import { ClassId, Class, EntityId, Entity } from '@joystream/types/versioned-store';
+import { InputValidationLengthConstraint } from '@joystream/types/forum';
+import { PlainEntity, AnyEntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
-import { ChannelId } from './channels/ChannelId';
-import { ChannelType } from './schemas/channel/Channel';
 import { ContentLicenseType } from './schemas/general/ContentLicense';
 import { CurationStatusType } from './schemas/general/CurationStatus';
 import { LanguageType } from './schemas/general/Language';
@@ -16,66 +15,230 @@ import { MusicMoodType } from './schemas/music/MusicMood';
 import { MusicThemeType } from './schemas/music/MusicTheme';
 import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
+import { ChannelEntity } from './entities/ChannelEntity';
+import { ChannelId, Channel } from '@joystream/types/content-working-group';
+import { ApiPromise } from '@polkadot/api/index';
+import { ApiProps } from '@polkadot/react-api/types';
+import { Vec } from '@polkadot/types';
+import { LinkageResult } from '@polkadot/types/codec/Linkage';
+import { ChannelCodec } from './schemas/channel/Channel';
+import { FeaturedContentType } from './schemas/general/FeaturedContent';
 
-function notImplementedYet (): any {
-  throw new Error('Substrate transport is not implemented yet');
-}
+const FIRST_CHANNEL_ID = 1;
+const FIRST_CLASS_ID = 1;
+const FIRST_ENTITY_ID = 1;
 
 export class SubstrateTransport extends MediaTransport {
 
-  musicTrackById (_id: EntityId): Promise<MusicTrackType> {
-    return notImplementedYet(); // TODO impl
+  protected api: ApiPromise
+
+  constructor(api: ApiProps) {
+    super();
+    
+    if (!api) {
+      throw new Error('Cannot create SubstrateTransport: Substrate API is required');
+    } else if (!api.isApiReady) {
+      throw new Error('Cannot create SubstrateTransport: Substrate API is not ready yet');
+    }
+
+    this.api = api.api;
   }
 
-  musicAlbumById (_id: EntityId): Promise<MusicAlbumType> {
-    return notImplementedYet(); // TODO impl
+  protected notImplementedYet<T> (): T {
+    throw new Error('Substrate transport: Requested function is not implemented yet')
   }
 
-  videoById (_id: EntityId): Promise<VideoType> {
-    return notImplementedYet(); // TODO impl
+  /** Content Working Group query. */
+  cwgQuery() {
+    return this.api.query.contentWorkingGroup
   }
 
-  channelById (_id: ChannelId): Promise<ChannelType> {
-    return notImplementedYet(); // TODO impl
+  /** Versioned Store query. */
+  vsQuery() {
+    return this.api.query.versionedStore
   }
 
-  allContentLicenses (): Promise<ContentLicenseType[]> {
-    return notImplementedYet(); // TODO impl
+  // Channels (Content Working Group module)
+  // -----------------------------------------------------------------
+
+  async nextChannelId(): Promise<ChannelId> {
+    return await this.cwgQuery().nextChannelId<ChannelId>()
   }
 
-  allCurationStatuses(): Promise<CurationStatusType[]> {
-    return notImplementedYet(); // TODO impl
+  async allChannelIds(): Promise<ChannelId[]> {
+    let nextId = (await this.nextChannelId()).toNumber()
+    if (nextId < 1) nextId = 1
+
+    const allIds: ChannelId[] = []
+    for (let id = FIRST_CHANNEL_ID; id < nextId; id++) {
+      allIds.push(new ChannelId(id))
+    }
+
+    return allIds
   }
 
-  allLanguages(): Promise<LanguageType[]> {
-    return notImplementedYet(); // TODO impl
+  async allChannels(): Promise<ChannelEntity[]> {
+    const ids = await this.allChannelIds()
+    const channelTuples = await this.cwgQuery().channelById.multi<LinkageResult>(ids)
+
+    return channelTuples.map((tuple, i) => {
+      const channel = tuple[0] as Channel
+      const plain = ChannelCodec.fromSubstrate(ids[i], channel)
+      
+      return {
+        ...plain,
+        rewardEarned: new BN(0), // TODO calc this value based on chain data
+        contentItemsCount: 0,    // TODO calc this value based on chain data
+      }
+    })
   }
 
-  allMediaObjects(): Promise<MediaObjectType[]> {
-    return notImplementedYet(); // TODO impl
+  protected async getValidationConstraint(constraintName: string): Promise<ValidationConstraint> {
+    const constraint = await this.cwgQuery()[constraintName]<InputValidationLengthConstraint>()
+    return {
+      min: constraint.min.toNumber(),
+      max: constraint.max.toNumber()
+    }
   }
 
-  allMusicGenres(): Promise<MusicGenreType[]> {
-    return notImplementedYet(); // TODO impl
+  async channelValidationConstraints(): Promise<ChannelValidationConstraints> {
+    return {
+      handle: await this.getValidationConstraint('channelHandleConstraint'),
+      title: await this.getValidationConstraint('channelTitleConstraint'),
+      description: await this.getValidationConstraint('channelDescriptionConstraint'),
+      avatar: await this.getValidationConstraint('channelAvatarConstraint'),
+      banner: await this.getValidationConstraint('channelBannerConstraint'),
+    }
   }
 
-  allMusicMoods(): Promise<MusicMoodType[]> {
-    return notImplementedYet(); // TODO impl
+  // Classes (Versioned Store module)
+  // -----------------------------------------------------------------
+
+  async nextClassId(): Promise<ClassId> {
+    return await this.vsQuery().nextClassId<ClassId>()
   }
 
-  allMusicThemes(): Promise<MusicThemeType[]> {
-    return notImplementedYet(); // TODO impl
+  async allClassIds(): Promise<ClassId[]> {
+    let nextId = (await this.nextClassId()).toNumber()
+
+    const allIds: ClassId[] = []
+    for (let id = FIRST_CLASS_ID; id < nextId; id++) {
+      allIds.push(new ClassId(id))
+    }
+
+    return allIds
   }
 
-  allPublicationStatuses(): Promise<PublicationStatusType[]> {
-    return notImplementedYet(); // TODO impl
+  // TODO Think wisely how to optimize/memoize the result of this func
+  async allClasses(): Promise<Class[]> {
+    const ids = await this.allClassIds()
+    return await this.vsQuery().classById.multi<Vec<Class>>(ids) as unknown as Class[]
   }
 
-  allVideoCategories(): Promise<VideoCategoryType[]> {
-    return notImplementedYet(); // TODO impl
+  // Entities (Versioned Store module)
+  // -----------------------------------------------------------------
+
+  async nextEntityId(): Promise<EntityId> {
+    return await this.vsQuery().nextEntityId<EntityId>()
   }
 
-  allEntities (): Subscribable<Entity[]> {
-    return notImplementedYet(); // TODO impl
+  async allEntityIds(): Promise<EntityId[]> {
+    let nextId = (await this.nextEntityId()).toNumber()
+
+    const allIds: EntityId[] = []
+    for (let id = FIRST_ENTITY_ID; id < nextId; id++) {
+      allIds.push(new EntityId(id))
+    }
+
+    return allIds
+  }
+
+  // TODO Think wisely how to optimize/memoize the result of this func
+  async allEntities(): Promise<Entity[]> {
+    const ids = await this.allEntityIds()
+    return await this.vsQuery().entityById.multi<Vec<Entity>>(ids) as unknown as Entity[]
+  }
+
+  async allEntitiesByClassName(className: ClassName): Promise<Entity[]> {
+    const classId = (await this.classIdByNameMap())[className]
+
+    if (!classId) {
+      console.log(`No entities found by class name '${className}'`)
+      return []
+    }
+
+    return (await this.allEntities())
+      .filter((e) => classId.eq(e.class_id))
+  }
+
+  async findPlainEntitiesByClassName<T extends PlainEntity> (className: ClassName): Promise<T[]> {
+    const entities = await this.allEntitiesByClassName(className)
+
+    const klass = await this.classByName(className)
+    if (!klass) {
+      console.log(`No class found by name '${className}'`)
+      return []
+    }
+    
+    const CodecClass = EntityCodecByClassNameMap[className] as typeof AnyEntityCodec
+    if (!CodecClass) {
+      console.log(`Entity codec not found by class name '${className}'`)
+      return []
+    }
+
+    return (new CodecClass(klass)).toPlainObjects(entities)
+  }
+
+  async featuredContent(): Promise<FeaturedContentType | undefined> {
+    const arr = await this.findPlainEntitiesByClassName('FeaturedContent')
+    return arr && arr.length ? arr[0] : undefined
+  }
+
+  async allMediaObjects(): Promise<MediaObjectType[]> {
+    return await this.findPlainEntitiesByClassName('MediaObject')
+  }
+
+  async allVideos(): Promise<VideoType[]> {
+    return await this.findPlainEntitiesByClassName('Video')
+  }
+
+  async allMusicTracks(): Promise<MusicTrackType[]> {
+    return await this.findPlainEntitiesByClassName('MusicTrack')
+  }
+
+  async allMusicAlbums(): Promise<MusicAlbumType[]> {
+    return await this.findPlainEntitiesByClassName('MusicAlbum')
+  }
+
+  async allContentLicenses (): Promise<ContentLicenseType[]> {
+    return await this.findPlainEntitiesByClassName('ContentLicense')
+  }
+
+  async allCurationStatuses(): Promise<CurationStatusType[]> {
+    return await this.findPlainEntitiesByClassName('CurationStatus')
+  }
+
+  async allLanguages(): Promise<LanguageType[]> {
+    return await this.findPlainEntitiesByClassName('Language')
+  }
+
+  async allMusicGenres(): Promise<MusicGenreType[]> {
+    return await this.findPlainEntitiesByClassName('MusicGenre')
+  }
+
+  async allMusicMoods(): Promise<MusicMoodType[]> {
+    return await this.findPlainEntitiesByClassName('MusicMood')
+  }
+
+  async allMusicThemes(): Promise<MusicThemeType[]> {
+    return await this.findPlainEntitiesByClassName('MusicTheme')
+  }
+
+  async allPublicationStatuses(): Promise<PublicationStatusType[]> {
+    return await this.findPlainEntitiesByClassName('PublicationStatus')
+  }
+
+  async allVideoCategories(): Promise<VideoCategoryType[]> {
+    return await this.findPlainEntitiesByClassName('VideoCategory')
   }
 }

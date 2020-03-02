@@ -17,6 +17,8 @@ export type FeaturedContentFormValues = {
 };
 
 export type FeaturedContentType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   topVideo?: VideoType
   featuredVideos?: VideoType[]

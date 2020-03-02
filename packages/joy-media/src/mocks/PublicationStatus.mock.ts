@@ -1,12 +1,16 @@
 import { newEntityId } from './EntityId.mock';
 import { PublicationStatusType } from '../schemas/general/PublicationStatus';
 
-const values = [
-  'Unpublished',
-  'Published'
-];
+function newEntity (value: string): PublicationStatusType {
+  return { id: newEntityId(), value } as unknown as PublicationStatusType // A hack to fix TS compilation.
+}
+
+export const PublicationStatus = {
+  Publiс: newEntity('Publiс'),
+  Unlisted: newEntity('Unlisted'),
+};
 
 export const AllPublicationStatuses: PublicationStatusType[] =
-  values.map(value => ({ id: newEntityId(), value }));
+  Object.values(PublicationStatus);
 
-export const PublicationStatus = AllPublicationStatuses[0];
+export const DefaultPublicationStatus = PublicationStatus.Publiс;

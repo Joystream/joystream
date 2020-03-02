@@ -3,6 +3,7 @@
 
 import * as Yup from 'yup';
 import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
+import moment from 'moment';
 import { LanguageType } from '../general/Language';
 import { MusicGenreType } from './MusicGenre';
 import { MusicMoodType } from './MusicMood';
@@ -24,6 +25,11 @@ export const MusicTrackValidationSchema = Yup.object().shape({
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
   description: Yup.string()
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
+  firstReleased: Yup.string()
+    .required('This field is required')
+    .test('valid-date', 'Invalid date. Valid date formats are yyyy-mm-dd or yyyy-mm or yyyy.', (val?: any) => {
+      return moment(val as any).isValid();
+    }),
   composerOrSongwriter: Yup.string()
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
   lyrics: Yup.string()
@@ -38,7 +44,7 @@ export type MusicTrackFormValues = {
   thumbnail: string
   description: string
   language: number
-  firstReleased: number
+  firstReleased: string
   genre: number
   mood: number
   theme: number
@@ -51,9 +57,12 @@ export type MusicTrackFormValues = {
   explicit: boolean
   license: number
   attribution: string
+  channelId: number
 };
 
 export type MusicTrackType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   title: string
   artist: string
@@ -73,6 +82,7 @@ export type MusicTrackType = {
   explicit: boolean
   license: ContentLicenseType
   attribution?: string
+  channelId?: number
 };
 
 export class MusicTrackCodec extends EntityCodec<MusicTrackType> { }
@@ -84,7 +94,7 @@ export function MusicTrackToFormValues(entity?: MusicTrackType): MusicTrackFormV
     thumbnail: entity && entity.thumbnail || '',
     description: entity && entity.description || '',
     language: entity && entity.language?.id || 0,
-    firstReleased: entity && entity.firstReleased || 0,
+    firstReleased: entity && moment(entity.firstReleased * 1000).format('YYYY-MM-DD') || '',
     genre: entity && entity.genre?.id || 0,
     mood: entity && entity.mood?.id || 0,
     theme: entity && entity.theme?.id || 0,
@@ -92,11 +102,12 @@ export function MusicTrackToFormValues(entity?: MusicTrackType): MusicTrackFormV
     composerOrSongwriter: entity && entity.composerOrSongwriter || '',
     lyrics: entity && entity.lyrics || '',
     object: entity && entity.object?.id || 0,
-    publicationStatus: entity && entity.publicationStatus.id || 0,
+    publicationStatus: entity && entity.publicationStatus?.id || 0,
     curationStatus: entity && entity.curationStatus?.id || 0,
     explicit: entity && entity.explicit || false,
-    license: entity && entity.license.id || 0,
-    attribution: entity && entity.attribution || ''
+    license: entity && entity.license?.id || 0,
+    attribution: entity && entity.attribution || '',
+    channelId: entity && entity.channelId || 0
   }
 }
 
@@ -118,7 +129,8 @@ export type MusicTrackPropId =
   'curationStatus' |
   'explicit' |
   'license' |
-  'attribution'
+  'attribution' |
+  'channelId'
   ;
 
 export type MusicTrackGenericProp = {
@@ -268,5 +280,11 @@ export const MusicTrackClass: MusicTrackClassType = {
     "description": "If the License requires attribution, add this here.",
     "type": "Text",
     "maxTextLength": 255
+  },
+  channelId: {
+    "id": "channelId",
+    "name": "Channel Id",
+    "description": "Id of the channel this music track is published to.",
+    "type": "Uint64"
   }
 };

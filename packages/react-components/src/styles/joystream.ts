@@ -102,10 +102,14 @@ export default css`
     margin: 1rem .75rem 2.5rem .5rem !important
   }
 
-  .JoyForm .ui--Labelled {
-    align-items: end;
-    &>label {
-      padding-top: .75rem;
+  .JoyForm {
+    margin-bottom: 1.5rem;
+
+    .ui--Labelled {
+      align-items: end;
+      &>label {
+        padding-top: .75rem;
+      }
     }
   }
 

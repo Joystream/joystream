@@ -3,6 +3,7 @@
 
 import * as Yup from 'yup';
 import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
+import moment from 'moment';
 import { MusicGenreType } from './MusicGenre';
 import { MusicMoodType } from './MusicMood';
 import { MusicThemeType } from './MusicTheme';
@@ -25,6 +26,11 @@ export const MusicAlbumValidationSchema = Yup.object().shape({
   description: Yup.string()
     .required('This field is required')
     .max(4000, 'Text is too long. Maximum length is 4000 chars.'),
+  firstReleased: Yup.string()
+    .required('This field is required')
+    .test('valid-date', 'Invalid date. Valid date formats are yyyy-mm-dd or yyyy-mm or yyyy.', (val?: any) => {
+      return moment(val as any).isValid();
+    }),
   lyrics: Yup.string()
     .max(255, 'Text is too long. Maximum length is 255 chars.'),
   composerOrSongwriter: Yup.string()
@@ -38,7 +44,7 @@ export type MusicAlbumFormValues = {
   artist: string
   thumbnail: string
   description: string
-  firstReleased: number
+  firstReleased: string
   genre: number
   mood: number
   theme: number
@@ -53,9 +59,12 @@ export type MusicAlbumFormValues = {
   explicit: boolean
   license: number
   attribution: string
+  channelId: number
 };
 
 export type MusicAlbumType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   title: string
   artist: string
@@ -76,6 +85,7 @@ export type MusicAlbumType = {
   explicit: boolean
   license: ContentLicenseType
   attribution?: string
+  channelId?: number
 };
 
 export class MusicAlbumCodec extends EntityCodec<MusicAlbumType> { }
@@ -86,7 +96,7 @@ export function MusicAlbumToFormValues(entity?: MusicAlbumType): MusicAlbumFormV
     artist: entity && entity.artist || '',
     thumbnail: entity && entity.thumbnail || '',
     description: entity && entity.description || '',
-    firstReleased: entity && entity.firstReleased || 0,
+    firstReleased: entity && moment(entity.firstReleased * 1000).format('YYYY-MM-DD') || '',
     genre: entity && entity.genre?.id || 0,
     mood: entity && entity.mood?.id || 0,
     theme: entity && entity.theme?.id || 0,
@@ -99,8 +109,9 @@ export function MusicAlbumToFormValues(entity?: MusicAlbumType): MusicAlbumFormV
     publicationStatus: entity && entity.publicationStatus.id || 0,
     curationStatus: entity && entity.curationStatus?.id || 0,
     explicit: entity && entity.explicit || false,
-    license: entity && entity.license.id || 0,
-    attribution: entity && entity.attribution || ''
+    license: entity && entity.license?.id || 0,
+    attribution: entity && entity.attribution || '',
+    channelId: entity && entity.channelId || 0
   }
 }
 
@@ -123,7 +134,8 @@ export type MusicAlbumPropId =
   'curationStatus' |
   'explicit' |
   'license' |
-  'attribution'
+  'attribution' |
+  'channelId'
   ;
 
 export type MusicAlbumGenericProp = {
@@ -284,5 +296,11 @@ export const MusicAlbumClass: MusicAlbumClassType = {
     "description": "If the License requires attribution, add this here.",
     "type": "Text",
     "maxTextLength": 255
+  },
+  channelId: {
+    "id": "channelId",
+    "name": "Channel Id",
+    "description": "Id of the channel this music album is published to.",
+    "type": "Uint64"
   }
 };

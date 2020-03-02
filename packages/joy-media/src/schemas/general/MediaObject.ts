@@ -15,6 +15,8 @@ export type MediaObjectFormValues = {
 };
 
 export type MediaObjectType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   value: string
 };
@@ -50,9 +52,9 @@ export const MediaObjectClass: MediaObjectClassType = {
   value: {
     "id": "value",
     "name": "Value",
-    "description": "ContentId of object in the data directory. Hex format expected.",
+    "description": "Content id of object in the data directory.",
     "type": "Text",
     "required": true,
-    "maxTextLength": 66
+    "maxTextLength": 48
   }
 };

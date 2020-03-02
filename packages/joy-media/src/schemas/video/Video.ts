@@ -3,6 +3,7 @@
 
 import * as Yup from 'yup';
 import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
+import moment from 'moment';
 import { LanguageType } from '../general/Language';
 import { VideoCategoryType } from './VideoCategory';
 import { MediaObjectType } from '../general/MediaObject';
@@ -20,6 +21,11 @@ export const VideoValidationSchema = Yup.object().shape({
   description: Yup.string()
     .required('This field is required')
     .max(4000, 'Text is too long. Maximum length is 4000 chars.'),
+  firstReleased: Yup.string()
+    .required('This field is required')
+    .test('valid-date', 'Invalid date. Valid date formats are yyyy-mm-dd or yyyy-mm or yyyy.', (val?: any) => {
+      return moment(val as any).isValid();
+    }),
   attribution: Yup.string()
     .max(255, 'Text is too long. Maximum length is 255 chars.')
 });
@@ -29,7 +35,7 @@ export type VideoFormValues = {
   thumbnail: string
   description: string
   language: number
-  firstReleased: number
+  firstReleased: string
   category: number
   link: string[]
   object: number
@@ -38,9 +44,12 @@ export type VideoFormValues = {
   explicit: boolean
   license: number
   attribution: string
+  channelId: number
 };
 
 export type VideoType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   title: string
   thumbnail: string
@@ -55,6 +64,7 @@ export type VideoType = {
   explicit: boolean
   license: ContentLicenseType
   attribution?: string
+  channelId?: number
 };
 
 export class VideoCodec extends EntityCodec<VideoType> { }
@@ -64,16 +74,17 @@ export function VideoToFormValues(entity?: VideoType): VideoFormValues {
     title: entity && entity.title || '',
     thumbnail: entity && entity.thumbnail || '',
     description: entity && entity.description || '',
-    language: entity && entity.language.id || 0,
-    firstReleased: entity && entity.firstReleased || 0,
+    language: entity && entity.language?.id || 0,
+    firstReleased: entity && moment(entity.firstReleased * 1000).format('YYYY-MM-DD') || '',
     category: entity && entity.category?.id || 0,
     link: entity && entity.link || [],
     object: entity && entity.object?.id || 0,
-    publicationStatus: entity && entity.publicationStatus.id || 0,
+    publicationStatus: entity && entity.publicationStatus?.id || 0,
     curationStatus: entity && entity.curationStatus?.id || 0,
     explicit: entity && entity.explicit || false,
-    license: entity && entity.license.id || 0,
-    attribution: entity && entity.attribution || ''
+    license: entity && entity.license?.id || 0,
+    attribution: entity && entity.attribution || '',
+    channelId: entity && entity.channelId || 0
   }
 }
 
@@ -90,7 +101,8 @@ export type VideoPropId =
   'curationStatus' |
   'explicit' |
   'license' |
-  'attribution'
+  'attribution' |
+  'channelId'
   ;
 
 export type VideoGenericProp = {
@@ -206,5 +218,11 @@ export const VideoClass: VideoClassType = {
     "description": "If the License requires attribution, add this here.",
     "type": "Text",
     "maxTextLength": 255
+  },
+  channelId: {
+    "id": "channelId",
+    "name": "Channel Id",
+    "description": "Id of the channel this video is published to.",
+    "type": "Uint64"
   }
 };

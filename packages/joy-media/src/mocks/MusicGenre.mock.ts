@@ -26,6 +26,6 @@ const values = [
 ];
 
 export const AllMusicGenres: MusicGenreType[] =
-  values.map(value => ({ id: newEntityId(), value }));
+  values.map(value => ({ id: newEntityId(), value })) as unknown as MusicGenreType[] // A hack to fix TS compilation.
 
 export const MusicGenre = AllMusicGenres[0];

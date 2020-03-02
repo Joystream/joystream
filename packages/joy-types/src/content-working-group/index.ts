@@ -17,36 +17,55 @@ export class PrincipalId extends Credential {};
 
 export class OptionalText extends Option.with(Text) {};
 
+export type ChannelContentTypeValue =
+  'Video' |
+  'Music' |
+  'Ebook';
+
+export const ChannelContentTypeAllValues: ChannelContentTypeValue[] = [
+  'Video',
+  'Music',
+  'Ebook'
+];
+
 export class ChannelContentType extends Enum {
-  constructor (value?: any, index?: number) {
+  constructor (value?: ChannelContentTypeValue, index?: number) {
     super(
-      [
-        'Video',
-        'Music',
-        'Ebook',
-      ],
+      ChannelContentTypeAllValues,
       value, index);
   }
 };
+
+export type ChannelPublicationStatusValue =
+  'Public' |
+  'Unlisted';
+
+export const ChannelPublicationStatusAllValues: ChannelPublicationStatusValue[] = [
+  'Public',
+  'Unlisted'
+];
 
 export class ChannelPublicationStatus extends Enum {
-  constructor (value?: any, index?: number) {
+  constructor (value?: ChannelPublicationStatusValue, index?: number) {
     super(
-      [
-        'Public',
-        'Unlisted',
-      ],
+      ChannelPublicationStatusAllValues,
       value, index);
   }
 };
 
+export type ChannelCurationStatusValue =
+  'Normal' |
+  'Censored';
+
+export const ChannelCurationStatusAllValues: ChannelCurationStatusValue[] = [
+  'Normal',
+  'Censored'
+];
+
 export class ChannelCurationStatus extends Enum {
-  constructor (value?: any, index?: number) {
+  constructor (value?: ChannelCurationStatusValue, index?: number) {
     super(
-      [
-        'Normal',
-        'Censored',
-      ],
+      ChannelCurationStatusAllValues,
       value, index);
   }
 };

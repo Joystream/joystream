@@ -5,20 +5,26 @@ import * as JoyForms from '@polkadot/joy-utils/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 import { MediaDropdownOptions } from './MediaDropdownOptions';
+import { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
+import isEqual from 'lodash/isEqual'
 
-type FormCallbacks = {
-  onSubmit: (sendTx: () => void) => void,
+export const datePlaceholder = 'Date in format yyyy-mm-dd';
+
+export type FormCallbacks = {
+  onSubmit: OnTxButtonClick,
   onTxSuccess: TxCallback,
   onTxFailed: TxFailedCallback
 };
 
-type GenericMediaProp<FormValues> = {
+export type GenericMediaProp<FormValues> = {
   id: keyof FormValues,
   type: string,
   name: string,
   description?: string,
   required?: boolean,
+  minItems?: number,
   maxItems?: number,
+  minTextLength?: number,
   maxTextLength?: number,
   classId?: any
 };
@@ -56,11 +62,16 @@ export type MediaFormProps<OuterProps, FormValues> =
   FormFields<OuterProps, FormValues> &
   FormCallbacks & {
     opts: MediaDropdownOptions
+    isFieldChanged: (field: keyof FormValues | GenericMediaProp<FormValues>) => boolean 
   };
 
 export function withMediaForm<OuterProps, FormValues>
   (Component: React.ComponentType<MediaFormProps<OuterProps, FormValues>>)
 {
+  type FieldName = keyof FormValues
+
+  type FieldObject = GenericMediaProp<FormValues>
+
   const LabelledText = JoyForms.LabelledText<FormValues>();
   
   const LabelledField = JoyForms.LabelledField<FormValues>();
@@ -110,13 +121,31 @@ export function withMediaForm<OuterProps, FormValues>
 
   return function (props: MediaFormProps<OuterProps, FormValues>) {
     const {
+      initialValues,
+      values,
+      dirty,
+      touched,
+      errors,
       isValid,
       setSubmitting,
       opts = MediaDropdownOptions.Empty,
     } = props;
 
+    const isFieldChanged = (field: FieldName | FieldObject): boolean => {
+      const fieldName = typeof field === 'string' ? field : (field as FieldObject).id
+      return (
+        dirty &&
+        touched[fieldName] === true &&
+        !isEqual(values[fieldName], initialValues[fieldName])
+      );
+    };
+
     const onSubmit = (sendTx: () => void) => {
-      if (isValid) sendTx();
+      if (isValid) {
+        sendTx();
+      } else {
+        console.log('Form is invalid. Errors:', errors)
+      }
     };
     
     const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
@@ -148,6 +177,7 @@ export function withMediaForm<OuterProps, FormValues>
 
       // Other
       opts,
+      isFieldChanged
     }
 
     return <Component {...allProps} />;

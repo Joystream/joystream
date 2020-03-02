@@ -15,6 +15,8 @@ export type MusicThemeFormValues = {
 };
 
 export type MusicThemeType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   value: string
 };

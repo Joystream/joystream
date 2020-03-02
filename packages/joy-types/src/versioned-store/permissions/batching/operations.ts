@@ -4,6 +4,7 @@ import { ParametrizedEntity } from "./parametrized-entity";
 import { Vec, u16 } from "@polkadot/types";
 import ParametrizedClassPropertyValue from "./ParametrizedClassPropertyValue";
 
+// TODO Rename to ParametrizedClassPropertyValue
 export class ParameterizedClassPropertyValues extends Vec.with(ParametrizedClassPropertyValue) {}
 
 export type ICreateEntityOperation = {

@@ -1,18 +1,13 @@
-import { Observable } from 'rxjs';
-import { Subscribable } from '@polkadot/joy-utils/index'
-import { MediaTransport } from './transport';
-
-import EntityId from '@joystream/types/versioned-store/EntityId';
-import { Entity } from '@joystream/types/versioned-store';
+import { MediaTransport, ChannelValidationConstraints } from './transport';
+import { Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
-import { ChannelType } from './schemas/channel/Channel';
-import { ChannelId } from './channels/ChannelId';
 
 import * as mocks from './mocks';
 import { ContentLicenseType } from './schemas/general/ContentLicense';
 import { CurationStatusType } from './schemas/general/CurationStatus';
+import { FeaturedContentType } from './schemas/general/FeaturedContent';
 import { LanguageType } from './schemas/general/Language';
 import { MediaObjectType } from './schemas/general/MediaObject';
 import { MusicGenreType } from './schemas/music/MusicGenre';
@@ -20,23 +15,45 @@ import { MusicMoodType } from './schemas/music/MusicMood';
 import { MusicThemeType } from './schemas/music/MusicTheme';
 import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
+import { ChannelEntity } from './entities/ChannelEntity';
+import { AllMockChannels } from './stories/data/ChannelSamples';
 
 export class MockTransport extends MediaTransport {
 
-  musicTrackById (_id: EntityId): Promise<MusicTrackType> {
-    return this.promise(mocks.MusicTrack);
+  protected notImplementedYet<T> (): T {
+    throw new Error('Mock transport: Requested function is not implemented yet')
   }
 
-  musicAlbumById (_id: EntityId): Promise<MusicAlbumType> {
-    return this.promise(mocks.MusicAlbum);
+  allChannels(): Promise<ChannelEntity[]> {
+    return this.promise(AllMockChannels);
   }
 
-  videoById (_id: EntityId): Promise<VideoType> {
-    return this.promise(mocks.Video);
+  channelValidationConstraints(): Promise<ChannelValidationConstraints> {
+    return this.notImplementedYet(); // TODO impl
   }
 
-  channelById (_id: ChannelId): Promise<ChannelType> {
-    return this.promise(mocks.Channel);
+  allClasses(): Promise<Class[]> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
+  allEntities (): Promise<Entity[]> {
+    return this.notImplementedYet(); // TODO impl
+  }
+
+  allVideos(): Promise<VideoType[]> {
+    return this.promise(mocks.AllVideos)
+  }
+
+  allMusicTracks(): Promise<MusicTrackType[]> {
+    return this.promise(mocks.AllMusicTracks)
+  }
+
+  allMusicAlbums(): Promise<MusicAlbumType[]> {
+    return this.promise(mocks.AllMusicAlbums)
+  }
+
+  featuredContent(): Promise<FeaturedContentType | undefined> {
+    return this.promise(mocks.FeaturedContent)
   }
 
   allContentLicenses (): Promise<ContentLicenseType[]> {
@@ -73,13 +90,5 @@ export class MockTransport extends MediaTransport {
 
   allVideoCategories(): Promise<VideoCategoryType[]> {
     return this.promise(mocks.AllVideoCategories);
-  }
-  
-  allEntities (): Subscribable<Entity[]> {
-    return new Observable<Entity[]>(observer => {
-      observer.next(
-        [] // TODO create mock data
-      );
-    });
   }
 }

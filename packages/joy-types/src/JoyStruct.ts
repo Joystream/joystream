@@ -1,4 +1,4 @@
-import { Option, Struct } from '@polkadot/types/codec';
+import { Option, Struct, Enum } from '@polkadot/types/codec';
 import { Text, bool as Bool } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 
@@ -18,8 +18,17 @@ export class JoyStruct<T extends {
     return this.getField<Bool>(name).valueOf();
   }
 
+  getEnumAsString<EnumValue extends string> (name: keyof T): EnumValue {
+    return this.getField<Enum>(name).toString() as EnumValue;
+  }
+
   unwrapOrUndefined<C extends Codec> (name: keyof T): C | undefined {
     return this.getField<Option<C>>(name).unwrapOr(undefined);
+  }
+
+  getOptionalString (name: keyof T): string | undefined {
+    const text = this.unwrapOrUndefined<Text>(name);
+    return text ? text.toString() : undefined;
   }
 
   cloneValues (): T {

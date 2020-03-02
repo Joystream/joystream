@@ -4,59 +4,77 @@ import { Route, Switch } from 'react-router';
 
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
+import { ApiProps } from '@polkadot/react-api/types';
+import { withMulti } from '@polkadot/react-api/with';
 
 import './index.css';
 import './common/index.css';
 
 import translate from './translate';
-import Upload from './Upload';
-import Explore from './Explore';
-import { Play } from './View';
-import { EditByContentId } from './EditMeta';
-import { withDiscoveryProvider, DiscoveryProviderProps } from './DiscoveryProvider';
-import { ApiProps } from '@polkadot/react-api/types';
-import { withMulti } from '@polkadot/react-api/with';
+import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { UploadWithRouter } from './Upload';
+import { DiscoveryProviderProps, DiscoveryProviderProvider } from './DiscoveryProvider';
+import { SubstrateTransportProvider } from './TransportContext';
+import { ChannelsByOwnerWithRouter } from './channels/ChannelsByOwner.view';
+import { EditChannelView, EditChannelWithRouter } from './channels/EditChannel.view';
+import { ExploreContentView } from './explore/ExploreContent.view';
+import { ViewChannelWithRouter } from './channels/ViewChannel.view';
+import { EditVideoWithRouter } from './upload/EditVideo.view';
+import { PlayVideoWithRouter } from './video/PlayVideo.view';
+// import { VideosByOwner } from './video/VideosByOwner';
 
 type Props = AppProps & I18nProps & ApiProps & DiscoveryProviderProps & {};
 
-class App extends React.PureComponent<Props> {
+function App(props: Props) {
+  const { t, basePath } = props;
+  const { state: { address: myAddress } } = useMyAccount();
 
-  private buildTabs (): TabItem[] {
-    const { t } = this.props;
-    return [
-      {
-        isRoot: true,
-        name: 'media',
-        text: t('Explore')
-      },
-      {
-        name: 'upload',
-        text: t('Upload')
-      }
-    ];
-  }
+  const tabs: TabItem[] = [
+    {
+      isRoot: true,
+      name: 'explore',
+      text: t('Explore')
+    },
+    !myAddress ? undefined : {
+      name: `account/${myAddress}/channels`,
+      text: t('My channels')
+    },
+    {
+      name: 'channels/new',
+      text: t('New channel')
+    },
+    // !myAddress ? undefined : {
+    //   name: `account/${myAddress}/videos`,
+    //   text: t('My videos')
+    // }
+  ].filter(x => x !== undefined) as TabItem[];
 
-  render () {
-    const { basePath, discoveryProvider, api } = this.props;
-    const tabs = this.buildTabs();
-    return (
-      <main className='media--App'>
-        <header>
-          <Tabs basePath={basePath} items={tabs} />
-        </header>
-        <Switch>
-          <Route path={`${basePath}/play/:assetName`} render={(props) => <Play {...props} discoveryProvider={discoveryProvider} api={api} />} />
-          <Route path={`${basePath}/upload`} render={(props) => <Upload {...props} discoveryProvider={discoveryProvider} api={api} />} />
-          <Route path={`${basePath}/edit/:assetName`} component={EditByContentId} />
-          <Route component={Explore} />
-        </Switch>
-      </main>
-    );
-  }
+  return (
+    <SubstrateTransportProvider>
+      <DiscoveryProviderProvider>
+        <main className='media--App'>
+          <header>
+            <Tabs basePath={basePath} items={tabs} />
+          </header>
+          <Switch>
+            <Route path={`${basePath}/account/:account/channels`} component={ChannelsByOwnerWithRouter} />
+            <Route path={`${basePath}/channels/new`} component={EditChannelView} />
+            <Route path={`${basePath}/channels/:id/edit`} component={EditChannelWithRouter} />
+            <Route path={`${basePath}/channels/:channelId/upload`} component={UploadWithRouter} />
+            <Route path={`${basePath}/channels/:id`} component={ViewChannelWithRouter} />
+            {/* <Route path={`${basePath}/video/my`} component={VideosByOwnerView} /> */}
+            <Route path={`${basePath}/video/:id/edit`} component={EditVideoWithRouter} />
+            <Route path={`${basePath}/video/:id`} component={PlayVideoWithRouter} />
+            <Route path={`${basePath}/explore`} component={ExploreContentView} />
+            <Route component={ExploreContentView} />
+          </Switch>
+        </main>
+      </DiscoveryProviderProvider>
+    </SubstrateTransportProvider>
+  );
 }
 
 export default withMulti(
   App,
-  translate,
-  withDiscoveryProvider
+  translate
 );

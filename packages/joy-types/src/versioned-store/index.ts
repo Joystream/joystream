@@ -6,6 +6,13 @@ import PropertyValue from './PropertyValue';
 import ClassId from './ClassId';
 import EntityId from './EntityId';
 
+export {
+  ClassId,
+  EntityId,
+  PropertyType,
+  PropertyValue
+}
+
 export type InputValidationLengthConstraintType = {
   min: u16,
   max_min_diff: u16
@@ -143,12 +150,12 @@ export class Class extends JoyStruct<ClassType> {
     return this.getField('schemas');
   }
 
-  get name (): Text {
-    return this.getField('name');
+  get name (): string {
+    return this.getString('name');
   }
 
-  get description (): Text {
-    return this.getField('description');
+  get description (): string {
+    return this.getString('description');
   }
 }
 
@@ -202,6 +209,6 @@ export function registerVersionedStoreTypes () {
       ClassPropertyValue
     });
   } catch (err) {
-    console.error('Failed to register custom types of versioned store module', err);
+    console.error('Failed to register custom types of Versioned Store module', err);
   }
 }

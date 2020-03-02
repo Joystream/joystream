@@ -15,6 +15,8 @@ export type CurationStatusFormValues = {
 };
 
 export type CurationStatusType = {
+  classId: number
+  inClassSchemaIndexes: number[]
   id: number
   value: string
 };

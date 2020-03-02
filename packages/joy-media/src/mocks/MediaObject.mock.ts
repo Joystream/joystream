@@ -12,6 +12,6 @@ const values = [
 ];
 
 export const AllMediaObjects: MediaObjectType[] =
-  values.map(value => ({ id: newEntityId(), value }));
+  values.map(value => ({ id: newEntityId(), value })) as unknown as MediaObjectType[] // A hack to fix TS compilation.
 
 export const MediaObject = AllMediaObjects[0];

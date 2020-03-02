@@ -3,13 +3,15 @@ import React, { CSSProperties } from 'react';
 type Props = {
   url: string,
   size?: number,
+  width?: number,
+  height?: number,
   circle?: boolean,
   className?: string,
   style?: CSSProperties
 };
 
 export function BgImg (props: Props) {
-  const { url, size, circle, className, style } = props;
+  let { url, width, height, size, circle, className, style } = props;
 
   const fullClass = 'JoyBgImg ' + className;
 
@@ -17,14 +19,17 @@ export function BgImg (props: Props) {
     backgroundImage: `url(${url})`,
   };
 
-  if (size) {
-    fullStyle = Object.assign(fullStyle, {
-      width: size,
-      height: size,
-      minWidth: size,
-      minHeight: size
-    })
+  if (!width || !height) {
+    width = size;
+    height = size;
   }
+
+  fullStyle = Object.assign(fullStyle, {
+    width,
+    height,
+    minWidth: width,
+    minHeight: height
+  })
 
   if (circle) {
     fullStyle = Object.assign(fullStyle, {

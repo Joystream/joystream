@@ -4,6 +4,13 @@ $grayFont: #999;
 $bgHover: #f2f2f2;
 $bgSelected: #c7e7fa;
 
+$borderColor: #e4e4e4;
+
+.NoContentYet {
+  padding: 2rem 0;
+  color: $grayFont;
+}
+
 .JoyBgImg {
   background-color: #ccc;
   background-size: cover;
@@ -97,8 +104,10 @@ $bgSelected: #c7e7fa;
       font-size: 1rem;
       font-weight: bold;
       color: $blackFont;
-      margin-bottom: 0.25rem;
+      margin-top: 0;
+      margin-bottom: 0.5rem;
     }
+
     .AlbumArtist,
     .AlbumTracksCount {
       color: $grayFont;
@@ -132,24 +141,34 @@ $bgSelected: #c7e7fa;
     text-align: left;
     padding: 0;
   }
+
   .AlbumCover {
     width: $size;
     height: $size;
     min-width: $size;
     min-height: $size;
   }
+
   .AlbumTitle {
     @extend .Ellipsis;
 
-    font-size: 1.15rem;
+    font-size: 1rem;
     font-weight: bold;
     color: $blackFont;
-    margin: .25rem 0;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
   }
+  &.vertical {
+    .AlbumTitle {
+      margin-top: 0.5rem;
+    }
+  }
+
   .AlbumArtist {
     color: $grayFont;
     font-size: 1rem;
   }
+
   .AlbumActions {
     opacity: 1;
   }
@@ -160,6 +179,7 @@ $bgSelected: #c7e7fa;
 
 .ChannelTitle {
   color: $blackFont;
+  display: flex;
 }
 
 .ChannelAvatar {
@@ -225,6 +245,9 @@ $bgSelected: #c7e7fa;
 }
 
 .JoyViewChannel {
+  .ChannelHeader {
+    margin-bottom: 1rem;
+  }
   .ChannelCover {
     background-size: cover;
     margin-bottom: 2rem;
@@ -239,8 +262,13 @@ $bgSelected: #c7e7fa;
     margin: .5rem 0;
   }
 
+  .ChannelDetails {
+    width: 100%;
+  }
+
   .ChannelTitle {
     font-size: 2rem;
+    font-weight: 500;
     margin-bottom: .5rem;
 
     .ChannelHeader & {
@@ -257,10 +285,15 @@ $bgSelected: #c7e7fa;
     color: $grayFont;
     font-size: .9rem;
     text-transform: uppercase;
+    margin-bottom: 1rem;
+
+    .icon {
+      margin-right: .5rem;
+    }
   }
 }
 
-/* Play Album */
+/* Play Album, Video */
 /* ------------------------------------------------------ */
 
 .JoyPlayAlbum {
@@ -270,7 +303,7 @@ $bgSelected: #c7e7fa;
   .JoyPlayAlbum_Main {
     display: flex;
     flex-direction: row;
-    margin-right: 2rem;
+    margin-right: 1rem;
 
     .JoyPlayAlbum_CurrentTrack {
       margin-right: 1rem;
@@ -321,4 +354,17 @@ $bgSelected: #c7e7fa;
   .JoyPlayAlbum_Featured {
     max-width: 200px;
   }
+}
+
+.ContentHeader {
+  border-bottom: 1px solid $borderColor;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.PlayVideoDetails {
+  border-top: 1px solid $borderColor;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
 }
