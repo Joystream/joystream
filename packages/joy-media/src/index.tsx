@@ -43,10 +43,10 @@ function App(props: Props) {
       name: 'channels/new',
       text: t('New channel')
     },
-    !myAddress ? undefined : {
-      name: `account/${myAddress}/videos`,
-      text: t('My videos')
-    }
+    // !myAddress ? undefined : {
+    //   name: `account/${myAddress}/videos`,
+    //   text: t('My videos')
+    // }
   ].filter(x => x !== undefined) as TabItem[];
 
   return (
