@@ -2,11 +2,16 @@ import React, { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { BgImg } from '../common/BgImg';
 import { VideoType } from '../schemas/video/Video';
+import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
+import { ChannelEntity } from '../entities/ChannelEntity';
+import { isAccountAChannelOwner } from '../channels/ChannelHelpers';
 
 export type VideoPreviewProps = {
   id: number,
   title: string,
   thumbnail: string,
+
+  channel?: ChannelEntity,
 
   // Preview-specific props:
   size?: 'normal' | 'small',
@@ -14,7 +19,8 @@ export type VideoPreviewProps = {
 };
 
 export function VideoPreview (props: VideoPreviewProps) {
-  const { id, size = 'normal', orientation = 'vertical' } = props;
+  const { myAccountId } = useMyMembership();
+  const { id, channel, size = 'normal', orientation = 'vertical' } = props;
 
   let width: number = 210;
   let height: number = 118;
@@ -30,15 +36,13 @@ export function VideoPreview (props: VideoPreviewProps) {
       : width * 1.5
   };
 
-  // TODO Do real check if current use is an owner of this entity:
-  const iAmOwner = true;
-  
-  const viewUrl = `/media/video/${id}`;
+  const playbackUrl = `/media/video/${id}`
+  const iAmOwner = isAccountAChannelOwner(channel, myAccountId)
 
   return (
     <div className={`JoyMusicAlbumPreview ` + orientation}>
 
-      <Link to={viewUrl}>
+      <Link to={playbackUrl}>
         <BgImg
           url={props.thumbnail}
           className='AlbumCover'
@@ -49,7 +53,7 @@ export function VideoPreview (props: VideoPreviewProps) {
       
       <div className='AlbumDescription' style={descStyle}>
 
-        <Link to={viewUrl}>
+        <Link to={playbackUrl}>
           <h3 className='AlbumTitle'>{props.title}</h3>
         </Link>
 
