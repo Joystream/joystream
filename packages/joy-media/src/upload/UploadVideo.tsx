@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button, Tab } from 'semantic-ui-react';
 import { Form, withFormik } from 'formik';
 import { History } from 'history';
@@ -83,7 +83,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     resetForm
   } = props;
 
-  const [ entityId, setEntityId ] = useState<EntityId | undefined>(id)
   const { thumbnail } = values
 
   if (!mediaObjectClass) {
@@ -94,6 +93,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     return <em>ERROR: "Video" entity class in undefined</em>
   }
 
+  // Next consts are used in tx params:
   const with_credential = new Option<Credential>(Credential, new Credential(2))
   const as_entity_maintainer = new bool(false)
   const schema_id = new u16(0)
@@ -237,7 +237,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       [ newlyCreatedMediaObjectProp() ]
     )
 
-    console.log('prepareTxParamsForAddSchemaToEntity:', propValues)
+    // console.log('prepareTxParamsForAddSchemaToEntity:', propValues)
 
     return newEntityOperation(
       OperationType.AddSchemaSupportToEntity(
@@ -260,7 +260,10 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       prepareTxParamsForCreateEntity(),
       prepareTxParamsForAddSchemaToEntity()
     ]
-    console.log('Batch entity operations:', ops)
+
+    // Use for debug:
+    // console.log('Batch entity operations:', ops)
+
     return [new Vec(Operation, ops)]
   }
 
@@ -269,17 +272,18 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     if (!canSubmitTx()) return []
 
     const updatedPropValues = entityCodec.toSubstrateUpdate(getFieldsValues())
-    console.log('buildUpdateEntityTxParams:', updatedPropValues)
+    // console.log('buildUpdateEntityTxParams:', updatedPropValues)
 
     return [
       with_credential,
       as_entity_maintainer,
-      entityId,
+      id, // Video Entity Id
       updatedPropValues
     ]
   }
 
-  const redirectToPlaybackPage = () => {
+  const redirectToPlaybackPage = (newEntityId?: EntityId) => {
+    const entityId = newEntityId || id
     if (history && entityId) {
       history.push('/media/video/' + entityId.toString())
     }
@@ -300,10 +304,9 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     // Extract id from from event:
     const newId = videoEntityCreatedEvent[0] as EntityId
-
     console.log('New video entity id:', newId && newId.toString())
-    setEntityId(newId)
-    redirectToPlaybackPage()
+
+    redirectToPlaybackPage(newId)
   }
 
   const onUpdateEntitySuccess: TxCallback = (_txResult: SubmittableResult) => {
