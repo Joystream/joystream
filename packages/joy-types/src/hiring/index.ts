@@ -25,17 +25,27 @@ export class ActivateOpeningAt extends Enum {
   }
 }
 
+export enum ApplicationDeactivationCauseKeys {
+  External = 'External',
+  Hired = 'Hired',
+  NotHired = 'NotHired',
+  CrowdedOut = 'CrowdedOut',
+  OpeningCancelled = 'OpeningCancelled',
+  ReviewPeriodExpired = 'ReviewPeriodExpired',
+  OpeningFilled = 'OpeningFilled',
+}
+
 export class ApplicationDeactivationCause extends Enum {
   constructor(value?: any, index?: number) {
     super(
       [
-        'External',
-        'Hired',
-        'NotHired',
-        'CrowdedOut',
-        'OpeningCancelled',
-        'ReviewPeriodExpired',
-        'OpeningFilled',
+        ApplicationDeactivationCauseKeys.External,
+        ApplicationDeactivationCauseKeys.Hired,
+        ApplicationDeactivationCauseKeys.NotHired,
+        ApplicationDeactivationCauseKeys.CrowdedOut,
+        ApplicationDeactivationCauseKeys.OpeningCancelled,
+        ApplicationDeactivationCauseKeys.ReviewPeriodExpired,
+        ApplicationDeactivationCauseKeys.OpeningFilled,
       ],
       value, index);
   }
@@ -43,7 +53,7 @@ export class ApplicationDeactivationCause extends Enum {
 
 export type UnstakingApplicationStageType = {
   deactivation_initiated: BlockNumber,
-  case: ApplicationDeactivationCause
+  cause: ApplicationDeactivationCause
 };
 export class UnstakingApplicationStage extends JoyStruct<UnstakingApplicationStageType> {
   constructor(value?: UnstakingApplicationStageType) {
@@ -52,12 +62,16 @@ export class UnstakingApplicationStage extends JoyStruct<UnstakingApplicationSta
       cause: ApplicationDeactivationCause,
     }, value);
   }
+
+  get cause(): ApplicationDeactivationCause {
+    return this.getField<ApplicationDeactivationCause>('cause')
+  }
 };
 
 export type InactiveApplicationStageType = {
   deactivation_initiated: BlockNumber,
   deactivated: BlockNumber,
-  case: ApplicationDeactivationCause
+  cause: ApplicationDeactivationCause
 };
 export class InactiveApplicationStage extends JoyStruct<InactiveApplicationStageType> {
   constructor(value?: InactiveApplicationStageType) {
@@ -67,17 +81,27 @@ export class InactiveApplicationStage extends JoyStruct<InactiveApplicationStage
       cause: ApplicationDeactivationCause,
     }, value);
   }
+
+  get cause(): ApplicationDeactivationCause {
+    return this.getField<ApplicationDeactivationCause>('cause')
+  }
 };
 
 export class ActiveApplicationStage extends Null { };
+
+export enum ApplicationStageKeys {
+  Active = 'Active',
+  Unstaking = 'Unstaking',
+  Inactive = 'Inactive',
+}
 
 export class ApplicationStage extends Enum {
   constructor(value?: any, index?: number) {
     super(
       {
-        'Active': Null,
-        'Unstaking': UnstakingApplicationStage,
-        'Inactive': InactiveApplicationStage,
+        [ApplicationStageKeys.Active]: Null,
+        [ApplicationStageKeys.Unstaking]: UnstakingApplicationStage,
+        [ApplicationStageKeys.Inactive]: InactiveApplicationStage,
       },
       value, index);
   }
@@ -92,6 +116,10 @@ export class ApplicationRationingPolicy extends JoyStruct<IApplicationRationingP
       max_active_applicants: u32,
     }, value);
   }
+
+  get max_active_applicants(): u32 {
+    return this.getField<u32>('max_active_applicants')
+  }
 };
 
 export type WaitingToBeingOpeningStageVariantType = {
@@ -103,17 +131,29 @@ export class WaitingToBeingOpeningStageVariant extends JoyStruct<WaitingToBeingO
       begins_at_block: u32,
     }, value);
   }
+
+  get begins_at_block(): BlockNumber {
+    return this.getField<BlockNumber>('begins_at_block')
+  }
 };
+
+export enum OpeningDeactivationCauseKeys {
+  CancelledBeforeActivation = 'CancelledBeforeActivation',
+  CancelledAcceptingApplications = 'CancelledAcceptingApplications',
+  CancelledInReviewPeriod = 'CancelledInReviewPeriod',
+  ReviewPeriodExpired = 'ReviewPeriodExpired',
+  Filled = 'Filled',
+}
 
 export class OpeningDeactivationCause extends Enum {
   constructor(value?: any, index?: number) {
     super(
       [
-        'CancelledBeforeActivation',
-        'CancelledAcceptingApplications',
-        'CancelledInReviewPeriod',
-        'ReviewPeriodExpired',
-        'Filled',
+        OpeningDeactivationCauseKeys.CancelledBeforeActivation,
+        OpeningDeactivationCauseKeys.CancelledAcceptingApplications,
+        OpeningDeactivationCauseKeys.CancelledInReviewPeriod,
+        OpeningDeactivationCauseKeys.ReviewPeriodExpired,
+        OpeningDeactivationCauseKeys.Filled,
       ],
       value, index);
   }
@@ -170,6 +210,22 @@ export class Deactivated extends JoyStruct<IDeactivated> {
       started_review_period_at_block: Option.with(u32),
     }, value);
   }
+
+  get cause(): OpeningDeactivationCause {
+    return this.getField<OpeningDeactivationCause>('cause')
+  }
+
+  get deactivated_at_block(): BlockNumber {
+    return this.getField<BlockNumber>('deactivated_at_block')
+  }
+
+  get started_accepting_applicants_at_block(): BlockNumber {
+    return this.getField<BlockNumber>('started_accepting_applicants_at_block')
+  }
+
+  get started_review_period_at_block(): BlockNumber {
+    return this.getField<BlockNumber>('started_review_period_at_block')
+  }
 };
 
 export enum ActiveOpeningStageKeys {
@@ -211,6 +267,15 @@ export class ActiveOpeningStageVariant extends JoyStruct<ActiveOpeningStageVaria
   get stage(): ActiveOpeningStage {
     return this.getField<ActiveOpeningStage>('stage')
   }
+
+  get is_active(): boolean {
+    switch (this.stage.type) {
+      case ActiveOpeningStageKeys.AcceptingApplications:
+        return true
+    }
+
+	  return false
+  }
 }
 
 export enum OpeningStageKeys {
@@ -229,12 +294,17 @@ export class OpeningStage extends Enum {
   }
 };
 
+export enum StakingAmountLimitModeKeys {
+  AtLeast = 'AtLeast',
+  Exact = 'Exact',
+}
+
 export class StakingAmountLimitMode extends Enum {
   constructor(value?: any, index?: number) {
     super(
       [
-        'AtLeast',
-        'Exact',
+        StakingAmountLimitModeKeys.AtLeast,
+        StakingAmountLimitModeKeys.Exact,
       ],
       value, index);
   }
@@ -255,6 +325,23 @@ export class StakingPolicy extends JoyStruct<IStakingPolicy> {
       review_period_expired_unstaking_period_length: Option.with(u32),
     }, value);
   }
+
+  get amount(): u128 {
+    return this.getField<u128>('amount')
+  }
+
+  get amount_mode(): StakingAmountLimitMode {
+    return this.getField<StakingAmountLimitMode>('amount_mode')
+  }
+
+  get crowded_out_unstaking_period_length(): Option<u32> {
+    return this.getField<Option<u32>>('crowded_out_unstaking_period_length')
+  }
+
+  get review_period_expired_unstaking_period_length(): Option<u32> {
+    return this.getField<Option<u32>>('review_period_expired_unstaking_period_length')
+  }
+
 };
 
 import * as role_schema_json from './schemas/role.schema.json'
@@ -315,6 +402,38 @@ export class Opening extends JoyStruct<IOpening> {
   get max_review_period_length(): BlockNumber {
     return this.getField<BlockNumber>('max_review_period_length')
   }
+
+  get application_rationing_policy(): Option<ApplicationRationingPolicy> {
+    return this.getField<Option<ApplicationRationingPolicy>>('application_rationing_policy')
+  }
+
+  get application_staking_policy(): Option<StakingPolicy> {
+    return this.getField<Option<StakingPolicy>>('application_staking_policy')
+  }
+
+  get role_staking_policy(): Option<StakingPolicy> {
+    return this.getField<Option<StakingPolicy>>('role_staking_policy')
+  }
+
+  get max_applicants(): number {
+    const appPolicy = this.application_rationing_policy
+    if (appPolicy.isNone) {
+      return 0
+    }
+    return appPolicy.unwrap().max_active_applicants.toNumber()
+  }
+
+  get is_active(): boolean {
+    switch (this.stage.type) {
+      case OpeningStageKeys.WaitingToBegin:
+        return true
+
+      case OpeningStageKeys.Active:
+        return (this.stage.value as ActiveOpeningStageVariant).is_active
+    }
+
+	  return false
+  }
 }
 
 export type IApplication = {
@@ -338,6 +457,22 @@ export class Application extends JoyStruct<IApplication> {
       stage: ApplicationStage,
       human_readable_text: Text,
     }, value);
+  }
+
+  get stage(): ApplicationStage {
+    return this.getField<ApplicationStage>('stage')
+  }
+
+  get active_role_staking_id(): Option<StakeId> {
+    return this.getField<Option<StakeId>>('active_role_staking_id')
+  }
+
+  get active_application_staking_id(): Option<StakeId> {
+    return this.getField<Option<StakeId>>('active_application_staking_id')
+  }
+
+  get human_readable_text(): Text {
+    return this.getField<Text>('human_readable_text')
   }
 }
 

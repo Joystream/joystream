@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { Balance } from '@polkadot/types/interfaces';
 import { Actor } from '@joystream/types/roles';
-import { Profile } from '@joystream/types/members';
+import { IProfile } from '@joystream/types/members';
 import { Text } from '@polkadot/types';
 
 import { ActorDetailsView, GroupMember, MemberView, GroupMemberView } from "../elements"
@@ -30,9 +30,9 @@ export const ContentCurators = Loadable<WorkingGroupMembership>(
         <Message positive>
           <Message.Header>Join us and get paid to curate!</Message.Header>
           <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            There are openings for new content curators. This is a great way to support Joystream!
           </p>
-          <Link to="/roles/opportunities">
+          <Link to="/working-groups/opportunities">
             <Button icon labelPosition="right" color="green" positive>
               Find out more
 			  <Icon name={'right arrow' as SemanticICONS} />
@@ -46,7 +46,7 @@ export const ContentCurators = Loadable<WorkingGroupMembership>(
       <section id="content-curators">
         <h2>Content curators</h2>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+          Content Curators are responsible for ensuring that all content is uploaded correctly and in line with the terms of service.
       </p>
         <Card.Group>
           {props.members.map((member, key) => (
@@ -63,7 +63,7 @@ export type StorageAndDistributionMembership = {
   actors: Actor[]
   balances: Map<string, Balance>
   memos: Map<string, Text>
-  profiles: Map<number, Profile>
+  profiles: Map<number, IProfile>
 }
 
 export const StorageAndDistribution = Loadable<StorageAndDistributionMembership>(
@@ -86,7 +86,7 @@ export const StorageAndDistribution = Loadable<StorageAndDistributionMembership>
                   <MemberView
                     actor={actor}
                     balance={props.balances.get(actor.account.toString())}
-                    profile={props.profiles.get(actor.member_id.toNumber()) as Profile}
+                    profile={props.profiles.get(actor.member_id.toNumber()) as IProfile}
                   />
                 </Table.Cell>
                 <Table.Cell>

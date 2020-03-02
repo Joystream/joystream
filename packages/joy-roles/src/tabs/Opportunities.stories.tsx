@@ -170,6 +170,7 @@ export function OpportunitySandbox() {
 
   const meta: OpeningMetadata = {
     id: "1",
+    group: "group-name",
   }
 
   return (

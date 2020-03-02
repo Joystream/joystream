@@ -122,6 +122,10 @@ export class CuratorRoleStakeProfile extends JoyStruct<ICuratorRoleStakeProfile>
       exit_unstaking_period: Option.with(u32),
     }, value);
   }
+
+  get stake_id(): StakeId {
+    return this.getField<StakeId>('stake_id')
+  }
 };
 
 export class CuratorExitInitiationOrigin extends Enum {
@@ -150,13 +154,18 @@ export class CuratorExitSummary extends JoyStruct<ICuratorExitSummary> {
   }
 };
 
+export enum CuratorRoleStakeKeys {
+    Active = 'Active',
+    Unstaking = 'Unstaking',
+    Exited = 'Exited',
+}
 export class CuratorRoleStage extends Enum {
   constructor (value?: any, index?: number) {
     super(
       {
-        Active: Null,
-        Unstaking: CuratorExitSummary,
-        Exited: CuratorExitSummary
+        [CuratorRoleStakeKeys.Active]: Null,
+        [CuratorRoleStakeKeys.Unstaking]: CuratorExitSummary,
+        [CuratorRoleStakeKeys.Exited]: CuratorExitSummary,
       },
       value, index);
   }
@@ -174,6 +183,18 @@ export class CuratorInduction extends JoyStruct<ICuratorInduction> {
       curator_application_id: CuratorApplicationId,
       at_block: u32,
     }, value);
+  }
+
+  get lead(): LeadId {
+    return this.getField<LeadId>('lead')
+  }
+
+  get curator_application_id(): CuratorApplicationId {
+    return this.getField<CuratorApplicationId>('curator_application_id')
+  }
+
+  get at_block(): u32 {
+    return this.getField<u32>('at_block')
   }
 };
 
@@ -196,6 +217,34 @@ export class Curator extends JoyStruct<ICurator> {
       principal_id: PrincipalId,
     }, value);
   }
+
+  get role_account(): GenericAccountId {
+    return this.getField<GenericAccountId>('role_account')
+  }
+
+  get reward_relationship(): Option<RewardRelationshipId> {
+    return this.getField<Option<RewardRelationshipId>>('reward_relationship')
+  }
+
+  get role_stake_profile(): Option<CuratorRoleStakeProfile> {
+    return this.getField<Option<CuratorRoleStakeProfile>>('role_stake_profile')
+  }
+
+  get stage(): CuratorRoleStage {
+    return this.getField<CuratorRoleStage>('stage')
+  }
+
+  get induction(): CuratorInduction {
+    return this.getField<CuratorInduction>('induction')
+  }
+
+  get principal_id(): PrincipalId {
+    return this.getField<PrincipalId>('principal_id')
+  }
+
+  get is_active(): boolean {
+    return (this.stage.type == CuratorRoleStakeKeys.Active)
+  }
 };
 
 export type ICuratorApplication = {
@@ -212,6 +261,22 @@ export class CuratorApplication extends JoyStruct<ICuratorApplication> {
       member_id: MemberId,
       application_id: ApplicationId,
     }, value);
+  }
+
+  get role_account(): GenericAccountId {
+    return this.getField<GenericAccountId>('role_account')
+  }
+
+  get curator_opening_id(): CuratorOpeningId {
+    return this.getField<CuratorOpeningId>('curator_opening_id')
+  }
+
+  get member_id(): MemberId {
+    return this.getField<MemberId>('member_id')
+  }
+
+  get application_id(): ApplicationId {
+    return this.getField<ApplicationId>('application_id')
   }
 };
 
@@ -270,6 +335,54 @@ export class OpeningPolicyCommitment extends JoyStruct<IOpeningPolicyCommitment>
       exit_curator_role_stake_unstaking_period: Option.with(u32),
     }, value);
   }
+
+  get application_rationing_policy(): Option<ApplicationRationingPolicy> {
+    return this.getField<Option<ApplicationRationingPolicy>>('application_rationing_policy')
+  }
+
+  get max_review_period_length(): u32 {
+    return this.getField<u32>('max_review_period_length')
+  }
+
+  get application_staking_policy(): Option<StakingPolicy> {
+    return this.getField<Option<StakingPolicy>>('application_staking_policy')
+  }
+
+  get role_staking_policy(): Option<StakingPolicy> {
+    return this.getField<Option<StakingPolicy>>('role_staking_policy')
+  }
+
+  get role_slashing_terms(): SlashingTerms {
+    return this.getField<SlashingTerms>('role_slashing_terms')
+  }
+
+  get fill_opening_successful_applicant_application_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('fill_opening_successful_applicant_application_stake_unstaking_period')
+  }
+
+  get fill_opening_failed_applicant_application_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('fill_opening_failed_applicant_application_stake_unstaking_period')
+  }
+
+  get fill_opening_failed_applicant_role_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('fill_opening_failed_applicant_role_stake_unstaking_period')
+  }
+
+  get terminate_curator_application_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('terminate_curator_application_stake_unstaking_period')
+  }
+
+  get terminate_curator_role_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('terminate_curator_role_stake_unstaking_period')
+  }
+
+  get exit_curator_role_application_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('exit_curator_role_application_stake_unstaking_period')
+  }
+
+  get exit_curator_role_stake_unstaking_period(): Option<u32> {
+    return this.getField<Option<u32>>('exit_curator_role_stake_unstaking_period')
+  }
 };
 
 // Not entierly sure that using BTreeSet will work correctly when reading/decoding this type from chain state
@@ -286,6 +399,10 @@ export class CuratorOpening extends JoyStruct<ICuratorOpening> {
       policy_commitment: OpeningPolicyCommitment,
     }, value);
   }
+
+  get opening_id(): OpeningId {
+    return this.getField<OpeningId>('opening_id')
+  }
 };
 
 export type IExitedLeadRole = {
@@ -297,6 +414,7 @@ export class ExitedLeadRole extends JoyStruct<IExitedLeadRole> {
       initiated_at_block_number: u32,
     }, value);
   }
+
 };
 
 export class LeadRoleState extends Enum {
@@ -324,6 +442,14 @@ export class Lead extends JoyStruct<ILead> {
       inducted: u32,
       stage: LeadRoleState,
     }, value);
+  }
+
+  get role_account(): GenericAccountId {
+    return this.getField<GenericAccountId>('role_account')
+  }
+
+  get reward_relationship(): Option<RewardRelationshipId> {
+    return this.getField<Option<RewardRelationshipId>>('reward_relationship')
   }
 };
 

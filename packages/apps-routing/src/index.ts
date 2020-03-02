@@ -13,6 +13,7 @@ import media from './joy-media';
 import members from './joy-members';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
+import storageRoles from './joy-storage';
 import pages from './joy-pages';
 
 import template from './123code';
@@ -41,6 +42,7 @@ const routes: Routes = appSettings.isBasicMode
     explorer,
     staking,
     roles,
+    storageRoles,
     transfer,
     null,
     media,
@@ -63,6 +65,7 @@ const routes: Routes = appSettings.isBasicMode
     explorer,
     staking,
     roles,
+    storageRoles,
     transfer,
     null,
     media,

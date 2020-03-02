@@ -15,9 +15,10 @@ import {
   ApplicationRationingPolicy,
   StakingPolicy,
 } from "@joystream/types/hiring"
-import { Profile } from '@joystream/types/members';
+import { IProfile } from '@joystream/types/members';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
+import { CuratorId } from '@joystream/types/content-working-group';
 import { WorkingGroupOpening } from "./tabs/Opportunities"
 import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'
@@ -115,7 +116,7 @@ export class Transport extends TransportBase implements ITransport {
         memos: new Map<string, Text>([
           ['5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew', new Text("This is a memo")]
         ]),
-        profiles: new Map<number, Profile>([
+        profiles: new Map<number, IProfile>([
           [1, mockProfile("bwhm0")],
           [2, mockProfile(
             "benholdencrowther",
@@ -196,6 +197,7 @@ export class Transport extends TransportBase implements ITransport {
           },
           meta: {
             id: "1",
+            group: "somegroup",
           },
           stage: {
             state: OpeningState.AcceptingApplications,
@@ -291,6 +293,7 @@ export class Transport extends TransportBase implements ITransport {
         },
         meta: {
           id: "1",
+          group: "group-name",
         },
         stage: {
           state: OpeningState.AcceptingApplications,
@@ -317,7 +320,7 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
-  openingApplicationRanks(openingId: string): Promise<Balance[]> {
+  openingApplicationRanks(openingId: number): Promise<Balance[]> {
     const slots: Balance[] = []
     for (let i = 0; i < 20; i++) {
       slots.push(new u128((i * 100) + 10 + i + 1))
@@ -328,6 +331,14 @@ export class Transport extends TransportBase implements ITransport {
 
   expectedBlockTime(): Promise<number> {
     return this.promise<number>(6)
+  }
+
+  blockHash(height: number): Promise<string> {
+    return this.promise<string>('somehash')
+  }
+
+  blockTimestamp(height: number): Promise<Date> {
+    return this.promise<Date>(new Date())
   }
 
   transactionFee(): Promise<Balance> {
@@ -358,125 +369,120 @@ export class Transport extends TransportBase implements ITransport {
     })
   }
 
-  openingApplications(): Subscribable<OpeningApplication[]> {
-    return new Observable<OpeningApplication[]>(observer => {
-      observer.next(
-        [
-          {
-            creator: {
-              actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
-              profile: mockProfile('benholdencrowther'),
-              title: 'Group lead',
-              lead: true,
-              stake: new u128(10),
-            },
-            meta: {
-              id: "1",
-            },
-            stage: {
-              state: OpeningState.AcceptingApplications,
-              starting_block: 2956498,
-              starting_block_hash: "somehash",
-              starting_time: yesterday(),
-            },
-            opening: new Opening({
-              created: new u32(50000),
-              stage: new ActiveOpeningStage({
-                acceptingApplications: new AcceptingApplications({
-                  started_accepting_applicants_at_block: new u32(100),
-                })
-              }),
-              max_review_period_length: new u32(100),
-              application_rationing_policy: new Option(ApplicationRationingPolicy),
-              application_staking_policy: new Option(StakingPolicy),
-              role_staking_policy: new Option(StakingPolicy),
-              human_readable_text: newMockHumanReadableText({
-                version: 1,
-                headline: "Help us curate awesome content",
-                job: {
-                  title: "Content curator",
-                  description: faker.lorem.paragraphs(4),
-                },
-                application: {
-                  sections: [
-                    {
-                      title: "About you",
-                      questions: [
-                        {
-                          title: "Your name",
-                          type: "text"
-                        },
-                        {
-                          title: "Your e-mail address",
-                          type: "text"
-                        }
-                      ]
-                    },
-                    {
-                      title: "Your experience",
-                      questions: [
-                        {
-                          title: "Why would you be good for this role?",
-                          type: "text area"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                reward: "10 JOY per block",
-                creator: {
-                  membership: {
-                    handle: "ben",
-                  }
-                },
-                process: {
-                  details: [
-                    "Some custom detail"
-                  ]
-                }
-              }),
-            }),
-            applicationStake: new u128(5),
-            roleStake: new u128(15),
-            rank: 21,
-            capacity: 20,
+  async openingApplications(): Promise<OpeningApplication[]> {
+    return [{
+      id: 1,
+      creator: {
+        actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
+        profile: mockProfile('benholdencrowther'),
+        title: 'Group lead',
+        lead: true,
+        stake: new u128(10),
+      },
+      meta: {
+        id: "1",
+        group: "group-name",
+      },
+      stage: {
+        state: OpeningState.AcceptingApplications,
+        starting_block: 2956498,
+        starting_block_hash: "somehash",
+        starting_time: yesterday(),
+      },
+      opening: new Opening({
+        created: new u32(50000),
+        stage: new ActiveOpeningStage({
+          acceptingApplications: new AcceptingApplications({
+            started_accepting_applicants_at_block: new u32(100),
+          })
+        }),
+        max_review_period_length: new u32(100),
+        application_rationing_policy: new Option(ApplicationRationingPolicy),
+        application_staking_policy: new Option(StakingPolicy),
+        role_staking_policy: new Option(StakingPolicy),
+        human_readable_text: newMockHumanReadableText({
+          version: 1,
+          headline: "Help us curate awesome content",
+          job: {
+            title: "Content curator",
+            description: faker.lorem.paragraphs(4),
           },
-        ]
-      )
-    }
-    )
+          application: {
+            sections: [
+              {
+                title: "About you",
+                questions: [
+                  {
+                    title: "Your name",
+                    type: "text"
+                  },
+                  {
+                    title: "Your e-mail address",
+                    type: "text"
+                  }
+                ]
+              },
+              {
+                title: "Your experience",
+                questions: [
+                  {
+                    title: "Why would you be good for this role?",
+                    type: "text area"
+                  }
+                ]
+              }
+            ]
+          },
+          reward: "10 JOY per block",
+          creator: {
+            membership: {
+              handle: "ben",
+            }
+          },
+          process: {
+            details: [
+              "Some custom detail"
+            ]
+          }
+        }),
+      }),
+      applicationStake: new u128(5),
+      roleStake: new u128(15),
+      rank: 21,
+      capacity: 20,
+    }]
   }
 
-  myCurationGroupRoles(): Subscribable<ActiveRole[]> {
-    return new Observable<ActiveRole[]>(observer => {
-      observer.next(
-        [
-          {
-            name: "My curation group role",
-            url: "some URL",
-            reward: "10 JOY per block",
-            stake: new u128(12343200),
-          }
-        ]
-      )
-    }
-    )
+  async myCurationGroupRoles(): Promise<ActiveRole[]> {
+    return [
+      {
+        curatorId: new CuratorId(1),
+        name: "My curation group role",
+        url: "some URL",
+        reward: new u128(321),
+        stake: new u128(12343200),
+      }
+    ]
   }
 
   myStorageGroupRoles(): Subscribable<ActiveRole[]> {
-    return new Observable<ActiveRole[]>(observer => {
-      observer.next(
-        [
-          {
-            name: "Storage provider",
-            url: "some URL",
-            reward: "10 JOY per block",
-            stake: new u128(12343200),
-          }
-        ]
-      )
-    }
-    )
+    return new Observable<ActiveRole[]>(observer => { })
+  }
+
+  async applyToCuratorOpening(
+    id: number,
+    roleAccountName: string,
+    sourceAccount: string,
+    appStake: Balance,
+    roleStake: Balance,
+    applicationText: string): Promise<number> {
+    return 0
+  }
+
+  leaveCurationRole(sourceAccount: string, id: number, rationale: string) {
+  }
+
+  withdrawCuratorApplication(sourceAccount: string, id: number) {
   }
 }
 

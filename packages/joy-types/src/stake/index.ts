@@ -65,6 +65,10 @@ export class StakedState extends JoyStruct<IStakedState> {
             ongoing_slashes: BTreeMap.with(SlashId, Slash),
         }, value);
     }
+
+    get staked_amount(): u128 {
+      return this.getField<u128>('staked_amount')
+    }
 };
 
 export class NotStaked extends Null {};
@@ -75,7 +79,7 @@ export class StakingStatus extends Enum {
         super(
           {
             NotStaked,
-            Staked
+            Staked,
           },
           value, index);
     }
@@ -92,6 +96,23 @@ export class Stake extends JoyStruct<IStake> {
             created: u32,
             staking_status: StakingStatus
         }, value);
+    }
+
+    get created(): u32 {
+      return this.getField<u32>('created')
+    }
+
+    get staking_status(): StakingStatus {
+      return this.getField<StakingStatus>('staking_status')
+    }
+
+    get value(): Balance {
+      switch (this.staking_status.type) {
+        case "Staked":
+          return (this.staking_status.value as Staked).staked_amount
+      }
+
+      return new u128(0)
     }
 }
 

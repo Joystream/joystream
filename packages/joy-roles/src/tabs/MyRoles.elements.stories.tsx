@@ -12,9 +12,13 @@ import {
 import {
   CurrentRoles, CurrentRolesProps,
   Application, ApplicationProps,
-  ApplicationStatus, ApplicationStatusProps, CancelledReason,
+  ApplicationStatus, ApplicationStatusProps,
   Applications,
 } from "./MyRoles"
+
+import {
+  CancelledReason
+} from '../classifiers'
 
 import 'semantic-ui-css/semantic.min.css'
 import '@polkadot/joy-roles/index.sass'
@@ -27,7 +31,7 @@ import {
 } from './Opportunities.stories'
 import { OpeningState } from "../classifiers"
 
-import { Opening } from "@joystream/types/hiring"
+import { CuratorId } from '@joystream/types/content-working-group';
 
 export default {
   title: 'Roles / Components / My roles tab / Elements',
@@ -42,8 +46,9 @@ export function CurrentRolesFragment() {
   const props: CurrentRolesProps = {
     currentRoles: [
       {
+        curatorId: new CuratorId(1),
         name: "Storage provider",
-        reward: "10 JOY per block",
+        reward: new u128(321),
         stake: new u128(100),
         CTAs: [
           {
@@ -53,9 +58,10 @@ export function CurrentRolesFragment() {
         ]
       },
       {
+        curatorId: new CuratorId(1),
         name: "Some other role",
         url: "some URL",
-        reward: "10 JOY per block",
+        reward: new u128(321),
         stake: new u128(12343200),
         CTAs: [
           {
@@ -156,9 +162,11 @@ export function ApplicationStatusFragment() {
 const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "1. Application open",
+    id: 1,
     creator: creator,
     meta: {
       id: "1",
+      group: "group-name",
     },
     stage: {
       state: OpeningState.AcceptingApplications,
@@ -169,15 +177,17 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    cancelCallback: (o: Opening) => { },
+    cancelCallback: () => { },
     rank: 15,
     capacity: 20,
   },
   {
     _description: "2. Application open; crowded out",
+    id: 1,
     creator: creator,
     meta: {
       id: "1",
+      group: "group-name",
     },
     stage: {
       state: OpeningState.AcceptingApplications,
@@ -194,9 +204,11 @@ const permutations: (ApplicationProps & TestProps)[] = [
   },
   {
     _description: "3. Application in review",
+    id: 1,
     creator: creator,
     meta: {
       id: "1",
+      group: "group-name",
     },
     stage: {
       state: OpeningState.InReview,
@@ -215,9 +227,11 @@ const permutations: (ApplicationProps & TestProps)[] = [
   },
   {
     _description: "4. Application in review; crowded out",
+    id: 1,
     creator: creator,
     meta: {
       id: "1",
+      group: "group-name",
     },
     stage: {
       state: OpeningState.InReview,
@@ -236,9 +250,11 @@ const permutations: (ApplicationProps & TestProps)[] = [
   },
   {
     _description: "5. Application review complete; unsuccessful",
+    id: 1,
     creator: creator,
     meta: {
       id: "1",
+      group: "group-name",
     },
     stage: {
       state: OpeningState.Complete,
@@ -255,9 +271,11 @@ const permutations: (ApplicationProps & TestProps)[] = [
   },
   {
     _description: "6. Opening cancelled",
+    id: 1,
     creator: creator,
     meta: {
       id: "1",
+      group: "group-name",
     },
     stage: {
       state: OpeningState.Cancelled,

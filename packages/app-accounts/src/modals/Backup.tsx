@@ -9,6 +9,7 @@ import React from 'react';
 import { AddressRow, Button, Modal, Password, TxComponent } from '@polkadot/react-components';
 import { ActionStatus } from '@polkadot/react-components/Status/types';
 import keyring from '@polkadot/ui-keyring';
+import { isPasswordValid } from '@polkadot/joy-utils/accounts';
 
 import translate from '../translate';
 
@@ -24,7 +25,7 @@ interface State {
 
 class Backup extends TxComponent<Props, State> {
   public state: State = {
-    isPassValid: false,
+    isPassValid: true,
     password: ''
   };
 
@@ -121,7 +122,7 @@ class Backup extends TxComponent<Props, State> {
 
       FileSaver.saveAs(blob, `${address}.json`);
     } catch (error) {
-      this.setState({ isPassValid: false });
+      this.setState({ isPassValid: true });
       console.error(error);
 
       status.status = 'error';
@@ -134,7 +135,7 @@ class Backup extends TxComponent<Props, State> {
 
   private onChangePass = (password: string): void => {
     this.setState({
-      isPassValid: keyring.isPassValid(password),
+      isPassValid: isPasswordValid(password),
       password
     });
   }

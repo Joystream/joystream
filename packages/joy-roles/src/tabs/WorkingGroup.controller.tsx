@@ -1,5 +1,4 @@
 import React from 'react';
-import { Container } from 'semantic-ui-react';
 
 import { Controller, View } from '@polkadot/joy-utils/index'
 
@@ -8,7 +7,7 @@ import { ITransport } from '../transport'
 import {
   ContentCurators,
   WorkingGroupMembership,
-  StorageAndDistribution, StorageAndDistributionMembership,
+  StorageAndDistributionMembership,
 } from './WorkingGroup'
 
 type State = {
@@ -40,9 +39,6 @@ export class WorkingGroupsController extends Controller<State, ITransport> {
 
 export const WorkingGroupsView = View<WorkingGroupsController, State>(
   (state) => (
-    <Container>
-      <ContentCurators {...state.contentCurators!} />
-      <StorageAndDistribution {...state.storageProviders!} />
-    </Container>
+    <ContentCurators {...state.contentCurators!} />
   )
 )

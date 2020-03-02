@@ -14,11 +14,21 @@ export interface ITransport {
   storageGroup: () => Promise<StorageAndDistributionMembership>
   currentOpportunities: () => Promise<Array<WorkingGroupOpening>>
   curationGroupOpening: (id: number) => Promise<WorkingGroupOpening>
-  openingApplicationRanks: (openingId: string) => Promise<Balance[]>
+  openingApplicationRanks: (openingId: number) => Promise<Balance[]>
   expectedBlockTime: () => Promise<number>
+  blockHash: (height: number) => Promise<string>
+  blockTimestamp: (height: number) => Promise<Date>
   transactionFee: () => Promise<Balance>
   accounts: () => Subscribable<keyPairDetails[]>
-  openingApplications: () => Subscribable<OpeningApplication[]>
-  myCurationGroupRoles: () => Subscribable<ActiveRole[]>
+  openingApplications: (address: string) => Promise<OpeningApplication[]>
+  myCurationGroupRoles: (address: string) => Promise<ActiveRole[]>
   myStorageGroupRoles: () => Subscribable<ActiveRole[]>
+  applyToCuratorOpening: (id: number,
+    roleAccountName: string,
+    sourceAccount: string,
+    appStake: Balance,
+    roleStake: Balance,
+    applicationText: string) => Promise<number>
+  leaveCurationRole: (sourceAccount: string, id: number, rationale: string) => void
+  withdrawCuratorApplication: (sourceAccount: string, id: number) => void
 }

@@ -8,6 +8,7 @@ import React from 'react';
 import { AddressRow, Button, Modal, Password, TxComponent } from '@polkadot/react-components';
 import { ActionStatus } from '@polkadot/react-components/Status/types';
 import keyring from '@polkadot/ui-keyring';
+import { isPasswordValid } from '@polkadot/joy-utils/accounts';
 
 import translate from '../translate';
 
@@ -175,7 +176,7 @@ class ChangePass extends TxComponent<Props, State> {
   }
 
   private validatePass (password: string): boolean {
-    return keyring.isPassValid(password);
+    return isPasswordValid(password);
   }
 }
 

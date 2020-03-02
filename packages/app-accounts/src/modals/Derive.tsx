@@ -11,12 +11,13 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AddressRow, Button, Input, InputAddress, Modal, Password, StatusContext } from '@polkadot/react-components';
 import { useDebounce } from '@polkadot/react-components/hooks';
 import keyring from '@polkadot/ui-keyring';
+import { isPasswordValid } from '@polkadot/joy-utils/accounts';
 import { keyExtractPath } from '@polkadot/util-crypto';
 
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 
 import translate from '../translate';
-import { downloadAccount } from './Create';
+import { downloadAccount } from '@polkadot/joy-utils/accounts';
 import CreateConfirmation from './CreateConfirmation';
 
 interface Props extends I18nProps {
@@ -76,7 +77,7 @@ function Derive ({ className, from, onClose, t }: Props): React.ReactElement {
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(source.isLocked);
   const [{ isNameValid, name }, setName] = useState({ isNameValid: false, name: '' });
-  const [{ isPassValid, password }, setPassword] = useState({ isPassValid: false, password: '' });
+  const [{ isPassValid, password }, setPassword] = useState({ isPassValid: true, password: '' });
   const [rootPass, setRootPass] = useState('');
   const [suri, setSuri] = useState('');
   const debouncedSuri = useDebounce(suri);
@@ -103,7 +104,7 @@ function Derive ({ className, from, onClose, t }: Props): React.ReactElement {
   }, [debouncedSuri]);
 
   const _onChangeName = (name: string): void => setName({ isNameValid: !!name.trim(), name });
-  const _onChangePass = (password: string): void => setPassword({ isPassValid: keyring.isPassValid(password), password });
+  const _onChangePass = (password: string): void => setPassword({ isPassValid: isPasswordValid(password), password });
   const _toggleConfirmation = (): void => setIsConfirmationOpen(!isConfirmationOpen);
   const _onUnlock = (): void => {
     try {
