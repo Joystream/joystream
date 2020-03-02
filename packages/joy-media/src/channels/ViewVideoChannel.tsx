@@ -21,7 +21,9 @@ export function ViewVideoChannel (props: Props) {
     !videos.length
       ? <NoVideosYet />
       : <Section title={`Videos`}>
-          {videos.map((x, i) => <VideoPreview key={'VideoPreview-' + i} {...x} />)}
+          {videos.map((x, i) =>
+            <VideoPreview key={x.id.toString()} {...x} channel={channel} />)
+          }
         </Section>
   );
   

@@ -15,8 +15,8 @@ export const isMusicChannel = (channel: ChannelEntity) => {
   return channel.content === 'Music';
 };
 
-export const isAccountAChannelOwner = (channel: ChannelEntity, account?: AccountId): boolean => {
-  return account ? channel.roleAccount.eq(account) : false
+export const isAccountAChannelOwner = (channel?: ChannelEntity, account?: AccountId): boolean => {
+  return (channel && account) ? channel.roleAccount.eq(account) : false
 };
 
 export function isPublicChannel(channel: ChannelType): boolean {
