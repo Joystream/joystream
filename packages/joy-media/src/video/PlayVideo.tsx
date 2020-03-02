@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Table } from 'semantic-ui-react';
 import { ApiProps } from '@polkadot/react-api/types';
@@ -55,12 +54,6 @@ export function PlayVideo (props: PlayVideoProps) {
   // TODO show video only to its owner, if the video is not public.
   // see isPublicVideo() function.
 
-  // TODO: resolve video asset URL !!!
-  const assetUrl = 'http://fake-asset-url.com';
-
-  // TODO Do real check if current use is an owner of this entity:
-  const iAmOwner = true;
-
   const contentId = ContentId.decode(mediaObject.value)
 
   // console.log('PlayVideo: props', props)
@@ -95,7 +88,7 @@ export function PlayVideo (props: PlayVideoProps) {
     {featuredVideos.length > 0 &&
       <div className='JoyPlayAlbum_Featured'>
         <h3 style={{ marginBottom: '1rem' }}>Featured videos</h3>
-        {featuredVideos.map((x, i) =>
+        {featuredVideos.map((x) =>
           <VideoPreview key={`VideoPreview-${x.id}`} {...x} size='small' orientation='horizontal' />
         )}
       </div>
