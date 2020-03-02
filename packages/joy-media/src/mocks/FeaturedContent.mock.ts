@@ -7,4 +7,4 @@ export const FeaturedContent: FeaturedContentType = {
   topVideo: Video,
   featuredVideos: AllVideos,
   featuredAlbums: AllMusicAlbums
-}
+} as unknown as FeaturedContentType // A hack to fix TS compilation.

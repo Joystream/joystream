@@ -48,6 +48,6 @@ export const AllVideos: VideoType[] = thumbnails.map((thumbnail, i) => ({
   explicit: true,
   license: ContentLicense,
   attribution: undefined
-}));
+})) as unknown as VideoType[] // A hack to fix TS compilation.
 
 export const Video = AllVideos[0];

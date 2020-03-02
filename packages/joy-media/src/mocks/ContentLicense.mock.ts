@@ -9,6 +9,6 @@ const values = [
 ];
 
 export const AllContentLicenses: ContentLicenseType[] =
-  values.map(value => ({ id: newEntityId(), value }));
+  values.map(value => ({ id: newEntityId(), value })) as unknown as ContentLicenseType[] // A hack to fix TS compilation.
 
 export const ContentLicense = AllContentLicenses[0];

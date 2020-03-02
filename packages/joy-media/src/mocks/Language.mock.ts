@@ -6,6 +6,6 @@ const values = [
 ];
 
 export const AllLanguages: LanguageType[] =
-  values.map(value => ({ id: newEntityId(), value }));
+  values.map(value => ({ id: newEntityId(), value })) as unknown as LanguageType[] // A hack to fix TS compilation.
 
 export const Language = AllLanguages[0];
