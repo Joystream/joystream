@@ -13,7 +13,6 @@ import './common/index.css';
 import translate from './translate';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { UploadWithRouter } from './Upload';
-import Explore from './Explore';
 import { DiscoveryProviderProps, DiscoveryProviderProvider } from './DiscoveryProvider';
 import { SubstrateTransportProvider } from './TransportContext';
 import { ChannelsByOwnerWithRouter } from './channels/ChannelsByOwner.view';
@@ -47,10 +46,6 @@ function App(props: Props) {
     !myAddress ? undefined : {
       name: `account/${myAddress}/videos`,
       text: t('My videos')
-    },
-    {
-      name: 'deprecated-explore',
-      text: t('OLD: Explore')
     }
   ].filter(x => x !== undefined) as TabItem[];
 
@@ -62,7 +57,6 @@ function App(props: Props) {
             <Tabs basePath={basePath} items={tabs} />
           </header>
           <Switch>
-            <Route path={`${basePath}/deprecated-explore`} component={Explore} />
             <Route path={`${basePath}/account/:account/channels`} component={ChannelsByOwnerWithRouter} />
             <Route path={`${basePath}/channels/new`} component={EditChannelView} />
             <Route path={`${basePath}/channels/:id/edit`} component={EditChannelWithRouter} />
