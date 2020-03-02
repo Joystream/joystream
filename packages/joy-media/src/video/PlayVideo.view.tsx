@@ -21,7 +21,7 @@ export const PlayVideoView = MediaView<Props>({
 
     // TODO Fix this type-casting hack.
     // Video.object field should be either number on the Video type
-    // or there shoudl be a way to get to video.object.id,
+    // or there should be a way to get to video.object.id,
     // but for this we need to load all fileds internally refered by video?
     // This doesn'r sound as the best approach.
     const objectId = new EntityId((video.object || 0) as number)
