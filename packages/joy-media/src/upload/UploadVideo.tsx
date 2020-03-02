@@ -15,13 +15,19 @@ import { FormTabs } from '../common/FormTabs';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { Credential } from '@joystream/types/versioned-store/permissions/credentials';
-import { Class } from '@joystream/types/versioned-store';
+import { Class, VecClassPropertyValue } from '@joystream/types/versioned-store';
 import { TxCallback } from '@polkadot/react-components/Status/types';
 import { SubmittableResult } from '@polkadot/api';
-import { findFirstParamOfSubstrateEvent, nonEmptyStr } from '@polkadot/joy-utils/';
-import { u16, Option } from '@polkadot/types';
+import { nonEmptyStr, filterSubstrateEventsAndExtractData } from '@polkadot/joy-utils/';
+import { u16, u32, bool, Option, Vec } from '@polkadot/types';
 import { isInternalProp } from '@joystream/types/versioned-store/EntityCodec';
 import { MediaObjectCodec } from '../schemas/general/MediaObject';
+import { Operation } from '@joystream/types/versioned-store/permissions/batching';
+import { OperationType } from '@joystream/types/versioned-store/permissions/batching/operation-types';
+import { ParametrizedEntity } from '@joystream/types/versioned-store/permissions/batching/parametrized-entity';
+import ParametrizedClassPropertyValue from '@joystream/types/versioned-store/permissions/batching/ParametrizedClassPropertyValue';
+import { ParametrizedPropertyValue } from '@joystream/types/versioned-store/permissions/batching/parametrized-property-value';
+import { ParameterizedClassPropertyValues } from '@joystream/types/versioned-store/permissions/batching/operations';
 
 /** Example: "2019-01-23" -> 1548201600 */
 function humanDateToUnixTs(humanFriendlyDate: string): number | undefined {
@@ -77,26 +83,26 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     resetForm
   } = props;
 
-  const initialSupportedSchemaIds: number[] = entity?.inClassSchemaIndexes || []
-
-  const [ mediaObjectId, setMediaObjectId ] = useState<EntityId | undefined>()
   const [ entityId, setEntityId ] = useState<EntityId | undefined>(id)
-  const [ supportsSchema, setSupportsSchema ] = useState<boolean>(initialSupportedSchemaIds.length > 0)
   const { thumbnail } = values
 
-  const withCredential = new Option(Credential, new Credential(2))
-  const asEntityMaintainer = false
-  const firstSchemaId = new u16(0)
-  
+  if (!mediaObjectClass) {
+    return <em>ERROR: "Media Object" entity class in undefined</em>
+  }
+
+  if (!entityClass) {
+    return <em>ERROR: "Video" entity class in undefined</em>
+  }
+
+  const with_credential = new Option<Credential>(Credential, new Credential(2))
+  const as_entity_maintainer = new bool(false)
+  const schema_id = new u16(0)
+
   const entityCodec = new VideoCodec(entityClass!)
   const mediaObjectCodec = new MediaObjectCodec(mediaObjectClass!)
 
   const getFieldsValues = (): Partial<FormValues> => {
     const res: Partial<FormValues> = {}
-
-    if (!entity && mediaObjectId) {
-      res.object = mediaObjectId.toNumber()
-    }
 
     Object.keys(values).forEach((prop) => {
       const fieldName = prop as VideoPropId
@@ -125,7 +131,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       //   propForLog.shouldIncludeValue = shouldIncludeValue
       // }
       // console.log(propForLog)
-      
+
       if (shouldIncludeValue) {
         if (typeof fieldValue === 'string') {
           fieldValue = fieldValue.trim()
@@ -136,89 +142,141 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
         res[fieldName] = fieldValue
       }
     })
-    
+
     return res
   }
 
-  // TODO Batch create + update entity operations with versionedStorePermissions.transaction function
+  const indexOfCreateMediaObjectOperation = new u32(0)
 
-  const buildCreateMediaObjectTxParams = () => {
-    return [
-      withCredential,
-      mediaObjectClass!.id
-    ]
-  }
+  const indexOfCreateVideoEntityOperation = new u32(2)
 
-  const buildAddSchemaToMediaObjectTxParams = () => {
-    const propValues = mediaObjectCodec.toSubstrateUpdate({
-      value: contentId!.encode()
+  const referToIdOfCreatedMediaObjectEntity = () =>
+    ParametrizedEntity.InternalEntityJustAdded(indexOfCreateMediaObjectOperation)
+
+  const referToIdOfCreatedVideoEntity = () =>
+    ParametrizedEntity.InternalEntityJustAdded(indexOfCreateVideoEntityOperation)
+
+  const newlyCreatedMediaObjectProp = () => {
+    const inClassIndexOfMediaObject = entityCodec.inClassIndexOfProp(Fields.object.id)
+    if (!inClassIndexOfMediaObject) {
+      throw new Error('Cannot not find an in-class index of "object" prop on Video entity.')
+    }
+
+    return new ParametrizedClassPropertyValue({
+      in_class_index: new u16(inClassIndexOfMediaObject),
+      value: ParametrizedPropertyValue.InternalEntityJustAdded(
+        indexOfCreateMediaObjectOperation
+      )
     })
-    // console.log('buildAddSchemaToMediaObjectTxParams:', propValues)
-
-    return [
-      withCredential,
-      asEntityMaintainer,
-      mediaObjectId,
-      firstSchemaId,
-      propValues
-    ]
   }
 
-  const buildCreateEntityTxParams = () => {
-    return [
-      withCredential,
-      entityClass!.id
-    ]
+  const toParametrizedPropValues = (
+    props: VecClassPropertyValue,
+    extra: ParametrizedClassPropertyValue[] = []
+  ): ParameterizedClassPropertyValues => {
+
+    const parametrizedProps = props.map(p => {
+      const { in_class_index, value } = p
+      return new ParametrizedClassPropertyValue({
+        in_class_index,
+        value: new ParametrizedPropertyValue({ PropertyValue: value })
+      })
+    })
+
+    if (extra && extra.length) {
+      extra.forEach(x => parametrizedProps.push(x))
+    }
+
+    return new ParameterizedClassPropertyValues(parametrizedProps)
   }
 
-  const buildAddSchemaToEntityTxParams = () => {
-    const propValues = entityCodec.toSubstrateUpdate(getFieldsValues())
-    // console.log('buildAddSchemaSupportTxParams:', propValues)
+  const newEntityOperation = (operation_type: OperationType) => {
+    return new Operation({
+      with_credential,
+      as_entity_maintainer,
+      operation_type
+    })
+  }
 
-    return [
-      withCredential,
-      asEntityMaintainer,
-      entityId,
-      firstSchemaId,
-      propValues
+  const prepareTxParamsForCreateMediaObject = () => {
+    return newEntityOperation(
+      OperationType.CreateEntity(
+        mediaObjectClass!.id
+      )
+    )
+  }
+
+  const prepareTxParamsForAddSchemaToMediaObject = () => {
+    const propValues = toParametrizedPropValues(
+      mediaObjectCodec.toSubstrateUpdate({
+        value: contentId!.encode()
+      })
+    )
+    // console.log('prepareTxParamsForAddSchemaToMediaObject:', propValues)
+
+    return newEntityOperation(
+      OperationType.AddSchemaSupportToEntity(
+        referToIdOfCreatedMediaObjectEntity(),
+        schema_id,
+        propValues
+      )
+    )
+  }
+
+  const prepareTxParamsForCreateEntity = () => {
+    return newEntityOperation(
+      OperationType.CreateEntity(
+        entityClass!.id
+      )
+    )
+  }
+
+  const prepareTxParamsForAddSchemaToEntity = () => {
+    const propValues = toParametrizedPropValues(
+      entityCodec.toSubstrateUpdate(getFieldsValues()),
+      [ newlyCreatedMediaObjectProp() ]
+    )
+
+    console.log('prepareTxParamsForAddSchemaToEntity:', propValues)
+
+    return newEntityOperation(
+      OperationType.AddSchemaSupportToEntity(
+        referToIdOfCreatedVideoEntity(),
+        schema_id,
+        propValues
+      )
+    )
+  }
+
+  const canSubmitTx = () => dirty && isValid && !isSubmitting
+
+  const buildTransactionTxParams = () => {
+    // No need to prepare tx params until the form is valid:
+    if (!canSubmitTx()) return []
+
+    const ops = [
+      prepareTxParamsForCreateMediaObject(),
+      prepareTxParamsForAddSchemaToMediaObject(),
+      prepareTxParamsForCreateEntity(),
+      prepareTxParamsForAddSchemaToEntity()
     ]
+    console.log('Batch entity operations:', ops)
+    return [new Vec(Operation, ops)]
   }
 
   const buildUpdateEntityTxParams = () => {
+    // No need to prepare tx params until the form is valid:
+    if (!canSubmitTx()) return []
+
     const updatedPropValues = entityCodec.toSubstrateUpdate(getFieldsValues())
-    // console.log('buildUpdateEntityTxParams:', updatedPropValues)
+    console.log('buildUpdateEntityTxParams:', updatedPropValues)
 
     return [
-      withCredential,
-      asEntityMaintainer,
+      with_credential,
+      as_entity_maintainer,
       entityId,
       updatedPropValues
     ]
-  };
-
-  const onCreateMediaObjectSuccess: TxCallback = (txResult: SubmittableResult) => {
-    setSubmitting(false)
-
-    // Get id of newly created media object:
-    const newId = findFirstParamOfSubstrateEvent<EntityId>(txResult, 'EntityCreated')
-    setMediaObjectId(newId)
-
-    console.log('New media object entity id:', newId && newId.toString())
-  }
-
-  const onAddSchemaToMediaObjectSuccess: TxCallback = (_txResult: SubmittableResult) => {
-    setSubmitting(false)
-    // Nothing yet
-  }
-
-  const onCreateEntitySuccess: TxCallback = (txResult: SubmittableResult) => {
-    setSubmitting(false)
-
-    // Get id of newly created entity:
-    const newId = findFirstParamOfSubstrateEvent<EntityId>(txResult, 'EntityCreated')
-    setEntityId(newId)
-
-    console.log('New video entity id:', newId && newId.toString())
   }
 
   const redirectToPlaybackPage = () => {
@@ -227,9 +285,24 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     }
   }
 
-  const onAddSchemaToEntitySuccess: TxCallback = (_txResult: SubmittableResult) => {
+  const onCreateEntitySuccess: TxCallback = (txResult: SubmittableResult) => {
     setSubmitting(false)
-    setSupportsSchema(true)
+
+    // Get id of newly created video entity from the second 'EntityCreated' event,
+    // because the first 'EntityCreated' event corresponds to a Media Object Entity.
+    const events = filterSubstrateEventsAndExtractData(txResult, 'EntityCreated')
+
+    // Return if there were less than two event: 
+    if (!events || events.length < 2) return
+
+    // Get the second 'EntityCreated' event:
+    const videoEntityCreatedEvent = events[1]
+
+    // Extract id from from event:
+    const newId = videoEntityCreatedEvent[0] as EntityId
+
+    console.log('New video entity id:', newId && newId.toString())
+    setEntityId(newId)
     redirectToPlaybackPage()
   }
 
@@ -282,110 +355,52 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   ]} />;
 
   const newOnSubmit: OnTxButtonClick = (sendTx: () => void) => {
-    
+
     // TODO Switch to the first tab with errors if any
-    
+
     if (onSubmit) {
       onSubmit(sendTx);
     }
   }
 
-  const CreateMediaObjectButton = () =>
+  const TransactionButton = () =>
     <TxButton
       type='submit'
       size='large'
-      isDisabled={isSubmitting}
-      label='Create media object'
-      tx='versionedStorePermissions.createEntity'
-      params={buildCreateMediaObjectTxParams()}
-      onClick={newOnSubmit}
-      txFailedCb={onTxFailed}
-      txSuccessCb={onCreateMediaObjectSuccess}
-    />
-
-  const AddSchemaToMediaObjectButton = () =>
-    <TxButton
-      type='submit'
-      size='large'
-      isDisabled={isSubmitting}
-      label='Add schema to media object'
-      tx='versionedStorePermissions.addSchemaSupportToEntity'
-      params={buildAddSchemaToMediaObjectTxParams()}
-      onClick={newOnSubmit}
-      txFailedCb={onTxFailed}
-      txSuccessCb={onAddSchemaToMediaObjectSuccess}
-    />
-
-  const CreateEntityButton = () =>
-    <TxButton
-      type='submit'
-      size='large'
-      isDisabled={!(dirty && isValid && !isSubmitting)}
-      label='Create video entity'
-      tx='versionedStorePermissions.createEntity'
-      params={buildCreateEntityTxParams()}
+      isDisabled={!canSubmitTx()}
+      label='Publish video'
+      tx='versionedStorePermissions.transaction'
+      params={buildTransactionTxParams()}
       onClick={newOnSubmit}
       txFailedCb={onTxFailed}
       txSuccessCb={onCreateEntitySuccess}
-    />
-
-  const AddSchemaToEntityButton = () =>
-    <TxButton
-      type='submit'
-      size='large'
-      isDisabled={!(dirty && isValid && !isSubmitting)}
-      label='Add schema to video entity'
-      tx='versionedStorePermissions.addSchemaSupportToEntity'
-      params={buildAddSchemaToEntityTxParams()}
-      onClick={newOnSubmit}
-      txFailedCb={onTxFailed}
-      txSuccessCb={onAddSchemaToEntitySuccess}
     />
 
   const UpdateEntityButton = () =>
     <TxButton
       type='submit'
       size='large'
-      isDisabled={!(dirty && isValid && !isSubmitting)}
-      label='Update video entity'
-      tx='versionedStorePermissions.updateEntityPropertyValues'      
+      isDisabled={!canSubmitTx()}
+      label='Update video'
+      tx='versionedStorePermissions.updateEntityPropertyValues'
       params={buildUpdateEntityTxParams()}
       onClick={newOnSubmit}
       txFailedCb={onTxFailed}
       txSuccessCb={onUpdateEntitySuccess}
     />
 
-  const MediaObjectButtons = () => <>
-    {!mediaObjectId &&
-      <CreateMediaObjectButton />
-    }
-    {mediaObjectId && !entityId &&
-      <AddSchemaToMediaObjectButton />
-    }
-  </>
-
-  const EntityButtons = () => <>
-    {!entity && !entityId &&
-      <CreateEntityButton />
-    }
-    {entityId && !supportsSchema &&
-      <AddSchemaToEntityButton />
-    }
-    {entityId && supportsSchema &&
-      <UpdateEntityButton />
-    }
-  </>
-
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
       {thumbnail && <img src={thumbnail} onError={onImageError} />}
     </div>
 
-    <Form className='ui form JoyForm EditMetaForm'>      
+    <Form className='ui form JoyForm EditMetaForm'>
       {tabs}
       <LabelledField style={{ marginTop: '1rem' }} {...props}>
-        <MediaObjectButtons />
-        {mediaObjectId && <EntityButtons />}
+        {!entity
+          ? <TransactionButton />
+          : <UpdateEntityButton />
+        }
         <Button
           type='button'
           size='large'
@@ -402,10 +417,13 @@ export const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
   mapPropsToValues: (props): FormValues => {
-    const { entity, fileName } = props;
+    const { entity, channelId, fileName } = props;
     const res = VideoToFormValues(entity);
     if (!res.title && fileName) {
       res.title = fileName;
+    }
+    if (channelId) {
+      res.channelId = channelId.toNumber()
     }
     return res;
   },

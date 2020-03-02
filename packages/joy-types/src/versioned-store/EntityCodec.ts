@@ -144,6 +144,10 @@ export abstract class EntityCodec<T extends PlainEntity> {
     })
   }
 
+  inClassIndexOfProp (propName: string): number | undefined {
+    return this.propNameToMetaMap.get(propName)?.index
+  }
+
   /**
    * Converts an entity of Substrate codec type to a plain JS object.
    */

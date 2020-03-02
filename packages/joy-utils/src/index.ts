@@ -179,23 +179,21 @@ export { memoize }
 import { SubmittableResult } from '@polkadot/api';
 import { Codec } from '@polkadot/types/types';
 
-export function findDataOfSubstrateEvent(txResult: SubmittableResult, eventName: string): Codec[] | undefined {
-  let res: Codec[] | undefined
-  txResult.events.find((event) => {
-    const { event: { data, method } } = event
+export function filterSubstrateEventsAndExtractData(txResult: SubmittableResult, eventName: string): Codec[][] {
+  let res: Codec[][] = []
+  txResult.events.forEach((event) => {
+    const { event: { method, data } } = event
     if (method === eventName) {
-      res = data.toArray()
-      return true
+      res.push(data.toArray())
     }
-    return false
   })
   return res
 }
 
 export function findFirstParamOfSubstrateEvent<T extends Codec>(txResult: SubmittableResult, eventName: string): T | undefined {
-  const data = findDataOfSubstrateEvent(txResult, eventName)
+  const data = filterSubstrateEventsAndExtractData(txResult, eventName)
   if (data && data.length) {
-    return data[0] as T
+    return data[0][0] as T
   }
   return undefined
 }

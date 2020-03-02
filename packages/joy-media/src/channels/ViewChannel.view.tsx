@@ -11,9 +11,6 @@ export const ViewChannelView = MediaView<Props>({
   resolveProps: async (props) => {
     const { transport, id } = props;
     const channel = await transport.channelById(id);
-    
-    // TODO check if video content, else if music content.
-
     const videos = await transport.videosByChannelId(id);
     return { channel, videos };
   }
