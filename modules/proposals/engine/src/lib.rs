@@ -127,8 +127,7 @@ decl_event!(
 decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalEngine{
         /// Map proposal by its id.
-        pub Proposals get(fn proposals): map T::ProposalId =>
-            Proposal<T::BlockNumber, T::ProposerId, types::BalanceOf<T>, T::StakeId>;
+        pub Proposals get(fn proposals): map T::ProposalId => ProposalObject<T>;
 
         /// Count of all proposals that have been created.
         pub ProposalCount get(fn proposal_count): u32;
@@ -249,7 +248,7 @@ impl<T: Trait> Module<T> {
         stake_balance: Option<types::BalanceOf<T>>,
         proposal_type: u32,
         proposal_code: Vec<u8>,
-    ) -> dispatch::Result {
+    ) -> Result<T::ProposalId, &'static str> {
         let account_id = T::ProposalOrigin::ensure_origin(origin)?;
         let proposer_id = T::ProposerId::from(account_id.clone());
 
@@ -293,7 +292,7 @@ impl<T: Trait> Module<T> {
 
         Self::deposit_event(RawEvent::ProposalCreated(proposer_id, proposal_id));
 
-        Ok(())
+        Ok(proposal_id)
     }
 }
 
@@ -536,6 +535,14 @@ impl<T: Trait> Module<T> {
 // Simplification of the 'FinalizedProposalData' type
 type FinalizedProposal<T> = FinalizedProposalData<
     <T as Trait>::ProposalId,
+    <T as system::Trait>::BlockNumber,
+    <T as Trait>::ProposerId,
+    types::BalanceOf<T>,
+    <T as stake::Trait>::StakeId,
+>;
+
+// Simplification of the 'Proposal' type
+type ProposalObject<T> = Proposal<
     <T as system::Trait>::BlockNumber,
     <T as Trait>::ProposerId,
     types::BalanceOf<T>,

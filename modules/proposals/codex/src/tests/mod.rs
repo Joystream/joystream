@@ -1,6 +1,7 @@
 mod mock;
 
 use srml_support::traits::Currency;
+use srml_support::StorageMap;
 use system::RawOrigin;
 
 use crate::{BalanceOf, Error};
@@ -25,6 +26,10 @@ fn create_text_proposal_codex_call_succeeds() {
             ),
             Ok(())
         );
+
+        // a discussion was created
+        let thread_id = <crate::ThreadIdByProposalId<Test>>::get(1);
+        assert_eq!(thread_id, 1);
     });
 }
 
@@ -197,5 +202,9 @@ fn create_runtime_upgrade_proposal_codex_call_succeeds() {
             ),
             Ok(())
         );
+
+        // a discussion was created
+        let thread_id = <crate::ThreadIdByProposalId<Test>>::get(1);
+        assert_eq!(thread_id, 1);
     });
 }

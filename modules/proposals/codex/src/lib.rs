@@ -24,9 +24,10 @@ use rstd::marker::PhantomData;
 use rstd::prelude::*;
 use rstd::vec::Vec;
 use srml_support::{decl_error, decl_module, decl_storage, ensure};
+use system::RawOrigin;
 
 /// 'Proposals codex' substrate module Trait
-pub trait Trait: system::Trait + proposal_engine::Trait {
+pub trait Trait: system::Trait + proposal_engine::Trait + proposal_discussion::Trait {
     /// Defines max allowed text proposal length.
     type TextProposalMaxLength: Get<u32>;
 
@@ -61,7 +62,11 @@ decl_error! {
 
 // Storage for the proposals codex module
 decl_storage! {
-    pub trait Store for Module<T: Trait> as ProposalCodex{}
+    pub trait Store for Module<T: Trait> as ProposalCodex{
+        /// Map proposal id to its discussion thread id
+        pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
+            map T::ProposalId => T::ThreadId;
+    }
 }
 
 decl_module! {
@@ -91,15 +96,24 @@ decl_module! {
                };
             let proposal_code = text_proposal.encode();
 
-            <proposal_engine::Module<T>>::create_proposal(
-                origin,
+            let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
+
+            let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
+                cloned_origin1,
+                title.clone(),
+            )?;
+
+            let proposal_id = <proposal_engine::Module<T>>::create_proposal(
+                cloned_origin2,
                 parameters,
                 title,
                 description,
                 stake_balance,
                 text_proposal.proposal_type(),
-                proposal_code
+                proposal_code,
             )?;
+
+             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         }
 
         /// Create runtime upgrade proposal type. On approval prints its content.
@@ -124,15 +138,45 @@ decl_module! {
                };
             let proposal_code = proposal.encode();
 
-            <proposal_engine::Module<T>>::create_proposal(
-                origin,
+            let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
+
+            let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
+                cloned_origin1,
+                title.clone(),
+            )?;
+
+            let proposal_id = <proposal_engine::Module<T>>::create_proposal(
+                cloned_origin2,
                 parameters,
                 title,
                 description,
                 stake_balance,
                 proposal.proposal_type(),
-                proposal_code
+                proposal_code,
             )?;
+
+            <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         }
+    }
+}
+
+impl<T: Trait> Module<T> {
+    // Multiplies the T::Origin.
+    // In our current substrate version system::Origin doesn't support clone(),
+    // but it will be supported in latest up-to-date substrate version.
+    // TODO: delete when T::Origin will support the clone()
+    fn double_origin(origin: T::Origin) -> (T::Origin, T::Origin) {
+        let coerced_origin = origin.into().ok().unwrap_or(RawOrigin::None);
+
+        let (cloned_origin1, cloned_origin2) = match coerced_origin {
+            RawOrigin::None => (RawOrigin::None, RawOrigin::None),
+            RawOrigin::Root => (RawOrigin::Root, RawOrigin::Root),
+            RawOrigin::Signed(account_id) => (
+                RawOrigin::Signed(account_id.clone()),
+                RawOrigin::Signed(account_id),
+            ),
+        };
+
+        (cloned_origin1.into(), cloned_origin2.into())
     }
 }

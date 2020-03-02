@@ -105,6 +105,24 @@ impl proposal_engine::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
 }
 
+parameter_types! {
+    pub const MaxPostEditionNumber: u32 = 5;
+    pub const ThreadTitleLengthLimit: u32 = 200;
+    pub const PostLengthLimit: u32 = 2000;
+}
+
+impl proposal_discussion::Trait for Test {
+    type ThreadAuthorOrigin = system::EnsureSigned<Self::AccountId>;
+    type PostAuthorOrigin = system::EnsureSigned<Self::AccountId>;
+    type ThreadId = u32;
+    type PostId = u32;
+    type ThreadAuthorId = u64;
+    type PostAuthorId = u64;
+    type MaxPostEditionNumber = MaxPostEditionNumber;
+    type ThreadTitleLengthLimit = ThreadTitleLengthLimit;
+    type PostLengthLimit = PostLengthLimit;
+}
+
 pub struct MockVotersParameters;
 impl VotersParameters for MockVotersParameters {
     fn total_voters_count() -> u32 {
