@@ -198,8 +198,8 @@ export function registerVersionedStoreTypes () {
   try {
     getTypeRegistry().register({
       InputValidationLengthConstraint,
-      ClassId,
-      EntityId,
+      ClassId: 'u64',
+      EntityId: 'u64',
       Class,
       Entity,
       ClassSchema,

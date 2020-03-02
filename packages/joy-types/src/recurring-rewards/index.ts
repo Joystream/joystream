@@ -17,6 +17,14 @@ export class Recipient extends JoyStruct<IRecipient> {
       total_reward_missed: u128,
     }, value);
   }
+
+  get total_reward_received(): u128 {
+    return this.getField<u128>('total_reward_received')
+  }
+
+  get total_reward_missed(): u128 {
+    return this.getField<u128>('total_reward_missed')
+  }
 };
 
 export type IRewardRelationship = {
@@ -42,13 +50,17 @@ export class RewardRelationship extends JoyStruct<IRewardRelationship> {
       total_reward_missed: u128,
     }, value);
   }
+
+  get recipient(): RecipientId {
+    return this.getField<RecipientId>('recipient')
+  }
 };
 
 export function registerRecurringRewardsTypes () {
     try {
       getTypeRegistry().register({
-        RecipientId,
-        RewardRelationshipId,
+        RecipientId: 'u64',
+        RewardRelationshipId: 'u64',
         Recipient,
         RewardRelationship
       });

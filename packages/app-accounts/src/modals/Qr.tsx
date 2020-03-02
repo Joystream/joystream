@@ -11,6 +11,8 @@ import { AddressRow, Button, Input, InputAddress, Modal } from '@polkadot/react-
 import { QrScanAddress } from '@polkadot/react-qr';
 import keyring from '@polkadot/ui-keyring';
 
+import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+
 import translate from '../translate';
 
 interface Scanned {
@@ -25,8 +27,10 @@ interface Props extends I18nProps, ModalProps {
 function QrModal ({ className, onClose, onStatusChange, t }: Props): React.ReactElement<Props> {
   const [{ isNameValid, name }, setName] = useState({ isNameValid: false, name: '' });
   const [scanned, setScanned] = useState<Scanned | null>(null);
+  const context = useMyAccount()
 
   const _onNameChange = (name: string): void => setName({ isNameValid: !!name.trim(), name });
+
   const _onSave = (): void => {
     if (!scanned || !isNameValid) {
       return;
@@ -36,6 +40,7 @@ function QrModal ({ className, onClose, onStatusChange, t }: Props): React.React
 
     keyring.addExternal(address, { genesisHash, name: name.trim() });
     InputAddress.setLastValue('account', address);
+    context.set(address)
 
     onStatusChange({
       account: address,

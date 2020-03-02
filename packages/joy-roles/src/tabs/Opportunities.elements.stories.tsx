@@ -34,6 +34,7 @@ type TestProps = {
 
 const meta: OpeningMetadata = {
   id: "1",
+  group: "group-name",
 }
 
 export function OpeningHeaderByState() {

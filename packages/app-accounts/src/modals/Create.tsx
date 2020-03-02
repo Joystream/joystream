@@ -3,21 +3,16 @@
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { I18nProps } from '@polkadot/react-components/types';
-import { ActionStatus } from '@polkadot/react-components/Status/types';
-import { CreateResult } from '@polkadot/ui-keyring/types';
 import { KeypairType } from '@polkadot/util-crypto/types';
 import { ModalProps } from '../types';
 
-import FileSaver from 'file-saver';
+import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { generateSeed, updateAddress, createAccount, isPasswordValid, AddressState, SeedType } from '@polkadot/joy-utils/accounts';
 import React, { useContext, useState } from 'react';
 import styled from 'styled-components';
-import { DEV_PHRASE } from '@polkadot/keyring/defaults';
 import { ApiContext } from '@polkadot/react-api';
-import { AddressRow, Button, Dropdown, Input, InputAddress, Modal, Password } from '@polkadot/react-components';
-import keyring from '@polkadot/ui-keyring';
+import { AddressRow, Button, Dropdown, Input, Modal, Password } from '@polkadot/react-components';
 import uiSettings from '@polkadot/ui-settings';
-import { isHex, u8aToHex } from '@polkadot/util';
-import { keyExtractSuri, mnemonicGenerate, mnemonicValidate, randomAsU8a } from '@polkadot/util-crypto';
 
 import translate from '../translate';
 import CreateConfirmation from './CreateConfirmation';
@@ -25,129 +20,6 @@ import CreateConfirmation from './CreateConfirmation';
 interface Props extends ModalProps, I18nProps {
   seed?: string;
   type?: KeypairType;
-}
-
-type SeedType = 'bip' | 'raw' | 'dev';
-
-interface AddressState {
-  address: string | null;
-  deriveError: string | null;
-  derivePath: string;
-  isSeedValid: boolean;
-  pairType: KeypairType;
-  seed: string;
-  seedType: SeedType;
-}
-
-const DEFAULT_PAIR_TYPE = 'ed25519'; // 'sr25519';
-
-function deriveValidate (seed: string, derivePath: string, pairType: KeypairType): string | null {
-  try {
-    const { path } = keyExtractSuri(`${seed}${derivePath}`);
-
-    // we don't allow soft for ed25519
-    if (pairType === 'ed25519' && path.some(({ isSoft }): boolean => isSoft)) {
-      return 'Soft derivation paths are not allowed on ed25519';
-    }
-  } catch (error) {
-    return error.message;
-  }
-
-  return null;
-}
-
-function isHexSeed (seed: string): boolean {
-  return isHex(seed) && seed.length === 66;
-}
-
-function rawValidate (seed: string): boolean {
-  return ((seed.length > 0) && (seed.length <= 32)) || isHexSeed(seed);
-}
-
-function addressFromSeed (phrase: string, derivePath: string, pairType: KeypairType): string {
-  return keyring
-    .createFromUri(`${phrase.trim()}${derivePath}`, {}, pairType)
-    .address;
-}
-
-function newSeed (seed: string | undefined | null, seedType: SeedType): string {
-  switch (seedType) {
-    case 'bip':
-      return mnemonicGenerate();
-    case 'dev':
-      return DEV_PHRASE;
-    default:
-      return seed || u8aToHex(randomAsU8a());
-  }
-}
-
-function generateSeed (_seed: string | undefined | null, derivePath: string, seedType: SeedType, pairType: KeypairType = DEFAULT_PAIR_TYPE): AddressState {
-  const seed = newSeed(_seed, seedType);
-  const address = addressFromSeed(seed, derivePath, pairType);
-
-  return {
-    address,
-    deriveError: null,
-    derivePath,
-    isSeedValid: true,
-    pairType,
-    seedType,
-    seed
-  };
-}
-
-function updateAddress (seed: string, derivePath: string, seedType: SeedType, pairType: KeypairType): AddressState {
-  const deriveError = deriveValidate(seed, derivePath, pairType);
-  let isSeedValid = seedType === 'raw'
-    ? rawValidate(seed)
-    : mnemonicValidate(seed);
-  let address: string | null = null;
-
-  if (!deriveError && isSeedValid) {
-    try {
-      address = addressFromSeed(seed, derivePath, pairType);
-    } catch (error) {
-      isSeedValid = false;
-    }
-  }
-
-  return {
-    address,
-    deriveError,
-    derivePath,
-    isSeedValid,
-    pairType,
-    seedType,
-    seed
-  };
-}
-
-export function downloadAccount ({ json, pair }: CreateResult): void {
-  const blob = new Blob([JSON.stringify(json)], { type: 'application/json; charset=utf-8' });
-
-  FileSaver.saveAs(blob, `${pair.address}.json`);
-  InputAddress.setLastValue('account', pair.address);
-}
-
-function createAccount (suri: string, pairType: KeypairType, name: string, password: string, success: string): ActionStatus {
-  // we will fill in all the details below
-  const status = { action: 'create' } as ActionStatus;
-
-  try {
-    const result = keyring.addUri(suri, password, { name: name.trim(), tags: [] }, pairType);
-    const { address } = result.pair;
-
-    status.account = address;
-    status.status = 'success';
-    status.message = success;
-
-    downloadAccount(result);
-  } catch (error) {
-    status.status = 'error';
-    status.message = error.message;
-  }
-
-  return status;
 }
 
 function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type: propsType }: Props): React.ReactElement<Props> {
@@ -159,7 +31,7 @@ function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type:
   const isValid = !!address && !deriveError && isNameValid && isPassValid && isSeedValid;
 
   const _onChangePass = (password: string): void =>
-    setPassword({ isPassValid: keyring.isPassValid(password), password });
+    setPassword({ isPassValid: isPasswordValid(password), password });
   const _onChangeDerive = (newDerivePath: string): void =>
     setAddress(updateAddress(seed, newDerivePath, seedType, pairType));
   const _onChangeSeed = (newSeed: string): void =>
@@ -173,6 +45,7 @@ function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type:
   };
   const _onChangeName = (name: string): void => setName({ isNameValid: !!name.trim(), name });
   const _toggleConfirmation = (): void => setIsConfirmationOpen(!isConfirmationOpen);
+  const context = useMyAccount()
 
   const _onCommit = (): void => {
     if (!isValid) {
@@ -180,6 +53,7 @@ function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type:
     }
 
     const status = createAccount(`${seed}${derivePath}`, pairType, name, password, t('created account'));
+    context.set(status.account as string)
 
     _toggleConfirmation();
     onStatusChange(status);

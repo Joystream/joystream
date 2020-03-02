@@ -5,6 +5,9 @@
     "**/build/**/*"
   ],
   "compilerOptions": {
+    "target": "esnext",
+    "module": "commonjs",
+    "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
       "@joystream/types/": [ "packages/joy-types/src/" ],
@@ -25,6 +28,8 @@
       "@polkadot/joy-proposals/*": [ "packages/joy-proposals/src/*" ],
       "@polkadot/joy-roles/": [ "packages/joy-roles/src/" ],
       "@polkadot/joy-roles/*": [ "packages/joy-roles/src/*" ],
+      "@polkadot/joy-storage/": [ "packages/joy-storage/src/" ],
+      "@polkadot/joy-storage/*": [ "packages/joy-storage/src/*" ],
       "@polkadot/joy-settings/": [ "packages/joy-settings/src/" ],
       "@polkadot/joy-settings/*": [ "packages/joy-settings/src/*" ],
       "@polkadot/joy-utils/": [ "packages/joy-utils/src/" ],

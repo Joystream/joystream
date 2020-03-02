@@ -8,6 +8,8 @@ import { ActionStatus } from '@polkadot/react-components/Status/types';
 import { ModalProps } from '../types';
 
 import React from 'react';
+import { MyAccountContext } from '@polkadot/joy-utils/MyAccountContext';
+import { isPasswordValid } from '@polkadot/joy-utils/accounts';
 import { AddressRow, Button, InputAddress, InputFile, Modal, Password, TxComponent } from '@polkadot/react-components';
 import { isHex, isObject, u8aToString } from '@polkadot/util';
 import keyring from '@polkadot/ui-keyring';
@@ -25,10 +27,13 @@ interface State {
 }
 
 class Import extends TxComponent<Props, State> {
+  static contextType = MyAccountContext;
+  context!: React.ContextType<typeof MyAccountContext>;
+
   public state: State = {
     address: null,
     isFileValid: false,
-    isPassValid: false,
+    isPassValid: true,
     json: null,
     password: ''
   };
@@ -131,7 +136,7 @@ class Import extends TxComponent<Props, State> {
 
   private onChangePass = (password: string): void => {
     this.setState({
-      isPassValid: keyring.isPassValid(password),
+      isPassValid: isPasswordValid(password),
       password
     });
   }
@@ -155,8 +160,9 @@ class Import extends TxComponent<Props, State> {
       status.message = t('account restored');
 
       InputAddress.setLastValue('account', address);
+      this.context.set(address)
     } catch (error) {
-      this.setState({ isPassValid: false });
+      this.setState({ isPassValid: true });
 
       status.status = 'error';
       status.message = error.message;

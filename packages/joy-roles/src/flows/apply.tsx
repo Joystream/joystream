@@ -9,6 +9,8 @@ import {
   u128,
 } from '@polkadot/types'
 
+import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext'
+
 import {
   Accordion,
   Button,
@@ -20,7 +22,6 @@ import {
   Input,
   Label,
   Message,
-  Modal,
   Segment,
   SemanticICONS,
   Step,
@@ -33,7 +34,7 @@ import { Slider } from "react-semantic-ui-range";
 import Identicon from '@polkadot/react-identicon';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
-import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema'
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings'
 
 import {
   GroupMemberView, GroupMember,
@@ -48,9 +49,10 @@ import {
   ApplicationDetails,
   QuestionField,
   QuestionSection,
-} from '@joystream/types/hiring/schemas/role.schema'
+} from '@joystream/types/hiring/schemas/role.schema.typings'
 
 import { Loadable } from '@polkadot/joy-utils/index'
+import { Add } from '../balances'
 
 type accordionProps = {
   title: string
@@ -96,8 +98,8 @@ export type keyPairDetails = {
 }
 
 export type FundSourceSelectorProps = {
-  transactionFee: Balance
   keypairs: keyPairDetails[]
+  totalStake?: Balance
 }
 
 type FundSourceCallbackProps = {
@@ -115,13 +117,13 @@ export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCa
   }
 
   const onChangeInput = (e: any, { value }: any) => {
-    if (typeof props.passphraseCallback !== "undefined") {
+    if (props.passphraseCallback) {
       props.passphraseCallback(value)
     }
   }
 
   props.keypairs.map((v) => {
-    if (v.balance.lt(props.transactionFee)) {
+    if (props.totalStake && v.balance.lt(props.totalStake)) {
       return
     }
 
@@ -135,7 +137,7 @@ export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCa
           isUppercase={true}
         />
       ),
-      value: v.accountId,
+      value: v.accountId.toString(),
     })
   })
 
@@ -144,6 +146,20 @@ export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCa
       props.addressCallback(new GenericAccountId(pairs[0].accountId))
     }
   }, [])
+
+  const accCtx = useMyAccount()
+  let passphraseCallback = null
+  if (props.passphraseCallback) {
+    passphraseCallback = (
+      <Form.Field>
+        <label>Unlock key with passphrase</label>
+        <Input placeholder='Passphrase'
+          type="password"
+          onChange={onChangeInput}
+        />
+      </Form.Field>
+    )
+  }
 
   return (
     <Form className="fund-source-selector">
@@ -155,16 +171,10 @@ export function FundSourceSelector(props: FundSourceSelectorProps & FundSourceCa
           selection
           options={pairs}
           onChange={onChangeDropdown}
-          defaultValue={pairs.length > 0 ? pairs[0].value : null}
+          defaultValue={accCtx.state.inited ? accCtx.state.address : undefined}
         />
       </Form.Field>
-      <Form.Field>
-        <label>Unlock key with passphrase</label>
-        <Input placeholder='Passphrase'
-          type="password"
-          onChange={onChangeInput}
-        />
-      </Form.Field>
+      {passphraseCallback}
     </Form>
   )
 }
@@ -187,53 +197,33 @@ export type StakeRankSelectorProps = {
   stake: Balance
   setStake: (b: Balance) => void
   step: Balance
+  otherStake: Balance
+  requirement: IStakeRequirement
 }
 
 export function StakeRankSelector(props: StakeRankSelectorProps) {
   const slotCount = props.slots.length
   const [rank, setRank] = useState(1);
-  const settings = {
-    min: 0,
-    max: slotCount,
-    step: 1,
-    onChange: (value: any) => {
-      if (value >= props.slots.length) {
-        value = props.slots.length
-        props.setStake(props.slots[value - 1])
-      } else if (value > 0 && !focused) {
-        props.setStake(props.slots[value - 1])
-      } else if (!focused) {
-        props.setStake(props.slots[0])
-      }
-      setRank(value)
-    }
-  };
+  const minStake = props.requirement.value
 
   const ticks = []
   for (var i = 0; i < slotCount; i++) {
     ticks.push(<div key={i} className="tick" style={{ width: (100 / slotCount) + '%' }}>{slotCount - i}</div>)
   }
 
-  const tickLabel = <div className="ui pointing above label" style={{ left: ((100 / slotCount) * rank) + '%' }}>
-    Your rank
-        <div className="detail">{(slotCount - rank) + 1}</div>
-  </div>
-
   const findRankValue = (newStake: Balance): number => {
-    if (newStake.gt(props.slots[slotCount - 1])) {
+    if (newStake.add(props.otherStake).gt(props.slots[slotCount - 1])) {
       return slotCount
     }
 
     for (let i = slotCount; i--; i >= 0) {
-      if (newStake.gt(props.slots[i])) {
+      if (newStake.add(props.otherStake).gt(props.slots[i])) {
         return i + 1
       }
     }
 
     return 0
   }
-
-  const [focused, setFocused] = useState(false)
 
   const changeValue = (e: any, { value }: any) => {
     const newStake = new u128(value)
@@ -245,50 +235,29 @@ export function StakeRankSelector(props: StakeRankSelectorProps) {
   }, [])
 
   let slider = null
-  if (slotCount > 1) {
-    slider = (
-      <div>
-        <Slider discrete className="labeled" value={rank} color="teal" settings={settings} />
-        <div className="ticks">
-          <div className="scale">
-            {ticks}
-          </div>
-          {tickLabel}
-        </div>
-      </div>
-    )
-  }
-
   return (
     <Container className="stake-rank-selector">
       <h4>Choose a stake</h4>
       <Container className="controls">
-        <Button circular icon='angle double left' onClick={() => { setRank(1) }} />
-        <Button circular icon='angle left' onClick={() => { rank > 1 && setRank(rank - 1) }} />
         <Input label="JOY"
           labelPosition="right"
           onChange={changeValue}
           type="number"
-          onBlur={() => { setFocused(false) }}
-          onFocus={() => { setFocused(true) }}
-          step={props.step.toNumber()}
+          step={slotCount > 1 ? props.step.toNumber() : 1}
           value={props.stake.toNumber() > 0 ? props.stake.toNumber() : 0}
-          min={props.slots[0].toNumber()}
+          min={props.slots.length > 0 ? props.slots[0].sub(props.otherStake).toNumber() : 0}
+          error={props.stake.lt(minStake)}
         />
-        <Button circular icon='angle right' onClick={() => { rank <= slotCount && setRank(rank + 1) }} />
-        <Button circular icon='angle double right' onClick={() => { rank < slotCount && setRank(slotCount) }} />
-        <Container className='ranks-and-stake'>
-          <Label size='large'>
-            <Icon name={rankIcon(rank, slotCount)} />
-            Estimated rank
+        <Label size='large'>
+          <Icon name={rankIcon(rank, slotCount)} />
+          Estimated rank
                         <Label.Detail>{(slotCount + 1) - rank} / {slotCount}</Label.Detail>
-          </Label>
-          <Label size='large'>
-            <Icon name="shield" />
-            Your stake
+        </Label>
+        <Label size='large'>
+          <Icon name="shield" />
+          Your stake
                         <Label.Detail>{formatBalance(props.stake)}</Label.Detail>
-          </Label>
-        </Container>
+        </Label>
       </Container>
       {slider}
     </Container>
@@ -371,7 +340,7 @@ type CTAProps = {
   negativeCallback: CTACallback
   positiveLabel: string
   positiveIcon: SemanticICONS
-  positiveCallback: CTACallback
+  positiveCallback?: CTACallback
 }
 
 function CTA(props: CTAProps) {
@@ -389,6 +358,7 @@ function CTA(props: CTAProps) {
         labelPosition='right'
         positive
         onClick={props.positiveCallback}
+        disabled={!props.positiveCallback}
       />
     </Container>
   )
@@ -424,7 +394,6 @@ export type ConfirmStakesStageProps =
     setSelectedRoleStake: (b: Balance) => void
   }
 
-//TODO! Set state
 export function ConfirmStakesStage(props: ConfirmStakesStageProps & StageTransitionProps) {
   const ctaContinue = (zeroOrTwoStakes(props.applications)) ?
     'Confirm stakes and continue' :
@@ -437,16 +406,6 @@ export function ConfirmStakesStage(props: ConfirmStakesStageProps & StageTransit
   return (
     <Container className="content">
       <ConfirmStakes {...props} />
-      <Segment padding>
-        <Label attached='top'>Source of stake funds</Label>
-        <p>Please select the account that will be used as the source of stake funds.</p>
-        <FundSourceSelector {...props}
-          transactionFee={new u128(props.selectedApplicationStake.add(props.selectedRoleStake))}
-          addressCallback={props.setKeyAddress}
-          passphraseCallback={props.setKeyPassphrase}
-        />
-      </Segment>
-
       <CTA
         negativeLabel='Cancel'
         negativeIcon='cancel'
@@ -496,6 +455,7 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
       setValue={props.setSelectedApplicationStake}
       maxNumberOfApplications={props.applications.maxNumberOfApplications}
       numberOfApplications={props.applications.numberOfApplications}
+      otherStake={props.selectedRoleStake}
       {...props}
     />
   }
@@ -511,6 +471,7 @@ function ConfirmStakes1Up(props: StakeSelectorProps) {
       setValue={props.setSelectedRoleStake}
       maxNumberOfApplications={props.applications.maxNumberOfApplications}
       numberOfApplications={props.applications.numberOfApplications}
+      otherStake={props.selectedApplicationStake}
       {...props}
     />
   }
@@ -534,7 +495,7 @@ export type ConfirmStakes2UpProps = {
 }
 
 export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
-  const [valid, setValid] = useState(false)
+  const [valid, setValid] = useState(true)
   const slotCount = props.slots.length
   const [rank, setRank] = useState(1);
   const minStake = props.slots[0]
@@ -542,15 +503,26 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
 
   // Watch stake values
   useEffect(() => {
-    const newCombined = new u128(props.selectedApplicationStake.add(props.selectedRoleStake))
+    const newCombined = Add(props.selectedApplicationStake, props.selectedRoleStake)
     setCombined(newCombined)
-    setRank(findRankValue(newCombined))
-    setValid(combined.gt(minStake))
   },
     [props.selectedApplicationStake, props.selectedRoleStake]
   )
 
+  useEffect(() => {
+    setRank(findRankValue(combined))
+    if (slotCount > 0) {
+      setValid(combined.gte(minStake))
+    }
+  },
+    [combined]
+  )
+
   const findRankValue = (newStake: Balance): number => {
+    if (slotCount == 0) {
+      return 0
+    }
+
     if (newStake.gt(props.slots[slotCount - 1])) {
       return slotCount
     }
@@ -571,7 +543,7 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
 
   const tickLabel = <div className="ui pointing below label" style={{ left: ((100 / slotCount) * rank) + '%' }}>
     Your rank
-        <div className="detail">{(slotCount - rank) + 1}</div>
+	  <div className="detail">{(slotCount - rank) + 1}/{props.applications.maxNumberOfApplications}</div>
   </div>
 
   let tickContainer = null
@@ -586,7 +558,14 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
     )
   }
 
-  let rankExplanation = <p>This role required a combined stake (application stake plus role stake) of {formatBalance(minStake)}.</p>
+  let defactoMinStakeMessage = null
+  if (props.applications.numberOfApplications >= props.applications.maxNumberOfApplications) {
+    defactoMinStakeMessage = (
+      <span>	However, in order to be in the top {props.applications.maxNumberOfApplications} applications, you wil need to stake a combined total of more than <strong>{formatBalance(minStake)}</strong>.</span>
+    )
+  }
+
+  let rankExplanation = <p>This role requires a combined stake (application stake plus role stake) of {formatBalance(minStake)}.</p>
   if (props.applications.maxNumberOfApplications > 0) {
     rankExplanation = (
       <Container>
@@ -595,8 +574,8 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
                </p>
         <p>
           There is a minimum application stake of {formatBalance(props.applications.requiredApplicationStake.value)} and a minimum role stake of {formatBalance(props.applications.requiredRoleStake.value)} to apply for this role.
-                    However, in order to be in the top {props.applications.maxNumberOfApplications} applications, you wil need to stake a combined total of <strong>{formatBalance(minStake)}</strong>.
-               </p>
+          {defactoMinStakeMessage}
+        </p>
       </Container>
     )
   }
@@ -661,7 +640,7 @@ export function ConfirmStakes2Up(props: ConfirmStakes2UpProps) {
                 <Label color='grey'>
                   <Icon name={rankIcon(rank, slotCount)} />
                   Estimated rank
-                                    <Label.Detail>{rank}/{slotCount}</Label.Detail>
+                                    <Label.Detail>{(slotCount - rank) + 1}/{props.applications.maxNumberOfApplications}</Label.Detail>
                 </Label>
               </Grid.Column>
             </Grid.Row>
@@ -699,6 +678,7 @@ function StakeRankMiniSelector(props: StakeRankMiniSelectorProps) {
         min={props.min.toNumber()}
         step={props.step.toNumber()}
         value={props.value.toNumber() > 0 ? props.value.toNumber() : null}
+        error={props.value.lt(props.min)}
       />
     </Container>
   )
@@ -714,6 +694,7 @@ type CaptureStake1UpProps = ApplicationStatusProps & {
   maxNumberOfApplications: number
   slots: Balance[] // List of stakes to beat
   step: Balance
+  otherStake: Balance
 }
 
 // This is not a perfect generator! 'User' would return 'an', for example,
@@ -945,7 +926,6 @@ export function ApplicationDetailsStage(props: ApplicationDetailsStageProps & St
 export type SubmitApplicationStageProps = FundSourceSelectorProps &
   StageTransitionProps &
   CaptureKeyAndPassphraseProps & {
-    transactionFee: Balance
     transactionDetails: Map<string, string>
   }
 
@@ -954,12 +934,27 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
     props.nextTransition()
   }
 
+  const balanceIsEnough = (): boolean => {
+    if (!props.totalStake) {
+      return true
+    }
+
+    const idx = props.keypairs.findIndex((a: keyPairDetails) => a.accountId.eq(props.keyAddress))
+    if (idx === -1) {
+      return false
+    }
+    return props.keypairs[idx].balance.gte(props.totalStake)
+  }
+
   return (
     <Container className="content">
       <p>
         You need to make a transaction to apply for this role.
-              There is a fee of <strong>{formatBalance(props.transactionFee)}</strong> for this transaction.
-          </p>
+      </p>
+      <p>
+        Before the transaction, a new account key, called a <em>role key</em>, will be generated and downloaded automatically.
+        You will need this role key to perform any duties in the role, so be sure to keep a backup.
+      </p>
       <ModalAccordion title="Transaction details">
         <Table basic='very'>
           <Table.Body>
@@ -973,12 +968,11 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
         </Table>
       </ModalAccordion>
 
-      <Segment padding>
-        <Label attached='top'>Source of transaction fee funds</Label>
-        <p>Please select the account that will be used as the source of transaction fee funds.</p>
+      <Segment>
+        <Label attached='top'>Source of funds</Label>
+        <p>Please select the account that will be used as the source of funds.</p>
         <FundSourceSelector {...props}
           addressCallback={props.setKeyAddress}
-          passphraseCallback={props.setKeyPassphrase}
         />
       </Segment>
 
@@ -988,7 +982,7 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
         negativeCallback={props.prevTransition}
         positiveLabel='Make transaction and submit application'
         positiveIcon={'right arrow' as SemanticICONS}
-        positiveCallback={onSubmit}
+        positiveCallback={balanceIsEnough() ? onSubmit : undefined}
       />
     </Container>
   )
@@ -1009,36 +1003,35 @@ export function DoneStage(props: DoneStageProps) {
 	  </p>
       <p>
         You can track the progress of your
-              application in the <Link to="#roles/my-roles">My roles</Link> section. If you have any issues,
-                  you can raise them in in the <Link to="#forum">Forum</Link> or contact the group lead
-directly.
+		application in the <Link to="#working-group/my-roles">My roles</Link> section. Note that your application is attached
+		to your role key (see below).  If you have any issues, you can message the group lead in in the <Link to="#forum">Forum</Link> or contact them directly.
 	  </p>
 
       <h4>Your new role key</h4>
       <p>
-        This role requires a new sub-key to be associated with your account.
-        You'll never have to use the key directly, but you will need it in order
-        to perform any duties in the role.
+        This role requires a new account, called a <em>role key</em>, which will be used to carry out any duties associated with the role.
 	  </p>
       <p>
-        We've generated a new role key, <strong>{props.roleKeyName}</strong>, automatically. You can
-              download its backup file using the button below, or from the <Link to="#accounts">My account</Link>
-        &nbsp; section.
+        We've generated a new role key, <strong>{props.roleKeyName}</strong>, automatically.
+        A copy of the backup file should have been downloaded, or you can
+		get a backup from the <Link to="/accounts">My account</Link> section. 	  </p>
+      <p>
+        You can also switch your role key using the Accounts selector in the top right of the screen. It works like
+		  any other account. The application you just completed is associated with your new role key, so you'll need to
+		select <strong>{props.roleKeyName}</strong> in the accounts selector in order to track its progress.
 	  </p>
-      <Message warning>
+      <Message warning icon>
+        <Icon name='warning sign' />
         <strong>Please make sure to save this file in a secure location as it is the only
-              way to restore your role key!</strong>
+          way to restore your role key!</strong>
       </Message>
-      <Container className="cta">
-        <Button content='Download role key backup' icon='download' labelPosition='left' primary />
-        <Button
-          content='Go to My Roles'
-          icon='right arrow'
-          labelPosition='right'
-          color='teal'
-        />
-      </Container>
-
+      <Message warning icon>
+        <Icon name='unlock' />
+        <strong>
+          This role key has been generated with no password!
+          We strongly recommend that you set a password for it in the <Link to="/accounts">My account</Link> section.
+        </strong>
+      </Message>
     </Container>
   )
 }
@@ -1048,17 +1041,31 @@ export type FlowModalProps = ConfirmStakesStageProps & FundSourceSelectorProps &
   applications: OpeningStakeAndApplicationStatus,
   creator: GroupMember
   hasConfirmStep: boolean
-  transactionFee: Balance
   prepareApplicationTransaction: (
     applicationStake: Balance,
     roleStake: Balance,
     questionResponses: any,
-    stakeKeyAddress: AccountId, stakeKeyPassphrase: string,
-    txKeyAddress: AccountId, txKeyPassphrase: string,
+    txKeyAddress: AccountId,
   ) => Promise<any>
   makeApplicationTransaction: () => Promise<any>
   transactionDetails: Map<string, string>
   roleKeyName: string
+
+  // IN PROGRESS: state fix
+  applicationStake: Balance
+  setApplicationStake: (b: Balance) => void
+  roleStake: Balance
+  setRoleStake: (b: Balance) => void
+  appDetails: any
+  setAppDetails: (v: any) => void
+  txKeyAddress: AccountId
+  setTxKeyAddress: (v: AccountId) => void
+  activeStep: ProgressSteps
+  setActiveStep: (v: ProgressSteps) => void
+  txInProgress: boolean
+  setTxInProgress: (v: boolean) => void
+  complete: boolean
+  setComplete: (v: boolean) => void
 }
 
 export const FlowModal = Loadable<FlowModalProps>(
@@ -1066,59 +1073,73 @@ export const FlowModal = Loadable<FlowModalProps>(
     'role',
     'applications',
     'creator',
-    'transactionFee',
     'keypairs',
     'slots',
   ],
   props => {
-    // Capture state
-    const [applicationStake, setApplicationStake] = useState(new u128(0))
-    const [roleStake, setRoleStake] = useState(new u128(0))
-    const [stakeKeyAddress, setStakeKeyAddress] = useState<AccountId>(new AccountId())
-    const [stakeKeyPassphrase, setStakeKeyPassphrase] = useState("")
-    const [txKeyAddress, setTxKeyAddress] = useState<AccountId>(new AccountId())
-    const [txKeyPassphrase, setTxKeyPassphrase] = useState("")
-    const [appDetails, setAppDetails] = useState<any>({})
+    const {
+      applicationStake, setApplicationStake,
+      roleStake, setRoleStake,
+      appDetails, setAppDetails,
+      txKeyAddress, setTxKeyAddress,
+      activeStep, setActiveStep,
+      txInProgress, setTxInProgress,
+      complete, setComplete,
+    } = props
 
-    // Presentation state
-    const [activeStep, setActiveStep] = useState(props.hasConfirmStep ?
-      ProgressSteps.ConfirmStakes :
-      ProgressSteps.ApplicationDetails)
-    const [complete, setComplete] = useState(false)
+    const accCtx = useMyAccount()
+    if (txKeyAddress.isEmpty) {
+      setTxKeyAddress(new AccountId(accCtx.state.address))
+    }
 
     const history = useHistory()
     const cancel = () => {
       if (history.length > 1) {
         history.goBack()
+        return
       }
-      history.push('/roles/')
+      history.push('/working-groups/')
     }
 
+    const scrollToTop = () => window.scrollTo(0, 0)
+
     const enterConfirmStakeState = () => {
+      scrollToTop()
       setActiveStep(ProgressSteps.ConfirmStakes)
     }
 
     const enterApplicationDetailsState = () => {
+      scrollToTop()
       setActiveStep(ProgressSteps.ApplicationDetails)
     }
 
     const enterSubmitApplicationState = () => {
+      scrollToTop()
       props.prepareApplicationTransaction(
-        applicationStake, roleStake,
+        applicationStake,
+        roleStake,
         appDetails,
-        stakeKeyAddress, stakeKeyPassphrase,
-        txKeyAddress, txKeyPassphrase,
-      ).then(() => {
-        setActiveStep(ProgressSteps.SubmitApplication)
-      })
+        txKeyAddress,
+      )
+        .then(() => {
+          setActiveStep(ProgressSteps.SubmitApplication)
+        })
+        .catch((e) => {
+          console.log(e)
+        })
     }
 
     const enterDoneState = () => {
-      // FIXME: What if this fails?
+      scrollToTop()
+      setTxInProgress(true)
       props.makeApplicationTransaction().then(() => {
         setComplete(true)
+        setTxInProgress(false)
         setActiveStep(ProgressSteps.Done)
       })
+        .catch((e) => {
+          setTimeout(() => setTxInProgress(false), 100);
+        })
     }
 
     const setStakeProps = {
@@ -1134,10 +1155,6 @@ export const FlowModal = Loadable<FlowModalProps>(
         nextTransition={enterApplicationDetailsState}
         prevTransition={cancel}
         {...setStakeProps}
-        keyAddress={stakeKeyAddress}
-        setKeyAddress={setStakeKeyAddress}
-        keyPassphrase={stakeKeyPassphrase}
-        setKeyPassphrase={setStakeKeyPassphrase}
       />],
 
       [ProgressSteps.ApplicationDetails, <ApplicationDetailsStage
@@ -1154,50 +1171,55 @@ export const FlowModal = Loadable<FlowModalProps>(
         prevTransition={enterApplicationDetailsState}
         keyAddress={txKeyAddress}
         setKeyAddress={setTxKeyAddress}
-        keyPassphrase={txKeyPassphrase}
-        setKeyPassphrase={setTxKeyPassphrase}
         transactionDetails={props.transactionDetails}
+        totalStake={Add(applicationStake, roleStake)}
       />],
 
       [ProgressSteps.Done, <DoneStage {...props} roleKeyName={props.roleKeyName} />],
     ])
 
+    const cancelText = complete ? "Close" : "Cancel application"
+
     return (
-      <Modal size='fullscreen' open={true} dimmer='inverted' className="apply-flow">
-        <Modal.Content>
-          <Container>
-            <Grid columns="equal">
-              <Grid.Column width={11} className="title">
-                <Label as='h1' color='green' size='huge' ribbon>
-                  <Icon name='heart' />
-                  Applying for
+      <Container className="apply-flow">
+        <div className="dimmer"></div>
+        <Container className="content">
+          <Grid columns="equal">
+            <Grid.Column width={11} className="title">
+              <Label as='h1' color='green' size='huge' ribbon>
+                <Icon name='heart' />
+                Applying for
                   <Label.Detail>{props.role.job.title}</Label.Detail>
-                </Label>
-              </Grid.Column>
-              <Grid.Column width={5} className="cancel">
-                <a onClick={() => cancel()}>
-                  <Icon name='cancel' /> Cancel application
-                          </a>
-              </Grid.Column>
-            </Grid>
-            <Grid columns="equal">
-              <Grid.Column width={11} className="main">
-                <ProgressStepsView activeStep={activeStep} hasConfirmStep={props.hasConfirmStep} />
-                {stages.get(activeStep)}
-              </Grid.Column>
-              <Grid.Column width={5} className="summary">
-                <Header as='h3'>{props.role.headline}</Header>
-                <Label as='h1' size='large' ribbon='right' className="fluid standout">
-                  Reward
+              </Label>
+            </Grid.Column>
+            <Grid.Column width={5} className="cancel">
+              <a onClick={() => cancel()}>
+                <Icon name='cancel' /> {cancelText}
+              </a>
+            </Grid.Column>
+          </Grid>
+          <Grid columns="equal">
+            <Grid.Column width={11} className="main">
+              <ProgressStepsView activeStep={activeStep} hasConfirmStep={props.hasConfirmStep} />
+              {stages.get(activeStep)}
+            </Grid.Column>
+            <Grid.Column width={5} className="summary">
+              <Header as='h3'>{props.role.headline}</Header>
+              <Label as='h1' size='large' ribbon='right' className="fluid standout">
+                Reward
                         <Label.Detail>{props.role.reward}</Label.Detail>
-                </Label>
-                <OpeningBodyApplicationsStatus {...props.applications} applied={complete} />
-                <h5>Group lead</h5>
-                <GroupMemberView {...props.creator} inset={true} />
-              </Grid.Column>
-            </Grid>
-          </Container>
-        </Modal.Content>
-      </Modal>
+              </Label>
+              <OpeningBodyApplicationsStatus {...props.applications} applied={complete} />
+              <h5>Group lead</h5>
+              <GroupMemberView {...props.creator} inset={true} />
+            </Grid.Column>
+          </Grid>
+        </Container>
+        {txInProgress &&
+          <div className="loading">
+            <div className="spinner"></div>
+          </div>
+        }
+      </Container>
     )
   })

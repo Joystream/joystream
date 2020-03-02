@@ -6,15 +6,14 @@ export default ([
   {
     Component: Roles,
     display: {
-      needsAccounts: true,
       needsApi: [
         'query.actors.actorAccountIds'
       ]
     },
     i18n: {
-      defaultValue: 'Roles'
+      defaultValue: 'Working groups'
     },
-    icon: 'server',
-    name: 'roles'
+    icon: 'users',
+    name: 'working-groups'
   }
 ] as Routes);

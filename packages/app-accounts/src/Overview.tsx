@@ -14,9 +14,7 @@ import { Button, CardGrid } from '@polkadot/react-components';
 
 import CreateModal from './modals/Create';
 import ImportModal from './modals/Import';
-import QrModal from './modals/Qr';
 import Account from './Account';
-import Banner from './Banner';
 import translate from './translate';
 
 interface Props extends ComponentProps, I18nProps {
@@ -39,16 +37,13 @@ async function queryLedger (): Promise<void> {
 function Overview ({ accounts, onStatusChange, t }: Props): React.ReactElement<Props> {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
-  const [isQrOpen, setIsQrOpen] = useState(false);
-  const emptyScreen = !(isCreateOpen || isImportOpen || isQrOpen) && accounts && (Object.keys(accounts).length === 0);
+  const emptyScreen = !(isCreateOpen || isImportOpen) && accounts && (Object.keys(accounts).length === 0);
 
   const _toggleCreate = (): void => setIsCreateOpen(!isCreateOpen);
   const _toggleImport = (): void => setIsImportOpen(!isImportOpen);
-  const _toggleQr = (): void => setIsQrOpen(!isQrOpen);
 
   return (
     <CardGrid
-      banner={<Banner />}
       buttons={
         <Button.Group>
           <Button
@@ -64,14 +59,7 @@ function Overview ({ accounts, onStatusChange, t }: Props): React.ReactElement<P
             label={t('Restore JSON')}
             onClick={_toggleImport}
           />
-          <Button.Or />
-          <Button
-            icon='qrcode'
-            isPrimary
-            label={t('Add via Qr')}
-            onClick={_toggleQr}
-          />
-          {isLedger() && (
+         {isLedger() && (
             <>
               <Button.Or />
               <Button
@@ -99,13 +87,7 @@ function Overview ({ accounts, onStatusChange, t }: Props): React.ReactElement<P
           onStatusChange={onStatusChange}
         />
       )}
-      {isQrOpen && (
-        <QrModal
-          onClose={_toggleQr}
-          onStatusChange={onStatusChange}
-        />
-      )}
-      {accounts && Object.keys(accounts).map((address): React.ReactNode => (
+     {accounts && Object.keys(accounts).map((address): React.ReactNode => (
         <Account
           address={address}
           key={address}

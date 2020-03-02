@@ -7,7 +7,7 @@ import { Balance } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 import Identicon from '@polkadot/react-identicon';
 import { Actor } from '@joystream/types/roles';
-import { Profile } from '@joystream/types/members';
+import { IProfile } from '@joystream/types/members';
 import { Text } from '@polkadot/types';
 
 type ActorProps = {
@@ -44,7 +44,7 @@ export function MemoView(props: MemoProps) {
 }
 
 type ProfileProps = {
-  profile: Profile
+  profile: IProfile
 }
 
 export function HandleView(props: ProfileProps) {
@@ -89,7 +89,7 @@ export function ActorDetailsView(props: ActorDetailsProps) {
 
 export type GroupMember = {
   actor: Actor
-  profile: Profile
+  profile: IProfile
   title: string
   lead: boolean
   stake?: Balance
