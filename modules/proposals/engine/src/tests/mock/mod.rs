@@ -1,38 +1,52 @@
+//! Mock runtime for the module testing.
+//!
+//! Submodules:
+//! - stakes: contains support for mocking external 'stake' module
+//! - balance_restorator: restores balances after unstaking
+//! - proposals: provides types for proposal execution tests
+//!
+
 #![cfg(test)]
-
-pub use system;
-
 pub use primitives::{Blake2Hasher, H256};
 pub use runtime_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
-    traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
+    traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize, Zero},
     weights::Weight,
     BuildStorage, Perbill,
 };
+use srml_support::{impl_outer_dispatch, impl_outer_event, impl_outer_origin, parameter_types};
+pub use system;
 
-use proposal_engine::VotersParameters;
-use srml_support::{impl_outer_dispatch, impl_outer_origin, parameter_types};
+mod balance_manager;
+mod proposals;
+mod stakes;
+
+use balance_manager::*;
+pub use proposals::*;
+pub use stakes::*;
+
+// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Test;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
-parameter_types! {
-    pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
-    pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
-}
-
 impl_outer_dispatch! {
     pub enum Call for Test where origin: Origin {
-        codex::ProposalCodex,
         proposals::ProposalsEngine,
+    }
+}
+
+mod engine {
+    pub use crate::Event;
+}
+
+impl_outer_event! {
+    pub enum TestEvent for Test {
+        balances<T>,
+        engine<T>,
     }
 }
 
@@ -50,7 +64,7 @@ impl balances::Trait for Test {
     /// What to do if a new account is created.
     type OnNewAccount = ();
 
-    type Event = ();
+    type Event = TestEvent;
 
     type DustRemoval = ();
     type TransferPayment = ();
@@ -62,7 +76,7 @@ impl balances::Trait for Test {
 impl stake::Trait for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
+    type StakingEventsHandler = BalanceManagerStakingEventsHandler;
     type StakeId = u64;
     type SlashId = u64;
 }
@@ -75,16 +89,16 @@ parameter_types! {
     pub const MaxActiveProposalLimit: u32 = 100;
 }
 
-impl proposal_engine::Trait for Test {
-    type Event = ();
+impl crate::Trait for Test {
+    type Event = TestEvent;
 
     type ProposalOrigin = system::EnsureSigned<Self::AccountId>;
 
     type VoteOrigin = system::EnsureSigned<Self::AccountId>;
 
-    type TotalVotersCounter = MockVotersParameters;
+    type TotalVotersCounter = ();
 
-    type ProposalCodeDecoder = crate::ProposalType;
+    type ProposalCodeDecoder = ProposalType;
 
     type ProposalId = u32;
 
@@ -92,7 +106,7 @@ impl proposal_engine::Trait for Test {
 
     type VoterId = u64;
 
-    type StakeHandlerProvider = proposal_engine::DefaultStakeHandlerProvider;
+    type StakeHandlerProvider = stakes::TestStakeHandlerProvider;
 
     type CancellationFee = CancellationFee;
 
@@ -105,21 +119,21 @@ impl proposal_engine::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
 }
 
-pub struct MockVotersParameters;
-impl VotersParameters for MockVotersParameters {
+// If changing count is required, we can upgrade the implementation as shown here:
+// https://substrate.dev/recipes/3-entrees/testing/externalities.html
+impl crate::VotersParameters for () {
     fn total_voters_count() -> u32 {
         4
     }
 }
 
 parameter_types! {
-    pub const TextProposalMaxLength: u32 = 20_000;
-    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 20_000;
-}
-
-impl crate::Trait for Test {
-    type TextProposalMaxLength = TextProposalMaxLength;
-    type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
+    pub const BlockHashCount: u64 = 250;
+    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockLength: u32 = 2 * 1024;
+    pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const MinimumPeriod: u64 = 5;
+    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl system::Trait for Test {
@@ -132,7 +146,7 @@ impl system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = ();
+    type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
     type MaximumBlockLength = MaximumBlockLength;
@@ -156,6 +170,6 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
     t.into()
 }
 
-pub type ProposalCodex = crate::Module<Test>;
-pub type ProposalsEngine = proposal_engine::Module<Test>;
+pub type ProposalsEngine = crate::Module<Test>;
+pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;

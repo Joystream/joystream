@@ -3,17 +3,21 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use rstd::convert::TryFrom;
 use rstd::prelude::*;
 
-use rstd::str::from_utf8;
-use srml_support::{dispatch, print};
+use srml_support::dispatch;
 
 use crate::{ProposalCodeDecoder, ProposalExecutable};
+
+use super::*;
 
 /// Defines allowed proposals types. Integer value serves as proposal_type_id.
 #[derive(Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
 #[repr(u32)]
 pub enum ProposalType {
-    /// Text(signal) proposal type
-    Text = 1,
+    /// Dummy(Text) proposal type
+    Dummy = 1,
+
+    /// Testing proposal type for faults
+    Faulty = 10001,
 }
 
 impl ProposalType {
@@ -22,14 +26,17 @@ impl ProposalType {
         proposal_data: Vec<u8>,
     ) -> Result<Box<dyn ProposalExecutable>, &'static str> {
         match self {
-            ProposalType::Text => TextProposalExecutable::decode(&mut &proposal_data[..])
+            ProposalType::Dummy => DummyExecutable::decode(&mut &proposal_data[..])
+                .map_err(|err| err.what())
+                .map(|obj| Box::new(obj) as Box<dyn ProposalExecutable>),
+            ProposalType::Faulty => FaultyExecutable::decode(&mut &proposal_data[..])
                 .map_err(|err| err.what())
                 .map(|obj| Box::new(obj) as Box<dyn ProposalExecutable>),
         }
     }
 }
 
-impl ProposalCodeDecoder for ProposalType {
+impl ProposalCodeDecoder<Test> for ProposalType {
     fn decode_proposal(
         proposal_type: u32,
         proposal_code: Vec<u8>,
@@ -40,30 +47,37 @@ impl ProposalCodeDecoder for ProposalType {
     }
 }
 
-/// Text (signal) proposal executable code wrapper. Prints its content on execution.
+/// Testing proposal type
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
-pub struct TextProposalExecutable {
-    /// Text proposal title
+pub struct DummyExecutable {
     pub title: Vec<u8>,
-
-    /// Text proposal body
-    pub body: Vec<u8>,
+    pub description: Vec<u8>,
 }
 
-impl TextProposalExecutable {
-    /// Converts text proposal type to proposal_type_id
+impl DummyExecutable {
     pub fn proposal_type(&self) -> u32 {
-        ProposalType::Text.into()
+        ProposalType::Dummy.into()
     }
 }
 
-impl ProposalExecutable for TextProposalExecutable {
+impl ProposalExecutable for DummyExecutable {
     fn execute(&self) -> dispatch::Result {
-        print("Proposal: ");
-        print(from_utf8(self.title.as_slice()).unwrap());
-        print("Description:");
-        print(from_utf8(self.body.as_slice()).unwrap());
-
         Ok(())
+    }
+}
+
+/// Faulty proposal executable code wrapper. Used for failed proposal execution tests.
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
+pub struct FaultyExecutable;
+impl ProposalExecutable for FaultyExecutable {
+    fn execute(&self) -> dispatch::Result {
+        Err("ExecutionFailed")
+    }
+}
+
+impl FaultyExecutable {
+    /// Converts faulty proposal type to proposal_type_id
+    pub fn proposal_type(&self) -> u32 {
+        ProposalType::Faulty.into()
     }
 }
