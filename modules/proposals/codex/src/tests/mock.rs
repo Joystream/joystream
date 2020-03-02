@@ -67,6 +67,14 @@ impl stake::Trait for Test {
     type SlashId = u64;
 }
 
+parameter_types! {
+    pub const CancellationFee: u64 = 5;
+    pub const RejectionFee: u64 = 3;
+    pub const TitleMaxLength: u32 = 100;
+    pub const DescriptionMaxLength: u32 = 10000;
+    pub const MaxActiveProposalLimit: u32 = 100;
+}
+
 impl proposal_engine::Trait for Test {
     type Event = ();
 
@@ -85,6 +93,16 @@ impl proposal_engine::Trait for Test {
     type VoterId = u64;
 
     type StakeHandlerProvider = proposal_engine::DefaultStakeHandlerProvider;
+
+    type CancellationFee = CancellationFee;
+
+    type RejectionFee = RejectionFee;
+
+    type TitleMaxLength = TitleMaxLength;
+
+    type DescriptionMaxLength = DescriptionMaxLength;
+
+    type MaxActiveProposalLimit = MaxActiveProposalLimit;
 }
 
 parameter_types! {
@@ -112,7 +130,15 @@ impl VotersParameters for MockVotersParameters {
     }
 }
 
-impl crate::Trait for Test {}
+parameter_types! {
+    pub const TextProposalMaxLength: u32 = 20_000;
+    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 20_000;
+}
+
+impl crate::Trait for Test {
+    type TextProposalMaxLength = TextProposalMaxLength;
+    type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
+}
 
 impl system::Trait for Test {
     type Origin = Origin;

@@ -5,6 +5,7 @@ use rstd::prelude::*;
 
 use crate::{ProposalCodeDecoder, ProposalExecutable};
 
+pub mod parameters;
 mod runtime_upgrade;
 mod text_proposal;
 

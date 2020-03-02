@@ -27,9 +27,14 @@ use srml_support::{decl_error, decl_module, decl_storage, ensure};
 use system::RawOrigin;
 
 /// 'Proposals codex' substrate module Trait
-pub trait Trait: system::Trait + proposal_engine::Trait + proposal_discussion::Trait {}
+pub trait Trait: system::Trait + proposal_engine::Trait + proposal_discussion::Trait {
+    /// Defines max allowed text proposal length.
+    type TextProposalMaxLength: Get<u32>;
 
-use srml_support::traits::Currency;
+    /// Defines max wasm code length of the runtime upgrade proposal.
+    type RuntimeUpgradeWasmProposalMaxLength: Get<u32>;
+}
+use srml_support::traits::{Currency, Get};
 
 /// Balance alias
 pub type BalanceOf<T> =
@@ -38,11 +43,6 @@ pub type BalanceOf<T> =
 /// Balance alias for staking
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
-
-// Defines max allowed text proposal text length. Can be override in the config.
-const DEFAULT_TEXT_PROPOSAL_MAX_LEN: u32 = 20_000;
-// Defines max allowed text proposal text length. Can be override in the config.
-const DEFAULT_RUNTIME_PROPOSAL_WASM_MAX_LEN: u32 = 20_000;
 
 decl_error! {
     pub enum Error {
@@ -63,12 +63,6 @@ decl_error! {
 // Storage for the proposals codex module
 decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalCodex{
-        /// Defines max allowed text proposal text length.
-        pub TextProposalMaxLen get(text_max_len) config(): u32 = DEFAULT_TEXT_PROPOSAL_MAX_LEN;
-
-        /// Defines max allowed runtime upgrade proposal wasm code length.
-        pub RuntimeUpgradeMaxLen get(wasm_max_len) config(): u32 = DEFAULT_RUNTIME_PROPOSAL_WASM_MAX_LEN;
-
         /// Map proposal id to its discussion thread id
         pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
             map T::ProposalId => T::ThreadId;
@@ -85,27 +79,19 @@ decl_module! {
         pub fn create_text_proposal(
             origin,
             title: Vec<u8>,
-            body: Vec<u8>,
+            description: Vec<u8>,
             text: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
         ) {
-            let parameters = crate::ProposalParameters {
-                voting_period: T::BlockNumber::from(50000u32),
-                grace_period: T::BlockNumber::from(10000u32),
-                approval_quorum_percentage: 40,
-                approval_threshold_percentage: 51,
-                slashing_quorum_percentage: 80,
-                slashing_threshold_percentage: 80,
-                required_stake: Some(<BalanceOf<T>>::from(500u32))
-            };
+            let parameters = proposal_types::parameters::text_proposal::<T>();
 
             ensure!(!text.is_empty(), Error::TextProposalIsEmpty);
-            ensure!(text.len() as u32 <=  Self::text_max_len(),
+            ensure!(text.len() as u32 <=  T::TextProposalMaxLength::get(),
                 Error::TextProposalSizeExceeded);
 
             let text_proposal = TextProposalExecutable{
                 title: title.clone(),
-                body: body.clone(),
+                description: description.clone(),
                 text,
                };
             let proposal_code = text_proposal.encode();
@@ -121,7 +107,7 @@ decl_module! {
                 cloned_origin2,
                 parameters,
                 title,
-                body,
+                description,
                 stake_balance,
                 text_proposal.proposal_type(),
                 proposal_code,
@@ -134,27 +120,19 @@ decl_module! {
         pub fn create_runtime_upgrade_proposal(
             origin,
             title: Vec<u8>,
-            body: Vec<u8>,
+            description: Vec<u8>,
             wasm: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
         ) {
-            let parameters = crate::ProposalParameters {
-                voting_period: T::BlockNumber::from(50000u32),
-                grace_period: T::BlockNumber::from(10000u32),
-                approval_quorum_percentage: 80,
-                approval_threshold_percentage: 80,
-                slashing_quorum_percentage: 80,
-                slashing_threshold_percentage: 80,
-                required_stake: Some(<BalanceOf<T>>::from(50000u32))
-            };
+            let parameters = proposal_types::parameters::upgrade_runtime::<T>();
 
             ensure!(!wasm.is_empty(), Error::RuntimeProposalIsEmpty);
-            ensure!(wasm.len() as u32 <= Self::wasm_max_len(),
+            ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
                 Error::RuntimeProposalSizeExceeded);
 
             let proposal = RuntimeUpgradeProposalExecutable{
                 title: title.clone(),
-                body: body.clone(),
+                description: description.clone(),
                 wasm,
                 marker : PhantomData::<T>
                };
@@ -171,7 +149,7 @@ decl_module! {
                 cloned_origin2,
                 parameters,
                 title,
-                body,
+                description,
                 stake_balance,
                 proposal.proposal_type(),
                 proposal_code,

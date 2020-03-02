@@ -12,8 +12,8 @@ pub struct TextProposalExecutable {
     /// Text proposal title
     pub title: Vec<u8>,
 
-    /// Text proposal body (description)
-    pub body: Vec<u8>,
+    /// Text proposal description
+    pub description: Vec<u8>,
 
     /// Text proposal main text
     pub text: Vec<u8>,
@@ -31,7 +31,7 @@ impl ProposalExecutable for TextProposalExecutable {
         print("Proposal: ");
         print(from_utf8(self.title.as_slice()).unwrap());
         print("Description:");
-        print(from_utf8(self.body.as_slice()).unwrap());
+        print(from_utf8(self.description.as_slice()).unwrap());
 
         Ok(())
     }

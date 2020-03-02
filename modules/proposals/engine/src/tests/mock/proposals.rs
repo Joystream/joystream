@@ -51,7 +51,7 @@ impl ProposalCodeDecoder<Test> for ProposalType {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
 pub struct DummyExecutable {
     pub title: Vec<u8>,
-    pub body: Vec<u8>,
+    pub description: Vec<u8>,
 }
 
 impl DummyExecutable {

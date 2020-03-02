@@ -19,13 +19,15 @@
 
 // TODO: Test module after the https://github.com/Joystream/substrate-runtime-joystream/issues/161
 // issue will be fixed: "Fix stake module and allow slashing and unstaking in the same block."
+// TODO: Test cancellation, rejection fees
 
 pub use types::BalanceOf;
 use types::FinalizedProposalData;
+use types::ProposalStakeManager;
 pub use types::VotingResults;
 pub use types::{
-    ApprovedProposalStatus, FinalizationStatus, Proposal, ProposalDecisionStatus,
-    ProposalParameters, ProposalStatus,
+    ApprovedProposalStatus, FinalizationData, Proposal, ProposalDecisionStatus, ProposalParameters,
+    ProposalStatus,
 };
 pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
@@ -40,21 +42,11 @@ mod tests;
 use rstd::prelude::*;
 
 use runtime_primitives::traits::{EnsureOrigin, Zero};
+use srml_support::traits::Get;
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
 };
 use system::ensure_root;
-
-// Max allowed proposal title length. Can be used if config value is not filled.
-const DEFAULT_TITLE_MAX_LEN: u32 = 100;
-// Max allowed proposal body length. Can be used if config value is not filled.
-const DEFAULT_BODY_MAX_LEN: u32 = 10_000;
-// Max simultaneous active proposals number.
-const MAX_ACTIVE_PROPOSALS_NUMBER: u32 = 100;
-// Default proposal cancellation fee to prevent spamming.
-const DEFAULT_CANCELLATION_FEE: u32 = 5;
-// Default proposal rejection fee to prevent spamming.
-const DEFAULT_REJECTION_FEE: u32 = 17;
 
 /// Proposals engine trait.
 pub trait Trait: system::Trait + timestamp::Trait + stake::Trait {
@@ -84,6 +76,21 @@ pub trait Trait: system::Trait + timestamp::Trait + stake::Trait {
 
     /// Provides stake logic implementation. Can be used to mock stake logic.
     type StakeHandlerProvider: StakeHandlerProvider<Self>;
+
+    /// The fee is applied when cancel the proposal. A fee would be slashed (burned).
+    type CancellationFee: Get<BalanceOf<Self>>;
+
+    /// The fee is applied when the proposal gets rejected. A fee would be slashed (burned).
+    type RejectionFee: Get<BalanceOf<Self>>;
+
+    /// Defines max allowed proposal title length.
+    type TitleMaxLength: Get<u32>;
+
+    /// Defines max allowed proposal description length.
+    type DescriptionMaxLength: Get<u32>;
+
+    /// Defines max simultaneous active proposals number.
+    type MaxActiveProposalLimit: Get<u32>;
 }
 
 decl_event!(
@@ -93,6 +100,7 @@ decl_event!(
         <T as Trait>::ProposalId,
         <T as Trait>::ProposerId,
         <T as Trait>::VoterId,
+        <T as system::Trait>::BlockNumber,
     {
     	/// Emits on proposal creation.
         /// Params:
@@ -104,7 +112,7 @@ decl_event!(
         /// Params:
         /// - Id of a updated proposal.
         /// - New proposal status
-        ProposalStatusUpdated(ProposalId, ProposalStatus),
+        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber>),
 
         /// Emits on voting for the proposal
         /// Params:
@@ -139,23 +147,6 @@ decl_storage! {
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
         pub VoteExistsByProposalByVoter get(fn vote_by_proposal_by_voter):
             double_map T::ProposalId, twox_256(T::VoterId) => VoteKind;
-
-        /// Defines max allowed proposal title length. Can be configured.
-        pub TitleMaxLen get(title_max_len) config(): u32 = DEFAULT_TITLE_MAX_LEN;
-
-        /// Defines max allowed proposal body length. Can be configured.
-        pub BodyMaxLen get(body_max_len) config(): u32 = DEFAULT_BODY_MAX_LEN;
-
-        /// Defines max simultaneous active proposals number. Can be configured.
-        pub MaxActiveProposals get(max_active_proposals) config(): u32 = MAX_ACTIVE_PROPOSALS_NUMBER;
-
-        /// A fee to be slashed (burn) in case a proposer decides to cancel a proposal.
-        pub CancellationFee get(cancellation_fee) config(): BalanceOf<T> =
-            BalanceOf::<T>::from(DEFAULT_CANCELLATION_FEE);
-
-        /// A fee to be slashed (burn) in case a proposal was rejected.
-        pub RejectionFee get(rejection_fee) config(): BalanceOf<T> =
-            BalanceOf::<T>::from(DEFAULT_REJECTION_FEE);
     }
 }
 
@@ -253,7 +244,7 @@ impl<T: Trait> Module<T> {
         origin: T::Origin,
         parameters: ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
         title: Vec<u8>,
-        body: Vec<u8>,
+        description: Vec<u8>,
         stake_balance: Option<types::BalanceOf<T>>,
         proposal_type: u32,
         proposal_code: Vec<u8>,
@@ -264,7 +255,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_create_proposal_parameters_are_valid(
             &parameters,
             &title,
-            &body,
+            &description,
             stake_balance,
         )?;
 
@@ -277,22 +268,18 @@ impl<T: Trait> Module<T> {
         // Check stake_balance for value and create stake if value exists, else take None
         // If create_stake() returns error - return error from extrinsic
         let stake_id = stake_balance
-            .map(|stake_amount| {
-                T::StakeHandlerProvider::stakes().create_stake(stake_amount, account_id)
-            })
+            .map(|stake_amount| ProposalStakeManager::<T>::create_stake(stake_amount, account_id))
             .transpose()?;
 
         let new_proposal = Proposal {
             created_at: Self::current_block(),
             parameters,
             title,
-            body,
+            description,
             proposer_id: proposer_id.clone(),
             proposal_type,
             status: ProposalStatus::Active,
-            approved_at: None,
             voting_results: VotingResults::default(),
-            finalized_at: None,
             stake_id,
         };
 
@@ -318,18 +305,21 @@ impl<T: Trait> Module<T> {
     // Enumerates through active proposals. Tally Voting results.
     // Returns proposals with finalized status and id
     fn get_finalized_proposals() -> Vec<FinalizedProposal<T>> {
-        // enumerate active proposals id and gather finalization data
+        // Enumerate active proposals id and gather finalization data.
+        // Skip proposals with unfinished voting.
         <ActiveProposalIds<T>>::enumerate()
             .filter_map(|(proposal_id, _)| {
                 // load current proposal
                 let proposal = Self::proposals(proposal_id);
 
+                // Calculates votes, takes in account voting period expiration.
+                // If voting process is in progress, then decision status is None.
                 let decision_status = proposal.define_proposal_decision_status(
                     T::TotalVotersCounter::total_voters_count(),
                     Self::current_block(),
                 );
 
-                // map to FinalizedProposalData or None
+                // map to FinalizedProposalData if decision for the proposal is made or return None
                 decision_status.map(|status| FinalizedProposalData {
                     proposal_id,
                     proposal,
@@ -343,38 +333,45 @@ impl<T: Trait> Module<T> {
     // Executes approved proposal code
     fn execute_proposal(proposal_id: T::ProposalId) {
         let mut proposal = Self::proposals(proposal_id);
-        let proposal_code = Self::proposal_codes(proposal_id);
 
-        let proposal_code_result =
-            T::ProposalCodeDecoder::decode_proposal(proposal.proposal_type, proposal_code);
+        // Execute only proposals with correct status
+        if let ProposalStatus::Finalized(finalized_status) = proposal.status.clone() {
+            let proposal_code = Self::proposal_codes(proposal_id);
 
-        let approved_proposal_status = match proposal_code_result {
-            Ok(proposal_code) => {
-                if let Err(error) = proposal_code.execute() {
-                    ApprovedProposalStatus::failed_execution(error)
-                } else {
-                    ApprovedProposalStatus::Executed
+            let proposal_code_result =
+                T::ProposalCodeDecoder::decode_proposal(proposal.proposal_type, proposal_code);
+
+            let approved_proposal_status = match proposal_code_result {
+                Ok(proposal_code) => {
+                    if let Err(error) = proposal_code.execute() {
+                        ApprovedProposalStatus::failed_execution(error)
+                    } else {
+                        ApprovedProposalStatus::Executed
+                    }
                 }
-            }
-            Err(error) => ApprovedProposalStatus::failed_execution(error),
-        };
+                Err(error) => ApprovedProposalStatus::failed_execution(error),
+            };
 
-        let proposal_execution_status = ProposalStatus::approved(approved_proposal_status);
+            let proposal_execution_status =
+                finalized_status.create_approved_proposal_status(approved_proposal_status);
 
-        proposal.status = proposal_execution_status.clone();
-        <Proposals<T>>::insert(proposal_id, proposal);
+            proposal.status = proposal_execution_status.clone();
+            <Proposals<T>>::insert(proposal_id, proposal);
 
-        Self::deposit_event(RawEvent::ProposalStatusUpdated(
-            proposal_id,
-            proposal_execution_status,
-        ));
+            Self::deposit_event(RawEvent::ProposalStatusUpdated(
+                proposal_id,
+                proposal_execution_status,
+            ));
+        }
 
+        // Remove proposals from the 'pending execution' queue even in case of not finalized status
+        // to prevent eternal cycles.
         <PendingExecutionProposalIds<T>>::remove(&proposal_id);
     }
 
     // Performs all actions on proposal finalization:
     // - clean active proposal cache
-    // - update proposal status fields (status, finalized_at, approved_at)
+    // - update proposal status fields (status, finalized_at)
     // - add to pending execution proposal cache if approved
     // - slash and unstake proposal stake if stake exists
     // - fire an event
@@ -385,7 +382,6 @@ impl<T: Trait> Module<T> {
         let mut proposal = Self::proposals(proposal_id);
 
         if let ProposalDecisionStatus::Approved { .. } = decision_status {
-            proposal.approved_at = Some(Self::current_block());
             <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
         }
 
@@ -398,11 +394,10 @@ impl<T: Trait> Module<T> {
         }
 
         // create finalized proposal status with error if any
-        let new_proposal_status =
-            ProposalStatus::finalized_with_error(decision_status, slash_and_unstake_result.err());
+        let new_proposal_status = //TODO rename without an error
+            ProposalStatus::finalized_with_error(decision_status, slash_and_unstake_result.err(), Self::current_block());
 
         proposal.status = new_proposal_status.clone();
-        proposal.finalized_at = Some(Self::current_block());
         <Proposals<T>>::insert(proposal_id, proposal);
 
         Self::deposit_event(RawEvent::ProposalStatusUpdated(
@@ -419,10 +414,10 @@ impl<T: Trait> Module<T> {
         // only if stake exists
         if let Some(stake_id) = current_stake_id {
             if !slash_balance.is_zero() {
-                T::StakeHandlerProvider::stakes().slash(stake_id, slash_balance)?;
+                ProposalStakeManager::<T>::slash(stake_id, slash_balance)?;
             }
 
-            T::StakeHandlerProvider::stakes().remove_stake(stake_id)?;
+            ProposalStakeManager::<T>::remove_stake(stake_id)?;
         }
 
         Ok(())
@@ -435,12 +430,12 @@ impl<T: Trait> Module<T> {
     ) -> types::BalanceOf<T> {
         match decision_status {
             ProposalDecisionStatus::Rejected | ProposalDecisionStatus::Expired => {
-                Self::rejection_fee()
+                T::RejectionFee::get()
             }
             ProposalDecisionStatus::Approved { .. } | ProposalDecisionStatus::Vetoed => {
                 BalanceOf::<T>::zero()
             }
-            ProposalDecisionStatus::Canceled => Self::cancellation_fee(),
+            ProposalDecisionStatus::Canceled => T::CancellationFee::get(),
             ProposalDecisionStatus::Slashed => proposal_parameters
                 .required_stake
                 .clone()
@@ -492,18 +487,18 @@ impl<T: Trait> Module<T> {
     ) -> dispatch::Result {
         ensure!(!title.is_empty(), errors::MSG_EMPTY_TITLE_PROVIDED);
         ensure!(
-            title.len() as u32 <= Self::title_max_len(),
+            title.len() as u32 <= T::TitleMaxLength::get(),
             errors::MSG_TOO_LONG_TITLE
         );
 
         ensure!(!body.is_empty(), errors::MSG_EMPTY_BODY_PROVIDED);
         ensure!(
-            body.len() as u32 <= Self::body_max_len(),
+            body.len() as u32 <= T::DescriptionMaxLength::get(),
             errors::MSG_TOO_LONG_BODY
         );
 
         ensure!(
-            (Self::active_proposal_count()) < Self::max_active_proposals(),
+            (Self::active_proposal_count()) < T::MaxActiveProposalLimit::get(),
             errors::MSG_MAX_ACTIVE_PROPOSAL_NUMBER_EXCEEDED
         );
 
