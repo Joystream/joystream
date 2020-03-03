@@ -10,6 +10,7 @@ pub use runtime_primitives::{
     BuildStorage, Perbill,
 };
 
+use crate::{ActorOriginValidator};
 use srml_support::{impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
@@ -36,7 +37,7 @@ parameter_types! {
 }
 
 impl crate::Trait for Test {
-    type ThreadAuthorOrigin = system::EnsureSigned<Self::AccountId>;
+    type ThreadAuthorOriginValidator = ();
     type PostAuthorOrigin = system::EnsureSigned<Self::AccountId>;
     type ThreadId = u32;
     type PostId = u32;
@@ -46,6 +47,12 @@ impl crate::Trait for Test {
     type ThreadTitleLengthLimit = ThreadTitleLengthLimit;
     type PostLengthLimit = PostLengthLimit;
     type MaxThreadInARowNumber = MaxThreadInARowNumber;
+}
+
+impl ActorOriginValidator<Origin, u64> for () {
+    fn validate_actor_origin(_: Origin, actor_id: u64) -> bool {
+        actor_id == 1
+    }
 }
 
 impl system::Trait for Test {

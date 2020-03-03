@@ -26,6 +26,7 @@ use runtime_primitives::traits::EnsureOrigin;
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
 use srml_support::traits::Get;
+use types::ActorOriginValidator;
 use types::{Post, Thread, ThreadCounter};
 
 // TODO: create events
@@ -41,11 +42,12 @@ pub(crate) const MSG_EMPTY_POST_PROVIDED: &str = "Post cannot be empty";
 pub(crate) const MSG_TOO_LONG_POST: &str = "Post is too long";
 pub(crate) const MSG_MAX_THREAD_IN_A_ROW_LIMIT_EXCEEDED: &str =
     "Max number of threads by same author in a row limit exceeded";
+pub(crate) const MSG_INVALID_AUTHOR_ORIGIN: &str = "Invalid origin and thread_author_id";
 
 /// 'Proposal discussion' substrate module Trait
 pub trait Trait: system::Trait {
     /// Origin from which thread author must come.
-    type ThreadAuthorOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
+    type ThreadAuthorOriginValidator: ActorOriginValidator<Self::Origin, Self::ThreadAuthorId>;
 
     /// Origin from which commenter must come.
     type PostAuthorOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
@@ -104,7 +106,7 @@ decl_module! {
 
        /// Adds a post with author origin check.
        pub fn add_post(origin, thread_id : T::ThreadId, text : Vec<u8>) {
-            let account_id = T::ThreadAuthorOrigin::ensure_origin(origin)?;
+            let account_id = T::PostAuthorOrigin::ensure_origin(origin)?;
             let post_author_id = T::PostAuthorId::from(account_id);
 
             ensure!(<ThreadById<T>>::exists(thread_id), MSG_THREAD_DOESNT_EXIST);
@@ -136,7 +138,7 @@ decl_module! {
 
        /// Updates a post with author origin check. Update attempts number is limited.
       pub fn update_post(origin, thread_id: T::ThreadId,  post_id : T::PostId, text : Vec<u8>) {
-            let account_id = T::ThreadAuthorOrigin::ensure_origin(origin)?;
+            let account_id = T::PostAuthorOrigin::ensure_origin(origin)?;
             let post_author_id = T::PostAuthorId::from(account_id);
 
             ensure!(<ThreadById<T>>::exists(thread_id), MSG_THREAD_DOESNT_EXIST);
@@ -176,9 +178,15 @@ impl<T: Trait> Module<T> {
 
     /// Create the discussion thread. Cannot add more threads than 'predefined limit = MaxThreadInARowNumber'
     /// times in a row by the same author.
-    pub fn create_thread(origin: T::Origin, title: Vec<u8>) -> Result<T::ThreadId, &'static str> {
-        let account_id = T::ThreadAuthorOrigin::ensure_origin(origin)?;
-        let thread_author_id = T::ThreadAuthorId::from(account_id);
+    pub fn create_thread(
+        origin: T::Origin,
+        thread_author_id: T::ThreadAuthorId,
+        title: Vec<u8>,
+    ) -> Result<T::ThreadId, &'static str> {
+        ensure!(
+            T::ThreadAuthorOriginValidator::validate_actor_origin(origin, thread_author_id.clone()),
+            MSG_INVALID_AUTHOR_ORIGIN
+        );
 
         ensure!(!title.is_empty(), MSG_EMPTY_TITLE_PROVIDED);
         ensure!(

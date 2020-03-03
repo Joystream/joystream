@@ -46,6 +46,7 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
 struct DiscussionFixture {
     pub title: Vec<u8>,
     pub origin: RawOrigin<u64>,
+    pub author_id: u64,
 }
 
 impl Default for DiscussionFixture {
@@ -53,6 +54,7 @@ impl Default for DiscussionFixture {
         DiscussionFixture {
             title: b"title".to_vec(),
             origin: RawOrigin::Signed(1),
+            author_id: 1,
         }
     }
 }
@@ -60,6 +62,22 @@ impl Default for DiscussionFixture {
 impl DiscussionFixture {
     fn with_title(self, title: Vec<u8>) -> Self {
         DiscussionFixture { title, ..self }
+    }
+
+    fn with_author(self, author_id: u64) -> Self {
+        DiscussionFixture { author_id, ..self }
+    }
+
+    fn create_discussion_and_assert(&self, result: Result<u32, &'static str>) -> Option<u32> {
+        let create_discussion_result = Discussions::create_thread(
+            self.origin.clone().into(),
+            self.author_id,
+            self.title.clone(),
+        );
+
+        assert_eq!(create_discussion_result, result);
+
+        create_discussion_result.ok()
     }
 }
 
@@ -132,17 +150,6 @@ impl PostFixture {
 
     fn update_post_and_assert(&mut self, result: Result<(), &'static str>) {
         self.update_post_with_text_and_assert(self.text.clone(), result);
-    }
-}
-
-impl DiscussionFixture {
-    fn create_discussion_and_assert(&self, result: Result<u32, &'static str>) -> Option<u32> {
-        let create_discussion_result =
-            Discussions::create_thread(self.origin.clone().into(), self.title.clone());
-
-        assert_eq!(create_discussion_result, result);
-
-        create_discussion_result.ok()
     }
 }
 
@@ -367,5 +374,15 @@ fn add_discussion_thread_fails_because_of_max_thread_by_same_author_in_a_row_lim
 
         discussion_fixture
             .create_discussion_and_assert(Err(MSG_MAX_THREAD_IN_A_ROW_LIMIT_EXCEEDED));
+    });
+}
+
+#[test]
+fn add_discussion_thread_fails_because_of_invalid_author_origin() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default().with_author(2);
+
+        discussion_fixture
+            .create_discussion_and_assert(Err(MSG_INVALID_AUTHOR_ORIGIN));
     });
 }
