@@ -10,7 +10,7 @@ pub use runtime_primitives::{
     BuildStorage, Perbill,
 };
 
-use crate::{ActorOriginValidator};
+use crate::ActorOriginValidator;
 use srml_support::{impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
@@ -38,7 +38,7 @@ parameter_types! {
 
 impl crate::Trait for Test {
     type ThreadAuthorOriginValidator = ();
-    type PostAuthorOrigin = system::EnsureSigned<Self::AccountId>;
+    type PostAuthorOriginValidator = ();
     type ThreadId = u32;
     type PostId = u32;
     type ThreadAuthorId = u64;
@@ -50,7 +50,11 @@ impl crate::Trait for Test {
 }
 
 impl ActorOriginValidator<Origin, u64> for () {
-    fn validate_actor_origin(_: Origin, actor_id: u64) -> bool {
+    fn validate_actor_origin(origin: Origin, actor_id: u64) -> bool {
+        if system::ensure_none(origin).is_ok() {
+            return true;
+        }
+
         actor_id == 1
     }
 }

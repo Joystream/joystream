@@ -86,12 +86,14 @@ struct PostFixture {
     pub origin: RawOrigin<u64>,
     pub thread_id: u32,
     pub post_id: Option<u32>,
+    pub author_id: u64,
 }
 
 impl PostFixture {
     fn default_for_thread(thread_id: u32) -> Self {
         PostFixture {
             text: b"text".to_vec(),
+            author_id: 1,
             thread_id,
             origin: RawOrigin::Signed(1),
             post_id: None,
@@ -104,6 +106,10 @@ impl PostFixture {
 
     fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         PostFixture { origin, ..self }
+    }
+
+    fn with_author(self, author_id: u64) -> Self {
+        PostFixture { author_id, ..self }
     }
 
     fn change_thread_id(self, thread_id: u32) -> Self {
@@ -120,6 +126,7 @@ impl PostFixture {
     fn add_post_and_assert(&mut self, result: Result<(), &'static str>) -> Option<u32> {
         let add_post_result = Discussions::add_post(
             self.origin.clone().into(),
+            self.author_id,
             self.thread_id,
             self.text.clone(),
         );
@@ -140,6 +147,7 @@ impl PostFixture {
     ) {
         let add_post_result = Discussions::update_post(
             self.origin.clone().into(),
+            self.author_id,
             self.thread_id,
             self.post_id.unwrap(),
             new_text,
@@ -227,7 +235,11 @@ fn update_post_call_failes_because_of_the_wrong_author() {
 
         post_fixture.add_post_and_assert(Ok(()));
 
-        post_fixture = post_fixture.with_origin(RawOrigin::Signed(2));
+        post_fixture = post_fixture.with_author(2);
+
+        post_fixture.update_post_and_assert(Err(MSG_INVALID_POST_AUTHOR_ORIGIN));
+
+        post_fixture = post_fixture.with_origin(RawOrigin::None).with_author(2);
 
         post_fixture.update_post_and_assert(Err(MSG_NOT_AUTHOR));
     });
@@ -382,7 +394,6 @@ fn add_discussion_thread_fails_because_of_invalid_author_origin() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default().with_author(2);
 
-        discussion_fixture
-            .create_discussion_and_assert(Err(MSG_INVALID_AUTHOR_ORIGIN));
+        discussion_fixture.create_discussion_and_assert(Err(MSG_INVALID_THREAD_AUTHOR_ORIGIN));
     });
 }

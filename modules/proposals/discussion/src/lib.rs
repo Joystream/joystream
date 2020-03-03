@@ -22,7 +22,6 @@ mod types;
 use rstd::clone::Clone;
 use rstd::prelude::*;
 use rstd::vec::Vec;
-use runtime_primitives::traits::EnsureOrigin;
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
 use srml_support::traits::Get;
@@ -42,15 +41,18 @@ pub(crate) const MSG_EMPTY_POST_PROVIDED: &str = "Post cannot be empty";
 pub(crate) const MSG_TOO_LONG_POST: &str = "Post is too long";
 pub(crate) const MSG_MAX_THREAD_IN_A_ROW_LIMIT_EXCEEDED: &str =
     "Max number of threads by same author in a row limit exceeded";
-pub(crate) const MSG_INVALID_AUTHOR_ORIGIN: &str = "Invalid origin and thread_author_id";
+pub(crate) const MSG_INVALID_THREAD_AUTHOR_ORIGIN: &str =
+    "Invalid combination of the origin and thread_author_id";
+pub(crate) const MSG_INVALID_POST_AUTHOR_ORIGIN: &str =
+    "Invalid combination of the origin and post_author_id";
 
 /// 'Proposal discussion' substrate module Trait
 pub trait Trait: system::Trait {
-    /// Origin from which thread author must come.
+    /// Validates thread author id and origin combination
     type ThreadAuthorOriginValidator: ActorOriginValidator<Self::Origin, Self::ThreadAuthorId>;
 
-    /// Origin from which commenter must come.
-    type PostAuthorOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
+    /// Validates  post author id and origin combination
+    type PostAuthorOriginValidator: ActorOriginValidator<Self::Origin, Self::PostAuthorId>;
 
     /// Discussion thread Id type
     type ThreadId: From<u32> + Into<u32> + Parameter + Default + Copy;
@@ -104,11 +106,17 @@ decl_module! {
     /// 'Proposal discussion' substrate module
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
-       /// Adds a post with author origin check.
-       pub fn add_post(origin, thread_id : T::ThreadId, text : Vec<u8>) {
-            let account_id = T::PostAuthorOrigin::ensure_origin(origin)?;
-            let post_author_id = T::PostAuthorId::from(account_id);
-
+        /// Adds a post with author origin check.
+        pub fn add_post(
+            origin,
+            post_author_id: T::PostAuthorId,
+            thread_id : T::ThreadId,
+            text : Vec<u8>
+        ) {
+            ensure!(
+                T::PostAuthorOriginValidator::validate_actor_origin(origin, post_author_id.clone()),
+                MSG_INVALID_POST_AUTHOR_ORIGIN
+            );
             ensure!(<ThreadById<T>>::exists(thread_id), MSG_THREAD_DOESNT_EXIST);
 
             ensure!(!text.is_empty(), MSG_EMPTY_POST_PROVIDED);
@@ -136,10 +144,18 @@ decl_module! {
             PostCount::put(next_post_count_value);
        }
 
-       /// Updates a post with author origin check. Update attempts number is limited.
-      pub fn update_post(origin, thread_id: T::ThreadId,  post_id : T::PostId, text : Vec<u8>) {
-            let account_id = T::PostAuthorOrigin::ensure_origin(origin)?;
-            let post_author_id = T::PostAuthorId::from(account_id);
+        /// Updates a post with author origin check. Update attempts number is limited.
+        pub fn update_post(
+            origin,
+            post_author_id: T::PostAuthorId,
+            thread_id: T::ThreadId,
+            post_id : T::PostId,
+            text : Vec<u8>
+        ){
+            ensure!(
+                T::PostAuthorOriginValidator::validate_actor_origin(origin, post_author_id.clone()),
+                MSG_INVALID_POST_AUTHOR_ORIGIN
+            );
 
             ensure!(<ThreadById<T>>::exists(thread_id), MSG_THREAD_DOESNT_EXIST);
             ensure!(<PostThreadIdByPostId<T>>::exists(thread_id, post_id), MSG_POST_DOESNT_EXIST);
@@ -185,7 +201,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::ThreadId, &'static str> {
         ensure!(
             T::ThreadAuthorOriginValidator::validate_actor_origin(origin, thread_author_id.clone()),
-            MSG_INVALID_AUTHOR_ORIGIN
+            MSG_INVALID_THREAD_AUTHOR_ORIGIN
         );
 
         ensure!(!title.is_empty(), MSG_EMPTY_TITLE_PROVIDED);
