@@ -12,6 +12,7 @@ import { Toggle } from '@polkadot/react-components';
 
 import translate from '../translate';
 import Param from './index';
+import getInitValue from '../initValue';
 
 interface Props extends CProps, I18nProps {}
 
@@ -24,6 +25,14 @@ function Option ({ className, defaultValue, isDisabled, name, onChange, onEnter,
       value: null
     });
   }, [isActive]);
+
+  function doSetIsActive(active: boolean) {
+    active && onChange && onChange({
+      isValid: true,
+      value: getInitValue(sub as TypeDef)
+    })
+    setIsActive(active);
+  }
 
   return (
     <div className={className}>
@@ -44,7 +53,7 @@ function Option ({ className, defaultValue, isDisabled, name, onChange, onEnter,
               ? t('include option')
               : t('exclude option')
           }
-          onChange={setIsActive}
+          onChange={doSetIsActive}
           value={isActive}
         />
       )}
