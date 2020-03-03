@@ -440,3 +440,35 @@ fn fill_opening_succeeds_with_not_role_stake_unstaked() {
         });
     });
 }
+
+#[test]
+fn fill_opening_fails_with_application_to_wrong_opening() {
+    build_test_externalities().execute_with(|| {
+        // opening 1
+        let opening_fixture = AddOpeningFixture::default();
+        let add_opening_result = opening_fixture.add_opening();
+        let opening_id = add_opening_result.unwrap();
+        // opening 2
+        let opening_fixture2 = AddOpeningFixture::default();
+        let add_opening_result2 = opening_fixture2.add_opening();
+        let opening_id2 = add_opening_result2.unwrap();
+
+        // application to opening 2
+        let application_fixture = AddApplicationFixture::default_for_opening(opening_id2);
+        let app_application_result = application_fixture.add_application();
+        let application_id = app_application_result.unwrap().application_id_added;
+
+        // opening 1 being review
+        assert!(Hiring::begin_review(opening_id).is_ok());
+
+        // fill opening 1 with application made to opening  (which should fail)
+        let mut fill_opening_fixture = FillOpeningFixture::default_for_opening(opening_id);
+        let mut apps = BTreeSet::new();
+        apps.insert(application_id);
+
+        fill_opening_fixture.successful_applications = apps;
+        fill_opening_fixture.call_and_assert(Err(FillOpeningError::ApplicationForWrongOpening(
+            application_id,
+        )));
+    });
+}
