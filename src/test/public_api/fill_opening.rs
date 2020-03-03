@@ -461,7 +461,7 @@ fn fill_opening_fails_with_application_to_wrong_opening() {
         // opening 1 being review
         assert!(Hiring::begin_review(opening_id).is_ok());
 
-        // fill opening 1 with application made to opening  (which should fail)
+        // fill opening 1 with application made to opening 2 (which should fail)
         let mut fill_opening_fixture = FillOpeningFixture::default_for_opening(opening_id);
         let mut apps = BTreeSet::new();
         apps.insert(application_id);
