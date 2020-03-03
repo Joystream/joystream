@@ -105,6 +105,12 @@ impl proposal_engine::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
 }
 
+impl proposal_discussion::ActorOriginValidator<Origin, u64> for () {
+    fn validate_actor_origin(_: Origin, _: u64) -> bool {
+        true
+    }
+}
+
 parameter_types! {
     pub const MaxPostEditionNumber: u32 = 5;
     pub const MaxThreadInARowNumber: u32 = 3;
@@ -113,8 +119,9 @@ parameter_types! {
 }
 
 impl proposal_discussion::Trait for Test {
-    type ThreadAuthorOrigin = system::EnsureSigned<Self::AccountId>;
-    type PostAuthorOrigin = system::EnsureSigned<Self::AccountId>;
+    type Event = ();
+    type ThreadAuthorOriginValidator = ();
+    type PostAuthorOriginValidator = ();
     type ThreadId = u32;
     type PostId = u32;
     type ThreadAuthorId = u64;

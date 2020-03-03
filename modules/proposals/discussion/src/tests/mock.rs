@@ -11,7 +11,7 @@ pub use runtime_primitives::{
 };
 
 use crate::ActorOriginValidator;
-use srml_support::{impl_outer_origin, parameter_types, impl_outer_event};
+use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Test {}

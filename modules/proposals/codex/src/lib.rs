@@ -11,20 +11,21 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-pub use proposal_types::{ProposalType, RuntimeUpgradeProposalExecutable, TextProposalExecutable};
-
 mod proposal_types;
 #[cfg(test)]
 mod tests;
 
 use codec::Encode;
-use proposal_engine::*;
 use rstd::clone::Clone;
 use rstd::marker::PhantomData;
 use rstd::prelude::*;
 use rstd::vec::Vec;
+use runtime_primitives::traits::One;
 use srml_support::{decl_error, decl_module, decl_storage, ensure};
 use system::RawOrigin;
+
+use proposal_engine::*;
+pub use proposal_types::{ProposalType, RuntimeUpgradeProposalExecutable, TextProposalExecutable};
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait: system::Trait + proposal_engine::Trait + proposal_discussion::Trait {
@@ -100,6 +101,7 @@ decl_module! {
 
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
                 cloned_origin1,
+                T::ThreadAuthorId::one(), //TODO: temporary stub, provide implementation
                 title.clone(),
             )?;
 
@@ -142,6 +144,7 @@ decl_module! {
 
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
                 cloned_origin1,
+                T::ThreadAuthorId::one(), //TODO: temporary stub, provide implementation
                 title.clone(),
             )?;
 

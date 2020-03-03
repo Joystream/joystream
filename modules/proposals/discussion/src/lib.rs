@@ -15,21 +15,21 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
+mod errors;
 #[cfg(test)]
 mod tests;
 mod types;
-mod errors;
 
 use rstd::clone::Clone;
 use rstd::prelude::*;
 use rstd::vec::Vec;
-use srml_support::{decl_module, decl_event, decl_storage, ensure, Parameter};
+use srml_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
 
+use runtime_primitives::traits::SimpleArithmetic;
 use srml_support::traits::Get;
-use types::ActorOriginValidator;
+pub use types::ActorOriginValidator;
 use types::{Post, Thread, ThreadCounter};
 
-// TODO: create events
 // TODO: move errors to decl_error macro (after substrate version upgrade)
 
 decl_event!(
@@ -60,7 +60,7 @@ pub trait Trait: system::Trait {
     /// Validates thread author id and origin combination
     type ThreadAuthorOriginValidator: ActorOriginValidator<Self::Origin, Self::ThreadAuthorId>;
 
-    /// Validates  post author id and origin combination
+    /// Validates post author id and origin combination
     type PostAuthorOriginValidator: ActorOriginValidator<Self::Origin, Self::PostAuthorId>;
 
     /// Discussion thread Id type
@@ -70,7 +70,7 @@ pub trait Trait: system::Trait {
     type PostId: From<u32> + Parameter + Default + Copy;
 
     /// Type for the thread author id. Should be authenticated by account id.
-    type ThreadAuthorId: From<Self::AccountId> + Parameter + Default;
+    type ThreadAuthorId: From<Self::AccountId> + Parameter + Default + SimpleArithmetic;
 
     /// Type for the post author id. Should be authenticated by account id.
     type PostAuthorId: From<Self::AccountId> + Parameter + Default;
