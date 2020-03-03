@@ -25,7 +25,7 @@ use runtime_primitives::traits::EnsureOrigin;
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
 use srml_support::traits::Get;
-use types::{Post, Thread};
+use types::{Post, Thread, ThreadCounter};
 
 // TODO: create events
 // TODO: move errors to decl_error macro
@@ -38,6 +38,8 @@ pub(crate) const MSG_THREAD_DOESNT_EXIST: &str = "Thread doesn't exist";
 pub(crate) const MSG_POST_DOESNT_EXIST: &str = "Post doesn't exist";
 pub(crate) const MSG_EMPTY_POST_PROVIDED: &str = "Post cannot be empty";
 pub(crate) const MSG_TOO_LONG_POST: &str = "Post is too long";
+pub(crate) const MSG_MAX_THREAD_IN_A_ROW_LIMIT_EXCEEDED: &str =
+    "Max number of threads by same author in a row limit exceeded";
 
 /// 'Proposal discussion' substrate module Trait
 pub trait Trait: system::Trait {
@@ -67,6 +69,9 @@ pub trait Trait: system::Trait {
 
     /// Defines post length limit.
     type PostLengthLimit: Get<u32>;
+
+    /// Defines max thread by same author in a row number limit.
+    type MaxThreadInARowNumber: Get<u32>;
 }
 
 // Storage for the proposals discussion module
@@ -85,6 +90,10 @@ decl_storage! {
 
         /// Count of all posts that have been created.
         pub PostCount get(fn post_count): u32;
+
+        /// Last author thread counter (part of the antispam mechanism)
+        pub LastThreadAuthorCounter get(fn last_thread_author_counter):
+            Option<ThreadCounter<T::ThreadAuthorId>>;
     }
 }
 
@@ -175,6 +184,14 @@ impl<T: Trait> Module<T> {
             MSG_TOO_LONG_TITLE
         );
 
+        // get new 'threads in a row' counter for the author
+        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id.clone());
+
+        ensure!(
+            current_thread_counter.counter as u32 <= T::MaxThreadInARowNumber::get(),
+            MSG_MAX_THREAD_IN_A_ROW_LIMIT_EXCEEDED
+        );
+
         let next_thread_count_value = Self::thread_count() + 1;
         let new_thread_id = next_thread_count_value;
 
@@ -189,7 +206,20 @@ impl<T: Trait> Module<T> {
         let thread_id = T::ThreadId::from(new_thread_id);
         <ThreadById<T>>::insert(thread_id, new_thread);
         ThreadCount::put(next_thread_count_value);
+        <LastThreadAuthorCounter<T>>::put(current_thread_counter);
 
         Ok(thread_id)
+    }
+
+    // returns incremented thread counter if last thread author equals with provided parameter
+    fn get_updated_thread_counter(
+        author_id: T::ThreadAuthorId,
+    ) -> ThreadCounter<T::ThreadAuthorId> {
+        if let Some(last_thread_author_counter) = Self::last_thread_author_counter() {
+            if last_thread_author_counter.author_id == author_id {
+                return last_thread_author_counter.increment();
+            }
+        }
+        ThreadCounter::new(author_id)
     }
 }

@@ -354,3 +354,18 @@ fn update_post_call_with_invalid_text_failed() {
         post_fixture3.update_post_and_assert(Err(MSG_TOO_LONG_POST));
     });
 }
+
+#[test]
+fn add_discussion_thread_fails_because_of_max_thread_by_same_author_in_a_row_limit_exceeded() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+        for idx in 1..=3 {
+            discussion_fixture
+                .create_discussion_and_assert(Ok(idx))
+                .unwrap();
+        }
+
+        discussion_fixture
+            .create_discussion_and_assert(Err(MSG_MAX_THREAD_IN_A_ROW_LIMIT_EXCEEDED));
+    });
+}
