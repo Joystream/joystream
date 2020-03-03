@@ -18,11 +18,12 @@
 #[cfg(test)]
 mod tests;
 mod types;
+mod errors;
 
 use rstd::clone::Clone;
 use rstd::prelude::*;
 use rstd::vec::Vec;
-use srml_support::{decl_module, decl_storage, ensure, Parameter};
+use srml_support::{decl_module, decl_event, decl_storage, ensure, Parameter};
 
 use srml_support::traits::Get;
 use types::ActorOriginValidator;
@@ -31,23 +32,31 @@ use types::{Post, Thread, ThreadCounter};
 // TODO: create events
 // TODO: move errors to decl_error macro (after substrate version upgrade)
 
-pub(crate) const MSG_NOT_AUTHOR: &str = "Author should match the post creator";
-pub(crate) const MSG_POST_EDITION_NUMBER_EXCEEDED: &str = "Post edition limit reached.";
-pub(crate) const MSG_EMPTY_TITLE_PROVIDED: &str = "Discussion cannot have an empty title";
-pub(crate) const MSG_TOO_LONG_TITLE: &str = "Title is too long";
-pub(crate) const MSG_THREAD_DOESNT_EXIST: &str = "Thread doesn't exist";
-pub(crate) const MSG_POST_DOESNT_EXIST: &str = "Post doesn't exist";
-pub(crate) const MSG_EMPTY_POST_PROVIDED: &str = "Post cannot be empty";
-pub(crate) const MSG_TOO_LONG_POST: &str = "Post is too long";
-pub(crate) const MSG_MAX_THREAD_IN_A_ROW_LIMIT_EXCEEDED: &str =
-    "Max number of threads by same author in a row limit exceeded";
-pub(crate) const MSG_INVALID_THREAD_AUTHOR_ORIGIN: &str =
-    "Invalid combination of the origin and thread_author_id";
-pub(crate) const MSG_INVALID_POST_AUTHOR_ORIGIN: &str =
-    "Invalid combination of the origin and post_author_id";
+decl_event!(
+    /// Proposals engine events
+    pub enum Event<T>
+    where
+        <T as Trait>::ThreadId,
+        <T as Trait>::ThreadAuthorId,
+        <T as Trait>::PostId,
+        <T as Trait>::PostAuthorId,
+    {
+    	/// Emits on thread creation.
+        ThreadCreated(ThreadId, ThreadAuthorId),
+
+    	/// Emits on post creation.
+        PostCreated(PostId, PostAuthorId),
+
+    	/// Emits on post update.
+        PostUpdated(PostId, PostAuthorId),
+    }
+);
 
 /// 'Proposal discussion' substrate module Trait
 pub trait Trait: system::Trait {
+    /// Engine event type.
+    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
     /// Validates thread author id and origin combination
     type ThreadAuthorOriginValidator: ActorOriginValidator<Self::Origin, Self::ThreadAuthorId>;
 
@@ -106,6 +115,9 @@ decl_module! {
     /// 'Proposal discussion' substrate module
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
+        /// Emits an event. Default substrate implementation.
+        fn deposit_event() = default;
+
         /// Adds a post with author origin check.
         pub fn add_post(
             origin,
@@ -115,14 +127,14 @@ decl_module! {
         ) {
             ensure!(
                 T::PostAuthorOriginValidator::validate_actor_origin(origin, post_author_id.clone()),
-                MSG_INVALID_POST_AUTHOR_ORIGIN
+                errors::MSG_INVALID_POST_AUTHOR_ORIGIN
             );
-            ensure!(<ThreadById<T>>::exists(thread_id), MSG_THREAD_DOESNT_EXIST);
+            ensure!(<ThreadById<T>>::exists(thread_id), errors::MSG_THREAD_DOESNT_EXIST);
 
-            ensure!(!text.is_empty(), MSG_EMPTY_POST_PROVIDED);
+            ensure!(!text.is_empty(), errors::MSG_EMPTY_POST_PROVIDED);
             ensure!(
                 text.len() as u32 <= T::PostLengthLimit::get(),
-                MSG_TOO_LONG_POST
+                errors::MSG_TOO_LONG_POST
             );
 
             // mutation
@@ -134,7 +146,7 @@ decl_module! {
                 text,
                 created_at: Self::current_block(),
                 updated_at: Self::current_block(),
-                author_id: post_author_id,
+                author_id: post_author_id.clone(),
                 edition_number : 0,
                 thread_id,
             };
@@ -142,6 +154,7 @@ decl_module! {
             let post_id = T::PostId::from(new_post_id);
             <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
             PostCount::put(next_post_count_value);
+            Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id));
        }
 
         /// Updates a post with author origin check. Update attempts number is limited.
@@ -154,23 +167,23 @@ decl_module! {
         ){
             ensure!(
                 T::PostAuthorOriginValidator::validate_actor_origin(origin, post_author_id.clone()),
-                MSG_INVALID_POST_AUTHOR_ORIGIN
+                errors::MSG_INVALID_POST_AUTHOR_ORIGIN
             );
 
-            ensure!(<ThreadById<T>>::exists(thread_id), MSG_THREAD_DOESNT_EXIST);
-            ensure!(<PostThreadIdByPostId<T>>::exists(thread_id, post_id), MSG_POST_DOESNT_EXIST);
+            ensure!(<ThreadById<T>>::exists(thread_id), errors::MSG_THREAD_DOESNT_EXIST);
+            ensure!(<PostThreadIdByPostId<T>>::exists(thread_id, post_id), errors::MSG_POST_DOESNT_EXIST);
 
-            ensure!(!text.is_empty(), MSG_EMPTY_POST_PROVIDED);
+            ensure!(!text.is_empty(), errors::MSG_EMPTY_POST_PROVIDED);
             ensure!(
                 text.len() as u32 <= T::PostLengthLimit::get(),
-                MSG_TOO_LONG_POST
+                errors::MSG_TOO_LONG_POST
             );
 
             let post = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id);
 
-            ensure!(post.author_id == post_author_id, MSG_NOT_AUTHOR);
+            ensure!(post.author_id == post_author_id, errors::MSG_NOT_AUTHOR);
             ensure!(post.edition_number < T::MaxPostEditionNumber::get(),
-                MSG_POST_EDITION_NUMBER_EXCEEDED);
+                errors::MSG_POST_EDITION_NUMBER_EXCEEDED);
 
             let new_post = Post {
                 text,
@@ -182,6 +195,7 @@ decl_module! {
             // mutation
 
             <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
+            Self::deposit_event(RawEvent::PostUpdated(post_id, post_author_id));
        }
     }
 }
@@ -201,13 +215,13 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::ThreadId, &'static str> {
         ensure!(
             T::ThreadAuthorOriginValidator::validate_actor_origin(origin, thread_author_id.clone()),
-            MSG_INVALID_THREAD_AUTHOR_ORIGIN
+            errors::MSG_INVALID_THREAD_AUTHOR_ORIGIN
         );
 
-        ensure!(!title.is_empty(), MSG_EMPTY_TITLE_PROVIDED);
+        ensure!(!title.is_empty(), errors::MSG_EMPTY_TITLE_PROVIDED);
         ensure!(
             title.len() as u32 <= T::ThreadTitleLengthLimit::get(),
-            MSG_TOO_LONG_TITLE
+            errors::MSG_TOO_LONG_TITLE
         );
 
         // get new 'threads in a row' counter for the author
@@ -215,7 +229,7 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             current_thread_counter.counter as u32 <= T::MaxThreadInARowNumber::get(),
-            MSG_MAX_THREAD_IN_A_ROW_LIMIT_EXCEEDED
+            errors::MSG_MAX_THREAD_IN_A_ROW_LIMIT_EXCEEDED
         );
 
         let next_thread_count_value = Self::thread_count() + 1;
@@ -224,7 +238,7 @@ impl<T: Trait> Module<T> {
         let new_thread = Thread {
             title,
             created_at: Self::current_block(),
-            author_id: thread_author_id,
+            author_id: thread_author_id.clone(),
         };
 
         // mutation
@@ -233,6 +247,7 @@ impl<T: Trait> Module<T> {
         <ThreadById<T>>::insert(thread_id, new_thread);
         ThreadCount::put(next_thread_count_value);
         <LastThreadAuthorCounter<T>>::put(current_thread_counter);
+        Self::deposit_event(RawEvent::ThreadCreated(thread_id, thread_author_id));
 
         Ok(thread_id)
     }

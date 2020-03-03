@@ -3,7 +3,25 @@ mod mock;
 use mock::*;
 
 use crate::*;
+use crate::errors::*;
 use system::RawOrigin;
+use system::{EventRecord, Phase};
+
+struct EventFixture;
+impl EventFixture {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u32, u64>>) {
+        let expected_events = expected_raw_events
+            .iter()
+            .map(|ev| EventRecord {
+                phase: Phase::ApplyExtrinsic(0),
+                event: TestEvent::discussion(ev.clone()),
+                topics: vec![],
+            })
+            .collect::<Vec<EventRecord<_, _>>>();
+
+        assert_eq!(System::events(), expected_events);
+    }
+}
 
 struct TestPostEntry {
     pub post_id: u32,
@@ -198,6 +216,12 @@ fn update_post_call_succeeds() {
 
         post_fixture.add_post_and_assert(Ok(()));
         post_fixture.update_post_and_assert(Ok(()));
+
+        EventFixture::assert_events(vec![
+            RawEvent::ThreadCreated(1, 1),
+            RawEvent::PostCreated(1, 1),
+            RawEvent::PostUpdated(1, 1),
+        ]);
     });
 }
 
@@ -286,10 +310,10 @@ fn thread_content_check_succeeded() {
 fn create_discussion_call_with_bad_title_failed() {
     initial_test_ext().execute_with(|| {
         let mut discussion_fixture = DiscussionFixture::default().with_title(Vec::new());
-        discussion_fixture.create_discussion_and_assert(Err(crate::MSG_EMPTY_TITLE_PROVIDED));
+        discussion_fixture.create_discussion_and_assert(Err(MSG_EMPTY_TITLE_PROVIDED));
 
         discussion_fixture = DiscussionFixture::default().with_title([0; 201].to_vec());
-        discussion_fixture.create_discussion_and_assert(Err(crate::MSG_TOO_LONG_TITLE));
+        discussion_fixture.create_discussion_and_assert(Err(MSG_TOO_LONG_TITLE));
     });
 }
 

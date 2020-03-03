@@ -11,7 +11,7 @@ pub use runtime_primitives::{
 };
 
 use crate::ActorOriginValidator;
-use srml_support::{impl_outer_origin, parameter_types};
+use srml_support::{impl_outer_origin, parameter_types, impl_outer_event};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -36,7 +36,18 @@ parameter_types! {
     pub const PostLengthLimit: u32 = 2000;
 }
 
+mod discussion {
+    pub use crate::Event;
+}
+
+impl_outer_event! {
+    pub enum TestEvent for Test {
+        discussion<T>,
+    }
+}
+
 impl crate::Trait for Test {
+    type Event = TestEvent;
     type ThreadAuthorOriginValidator = ();
     type PostAuthorOriginValidator = ();
     type ThreadId = u32;
@@ -69,7 +80,7 @@ impl system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = ();
+    type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
     type MaximumBlockLength = MaximumBlockLength;
@@ -92,3 +103,4 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
 }
 
 pub type Discussions = crate::Module<Test>;
+pub type System = system::Module<Test>;
