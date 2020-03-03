@@ -429,10 +429,10 @@ export class Transport extends TransportBase implements ITransport {
       if (a.value.eq(b.value)) {
         return 0
       } else if (a.value.gt(b.value)) {
-        return 1
+        return -1
       }
 
-      return 0
+      return 1
     })
 
     return appvalues.findIndex(v => v.app.eq(myApp)) + 1
