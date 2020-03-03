@@ -3,6 +3,7 @@
 //!
 //! Supported extrinsics:
 //! - add_post - adds a post to existing discussion thread
+//! - update_post - updates existing post
 //!
 //! Public API:
 //! - create_discussion - creates a discussion
@@ -28,7 +29,7 @@ use srml_support::traits::Get;
 use types::{Post, Thread, ThreadCounter};
 
 // TODO: create events
-// TODO: move errors to decl_error macro
+// TODO: move errors to decl_error macro (after substrate version upgrade)
 
 pub(crate) const MSG_NOT_AUTHOR: &str = "Author should match the post creator";
 pub(crate) const MSG_POST_EDITION_NUMBER_EXCEEDED: &str = "Post edition limit reached.";
@@ -173,7 +174,8 @@ impl<T: Trait> Module<T> {
         <system::Module<T>>::block_number()
     }
 
-    /// Create the discussion thread
+    /// Create the discussion thread. Cannot add more threads than 'predefined limit = MaxThreadInARowNumber'
+    /// times in a row by the same author.
     pub fn create_thread(origin: T::Origin, title: Vec<u8>) -> Result<T::ThreadId, &'static str> {
         let account_id = T::ThreadAuthorOrigin::ensure_origin(origin)?;
         let thread_author_id = T::ThreadAuthorId::from(account_id);
@@ -215,11 +217,15 @@ impl<T: Trait> Module<T> {
     fn get_updated_thread_counter(
         author_id: T::ThreadAuthorId,
     ) -> ThreadCounter<T::ThreadAuthorId> {
+        // if thread counter exists
         if let Some(last_thread_author_counter) = Self::last_thread_author_counter() {
+            // if last(previous) author is the same as current author
             if last_thread_author_counter.author_id == author_id {
                 return last_thread_author_counter.increment();
             }
         }
+
+        // else return new counter (set with 1 thread number)
         ThreadCounter::new(author_id)
     }
 }
