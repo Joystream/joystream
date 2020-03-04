@@ -48,8 +48,8 @@ class App extends React.PureComponent<Props> {
 
   private renderList () {
     const { membersCreated, ...otherProps } = this.props;
-    return membersCreated
-      ? <List firstMemberId={FIRST_MEMBER_ID} nextMemberId={membersCreated} {...otherProps} />
+    return membersCreated ?
+      <List firstMemberId={FIRST_MEMBER_ID} membersCreated={membersCreated} {...otherProps} />
       : <em>Loading...</em>;
   }
 
