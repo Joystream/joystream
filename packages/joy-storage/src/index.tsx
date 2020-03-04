@@ -49,15 +49,15 @@ class App extends React.PureComponent<Props, State> {
         {
           isRoot: true,
           name: 'actors',
-          text: t('Actors')
+          text: t('Staked Providers')
         },
         {
           name: 'roles',
-          text: t('Available Roles')
+          text: t('Role Details')
         },
         {
           name: 'requests',
-          text: t('My Requests')
+          text: t('My Staking Requests')
         },
       ],
     };
