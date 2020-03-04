@@ -1,0 +1,21 @@
+language: rust
+
+rust:
+  - 1.41.1
+# Caching saves a lot of time but often causes stalled builds...
+# disabled for now
+# look into solution here: https://levans.fr/rust_travis_cache.html
+# cache:
+#  - cargo
+
+before_script:
+  - rustup component add rustfmt --toolchain 1.41.1-x86_64-unknown-linux-gnu
+  - rustup update nightly
+  - rustup target add wasm32-unknown-unknown --toolchain nightly
+  - cargo +nightly install --git https://github.com/alexcrichton/wasm-gc --force
+
+script:
+  # Ensure all checked in code is cargo-fmt'ed
+  - cargo fmt --all -- --check
+  # WASM build check
+  - cargo build --release
