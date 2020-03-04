@@ -110,7 +110,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     }
   ]} />;
 
-  const MainButton = () =>
+  const renderMainButton = () =>
     <TxButton
       type='submit'
       size='large'
@@ -139,7 +139,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       {tabs}
 
       <LabelledField style={{ marginTop: '1rem' }} {...props}>
-        <MainButton />
+        {renderMainButton()}
         <Button
           type='button'
           size='large'
