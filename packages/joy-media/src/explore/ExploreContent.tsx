@@ -18,13 +18,17 @@ export function ExploreContent (props: ExploreContentProps) {
 
   return <div>
     {latestVideos.length > 0 &&
-      <Section title={`Latest videos`}>
-        {latestVideos.map((x, i) => <VideoPreview key={'VideoPreview-' + i} {...x} />)}
+      <Section title={`Latest videos`} className='ListOfVideos'>
+        {latestVideos.map((x) =>
+          <VideoPreview key={x.id} {...x} />
+        )}
       </Section>
     }
     {latestVideoChannels.length > 0 &&
-      <Section title={`Latest video channels`}>
-        {latestVideoChannels.map((x, i) => <ChannelPreview key={'VideoChannelPreview-' + i} channel={x} />)}
+      <Section title={`Latest video channels`} className='ListOfChannels'>
+        {latestVideoChannels.map((x) =>
+          <ChannelPreview key={x.id} channel={x} withSubtitle={false} />
+        )}
       </Section>
     }
   </div>

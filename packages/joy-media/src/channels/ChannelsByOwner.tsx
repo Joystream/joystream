@@ -59,7 +59,7 @@ const TabsAndChannels = (props: ChannelsByOwnerProps) => {
       Create Channel
     </Link>
     {channels.map((channel) =>
-      <Segment key={'ChannelPreview-' + channel.id} padded style={{ backgroundColor: '#fff' }}>
+      <Segment key={channel.id} padded style={{ backgroundColor: '#fff' }}>
         <ChannelPreview channel={channel} withDescription />
       </Segment>
     )}

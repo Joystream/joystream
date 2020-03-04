@@ -7,16 +7,18 @@ import { ChannelAvatar, ChannelAvatarSize } from './ChannelAvatar';
 import { isPublicChannel } from './ChannelHelpers';
 import { isMusicChannel, isVideoChannel, isAccountAChannelOwner } from './ChannelHelpers';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
+import { nonEmptyStr } from '@polkadot/joy-utils/';
 
 type ChannelPreviewProps = {
   channel: ChannelEntity
   size?: ChannelAvatarSize
+  withSubtitle?: boolean
   withDescription?: boolean
 };
 
 export const ChannelPreview = (props: ChannelPreviewProps) => {
   const { myAccountId } = useMyMembership();
-  const { channel, size, withDescription } = props;
+  const { channel, size, withSubtitle = true, withDescription } = props;
 
   let subtitle: string | undefined;
   let icon: 'music' | 'film' | undefined;
@@ -45,10 +47,10 @@ export const ChannelPreview = (props: ChannelPreviewProps) => {
       <ChannelAvatar channel={channel} size={size} />
 
       <div className='ChannelDetails'>
-        <h2 className='ChannelTitle' style={{ display: 'block' }}>
+        <h3 className='ChannelTitle' style={{ display: 'block' }}>
           
           <Link to={`/media/channels/${channel.id}`} style={{ marginRight: '1rem' }}>
-            {channel.title}
+            {channel.title || channel.handle}
           </Link>
 
           {isAccountAChannelOwner(channel, myAccountId) &&
@@ -65,33 +67,33 @@ export const ChannelPreview = (props: ChannelPreviewProps) => {
               </Link>
             </div>
           }
-        </h2>
+        </h3>
 
-        {subtitle &&
-          <div className='ChannelSubtitle'>
+        <div className='ChannelSubtitle'>
 
+          {withSubtitle && subtitle &&
             <span style={{ marginRight: '1rem' }}>
               {icon && <i className={`icon ${icon}`} />}
               {subtitle}
             </span>
+          }
 
-            <Label basic color={visibilityColor} style={{ marginRight: '1rem' }}>
-              <Icon name={visibilityIcon} />
-              {visibilityText}
+          <Label basic color={visibilityColor} style={{ marginRight: '1rem' }}>
+            <Icon name={visibilityIcon} />
+            {visibilityText}
+          </Label>
+
+          {channel.curationStatus !== 'Normal' &&
+            <Label basic color='red'>
+              <Icon name='dont' />
+              Channel {channel.curationStatus}
+              {' '}<Icon name='question circle outline' size='small' />
             </Label>
+          }
+        </div>
 
-            {channel.curationStatus !== 'Normal' &&
-              <Label basic color='red'>
-                <Icon name='dont' />
-                Channel {channel.curationStatus}
-                {' '}<Icon name='question circle outline' size='small' />
-              </Label>
-            }
-          </div>
-        }
-
-        {withDescription &&
-          <ReactMarkdown className='JoyMemo--full' source={channel.description} linkTarget='_blank' />
+        {withDescription && nonEmptyStr(channel.description) &&
+          <ReactMarkdown className='JoyMemo--full ChannelDesc' source={channel.description} linkTarget='_blank' />
         }
       </div>
 
