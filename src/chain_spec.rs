@@ -159,7 +159,7 @@ impl Alternative {
             "dev" => Some(Alternative::Development),
             "local" => Some(Alternative::LocalTestnet),
             "staging" => Some(Alternative::StagingTestnet),
-            "" | "testnet" => Some(Alternative::LiveTestnet),
+            "" | "rome" => Some(Alternative::LiveTestnet),
             _ => None,
         }
     }
@@ -171,7 +171,7 @@ fn new_vs_validation(min: u16, max_min_diff: u16) -> VsInputValidation {
 
 /// Joystream LiveTestnet generator
 pub fn live_testnet_config() -> Result<ChainSpec, String> {
-    ChainSpec::from_json_bytes(&include_bytes!("../res/dummy.json")[..])
+    ChainSpec::from_json_bytes(&include_bytes!("../res/rome-staging.json")[..])
 }
 
 pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
