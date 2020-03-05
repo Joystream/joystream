@@ -34,7 +34,7 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 default_features = false
 git = 'https://github.com/Joystream/substrate-token-minting-module/'
 package = 'substrate-token-mint-module'
-branch = 'rome'
+tag = 'v1.0.0'
 
 [dev-dependencies]
 runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
