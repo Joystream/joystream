@@ -444,7 +444,7 @@ impl<T: Trait> Module<T> {
             )
         )?;
 
-        // Ensure that all successful applications are actually exist.
+        // Ensure that all successful applications actually exist
         for application_id in &successful_applications {
             ensure_application_exists!(
                 T,
@@ -456,12 +456,18 @@ impl<T: Trait> Module<T> {
         let successful_applications_map =
             Self::application_id_iter_to_map(successful_applications.iter());
 
-        // Ensure that all successful applications are actually active.
+        // Ensure that all successful applications are actually active and associated with the opening
         for (application_id, application) in &successful_applications_map {
             ensure_eq!(
                 application.stage,
                 hiring::ApplicationStage::Active,
                 FillOpeningError::ApplicationNotInActiveStage(*application_id,)
+            );
+
+            ensure_eq!(
+                application.opening_id,
+                opening_id,
+                FillOpeningError::ApplicationForWrongOpening(*application_id)
             );
         }
 
@@ -871,6 +877,9 @@ pub enum FillOpeningError<T: Trait> {
 
     /// Application is not in active stage
     ApplicationNotInActiveStage(T::ApplicationId),
+
+    /// Application is not for the opening
+    ApplicationForWrongOpening(T::ApplicationId),
 }
 
 /// Product of ensure_can_add_application()
@@ -1317,7 +1326,6 @@ impl<T: Trait> Module<T> {
         // Map with applications
         let applications_map = Self::application_id_iter_to_map(opening_applicants.iter());
 
-        //
         let active_applications_with_stake_iter =
             applications_map
                 .iter()
