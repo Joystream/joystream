@@ -41,7 +41,7 @@ const PROVIDERS: Record<ProviderName, PoviderData> = {
   'joystream_org': {
     providerDisplay: 'Joystream.org',
     nodes: {
-      'joystream': 'wss://rome-reckless.joystream.org/reckless/rpc/',
+      'joystream': 'wss://rome-staging-2.joystream.org/staging/rpc/',
     }
   }
 };
