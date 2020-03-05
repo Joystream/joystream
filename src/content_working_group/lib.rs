@@ -14,8 +14,8 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::convert::From;
 use rstd::prelude::*;
-use runtime_primitives::traits::{One, Zero}; // Member, SimpleArithmetic, MaybeSerialize
-use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
+use sr_primitives::traits::{One, Zero}; // Member, SimpleArithmetic, MaybeSerialize
+use srml_support::traits::{Currency, ExistenceRequirement, Get, WithdrawReasons};
 use srml_support::{
     decl_event,
     decl_module,
@@ -183,7 +183,8 @@ pub static MSG_FULL_CURATOR_OPENING_APPLICATION_NOT_ACTIVE: &str = "ApplicationN
 pub static MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK: &str =
     "Reward policy has invalid next payment block number";
 pub static MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST: &str = "Working group mint does not exist";
-
+pub static MSG_FILL_CURATOR_OPENING_APPLICATION_FOR_WRONG_OPENING: &str =
+    "Applications not for opening";
 // Errors for `withdraw_curator_application`
 pub static MSG_WITHDRAW_CURATOR_APPLICATION_APPLICATION_DOES_NOT_EXIST: &str =
     "ApplicationDoesNotExist";
@@ -888,7 +889,8 @@ impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError
                 },
             },
             hiring::FillOpeningError::<T>::ApplicationDoesNotExist(_application_id) => MSG_FULL_CURATOR_OPENING_APPLICATION_DOES_NOT_EXIST,
-            hiring::FillOpeningError::<T>::ApplicationNotInActiveStage(_application_id) => MSG_FULL_CURATOR_OPENING_APPLICATION_NOT_ACTIVE
+            hiring::FillOpeningError::<T>::ApplicationNotInActiveStage(_application_id) => MSG_FULL_CURATOR_OPENING_APPLICATION_NOT_ACTIVE,
+            hiring::FillOpeningError::<T>::ApplicationForWrongOpening(_application_id) => MSG_FILL_CURATOR_OPENING_APPLICATION_FOR_WRONG_OPENING,
         }
     }
 }

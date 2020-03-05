@@ -4,7 +4,7 @@ use crate::storage::data_object_type_registry::Trait as DOTRTrait;
 use crate::traits::{ContentIdExists, IsActiveDataObjectType, Roles};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
+use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 use system::{self, ensure_root, ensure_signed};
 

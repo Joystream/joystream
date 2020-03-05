@@ -1,4 +1,4 @@
-use runtime_primitives::traits::Convert;
+use sr_primitives::traits::Convert;
 use srml_support::traits::{Currency, LockableCurrency, ReservableCurrency};
 use system;
 

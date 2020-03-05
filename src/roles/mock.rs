@@ -7,7 +7,7 @@ pub use srml_support::traits::Currency;
 pub use system;
 
 pub use primitives::{Blake2Hasher, H256};
-pub use runtime_primitives::{
+pub use sr_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
     traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
     weights::Weight,

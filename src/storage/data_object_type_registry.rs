@@ -1,7 +1,7 @@
 use crate::traits;
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
+use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, Parameter};
 use system::ensure_root;
 
