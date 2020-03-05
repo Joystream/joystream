@@ -3332,10 +3332,11 @@ dependencies = [
 [[package]]
 name = "substrate-forum-module"
 version = "1.1.0"
-source = "git+https://github.com/mnaamani/substrate-forum-module?branch=upgrade-libp2p#a403cb2994790e2f29b2e9886a1f35ba5bdaf181"
+source = "git+https://github.com/mnaamani/substrate-forum-module?branch=upgrade-libp2p#aec14b455127b0b3a42b0e01827aa91b02894cd2"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
+ "quote 1.0.2",
  "serde",
  "serde_derive",
  "sr-io",
@@ -3521,10 +3522,11 @@ dependencies = [
 [[package]]
 name = "substrate-stake-module"
 version = "1.0.0"
-source = "git+https://github.com/mnaamani/substrate-stake-module/?branch=upgrade-libp2p#1829dfb79b5d26cc34619065bd12a38a9b0b4783"
+source = "git+https://github.com/mnaamani/substrate-stake-module/?branch=upgrade-libp2p#879124a68aec37c8eac9ffc1382e3796a33a5c2b"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
+ "quote 1.0.2",
  "serde",
  "serde_derive",
  "sr-io",
@@ -3581,10 +3583,11 @@ dependencies = [
 [[package]]
 name = "substrate-token-mint-module"
 version = "1.0.0"
-source = "git+https://github.com/mnaamani/substrate-token-minting-module/?branch=upgrade-libp2p#bec7a1b121eff86d5d1c8a8de11ac09094b6fe78"
+source = "git+https://github.com/mnaamani/substrate-token-minting-module/?branch=upgrade-libp2p#917e83227df9e65681261eb34f1ac646f411fbf5"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
+ "quote 1.0.2",
  "serde",
  "serde_derive",
  "sr-io",
