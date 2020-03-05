@@ -1037,7 +1037,7 @@ checksum = "b8b7a7c0c47db5545ed3fef7468ee7bb5b74691498139e4b3f6a20685dc6dd8e"
 
 [[package]]
 name = "joystream-node-runtime"
-version = "6.2.0"
+version = "6.5.0"
 dependencies = [
  "parity-scale-codec",
  "safe-mix",
@@ -3332,7 +3332,7 @@ dependencies = [
 [[package]]
 name = "substrate-forum-module"
 version = "1.1.0"
-source = "git+https://github.com/mnaamani/substrate-forum-module?branch=upgrade-libp2p#aec14b455127b0b3a42b0e01827aa91b02894cd2"
+source = "git+https://github.com/joystream/substrate-forum-module?tag=v1.1.0#3e405b0aed239b15a866897402b9df225bc0636a"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3362,10 +3362,11 @@ dependencies = [
 [[package]]
 name = "substrate-hiring-module"
 version = "1.0.0"
-source = "git+https://github.com/mnaamani/substrate-hiring-module?branch=upgrade-libp2p#ac45de704e0147dfb9ad7fb8d3375a01fe9df6ad"
+source = "git+https://github.com/Joystream/substrate-hiring-module?tag=v1.0.0#4929b8be1a3e1c0f48be4a666f70a3c145085b29"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
+ "quote 1.0.2",
  "serde",
  "serde_derive",
  "sr-io",
@@ -3482,10 +3483,11 @@ dependencies = [
 [[package]]
 name = "substrate-recurring-reward-module"
 version = "1.0.0"
-source = "git+https://github.com/mnaamani/substrate-recurring-reward-module?branch=upgrade-libp2p#84bc180bdff6709ad952135fff1cb13d4426758c"
+source = "git+https://github.com/Joystream/substrate-recurring-reward-module?tag=v1.0.0#cf945e1f4df333555aaef1f95c14e7950bd55ba7"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
+ "quote 1.0.2",
  "serde",
  "serde_derive",
  "sr-io",
@@ -3522,7 +3524,7 @@ dependencies = [
 [[package]]
 name = "substrate-stake-module"
 version = "1.0.0"
-source = "git+https://github.com/mnaamani/substrate-stake-module/?branch=upgrade-libp2p#879124a68aec37c8eac9ffc1382e3796a33a5c2b"
+source = "git+https://github.com/Joystream/substrate-stake-module/?tag=v1.0.0#e8241cf7b42bdd89352f39420b17294cae349679"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3583,7 +3585,7 @@ dependencies = [
 [[package]]
 name = "substrate-token-mint-module"
 version = "1.0.0"
-source = "git+https://github.com/mnaamani/substrate-token-minting-module/?branch=upgrade-libp2p#917e83227df9e65681261eb34f1ac646f411fbf5"
+source = "git+https://github.com/joystream/substrate-token-minting-module/?tag=v1.0.0#af6da475886cedf0d3f3c9325dd32b22a30b9662"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3617,10 +3619,11 @@ dependencies = [
 [[package]]
 name = "substrate-versioned-store"
 version = "1.1.0"
-source = "git+https://github.com/mnaamani/substrate-versioned-store-module?branch=upgrade-libp2p#025734d46efaddf4aed0f6ed4c4a4beff0cc5403"
+source = "git+https://github.com/joystream/substrate-versioned-store-module?tag=v1.0.0#feadff11b6b30b7ca065d9a5077fa3749142566d"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
+ "quote 1.0.2",
  "serde",
  "serde_derive",
  "sr-io",
@@ -3636,10 +3639,11 @@ dependencies = [
 [[package]]
 name = "substrate-versioned-store-permissions-module"
 version = "1.0.0"
-source = "git+https://github.com/mnaamani/substrate-versioned-store-permissions-module?branch=upgrade-libp2p#f981a6000eb210764c8e3b48d2142bc23af59fff"
+source = "git+https://github.com/joystream/substrate-versioned-store-permissions-module?tag=v1.0.0#983c0e53b587a153d4611032f665911299d3e17c"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
+ "quote 1.0.2",
  "serde",
  "serde_derive",
  "sr-io",
