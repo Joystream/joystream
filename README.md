@@ -21,6 +21,8 @@ cd substrate-node-joystream/
 ./setup.sh
 ```
 
+If you prefer to use docker see [building with docker](Docker).
+
 ### Building
 
 ```bash
@@ -62,14 +64,36 @@ When making changes to the runtime library remember to purge the chain after reb
 cargo run --release -- purge-chain --dev
 ```
 
-### Docker - experimental
+### Docker
 
-A joystream-node can be run in a docker container using the provided [Dockerfile](Dockerfile):
+#### Building localy
+
+A joystream-node can be compiled with give [Dockerfile](Dockerfile) file:
 
 ```bash
-# Build and tag a new docker image, which will compile joystream-node from source
-# The image is specifically made run joystream-node full node inside a container.
+# Build and tag a new image, which will compile joystream-node from source
 docker build . -t joystream-node
-# run a development chain by launching a new docker container, publishing the websocket port
+
+# run a development chain with the image just created publishing the websocket port
 docker run -p 9944:9944 joystream-node --dev --ws-external
 ```
+
+#### Downloading joystream pre-built images from Docker Hub
+
+```bash
+docker pull joystream/node
+```
+
+#### Running a public node as a service
+
+```bash
+docker run -d -p 30333:30333 --name my-node joystream/node
+
+# check status
+docker ps
+
+# monitor logs
+docker logs --tail 100 -f my-node
+```
+
+[More advanced guide]()
