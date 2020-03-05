@@ -105,17 +105,24 @@ export abstract class MediaTransport extends TransportBase {
 
   async topVideo(): Promise<VideoType | undefined> {
     const content = await this.featuredContent()
-    return content?.topVideo
+    const topVideoId = content?.topVideo as unknown as number | undefined
+    return !topVideoId ? undefined : await this.videoById(new EntityId(topVideoId))
   }
 
   async featuredVideos(): Promise<VideoType[]> {
     const content = await this.featuredContent()
-    return content?.featuredVideos || []
+    const videoIds = (content?.featuredVideos || []) as unknown as number[]
+    const videos = await Promise.all(videoIds.map((id) =>
+      this.videoById(new EntityId(id))))
+    return videos.filter(x => x !== undefined) as VideoType[]
   }
 
   async featuredAlbums(): Promise<MusicAlbumType[]> {
     const content = await this.featuredContent()
-    return content?.featuredAlbums || []
+    const albumIds = (content?.featuredAlbums || []) as unknown as EntityId[]
+    const albums = await Promise.all(albumIds.map((id) =>
+      this.musicAlbumById(new EntityId(id))))
+    return albums.filter(x => x !== undefined) as MusicAlbumType[]
   }
 
   abstract allMediaObjects(): Promise<MediaObjectType[]>
