@@ -27,10 +27,10 @@ cd substrate-node-joystream/
 ```
 
 ### Building
-Clone the joystream runtime into the substrate-node-joystream directory:
+Clone the joystream runtime into the substrate-node-joystream directory, release version v5.3.0:
 
 ```bash
-git clone https://github.com/Joystream/substrate-runtime-joystream.git
+git clone -b v5.3.0 https://github.com/Joystream/substrate-runtime-joystream.git
 ```
 
 Build the WASM runtime library:

@@ -1080,7 +1080,7 @@ dependencies = [
  "exit-future 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "joystream-node-runtime 5.1.0",
+ "joystream-node-runtime 5.3.0",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-codec 3.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1104,7 +1104,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "5.1.0"
+version = "5.3.0"
 dependencies = [
  "parity-codec 3.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-codec-derive 3.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
