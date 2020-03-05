@@ -4,8 +4,6 @@ use super::*;
 use crate::mock::*;
 use srml_support::traits::Currency;
 
-use runtime_io::with_externalities;
-
 fn create_new_mint_with_capacity(capacity: u64) -> u64 {
     let mint_id = Minting::add_mint(capacity, None).ok().unwrap();
     assert!(Minting::mint_exists(mint_id));
@@ -15,7 +13,7 @@ fn create_new_mint_with_capacity(capacity: u64) -> u64 {
 
 #[test]
 fn adding_recipients() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         let next_id = Rewards::recipients_created();
         assert!(!<Recipients<Test>>::exists(&next_id));
         let recipient_id = Rewards::add_recipient();
@@ -27,7 +25,7 @@ fn adding_recipients() {
 
 #[test]
 fn adding_relationships() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         let recipient_account: u64 = 1;
         let mint_id = create_new_mint_with_capacity(1000000);
         let recipient_id = Rewards::add_recipient();
@@ -77,7 +75,7 @@ fn adding_relationships() {
 
 #[test]
 fn one_off_payout() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         System::set_block_number(10000);
         let recipient_account: u64 = 1;
         let _ = Balances::deposit_creating(&recipient_account, 400);
@@ -127,7 +125,7 @@ fn one_off_payout() {
 
 #[test]
 fn recurring_payout() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         System::set_block_number(10000);
         let recipient_account: u64 = 1;
         let _ = Balances::deposit_creating(&recipient_account, 400);
@@ -176,7 +174,7 @@ fn recurring_payout() {
 
 #[test]
 fn track_missed_payouts() {
-    with_externalities(&mut build_test_externalities(), || {
+    build_test_externalities().execute_with(|| {
         System::set_block_number(10000);
         let recipient_account: u64 = 1;
         let _ = Balances::deposit_creating(&recipient_account, 400);
@@ -212,5 +210,50 @@ fn track_missed_payouts() {
         let recipient = Rewards::recipients(&recipient_id);
         assert_eq!(recipient.total_reward_received, 0);
         assert_eq!(recipient.total_reward_missed, payout);
+    });
+}
+
+#[test]
+fn activate_and_deactivate_relationship() {
+    build_test_externalities().execute_with(|| {
+        System::set_block_number(10000);
+        let recipient_account: u64 = 1;
+        let _ = Balances::deposit_creating(&recipient_account, 400);
+        let mint_id = create_new_mint_with_capacity(0);
+        let recipient_id = Rewards::add_recipient();
+        let payout: u64 = 1000;
+        let next_payout_at: u64 = 12222;
+
+        // Add relationship
+        let relationship_id = Rewards::add_reward_relationship(
+            mint_id,
+            recipient_id,
+            recipient_account,
+            payout,
+            next_payout_at,
+            None,
+        )
+        .unwrap();
+
+        // The relationship starts out active
+        assert!(Rewards::reward_relationships(&relationship_id).is_active());
+
+        // We are able to deactivate relationship
+        assert!(Rewards::try_to_deactivate_relationship(relationship_id).unwrap());
+
+        // The relationship is no longer active
+        assert!(!Rewards::reward_relationships(&relationship_id).is_active());
+
+        // We cannot deactivate an already deactivated relationship
+        assert!(!Rewards::try_to_deactivate_relationship(relationship_id).unwrap());
+
+        // We are able to activate relationship
+        assert!(Rewards::try_to_activate_relationship(relationship_id, next_payout_at).unwrap());
+
+        // The relationship is now not active
+        assert!(Rewards::reward_relationships(&relationship_id).is_active());
+
+        // We cannot activate an already active relationship
+        assert!(!Rewards::try_to_activate_relationship(relationship_id, next_payout_at).unwrap());
     });
 }

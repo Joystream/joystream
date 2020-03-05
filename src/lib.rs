@@ -1,13 +1,10 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-
 use rstd::prelude::*;
 
 use codec::{Codec, Decode, Encode};
-use runtime_primitives::traits::{MaybeSerializeDebug, Member, One, SimpleArithmetic, Zero};
-use srml_support::{
-    decl_module, decl_storage, ensure, EnumerableStorageMap, Parameter, StorageMap, StorageValue,
-};
+use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic, Zero};
+use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
 use minting::{self, BalanceOf};
 use system;
@@ -15,7 +12,7 @@ use system;
 mod mock;
 mod tests;
 
-pub trait Trait: system::Trait + minting::Trait + minting::Trait {
+pub trait Trait: system::Trait + minting::Trait {
     type PayoutStatusHandler: PayoutStatusHandler<Self>;
 
     /// Type of identifier for recipients.
@@ -25,7 +22,7 @@ pub trait Trait: system::Trait + minting::Trait + minting::Trait {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 
     /// Type for identifier for relationship representing that a recipient recieves recurring reward from a token mint
@@ -35,7 +32,7 @@ pub trait Trait: system::Trait + minting::Trait + minting::Trait {
         + Codec
         + Default
         + Copy
-        + MaybeSerializeDebug
+        + MaybeSerialize
         + PartialEq;
 }
 
@@ -110,6 +107,31 @@ pub struct RewardRelationship<AccountId, Balance, BlockNumber, MintId, Recipient
 
     /// Total payout failed in this relationship
     total_reward_missed: Balance,
+}
+
+impl<AccountId: Clone, Balance: Clone, BlockNumber: Clone, MintId: Clone, RecipientId: Clone>
+    RewardRelationship<AccountId, Balance, BlockNumber, MintId, RecipientId>
+{
+    /// Verifies whether relationship is active
+    pub fn is_active(&self) -> bool {
+        self.next_payment_at_block.is_some()
+    }
+
+    /// Make clone which is activated.
+    pub fn clone_activated(&self, start_at: &BlockNumber) -> Self {
+        Self {
+            next_payment_at_block: Some((*start_at).clone()),
+            ..((*self).clone())
+        }
+    }
+
+    /// Make clone which is deactivated
+    pub fn clone_deactivated(&self) -> Self {
+        Self {
+            next_payment_at_block: None,
+            ..((*self).clone())
+        }
+    }
 }
 
 decl_storage! {
@@ -195,6 +217,51 @@ impl<T: Trait> Module<T> {
         if <RewardRelationships<T>>::exists(&id) {
             <Recipients<T>>::remove(<RewardRelationships<T>>::take(&id).recipient);
         }
+    }
+
+    /// Will attempt to activat a deactivated reward relationship.
+    pub fn try_to_activate_relationship(
+        id: T::RewardRelationshipId,
+        next_payment_at_block: T::BlockNumber,
+    ) -> Result<bool, ()> {
+        // Ensure relationship exists
+        let reward_relationship = Self::ensure_reward_relationship_exists(&id)?;
+
+        let activated = if reward_relationship.is_active() {
+            // Was not activated
+            false
+        } else {
+            // Update as activated
+            let activated_relationship =
+                reward_relationship.clone_activated(&next_payment_at_block);
+
+            RewardRelationships::<T>::insert(id, activated_relationship);
+
+            // We activated
+            true
+        };
+
+        Ok(activated)
+    }
+
+    /// Will attempt to deactivat a activated reward relationship.
+    pub fn try_to_deactivate_relationship(id: T::RewardRelationshipId) -> Result<bool, ()> {
+        // Ensure relationship exists
+        let reward_relationship = Self::ensure_reward_relationship_exists(&id)?;
+
+        let deactivated = if reward_relationship.is_active() {
+            let deactivated_relationship = reward_relationship.clone_deactivated();
+
+            RewardRelationships::<T>::insert(id, deactivated_relationship);
+
+            // Was deactivated
+            true
+        } else {
+            // Was not deactivated
+            false
+        };
+
+        Ok(deactivated)
     }
 
     // For reward relationship found with given identifier, new values can be set for
@@ -311,5 +378,20 @@ impl<T: Trait> Module<T> {
                 <RewardRelationships<T>>::insert(relationship_id, relationship);
             }
         }
+    }
+}
+
+impl<T: Trait> Module<T> {
+    fn ensure_reward_relationship_exists(
+        id: &T::RewardRelationshipId,
+    ) -> Result<
+        RewardRelationship<T::AccountId, BalanceOf<T>, T::BlockNumber, T::MintId, T::RecipientId>,
+        (),
+    > {
+        ensure!(RewardRelationships::<T>::exists(id), ());
+
+        let relationship = RewardRelationships::<T>::get(id);
+
+        Ok(relationship)
     }
 }
