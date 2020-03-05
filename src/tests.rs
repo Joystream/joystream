@@ -216,7 +216,6 @@ fn track_missed_payouts() {
 #[test]
 fn activate_and_deactivate_relationship() {
     build_test_externalities().execute_with(|| {
-
         System::set_block_number(10000);
         let recipient_account: u64 = 1;
         let _ = Balances::deposit_creating(&recipient_account, 400);
@@ -224,7 +223,7 @@ fn activate_and_deactivate_relationship() {
         let recipient_id = Rewards::add_recipient();
         let payout: u64 = 1000;
         let next_payout_at: u64 = 12222;
-        
+
         // Add relationship
         let relationship_id = Rewards::add_reward_relationship(
             mint_id,
@@ -233,7 +232,8 @@ fn activate_and_deactivate_relationship() {
             payout,
             next_payout_at,
             None,
-        ).unwrap();
+        )
+        .unwrap();
 
         // The relationship starts out active
         assert!(Rewards::reward_relationships(&relationship_id).is_active());
@@ -255,6 +255,5 @@ fn activate_and_deactivate_relationship() {
 
         // We cannot activate an already active relationship
         assert!(!Rewards::try_to_activate_relationship(relationship_id, next_payout_at).unwrap());
-
     });
 }
