@@ -1,4 +1,4 @@
-import React, { useContext, createContext } from 'react';
+import React, { useEffect, useState, useContext, createContext } from 'react';
 import { MediaTransport } from './transport';
 import { MockTransport } from './transport.mock';
 import { SubstrateTransport } from './transport.substrate';
@@ -17,14 +17,26 @@ export const MockTransportProvider = (props: React.PropsWithChildren<{}>) =>
 
 export const SubstrateTransportProvider = (props: React.PropsWithChildren<{}>) => {
   const api: ApiProps = useContext(ApiContext);
+  const [ transport, setTransport ] = useState<SubstrateTransport>()
+  const [ loaded, setLoaded ] = useState<boolean>()
   
-  if (!api || !api.isApiReady) {
+  useEffect(() => {
+    const load = async () => {
+      if (!loaded && api && api.isApiReady) {
+        setTransport(new SubstrateTransport(api))
+        setLoaded(true)
+      }
+    }
+    load()
+  }, [loaded])
+
+  if (!transport) {
     // Substrate API is not ready yet.
     return null
   }
 
   return (
-    <TransportContext.Provider value={new SubstrateTransport(api)}>
+    <TransportContext.Provider value={transport}>
       {props.children}
     </TransportContext.Provider>
   )
