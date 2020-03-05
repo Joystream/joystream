@@ -22,11 +22,8 @@ quote = '=1.0.2'
 [dependencies.versioned-store]
 default_features = false
 package ='substrate-versioned-store'
-# git = 'https://github.com/joystream/substrate-versioned-store-module'
-# rev = 'd0c68722405355404840512edf3064d5ced3e1fe'
-# path = '../substrate-versioned-store'
-git = 'https://github.com/mnaamani/substrate-versioned-store-module'
-branch = "upgrade-libp2p"
+git = 'https://github.com/joystream/substrate-versioned-store-module'
+branch = "rome"
 
 [dev-dependencies]
 runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
