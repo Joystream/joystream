@@ -109,14 +109,9 @@ pub struct RewardRelationship<AccountId, Balance, BlockNumber, MintId, Recipient
     total_reward_missed: Balance,
 }
 
-impl<
-AccountId: Clone, 
-Balance: Clone, 
-BlockNumber: Clone, 
-MintId: Clone, 
-RecipientId: Clone
-> RewardRelationship<AccountId, Balance, BlockNumber, MintId, RecipientId> {
-
+impl<AccountId: Clone, Balance: Clone, BlockNumber: Clone, MintId: Clone, RecipientId: Clone>
+    RewardRelationship<AccountId, Balance, BlockNumber, MintId, RecipientId>
+{
     /// Verifies whether relationship is active
     pub fn is_active(&self) -> bool {
         self.next_payment_at_block.is_some()
@@ -124,7 +119,6 @@ RecipientId: Clone
 
     /// Make clone which is activated.
     pub fn clone_activated(&self, start_at: &BlockNumber) -> Self {
-
         Self {
             next_payment_at_block: Some((*start_at).clone()),
             ..((*self).clone())
@@ -133,7 +127,6 @@ RecipientId: Clone
 
     /// Make clone which is deactivated
     pub fn clone_deactivated(&self) -> Self {
-
         Self {
             next_payment_at_block: None,
             ..((*self).clone())
@@ -229,54 +222,44 @@ impl<T: Trait> Module<T> {
     /// Will attempt to activat a deactivated reward relationship.
     pub fn try_to_activate_relationship(
         id: T::RewardRelationshipId,
-        next_payment_at_block: T::BlockNumber
+        next_payment_at_block: T::BlockNumber,
     ) -> Result<bool, ()> {
-
         // Ensure relationship exists
         let reward_relationship = Self::ensure_reward_relationship_exists(&id)?;
 
-        let activated = 
-            if reward_relationship.is_active() {
+        let activated = if reward_relationship.is_active() {
+            // Was not activated
+            false
+        } else {
+            // Update as activated
+            let activated_relationship =
+                reward_relationship.clone_activated(&next_payment_at_block);
 
-                // Was not activated
-                false
-            } else {
+            RewardRelationships::<T>::insert(id, activated_relationship);
 
-                // Update as activated
-                let activated_relationship = reward_relationship.clone_activated(&next_payment_at_block);
-
-                RewardRelationships::<T>::insert(id, activated_relationship);
-
-                // We activated
-                true
-            };
+            // We activated
+            true
+        };
 
         Ok(activated)
     }
 
     /// Will attempt to deactivat a activated reward relationship.
-    pub fn try_to_deactivate_relationship(
-        id: T::RewardRelationshipId
-    ) -> Result<bool, ()> {
-
+    pub fn try_to_deactivate_relationship(id: T::RewardRelationshipId) -> Result<bool, ()> {
         // Ensure relationship exists
         let reward_relationship = Self::ensure_reward_relationship_exists(&id)?;
 
-        let deactivated =
-            if reward_relationship.is_active() {
+        let deactivated = if reward_relationship.is_active() {
+            let deactivated_relationship = reward_relationship.clone_deactivated();
 
-                let deactivated_relationship = reward_relationship.clone_deactivated();
+            RewardRelationships::<T>::insert(id, deactivated_relationship);
 
-                RewardRelationships::<T>::insert(id, deactivated_relationship);
-
-                // Was deactivated
-                true
-
-            } else {
-
-                // Was not deactivated
-                false
-            };
+            // Was deactivated
+            true
+        } else {
+            // Was not deactivated
+            false
+        };
 
         Ok(deactivated)
     }
@@ -399,13 +382,13 @@ impl<T: Trait> Module<T> {
 }
 
 impl<T: Trait> Module<T> {
-
-    fn ensure_reward_relationship_exists(id: &T::RewardRelationshipId) -> Result<RewardRelationship<T::AccountId, BalanceOf<T>, T::BlockNumber, T::MintId, T::RecipientId>, ()> {
-
-        ensure!(
-            RewardRelationships::<T>::exists(id),
-            ()
-        );
+    fn ensure_reward_relationship_exists(
+        id: &T::RewardRelationshipId,
+    ) -> Result<
+        RewardRelationship<T::AccountId, BalanceOf<T>, T::BlockNumber, T::MintId, T::RecipientId>,
+        (),
+    > {
+        ensure!(RewardRelationships::<T>::exists(id), ());
 
         let relationship = RewardRelationships::<T>::get(id);
 
