@@ -67,6 +67,8 @@ function insensitiveEq(text1: string, text2: string): boolean {
 
 export abstract class MediaTransport extends TransportBase {
 
+  protected cachedClassIdByNameMap: ClassIdByNameMap | undefined
+
   protected abstract notImplementedYet<T> (): T
 
   abstract allChannels(): Promise<ChannelEntity[]>
@@ -90,14 +92,17 @@ export abstract class MediaTransport extends TransportBase {
       .find((x) => className === unifyClassName(x.name))
   }
 
-  // TODO Save result of this func in context state and subscribe to updates from Substrate.
   async classIdByNameMap(): Promise<ClassIdByNameMap> {
+    if (this.cachedClassIdByNameMap) return this.cachedClassIdByNameMap
+
     const map: ClassIdByNameMap = {}
     const classes = await this.allClasses()
     classes.forEach((x) => {
       const className = unifyClassName(x.name)
       map[className] = x.id
     });
+    
+    this.cachedClassIdByNameMap = map
     return map
   }
 
