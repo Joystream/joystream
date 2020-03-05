@@ -1,31 +1,14 @@
 import ISO6391 from 'iso-639-1';
 import { DropdownItemProps } from 'semantic-ui-react';
 import { LanguageType } from '../schemas/general/Language';
-import { ContentLicenseType } from '../schemas/general/ContentLicense';
-import { CurationStatusType } from '../schemas/general/CurationStatus';
-import { MusicGenreType } from '../schemas/music/MusicGenre';
-import { MusicMoodType } from '../schemas/music/MusicMood';
-import { MusicThemeType } from '../schemas/music/MusicTheme';
-import { PublicationStatusType } from '../schemas/general/PublicationStatus';
-import { VideoCategoryType } from '../schemas/video/VideoCategory';
 import { TextValueEntity } from '@joystream/types/versioned-store/EntityCodec';
+import { InternalEntities } from '../transport';
 
 const buildOptions = (entities: TextValueEntity[]): DropdownItemProps[] =>
   entities.map(x => ({ key: x.id, value: x.id, text: x.value }))
 
 const buildLanguageOptions = (entities: LanguageType[]): DropdownItemProps[] =>
   entities.map(x => ({ key: x.id, value: x.id, text: ISO6391.getName(x.value) }))
-
-type MediaDropdownInitialProps = {
-  languages: LanguageType[]
-  contentLicenses: ContentLicenseType[]
-  curationStatuses: CurationStatusType[]
-  musicGenres: MusicGenreType[]
-  musicMoods: MusicMoodType[]
-  musicThemes: MusicThemeType[]
-  publicationStatuses: PublicationStatusType[]
-  videoCategories: VideoCategoryType[]
-}
 
 export class MediaDropdownOptions {
 
@@ -38,7 +21,7 @@ export class MediaDropdownOptions {
   public publicationStatusOptions: DropdownItemProps[]
   public videoCategoryOptions: DropdownItemProps[]
 
-  constructor (props: MediaDropdownInitialProps) {
+  constructor (props: InternalEntities) {
     this.languageOptions = buildLanguageOptions(props.languages);
     this.contentLicenseOptions = buildOptions(props.contentLicenses);
     this.curationStatusOptions = buildOptions(props.curationStatuses);

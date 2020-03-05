@@ -1,6 +1,6 @@
 import BN from 'bn.js';
-import { MediaTransport, EntityCodecByClassNameMap, ClassName, ChannelValidationConstraints, ValidationConstraint } from './transport';
-import { ClassId, Class, EntityId, Entity } from '@joystream/types/versioned-store';
+import { MediaTransport, EntityCodecByClassNameMap, ChannelValidationConstraints, ValidationConstraint } from './transport';
+import { ClassId, Class, EntityId, Entity, ClassName } from '@joystream/types/versioned-store';
 import { InputValidationLengthConstraint } from '@joystream/types/forum';
 import { PlainEntity, AnyEntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 import { MusicTrackType } from './schemas/music/MusicTrack';
@@ -171,7 +171,7 @@ export class SubstrateTransport extends MediaTransport {
       .filter((e) => classId.eq(e.class_id))
   }
 
-  async findPlainEntitiesByClassName<T extends PlainEntity> (className: ClassName): Promise<T[]> {
+  async findPlainEntitiesByClassName<T extends PlainEntity> (className: ClassName, resolveInternals: boolean = false): Promise<T[]> {
     const entities = await this.allEntitiesByClassName(className)
 
     const klass = await this.classByName(className)
@@ -186,11 +186,13 @@ export class SubstrateTransport extends MediaTransport {
       return []
     }
 
-    return (new CodecClass(klass)).toPlainObjects(entities)
+    const resolvers = !resolveInternals ? {} : await this.internalEntityResolvers()
+    const codec = new CodecClass(klass, resolvers)
+    return codec.toPlainObjects(entities)
   }
 
   async featuredContent(): Promise<FeaturedContentType | undefined> {
-    const arr = await this.findPlainEntitiesByClassName('FeaturedContent')
+    const arr = await this.findPlainEntitiesByClassName('FeaturedContent', true)
     return arr && arr.length ? arr[0] : undefined
   }
 
@@ -199,15 +201,15 @@ export class SubstrateTransport extends MediaTransport {
   }
 
   async allVideos(): Promise<VideoType[]> {
-    return await this.findPlainEntitiesByClassName('Video')
+    return await this.findPlainEntitiesByClassName('Video', true)
   }
 
   async allMusicTracks(): Promise<MusicTrackType[]> {
-    return await this.findPlainEntitiesByClassName('MusicTrack')
+    return await this.findPlainEntitiesByClassName('MusicTrack', true)
   }
 
   async allMusicAlbums(): Promise<MusicAlbumType[]> {
-    return await this.findPlainEntitiesByClassName('MusicAlbum')
+    return await this.findPlainEntitiesByClassName('MusicAlbum', true)
   }
 
   async allContentLicenses (): Promise<ContentLicenseType[]> {

@@ -1,6 +1,7 @@
 import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 import { AccountId } from '@polkadot/types/interfaces';
-import { EntityId, Entity, Class, ClassId } from '@joystream/types/versioned-store';
+import { EntityId, Entity, Class, ClassName, unifyClassName, ClassIdByNameMap } from '@joystream/types/versioned-store';
+import { InternalEntityResolvers } from '@joystream/types/versioned-store/EntityCodec';
 import { MusicTrackType, MusicTrackCodec } from './schemas/music/MusicTrack';
 import { MusicAlbumType, MusicAlbumCodec } from './schemas/music/MusicAlbum';
 import { VideoType, VideoCodec } from './schemas/video/Video';
@@ -18,8 +19,6 @@ import { MediaDropdownOptions } from './common/MediaDropdownOptions';
 import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { isVideoChannel, isPublicChannel } from './channels/ChannelHelpers';
-import { isPublicEntity } from './entities/EntityHelpers';
-import { camelCase, upperFirst } from 'lodash'
 
 export interface ValidationConstraint {
   min: number
@@ -34,20 +33,15 @@ export interface ChannelValidationConstraints {
   banner: ValidationConstraint
 }
 
-export interface ClassIdByNameMap {
-  ContentLicense?: ClassId
-  CurationStatus?: ClassId
-  FeaturedContent?: ClassId
-  Language?: ClassId
-  MediaObject?: ClassId
-  MusicAlbum?: ClassId
-  MusicGenre?: ClassId
-  MusicMood?: ClassId
-  MusicTheme?: ClassId
-  MusicTrack?: ClassId
-  PublicationStatus?: ClassId
-  Video?: ClassId
-  VideoCategory?: ClassId
+export interface InternalEntities {
+  languages: LanguageType[]
+  contentLicenses: ContentLicenseType[]
+  curationStatuses: CurationStatusType[]
+  musicGenres: MusicGenreType[]
+  musicMoods: MusicMoodType[]
+  musicThemes: MusicThemeType[]
+  publicationStatuses: PublicationStatusType[]
+  videoCategories: VideoCategoryType[]
 }
 
 export const EntityCodecByClassNameMap = {
@@ -66,10 +60,9 @@ export const EntityCodecByClassNameMap = {
   VideoCategory: VideoCategoryCodec,
 }
 
-export type ClassName = keyof ClassIdByNameMap
-
-export function unifyClassName(className: string): ClassName {
-  return upperFirst(camelCase(className)) as ClassName
+function insensitiveEq(text1: string, text2: string): boolean {
+  const prepare = (txt: string) => txt.replace(/[\s]+/mg, '').toLowerCase()
+  return prepare(text1) === prepare(text2)
 }
 
 export abstract class MediaTransport extends TransportBase {
@@ -184,8 +177,26 @@ export abstract class MediaTransport extends TransportBase {
   }
 
   async latestPublicVideos(limit: number = 5): Promise<VideoType[]> {
+
+    const idOfPublicPS = (await this.allPublicationStatuses())
+      .find(x =>
+        insensitiveEq(x.value, 'Public')
+      )?.id
+    
+    const idsOfCuratedCS = (await this.allCurationStatuses())
+      .filter(x =>
+        insensitiveEq(x.value, 'Under review') ||
+        insensitiveEq(x.value, 'Removed')
+      ).map(x => x.id)
+
+    const isPublicAndNotCurated = (video: VideoType) => {
+      const isPublic = video.publicationStatus.id === idOfPublicPS
+      const isNotCurated = idsOfCuratedCS.indexOf(video.curationStatus?.id || -1) < 0
+      return isPublic && isNotCurated
+    }
+
     return (await this.allVideos())
-      .filter(isPublicEntity)
+      .filter(isPublicAndNotCurated)
       .sort(x => -1 * x.id)
       .slice(0, limit)
   }
@@ -217,8 +228,8 @@ export abstract class MediaTransport extends TransportBase {
 
   abstract allEntities(): Promise<Entity[]>
 
-  async dropdownOptions(): Promise<MediaDropdownOptions> {
-    const res = new MediaDropdownOptions({
+  async allInternalEntities(): Promise<InternalEntities> {
+    return {
       contentLicenses: await this.allContentLicenses(),
       curationStatuses: await this.allCurationStatuses(),
       languages: await this.allLanguages(),
@@ -227,8 +238,29 @@ export abstract class MediaTransport extends TransportBase {
       musicThemes: await this.allMusicThemes(),
       publicationStatuses: await this.allPublicationStatuses(),
       videoCategories: await this.allVideoCategories()
-    });
-    //console.log('Transport.dropdownOptions', res);
-    return res;
+    }
+  }
+
+  async internalEntityResolvers(): Promise<InternalEntityResolvers> {
+    const entities = await this.allInternalEntities()
+    return {
+      // MediaObject: undefined, // TODO think how to implement? or even need?
+      ContentLicense: (id) => entities.contentLicenses.find(x => id.eq(x.id)),
+      CurationStatus: (id) => entities.curationStatuses.find(x => id.eq(x.id)),
+      Language: (id) => entities.languages.find(x => id.eq(x.id)),
+      MusicGenre: (id) => entities.musicGenres.find(x => id.eq(x.id)),
+      MusicMood: (id) => entities.musicMoods.find(x => id.eq(x.id)),
+      MusicTheme: (id) => entities.musicThemes.find(x => id.eq(x.id)),
+      PublicationStatus: (id) => entities.publicationStatuses.find(x => id.eq(x.id)),
+      VideoCategory: (id) => entities.videoCategories.find(x => id.eq(x.id))
+    }
+  }
+
+  async dropdownOptions(): Promise<MediaDropdownOptions> {
+    const res = new MediaDropdownOptions(
+      await this.allInternalEntities()
+    )
+    //console.log('Transport.dropdownOptions', res)
+    return res
   }
 }
