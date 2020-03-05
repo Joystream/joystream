@@ -1,52 +1,50 @@
 [package]
-name = "substrate-forum-module"
-version = "1.0.0"
-authors = ["Bedeho Mender <bedeho.mender@protonmail.com>"]
-edition = "2018"
+name = 'substrate-forum-module'
+version = '1.1.0'
+authors = ['Bedeho Mender <bedeho.mender@protonmail.com>']
+edition = '2018'
 
 [dependencies]
-# restrict version of syn, see https://github.com/paritytech/substrate/issues/2326
-syn = { version = ">= 0.15.26, < 0.15.32", features = ["full"] }
-hex-literal = "0.1.0"
-serde = { version = "1.0", optional = true }
-serde_derive = { version = "1.0", optional = true }
-parity-codec = { version = "3.2", default-features = false }
-parity-codec-derive = { version = "3.1", default-features = false }
-rstd = { package = 'sr-std', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
-runtime-primitives = { package = 'sr-primitives', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
-srml-support = { package = 'srml-support', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
-srml-support-procedural = { package = 'srml-support-procedural', git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
-system = { package = 'srml-system', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
-balances = { package = 'srml-balances', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
+hex-literal = '0.1.0'
+serde = { version = '1.0.101', optional = true}
+serde_derive = { version = '1.0.101', optional = true }
+rstd = { package = 'sr-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+runtime-primitives = { package = 'sr-primitives', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+srml-support = { package = 'srml-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+srml-support-procedural = { package = 'srml-support-procedural', git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+system = { package = 'srml-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+balances = { package = 'srml-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+codec = { package = 'parity-scale-codec', version = '1.0.0', default-features = false, features = ['derive'] }
+#https://users.rust-lang.org/t/failure-derive-compilation-error/39062
+quote = '=1.0.2'
 
 [dependencies.timestamp]
 default_features = false
-git = 'https://github.com/joystream/substrate.git'
+git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-timestamp'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [dependencies.runtime-io]
 default_features = false
-git = 'https://github.com/joystream/substrate.git'
+git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
-rev = '6dfc3e8b057bb00322136251a0f10305fbb1ad8f'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [dev-dependencies]
-runtime-io = { package = 'sr-io', default-features = false, git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
-primitives = { package = 'substrate-primitives', git = "https://github.com/joystream/substrate.git", rev = "6dfc3e8b057bb00322136251a0f10305fbb1ad8f"}
+runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+primitives = { package = 'substrate-primitives', git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
 
 [features]
-default = ["std"]
+default = ['std']
 std = [
-	"serde",
-	"serde_derive",
-	"parity-codec/std",
-	"parity-codec-derive/std",
-	"rstd/std",
-	"runtime-io/std",
-	"runtime-primitives/std",
-	"srml-support/std",
-	"system/std",
-  	"balances/std",
-	"timestamp/std",
+	'serde',
+	'serde_derive',
+	'codec/std',
+	'rstd/std',
+	'runtime-io/std',
+	'runtime-primitives/std',
+	'srml-support/std',
+	'system/std',
+  	'balances/std',
+	'timestamp/std',
 ]
