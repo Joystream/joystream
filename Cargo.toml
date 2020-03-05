@@ -23,7 +23,7 @@ quote = '=1.0.2'
 default_features = false
 git = 'https://github.com/joystream/substrate-stake-module'
 package = 'substrate-stake-module'
-branch = 'rome'
+tag = 'v1.0.0'
 
 [dependencies.timestamp]
 default_features = false
