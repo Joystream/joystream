@@ -395,12 +395,12 @@ impl finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
+pub use forum;
 use governance::{council, election, proposals};
+use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use versioned_store;
 use versioned_store_permissions;
-pub use forum;
-use membership::members;
 
 pub use content_working_group as content_wg;
 mod migration;
