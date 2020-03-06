@@ -1213,17 +1213,13 @@ decl_module! {
             // Ensure prospective new owner can actually become a channel owner (with a new channel id)
             // We do not pass the existing channel id because it is already owned and the call would
             // return with Err, since the membership system doesn't allow the same ActorInRole to be assigned
-            // to more than one member.
+            // to more than one member, and we don't use the returned actor_in_role because its not
+            // for the channel being transferred.
             Self::ensure_can_register_channel_owner_role_on_member(&new_owner, None)?;
 
             //
             // == MUTATION SAFE ==
             //
-
-            <members::Module<T>>::transfer_role(
-                role_types::ActorInRole::new(role_types::Role::ChannelOwner, channel_id),
-                new_owner,
-            )?;
 
             // Construct new channel with altered properties
             let new_channel = Channel {
@@ -1234,6 +1230,26 @@ decl_module! {
 
             // Overwrite entry in ChannelById
             ChannelById::<T>::insert(channel_id, new_channel);
+
+            let role = role_types::ActorInRole::new(
+                role_types::Role::ChannelOwner,
+                channel_id
+            );
+
+            // Remove
+            let unregistered_role = <members::Module<T>>::unregister_role(
+                role
+            ).is_ok();
+
+            assert!(unregistered_role);
+
+            // Dial out to membership module and inform about new role as channel owner.
+            let registered_role = <members::Module<T>>::register_role_on_member(
+                new_owner,
+                &role
+            ).is_ok();
+
+            assert!(registered_role);
 
             // Trigger event
             Self::deposit_event(RawEvent::ChannelOwnershipTransferred(channel_id));

@@ -636,15 +636,27 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn register_role_on_member_policy_check(
+    // policy across all roles is:
+    // members can only occupy a role at most once at a time
+    // members can enter any role
+    // no limit on total number of roles a member can enter
+    // ** Note ** Role specific policies should be enforced by the client modules
+    // this method should handle higher level policies
+    pub fn can_register_role_on_member(
         member_id: &T::MemberId,
-        _actor_in_role: &ActorInRole<T::ActorId>,
+        actor_in_role: &ActorInRole<T::ActorId>,
     ) -> Result<Profile<T>, &'static str> {
         // Ensure member exists
         let profile = Self::ensure_profile(*member_id)?;
 
         // ensure is active member
         ensure!(!profile.suspended, "SuspendedMemberCannotEnterRole");
+
+        // guard against duplicate ActorInRole
+        ensure!(
+            !<MembershipIdByActorInRole<T>>::exists(actor_in_role),
+            "ActorInRoleAlreadyExists"
+        );
 
         /*
         Disabling this temporarily for Rome, later we will drop all this
@@ -660,26 +672,6 @@ impl<T: Trait> Module<T> {
         // How long the member has been registered
         // Minimum balance
         // EntryMethod
-        Ok(profile)
-    }
-
-    // policy across all roles is:
-    // members can only occupy a role at most once at a time
-    // members can enter any role
-    // no limit on total number of roles a member can enter
-    // ** Note ** Role specific policies should be enforced by the client modules
-    // this method should handle higher level policies
-    pub fn can_register_role_on_member(
-        member_id: &T::MemberId,
-        actor_in_role: &ActorInRole<T::ActorId>,
-    ) -> Result<Profile<T>, &'static str> {
-        let profile = Self::register_role_on_member_policy_check(member_id, actor_in_role)?;
-
-        // guard against duplicate ActorInRole
-        ensure!(
-            !<MembershipIdByActorInRole<T>>::exists(actor_in_role),
-            "ActorInRoleAlreadyExists"
-        );
 
         Ok(profile)
     }
@@ -717,39 +709,12 @@ impl<T: Trait> Module<T> {
 
         assert!(profile.roles.unregister_role(&actor_in_role));
 
-        // Note we do do not remove the mapping by convention, so attempting to register
-        // same actor_in_role in future would fail. If the intent is to register it
-        // again on another member, use transfer_role() instead.
-        // ** Isn't is simpler to just remove it from map than to introduce a transfer function?
+        <MembershipIdByActorInRole<T>>::remove(actor_in_role);
 
         <MemberProfile<T>>::insert(member_id, profile);
 
         Self::deposit_event(RawEvent::MemberUnregisteredRole(member_id, actor_in_role));
 
         Ok(())
-    }
-
-    pub fn can_transfer_role_to_member(
-        actor_in_role: ActorInRole<T::ActorId>,
-        member_id: T::MemberId,
-    ) -> Result<(), &'static str> {
-        Self::register_role_on_member_policy_check(&member_id, &actor_in_role)?;
-
-        // cannot transfer no-existant role
-        ensure!(
-            <MembershipIdByActorInRole<T>>::exists(actor_in_role),
-            "CannotTransferNonExistentActorInRole"
-        );
-        Ok(())
-    }
-
-    pub fn transfer_role(
-        actor_in_role: ActorInRole<T::ActorId>,
-        new_member_id: T::MemberId,
-    ) -> Result<(), &'static str> {
-        Self::can_transfer_role_to_member(actor_in_role, new_member_id)?;
-        Self::unregister_role(actor_in_role)?;
-        <MembershipIdByActorInRole<T>>::remove(&actor_in_role);
-        Self::register_role_on_member(new_member_id, &actor_in_role)
     }
 }
