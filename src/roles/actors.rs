@@ -1,7 +1,7 @@
 use crate::currency::{BalanceOf, GovernanceCurrency};
 use codec::{Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{Bounded, Zero};
+use sr_primitives::traits::{Bounded, Zero};
 use srml_support::traits::{
     Currency, LockIdentifier, LockableCurrency, WithdrawReason, WithdrawReasons,
 };
