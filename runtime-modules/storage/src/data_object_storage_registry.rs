@@ -1,5 +1,5 @@
-use crate::roles::actors;
-use crate::storage::data_directory::Trait as DDTrait;
+use roles::actors;
+use crate::data_directory::Trait as DDTrait;
 use crate::traits::{ContentHasStorage, ContentIdExists, Roles};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;

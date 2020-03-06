@@ -1,6 +1,5 @@
-use crate::membership;
 use roles::actors;
-use crate::storage::data_object_type_registry::Trait as DOTRTrait;
+use crate::data_object_type_registry::Trait as DOTRTrait;
 use crate::traits::{ContentIdExists, IsActiveDataObjectType};
 use roles::traits::{Roles};
 use codec::{Codec, Decode, Encode};

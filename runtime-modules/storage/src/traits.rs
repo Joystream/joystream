@@ -1,4 +1,4 @@
-use crate::storage::{data_directory, data_object_storage_registry, data_object_type_registry};
+use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 use system;
 
 // Storage
