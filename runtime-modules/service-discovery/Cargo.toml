@@ -46,7 +46,7 @@ features = ['derive']
 optional = true
 version = '1.0.101'
 
-[dev-dependencies.primitives]
+[dependencies.primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-primitives'
@@ -61,4 +61,4 @@ version = '1.0.0'
 [dependencies.roles]
 default_features = false
 package = 'substrate-roles-module'
-path = 'runtime-modules/roles'
+path = '../roles'

@@ -48,7 +48,7 @@ features = ['derive']
 package = 'parity-scale-codec'
 version = '1.0.0'
 
-[dev-dependencies.primitives]
+[dependencies.primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-primitives'
@@ -57,9 +57,9 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 [dependencies.membership]
 default_features = false
 package = 'substrate-membership-module'
-path = 'runtime-modules/membership'
+path = '../membership'
 
 [dependencies.common]
 default_features = false
 package = 'substrate-common-module'
-path = 'runtime-modules/common'
+path = '../common'

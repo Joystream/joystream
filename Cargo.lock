@@ -621,6 +621,10 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "516877b7b9a1cc2d0293cbce23cd6203f0edbfd4090e6ca4489fecb5aa73050e"
 dependencies = [
+ "byteorder 1.3.4",
+ "libc",
+ "rand 0.5.6",
+ "rustc-hex",
  "static_assertions 0.2.5",
 ]
 
@@ -888,6 +892,12 @@ dependencies = [
 
 [[package]]
 name = "hex"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"
+
+[[package]]
+name = "hex"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
@@ -1080,13 +1090,20 @@ dependencies = [
  "substrate-client",
  "substrate-common-module",
  "substrate-consensus-babe-primitives",
+ "substrate-content-working-group-module",
  "substrate-forum-module",
+ "substrate-governance-module",
  "substrate-hiring-module",
+ "substrate-membership-module",
+ "substrate-memo-module",
  "substrate-offchain-primitives",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-recurring-reward-module",
+ "substrate-roles-module",
+ "substrate-service-discovery-module",
  "substrate-session",
  "substrate-stake-module",
+ "substrate-storage-module",
  "substrate-token-mint-module",
  "substrate-versioned-store",
  "substrate-versioned-store-permissions-module",
@@ -2063,6 +2080,7 @@ checksum = "83ef7b3b965c0eadcb6838f34f827e1dfb2939bdd5ebd43f9647e009b12b0371"
 dependencies = [
  "fixed-hash 0.4.0",
  "impl-codec",
+ "impl-serde 0.2.3",
  "uint",
 ]
 
@@ -2181,6 +2199,19 @@ dependencies = [
  "libc",
  "rand_core 0.3.1",
  "rdrand",
+ "winapi 0.3.8",
+]
+
+[[package]]
+name = "rand"
+version = "0.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c618c47cd3ebd209790115ab837de41425723956ad3ce2e6a7f09890947cacb9"
+dependencies = [
+ "cloudabi",
+ "fuchsia-cprng",
+ "libc",
+ "rand_core 0.3.1",
  "winapi 0.3.8",
 ]
 
@@ -2709,6 +2740,7 @@ dependencies = [
  "integer-sqrt",
  "num-traits",
  "parity-scale-codec",
+ "serde",
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-debug-derive 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
 ]
@@ -2732,10 +2764,16 @@ version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
 dependencies = [
  "hash-db",
+ "libsecp256k1",
+ "log",
  "parity-scale-codec",
  "rustc_version",
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-externalities 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-state-machine 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-trie 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "tiny-keccak",
 ]
 
 [[package]]
@@ -2749,10 +2787,10 @@ dependencies = [
  "parity-scale-codec",
  "rustc_version",
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-externalities",
+ "substrate-externalities 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-state-machine",
- "substrate-trie",
+ "substrate-state-machine 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+ "substrate-trie 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "tiny-keccak",
 ]
 
@@ -2762,8 +2800,11 @@ version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
 dependencies = [
  "impl-trait-for-tuples",
+ "log",
  "parity-scale-codec",
  "paste",
+ "rand 0.7.3",
+ "serde",
  "sr-arithmetic 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "sr-io 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
@@ -2820,7 +2861,9 @@ name = "sr-version"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
 dependencies = [
+ "impl-serde 0.2.3",
  "parity-scale-codec",
+ "serde",
  "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
 ]
@@ -2994,6 +3037,7 @@ version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
 dependencies = [
  "parity-scale-codec",
+ "serde",
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
 ]
@@ -3053,7 +3097,7 @@ dependencies = [
  "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-timestamp",
- "substrate-trie",
+ "substrate-trie 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
 ]
 
 [[package]]
@@ -3109,8 +3153,10 @@ dependencies = [
  "bitmask",
  "impl-trait-for-tuples",
  "log",
+ "once_cell 0.2.4",
  "parity-scale-codec",
  "paste",
+ "serde",
  "sr-io 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
@@ -3217,6 +3263,7 @@ dependencies = [
  "impl-trait-for-tuples",
  "parity-scale-codec",
  "safe-mix",
+ "serde",
  "sr-io 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
@@ -3336,6 +3383,7 @@ version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
 dependencies = [
  "parity-scale-codec",
+ "serde",
  "sr-io 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
@@ -3401,9 +3449,9 @@ dependencies = [
  "substrate-inherents 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-keyring",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-state-machine",
+ "substrate-state-machine 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-telemetry",
- "substrate-trie",
+ "substrate-trie 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
 ]
 
 [[package]]
@@ -3467,6 +3515,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-content-working-group-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+ "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-membership-module",
+ "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+]
+
+[[package]]
 name = "substrate-debug-derive"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
@@ -3500,14 +3562,25 @@ dependencies = [
  "parking_lot 0.9.0",
  "sr-io 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "sr-version 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-externalities",
- "substrate-panic-handler",
+ "substrate-externalities 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+ "substrate-panic-handler 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-serializer",
- "substrate-trie",
+ "substrate-trie 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-wasm-interface",
  "tiny-keccak",
  "wasmi",
+]
+
+[[package]]
+name = "substrate-externalities"
+version = "2.0.0"
+source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
+dependencies = [
+ "environmental",
+ "primitive-types 0.5.1",
+ "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-primitives-storage 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
 ]
 
 [[package]]
@@ -3555,6 +3628,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-governance-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+ "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-common-module",
+ "substrate-membership-module",
+ "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+]
+
+[[package]]
 name = "substrate-header-metadata"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8#c37bb08535c49a12320af7facfd555ce05cce2e8"
@@ -3591,6 +3679,7 @@ version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
 dependencies = [
  "parity-scale-codec",
+ "parking_lot 0.9.0",
  "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
 ]
@@ -3619,12 +3708,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-membership-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+ "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "srml-timestamp",
+ "substrate-common-module",
+ "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+]
+
+[[package]]
+name = "substrate-memo-module"
+version = "1.0.0"
+dependencies = [
+ "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+ "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-common-module",
+]
+
+[[package]]
 name = "substrate-offchain-primitives"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8#c37bb08535c49a12320af7facfd555ce05cce2e8"
 dependencies = [
  "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-client",
+]
+
+[[package]]
+name = "substrate-panic-handler"
+version = "2.0.0"
+source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
+dependencies = [
+ "backtrace",
+ "log",
 ]
 
 [[package]]
@@ -3651,17 +3774,36 @@ name = "substrate-primitives"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
 dependencies = [
+ "base58",
+ "blake2-rfc",
  "byteorder 1.3.4",
+ "ed25519-dalek 0.9.1",
  "hash-db",
  "hash256-std-hasher",
+ "hex 0.3.2",
+ "impl-serde 0.2.3",
+ "lazy_static",
+ "libsecp256k1",
  "log",
  "num-traits",
  "parity-scale-codec",
+ "parking_lot 0.9.0",
  "primitive-types 0.5.1",
+ "rand 0.7.3",
+ "regex",
  "rustc-hex",
+ "schnorrkel",
+ "serde",
+ "sha2",
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-bip39",
  "substrate-debug-derive 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-externalities 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-primitives-storage 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "tiny-bip39",
+ "tiny-keccak",
+ "twox-hash",
+ "wasmi",
  "zeroize 0.10.1",
 ]
 
@@ -3676,7 +3818,7 @@ dependencies = [
  "ed25519-dalek 0.9.1",
  "hash-db",
  "hash256-std-hasher",
- "hex",
+ "hex 0.4.2",
  "impl-serde 0.2.3",
  "lazy_static",
  "libsecp256k1",
@@ -3694,7 +3836,7 @@ dependencies = [
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-bip39",
  "substrate-debug-derive 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-externalities",
+ "substrate-externalities 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-primitives-storage 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "tiny-bip39",
  "tiny-keccak",
@@ -3708,6 +3850,8 @@ name = "substrate-primitives-storage"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
 dependencies = [
+ "impl-serde 0.2.3",
+ "serde",
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
  "substrate-debug-derive 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
 ]
@@ -3745,12 +3889,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-roles-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+ "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-common-module",
+ "substrate-membership-module",
+ "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+]
+
+[[package]]
 name = "substrate-serializer"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8#c37bb08535c49a12320af7facfd555ce05cce2e8"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "substrate-service-discovery-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+ "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+ "substrate-roles-module",
 ]
 
 [[package]]
@@ -3787,6 +3959,25 @@ dependencies = [
 [[package]]
 name = "substrate-state-machine"
 version = "2.0.0"
+source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
+dependencies = [
+ "hash-db",
+ "log",
+ "num-traits",
+ "parity-scale-codec",
+ "parking_lot 0.9.0",
+ "rand 0.7.3",
+ "substrate-externalities 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-panic-handler 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-trie 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "trie-db",
+ "trie-root",
+]
+
+[[package]]
+name = "substrate-state-machine"
+version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8#c37bb08535c49a12320af7facfd555ce05cce2e8"
 dependencies = [
  "hash-db",
@@ -3795,12 +3986,27 @@ dependencies = [
  "parity-scale-codec",
  "parking_lot 0.9.0",
  "rand 0.7.3",
- "substrate-externalities",
- "substrate-panic-handler",
+ "substrate-externalities 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+ "substrate-panic-handler 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-trie",
+ "substrate-trie 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "trie-db",
  "trie-root",
+]
+
+[[package]]
+name = "substrate-storage-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+ "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-common-module",
+ "substrate-membership-module",
+ "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
+ "substrate-roles-module",
 ]
 
 [[package]]
@@ -3843,6 +4049,20 @@ dependencies = [
  "srml-support-procedural 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-timestamp",
+]
+
+[[package]]
+name = "substrate-trie"
+version = "2.0.0"
+source = "git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3#0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3"
+dependencies = [
+ "hash-db",
+ "memory-db",
+ "parity-scale-codec",
+ "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3)",
+ "trie-db",
+ "trie-root",
 ]
 
 [[package]]

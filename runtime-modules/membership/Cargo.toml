@@ -53,7 +53,7 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-timestamp'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
-[dev-dependencies.primitives]
+[dependencies.primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-primitives'
@@ -62,4 +62,4 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 [dependencies.common]
 default_features = false
 package = 'substrate-common-module'
-path = 'runtime-modules/common'
+path = '../common'
