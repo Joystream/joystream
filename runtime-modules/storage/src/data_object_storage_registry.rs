@@ -198,7 +198,7 @@ impl<T: Trait> Module<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::storage::mock::*;
+    use crate::mock::*;
 
     #[test]
     fn initial_state() {

@@ -41,7 +41,7 @@ pub const TEST_MOCK_LIAISON: u64 = 0xd00du64;
 pub const TEST_MOCK_EXISTING_CID: u64 = 42;
 
 pub struct MockRoles {}
-impl traits::Roles<Test> for MockRoles {
+impl roles::traits::Roles<Test> for MockRoles {
     fn is_role_account(_account_id: &<Test as system::Trait>::AccountId) -> bool {
         false
     }

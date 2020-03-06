@@ -898,7 +898,7 @@ impl<T: Trait> council::CouncilTermEnded for Module<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::governance::mock::*;
+    use crate::mock::*;
     use codec::Encode;
     use srml_support::*;
 

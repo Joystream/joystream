@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 pub use super::discovery;
-pub use crate::roles::actors;
+pub use roles::actors;
 use roles::traits::Roles;
 
 pub use primitives::{Blake2Hasher, H256};

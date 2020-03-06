@@ -687,10 +687,11 @@ mod tests {
             .build_storage::<Test>()
             .unwrap();
 
-        // We use default for brevity, but you can configure as desired if needed.
-        balances::GenesisConfig::<Test>::default()
-            .assimilate_storage(&mut t)
-            .unwrap();
+        // balances doesn't contain GenesisConfig anymore
+        // // We use default for brevity, but you can configure as desired if needed.
+        // balances::GenesisConfig::<Test>::default()
+        //     .assimilate_storage(&mut t)
+        //     .unwrap();
 
         let council_mock: council::Seats<u64, u64> = ALL_COUNCILORS
             .iter()

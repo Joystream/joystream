@@ -157,7 +157,7 @@ impl<T: Trait> Module<T> {
 #[cfg(test)]
 mod tests {
     //use super::*;
-    use crate::storage::mock::*;
+    use crate::mock::*;
 
     use system::{self, EventRecord, Phase};
 

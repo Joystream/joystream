@@ -123,7 +123,7 @@ decl_module! {
 
 #[cfg(test)]
 mod tests {
-    use crate::governance::mock::*;
+    use crate::mock::*;
     use srml_support::*;
 
     fn add_council_member_as_root(account: <Test as system::Trait>::AccountId) -> dispatch::Result {
