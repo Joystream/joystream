@@ -395,24 +395,15 @@ impl finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
-pub mod currency;
-pub mod governance;
 use governance::{council, election, proposals};
-pub mod storage;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
-mod membership;
-mod memo;
 pub use versioned_store;
 use versioned_store_permissions;
-mod traits;
 pub use forum;
 use membership::members;
 
-mod content_working_group;
 pub use content_working_group::lib as content_wg;
 mod migration;
-mod roles;
-mod service_discovery;
 use hiring;
 use minting;
 use recurringrewards;

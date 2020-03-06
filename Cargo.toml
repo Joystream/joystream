@@ -49,7 +49,15 @@ std = [
     'stake/std',
     'hiring/std',
     'versioned_store/std',
-    'versioned_store_permissions/std'
+    'versioned_store_permissions/std',
+    'common/std',
+    'content_working_group/std',
+    'governance/std',
+    'membership/std',
+    'memo/std',
+    'roles/std',
+    'service_discovery/std',
+    'storage/std',
 ]
 
 [dependencies.babe]
@@ -299,3 +307,43 @@ default_features = false
 package = 'substrate-versioned-store-permissions-module'
 git = 'https://github.com/joystream/substrate-versioned-store-permissions-module'
 tag = 'v1.0.0'
+
+[dependencies.common]
+default_features = false
+package = 'substrate-common-module'
+path = 'runtime-modules/common'
+
+[dependencies.content_working_group]
+default_features = false
+package = 'substrate-content-working-group-module'
+path = 'runtime-modules/content-working-group'
+
+[dependencies.governance]
+default_features = false
+package = 'substrate-governance-module'
+path = 'runtime-modules/governance'
+
+[dependencies.membership]
+default_features = false
+package = 'substrate-membership-module'
+path = 'runtime-modules/membership'
+
+[dependencies.memo]
+default_features = false
+package = 'substrate-memo-module'
+path = 'runtime-modules/memo'
+
+[dependencies.roles]
+default_features = false
+package = 'substrate-roles-module'
+path = 'runtime-modules/roles'
+
+[dependencies.service_discovery]
+default_features = false
+package = 'substrate-service-discovery-module'
+path = 'runtime-modules/service-discovery'
+
+[dependencies.storage]
+default_features = false
+package = 'substrate-storage-module'
+path = 'runtime-modules/storage'
