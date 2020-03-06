@@ -636,13 +636,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // policy across all roles is:
-    // members can only occupy a role at most once at a time
-    // members can enter any role
-    // no limit on total number of roles a member can enter
-    // ** Note ** Role specific policies should be enforced by the client modules
-    // this method should handle higher level policies
-    pub fn can_register_role_on_member(
+    fn register_role_on_member_policy_check(
         member_id: &T::MemberId,
         actor_in_role: &ActorInRole<T::ActorId>,
     ) -> Result<Profile<T>, &'static str> {
@@ -651,12 +645,6 @@ impl<T: Trait> Module<T> {
 
         // ensure is active member
         ensure!(!profile.suspended, "SuspendedMemberCannotEnterRole");
-
-        // guard against duplicate ActorInRole
-        ensure!(
-            !<MembershipIdByActorInRole<T>>::exists(actor_in_role),
-            "ActorInRoleAlreadyExists"
-        );
 
         /*
         Disabling this temporarily for Rome, later we will drop all this
@@ -672,6 +660,26 @@ impl<T: Trait> Module<T> {
         // How long the member has been registered
         // Minimum balance
         // EntryMethod
+        Ok(profile)
+    }
+
+    // policy across all roles is:
+    // members can only occupy a role at most once at a time
+    // members can enter any role
+    // no limit on total number of roles a member can enter
+    // ** Note ** Role specific policies should be enforced by the client modules
+    // this method should handle higher level policies
+    pub fn can_register_role_on_member(
+        member_id: &T::MemberId,
+        actor_in_role: &ActorInRole<T::ActorId>,
+    ) -> Result<Profile<T>, &'static str> {
+        let profile = Self::register_role_on_member_policy_check(member_id, actor_in_role)?;
+
+        // guard against duplicate ActorInRole
+        ensure!(
+            !<MembershipIdByActorInRole<T>>::exists(actor_in_role),
+            "ActorInRoleAlreadyExists"
+        );
 
         Ok(profile)
     }
@@ -725,14 +733,7 @@ impl<T: Trait> Module<T> {
         actor_in_role: ActorInRole<T::ActorId>,
         member_id: T::MemberId,
     ) -> Result<(), &'static str> {
-        // Ensure member exists
-        let profile = Self::ensure_profile(member_id)?;
-
-        // ensure is active member
-        ensure!(!profile.suspended, "SuspendedMemberCannotEnterRole");
-
-        // TODO: if above policy checks are identical to ones in can_register_role_on_member() factor them out
-        // to a separate function
+        let _profile = Self::register_role_on_member_policy_check(&member_id, &actor_in_role)?;
 
         // cannot transfer no-existant role
         ensure!(
