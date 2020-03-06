@@ -1,6 +1,6 @@
 [package]
 name = 'substrate-recurring-reward-module'
-version = '1.0.0'
+version = '1.0.1'
 authors = ['Mokhtar Naamani <mokhtar.naamani@gmail.com>']
 edition = '2018'
 
@@ -15,8 +15,8 @@ srml-support-procedural = { package = 'srml-support-procedural', git = 'https://
 system = { package = 'srml-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
 balances = { package = 'srml-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
 codec = { package = 'parity-scale-codec', version = '1.0.0', default-features = false, features = ['derive'] }
-#https://users.rust-lang.org/t/failure-derive-compilation-error/39062
-quote = '=1.0.2'
+# https://users.rust-lang.org/t/failure-derive-compilation-error/39062
+quote = '<=1.0.2'
 
 [dependencies.timestamp]
 default_features = false
@@ -34,7 +34,7 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 default_features = false
 git = 'https://github.com/Joystream/substrate-token-minting-module/'
 package = 'substrate-token-mint-module'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
 
 [dev-dependencies]
 runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
