@@ -1,4 +1,4 @@
-use crate::currency::{BalanceOf, GovernanceCurrency};
+use common::currency::{BalanceOf, GovernanceCurrency};
 use codec::{Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{Bounded, Zero};
@@ -8,7 +8,6 @@ use srml_support::traits::{
 use srml_support::{decl_event, decl_module, decl_storage, ensure};
 use system::{self, ensure_root, ensure_signed};
 
-use crate::membership;
 pub use membership::members::Role;
 
 const STAKING_ID: LockIdentifier = *b"role_stk";
