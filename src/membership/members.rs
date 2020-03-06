@@ -691,11 +691,17 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn unregister_role(actor_in_role: ActorInRole<T::ActorId>) -> Result<(), &'static str> {
+    pub fn can_unregister_role(actor_in_role: ActorInRole<T::ActorId>) -> Result<(), &'static str> {
         ensure!(
             <MembershipIdByActorInRole<T>>::exists(&actor_in_role),
             "ActorInRoleNotFound"
         );
+
+        Ok(())
+    }
+
+    pub fn unregister_role(actor_in_role: ActorInRole<T::ActorId>) -> Result<(), &'static str> {
+        Self::can_unregister_role(actor_in_role)?;
 
         let member_id = <MembershipIdByActorInRole<T>>::get(actor_in_role);
 
@@ -715,7 +721,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn can_transfer_role_to_member(
+    pub fn can_transfer_role_to_member(
         actor_in_role: ActorInRole<T::ActorId>,
         member_id: T::MemberId,
     ) -> Result<(), &'static str> {
@@ -731,7 +737,7 @@ impl<T: Trait> Module<T> {
         // cannot transfer no-existant role
         ensure!(
             <MembershipIdByActorInRole<T>>::exists(actor_in_role),
-            "ActorInRoleDoesNotExist"
+            "CannotTransferNonExistentActorInRole"
         );
         Ok(())
     }
