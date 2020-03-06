@@ -1,4 +1,4 @@
-use crate::currency::{BalanceOf, GovernanceCurrency};
+use common::currency::{BalanceOf, GovernanceCurrency};
 use codec::{Codec, Decode, Encode};
 
 use rstd::prelude::*;

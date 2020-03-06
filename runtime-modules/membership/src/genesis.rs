@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::currency::BalanceOf;
+use common::currency::BalanceOf;
 use rstd::prelude::*;
 //pub use super::members::{GenesisConfig, Trait};
 

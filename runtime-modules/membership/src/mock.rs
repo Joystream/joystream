@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 pub use super::members::{self, Trait, DEFAULT_PAID_TERM_ID};
-pub use crate::currency::GovernanceCurrency;
+pub use common::currency::GovernanceCurrency;
 pub use srml_support::traits::Currency;
 pub use system;
 
