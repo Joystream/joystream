@@ -1,7 +1,6 @@
-import { Transport as TransportBase } from '@polkadot/joy-utils/index'
+import { Transport } from '@polkadot/joy-utils/index'
 import { AccountId } from '@polkadot/types/interfaces';
 import { EntityId, Entity, Class, ClassName, unifyClassName, ClassIdByNameMap } from '@joystream/types/versioned-store';
-import { InternalEntityResolvers } from '@joystream/types/versioned-store/EntityCodec';
 import { MusicTrackType, MusicTrackCodec } from './schemas/music/MusicTrack';
 import { MusicAlbumType, MusicAlbumCodec } from './schemas/music/MusicAlbum';
 import { VideoType, VideoCodec } from './schemas/video/Video';
@@ -65,7 +64,7 @@ function insensitiveEq(text1: string, text2: string): boolean {
   return prepare(text1) === prepare(text2)
 }
 
-export abstract class MediaTransport extends TransportBase {
+export abstract class MediaTransport extends Transport {
 
   protected cachedClassIdByNameMap: ClassIdByNameMap | undefined
 
@@ -93,17 +92,16 @@ export abstract class MediaTransport extends TransportBase {
   }
 
   async classIdByNameMap(): Promise<ClassIdByNameMap> {
-    if (this.cachedClassIdByNameMap) return this.cachedClassIdByNameMap
-
-    const map: ClassIdByNameMap = {}
-    const classes = await this.allClasses()
-    classes.forEach((x) => {
-      const className = unifyClassName(x.name)
-      map[className] = x.id
-    });
-    
-    this.cachedClassIdByNameMap = map
-    return map
+    if (!this.cachedClassIdByNameMap) {
+      const map: ClassIdByNameMap = {}
+      const classes = await this.allClasses()
+      classes.forEach((c) => {
+        const className = unifyClassName(c.name)
+        map[className] = c.id
+      })
+      this.cachedClassIdByNameMap = map
+    }
+    return this.cachedClassIdByNameMap
   }
 
   abstract featuredContent(): Promise<FeaturedContentType | undefined>
@@ -250,21 +248,6 @@ export abstract class MediaTransport extends TransportBase {
       musicThemes: await this.allMusicThemes(),
       publicationStatuses: await this.allPublicationStatuses(),
       videoCategories: await this.allVideoCategories()
-    }
-  }
-
-  async internalEntityResolvers(): Promise<InternalEntityResolvers> {
-    const entities = await this.allInternalEntities()
-    return {
-      // MediaObject: undefined, // TODO think how to implement? or even need?
-      ContentLicense: (id) => entities.contentLicenses.find(x => id.eq(x.id)),
-      CurationStatus: (id) => entities.curationStatuses.find(x => id.eq(x.id)),
-      Language: (id) => entities.languages.find(x => id.eq(x.id)),
-      MusicGenre: (id) => entities.musicGenres.find(x => id.eq(x.id)),
-      MusicMood: (id) => entities.musicMoods.find(x => id.eq(x.id)),
-      MusicTheme: (id) => entities.musicThemes.find(x => id.eq(x.id)),
-      PublicationStatus: (id) => entities.publicationStatuses.find(x => id.eq(x.id)),
-      VideoCategory: (id) => entities.videoCategories.find(x => id.eq(x.id))
     }
   }
 

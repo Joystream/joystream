@@ -1,8 +1,8 @@
 import BN from 'bn.js';
-import { MediaTransport, EntityCodecByClassNameMap, ChannelValidationConstraints, ValidationConstraint } from './transport';
+import { MediaTransport, ChannelValidationConstraints, ValidationConstraint } from './transport';
 import { ClassId, Class, EntityId, Entity, ClassName } from '@joystream/types/versioned-store';
 import { InputValidationLengthConstraint } from '@joystream/types/forum';
-import { PlainEntity, AnyEntityCodec } from '@joystream/types/versioned-store/EntityCodec';
+import { PlainEntity, EntityCodecResolver } from '@joystream/types/versioned-store/EntityCodec';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';
@@ -28,6 +28,22 @@ const FIRST_CHANNEL_ID = 1;
 const FIRST_CLASS_ID = 1;
 const FIRST_ENTITY_ID = 1;
 
+/**
+ * There are entities that refer to other entities.
+ * 
+ */
+const ClassNamesThatRequireLoadingInternals: ClassName[] = [
+  'Video',
+  'MusicTrack',
+  'MusicAlbum'
+]
+
+/**
+ * There are such group of entities that are safe to cache
+ * becase they serve as utility entities. 
+ * Very unlikely that their values will be changed frequently. 
+ * Even if changed, this is not a big issue from UI point of view.
+ */
 const ClassNamesThatCanBeCached: ClassName[] = [
   'ContentLicense',
   'CurationStatus',
@@ -39,9 +55,23 @@ const ClassNamesThatCanBeCached: ClassName[] = [
   'VideoCategory',
 ]
 
+type AnyEntityId = EntityId | BN | number | string
+
+function asEntityId(id: AnyEntityId): EntityId {
+  if (id instanceof EntityId) {
+    return id
+  } else if (id instanceof BN || typeof id === 'number' || typeof id === 'string') {
+    return new EntityId(id)
+  } else {
+    throw new Error(`Not supported format for entity id: ${id}`)
+  }
+}
+
 export class SubstrateTransport extends MediaTransport {
 
   protected api: ApiPromise
+
+  private entityCodecResolver: EntityCodecResolver | undefined
 
   private cachedClasses: Class[] | undefined
 
@@ -59,7 +89,7 @@ export class SubstrateTransport extends MediaTransport {
       throw new Error('Cannot create SubstrateTransport: Substrate API is not ready yet');
     }
 
-    this.api = api.api;
+    this.api = api.api
   }
 
   protected notImplementedYet<T> (): T {
@@ -159,6 +189,14 @@ export class SubstrateTransport extends MediaTransport {
     return ClassNamesThatCanBeCached.indexOf(className) >= 0
   }
 
+  async getEntityCodecResolver(): Promise<EntityCodecResolver> {
+    if (!this.entityCodecResolver) {
+      const classes = await this.allClasses()
+      this.entityCodecResolver = new EntityCodecResolver(classes)
+    }
+    return this.entityCodecResolver
+  }
+
   // Entities (Versioned Store module)
   // -----------------------------------------------------------------
 
@@ -177,7 +215,7 @@ export class SubstrateTransport extends MediaTransport {
     return allIds
   }
 
-  private async loadEntitiesByIds(ids: EntityId[]): Promise<Entity[]> {
+  private async loadEntitiesByIds(ids: AnyEntityId[]): Promise<Entity[]> {
     if (!ids || ids.length === 0) return []
 
     return await this.vsQuery().entityById.multi<Vec<Entity>>(ids) as unknown as Entity[]
@@ -236,7 +274,7 @@ export class SubstrateTransport extends MediaTransport {
     const classId = (await this.classIdByNameMap())[className]
 
     if (!classId) {
-      console.log(`No entities found by class name '${className}'`)
+      console.log(`Cannot find a class id by its name '${className}'`)
       return []
     }
 
@@ -247,28 +285,52 @@ export class SubstrateTransport extends MediaTransport {
     return entities.filter((e) => classId.eq(e.class_id))
   }
 
-  async findPlainEntitiesByClassName<T extends PlainEntity> (className: ClassName, resolveInternals: boolean = false): Promise<T[]> {
+  private async findEntityInCache(id: AnyEntityId): Promise<Entity | undefined> {
+    const entityId = asEntityId(id)
+    return (await this.internalEntities()).find(x => entityId.eq(x.id))
+  }
+
+  private async loadEntityById(id: AnyEntityId): Promise<Entity | undefined> {
+    const cachedEntity = await this.findEntityInCache(id)
+    return cachedEntity ? cachedEntity : (await this.loadEntitiesByIds([ id ]))[0]
+  }
+
+  async findPlainEntitiesByClassName<T extends PlainEntity> (className: ClassName): Promise<T[]> {
+    const res: T[] = []
+    const clazz = await this.classByName(className)
+    if (!clazz) {
+      console.warn(`No class found by name '${className}'`)
+      return res
+    }
+
+    const entityCodecResolver = await this.getEntityCodecResolver()
+    const codec = entityCodecResolver.getCodecByClassId(clazz.id)
+    if (!codec) {
+      console.warn(`No entity codec found by class name '${className}'`)
+      return res
+    }
+
+    const loadEntityById = this.loadEntityById.bind(this)
+    const loadInternals = ClassNamesThatRequireLoadingInternals.indexOf(className) >= 0
+    const codecProps = {
+      entityCodecResolver,
+      loadEntityById,
+      loadInternals
+    }
+
     const entities = await this.allEntitiesByClassName(className)
-
-    const klass = await this.classByName(className)
-    if (!klass) {
-      console.log(`No class found by name '${className}'`)
-      return []
-    }
-    
-    const CodecClass = EntityCodecByClassNameMap[className] as typeof AnyEntityCodec
-    if (!CodecClass) {
-      console.log(`Entity codec not found by class name '${className}'`)
-      return []
+    for (const e of entities) {
+      const converted = await codec.toPlainObject(e, codecProps)
+      if (converted) {
+        res.push(converted)
+      }
     }
 
-    const resolvers = !resolveInternals ? {} : await this.internalEntityResolvers()
-    const codec = new CodecClass(klass, resolvers)
-    return codec.toPlainObjects(entities)
+    return res
   }
 
   async featuredContent(): Promise<FeaturedContentType | undefined> {
-    const arr = await this.findPlainEntitiesByClassName('FeaturedContent', true)
+    const arr = await this.findPlainEntitiesByClassName('FeaturedContent')
     return arr && arr.length ? arr[0] : undefined
   }
 
@@ -277,15 +339,15 @@ export class SubstrateTransport extends MediaTransport {
   }
 
   async allVideos(): Promise<VideoType[]> {
-    return await this.findPlainEntitiesByClassName('Video', true)
+    return await this.findPlainEntitiesByClassName('Video')
   }
 
   async allMusicTracks(): Promise<MusicTrackType[]> {
-    return await this.findPlainEntitiesByClassName('MusicTrack', true)
+    return await this.findPlainEntitiesByClassName('MusicTrack')
   }
 
   async allMusicAlbums(): Promise<MusicAlbumType[]> {
-    return await this.findPlainEntitiesByClassName('MusicAlbum', true)
+    return await this.findPlainEntitiesByClassName('MusicAlbum')
   }
 
   async allContentLicenses (): Promise<ContentLicenseType[]> {
