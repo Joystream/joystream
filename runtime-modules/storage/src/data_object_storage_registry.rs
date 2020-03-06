@@ -1,6 +1,7 @@
 use roles::actors;
 use crate::data_directory::Trait as DDTrait;
-use crate::traits::{ContentHasStorage, ContentIdExists, Roles};
+use crate::traits::{ContentHasStorage, ContentIdExists};
+use roles::traits::{ Roles};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};

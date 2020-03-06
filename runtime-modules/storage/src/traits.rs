@@ -1,5 +1,4 @@
 use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
-use system;
 
 // Storage
 pub trait IsActiveDataObjectType<T: data_object_type_registry::Trait> {

@@ -7,9 +7,6 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode}; // Codec
                              //use rstd::collections::btree_map::BTreeMap;
 use membership::{members, role_types};
-use hiring;
-use minting;
-use recurringrewards;
 use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::convert::From;
@@ -23,9 +20,7 @@ use srml_support::{
     dispatch, // , StorageMap, , Parameter
     ensure,
 };
-use stake;
 use system::{self, ensure_root, ensure_signed};
-use versioned_store_permissions;
 
 /// DIRTY IMPORT BECAUSE
 /// InputValidationLengthConstraint has not been factored out yet!!!
@@ -792,7 +787,7 @@ struct WrappedBeginAcceptingApplicationsError { // can this be made generic, or 
 }
 */
 
-pub(super) struct WrappedError<E> {
+pub struct WrappedError<E> {
     // can this be made generic, or does that undermine the whole orhpan rule spirit?
     pub error: E,
 }

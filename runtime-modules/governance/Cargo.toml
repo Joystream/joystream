@@ -12,6 +12,7 @@ std = [
 	'system/std',
 	'serde',
 	'codec/std',
+	'timestamp/std',
 	'primitives/std',
 	'rstd/std',
 	'common/std',
@@ -22,19 +23,19 @@ std = [
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-primitives'
-rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [dependencies.srml-support]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-support'
-rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [dependencies.system]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-system'
-rev = '0e3001a1ad6fa3d1ba7da7342a8d0d3b3facb2f3'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [dependencies.rstd]
 default_features = false
@@ -46,6 +47,12 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 features = ['derive']
 optional = true
 version = '1.0.101'
+
+[dependencies.timestamp]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-timestamp'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [dependencies.primitives]
 default_features = false
