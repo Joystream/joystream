@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use codec::{Decode, Encode}; // Codec
                              //use rstd::collections::btree_map::BTreeMap;
-use crate::membership::{members, role_types};
+use membership::{members, role_types};
 use hiring;
 use minting;
 use recurringrewards;

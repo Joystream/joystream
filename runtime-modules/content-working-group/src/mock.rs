@@ -14,8 +14,8 @@ pub use sr_primitives::{
 
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
-pub use crate::currency::GovernanceCurrency;
-pub use crate::membership::members;
+pub use common::currency::GovernanceCurrency;
+pub use membership::members;
 pub use hiring;
 pub use minting;
 pub use recurringrewards;
