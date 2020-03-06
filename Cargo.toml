@@ -23,6 +23,17 @@ structopt = '=0.3.5'
 serde_json = '1.0'
 serde = '1.0'
 hex = '0.4'
+# https://users.rust-lang.org/t/failure-derive-compilation-error/39062
+# quote = '<=1.0.2'
+
+[dependencies.node-runtime]
+package = 'joystream-node-runtime'
+# git = 'https://github.com/joystream/substrate-runtime-joystream'
+git = 'https://github.com/mnaamani/substrate-runtime-joystream'
+# rev = 'b161c0c4ef847978a715c6beeaeadac0fadc9a72' # v6.1.0
+# local development...
+# path = '/Users/mokhtar/joystream/runtime'
+branch = 'quote-patch'
 
 [dependencies.substrate-basic-authorship]
 git = 'https://github.com/paritytech/substrate.git'
@@ -56,15 +67,6 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 git = 'https://github.com/paritytech/substrate.git'
 package = 'substrate-network'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.node-runtime]
-package = 'joystream-node-runtime'
-# git = 'https://github.com/joystream/substrate-runtime-joystream'
-git = 'https://github.com/mnaamani/substrate-runtime-joystream'
-# rev = 'b161c0c4ef847978a715c6beeaeadac0fadc9a72' # v6.1.0
-# local development...
-# path = '/Users/mokhtar/joystream/runtime'
-branch = 'upgrade-libp2p'
 
 [dependencies.primitives]
 git = 'https://github.com/paritytech/substrate.git'
