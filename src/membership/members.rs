@@ -691,17 +691,11 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn can_unregister_role(actor_in_role: ActorInRole<T::ActorId>) -> Result<(), &'static str> {
+    pub fn unregister_role(actor_in_role: ActorInRole<T::ActorId>) -> Result<(), &'static str> {
         ensure!(
             <MembershipIdByActorInRole<T>>::exists(&actor_in_role),
             "ActorInRoleNotFound"
         );
-
-        Ok(())
-    }
-
-    pub fn unregister_role(actor_in_role: ActorInRole<T::ActorId>) -> Result<(), &'static str> {
-        Self::can_unregister_role(actor_in_role)?;
 
         let member_id = <MembershipIdByActorInRole<T>>::get(actor_in_role);
 
@@ -709,10 +703,46 @@ impl<T: Trait> Module<T> {
 
         assert!(profile.roles.unregister_role(&actor_in_role));
 
+        // Note we do do not remove the mapping by convention, so attempting to register
+        // same actor_in_role in future would fail. If the intent is to register it
+        // again on another member, use transfer_role() instead.
+        // ** Isn't is simpler to just remove it from map than to introduce a transfer function?
+
         <MemberProfile<T>>::insert(member_id, profile);
 
         Self::deposit_event(RawEvent::MemberUnregisteredRole(member_id, actor_in_role));
 
         Ok(())
+    }
+
+    fn can_transfer_role_to_member(
+        actor_in_role: ActorInRole<T::ActorId>,
+        member_id: T::MemberId,
+    ) -> Result<(), &'static str> {
+        // Ensure member exists
+        let profile = Self::ensure_profile(member_id)?;
+
+        // ensure is active member
+        ensure!(!profile.suspended, "SuspendedMemberCannotEnterRole");
+
+        // TODO: if above policy checks are identical to ones in can_register_role_on_member() factor them out
+        // to a separate function
+
+        // cannot transfer no-existant role
+        ensure!(
+            <MembershipIdByActorInRole<T>>::exists(actor_in_role),
+            "ActorInRoleDoesNotExist"
+        );
+        Ok(())
+    }
+
+    pub fn transfer_role(
+        actor_in_role: ActorInRole<T::ActorId>,
+        new_member_id: T::MemberId,
+    ) -> Result<(), &'static str> {
+        Self::can_transfer_role_to_member(actor_in_role, new_member_id)?;
+        Self::unregister_role(actor_in_role)?;
+        let _ = <MembershipIdByActorInRole<T>>::remove(&actor_in_role);
+        Self::register_role_on_member(new_member_id, &actor_in_role)
     }
 }

@@ -1210,12 +1210,20 @@ decl_module! {
             // Ensure channel owner has signed
             let channel = Self::ensure_channel_owner_signed(origin, &channel_id)?;
 
-            // Ensure prospective new owner can actually become a channel owner
-            let (new_owner_as_channel_owner, _next_channel_id) = Self::ensure_can_register_channel_owner_role_on_member(&new_owner, Some(channel_id))?;
+            // Ensure prospective new owner can actually become a channel owner (with a new channel id)
+            // We do not pass the existing channel id because it is already owned and the call would
+            // return with Err, since the membership system doesn't allow the same ActorInRole to be assigned
+            // to more than one member.
+            let _ = Self::ensure_can_register_channel_owner_role_on_member(&new_owner, None)?;
 
             //
             // == MUTATION SAFE ==
             //
+
+            <members::Module<T>>::transfer_role(
+                role_types::ActorInRole::new(role_types::Role::ChannelOwner, channel_id),
+                new_owner,
+            )?;
 
             // Construct new channel with altered properties
             let new_channel = Channel {
@@ -1226,19 +1234,6 @@ decl_module! {
 
             // Overwrite entry in ChannelById
             ChannelById::<T>::insert(channel_id, new_channel);
-
-            // Remove
-            let unregistered_role = <members::Module<T>>::unregister_role(role_types::ActorInRole::new(role_types::Role::ChannelOwner, channel_id)).is_ok();
-
-            assert!(unregistered_role);
-
-            // Dial out to membership module and inform about new role as channe owner.
-            let registered_role = <members::Module<T>>::register_role_on_member(
-                new_owner,
-                &new_owner_as_channel_owner)
-                .is_ok();
-
-            assert!(registered_role);
 
             // Trigger event
             Self::deposit_event(RawEvent::ChannelOwnershipTransferred(channel_id));
@@ -2118,7 +2113,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<
         (
             members::ActorInRole<ActorIdInMembersModule<T>>,
-            CuratorId<T>,
+            ChannelId<T>,
         ),
         &'static str,
     > {

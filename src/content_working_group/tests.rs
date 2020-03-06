@@ -171,7 +171,57 @@ fn create_channel_description_too_short() {
 }
 
 #[test]
-fn transfer_channel_ownership_success() {}
+fn transfer_channel_ownership_success() {
+    TestExternalitiesBuilder::<Test>::default()
+        .build()
+        .execute_with(|| {
+            // Add channel creator as member
+            let channel_creator_member_root_and_controller_account_1 = 1111;
+            let channel_creator_member_root_and_controller_account_2 = 2222;
+
+            let channel_creator_member_id_1 = add_member(
+                channel_creator_member_root_and_controller_account_1,
+                to_vec(CHANNEL_CREATOR_HANDLE),
+            );
+
+            let channel_creator_member_id_2 = add_member(
+                channel_creator_member_root_and_controller_account_2,
+                to_vec(CHANNEL_CREATOR_HANDLE2),
+            );
+
+            let create_channel_fixture =
+                CreateChannelFixture::make_valid_unpulished_video_channel_for(
+                    channel_creator_member_id_1,
+                    None,
+                );
+
+            let channel_id = create_channel_fixture.call_and_assert_success();
+
+            let original_channel = ChannelById::<Test>::get(channel_id);
+
+            let new_role_account = 3333;
+
+            let transfer_result = ContentWorkingGroup::transfer_channel_ownership(
+                Origin::signed(create_channel_fixture.channel_creator_role_account),
+                channel_id,
+                channel_creator_member_id_2,
+                new_role_account,
+            );
+
+            assert_ok!(transfer_result);
+
+            let updated_channel = ChannelById::<Test>::get(channel_id);
+
+            assert_eq!(
+                updated_channel,
+                Channel {
+                    owner: channel_creator_member_id_2,
+                    role_account: new_role_account,
+                    ..original_channel
+                }
+            );
+        });
+}
 
 #[test]
 fn update_channel_as_owner_success() {}
@@ -1354,7 +1404,8 @@ static LEAD_ROOT_AND_CONTROLLER_ACCOUNT: <Test as system::Trait>::AccountId = 12
 static LEAD_ROLE_ACCOUNT: <Test as system::Trait>::AccountId = 1289;
 static LEAD_MEMBER_HANDLE: &str = "IamTheLead";
 static CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT: <Test as system::Trait>::AccountId = 11;
-static CHANNEL_CREATOR_HANDLE: &str = "Coolcreator";
+static CHANNEL_CREATOR_HANDLE: &str = "Coolcreator1";
+static CHANNEL_CREATOR_HANDLE2: &str = "Coolcreator2";
 
 fn make_generic_add_member_params() -> AddMemberAndApplyOnOpeningParams {
     AddMemberAndApplyOnOpeningParams::new(
