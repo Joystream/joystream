@@ -1,6 +1,6 @@
 [package]
 name = 'substrate-stake-module'
-version = '1.0.0'
+version = '1.0.1'
 authors = ['Mokhtar Naamani <mokhtar.naamani@gmail.com>']
 edition = '2018'
 
