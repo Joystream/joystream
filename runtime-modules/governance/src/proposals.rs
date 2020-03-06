@@ -15,8 +15,7 @@ use serde::{Deserialize, Serialize};
 use primitives::storage::well_known_keys;
 
 use super::council;
-pub use crate::currency::{BalanceOf, GovernanceCurrency};
-use crate::membership;
+pub use common::currency::{BalanceOf, GovernanceCurrency};
 
 const DEFAULT_APPROVAL_QUORUM: u32 = 60;
 const DEFAULT_MIN_STAKE: u32 = 100;

@@ -1,8 +1,7 @@
 #![cfg(test)]
 
 pub use super::{council, election, proposals};
-pub use crate::currency::GovernanceCurrency;
-use crate::membership;
+pub use common::currency::GovernanceCurrency;
 pub use system;
 
 pub use primitives::{Blake2Hasher, H256};

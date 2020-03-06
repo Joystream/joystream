@@ -14,9 +14,7 @@ use super::sealed_vote::SealedVote;
 use super::stake::Stake;
 
 use super::council;
-pub use crate::currency::{BalanceOf, GovernanceCurrency};
-
-use crate::membership;
+pub use common::currency::{BalanceOf, GovernanceCurrency};
 
 pub trait Trait:
     system::Trait + council::Trait + GovernanceCurrency + membership::members::Trait
