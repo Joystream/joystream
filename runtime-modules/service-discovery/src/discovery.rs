@@ -1,4 +1,4 @@
-use crate::traits::Roles;
+use roles::traits::Roles;
 use codec::{Decode, Encode};
 use rstd::prelude::*;
 #[cfg(feature = "std")]

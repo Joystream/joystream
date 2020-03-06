@@ -1,7 +1,8 @@
 use crate::membership;
-use crate::roles::actors;
+use roles::actors;
 use crate::storage::data_object_type_registry::Trait as DOTRTrait;
-use crate::traits::{ContentIdExists, IsActiveDataObjectType, Roles};
+use crate::traits::{ContentIdExists, IsActiveDataObjectType};
+use roles::traits::{Roles};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};

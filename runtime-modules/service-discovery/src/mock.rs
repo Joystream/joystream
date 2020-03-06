@@ -2,7 +2,7 @@
 
 pub use super::discovery;
 pub use crate::roles::actors;
-pub use crate::traits::Roles;
+use roles::traits::Roles;
 
 pub use primitives::{Blake2Hasher, H256};
 pub use sr_primitives::{

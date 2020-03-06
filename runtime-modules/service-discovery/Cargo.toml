@@ -14,7 +14,7 @@ std = [
 	'serde',
     'codec/std',
     'primitives/std',
-    'common/std',
+    'roles/std',
 ]
 
 [dependencies.sr-primitives]
@@ -58,7 +58,7 @@ features = ['derive']
 package = 'parity-scale-codec'
 version = '1.0.0'
 
-[dependencies.common]
+[dependencies.roles]
 default_features = false
-package = 'substrate-common-module'
-path = 'runtime-modules/common'
+package = 'substrate-roles-module'
+path = 'runtime-modules/roles'

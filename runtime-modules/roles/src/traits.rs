@@ -1,4 +1,4 @@
-use crate::roles::actors;
+use crate::actors;
 use system;
 
 // Roles
