@@ -1214,7 +1214,7 @@ decl_module! {
             // We do not pass the existing channel id because it is already owned and the call would
             // return with Err, since the membership system doesn't allow the same ActorInRole to be assigned
             // to more than one member.
-            let _ = Self::ensure_can_register_channel_owner_role_on_member(&new_owner, None)?;
+            Self::ensure_can_register_channel_owner_role_on_member(&new_owner, None)?;
 
             //
             // == MUTATION SAFE ==

@@ -638,7 +638,7 @@ impl<T: Trait> Module<T> {
 
     fn register_role_on_member_policy_check(
         member_id: &T::MemberId,
-        actor_in_role: &ActorInRole<T::ActorId>,
+        _actor_in_role: &ActorInRole<T::ActorId>,
     ) -> Result<Profile<T>, &'static str> {
         // Ensure member exists
         let profile = Self::ensure_profile(*member_id)?;
@@ -733,7 +733,7 @@ impl<T: Trait> Module<T> {
         actor_in_role: ActorInRole<T::ActorId>,
         member_id: T::MemberId,
     ) -> Result<(), &'static str> {
-        let _profile = Self::register_role_on_member_policy_check(&member_id, &actor_in_role)?;
+        Self::register_role_on_member_policy_check(&member_id, &actor_in_role)?;
 
         // cannot transfer no-existant role
         ensure!(
@@ -749,7 +749,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<(), &'static str> {
         Self::can_transfer_role_to_member(actor_in_role, new_member_id)?;
         Self::unregister_role(actor_in_role)?;
-        let _ = <MembershipIdByActorInRole<T>>::remove(&actor_in_role);
+        <MembershipIdByActorInRole<T>>::remove(&actor_in_role);
         Self::register_role_on_member(new_member_id, &actor_in_role)
     }
 }
