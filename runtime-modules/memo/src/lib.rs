@@ -1,7 +1,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use crate::currency::GovernanceCurrency;
+use common::currency::GovernanceCurrency;
 use rstd::prelude::*;
 use sr_primitives::traits::Zero;
 use srml_support::traits::Currency;
