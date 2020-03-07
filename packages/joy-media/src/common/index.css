@@ -258,6 +258,10 @@ $borderColor: #e4e4e4;
 .ChannelPreview {
   display: flex;
 
+  .ListOfChannels & {
+    margin-bottom: 1rem;
+  }
+
   .JoyPlayAlbum & {
     margin: .5rem 0;
   }
@@ -267,29 +271,34 @@ $borderColor: #e4e4e4;
   }
 
   .ChannelTitle {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 500;
+    margin-top: .75rem;
     margin-bottom: .5rem;
 
     .ChannelHeader & {
       margin-top: 1rem;
     }
-
-    .JoyPlayAlbum & {
-      font-size: 1.25rem;
-      margin-top: 1rem;
-    }
+  }
+  &.big .ChannelTitle {
+    font-size: 2rem;
+  }
+  &.small .ChannelTitle {
+    font-size: 1rem;
   }
 
   .ChannelSubtitle {
     color: $grayFont;
     font-size: .9rem;
     text-transform: uppercase;
-    margin-bottom: 1rem;
 
     .icon {
       margin-right: .5rem;
     }
+  }
+
+  .ChannelDesc {
+    margin-top: .75rem;
   }
 }
 

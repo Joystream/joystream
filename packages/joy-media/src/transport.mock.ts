@@ -20,6 +20,11 @@ import { AllMockChannels } from './stories/data/ChannelSamples';
 
 export class MockTransport extends MediaTransport {
 
+  constructor() {
+    super();
+    console.log('Create new MockTransport')
+  }
+
   protected notImplementedYet<T> (): T {
     throw new Error('Mock transport: Requested function is not implemented yet')
   }

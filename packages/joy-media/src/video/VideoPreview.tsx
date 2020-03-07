@@ -20,7 +20,7 @@ export type VideoPreviewProps = {
 
 export function VideoPreview (props: VideoPreviewProps) {
   const { myAccountId } = useMyMembership();
-  const { id, channel, size = 'normal', orientation = 'vertical' } = props;
+  const { id, channel, title, size = 'normal', orientation = 'vertical' } = props;
 
   let width: number = 210;
   let height: number = 118;
@@ -54,7 +54,7 @@ export function VideoPreview (props: VideoPreviewProps) {
       <div className='AlbumDescription' style={descStyle}>
 
         <Link to={playbackUrl}>
-          <h3 className='AlbumTitle'>{props.title}</h3>
+          <h3 className='AlbumTitle' title={title}>{title}</h3>
         </Link>
 
         {iAmOwner &&

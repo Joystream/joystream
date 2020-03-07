@@ -366,7 +366,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     }
   }
 
-  const TransactionButton = () =>
+  const renderTransactionButton = () =>
     <TxButton
       type='submit'
       size='large'
@@ -379,7 +379,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       txSuccessCb={onCreateEntitySuccess}
     />
 
-  const UpdateEntityButton = () =>
+  const renderUpdateEntityButton = () =>
     <TxButton
       type='submit'
       size='large'
@@ -401,8 +401,8 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       {tabs}
       <LabelledField style={{ marginTop: '1rem' }} {...props}>
         {!entity
-          ? <TransactionButton />
-          : <UpdateEntityButton />
+          ? renderTransactionButton()
+          : renderUpdateEntityButton()
         }
         <Button
           type='button'

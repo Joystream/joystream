@@ -1,6 +1,6 @@
 import BN from 'bn.js';
-import { MediaTransport, EntityCodecByClassNameMap, ClassName, ChannelValidationConstraints, ValidationConstraint } from './transport';
-import { ClassId, Class, EntityId, Entity } from '@joystream/types/versioned-store';
+import { MediaTransport, EntityCodecByClassNameMap, ChannelValidationConstraints, ValidationConstraint } from './transport';
+import { ClassId, Class, EntityId, Entity, ClassName } from '@joystream/types/versioned-store';
 import { InputValidationLengthConstraint } from '@joystream/types/forum';
 import { PlainEntity, AnyEntityCodec } from '@joystream/types/versioned-store/EntityCodec';
 import { MusicTrackType } from './schemas/music/MusicTrack';
@@ -28,13 +28,31 @@ const FIRST_CHANNEL_ID = 1;
 const FIRST_CLASS_ID = 1;
 const FIRST_ENTITY_ID = 1;
 
+const ClassNamesThatCanBeCached: ClassName[] = [
+  'ContentLicense',
+  'CurationStatus',
+  'Language',
+  'MusicGenre',
+  'MusicMood',
+  'MusicTheme',
+  'PublicationStatus',
+  'VideoCategory',
+]
+
 export class SubstrateTransport extends MediaTransport {
 
   protected api: ApiPromise
 
+  private cachedClasses: Class[] | undefined
+
+  private cachedInternalEntities: Entity[] | undefined
+
+  private cachedEntityIdsAsStrings: Set<string> = new Set()
+
   constructor(api: ApiProps) {
     super();
-    
+    console.log('Create new SubstrateTransport')
+
     if (!api) {
       throw new Error('Cannot create SubstrateTransport: Substrate API is required');
     } else if (!api.isApiReady) {
@@ -129,10 +147,16 @@ export class SubstrateTransport extends MediaTransport {
     return allIds
   }
 
-  // TODO Think wisely how to optimize/memoize the result of this func
   async allClasses(): Promise<Class[]> {
+    if (this.cachedClasses) return this.cachedClasses
+
     const ids = await this.allClassIds()
-    return await this.vsQuery().classById.multi<Vec<Class>>(ids) as unknown as Class[]
+    this.cachedClasses = await this.vsQuery().classById.multi<Vec<Class>>(ids) as unknown as Class[]
+    return this.cachedClasses
+  }
+
+  canCacheClass(className: ClassName): boolean {
+    return ClassNamesThatCanBeCached.indexOf(className) >= 0
   }
 
   // Entities (Versioned Store module)
@@ -153,10 +177,59 @@ export class SubstrateTransport extends MediaTransport {
     return allIds
   }
 
-  // TODO Think wisely how to optimize/memoize the result of this func
-  async allEntities(): Promise<Entity[]> {
-    const ids = await this.allEntityIds()
+  private async loadEntitiesByIds(ids: EntityId[]): Promise<Entity[]> {
+    if (!ids || ids.length === 0) return []
+
     return await this.vsQuery().entityById.multi<Vec<Entity>>(ids) as unknown as Entity[]
+  }
+
+  private async loadAndCacheInternalEntities(allIds?: EntityId[]) {
+    if (!allIds) {
+      allIds = await this.allEntityIds()
+    }
+
+    const allEntities = await this.loadEntitiesByIds(allIds)
+    const classIdByName = await this.classIdByNameMap()
+
+    const classIdsThatCanBeCached = ClassNamesThatCanBeCached
+      .map(name => classIdByName[name]?.toString())
+      .filter(x => x !== undefined) as string[]
+
+    // console.log({ classIdsThatCanBeCached })
+
+    const canCacheEntity = (entity: Entity): boolean => {
+      return classIdsThatCanBeCached.indexOf(entity.class_id.toString()) >= 0
+    }
+
+    this.cachedInternalEntities = allEntities.filter(canCacheEntity)
+
+    this.cachedEntityIdsAsStrings = new Set(
+      this.cachedInternalEntities.map(x => x.id.toString()))
+
+    return this.cachedInternalEntities
+  }
+
+  async internalEntities(): Promise<Entity[]> {
+    return this.cachedInternalEntities
+      ? this.cachedInternalEntities
+      : await this.loadAndCacheInternalEntities()
+  }
+
+  async allEntities(): Promise<Entity[]> {
+    const allIds = await this.allEntityIds()
+
+    if (!this.cachedInternalEntities) {
+      await this.loadAndCacheInternalEntities(allIds)
+    }
+    
+    const idsOfNoncachedEntities = allIds.filter(id =>
+      !this.cachedEntityIdsAsStrings.has(id.toString()))
+
+    const freshEntities = await this.loadEntitiesByIds(idsOfNoncachedEntities)
+
+    console.log('Loaded fresh entities by ids:', idsOfNoncachedEntities)
+
+    return this.cachedInternalEntities!.concat(freshEntities)
   }
 
   async allEntitiesByClassName(className: ClassName): Promise<Entity[]> {
@@ -167,11 +240,14 @@ export class SubstrateTransport extends MediaTransport {
       return []
     }
 
-    return (await this.allEntities())
-      .filter((e) => classId.eq(e.class_id))
+    const entities = this.canCacheClass(className)
+      ? await this.internalEntities()
+      : await this.allEntities()
+
+    return entities.filter((e) => classId.eq(e.class_id))
   }
 
-  async findPlainEntitiesByClassName<T extends PlainEntity> (className: ClassName): Promise<T[]> {
+  async findPlainEntitiesByClassName<T extends PlainEntity> (className: ClassName, resolveInternals: boolean = false): Promise<T[]> {
     const entities = await this.allEntitiesByClassName(className)
 
     const klass = await this.classByName(className)
@@ -186,11 +262,13 @@ export class SubstrateTransport extends MediaTransport {
       return []
     }
 
-    return (new CodecClass(klass)).toPlainObjects(entities)
+    const resolvers = !resolveInternals ? {} : await this.internalEntityResolvers()
+    const codec = new CodecClass(klass, resolvers)
+    return codec.toPlainObjects(entities)
   }
 
   async featuredContent(): Promise<FeaturedContentType | undefined> {
-    const arr = await this.findPlainEntitiesByClassName('FeaturedContent')
+    const arr = await this.findPlainEntitiesByClassName('FeaturedContent', true)
     return arr && arr.length ? arr[0] : undefined
   }
 
@@ -199,15 +277,15 @@ export class SubstrateTransport extends MediaTransport {
   }
 
   async allVideos(): Promise<VideoType[]> {
-    return await this.findPlainEntitiesByClassName('Video')
+    return await this.findPlainEntitiesByClassName('Video', true)
   }
 
   async allMusicTracks(): Promise<MusicTrackType[]> {
-    return await this.findPlainEntitiesByClassName('MusicTrack')
+    return await this.findPlainEntitiesByClassName('MusicTrack', true)
   }
 
   async allMusicAlbums(): Promise<MusicAlbumType[]> {
-    return await this.findPlainEntitiesByClassName('MusicAlbum')
+    return await this.findPlainEntitiesByClassName('MusicAlbum', true)
   }
 
   async allContentLicenses (): Promise<ContentLicenseType[]> {

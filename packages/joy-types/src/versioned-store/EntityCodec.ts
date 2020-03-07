@@ -4,7 +4,7 @@ import { Text, bool, Vec, u16 } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import * as PV from './PropertyValue';
 import { PropertyValue } from './PropertyValue';
-import { Class, Entity, VecClassPropertyValue, ClassPropertyValue } from '.';
+import { Class, Entity, VecClassPropertyValue, ClassPropertyValue, unifyClassName, EntityId } from '.';
 import PropertyTypeName from './PropertyTypeName';
 
 /**
@@ -14,7 +14,9 @@ import PropertyTypeName from './PropertyTypeName';
 function substrateToPlain<T> (x: Codec): T | undefined {
   let res: any = undefined;
 
-  if (x instanceof Text) {
+  if (x instanceof PV.None) {
+    res = undefined;
+  } else if (x instanceof Text) {
     res = (x as Text).toString();
   } else if (x instanceof BN) {
     res = (x as BN).toNumber();
@@ -130,12 +132,35 @@ export type TextValueEntity = PlainEntity & {
   value: string
 }
 
+type IdToResolvedObject = (id: EntityId) => any
+
+export interface InternalEntityResolvers {
+  ContentLicense?: IdToResolvedObject
+  CurationStatus?: IdToResolvedObject
+  FeaturedContent?: IdToResolvedObject
+  Language?: IdToResolvedObject
+  MediaObject?: IdToResolvedObject
+  MusicAlbum?: IdToResolvedObject
+  MusicGenre?: IdToResolvedObject
+  MusicMood?: IdToResolvedObject
+  MusicTheme?: IdToResolvedObject
+  MusicTrack?: IdToResolvedObject
+  PublicationStatus?: IdToResolvedObject
+  Video?: IdToResolvedObject
+  VideoCategory?: IdToResolvedObject
+}
+
 export abstract class EntityCodec<T extends PlainEntity> {
   
   private propNameToMetaMap: Map<string, PropMeta> = new Map();
   private propIndexToNameMap: Map<number, string> = new Map();
+  private internalResolvers: InternalEntityResolvers
   
-  public constructor (entityClass: Class) {
+  public constructor (
+    entityClass: Class,
+    internalResolvers: InternalEntityResolvers = {}
+  ) {
+    this.internalResolvers = internalResolvers
     entityClass.properties.map((p, index) => {
       const propName = propNameToJsFieldStyle(p.name.toString());
       const propMeta = { index, type: p.prop_type.type.toString() };
@@ -158,11 +183,26 @@ export abstract class EntityCodec<T extends PlainEntity> {
       id: entity.id.toNumber()
     }
 
-    entity.entity_values.forEach(v => {
+    entity.entity_values.forEach((v) => {
       const propIdx = v.in_class_index.toNumber();
       const propName = this.propIndexToNameMap.get(propIdx);
+
       if (propName) {
-        res[propName] = substrateToPlain(v.value.value);
+        let valueConverted = false
+
+        if (v.value.value instanceof PV.Internal) {
+          const className = unifyClassName(propName)
+          const internalEntityById = this.internalResolvers[className]
+          if (internalEntityById) {
+            const internalId = v.value.value as EntityId
+            res[propName] = internalEntityById(internalId)
+            valueConverted = true
+          }
+        }
+
+        if (!valueConverted) {
+          res[propName] = substrateToPlain(v.value.value)
+        }
       }
     })
 

@@ -5,6 +5,7 @@ import PropertyType from './PropertyType';
 import PropertyValue from './PropertyValue';
 import ClassId from './ClassId';
 import EntityId from './EntityId';
+import { camelCase, upperFirst } from 'lodash'
 
 export {
   ClassId,
@@ -192,6 +193,28 @@ export class Entity extends JoyStruct<EntityType> {
   get entity_values (): VecClassPropertyValue {
     return this.getField('values');
   }
+}
+
+export interface ClassIdByNameMap {
+  ContentLicense?: ClassId
+  CurationStatus?: ClassId
+  FeaturedContent?: ClassId
+  Language?: ClassId
+  MediaObject?: ClassId
+  MusicAlbum?: ClassId
+  MusicGenre?: ClassId
+  MusicMood?: ClassId
+  MusicTheme?: ClassId
+  MusicTrack?: ClassId
+  PublicationStatus?: ClassId
+  Video?: ClassId
+  VideoCategory?: ClassId
+}
+
+export type ClassName = keyof ClassIdByNameMap
+
+export function unifyClassName(className: string): ClassName {
+  return upperFirst(camelCase(className)) as ClassName
 }
 
 export function registerVersionedStoreTypes () {
