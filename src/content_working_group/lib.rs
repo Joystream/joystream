@@ -15,7 +15,7 @@ use rstd::collections::btree_set::BTreeSet;
 use rstd::convert::From;
 use rstd::prelude::*;
 use sr_primitives::traits::{One, Zero}; // Member, SimpleArithmetic, MaybeSerialize
-use srml_support::traits::{Currency, ExistenceRequirement, Get, WithdrawReasons};
+use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
 use srml_support::{
     decl_event,
     decl_module,
@@ -1210,8 +1210,12 @@ decl_module! {
             // Ensure channel owner has signed
             let channel = Self::ensure_channel_owner_signed(origin, &channel_id)?;
 
-            // Ensure prospective new owner can actually become a channel owner
-            let (new_owner_as_channel_owner, _next_channel_id) = Self::ensure_can_register_channel_owner_role_on_member(&new_owner, Some(channel_id))?;
+            // Ensure prospective new owner can actually become a channel owner (with a new channel id)
+            // We do not pass the existing channel id because it is already owned and the call would
+            // return with Err, since the membership system doesn't allow the same ActorInRole to be assigned
+            // to more than one member, and we don't use the returned actor_in_role because its not
+            // for the channel being transferred.
+            Self::ensure_can_register_channel_owner_role_on_member(&new_owner, None)?;
 
             //
             // == MUTATION SAFE ==
@@ -1227,16 +1231,23 @@ decl_module! {
             // Overwrite entry in ChannelById
             ChannelById::<T>::insert(channel_id, new_channel);
 
+            let role = role_types::ActorInRole::new(
+                role_types::Role::ChannelOwner,
+                channel_id
+            );
+
             // Remove
-            let unregistered_role = <members::Module<T>>::unregister_role(role_types::ActorInRole::new(role_types::Role::ChannelOwner, channel_id)).is_ok();
+            let unregistered_role = <members::Module<T>>::unregister_role(
+                role
+            ).is_ok();
 
             assert!(unregistered_role);
 
-            // Dial out to membership module and inform about new role as channe owner.
+            // Dial out to membership module and inform about new role as channel owner.
             let registered_role = <members::Module<T>>::register_role_on_member(
                 new_owner,
-                &new_owner_as_channel_owner)
-                .is_ok();
+                &role
+            ).is_ok();
 
             assert!(registered_role);
 
@@ -2118,7 +2129,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<
         (
             members::ActorInRole<ActorIdInMembersModule<T>>,
-            CuratorId<T>,
+            ChannelId<T>,
         ),
         &'static str,
     > {
