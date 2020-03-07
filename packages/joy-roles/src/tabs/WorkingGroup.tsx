@@ -7,7 +7,8 @@ import { Actor } from '@joystream/types/roles';
 import { IProfile } from '@joystream/types/members';
 import { Text } from '@polkadot/types';
 
-import { ActorDetailsView, GroupMember, MemberView, GroupMemberView } from "../elements"
+import { ActorDetailsView, MemberView, GroupMemberView } from "../elements"
+import { GroupMember } from "../elements";
 import { Loadable } from '@polkadot/joy-utils/index'
 
 export type WorkingGroupMembership = {

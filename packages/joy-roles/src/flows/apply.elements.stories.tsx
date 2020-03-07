@@ -28,8 +28,6 @@ import {
   StakeType,
 } from '../StakeRequirement'
 
-import { creator } from "../tabs/Opportunities.stories"
-
 import 'semantic-ui-css/semantic.min.css'
 import '@polkadot/joy-roles/index.sass'
 
@@ -501,7 +499,6 @@ export function StageCSubmitApplication() {
   const props: SubmitApplicationStageProps = {
     nextTransition: () => { },
     applications: applications,
-    creator: creator,
     transactionFee: new u128(number("Transaction fee", 500, moneySliderOptions, "Application Tx")),
     transactionDetails: new Map<string, string>([
       ["Extrinsic hash", "0xae6d24d4d55020c645ddfe2e8d0faf93b1c0c9879f9bf2c439fb6514c6d1292e"],

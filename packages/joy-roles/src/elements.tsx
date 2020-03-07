@@ -7,8 +7,8 @@ import { Balance } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 import Identicon from '@polkadot/react-identicon';
 import { Actor } from '@joystream/types/roles';
-import { IProfile } from '@joystream/types/members';
-import { Text } from '@polkadot/types';
+import { IProfile, MemberId } from '@joystream/types/members';
+import { Text, GenericAccountId } from '@polkadot/types';
 
 type ActorProps = {
   actor: Actor
@@ -88,10 +88,10 @@ export function ActorDetailsView(props: ActorDetailsProps) {
 }
 
 export type GroupMember = {
-  actor: Actor
+  memberId: MemberId
+  roleAccount: GenericAccountId
   profile: IProfile
   title: string
-  lead: boolean
   stake?: Balance
   earned?: Balance
 }
@@ -118,7 +118,7 @@ export function GroupMemberView(props: GroupMember & inset) {
     )
   }
 
-  let avatar = <Identicon value={props.actor.account.toString()} size={50} />
+  let avatar = <Identicon value={props.roleAccount.toString()} size={50} />
   if (typeof props.profile.avatar_uri !== "undefined" && props.profile.avatar_uri.toString() != "") {
     avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
   }
@@ -135,7 +135,7 @@ export function GroupMemberView(props: GroupMember & inset) {
   }
 
   return (
-    <Card color={props.lead ? 'teal' : 'grey'} className="staked-card" fluid={fluid}>
+    <Card color='grey' className="staked-card" fluid={fluid}>
       <Card.Content>
         <Image floated='right'>
           {avatar}

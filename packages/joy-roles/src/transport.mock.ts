@@ -15,7 +15,7 @@ import {
   ApplicationRationingPolicy,
   StakingPolicy,
 } from "@joystream/types/hiring"
-import { IProfile } from '@joystream/types/members';
+import { IProfile, MemberId } from '@joystream/types/members';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
 import { CuratorId } from '@joystream/types/content-working-group';
@@ -52,54 +52,54 @@ export class Transport extends TransportBase implements ITransport {
       rolesAvailable: true,
       members: [
         {
-          actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
+          memberId: new MemberId(1),
+          roleAccount: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
           profile: mockProfile(
             "benholdencrowther",
             'https://www.benholdencrowther.com/wp-content/uploads/2019/03/Hanging_Gardens_of_Babylon.jpg',
           ),
-          title: 'Curation lead',
-          lead: true,
+          title: 'Content curator',
           stake: new u128(10101),
           earned: new u128(347829),
         },
         {
-          actor: new Actor({ member_id: 2, account: '5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew' }),
+          memberId: new MemberId(2),
+          roleAccount: new GenericAccountId('5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew'),
           profile: mockProfile("bwhm0"),
           title: 'Content curator',
-          lead: false,
           stake: new u128(10101),
           earned: new u128(347829),
         },
         {
-          actor: new Actor({ member_id: 3, account: '5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3' }),
+          memberId: new MemberId(3),
+          roleAccount: new GenericAccountId('5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
           profile: mockProfile(
             "yourheropaul",
             "https://yhp.io/img/paul.svg",
           ),
           title: 'Content curator',
-          lead: false,
           stake: new u128(10101),
           earned: new u128(347829),
         },
         {
-          actor: new Actor({ member_id: 2, account: '5GSMNn8Sy8k64mGUWPDafjMZu9bQNX26GujbBQ1LeJpNbrfg' }),
+          memberId: new MemberId(4),
+          roleAccount: new GenericAccountId('5GSMNn8Sy8k64mGUWPDafjMZu9bQNX26GujbBQ1LeJpNbrfg'),
           profile: mockProfile(
             "alex_joystream",
             "https://avatars2.githubusercontent.com/u/153928?s=200&v=4",
           ),
           title: 'Content curator',
-          lead: false,
           stake: new u128(10101),
           earned: new u128(347829),
         },
         {
-          actor: new Actor({ member_id: 3, account: '5Gn9n7SDJ7VgHqHQWYzkSA4vX6DCmS5TFWdHxikTXp9b4L32' }),
+          memberId: new MemberId(3),
+          roleAccount: new GenericAccountId('5Gn9n7SDJ7VgHqHQWYzkSA4vX6DCmS5TFWdHxikTXp9b4L32'),
           profile: mockProfile(
             "mokhtar",
             "https://avatars2.githubusercontent.com/u/1621012?s=460&v=4",
           ),
           title: 'Content curator',
-          lead: false,
           stake: new u128(10101),
           earned: new u128(347829),
         },
@@ -176,11 +176,6 @@ export class Transport extends TransportBase implements ITransport {
                 ]
               },
               reward: "10 JOY per block",
-              creator: {
-                membership: {
-                  handle: "ben",
-                }
-              },
               process: {
                 details: [
                   "Some custom detail"
@@ -188,13 +183,6 @@ export class Transport extends TransportBase implements ITransport {
               }
             }),
           }),
-          creator: {
-            actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
-            profile: mockProfile('benholdencrowther'),
-            title: 'Group lead',
-            lead: true,
-            stake: new u128(10),
-          },
           meta: {
             id: "1",
             group: "somegroup",
@@ -272,11 +260,6 @@ export class Transport extends TransportBase implements ITransport {
               ]
             },
             reward: "10 JOY per block",
-            creator: {
-              membership: {
-                handle: "ben",
-              }
-            },
             process: {
               details: [
                 "Some custom detail"
@@ -284,13 +267,6 @@ export class Transport extends TransportBase implements ITransport {
             }
           }),
         }),
-        creator: {
-          actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
-          profile: mockProfile('benholdencrowther'),
-          title: 'Group lead',
-          lead: true,
-          stake: new u128(10),
-        },
         meta: {
           id: "1",
           group: "group-name",
@@ -372,13 +348,6 @@ export class Transport extends TransportBase implements ITransport {
   async openingApplications(): Promise<OpeningApplication[]> {
     return [{
       id: 1,
-      creator: {
-        actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
-        profile: mockProfile('benholdencrowther'),
-        title: 'Group lead',
-        lead: true,
-        stake: new u128(10),
-      },
       meta: {
         id: "1",
         group: "group-name",
@@ -434,11 +403,6 @@ export class Transport extends TransportBase implements ITransport {
             ]
           },
           reward: "10 JOY per block",
-          creator: {
-            membership: {
-              handle: "ben",
-            }
-          },
           process: {
             details: [
               "Some custom detail"

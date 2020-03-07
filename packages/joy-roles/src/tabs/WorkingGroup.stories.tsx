@@ -2,13 +2,13 @@ import React from 'react'
 import { boolean, number, text, withKnobs } from '@storybook/addon-knobs'
 
 import { Balance } from '@polkadot/types/interfaces'
-import { Text, u128 } from '@polkadot/types'
+import { Text, u128, GenericAccountId } from '@polkadot/types'
 
 import { Actor } from '@joystream/types/roles'
-import { IProfile } from '@joystream/types/members';
+import { IProfile, MemberId } from '@joystream/types/members';
 
 import { ContentCurators, StorageAndDistribution } from "@polkadot/joy-roles/tabs/WorkingGroup"
-import { GroupMember } from "@polkadot/joy-roles/elements"
+import { GroupMember } from "../elements"
 
 import { mockProfile } from '../mocks'
 
@@ -23,54 +23,54 @@ export default {
 export function ContentCuratorsSection() {
   const members: GroupMember[] = [
     {
-      actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
+      memberId: new MemberId(1),
+      roleAccount: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
       profile: mockProfile(
         text("Handle", "benholdencrowther", "Ben"),
         text("Avatar URL", "https://www.benholdencrowther.com/wp-content/uploads/2019/03/Hanging_Gardens_of_Babylon.jpg", "Ben"),
       ),
       title: text("Title", 'Curation lead', "Ben"),
-      lead: boolean("Lead", true, "Ben"),
       stake: new u128(number("Stake", 10101, {}, "Ben")),
       earned: new u128(number("Earned", 347829, {}, "Ben")),
     },
     {
-      actor: new Actor({ member_id: 2, account: '5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew' }),
+      memberId: new MemberId(2),
+      roleAccount: new GenericAccountId('5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew'),
       profile: mockProfile(text("Handle", "bwhm0", "Martin")),
       title: text('Title', 'Content curator', 'Martin'),
-      lead: boolean("Lead", false, "Martin"),
       stake: new u128(number("Stake", 10101, {}, "Martin")),
       earned: new u128(number("Earned", 347829, {}, "Martin")),
     },
     {
-      actor: new Actor({ member_id: 3, account: '5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3' }),
+      memberId: new MemberId(3),
+      roleAccount: new GenericAccountId('5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
       profile: mockProfile(
         "yourheropaul",
         "https://yhp.io/img/paul.svg",
       ),
       title: text('Title', 'Content curator', 'Paul'),
-      lead: boolean("Lead", false, "Paul"),
       stake: new u128(number("Stake", 10101, {}, "Paul")),
       earned: new u128(number("Earned", 347829, {}, "Paul")),
     },
     {
-      actor: new Actor({ member_id: 2, account: '5GSMNn8Sy8k64mGUWPDafjMZu9bQNX26GujbBQ1LeJpNbrfg' }),
+      memberId: new MemberId(4),
+      roleAccount: new GenericAccountId('5GSMNn8Sy8k64mGUWPDafjMZu9bQNX26GujbBQ1LeJpNbrfg'),
       profile: mockProfile(
         "alex_joystream",
         "https://avatars2.githubusercontent.com/u/153928?s=200&v=4",
       ),
       title: text('Title', 'Content curator', 'Alex'),
-      lead: boolean("Lead", false, "Alex"),
       stake: new u128(number("Stake", 10101, {}, "Alex")),
       earned: new u128(number("Earned", 347829, {}, "Alex")),
     },
     {
-      actor: new Actor({ member_id: 3, account: '5Gn9n7SDJ7VgHqHQWYzkSA4vX6DCmS5TFWdHxikTXp9b4L32' }),
+      memberId: new MemberId(5),
+      roleAccount: new GenericAccountId('5Gn9n7SDJ7VgHqHQWYzkSA4vX6DCmS5TFWdHxikTXp9b4L32'),
       profile: mockProfile(
         "mokhtar",
         "https://avatars2.githubusercontent.com/u/1621012?s=460&v=4",
       ),
       title: text('Title', 'Content curator', 'Mokhtar'),
-      lead: boolean("Lead", false, "Mokhtar"),
       stake: new u128(number("Stake", 10101, {}, "Mokhtar")),
       earned: new u128(number("Earned", 347829, {}, "Mokhtar")),
     },

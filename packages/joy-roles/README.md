@@ -1,1 +1,1 @@
-# @polkadot/joy-actors
+# @polkadot/joy-roles

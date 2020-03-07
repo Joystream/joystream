@@ -12,10 +12,10 @@ import keyringOption from '@polkadot/ui-keyring/options';
 import { APIQueryCache, MultipleLinkedMapEntry, SingleLinkedMapEntry } from '@polkadot/joy-utils/index'
 
 import { ITransport } from './transport'
-import { GroupMember } from './elements'
+import { GroupMember } from "./elements";
 import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index'
 
-import { Actor, Role } from '@joystream/types/roles';
+import { Role } from '@joystream/types/roles';
 import {
   Curator, CuratorId,
   CuratorApplication, CuratorApplicationId,
@@ -114,9 +114,9 @@ export class Transport extends TransportBase implements ITransport {
     return recipient.value.total_reward_received
   }
 
-  protected async groupMember(id: CuratorId, curator: IRoleAccounter, lead: boolean = false): Promise<GroupMember> {
+  protected async groupMember(id: CuratorId, curator: IRoleAccounter): Promise<GroupMember> {
     return new Promise<GroupMember>(async (resolve, reject) => {
-      const account = curator.role_account
+      const roleAccount = curator.role_account
       const memberId = (
         await this.cachedApi.query.members.membershipIdByActorInRole(
           new ActorInRole({
@@ -131,11 +131,6 @@ export class Transport extends TransportBase implements ITransport {
         reject("no profile found")
       }
 
-      const actor = new Actor({
-        member_id: memberId,
-        account: account,
-      })
-
       let stakeValue: Balance = new u128(0)
       if (curator.role_stake_profile && curator.role_stake_profile.isSome) {
         stakeValue = await this.curatorStake(curator.role_stake_profile.unwrap())
@@ -147,10 +142,10 @@ export class Transport extends TransportBase implements ITransport {
       }
 
       resolve({
-        actor: actor,
+        roleAccount,
+        memberId,
         profile: profile.unwrap() as Profile,
-        title: lead ? 'Group lead' : 'Content curator',
-        lead: lead,
+        title: 'Content curator',
         stake: stakeValue,
         earned: earnedValue,
       })
@@ -174,6 +169,24 @@ export class Transport extends TransportBase implements ITransport {
     return false
   }
 
+  async currentLead() : Promise<Option<Lead>> {
+
+    const optLeadId = (await this.cachedApi.query.contentWorkingGroup.currentLeadId()) as Option<LeadId>
+
+    if (optLeadId.isSome) {
+      const leadId = optLeadId.unwrap();
+      const lead = new SingleLinkedMapEntry<Lead>(
+        Lead,
+        await this.cachedApi.query.contentWorkingGroup.leadById(leadId)
+      );
+
+      return new Option(Lead,lead.value);
+    } else {
+      return new Option(Lead, null);
+    }
+
+  }
+
   async curationGroup(): Promise<WorkingGroupMembership> {
     const values = new MultipleLinkedMapEntry<CuratorId, Curator>(
       CuratorId,
@@ -184,31 +197,9 @@ export class Transport extends TransportBase implements ITransport {
     const members = values.linked_values.filter(value => value.is_active).reverse()
     const memberIds = values.linked_keys.filter((v, k) => values.linked_values[k].is_active).reverse()
 
-    let leadExists = false
-
-    // If there's a lead ID, then make sure they're promoted to the top
-    const leadId = (await this.cachedApi.query.contentWorkingGroup.currentLeadId()) as Option<LeadId>
-    if (leadId.isSome) {
-      const lead = new SingleLinkedMapEntry<Lead>(
-        Lead,
-        await this.cachedApi.query.contentWorkingGroup.leadById(
-          leadId.unwrap(),
-        ),
-      )
-
-      const id = members.findIndex(
-        member => member.role_account.eq(lead.value.role_account)
-      )
-      if (id >= 0) {
-        leadExists = true
-        members.unshift(...members.splice(id, 1))
-        memberIds.unshift(...memberIds.splice(id, 1))
-      }
-    }
-
     return {
       members: await Promise.all(
-        members.map((member, k) => this.groupMember(memberIds[k], member, leadExists && k === 0))
+        members.map((member, k) => this.groupMember(memberIds[k], member))
       ),
       rolesAvailable: await this.areAnyCuratorRolesOpen(),
     }
@@ -293,24 +284,10 @@ export class Transport extends TransportBase implements ITransport {
         curatorOpening.value.getField<OpeningId>("opening_id").toNumber()
       )
 
-      const currentLeadId = await this.cachedApi.query.contentWorkingGroup.currentLeadId() as Option<LeadId>
-
-      if (currentLeadId.isNone) {
-        reject("no current lead id")
-      }
-
-      const lead = new SingleLinkedMapEntry<Lead>(
-        Lead,
-        await this.cachedApi.query.contentWorkingGroup.leadById(
-          currentLeadId.unwrap(),
-        ),
-      )
-
       const applications = await this.curatorOpeningApplications(id)
       const stakes = classifyOpeningStakes(opening)
 
       resolve({
-        creator: await this.groupMember(currentLeadId.unwrap(), lead.value, true),
         opening: opening,
         meta: {
           id: id.toString(),
@@ -486,7 +463,6 @@ export class Transport extends TransportBase implements ITransport {
           rank: await this.myApplicationRank(hiringApps[key], allAppsByOpening[key].map(a => a.hiringModule)),
           capacity: wg.applications.maxNumberOfApplications,
           stage: wg.stage,
-          creator: wg.creator,
           opening: wg.opening,
           meta: wg.meta,
           applicationStake: stakes[key].application,
