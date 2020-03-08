@@ -17,7 +17,7 @@ import {
 } from "@joystream/types/hiring"
 import { IProfile, MemberId } from '@joystream/types/members';
 
-import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
+import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStatus } from "./tabs/WorkingGroup"
 import { CuratorId } from '@joystream/types/content-working-group';
 import { WorkingGroupOpening } from "./tabs/Opportunities"
 import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
@@ -45,6 +45,12 @@ export class Transport extends TransportBase implements ITransport {
         new Role("StorageProvider"),
       ]
     )
+  }
+
+  groupLeadStatus(): Promise<GroupLeadStatus> {
+    return this.simulateApiResponse<GroupLeadStatus>({
+      loaded: true
+    });
   }
 
   curationGroup(): Promise<WorkingGroupMembership> {

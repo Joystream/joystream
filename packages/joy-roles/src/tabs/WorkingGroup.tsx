@@ -7,8 +7,8 @@ import { Actor } from '@joystream/types/roles';
 import { IProfile } from '@joystream/types/members';
 import { Text } from '@polkadot/types';
 
-import { ActorDetailsView, MemberView, GroupMemberView } from "../elements"
-import { GroupMember } from "../elements";
+import { ActorDetailsView, MemberView, GroupMemberView, GroupLeadView } from "../elements"
+import { GroupMember, GroupLead } from "../elements";
 import { Loadable } from '@polkadot/joy-utils/index'
 
 export type WorkingGroupMembership = {
@@ -101,6 +101,34 @@ export const StorageAndDistribution = Loadable<StorageAndDistributionMembership>
             ))}
           </Table.Body>
         </Table>
+      </section>
+    )
+  }
+)
+
+export type GroupLeadStatus = {
+  lead?: GroupLead
+  loaded: boolean
+}
+
+export const ContentLead = Loadable<GroupLeadStatus>(
+  ['loaded'],
+  props => {
+    return (
+      <section id='lead'>
+        <br/>
+        <Message positive>
+          <Message.Header>Content Lead</Message.Header>
+          <p>
+          This role is responsible for hiring curators, and is assigned by the platform.
+          </p>
+          {props.lead ?
+          <Card.Group>
+            <GroupLeadView {...props.lead} />
+          </Card.Group>
+          : 'There is no active Content Lead assigned.'}
+        </Message>
+
       </section>
     )
   }

@@ -9,6 +9,7 @@ import Identicon from '@polkadot/react-identicon';
 import { Actor } from '@joystream/types/roles';
 import { IProfile, MemberId } from '@joystream/types/members';
 import { Text, GenericAccountId } from '@polkadot/types';
+import { LeadRoleState } from '@joystream/types/content-working-group';
 
 type ActorProps = {
   actor: Actor
@@ -96,8 +97,50 @@ export type GroupMember = {
   earned?: Balance
 }
 
+export type GroupLead = {
+  memberId: MemberId
+  roleAccount: GenericAccountId
+  profile: IProfile
+  title: string
+  stage: LeadRoleState
+}
+
 type inset = {
   inset?: boolean
+}
+
+export function GroupLeadView(props: GroupLead & inset) {
+  let fluid = false
+  if (typeof props.inset !== "undefined") {
+    fluid = props.inset
+  }
+
+  let avatar = <Identicon value={props.roleAccount.toString()} size={50} />
+  if (typeof props.profile.avatar_uri !== "undefined" && props.profile.avatar_uri.toString() != "") {
+    avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
+  }
+
+  return (
+    <Card color='grey' className="staked-card" fluid={fluid}>
+      <Card.Content>
+        <Image floated='right'>
+          {avatar}
+        </Image>
+        <Card.Header><HandleView profile={props.profile} /></Card.Header>
+        <Card.Meta>{props.title}</Card.Meta>
+        <Card.Description>
+          <Label color='teal' ribbon={fluid}>
+          <Icon name="shield" />
+          Content Lead
+          <Label.Detail>{/* ... */}</Label.Detail>
+          </Label>
+        </Card.Description>
+      </Card.Content>
+      <Card.Content extra>
+        <Label>Something about <Label.Detail> the lead </Label.Detail></Label>
+      </Card.Content>
+    </Card>
+  )
 }
 
 export function GroupMemberView(props: GroupMember & inset) {
@@ -109,8 +152,7 @@ export function GroupMemberView(props: GroupMember & inset) {
   let stake = null
   if (typeof props.stake !== "undefined" && props.stake.toNumber() !== 0) {
     stake = (
-      // @ts-ignore
-      <Label color={props.lead ? 'teal' : 'green'} ribbon={fluid ? 'right' : 'left'}>
+      <Label color='green' ribbon={fluid}>
         <Icon name="shield" />
         Staked
         <Label.Detail>{formatBalance(props.stake)}</Label.Detail>

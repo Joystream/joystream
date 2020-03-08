@@ -8,11 +8,14 @@ import {
   ContentCurators,
   WorkingGroupMembership,
   StorageAndDistributionMembership,
+  GroupLeadStatus,
+  ContentLead,
 } from './WorkingGroup'
 
 type State = {
   contentCurators?: WorkingGroupMembership,
   storageProviders?: StorageAndDistributionMembership,
+  groupLeadStatus?: GroupLeadStatus
 }
 
 export class WorkingGroupsController extends Controller<State, ITransport> {
@@ -20,6 +23,7 @@ export class WorkingGroupsController extends Controller<State, ITransport> {
     super(transport, {})
     this.getCurationGroup()
     this.getStorageGroup()
+    this.getGroupLeadStatus()
   }
 
   getCurationGroup() {
@@ -35,10 +39,20 @@ export class WorkingGroupsController extends Controller<State, ITransport> {
       this.dispatch()
     })
   }
+
+  getGroupLeadStatus() {
+    this.transport.groupLeadStatus().then((value: GroupLeadStatus) => {
+      this.setState({ groupLeadStatus: value })
+      this.dispatch()
+    })
+  }
 }
 
 export const WorkingGroupsView = View<WorkingGroupsController, State>(
   (state) => (
+    <div>
     <ContentCurators {...state.contentCurators!} />
+    <ContentLead {...state.groupLeadStatus!} />
+    </div>
   )
 )

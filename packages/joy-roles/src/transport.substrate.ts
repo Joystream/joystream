@@ -28,10 +28,10 @@ import {
 import { Application, Opening, OpeningId } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
 import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
-import { ActorInRole, Profile, MemberId, Role as MemberRole, RoleKeys } from '@joystream/types/members';
+import { ActorInRole, Profile, MemberId, Role as MemberRole, RoleKeys, ActorId } from '@joystream/types/members';
 import { createAccount, generateSeed } from '@polkadot/joy-utils/accounts'
 
-import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
+import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStatus } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening } from "./tabs/Opportunities"
 import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 
@@ -114,17 +114,37 @@ export class Transport extends TransportBase implements ITransport {
     return recipient.value.total_reward_received
   }
 
+  protected async memberIdFromRoleAndActorId(role: MemberRole, id: ActorId): Promise<MemberId> {
+    const memberId = (
+      await this.cachedApi.query.members.membershipIdByActorInRole(
+        new ActorInRole({
+          role: role,
+          actor_id: id,
+        })
+      )
+    ) as MemberId
+
+    return memberId
+  }
+
+  protected memberIdFromCuratorId(curatorId: CuratorId): Promise<MemberId> {
+    return this.memberIdFromRoleAndActorId(
+      new MemberRole(RoleKeys.Curator),
+      curatorId
+    )
+  }
+
+  protected memberIdFromLeadId(leadId: LeadId): Promise<MemberId> {
+    return this.memberIdFromRoleAndActorId(
+      new MemberRole(RoleKeys.CuratorLead),
+      leadId
+    )
+  }
+
   protected async groupMember(id: CuratorId, curator: IRoleAccounter): Promise<GroupMember> {
     return new Promise<GroupMember>(async (resolve, reject) => {
       const roleAccount = curator.role_account
-      const memberId = (
-        await this.cachedApi.query.members.membershipIdByActorInRole(
-          new ActorInRole({
-            role: new MemberRole(RoleKeys.Curator),
-            actor_id: id,
-          })
-        )
-      ) as MemberId
+      const memberId = await this.memberIdFromCuratorId(id)
 
       const profile = await this.cachedApi.query.members.memberProfile(memberId) as Option<Profile>
       if (profile.isNone) {
@@ -169,7 +189,7 @@ export class Transport extends TransportBase implements ITransport {
     return false
   }
 
-  async currentLead() : Promise<Option<Lead>> {
+  async groupLeadStatus() : Promise<GroupLeadStatus> {
 
     const optLeadId = (await this.cachedApi.query.contentWorkingGroup.currentLeadId()) as Option<LeadId>
 
@@ -180,9 +200,27 @@ export class Transport extends TransportBase implements ITransport {
         await this.cachedApi.query.contentWorkingGroup.leadById(leadId)
       );
 
-      return new Option(Lead,lead.value);
+      const memberId = await this.memberIdFromLeadId(leadId);
+
+      const profile = await this.cachedApi.query.members.memberProfile(memberId) as Option<Profile>
+      if (profile.isNone) {
+        throw new Error("no profile found")
+      }
+
+      return {
+        lead: {
+          memberId,
+          roleAccount: lead.value.role_account,
+          profile: profile.unwrap(),
+          title: 'Content Lead',
+          stage: lead.value.stage,
+        },
+        loaded: true
+      }
     } else {
-      return new Option(Lead, null);
+      return {
+        loaded: true
+      }
     }
 
   }
@@ -196,7 +234,7 @@ export class Transport extends TransportBase implements ITransport {
 
     const members = values.linked_values.filter(value => value.is_active).reverse()
     const memberIds = values.linked_keys.filter((v, k) => values.linked_values[k].is_active).reverse()
-
+console.log('loaded group members length:', members.length)
     return {
       members: await Promise.all(
         members.map((member, k) => this.groupMember(memberIds[k], member))
