@@ -1,3 +1,8 @@
+### Version 6.8.0 (Rome release) - March 9th 2020
+- New versioned and permissioned content mangement system that powers a new media experience.
+- Content Working Group - introduces staked content curator roles to maintain quality of content and ensure that is meets the platform's terms of service.
+- Update of core substrate to pre-release of version 2.0 - [c37bb08](https://github.com/paritytech/substrate/commit/c37bb08535c49a12320af7facfd555ce05cce2e8)
+
 ### Version 5.4.0 (Acropolis) - Athens testnet update 3 - June 22n 2019
 - New Forum - v1.0.0
 - Discovery Service to support new Storage Provider implementation.
