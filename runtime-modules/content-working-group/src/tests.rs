@@ -852,19 +852,20 @@ impl UpdateCuratorRoleAccountFixture {
             updated_curator
         );
 
-        let (event_curator_id, event_new_role_account) = if let mock::TestEvent::lib(ref x) =
-            System::events().last().unwrap().event
-        {
-            if let crate::RawEvent::CuratorRoleAccountUpdated(ref curator_id, ref new_role_account) =
-                x
-            {
-                (curator_id.clone(), new_role_account.clone())
+        let (event_curator_id, event_new_role_account) =
+            if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+                if let crate::RawEvent::CuratorRoleAccountUpdated(
+                    ref curator_id,
+                    ref new_role_account,
+                ) = x
+                {
+                    (curator_id.clone(), new_role_account.clone())
+                } else {
+                    panic!("Event was not CuratorRoleAccountUpdated.")
+                }
             } else {
-                panic!("Event was not CuratorRoleAccountUpdated.")
-            }
-        } else {
-            panic!("No event deposited.")
-        };
+                panic!("No event deposited.")
+            };
 
         assert_eq!(self.curator_id, event_curator_id);
 
@@ -926,19 +927,20 @@ impl UpdateCuratorRewardAccountFixture {
             Actually checking new reward account requires checking call to token mint module, but we cannot do that properly yet.
         */
 
-        let (event_curator_id, event_reward_account) = if let mock::TestEvent::lib(ref x) =
-            System::events().last().unwrap().event
-        {
-            if let crate::RawEvent::CuratorRewardAccountUpdated(ref curator_id, ref reward_account) =
-                x
-            {
-                (curator_id.clone(), reward_account.clone())
+        let (event_curator_id, event_reward_account) =
+            if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
+                if let crate::RawEvent::CuratorRewardAccountUpdated(
+                    ref curator_id,
+                    ref reward_account,
+                ) = x
+                {
+                    (curator_id.clone(), reward_account.clone())
+                } else {
+                    panic!("Event was not CuratorRewardAccountUpdated.")
+                }
             } else {
-                panic!("Event was not CuratorRewardAccountUpdated.")
-            }
-        } else {
-            panic!("No event deposited.")
-        };
+                panic!("No event deposited.")
+            };
 
         assert_eq!(self.curator_id, event_curator_id);
 

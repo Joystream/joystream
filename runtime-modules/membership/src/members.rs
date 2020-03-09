@@ -1,5 +1,5 @@
-use common::currency::{BalanceOf, GovernanceCurrency};
 use codec::{Codec, Decode, Encode};
+use common::currency::{BalanceOf, GovernanceCurrency};
 
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};

@@ -1,10 +1,10 @@
 #![cfg(test)]
 
 pub use super::{data_directory, data_object_storage_registry, data_object_type_registry};
+use crate::traits;
 pub use common::currency::GovernanceCurrency;
 use membership::members;
 use roles::actors;
-use crate::traits;
 pub use system;
 
 pub use primitives::{Blake2Hasher, H256};

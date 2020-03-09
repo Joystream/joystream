@@ -1,5 +1,5 @@
-use common::currency::{BalanceOf, GovernanceCurrency};
 use codec::{Decode, Encode};
+use common::currency::{BalanceOf, GovernanceCurrency};
 use rstd::prelude::*;
 use sr_primitives::traits::{Bounded, Zero};
 use srml_support::traits::{

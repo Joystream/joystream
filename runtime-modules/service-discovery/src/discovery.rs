@@ -1,5 +1,5 @@
-use roles::traits::Roles;
 use codec::{Decode, Encode};
+use roles::traits::Roles;
 use rstd::prelude::*;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};

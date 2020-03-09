@@ -1,8 +1,8 @@
-use roles::actors;
 use crate::data_object_type_registry::Trait as DOTRTrait;
 use crate::traits::{ContentIdExists, IsActiveDataObjectType};
-use roles::traits::{Roles};
 use codec::{Codec, Decode, Encode};
+use roles::actors;
+use roles::traits::Roles;
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
