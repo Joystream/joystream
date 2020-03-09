@@ -275,8 +275,7 @@ tag = 'v1.1.1'
 [dependencies.minting]
 default_features = false
 package = 'substrate-token-mint-module'
-git = 'https://github.com/joystream/substrate-token-minting-module/'
-tag = 'v1.0.1'
+path = 'runtime-modules/token-minting'
 
 [dependencies.stake]
 default_features = false
