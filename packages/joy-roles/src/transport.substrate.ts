@@ -268,30 +268,29 @@ export class Transport extends TransportBase implements ITransport {
     )
   }
 
-  currentOpportunities(): Promise<Array<WorkingGroupOpening>> {
-    return new Promise<Array<WorkingGroupOpening>>(async (resolve, reject) => {
+  async currentOpportunities(): Promise<Array<WorkingGroupOpening>> {
       const output = new Array<WorkingGroupOpening>()
-      const highestId = (await this.cachedApi.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber() - 1
-      if (highestId < 0) {
-        resolve([])
+      const nextId = await this.cachedApi.query.contentWorkingGroup.nextCuratorOpeningId() as CuratorOpeningId;
+
+      // This is chain specfic, but if next id is still 0, it means no curator openings have been added yet
+      if (!nextId.eq(0)) {
+        const highestId = nextId.toNumber() - 1;
+
+        for (let i = highestId; i >= 0; i--) {
+          output.push(await this.curationGroupOpening(i))
+        }
       }
 
-      for (let i = highestId; i >= 0; i--) {
-        output.push(await this.curationGroupOpening(i))
-      }
-
-      resolve(output)
-    })
+      return output
   }
 
   protected async opening(id: number): Promise<Opening> {
-    return new Promise<Opening>(async (resolve, reject) => {
-      const opening = new SingleLinkedMapEntry<Opening>(
-        Opening,
-        await this.cachedApi.query.hiring.openingById(id),
-      )
-      resolve(opening.value)
-    })
+    const opening = new SingleLinkedMapEntry<Opening>(
+      Opening,
+      await this.cachedApi.query.hiring.openingById(id),
+    );
+
+    return opening.value
   }
 
   protected async curatorOpeningApplications(curatorOpeningId: number): Promise<Array<WorkingGroupPair<Application, CuratorApplication>>> {

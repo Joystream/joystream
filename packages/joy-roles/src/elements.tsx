@@ -136,9 +136,9 @@ export function GroupLeadView(props: GroupLead & inset) {
           </Label>
         </Card.Description>
       </Card.Content>
-      <Card.Content extra>
+      {/* <Card.Content extra>
         <Label>Something about <Label.Detail> the lead </Label.Detail></Label>
-      </Card.Content>
+      </Card.Content> */}
     </Card>
   )
 }
