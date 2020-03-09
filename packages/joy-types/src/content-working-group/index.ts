@@ -470,6 +470,10 @@ export class Lead extends JoyStruct<ILead> {
   get reward_relationship(): Option<RewardRelationshipId> {
     return this.getField<Option<RewardRelationshipId>>('reward_relationship')
   }
+
+  get stage(): LeadRoleState {
+    return this.getField('stage')
+  }
 };
 
 export class WorkingGroupUnstaker extends Enum {
