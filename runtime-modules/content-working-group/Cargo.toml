@@ -94,8 +94,7 @@ path = '../hiring'
 [dependencies.versioned_store]
 default_features = false
 package ='substrate-versioned-store'
-git = 'https://github.com/joystream/substrate-versioned-store-module'
-tag = 'v1.0.1'
+path = '../versioned-store'
 
 [dependencies.versioned_store_permissions]
 default_features = false

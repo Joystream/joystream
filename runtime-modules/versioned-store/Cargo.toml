@@ -1,7 +1,7 @@
 [package]
 name = 'substrate-versioned-store'
 version = '1.0.1'
-authors = ['Joystream']
+authors = ['Joystream contributors']
 edition = '2018'
 
 [dependencies]
