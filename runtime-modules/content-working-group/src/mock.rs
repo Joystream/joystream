@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use super::lib::{self, *}; // {self, Module, Trait, GenesisConfig};
+pub use crate::*; // {self, Module, Trait, GenesisConfig};
 pub use srml_support::traits::Currency;
 pub use system;
 
@@ -23,7 +23,7 @@ pub use stake;
 pub use versioned_store;
 pub use versioned_store_permissions;
 
-use super::genesis;
+use crate::genesis;
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
@@ -48,6 +48,10 @@ impl_outer_origin! {
     pub enum Origin for Test {}
 }
 
+mod lib {
+    pub use crate::Event;
+}
+
 impl_outer_event! {
     pub enum TestEvent for Test {
         versioned_store<T>,
@@ -57,7 +61,7 @@ impl_outer_event! {
     }
 }
 
-pub type RawLibTestEvent = lib::RawEvent<
+pub type RawLibTestEvent = RawEvent<
     ChannelId<Test>,
     LeadId<Test>,
     CuratorOpeningId<Test>,

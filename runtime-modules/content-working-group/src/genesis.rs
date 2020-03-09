@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::lib::{Trait, *};
+use crate::{Trait, *};
 pub use primitives::{map, Blake2Hasher, H256};
 use rstd::prelude::*;
 

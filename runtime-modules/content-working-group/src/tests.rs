@@ -1,7 +1,6 @@
 #![cfg(test)]
 
 //use super::genesis;
-use super::lib;
 use super::mock::{self, *};
 //use crate::membership;
 use hiring;
@@ -245,9 +244,9 @@ impl UpdateChannelAsCurationActorFixture {
         assert_eq!(updated_channel, expected_updated_channel);
     }
 
-    fn get_event_deposited() -> lib::ChannelId<Test> {
+    fn get_event_deposited() -> crate::ChannelId<Test> {
         if let mock::TestEvent::lib(ref x) = System::events().last().unwrap().event {
-            if let lib::RawEvent::ChannelUpdatedByCurationActor(ref channel_id) = x {
+            if let crate::RawEvent::ChannelUpdatedByCurationActor(ref channel_id) = x {
                 return channel_id.clone();
             } else {
                 panic!("Event was not ChannelUpdatedByCurationActor.")
@@ -343,17 +342,17 @@ fn add_curator_opening_success() {
 
             assert_eq!(
                 get_last_event_or_panic(),
-                lib::RawEvent::CuratorOpeningAdded(expected_curator_opening_id)
+                crate::RawEvent::CuratorOpeningAdded(expected_curator_opening_id)
             );
 
             // Assert that given opening id has been added,
             // and has the right properties.
-            assert!(lib::CuratorOpeningById::<Test>::exists(
+            assert!(crate::CuratorOpeningById::<Test>::exists(
                 expected_curator_opening_id
             ));
 
             let created_curator_opening =
-                lib::CuratorOpeningById::<Test>::get(expected_curator_opening_id);
+                crate::CuratorOpeningById::<Test>::get(expected_curator_opening_id);
 
             let expected_curator_opening = CuratorOpening {
                 opening_id: expected_opening_id,
@@ -365,7 +364,7 @@ fn add_curator_opening_success() {
 
             // Assert that next id incremented.
             assert_eq!(
-                lib::NextCuratorOpeningId::<Test>::get(),
+                crate::NextCuratorOpeningId::<Test>::get(),
                 expected_opening_id + 1
             );
 
@@ -404,7 +403,7 @@ fn accept_curator_applications_success() {
 
             assert_eq!(
                 get_last_event_or_panic(),
-                lib::RawEvent::AcceptedCuratorApplications(curator_opening_id)
+                crate::RawEvent::AcceptedCuratorApplications(curator_opening_id)
             )
 
             /*
@@ -448,7 +447,7 @@ fn begin_curator_applicant_review_success() {
 
             assert_eq!(
                 get_last_event_or_panic(),
-                lib::RawEvent::BeganCuratorApplicationReview(
+                crate::RawEvent::BeganCuratorApplicationReview(
                     normal_opening_constructed.curator_opening_id
                 )
             );
@@ -582,7 +581,7 @@ fn withdraw_curator_application_success() {
             // Event was triggered
             assert_eq!(
                 get_last_event_or_panic(),
-                lib::RawEvent::CuratorApplicationWithdrawn(result.curator_application_id)
+                crate::RawEvent::CuratorApplicationWithdrawn(result.curator_application_id)
             );
 
             /*
@@ -626,7 +625,7 @@ fn terminate_curator_application_success() {
 
             assert_eq!(
                 get_last_event_or_panic(),
-                lib::RawEvent::CuratorApplicationTerminated(result.curator_application_id)
+                crate::RawEvent::CuratorApplicationTerminated(result.curator_application_id)
             );
 
             /*
@@ -702,7 +701,7 @@ fn apply_on_curator_opening_success() {
 
             assert_eq!(
                 get_last_event_or_panic(),
-                lib::RawEvent::AppliedOnCuratorOpening(
+                crate::RawEvent::AppliedOnCuratorOpening(
                     normal_opening_constructed.curator_opening_id,
                     new_curator_application_id
                 )
@@ -846,7 +845,7 @@ impl UpdateCuratorRoleAccountFixture {
         let updated_curator = CuratorById::<Test>::get(self.curator_id);
 
         assert_eq!(
-            lib::Curator {
+            crate::Curator {
                 role_account: self.new_role_account,
                 ..original_curator
             },
@@ -856,7 +855,7 @@ impl UpdateCuratorRoleAccountFixture {
         let (event_curator_id, event_new_role_account) = if let mock::TestEvent::lib(ref x) =
             System::events().last().unwrap().event
         {
-            if let lib::RawEvent::CuratorRoleAccountUpdated(ref curator_id, ref new_role_account) =
+            if let crate::RawEvent::CuratorRoleAccountUpdated(ref curator_id, ref new_role_account) =
                 x
             {
                 (curator_id.clone(), new_role_account.clone())
@@ -930,7 +929,7 @@ impl UpdateCuratorRewardAccountFixture {
         let (event_curator_id, event_reward_account) = if let mock::TestEvent::lib(ref x) =
             System::events().last().unwrap().event
         {
-            if let lib::RawEvent::CuratorRewardAccountUpdated(ref curator_id, ref reward_account) =
+            if let crate::RawEvent::CuratorRewardAccountUpdated(ref curator_id, ref reward_account) =
                 x
             {
                 (curator_id.clone(), reward_account.clone())
@@ -1008,7 +1007,7 @@ impl LeaveCuratorRoleFixture {
 
         assert_eq!(
             get_last_event_or_panic(),
-            lib::RawEvent::CuratorUnstaking(self.curator_id)
+            crate::RawEvent::CuratorUnstaking(self.curator_id)
         );
 
         // Tracking unstaking
@@ -1087,7 +1086,7 @@ impl TerminateCuratorRoleFixture {
 
         assert_eq!(
             get_last_event_or_panic(),
-            lib::RawEvent::CuratorUnstaking(self.curator_id)
+            crate::RawEvent::CuratorUnstaking(self.curator_id)
         );
 
         // Tracking unstaking
@@ -1170,7 +1169,7 @@ impl SetLeadFixture {
 
         assert_eq!(
             get_last_event_or_panic(),
-            lib::RawEvent::LeadSet(new_lead_id)
+            crate::RawEvent::LeadSet(new_lead_id)
         );
     }
 
@@ -1234,7 +1233,7 @@ impl UnsetLeadFixture {
 
         assert_eq!(
             get_last_event_or_panic(),
-            lib::RawEvent::LeadUnset(original_lead_id)
+            crate::RawEvent::LeadUnset(original_lead_id)
         );
     }
 
@@ -1303,7 +1302,7 @@ impl UnstakedFixture {
 
         assert_eq!(
             get_last_event_or_panic(),
-            lib::RawEvent::TerminatedCurator(curator_id)
+            crate::RawEvent::TerminatedCurator(curator_id)
         );
 
         // Unstaker gone
@@ -1496,7 +1495,7 @@ fn add_members_and_apply_on_opening(
 #[derive(Clone)]
 struct NewMemberAppliedResult {
     pub member_id: <Test as members::Trait>::MemberId,
-    pub curator_application_id: lib::CuratorApplicationId<Test>,
+    pub curator_application_id: crate::CuratorApplicationId<Test>,
 }
 
 fn add_member_and_apply_on_opening(
@@ -1560,7 +1559,7 @@ fn add_member_and_apply_on_opening(
 
     assert_eq!(
         get_last_event_or_panic(),
-        lib::RawEvent::AppliedOnCuratorOpening(curator_opening_id, new_curator_application_id)
+        crate::RawEvent::AppliedOnCuratorOpening(curator_opening_id, new_curator_application_id)
     );
 
     assert!(CuratorApplicationById::<Test>::exists(
@@ -1627,7 +1626,7 @@ fn setup_normal_opening() -> NormalOpeningConstructed {
 
     assert_eq!(
         get_last_event_or_panic(),
-        lib::RawEvent::CuratorOpeningAdded(expected_curator_opening_id)
+        crate::RawEvent::CuratorOpeningAdded(expected_curator_opening_id)
     );
 
     NormalOpeningConstructed {
@@ -1765,7 +1764,7 @@ fn setup_and_fill_opening(
 
     assert_eq!(
         get_last_event_or_panic(),
-        lib::RawEvent::CuratorOpeningFilled(
+        crate::RawEvent::CuratorOpeningFilled(
             setup_opening_in_review
                 .normal_opening_constructed
                 .curator_opening_id,
@@ -1998,16 +1997,16 @@ impl CreateChannelFixture {
         // keep channel id.
         assert_eq!(
             get_last_event_or_panic(),
-            lib::RawEvent::ChannelCreated(old_next_channel_id)
+            crate::RawEvent::ChannelCreated(old_next_channel_id)
         );
 
         let channel_id = old_next_channel_id;
 
         // Assert that given channel id has been added,
         // and has the right properties.
-        assert!(lib::ChannelById::<Test>::exists(channel_id));
+        assert!(crate::ChannelById::<Test>::exists(channel_id));
 
-        let created_channel = lib::ChannelById::<Test>::get(channel_id);
+        let created_channel = crate::ChannelById::<Test>::get(channel_id);
 
         let expected_channel = Channel {
             verified: false,
@@ -2030,20 +2029,20 @@ impl CreateChannelFixture {
         assert_eq!(created_channel, expected_channel);
 
         // Assert that next id incremented.
-        assert_eq!(lib::NextChannelId::<Test>::get(), channel_id + 1);
+        assert_eq!(crate::NextChannelId::<Test>::get(), channel_id + 1);
 
         // Assert that there is a mapping established for handle
         assert_eq!(
-            lib::ChannelIdByHandle::<Test>::get(self.channel_handle.clone()),
+            crate::ChannelIdByHandle::<Test>::get(self.channel_handle.clone()),
             channel_id
         );
 
         // Check that principal actually has been added
-        assert!(lib::PrincipalById::<Test>::exists(
+        assert!(crate::PrincipalById::<Test>::exists(
             created_channel.principal_id
         ));
 
-        let created_principal = lib::PrincipalById::<Test>::get(created_channel.principal_id);
+        let created_principal = crate::PrincipalById::<Test>::get(created_channel.principal_id);
 
         assert!(match created_principal {
             Principal::Lead => false,
@@ -2070,7 +2069,7 @@ fn add_member_and_set_as_lead() -> NewMemberAsLead {
 }
 
 pub fn set_channel_creation_enabled(enabled: bool) {
-    lib::Module::<Test>::set_channel_creation_enabled(Origin::signed(LEAD_ROLE_ACCOUNT), enabled)
+    crate::Module::<Test>::set_channel_creation_enabled(Origin::signed(LEAD_ROLE_ACCOUNT), enabled)
         .unwrap()
 }
 
@@ -2128,7 +2127,7 @@ pub fn set_lead(
 
     assert_eq!(
         get_last_event_or_panic(),
-        lib::RawEvent::LeadSet(expected_lead_id)
+        crate::RawEvent::LeadSet(expected_lead_id)
     );
 
     expected_lead_id
@@ -2155,7 +2154,7 @@ pub fn add_curator_opening() -> CuratorOpeningId<Test> {
 
     assert_eq!(
         get_last_event_or_panic(),
-        lib::RawEvent::CuratorOpeningAdded(expected_curator_opening_id)
+        crate::RawEvent::CuratorOpeningAdded(expected_curator_opening_id)
     );
 
     expected_curator_opening_id
