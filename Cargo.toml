@@ -49,7 +49,15 @@ std = [
     'stake/std',
     'hiring/std',
     'versioned_store/std',
-    'versioned_store_permissions/std'
+    'versioned_store_permissions/std',
+    'common/std',
+    'content_working_group/std',
+    'governance/std',
+    'membership/std',
+    'memo/std',
+    'roles/std',
+    'service_discovery/std',
+    'storage/std',
 ]
 
 [dependencies.babe]
@@ -262,40 +270,88 @@ version = '1.0.4'
 default_features = false
 package = 'substrate-forum-module'
 git = 'https://github.com/joystream/substrate-forum-module'
-tag = 'v1.1.0'
+tag = 'v1.1.1'
 
 [dependencies.minting]
 default_features = false
 package = 'substrate-token-mint-module'
 git = 'https://github.com/joystream/substrate-token-minting-module/'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
 
 [dependencies.stake]
 default_features = false
 package = 'substrate-stake-module'
 git = 'https://github.com/Joystream/substrate-stake-module/'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
 
 [dependencies.recurringrewards]
 default_features = false
 package = 'substrate-recurring-reward-module'
 git = 'https://github.com/Joystream/substrate-recurring-reward-module'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
 
 [dependencies.hiring]
 default_features = false
 package = 'substrate-hiring-module'
 git = 'https://github.com/Joystream/substrate-hiring-module'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
 
 [dependencies.versioned_store]
 default_features = false
 package ='substrate-versioned-store'
 git = 'https://github.com/joystream/substrate-versioned-store-module'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
 
 [dependencies.versioned_store_permissions]
 default_features = false
 package = 'substrate-versioned-store-permissions-module'
 git = 'https://github.com/joystream/substrate-versioned-store-permissions-module'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
+
+[dependencies.common]
+default_features = false
+package = 'substrate-common-module'
+path = 'runtime-modules/common'
+version = '1.0.0'
+
+[dependencies.content_working_group]
+default_features = false
+package = 'substrate-content-working-group-module'
+path = 'runtime-modules/content-working-group'
+version = '1.0.0'
+
+[dependencies.governance]
+default_features = false
+package = 'substrate-governance-module'
+path = 'runtime-modules/governance'
+version = '1.0.0'
+
+[dependencies.membership]
+default_features = false
+package = 'substrate-membership-module'
+path = 'runtime-modules/membership'
+version = '1.0.0'
+
+[dependencies.memo]
+default_features = false
+package = 'substrate-memo-module'
+path = 'runtime-modules/memo'
+version = '1.0.0'
+
+[dependencies.roles]
+default_features = false
+package = 'substrate-roles-module'
+path = 'runtime-modules/roles'
+version = '1.0.0'
+
+[dependencies.service_discovery]
+default_features = false
+package = 'substrate-service-discovery-module'
+path = 'runtime-modules/service-discovery'
+version = '1.0.0'
+
+[dependencies.storage]
+default_features = false
+package = 'substrate-storage-module'
+path = 'runtime-modules/storage'
+version = '1.0.0'

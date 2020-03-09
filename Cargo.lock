@@ -1069,14 +1069,22 @@ dependencies = [
  "srml-transaction-payment",
  "substrate-authority-discovery-primitives",
  "substrate-client",
+ "substrate-common-module",
  "substrate-consensus-babe-primitives",
+ "substrate-content-working-group-module",
  "substrate-forum-module",
+ "substrate-governance-module",
  "substrate-hiring-module",
+ "substrate-membership-module",
+ "substrate-memo-module",
  "substrate-offchain-primitives",
  "substrate-primitives",
  "substrate-recurring-reward-module",
+ "substrate-roles-module",
+ "substrate-service-discovery-module",
  "substrate-session",
  "substrate-stake-module",
+ "substrate-storage-module",
  "substrate-token-mint-module",
  "substrate-versioned-store",
  "substrate-versioned-store-permissions-module",
@@ -3221,6 +3229,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-common-module"
+version = "1.0.0"
+dependencies = [
+ "sr-primitives",
+ "srml-support",
+ "srml-system",
+]
+
+[[package]]
 name = "substrate-consensus-babe-primitives"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8#c37bb08535c49a12320af7facfd555ce05cce2e8"
@@ -3269,6 +3286,27 @@ dependencies = [
  "substrate-inherents",
  "substrate-primitives",
  "substrate-telemetry",
+]
+
+[[package]]
+name = "substrate-content-working-group-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-system",
+ "substrate-forum-module",
+ "substrate-hiring-module",
+ "substrate-membership-module",
+ "substrate-primitives",
+ "substrate-recurring-reward-module",
+ "substrate-stake-module",
+ "substrate-token-mint-module",
+ "substrate-versioned-store",
+ "substrate-versioned-store-permissions-module",
 ]
 
 [[package]]
@@ -3331,12 +3369,12 @@ dependencies = [
 
 [[package]]
 name = "substrate-forum-module"
-version = "1.1.0"
-source = "git+https://github.com/joystream/substrate-forum-module?tag=v1.1.0#3e405b0aed239b15a866897402b9df225bc0636a"
+version = "1.1.1"
+source = "git+https://github.com/joystream/substrate-forum-module?tag=v1.1.1#5918fc90d25faeac06311b0d6b05305cbe722a27"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
- "quote 1.0.2",
+ "quote 0.6.13",
  "serde",
  "serde_derive",
  "sr-io",
@@ -3347,6 +3385,22 @@ dependencies = [
  "srml-support-procedural",
  "srml-system",
  "srml-timestamp",
+]
+
+[[package]]
+name = "substrate-governance-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-system",
+ "srml-timestamp",
+ "substrate-common-module",
+ "substrate-membership-module",
+ "substrate-primitives",
 ]
 
 [[package]]
@@ -3361,12 +3415,12 @@ dependencies = [
 
 [[package]]
 name = "substrate-hiring-module"
-version = "1.0.0"
-source = "git+https://github.com/Joystream/substrate-hiring-module?tag=v1.0.0#4929b8be1a3e1c0f48be4a666f70a3c145085b29"
+version = "1.0.1"
+source = "git+https://github.com/Joystream/substrate-hiring-module?tag=v1.0.1#e387af033fb0e81c66d487bdec445153b0fe3cdf"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
- "quote 1.0.2",
+ "quote 0.6.13",
  "serde",
  "serde_derive",
  "sr-io",
@@ -3401,6 +3455,34 @@ dependencies = [
  "strum",
  "strum_macros",
  "substrate-primitives",
+]
+
+[[package]]
+name = "substrate-membership-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-system",
+ "srml-timestamp",
+ "substrate-common-module",
+ "substrate-primitives",
+]
+
+[[package]]
+name = "substrate-memo-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-system",
+ "substrate-common-module",
 ]
 
 [[package]]
@@ -3482,12 +3564,12 @@ dependencies = [
 
 [[package]]
 name = "substrate-recurring-reward-module"
-version = "1.0.0"
-source = "git+https://github.com/Joystream/substrate-recurring-reward-module?tag=v1.0.0#cf945e1f4df333555aaef1f95c14e7950bd55ba7"
+version = "1.0.1"
+source = "git+https://github.com/Joystream/substrate-recurring-reward-module?tag=v1.0.1#2c4bda1dea315629313643737c2f59979579fb50"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
- "quote 1.0.2",
+ "quote 0.6.13",
  "serde",
  "serde_derive",
  "sr-io",
@@ -3502,12 +3584,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-roles-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-system",
+ "substrate-common-module",
+ "substrate-membership-module",
+]
+
+[[package]]
 name = "substrate-serializer"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8#c37bb08535c49a12320af7facfd555ce05cce2e8"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "substrate-service-discovery-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-system",
+ "substrate-primitives",
+ "substrate-roles-module",
 ]
 
 [[package]]
@@ -3523,12 +3633,12 @@ dependencies = [
 
 [[package]]
 name = "substrate-stake-module"
-version = "1.0.0"
-source = "git+https://github.com/Joystream/substrate-stake-module/?tag=v1.0.0#e8241cf7b42bdd89352f39420b17294cae349679"
+version = "1.0.1"
+source = "git+https://github.com/Joystream/substrate-stake-module/?tag=v1.0.1#af5860c3cde5b11e37728df0b1dfbbdf9a9fa2f3"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
- "quote 1.0.2",
+ "quote 0.6.13",
  "serde",
  "serde_derive",
  "sr-io",
@@ -3561,6 +3671,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-storage-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-system",
+ "srml-timestamp",
+ "substrate-common-module",
+ "substrate-membership-module",
+ "substrate-primitives",
+ "substrate-roles-module",
+]
+
+[[package]]
 name = "substrate-telemetry"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8#c37bb08535c49a12320af7facfd555ce05cce2e8"
@@ -3584,12 +3711,12 @@ dependencies = [
 
 [[package]]
 name = "substrate-token-mint-module"
-version = "1.0.0"
-source = "git+https://github.com/joystream/substrate-token-minting-module/?tag=v1.0.0#af6da475886cedf0d3f3c9325dd32b22a30b9662"
+version = "1.0.1"
+source = "git+https://github.com/joystream/substrate-token-minting-module/?tag=v1.0.1#7905ce50136cf8483a808a1946fbf123b9ca4bb8"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
- "quote 1.0.2",
+ "quote 0.6.13",
  "serde",
  "serde_derive",
  "sr-io",
@@ -3618,12 +3745,12 @@ dependencies = [
 
 [[package]]
 name = "substrate-versioned-store"
-version = "1.1.0"
-source = "git+https://github.com/joystream/substrate-versioned-store-module?tag=v1.0.0#feadff11b6b30b7ca065d9a5077fa3749142566d"
+version = "1.0.1"
+source = "git+https://github.com/joystream/substrate-versioned-store-module?tag=v1.0.1#24bcd60e84c1ece74a8a3130beb740f6fa760145"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
- "quote 1.0.2",
+ "quote 0.6.13",
  "serde",
  "serde_derive",
  "sr-io",
@@ -3638,12 +3765,12 @@ dependencies = [
 
 [[package]]
 name = "substrate-versioned-store-permissions-module"
-version = "1.0.0"
-source = "git+https://github.com/joystream/substrate-versioned-store-permissions-module?tag=v1.0.0#983c0e53b587a153d4611032f665911299d3e17c"
+version = "1.0.1"
+source = "git+https://github.com/joystream/substrate-versioned-store-permissions-module?tag=v1.0.1#dd75f4bfe283673685c4ccf9de14384a546daa6e"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
- "quote 1.0.2",
+ "quote 0.6.13",
  "serde",
  "serde_derive",
  "sr-io",

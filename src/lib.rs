@@ -348,7 +348,7 @@ parameter_types! {
 impl staking::Trait for Runtime {
     type Currency = Balances;
     type Time = Timestamp;
-    type CurrencyToVote = currency::CurrencyToVoteHandler;
+    type CurrencyToVote = common::currency::CurrencyToVoteHandler;
     type RewardRemainder = ();
     type Event = Event;
     type Slash = (); // where to send the slashed funds.
@@ -395,24 +395,15 @@ impl finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
-pub mod currency;
-pub mod governance;
+pub use forum;
 use governance::{council, election, proposals};
-pub mod storage;
+use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
-mod membership;
-mod memo;
 pub use versioned_store;
 use versioned_store_permissions;
-mod traits;
-pub use forum;
-use membership::members;
 
-mod content_working_group;
-pub use content_working_group::lib as content_wg;
+pub use content_working_group as content_wg;
 mod migration;
-mod roles;
-mod service_discovery;
 use hiring;
 use minting;
 use recurringrewards;
@@ -569,7 +560,7 @@ impl hiring::Trait for Runtime {
 }
 
 impl minting::Trait for Runtime {
-    type Currency = <Self as currency::GovernanceCurrency>::Currency;
+    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type MintId = u64;
 }
 
@@ -584,7 +575,7 @@ parameter_types! {
 }
 
 impl stake::Trait for Runtime {
-    type Currency = <Self as currency::GovernanceCurrency>::Currency;
+    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = ContentWorkingGroupStakingEventHandler;
     type StakeId = u64;
@@ -662,7 +653,7 @@ impl content_wg::Trait for Runtime {
     type Event = Event;
 }
 
-impl currency::GovernanceCurrency for Runtime {
+impl common::currency::GovernanceCurrency for Runtime {
     type Currency = balances::Module<Self>;
 }
 
@@ -714,7 +705,7 @@ fn random_index(upper_bound: usize) -> usize {
 }
 
 pub struct LookupRoles {}
-impl traits::Roles<Runtime> for LookupRoles {
+impl roles::traits::Roles<Runtime> for LookupRoles {
     fn is_role_account(account_id: &<Runtime as system::Trait>::AccountId) -> bool {
         <actors::Module<Runtime>>::is_role_account(account_id)
     }
