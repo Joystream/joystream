@@ -270,43 +270,43 @@ version = '1.0.4'
 default_features = false
 package = 'substrate-forum-module'
 git = 'https://github.com/joystream/substrate-forum-module'
-tag = 'v1.1.0'
+tag = 'v1.1.1'
 
 [dependencies.minting]
 default_features = false
 package = 'substrate-token-mint-module'
 git = 'https://github.com/joystream/substrate-token-minting-module/'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
 
 [dependencies.stake]
 default_features = false
 package = 'substrate-stake-module'
 git = 'https://github.com/Joystream/substrate-stake-module/'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
 
 [dependencies.recurringrewards]
 default_features = false
 package = 'substrate-recurring-reward-module'
 git = 'https://github.com/Joystream/substrate-recurring-reward-module'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
 
 [dependencies.hiring]
 default_features = false
 package = 'substrate-hiring-module'
 git = 'https://github.com/Joystream/substrate-hiring-module'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
 
 [dependencies.versioned_store]
 default_features = false
 package ='substrate-versioned-store'
 git = 'https://github.com/joystream/substrate-versioned-store-module'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
 
 [dependencies.versioned_store_permissions]
 default_features = false
 package = 'substrate-versioned-store-permissions-module'
 git = 'https://github.com/joystream/substrate-versioned-store-permissions-module'
-tag = 'v1.0.0'
+tag = 'v1.0.1'
 
 [dependencies.common]
 default_features = false
