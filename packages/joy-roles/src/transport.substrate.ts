@@ -226,6 +226,18 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   async curationGroup(): Promise<WorkingGroupMembership> {
+    const rolesAvailable = await this.areAnyCuratorRolesOpen()
+
+    const nextId = await this.cachedApi.query.contentWorkingGroup.nextCuratorId() as CuratorId
+
+    // This is chain specfic, but if next id is still 0, it means no curators have been added yet
+    if (nextId.eq(0)) {
+      return {
+        members: [],
+        rolesAvailable
+      }
+    }
+
     const values = new MultipleLinkedMapEntry<CuratorId, Curator>(
       CuratorId,
       Curator,
@@ -234,12 +246,12 @@ export class Transport extends TransportBase implements ITransport {
 
     const members = values.linked_values.filter(value => value.is_active).reverse()
     const memberIds = values.linked_keys.filter((v, k) => values.linked_values[k].is_active).reverse()
-console.log('loaded group members length:', members.length)
+
     return {
       members: await Promise.all(
         members.map((member, k) => this.groupMember(memberIds[k], member))
       ),
-      rolesAvailable: await this.areAnyCuratorRolesOpen(),
+      rolesAvailable,
     }
   }
 
