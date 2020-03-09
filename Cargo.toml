@@ -286,8 +286,7 @@ tag = 'v1.0.1'
 [dependencies.recurringrewards]
 default_features = false
 package = 'substrate-recurring-reward-module'
-git = 'https://github.com/Joystream/substrate-recurring-reward-module'
-tag = 'v1.0.1'
+path = 'runtime-modules/recurring-reward'
 
 [dependencies.hiring]
 default_features = false

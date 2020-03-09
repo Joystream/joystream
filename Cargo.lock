@@ -1085,7 +1085,7 @@ dependencies = [
  "substrate-session",
  "substrate-stake-module",
  "substrate-storage-module",
- "substrate-token-mint-module 1.0.1",
+ "substrate-token-mint-module",
  "substrate-versioned-store",
  "substrate-versioned-store-permissions-module",
  "substrate-wasm-builder-runner",
@@ -3304,7 +3304,7 @@ dependencies = [
  "substrate-primitives",
  "substrate-recurring-reward-module",
  "substrate-stake-module",
- "substrate-token-mint-module 1.0.1",
+ "substrate-token-mint-module",
  "substrate-versioned-store",
  "substrate-versioned-store-permissions-module",
 ]
@@ -3564,7 +3564,6 @@ dependencies = [
 [[package]]
 name = "substrate-recurring-reward-module"
 version = "1.0.1"
-source = "git+https://github.com/Joystream/substrate-recurring-reward-module?tag=v1.0.1#2c4bda1dea315629313643737c2f59979579fb50"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3579,7 +3578,7 @@ dependencies = [
  "srml-support-procedural",
  "srml-system",
  "srml-timestamp",
- "substrate-token-mint-module 1.0.1 (git+https://github.com/joystream/substrate-token-minting-module/?tag=v1.0.1)",
+ "substrate-token-mint-module",
 ]
 
 [[package]]
@@ -3706,26 +3705,6 @@ dependencies = [
  "slog-scope",
  "tokio-io",
  "void",
-]
-
-[[package]]
-name = "substrate-token-mint-module"
-version = "1.0.1"
-source = "git+https://github.com/joystream/substrate-token-minting-module/?tag=v1.0.1#7905ce50136cf8483a808a1946fbf123b9ca4bb8"
-dependencies = [
- "hex-literal 0.1.4",
- "parity-scale-codec",
- "quote 0.6.13",
- "serde",
- "serde_derive",
- "sr-io",
- "sr-primitives",
- "sr-std",
- "srml-balances",
- "srml-support",
- "srml-support-procedural",
- "srml-system",
- "srml-timestamp",
 ]
 
 [[package]]
