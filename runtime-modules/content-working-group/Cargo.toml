@@ -69,8 +69,7 @@ version = '1.0.0'
 [dependencies.forum]
 default_features = false
 package = 'substrate-forum-module'
-git = 'https://github.com/joystream/substrate-forum-module'
-tag = 'v1.1.1'
+path = '../forum'
 
 [dependencies.minting]
 default_features = false
