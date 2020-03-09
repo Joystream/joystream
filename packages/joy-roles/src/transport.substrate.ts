@@ -173,6 +173,13 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   protected async areAnyCuratorRolesOpen(): Promise<boolean> {
+    const nextId = await this.cachedApi.query.contentWorkingGroup.nextCuratorOpeningId() as CuratorId
+
+    // This is chain specfic, but if next id is still 0, it means no openings have been added yet
+    if (nextId.eq(0)) {
+      return false
+    }
+
     const curatorOpenings = new MultipleLinkedMapEntry<CuratorOpeningId, CuratorOpening>(
       CuratorOpeningId,
       CuratorOpening,
