@@ -80,8 +80,7 @@ path = '../token-minting'
 [dependencies.stake]
 default_features = false
 package = 'substrate-stake-module'
-git = 'https://github.com/Joystream/substrate-stake-module/'
-tag = 'v1.0.1'
+path = '../stake'
 
 [dependencies.recurringrewards]
 default_features = false

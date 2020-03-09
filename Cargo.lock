@@ -3632,7 +3632,6 @@ dependencies = [
 [[package]]
 name = "substrate-stake-module"
 version = "1.0.1"
-source = "git+https://github.com/Joystream/substrate-stake-module/?tag=v1.0.1#af5860c3cde5b11e37728df0b1dfbbdf9a9fa2f3"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",

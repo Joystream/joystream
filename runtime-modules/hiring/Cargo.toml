@@ -21,9 +21,8 @@ quote = '<=1.0.2'
 
 [dependencies.stake]
 default_features = false
-git = 'https://github.com/joystream/substrate-stake-module'
 package = 'substrate-stake-module'
-tag = 'v1.0.1'
+path = '../stake'
 
 [dependencies.timestamp]
 default_features = false
