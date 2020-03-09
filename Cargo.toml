@@ -1,5 +1,5 @@
 [package]
-authors = ['Joystream']
+authors = ['Joystream contributors']
 edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
@@ -299,8 +299,7 @@ path = 'runtime-modules/versioned-store'
 [dependencies.versioned_store_permissions]
 default_features = false
 package = 'substrate-versioned-store-permissions-module'
-git = 'https://github.com/joystream/substrate-versioned-store-permissions-module'
-tag = 'v1.0.1'
+path = 'runtime-modules/versioned-store-permissions'
 
 [dependencies.common]
 default_features = false

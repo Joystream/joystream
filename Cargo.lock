@@ -1086,7 +1086,7 @@ dependencies = [
  "substrate-stake-module",
  "substrate-storage-module",
  "substrate-token-mint-module",
- "substrate-versioned-store 1.0.1",
+ "substrate-versioned-store",
  "substrate-versioned-store-permissions-module",
  "substrate-wasm-builder-runner",
 ]
@@ -3305,7 +3305,7 @@ dependencies = [
  "substrate-recurring-reward-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
- "substrate-versioned-store 1.0.1",
+ "substrate-versioned-store",
  "substrate-versioned-store-permissions-module",
 ]
 
@@ -3741,26 +3741,6 @@ dependencies = [
 [[package]]
 name = "substrate-versioned-store"
 version = "1.0.1"
-source = "git+https://github.com/joystream/substrate-versioned-store-module?tag=v1.0.1#24bcd60e84c1ece74a8a3130beb740f6fa760145"
-dependencies = [
- "hex-literal 0.1.4",
- "parity-scale-codec",
- "quote 0.6.13",
- "serde",
- "serde_derive",
- "sr-io",
- "sr-primitives",
- "sr-std",
- "srml-balances",
- "srml-support",
- "srml-support-procedural",
- "srml-system",
- "srml-timestamp",
-]
-
-[[package]]
-name = "substrate-versioned-store"
-version = "1.0.1"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3780,7 +3760,6 @@ dependencies = [
 [[package]]
 name = "substrate-versioned-store-permissions-module"
 version = "1.0.1"
-source = "git+https://github.com/joystream/substrate-versioned-store-permissions-module?tag=v1.0.1#dd75f4bfe283673685c4ccf9de14384a546daa6e"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3794,7 +3773,7 @@ dependencies = [
  "srml-support-procedural",
  "srml-system",
  "srml-timestamp",
- "substrate-versioned-store 1.0.1 (git+https://github.com/joystream/substrate-versioned-store-module?tag=v1.0.1)",
+ "substrate-versioned-store",
 ]
 
 [[package]]
