@@ -17,7 +17,7 @@ export function ExploreContent (props: ExploreContentProps) {
     {featuredVideos.length > 0 &&
       <Section title={`Featured videos`} className='ListOfVideos'>
         {featuredVideos.map((x) =>
-          <VideoPreview key={x.id} {...x} />
+          <VideoPreview key={x.id} {...x} withChannel />
         )}
       </Section>
     }
@@ -25,7 +25,7 @@ export function ExploreContent (props: ExploreContentProps) {
       // Add a link to "View all videos"
       <Section title={`Latest videos`} className='ListOfVideos'>
         {latestVideos.map((x) =>
-          <VideoPreview key={x.id} {...x} />
+          <VideoPreview key={x.id} {...x} withChannel />
         )}
       </Section>
     }

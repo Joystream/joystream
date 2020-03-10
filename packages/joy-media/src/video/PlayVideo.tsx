@@ -89,7 +89,7 @@ export function PlayVideo (props: PlayVideoProps) {
       <div className='JoyPlayAlbum_Featured'>
         <h3 style={{ marginBottom: '1rem' }}>Featured videos</h3>
         {featuredVideos.map((x) =>
-          <VideoPreview key={`VideoPreview-${x.id}`} {...x} size='small' orientation='horizontal' />
+          <VideoPreview key={`VideoPreview-${x.id}`} {...x} size='small' orientation='horizontal' withChannel />
         )}
       </div>
     }
