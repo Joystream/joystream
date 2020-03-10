@@ -16,4 +16,5 @@ members = [
 	"runtime-modules/token-minting",
 	"runtime-modules/versioned-store",
 	"runtime-modules/versioned-store-permissions",
-	]
+]
+
