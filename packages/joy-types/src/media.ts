@@ -68,76 +68,9 @@ export class ContentVisibility extends Enum {
 
 export class VecContentId extends Vector.with(ContentId) {}
 
-export type ContentMetadataJsonV1 = {
-  name: string,
-  description?: string,
-  thumbnail?: string,
-  keywords?: string
-};
-
-export class ContentMetadata extends Struct {
-  constructor (value?: any) {
-    super({
-      owner: GenericAccountId,
-      added_at: BlockAndTime,
-      children_ids: VecContentId,
-      visibility: ContentVisibility,
-      schema: SchemaId,
-      json: Text
-    }, value);
-  }
-
-  get owner (): AccountId {
-    return this.get('owner') as AccountId;
-  }
-
-  get added_at (): BlockAndTime {
-    return this.get('added_at') as BlockAndTime;
-  }
-
-  get children_ids (): VecContentId {
-    return this.get('children_ids') as VecContentId;
-  }
-
-  get visibility (): ContentVisibility {
-    return this.get('visibility') as ContentVisibility;
-  }
-
-  get schema (): SchemaId {
-    return this.get('schema') as SchemaId;
-  }
-
-  get json (): Text {
-    return this.get('json') as Text;
-  }
-
-  parseJson (): ContentMetadataJsonV1 {
-    return JSON.parse(this.json.toString());
-  }
-}
-
 export class OptionVecContentId extends Option.with(VecContentId) {}
 export class OptionSchemaId extends Option.with(SchemaId) {}
 export class OptionContentVisibility extends Option.with(ContentVisibility) {}
-
-export type ContentMetadataUpdateType = {
-  children_ids: OptionVecContentId,
-  visibility: OptionContentVisibility,
-  schema: OptionSchemaId,
-  json: OptionText
-};
-
-export class ContentMetadataUpdate extends Struct {
-  constructor (value?: ContentMetadataUpdateType) {
-    super({
-      children_ids: OptionVecContentId,
-      visibility: OptionContentVisibility,
-      schema: OptionSchemaId,
-      json: OptionText
-    }, value);
-  }
-}
-
 export type LiaisonJudgementKey = 'Pending' | 'Accepted' | 'Rejected';
 
 export class LiaisonJudgement extends Enum {
@@ -293,8 +226,6 @@ export function registerMediaTypes () {
       // SchemaId, // This isn't required? (its what caused issue with type mismatch in permissions module!)
       ContentId,
       ContentVisibility,
-      ContentMetadata,
-      ContentMetadataUpdate,
       LiaisonJudgement,
       DataObject,
       DataObjectStorageRelationshipId,
