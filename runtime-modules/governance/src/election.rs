@@ -82,7 +82,7 @@ pub struct TransferableStake<Balance> {
 }
 
 // can we use a type alias to overcome name clashes of public types with other modules?
-pub type ElectionStake<T: Trait> = Stake<BalanceOf<T>>;
+pub type ElectionStake<T> = Stake<BalanceOf<T>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as CouncilElection {

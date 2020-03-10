@@ -709,6 +709,8 @@ impl<T: Trait> Module<T> {
 
         assert!(profile.roles.unregister_role(&actor_in_role));
 
+        <MembershipIdByActorInRole<T>>::remove(actor_in_role);
+
         <MemberProfile<T>>::insert(member_id, profile);
 
         Self::deposit_event(RawEvent::MemberUnregisteredRole(member_id, actor_in_role));

@@ -3,29 +3,23 @@
 # Joystream Runtime
 
 The runtime is the code that defines the consensus rules of the Joystream protocol.
-It is compiled to WASM and lives on chain. [Full nodes](https://github.com/Joystream/substrate-node-joystream) execute the code's logic to validate transactions and blocks on the blockchain.
+It is compiled to WASM and lives on chain.
+[Full nodes](https://github.com/Joystream/substrate-node-joystream) execute the code's logic to validate transactions and blocks on the blockchain.
 
-The joystream runtime builds on [substrate v1.0](https://docs.substrate.dev/docs) and adds additional functionality:
+The joystream runtime builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
+functionality to support the [various roles](https://www.joystream.org/roles) that can be entered into on the platform.
 
-- [Council elections](src/governance/election.rs)
-- [Runtime Upgrade proposal system](src/governance/proposals.rs)
-- [User membership system](src/membership/)
-- [Staked Roles](src/roles)
-   - [Storage Provider](src/storage/)
 
 ### Prerequisites
-
-To compile the runtime you will need some tools such as: Rust, llvm and openssl. You can install most of the dependencies with:
-
-```bash
-curl https://getsubstrate.io -sSf | bash -s -- --fast
-```
 
 ## Getting Started - Building the WASM runtime
 
 ```bash
+# Clone repository
 git clone https://github.com/Joystream/substrate-runtime-joystream
 cd substrate-runtime-joystream/
+
+# Install Pre-requisits
 ./setup.sh
 cargo build --release
 ```
@@ -50,7 +44,7 @@ Deploying the compiled runtime on a live system can be done in one of two ways:
 cargo test
 ```
 
-### Coding style
+## Coding style
 
 We use `rustfmt` to format the source code for consistency.
 
@@ -66,13 +60,17 @@ Running rustfmt can be applied to all source files recursing subfolders:
 rustfmt src/*.*
 ```
 
+## Reproducible Builds
+
+In an attempt to have a reproducuble version of the runtime that can be verified independantly (by council members for example when deciding wether to vote in a runtime upgrade proposal) there is a `build-with-docker.sh` script which can be run to generate a `joystream_runtime.wasm` file to the current directory.
+
 ## Built With
 
 * [Substrate](https://github.com/paritytech/substrate)
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
+Please see our [contributing guidlines](https://github.com/Joystream/joystream#contribute) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
