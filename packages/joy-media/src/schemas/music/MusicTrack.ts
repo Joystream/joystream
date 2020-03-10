@@ -12,6 +12,7 @@ import { MediaObjectType } from '../general/MediaObject';
 import { PublicationStatusType } from '../general/PublicationStatus';
 import { CurationStatusType } from '../general/CurationStatus';
 import { ContentLicenseType } from '../general/ContentLicense';
+import { ChannelEntity } from '@polkadot/joy-media/entities/ChannelEntity';
 
 export const MusicTrackValidationSchema = Yup.object().shape({
   title: Yup.string()
@@ -83,6 +84,7 @@ export type MusicTrackType = {
   license: ContentLicenseType
   attribution?: string
   channelId?: number
+  channel?: ChannelEntity
 };
 
 export class MusicTrackCodec extends EntityCodec<MusicTrackType> { }
