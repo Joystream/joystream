@@ -10,7 +10,19 @@ before_script:
   - cargo +nightly install --git https://github.com/alexcrichton/wasm-gc --force
 
 script:
-  # Ensure all checked in code is cargo-fmt'ed
   - cargo fmt --all -- --check
-  # WASM build check
   - cargo build --release
+  - mv ./target/release/joystream-node .
+  - export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
+  - tar -cfz ${FILENAME}.tar.gz joystream-node
+
+deploy:
+  provider: releases
+  api_key:
+    secure: icPiO8fnOgkHlo2MpUJvH+sZSaxJqzHif/1Pndlxg2jM/jrvLbUCr9UvtLaRQYPi2BVnR41t2m56uMJD3LktKMzAwUP74JcdX7iw6tq+iyvuU4UBsn5+k8pgue+eE34PVN0vNbDS+RVzzc6wG/vhUyKNKz6M1pOuEBx0s6UX3oED16W1LEN8/CHmFVBxQehlGv40Mje6tSmfZMw++efAmFm9vd0Fx8ub8as5ZqyjGv2IwbQlyIGT3SF9yx2va90F2wOxyZM7wgWzA/XIzlDGy+zvZssEYNGQhepUdGwTwwe+YLvZWuttTC218K4H8aireO2vCMti58veX7hVuDz6j6ETVxhr6Nv47HfxQF4IywDTUH1JGlLVadgcKQXUlVRrfy1tBKDq76ppMul8TdS0LgojeTgcJOblKw0V5TMwx+IYmMabVIZQ7Q7xKqf4SeXxh/YL3EUWBvzu1TUn946CB3jLATUxjGyjAZ00BN01QL7chrkcewInlKxJ/wjUqM34KnHNXXgPNADW+c5IIsl82BwnPsPK37WMfW5FaKtOn0YXQWj9QwtEX7VakNnPZZRvpsl2Ftd1As7hPgufMk8NbXmiQH8i0h1W0xcHQ38hvegIpf1fa8JA7VIFBP6ElymMTIus5xD5rsLGzPqgazm/328p2DthJWebyLAZIbEX+I4=
+  file: ${FILENAME}.tar.gz
+  on:
+    tags: true
+  draft: true
+  prerelease: true
+  overwrite: true
