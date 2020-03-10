@@ -299,8 +299,8 @@ export class SubstrateTransport extends MediaTransport {
 
   async toPlainEntitiesAndResolveInternals(entities: Entity[]): Promise<PlainEntity[]> {
     
-    // TODO Maybe problems with recursion.
     const loadEntityById = this.entityCache.getOrLoadById.bind(this.entityCache)
+    const loadChannelById = this.channelCache.getOrLoadById.bind(this.channelCache)
 
     const entityCodecResolver = await this.getEntityCodecResolver()
     const loadableClassIds = await this.classNamesToIdSet(ClassNamesThatRequireLoadingInternals)
@@ -316,8 +316,13 @@ export class SubstrateTransport extends MediaTransport {
       }
 
       const loadInternals = loadableClassIds.has(classIdStr)
-      const codecProps = { loadEntityById, loadInternals }
-      convertions.push(codec.toPlainObject(entity, codecProps))
+      convertions.push(
+        codec.toPlainObject(
+          entity, {
+            loadInternals,
+            loadEntityById, 
+            loadChannelById
+          }))
     }
 
     return Promise.all(convertions)

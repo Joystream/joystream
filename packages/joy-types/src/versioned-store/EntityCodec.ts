@@ -1,11 +1,11 @@
-import camelCase from 'lodash/camelCase';
 import BN from 'bn.js';
 import { Text, bool, Vec, u16 } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import * as PV from './PropertyValue';
 import { PropertyValue } from './PropertyValue';
-import { Class, Entity, VecClassPropertyValue, ClassPropertyValue, EntityId, ClassId } from '.';
+import { Class, Entity, VecClassPropertyValue, ClassPropertyValue, EntityId, ClassId, unifyPropName } from '.';
 import PropertyTypeName from './PropertyTypeName';
+import { ChannelId } from '../content-working-group';
 
 /**
  * Convert a Substrate value to a plain JavaScript value of a corresponding type
@@ -97,10 +97,6 @@ function plainToSubstrate(propType: string, value: any): PropertyValue {
   }
 }
 
-function propNameToJsFieldStyle (humanFriendlyPropName: string): string {
-  return camelCase(humanFriendlyPropName);
-}
-
 interface HasTypeField {
   type: string
 }
@@ -149,11 +145,12 @@ export class EntityCodecResolver {
 
 // TODO delete this hack once EntityCodec extracted from types to media app
 type EntityType = any
+type ChannelEntity = any
 
 export interface ToPlainObjectProps {
   loadInternals?: boolean
   loadEntityById?: (id: EntityId) => Promise<EntityType | undefined>
-  // loadChannelById?: (id: ChannelId) => Promise<ChannelEntity | undefined>
+  loadChannelById?: (id: ChannelId) => Promise<ChannelEntity | undefined>
 }
 
 export abstract class EntityCodec<T extends PlainEntity> {
@@ -163,7 +160,7 @@ export abstract class EntityCodec<T extends PlainEntity> {
   
   public constructor (entityClass: Class) {
     entityClass.properties.map((p, index) => {
-      const propName = propNameToJsFieldStyle(p.name.toString());
+      const propName = unifyPropName(p.name.toString());
       const propMeta = { index, type: p.prop_type.type.toString() };
       this.propNameToMetaMap.set(propName, propMeta);
       this.propIndexToNameMap.set(index, propName);
@@ -181,7 +178,8 @@ export abstract class EntityCodec<T extends PlainEntity> {
 
     const {
       loadInternals,
-      loadEntityById
+      loadEntityById,
+      loadChannelById
     } = props || {}
 
     const res: PlainEntity = {
@@ -199,13 +197,18 @@ export abstract class EntityCodec<T extends PlainEntity> {
         let convertedValue: any
 
         // Load a referred internal entity:
-        if (
-          propValue instanceof PV.Internal && 
-          loadInternals && 
-          typeof loadEntityById === 'function'
-        ) {
-          const internalId = propValue as EntityId
-          convertedValue = await loadEntityById(internalId)
+        if (loadInternals) {
+          if (
+            propValue instanceof PV.Internal && 
+            typeof loadEntityById === 'function'
+          ) {
+            convertedValue = await loadEntityById(propValue as EntityId)
+          } else if (
+            propName === 'channelId' &&
+            typeof loadChannelById === 'function'
+          ) {
+            res.channel = await loadChannelById(propValue as ChannelId)
+          }
         }
 
         // Just convert a Substrate codec value to JS plain object:
