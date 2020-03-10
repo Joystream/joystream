@@ -93,8 +93,7 @@ tag = 'v1.0.1'
 [dependencies.hiring]
 default_features = false
 package = 'substrate-hiring-module'
-git = 'https://github.com/Joystream/substrate-hiring-module'
-tag = 'v1.0.1'
+path = '../hiring'
 
 [dependencies.versioned_store]
 default_features = false

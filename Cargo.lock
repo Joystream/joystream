@@ -3416,7 +3416,6 @@ dependencies = [
 [[package]]
 name = "substrate-hiring-module"
 version = "1.0.1"
-source = "git+https://github.com/Joystream/substrate-hiring-module?tag=v1.0.1#e387af033fb0e81c66d487bdec445153b0fe3cdf"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
