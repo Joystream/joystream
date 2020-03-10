@@ -226,7 +226,8 @@ export abstract class MediaTransport extends Transport {
     const isPublicAndNotCurated = (video: VideoType) => {
       const isPublic = video.publicationStatus.id === idOfPublicPS
       const isNotCurated = idsOfCuratedCS.indexOf(video.curationStatus?.id || -1) < 0
-      return isPublic && isNotCurated
+      const isPubChannel = video.channel ? isPublicChannel(video.channel) : true
+      return isPublic && isNotCurated && isPubChannel
     }
 
     return (await this.allVideos())
