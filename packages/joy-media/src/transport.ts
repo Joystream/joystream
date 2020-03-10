@@ -1,6 +1,6 @@
 import { Transport } from '@polkadot/joy-utils/index'
 import { AccountId } from '@polkadot/types/interfaces';
-import { EntityId, Entity, Class, ClassName, unifyClassName, ClassIdByNameMap } from '@joystream/types/versioned-store';
+import { EntityId, Class, ClassName, unifyClassName, ClassIdByNameMap } from '@joystream/types/versioned-store';
 import { MusicTrackType, MusicTrackCodec } from './schemas/music/MusicTrack';
 import { MusicAlbumType, MusicAlbumCodec } from './schemas/music/MusicAlbum';
 import { VideoType, VideoCodec } from './schemas/video/Video';
@@ -68,7 +68,31 @@ export abstract class MediaTransport extends Transport {
 
   protected cachedClassIdByNameMap: ClassIdByNameMap | undefined
 
+  protected sessionId: number = 0
+
   protected abstract notImplementedYet<T> (): T
+
+  clearSessionCache(): void {}
+
+  openSession(): void {
+    this.sessionId++
+    console.info(`Open transport session no. ${this.sessionId}`)
+  }
+
+  closeSession(): void {
+    this.clearSessionCache()
+    console.info(`Close transport session no. ${this.sessionId}`)
+  }
+
+  async session<R>(operation: () => R): Promise<R> {
+    if (typeof operation !== 'function') {
+      throw new Error('Operation is not a function')
+    }
+    this.openSession()
+    const res = await operation()
+    this.closeSession()
+    return res
+  }
 
   abstract allChannels(): Promise<ChannelEntity[]>
 
@@ -235,8 +259,6 @@ export abstract class MediaTransport extends Transport {
   abstract allMusicThemes(): Promise<MusicThemeType[]>
   abstract allPublicationStatuses(): Promise<PublicationStatusType[]>
   abstract allVideoCategories(): Promise<VideoCategoryType[]>
-
-  abstract allEntities(): Promise<Entity[]>
 
   async allInternalEntities(): Promise<InternalEntities> {
     return {

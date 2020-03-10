@@ -147,10 +147,12 @@ export class EntityCodecResolver {
   }
 }
 
+// TODO delete this hack once EntityCodec extracted from types to media app
+type EntityType = any
+
 export interface ToPlainObjectProps {
-  entityCodecResolver?: EntityCodecResolver
   loadInternals?: boolean
-  loadEntityById?: (id: EntityId) => Promise<Entity | undefined>
+  loadEntityById?: (id: EntityId) => Promise<EntityType | undefined>
   // loadChannelById?: (id: ChannelId) => Promise<ChannelEntity | undefined>
 }
 
@@ -179,8 +181,7 @@ export abstract class EntityCodec<T extends PlainEntity> {
 
     const {
       loadInternals,
-      loadEntityById,
-      entityCodecResolver: entityCodeResolver
+      loadEntityById
     } = props || {}
 
     const res: PlainEntity = {
@@ -201,20 +202,10 @@ export abstract class EntityCodec<T extends PlainEntity> {
         if (
           propValue instanceof PV.Internal && 
           loadInternals && 
-          typeof loadEntityById === 'function' &&
-          entityCodeResolver instanceof EntityCodecResolver
+          typeof loadEntityById === 'function'
         ) {
           const internalId = propValue as EntityId
-          const internalEntity = await loadEntityById(internalId)
-
-          if (internalEntity) {
-            const internalCodec = entityCodeResolver
-              .getCodecByClassId(internalEntity.class_id)
-
-            if (internalCodec) {
-              convertedValue = await internalCodec.toPlainObject(internalEntity)
-            }
-          }
+          convertedValue = await loadEntityById(internalId)
         }
 
         // Just convert a Substrate codec value to JS plain object:
