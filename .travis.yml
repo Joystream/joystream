@@ -14,7 +14,8 @@ script:
   - cargo build --release
   - mv ./target/release/joystream-node .
   - export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
-  - tar -cfz ${FILENAME}.tar.gz joystream-node
+  - tar -cf ${FILENAME}.tar ./joystream-node
+  - gzip ${FILENAME}.tar
 
 deploy:
   provider: releases
