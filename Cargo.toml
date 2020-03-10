@@ -1,0 +1,19 @@
+[workspace]
+members = [
+	"runtime",
+	"runtime-modules/common",
+	"runtime-modules/content-working-group",
+	"runtime-modules/forum",
+	"runtime-modules/governance",
+	"runtime-modules/hiring",
+	"runtime-modules/membership",
+	"runtime-modules/memo",
+	"runtime-modules/recurring-reward",
+	"runtime-modules/roles",
+	"runtime-modules/service-discovery",
+	"runtime-modules/stake",
+	"runtime-modules/storage",
+	"runtime-modules/token-minting",
+	"runtime-modules/versioned-store",
+	"runtime-modules/versioned-store-permissions",
+	]
