@@ -3370,7 +3370,6 @@ dependencies = [
 [[package]]
 name = "substrate-forum-module"
 version = "1.1.1"
-source = "git+https://github.com/joystream/substrate-forum-module?tag=v1.1.1#5918fc90d25faeac06311b0d6b05305cbe722a27"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3564,7 +3563,6 @@ dependencies = [
 [[package]]
 name = "substrate-recurring-reward-module"
 version = "1.0.1"
-source = "git+https://github.com/Joystream/substrate-recurring-reward-module?tag=v1.0.1#2c4bda1dea315629313643737c2f59979579fb50"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3633,7 +3631,6 @@ dependencies = [
 [[package]]
 name = "substrate-stake-module"
 version = "1.0.1"
-source = "git+https://github.com/Joystream/substrate-stake-module/?tag=v1.0.1#af5860c3cde5b11e37728df0b1dfbbdf9a9fa2f3"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3711,7 +3708,6 @@ dependencies = [
 [[package]]
 name = "substrate-token-mint-module"
 version = "1.0.1"
-source = "git+https://github.com/joystream/substrate-token-minting-module/?tag=v1.0.1#7905ce50136cf8483a808a1946fbf123b9ca4bb8"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3745,7 +3741,6 @@ dependencies = [
 [[package]]
 name = "substrate-versioned-store"
 version = "1.0.1"
-source = "git+https://github.com/joystream/substrate-versioned-store-module?tag=v1.0.1#24bcd60e84c1ece74a8a3130beb740f6fa760145"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -3765,7 +3760,6 @@ dependencies = [
 [[package]]
 name = "substrate-versioned-store-permissions-module"
 version = "1.0.1"
-source = "git+https://github.com/joystream/substrate-versioned-store-permissions-module?tag=v1.0.1#dd75f4bfe283673685c4ccf9de14384a546daa6e"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
