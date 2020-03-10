@@ -269,82 +269,82 @@ version = '1.0.4'
 [dependencies.forum]
 default_features = false
 package = 'substrate-forum-module'
-path = 'runtime-modules/forum'
+path = '../runtime-modules/forum'
 
 [dependencies.minting]
 default_features = false
 package = 'substrate-token-mint-module'
-path = 'runtime-modules/token-minting'
+path = '../runtime-modules/token-minting'
 
 [dependencies.stake]
 default_features = false
 package = 'substrate-stake-module'
-path = 'runtime-modules/stake'
+path = '../runtime-modules/stake'
 
 [dependencies.recurringrewards]
 default_features = false
 package = 'substrate-recurring-reward-module'
-path = 'runtime-modules/recurring-reward'
+path = '../runtime-modules/recurring-reward'
 
 [dependencies.hiring]
 default_features = false
 package = 'substrate-hiring-module'
-path = 'runtime-modules/hiring'
+path = '../runtime-modules/hiring'
 
 [dependencies.versioned_store]
 default_features = false
 package ='substrate-versioned-store'
-path = 'runtime-modules/versioned-store'
+path = '../runtime-modules/versioned-store'
 
 [dependencies.versioned_store_permissions]
 default_features = false
 package = 'substrate-versioned-store-permissions-module'
-path = 'runtime-modules/versioned-store-permissions'
+path = '../runtime-modules/versioned-store-permissions'
 
 [dependencies.common]
 default_features = false
 package = 'substrate-common-module'
-path = 'runtime-modules/common'
+path = '../runtime-modules/common'
 version = '1.0.0'
 
 [dependencies.content_working_group]
 default_features = false
 package = 'substrate-content-working-group-module'
-path = 'runtime-modules/content-working-group'
+path = '../runtime-modules/content-working-group'
 version = '1.0.0'
 
 [dependencies.governance]
 default_features = false
 package = 'substrate-governance-module'
-path = 'runtime-modules/governance'
+path = '../runtime-modules/governance'
 version = '1.0.0'
 
 [dependencies.membership]
 default_features = false
 package = 'substrate-membership-module'
-path = 'runtime-modules/membership'
+path = '../runtime-modules/membership'
 version = '1.0.0'
 
 [dependencies.memo]
 default_features = false
 package = 'substrate-memo-module'
-path = 'runtime-modules/memo'
+path = '../runtime-modules/memo'
 version = '1.0.0'
 
 [dependencies.roles]
 default_features = false
 package = 'substrate-roles-module'
-path = 'runtime-modules/roles'
+path = '../runtime-modules/roles'
 version = '1.0.0'
 
 [dependencies.service_discovery]
 default_features = false
 package = 'substrate-service-discovery-module'
-path = 'runtime-modules/service-discovery'
+path = '../runtime-modules/service-discovery'
 version = '1.0.0'
 
 [dependencies.storage]
 default_features = false
 package = 'substrate-storage-module'
-path = 'runtime-modules/storage'
+path = '../runtime-modules/storage'
 version = '1.0.0'
