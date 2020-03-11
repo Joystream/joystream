@@ -3,7 +3,7 @@
 use codec::{Codec, Decode, Encode};
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch::Result, Parameter, StorageMap, StorageValue,
+    decl_event, decl_module, decl_storage, dispatch::Result, Parameter, StorageMap, StorageValue, ensure
 };
 use system::{self, ensure_signed};
 use rstd::collections::btree_set::BTreeSet;
@@ -61,7 +61,7 @@ decl_storage! {
         // Blog Ids set, associated with owner
         BlogIds get(fn blog_ids_by_owner): map T::AccountId => BTreeSet<T::BlogId>;
 
-        BlogPostIds get(fn blog_post_ids_by_blog_id): map T::BlogId => Option<T::PostId>;
+        BlogPostIds get(fn blog_post_ids_by_blog_id): map T::BlogId => Option<BTreeSet<T::PostId>>;
 
         BlogPostReplyIds get (fn blog_post_reply_ids): map (T::BlogId, T::PostId) => Option<BTreeSet<T::ReplyId>>;
 
@@ -104,8 +104,36 @@ decl_module! {
                 new_set.insert(blogs_count);
                 <BlogIds<T>>::insert(&blog_owner, new_set);
             }
+            // Blog default locking status
+            <BlogLockedStatus<T>>::insert(blogs_count, false);
             Self::deposit_event(RawEvent::BlogCreated(blog_owner, blogs_count));
             <BlogsCount<T>>::mutate(|count| *count += T::BlogId::one());
+            Ok(())
+        }
+
+        pub fn lock_blog(origin, blog_id: T::BlogId) -> Result {
+            let blog_owner = ensure_signed(origin)?;
+            ensure!(<BlogIds<T>>::exists(&blog_owner), "AccountId, associated with blog owner does not found");
+            let blog_ids_set = Self::blog_ids_by_owner(&blog_owner);
+            if blog_ids_set.contains(&blog_id) {
+                <BlogLockedStatus<T>>::mutate(&blog_id, |locked_status| *locked_status = true)
+            } else {
+                return Err("You doesn`t own blog, associated with this identifier")
+            }
+            Self::deposit_event(RawEvent::BlogLocked(blog_owner, blog_id));
+            Ok(())
+        }
+
+        pub fn unlock_blog(origin, blog_id: T::BlogId) -> Result {
+            let blog_owner = ensure_signed(origin)?;
+            ensure!(<BlogIds<T>>::exists(&blog_owner), "AccountId, associated with blog owner does not found");
+            let blog_ids_set = Self::blog_ids_by_owner(&blog_owner);
+            if blog_ids_set.contains(&blog_id) {
+                <BlogLockedStatus<T>>::mutate(&blog_id, |locked_status| *locked_status = false)
+            } else {
+                return Err("You doesn`t own blog, associated with this identifier")
+            }
+            Self::deposit_event(RawEvent::BlogUnlocked(blog_owner, blog_id));
             Ok(())
         }
     }
@@ -117,9 +145,8 @@ decl_event!(
         AccountId = <T as system::Trait>::AccountId,
         BlogId = <T as Trait>::BlogId,
     {
-        // Just a dummy event.
-        // Event `Something` is declared with a parameter of the type `u32` and `AccountId`
-        // To emit this event, we call the deposit funtion, from our runtime funtions
         BlogCreated(AccountId, BlogId),
+        BlogLocked(AccountId, BlogId),
+        BlogUnlocked(AccountId, BlogId),
     }
 );
