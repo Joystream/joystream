@@ -5,6 +5,7 @@ import { VideoType } from '../schemas/video/Video';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { isAccountAChannelOwner } from '../channels/ChannelHelpers';
+import { ChannelAvatarAndName } from '../channels/ChannelAvatarAndName';
 
 export type VideoPreviewProps = {
   id: number,
@@ -12,6 +13,7 @@ export type VideoPreviewProps = {
   thumbnail: string,
 
   channel?: ChannelEntity,
+  withChannel?: boolean,
 
   // Preview-specific props:
   size?: 'normal' | 'small',
@@ -20,7 +22,7 @@ export type VideoPreviewProps = {
 
 export function VideoPreview (props: VideoPreviewProps) {
   const { myAccountId } = useMyMembership();
-  const { id, channel, title, size = 'normal', orientation = 'vertical' } = props;
+  const { id, channel, withChannel = false, title, size = 'normal', orientation = 'vertical' } = props;
 
   let width: number = 210;
   let height: number = 118;
@@ -56,6 +58,10 @@ export function VideoPreview (props: VideoPreviewProps) {
         <Link to={playbackUrl}>
           <h3 className='AlbumTitle' title={title}>{title}</h3>
         </Link>
+
+        {withChannel && channel &&
+          <ChannelAvatarAndName channel={channel} />
+        }
 
         {iAmOwner &&
           <div>

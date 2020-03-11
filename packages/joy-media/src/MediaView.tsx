@@ -31,9 +31,13 @@ export function MediaView<A = {}, B = {}> (baseProps: BaseProps<A, B>) {
 
       async function doResolveProps () {
         if (typeof resolveProps === 'function') {
+          // Transport session allows us to cache loaded channels, entites and classes
+          // during the render of this view:
+          transport.openSession()
           setResolvedProps(await resolveProps(
             {...initialProps, transport, myAddress, myMemberId }
           ));
+          transport.closeSession()
         }
         setPropsResolved(true);
       }

@@ -1,11 +1,11 @@
-import camelCase from 'lodash/camelCase';
 import BN from 'bn.js';
 import { Text, bool, Vec, u16 } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import * as PV from './PropertyValue';
 import { PropertyValue } from './PropertyValue';
-import { Class, Entity, VecClassPropertyValue, ClassPropertyValue, unifyClassName, EntityId } from '.';
+import { Class, Entity, VecClassPropertyValue, ClassPropertyValue, EntityId, ClassId, unifyPropName } from '.';
 import PropertyTypeName from './PropertyTypeName';
+import { ChannelId } from '../content-working-group';
 
 /**
  * Convert a Substrate value to a plain JavaScript value of a corresponding type
@@ -97,10 +97,6 @@ function plainToSubstrate(propType: string, value: any): PropertyValue {
   }
 }
 
-function propNameToJsFieldStyle (humanFriendlyPropName: string): string {
-  return camelCase(humanFriendlyPropName);
-}
-
 interface HasTypeField {
   type: string
 }
@@ -132,37 +128,39 @@ export type TextValueEntity = PlainEntity & {
   value: string
 }
 
-type IdToResolvedObject = (id: EntityId) => any
+export class EntityCodecResolver {
 
-export interface InternalEntityResolvers {
-  ContentLicense?: IdToResolvedObject
-  CurationStatus?: IdToResolvedObject
-  FeaturedContent?: IdToResolvedObject
-  Language?: IdToResolvedObject
-  MediaObject?: IdToResolvedObject
-  MusicAlbum?: IdToResolvedObject
-  MusicGenre?: IdToResolvedObject
-  MusicMood?: IdToResolvedObject
-  MusicTheme?: IdToResolvedObject
-  MusicTrack?: IdToResolvedObject
-  PublicationStatus?: IdToResolvedObject
-  Video?: IdToResolvedObject
-  VideoCategory?: IdToResolvedObject
+  private codecByClassIdMap = new Map<string, AnyEntityCodec>()
+
+  constructor (classes: Class[]) {
+    classes.forEach(c => {
+      this.codecByClassIdMap.set(c.id.toString(), new AnyEntityCodec(c))
+    })
+  }
+
+  getCodecByClassId<C extends EntityCodec<any>>(classId: ClassId): C | undefined {
+    return this.codecByClassIdMap.get(classId.toString()) as C
+  }
+}
+
+// TODO delete this hack once EntityCodec extracted from types to media app
+type EntityType = any
+type ChannelEntity = any
+
+export interface ToPlainObjectProps {
+  loadInternals?: boolean
+  loadEntityById?: (id: EntityId) => Promise<EntityType | undefined>
+  loadChannelById?: (id: ChannelId) => Promise<ChannelEntity | undefined>
 }
 
 export abstract class EntityCodec<T extends PlainEntity> {
   
-  private propNameToMetaMap: Map<string, PropMeta> = new Map();
-  private propIndexToNameMap: Map<number, string> = new Map();
-  private internalResolvers: InternalEntityResolvers
+  private propNameToMetaMap: Map<string, PropMeta> = new Map()
+  private propIndexToNameMap: Map<number, string> = new Map()
   
-  public constructor (
-    entityClass: Class,
-    internalResolvers: InternalEntityResolvers = {}
-  ) {
-    this.internalResolvers = internalResolvers
+  public constructor (entityClass: Class) {
     entityClass.properties.map((p, index) => {
-      const propName = propNameToJsFieldStyle(p.name.toString());
+      const propName = unifyPropName(p.name.toString());
       const propMeta = { index, type: p.prop_type.type.toString() };
       this.propNameToMetaMap.set(propName, propMeta);
       this.propIndexToNameMap.set(index, propName);
@@ -176,43 +174,53 @@ export abstract class EntityCodec<T extends PlainEntity> {
   /**
    * Converts an entity of Substrate codec type to a plain JS object.
    */
-  toPlainObject (entity: Entity): T | undefined {
+  async toPlainObject (entity: Entity, props: ToPlainObjectProps = {}): Promise<T | undefined> {
+
+    const {
+      loadInternals,
+      loadEntityById,
+      loadChannelById
+    } = props || {}
+
     const res: PlainEntity = {
       classId: entity.class_id.toNumber(),
       inClassSchemaIndexes: entity.in_class_schema_indexes.map(x => x.toNumber()),
       id: entity.id.toNumber()
     }
 
-    entity.entity_values.forEach((v) => {
+    for (const v of entity.entity_values) {
       const propIdx = v.in_class_index.toNumber();
       const propName = this.propIndexToNameMap.get(propIdx);
 
       if (propName) {
-        let valueConverted = false
+        const propValue = v.value.value
+        let convertedValue: any
 
-        if (v.value.value instanceof PV.Internal) {
-          const className = unifyClassName(propName)
-          const internalEntityById = this.internalResolvers[className]
-          if (internalEntityById) {
-            const internalId = v.value.value as EntityId
-            res[propName] = internalEntityById(internalId)
-            valueConverted = true
+        // Load a referred internal entity:
+        if (loadInternals) {
+          if (
+            propValue instanceof PV.Internal && 
+            typeof loadEntityById === 'function'
+          ) {
+            convertedValue = await loadEntityById(propValue as EntityId)
+          } else if (
+            propName === 'channelId' &&
+            typeof loadChannelById === 'function'
+          ) {
+            res.channel = await loadChannelById(propValue as ChannelId)
           }
         }
 
-        if (!valueConverted) {
-          res[propName] = substrateToPlain(v.value.value)
+        // Just convert a Substrate codec value to JS plain object:
+        if (!convertedValue) {
+          convertedValue = substrateToPlain(propValue)
         }
-      }
-    })
 
-    return res as T;
-  }
-  
-  toPlainObjects (entities: Entity[]): T[] {
-    return entities
-      .map((e) => this.toPlainObject(e))
-      .filter((e) => typeof e !== undefined) as T[]
+        res[propName] = convertedValue
+      }
+    }
+
+    return res as T
   }
 
   /**

@@ -285,6 +285,12 @@ $borderColor: #e4e4e4;
   }
   &.small .ChannelTitle {
     font-size: 1rem;
+    a {
+      color: $blackFont;
+    }
+  }
+  &.small .ChannelAvatar {
+    margin-right: .5rem;
   }
 
   .ChannelSubtitle {

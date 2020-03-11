@@ -10,6 +10,7 @@ import { MediaObjectType } from '../general/MediaObject';
 import { PublicationStatusType } from '../general/PublicationStatus';
 import { CurationStatusType } from '../general/CurationStatus';
 import { ContentLicenseType } from '../general/ContentLicense';
+import { ChannelEntity } from '@polkadot/joy-media/entities/ChannelEntity';
 
 export const VideoValidationSchema = Yup.object().shape({
   title: Yup.string()
@@ -65,6 +66,7 @@ export type VideoType = {
   license: ContentLicenseType
   attribution?: string
   channelId?: number
+  channel?: ChannelEntity
 };
 
 export class VideoCodec extends EntityCodec<VideoType> { }
