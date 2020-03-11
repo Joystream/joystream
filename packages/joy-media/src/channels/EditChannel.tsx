@@ -57,6 +57,9 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const { avatar } = values;
   const isNew = !entity;
 
+  // if user is not the channel owner don't render the edit form
+  // return null
+
   const onTxSuccess: TxCallback = (txResult: SubmittableResult) => {
     setSubmitting(false)
     if (!history) return
@@ -133,7 +136,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     }
   };
 
-  const formFields = () => <>    
+  const formFields = () => <>
     <MediaText field={Fields.handle} {...props} />
     <MediaText field={Fields.title} {...props} />
     <MediaText field={Fields.avatar} {...props} />
@@ -172,7 +175,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     </div>
 
     <Form className='ui form JoyForm EditMetaForm'>
-      
+
       {formFields()}
 
       <LabelledField style={{ marginTop: '1rem' }} {...props}>

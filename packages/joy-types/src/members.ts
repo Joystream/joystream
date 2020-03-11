@@ -26,7 +26,7 @@ export enum RoleKeys {
   StorageProvider = 'StorageProvider',
     ChannelOwner = 'ChannelOwner',
     CuratorLead = 'CuratorLead',
-    Curator = 'Curator', 
+    Curator = 'Curator',
 }
 
 export class Role extends Enum {
@@ -121,6 +121,22 @@ export class ActorInRole extends Struct {
       role: Role,
       actor_id: ActorId,
     }, value);
+  }
+
+  get role (): Role {
+    return this.get('role') as Role;
+  }
+
+  get actor_id(): ActorId {
+    return this.get('actor_id') as ActorId;
+  }
+
+  get isContentLead() : boolean {
+    return this.role.eq(RoleKeys.CuratorLead);
+  }
+
+  get isCurator() : boolean {
+    return this.role.eq(RoleKeys.Curator);
   }
 };
 
