@@ -17,6 +17,15 @@ $borderColor: #e4e4e4;
   background-position: center;
 }
 
+.JoySection {
+  .ViewAllLink {
+    float: right;
+    font-size: 1rem;
+    font-weight: normal;
+    text-transform: uppercase;
+    margin-left: 1rem;
+  }
+}
 .Ellipsis {
   text-overflow: ellipsis;
   overflow: hidden;

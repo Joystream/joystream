@@ -203,14 +203,17 @@ export abstract class MediaTransport extends Transport {
       .filter(isVideoChannel)
   }
 
-  async latestPublicVideoChannels(limit: number = 5): Promise<ChannelEntity[]> {
+  async allPublicVideoChannels(): Promise<ChannelEntity[]> {
     return (await this.allVideoChannels())
       .filter(isPublicChannel)
       .sort(x => -1 * x.id)
-      .slice(0, limit)
   }
 
-  async latestPublicVideos(limit: number = 5): Promise<VideoType[]> {
+  async latestPublicVideoChannels(limit: number = 6): Promise<ChannelEntity[]> {
+    return (await this.allPublicVideoChannels()).slice(0, limit)
+  }
+
+  async allPublicVideos(): Promise<VideoType[]> {
 
     const idOfPublicPS = (await this.allPublicationStatuses())
       .find(x =>
@@ -233,7 +236,10 @@ export abstract class MediaTransport extends Transport {
     return (await this.allVideos())
       .filter(isPublicAndNotCurated)
       .sort(x => -1 * x.id)
-      .slice(0, limit)
+  }
+
+  async latestPublicVideos(limit: number = 12): Promise<VideoType[]> {
+    return (await this.allPublicVideos()).slice(0, limit)
   }
 
   async mediaObjectClass() {
