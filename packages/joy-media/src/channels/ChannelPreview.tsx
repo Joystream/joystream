@@ -8,6 +8,7 @@ import { isPublicChannel } from './ChannelHelpers';
 import { isMusicChannel, isVideoChannel, isAccountAChannelOwner } from './ChannelHelpers';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 import { nonEmptyStr } from '@polkadot/joy-utils/';
+import { ChannelNameAsLink } from './ChannelNameAsLink';
 
 type ChannelPreviewProps = {
   channel: ChannelEntity
@@ -49,9 +50,7 @@ export const ChannelPreview = (props: ChannelPreviewProps) => {
       <div className='ChannelDetails'>
         <h3 className='ChannelTitle' style={{ display: 'block' }}>
           
-          <Link to={`/media/channels/${channel.id}`} style={{ marginRight: '1rem' }}>
-            {channel.title || channel.handle}
-          </Link>
+          <ChannelNameAsLink channel={channel} style={{ marginRight: '1rem' }} />
 
           {isAccountAChannelOwner(channel, myAccountId) &&
             <div style={{ float: 'right' }}>

@@ -217,6 +217,10 @@ export function unifyClassName(className: string): ClassName {
   return upperFirst(camelCase(className)) as ClassName
 }
 
+export function unifyPropName(propName: string): string {
+  return camelCase(propName)
+}
+
 export function registerVersionedStoreTypes () {
   try {
     getTypeRegistry().register({
