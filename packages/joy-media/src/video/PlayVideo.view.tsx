@@ -18,15 +18,7 @@ export const PlayVideoView = MediaView<Props>({
     const channelId = new ChannelId(video.channelId)
     const channel = await transport.channelById(channelId)
     const featuredVideos = await transport.featuredVideos()
-
-    // TODO Fix this type-casting hack.
-    // Video.object field should be either number on the Video type
-    // or there should be a way to get to video.object.id,
-    // but for this we need to load all fileds internally refered by video?
-    // This doesn'r sound as the best approach.
-    const objectId = new EntityId((video.object || 0) as number)
-
-    const mediaObject = await transport.mediaObjectById(objectId)
+    const mediaObject = video.object
 
     return { mediaObject, video, channel, featuredVideos }
   }

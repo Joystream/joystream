@@ -8,7 +8,7 @@ import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelPreview } from '../channels/ChannelPreview';
 import { VideoPreview } from './VideoPreview';
 import { VideoType, VideoClass as Fields, VideoGenericProp } from '../schemas/video/Video';
-import { printExplicit, printReleaseDate } from '../entities/EntityHelpers';
+import { printExplicit, printReleaseDate, printLanguage } from '../entities/EntityHelpers';
 import { MediaObjectType } from '../schemas/general/MediaObject';
 import { MediaPlayerWithResolver } from '../common/MediaPlayerWithResolver';
 import { ContentId } from '@joystream/types/media';
@@ -32,21 +32,34 @@ export function PlayVideo (props: PlayVideoProps) {
     return <em>Channel was not found</em>
   }
 
-  const metaField = (field: VideoGenericProp, value: React.ReactNode | string) =>
-    <Table.Row>
-      <Table.Cell width={4}>{field.name}</Table.Cell>
-      <Table.Cell>{value}</Table.Cell>
-    </Table.Row>
+  const metaField = (field: VideoGenericProp, value: React.ReactNode | string) => (
+    typeof video[field.id] !== 'undefined' &&
+      <Table.Row>
+        <Table.Cell width={4}>{field.name}</Table.Cell>
+        <Table.Cell>{value}</Table.Cell>
+      </Table.Row>
+  )
+
+  const printLinks = (links?: string[]) => {
+    return (links || []).map((x, i) =>
+      <div key={`EntityLink-${i}`}>
+        <a href={encodeURI(x)} target='_blank' rel='nofollow'>{x}</a>
+      </div>
+    )
+  }
 
   const metaTable = <>
     <h3>Video details</h3>
     <Table basic='very' compact className='JoyPlayAlbum_MetaInfo'>
       <Table.Body>
-        {metaField(Fields.firstReleased, printReleaseDate(video.firstReleased))}
         {metaField(Fields.explicit, printExplicit(video.explicit))}
-
-        {/* TODO show other resolved internal values: language, category, etc. */}
-
+        {metaField(Fields.firstReleased, printReleaseDate(video.firstReleased))}
+        {metaField(Fields.language, printLanguage(video.language))}
+        {metaField(Fields.category, video.category?.value)}
+        {metaField(Fields.license, video.license?.value)}
+        {metaField(Fields.attribution, video.attribution)}
+        {metaField(Fields.link, printLinks(video.link))}
+        {metaField(Fields.curationStatus, video.curationStatus?.value)}
       </Table.Body>
     </Table>
   </>
@@ -89,7 +102,7 @@ export function PlayVideo (props: PlayVideoProps) {
       <div className='JoyPlayAlbum_Featured'>
         <h3 style={{ marginBottom: '1rem' }}>Featured videos</h3>
         {featuredVideos.map((x) =>
-          <VideoPreview key={`VideoPreview-${x.id}`} {...x} size='small' orientation='horizontal' />
+          <VideoPreview key={`VideoPreview-${x.id}`} {...x} size='small' orientation='horizontal' withChannel />
         )}
       </div>
     }
