@@ -6,6 +6,8 @@ use srml_support::{
     decl_event, decl_module, decl_storage, dispatch::Result, Parameter, StorageMap, StorageValue,
 };
 use system::{self, ensure_signed};
+use rstd::collections::btree_set::BTreeSet;
+use rstd::prelude::*;
 
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait {
@@ -55,20 +57,24 @@ pub struct Post {
 // Blog`s pallet storage items.
 decl_storage! {
     trait Store for Module<T: Trait> as TemplateModule {
-        // Blog Ids, associated with owner
-        BlogIds get(fn blog_ids_by_owner): map T::AccountId => Vec<T::BlogId>;
+
+        // Blog Ids set, associated with owner
+        BlogIds get(fn blog_ids_by_owner): map T::AccountId => BTreeSet<T::BlogId>;
 
         BlogPostIds get(fn blog_post_ids_by_blog_id): map T::BlogId => Option<T::PostId>;
 
-        BlogPostReplyIds get (fn blog_post_reply_ids): map (T::BlogId, T::PostId) => Option<Vec<T::ReplyId>>;
+        BlogPostReplyIds get (fn blog_post_reply_ids): map (T::BlogId, T::PostId) => Option<BTreeSet<T::ReplyId>>;
 
-        Reply get (fn reply_by_id): map T::ReplyId => String;
+        BlogPost get(fn blog_post_by_id): map (T::BlogId, T::PostId) => Post;
 
-        BlogPost get(fn blog_post_by_id): map T::PostId => Post;
+        Reply get (fn reply_by_id): map (T::BlogId, T::PostId, T::ReplyId) => String;
 
         BlogLockedStatus get(fn blog_locked_status): map T::BlogId => bool;
 
         BlogPostLockedStatus get(fn blog_post_locked_status): map T::PostId => bool;
+
+        //Reply Ids set, associated with owner
+        ReplyIds get (fn reply_ids_by_owner): map T::AccountId => BTreeSet<(T::BlogId, T::PostId, T::ReplyId)>;
 
         //ReplyLockedStatus get(fn reply_locked_status): map T::Hash => bool;
 
@@ -91,13 +97,15 @@ decl_module! {
             let blogs_count = Self::blogs_count();
             if <BlogIds<T>>::exists(&blog_owner) {
                 <BlogIds<T>>::mutate(&blog_owner, |blog_ids| {
-                    blog_ids.push(blogs_count)
+                    blog_ids.insert(blogs_count);
                 })
             } else {
-                <BlogIds<T>>::insert(&blog_owner, vec![blogs_count]);
+                let mut new_set = BTreeSet::new();
+                new_set.insert(blogs_count);
+                <BlogIds<T>>::insert(&blog_owner, new_set);
             }
-            <BlogsCount<T>>::mutate(|count| *count += T::BlogId::one());
             Self::deposit_event(RawEvent::BlogCreated(blog_owner, blogs_count));
+            <BlogsCount<T>>::mutate(|count| *count += T::BlogId::one());
             Ok(())
         }
     }
