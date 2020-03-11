@@ -21,6 +21,8 @@ import { ExploreContentView } from './explore/ExploreContent.view';
 import { ViewChannelWithRouter } from './channels/ViewChannel.view';
 import { EditVideoWithRouter } from './upload/EditVideo.view';
 import { PlayVideoWithRouter } from './video/PlayVideo.view';
+import { AllVideosView } from './explore/AllVideos';
+import { AllChannelsView } from './explore/AllChannels';
 // import { VideosByOwner } from './video/VideosByOwner';
 
 type Props = AppProps & I18nProps & ApiProps & DiscoveryProviderProps & {};
@@ -62,9 +64,12 @@ function App(props: Props) {
             <Route path={`${basePath}/channels/:id/edit`} component={EditChannelWithRouter} />
             <Route path={`${basePath}/channels/:channelId/upload`} component={UploadWithRouter} />
             <Route path={`${basePath}/channels/:id`} component={ViewChannelWithRouter} />
+            <Route path={`${basePath}/channels/:id`} component={ViewChannelWithRouter} />
+            <Route path={`${basePath}/channels`} component={AllChannelsView} />
             {/* <Route path={`${basePath}/video/my`} component={VideosByOwnerView} /> */}
             <Route path={`${basePath}/video/:id/edit`} component={EditVideoWithRouter} />
             <Route path={`${basePath}/video/:id`} component={PlayVideoWithRouter} />
+            <Route path={`${basePath}/video`} component={AllVideosView} />
             <Route path={`${basePath}/explore`} component={ExploreContentView} />
             <Route component={ExploreContentView} />
           </Switch>
