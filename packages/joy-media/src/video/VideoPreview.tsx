@@ -38,7 +38,7 @@ export function VideoPreview (props: VideoPreviewProps) {
       : width * 1.5
   };
 
-  const playbackUrl = `/media/video/${id}`
+  const playbackUrl = `/media/videos/${id}`
   const iAmOwner = isAccountAChannelOwner(channel, myAccountId)
 
   return (
@@ -65,7 +65,7 @@ export function VideoPreview (props: VideoPreviewProps) {
 
         {iAmOwner &&
           <div>
-            <Link to={`/media/video/${id}/edit`} className='ui button basic small'>
+            <Link to={`/media/videos/${id}/edit`} className='ui button basic small'>
               <i className='icon pencil' />
               Edit
             </Link>

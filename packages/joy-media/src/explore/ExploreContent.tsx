@@ -8,7 +8,7 @@ import { ChannelPreview } from '../channels/ChannelPreview';
 const LatestVideosTitle = () => (
   <div>
     Latest videos
-    <Link to={`/media/video`} className='ViewAllLink'>All videos</Link>
+    <Link to={`/media/videos`} className='ViewAllLink'>All videos</Link>
   </div>
 )
 
