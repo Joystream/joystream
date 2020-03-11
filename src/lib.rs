@@ -55,6 +55,12 @@ pub struct Post {
     body: String,
 }
 
+type MaxLengthConstraint = u32;
+
+type MaxNumberConstraint = u32;
+
+type MaxConsecutiveRepliesConstraint = u32;
+
 impl Post {
     fn new(title: String, body: String) -> Self {
         Self { title, body }
@@ -64,7 +70,17 @@ impl Post {
 // Blog`s pallet storage items.
 decl_storage! {
     trait Store for Module<T: Trait> as TemplateModule {
+        // Security/configuration constraints
+        PostHeaderMaxLength get(fn post_header_max_length) config(): MaxLengthConstraint;
+        PostBodyMaxLength get(fn post_body_max_length) config(): MaxLengthConstraint;
+        ReplyMaxLength get(fn reply_max_length) config(): MaxLengthConstraint;
 
+        PostsMaxNumber get(fn posts_max_number) config(): MaxNumberConstraint;
+        RepliesMaxNumber get(fn replies_max_number) config(): MaxNumberConstraint;
+        DirectRepliesMaxNumber get(fn direct_replies_max_number) config(): MaxNumberConstraint;
+
+        ConsecutiveRepliesMaxNumber get(fn consecutive_replies_max_number) config(): MaxConsecutiveRepliesConstraint;
+        
         // Blog Ids set, associated with owner
         BlogIds get(fn blog_ids_by_owner): map T::AccountId => Option<BTreeSet<T::BlogId>>;
 
