@@ -218,6 +218,37 @@ decl_module! {
             Self::deposit_event(RawEvent::PostUnlocked(blog_id, post_id));
             Ok(())
         }
+
+        pub fn edit_post(origin, blog_id: T::BlogId, post_id: T::PostId, new_title: Option<String>, new_body: Option<String>) -> Result {
+            let blog_owner = ensure_signed(origin)?;
+            ensure!(<BlogIds<T>>::exists(&blog_owner), "AccountId, associated with given blog owner does not found");
+            ensure!(!Self::blog_locked(blog_id), "Please, unlock your blog before post editing");
+            ensure!(!Self::blog_post_locked((blog_id, post_id)), "Please, unlock your post before editing");
+            let blog_ids_set = Self::blog_ids_by_owner(&blog_owner);
+            match blog_ids_set {
+                Some(blog_ids_set) if blog_ids_set.contains(&blog_id) => {
+                    <BlogPost<T>>::mutate((blog_id, post_id), |post| {
+                        if let Some(post) = post {
+                            Self::update_post(post, new_title, new_body)
+                        }
+                    });
+                }
+                _ => return Err("You doesn`t own blog, associated with this identifier")
+            }
+            Self::deposit_event(RawEvent::PostEdited(blog_id, post_id));
+            Ok(())
+        }
+    }
+}
+
+impl<T: Trait> Module<T> {
+    fn update_post(post: &mut Post, new_title: Option<String>, new_body: Option<String>) {
+        if let Some(new_title) = new_title {
+            post.title = new_title
+        }
+        if let Some(new_body) = new_body {
+            post.body = new_body
+        }
     }
 }
 
@@ -234,5 +265,6 @@ decl_event!(
         PostCreated(BlogId, PostId),
         PostLocked(BlogId, PostId),
         PostUnlocked(BlogId, PostId),
+        PostEdited(BlogId, PostId),
     }
 );
