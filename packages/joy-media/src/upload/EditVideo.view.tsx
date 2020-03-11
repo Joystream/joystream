@@ -10,11 +10,12 @@ type Props = OuterProps;
 export const EditVideoView = MediaView<Props>({
   component: EditForm,
   resolveProps: async (props) => {
-    const { transport, channelId, id } = props;
-    const channel = channelId && await transport.channelById(channelId);
+    const { transport, id, /*channelId*/ } = props;
+    // const channel = channelId && await transport.channelById(channelId);
     const mediaObjectClass = await transport.mediaObjectClass();
     const entityClass = await transport.videoClass();
     const entity = id && await transport.videoById(id);
+    const channel = (entity && entity.channelId) && await transport.channelById(new ChannelId(entity.channelId));
     const opts = await transport.dropdownOptions();
     return { channel, mediaObjectClass, entityClass, entity, opts };
   }

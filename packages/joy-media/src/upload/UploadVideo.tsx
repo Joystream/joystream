@@ -28,6 +28,7 @@ import { ParametrizedEntity } from '@joystream/types/versioned-store/permissions
 import ParametrizedClassPropertyValue from '@joystream/types/versioned-store/permissions/batching/ParametrizedClassPropertyValue';
 import { ParametrizedPropertyValue } from '@joystream/types/versioned-store/permissions/batching/parametrized-property-value';
 import { ParameterizedClassPropertyValues } from '@joystream/types/versioned-store/permissions/batching/operations';
+import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 
 /** Example: "2019-01-23" -> 1548201600 */
 function humanDateToUnixTs(humanFriendlyDate: string): number | undefined {
@@ -80,8 +81,11 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     isValid,
     isSubmitting,
     setSubmitting,
-    resetForm
+    resetForm,
+    channel
   } = props;
+
+  const { myAccountId } = useMyMembership();
 
   const { thumbnail } = values
 
@@ -91,6 +95,10 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   if (!entityClass) {
     return <em>ERROR: "Video" entity class in undefined</em>
+  }
+
+  if (channel && !channel.roleAccount.eq(myAccountId)) {
+    return <em>ERROR: "Only owner can edit video"</em>
   }
 
   // Next consts are used in tx params:
@@ -296,7 +304,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     // because the first 'EntityCreated' event corresponds to a Media Object Entity.
     const events = filterSubstrateEventsAndExtractData(txResult, 'EntityCreated')
 
-    // Return if there were less than two event: 
+    // Return if there were less than two event:
     if (!events || events.length < 2) return
 
     // Get the second 'EntityCreated' event:
