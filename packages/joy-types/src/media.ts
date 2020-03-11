@@ -1,7 +1,6 @@
 import { Enum, Struct, Option, Vec as Vector, H256 } from '@polkadot/types';
 import { getTypeRegistry, u32, u64, bool, Text, GenericAccountId } from '@polkadot/types';
 import { BlockNumber, Moment, AccountId } from '@polkadot/types/interfaces';
-import { OptionText } from './';
 
 import { randomAsU8a } from '@polkadot/util-crypto';
 import { encodeAddress, decodeAddress } from '@polkadot/keyring';
