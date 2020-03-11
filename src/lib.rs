@@ -68,22 +68,22 @@ decl_storage! {
         // Blog Ids set, associated with owner
         BlogIds get(fn blog_ids_by_owner): map T::AccountId => Option<BTreeSet<T::BlogId>>;
 
-        BlogPostIds get(fn blog_post_ids_by_blog_id): map T::BlogId => Option<BTreeSet<T::PostId>>;
+        BlogPostIds get(fn post_ids_by_blog_id): map T::BlogId => Option<BTreeSet<T::PostId>>;
 
-        BlogPostReplyIds get (fn blog_post_reply_ids): map (T::BlogId, T::PostId) => Option<BTreeSet<T::ReplyId>>;
+        BlogPostReplyIds get (fn post_reply_ids): map (T::BlogId, T::PostId) => Option<BTreeSet<T::ReplyId>>;
 
-        BlogPost get(fn blog_post_by_id): map (T::BlogId, T::PostId) => Option<Post>;
+        BlogPost get(fn post_by_id): map (T::BlogId, T::PostId) => Option<Post>;
 
         Reply get (fn reply_by_id): map (T::BlogId, T::PostId, T::ReplyId) => Option<String>;
 
         BlogLockedStatus get(fn blog_locked): map T::BlogId => bool;
 
-        BlogPostLockedStatus get(fn blog_post_locked): map T::PostId => bool;
+        PostLockedStatus get(fn blog_post_locked): map (T::BlogId, T::PostId) => bool;
 
         //Reply Ids set, associated with owner
         ReplyIds get (fn reply_ids_by_owner): map T::AccountId => BTreeSet<(T::BlogId, T::PostId, T::ReplyId)>;
 
-        //ReplyLockedStatus get(fn reply_locked): map T::Hash => bool;
+        //ReplyLockedStatus get(fn reply_locked): map (T::BlogId, T::PostId, T::ReplyId) => bool;
 
         BlogsCount get(fn blogs_count): T::BlogId;
 
@@ -171,9 +171,51 @@ decl_module! {
                 _ => return Err("You doesn`t own blog, associated with this identifier")
             }
             // Blog default locking status
-            <BlogPostLockedStatus<T>>::insert(posts_count, false);
+            <PostLockedStatus<T>>::insert((blog_id, posts_count), false);
             <PostsCount<T>>::mutate(blog_id, |count| *count += T::PostId::one());
             Self::deposit_event(RawEvent::PostCreated(blog_id, posts_count));
+            Ok(())
+        }
+
+        pub fn lock_post(origin, blog_id: T::BlogId, post_id: T::PostId) -> Result {
+            let blog_owner = ensure_signed(origin)?;
+            ensure!(<BlogIds<T>>::exists(&blog_owner), "AccountId, associated with given blog owner does not found");
+            ensure!(<BlogPost<T>>::exists((blog_id, post_id)), "Post, associated with given blog and post ids does not found");
+            let blog_ids_set = Self::blog_ids_by_owner(&blog_owner);
+            match blog_ids_set {
+                Some(blog_ids_set) if blog_ids_set.contains(&blog_id) => {
+                    let post_ids_set = Self::post_ids_by_blog_id(&blog_id);
+                    match post_ids_set {
+                        Some(post_ids_set) if post_ids_set.contains(&post_id) => {
+                            <PostLockedStatus<T>>::mutate((blog_id, post_id), |locked_status| *locked_status = true)
+                        }
+                        _ => return Err("You doesn`t own post, associated with this identifier")
+                    }
+                }
+                _ => return Err("You doesn`t own blog, associated with this identifier")
+            }
+            Self::deposit_event(RawEvent::PostLocked(blog_id, post_id));
+            Ok(())
+        }
+
+        pub fn unlock_post(origin, blog_id: T::BlogId, post_id: T::PostId) -> Result {
+            let blog_owner = ensure_signed(origin)?;
+            ensure!(<BlogIds<T>>::exists(&blog_owner), "AccountId, associated with given blog owner does not found");
+            ensure!(<BlogPost<T>>::exists((blog_id, post_id)), "Post, associated with given blog and post ids does not found");
+            let blog_ids_set = Self::blog_ids_by_owner(&blog_owner);
+            match blog_ids_set {
+                Some(blog_ids_set) if blog_ids_set.contains(&blog_id) => {
+                    let post_ids_set = Self::post_ids_by_blog_id(&blog_id);
+                    match post_ids_set {
+                        Some(post_ids_set) if post_ids_set.contains(&post_id) => {
+                            <PostLockedStatus<T>>::mutate((blog_id, post_id), |locked_status| *locked_status = false)
+                        }
+                        _ => return Err("You doesn`t own post, associated with this identifier")
+                    }
+                }
+                _ => return Err("You doesn`t own blog, associated with this identifier")
+            }
+            Self::deposit_event(RawEvent::PostUnlocked(blog_id, post_id));
             Ok(())
         }
     }
@@ -190,5 +232,7 @@ decl_event!(
         BlogLocked(AccountId, BlogId),
         BlogUnlocked(AccountId, BlogId),
         PostCreated(BlogId, PostId),
+        PostLocked(BlogId, PostId),
+        PostUnlocked(BlogId, PostId),
     }
 );
