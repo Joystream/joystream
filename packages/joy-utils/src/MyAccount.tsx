@@ -158,7 +158,7 @@ function withMyRoles<P extends MyAccountProps> (Component: React.ComponentType<P
 function withCurationActor<P extends MyAccountProps> (Component: React.ComponentType<P>) {
   return function (props: P) {
 
-    const { myAccountId, isLeadSet, contentLeadEntry, memberIsContentLead, memberIsCurator, myCuratorIds, curatorEntries, allAccounts} = props;
+    const { myAccountId, isLeadSet, contentLeadEntry, memberIsCurator, myCuratorIds, curatorEntries, allAccounts} = props;
 
     // leadEntry should be single entry otherwise we fetched the whole map?
     // should be handle that case?
@@ -184,11 +184,12 @@ function withCurationActor<P extends MyAccountProps> (Component: React.Component
     const leadExists = isLeadSet && isLeadSet.isSome;
 
     if (leadExists && myAccountId && contentLeadEntry) {
-      const lead_role_account = contentLeadEntry[0].role_account.toString();
-      // my account is lead role account, or member account being used is the lead
-      // maybe they have the lead role account in keystore
-      if (myAccountId.eq(lead_role_account) || memberIsContentLead) {
-        return <Component {...props} curationActor={[new CurationActor('Lead'), lead_role_account]} />
+      const lead_role_account = contentLeadEntry[0].role_account
+      if (canUseAccount(lead_role_account)) {
+        return <Component {...props} curationActor={[
+          new CurationActor('Lead'),
+          lead_role_account
+        ]} />
       }
     }
 
@@ -207,12 +208,10 @@ function withCurationActor<P extends MyAccountProps> (Component: React.Component
 
       if (ix >= 0) {
         const role_account = curators.linked_values[ix].role_account;
-        if (canUseAccount(role_account)) {
           return <Component {...props} curationActor={[
             new CurationActor({ 'Curator': curator_id }),
-            role_account.toString()
+            role_account
           ]} />;
-        }
       }
     }
 
@@ -229,7 +228,7 @@ function withCurationActor<P extends MyAccountProps> (Component: React.Component
         const curator_id = curators.linked_keys[ix];
         return <Component {...props} curationActor={[
           new CurationActor({ 'Curator':  curator_id }),
-          myAccountId.toString()
+          myAccountId
         ]} />
       }
     }
