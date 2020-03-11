@@ -81,15 +81,15 @@ decl_storage! {
         PostLockedStatus get(fn blog_post_locked): map (T::BlogId, T::PostId) => bool;
 
         //Reply Ids set, associated with owner
-        ReplyIds get (fn reply_ids_by_owner): map T::AccountId => BTreeSet<(T::BlogId, T::PostId, T::ReplyId)>;
+        ReplyIds get (fn reply_ids_by_owner): map T::AccountId => Option<BTreeSet<(T::BlogId, T::PostId, T::ReplyId)>>;
 
         //ReplyLockedStatus get(fn reply_locked): map (T::BlogId, T::PostId, T::ReplyId) => bool;
 
         BlogsCount get(fn blogs_count): T::BlogId;
 
-        PostsCount get(fn posts_count_by_blog): map T::BlogId => T::PostId;
+        PostsCount get(fn posts_count): map T::BlogId => T::PostId;
 
-        PostRepliesCount get(fn post_replies_count): map (T::BlogId, T::PostId) => T::ReplyId;
+        RepliesCount get(fn replies_count): map (T::BlogId, T::PostId) => T::ReplyId;
     }
 }
 
@@ -123,8 +123,7 @@ decl_module! {
         pub fn lock_blog(origin, blog_id: T::BlogId) -> Result {
             let blog_owner = ensure_signed(origin)?;
             ensure!(<BlogIds<T>>::exists(&blog_owner), "AccountId, associated with given blog owner does not found");
-            let blog_ids_set = Self::blog_ids_by_owner(&blog_owner);
-            match blog_ids_set {
+            match Self::blog_ids_by_owner(&blog_owner) {
                 Some(blog_ids_set) if blog_ids_set.contains(&blog_id) => {
                     <BlogLockedStatus<T>>::mutate(&blog_id, |locked_status| *locked_status = true)
                 }
@@ -137,8 +136,7 @@ decl_module! {
         pub fn unlock_blog(origin, blog_id: T::BlogId) -> Result {
             let blog_owner = ensure_signed(origin)?;
             ensure!(<BlogIds<T>>::exists(&blog_owner), "AccountId, associated with given blog owner does not found");
-            let blog_ids_set = Self::blog_ids_by_owner(&blog_owner);
-            match blog_ids_set {
+            match Self::blog_ids_by_owner(&blog_owner) {
                 Some(blog_ids_set) if blog_ids_set.contains(&blog_id) => {
                     <BlogLockedStatus<T>>::mutate(&blog_id, |locked_status| *locked_status = false)
                 }
@@ -152,20 +150,21 @@ decl_module! {
             let blog_owner = ensure_signed(origin)?;
             ensure!(<BlogIds<T>>::exists(&blog_owner), "AccountId, associated with given blog owner does not found");
             ensure!(!Self::blog_locked(blog_id), "Please, unlock your blog before new posts creation");
-            let posts_count = Self::posts_count_by_blog(blog_id);
-            let blog_ids_set = Self::blog_ids_by_owner(&blog_owner);
-            match blog_ids_set {
+            let posts_count = Self::posts_count(blog_id);
+            match Self::blog_ids_by_owner(&blog_owner) {
                 Some(blog_ids_set) if blog_ids_set.contains(&blog_id) => {
                     let post = Post::new(title, body);
-                    <BlogPostIds<T>>::mutate(blog_id, |post_ids| {
-                        if let Some(post_ids) = post_ids {
-                            post_ids.insert(posts_count);
-                        } else {
-                            let mut new_set = BTreeSet::new();
-                            new_set.insert(posts_count);
-                            *post_ids = Some(new_set);
-                        }
-                    });
+                    if <BlogPostIds<T>>::exists(blog_id) {
+                        <BlogPostIds<T>>::mutate(blog_id, |post_ids| {
+                            if let Some(post_ids) = post_ids {
+                                post_ids.insert(posts_count);
+                            }
+                        });
+                    } else {
+                        let mut new_set = BTreeSet::new();
+                        new_set.insert(posts_count);
+                        <BlogPostIds<T>>::insert(blog_id, new_set);
+                    }
                     <BlogPost<T>>::insert((blog_id, posts_count), post);
                 }
                 _ => return Err("You doesn`t own blog, associated with this identifier")
@@ -181,11 +180,9 @@ decl_module! {
             let blog_owner = ensure_signed(origin)?;
             ensure!(<BlogIds<T>>::exists(&blog_owner), "AccountId, associated with given blog owner does not found");
             ensure!(<BlogPost<T>>::exists((blog_id, post_id)), "Post, associated with given blog and post ids does not found");
-            let blog_ids_set = Self::blog_ids_by_owner(&blog_owner);
-            match blog_ids_set {
+            match Self::blog_ids_by_owner(&blog_owner) {
                 Some(blog_ids_set) if blog_ids_set.contains(&blog_id) => {
-                    let post_ids_set = Self::post_ids_by_blog_id(&blog_id);
-                    match post_ids_set {
+                    match Self::post_ids_by_blog_id(&blog_id) {
                         Some(post_ids_set) if post_ids_set.contains(&post_id) => {
                             <PostLockedStatus<T>>::mutate((blog_id, post_id), |locked_status| *locked_status = true)
                         }
@@ -202,11 +199,9 @@ decl_module! {
             let blog_owner = ensure_signed(origin)?;
             ensure!(<BlogIds<T>>::exists(&blog_owner), "AccountId, associated with given blog owner does not found");
             ensure!(<BlogPost<T>>::exists((blog_id, post_id)), "Post, associated with given blog and post ids does not found");
-            let blog_ids_set = Self::blog_ids_by_owner(&blog_owner);
-            match blog_ids_set {
+            match Self::blog_ids_by_owner(&blog_owner) {
                 Some(blog_ids_set) if blog_ids_set.contains(&blog_id) => {
-                    let post_ids_set = Self::post_ids_by_blog_id(&blog_id);
-                    match post_ids_set {
+                    match Self::post_ids_by_blog_id(&blog_id) {
                         Some(post_ids_set) if post_ids_set.contains(&post_id) => {
                             <PostLockedStatus<T>>::mutate((blog_id, post_id), |locked_status| *locked_status = false)
                         }
@@ -222,20 +217,75 @@ decl_module! {
         pub fn edit_post(origin, blog_id: T::BlogId, post_id: T::PostId, new_title: Option<String>, new_body: Option<String>) -> Result {
             let blog_owner = ensure_signed(origin)?;
             ensure!(<BlogIds<T>>::exists(&blog_owner), "AccountId, associated with given blog owner does not found");
-            ensure!(!Self::blog_locked(blog_id), "Please, unlock your blog before post editing");
-            ensure!(!Self::blog_post_locked((blog_id, post_id)), "Please, unlock your post before editing");
-            let blog_ids_set = Self::blog_ids_by_owner(&blog_owner);
-            match blog_ids_set {
+            ensure!(!Self::blog_locked(blog_id), "Please, unlock blog before this action!");
+            ensure!(!Self::blog_post_locked((blog_id, post_id)), "Please, unlock post before this action!");
+            match Self::blog_ids_by_owner(&blog_owner) {
                 Some(blog_ids_set) if blog_ids_set.contains(&blog_id) => {
-                    <BlogPost<T>>::mutate((blog_id, post_id), |post| {
-                        if let Some(post) = post {
-                            Self::update_post(post, new_title, new_body)
+                    match Self::post_ids_by_blog_id(&blog_id) {
+                        Some(post_ids_set) if post_ids_set.contains(&post_id) => {
+                            <BlogPost<T>>::mutate((blog_id, post_id), |post| {
+                                if let Some(post) = post {
+                                    Self::update_post(post, new_title, new_body)
+                                }
+                            });
                         }
-                    });
+                        _ => return Err("You doesn`t own post, associated with this identifier")
+                    }
                 }
                 _ => return Err("You doesn`t own blog, associated with this identifier")
             }
             Self::deposit_event(RawEvent::PostEdited(blog_id, post_id));
+            Ok(())
+        }
+
+        pub fn create_reply(origin, blog_id: T::BlogId, post_id: T::PostId, reply_text: String) -> Result {
+            let replier = ensure_signed(origin)?;
+            ensure!(<BlogPostReplyIds<T>>::exists((blog_id, post_id)), "Post, associated with given identificator not found");
+            ensure!(!Self::blog_locked(blog_id), "Please, unlock blog before this action!");
+            ensure!(!Self::blog_post_locked((blog_id, post_id)), "Please, unlock post before this action!");
+            let replies_count = Self::replies_count((blog_id, post_id));
+            match Self::post_ids_by_blog_id(&blog_id) {
+                Some(post_ids_set) if post_ids_set.contains(&post_id) => {
+                    <BlogPostReplyIds<T>>::mutate((blog_id, post_id), |reply_ids| {
+                        if let Some(reply_ids) = reply_ids {
+                            reply_ids.insert(replies_count);
+                        } else {
+                            let mut new_set = BTreeSet::new();
+                            new_set.insert(replies_count);
+                            *reply_ids = Some(new_set);
+                        }
+                    });
+                    <Reply<T>>::insert((blog_id, post_id, replies_count), reply_text);
+                    if <ReplyIds<T>>::exists(&replier) {
+                        <ReplyIds<T>>::mutate(&replier, |reply_ids| {
+                            if let Some(reply_ids) = reply_ids {
+                                reply_ids.insert((blog_id, post_id, replies_count));
+                            }
+                        })
+                    } else {
+                        let mut new_set = BTreeSet::new();
+                        new_set.insert((blog_id, post_id, replies_count));
+                        <ReplyIds<T>>::insert(&replier, new_set);
+                    }
+                }
+                _ => return Err("You doesn`t own post, associated with this identifier")
+            }
+            <RepliesCount<T>>::mutate((blog_id, post_id), |count| *count += T::ReplyId::one());
+            Self::deposit_event(RawEvent::ReplyCreated(replier, blog_id, post_id, replies_count));
+            Ok(())
+        }
+
+        pub fn edit_reply(origin, blog_id: T::BlogId, post_id: T::PostId, reply_id: T::ReplyId, reply_text: String) -> Result {
+            let replier = ensure_signed(origin)?;
+            ensure!(!Self::blog_locked(blog_id), "Please, unlock blog before this action!");
+            ensure!(!Self::blog_post_locked((blog_id, post_id)), "Please, unlock post before this action!");
+            match Self::reply_ids_by_owner(&replier) {
+                Some(reply_ids_set) if reply_ids_set.contains(&(blog_id, post_id, reply_id)) => {
+                    <Reply<T>>::insert((blog_id, post_id, reply_id), reply_text)
+                }
+                _ => return Err("You doesn`t own reply, associated with this identifier")
+            }
+            Self::deposit_event(RawEvent::ReplyEdited(blog_id, post_id, reply_id));
             Ok(())
         }
     }
@@ -258,6 +308,7 @@ decl_event!(
         AccountId = <T as system::Trait>::AccountId,
         BlogId = <T as Trait>::BlogId,
         PostId = <T as Trait>::PostId,
+        ReplyId = <T as Trait>::ReplyId,
     {
         BlogCreated(AccountId, BlogId),
         BlogLocked(AccountId, BlogId),
@@ -266,5 +317,7 @@ decl_event!(
         PostLocked(BlogId, PostId),
         PostUnlocked(BlogId, PostId),
         PostEdited(BlogId, PostId),
+        ReplyCreated(AccountId, BlogId, PostId, ReplyId),
+        ReplyEdited(BlogId, PostId, ReplyId),
     }
 );
