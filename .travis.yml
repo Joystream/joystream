@@ -25,7 +25,7 @@ before_script:
 
 script:
   - cargo fmt --all -- --check
-  - cargo build --release
+  - cargo build --release --target=${TARGET}
   - mv ./target/${TARGET}/release/joystream-node .
   - export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
   - tar -cf ${FILENAME}.tar ./joystream-node
