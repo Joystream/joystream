@@ -9,11 +9,11 @@ import { withCalls, withMulti, withObservable } from '@polkadot/react-api/index'
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 import { MemberId, Profile } from '@joystream/types/members';
-import { CuratorId, LeadId, CurationActor, Curator } from '@joystream/types/content-working-group';
+import { CuratorId, LeadId, Lead, CurationActor, Curator } from '@joystream/types/content-working-group';
 
 import { queryMembershipToProp } from '@polkadot/joy-members/utils';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
-import { queryToProp, MultipleLinkedMapEntry } from '@polkadot/joy-utils/index';
+import { queryToProp, MultipleLinkedMapEntry, SingleLinkedMapEntry } from '@polkadot/joy-utils/index';
 
 export type MyAddressProps = {
   myAddress?: string
@@ -155,84 +155,118 @@ function withMyRoles<P extends MyAccountProps> (Component: React.ComponentType<P
   }
 }
 
+const canUseAccount = (account: AccountId, allAccounts: SubjectInfo | undefined) => {
+  if (!allAccounts || !Object.keys(allAccounts).length) {
+    return false
+  }
+
+  const ix = Object.keys(allAccounts).findIndex((key) => {
+    return account.eq(allAccounts[key].json.address)
+  });
+
+  return ix != -1
+}
+
 function withCurationActor<P extends MyAccountProps> (Component: React.ComponentType<P>) {
   return function (props: P) {
 
-    const { myAccountId, isLeadSet, contentLeadEntry, memberIsCurator, myCuratorIds, curatorEntries, allAccounts} = props;
+    const {
+      myAccountId, isLeadSet, contentLeadEntry,
+      myCuratorIds, curatorEntries, allAccounts,
+      memberIsContentLead, memberIsCurator
+    } = props;
 
-    // leadEntry should be single entry otherwise we fetched the whole map?
-    // should be handle that case?
-
-    // NOTE: in all these methods we allow the selection of the correct role key for the action to be taken
-    // but we don't verify that the keystore has the key. when Cliking on tx button
-    // if the key is not found we get this err:
-    //     Error: Unable to retrieve keypair '0x18826e7793e16f0c8aea42b3a3e2f16cb20f6445042c53af73d440cb47c69654'
-    //// how do we detect this ?
-
-    const canUseAccount = (account: AccountId) => {
-      if (!allAccounts || !Object.keys(allAccounts).length) {
-        return false
-      }
-
-      const ix = Object.keys(allAccounts).findIndex((key) => {
-        return account.eq(allAccounts[key].json.address)
-      });
-
-      return ix != -1
+    if (!myAccountId || !isLeadSet || !contentLeadEntry || !curatorEntries || !allAccounts) {
+      return <Component {...props} />;
     }
 
-    const leadExists = isLeadSet && isLeadSet.isSome;
+    const leadRoleAccount = isLeadSet.isSome ?
+      new SingleLinkedMapEntry<Lead>(Lead, contentLeadEntry).value.role_account : null;
 
-    if (leadExists && myAccountId && contentLeadEntry) {
-      const lead_role_account = contentLeadEntry[0].role_account
-      if (canUseAccount(lead_role_account)) {
-        return <Component {...props} curationActor={[
-          new CurationActor('Lead'),
-          lead_role_account
-        ]} />
-      }
+    // Is current key the content lead key?
+    if (leadRoleAccount && leadRoleAccount.eq(myAccountId)) {
+      return <Component {...props} curationActor={[
+        new CurationActor('Lead'),
+        myAccountId
+      ]} />
     }
 
-    // If member account being used and it is a curator
-    // pick first curator id and associated role account
-    if (memberIsCurator && myCuratorIds && curatorEntries) {
-      let curator_id = myCuratorIds[0];
+    const curators = new MultipleLinkedMapEntry<CuratorId, Curator>(
+      CuratorId,
+      Curator,
+      curatorEntries
+    );
 
-      let curators = new MultipleLinkedMapEntry<CuratorId, Curator>(
-        CuratorId,
-        Curator,
-        curatorEntries
+    const correspondingCurationActor = (accountId: AccountId, curators: MultipleLinkedMapEntry<CuratorId, Curator>) => {
+      const ix = curators.linked_values.findIndex(
+        curator => myAccountId.eq(curator.role_account) && curator.is_active
       );
 
-      const ix = curators.linked_keys.findIndex((id) => id.eq(curator_id));
+      return ix >= 0 ? new CurationActor({
+          'Curator':  curators.linked_keys[ix]
+        }) : null;
+    }
 
-      if (ix >= 0) {
-        const role_account = curators.linked_values[ix].role_account;
+    const firstMatchingCurationActor = correspondingCurationActor(myAccountId, curators);
+
+    // Is the current key corresponding to an active curator role key?
+    if (firstMatchingCurationActor) {
+      return <Component {...props} curationActor={[
+        firstMatchingCurationActor,
+        myAccountId
+      ]} />;
+    }
+
+    // See if we have the member's lead role account
+    if(leadRoleAccount && memberIsContentLead && canUseAccount(leadRoleAccount, allAccounts)) {
+      return <Component {...props} curationActor={[
+        new CurationActor('Lead'),
+        leadRoleAccount
+      ]} />
+    }
+
+    // See if we have one of the member's curator role accounts
+    if(memberIsCurator && myCuratorIds && curators.linked_keys.length) {
+      for(let i = 0; i < myCuratorIds.length; i++) {
+        const curator_id = myCuratorIds[i];
+        const ix = curators.linked_keys.findIndex((id) => id.eq(curator_id));
+
+        if (ix >= 0) {
+          const curator = curators.linked_values[ix];
+          if (curator.is_active && canUseAccount(curator.role_account, allAccounts)) {
+            return <Component {...props} curationActor={[
+              new CurationActor({ 'Curator': curator_id }),
+              curator.role_account
+            ]} />;
+          }
+        }
+      }
+    }
+
+    // selected key doesn't have any special role, check other available keys..
+
+    // Use lead role key if available
+    if (leadRoleAccount && canUseAccount(leadRoleAccount, allAccounts)) {
+      return <Component {...props} curationActor={[
+        new CurationActor('Lead'),
+        leadRoleAccount
+      ]} />
+    }
+
+    // Use first available active curator role key if available
+    if(curators.linked_keys.length) {
+      for (let i = 0; i < curators.linked_keys.length; i++) {
+        let curator = curators.linked_values[i];
+        if (curator.is_active && canUseAccount(curator.role_account, allAccounts)) {
           return <Component {...props} curationActor={[
-            new CurationActor({ 'Curator': curator_id }),
-            role_account
-          ]} />;
+            new CurationActor({ 'Curator':  curators.linked_keys[i] }),
+            curator.role_account
+          ]} />
+        }
       }
     }
 
-    if (myAccountId && curatorEntries) {
-      let curators = new MultipleLinkedMapEntry<CuratorId, Curator>(
-        CuratorId,
-        Curator,
-        curatorEntries
-      );
-
-      const ix = curators.linked_values.findIndex((curator) => myAccountId.eq(curator.role_account));
-
-      if (ix >= 0) {
-        const curator_id = curators.linked_keys[ix];
-        return <Component {...props} curationActor={[
-          new CurationActor({ 'Curator':  curator_id }),
-          myAccountId
-        ]} />
-      }
-    }
-
+    // we don't have any key that can fulfill a curation action
     return <Component {...props} />;
   }
 }
