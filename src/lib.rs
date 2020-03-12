@@ -6,9 +6,17 @@ use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch::Result, ensure, Parameter, StorageMap,
-    StorageValue,
+    StorageValue, traits::Get
 };
 use system::{self, ensure_signed};
+
+mod mock;
+
+type MaxLength = u32;
+
+type MaxNumber = u32;
+
+type MaxConsecutiveRepliesNumber = u16;
 
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait {
@@ -16,6 +24,20 @@ pub trait Trait: system::Trait {
 
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
+    type PostTitleMaxLength: Get<MaxLength>;
+
+    type PostBodyMaxLength: Get<MaxLength>;
+
+    type ReplyMaxLength: Get<MaxLength>;
+
+    type PostsMaxNumber: Get<MaxNumber>;
+
+    type RepliesMaxNumber: Get<MaxNumber>;
+
+    type DirectRepliesMaxNumber: Get<MaxNumber>;
+
+    type ConsecutiveRepliesMaxNumber: Get<MaxConsecutiveRepliesNumber>;
 
     /// Type of identifier for blogs.
     type BlogId: Parameter
@@ -55,12 +77,6 @@ pub struct Post {
     body: String,
 }
 
-type MaxLengthConstraint = u32;
-
-type MaxNumberConstraint = u32;
-
-type MaxConsecutiveRepliesConstraint = u32;
-
 impl Post {
     fn new(title: String, body: String) -> Self {
         Self { title, body }
@@ -70,16 +86,6 @@ impl Post {
 // Blog`s pallet storage items.
 decl_storage! {
     trait Store for Module<T: Trait> as TemplateModule {
-        // Security/configuration constraints
-        PostHeaderMaxLength get(fn post_header_max_length) config(): MaxLengthConstraint;
-        PostBodyMaxLength get(fn post_body_max_length) config(): MaxLengthConstraint;
-        ReplyMaxLength get(fn reply_max_length) config(): MaxLengthConstraint;
-
-        PostsMaxNumber get(fn posts_max_number) config(): MaxNumberConstraint;
-        RepliesMaxNumber get(fn replies_max_number) config(): MaxNumberConstraint;
-        DirectRepliesMaxNumber get(fn direct_replies_max_number) config(): MaxNumberConstraint;
-
-        ConsecutiveRepliesMaxNumber get(fn consecutive_replies_max_number) config(): MaxConsecutiveRepliesConstraint;
         
         // Blog Ids set, associated with owner
         BlogIds get(fn blog_ids_by_owner): map T::AccountId => Option<BTreeSet<T::BlogId>>;
@@ -114,6 +120,17 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         // Initializing events
         fn deposit_event() = default;
+
+        // Security/configuration constraints
+        const POST_TITLE_MAX_LENGTH: MaxLength = T::PostTitleMaxLength::get();
+        const POST_BODY_MAX_LENGTH: MaxLength = T::PostBodyMaxLength::get();
+        const REPLY_MAX_LENGTH: MaxLength = T::ReplyMaxLength::get();
+
+        const POSTS_MAX_NUMBER: MaxNumber = T::PostsMaxNumber::get();
+        const REPLIES_MAX_NUMBER: MaxNumber  = T::RepliesMaxNumber::get();
+        const DIRECT_REPLIES_MAX_NUMBER: MaxNumber = T::DirectRepliesMaxNumber::get();
+
+        const CONSECUTIVE_REPLIES_MAX_NUMBER: MaxConsecutiveRepliesNumber = T::ConsecutiveRepliesMaxNumber::get();
 
         pub fn create_blog(origin) -> Result {
             let blog_owner = ensure_signed(origin)?;
