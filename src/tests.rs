@@ -51,10 +51,11 @@ fn blog_locking_failure() {
         // Non owner attemt to lock blog
         TestBlogModule::lock_blog(Origin::signed(INVALID_OWNER_ORIGIN), FISRT_ID);
         let owner_id = ensure_signed(Origin::signed(OWNER_ORIGIN)).unwrap();
-        // Get invalid blog owner 
+        // Get invalid blog owner
         let invalid_owner_id = ensure_signed(Origin::signed(INVALID_OWNER_ORIGIN)).unwrap();
         let blog_locked_event = TestEvent::test_events(RawEvent::BlogLocked(owner_id, FISRT_ID));
-        let blog_locked_event_invalid = TestEvent::test_events(RawEvent::BlogLocked(invalid_owner_id, FISRT_ID));
+        let blog_locked_event_invalid =
+            TestEvent::test_events(RawEvent::BlogLocked(invalid_owner_id, FISRT_ID));
         let is_locked = TestBlogModule::blog_locked(FISRT_ID);
         assert!(is_locked == false);
         assert!(System::events()
@@ -76,7 +77,8 @@ fn blog_unlocking_success() {
         assert!(is_locked == true);
         TestBlogModule::unlock_blog(Origin::signed(OWNER_ORIGIN), FISRT_ID);
         let owner_id = ensure_signed(Origin::signed(OWNER_ORIGIN)).unwrap();
-        let blog_unlocked_event = TestEvent::test_events(RawEvent::BlogUnlocked(owner_id, FISRT_ID));
+        let blog_unlocked_event =
+            TestEvent::test_events(RawEvent::BlogUnlocked(owner_id, FISRT_ID));
         let is_locked = TestBlogModule::blog_locked(FISRT_ID);
         assert!(is_locked == false);
         assert!(System::events()
@@ -96,10 +98,12 @@ fn blog_unlocking_failure() {
         // Non owner attemt to unlock blog
         TestBlogModule::unlock_blog(Origin::signed(INVALID_OWNER_ORIGIN), FISRT_ID);
         let owner_id = ensure_signed(Origin::signed(OWNER_ORIGIN)).unwrap();
-        // Get invalid blog owner 
+        // Get invalid blog owner
         let invalid_owner_id = ensure_signed(Origin::signed(INVALID_OWNER_ORIGIN)).unwrap();
-        let blog_unlocked_event = TestEvent::test_events(RawEvent::BlogUnlocked(owner_id, FISRT_ID));
-        let blog_unlocked_event_invalid = TestEvent::test_events(RawEvent::BlogUnlocked(invalid_owner_id, FISRT_ID));
+        let blog_unlocked_event =
+            TestEvent::test_events(RawEvent::BlogUnlocked(owner_id, FISRT_ID));
+        let blog_unlocked_event_invalid =
+            TestEvent::test_events(RawEvent::BlogUnlocked(invalid_owner_id, FISRT_ID));
         let is_locked = TestBlogModule::blog_locked(FISRT_ID);
         assert!(is_locked == true);
         assert!(System::events()
