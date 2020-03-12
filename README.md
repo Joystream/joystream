@@ -3,17 +3,14 @@
 # Joystream Runtime
 
 The runtime is the code that defines the consensus rules of the Joystream protocol.
-It is compiled to WASM and lives on chain. [Full nodes](https://github.com/Joystream/substrate-node-joystream) execute the code's logic to validate transactions and blocks on the blockchain.
+It is compiled to WASM and lives on chain.
+[Full nodes](https://github.com/Joystream/substrate-node-joystream) execute the code's logic to validate transactions and blocks on the blockchain.
 
-The joystream runtime builds on [substrate v1.0](https://docs.substrate.dev/docs) and adds additional functionality:
+The joystream runtime builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
+functionality to support the [various roles](https://www.joystream.org/roles) that can be entered into on the platform.
 
-- [Council elections](src/governance/election.rs)
-- [Runtime Upgrade proposal system](src/governance/proposals.rs)
-- [User membership system](src/membership/)
-- [Staked Roles](src/roles)
-   - [Storage Provider](src/storage/)
-- [Forum](https://github.com/Joystream/substrate-forum-module)
-- [Discovery](src/discovery_service)
+
+### Prerequisites
 
 ## Getting Started - Building the WASM runtime
 
@@ -24,14 +21,12 @@ cd substrate-runtime-joystream/
 
 # Install Pre-requisits
 ./setup.sh
-
-# Compile runtime
-./build.sh
+cargo build --release
 ```
 
 This produces the WASM "blob" output in:
 
-`wasm/target/wasm32-unknown-unknown/release/joystream_node_runtime_wasm.compact.wasm`
+`target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.wasm`
 
 See deployment for notes on how to deploy this runtime on a live system.
 
