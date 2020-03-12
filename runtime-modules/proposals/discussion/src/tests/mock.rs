@@ -94,7 +94,6 @@ impl crate::Trait for Test {
     type PostAuthorOriginValidator = ();
     type ThreadId = u32;
     type PostId = u32;
-    type PostAuthorId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;
     type ThreadTitleLengthLimit = ThreadTitleLengthLimit;
     type PostLengthLimit = PostLengthLimit;
@@ -102,12 +101,16 @@ impl crate::Trait for Test {
 }
 
 impl ActorOriginValidator<Origin, u64> for () {
-    fn validate_actor_origin(origin: Origin, actor_id: u64) -> bool {
+    fn ensure_actor_origin(origin: Origin, actor_id: u64, error: &'static str) -> Result<(), &'static str> {
         if system::ensure_none(origin).is_ok() {
-            return true;
+            return Ok(());
         }
 
-        actor_id == 1
+        if actor_id == 1 {
+            return Ok(())
+        }
+
+        Err(error)
     }
 }
 

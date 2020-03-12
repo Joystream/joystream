@@ -9,7 +9,7 @@ use system::{EventRecord, Phase};
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u32, u64>>) {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u32>>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {

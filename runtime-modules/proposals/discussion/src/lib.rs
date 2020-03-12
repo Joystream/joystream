@@ -40,16 +40,15 @@ decl_event!(
         <T as Trait>::ThreadId,
         MemberId = MemberId<T>,
         <T as Trait>::PostId,
-        <T as Trait>::PostAuthorId,
     {
     	/// Emits on thread creation.
         ThreadCreated(ThreadId, MemberId),
 
     	/// Emits on post creation.
-        PostCreated(PostId, PostAuthorId),
+        PostCreated(PostId, MemberId),
 
     	/// Emits on post update.
-        PostUpdated(PostId, PostAuthorId),
+        PostUpdated(PostId, MemberId),
     }
 );
 
@@ -62,16 +61,13 @@ pub trait Trait: system::Trait + membership::members::Trait {
     type ThreadAuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>>;
 
     /// Validates post author id and origin combination
-    type PostAuthorOriginValidator: ActorOriginValidator<Self::Origin, Self::PostAuthorId>;
+    type PostAuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>>;
 
     /// Discussion thread Id type
     type ThreadId: From<u32> + Into<u32> + Parameter + Default + Copy;
 
     /// Post Id type
     type PostId: From<u32> + Parameter + Default + Copy;
-
-    /// Type for the post author id. Should be authenticated by account id.
-    type PostAuthorId: From<Self::AccountId> + Parameter + Default;
 
     /// Defines post edition number limit.
     type MaxPostEditionNumber: Get<u32>;
@@ -98,7 +94,7 @@ decl_storage! {
 
         /// Map thread id and post id to corresponding post.
         pub PostThreadIdByPostId: double_map T::ThreadId, twox_128(T::PostId) =>
-             Post<T::PostAuthorId, T::BlockNumber, T::ThreadId>;
+             Post<MemberId<T>, T::BlockNumber, T::ThreadId>;
 
         /// Count of all posts that have been created.
         pub PostCount get(fn post_count): u32;
@@ -119,14 +115,15 @@ decl_module! {
         /// Adds a post with author origin check.
         pub fn add_post(
             origin,
-            post_author_id: T::PostAuthorId,
+            post_author_id: MemberId<T>,
             thread_id : T::ThreadId,
             text : Vec<u8>
         ) {
-            ensure!(
-                T::PostAuthorOriginValidator::validate_actor_origin(origin, post_author_id.clone()),
+            T::PostAuthorOriginValidator::ensure_actor_origin(
+                origin,
+                post_author_id.clone(),
                 errors::MSG_INVALID_POST_AUTHOR_ORIGIN
-            );
+            )?;
             ensure!(<ThreadById<T>>::exists(thread_id), errors::MSG_THREAD_DOESNT_EXIST);
 
             ensure!(!text.is_empty(), errors::MSG_EMPTY_POST_PROVIDED);
@@ -158,15 +155,16 @@ decl_module! {
         /// Updates a post with author origin check. Update attempts number is limited.
         pub fn update_post(
             origin,
-            post_author_id: T::PostAuthorId,
+            post_author_id: MemberId<T>,
             thread_id: T::ThreadId,
             post_id : T::PostId,
             text : Vec<u8>
         ){
-            ensure!(
-                T::PostAuthorOriginValidator::validate_actor_origin(origin, post_author_id.clone()),
+            T::PostAuthorOriginValidator::ensure_actor_origin(
+                origin,
+                post_author_id.clone(),
                 errors::MSG_INVALID_POST_AUTHOR_ORIGIN
-            );
+            )?;
 
             ensure!(<ThreadById<T>>::exists(thread_id), errors::MSG_THREAD_DOESNT_EXIST);
             ensure!(<PostThreadIdByPostId<T>>::exists(thread_id, post_id), errors::MSG_POST_DOESNT_EXIST);
@@ -211,10 +209,11 @@ impl<T: Trait> Module<T> {
         thread_author_id: MemberId<T>,
         title: Vec<u8>,
     ) -> Result<T::ThreadId, &'static str> {
-        ensure!(
-            T::ThreadAuthorOriginValidator::validate_actor_origin(origin, thread_author_id.clone()),
+        T::ThreadAuthorOriginValidator::ensure_actor_origin(
+            origin,
+            thread_author_id.clone(),
             errors::MSG_INVALID_THREAD_AUTHOR_ORIGIN
-        );
+        )?;
 
         ensure!(!title.is_empty(), errors::MSG_EMPTY_TITLE_PROVIDED);
         ensure!(

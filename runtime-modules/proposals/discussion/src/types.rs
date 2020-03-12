@@ -78,7 +78,7 @@ impl<ThreadAuthorId: Clone> ThreadCounter<ThreadAuthorId> {
 /// Abstract validator for the origin(account_id) and actor_id (eg.: thread author id).
 pub trait ActorOriginValidator<Origin, ActorId> {
     /// Check for valid combination of origin and actor_id
-    fn validate_actor_origin(origin: Origin, actor_id: ActorId) -> bool;
+    fn ensure_actor_origin(origin: Origin, actor_id: ActorId, error: &'static str) -> Result<(), &'static str>;
 }
 
 // Member of the Joystream organization
@@ -103,23 +103,21 @@ impl<T: Trait> ActorOriginValidator<<T as system::Trait>::Origin, MemberId<T>>
 {
     /// Check for valid combination of origin and actor_id. Actor_id should be valid member_id of
     /// the membership module
-    fn validate_actor_origin(origin: <T as system::Trait>::Origin, actor_id: MemberId<T>) -> bool {
-        let account_id_result = ensure_signed(origin);
-
-        //todo : modify to Result and rename to ensure
-
+    fn ensure_actor_origin(origin: <T as system::Trait>::Origin, actor_id: MemberId<T>, error : &'static str) -> Result<(), &'static str> {
         // check valid signed account_id
-        if let Ok(account_id) = account_id_result {
-            // check whether actor_id belongs to the registered member
-            let profile_result = <membership::members::Module<T>>::ensure_profile(actor_id);
+        let account_id = ensure_signed(origin)?;
 
-            if let Ok(profile) = profile_result {
-                // whether the account_id belongs to the actor
-                return profile.root_account == account_id
-                    || profile.controller_account == account_id;
+        // check whether actor_id belongs to the registered member
+        let profile_result = <membership::members::Module<T>>::ensure_profile(actor_id);
+
+        if let Ok(profile) = profile_result {
+            // whether the account_id belongs to the actor
+            if  profile.root_account == account_id
+                || profile.controller_account == account_id {
+                return Ok(())
             }
         }
 
-        false
+        Err(error)
     }
 }

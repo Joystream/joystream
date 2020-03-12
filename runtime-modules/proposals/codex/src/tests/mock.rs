@@ -90,37 +90,24 @@ parameter_types! {
 
 impl proposal_engine::Trait for Test {
     type Event = ();
-
     type ProposalOrigin = system::EnsureSigned<Self::AccountId>;
-
     type VoteOrigin = system::EnsureSigned<Self::AccountId>;
-
     type TotalVotersCounter = MockVotersParameters;
-
     type ProposalCodeDecoder = crate::ProposalType;
-
     type ProposalId = u32;
-
     type ProposerId = u64;
-
     type VoterId = u64;
-
     type StakeHandlerProvider = proposal_engine::DefaultStakeHandlerProvider;
-
     type CancellationFee = CancellationFee;
-
     type RejectionFee = RejectionFee;
-
     type TitleMaxLength = TitleMaxLength;
-
     type DescriptionMaxLength = DescriptionMaxLength;
-
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
 }
 
 impl proposal_discussion::ActorOriginValidator<Origin, u64> for () {
-    fn validate_actor_origin(_: Origin, _: u64) -> bool {
-        true
+    fn ensure_actor_origin(_: Origin, _: u64, _: &'static str) -> Result<(), &'static str> {
+        Ok(())
     }
 }
 
@@ -137,7 +124,6 @@ impl proposal_discussion::Trait for Test {
     type PostAuthorOriginValidator = ();
     type ThreadId = u32;
     type PostId = u32;
-    type PostAuthorId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;
     type ThreadTitleLengthLimit = ThreadTitleLengthLimit;
     type PostLengthLimit = PostLengthLimit;
