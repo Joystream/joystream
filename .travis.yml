@@ -11,28 +11,14 @@ os:
   - osx
   - windows
 
-env:
-  - TARGET=x86_64-unknown-linux-gnu
-  - TARGET=x86_64-apple-darwin
-  - TARGET=x86_64-pc-windows-msvc
-
-jobs:
-  include:
-    - os: linux
-      env: TARGET=x86_64-unknown-linux-gnu
-    - os: osx
-      env: TARGET=x86_64-apple-darwin
-    - os: windows
-      env: TARGET=x86_64-pc-windows-msvc
-
 before_script:
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export TARGET=x86_64-apple-darwin  ; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export TARGET=x86_64-unknown-linux-gnu  ; fi
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then export TARGET=x86_64-pc-windows-msvc  ; fi
   - rustup component add rustfmt
   - rustup update nightly
   - rustup target add ${TARGET}
   - rustup target add wasm32-unknown-unknown --toolchain nightly
-# Since the WASM builder now directly builds the runtime,
-# I don't think we need the commandline version anymore.
-# - cargo +nightly install --git https://github.com/alexcrichton/wasm-gc --force
 
 script:
   - cargo fmt --all -- --check
