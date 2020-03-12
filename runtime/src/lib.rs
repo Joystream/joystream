@@ -4,6 +4,10 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 
+// srml_staking_reward_curve::build! - substrate macro produces a warning.
+// TODO: remove after post-Rome substrate upgrade
+#![allow(array_into_iter)]
+
 // Make the WASM binary available.
 // This is required only by the node build.
 // A dummy wasm_binary.rs will be built for the IDE.
@@ -327,6 +331,7 @@ impl session::historical::Trait for Runtime {
     type FullIdentification = staking::Exposure<AccountId, Balance>;
     type FullIdentificationOf = staking::ExposureOf<Runtime>;
 }
+
 
 srml_staking_reward_curve::build! {
     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
