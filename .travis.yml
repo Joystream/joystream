@@ -7,12 +7,15 @@ cache:
   cargo
 
 os:
-  - linux
-    env: TARGET=x86_64-unknown-linux-gnu
-  - osx
-    env: TARGET=x86_64-apple-darwin
-  - windows
-    env: TARGET=x86_64-pc-windows-msvc
+  - linux:
+      - env:
+        - TARGET=x86_64-unknown-linux-gnu
+  - osx:
+    - env:
+      - TARGET=x86_64-apple-darwin
+  - windows:
+      - env:
+        - TARGET=x86_64-pc-windows-msvc
 
 before_script:
   - rustup component add rustfmt
