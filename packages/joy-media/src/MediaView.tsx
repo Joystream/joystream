@@ -4,21 +4,30 @@ import { MemberId } from '@joystream/types/members';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 import { useTransportContext } from './TransportContext';
 
-type ResolverProps<A> = A & {
-  transport: MediaTransport
+type InitialPropsWithMembership<A> = A & {
   myAddress?: string
   myMemberId?: MemberId
-};
+}
+
+type ResolverProps<A> = InitialPropsWithMembership<A> & {
+  transport: MediaTransport
+}
 
 type BaseProps<A, B> = {
   component: React.ComponentType<A & B>
-  resolveProps?: (props: ResolverProps<A>) => Promise<B>
   unresolvedView?: React.ReactElement
-};
+  resolveProps?: (props: ResolverProps<A>) => Promise<B>
+
+  /**
+   * Array of property names that can trigger re-render of the view,
+   * if values of such properties changed. 
+   */
+  triggers?: (keyof A)[]
+}
 
 export function MediaView<A = {}, B = {}> (baseProps: BaseProps<A, B>) {
   return function (initialProps: A & B) {
-    const { component: Component, resolveProps, unresolvedView = null } = baseProps;
+    const { component: Component, resolveProps, triggers = [], unresolvedView = null } = baseProps;
 
     const transport = useTransportContext();
     const { myAddress, myMemberId } = useMyMembership();
@@ -26,29 +35,34 @@ export function MediaView<A = {}, B = {}> (baseProps: BaseProps<A, B>) {
     const [ resolvedProps, setResolvedProps ] = useState({} as B);
     const [ propsResolved, setPropsResolved ] = useState(false);
 
+    const resolverProps = {...initialProps, transport, myAddress, myMemberId }
+    const initialDeps = triggers.map(propName => initialProps[propName])
+    const rerenderDeps = [ ...initialDeps, myAddress ]
+
     useEffect(() => {
-      console.log('Resolving props of media view');
 
       async function doResolveProps () {
-        if (typeof resolveProps === 'function') {
-          // Transport session allows us to cache loaded channels, entites and classes
-          // during the render of this view:
-          transport.openSession()
-          setResolvedProps(await resolveProps(
-            {...initialProps, transport, myAddress, myMemberId }
-          ));
-          transport.closeSession()
-        }
+        if (typeof resolveProps !== 'function') return;
+        
+        console.log('Resolving props of media view');
+
+        // Transport session allows us to cache loaded channels, entites and classes
+        // during the render of this view:
+        transport.openSession()
+        setResolvedProps(await resolveProps(resolverProps));
+        transport.closeSession()
         setPropsResolved(true);
       }
 
       if (!transport) {
-        console.log('ERROR: Transport is not defined');
-      } else if (!propsResolved) {
+        console.error('Transport is not defined');
+      } else {
         doResolveProps();
       }
-    }, [ false ]);
+    }, rerenderDeps);
     
+    console.log('Rerender deps of Media View:', rerenderDeps);
+
     return propsResolved
       ? <Component {...initialProps} {...resolvedProps} />
       : unresolvedView;

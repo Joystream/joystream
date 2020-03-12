@@ -8,6 +8,7 @@ type Props = OuterProps;
 
 export const EditChannelView = MediaView<Props>({
   component: EditForm,
+  triggers: [ 'id' ],
   resolveProps: async (props) => {
     const { transport, id } = props;
     const entity = id && await transport.channelById(id);

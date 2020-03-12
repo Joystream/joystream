@@ -9,6 +9,7 @@ type Props = PlayVideoProps;
 
 export const PlayVideoView = MediaView<Props>({
   component: PlayVideo,
+  triggers: [ 'id' ],
   resolveProps: async (props) => {
     const { transport, id } = props
 
