@@ -8,12 +8,16 @@ cache:
 
 os:
   - linux
+    env: TARGET=x86_64-unknown-linux-gnu
   - osx
+    env: TARGET=x86_64-apple-darwin
   - windows
+    env: TARGET=x86_64-pc-windows-msvc
 
 before_script:
   - rustup component add rustfmt
   - rustup update nightly
+  - rustup target add ${TARGET}
   - rustup target add wasm32-unknown-unknown --toolchain nightly
 # Since the WASM builder now directly builds the runtime,
 # I don't think we need the commandline version anymore.
@@ -22,7 +26,7 @@ before_script:
 script:
   - cargo fmt --all -- --check
   - cargo build --release
-  - mv ./target/release/joystream-node .
+  - mv ./target/${TARGET}/release/joystream-node .
   - export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
   - tar -cf ${FILENAME}.tar ./joystream-node
   - gzip ${FILENAME}.tar
