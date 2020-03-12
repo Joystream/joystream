@@ -5,12 +5,13 @@ use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch::Result, ensure, Parameter, StorageMap,
-    StorageValue, traits::Get
+    decl_event, decl_module, decl_storage, dispatch::Result, ensure, traits::Get, Parameter,
+    StorageMap, StorageValue,
 };
 use system::{self, ensure_signed};
 
 mod mock;
+mod tests;
 
 type MaxLength = u32;
 
@@ -85,10 +86,10 @@ impl Post {
 
 // Blog`s pallet storage items.
 decl_storage! {
-    trait Store for Module<T: Trait> as TemplateModule {
-        
+    trait Store for Module<T: Trait> as BlogModule {
+
         // Blog Ids set, associated with owner
-        BlogIds get(fn blog_ids_by_owner): map T::AccountId => Option<BTreeSet<T::BlogId>>;
+        pub BlogIds get(fn blog_ids_by_owner): map T::AccountId => Option<BTreeSet<T::BlogId>>;
 
         BlogPostIds get(fn post_ids_by_blog_id): map T::BlogId => Option<BTreeSet<T::PostId>>;
 
@@ -98,7 +99,7 @@ decl_storage! {
 
         Reply get (fn reply_by_id): map (T::BlogId, T::PostId, T::ReplyId) => Option<String>;
 
-        BlogLockedStatus get(fn blog_locked): map T::BlogId => bool;
+        pub BlogLockedStatus get(fn blog_locked): map T::BlogId => bool;
 
         PostLockedStatus get(fn blog_post_locked): map (T::BlogId, T::PostId) => bool;
 
