@@ -25,10 +25,11 @@ use rstd::prelude::*;
 use rstd::vec::Vec;
 use srml_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
 
-use runtime_primitives::traits::SimpleArithmetic;
 use srml_support::traits::Get;
-pub use types::ActorOriginValidator;
+pub use types::{ActorOriginValidator, ThreadPostActorOriginValidator};
 use types::{Post, Thread, ThreadCounter};
+
+pub(crate) use types::MemberId;
 
 // TODO: move errors to decl_error macro (after substrate version upgrade)
 
@@ -37,12 +38,12 @@ decl_event!(
     pub enum Event<T>
     where
         <T as Trait>::ThreadId,
-        <T as Trait>::ThreadAuthorId,
+        MemberId = MemberId<T>,
         <T as Trait>::PostId,
         <T as Trait>::PostAuthorId,
     {
     	/// Emits on thread creation.
-        ThreadCreated(ThreadId, ThreadAuthorId),
+        ThreadCreated(ThreadId, MemberId),
 
     	/// Emits on post creation.
         PostCreated(PostId, PostAuthorId),
@@ -53,12 +54,12 @@ decl_event!(
 );
 
 /// 'Proposal discussion' substrate module Trait
-pub trait Trait: system::Trait {
+pub trait Trait: system::Trait + membership::members::Trait {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     /// Validates thread author id and origin combination
-    type ThreadAuthorOriginValidator: ActorOriginValidator<Self::Origin, Self::ThreadAuthorId>;
+    type ThreadAuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>>;
 
     /// Validates post author id and origin combination
     type PostAuthorOriginValidator: ActorOriginValidator<Self::Origin, Self::PostAuthorId>;
@@ -68,9 +69,6 @@ pub trait Trait: system::Trait {
 
     /// Post Id type
     type PostId: From<u32> + Parameter + Default + Copy;
-
-    /// Type for the thread author id. Should be authenticated by account id.
-    type ThreadAuthorId: From<Self::AccountId> + Parameter + Default + SimpleArithmetic;
 
     /// Type for the post author id. Should be authenticated by account id.
     type PostAuthorId: From<Self::AccountId> + Parameter + Default;
@@ -93,7 +91,7 @@ decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalDiscussion {
         /// Map thread identifier to corresponding thread.
         pub ThreadById get(thread_by_id): map T::ThreadId =>
-            Thread<T::ThreadAuthorId, T::BlockNumber>;
+            Thread<MemberId<T>, T::BlockNumber>;
 
         /// Count of all threads that have been created.
         pub ThreadCount get(fn thread_count): u32;
@@ -107,7 +105,7 @@ decl_storage! {
 
         /// Last author thread counter (part of the antispam mechanism)
         pub LastThreadAuthorCounter get(fn last_thread_author_counter):
-            Option<ThreadCounter<T::ThreadAuthorId>>;
+            Option<ThreadCounter<MemberId<T>>>;
     }
 }
 
@@ -210,7 +208,7 @@ impl<T: Trait> Module<T> {
     /// times in a row by the same author.
     pub fn create_thread(
         origin: T::Origin,
-        thread_author_id: T::ThreadAuthorId,
+        thread_author_id: MemberId<T>,
         title: Vec<u8>,
     ) -> Result<T::ThreadId, &'static str> {
         ensure!(
@@ -253,9 +251,7 @@ impl<T: Trait> Module<T> {
     }
 
     // returns incremented thread counter if last thread author equals with provided parameter
-    fn get_updated_thread_counter(
-        author_id: T::ThreadAuthorId,
-    ) -> ThreadCounter<T::ThreadAuthorId> {
+    fn get_updated_thread_counter(author_id: MemberId<T>) -> ThreadCounter<MemberId<T>> {
         // if thread counter exists
         if let Some(last_thread_author_counter) = Self::last_thread_author_counter() {
             // if last(previous) author is the same as current author

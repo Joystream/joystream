@@ -1,8 +1,13 @@
-use rstd::prelude::*;
+use crate::Trait;
+
+use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use codec::{Decode, Encode};
+use rstd::marker::PhantomData;
+use rstd::prelude::*;
+
+use system::ensure_signed;
 
 /// Represents a discussion thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -74,4 +79,47 @@ impl<ThreadAuthorId: Clone> ThreadCounter<ThreadAuthorId> {
 pub trait ActorOriginValidator<Origin, ActorId> {
     /// Check for valid combination of origin and actor_id
     fn validate_actor_origin(origin: Origin, actor_id: ActorId) -> bool;
+}
+
+// Member of the Joystream organization
+pub(crate) type MemberId<T> = <T as membership::members::Trait>::MemberId;
+
+/// Default discussion system actor origin validator. Valid for both thread and post authors.
+pub struct ThreadPostActorOriginValidator<T> {
+    marker: PhantomData<T>,
+}
+
+impl<T> ThreadPostActorOriginValidator<T> {
+    /// Create ThreadPostActorOriginValidator instance
+    pub fn new() -> Self {
+        ThreadPostActorOriginValidator {
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<T: Trait> ActorOriginValidator<<T as system::Trait>::Origin, MemberId<T>>
+    for ThreadPostActorOriginValidator<T>
+{
+    /// Check for valid combination of origin and actor_id. Actor_id should be valid member_id of
+    /// the membership module
+    fn validate_actor_origin(origin: <T as system::Trait>::Origin, actor_id: MemberId<T>) -> bool {
+        let account_id_result = ensure_signed(origin);
+
+        //todo : modify to Result and rename to ensure
+
+        // check valid signed account_id
+        if let Ok(account_id) = account_id_result {
+            // check whether actor_id belongs to the registered member
+            let profile_result = <membership::members::Module<T>>::ensure_profile(actor_id);
+
+            if let Ok(profile) = profile_result {
+                // whether the account_id belongs to the actor
+                return profile.root_account == account_id
+                    || profile.controller_account == account_id;
+            }
+        }
+
+        false
+    }
 }

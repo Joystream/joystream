@@ -40,10 +40,52 @@ mod discussion {
     pub use crate::Event;
 }
 
+mod membership_mod {
+    pub use membership::members::Event;
+}
+
 impl_outer_event! {
     pub enum TestEvent for Test {
         discussion<T>,
+        balances<T>,
+        membership_mod<T>,
     }
+}
+
+parameter_types! {
+    pub const ExistentialDeposit: u32 = 0;
+    pub const TransferFee: u32 = 0;
+    pub const CreationFee: u32 = 0;
+}
+
+impl balances::Trait for Test {
+    /// The type for recording an account's balance.
+    type Balance = u64;
+    /// What to do if an account's free balance gets zeroed.
+    type OnFreeBalanceZero = ();
+    /// What to do if a new account is created.
+    type OnNewAccount = ();
+
+    type Event = TestEvent;
+
+    type DustRemoval = ();
+    type TransferPayment = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type TransferFee = TransferFee;
+    type CreationFee = CreationFee;
+}
+
+impl common::currency::GovernanceCurrency for Test {
+    type Currency = balances::Module<Self>;
+}
+
+impl membership::members::Trait for Test {
+    type Event = TestEvent;
+    type MemberId = u64;
+    type PaidTermId = u64;
+    type SubscriptionId = u64;
+    type ActorId = u64;
+    type InitialMembersBalance = ();
 }
 
 impl crate::Trait for Test {
@@ -52,7 +94,6 @@ impl crate::Trait for Test {
     type PostAuthorOriginValidator = ();
     type ThreadId = u32;
     type PostId = u32;
-    type ThreadAuthorId = u64;
     type PostAuthorId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;
     type ThreadTitleLengthLimit = ThreadTitleLengthLimit;

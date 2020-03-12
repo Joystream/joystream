@@ -36,6 +36,19 @@ impl_outer_dispatch! {
     }
 }
 
+impl common::currency::GovernanceCurrency for Test {
+    type Currency = balances::Module<Self>;
+}
+
+impl membership::members::Trait for Test {
+    type Event = ();
+    type MemberId = u64;
+    type PaidTermId = u64;
+    type SubscriptionId = u64;
+    type ActorId = u64;
+    type InitialMembersBalance = ();
+}
+
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
     pub const TransferFee: u32 = 0;
@@ -124,7 +137,6 @@ impl proposal_discussion::Trait for Test {
     type PostAuthorOriginValidator = ();
     type ThreadId = u32;
     type PostId = u32;
-    type ThreadAuthorId = u64;
     type PostAuthorId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;
     type ThreadTitleLengthLimit = ThreadTitleLengthLimit;

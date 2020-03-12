@@ -28,7 +28,9 @@ use proposal_engine::*;
 pub use proposal_types::{ProposalType, RuntimeUpgradeProposalExecutable, TextProposalExecutable};
 
 /// 'Proposals codex' substrate module Trait
-pub trait Trait: system::Trait + proposal_engine::Trait + proposal_discussion::Trait {
+pub trait Trait:
+    system::Trait + proposal_engine::Trait + membership::members::Trait + proposal_discussion::Trait
+{
     /// Defines max allowed text proposal length.
     type TextProposalMaxLength: Get<u32>;
 
@@ -101,7 +103,7 @@ decl_module! {
 
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
                 cloned_origin1,
-                T::ThreadAuthorId::one(), //TODO: temporary stub, provide implementation
+                T::MemberId::one(), //TODO: temporary stub, provide implementation
                 title.clone(),
             )?;
 
@@ -144,7 +146,7 @@ decl_module! {
 
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
                 cloned_origin1,
-                T::ThreadAuthorId::one(), //TODO: temporary stub, provide implementation
+                T::MemberId::one(),  //TODO: temporary stub, provide implementation
                 title.clone(),
             )?;
 
