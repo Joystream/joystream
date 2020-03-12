@@ -8,9 +8,5 @@ ENV TERM=xterm
 
 RUN rustup show
 
-# Ensure clean build
-RUN cargo clean
-RUN rm -fr target/
-
 # Build the runtime
 RUN cargo test && cargo build --release
