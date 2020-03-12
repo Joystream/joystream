@@ -1,0 +1,32 @@
+[package]
+name = 'substrate-common-module'
+version = '1.0.0'
+authors = ['Joystream contributors']
+edition = '2018'
+
+[features]
+default = ['std']
+std = [
+	'sr-primitives/std',
+	'srml-support/std',
+	'system/std',
+]
+
+
+[dependencies.sr-primitives]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'sr-primitives'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
+
+[dependencies.srml-support]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-support'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
+
+[dependencies.system]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-system'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
