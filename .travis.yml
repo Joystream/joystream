@@ -24,6 +24,7 @@ deploy:
   file: ${FILENAME}.tar.gz
   on:
     tags: true
+    branch: development
   draft: true
   prerelease: true
   overwrite: true
