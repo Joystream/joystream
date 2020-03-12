@@ -1364,7 +1364,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "2.1.1"
+version = "2.1.2"
 dependencies = [
  "ctrlc 3.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "derive_more 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1372,7 +1372,7 @@ dependencies = [
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex-literal 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "joystream-node-runtime 6.8.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "joystream-node-runtime 6.8.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
  "jsonrpc-core 13.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libp2p 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1410,7 +1410,7 @@ dependencies = [
 [[package]]
 name = "joystream-node-runtime"
 version = "6.8.0"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "safe-mix 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1442,25 +1442,25 @@ dependencies = [
  "srml-transaction-payment 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-authority-discovery-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-client 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
  "substrate-consensus-babe-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-content-working-group-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-forum-module 1.1.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-governance-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-hiring-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-membership-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-memo-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-content-working-group-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-forum-module 1.1.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-governance-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-hiring-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-membership-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-memo-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
  "substrate-offchain-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-recurring-reward-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-roles-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-service-discovery-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-recurring-reward-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-roles-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-service-discovery-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
  "substrate-session 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-stake-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-storage-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-token-mint-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-versioned-store 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-versioned-store-permissions-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-stake-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-storage-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-token-mint-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-versioned-store 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-versioned-store-permissions-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
  "substrate-wasm-builder-runner 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -4095,7 +4095,7 @@ dependencies = [
 [[package]]
 name = "substrate-common-module"
 version = "1.0.0"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "sr-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
@@ -4208,7 +4208,7 @@ dependencies = [
 [[package]]
 name = "substrate-content-working-group-module"
 version = "1.0.0"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4216,15 +4216,15 @@ dependencies = [
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-forum-module 1.1.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-hiring-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-membership-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-forum-module 1.1.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-hiring-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-membership-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-recurring-reward-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-stake-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-token-mint-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-versioned-store 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-versioned-store-permissions-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-recurring-reward-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-stake-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-token-mint-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-versioned-store 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-versioned-store-permissions-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
 ]
 
 [[package]]
@@ -4317,7 +4317,7 @@ dependencies = [
 [[package]]
 name = "substrate-forum-module"
 version = "1.1.1"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4337,7 +4337,7 @@ dependencies = [
 [[package]]
 name = "substrate-governance-module"
 version = "1.0.0"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4346,8 +4346,8 @@ dependencies = [
  "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-timestamp 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-membership-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-membership-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
 ]
 
@@ -4364,7 +4364,7 @@ dependencies = [
 [[package]]
 name = "substrate-hiring-module"
 version = "1.0.1"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4379,7 +4379,7 @@ dependencies = [
  "srml-support-procedural 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-timestamp 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-stake-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-stake-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
 ]
 
 [[package]]
@@ -4423,7 +4423,7 @@ dependencies = [
 [[package]]
 name = "substrate-membership-module"
 version = "1.0.0"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4432,14 +4432,14 @@ dependencies = [
  "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-timestamp 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
 ]
 
 [[package]]
 name = "substrate-memo-module"
 version = "1.0.0"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4447,7 +4447,7 @@ dependencies = [
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
 ]
 
 [[package]]
@@ -4612,7 +4612,7 @@ dependencies = [
 [[package]]
 name = "substrate-recurring-reward-module"
 version = "1.0.1"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4627,13 +4627,13 @@ dependencies = [
  "srml-support-procedural 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-timestamp 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-token-mint-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-token-mint-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
 ]
 
 [[package]]
 name = "substrate-roles-module"
 version = "1.0.0"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4641,8 +4641,8 @@ dependencies = [
  "sr-std 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-membership-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-membership-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
 ]
 
 [[package]]
@@ -4769,7 +4769,7 @@ dependencies = [
 [[package]]
 name = "substrate-service-discovery-module"
 version = "1.0.0"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4778,7 +4778,7 @@ dependencies = [
  "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-roles-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-roles-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
 ]
 
 [[package]]
@@ -4795,7 +4795,7 @@ dependencies = [
 [[package]]
 name = "substrate-stake-module"
 version = "1.0.1"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4845,7 +4845,7 @@ dependencies = [
 [[package]]
 name = "substrate-storage-module"
 version = "1.0.0"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4854,10 +4854,10 @@ dependencies = [
  "srml-support 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-timestamp 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
- "substrate-membership-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
+ "substrate-membership-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
  "substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-roles-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-roles-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
 ]
 
 [[package]]
@@ -4885,7 +4885,7 @@ dependencies = [
 [[package]]
 name = "substrate-token-mint-module"
 version = "1.0.1"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4949,7 +4949,7 @@ dependencies = [
 [[package]]
 name = "substrate-versioned-store"
 version = "1.0.1"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4969,7 +4969,7 @@ dependencies = [
 [[package]]
 name = "substrate-versioned-store-permissions-module"
 version = "1.0.1"
-source = "git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b#620094ef5f393180284aab2e5516f854694f009b"
+source = "git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0#251840fee6c8f29792dec6b1e11dc0406132d176"
 dependencies = [
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-scale-codec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4983,7 +4983,7 @@ dependencies = [
  "srml-support-procedural 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-system 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
  "srml-timestamp 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)",
- "substrate-versioned-store 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)",
+ "substrate-versioned-store 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)",
 ]
 
 [[package]]
@@ -5972,7 +5972,7 @@ dependencies = [
 "checksum itertools 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f56a2d0bc861f9165be4eb3442afd3c236d8a98afd426f65d92324ae1091a484"
 "checksum itoa 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)" = "b8b7a7c0c47db5545ed3fef7468ee7bb5b74691498139e4b3f6a20685dc6dd8e"
 "checksum jobserver 0.1.21 (registry+https://github.com/rust-lang/crates.io-index)" = "5c71313ebb9439f74b00d9d2dcec36440beaf57a6aa0623068441dd7cd81a7f2"
-"checksum joystream-node-runtime 6.8.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
+"checksum joystream-node-runtime 6.8.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
 "checksum js-sys 0.3.36 (registry+https://github.com/rust-lang/crates.io-index)" = "1cb931d43e71f560c81badb0191596562bafad2be06a3f9025b845c847c60df5"
 "checksum jsonrpc-client-transports 14.0.5 (registry+https://github.com/rust-lang/crates.io-index)" = "0a9ae166c4d1f702d297cd76d4b55758ace80272ffc6dbb139fdc1bf810de40b"
 "checksum jsonrpc-core 13.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "91d767c183a7e58618a609499d359ce3820700b3ebb4823a18c343b4a2a41a0d"
@@ -6212,27 +6212,27 @@ dependencies = [
 "checksum substrate-cli 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-client 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-client-db 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
-"checksum substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
+"checksum substrate-common-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
 "checksum substrate-consensus-babe 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-consensus-babe-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-consensus-common 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-consensus-slots 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-consensus-uncles 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
-"checksum substrate-content-working-group-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
+"checksum substrate-content-working-group-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
 "checksum substrate-debug-derive 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-executor 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-externalities 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-finality-grandpa 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-finality-grandpa-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
-"checksum substrate-forum-module 1.1.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
-"checksum substrate-governance-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
+"checksum substrate-forum-module 1.1.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
+"checksum substrate-governance-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
 "checksum substrate-header-metadata 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
-"checksum substrate-hiring-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
+"checksum substrate-hiring-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
 "checksum substrate-inherents 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-keyring 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-keystore 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
-"checksum substrate-membership-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
-"checksum substrate-memo-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
+"checksum substrate-membership-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
+"checksum substrate-memo-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
 "checksum substrate-network 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-offchain 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-offchain-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
@@ -6241,27 +6241,27 @@ dependencies = [
 "checksum substrate-phragmen 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-primitives-storage 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
-"checksum substrate-recurring-reward-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
-"checksum substrate-roles-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
+"checksum substrate-recurring-reward-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
+"checksum substrate-roles-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
 "checksum substrate-rpc 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-rpc-api 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-rpc-primitives 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-rpc-servers 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-serializer 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-service 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
-"checksum substrate-service-discovery-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
+"checksum substrate-service-discovery-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
 "checksum substrate-session 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
-"checksum substrate-stake-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
+"checksum substrate-stake-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
 "checksum substrate-state-db 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-state-machine 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
-"checksum substrate-storage-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
+"checksum substrate-storage-module 1.0.0 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
 "checksum substrate-telemetry 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
-"checksum substrate-token-mint-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
+"checksum substrate-token-mint-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
 "checksum substrate-transaction-graph 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-transaction-pool 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum substrate-trie 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
-"checksum substrate-versioned-store 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
-"checksum substrate-versioned-store-permissions-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?rev=620094ef5f393180284aab2e5516f854694f009b)" = "<none>"
+"checksum substrate-versioned-store 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
+"checksum substrate-versioned-store-permissions-module 1.0.1 (git+https://github.com/joystream/substrate-runtime-joystream?tag=v6.8.0)" = "<none>"
 "checksum substrate-wasm-builder-runner 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)" = "e30c70de7e7d5fd404fe26db1e7a4d6b553e2760b1ac490f249c04a960c483b8"
 "checksum substrate-wasm-interface 2.0.0 (git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8)" = "<none>"
 "checksum subtle 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2d67a5a62ba6e01cb2192ff309324cb4875d0c451d55fe2319433abe7a05a8ee"

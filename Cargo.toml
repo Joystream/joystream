@@ -7,7 +7,7 @@ authors = ['Joystream']
 build = 'build.rs'
 edition = '2018'
 name = 'joystream-node'
-version = '2.1.1'
+version = '2.1.2'
 
 [dependencies]
 hex-literal = '0.2.1'
@@ -29,7 +29,8 @@ hex = '0.4'
 [dependencies.node-runtime]
 package = 'joystream-node-runtime'
 git = 'https://github.com/joystream/substrate-runtime-joystream'
-rev = '620094ef5f393180284aab2e5516f854694f009b' # development branch: v6.8.0
+tag = 'v6.8.0'
+# rev = '620094ef5f393180284aab2e5516f854694f009b' # development branch: v6.8.0
 # branch = 'development'
 # local development...
 # path = '/Users/mokhtar/joystream/runtime'
