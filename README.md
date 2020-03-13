@@ -13,37 +13,24 @@ Downloads are available in [releases](https://github.com/Joystream/substrate-nod
 ## Building from source
 
 ### Initial setup
-If you want to build from source you will need the Rust [toolchain](https://rustup.rs/), openssl and llvm/libclang.
+If you want to build from source you will need the Rust [toolchain](https://rustup.rs/), openssl and llvm/libclang. You can install the required dependencies with:
 
 ```bash
 git clone https://github.com/Joystream/substrate-node-joystream.git
-```
-
-Initialise the WASM build environment:
-
-```bash
 cd substrate-node-joystream/
-./init-wasm.sh
+./setup.sh
 ```
+
+If you prefer to use docker see [building with docker](Docker).
 
 ### Building
-Clone the joystream runtime into the substrate-node-joystream directory:
 
-```bash
-git clone https://github.com/Joystream/substrate-runtime-joystream.git
-```
-
-Build the WASM runtime library:
-```bash
-./build-runtime.sh
-```
-
-Build the node (native code):
 ```bash
 cargo build --release
 ```
 
 ### Running a public node
+
 Run the node and connect to the public testnet
 ```bash
 cargo run --release
@@ -77,6 +64,36 @@ When making changes to the runtime library remember to purge the chain after reb
 cargo run --release -- purge-chain --dev
 ```
 
-### Substrate node template
+### Docker
 
-The full node is built based on the substrate node [template](https://github.com/shawntabrizi/substrate-package/tree/master/substrate-node-template)
+#### Building localy
+
+A joystream-node can be compiled with give [Dockerfile](Dockerfile) file:
+
+```bash
+# Build and tag a new image, which will compile joystream-node from source
+docker build . -t joystream-node
+
+# run a development chain with the image just created publishing the websocket port
+docker run -p 9944:9944 joystream-node --dev --ws-external
+```
+
+#### Downloading joystream pre-built images from Docker Hub
+
+```bash
+docker pull joystream/node
+```
+
+#### Running a public node as a service
+
+```bash
+docker run -d -p 30333:30333 --name my-node joystream/node
+
+# check status
+docker ps
+
+# monitor logs
+docker logs --tail 100 -f my-node
+```
+
+[More advanced guide]()

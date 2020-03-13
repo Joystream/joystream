@@ -1,28 +1,12 @@
-// Copyright 2019 Joystream Contributors
-// This file is part of Joystream node.
-
-// Joystream node is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Joystream node is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
-
 use crate::chain_spec;
+use crate::new_full_start;
 use crate::service;
 use futures::{future, sync::oneshot, Future};
 use log::info;
 use std::cell::RefCell;
-use std::ops::Deref;
 pub use substrate_cli::{error, IntoExit, VersionInfo};
-use substrate_cli::{informant, parse_and_execute, NoCustom};
-use substrate_service::{Roles as ServiceRoles, ServiceFactory};
+use substrate_cli::{informant, parse_and_prepare, NoCustom, ParseAndPrepare};
+use substrate_service::{AbstractService, Configuration, Roles as ServiceRoles};
 use tokio::runtime::Runtime;
 
 /// Parse command line arguments into service configuration.
@@ -32,39 +16,53 @@ where
     T: Into<std::ffi::OsString> + Clone,
     E: IntoExit,
 {
-    parse_and_execute::<service::Factory, NoCustom, NoCustom, _, _, _, _, _>(
-        load_spec,
-        &version,
-        "joystream-node",
-        args,
-        exit,
-        |exit, _custom_args, config| {
-            info!("{}", version.name);
-            info!("  version {}", config.full_version());
-            info!("  by {}, 2019", version.author);
-            info!("Chain specification: {}", config.chain_spec.name());
-            info!("Node name: {}", config.name);
-            info!("Roles: {:?}", config.roles);
-            let runtime = Runtime::new().map_err(|e| format!("{:?}", e))?;
-            let executor = runtime.executor();
-            match config.roles {
-                ServiceRoles::LIGHT => run_until_exit(
-                    runtime,
-                    service::Factory::new_light(config, executor)
-                        .map_err(|e| format!("{:?}", e))?,
-                    exit,
-                ),
-                _ => run_until_exit(
-                    runtime,
-                    service::Factory::new_full(config, executor).map_err(|e| format!("{:?}", e))?,
-                    exit,
-                ),
-            }
-            .map_err(|e| format!("{:?}", e))
-        },
-    )
-    .map_err(Into::into)
-    .map(|_| ())
+    type Config<T> = Configuration<(), T>;
+    match parse_and_prepare::<NoCustom, NoCustom, _>(&version, "joystream-node", args) {
+        ParseAndPrepare::Run(cmd) => cmd.run(
+            load_spec,
+            exit,
+            |exit, _cli_args, _custom_args, config: Config<_>| {
+                info!("{}", version.name);
+                info!("  version {}", config.full_version());
+                info!("  by {}, 2019", version.author);
+                info!("Chain specification: {}", config.chain_spec.name());
+                info!("Node name: {}", config.name);
+                info!("Roles: {:?}", config.roles);
+                let runtime = Runtime::new().map_err(|e| format!("{:?}", e))?;
+                match config.roles {
+                    ServiceRoles::LIGHT => run_until_exit(
+                        runtime,
+                        service::new_light(config).map_err(|e| format!("{:?}", e))?,
+                        exit,
+                    ),
+                    _ => run_until_exit(
+                        runtime,
+                        service::new_full(config).map_err(|e| format!("{:?}", e))?,
+                        exit,
+                    ),
+                }
+                .map_err(|e| format!("{:?}", e))
+            },
+        ),
+        ParseAndPrepare::BuildSpec(cmd) => cmd.run::<NoCustom, _, _, _>(load_spec),
+        ParseAndPrepare::ExportBlocks(cmd) => cmd.run_with_builder(
+            |config: Config<_>| Ok(new_full_start!(config).0),
+            load_spec,
+            exit,
+        ),
+        ParseAndPrepare::ImportBlocks(cmd) => cmd.run_with_builder(
+            |config: Config<_>| Ok(new_full_start!(config).0),
+            load_spec,
+            exit,
+        ),
+        ParseAndPrepare::PurgeChain(cmd) => cmd.run(load_spec),
+        ParseAndPrepare::RevertChain(cmd) => {
+            cmd.run_with_builder(|config: Config<_>| Ok(new_full_start!(config).0), load_spec)
+        }
+        ParseAndPrepare::CustomCommand(_) => Ok(()),
+    }?;
+
+    Ok(())
 }
 
 fn load_spec(id: &str) -> Result<Option<chain_spec::ChainSpec>, String> {
@@ -74,25 +72,35 @@ fn load_spec(id: &str) -> Result<Option<chain_spec::ChainSpec>, String> {
     })
 }
 
-fn run_until_exit<T, C, E>(mut runtime: Runtime, service: T, e: E) -> error::Result<()>
+fn run_until_exit<T, E>(mut runtime: Runtime, service: T, e: E) -> error::Result<()>
 where
-    T: Deref<Target = substrate_service::Service<C>>,
-    C: substrate_service::Components,
+    T: AbstractService,
     E: IntoExit,
 {
     let (exit_send, exit) = exit_future::signal();
 
-    let executor = runtime.executor();
-    informant::start(&service, exit.clone(), executor.clone());
-
-    let _ = runtime.block_on(e.into_exit());
-    exit_send.fire();
+    let informant = informant::build(&service);
+    runtime.executor().spawn(exit.until(informant).map(|_| ()));
 
     // we eagerly drop the service so that the internal exit future is fired,
     // but we need to keep holding a reference to the global telemetry guard
     let _telemetry = service.telemetry();
-    drop(service);
-    Ok(())
+
+    let service_res = {
+        let exit = e
+            .into_exit()
+            .map_err(|_| error::Error::Other("Exit future failed.".into()));
+        let service = service.map_err(|err| error::Error::Service(err));
+        let select = service.select(exit).map(|_| ()).map_err(|(err, _)| err);
+        runtime.block_on(select)
+    };
+
+    exit_send.fire();
+
+    // TODO [andre]: timeout this future #1318
+    let _ = runtime.shutdown_on_idle().wait();
+
+    service_res
 }
 
 // handles ctrl-c
@@ -105,11 +113,11 @@ impl IntoExit for Exit {
 
         let exit_send_cell = RefCell::new(Some(exit_send));
         ctrlc::set_handler(move || {
-            if let Some(exit_send) = exit_send_cell
+            let exit_send = exit_send_cell
                 .try_borrow_mut()
                 .expect("signal handler not reentrant; qed")
-                .take()
-            {
+                .take();
+            if let Some(exit_send) = exit_send {
                 exit_send.send(()).expect("Error sending exit notification");
             }
         })

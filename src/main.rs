@@ -21,11 +21,13 @@
 
 mod chain_spec;
 mod cli;
+mod forum_config;
+mod members_config;
 mod service;
 
 pub use substrate_cli::{error, IntoExit, VersionInfo};
 
-fn run() -> cli::error::Result<()> {
+fn main() {
     let version = VersionInfo {
         name: "Joystream Node",
         commit: env!("VERGEN_SHA_SHORT"),
@@ -35,7 +37,9 @@ fn run() -> cli::error::Result<()> {
         description: "Joystream substrate node",
         support_url: "https://www.joystream.org/",
     };
-    cli::run(::std::env::args(), cli::Exit, version)
-}
 
-error_chain::quick_main!(run);
+    if let Err(e) = cli::run(::std::env::args(), cli::Exit, version) {
+        eprintln!("Fatal error: {}\n\n{:?}", e, e);
+        std::process::exit(1)
+    }
+}
