@@ -93,7 +93,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   }
 
   if (!entityClass) {
-    return <em>ERROR: "Video" entity class in undefined</em>
+    return <em>ERROR: Video entity class in undefined</em>
   }
 
   if (entity && entity.channel && !entity.channel.roleAccount.eq(myAccountId)) {
