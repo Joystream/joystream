@@ -37,7 +37,7 @@ deploy:
     skip_cleanup: true
     on:
       tags: true
-      repo: joystream/substrate-node-joystream
+      repo: Joystream/substrate-node-joystream
     draft: true
     overwrite: true
   - provider: releases
@@ -47,7 +47,7 @@ deploy:
     skip_cleanup: true
     on:
       branch: development
-      repo: joystream/substrate-node-joystream
+      repo: Joystream/substrate-node-joystream
     draft: true
     prerelease: true
     overwrite: true
