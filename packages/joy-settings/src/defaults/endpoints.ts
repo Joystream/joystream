@@ -5,7 +5,7 @@
 import { Option } from '../types';
 
 // type ChainName = 'alexander' | 'edgeware' | 'edgewareTest' | 'flamingFir' | 'kusama';
-type ChainName = 'joystream';
+type ChainName = 'joystream_rome_experimental' | 'joystream_rome_final_staging';
 
 interface ChainData {
   chainDisplay: string;
@@ -22,18 +22,23 @@ interface PoviderData {
 }
 
 // we use this to give an ordering to the chains available
-const ORDER_CHAINS: ChainName[] = ['joystream'];
+const ORDER_CHAINS: ChainName[] = ['joystream_rome_experimental', 'joystream_rome_final_staging'];
 
 // we use this to order the providers inside the chains
 const ORDER_PROVIDERS: ProviderName[] = ['joystream_org'];
 
 // some suplementary info on a per-chain basis
 const CHAIN_INFO: Record<ChainName, ChainData> = {
-  joystream: {
+  joystream_rome_experimental: {
     chainDisplay: 'Joystream',
     logo: 'joystream',
     type: 'Rome Reckless Testnet'
   },
+  joystream_rome_final_staging: {
+    chainDisplay: 'Joystream',
+    logo: 'joystream',
+    type: 'Rome Final Staging Testnet'
+  }
 };
 
 // the actual providers with all  the nodes they provide
@@ -41,12 +46,13 @@ const PROVIDERS: Record<ProviderName, PoviderData> = {
   'joystream_org': {
     providerDisplay: 'Joystream.org',
     nodes: {
-      'joystream': 'wss://rome-staging-2.joystream.org/staging/rpc/',
+      'joystream_rome_experimental': 'wss://rome-staging-2.joystream.org/staging/rpc/',
+      'joystream_rome_final_staging': 'wss://rome-staging-4.joystream.org/rpc/',
     }
   }
 };
 
-export const ENDPOINT_DEFAULT = PROVIDERS.joystream_org.nodes.joystream;
+export const ENDPOINT_DEFAULT = PROVIDERS.joystream_org.nodes.joystream_rome_final_staging;
 
 export const ENDPOINTS: Option[] = ORDER_CHAINS.reduce((endpoints: Option[], chainName): Option[] => {
   const { chainDisplay, logo, type } = CHAIN_INFO[chainName];
