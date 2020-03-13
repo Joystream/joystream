@@ -150,7 +150,7 @@ decl_module! {
                 new_set.insert(blogs_count);
                 <BlogIds<T>>::insert(&blog_owner, new_set);
             }
-            // Blog default locking status
+            // Blog locking default status
             <BlogLockedStatus<T>>::insert(blogs_count, false);
             <BlogsCount<T>>::mutate(|count| *count += T::BlogId::one());
             Self::deposit_event(RawEvent::BlogCreated(blog_owner, blogs_count));
@@ -206,7 +206,7 @@ decl_module! {
                 }
                 _ => return Err(BLOG_OWNERSHIP_ERROR)
             }
-            // Blog default locking status
+            // Blog locking default status
             <PostLockedStatus<T>>::insert((blog_id, posts_count), false);
             <PostsCount<T>>::mutate(blog_id, |count| *count += T::PostId::one());
             Self::deposit_event(RawEvent::PostCreated(blog_id, posts_count));
