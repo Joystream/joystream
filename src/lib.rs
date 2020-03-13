@@ -5,8 +5,8 @@ use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
-    StorageMap, StorageValue,
+    decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter, StorageMap,
+    StorageValue,
 };
 use system::{self, ensure_signed};
 
@@ -92,7 +92,7 @@ decl_storage! {
     trait Store for Module<T: Trait> as BlogModule {
 
         // Blog Ids set, associated with owner
-        pub BlogIds get(fn blog_ids_by_owner): map T::AccountId => Option<BTreeSet<T::BlogId>>;
+        BlogIds get(fn blog_ids_by_owner): map T::AccountId => Option<BTreeSet<T::BlogId>>;
 
         BlogPostIds get(fn post_ids_by_blog_id): map T::BlogId => Option<BTreeSet<T::PostId>>;
 
@@ -102,9 +102,9 @@ decl_storage! {
 
         Reply get (fn reply_by_id): map (T::BlogId, T::PostId, T::ReplyId) => Option<Vec<u8>>;
 
-        pub BlogLockedStatus get(fn blog_locked): map T::BlogId => bool;
+        BlogLockedStatus get(fn blog_locked): map T::BlogId => bool;
 
-        PostLockedStatus get(fn blog_post_locked): map (T::BlogId, T::PostId) => bool;
+        PostLockedStatus get(fn post_locked): map (T::BlogId, T::PostId) => bool;
 
         //Reply Ids set, associated with owner
         ReplyIds get (fn reply_ids_by_owner): map T::AccountId => Option<BTreeSet<(T::BlogId, T::PostId, T::ReplyId)>>;
@@ -126,15 +126,15 @@ decl_module! {
         fn deposit_event() = default;
 
         // Security/configuration constraints
-        // const POST_TITLE_MAX_LENGTH: MaxLength = T::PostTitleMaxLength::get();
-        // const POST_BODY_MAX_LENGTH: MaxLength = T::PostBodyMaxLength::get();
-        // const REPLY_MAX_LENGTH: MaxLength = T::ReplyMaxLength::get();
+        const POST_TITLE_MAX_LENGTH: MaxLength = T::PostTitleMaxLength::get();
+        const POST_BODY_MAX_LENGTH: MaxLength = T::PostBodyMaxLength::get();
+        const REPLY_MAX_LENGTH: MaxLength = T::ReplyMaxLength::get();
 
-        // const POSTS_MAX_NUMBER: MaxNumber = T::PostsMaxNumber::get();
-        // const REPLIES_MAX_NUMBER: MaxNumber  = T::RepliesMaxNumber::get();
-        // const DIRECT_REPLIES_MAX_NUMBER: MaxNumber = T::DirectRepliesMaxNumber::get();
+        const POSTS_MAX_NUMBER: MaxNumber = T::PostsMaxNumber::get();
+        const REPLIES_MAX_NUMBER: MaxNumber  = T::RepliesMaxNumber::get();
+        const DIRECT_REPLIES_MAX_NUMBER: MaxNumber = T::DirectRepliesMaxNumber::get();
 
-        // const CONSECUTIVE_REPLIES_MAX_NUMBER: MaxConsecutiveRepliesNumber = T::ConsecutiveRepliesMaxNumber::get();
+        const CONSECUTIVE_REPLIES_MAX_NUMBER: MaxConsecutiveRepliesNumber = T::ConsecutiveRepliesMaxNumber::get();
 
         pub fn create_blog(origin) -> dispatch::Result {
             let blog_owner = ensure_signed(origin)?;
@@ -222,11 +222,9 @@ decl_module! {
             ensure!(<BlogPost<T>>::exists((blog_id, post_id)), POST_NOT_FOUND);
             match Self::blog_ids_by_owner(&blog_owner) {
                 Some(blog_ids_set) if blog_ids_set.contains(&blog_id) => {
-                    match Self::post_ids_by_blog_id(&blog_id) {
-                        Some(post_ids_set) if post_ids_set.contains(&post_id) => {
-                            <PostLockedStatus<T>>::mutate((blog_id, post_id), |locked_status| *locked_status = true)
-                        }
-                        _ => return Err(POST_OWNERSHIP_ERROR)
+                    // Should always be valid, as given blog -> post relation exists
+                    if matches!(Self::post_ids_by_blog_id(&blog_id), Some(post_ids_set) if post_ids_set.contains(&post_id)) {
+                        <PostLockedStatus<T>>::mutate((blog_id, post_id), |locked_status| *locked_status = true)
                     }
                 }
                 _ => return Err(BLOG_OWNERSHIP_ERROR)
@@ -241,11 +239,9 @@ decl_module! {
             ensure!(<BlogPost<T>>::exists((blog_id, post_id)), POST_NOT_FOUND);
             match Self::blog_ids_by_owner(&blog_owner) {
                 Some(blog_ids_set) if blog_ids_set.contains(&blog_id) => {
-                    match Self::post_ids_by_blog_id(&blog_id) {
-                        Some(post_ids_set) if post_ids_set.contains(&post_id) => {
-                            <PostLockedStatus<T>>::mutate((blog_id, post_id), |locked_status| *locked_status = false)
-                        }
-                        _ => return Err(POST_OWNERSHIP_ERROR)
+                    // Should always be valid, as given blog -> post relation exists
+                    if matches!(Self::post_ids_by_blog_id(&blog_id), Some(post_ids_set) if post_ids_set.contains(&post_id)) {
+                        <PostLockedStatus<T>>::mutate((blog_id, post_id), |locked_status| *locked_status = false)
                     }
                 }
                 _ => return Err(BLOG_OWNERSHIP_ERROR)
@@ -257,8 +253,9 @@ decl_module! {
         pub fn edit_post(origin, blog_id: T::BlogId, post_id: T::PostId, new_title: Option<Vec<u8>>, new_body: Option<Vec<u8>>) -> dispatch::Result {
             let blog_owner = ensure_signed(origin)?;
             ensure!(<BlogIds<T>>::exists(&blog_owner), BLOG_OWNER_NOT_FOUND);
+            ensure!(<BlogPost<T>>::exists((blog_id, post_id)), POST_NOT_FOUND);
             ensure!(!Self::blog_locked(blog_id), BLOG_LOCKED_ERROR);
-            ensure!(!Self::blog_post_locked((blog_id, post_id)), POST_LOCKED_ERROR);
+            ensure!(!Self::post_locked((blog_id, post_id)), POST_LOCKED_ERROR);
             // Check security/configuration constraints
             if let Some(ref new_title) = new_title {
                 ensure!(new_title.len() <= T::PostTitleMaxLength::get() as usize, POST_TITLE_TOO_LONG);
@@ -268,18 +265,16 @@ decl_module! {
             }
             match Self::blog_ids_by_owner(&blog_owner) {
                 Some(blog_ids_set) if blog_ids_set.contains(&blog_id) => {
-                    match Self::post_ids_by_blog_id(&blog_id) {
-                        Some(post_ids_set) if post_ids_set.contains(&post_id) => {
-                            <BlogPost<T>>::mutate((blog_id, post_id), |post| {
-                                if let Some(post) = post {
-                                    Self::update_post(post, new_title, new_body)
-                                }
-                            });
-                        }
-                        _ => return Err(POST_OWNERSHIP_ERROR)
+                    // Should always be valid, as given blog -> post relation exists
+                    if matches!(Self::post_ids_by_blog_id(&blog_id), Some(post_ids_set) if post_ids_set.contains(&post_id)) {
+                        <BlogPost<T>>::mutate((blog_id, post_id), |post| {
+                            if let Some(post) = post {
+                                Self::update_post(post, new_title, new_body)
+                            }
+                        });
                     }
                 }
-                _ => return Err("You don`t own blog, associated with this identifier")
+                _ => return Err(BLOG_OWNERSHIP_ERROR)
             }
             Self::deposit_event(RawEvent::PostEdited(blog_id, post_id));
             Ok(())
@@ -289,7 +284,7 @@ decl_module! {
             let replier = ensure_signed(origin)?;
             ensure!(<BlogPostReplyIds<T>>::exists((blog_id, post_id)), POST_NOT_FOUND);
             ensure!(!Self::blog_locked(blog_id), BLOG_LOCKED_ERROR);
-            ensure!(!Self::blog_post_locked((blog_id, post_id)), POST_LOCKED_ERROR);
+            ensure!(!Self::post_locked((blog_id, post_id)), POST_LOCKED_ERROR);
             // Check security/configuration constraint
             ensure!(reply_text.len() <= T::ReplyMaxLength::get() as usize, REPLY_TEXT_TOO_LONG);
             let replies_count = Self::replies_count((blog_id, post_id));
@@ -327,7 +322,7 @@ decl_module! {
         pub fn edit_reply(origin, blog_id: T::BlogId, post_id: T::PostId, reply_id: T::ReplyId, reply_text: Vec<u8>) -> dispatch::Result {
             let replier = ensure_signed(origin)?;
             ensure!(!Self::blog_locked(blog_id), BLOG_LOCKED_ERROR);
-            ensure!(!Self::blog_post_locked((blog_id, post_id)), POST_LOCKED_ERROR);
+            ensure!(!Self::post_locked((blog_id, post_id)), POST_LOCKED_ERROR);
             ensure!(<Reply<T>>::exists((blog_id, post_id, reply_id)), REPLY_NOT_FOUND);
             // Check security/configuration constraint
             ensure!(reply_text.len() <= T::ReplyMaxLength::get() as usize, REPLY_TEXT_TOO_LONG);

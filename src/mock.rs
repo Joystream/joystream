@@ -12,6 +12,10 @@ use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, traits:
 use std::cell::RefCell;
 use system;
 
+pub fn generate_text(len: usize) -> Vec<u8> {
+    vec![b'x'; len]
+}
+
 impl_outer_origin! {
     pub enum Origin for Runtime {}
 }
