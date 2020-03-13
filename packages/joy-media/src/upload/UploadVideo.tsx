@@ -303,7 +303,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     // because the first 'EntityCreated' event corresponds to a Media Object Entity.
     const events = filterSubstrateEventsAndExtractData(txResult, 'EntityCreated')
 
-    // Return if there were less than two event:
+    // Return if there were less than two events:
     if (!events || events.length < 2) return
 
     // Get the second 'EntityCreated' event:
