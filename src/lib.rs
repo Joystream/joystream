@@ -77,12 +77,12 @@ pub trait Trait: system::Trait {
 #[derive(Encode, Decode, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Post {
-    title: String,
-    body: String,
+    title: Vec<u8>,
+    body: Vec<u8>,
 }
 
 impl Post {
-    fn new(title: String, body: String) -> Self {
+    fn new(title: Vec<u8>, body: Vec<u8>) -> Self {
         Self { title, body }
     }
 }
@@ -100,7 +100,7 @@ decl_storage! {
 
         BlogPost get(fn post_by_id): map (T::BlogId, T::PostId) => Option<Post>;
 
-        Reply get (fn reply_by_id): map (T::BlogId, T::PostId, T::ReplyId) => Option<String>;
+        Reply get (fn reply_by_id): map (T::BlogId, T::PostId, T::ReplyId) => Option<Vec<u8>>;
 
         pub BlogLockedStatus get(fn blog_locked): map T::BlogId => bool;
 
@@ -183,7 +183,7 @@ decl_module! {
             Ok(())
         }
 
-        pub fn create_post(origin, blog_id: T::BlogId, title: String, body: String) -> Result {
+        pub fn create_post(origin, blog_id: T::BlogId, title: Vec<u8>, body: Vec<u8>) -> Result {
             let blog_owner = ensure_signed(origin)?;
             ensure!(<BlogIds<T>>::exists(&blog_owner), BLOG_OWNER_NOT_FOUND);
             ensure!(!Self::blog_locked(blog_id), BLOG_LOCKED_ERROR);
@@ -251,7 +251,7 @@ decl_module! {
             Ok(())
         }
 
-        pub fn edit_post(origin, blog_id: T::BlogId, post_id: T::PostId, new_title: Option<String>, new_body: Option<String>) -> Result {
+        pub fn edit_post(origin, blog_id: T::BlogId, post_id: T::PostId, new_title: Option<Vec<u8>>, new_body: Option<Vec<u8>>) -> Result {
             let blog_owner = ensure_signed(origin)?;
             ensure!(<BlogIds<T>>::exists(&blog_owner), BLOG_OWNER_NOT_FOUND);
             ensure!(!Self::blog_locked(blog_id), BLOG_LOCKED_ERROR);
@@ -275,7 +275,7 @@ decl_module! {
             Ok(())
         }
 
-        pub fn create_reply(origin, blog_id: T::BlogId, post_id: T::PostId, reply_text: String) -> Result {
+        pub fn create_reply(origin, blog_id: T::BlogId, post_id: T::PostId, reply_text: Vec<u8>) -> Result {
             let replier = ensure_signed(origin)?;
             ensure!(<BlogPostReplyIds<T>>::exists((blog_id, post_id)), POST_NOT_FOUND);
             ensure!(!Self::blog_locked(blog_id), BLOG_LOCKED_ERROR);
@@ -312,7 +312,7 @@ decl_module! {
             Ok(())
         }
 
-        pub fn edit_reply(origin, blog_id: T::BlogId, post_id: T::PostId, reply_id: T::ReplyId, reply_text: String) -> Result {
+        pub fn edit_reply(origin, blog_id: T::BlogId, post_id: T::PostId, reply_id: T::ReplyId, reply_text: Vec<u8>) -> Result {
             let replier = ensure_signed(origin)?;
             ensure!(!Self::blog_locked(blog_id), BLOG_LOCKED_ERROR);
             ensure!(!Self::blog_post_locked((blog_id, post_id)), POST_LOCKED_ERROR);
@@ -330,7 +330,7 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    fn update_post(post: &mut Post, new_title: Option<String>, new_body: Option<String>) {
+    fn update_post(post: &mut Post, new_title: Option<Vec<u8>>, new_body: Option<Vec<u8>>) {
         if let Some(new_title) = new_title {
             post.title = new_title
         }
