@@ -293,7 +293,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const redirectToPlaybackPage = (newEntityId?: EntityId) => {
     const entityId = newEntityId || id
     if (history && entityId) {
-      history.push('/media/video/' + entityId.toString())
+      history.push('/media/videos/' + entityId.toString())
     }
   }
 

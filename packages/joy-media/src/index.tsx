@@ -66,10 +66,10 @@ function App(props: Props) {
             <Route path={`${basePath}/channels/:id`} component={ViewChannelWithRouter} />
             <Route path={`${basePath}/channels/:id`} component={ViewChannelWithRouter} />
             <Route path={`${basePath}/channels`} component={AllChannelsView} />
-            {/* <Route path={`${basePath}/video/my`} component={VideosByOwnerView} /> */}
-            <Route path={`${basePath}/video/:id/edit`} component={EditVideoWithRouter} />
-            <Route path={`${basePath}/video/:id`} component={PlayVideoWithRouter} />
-            <Route path={`${basePath}/video`} component={AllVideosView} />
+            {/* <Route path={`${basePath}/videos/my`} component={VideosByOwnerView} /> */}
+            <Route path={`${basePath}/videos/:id/edit`} component={EditVideoWithRouter} />
+            <Route path={`${basePath}/videos/:id`} component={PlayVideoWithRouter} />
+            <Route path={`${basePath}/videos`} component={AllVideosView} />
             <Route path={`${basePath}/explore`} component={ExploreContentView} />
             <Route component={ExploreContentView} />
           </Switch>
