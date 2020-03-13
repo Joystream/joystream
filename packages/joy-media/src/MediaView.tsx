@@ -25,18 +25,28 @@ type BaseProps<A, B> = {
   triggers?: (keyof A)[]
 }
 
+function serializeTrigger(val: any): any {
+  if (['number', 'boolean', 'string'].indexOf(typeof val) >= 0) {
+    return val
+  } else if (typeof val === 'object' && typeof val.toString === 'function') {
+    return val.toString()
+  } else {
+    return undefined
+  }
+}
+
 export function MediaView<A = {}, B = {}> (baseProps: BaseProps<A, B>) {
   return function (initialProps: A & B) {
     const { component: Component, resolveProps, triggers = [], unresolvedView = null } = baseProps;
 
     const transport = useTransportContext();
     const { myAddress, myMemberId } = useMyMembership();
+    const resolverProps = {...initialProps, transport, myAddress, myMemberId }
     
     const [ resolvedProps, setResolvedProps ] = useState({} as B);
     const [ propsResolved, setPropsResolved ] = useState(false);
 
-    const resolverProps = {...initialProps, transport, myAddress, myMemberId }
-    const initialDeps = triggers.map(propName => initialProps[propName])
+    const initialDeps = triggers.map(propName => serializeTrigger(initialProps[propName]))
     const rerenderDeps = [ ...initialDeps, myAddress ]
 
     useEffect(() => {
