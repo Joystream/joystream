@@ -29,6 +29,7 @@ import ParametrizedClassPropertyValue from '@joystream/types/versioned-store/per
 import { ParametrizedPropertyValue } from '@joystream/types/versioned-store/permissions/batching/parametrized-property-value';
 import { ParameterizedClassPropertyValues } from '@joystream/types/versioned-store/permissions/batching/operations';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
+import { isAccountAChannelOwner } from '../channels/ChannelHelpers';
 
 /** Example: "2019-01-23" -> 1548201600 */
 function humanDateToUnixTs(humanFriendlyDate: string): number | undefined {
@@ -89,11 +90,11 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const { thumbnail } = values
 
   if (!mediaObjectClass) {
-    return <em>ERROR: "Media Object" entity class in undefined</em>
+    return <em>ERROR: "Media Object" entity class is undefined</em>
   }
 
   if (!entityClass) {
-    return <em>ERROR: Video entity class in undefined</em>
+    return <em>ERROR: Video entity class is undefined</em>
   }
 
   if (entity && !isAccountAChannelOwner(entity.channel, myAccountId)) {
