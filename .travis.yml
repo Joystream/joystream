@@ -51,4 +51,3 @@ deploy:
     draft: true
     prerelease: true
     overwrite: true
-  -
