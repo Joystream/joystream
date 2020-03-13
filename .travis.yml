@@ -20,7 +20,7 @@ before_script:
   - rustup target add ${TARGET}
   - rustup target add wasm32-unknown-unknown --toolchain nightly
   - rustup show
-  - cat ~/.cargo/config
+  # - cat ~/.cargo/config
 
 script:
   - cargo fmt --all -- --check
