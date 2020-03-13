@@ -6,5 +6,5 @@ pub mod members;
 pub mod origin_validator;
 pub mod role_types;
 
-mod mock;
+pub(crate) mod mock;
 mod tests;

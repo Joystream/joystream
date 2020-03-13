@@ -59,17 +59,13 @@ parameter_types! {
 }
 
 impl balances::Trait for Test {
-    /// The type for recording an account's balance.
     type Balance = u64;
     /// What to do if an account's free balance gets zeroed.
     type OnFreeBalanceZero = ();
-    /// What to do if a new account is created.
     type OnNewAccount = ();
-
-    type Event = TestEvent;
-
-    type DustRemoval = ();
     type TransferPayment = ();
+    type DustRemoval = ();
+    type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type TransferFee = TransferFee;
     type CreationFee = CreationFee;
@@ -120,9 +116,9 @@ impl ActorOriginValidator<Origin, u64, u64> for () {
 
 impl system::Trait for Test {
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;

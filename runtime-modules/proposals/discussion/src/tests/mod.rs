@@ -86,6 +86,13 @@ impl DiscussionFixture {
         DiscussionFixture { author_id, ..self }
     }
 
+    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        DiscussionFixture {
+            origin: origin.into(),
+            ..self
+        }
+    }
+
     fn create_discussion_and_assert(&self, result: Result<u32, &'static str>) -> Option<u32> {
         let create_discussion_result = Discussions::create_thread(
             self.origin.clone().into(),
@@ -417,7 +424,11 @@ fn add_discussion_thread_fails_because_of_max_thread_by_same_author_in_a_row_lim
 fn add_discussion_thread_fails_because_of_invalid_author_origin() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default().with_author(2);
+        discussion_fixture.create_discussion_and_assert(Err(MSG_INVALID_THREAD_AUTHOR_ORIGIN));
 
+        let discussion_fixture = DiscussionFixture::default()
+            .with_origin(RawOrigin::Signed(3))
+            .with_author(2);
         discussion_fixture.create_discussion_and_assert(Err(MSG_INVALID_THREAD_AUTHOR_ORIGIN));
     });
 }

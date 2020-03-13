@@ -291,7 +291,6 @@ fn create_dummy_proposal_succeeds() {
 fn create_dummy_proposal_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default().with_origin(RawOrigin::None);
-
         dummy_proposal.create_proposal_and_assert(Err("RequireSignedOrigin"));
     });
 }
