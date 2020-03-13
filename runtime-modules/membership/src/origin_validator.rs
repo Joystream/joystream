@@ -48,7 +48,6 @@ impl<T: crate::members::Trait>
         let profile_result = <crate::members::Module<T>>::ensure_profile(actor_id);
 
         if let Ok(profile) = profile_result {
-            print("profile");
             // whether the account_id belongs to the actor
             if profile.root_account == account_id || profile.controller_account == account_id {
                 return Ok(account_id);
@@ -61,7 +60,6 @@ impl<T: crate::members::Trait>
 
 #[cfg(test)]
 mod tests {
-
     use crate::members::UserInfo;
     use crate::mock::{Test, TestExternalitiesBuilder};
     use crate::origin_validator::{ActorOriginValidator, MembershipOriginValidator};
@@ -70,17 +68,7 @@ mod tests {
     type Membership = crate::members::Module<Test>;
 
     pub fn initial_test_ext() -> runtime_io::TestExternalities {
-        const DEFAULT_FEE: u64 = 500;
-        let initial_members = [1, 2, 3];
-
-        TestExternalitiesBuilder::<Test>::default()
-            .set_membership_config(
-                crate::genesis::GenesisConfigBuilder::default()
-                    .default_paid_membership_fee(DEFAULT_FEE)
-                    .members(initial_members.to_vec())
-                    .build(),
-            )
-            .build()
+        TestExternalitiesBuilder::<Test>::default().build()
     }
 
     #[test]
@@ -105,7 +93,6 @@ mod tests {
         initial_test_ext().execute_with(|| {
             let account_id = 1;
             let origin = RawOrigin::Signed(account_id);
-            let member_id = 0;
             let error = "Error";
             let authority_account_id = 10;
             Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id)
@@ -121,6 +108,7 @@ mod tests {
                 },
             )
             .unwrap();
+            let member_id = 0; // newly created member_id
 
             let validation_result = MembershipOriginValidator::<Test>::ensure_actor_origin(
                 origin.into(),
@@ -136,8 +124,7 @@ mod tests {
     fn membership_origin_validator_fails_with_incompatible_account_id_and_member_id() {
         initial_test_ext().execute_with(|| {
             let account_id = 1;
-            let member_id = 0;
-            let error = "Error";
+            let error = "Errorss";
             let authority_account_id = 10;
             Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id)
                 .unwrap();
@@ -152,6 +139,7 @@ mod tests {
                 },
             )
             .unwrap();
+            let member_id = 0; // newly created member_id
 
             let invalid_account_id = 2;
             let validation_result = MembershipOriginValidator::<Test>::ensure_actor_origin(
