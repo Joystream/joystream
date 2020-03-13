@@ -11,6 +11,7 @@ use mock::*;
 fn create_text_proposal_codex_call_succeeds() {
     initial_test_ext().execute_with(|| {
         let account_id = 1;
+        let proposer_id = 1;
         let origin = RawOrigin::Signed(account_id).into();
 
         let required_stake = Some(<BalanceOf<Test>>::from(500u32));
@@ -19,6 +20,7 @@ fn create_text_proposal_codex_call_succeeds() {
         assert_eq!(
             ProposalCodex::create_text_proposal(
                 origin,
+                proposer_id,
                 b"title".to_vec(),
                 b"body".to_vec(),
                 b"text".to_vec(),
@@ -39,6 +41,7 @@ fn create_text_proposal_codex_call_fails_with_invalid_stake() {
         assert_eq!(
             ProposalCodex::create_text_proposal(
                 RawOrigin::Signed(1).into(),
+                1,
                 b"title".to_vec(),
                 b"body".to_vec(),
                 b"text".to_vec(),
@@ -52,6 +55,7 @@ fn create_text_proposal_codex_call_fails_with_invalid_stake() {
         assert_eq!(
             ProposalCodex::create_text_proposal(
                 RawOrigin::Signed(1).into(),
+                1,
                 b"title".to_vec(),
                 b"body".to_vec(),
                 b"text".to_vec(),
@@ -71,6 +75,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
         assert_eq!(
             ProposalCodex::create_text_proposal(
                 origin,
+                1,
                 b"title".to_vec(),
                 b"body".to_vec(),
                 long_text,
@@ -82,6 +87,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
         assert_eq!(
             ProposalCodex::create_text_proposal(
                 RawOrigin::Signed(1).into(),
+                1,
                 b"title".to_vec(),
                 b"body".to_vec(),
                 Vec::new(),
@@ -99,6 +105,7 @@ fn create_text_proposal_codex_call_fails_with_insufficient_rights() {
 
         assert!(ProposalCodex::create_text_proposal(
             origin,
+            1,
             b"title".to_vec(),
             b"body".to_vec(),
             b"text".to_vec(),
@@ -117,6 +124,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
         assert_eq!(
             ProposalCodex::create_runtime_upgrade_proposal(
                 origin,
+                1,
                 b"title".to_vec(),
                 b"body".to_vec(),
                 long_wasm,
@@ -128,6 +136,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
         assert_eq!(
             ProposalCodex::create_runtime_upgrade_proposal(
                 RawOrigin::Signed(1).into(),
+                1,
                 b"title".to_vec(),
                 b"body".to_vec(),
                 Vec::new(),
@@ -145,6 +154,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_insufficient_rights() {
 
         assert!(ProposalCodex::create_runtime_upgrade_proposal(
             origin,
+            1,
             b"title".to_vec(),
             b"body".to_vec(),
             b"wasm".to_vec(),
@@ -157,9 +167,11 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_insufficient_rights() {
 #[test]
 fn create_runtime_upgrade_proposal_codex_call_fails_with_invalid_stake() {
     initial_test_ext().execute_with(|| {
+        let proposer_id = 1;
         assert_eq!(
             ProposalCodex::create_runtime_upgrade_proposal(
                 RawOrigin::Signed(1).into(),
+                proposer_id,
                 b"title".to_vec(),
                 b"body".to_vec(),
                 b"wasm".to_vec(),
@@ -173,6 +185,7 @@ fn create_runtime_upgrade_proposal_codex_call_fails_with_invalid_stake() {
         assert_eq!(
             ProposalCodex::create_runtime_upgrade_proposal(
                 RawOrigin::Signed(1).into(),
+                proposer_id,
                 b"title".to_vec(),
                 b"body".to_vec(),
                 b"wasm".to_vec(),
@@ -187,6 +200,7 @@ fn create_runtime_upgrade_proposal_codex_call_fails_with_invalid_stake() {
 fn create_runtime_upgrade_proposal_codex_call_succeeds() {
     initial_test_ext().execute_with(|| {
         let account_id = 1;
+        let proposer_id = 1;
         let origin = RawOrigin::Signed(account_id).into();
 
         let required_stake = Some(<BalanceOf<Test>>::from(50000u32));
@@ -195,6 +209,7 @@ fn create_runtime_upgrade_proposal_codex_call_succeeds() {
         assert_eq!(
             ProposalCodex::create_runtime_upgrade_proposal(
                 origin,
+                proposer_id,
                 b"title".to_vec(),
                 b"body".to_vec(),
                 b"wasm".to_vec(),

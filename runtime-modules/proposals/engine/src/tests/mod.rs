@@ -59,6 +59,7 @@ impl Default for ProposalParametersFixture {
 struct DummyProposalFixture {
     parameters: ProposalParameters<u64, u64>,
     origin: RawOrigin<u64>,
+    proposer_id: u64,
     proposal_type: u32,
     proposal_code: Vec<u8>,
     title: Vec<u8>,
@@ -84,6 +85,7 @@ impl Default for DummyProposalFixture {
                 required_stake: None,
             },
             origin: RawOrigin::Signed(1),
+            proposer_id: 1,
             proposal_type: dummy_proposal.proposal_type(),
             proposal_code: dummy_proposal.encode(),
             title: dummy_proposal.title,
@@ -128,6 +130,7 @@ impl DummyProposalFixture {
     fn create_proposal_and_assert(self, result: Result<u32, &'static str>) -> Option<u32> {
         let proposal_id_result = ProposalsEngine::create_proposal(
             self.origin.into(),
+            self.proposer_id,
             self.parameters,
             self.title,
             self.description,
@@ -144,6 +147,7 @@ impl DummyProposalFixture {
 struct CancelProposalFixture {
     origin: RawOrigin<u64>,
     proposal_id: u32,
+    proposer_id: u64,
 }
 
 impl CancelProposalFixture {
@@ -151,6 +155,7 @@ impl CancelProposalFixture {
         CancelProposalFixture {
             proposal_id,
             origin: RawOrigin::Signed(1),
+            proposer_id: 1,
         }
     }
 
@@ -158,9 +163,20 @@ impl CancelProposalFixture {
         CancelProposalFixture { origin, ..self }
     }
 
+    fn with_proposer(self, proposer_id: u64) -> Self {
+        CancelProposalFixture {
+            proposer_id,
+            ..self
+        }
+    }
+
     fn cancel_and_assert(self, expected_result: dispatch::Result) {
         assert_eq!(
-            ProposalsEngine::cancel_proposal(self.origin.into(), self.proposal_id,),
+            ProposalsEngine::cancel_proposal(
+                self.origin.into(),
+                self.proposer_id,
+                self.proposal_id
+            ),
             expected_result
         );
     }
@@ -193,6 +209,7 @@ impl VetoProposalFixture {
 struct VoteGenerator {
     proposal_id: u32,
     current_account_id: u64,
+    current_voter_id: u64,
     pub auto_increment_voter_id: bool,
 }
 
@@ -200,6 +217,7 @@ impl VoteGenerator {
     fn new(proposal_id: u32) -> Self {
         VoteGenerator {
             proposal_id,
+            current_voter_id: 0,
             current_account_id: 0,
             auto_increment_voter_id: true,
         }
@@ -215,10 +233,12 @@ impl VoteGenerator {
     fn vote(&mut self, vote_kind: VoteKind) -> dispatch::Result {
         if self.auto_increment_voter_id {
             self.current_account_id += 1;
+            self.current_voter_id += 1;
         }
 
         ProposalsEngine::vote(
             system::RawOrigin::Signed(self.current_account_id).into(),
+            self.current_voter_id,
             self.proposal_id,
             vote_kind,
         )
@@ -227,7 +247,7 @@ impl VoteGenerator {
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64, u64>>) {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64>>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
@@ -272,7 +292,7 @@ fn create_dummy_proposal_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default().with_origin(RawOrigin::None);
 
-        dummy_proposal.create_proposal_and_assert(Err("Invalid origin"));
+        dummy_proposal.create_proposal_and_assert(Err("RequireSignedOrigin"));
     });
 }
 
@@ -291,8 +311,8 @@ fn vote_succeeds() {
 fn vote_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         assert_eq!(
-            ProposalsEngine::vote(system::RawOrigin::None.into(), 1, VoteKind::Approve),
-            Err("Invalid origin")
+            ProposalsEngine::vote(system::RawOrigin::None.into(), 1, 1, VoteKind::Approve),
+            Err("RequireSignedOrigin")
         );
     });
 }
@@ -601,8 +621,9 @@ fn cancel_proposal_fails_with_insufficient_rights() {
         let dummy_proposal = DummyProposalFixture::default();
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
-        let cancel_proposal =
-            CancelProposalFixture::new(proposal_id).with_origin(RawOrigin::Signed(2));
+        let cancel_proposal = CancelProposalFixture::new(proposal_id)
+            .with_origin(RawOrigin::Signed(2))
+            .with_proposer(2);
         cancel_proposal.cancel_and_assert(Err("You do not own this proposal"));
     });
 }

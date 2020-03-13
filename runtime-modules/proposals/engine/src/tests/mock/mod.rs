@@ -43,10 +43,15 @@ mod engine {
     pub use crate::Event;
 }
 
+mod membership_mod {
+    pub use membership::members::Event;
+}
+
 impl_outer_event! {
     pub enum TestEvent for Test {
         balances<T>,
         engine<T>,
+         membership_mod<T>,
     }
 }
 
@@ -73,6 +78,10 @@ impl balances::Trait for Test {
     type CreationFee = CreationFee;
 }
 
+impl common::currency::GovernanceCurrency for Test {
+    type Currency = balances::Module<Self>;
+}
+
 impl stake::Trait for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;
@@ -89,34 +98,36 @@ parameter_types! {
     pub const MaxActiveProposalLimit: u32 = 100;
 }
 
+impl membership::members::Trait for Test {
+    type Event = TestEvent;
+    type MemberId = u64;
+    type PaidTermId = u64;
+    type SubscriptionId = u64;
+    type ActorId = u64;
+    type InitialMembersBalance = ();
+}
+
 impl crate::Trait for Test {
     type Event = TestEvent;
-
-    type ProposalOrigin = system::EnsureSigned<Self::AccountId>;
-
-    type VoteOrigin = system::EnsureSigned<Self::AccountId>;
-
+    type ProposerOriginValidator = ();
+    type VoterOriginValidator = ();
     type TotalVotersCounter = ();
-
     type ProposalCodeDecoder = ProposalType;
-
     type ProposalId = u32;
-
-    type ProposerId = u64;
-
-    type VoterId = u64;
-
     type StakeHandlerProvider = stakes::TestStakeHandlerProvider;
-
     type CancellationFee = CancellationFee;
-
     type RejectionFee = RejectionFee;
-
     type TitleMaxLength = TitleMaxLength;
-
     type DescriptionMaxLength = DescriptionMaxLength;
-
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
+}
+
+impl membership::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, _account_id: u64, _: &'static str) -> Result<u64, &'static str> {
+        let signed_account_id = system::ensure_signed(origin)?;
+
+        Ok(signed_account_id)
+    }
 }
 
 // If changing count is required, we can upgrade the implementation as shown here:

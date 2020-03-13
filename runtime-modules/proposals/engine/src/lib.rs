@@ -41,7 +41,7 @@ mod tests;
 
 use rstd::prelude::*;
 
-use runtime_primitives::traits::{Zero};
+use runtime_primitives::traits::Zero;
 use srml_support::traits::Get;
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
@@ -51,12 +51,18 @@ use system::ensure_root;
 use membership::origin_validator::{ActorOriginValidator, MemberId};
 
 /// Proposals engine trait.
-pub trait Trait: system::Trait + timestamp::Trait + stake::Trait + membership::members::Trait {
+pub trait Trait:
+    system::Trait + timestamp::Trait + stake::Trait + membership::members::Trait
+{
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     /// Validates proposer id and origin combination
-    type ProposerOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type ProposerOriginValidator: ActorOriginValidator<
+        Self::Origin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 
     /// Validates voter id and origin combination
     type VoterOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
@@ -254,7 +260,7 @@ impl<T: Trait> Module<T> {
         let account_id = T::ProposerOriginValidator::ensure_actor_origin(
             origin,
             proposer_id.clone(),
-            errors::MSG_ONLY_MEMBERS_CAN_PROPOSE
+            errors::MSG_ONLY_MEMBERS_CAN_PROPOSE,
         )?;
 
         Self::ensure_create_proposal_parameters_are_valid(

@@ -16,4 +16,3 @@ pub const MSG_ONLY_MEMBERS_CAN_PROPOSE: &str = "Only members can make or cancel 
 pub const MSG_ONLY_COUNCILORS_CAN_VOTE: &str = "Only councilors can vote on proposals";
 
 //pub const MSG_STAKE_IS_GREATER_THAN_BALANCE: &str = "Balance is too low to be staked";
-

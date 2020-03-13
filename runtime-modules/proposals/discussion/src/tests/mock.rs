@@ -100,14 +100,18 @@ impl crate::Trait for Test {
     type MaxThreadInARowNumber = MaxThreadInARowNumber;
 }
 
-impl ActorOriginValidator<Origin, u64> for () {
-    fn ensure_actor_origin(origin: Origin, actor_id: u64, error: &'static str) -> Result<(), &'static str> {
+impl ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(
+        origin: Origin,
+        actor_id: u64,
+        error: &'static str,
+    ) -> Result<u64, &'static str> {
         if system::ensure_none(origin).is_ok() {
-            return Ok(());
+            return Ok(1);
         }
 
         if actor_id == 1 {
-            return Ok(())
+            return Ok(1);
         }
 
         Err(error)

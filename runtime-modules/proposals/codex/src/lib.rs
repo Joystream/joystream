@@ -46,7 +46,7 @@ pub type BalanceOf<T> =
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
-use membership::origin_validator::{MemberId};
+use membership::origin_validator::MemberId;
 
 decl_error! {
     pub enum Error {

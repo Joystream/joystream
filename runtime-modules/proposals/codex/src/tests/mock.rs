@@ -90,13 +90,11 @@ parameter_types! {
 
 impl proposal_engine::Trait for Test {
     type Event = ();
-    type ProposalOrigin = system::EnsureSigned<Self::AccountId>;
-    type VoteOrigin = system::EnsureSigned<Self::AccountId>;
+    type ProposerOriginValidator = ();
+    type VoterOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
     type ProposalCodeDecoder = crate::ProposalType;
     type ProposalId = u32;
-    type ProposerId = u64;
-    type VoterId = u64;
     type StakeHandlerProvider = proposal_engine::DefaultStakeHandlerProvider;
     type CancellationFee = CancellationFee;
     type RejectionFee = RejectionFee;
@@ -105,9 +103,9 @@ impl proposal_engine::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
 }
 
-impl proposal_discussion::ActorOriginValidator<Origin, u64> for () {
-    fn ensure_actor_origin(_: Origin, _: u64, _: &'static str) -> Result<(), &'static str> {
-        Ok(())
+impl membership::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(_: Origin, _: u64, _: &'static str) -> Result<u64, &'static str> {
+        Ok(1)
     }
 }
 

@@ -57,10 +57,18 @@ pub trait Trait: system::Trait + membership::members::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     /// Validates thread author id and origin combination
-    type ThreadAuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type ThreadAuthorOriginValidator: ActorOriginValidator<
+        Self::Origin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 
     /// Validates post author id and origin combination
-    type PostAuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type PostAuthorOriginValidator: ActorOriginValidator<
+        Self::Origin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 
     /// Discussion thread Id type
     type ThreadId: From<u32> + Into<u32> + Parameter + Default + Copy;
@@ -211,7 +219,7 @@ impl<T: Trait> Module<T> {
         T::ThreadAuthorOriginValidator::ensure_actor_origin(
             origin,
             thread_author_id.clone(),
-            errors::MSG_INVALID_THREAD_AUTHOR_ORIGIN
+            errors::MSG_INVALID_THREAD_AUTHOR_ORIGIN,
         )?;
 
         ensure!(!title.is_empty(), errors::MSG_EMPTY_TITLE_PROVIDED);
