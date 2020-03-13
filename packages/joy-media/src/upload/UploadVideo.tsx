@@ -97,7 +97,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   }
 
   if (entity && entity.channel && !entity.channel.roleAccount.eq(myAccountId)) {
-    return <em>ERROR: "Only owner can edit video"</em>
+    return <em>ERROR: Only owner can edit video</em>
   }
 
   // Next consts are used in tx params:
