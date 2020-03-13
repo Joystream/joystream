@@ -7,20 +7,14 @@ import { Option } from '@polkadot/types';
 import { AccountId } from '@polkadot/types/interfaces';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { Actor } from '@joystream/types/roles';
-import { MemberId } from '@joystream/types/members';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
-import { queryMembershipToProp } from '@polkadot/joy-members/utils';
 import TxButton from '@polkadot/joy-utils/TxButton';
 
-type MemberIdProps = {
-  memberIdsByControllerAccountId?: Option<MemberId>,
-};
-
-type Props = BareProps & ComponentProps & MyAccountProps & MemberIdProps;
+type Props = BareProps & ComponentProps & MyAccountProps;
 
 class ActorsList extends React.PureComponent<Props> {
   render() {
-    const { actorAccountIds, memberIdsByControllerAccountId } = this.props;
+    const { actorAccountIds, myMemberId, iAmMember} = this.props;
 
     return (
       <Table>
@@ -32,8 +26,8 @@ class ActorsList extends React.PureComponent<Props> {
             <Table.HeaderCell></Table.HeaderCell>
           </Table.Row>
         </Table.Header>
-        <Table.Body>{actorAccountIds.map((account: string) =>
-          <ActorDisplay key={account} account={account} memberIdsByControllerAccountId={memberIdsByControllerAccountId} />
+        <Table.Body>{actorAccountIds.map((actor_account: string) =>
+          <ActorDisplay key={actor_account} actor_account={actor_account} myMemberId={myMemberId} iAmMember={iAmMember} />
         )}
         </Table.Body>
       </Table>
@@ -42,21 +36,20 @@ class ActorsList extends React.PureComponent<Props> {
 }
 
 
-type ActorProps = BareProps & MemberIdProps & {
-  account: string,
-  actor?: Option<Actor>
+type ActorProps = MyAccountProps & {
+  actor_account: string,
+  actor?: Option<Actor>,
 }
 
 class ActorInner extends React.PureComponent<ActorProps> {
   render() {
-    const { actor: actorOpt, memberIdsByControllerAccountId: memberIdOpt } = this.props;
+    const { actor: actorOpt, iAmMember, myMemberId } = this.props;
 
-    if (!actorOpt || actorOpt.isNone || !memberIdOpt) return null;
+    if (!actorOpt || actorOpt.isNone) return null;
 
     const actor = actorOpt.unwrap();
-
-    const memberId = memberIdOpt.isSome ? memberIdOpt.unwrap() : undefined;
-    const memberIsActor = memberId && (memberId.toString() == actor.member_id.toString());
+    const memberIsActor = iAmMember && myMemberId
+                            && (myMemberId.toString() == actor.member_id.toString());
 
     return (
       <Table.Row>
@@ -76,12 +69,10 @@ class ActorInner extends React.PureComponent<ActorProps> {
 }
 
 const ActorDisplay = withCalls<ActorProps>(
-  ['query.actors.actorByAccountId', { propName: 'actor', paramName: 'account' }]
+  ['query.actors.actorByAccountId', { propName: 'actor', paramName: 'actor_account' }]
 )(ActorInner)
 
 
-const ActionableActorsList = withMyAccount(withCalls<Props>(
-  queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress')
-)(ActorsList));
+const ActionableActorsList = withMyAccount(ActorsList);
 
 export default ActionableActorsList;
