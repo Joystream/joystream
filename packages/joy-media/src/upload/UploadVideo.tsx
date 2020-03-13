@@ -96,7 +96,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     return <em>ERROR: Video entity class in undefined</em>
   }
 
-  if (entity && entity.channel && !entity.channel.roleAccount.eq(myAccountId)) {
+  if (entity && !isAccountAChannelOwner(entity.channel, myAccountId)) {
     return <em>ERROR: Only owner can edit video</em>
   }
 
