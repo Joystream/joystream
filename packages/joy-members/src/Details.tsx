@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Table } from 'semantic-ui-react';
 import ReactMarkdown from 'react-markdown';
-
+import { IdentityIcon } from '@polkadot/react-components';
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { withCalls } from '@polkadot/react-api/with';
@@ -58,10 +58,9 @@ class Component extends React.PureComponent<Props> {
     return (
       <>
       <div className={`item ProfileDetails ${isMyProfile && 'MyProfile'}`}>
-        <div>{this.props.memberId.toString()}</div>
         {hasAvatar
           ? <img className='ui avatar image' src={avatar_uri.toString()} />
-          : null
+          : <IdentityIcon className='image' value={root_account} size={40} />
         }
         <div className='content'>
           <div className='header'>
@@ -74,7 +73,8 @@ class Component extends React.PureComponent<Props> {
                 <i className='university icon'></i>
                 Council member
               </b>}
-            <BalanceDisplay label='Balance: ' params={myAddress} />
+              <BalanceDisplay label='Balance(root): ' params={root_account} />
+              <div>MemberId: {this.props.memberId.toString()}</div>
           </div>
         </div>
       </div>

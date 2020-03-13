@@ -15,7 +15,7 @@ import Bare from './Bare';
 function onChange ({ onChange }: Props): (_: string) => void {
   return function (value: string): void {
     onChange && onChange({
-      isValid: true,
+      isValid: value ? true : false,
       value: new BN(value || 0)
     });
   };

@@ -184,7 +184,7 @@ class Component extends React.PureComponent<Props, State> {
     let hasVotedEvent = false;
     txResult.events.forEach((event, i) => {
       const { section, method } = event.event;
-      if (section === 'election' && method === 'Voted') {
+      if (section === 'councilElection' && method === 'Voted') {
         hasVotedEvent = true;
       }
     });
