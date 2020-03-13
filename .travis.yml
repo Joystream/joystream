@@ -9,7 +9,7 @@ cache:
 os:
   - linux
   - osx
-  - windows
+# - windows
 
 before_script:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export TARGET=x86_64-apple-darwin  ; fi
@@ -20,7 +20,6 @@ before_script:
   - rustup target add ${TARGET}
   - rustup target add wasm32-unknown-unknown --toolchain nightly
   - rustup show
-  # - cat ~/.cargo/config
 
 script:
   - cargo fmt --all -- --check
@@ -31,14 +30,23 @@ script:
   - gzip ${FILENAME}.tar
 
 deploy:
-  provider: releases
-  api_key:
-    secure: icPiO8fnOgkHlo2MpUJvH+sZSaxJqzHif/1Pndlxg2jM/jrvLbUCr9UvtLaRQYPi2BVnR41t2m56uMJD3LktKMzAwUP74JcdX7iw6tq+iyvuU4UBsn5+k8pgue+eE34PVN0vNbDS+RVzzc6wG/vhUyKNKz6M1pOuEBx0s6UX3oED16W1LEN8/CHmFVBxQehlGv40Mje6tSmfZMw++efAmFm9vd0Fx8ub8as5ZqyjGv2IwbQlyIGT3SF9yx2va90F2wOxyZM7wgWzA/XIzlDGy+zvZssEYNGQhepUdGwTwwe+YLvZWuttTC218K4H8aireO2vCMti58veX7hVuDz6j6ETVxhr6Nv47HfxQF4IywDTUH1JGlLVadgcKQXUlVRrfy1tBKDq76ppMul8TdS0LgojeTgcJOblKw0V5TMwx+IYmMabVIZQ7Q7xKqf4SeXxh/YL3EUWBvzu1TUn946CB3jLATUxjGyjAZ00BN01QL7chrkcewInlKxJ/wjUqM34KnHNXXgPNADW+c5IIsl82BwnPsPK37WMfW5FaKtOn0YXQWj9QwtEX7VakNnPZZRvpsl2Ftd1As7hPgufMk8NbXmiQH8i0h1W0xcHQ38hvegIpf1fa8JA7VIFBP6ElymMTIus5xD5rsLGzPqgazm/328p2DthJWebyLAZIbEX+I4=
-  file: ${FILENAME}.tar.gz
-  skip_cleanup: true
-  on:
-    tags: true
-    branch: development
-  draft: true
-  prerelease: true
-  overwrite: true
+  - provider: releases
+    api_key:
+      secure: icPiO8fnOgkHlo2MpUJvH+sZSaxJqzHif/1Pndlxg2jM/jrvLbUCr9UvtLaRQYPi2BVnR41t2m56uMJD3LktKMzAwUP74JcdX7iw6tq+iyvuU4UBsn5+k8pgue+eE34PVN0vNbDS+RVzzc6wG/vhUyKNKz6M1pOuEBx0s6UX3oED16W1LEN8/CHmFVBxQehlGv40Mje6tSmfZMw++efAmFm9vd0Fx8ub8as5ZqyjGv2IwbQlyIGT3SF9yx2va90F2wOxyZM7wgWzA/XIzlDGy+zvZssEYNGQhepUdGwTwwe+YLvZWuttTC218K4H8aireO2vCMti58veX7hVuDz6j6ETVxhr6Nv47HfxQF4IywDTUH1JGlLVadgcKQXUlVRrfy1tBKDq76ppMul8TdS0LgojeTgcJOblKw0V5TMwx+IYmMabVIZQ7Q7xKqf4SeXxh/YL3EUWBvzu1TUn946CB3jLATUxjGyjAZ00BN01QL7chrkcewInlKxJ/wjUqM34KnHNXXgPNADW+c5IIsl82BwnPsPK37WMfW5FaKtOn0YXQWj9QwtEX7VakNnPZZRvpsl2Ftd1As7hPgufMk8NbXmiQH8i0h1W0xcHQ38hvegIpf1fa8JA7VIFBP6ElymMTIus5xD5rsLGzPqgazm/328p2DthJWebyLAZIbEX+I4=
+    file: ${FILENAME}.tar.gz
+    skip_cleanup: true
+    on:
+      tags: true
+    draft: true
+    overwrite: true
+  - provider: releases
+    api_key:
+      secure: icPiO8fnOgkHlo2MpUJvH+sZSaxJqzHif/1Pndlxg2jM/jrvLbUCr9UvtLaRQYPi2BVnR41t2m56uMJD3LktKMzAwUP74JcdX7iw6tq+iyvuU4UBsn5+k8pgue+eE34PVN0vNbDS+RVzzc6wG/vhUyKNKz6M1pOuEBx0s6UX3oED16W1LEN8/CHmFVBxQehlGv40Mje6tSmfZMw++efAmFm9vd0Fx8ub8as5ZqyjGv2IwbQlyIGT3SF9yx2va90F2wOxyZM7wgWzA/XIzlDGy+zvZssEYNGQhepUdGwTwwe+YLvZWuttTC218K4H8aireO2vCMti58veX7hVuDz6j6ETVxhr6Nv47HfxQF4IywDTUH1JGlLVadgcKQXUlVRrfy1tBKDq76ppMul8TdS0LgojeTgcJOblKw0V5TMwx+IYmMabVIZQ7Q7xKqf4SeXxh/YL3EUWBvzu1TUn946CB3jLATUxjGyjAZ00BN01QL7chrkcewInlKxJ/wjUqM34KnHNXXgPNADW+c5IIsl82BwnPsPK37WMfW5FaKtOn0YXQWj9QwtEX7VakNnPZZRvpsl2Ftd1As7hPgufMk8NbXmiQH8i0h1W0xcHQ38hvegIpf1fa8JA7VIFBP6ElymMTIus5xD5rsLGzPqgazm/328p2DthJWebyLAZIbEX+I4=
+    file: ${FILENAME}.tar.gz
+    skip_cleanup: true
+    on:
+      branch: development
+    draft: true
+    prerelease: true
+    overwrite: true
+  -
