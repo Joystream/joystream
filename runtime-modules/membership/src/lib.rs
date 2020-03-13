@@ -4,6 +4,7 @@
 pub mod genesis;
 pub mod members;
 pub mod role_types;
+pub mod origin_validator;
 
 mod mock;
 mod tests;

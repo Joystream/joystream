@@ -46,8 +46,7 @@ pub type BalanceOf<T> =
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
-// Member of the Joystream organization
-pub(crate) type MemberId<T> = <T as membership::members::Trait>::MemberId;
+use membership::origin_validator::{MemberId};
 
 decl_error! {
     pub enum Error {

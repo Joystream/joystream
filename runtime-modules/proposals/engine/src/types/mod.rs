@@ -321,9 +321,6 @@ pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, ProposerId, Bal
     pub finalized_at: BlockNumber,
 }
 
-// Member of the Joystream organization
-pub(crate) type MemberId<T> = <T as membership::members::Trait>::MemberId;
-
 #[cfg(test)]
 mod tests {
     use crate::*;

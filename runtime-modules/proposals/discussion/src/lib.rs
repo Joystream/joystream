@@ -26,10 +26,9 @@ use rstd::vec::Vec;
 use srml_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
 
 use srml_support::traits::Get;
-pub use types::{ActorOriginValidator, MembershipOriginValidator};
 use types::{Post, Thread, ThreadCounter};
 
-pub(crate) use types::MemberId;
+use membership::origin_validator::{ActorOriginValidator, MemberId};
 
 // TODO: move errors to decl_error macro (after substrate version upgrade)
 
@@ -58,10 +57,10 @@ pub trait Trait: system::Trait + membership::members::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     /// Validates thread author id and origin combination
-    type ThreadAuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>>;
+    type ThreadAuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Validates post author id and origin combination
-    type PostAuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>>;
+    type PostAuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Discussion thread Id type
     type ThreadId: From<u32> + Into<u32> + Parameter + Default + Copy;

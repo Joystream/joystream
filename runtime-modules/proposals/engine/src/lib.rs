@@ -22,7 +22,6 @@
 // TODO: Test cancellation, rejection fees
 
 pub use types::BalanceOf;
-use types::MemberId;
 use types::FinalizedProposalData;
 use types::ProposalStakeManager;
 pub use types::VotingResults;
@@ -42,23 +41,25 @@ mod tests;
 
 use rstd::prelude::*;
 
-use runtime_primitives::traits::{EnsureOrigin, Zero};
+use runtime_primitives::traits::{Zero};
 use srml_support::traits::Get;
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
 };
 use system::ensure_root;
 
+use membership::origin_validator::{ActorOriginValidator, MemberId};
+
 /// Proposals engine trait.
 pub trait Trait: system::Trait + timestamp::Trait + stake::Trait + membership::members::Trait {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    /// Origin from which proposals must come.
-    type ProposalOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
+    /// Validates proposer id and origin combination
+    type ProposerOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
-    /// Origin from which votes must come.
-    type VoteOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
+    /// Validates voter id and origin combination
+    type VoterOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Provides data for voting. Defines maximum voters count for the proposal.
     type TotalVotersCounter: VotersParameters;
@@ -153,8 +154,11 @@ decl_module! {
 
         /// Vote extrinsic. Conditions:  origin must allow votes.
         pub fn vote(origin, voter_id: MemberId<T>, proposal_id: T::ProposalId, vote: VoteKind)  {
-            let account_id = T::VoteOrigin::ensure_origin(origin)?;
-            //TODO: set validator
+            T::VoterOriginValidator::ensure_actor_origin(
+                origin,
+                voter_id.clone(),
+                errors::MSG_ONLY_COUNCILORS_CAN_VOTE
+            )?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
             let mut proposal = Self::proposals(proposal_id);
@@ -179,9 +183,11 @@ decl_module! {
 
         /// Cancel a proposal by its original proposer.
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
-            let account_id = T::ProposalOrigin::ensure_origin(origin)?;
-            // TODO proposer_id should be the same?
-//            let proposer_id = T::ProposerId::from(account_id);
+            T::ProposerOriginValidator::ensure_actor_origin(
+                origin,
+                proposer_id.clone(),
+                errors::MSG_ONLY_MEMBERS_CAN_PROPOSE
+            )?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
             let proposal = Self::proposals(proposal_id);
@@ -245,8 +251,11 @@ impl<T: Trait> Module<T> {
         proposal_type: u32,
         proposal_code: Vec<u8>,
     ) -> Result<T::ProposalId, &'static str> {
-        let account_id = T::ProposalOrigin::ensure_origin(origin)?;
-//        let proposer_id = T::ProposerId::from(account_id.clone());
+        let account_id = T::ProposerOriginValidator::ensure_actor_origin(
+            origin,
+            proposer_id.clone(),
+            errors::MSG_ONLY_MEMBERS_CAN_PROPOSE
+        )?;
 
         Self::ensure_create_proposal_parameters_are_valid(
             &parameters,
