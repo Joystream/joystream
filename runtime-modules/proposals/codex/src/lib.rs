@@ -20,7 +20,6 @@ use rstd::clone::Clone;
 use rstd::marker::PhantomData;
 use rstd::prelude::*;
 use rstd::vec::Vec;
-use runtime_primitives::traits::One;
 use srml_support::{decl_error, decl_module, decl_storage, ensure};
 use system::RawOrigin;
 
@@ -46,6 +45,9 @@ pub type BalanceOf<T> =
 /// Balance alias for staking
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+
+// Member of the Joystream organization
+pub(crate) type MemberId<T> = <T as membership::members::Trait>::MemberId;
 
 decl_error! {
     pub enum Error {
@@ -81,6 +83,7 @@ decl_module! {
         /// Create text (signal) proposal type. On approval prints its content.
         pub fn create_text_proposal(
             origin,
+            member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
             text: Vec<u8>,
@@ -103,12 +106,13 @@ decl_module! {
 
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
                 cloned_origin1,
-                T::MemberId::one(), //TODO: temporary stub, provide implementation
+                member_id,
                 title.clone(),
             )?;
 
             let proposal_id = <proposal_engine::Module<T>>::create_proposal(
                 cloned_origin2,
+                member_id,
                 parameters,
                 title,
                 description,
@@ -123,6 +127,7 @@ decl_module! {
         /// Create runtime upgrade proposal type. On approval prints its content.
         pub fn create_runtime_upgrade_proposal(
             origin,
+            member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
             wasm: Vec<u8>,
@@ -146,12 +151,13 @@ decl_module! {
 
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
                 cloned_origin1,
-                T::MemberId::one(),  //TODO: temporary stub, provide implementation
+                member_id,
                 title.clone(),
             )?;
 
             let proposal_id = <proposal_engine::Module<T>>::create_proposal(
                 cloned_origin2,
+                member_id,
                 parameters,
                 title,
                 description,

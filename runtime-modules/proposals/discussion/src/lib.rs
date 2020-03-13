@@ -26,7 +26,7 @@ use rstd::vec::Vec;
 use srml_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
 
 use srml_support::traits::Get;
-pub use types::{ActorOriginValidator, ThreadPostActorOriginValidator};
+pub use types::{ActorOriginValidator, MembershipOriginValidator};
 use types::{Post, Thread, ThreadCounter};
 
 pub(crate) use types::MemberId;

@@ -85,21 +85,21 @@ pub trait ActorOriginValidator<Origin, ActorId> {
 pub(crate) type MemberId<T> = <T as membership::members::Trait>::MemberId;
 
 /// Default discussion system actor origin validator. Valid for both thread and post authors.
-pub struct ThreadPostActorOriginValidator<T> {
+pub struct MembershipOriginValidator<T> {
     marker: PhantomData<T>,
 }
 
-impl<T> ThreadPostActorOriginValidator<T> {
+impl<T> MembershipOriginValidator<T> {
     /// Create ThreadPostActorOriginValidator instance
     pub fn new() -> Self {
-        ThreadPostActorOriginValidator {
+        MembershipOriginValidator {
             marker: PhantomData,
         }
     }
 }
 
 impl<T: Trait> ActorOriginValidator<<T as system::Trait>::Origin, MemberId<T>>
-    for ThreadPostActorOriginValidator<T>
+    for MembershipOriginValidator<T>
 {
     /// Check for valid combination of origin and actor_id. Actor_id should be valid member_id of
     /// the membership module

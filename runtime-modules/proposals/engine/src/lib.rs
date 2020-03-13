@@ -22,6 +22,7 @@
 // TODO: Test cancellation, rejection fees
 
 pub use types::BalanceOf;
+use types::MemberId;
 use types::FinalizedProposalData;
 use types::ProposalStakeManager;
 pub use types::VotingResults;
@@ -49,7 +50,7 @@ use srml_support::{
 use system::ensure_root;
 
 /// Proposals engine trait.
-pub trait Trait: system::Trait + timestamp::Trait + stake::Trait {
+pub trait Trait: system::Trait + timestamp::Trait + stake::Trait + membership::members::Trait {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -67,12 +68,6 @@ pub trait Trait: system::Trait + timestamp::Trait + stake::Trait {
 
     /// Proposal Id type
     type ProposalId: From<u32> + Parameter + Default + Copy;
-
-    /// Type for the proposer id. Should be authenticated by account id.
-    type ProposerId: From<Self::AccountId> + Parameter + Default;
-
-    /// Type for the voter id. Should be authenticated by account id.
-    type VoterId: From<Self::AccountId> + Parameter + Default + Clone;
 
     /// Provides stake logic implementation. Can be used to mock stake logic.
     type StakeHandlerProvider: StakeHandlerProvider<Self>;
@@ -98,15 +93,14 @@ decl_event!(
     pub enum Event<T>
     where
         <T as Trait>::ProposalId,
-        <T as Trait>::ProposerId,
-        <T as Trait>::VoterId,
+        MemberId = MemberId<T>,
         <T as system::Trait>::BlockNumber,
     {
     	/// Emits on proposal creation.
         /// Params:
-        /// - Account id of a proposer.
+        /// - Member id of a proposer.
         /// - Id of a newly created proposal after it was saved in storage.
-        ProposalCreated(ProposerId, ProposalId),
+        ProposalCreated(MemberId, ProposalId),
 
         /// Emits on proposal status change.
         /// Params:
@@ -116,10 +110,10 @@ decl_event!(
 
         /// Emits on voting for the proposal
         /// Params:
-        /// - Voter - an account id of a voter.
+        /// - Voter - member id of a voter.
         /// - Id of a proposal.
         /// - Kind of vote.
-        Voted(VoterId, ProposalId, VoteKind),
+        Voted(MemberId, ProposalId, VoteKind),
     }
 );
 
@@ -146,7 +140,7 @@ decl_storage! {
 
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
         pub VoteExistsByProposalByVoter get(fn vote_by_proposal_by_voter):
-            double_map T::ProposalId, twox_256(T::VoterId) => VoteKind;
+            double_map T::ProposalId, twox_256(MemberId<T>) => VoteKind;
     }
 }
 
@@ -158,9 +152,9 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Vote extrinsic. Conditions:  origin must allow votes.
-        pub fn vote(origin, proposal_id: T::ProposalId, vote: VoteKind)  {
+        pub fn vote(origin, voter_id: MemberId<T>, proposal_id: T::ProposalId, vote: VoteKind)  {
             let account_id = T::VoteOrigin::ensure_origin(origin)?;
-            let voter_id = T::VoterId::from(account_id);
+            //TODO: set validator
 
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
             let mut proposal = Self::proposals(proposal_id);
@@ -184,9 +178,10 @@ decl_module! {
         }
 
         /// Cancel a proposal by its original proposer.
-        pub fn cancel_proposal(origin, proposal_id: T::ProposalId) {
+        pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
             let account_id = T::ProposalOrigin::ensure_origin(origin)?;
-            let proposer_id = T::ProposerId::from(account_id);
+            // TODO proposer_id should be the same?
+//            let proposer_id = T::ProposerId::from(account_id);
 
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
             let proposal = Self::proposals(proposal_id);
@@ -242,6 +237,7 @@ impl<T: Trait> Module<T> {
     /// Create proposal. Requires 'proposal origin' membership.
     pub fn create_proposal(
         origin: T::Origin,
+        proposer_id: MemberId<T>,
         parameters: ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
         title: Vec<u8>,
         description: Vec<u8>,
@@ -250,7 +246,7 @@ impl<T: Trait> Module<T> {
         proposal_code: Vec<u8>,
     ) -> Result<T::ProposalId, &'static str> {
         let account_id = T::ProposalOrigin::ensure_origin(origin)?;
-        let proposer_id = T::ProposerId::from(account_id.clone());
+//        let proposer_id = T::ProposerId::from(account_id.clone());
 
         Self::ensure_create_proposal_parameters_are_valid(
             &parameters,
@@ -536,7 +532,7 @@ impl<T: Trait> Module<T> {
 type FinalizedProposal<T> = FinalizedProposalData<
     <T as Trait>::ProposalId,
     <T as system::Trait>::BlockNumber,
-    <T as Trait>::ProposerId,
+    MemberId<T>,
     types::BalanceOf<T>,
     <T as stake::Trait>::StakeId,
 >;
@@ -544,7 +540,7 @@ type FinalizedProposal<T> = FinalizedProposalData<
 // Simplification of the 'Proposal' type
 type ProposalObject<T> = Proposal<
     <T as system::Trait>::BlockNumber,
-    <T as Trait>::ProposerId,
+    MemberId<T>,
     types::BalanceOf<T>,
     <T as stake::Trait>::StakeId,
 >;

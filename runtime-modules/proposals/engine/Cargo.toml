@@ -83,6 +83,11 @@ default_features = false
 package = 'substrate-stake-module'
 path = '../../stake'
 
+[dependencies.membership]
+default_features = false
+package = 'substrate-membership-module'
+path = '../../membership'
+
 [dev-dependencies]
 mockall = "0.6.0"
 
@@ -92,4 +97,7 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
-
+[dev-dependencies.common]
+default_features = false
+package = 'substrate-common-module'
+path = '../../common'
