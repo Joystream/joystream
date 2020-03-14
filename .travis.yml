@@ -33,19 +33,24 @@ script:
   - |
     if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
     then
-      export FILENAME="joystream-node-armv7-linux-gnueabihf"
       docker run -u root \
         --volume ${TRAVIS_BUILD_DIR}:/home/cross/project \
           joystream/rust-raspberry \
         build --release
       sudo chmod a+r ${TRAVIS_BUILD_DIR}/target/${TARGET}/release/joystream-node
     else
-      export FILENAME="joystream-node-x86_64-linux-gnu"
       cargo build --release --target=${TARGET}
     fi
 
 before_deploy:
   - cp ./target/${TARGET}/release/joystream-node .
+  - |
+    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
+    then
+      export FILENAME="joystream-node-armv7-linux-gnueabihf"
+    else
+      export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
+    fi
   - tar -cf ${FILENAME}.tar ./joystream-node
   - gzip ${FILENAME}.tar
 
