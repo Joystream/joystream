@@ -3,29 +3,49 @@ language: rust
 rust:
   - 1.41.1
 
-# cache:
-#  cargo
+matrix:
+  include:
+    - os: linux
+      env: TARGET=x86_64-unknown-linux-gnu
+    - os: linux
+      env: TARGET=arm-unknown-linux-gnueabihf
+      services: docker
+    - os: osx
+      env: TARGET=x86_64-apple-darwin
 
-os:
-  - linux
-  - osx
-# - windows
-
-before_script:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export TARGET=x86_64-apple-darwin  ; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export TARGET=x86_64-unknown-linux-gnu  ; fi
-  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then export TARGET=x86_64-pc-windows-msvc  ; fi
+before_install:
   - rustup component add rustfmt
-  - rustup update nightly
-  - rustup target add ${TARGET}
-  - rustup target add wasm32-unknown-unknown --toolchain nightly
-  - rustup show
+  - cargo fmt --all -- --check
+
+install:
+  - |
+    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
+    then
+      docker pull joystream/rust-raspberry
+    else
+      rustup update nightly
+      rustup target add ${TARGET}
+      rustup target add wasm32-unknown-unknown --toolchain nightly
+      rustup show
+    fi
 
 script:
-  - cargo fmt --all -- --check
-  - cargo build --release --target=${TARGET}
-  - mv ./target/${TARGET}/release/joystream-node .
-  - export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
+  - |
+    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
+    then
+      export FILENAME="joystream-node-armv7-linux-gnueabihf"
+      docker run -u root \
+        --volume ${TRAVIS_BUILD_DIR}:/home/cross/project \
+          joystream/rust-raspberry \
+        build --release
+      sudo chmod a+r ${TRAVIS_BUILD_DIR}/target/${TARGET}/release/joystream-node
+    else
+      export FILENAME="joystream-node-x86_64-linux-gnu"
+      cargo build --release --target=${TARGET}
+    fi
+
+before_deploy:
+  - cp ./target/${TARGET}/release/joystream-node .
   - tar -cf ${FILENAME}.tar ./joystream-node
   - gzip ${FILENAME}.tar
 
@@ -51,3 +71,14 @@ deploy:
     prerelease: true
     overwrite: true
     skip_cleanup: true
+  - provider: releases
+    api_key:
+      secure: ZoEXp8g+yZOEG8JZ1Fg6tWnW3aYDfupFbZflEejYaAdXhj1nw7G9N10ZX5VDdb/O1iFx8BhfFymQxk0ynxNC8c52LzOjKIhXEporxgvEPdnoPS/N1JhfsOUV0ragwZDLv2tFVi2AT0K4w8WJFJDzrK4qHOMMQgVbVQZtFmDL1whHdfBD5FyFyKmMdZdWBtTGy4s7X0LnmxjNB4/3AMa540T3LowZ5H66MYZkQmAbtg8ib93WomVanhS23vbjNaH9x1Kmzxd2B3pCSgI8uaxBrpmzINvAeSusYVJQt0EF/cAPXmq0+JmGoocvcS1ecg/SNZoKUNmeElB4ns/obg/QAyE+fyQtyl+iDYBilhFLm5xRMUnqkpyeUUD3u824i/Z+/tfLvtm5Egg1QAiXtIIJMeAj1nN8OIeSlHR4phnSTA3jl2PZw9QYidtV9WCqHC0qxtpkYSKkC8ItaefScPB1AuvOvVx8xvnIxfR/tXvL8Y3Y2BvhiLgpky9JkbdMln1b0m0E5c4vyGCEVqHqpbxM63VJkpct8sVx0atGvipWEelVjz5XpkxW2PYbgg4EKUzl3FiYcXwf5Y/ykxaZNZt7I4gv9nz2KkVwUCCPqdwWF7ww1shFWW5tCoCmJuUESOdPFx0jQ7LVWz7SDLDsqvvaW2c2OPxG6DIx9BiTeAE4qIQ=
+    file: "${FILENAME}.tar.gz"
+    skip_cleanup: true
+    draft: true
+    prerelease: true
+    overwrite: true
+    on:
+      repo: mnaamani/substrate-node-joystream
+      branch: deploy
