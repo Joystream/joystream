@@ -5,9 +5,10 @@ import { Icon, Label, SemanticICONS, SemanticCOLORS } from 'semantic-ui-react';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelAvatar, ChannelAvatarSize } from './ChannelAvatar';
 import { isPublicChannel } from './ChannelHelpers';
-import { isMusicChannel, isVideoChannel, isAccountAChannelOwner } from './ChannelHelpers';
+import { isMusicChannel, isVideoChannel, isAccountAChannelOwner, isVerifiedChannel } from './ChannelHelpers';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 import { nonEmptyStr } from '@polkadot/joy-utils/';
+import { CurationPanel } from './CurationPanel';
 import { ChannelNameAsLink } from './ChannelNameAsLink';
 
 type ChannelPreviewProps = {
@@ -49,8 +50,9 @@ export const ChannelPreview = (props: ChannelPreviewProps) => {
 
       <div className='ChannelDetails'>
         <h3 className='ChannelTitle' style={{ display: 'block' }}>
-          
           <ChannelNameAsLink channel={channel} style={{ marginRight: '1rem' }} />
+
+          <CurationPanel channel={channel} />
 
           {isAccountAChannelOwner(channel, myAccountId) &&
             <div style={{ float: 'right' }}>
@@ -59,11 +61,12 @@ export const ChannelPreview = (props: ChannelPreviewProps) => {
                 <i className='icon pencil' />
                 Edit
               </Link>
-              
+
               <Link to={`/media/channels/${channel.id}/upload`} className='ui button basic primary'>
                 <i className='icon upload' />
                 Upload {channel.content}
               </Link>
+
             </div>
           }
         </h3>
@@ -87,6 +90,13 @@ export const ChannelPreview = (props: ChannelPreviewProps) => {
               <Icon name='dont' />
               Channel {channel.curationStatus}
               {' '}<Icon name='question circle outline' size='small' />
+            </Label>
+          }
+
+          {isVerifiedChannel(channel) &&
+            <Label basic color='blue'>
+              <i className='icon checkmark'/>
+              Verified
             </Label>
           }
         </div>

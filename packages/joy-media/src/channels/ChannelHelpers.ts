@@ -21,8 +21,15 @@ export const isAccountAChannelOwner = (channel?: ChannelEntity, account?: Accoun
 
 export function isPublicChannel(channel: ChannelType): boolean {
   return (
-    channel.verified === true && // TODO uncomment
     channel.publicationStatus === 'Public' &&
     channel.curationStatus !== 'Censored'
   );
+}
+
+export function isCensoredChannel(channel: ChannelEntity) : boolean {
+  return channel.curationStatus == 'Censored'
+}
+
+export function isVerifiedChannel(channel: ChannelEntity) : boolean {
+  return channel.verified
 }
