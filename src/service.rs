@@ -1,173 +1,351 @@
-//! Service and ServiceFactory implementation. Specialized wrapper over Substrate service.
+// Copyright 2019 Joystream Contributors
+// This file is part of Joystream node.
+
+// Joystream node is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Joystream node is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
 #![warn(unused_extern_crates)]
 
-use basic_authorship::ProposerFactory;
-use consensus::{import_queue, start_aura, AuraImportQueue, NothingExtra, SlotDuration};
-use grandpa;
+//! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
+
+use client_db::Backend;
+use grandpa::{self, FinalityProofProvider as GrandpaFinalityProofProvider};
 use inherents::InherentDataProviders;
-use joystream_node_runtime::{self, opaque::Block, GenesisConfig, RuntimeApi};
-use log::info;
-use network::construct_simple_protocol;
-use primitives::{ed25519::Pair, Pair as PairT, sr25519::Public as SrPublic, crypto::Ss58Codec};
+use network::{construct_simple_protocol, NetworkService};
+use node_runtime::{self, opaque::Block, GenesisConfig, RuntimeApi};
+use offchain::OffchainWorkers;
+use primitives::Blake2Hasher;
+use runtime_primitives::traits::Block as BlockT;
 use std::sync::Arc;
-use std::time::Duration;
-use substrate_client as client;
-use substrate_executor::native_executor_instance;
-use substrate_service::construct_service_factory;
+use substrate_client::{Client, LocalCallExecutor, LongestChain};
+pub use substrate_executor::{native_executor_instance, NativeExecutor};
 use substrate_service::{
-    FactoryFullConfiguration, FullBackend, FullClient, FullComponents, FullExecutor, LightBackend,
-    LightClient, LightComponents, LightExecutor, TaskExecutor,
+    error::Error as ServiceError, AbstractService, Configuration, NetworkStatus, Service,
+    ServiceBuilder,
 };
 use transaction_pool::{self, txpool::Pool as TransactionPool};
-
-// Get new prefixed ss58 address encoding for ed25519 public keys
-fn ed_ss58check(public_key: &primitives::ed25519::Public) -> String {
-    let raw_bytes: &[u8; 32] = public_key.as_ref();
-    // Interpret bytes as sr25519 public key
-    let v : SrPublic = SrPublic::from_raw(raw_bytes.clone());
-    v.to_ss58check()
-}
-
-pub use substrate_executor::NativeExecutor;
-// Our native executor instance.
-native_executor_instance!(
-	pub Executor,
-	joystream_node_runtime::api::dispatch,
-	joystream_node_runtime::native_version,
-	include_bytes!("../substrate-runtime-joystream/wasm/target/wasm32-unknown-unknown/release/joystream_node_runtime_wasm.compact.wasm")
-);
-
-pub struct NodeConfig<F: substrate_service::ServiceFactory> {
-    pub grandpa_import_setup: Option<(
-        Arc<grandpa::BlockImportForService<F>>,
-        grandpa::LinkHalfForService<F>,
-    )>,
-    inherent_data_providers: InherentDataProviders,
-}
-
-impl<F> Default for NodeConfig<F>
-where
-    F: substrate_service::ServiceFactory,
-{
-    fn default() -> NodeConfig<F> {
-        NodeConfig {
-            grandpa_import_setup: None,
-            inherent_data_providers: InherentDataProviders::new(),
-        }
-    }
-}
 
 construct_simple_protocol! {
     /// Demo protocol attachment for substrate.
     pub struct NodeProtocol where Block = Block { }
 }
 
-construct_service_factory! {
-    struct Factory {
-        Block = Block,
-        RuntimeApi = RuntimeApi,
-        NetworkProtocol = NodeProtocol { |config| Ok(NodeProtocol::new()) },
-        RuntimeDispatch = Executor,
-        FullTransactionPoolApi = transaction_pool::ChainApi<client::Client<FullBackend<Self>, FullExecutor<Self>, Block, RuntimeApi>, Block>
-            { |config, client| Ok(TransactionPool::new(config, transaction_pool::ChainApi::new(client))) },
-        LightTransactionPoolApi = transaction_pool::ChainApi<client::Client<LightBackend<Self>, LightExecutor<Self>, Block, RuntimeApi>, Block>
-            { |config, client| Ok(TransactionPool::new(config, transaction_pool::ChainApi::new(client))) },
-        Genesis = GenesisConfig,
-        Configuration = NodeConfig<Self>,
-        FullService = FullComponents<Self>
-            { |config: FactoryFullConfiguration<Self>, executor: TaskExecutor|
-                FullComponents::<Factory>::new(config, executor)
-            },
-        AuthoritySetup = {
-            |mut service: Self::FullService, executor: TaskExecutor, key: Option<Arc<Pair>>| {
-                let (block_import, link_half) = service.config.custom.grandpa_import_setup.take()
-                    .expect("Link Half and Block Import are present for Full Services or setup failed before. qed");
+// Declare an instance of the native executor named `Executor`. Include the wasm binary as the
+// equivalent wasm code.
+native_executor_instance!(
+	pub Executor,
+	node_runtime::api::dispatch,
+	node_runtime::native_version
+);
 
-                if let Some(ref key) = key {
-                    info!("Using authority key {}", ed_ss58check(&key.public()));
-                    let proposer = Arc::new(ProposerFactory {
-                        client: service.client(),
-                        transaction_pool: service.transaction_pool(),
-                        inherents_pool: service.inherents_pool(),
-                    });
+/// Starts a `ServiceBuilder` for a full service.
+///
+/// Use this macro if you don't actually need the full service, but just the builder in order to
+/// be able to perform chain operations.
+#[macro_export]
+macro_rules! new_full_start {
+    ($config:expr) => {{
+        // type RpcExtension = jsonrpc_core::IoHandler<substrate_rpc::Metadata>;
+        let mut import_setup = None;
+        let inherent_data_providers = inherents::InherentDataProviders::new();
 
-                    let client = service.client();
-                    executor.spawn(start_aura(
-                        SlotDuration::get_or_compute(&*client)?,
-                        key.clone(),
-                        client,
-                        block_import.clone(),
-                        proposer,
-                        service.network(),
-                        service.on_exit(),
-                        service.config.custom.inherent_data_providers.clone(),
-                        service.config.force_authoring,
-                    )?);
-
-                    info!("Running Grandpa session as Authority {}", ed_ss58check(&key.public()));
-                }
-
-                let key = if service.config.disable_grandpa {
-                    None
-                } else {
-                    key
-                };
-
-                executor.spawn(grandpa::run_grandpa(
-                    grandpa::Config {
-                        local_key: key,
-                        // FIXME #1578 make this available through chainspec
-                        gossip_duration: Duration::from_millis(333),
-                        justification_period: 4096,
-                        name: Some(service.config.name.clone())
-                    },
-                    link_half,
-                    grandpa::NetworkBridge::new(service.network()),
-                    service.config.custom.inherent_data_providers.clone(),
-                    service.on_exit(),
-                )?);
-
-                Ok(service)
-            }
-        },
-        LightService = LightComponents<Self>
-            { |config, executor| <LightComponents<Factory>>::new(config, executor) },
-        FullImportQueue = AuraImportQueue<
-            Self::Block,
-        >
-            { |config: &mut FactoryFullConfiguration<Self> , client: Arc<FullClient<Self>>| {
-                let slot_duration = SlotDuration::get_or_compute(&*client)?;
-                let (block_import, link_half) =
-                    grandpa::block_import::<_, _, _, RuntimeApi, FullClient<Self>>(
-                        client.clone(), client.clone()
-                    )?;
-                let block_import = Arc::new(block_import);
-                let justification_import = block_import.clone();
-
-                config.custom.grandpa_import_setup = Some((block_import.clone(), link_half));
-
-                import_queue::<_, _, _, Pair>(
-                    slot_duration,
-                    block_import,
-                    Some(justification_import),
-                    client,
-                    NothingExtra,
-                    config.custom.inherent_data_providers.clone(),
-                ).map_err(Into::into)
-            }},
-        LightImportQueue = AuraImportQueue<
-            Self::Block,
-        >
-            { |config: &mut FactoryFullConfiguration<Self>, client: Arc<LightClient<Self>>|
-                import_queue::<_, _, _, Pair>(
-                    SlotDuration::get_or_compute(&*client)?,
+        let builder = substrate_service::ServiceBuilder::new_full::<
+            node_runtime::opaque::Block,
+            node_runtime::RuntimeApi,
+            crate::service::Executor,
+        >($config)?
+        .with_select_chain(|_config, backend| {
+            Ok(substrate_client::LongestChain::new(backend.clone()))
+        })?
+        .with_transaction_pool(|config, client| {
+            Ok(transaction_pool::txpool::Pool::new(
+                config,
+                transaction_pool::FullChainApi::new(client),
+            ))
+        })?
+        .with_import_queue(|_config, client, mut select_chain, _transaction_pool| {
+            let select_chain = select_chain
+                .take()
+                .ok_or_else(|| substrate_service::Error::SelectChainRequired)?;
+            let (grandpa_block_import, grandpa_link) =
+                grandpa::block_import::<_, _, _, node_runtime::RuntimeApi, _>(
                     client.clone(),
+                    &*client,
+                    select_chain,
+                )?;
+            let justification_import = grandpa_block_import.clone();
+
+            let (block_import, babe_link) = babe::block_import(
+                babe::Config::get_or_compute(&*client)?,
+                grandpa_block_import,
+                client.clone(),
+                client.clone(),
+            )?;
+
+            let import_queue = babe::import_queue(
+                babe_link.clone(),
+                block_import.clone(),
+                Some(Box::new(justification_import)),
+                None,
+                client.clone(),
+                client,
+                inherent_data_providers.clone(),
+            )?;
+
+            import_setup = Some((block_import, grandpa_link, babe_link));
+            Ok(import_queue)
+        })?;
+        // We don't have any custom rpc commands...
+        // .with_rpc_extensions(|client, pool| -> RpcExtension {
+        // 	node_rpc::create(client, pool)
+        // })?;
+
+        (builder, import_setup, inherent_data_providers)
+    }};
+}
+
+/// Creates a full service from the configuration.
+///
+/// We need to use a macro because the test suit doesn't work with an opaque service. It expects
+/// concrete types instead.
+macro_rules! new_full {
+	($config:expr, $with_startup_data: expr) => {{
+		use futures::sync::mpsc;
+		use network::DhtEvent;
+
+		let (
+			is_authority,
+			force_authoring,
+			name,
+			disable_grandpa
+		) = (
+			$config.roles.is_authority(),
+			$config.force_authoring,
+			$config.name.clone(),
+			$config.disable_grandpa
+		);
+
+        // sentry nodes announce themselves as authorities to the network
+		// and should run the same protocols authorities do, but it should
+		// never actively participate in any consensus process.
+        let participates_in_consensus = is_authority && !$config.sentry_mode;
+
+		let (builder, mut import_setup, inherent_data_providers) = new_full_start!($config);
+
+		// Dht event channel from the network to the authority discovery module. Use bounded channel to ensure
+		// back-pressure. Authority discovery is triggering one event per authority within the current authority set.
+		// This estimates the authority set size to be somewhere below 10 000 thereby setting the channel buffer size to
+		// 10 000.
+		let (dht_event_tx, _dht_event_rx) =
+			mpsc::channel::<DhtEvent>(10_000);
+
+		let service = builder.with_network_protocol(|_| Ok(crate::service::NodeProtocol::new()))?
+			.with_finality_proof_provider(|client, backend|
+				Ok(Arc::new(grandpa::FinalityProofProvider::new(backend, client)) as _)
+			)?
+			.with_dht_event_tx(dht_event_tx)?
+			.build()?;
+
+		let (block_import, grandpa_link, babe_link) = import_setup.take()
+				.expect("Link Half and Block Import are present for Full Services or setup failed before. qed");
+
+		($with_startup_data)(&block_import, &babe_link);
+
+		if participates_in_consensus {
+			let proposer = substrate_basic_authorship::ProposerFactory {
+				client: service.client(),
+				transaction_pool: service.transaction_pool(),
+			};
+
+			let client = service.client();
+			let select_chain = service.select_chain()
+				.ok_or(substrate_service::Error::SelectChainRequired)?;
+
+			let babe_config = babe::BabeParams {
+				keystore: service.keystore(),
+				client,
+				select_chain,
+				env: proposer,
+				block_import,
+				sync_oracle: service.network(),
+				inherent_data_providers: inherent_data_providers.clone(),
+				force_authoring,
+				babe_link,
+			};
+
+			let babe = babe::start_babe(babe_config)?;
+			service.spawn_essential_task(babe);
+        }
+
+        // if the node isn't actively participating in consensus then it doesn't
+		// need a keystore, regardless of which protocol we use below.
+		let keystore = if participates_in_consensus {
+			Some(service.keystore())
+		} else {
+			None
+        };
+
+        let config = grandpa::Config {
+            // FIXME #1578 make this available through chainspec
+            gossip_duration: std::time::Duration::from_millis(333),
+            justification_period: 512,
+            name: Some(name),
+            observer_enabled: true,
+            keystore,
+            is_authority,
+        };
+
+		match (is_authority, disable_grandpa) {
+			(false, false) => {
+				// start the lightweight GRANDPA observer
+				service.spawn_task(Box::new(grandpa::run_grandpa_observer(
+					config,
+					grandpa_link,
+					service.network(),
+					service.on_exit(),
+				)?));
+			},
+			(true, false) => {
+				// start the full GRANDPA voter
+				let grandpa_config = grandpa::GrandpaParams {
+					config: config,
+					link: grandpa_link,
+					network: service.network(),
+					inherent_data_providers: inherent_data_providers.clone(),
+					on_exit: service.on_exit(),
+					telemetry_on_connect: Some(service.telemetry_on_connect_stream()),
+					voting_rule: grandpa::VotingRulesBuilder::default().build(),
+                };
+                // the GRANDPA voter task is considered infallible, i.e.
+				// if it fails we take down the service with it.
+				service.spawn_essential_task(grandpa::run_grandpa_voter(grandpa_config)?);
+			},
+			(_, true) => {
+				grandpa::setup_disabled_grandpa(
+					service.client(),
+					&inherent_data_providers,
+					service.network(),
+				)?;
+			},
+		}
+
+		Ok((service, inherent_data_providers))
+	}};
+	($config:expr) => {{
+		new_full!($config, |_, _| {})
+	}}
+}
+
+#[allow(dead_code)]
+type ConcreteBlock = node_runtime::opaque::Block;
+#[allow(dead_code)]
+type ConcreteClient = Client<
+    Backend<ConcreteBlock>,
+    LocalCallExecutor<Backend<ConcreteBlock>, NativeExecutor<Executor>>,
+    ConcreteBlock,
+    node_runtime::RuntimeApi,
+>;
+#[allow(dead_code)]
+type ConcreteBackend = Backend<ConcreteBlock>;
+
+/// A specialized configuration object for setting up the node..
+pub type NodeConfiguration<C> =
+    Configuration<C, GenesisConfig /*, crate::chain_spec::Extensions*/>;
+
+/// Builds a new service for a full client.
+pub fn new_full<C: Send + Default + 'static>(config: NodeConfiguration<C>)
+-> Result<
+	Service<
+		ConcreteBlock,
+		ConcreteClient,
+		LongestChain<ConcreteBackend, ConcreteBlock>,
+		NetworkStatus<ConcreteBlock>,
+		NetworkService<ConcreteBlock, crate::service::NodeProtocol, <ConcreteBlock as BlockT>::Hash>,
+		TransactionPool<transaction_pool::FullChainApi<ConcreteClient, ConcreteBlock>>,
+		OffchainWorkers<
+			ConcreteClient,
+			<ConcreteBackend as substrate_client::backend::Backend<Block, Blake2Hasher>>::OffchainStorage,
+			ConcreteBlock,
+		>
+	>,
+	ServiceError,
+>
+{
+    new_full!(config).map(|(service, _)| service)
+}
+
+/// Builds a new service for a light client.
+pub fn new_light<C: Send + Default + 'static>(
+    config: NodeConfiguration<C>,
+) -> Result<impl AbstractService, ServiceError> {
+    // type RpcExtension = jsonrpc_core::IoHandler<substrate_rpc::Metadata>;
+    let inherent_data_providers = InherentDataProviders::new();
+
+    let service = ServiceBuilder::new_light::<Block, RuntimeApi, Executor>(config)?
+        .with_select_chain(|_config, backend| Ok(LongestChain::new(backend.clone())))?
+        .with_transaction_pool(|config, client| {
+            Ok(TransactionPool::new(
+                config,
+                transaction_pool::FullChainApi::new(client),
+            ))
+        })?
+        .with_import_queue_and_fprb(
+            |_config, client, backend, fetcher, _select_chain, _tx_pool| {
+                let fetch_checker = fetcher
+                    .map(|fetcher| fetcher.checker().clone())
+                    .ok_or_else(|| {
+                        "Trying to start light import queue without active fetch checker"
+                    })?;
+                let grandpa_block_import = grandpa::light_block_import::<_, _, _, RuntimeApi>(
+                    client.clone(),
+                    backend,
+                    &*client,
+                    Arc::new(fetch_checker),
+                )?;
+
+                let finality_proof_import = grandpa_block_import.clone();
+                let finality_proof_request_builder =
+                    finality_proof_import.create_finality_proof_request_builder();
+
+                let (babe_block_import, babe_link) = babe::block_import(
+                    babe::Config::get_or_compute(&*client)?,
+                    grandpa_block_import,
+                    client.clone(),
+                    client.clone(),
+                )?;
+
+                let import_queue = babe::import_queue(
+                    babe_link,
+                    babe_block_import,
                     None,
+                    Some(Box::new(finality_proof_import)),
+                    client.clone(),
                     client,
-                    NothingExtra,
-                    config.custom.inherent_data_providers.clone(),
-                ).map_err(Into::into)
+                    inherent_data_providers.clone(),
+                )?;
+
+                Ok((import_queue, finality_proof_request_builder))
             },
-    }
+        )?
+        .with_network_protocol(|_| Ok(NodeProtocol::new()))?
+        .with_finality_proof_provider(|client, backend| {
+            Ok(Arc::new(GrandpaFinalityProofProvider::new(backend, client)) as _)
+        })?
+        // We don't have any custom rpc extensions
+        // .with_rpc_extensions(|client, pool| -> RpcExtension {
+        // 	node_rpc::create(client, pool)
+        // })?
+        .build()?;
+
+    Ok(service)
 }
