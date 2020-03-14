@@ -15,7 +15,6 @@ import { ITransport } from '../transport'
 
 import { keyPairDetails, FlowModal, ProgressSteps } from './apply'
 
-import { GroupMember } from '../elements'
 import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities'
 import { Min, Step, Sum } from "../balances"
 
@@ -23,7 +22,6 @@ type State = {
   // Input data from state
   role?: GenericJoyStreamRoleSchema
   applications?: OpeningStakeAndApplicationStatus
-  creator?: GroupMember
   keypairs?: keyPairDetails[] // <- Where does this come from?
   hasConfirmStep?: boolean
   step?: Balance
@@ -100,7 +98,6 @@ export class ApplyController extends Controller<State, ITransport> {
 
           this.state.role = hrt
           this.state.applications = opening.applications
-          this.state.creator = opening.creator
           this.state.slots = ranks
           this.state.step = Min(Step(ranks, ranks.length))
           this.state.hasConfirmStep =
@@ -206,7 +203,6 @@ export const ApplyView = View<ApplyController, State>(
         <FlowModal
           role={state.role!}
           applications={state.applications!}
-          creator={state.creator!}
           keypairs={state.keypairs!}
           hasConfirmStep={state.hasConfirmStep!}
           step={state.step!}

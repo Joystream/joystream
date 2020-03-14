@@ -3,13 +3,14 @@ import { Balance } from '@polkadot/types/interfaces';
 
 import { Role } from '@joystream/types/roles';
 
-import { WorkingGroupMembership, StorageAndDistributionMembership } from "./tabs/WorkingGroup"
+import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStatus } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening, } from "./tabs/Opportunities"
 import { keyPairDetails } from './flows/apply'
 import { ActiveRole, OpeningApplication } from './tabs/MyRoles'
 
 export interface ITransport {
   roles: () => Promise<Array<Role>>
+  groupLeadStatus: () => Promise<GroupLeadStatus>
   curationGroup: () => Promise<WorkingGroupMembership>
   storageGroup: () => Promise<StorageAndDistributionMembership>
   currentOpportunities: () => Promise<Array<WorkingGroupOpening>>

@@ -1,11 +1,10 @@
 import React from 'react'
-import { boolean, number, select, text, withKnobs } from '@storybook/addon-knobs'
+import { number, select, text, withKnobs } from '@storybook/addon-knobs'
 import * as faker from 'faker'
 
 import { Option, Text, u32, u128 } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces';
 
-import { Actor } from "@joystream/types/roles"
 import {
   Opening,
   AcceptingApplications,
@@ -26,8 +25,6 @@ import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequi
 import { OpeningStageClassification, OpeningState } from "../classifiers"
 import { OpeningMetadata } from "../OpeningMetadata"
 
-import { mockProfile } from '../mocks'
-
 import 'semantic-ui-css/semantic.min.css'
 import '@polkadot/joy-roles/index.sass'
 
@@ -38,7 +35,6 @@ export default {
     'tomorrow',
     'yesterday',
     'opening',
-    'creator',
     'stateOptions',
     'newMockHumanReadableText',
   ],
@@ -101,11 +97,6 @@ export const opening = new Opening({
       ]
     },
     reward: text("Reward", "10 JOY per block", "Role"),
-    creator: {
-      membership: {
-        handle: text("Creator handle", "ben", "Role")
-      }
-    },
     process: {
       details: [
         "Some custom detail"
@@ -113,14 +104,6 @@ export const opening = new Opening({
     }
   }),
 })
-
-export const creator = {
-  actor: new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
-  profile: mockProfile('benholdencrowther'),
-  title: text('Title', 'Group lead', "Creator"),
-  lead: boolean('Lead member', true, "Creator"),
-  stake: new u128(number('Stake', 10, {}, "Creator")),
-}
 
 const stateOptions: any = function() {
   const options: any = {}
@@ -177,11 +160,10 @@ export function OpportunitySandbox() {
     <OpeningView
       meta={meta}
       opening={opening}
-      creator={creator}
       stage={stage}
       applications={applications}
       defactoMinimumStake={defactoMinimumStake}
       block_time_in_seconds={3}
     />
   )
-}   
+}

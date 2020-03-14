@@ -12,8 +12,6 @@ import {
   StakeType,
 } from '../StakeRequirement'
 
-import { creator } from "../tabs/Opportunities.stories"
-
 import 'semantic-ui-css/semantic.min.css'
 import '@polkadot/joy-roles/index.sass'
 

@@ -37,9 +37,6 @@ import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings'
 
 import {
-  GroupMemberView, GroupMember,
-} from '../elements'
-import {
   OpeningBodyApplicationsStatus, OpeningStakeAndApplicationStatus,
   ApplicationCount,
   StakeRequirementProps,
@@ -1039,7 +1036,6 @@ export function DoneStage(props: DoneStageProps) {
 export type FlowModalProps = ConfirmStakesStageProps & FundSourceSelectorProps & {
   role: GenericJoyStreamRoleSchema
   applications: OpeningStakeAndApplicationStatus,
-  creator: GroupMember
   hasConfirmStep: boolean
   prepareApplicationTransaction: (
     applicationStake: Balance,
@@ -1072,7 +1068,6 @@ export const FlowModal = Loadable<FlowModalProps>(
   [
     'role',
     'applications',
-    'creator',
     'keypairs',
     'slots',
   ],
@@ -1210,8 +1205,6 @@ export const FlowModal = Loadable<FlowModalProps>(
                         <Label.Detail>{props.role.reward}</Label.Detail>
               </Label>
               <OpeningBodyApplicationsStatus {...props.applications} applied={complete} />
-              <h5>Group lead</h5>
-              <GroupMemberView {...props.creator} inset={true} />
             </Grid.Column>
           </Grid>
         </Container>

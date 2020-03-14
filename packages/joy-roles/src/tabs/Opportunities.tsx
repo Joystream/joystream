@@ -22,7 +22,7 @@ import { Balance } from '@polkadot/types/interfaces';
 
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext'
 
-import { Countdown, GroupMember, GroupMemberView } from '../elements'
+import { Countdown } from '../elements'
 import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement'
 import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings'
 import { Opening } from "@joystream/types/hiring"
@@ -385,7 +385,6 @@ function timeInHumanFormat(block_time_in_seconds: number, blocks: number) {
 export type OpeningBodyProps = DefactoMinimumStake & StakeRequirementProps & BlockTimeProps & OpeningMetadataProps & MemberIdProps & {
   opening: Opening
   text: GenericJoyStreamRoleSchema
-  creator: GroupMember
   stage: OpeningStageClassification
   applications: OpeningStakeAndApplicationStatus
 }
@@ -436,8 +435,6 @@ export function OpeningBody(props: OpeningBodyProps) {
       <Grid.Column width={6} className="details">
         <OpeningBodyApplicationsStatus {...props.applications} />
         {stakeRequirements}
-        <h5>Group lead</h5>
-        <GroupMemberView {...props.creator} inset={true} />
         <OpeningBodyCTAView {...props} {...props.applications} />
       </Grid.Column>
     </Grid>
@@ -459,7 +456,6 @@ function OpeningReward(props: OpeningRewardProps) {
 
 export type WorkingGroupOpening = OpeningStage & DefactoMinimumStake & OpeningMetadataProps & {
   opening: Opening
-  creator: GroupMember
   applications: OpeningStakeAndApplicationStatus
 }
 
@@ -489,7 +485,6 @@ export const OpeningView = Loadable<OpeningViewProps>(
               text={text}
               meta={props.meta}
               opening={props.opening}
-              creator={props.creator}
               stage={props.stage}
               applications={props.applications}
               defactoMinimumStake={props.defactoMinimumStake}

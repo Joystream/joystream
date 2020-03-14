@@ -24,7 +24,6 @@ import 'semantic-ui-css/semantic.min.css'
 import '@polkadot/joy-roles/index.sass'
 
 import {
-  creator,
   opening,
   tomorrow,
   yesterday,
@@ -163,7 +162,6 @@ const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "1. Application open",
     id: 1,
-    creator: creator,
     meta: {
       id: "1",
       group: "group-name",
@@ -184,7 +182,6 @@ const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "2. Application open; crowded out",
     id: 1,
-    creator: creator,
     meta: {
       id: "1",
       group: "group-name",
@@ -205,7 +202,6 @@ const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "3. Application in review",
     id: 1,
-    creator: creator,
     meta: {
       id: "1",
       group: "group-name",
@@ -228,7 +224,6 @@ const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "4. Application in review; crowded out",
     id: 1,
-    creator: creator,
     meta: {
       id: "1",
       group: "group-name",
@@ -251,7 +246,6 @@ const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "5. Application review complete; unsuccessful",
     id: 1,
-    creator: creator,
     meta: {
       id: "1",
       group: "group-name",
@@ -272,7 +266,6 @@ const permutations: (ApplicationProps & TestProps)[] = [
   {
     _description: "6. Opening cancelled",
     id: 1,
-    creator: creator,
     meta: {
       id: "1",
       group: "group-name",

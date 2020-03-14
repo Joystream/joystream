@@ -32,7 +32,6 @@ import {
   openingIcon,
   openingDescription,
 } from '../openingStateMarkup'
-import { GroupMember, GroupMemberView } from '../elements'
 import { CancelledReason, OpeningStageClassification, OpeningState } from "../classifiers"
 import { OpeningMetadata } from "../OpeningMetadata"
 import { CuratorId } from '@joystream/types/content-working-group';
@@ -322,7 +321,6 @@ export type OpeningApplication = {
   cancelledReason?: CancelledReason
   hired?: boolean
   stage: OpeningStageClassification
-  creator: GroupMember
   opening: Opening
   meta: OpeningMetadata
   applicationStake: Balance
@@ -466,9 +464,6 @@ export function Application(props: ApplicationProps) {
           />
 
           {countdown}
-
-          <h4>Group lead</h4>
-          <GroupMemberView {...props.creator} inset={true} />
           {CTA}
         </Grid.Column>
       </Grid>
