@@ -33,8 +33,12 @@ cargo build --release
 
 Run the node and connect to the public testnet
 ```bash
-cargo run --release
+cargo run --release --chain chain-file.json
 ```
+
+The chain file for the required testnet is also avilable on the [releases](https://github.com/Joystream/substrate-node-joystream/releases) page.
+
+The current public testnet is Rome. So you would download the rome-testnet.json file to use.
 
 ### Installing a release build
 This will install the executable `joystream-node` to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
@@ -46,7 +50,7 @@ cargo install --path ./
 Now you can run
 
 ```bash
-joystream-node
+joystream-node --chain chain-file.json
 ```
 
 ## Development
@@ -86,8 +90,18 @@ docker pull joystream/node
 
 #### Running a public node as a service
 
+Create a working directory to store the node's data and where you will need to place the chain file.
+
+
 ```bash
-docker run -d -p 30333:30333 --name my-node joystream/node
+mkdir ${HOME}/joystream-node-data/
+
+cp rome-testnet.json ${HOME}/joystream-node-data/
+
+docker run -d -p 30333:30333 \
+    -v ${HOME}/joystream-node-data/:/data \
+    --name my-node \
+    joystream/node --base-path /data --chain /data/rome-testnet.json
 
 # check status
 docker ps
