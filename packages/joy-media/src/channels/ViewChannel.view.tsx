@@ -8,6 +8,7 @@ type Props = ViewChannelProps;
 
 export const ViewChannelView = MediaView<Props>({
   component: ViewChannel,
+  triggers: [ 'id' ],
   resolveProps: async (props) => {
     const { transport, id } = props;
     const channel = await transport.channelById(id);

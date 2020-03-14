@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import axios, { CancelTokenSource } from 'axios';
 import _ from 'lodash';
 
@@ -16,34 +16,30 @@ import { MediaPlayerView, RequiredMediaPlayerProps } from './MediaPlayerView';
 
 type Props = ApiProps & I18nProps & DiscoveryProviderProps & RequiredMediaPlayerProps;
 
-type State = {
-  contentType?: string,
-  resolvingAsset: boolean,
-  resolvedAssetUrl?: string,
-  error?: Error,
-  cancelSource: CancelTokenSource
-};
+function newCancelSource(): CancelTokenSource {
+  return axios.CancelToken.source()
+}
 
-class InnerComponent extends React.PureComponent<Props, State> {
+function InnerComponent(props: Props) {
+  const { contentId, api, discoveryProvider } = props
 
-  state: State = {
-    resolvingAsset: false,
-    cancelSource: axios.CancelToken.source()
-  };
+  const [ error, setError ] = useState<Error>()
+  const [ resolvedAssetUrl, setResolvedAssetUrl ] = useState<string>()
+  const [ contentType, setContentType ] = useState<string>()
+  const [ cancelSource, setCancelSource ] = useState<CancelTokenSource>(newCancelSource())
 
-  componentDidMount () {
-    this.resolveAsset();
-  }
+  useEffect(() => {
 
-  componentWillUnmount () {
-    const { cancelSource } = this.state;
-    cancelSource.cancel();
-  }
+    resolveAsset()
 
-  private resolveAsset = async () => {
-    const { contentId, discoveryProvider, api } = this.props;
+    return () => {
+      cancelSource.cancel()
+    }
+  }, [ contentId.encode() ])
 
-    this.setState({ resolvingAsset: true, error: undefined });
+  const resolveAsset = async () => {
+    setError(undefined)
+    setCancelSource(newCancelSource())
 
     const rids: DataObjectStorageRelationshipId[] = await api.query.dataObjectStorageRegistry.relationshipsByContentId(contentId) as any;
 
@@ -57,10 +53,7 @@ class InnerComponent extends React.PureComponent<Props, State> {
     readyProviders = _.uniqBy(readyProviders, provider => provider.toString());
 
     if (!readyProviders.length) {
-      this.setState({
-        resolvingAsset: false,
-        error: new Error('No Storage Providers found storing this content')
-      });
+      setError(new Error('No Storage Providers found storing this content'))
       return;
     }
 
@@ -76,21 +69,14 @@ class InnerComponent extends React.PureComponent<Props, State> {
     // TODO: prioritize already resolved providers, least reported unreachable, closest
     // by geography etc..
 
-    const { cancelSource } = this.state;
-
     // loop over providers until we find one that responds
     while (readyProviders.length) {
       const provider = readyProviders.shift();
       if (!provider) continue;
 
-      const { resolvingAsset } = this.state;
-      if (!resolvingAsset) {
-        break;
-      }
-
+      let assetUrl: string | undefined
       try {
-        var resolvedAssetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.encode(), cancelSource.token);
-        console.log({ resolvedAssetUrl })
+        assetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.encode(), cancelSource.token);
       } catch (err) {
         if (axios.isCancel(err)) {
           return;
@@ -100,10 +86,12 @@ class InnerComponent extends React.PureComponent<Props, State> {
       }
 
       try {
-        console.log('Checking an URL of resolved asset:', resolvedAssetUrl);
-        const response = await axios.head(resolvedAssetUrl, { cancelToken: cancelSource.token });
-        const contentType = response.headers['content-type'] || 'video/video';
-        this.setState({ contentType, resolvedAssetUrl, resolvingAsset: false });
+        console.log('Check URL of resolved asset:', assetUrl);
+        const response = await axios.head(assetUrl, { cancelToken: cancelSource.token });
+
+        setContentType(response.headers['content-type'] || 'video/video')
+        setResolvedAssetUrl(assetUrl)
+
         return;
       } catch (err) {
         if (axios.isCancel(err)) {
@@ -113,40 +101,35 @@ class InnerComponent extends React.PureComponent<Props, State> {
             // network connection error
             discoveryProvider.reportUnreachable(provider);
           }
+          
           // try next provider
           continue;
         }
       }
     }
 
-    this.setState({
-      resolvingAsset: false,
-      error: new Error('Unable to reach any provider serving this content')
-    });
+    setError(new Error('Unable to reach any provider serving this content'))
   }
 
-  render () {
-    const { error, contentType, resolvedAssetUrl } = this.state;
+  console.log('Content id:', contentId.encode())
+  console.log('Resolved asset URL:', resolvedAssetUrl)
 
-    console.log({ resolvedAssetUrl })
-
-    if (error) {
-      return (
-        <Message error className='JoyMainStatus'>
-          <Message.Header>Error loading media content</Message.Header>
-          <p>{error.toString()}</p>
-          <button className='ui button' onClick={this.resolveAsset}>Try again</button>
-        </Message>
-      );
-    }
-
-    if (resolvedAssetUrl) {
-      const playerProps = { ...this.props, contentType, resolvedAssetUrl }
-      return <MediaPlayerView {...playerProps} />;
-    } else {
-      return <em>Resolving media content...</em>;
-    }
+  if (error) {
+    return (
+      <Message error className='JoyMainStatus'>
+        <Message.Header>Error loading media content</Message.Header>
+        <p>{error.toString()}</p>
+        <button className='ui button' onClick={resolveAsset}>Try again</button>
+      </Message>
+    );
   }
+
+  if (!resolvedAssetUrl) {
+    return <em>Resolving media content...</em>
+  }
+
+  const playerProps = { ...props, contentType, resolvedAssetUrl }
+  return <MediaPlayerView {...playerProps} />
 }
 
 export const MediaPlayerWithResolver = withMulti(
