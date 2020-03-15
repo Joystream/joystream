@@ -251,6 +251,10 @@ decl_module! {
         }
 
         pub fn edit_post(origin, blog_id: T::BlogId, post_id: T::PostId, new_title: Option<Vec<u8>>, new_body: Option<Vec<u8>>) -> dispatch::Result {
+            // Nothing to edit
+            if matches!((&new_title, &new_body), (None, None)) {
+                return Ok(())
+            }
             let blog_owner = ensure_signed(origin)?;
             ensure!(<BlogIds<T>>::exists(&blog_owner), BLOG_OWNER_NOT_FOUND);
             ensure!(<BlogPost<T>>::exists((blog_id, post_id)), POST_NOT_FOUND);

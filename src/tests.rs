@@ -438,24 +438,34 @@ fn post_unlocking_ownership_error() {
 
 #[test]
 fn post_editing_success() {
-    ExtBuilder::default().build().execute_with(|| {
-        // Create blog for future posts
-        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
-        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
-        let valid_title = generate_text(PostTitleMaxLength::get() as usize);
-        assert_ok!(TestBlogModule::edit_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            FISRT_ID,
-            Some(valid_title),
-            None,
-        ));
-        // Event checked
-        let post_edited_event = TestEvent::test_events(RawEvent::PostEdited(FISRT_ID, FISRT_ID));
-        assert!(System::events()
-            .iter()
-            .any(|a| a.event == post_edited_event));
-    })
+    ExtBuilder::default()
+        .post_title_max_length(5)
+        .post_body_max_length(5)
+        .build()
+        .execute_with(|| {
+            // Create blog for future posts
+            TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+            create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+            // TODO: Switch to text random length generator?
+            let valid_title = generate_text((PostTitleMaxLength::get() - 1) as usize);
+            let valid_body = generate_text((PostBodyMaxLength::get() - 1) as usize);
+            assert_ok!(TestBlogModule::edit_post(
+                Origin::signed(FIRST_OWNER_ORIGIN),
+                FISRT_ID,
+                FISRT_ID,
+                Some(valid_title.clone()),
+                Some(valid_body.clone()),
+            ));
+            // Event checked
+            let post_edited_event =
+                TestEvent::test_events(RawEvent::PostEdited(FISRT_ID, FISRT_ID));
+            // Post after editing checked
+            let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
+            assert!(matches!(post, Some(post) if post.title == valid_title && post.body == valid_body));
+            assert!(System::events()
+                .iter()
+                .any(|a| a.event == post_edited_event));
+        })
 }
 
 fn post_storage_unchanged(
