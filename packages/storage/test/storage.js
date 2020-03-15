@@ -65,27 +65,24 @@ function read_all(stream)
 function create_known_object(content_id, contents, callback)
 {
   var hash;
-  Storage.create({
+  const store = Storage.create({
     resolve_content_id: () => {
       return hash;
     },
   })
-  .then((store) => {
-    write(store, content_id, contents, (the_hash) => {
-      hash = the_hash;
 
-      callback(store, hash);
-    });
-  })
-  .catch((err) => {
-    expect.fail(err);
+  write(store, content_id, contents, (the_hash) => {
+    hash = the_hash;
+
+    callback(store, hash);
   });
+
 }
 
 describe('storage/storage', () => {
   var storage;
   before(async () => {
-    storage = await Storage.create({ timeout: 1500 });
+    storage = await Storage.create({ timeout: 1900 });
   });
 
   describe('open()', () => {
@@ -98,13 +95,9 @@ describe('storage/storage', () => {
     });
 
     it('detects the MIME type of a write stream', (done) => {
-      const contents = fs.readFileSync('../../banner.svg');
-      Storage.create({
-        resolve_content_id: () => {
-          return hash;
-        },
-      })
-      .then((store) => {
+      const contents = fs.readFileSync('../../storage-node_new.svg');
+
+      create_known_object('foobar', contents, (store, hash) => {
         var file_info;
         store.open('mime-test', 'w')
           .then((stream) => {
@@ -133,6 +126,7 @@ describe('storage/storage', () => {
             expect.fail(err);
           });
       });
+
     });
 
     it('can read a stream', (done) => {
@@ -151,7 +145,7 @@ describe('storage/storage', () => {
     });
 
     it('detects the MIME type of a read stream', (done) => {
-      const contents = fs.readFileSync('../../banner.svg');
+      const contents = fs.readFileSync('../../storage-node_new.svg');
       create_known_object('foobar', contents, (store, hash) => {
         store.open('foobar', 'r')
           .then((stream) => {
