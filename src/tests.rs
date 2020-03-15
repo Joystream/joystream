@@ -514,8 +514,7 @@ fn post_editing_post_not_found() {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         // Try to unlock not existing post
-        let edit_result =
-            edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
+        let edit_result = edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
         assert!(matches!(edit_result, Err(edit_err) if edit_err == POST_NOT_FOUND));
         // Event absence checked
         assert!(post_editing_event_failure(FISRT_ID, FISRT_ID))
@@ -581,7 +580,12 @@ fn post_editing_body_invalid_error() {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::PostBodyInvalid);
-        let edit_result = edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::PostBodyInvalid);
+        let edit_result = edit_post(
+            FIRST_OWNER_ORIGIN,
+            FISRT_ID,
+            FISRT_ID,
+            PostType::PostBodyInvalid,
+        );
         // Remain unedited
         let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
         assert!(matches!(edit_result, Err(create_err) if create_err == POST_BODY_TOO_LONG));
@@ -599,7 +603,12 @@ fn post_editing_ownership_error() {
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         TestBlogModule::create_blog(Origin::signed(SECOND_OWNER_ORIGIN));
         create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
-        let edit_result = edit_post(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::PostBodyInvalid);
+        let edit_result = edit_post(
+            SECOND_OWNER_ORIGIN,
+            FISRT_ID,
+            FISRT_ID,
+            PostType::PostBodyInvalid,
+        );
         // Remain unedited
         let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
         assert!(matches!(edit_result, Err(create_err) if create_err == BLOG_OWNERSHIP_ERROR));

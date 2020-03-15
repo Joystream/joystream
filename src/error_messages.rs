@@ -10,3 +10,4 @@ pub const REPLY_OWNERSHIP_ERROR: &str = "You don`t own reply, associated with th
 pub const POST_TITLE_TOO_LONG: &str = "Post title too long";
 pub const POST_BODY_TOO_LONG: &str = "Post body too long";
 pub const REPLY_TEXT_TOO_LONG: &str = "Reply text too long";
+pub const POSTS_LIMIT_REACHED: &str = "Posts limit in a blog reached";
