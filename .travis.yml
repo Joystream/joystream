@@ -1,6 +1,6 @@
 language: node_js
 
-- node_js:
+node_js:
     - 10
     - 12
     - 13
@@ -9,7 +9,7 @@ services:
   - docker
 
 script:
-  - docker-compose -f scripts/compose/devchain-and-ipfs-node/docker-compose.yaml up
+  - docker-compose -f ./scripts/compose/devchain-and-ipfs-node/docker-compose.yaml up
   - yarn test
-  - docker-compose -f scripts/compose/devchain-and-ipfs-node/docker-compose.yaml down
+  - docker-compose -f ./scripts/compose/devchain-and-ipfs-node/docker-compose.yaml down
 
