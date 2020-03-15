@@ -196,8 +196,10 @@ describe('storage/storage', () => {
     });
 
     it('returns stats for a known object', (done) => {
+      const content = 'stat-test';
+      const expected_size = content.length;
       create_known_object('foobar', 'stat-test', (store, hash) => {
-        expect(store.stat(hash)).to.eventually.have.property('DataSize', 15);
+        expect(store.stat(hash)).to.eventually.have.property('size', expected_size);
         done();
       });
     });
