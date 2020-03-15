@@ -17,9 +17,14 @@ enum PostType {
     PostBodyInvalid,
 }
 
-fn get_post(post_type: PostType) -> Post {
+fn get_post(post_type: PostType, editing: bool) -> Post {
     let (title, body);
     match post_type {
+        // Make them different
+        PostType::Valid if editing => {
+            title = generate_text((PostTitleMaxLength::get() - 1) as usize);
+            body = generate_text((PostBodyMaxLength::get() - 1) as usize);
+        }
         PostType::Valid => {
             title = generate_text(PostTitleMaxLength::get() as usize);
             body = generate_text(PostBodyMaxLength::get() as usize);
@@ -41,8 +46,24 @@ fn create_post(
     blog_id: <Runtime as Trait>::BlogId,
     post_type: PostType,
 ) -> Result<(), &'static str> {
-    let post = get_post(post_type);
+    let post = get_post(post_type, false);
     TestBlogModule::create_post(Origin::signed(origin_id), blog_id, post.title, post.body)
+}
+
+fn edit_post(
+    origin_id: u64,
+    blog_id: <Runtime as Trait>::BlogId,
+    post_id: <Runtime as Trait>::PostId,
+    post_type: PostType,
+) -> Result<(), &'static str> {
+    let post = get_post(post_type, true);
+    TestBlogModule::edit_post(
+        Origin::signed(origin_id),
+        blog_id,
+        post_id,
+        Some(post.title),
+        Some(post.body),
+    )
 }
 
 // Blogs
@@ -208,7 +229,7 @@ fn post_creation_success() {
         assert_eq!(TestBlogModule::posts_count(FISRT_ID), 0);
         assert_ok!(create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid));
         // Posts storage updated succesfully
-        assert!(matches!(TestBlogModule::post_by_id((FISRT_ID, FISRT_ID)), Some(post) if post == get_post(PostType::Valid)));
+        assert!(matches!(TestBlogModule::post_by_id((FISRT_ID, FISRT_ID)), Some(post) if post == get_post(PostType::Valid, false)));
         // Check up all changes, related to given post id 
         let mut set = BTreeSet::new();
         set.insert(FISRT_ID);
@@ -440,7 +461,7 @@ fn post_unlocking_ownership_error() {
 fn post_editing_success() {
     ExtBuilder::default()
         .post_title_max_length(5)
-        .post_body_max_length(5)
+        .post_body_max_length(10)
         .build()
         .execute_with(|| {
             // Create blog for future posts
@@ -456,16 +477,137 @@ fn post_editing_success() {
                 Some(valid_title.clone()),
                 Some(valid_body.clone()),
             ));
+            // Post after editing checked
+            let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
+            assert!(
+                matches!(post, Some(post) if (post.title == valid_title) && (post.body == valid_body))
+            );
             // Event checked
             let post_edited_event =
                 TestEvent::test_events(RawEvent::PostEdited(FISRT_ID, FISRT_ID));
-            // Post after editing checked
-            let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
-            assert!(matches!(post, Some(post) if post.title == valid_title && post.body == valid_body));
             assert!(System::events()
                 .iter()
                 .any(|a| a.event == post_edited_event));
         })
+}
+
+#[test]
+fn post_editing_owner_not_found() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        let edit_result = edit_post(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
+        // Remain unedited
+        let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
+        assert!(matches!(edit_result, Err(create_err) if create_err == BLOG_OWNER_NOT_FOUND));
+        // Compare with default unedited post
+        assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
+        // Event absence checked
+        assert!(post_editing_event_failure(FISRT_ID, FISRT_ID))
+    })
+}
+
+#[test]
+fn post_editing_post_not_found() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        // Try to unlock not existing post
+        let edit_result =
+            edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
+        assert!(matches!(edit_result, Err(edit_err) if edit_err == POST_NOT_FOUND));
+        // Event absence checked
+        assert!(post_editing_event_failure(FISRT_ID, FISRT_ID))
+    })
+}
+
+#[test]
+fn post_editing_blog_locked_error() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        TestBlogModule::lock_blog(Origin::signed(FIRST_OWNER_ORIGIN), FISRT_ID);
+        let edit_result = edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
+        // Remain unedited
+        let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
+        assert!(matches!(edit_result, Err(create_err) if create_err == BLOG_LOCKED_ERROR));
+        // Compare with default unedited post
+        assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
+        // Event absence checked
+        assert!(post_editing_event_failure(FISRT_ID, FISRT_ID))
+    })
+}
+
+#[test]
+fn post_editing_post_locked_error() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        TestBlogModule::lock_post(Origin::signed(FIRST_OWNER_ORIGIN), FISRT_ID, FISRT_ID);
+        let edit_result = edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
+        // Remain unedited
+        let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
+        assert!(matches!(edit_result, Err(create_err) if create_err == POST_LOCKED_ERROR));
+        // Compare with default unedited post
+        assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
+        // Event absence checked
+        assert!(post_editing_event_failure(FISRT_ID, FISRT_ID))
+    })
+}
+
+#[test]
+fn post_editing_title_invalid_error() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::PostTitleInvalid);
+        let edit_result = edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
+        // Remain unedited
+        let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
+        assert!(matches!(edit_result, Err(create_err) if create_err == POST_TITLE_TOO_LONG));
+        // Compare with default unedited post
+        assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
+        // Event absence checked
+        assert!(post_editing_event_failure(FISRT_ID, FISRT_ID))
+    })
+}
+
+#[test]
+fn post_editing_body_invalid_error() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::PostBodyInvalid);
+        let edit_result = edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::PostBodyInvalid);
+        // Remain unedited
+        let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
+        assert!(matches!(edit_result, Err(create_err) if create_err == POST_BODY_TOO_LONG));
+        // Compare with default unedited post
+        assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
+        // Event absence checked
+        assert!(post_editing_event_failure(FISRT_ID, FISRT_ID))
+    })
+}
+
+#[test]
+fn post_editing_ownership_error() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        TestBlogModule::create_blog(Origin::signed(SECOND_OWNER_ORIGIN));
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        let edit_result = edit_post(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::PostBodyInvalid);
+        // Remain unedited
+        let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
+        assert!(matches!(edit_result, Err(create_err) if create_err == BLOG_OWNERSHIP_ERROR));
+        // Compare with default unedited post
+        assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
+        // Event absence checked
+        assert!(post_editing_event_failure(FISRT_ID, FISRT_ID))
+    })
 }
 
 fn post_storage_unchanged(
