@@ -36,6 +36,15 @@ fn get_post(post_type: PostType) -> Post {
     Post::new(title, body)
 }
 
+fn create_post(
+    origin_id: u64,
+    blog_id: <Runtime as Trait>::BlogId,
+    post_type: PostType,
+) -> Result<(), &'static str> {
+    let post = get_post(post_type);
+    TestBlogModule::create_post(Origin::signed(origin_id), blog_id, post.title, post.body)
+}
+
 // Blogs
 #[test]
 fn blog_creation() {
@@ -196,16 +205,10 @@ fn post_creation_success() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
-        let valid_post = get_post(PostType::Valid);
         assert_eq!(TestBlogModule::posts_count(FISRT_ID), 0);
-        assert_ok!(TestBlogModule::create_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            valid_post.title.clone(),
-            valid_post.body.clone(),
-        ));
+        assert_ok!(create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid));
         // Posts storage updated succesfully
-        assert!(matches!(TestBlogModule::post_by_id((FISRT_ID, FISRT_ID)), Some(post) if post == valid_post));
+        assert!(matches!(TestBlogModule::post_by_id((FISRT_ID, FISRT_ID)), Some(post) if post == get_post(PostType::Valid)));
         // Check up all changes, related to given post id 
         let mut set = BTreeSet::new();
         set.insert(FISRT_ID);
@@ -224,13 +227,7 @@ fn post_creation_success() {
 #[test]
 fn post_creation_blog_owner_not_found() {
     ExtBuilder::default().build().execute_with(|| {
-        let valid_post = get_post(PostType::Valid);
-        let create_result = TestBlogModule::create_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            valid_post.title,
-            valid_post.body,
-        );
+        let create_result = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         assert!(matches!(create_result, Err(create_err) if create_err == BLOG_OWNER_NOT_FOUND));
         // Check if related runtime storage left unchanged
         assert!(post_storage_unchanged(FISRT_ID, FISRT_ID));
@@ -246,13 +243,7 @@ fn post_creation_blog_ownership_error() {
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         // Create another blog, using second owner origin
         TestBlogModule::create_blog(Origin::signed(SECOND_OWNER_ORIGIN));
-        let valid_post = get_post(PostType::Valid);
-        let create_result = TestBlogModule::create_post(
-            Origin::signed(SECOND_OWNER_ORIGIN),
-            FISRT_ID,
-            valid_post.title,
-            valid_post.body,
-        );
+        let create_result = create_post(SECOND_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         assert!(matches!(create_result, Err(create_err) if create_err == BLOG_OWNERSHIP_ERROR));
         // Check if related runtime storage left unchanged
         assert!(post_storage_unchanged(FISRT_ID, FISRT_ID));
@@ -267,13 +258,7 @@ fn post_creation_blog_locked_error() {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         TestBlogModule::lock_blog(Origin::signed(FIRST_OWNER_ORIGIN), FISRT_ID);
-        let valid_post = get_post(PostType::Valid);
-        let create_result = TestBlogModule::create_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            valid_post.title,
-            valid_post.body,
-        );
+        let create_result = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         assert!(matches!(create_result, Err(create_err) if create_err == BLOG_LOCKED_ERROR));
         // Check if related runtime storage left unchanged
         assert!(post_storage_unchanged(FISRT_ID, FISRT_ID));
@@ -287,13 +272,7 @@ fn post_creation_title_too_long() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
-        let invalid_post = get_post(PostType::PostTitleInvalid);
-        let create_result = TestBlogModule::create_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            invalid_post.title,
-            invalid_post.body,
-        );
+        let create_result = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::PostTitleInvalid);
         assert!(matches!(create_result, Err(create_err) if create_err == POST_TITLE_TOO_LONG));
         // Check if related runtime storage left unchanged
         assert!(post_storage_unchanged(FISRT_ID, FISRT_ID));
@@ -307,13 +286,7 @@ fn post_creation_body_too_long() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
-        let invalid_post = get_post(PostType::PostBodyInvalid);
-        let create_result = TestBlogModule::create_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            invalid_post.title,
-            invalid_post.body,
-        );
+        let create_result = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::PostBodyInvalid);
         assert!(matches!(create_result, Err(create_err) if create_err == POST_BODY_TOO_LONG));
         // Check if related runtime storage left unchanged
         assert!(post_storage_unchanged(FISRT_ID, FISRT_ID));
@@ -327,13 +300,7 @@ fn post_locking_success() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
-        let valid_post = get_post(PostType::Valid);
-        TestBlogModule::create_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            valid_post.title,
-            valid_post.body,
-        );
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         // Check default post locking status right after creation
         assert_eq!(TestBlogModule::post_locked((FISRT_ID, FISRT_ID)), false);
         assert_ok!(TestBlogModule::lock_post(
@@ -355,13 +322,7 @@ fn post_locking_owner_not_found() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
-        let valid_post = get_post(PostType::Valid);
-        TestBlogModule::create_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            valid_post.title,
-            valid_post.body,
-        );
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         let lock_result =
             TestBlogModule::lock_post(Origin::signed(SECOND_OWNER_ORIGIN), FISRT_ID, FISRT_ID);
         // Remain unlocked
@@ -391,13 +352,7 @@ fn post_locking_ownership_error() {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         TestBlogModule::create_blog(Origin::signed(SECOND_OWNER_ORIGIN));
-        let valid_post = get_post(PostType::Valid);
-        TestBlogModule::create_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            valid_post.title,
-            valid_post.body,
-        );
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         let lock_result =
             TestBlogModule::lock_post(Origin::signed(SECOND_OWNER_ORIGIN), FISRT_ID, FISRT_ID);
         // Remain unlocked
@@ -413,13 +368,7 @@ fn post_unlocking_success() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
-        let valid_post = get_post(PostType::Valid);
-        TestBlogModule::create_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            valid_post.title,
-            valid_post.body,
-        );
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         // Lock post firstly
         TestBlogModule::lock_post(Origin::signed(FIRST_OWNER_ORIGIN), FISRT_ID, FISRT_ID);
         assert_eq!(TestBlogModule::post_locked((FISRT_ID, FISRT_ID)), true);
@@ -443,13 +392,7 @@ fn post_unlocking_owner_not_found() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
-        let valid_post = get_post(PostType::Valid);
-        TestBlogModule::create_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            valid_post.title,
-            valid_post.body,
-        );
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         // Lock post firstly
         TestBlogModule::lock_post(Origin::signed(FIRST_OWNER_ORIGIN), FISRT_ID, FISRT_ID);
         let unlock_result =
@@ -482,13 +425,7 @@ fn post_unlocking_ownership_error() {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         TestBlogModule::create_blog(Origin::signed(SECOND_OWNER_ORIGIN));
-        let valid_post = get_post(PostType::Valid);
-        TestBlogModule::create_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            valid_post.title,
-            valid_post.body,
-        );
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         let lock_result =
             TestBlogModule::lock_post(Origin::signed(SECOND_OWNER_ORIGIN), FISRT_ID, FISRT_ID);
         // Remain unlocked
@@ -504,13 +441,7 @@ fn post_editing_success() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
-        let valid_post = get_post(PostType::Valid);
-        TestBlogModule::create_post(
-            Origin::signed(FIRST_OWNER_ORIGIN),
-            FISRT_ID,
-            valid_post.title,
-            valid_post.body,
-        );
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         let valid_title = generate_text(PostTitleMaxLength::get() as usize);
         assert_ok!(TestBlogModule::edit_post(
             Origin::signed(FIRST_OWNER_ORIGIN),
