@@ -114,10 +114,21 @@ impl VotingResults {
     }
 }
 
+/// Contains created stake id and source account for the stake balance
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
+pub struct StakeData<StakeId, AccountId> {
+    /// Created stake id for the proposal
+    pub stake_id: StakeId,
+
+    /// Source account of the stake balance. Refund if any will be provided using this account
+    pub source_account_id: AccountId,
+}
+
 /// 'Proposal' contains information necessary for the proposal system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId> {
+pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId> {
     /// Proposal type id
     pub proposal_type: u32,
 
@@ -142,11 +153,12 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId> {
     /// Curring voting result for the proposal
     pub voting_results: VotingResults,
 
-    /// Created stake id for the proposal
-    pub stake_id: Option<StakeId>,
+    /// Stake data for the proposal
+    pub stake_data: Option<StakeData<StakeId, AccountId>>,
 }
 
-impl<BlockNumber, ProposerId, Balance, StakeId> Proposal<BlockNumber, ProposerId, Balance, StakeId>
+impl<BlockNumber, ProposerId, Balance, StakeId, AccountId>
+    Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
 {
@@ -214,8 +226,8 @@ pub trait VotersParameters {
 }
 
 // Calculates quorum, votes threshold, expiration status
-struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId> {
-    proposal: &'a Proposal<BlockNumber, ProposerId, Balance, StakeId>,
+struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId, AccountId> {
+    proposal: &'a Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>,
     now: BlockNumber,
     votes_count: u32,
     total_voters_count: u32,
@@ -223,8 +235,8 @@ struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId> {
     slashes: u32,
 }
 
-impl<'a, BlockNumber, ProposerId, Balance, StakeId>
-    ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId>
+impl<'a, BlockNumber, ProposerId, Balance, StakeId, AccountId>
+    ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId, AccountId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
 {
@@ -310,12 +322,19 @@ pub type NegativeImbalance<T> =
 pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
 
 /// Data container for the finalized proposal results
-pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, ProposerId, Balance, StakeId> {
+pub(crate) struct FinalizedProposalData<
+    ProposalId,
+    BlockNumber,
+    ProposerId,
+    Balance,
+    StakeId,
+    AccountId,
+> {
     /// Proposal id
     pub proposal_id: ProposalId,
 
     /// Proposal to be finalized
-    pub proposal: Proposal<BlockNumber, ProposerId, Balance, StakeId>,
+    pub proposal: Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>,
 
     /// Proposal finalization status
     pub status: ProposalDecisionStatus,
@@ -329,7 +348,7 @@ mod tests {
     use crate::*;
 
     // Alias introduced for simplicity of changing Proposal exact types.
-    type ProposalObject = Proposal<u64, u64, u64, u64>;
+    type ProposalObject = Proposal<u64, u64, u64, u64, u64>;
 
     #[test]
     fn proposal_voting_period_expired() {

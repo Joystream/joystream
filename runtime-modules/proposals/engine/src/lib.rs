@@ -28,7 +28,7 @@ use types::ProposalStakeManager;
 pub use types::VotingResults;
 pub use types::{
     ApprovedProposalStatus, FinalizationData, Proposal, ProposalDecisionStatus, ProposalParameters,
-    ProposalStatus,
+    ProposalStatus, StakeData,
 };
 pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
@@ -280,8 +280,15 @@ impl<T: Trait> Module<T> {
         // Check stake_balance for value and create stake if value exists, else take None
         // If create_stake() returns error - return error from extrinsic
         let stake_id = stake_balance
-            .map(|stake_amount| ProposalStakeManager::<T>::create_stake(stake_amount, account_id))
+            .map(|stake_amount| {
+                ProposalStakeManager::<T>::create_stake(stake_amount, account_id.clone())
+            })
             .transpose()?;
+
+        let stake_data = stake_id.map(|stake_id| StakeData {
+            stake_id,
+            source_account_id: account_id,
+        });
 
         let new_proposal = Proposal {
             created_at: Self::current_block(),
@@ -292,7 +299,7 @@ impl<T: Trait> Module<T> {
             proposal_type,
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
-            stake_id,
+            stake_data,
         };
 
         let proposal_id = T::ProposalId::from(new_proposal_id);
@@ -399,10 +406,12 @@ impl<T: Trait> Module<T> {
 
         // deal with stakes if necessary
         let slash_balance = Self::calculate_slash_balance(&decision_status, &proposal.parameters);
-        let slash_and_unstake_result = Self::slash_and_unstake(proposal.stake_id, slash_balance);
+        let slash_and_unstake_result =
+            Self::slash_and_unstake(proposal.stake_data.clone(), slash_balance);
 
+        //TODO: leave stake data as is?
         if slash_and_unstake_result.is_ok() {
-            proposal.stake_id = None;
+            proposal.stake_data = None;
         }
 
         // create finalized proposal status with error if any
@@ -420,16 +429,16 @@ impl<T: Trait> Module<T> {
 
     // Slashes the stake and perform unstake only in case of existing stake
     fn slash_and_unstake(
-        current_stake_id: Option<T::StakeId>,
+        current_stake_data: Option<StakeData<T::StakeId, T::AccountId>>,
         slash_balance: BalanceOf<T>,
     ) -> Result<(), &'static str> {
         // only if stake exists
-        if let Some(stake_id) = current_stake_id {
+        if let Some(stake_data) = current_stake_data {
             if !slash_balance.is_zero() {
-                ProposalStakeManager::<T>::slash(stake_id, slash_balance)?;
+                ProposalStakeManager::<T>::slash(stake_data.stake_id, slash_balance)?;
             }
 
-            ProposalStakeManager::<T>::remove_stake(stake_id)?;
+            ProposalStakeManager::<T>::remove_stake(stake_data.stake_id)?;
         }
 
         Ok(())
@@ -551,6 +560,7 @@ type FinalizedProposal<T> = FinalizedProposalData<
     MemberId<T>,
     types::BalanceOf<T>,
     <T as stake::Trait>::StakeId,
+    <T as system::Trait>::AccountId,
 >;
 
 // Simplification of the 'Proposal' type
@@ -559,4 +569,5 @@ type ProposalObject<T> = Proposal<
     MemberId<T>,
     types::BalanceOf<T>,
     <T as stake::Trait>::StakeId,
+    <T as system::Trait>::AccountId,
 >;

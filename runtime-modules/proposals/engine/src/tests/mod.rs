@@ -353,7 +353,7 @@ fn proposal_execution_succeeds() {
                     rejections: 0,
                     slashes: 0,
                 },
-                stake_id: None,
+                stake_data: None,
             }
         );
 
@@ -403,7 +403,7 @@ fn proposal_execution_failed() {
                     rejections: 0,
                     slashes: 0,
                 },
-                stake_id: None,
+                stake_data: None,
             }
         )
     });
@@ -587,7 +587,7 @@ fn cancel_proposal_succeeds() {
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_id: None,
+                stake_data: None,
             }
         )
     });
@@ -657,7 +657,7 @@ fn veto_proposal_succeeds() {
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_id: None,
+                stake_data: None,
             }
         );
 
@@ -789,7 +789,7 @@ fn create_proposal_and_expire_it() {
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_id: None,
+                stake_data: None,
             }
         )
     });
@@ -836,7 +836,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
                     rejections: 0,
                     slashes: 0,
                 },
-                stake_id: None,
+                stake_data: None,
             }
         );
     });
@@ -879,7 +879,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
                 rejections: 0,
                 slashes: 0,
             },
-            stake_id: None,
+            stake_data: None,
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -978,7 +978,10 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_id: Some(0), // valid stake_id
+                stake_data: Some(StakeData {
+                    stake_id: 0, // valid stake_id
+                    source_account_id: 1
+                }),
             }
         )
     });
@@ -1240,7 +1243,10 @@ fn finalize_proposal_using_stake_mocks_failed() {
                     title: b"title".to_vec(),
                     description: b"description".to_vec(),
                     voting_results: VotingResults::default(),
-                    stake_id: Some(1),
+                    stake_data: Some(StakeData {
+                        stake_id: 1,
+                        source_account_id: 1
+                    }),
                 }
             );
         });

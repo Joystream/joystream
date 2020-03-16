@@ -153,6 +153,7 @@ impl<T: Trait> ProposalStakeManager<T> {
     pub fn remove_stake(stake_id: T::StakeId) -> Result<(), &'static str> {
         T::StakeHandlerProvider::stakes().unstake(stake_id)?;
 
+        //TODO: can't remove stake before refunding
         T::StakeHandlerProvider::stakes().remove_stake(stake_id)?;
 
         Ok(())

@@ -12,5 +12,3 @@ pub const MSG_STAKE_SHOULD_BE_EMPTY: &str = "Stake should be empty for this prop
 pub const MSG_STAKE_DIFFERS_FROM_REQUIRED: &str = "Stake differs from the proposal requirements";
 pub const MSG_INVALID_PARAMETER_APPROVAL_THRESHOLD: &str = "Approval threshold cannot be zero";
 pub const MSG_INVALID_PARAMETER_SLASHING_THRESHOLD: &str = "Slashing threshold cannot be zero";
-
-//pub const MSG_STAKE_IS_GREATER_THAN_BALANCE: &str = "Balance is too low to be staked";
