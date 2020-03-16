@@ -176,16 +176,6 @@ fn blog_locking_ownership_error() {
     })
 }
 
-fn blog_locking_event_failure(invalid_owner_origin: u64) -> bool {
-    // Get invalid blog owner
-    let invalid_owner_id = ensure_signed(Origin::signed(invalid_owner_origin)).unwrap();
-    let blog_locked_event =
-        TestEvent::test_events(RawEvent::BlogLocked(invalid_owner_id, FIRST_ID));
-    System::events()
-        .iter()
-        .all(|a| a.event != blog_locked_event)
-}
-
 #[test]
 fn blog_unlocking_success() {
     ExtBuilder::default().build().execute_with(|| {
@@ -403,7 +393,7 @@ fn post_locking_owner_not_found() {
             TestBlogModule::lock_post(Origin::signed(SECOND_OWNER_ORIGIN), FIRST_ID, FIRST_ID);
         // Remain unlocked
         assert_eq!(TestBlogModule::post_locked((FIRST_ID, FIRST_ID)), false);
-        assert!(matches!(lock_result, Err(create_err) if create_err == BLOG_OWNER_NOT_FOUND));
+        assert!(matches!(lock_result, Err(lock_err) if lock_err == BLOG_OWNER_NOT_FOUND));
         // Event absence checked
         assert!(post_locking_event_failure(FIRST_ID, FIRST_ID))
     })
@@ -416,7 +406,7 @@ fn post_locking_post_not_found() {
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         let lock_result =
             TestBlogModule::lock_post(Origin::signed(FIRST_OWNER_ORIGIN), FIRST_ID, FIRST_ID);
-        assert!(matches!(lock_result, Err(create_err) if create_err == POST_NOT_FOUND));
+        assert!(matches!(lock_result, Err(lock_err) if lock_err == POST_NOT_FOUND));
         // Event absence checked
         assert!(post_locking_event_failure(FIRST_ID, FIRST_ID))
     })
@@ -433,7 +423,7 @@ fn post_locking_ownership_error() {
             TestBlogModule::lock_post(Origin::signed(SECOND_OWNER_ORIGIN), FIRST_ID, FIRST_ID);
         // Remain unlocked
         assert_eq!(TestBlogModule::post_locked((FIRST_ID, FIRST_ID)), false);
-        assert!(matches!(lock_result, Err(create_err) if create_err == BLOG_OWNERSHIP_ERROR));
+        assert!(matches!(lock_result, Err(lock_err) if lock_err == BLOG_OWNERSHIP_ERROR));
         // Event absence checked
         assert!(post_locking_event_failure(FIRST_ID, FIRST_ID))
     })
@@ -475,7 +465,7 @@ fn post_unlocking_owner_not_found() {
             TestBlogModule::unlock_post(Origin::signed(SECOND_OWNER_ORIGIN), FIRST_ID, FIRST_ID);
         // Remain locked
         assert_eq!(TestBlogModule::post_locked((FIRST_ID, FIRST_ID)), true);
-        assert!(matches!(unlock_result, Err(create_err) if create_err == BLOG_OWNER_NOT_FOUND));
+        assert!(matches!(unlock_result, Err(unlock_err) if unlock_err == BLOG_OWNER_NOT_FOUND));
         // Event absence checked
         assert!(post_unlocking_event_failure(FIRST_ID, FIRST_ID))
     })
@@ -506,7 +496,7 @@ fn post_unlocking_ownership_error() {
             TestBlogModule::lock_post(Origin::signed(SECOND_OWNER_ORIGIN), FIRST_ID, FIRST_ID);
         // Remain unlocked
         assert_eq!(TestBlogModule::post_locked((FIRST_ID, FIRST_ID)), false);
-        assert!(matches!(lock_result, Err(create_err) if create_err == BLOG_OWNERSHIP_ERROR));
+        assert!(matches!(lock_result, Err(lock_err) if lock_err == BLOG_OWNERSHIP_ERROR));
         // Event absence checked
         assert!(post_unlocking_event_failure(FIRST_ID, FIRST_ID))
     })
@@ -535,7 +525,7 @@ fn post_editing_success() {
             // Post after editing checked
             let post = TestBlogModule::post_by_id((FIRST_ID, FIRST_ID));
             assert!(
-                matches!(post, Some(post) if (post.title == valid_title) && (post.body == valid_body))
+                matches!(post, Some(post) if post.title == valid_title && post.body == valid_body)
             );
             // Event checked
             let post_edited_event =
@@ -555,7 +545,7 @@ fn post_editing_owner_not_found() {
         let edit_result = edit_post(SECOND_OWNER_ORIGIN, FIRST_ID, FIRST_ID, PostType::Valid);
         // Remain unedited
         let post = TestBlogModule::post_by_id((FIRST_ID, FIRST_ID));
-        assert!(matches!(edit_result, Err(create_err) if create_err == BLOG_OWNER_NOT_FOUND));
+        assert!(matches!(edit_result, Err(edit_err) if edit_err == BLOG_OWNER_NOT_FOUND));
         // Compare with default unedited post
         assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
         // Event absence checked
@@ -586,7 +576,7 @@ fn post_editing_blog_locked_error() {
         let edit_result = edit_post(FIRST_OWNER_ORIGIN, FIRST_ID, FIRST_ID, PostType::Valid);
         // Remain unedited
         let post = TestBlogModule::post_by_id((FIRST_ID, FIRST_ID));
-        assert!(matches!(edit_result, Err(create_err) if create_err == BLOG_LOCKED_ERROR));
+        assert!(matches!(edit_result, Err(edit_err) if edit_err == BLOG_LOCKED_ERROR));
         // Compare with default unedited post
         assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
         // Event absence checked
@@ -604,7 +594,7 @@ fn post_editing_post_locked_error() {
         let edit_result = edit_post(FIRST_OWNER_ORIGIN, FIRST_ID, FIRST_ID, PostType::Valid);
         // Remain unedited
         let post = TestBlogModule::post_by_id((FIRST_ID, FIRST_ID));
-        assert!(matches!(edit_result, Err(create_err) if create_err == POST_LOCKED_ERROR));
+        assert!(matches!(edit_result, Err(edit_err) if edit_err == POST_LOCKED_ERROR));
         // Compare with default unedited post
         assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
         // Event absence checked
@@ -626,7 +616,7 @@ fn post_editing_title_invalid_error() {
         );
         // Remain unedited
         let post = TestBlogModule::post_by_id((FIRST_ID, FIRST_ID));
-        assert!(matches!(edit_result, Err(create_err) if create_err == POST_TITLE_TOO_LONG));
+        assert!(matches!(edit_result, Err(edit_err) if edit_err == POST_TITLE_TOO_LONG));
         // Compare with default unedited post
         assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
         // Event absence checked
@@ -648,7 +638,7 @@ fn post_editing_body_invalid_error() {
         );
         // Remain unedited
         let post = TestBlogModule::post_by_id((FIRST_ID, FIRST_ID));
-        assert!(matches!(edit_result, Err(create_err) if create_err == POST_BODY_TOO_LONG));
+        assert!(matches!(edit_result, Err(edit_err) if edit_err == POST_BODY_TOO_LONG));
         // Compare with default unedited post
         assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
         // Event absence checked
@@ -666,7 +656,7 @@ fn post_editing_ownership_error() {
         let edit_result = edit_post(SECOND_OWNER_ORIGIN, FIRST_ID, FIRST_ID, PostType::Valid);
         // Remain unedited
         let post = TestBlogModule::post_by_id((FIRST_ID, FIRST_ID));
-        assert!(matches!(edit_result, Err(create_err) if create_err == BLOG_OWNERSHIP_ERROR));
+        assert!(matches!(edit_result, Err(edit_err) if edit_err == BLOG_OWNERSHIP_ERROR));
         // Compare with default unedited post
         assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
         // Event absence checked
@@ -1038,6 +1028,16 @@ fn replies_storage_unchanged(
     TestBlogModule::post_root_reply_ids((blog_id, post_id)).is_none()
         && TestBlogModule::reply_ids_by_owner(reply_owner_id).is_none()
         && TestBlogModule::replies_count((blog_id, post_id)) == 0
+}
+
+fn blog_locking_event_failure(invalid_owner_origin: u64) -> bool {
+    // Get invalid blog owner
+    let invalid_owner_id = ensure_signed(Origin::signed(invalid_owner_origin)).unwrap();
+    let blog_locked_event =
+        TestEvent::test_events(RawEvent::BlogLocked(invalid_owner_id, FIRST_ID));
+    System::events()
+        .iter()
+        .all(|a| a.event != blog_locked_event)
 }
 
 fn post_creation_event_failure(
