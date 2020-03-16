@@ -1,33 +1,14 @@
 use rstd::marker::PhantomData;
 
-use srml_support::print;
+use common::origin_validator::ActorOriginValidator;
 use system::ensure_signed;
-
-/// Abstract validator for the origin(account_id) and actor_id (eg.: thread author id).
-pub trait ActorOriginValidator<Origin, ActorId, AccountId> {
-    /// Check for valid combination of origin and actor_id
-    fn ensure_actor_origin(
-        origin: Origin,
-        actor_id: ActorId,
-        error: &'static str,
-    ) -> Result<AccountId, &'static str>;
-}
 
 /// Member of the Joystream organization
 pub type MemberId<T> = <T as crate::members::Trait>::MemberId;
 
-/// Default discussion system actor origin validator. Valid for both thread and post authors.
+/// Default membership actor origin validator.
 pub struct MembershipOriginValidator<T> {
     marker: PhantomData<T>,
-}
-
-impl<T> MembershipOriginValidator<T> {
-    /// Create ThreadPostActorOriginValidator instance
-    pub fn new() -> Self {
-        MembershipOriginValidator {
-            marker: PhantomData,
-        }
-    }
 }
 
 impl<T: crate::members::Trait>
@@ -62,7 +43,8 @@ impl<T: crate::members::Trait>
 mod tests {
     use crate::members::UserInfo;
     use crate::mock::{Test, TestExternalitiesBuilder};
-    use crate::origin_validator::{ActorOriginValidator, MembershipOriginValidator};
+    use crate::origin_validator::MembershipOriginValidator;
+    use common::origin_validator::ActorOriginValidator;
     use system::RawOrigin;
 
     type Membership = crate::members::Module<Test>;
