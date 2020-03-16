@@ -94,9 +94,14 @@ decl_storage! {
         // Blog Ids set, associated with owner
         BlogIds get(fn blog_ids_by_owner): map T::AccountId => Option<BTreeSet<T::BlogId>>;
 
+        // Post Ids set, associated with blog
         BlogPostIds get(fn post_ids_by_blog_id): map T::BlogId => Option<BTreeSet<T::PostId>>;
 
-        BlogPostReplyIds get (fn post_reply_ids): map (T::BlogId, T::PostId) => Option<BTreeSet<T::ReplyId>>;
+        // Root replies
+        BlogPostParentReplyIds get (fn post_root_reply_ids): map (T::BlogId, T::PostId) => Option<BTreeSet<T::ReplyId>>;
+
+        // Direct replies to reply
+        BlogPostChildReplyIds get (fn post_child_reply_ids): map (T::BlogId, T::PostId, T::ReplyId) => Option<BTreeSet<T::ReplyId>>;
 
         BlogPost get(fn post_by_id): map (T::BlogId, T::PostId) => Option<Post>;
 
@@ -110,11 +115,12 @@ decl_storage! {
         ReplyIds get (fn reply_ids_by_owner): map T::AccountId => Option<BTreeSet<(T::BlogId, T::PostId, T::ReplyId)>>;
 
         //ReplyLockedStatus get(fn reply_locked): map (T::BlogId, T::PostId, T::ReplyId) => bool;
-
         BlogsCount get(fn blogs_count): T::BlogId;
 
+        // Overall post count by blog
         PostsCount get(fn posts_count): map T::BlogId => T::PostId;
 
+        // Overall replies count by blog
         RepliesCount get(fn replies_count): map (T::BlogId, T::PostId) => T::ReplyId;
     }
 }
@@ -253,7 +259,12 @@ decl_module! {
             Ok(())
         }
 
-        pub fn edit_post(origin, blog_id: T::BlogId, post_id: T::PostId, new_title: Option<Vec<u8>>, new_body: Option<Vec<u8>>) -> dispatch::Result {
+        pub fn edit_post(origin, 
+            blog_id: T::BlogId, 
+            post_id: T::PostId, 
+            new_title: Option<Vec<u8>>, 
+            new_body: Option<Vec<u8>>
+        ) -> dispatch::Result {
             // Nothing to edit
             if matches!((&new_title, &new_body), (None, None)) {
                 return Ok(())
@@ -287,23 +298,32 @@ decl_module! {
             Ok(())
         }
 
-        pub fn create_reply(origin, blog_id: T::BlogId, post_id: T::PostId, reply_text: Vec<u8>) -> dispatch::Result {
+        // Either root post reply or direct reply to reply
+        pub fn create_reply(origin, 
+            blog_id: T::BlogId, 
+            post_id: T::PostId, 
+            reply_id: Option<T::ReplyId>, 
+            reply_text: Vec<u8>
+        ) -> dispatch::Result {
             let replier = ensure_signed(origin)?;
-            ensure!(<BlogPostReplyIds<T>>::exists((blog_id, post_id)), POST_NOT_FOUND);
             ensure!(!Self::blog_locked(blog_id), BLOG_LOCKED_ERROR);
             ensure!(!Self::post_locked((blog_id, post_id)), POST_LOCKED_ERROR);
             // Check security/configuration constraint
             ensure!(reply_text.len() <= T::ReplyMaxLength::get() as usize, REPLY_TEXT_TOO_LONG);
             let replies_count = Self::replies_count((blog_id, post_id));
-            <BlogPostReplyIds<T>>::mutate((blog_id, post_id), |reply_ids| {
-                if let Some(reply_ids) = reply_ids {
-                    reply_ids.insert(replies_count);
-                } else {
-                    let mut new_set = BTreeSet::new();
-                    new_set.insert(replies_count);
-                    *reply_ids = Some(new_set);
-                }
-            });
+            if let Some(reply_id) = reply_id {
+                // Check reply existance in case of direct reply
+                ensure!(<Reply<T>>::exists((blog_id, post_id, reply_id)), REPLY_NOT_FOUND);
+                <BlogPostChildReplyIds<T>>::mutate((blog_id, post_id, reply_id), |reply_ids| {
+                    Self::update_reply_ids(reply_ids, replies_count)
+                });
+            } else {
+                // Check post existance
+                ensure!(<BlogPostParentReplyIds<T>>::exists((blog_id, post_id)), POST_NOT_FOUND);
+                <BlogPostParentReplyIds<T>>::mutate((blog_id, post_id), |reply_ids| {
+                    Self::update_reply_ids(reply_ids, replies_count)
+                });
+            }
             <Reply<T>>::insert((blog_id, post_id, replies_count), reply_text);
             if <ReplyIds<T>>::exists(&replier) {
                 <ReplyIds<T>>::mutate(&replier, |reply_ids| {
@@ -317,11 +337,20 @@ decl_module! {
                 <ReplyIds<T>>::insert(&replier, new_set);
             }
             <RepliesCount<T>>::mutate((blog_id, post_id), |count| *count += T::ReplyId::one());
-            Self::deposit_event(RawEvent::ReplyCreated(replier, blog_id, post_id, replies_count));
+            if let Some(reply_id) = reply_id {
+                Self::deposit_event(RawEvent::DirectReplyCreated(replier, blog_id, post_id, reply_id, replies_count));
+            } else {
+                Self::deposit_event(RawEvent::ReplyCreated(replier, blog_id, post_id, replies_count));
+            }
             Ok(())
         }
 
-        pub fn edit_reply(origin, blog_id: T::BlogId, post_id: T::PostId, reply_id: T::ReplyId, reply_text: Vec<u8>) -> dispatch::Result {
+        pub fn edit_reply(origin, 
+            blog_id: T::BlogId, 
+            post_id: T::PostId, 
+            reply_id: T::ReplyId, 
+            reply_text: Vec<u8>
+        ) -> dispatch::Result {
             let replier = ensure_signed(origin)?;
             ensure!(!Self::blog_locked(blog_id), BLOG_LOCKED_ERROR);
             ensure!(!Self::post_locked((blog_id, post_id)), POST_LOCKED_ERROR);
@@ -349,8 +378,19 @@ impl<T: Trait> Module<T> {
             post.body = new_body
         }
     }
+
+    fn update_reply_ids(reply_ids: &mut Option<BTreeSet::<T::ReplyId>>, replies_count: T::ReplyId) {
+        if let Some(reply_ids) = reply_ids {
+            reply_ids.insert(replies_count);
+        } else {
+            let mut new_set = BTreeSet::new();
+            new_set.insert(replies_count);
+            *reply_ids = Some(new_set);
+        }
+    }
 }
 
+//TODO: Some additional information 
 decl_event!(
     pub enum Event<T>
     where
@@ -367,6 +407,7 @@ decl_event!(
         PostUnlocked(BlogId, PostId),
         PostEdited(BlogId, PostId),
         ReplyCreated(AccountId, BlogId, PostId, ReplyId),
+        DirectReplyCreated(AccountId, BlogId, PostId, ReplyId, ReplyId),
         ReplyEdited(BlogId, PostId, ReplyId),
     }
 );

@@ -41,6 +41,14 @@ fn get_post(post_type: PostType, editing: bool) -> Post {
     Post::new(title, body)
 }
 
+fn get_reply(is_valid: bool) -> Vec<u8> {
+    if is_valid {
+        generate_text(ReplyMaxLength::get() as usize)
+    } else {
+        generate_text((ReplyMaxLength::get() + 1) as usize)
+    }
+}
+
 fn create_post(
     origin_id: u64,
     blog_id: <Runtime as Trait>::BlogId,
@@ -639,6 +647,7 @@ fn post_editing_ownership_error() {
     })
 }
 
+// TODO: Refactoring
 fn post_storage_unchanged(
     blog_id: <Runtime as Trait>::BlogId,
     post_id: <Runtime as Trait>::PostId,
