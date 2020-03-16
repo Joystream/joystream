@@ -97,11 +97,7 @@ impl crate::Trait for Test {
 }
 
 impl ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(
-        origin: Origin,
-        actor_id: u64,
-        error: &'static str,
-    ) -> Result<u64, &'static str> {
+    fn ensure_actor_origin(origin: Origin, actor_id: u64) -> Result<u64, &'static str> {
         if system::ensure_none(origin).is_ok() {
             return Ok(1);
         }
@@ -110,7 +106,7 @@ impl ActorOriginValidator<Origin, u64, u64> for () {
             return Ok(1);
         }
 
-        Err(error)
+        Err("Invalid author")
     }
 }
 

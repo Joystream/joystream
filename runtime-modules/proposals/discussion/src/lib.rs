@@ -130,7 +130,6 @@ decl_module! {
             T::PostAuthorOriginValidator::ensure_actor_origin(
                 origin,
                 post_author_id.clone(),
-                errors::MSG_INVALID_POST_AUTHOR_ORIGIN
             )?;
             ensure!(<ThreadById<T>>::exists(thread_id), errors::MSG_THREAD_DOESNT_EXIST);
 
@@ -171,7 +170,6 @@ decl_module! {
             T::PostAuthorOriginValidator::ensure_actor_origin(
                 origin,
                 post_author_id.clone(),
-                errors::MSG_INVALID_POST_AUTHOR_ORIGIN
             )?;
 
             ensure!(<ThreadById<T>>::exists(thread_id), errors::MSG_THREAD_DOESNT_EXIST);
@@ -217,11 +215,7 @@ impl<T: Trait> Module<T> {
         thread_author_id: MemberId<T>,
         title: Vec<u8>,
     ) -> Result<T::ThreadId, &'static str> {
-        T::ThreadAuthorOriginValidator::ensure_actor_origin(
-            origin,
-            thread_author_id.clone(),
-            errors::MSG_INVALID_THREAD_AUTHOR_ORIGIN,
-        )?;
+        T::ThreadAuthorOriginValidator::ensure_actor_origin(origin, thread_author_id.clone())?;
 
         ensure!(!title.is_empty(), errors::MSG_EMPTY_TITLE_PROVIDED);
         ensure!(

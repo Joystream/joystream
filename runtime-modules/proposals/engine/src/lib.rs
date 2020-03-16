@@ -169,7 +169,6 @@ decl_module! {
             T::VoterOriginValidator::ensure_actor_origin(
                 origin,
                 voter_id.clone(),
-                errors::MSG_ONLY_COUNCILORS_CAN_VOTE
             )?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
@@ -198,7 +197,6 @@ decl_module! {
             T::ProposerOriginValidator::ensure_actor_origin(
                 origin,
                 proposer_id.clone(),
-                errors::MSG_ONLY_MEMBERS_CAN_PROPOSE
             )?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
@@ -263,11 +261,8 @@ impl<T: Trait> Module<T> {
         proposal_type: u32,
         proposal_code: Vec<u8>,
     ) -> Result<T::ProposalId, &'static str> {
-        let account_id = T::ProposerOriginValidator::ensure_actor_origin(
-            origin,
-            proposer_id.clone(),
-            errors::MSG_ONLY_MEMBERS_CAN_PROPOSE,
-        )?;
+        let account_id =
+            T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id.clone())?;
 
         Self::ensure_create_proposal_parameters_are_valid(
             &parameters,

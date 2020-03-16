@@ -20,7 +20,6 @@ impl<T: crate::members::Trait>
     fn ensure_actor_origin(
         origin: <T as system::Trait>::Origin,
         actor_id: MemberId<T>,
-        error: &'static str,
     ) -> Result<<T as system::Trait>::AccountId, &'static str> {
         // check valid signed account_id
         let account_id = ensure_signed(origin)?;
@@ -32,10 +31,12 @@ impl<T: crate::members::Trait>
             // whether the account_id belongs to the actor
             if profile.root_account == account_id || profile.controller_account == account_id {
                 return Ok(account_id);
+            } else {
+                return Err("Membership validation failed: given account doesn't match with profile accounts");
             }
         }
 
-        Err(error)
+        Err("Membership validation failed: cannot find a profile for a member")
     }
 }
 
@@ -58,13 +59,10 @@ mod tests {
         initial_test_ext().execute_with(|| {
             let origin = RawOrigin::Signed(1);
             let member_id = 1;
-            let error = "Error";
+            let error = "Membership validation failed: cannot find a profile for a member";
 
-            let validation_result = MembershipOriginValidator::<Test>::ensure_actor_origin(
-                origin.into(),
-                member_id,
-                error,
-            );
+            let validation_result =
+                MembershipOriginValidator::<Test>::ensure_actor_origin(origin.into(), member_id);
 
             assert_eq!(validation_result, Err(error));
         });
@@ -75,7 +73,6 @@ mod tests {
         initial_test_ext().execute_with(|| {
             let account_id = 1;
             let origin = RawOrigin::Signed(account_id);
-            let error = "Error";
             let authority_account_id = 10;
             Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id)
                 .unwrap();
@@ -92,11 +89,8 @@ mod tests {
             .unwrap();
             let member_id = 0; // newly created member_id
 
-            let validation_result = MembershipOriginValidator::<Test>::ensure_actor_origin(
-                origin.into(),
-                member_id,
-                error,
-            );
+            let validation_result =
+                MembershipOriginValidator::<Test>::ensure_actor_origin(origin.into(), member_id);
 
             assert_eq!(validation_result, Ok(account_id));
         });
@@ -106,7 +100,8 @@ mod tests {
     fn membership_origin_validator_fails_with_incompatible_account_id_and_member_id() {
         initial_test_ext().execute_with(|| {
             let account_id = 1;
-            let error = "Errorss";
+            let error =
+                "Membership validation failed: given account doesn't match with profile accounts";
             let authority_account_id = 10;
             Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id)
                 .unwrap();
@@ -127,7 +122,6 @@ mod tests {
             let validation_result = MembershipOriginValidator::<Test>::ensure_actor_origin(
                 RawOrigin::Signed(invalid_account_id).into(),
                 member_id,
-                error,
             );
 
             assert_eq!(validation_result, Err(error));

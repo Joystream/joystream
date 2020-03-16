@@ -268,7 +268,7 @@ fn update_post_call_failes_because_of_the_wrong_author() {
 
         post_fixture = post_fixture.with_author(2);
 
-        post_fixture.update_post_and_assert(Err(MSG_INVALID_POST_AUTHOR_ORIGIN));
+        post_fixture.update_post_and_assert(Err("Invalid author"));
 
         post_fixture = post_fixture.with_origin(RawOrigin::None).with_author(2);
 
@@ -424,11 +424,11 @@ fn add_discussion_thread_fails_because_of_max_thread_by_same_author_in_a_row_lim
 fn add_discussion_thread_fails_because_of_invalid_author_origin() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default().with_author(2);
-        discussion_fixture.create_discussion_and_assert(Err(MSG_INVALID_THREAD_AUTHOR_ORIGIN));
+        discussion_fixture.create_discussion_and_assert(Err("Invalid author"));
 
         let discussion_fixture = DiscussionFixture::default()
             .with_origin(RawOrigin::Signed(3))
             .with_author(2);
-        discussion_fixture.create_discussion_and_assert(Err(MSG_INVALID_THREAD_AUTHOR_ORIGIN));
+        discussion_fixture.create_discussion_and_assert(Err("Invalid author"));
     });
 }

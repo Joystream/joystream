@@ -19,16 +19,14 @@ impl<T: crate::Trait>
     fn ensure_actor_origin(
         origin: <T as system::Trait>::Origin,
         actor_id: MemberId<T>,
-        error: &'static str,
     ) -> Result<<T as system::Trait>::AccountId, &'static str> {
-        let account_id =
-            <MembershipOriginValidator<T>>::ensure_actor_origin(origin, actor_id, error)?;
+        let account_id = <MembershipOriginValidator<T>>::ensure_actor_origin(origin, actor_id)?;
 
         if <governance::council::Module<T>>::is_councilor(&account_id) {
             return Ok(account_id);
         }
 
-        Err(error)
+        Err("Council validation failed: account id doesn't belong to a council member")
     }
 }
 
@@ -56,10 +54,10 @@ mod tests {
         initial_test_ext().execute_with(|| {
             let origin = RawOrigin::Signed(1);
             let member_id = 1;
-            let error = "Error";
+            let error = "Membership validation failed: cannot find a profile for a member";
 
             let validation_result =
-                CouncilManager::<Test>::ensure_actor_origin(origin.into(), member_id, error);
+                CouncilManager::<Test>::ensure_actor_origin(origin.into(), member_id);
 
             assert_eq!(validation_result, Err(error));
         });
@@ -72,7 +70,6 @@ mod tests {
 
             let account_id = 1;
             let origin = RawOrigin::Signed(account_id);
-            let error = "Error";
             let authority_account_id = 10;
             Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id)
                 .unwrap();
@@ -90,7 +87,7 @@ mod tests {
             let member_id = 0; // newly created member_id
 
             let validation_result =
-                CouncilManager::<Test>::ensure_actor_origin(origin.into(), member_id, error);
+                CouncilManager::<Test>::ensure_actor_origin(origin.into(), member_id);
 
             assert_eq!(validation_result, Ok(account_id));
         });
@@ -100,7 +97,8 @@ mod tests {
     fn council_origin_validator_fails_with_incompatible_account_id_and_member_id() {
         initial_test_ext().execute_with(|| {
             let account_id = 1;
-            let error = "Errorss";
+            let error =
+                "Membership validation failed: given account doesn't match with profile accounts";
             let authority_account_id = 10;
             Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id)
                 .unwrap();
@@ -121,7 +119,6 @@ mod tests {
             let validation_result = CouncilManager::<Test>::ensure_actor_origin(
                 RawOrigin::Signed(invalid_account_id).into(),
                 member_id,
-                error,
             );
 
             assert_eq!(validation_result, Err(error));
@@ -133,7 +130,7 @@ mod tests {
         initial_test_ext().execute_with(|| {
             let account_id = 1;
             let origin = RawOrigin::Signed(account_id);
-            let error = "Error";
+            let error = "Council validation failed: account id doesn't belong to a council member";
             let authority_account_id = 10;
             Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id)
                 .unwrap();
@@ -151,7 +148,7 @@ mod tests {
             let member_id = 0; // newly created member_id
 
             let validation_result =
-                CouncilManager::<Test>::ensure_actor_origin(origin.into(), member_id, error);
+                CouncilManager::<Test>::ensure_actor_origin(origin.into(), member_id);
 
             assert_eq!(validation_result, Err(error));
         });

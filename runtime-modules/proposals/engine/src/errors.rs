@@ -12,7 +12,5 @@ pub const MSG_STAKE_SHOULD_BE_EMPTY: &str = "Stake should be empty for this prop
 pub const MSG_STAKE_DIFFERS_FROM_REQUIRED: &str = "Stake differs from the proposal requirements";
 pub const MSG_INVALID_PARAMETER_APPROVAL_THRESHOLD: &str = "Approval threshold cannot be zero";
 pub const MSG_INVALID_PARAMETER_SLASHING_THRESHOLD: &str = "Slashing threshold cannot be zero";
-pub const MSG_ONLY_MEMBERS_CAN_PROPOSE: &str = "Only members can make or cancel a proposal";
-pub const MSG_ONLY_COUNCILORS_CAN_VOTE: &str = "Only councilors can vote on proposals";
 
 //pub const MSG_STAKE_IS_GREATER_THAN_BALANCE: &str = "Balance is too low to be staked";

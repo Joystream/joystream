@@ -133,11 +133,7 @@ impl crate::Trait for Test {
 }
 
 impl common::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(
-        origin: Origin,
-        _account_id: u64,
-        _: &'static str,
-    ) -> Result<u64, &'static str> {
+    fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, &'static str> {
         let signed_account_id = system::ensure_signed(origin)?;
 
         Ok(signed_account_id)
