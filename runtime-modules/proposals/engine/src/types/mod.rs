@@ -15,7 +15,7 @@ mod council_origin_validator;
 mod proposal_statuses;
 mod stakes;
 
-pub use council_origin_validator::CouncilOriginValidator;
+pub use council_origin_validator::CouncilManager;
 
 pub use proposal_statuses::{
     ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus, ProposalStatus,

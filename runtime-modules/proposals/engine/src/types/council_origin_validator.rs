@@ -1,16 +1,18 @@
 use rstd::marker::PhantomData;
 
+use crate::VotersParameters;
 use common::origin_validator::ActorOriginValidator;
 use membership::origin_validator::{MemberId, MembershipOriginValidator};
 
-/// Default discussion system actor origin validator. Valid for both thread and post authors.
-pub struct CouncilOriginValidator<T> {
+/// Handles work with the council.
+/// Provides implementations for ActorOriginValidator and VotersParameters.
+pub struct CouncilManager<T> {
     marker: PhantomData<T>,
 }
 
 impl<T: crate::Trait>
     ActorOriginValidator<<T as system::Trait>::Origin, MemberId<T>, <T as system::Trait>::AccountId>
-    for CouncilOriginValidator<T>
+    for CouncilManager<T>
 {
     /// Check for valid combination of origin and actor_id. Actor_id should be valid member_id of
     /// the membership module
@@ -30,12 +32,20 @@ impl<T: crate::Trait>
     }
 }
 
+impl<T: crate::Trait> VotersParameters for CouncilManager<T> {
+    /// Implement total_voters_count() as council size
+    fn total_voters_count() -> u32 {
+        <governance::council::Module<T>>::active_council().len() as u32
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::tests::mock::{Test, initial_test_ext};
+    use crate::tests::mock::{initial_test_ext, Test};
+    use crate::CouncilManager;
+    use crate::VotersParameters;
     use common::origin_validator::ActorOriginValidator;
     use membership::members::UserInfo;
-    use crate::CouncilOriginValidator;
     use system::RawOrigin;
 
     type Membership = membership::members::Module<Test>;
@@ -48,11 +58,8 @@ mod tests {
             let member_id = 1;
             let error = "Error";
 
-            let validation_result = CouncilOriginValidator::<Test>::ensure_actor_origin(
-                origin.into(),
-                member_id,
-                error,
-            );
+            let validation_result =
+                CouncilManager::<Test>::ensure_actor_origin(origin.into(), member_id, error);
 
             assert_eq!(validation_result, Err(error));
         });
@@ -61,10 +68,7 @@ mod tests {
     #[test]
     fn council_origin_validator_succeeds() {
         initial_test_ext().execute_with(|| {
-            assert!(Council::set_council(
-                system::RawOrigin::Root.into(),
-                vec![1, 2, 3]
-            ).is_ok());
+            assert!(Council::set_council(system::RawOrigin::Root.into(), vec![1, 2, 3]).is_ok());
 
             let account_id = 1;
             let origin = RawOrigin::Signed(account_id);
@@ -85,11 +89,8 @@ mod tests {
             .unwrap();
             let member_id = 0; // newly created member_id
 
-            let validation_result = CouncilOriginValidator::<Test>::ensure_actor_origin(
-                origin.into(),
-                member_id,
-                error,
-            );
+            let validation_result =
+                CouncilManager::<Test>::ensure_actor_origin(origin.into(), member_id, error);
 
             assert_eq!(validation_result, Ok(account_id));
         });
@@ -117,7 +118,7 @@ mod tests {
             let member_id = 0; // newly created member_id
 
             let invalid_account_id = 2;
-            let validation_result = CouncilOriginValidator::<Test>::ensure_actor_origin(
+            let validation_result = CouncilManager::<Test>::ensure_actor_origin(
                 RawOrigin::Signed(invalid_account_id).into(),
                 member_id,
                 error,
@@ -146,16 +147,22 @@ mod tests {
                     about: None,
                 },
             )
-                .unwrap();
+            .unwrap();
             let member_id = 0; // newly created member_id
 
-            let validation_result = CouncilOriginValidator::<Test>::ensure_actor_origin(
-                origin.into(),
-                member_id,
-                error,
-            );
+            let validation_result =
+                CouncilManager::<Test>::ensure_actor_origin(origin.into(), member_id, error);
 
             assert_eq!(validation_result, Err(error));
+        });
+    }
+
+    #[test]
+    fn council_size_calculation_aka_total_voters_count_succeeds() {
+        initial_test_ext().execute_with(|| {
+            assert!(Council::set_council(system::RawOrigin::Root.into(), vec![1, 2, 3, 7]).is_ok());
+
+            assert_eq!(CouncilManager::<Test>::total_voters_count(), 4)
         });
     }
 }

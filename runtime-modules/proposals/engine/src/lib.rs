@@ -22,6 +22,7 @@
 // TODO: Test cancellation, rejection fees
 
 pub use types::BalanceOf;
+pub use types::CouncilManager;
 use types::FinalizedProposalData;
 use types::ProposalStakeManager;
 pub use types::VotingResults;
@@ -32,7 +33,6 @@ pub use types::{
 pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
 pub use types::{VoteKind, VotersParameters};
-pub use types::CouncilOriginValidator;
 
 mod errors;
 pub(crate) mod types;
