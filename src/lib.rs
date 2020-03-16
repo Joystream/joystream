@@ -258,7 +258,8 @@ decl_module! {
             Ok(())
         }
 
-        pub fn edit_post(origin,
+        pub fn edit_post(
+            origin,
             blog_id: T::BlogId,
             post_id: T::PostId,
             new_title: Option<Vec<u8>>,
@@ -298,7 +299,8 @@ decl_module! {
         }
 
         // Either root post reply or direct reply to reply
-        pub fn create_reply(origin,
+        pub fn create_reply(
+            origin,
             blog_id: T::BlogId,
             post_id: T::PostId,
             reply_id: Option<T::ReplyId>,
@@ -349,7 +351,8 @@ decl_module! {
             Ok(())
         }
 
-        pub fn edit_reply(origin,
+        pub fn edit_reply(
+            origin,
             blog_id: T::BlogId,
             post_id: T::PostId,
             reply_id: T::ReplyId,
