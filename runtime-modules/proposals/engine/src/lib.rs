@@ -20,16 +20,17 @@
 // TODO: Test module after the https://github.com/Joystream/substrate-runtime-joystream/issues/161
 // issue will be fixed: "Fix stake module and allow slashing and unstaking in the same block."
 // TODO: Test cancellation, rejection fees
+// TODO: Test StakingEventHandler
+// TODO: Test refund_proposal_stake()
 
-pub use types::BalanceOf;
 pub use types::CouncilManager;
 use types::FinalizedProposalData;
 use types::ProposalStakeManager;
-pub use types::VotingResults;
 pub use types::{
     ApprovedProposalStatus, FinalizationData, Proposal, ProposalDecisionStatus, ProposalParameters,
-    ProposalStatus, StakeData,
+    ProposalStatus, StakeData, StakingEventsHandler, VotingResults,
 };
+pub use types::{BalanceOf, CurrencyOf, NegativeImbalance};
 pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
 pub use types::{VoteKind, VotersParameters};
@@ -43,7 +44,7 @@ mod tests;
 use rstd::prelude::*;
 
 use runtime_primitives::traits::Zero;
-use srml_support::traits::Get;
+use srml_support::traits::{Get, Currency};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
 };
@@ -154,6 +155,9 @@ decl_storage! {
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
         pub VoteExistsByProposalByVoter get(fn vote_by_proposal_by_voter):
             double_map T::ProposalId, twox_256(MemberId<T>) => VoteKind;
+
+        /// Map proposal id by stake id. Required by StakingEventsHandler callback call
+        pub StakesProposals get(fn stakes_proposals): map T::StakeId =>  T::ProposalId;
     }
 }
 
@@ -276,19 +280,25 @@ impl<T: Trait> Module<T> {
 
         let next_proposal_count_value = Self::proposal_count() + 1;
         let new_proposal_id = next_proposal_count_value;
+        let proposal_id = T::ProposalId::from(new_proposal_id);
 
         // Check stake_balance for value and create stake if value exists, else take None
         // If create_stake() returns error - return error from extrinsic
-        let stake_id = stake_balance
+        let stake_id_result = stake_balance
             .map(|stake_amount| {
                 ProposalStakeManager::<T>::create_stake(stake_amount, account_id.clone())
             })
             .transpose()?;
 
-        let stake_data = stake_id.map(|stake_id| StakeData {
-            stake_id,
-            source_account_id: account_id,
-        });
+        let mut stake_data = None;
+        if let Some(stake_id) = stake_id_result {
+            stake_data = Some(StakeData {
+                stake_id,
+                source_account_id: account_id,
+            });
+
+            <StakesProposals<T>>::insert(stake_id, proposal_id);
+        }
 
         let new_proposal = Proposal {
             created_at: Self::current_block(),
@@ -302,7 +312,6 @@ impl<T: Trait> Module<T> {
             stake_data,
         };
 
-        let proposal_id = T::ProposalId::from(new_proposal_id);
         <Proposals<T>>::insert(proposal_id, new_proposal);
         <ProposalCode<T>>::insert(proposal_id, proposal_code);
         <ActiveProposalIds<T>>::insert(proposal_id, ());
@@ -550,6 +559,25 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(())
+    }
+
+    //TODO: candidate for invariant break or error saving to the state
+    /// Callback from StakingEventsHandler. Refunds unstaked imbalance back to the source account
+    pub(crate) fn refund_proposal_stake(stake_id: T::StakeId, imbalance: NegativeImbalance<T>) {
+        if <StakesProposals<T>>::exists(stake_id) {
+            //TODO: handle non existence
+
+            let proposal_id = Self::stakes_proposals(stake_id);
+
+            if <Proposals<T>>::exists(proposal_id) {
+                let proposal = Self::proposals(proposal_id);
+
+                if let Some(stake_data) = proposal.stake_data {
+                    //TODO: handle the result
+                    let _ = CurrencyOf::<T>::resolve_into_existing(&stake_data.source_account_id, imbalance);
+                }
+            }
+        }
     }
 }
 

@@ -4,13 +4,43 @@ use rstd::convert::From;
 use rstd::marker::PhantomData;
 use rstd::rc::Rc;
 use runtime_primitives::traits::Zero;
-use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
+use srml_support::traits::{Currency, ExistenceRequirement, Imbalance, WithdrawReasons};
 
 // Mocking dependencies for testing
 #[cfg(test)]
 use mockall::predicate::*;
 #[cfg(test)]
 use mockall::*;
+
+/// Proposal implementation of the staking event handler from the stake module.
+/// 'marker' responsible for the 'Trait' binding.
+pub struct StakingEventsHandler<T> {
+    pub marker: PhantomData<T>,
+}
+
+impl<T: Trait> stake::StakingEventsHandler<T> for StakingEventsHandler<T> {
+    /// Unstake remaining sum back to the source_account_id
+    fn unstaked(
+        id: &<T as stake::Trait>::StakeId,
+        _unstaked_amount: BalanceOf<T>,
+        remaining_imbalance: NegativeImbalance<T>,
+    ) -> NegativeImbalance<T> {
+        <crate::Module<T>>::refund_proposal_stake(*id, remaining_imbalance);
+
+        <NegativeImbalance<T>>::zero() // all imbalance was consumed
+    }
+
+    /// Empty handler for slashing
+    fn slashed(
+        _: &<T as stake::Trait>::StakeId,
+        _: &<T as stake::Trait>::SlashId,
+        _: BalanceOf<T>,
+        _: BalanceOf<T>,
+        remaining_imbalance: NegativeImbalance<T>,
+    ) -> NegativeImbalance<T> {
+        remaining_imbalance
+    }
+}
 
 /// Returns registered stake handler. This is scaffolds for the mocking of the stake module.
 pub trait StakeHandlerProvider<T: Trait> {
