@@ -135,7 +135,8 @@ fn blog_locking_owner_not_found() {
     ExtBuilder::default().build().execute_with(|| {
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         // Non owner attemt to lock blog
-        let lock_result = TestBlogModule::lock_blog(Origin::signed(SECOND_OWNER_ORIGIN), FISRT_ID);
+        let lock_result 
+            = TestBlogModule::lock_blog(Origin::signed(SECOND_OWNER_ORIGIN), FISRT_ID);
         assert!(matches!(lock_result, Err(lock_err) if lock_err == BLOG_OWNER_NOT_FOUND));
         // Remain unlocked
         let is_locked = TestBlogModule::blog_locked(FISRT_ID);
@@ -151,7 +152,8 @@ fn blog_locking_ownership_error() {
         // Create another blog, using second owner origin
         TestBlogModule::create_blog(Origin::signed(SECOND_OWNER_ORIGIN));
         // Non owner attemt to lock blog
-        let lock_result = TestBlogModule::lock_blog(Origin::signed(SECOND_OWNER_ORIGIN), FISRT_ID);
+        let lock_result
+             = TestBlogModule::lock_blog(Origin::signed(SECOND_OWNER_ORIGIN), FISRT_ID);
         assert!(matches!(lock_result, Err(lock_err) if lock_err == BLOG_OWNERSHIP_ERROR));
         // Remain unlocked
         let is_locked = TestBlogModule::blog_locked(FISRT_ID);
@@ -267,7 +269,8 @@ fn post_creation_success() {
 #[test]
 fn post_creation_blog_owner_not_found() {
     ExtBuilder::default().build().execute_with(|| {
-        let create_result = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        let create_result 
+            = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         assert!(matches!(create_result, Err(create_err) if create_err == BLOG_OWNER_NOT_FOUND));
         // Check if related runtime storage left unchanged
         assert!(post_storage_unchanged(FISRT_ID, FISRT_ID));
@@ -283,7 +286,8 @@ fn post_creation_blog_ownership_error() {
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         // Create another blog, using second owner origin
         TestBlogModule::create_blog(Origin::signed(SECOND_OWNER_ORIGIN));
-        let create_result = create_post(SECOND_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        let create_result 
+            = create_post(SECOND_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         assert!(matches!(create_result, Err(create_err) if create_err == BLOG_OWNERSHIP_ERROR));
         // Check if related runtime storage left unchanged
         assert!(post_storage_unchanged(FISRT_ID, FISRT_ID));
@@ -298,7 +302,8 @@ fn post_creation_blog_locked_error() {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         TestBlogModule::lock_blog(Origin::signed(FIRST_OWNER_ORIGIN), FISRT_ID);
-        let create_result = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        let create_result 
+            = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         assert!(matches!(create_result, Err(create_err) if create_err == BLOG_LOCKED_ERROR));
         // Check if related runtime storage left unchanged
         assert!(post_storage_unchanged(FISRT_ID, FISRT_ID));
@@ -312,7 +317,8 @@ fn post_creation_title_too_long() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
-        let create_result = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::PostTitleInvalid);
+        let create_result 
+            = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::PostTitleInvalid);
         assert!(matches!(create_result, Err(create_err) if create_err == POST_TITLE_TOO_LONG));
         // Check if related runtime storage left unchanged
         assert!(post_storage_unchanged(FISRT_ID, FISRT_ID));
@@ -326,7 +332,8 @@ fn post_creation_body_too_long() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
-        let create_result = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::PostBodyInvalid);
+        let create_result =
+             create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::PostBodyInvalid);
         assert!(matches!(create_result, Err(create_err) if create_err == POST_BODY_TOO_LONG));
         // Check if related runtime storage left unchanged
         assert!(post_storage_unchanged(FISRT_ID, FISRT_ID));
@@ -341,7 +348,8 @@ fn post_creation_limit_reached() {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         loop {
-            if let Err(create_post_err) = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid)
+            if let Err(create_post_err) =
+                 create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid)
             {
                 assert_eq!(create_post_err, POSTS_LIMIT_REACHED);
                 let posts_count = TestBlogModule::posts_count(FISRT_ID);
@@ -536,7 +544,8 @@ fn post_editing_owner_not_found() {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
-        let edit_result = edit_post(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
+        let edit_result 
+            = edit_post(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
         // Remain unedited
         let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
         assert!(matches!(edit_result, Err(create_err) if create_err == BLOG_OWNER_NOT_FOUND));
@@ -553,7 +562,8 @@ fn post_editing_post_not_found() {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         // Try to unlock not existing post
-        let edit_result = edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
+        let edit_result 
+            = edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
         assert!(matches!(edit_result, Err(edit_err) if edit_err == POST_NOT_FOUND));
         // Event absence checked
         assert!(post_editing_event_failure(FISRT_ID, FISRT_ID))
@@ -567,7 +577,8 @@ fn post_editing_blog_locked_error() {
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         TestBlogModule::lock_blog(Origin::signed(FIRST_OWNER_ORIGIN), FISRT_ID);
-        let edit_result = edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
+        let edit_result
+             = edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
         // Remain unedited
         let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
         assert!(matches!(edit_result, Err(create_err) if create_err == BLOG_LOCKED_ERROR));
@@ -585,7 +596,8 @@ fn post_editing_post_locked_error() {
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         TestBlogModule::lock_post(Origin::signed(FIRST_OWNER_ORIGIN), FISRT_ID, FISRT_ID);
-        let edit_result = edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
+        let edit_result = 
+            edit_post(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
         // Remain unedited
         let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
         assert!(matches!(edit_result, Err(create_err) if create_err == POST_LOCKED_ERROR));
@@ -647,7 +659,8 @@ fn post_editing_ownership_error() {
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         TestBlogModule::create_blog(Origin::signed(SECOND_OWNER_ORIGIN));
         create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
-        let edit_result = edit_post(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
+        let edit_result = 
+            edit_post(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, PostType::Valid);
         // Remain unedited
         let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
         assert!(matches!(edit_result, Err(create_err) if create_err == BLOG_OWNERSHIP_ERROR));
@@ -739,7 +752,8 @@ fn reply_creation_blog_locked_error() {
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         TestBlogModule::lock_blog(Origin::signed(FIRST_OWNER_ORIGIN), FISRT_ID);
-        let reply_creation_res = create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true);
+        let reply_creation_res
+             = create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true);
         assert!(matches!(reply_creation_res, Err(reply_creation_err) if reply_creation_err == BLOG_LOCKED_ERROR));
         // Check if related replies storage left unchanged
         assert!(replies_storage_unchanged(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID));
@@ -755,7 +769,8 @@ fn reply_creation_post_locked_error() {
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         TestBlogModule::lock_post(Origin::signed(FIRST_OWNER_ORIGIN), FISRT_ID, FISRT_ID);
-        let reply_creation_result = create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true);
+        let reply_creation_result 
+            = create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true);
         assert!(matches!(reply_creation_result, Err(reply_creation_err) if reply_creation_err == POST_LOCKED_ERROR));
         // Check if related replies storage left unchanged
         assert!(replies_storage_unchanged(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID));
@@ -770,7 +785,8 @@ fn reply_creation_text_too_long_error() {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
-        let reply_creation_result = create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, false);
+        let reply_creation_result 
+            = create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, false);
         assert!(matches!(reply_creation_result, Err(reply_creation_err) if reply_creation_err == REPLY_TEXT_TOO_LONG));
         // Check if related replies storage left unchanged
         assert!(replies_storage_unchanged(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID));
@@ -780,11 +796,12 @@ fn reply_creation_text_too_long_error() {
 }
 
 #[test]
-fn reply_creation_post_not_found_error() {
+fn reply_creation_post_not_found() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
-        let reply_creation_result = create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true);
+        let reply_creation_result = 
+            create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true);
         assert!(matches!(reply_creation_result, Err(reply_creation_err) if reply_creation_err == POST_NOT_FOUND));
         // Check if related replies storage left unchanged
         assert!(replies_storage_unchanged(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID));
@@ -800,12 +817,59 @@ fn reply_creation_limit_reached() {
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
         loop {
-            if let Err(create_reply_err) = create_reply(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true)
+            if let Err(create_reply_err) = 
+                create_reply(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true)
             {
                 assert_eq!(create_reply_err, REPLIES_LIMIT_REACHED);
                 let replies_count = TestBlogModule::replies_count((FISRT_ID, FISRT_ID));
                 // Reply counter & reply max number contraint equality checked
                 assert_eq!(replies_count, RepliesMaxNumber::get());
+                // Last reply creation, before limit reached, event absence checked
+                assert!(reply_creation_event_failure(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, replies_count));
+                break;
+            }
+        }
+    })
+}
+
+
+#[test]
+fn direct_reply_creation_reply_not_found() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        // Post for future replies
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        // Attempt to create direct reply for nonexistent reply
+        let reply_creation_result = 
+            create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, Some(FISRT_ID), true);
+        assert!(matches!(reply_creation_result, Err(reply_creation_err) if reply_creation_err == REPLY_NOT_FOUND));
+        // Check if related direct replies storage left unchanged
+        assert_eq!(TestBlogModule::post_child_reply_ids((FISRT_ID, FISRT_ID, FISRT_ID)), None);
+        // Event absence checked
+        assert!(reply_creation_event_failure(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, FISRT_ID));
+    })
+}
+
+#[test]
+fn direct_reply_creation_limit_reached() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        // Create reply for direct replying
+        create_reply(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true);
+        loop {
+            if let Err(create_reply_err) = 
+                create_reply(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, Some(FISRT_ID), true)
+            {
+                assert_eq!(create_reply_err, DIRECT_REPLIES_LIMIT_REACHED);
+                let replies_count = TestBlogModule::replies_count((FISRT_ID, FISRT_ID));
+                let direct_reply_ids = TestBlogModule::post_child_reply_ids((FISRT_ID, FISRT_ID, FISRT_ID));
+                // Direct reply counter & direct reply max number contraint equality checked
+                if let Some(direct_reply_ids) = direct_reply_ids {
+                    assert_eq!(direct_reply_ids.len(), DirectRepliesMaxNumber::get() as usize);
+                }
                 // Last reply creation, before limit reached, event absence checked
                 assert!(reply_creation_event_failure(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, replies_count));
                 break;
