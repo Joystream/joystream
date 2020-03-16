@@ -322,14 +322,15 @@ fn post_creation_limit_reached() {
         // Create blog for future posts
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         loop {
-            if let Err(create_post_err) = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid) {
+            if let Err(create_post_err) = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid)
+            {
                 assert_eq!(create_post_err, POSTS_LIMIT_REACHED);
                 let posts_count = TestBlogModule::posts_count(FISRT_ID);
                 // Post counter & post max number contraint equality checked
                 assert_eq!(posts_count, PostsMaxNumber::get());
                 // Last post creation, before limit reached, event absence checked
                 assert!(post_creation_event_failure(FISRT_ID, posts_count));
-                break
+                break;
             }
         }
     })

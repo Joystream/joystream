@@ -295,31 +295,26 @@ decl_module! {
             // Check security/configuration constraint
             ensure!(reply_text.len() <= T::ReplyMaxLength::get() as usize, REPLY_TEXT_TOO_LONG);
             let replies_count = Self::replies_count((blog_id, post_id));
-            match Self::post_ids_by_blog_id(&blog_id) {
-                Some(post_ids_set) if post_ids_set.contains(&post_id) => {
-                    <BlogPostReplyIds<T>>::mutate((blog_id, post_id), |reply_ids| {
-                        if let Some(reply_ids) = reply_ids {
-                            reply_ids.insert(replies_count);
-                        } else {
-                            let mut new_set = BTreeSet::new();
-                            new_set.insert(replies_count);
-                            *reply_ids = Some(new_set);
-                        }
-                    });
-                    <Reply<T>>::insert((blog_id, post_id, replies_count), reply_text);
-                    if <ReplyIds<T>>::exists(&replier) {
-                        <ReplyIds<T>>::mutate(&replier, |reply_ids| {
-                            if let Some(reply_ids) = reply_ids {
-                                reply_ids.insert((blog_id, post_id, replies_count));
-                            }
-                        })
-                    } else {
-                        let mut new_set = BTreeSet::new();
-                        new_set.insert((blog_id, post_id, replies_count));
-                        <ReplyIds<T>>::insert(&replier, new_set);
-                    }
+            <BlogPostReplyIds<T>>::mutate((blog_id, post_id), |reply_ids| {
+                if let Some(reply_ids) = reply_ids {
+                    reply_ids.insert(replies_count);
+                } else {
+                    let mut new_set = BTreeSet::new();
+                    new_set.insert(replies_count);
+                    *reply_ids = Some(new_set);
                 }
-                _ => return Err(POST_OWNERSHIP_ERROR)
+            });
+            <Reply<T>>::insert((blog_id, post_id, replies_count), reply_text);
+            if <ReplyIds<T>>::exists(&replier) {
+                <ReplyIds<T>>::mutate(&replier, |reply_ids| {
+                    if let Some(reply_ids) = reply_ids {
+                        reply_ids.insert((blog_id, post_id, replies_count));
+                    }
+                })
+            } else {
+                let mut new_set = BTreeSet::new();
+                new_set.insert((blog_id, post_id, replies_count));
+                <ReplyIds<T>>::insert(&replier, new_set);
             }
             <RepliesCount<T>>::mutate((blog_id, post_id), |count| *count += T::ReplyId::one());
             Self::deposit_event(RawEvent::ReplyCreated(replier, blog_id, post_id, replies_count));
