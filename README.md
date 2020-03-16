@@ -2,26 +2,31 @@
 
 # Joystream Full Node
 
-Joystream node built on top of [Substrate](https://github.com/paritytech/substrate).
+Joystream node built with [Substrate](https://github.com/paritytech/substrate).
 
-Follow the instructions below to download the software or build it from source. Further instructions for windows and mac can be found [here.](https://blog.joystream.org/sparta/)
-Linux should be similar to mac.
+Follow the instructions below to download the software or build it from source.
+
+For setting up a full node and valiador review the [advanced guide from the helpdesk](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
+
 
 ##  Binary releases
-Downloads are available in [releases](https://github.com/Joystream/substrate-node-joystream/releases).
+
+The latest pre build binaries can be downloads from the [releases](https://github.com/Joystream/substrate-node-joystream/releases) page.
+
 
 ## Building from source
 
 ### Initial setup
-If you want to build from source you will need the Rust [toolchain](https://rustup.rs/), openssl and llvm/libclang. You can install the required dependencies with:
+If you want to build from source you will need the [Rust toolchain](https://rustup.rs/), openssl and llvm/libclang. You can install the required dependencies with:
 
 ```bash
 git clone https://github.com/Joystream/substrate-node-joystream.git
 cd substrate-node-joystream/
+git checkout v2.1.2
 ./setup.sh
 ```
 
-If you prefer to use docker see [building with docker](Docker).
+If you are familiar with docker see the [building with docker section](#Docker).
 
 ### Building
 
@@ -29,16 +34,16 @@ If you prefer to use docker see [building with docker](Docker).
 cargo build --release
 ```
 
-### Running a public node
+### Running a public node on the Rome testnet
 
-Run the node and connect to the public testnet
+Run the node and connect to the public testnet.
+
 ```bash
-cargo run --release --chain chain-file.json
+cargo run --release --chain ./rome-tesnet.json
 ```
 
-The chain file for the required testnet is also avilable on the [releases](https://github.com/Joystream/substrate-node-joystream/releases) page.
+The `rome-testnet.json` chain file can be ontained from the [release page](https://github.com/Joystream/substrate-node-joystream/releases/tag/v2.1.2)
 
-The current public testnet is Rome. So you would download the rome-testnet.json file to use.
 
 ### Installing a release build
 This will install the executable `joystream-node` to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
@@ -50,7 +55,7 @@ cargo install --path ./
 Now you can run
 
 ```bash
-joystream-node --chain chain-file.json
+joystream-node --chain rome-testnet.json
 ```
 
 ## Development
@@ -91,8 +96,6 @@ docker pull joystream/node
 #### Running a public node as a service
 
 Create a working directory to store the node's data and where you will need to place the chain file.
-
-Download the [Rome Testnet chain file](https://github.com/Joystream/substrate-node-joystream/releases/download/v2.1.2/rome-tesnet.json)
 
 ```bash
 mkdir ${HOME}/joystream-node-data/
