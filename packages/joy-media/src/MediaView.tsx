@@ -73,8 +73,14 @@ export function MediaView<A = {}, B = {}> (baseProps: BaseProps<A, B>) {
     
     console.log('Rerender deps of Media View:', rerenderDeps);
 
+    const renderResolving = () => {
+      return unresolvedView
+        ? unresolvedView
+        : <div className='ui active centered inline loader' />
+    }
+
     return propsResolved
       ? <Component {...initialProps} {...resolvedProps} />
-      : unresolvedView;
+      : renderResolving()
   }
 }
