@@ -1,0 +1,30 @@
+[package]
+name = "chain-spec-builder"
+version = "2.0.0-alpha.3"
+authors = ["Parity Technologies <admin@parity.io>"]
+edition = "2018"
+build = "build.rs"
+license = "GPL-3.0"
+homepage = "https://substrate.dev"
+repository = "https://github.com/paritytech/substrate/"
+
+[dependencies]
+ansi_term = "0.12.1"
+rand = "0.7.2"
+structopt = "0.3.5"
+joystream-node = { version = "2.1.2", path = "../" }
+
+[dependencies.sr-keystore]
+git = 'https://github.com/paritytech/substrate.git'
+package = 'substrate-keystore'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
+
+[dependencies.sr-primitives]
+git = 'https://github.com/paritytech/substrate.git'
+package = 'substrate-primitives'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
+
+[dependencies.substrate-telemetry]
+git = 'https://github.com/paritytech/substrate.git'
+package = 'substrate-telemetry'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'

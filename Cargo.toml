@@ -3,11 +3,10 @@ authors = ['Joystream']
 build = 'build.rs'
 edition = '2018'
 name = 'joystream-node'
-version = '2.1.2'
+version = '2.1.3'
 default-run = "joystream-node"
 
 [[bin]]
-# is there a name conflict with package name?
 name = 'joystream-node'
 path = 'bin/main.rs'
 
