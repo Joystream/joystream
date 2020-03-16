@@ -114,7 +114,6 @@ decl_storage! {
         //Reply Ids set, associated with owner
         ReplyIds get (fn reply_ids_by_owner): map T::AccountId => Option<BTreeSet<(T::BlogId, T::PostId, T::ReplyId)>>;
 
-        //ReplyLockedStatus get(fn reply_locked): map (T::BlogId, T::PostId, T::ReplyId) => bool;
         BlogsCount get(fn blogs_count): T::BlogId;
 
         // Overall post count by blog
@@ -259,10 +258,10 @@ decl_module! {
             Ok(())
         }
 
-        pub fn edit_post(origin, 
-            blog_id: T::BlogId, 
-            post_id: T::PostId, 
-            new_title: Option<Vec<u8>>, 
+        pub fn edit_post(origin,
+            blog_id: T::BlogId,
+            post_id: T::PostId,
+            new_title: Option<Vec<u8>>,
             new_body: Option<Vec<u8>>
         ) -> dispatch::Result {
             // Nothing to edit
@@ -299,10 +298,10 @@ decl_module! {
         }
 
         // Either root post reply or direct reply to reply
-        pub fn create_reply(origin, 
-            blog_id: T::BlogId, 
-            post_id: T::PostId, 
-            reply_id: Option<T::ReplyId>, 
+        pub fn create_reply(origin,
+            blog_id: T::BlogId,
+            post_id: T::PostId,
+            reply_id: Option<T::ReplyId>,
             reply_text: Vec<u8>
         ) -> dispatch::Result {
             let replier = ensure_signed(origin)?;
@@ -319,7 +318,7 @@ decl_module! {
                 });
             } else {
                 // Check post existance
-                ensure!(<BlogPostParentReplyIds<T>>::exists((blog_id, post_id)), POST_NOT_FOUND);
+                ensure!(<BlogPost<T>>::exists((blog_id, post_id)), POST_NOT_FOUND);
                 <BlogPostParentReplyIds<T>>::mutate((blog_id, post_id), |reply_ids| {
                     Self::update_reply_ids(reply_ids, replies_count)
                 });
@@ -345,10 +344,10 @@ decl_module! {
             Ok(())
         }
 
-        pub fn edit_reply(origin, 
-            blog_id: T::BlogId, 
-            post_id: T::PostId, 
-            reply_id: T::ReplyId, 
+        pub fn edit_reply(origin,
+            blog_id: T::BlogId,
+            post_id: T::PostId,
+            reply_id: T::ReplyId,
             reply_text: Vec<u8>
         ) -> dispatch::Result {
             let replier = ensure_signed(origin)?;
@@ -379,7 +378,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn update_reply_ids(reply_ids: &mut Option<BTreeSet::<T::ReplyId>>, replies_count: T::ReplyId) {
+    fn update_reply_ids(reply_ids: &mut Option<BTreeSet<T::ReplyId>>, replies_count: T::ReplyId) {
         if let Some(reply_ids) = reply_ids {
             reply_ids.insert(replies_count);
         } else {
@@ -390,7 +389,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
-//TODO: Some additional information 
+//TODO: Some additional information
 decl_event!(
     pub enum Event<T>
     where

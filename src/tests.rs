@@ -74,6 +74,17 @@ fn edit_post(
     )
 }
 
+fn create_reply(
+    origin_id: u64,
+    blog_id: <Runtime as Trait>::BlogId,
+    post_id: <Runtime as Trait>::PostId,
+    reply_id: Option<<Runtime as Trait>::ReplyId>,
+    is_valid: bool,
+) -> Result<(), &'static str> {
+    let reply = get_reply(is_valid);
+    TestBlogModule::create_reply(Origin::signed(origin_id), blog_id, post_id, reply_id, reply)
+}
+
 // Blogs
 #[test]
 fn blog_creation() {
@@ -237,12 +248,12 @@ fn post_creation_success() {
         assert_eq!(TestBlogModule::posts_count(FISRT_ID), 0);
         assert_ok!(create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid));
         // Posts storage updated succesfully
-        assert!(matches!(TestBlogModule::post_by_id((FISRT_ID, FISRT_ID)), Some(post) if post == get_post(PostType::Valid, false)));
+        let post = TestBlogModule::post_by_id((FISRT_ID, FISRT_ID));
+        assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
         // Check up all changes, related to given post id 
         let mut set = BTreeSet::new();
         set.insert(FISRT_ID);
-        let blog_id = TestBlogModule::post_ids_by_blog_id(FISRT_ID).unwrap();
-        assert_eq!(blog_id, set);
+        assert!(matches!(TestBlogModule::post_ids_by_blog_id(FISRT_ID), Some(post_ids) if post_ids == set));
         // Post counter updated succesfully
         assert_eq!(TestBlogModule::posts_count(FISRT_ID), 1);
         // Event checked
@@ -645,6 +656,80 @@ fn post_editing_ownership_error() {
         // Event absence checked
         assert!(post_editing_event_failure(FISRT_ID, FISRT_ID))
     })
+}
+
+// Replies
+#[test]
+fn reply_creation_success() {
+    ExtBuilder::default()
+        .build()
+        .execute_with(|| {
+            // Create blog for future posts
+            TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+            create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+            let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+            assert_eq!(TestBlogModule::replies_count((FISRT_ID, FISRT_ID)), 0);
+            assert_eq!(TestBlogModule::post_root_reply_ids((FISRT_ID, FISRT_ID)), None);
+            assert_eq!(TestBlogModule::reply_ids_by_owner(reply_owner_id), None);
+            assert_ok!(create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true));
+            // Replies storage updated succesfully
+            let reply = TestBlogModule::reply_by_id((FISRT_ID, FISRT_ID, FISRT_ID));
+            assert!(matches!(reply, Some(reply) if reply == get_reply(true)));
+            assert_eq!(TestBlogModule::replies_count((FISRT_ID, FISRT_ID)), 1);
+             // Check up all changes, related to given post id 
+            let mut root_reply_ids_set = BTreeSet::new();
+            root_reply_ids_set.insert(FISRT_ID);
+            let mut reply_ids_by_owner_set = BTreeSet::new();
+            reply_ids_by_owner_set.insert((FISRT_ID, FISRT_ID, FISRT_ID));
+            let root_reply_ids = TestBlogModule::post_root_reply_ids((FISRT_ID, FISRT_ID));
+            let reply_ids_by_owner = TestBlogModule::reply_ids_by_owner(reply_owner_id);
+            assert!(matches!(root_reply_ids, Some(root_reply_ids) if root_reply_ids == root_reply_ids_set));
+            assert!(matches!(reply_ids_by_owner, Some(reply_ids_by_owner) if reply_ids_by_owner ==  reply_ids_by_owner_set));
+            // Event checked
+            let reply_created_event =
+                TestEvent::test_events(RawEvent::ReplyCreated(reply_owner_id, FISRT_ID, FISRT_ID, FISRT_ID));
+            assert!(System::events()
+                .iter()
+                .any(|a| a.event == reply_created_event));
+        })
+}
+
+#[test]
+fn direct_reply_creation_success() {
+    ExtBuilder::default()
+        .build()
+        .execute_with(|| {
+            // Create blog for future posts
+            TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+            create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+            let direct_reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+            assert_eq!(TestBlogModule::replies_count((FISRT_ID, FISRT_ID)), 0);
+            assert_eq!(TestBlogModule::post_child_reply_ids((FISRT_ID, FISRT_ID, FISRT_ID)), None);
+            assert_eq!(TestBlogModule::reply_ids_by_owner(direct_reply_owner_id), None);
+            // Create reply for direct replying
+            assert_ok!(create_reply(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true));
+            assert_ok!(create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, Some(FISRT_ID), true));
+            // Replies storage updated succesfully
+            let reply = TestBlogModule::reply_by_id((FISRT_ID, FISRT_ID, SECOND_ID));
+            assert!(matches!(reply, Some(reply) if reply == get_reply(true)));
+            assert_eq!(TestBlogModule::replies_count((FISRT_ID, FISRT_ID)), 2);
+             // Check up all changes, related to given post id 
+            let mut child_reply_ids_set = BTreeSet::new();
+            child_reply_ids_set.insert(SECOND_ID);
+            let mut reply_ids_by_owner_set = BTreeSet::new();
+            let child_reply_ids = TestBlogModule::post_child_reply_ids((FISRT_ID, FISRT_ID, FISRT_ID));
+            let reply_ids_by_owner = TestBlogModule::reply_ids_by_owner(direct_reply_owner_id);
+            // Direct reply id
+            reply_ids_by_owner_set.insert((FISRT_ID, FISRT_ID, SECOND_ID));
+            assert!(matches!(child_reply_ids, Some(child_reply_ids) if child_reply_ids == child_reply_ids_set));
+            assert!(matches!(reply_ids_by_owner, Some(reply_ids_by_owner) if reply_ids_by_owner == reply_ids_by_owner_set));
+            // Event checked
+            let reply_created_event =
+                TestEvent::test_events(RawEvent::DirectReplyCreated(direct_reply_owner_id, FISRT_ID, FISRT_ID, FISRT_ID, SECOND_ID));
+            assert!(System::events()
+                .iter()
+                .any(|a| a.event == reply_created_event));
+        })
 }
 
 // TODO: Refactoring
