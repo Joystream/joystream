@@ -110,3 +110,8 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 default_features = false
 package = 'substrate-common-module'
 path = '../../common'
+
+[dev-dependencies.governance]
+default_features = false
+package = 'substrate-governance-module'
+path = '../../governance'

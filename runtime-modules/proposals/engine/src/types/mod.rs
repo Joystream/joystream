@@ -11,8 +11,11 @@ use serde::{Deserialize, Serialize};
 use srml_support::dispatch;
 use srml_support::traits::Currency;
 
+mod council_origin_validator;
 mod proposal_statuses;
 mod stakes;
+
+pub use council_origin_validator::CouncilOriginValidator;
 
 pub use proposal_statuses::{
     ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus, ProposalStatus,

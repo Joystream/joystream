@@ -1,4 +1,4 @@
-mod mock;
+pub(crate) mod mock;
 
 use crate::*;
 use mock::*;

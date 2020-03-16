@@ -28,7 +28,8 @@ use srml_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
 use srml_support::traits::Get;
 use types::{Post, Thread, ThreadCounter};
 
-use membership::origin_validator::{ActorOriginValidator, MemberId};
+use common::origin_validator::ActorOriginValidator;
+use membership::origin_validator::MemberId;
 
 // TODO: move errors to decl_error macro (after substrate version upgrade)
 

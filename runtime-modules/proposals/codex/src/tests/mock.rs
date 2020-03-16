@@ -103,7 +103,12 @@ impl proposal_engine::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
 }
 
-impl membership::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
+impl governance::council::Trait for Test {
+    type Event = ();
+    type CouncilTermEnded = ();
+}
+
+impl common::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(_: Origin, _: u64, _: &'static str) -> Result<u64, &'static str> {
         Ok(1)
     }

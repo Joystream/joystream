@@ -32,6 +32,7 @@ pub use types::{
 pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
 pub use types::{VoteKind, VotersParameters};
+pub use types::CouncilOriginValidator;
 
 mod errors;
 pub(crate) mod types;
@@ -48,11 +49,16 @@ use srml_support::{
 };
 use system::ensure_root;
 
-use membership::origin_validator::{ActorOriginValidator, MemberId};
+use common::origin_validator::ActorOriginValidator;
+use membership::origin_validator::MemberId;
 
 /// Proposals engine trait.
 pub trait Trait:
-    system::Trait + timestamp::Trait + stake::Trait + membership::members::Trait
+    system::Trait
+    + timestamp::Trait
+    + stake::Trait
+    + membership::members::Trait
+    + governance::council::Trait
 {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
