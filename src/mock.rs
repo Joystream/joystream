@@ -151,10 +151,10 @@ impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
             post_title_max_length: 200,
-            post_body_max_length: 100_000,
-            reply_max_length: 10_000,
+            post_body_max_length: 10_000,
+            reply_max_length: 2_000,
             posts_max_number: 20,
-            replies_max_number: 10_000,
+            replies_max_number: 100,
             direct_replies_max_number: 10,
             consecutive_replies_max_number: 3,
         }

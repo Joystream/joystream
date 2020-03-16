@@ -732,6 +732,88 @@ fn direct_reply_creation_success() {
         })
 }
 
+#[test]
+fn reply_creation_blog_locked_error() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        TestBlogModule::lock_blog(Origin::signed(FIRST_OWNER_ORIGIN), FISRT_ID);
+        let reply_creation_res = create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true);
+        assert!(matches!(reply_creation_res, Err(reply_creation_err) if reply_creation_err == BLOG_LOCKED_ERROR));
+        // Check if related replies storage left unchanged
+        assert!(replies_storage_unchanged(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID));
+        // Event absence checked
+        assert!(reply_creation_event_failure(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, FISRT_ID));
+    })
+}
+
+#[test]
+fn reply_creation_post_locked_error() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        TestBlogModule::lock_post(Origin::signed(FIRST_OWNER_ORIGIN), FISRT_ID, FISRT_ID);
+        let reply_creation_result = create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true);
+        assert!(matches!(reply_creation_result, Err(reply_creation_err) if reply_creation_err == POST_LOCKED_ERROR));
+        // Check if related replies storage left unchanged
+        assert!(replies_storage_unchanged(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID));
+        // Event absence checked
+        assert!(reply_creation_event_failure(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, FISRT_ID));
+    })
+}
+
+#[test]
+fn reply_creation_text_too_long_error() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        let reply_creation_result = create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, false);
+        assert!(matches!(reply_creation_result, Err(reply_creation_err) if reply_creation_err == REPLY_TEXT_TOO_LONG));
+        // Check if related replies storage left unchanged
+        assert!(replies_storage_unchanged(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID));
+        // Event absence checked
+        assert!(reply_creation_event_failure(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, FISRT_ID));
+    })
+}
+
+#[test]
+fn reply_creation_post_not_found_error() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        let reply_creation_result = create_reply(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true);
+        assert!(matches!(reply_creation_result, Err(reply_creation_err) if reply_creation_err == POST_NOT_FOUND));
+        // Check if related replies storage left unchanged
+        assert!(replies_storage_unchanged(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID));
+        // Event absence checked
+        assert!(reply_creation_event_failure(SECOND_OWNER_ORIGIN, FISRT_ID, FISRT_ID, FISRT_ID));
+    })
+}
+
+#[test]
+fn reply_creation_limit_reached() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Create blog for future posts
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid);
+        loop {
+            if let Err(create_reply_err) = create_reply(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, None, true)
+            {
+                assert_eq!(create_reply_err, REPLIES_LIMIT_REACHED);
+                let replies_count = TestBlogModule::replies_count((FISRT_ID, FISRT_ID));
+                // Reply counter & reply max number contraint equality checked
+                assert_eq!(replies_count, RepliesMaxNumber::get());
+                // Last reply creation, before limit reached, event absence checked
+                assert!(reply_creation_event_failure(FIRST_OWNER_ORIGIN, FISRT_ID, FISRT_ID, replies_count));
+                break;
+            }
+        }
+    })
+}
+
 // TODO: Refactoring
 fn post_storage_unchanged(
     blog_id: <Runtime as Trait>::BlogId,
@@ -740,6 +822,17 @@ fn post_storage_unchanged(
     TestBlogModule::post_ids_by_blog_id(blog_id).is_none()
         && TestBlogModule::post_by_id((blog_id, post_id)).is_none()
         && TestBlogModule::posts_count(blog_id) == 0
+}
+
+fn replies_storage_unchanged(
+    reply_owner_origin: u64,
+    blog_id: <Runtime as Trait>::BlogId,
+    post_id: <Runtime as Trait>::PostId,
+) -> bool {
+    let reply_owner_id = ensure_signed(Origin::signed(reply_owner_origin)).unwrap();
+    TestBlogModule::post_root_reply_ids((blog_id, post_id)).is_none()
+        && TestBlogModule::reply_ids_by_owner(reply_owner_id).is_none()
+        && TestBlogModule::replies_count((blog_id, post_id)) == 0
 }
 
 fn post_creation_event_failure(
@@ -777,6 +870,42 @@ fn post_editing_event_failure(
     post_id: <Runtime as Trait>::PostId,
 ) -> bool {
     let post_edited_event = TestEvent::test_events(RawEvent::PostEdited(blog_id, post_id));
+    System::events()
+        .iter()
+        .all(|a| a.event != post_edited_event)
+}
+
+fn reply_creation_event_failure(
+    invalid_owner_origin: u64,
+    blog_id: <Runtime as Trait>::BlogId,
+    post_id: <Runtime as Trait>::PostId,
+    reply_id: <Runtime as Trait>::ReplyId,
+) -> bool {
+    let post_edited_event = TestEvent::test_events(RawEvent::ReplyCreated(
+        invalid_owner_origin,
+        blog_id,
+        post_id,
+        reply_id,
+    ));
+    System::events()
+        .iter()
+        .all(|a| a.event != post_edited_event)
+}
+
+fn direct_reply_creation_event_failure(
+    invalid_owner_origin: u64,
+    blog_id: <Runtime as Trait>::BlogId,
+    post_id: <Runtime as Trait>::PostId,
+    reply_id: <Runtime as Trait>::ReplyId,
+    child_reply_id: <Runtime as Trait>::ReplyId,
+) -> bool {
+    let post_edited_event = TestEvent::test_events(RawEvent::DirectReplyCreated(
+        invalid_owner_origin,
+        blog_id,
+        post_id,
+        reply_id,
+        child_reply_id,
+    ));
     System::events()
         .iter()
         .all(|a| a.event != post_edited_event)
