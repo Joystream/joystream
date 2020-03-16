@@ -160,9 +160,16 @@ export abstract class MediaTransport extends Transport {
 
   abstract allMusicAlbums(): Promise<MusicAlbumType[]>
 
-  async videosByChannelId(channelId: ChannelId): Promise<VideoType[]> {
-    return (await this.allVideos())
+  async videosByChannelId(channelId: ChannelId, limit?: number): Promise<VideoType[]> {
+    let videos = (await this.allVideos())
       .filter(x => channelId && channelId.eq(x.channelId))
+      .sort(x => -1 * x.id)
+
+    if (limit && limit > 0) {
+      videos = videos.slice(0, limit)
+    }
+
+    return videos
   }
 
   async videosByAccount(accountId: AccountId): Promise<VideoType[]> {
