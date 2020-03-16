@@ -191,7 +191,7 @@ decl_module! {
             ensure!(title.len() <= T::PostTitleMaxLength::get() as usize, POST_TITLE_TOO_LONG);
             ensure!(body.len() <= T::PostBodyMaxLength::get() as usize, POST_BODY_TOO_LONG);
             if let Some(post_ids) = Self::post_ids_by_blog_id(blog_id) {
-                ensure!(post_ids.len() <= T::PostsMaxNumber::get() as usize, POSTS_LIMIT_REACHED)
+                ensure!(post_ids.len() < T::PostsMaxNumber::get() as usize, POSTS_LIMIT_REACHED)
             }
             let posts_count = Self::posts_count(blog_id);
             match Self::blog_ids_by_owner(&blog_owner) {
