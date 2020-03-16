@@ -39,7 +39,7 @@ cargo build --release
 Run the node and connect to the public testnet.
 
 ```bash
-cargo run --release --chain ./rome-tesnet.json
+cargo run --release -- --chain ./rome-tesnet.json
 ```
 
 The `rome-testnet.json` chain file can be ontained from the [release page](https://github.com/Joystream/substrate-node-joystream/releases/tag/v2.1.2)
