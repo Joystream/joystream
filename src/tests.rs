@@ -724,11 +724,11 @@ fn direct_reply_creation_success() {
             assert!(matches!(child_reply_ids, Some(child_reply_ids) if child_reply_ids == child_reply_ids_set));
             assert!(matches!(reply_ids_by_owner, Some(reply_ids_by_owner) if reply_ids_by_owner == reply_ids_by_owner_set));
             // Event checked
-            let reply_created_event =
+            let direct_reply_created_event =
                 TestEvent::test_events(RawEvent::DirectReplyCreated(direct_reply_owner_id, FISRT_ID, FISRT_ID, FISRT_ID, SECOND_ID));
             assert!(System::events()
                 .iter()
-                .any(|a| a.event == reply_created_event));
+                .any(|a| a.event == direct_reply_created_event));
         })
 }
 

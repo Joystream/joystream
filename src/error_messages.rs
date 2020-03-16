@@ -10,3 +10,6 @@ pub const POST_TITLE_TOO_LONG: &str = "Post title too long";
 pub const POST_BODY_TOO_LONG: &str = "Post body too long";
 pub const REPLY_TEXT_TOO_LONG: &str = "Reply text too long";
 pub const POSTS_LIMIT_REACHED: &str = "Posts limit in a blog reached";
+pub const REPLIES_LIMIT_REACHED: &str = "Replies limit in a post reached";
+pub const DIRECT_REPLIES_LIMIT_REACHED: &str = "Direct replies limit reached";
+

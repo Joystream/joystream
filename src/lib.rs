@@ -307,18 +307,23 @@ decl_module! {
             let replier = ensure_signed(origin)?;
             ensure!(!Self::blog_locked(blog_id), BLOG_LOCKED_ERROR);
             ensure!(!Self::post_locked((blog_id, post_id)), POST_LOCKED_ERROR);
-            // Check security/configuration constraint
             ensure!(reply_text.len() <= T::ReplyMaxLength::get() as usize, REPLY_TEXT_TOO_LONG);
             let replies_count = Self::replies_count((blog_id, post_id));
             if let Some(reply_id) = reply_id {
                 // Check reply existance in case of direct reply
                 ensure!(<Reply<T>>::exists((blog_id, post_id, reply_id)), REPLY_NOT_FOUND);
+                if let Some(child_reply_ids) = Self::post_child_reply_ids((blog_id, post_id, reply_id)) {
+                    ensure!(child_reply_ids.len() < T::DirectRepliesMaxNumber::get() as usize, DIRECT_REPLIES_LIMIT_REACHED)
+                }
                 <BlogPostChildReplyIds<T>>::mutate((blog_id, post_id, reply_id), |reply_ids| {
                     Self::update_reply_ids(reply_ids, replies_count)
                 });
             } else {
                 // Check post existance
                 ensure!(<BlogPost<T>>::exists((blog_id, post_id)), POST_NOT_FOUND);
+                if let Some(root_reply_ids) = Self::post_root_reply_ids((blog_id, post_id)) {
+                    ensure!(root_reply_ids.len() < T::RepliesMaxNumber::get() as usize, REPLIES_LIMIT_REACHED)
+                }
                 <BlogPostParentReplyIds<T>>::mutate((blog_id, post_id), |reply_ids| {
                     Self::update_reply_ids(reply_ids, replies_count)
                 });
