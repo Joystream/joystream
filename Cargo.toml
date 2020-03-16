@@ -1,13 +1,18 @@
-[[bin]]
-name = 'joystream-node'
-path = 'src/main.rs'
-
 [package]
 authors = ['Joystream']
 build = 'build.rs'
 edition = '2018'
 name = 'joystream-node'
 version = '2.1.2'
+default-run = "joystream-node"
+
+[[bin]]
+# is there a name conflict with package name?
+name = 'joystream-node'
+path = 'bin/main.rs'
+
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 hex-literal = '0.2.1'

@@ -19,12 +19,7 @@
 #![warn(missing_docs)]
 #![warn(unused_extern_crates)]
 
-mod chain_spec;
-mod cli;
-mod forum_config;
-mod members_config;
-mod service;
-
+use joystream_node::cli;
 pub use substrate_cli::{error, IntoExit, VersionInfo};
 
 fn main() {
