@@ -38,7 +38,14 @@ export class Settings implements SettingsStruct {
 
     this._emitter = new EventEmitter();
 
-    this._apiUrl = settings.apiUrl || process.env.WS_URL || ENDPOINT_DEFAULT;
+    // Transition from acropolis - since visitors are coming to the same domain they most likely
+    // have the endpoint url saved in local storage. Replace it with new rome default endpoint.
+    if (settings.apiUrl == 'wss://testnet.joystream.org/acropolis/rpc/') {
+      this._apiUrl = process.env.WS_URL || ENDPOINT_DEFAULT || 'wss://rome-rpc-endpoint.joystream.org:9944/';
+    } else {
+      this._apiUrl = settings.apiUrl || process.env.WS_URL || ENDPOINT_DEFAULT;
+    }
+
     this._ledgerConn = settings.ledgerConn || LEDGER_CONN_DEFAULT;
     this._i18nLang = settings.i18nLang || LANGUAGE_DEFAULT;
     this._icon = settings.icon || ICON_DEFAULT;
