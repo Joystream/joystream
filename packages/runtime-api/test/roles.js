@@ -40,7 +40,7 @@ describe('Roles', () => {
   });
 
   it('returns whether an account has funds for role staking', async () => {
-    expect(await api.roles.hasBalanceForRoleStaking(key.address(), api.roles.ROLE_STORAGE)).to.be.false;
+    expect(await api.roles.hasBalanceForRoleStaking(key.address, api.roles.ROLE_STORAGE)).to.be.false;
   });
 
   it('returns accounts for a role', async () => {
@@ -52,12 +52,12 @@ describe('Roles', () => {
 
   it('can check whether an account fulfils requirements for role staking', async () => {
     expect(async _ => {
-      await api.roles.checkAccountForRoleStaking(key.address(), api.roles.ROLE_STORAGE);
+      await api.roles.checkAccountForRoleStaking(key.address, api.roles.ROLE_STORAGE);
     }).to.throw;
   });
 
   it('can check for an account to have a role', async () => {
-    expect(await api.roles.checkForRole(key.address(), api.roles.ROLE_STORAGE)).to.be.false;
+    expect(await api.roles.checkForRole(key.address, api.roles.ROLE_STORAGE)).to.be.false;
   });
 
   // TODO requires complex setup, and may change in the near future.

@@ -4,6 +4,9 @@
   "bin": {
     "helios": "bin/cli.js"
   },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 0"
+  },
   "license": "MIT",
   "dependencies": {
     "@joystream/runtime-api": "^0.1.0",

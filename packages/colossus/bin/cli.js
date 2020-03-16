@@ -29,7 +29,7 @@ const FLAG_DEFINITIONS = {
   },
   'syncPeriod': {
     type: 'integer',
-    _default: 300000,
+    _default: 120000,
   },
   keyFile: {
     type: 'string',
@@ -44,6 +44,10 @@ const FLAG_DEFINITIONS = {
   },
   'passphrase': {
     type: 'string'
+  },
+  'wsProvider': {
+    type: 'string',
+    _default: 'ws://localhost:9944'
   }
 };
 
@@ -70,8 +74,8 @@ const cli = meow(`
                             runs. Defaults to 30,000 (30s).
     --key-file              JSON key export file to use as the storage provider.
     --passphrase            Optional passphrase to use to decrypt the key-file (if its encrypted).
-    --public-url=URL        Public URL to announce. No URL will be announced if not specified.
-    --reannounce-period     Number of milliseconds to wait between reannouncing public url.
+    --public-url            API Public URL to announce. No URL will be announced if not specified.
+    --ws-provider           Joystream Node websocket provider url, eg: "ws://127.0.0.1:9944"
   `,
   { flags: FLAG_DEFINITIONS });
 
@@ -168,7 +172,7 @@ function get_storage(runtime_api, config)
   return Storage.create(options);
 }
 
-async function run_signup(account_file)
+async function run_signup(account_file, provider_url)
 {
   if (!account_file) {
     console.log('Cannot proceed without keyfile');
@@ -176,7 +180,7 @@ async function run_signup(account_file)
   }
 
   const { RuntimeApi } = require('@joystream/runtime-api');
-  const api = await RuntimeApi.create({account_file, canPromptForPassphrase: true});
+  const api = await RuntimeApi.create({account_file, canPromptForPassphrase: true, provider_url});
 
   if (!api.identities.key) {
     console.log('Cannot proceed without a member account');
@@ -196,7 +200,7 @@ async function run_signup(account_file)
     console.log(`There are still ${availableSlots} slots available, proceeding`);
   }
 
-  const member_address = api.identities.key.address();
+  const member_address = api.identities.key.address;
 
   // Check if account works
   const min = await api.roles.requiredBalanceForRoleStaking(api.roles.ROLE_STORAGE);
@@ -208,7 +212,7 @@ async function run_signup(account_file)
 
   // Create a role key
   const role_key = await api.identities.createRoleKey(member_address);
-  const role_address = role_key.address();
+  const role_address = role_key.address;
   console.log('Generated', role_address, '- this is going to be exported to a JSON file.\n',
     ' You can provide an empty passphrase to make starting the server easier,\n',
     ' but you must keep the file very safe, then.');
@@ -232,7 +236,13 @@ async function wait_for_role(config)
   if (!keyFile) {
     throw new Error("Must specify a key file for running a storage node! Sign up for the role; see `colussus --help' for details.");
   }
-  const api = await RuntimeApi.create({account_file: keyFile, passphrase: cli.flags.passphrase});
+  const wsProvider = config.get('wsProvider');
+
+  const api = await RuntimeApi.create({
+    account_file: keyFile,
+    passphrase: cli.flags.passphrase,
+    provider_url: wsProvider,
+  });
 
   if (!api.identities.key) {
     throw new Error('Failed to unlock storage provider account');
@@ -240,7 +250,7 @@ async function wait_for_role(config)
 
   // Wait for the account role to be finalized
   console.log('Waiting for the account to be staked as a storage provider role...');
-  const result = await api.roles.waitForRole(api.identities.key.address(), api.roles.ROLE_STORAGE);
+  const result = await api.roles.waitForRole(api.identities.key.address, api.roles.ROLE_STORAGE);
   return [result, api];
 }
 
@@ -267,7 +277,7 @@ async function announce_public_url(api, config) {
   debug('announcing public url')
   const { publish } = require('@joystream/discovery')
 
-  const accountId = api.identities.key.address()
+  const accountId = api.identities.key.address
 
   try {
     const serviceInformation = get_service_information(config)
@@ -294,7 +304,7 @@ async function announce_public_url(api, config) {
 }
 
 function go_offline(api) {
-  return api.discovery.unsetAccountInfo(api.identities.key.address())
+  return api.discovery.unsetAccountInfo(api.identities.key.address)
 }
 
 // Simple CLI commands
@@ -332,7 +342,8 @@ const commands = {
     await start_all_services(store, api, cfg);
   },
   'signup': async (account_file) => {
-    await run_signup(account_file);
+    const cfg = create_config(pkg.name, cli.flags);
+    await run_signup(account_file, cfg.get('wsProvider'));
   },
   'down': async () => {
     const cfg = create_config(pkg.name, cli.flags);
@@ -350,7 +361,8 @@ const commands = {
     debug("Starting Joystream Discovery Service")
     const { RuntimeApi } = require('@joystream/runtime-api')
     const cfg = create_config(pkg.name, cli.flags)
-    const api = await RuntimeApi.create()
+    const wsProvider = cfg.get('wsProvider');
+    const api = await RuntimeApi.create({ provider_url: wsProvider });
     await start_discovery_service(api, cfg)
   }
 };

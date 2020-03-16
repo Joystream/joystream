@@ -87,10 +87,12 @@ module.exports = function(config, storage, runtime)
 
       // First check if we're the liaison for the name, otherwise we can bail
       // out already.
-      const role_addr = runtime.identities.key.address();
+      const role_addr = runtime.identities.key.address;
       let dataObject;
       try {
+        debug('calling checkLiaisonForDataObject')
         dataObject = await runtime.assets.checkLiaisonForDataObject(role_addr, id);
+        debug('called checkLiaisonForDataObject')
       } catch (err) {
         error_handler(res, err, 403);
         return;

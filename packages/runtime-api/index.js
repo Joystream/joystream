@@ -37,24 +37,24 @@ class RuntimeApi
 {
   static async create(options)
   {
-    const ret = new RuntimeApi();
-    await ret.init(options || {
-      canPromptForPassphrase: false
-    });
-    return ret;
+    const runtime_api = new RuntimeApi();
+    await runtime_api.init(options || {});
+    return runtime_api;
   }
 
   async init(options)
   {
     debug('Init');
 
+    options = options || {};
+
     // Register joystream types
     registerJoystreamTypes();
 
-    const provider = new WsProvider('ws://localhost:9944');
+    const provider = new WsProvider(options.provider_url || 'ws://localhost:9944');
 
     // Create the API instrance
-    this.api = await ApiPromise.create(provider);
+    this.api = await ApiPromise.create({ provider });
 
     this.asyncLock = new AsyncLock();
 
@@ -78,8 +78,8 @@ class RuntimeApi
     this.api.disconnect();
   }
 
-  executeWithLock(execFunction) {
-    return this.asyncLock.acquire(RuntimeApi.NONCE_LOCK_KEY, execFunction);
+  executeWithAccountLock(account_id, func) {
+    return this.asyncLock.acquire(`${account_id}`, func);
   }
 
   /*
@@ -163,27 +163,20 @@ class RuntimeApi
   {
     // Prepare key
     const from_key = this.identities.keyring.getPair(accountId);
-    if (from_key.isLocked()) {
+
+    if (from_key.isLocked) {
       throw new Error('Must unlock key before using it to sign!');
     }
 
-    const finalizedPromise = (function() {
-      // externally controller promise
-      let resolve, reject;
-      const promise = new Promise((res, rej) => {
-        resolve = res;
-        reject = rej;
-      });
-      return {resolve, reject, promise}
-    })();
+    const finalizedPromise = newExternallyControlledPromise();
 
-    let unsubscribe = await this.executeWithLock(async () => {
+    let unsubscribe = await this.executeWithAccountLock(accountId,  async () => {
       // Try to get the next nonce to use
-      var nonce = this.nonces[accountId];
+      let nonce = this.nonces[accountId];
 
       let incrementNonce = () => {
         // only increment once
-        incrementNonce = () => {}; // turn it into a noop
+        incrementNonce = () => {}; // turn it into a no-op
         nonce = nonce.addn(1);
         this.nonces[accountId] = nonce;
       }
@@ -283,8 +276,16 @@ class RuntimeApi
   }
 }
 
-RuntimeApi.NONCE_LOCK_KEY = 'nonce';
-
 module.exports = {
   RuntimeApi: RuntimeApi,
+}
+
+function newExternallyControlledPromise () {
+  // externally controller promise
+  let resolve, reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return ({resolve, reject, promise});
 }

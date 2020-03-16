@@ -29,7 +29,7 @@ async function sync_callback(api, config, storage)
   // FIXME this isn't actually on chain yet, so we'll fake it.
   const knownContentIds = await api.assets.getKnownContentIds() || [];
 
-  const role_addr = api.identities.key.address();
+  const role_addr = api.identities.key.address;
 
   // Iterate over all sync objects, and ensure they're synced.
   const allChecks = knownContentIds.map(async (content_id) => {
