@@ -72,7 +72,7 @@ cargo run --release -- purge-chain --dev
 
 #### Building localy
 
-A joystream-node can be compiled with give [Dockerfile](Dockerfile) file:
+A joystream-node can be compiled with given [Dockerfile](./Dockerfile) file:
 
 ```bash
 # Build and tag a new image, which will compile joystream-node from source
@@ -92,6 +92,7 @@ docker pull joystream/node
 
 Create a working directory to store the node's data and where you will need to place the chain file.
 
+Download the [Rome Testnet chain file](https://github.com/Joystream/substrate-node-joystream/releases/download/v2.1.2/rome-tesnet.json)
 
 ```bash
 mkdir ${HOME}/joystream-node-data/
@@ -109,5 +110,3 @@ docker ps
 # monitor logs
 docker logs --tail 100 -f my-node
 ```
-
-[More advanced guide]()
