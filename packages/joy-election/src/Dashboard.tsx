@@ -1,11 +1,12 @@
 import BN from 'bn.js';
 import React from 'react';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { BlockNumber, Balance, Option } from '@polkadot/types';
-import { Bubble } from '@polkadot/ui-app/index';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
+import { Option } from '@polkadot/types';
+import { BlockNumber, Balance } from '@polkadot/types/interfaces';
+import { Bubble } from '@polkadot/react-components/index';
 import { formatNumber, formatBalance } from '@polkadot/util';
 
 import Section from '@polkadot/joy-utils/Section';
@@ -61,8 +62,8 @@ class Dashboard extends React.PureComponent<Props, State> {
     let stageEndsAt: BlockNumber | undefined = undefined;
     if (stage && stage.isSome) {
       const stageValue = stage.value as ElectionStage;
-      stageEndsAt = stageValue.value as BlockNumber;
-      stageName = stageValue.type;
+      stageEndsAt = stageValue.value as BlockNumber; // contained value
+      stageName = stageValue.type; //name of Enum variant
     }
 
     let leftBlocks: BN | undefined;

@@ -1,11 +1,11 @@
 import React from 'react';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls } from '@polkadot/ui-api/with';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
 import { Table } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
-import AddressMini from '@polkadot/ui-app/AddressMiniJoy';
+import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 
 import { calcBackersStake } from '@polkadot/joy-utils/index';
 import { Seat } from '@joystream/types/';
@@ -38,7 +38,7 @@ class Council extends React.PureComponent<Props, State> {
         <Table.Row key={index}>
           <Table.Cell>{index + 1}</Table.Cell>
           <Table.Cell>
-            <AddressMini value={seat.member} isShort={false} isPadded={false} withBalance={true} withName={true} withMemo={true} size={36} />
+            <AddressMini value={seat.member} isShort={false} isPadded={false} withBalance={true} />
           </Table.Cell>
           <Table.Cell>{formatBalance(seat.stake)}</Table.Cell>
           <Table.Cell>{formatBalance(calcBackersStake(seat.backers))}</Table.Cell>

@@ -3,13 +3,26 @@
   "version": "0.0.1",
   "description": "Staked roles module for Joystream node",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "jest",
+    "test-watch": "jest --watch",
+    "lint": "eslint -c ../../tsconfig.eslint.json --ext .js,.jsx,.ts,.tsx . && tsc --noEmit --pretty"
+  },
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@babel/runtime": "^7.4.3",
-    "@polkadot/ui-app": "^0.32.0-beta.6",
+    "@babel/runtime": "^7.7.1",
     "@polkadot/joy-utils": "^0.1.1",
-    "@polkadot/ui-reactive": "^0.32.0-beta.6"
+    "@polkadot/react-components": "0.37.0-beta.63",
+    "@polkadot/react-query": "0.37.0-beta.63",
+    "@types/faker": "^4.1.8",
+    "faker": "^4.1.0",
+    "marked": "^0.7.0",
+    "moment": "^2.24.0",
+    "react-compound-slider": "^2.4.0",
+    "react-moment": "^0.9.6",
+    "react-number-format": "^4.3.1",
+    "react-semantic-ui-range": "^0.7.0",
+    "typescript-formatter": "^7.2.2"
   }
 }

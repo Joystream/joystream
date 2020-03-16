@@ -2,9 +2,9 @@ import BN from 'bn.js';
 import React from 'react';
 import { Segment } from 'semantic-ui-react';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
-import { withCalls } from '@polkadot/ui-api/with';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
 
 import { queryToProp, ZERO } from '@polkadot/joy-utils/index';
 import { Seat } from '@joystream/types/';

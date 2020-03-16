@@ -1,8 +1,8 @@
 import BN from 'bn.js';
 import React from 'react';
 
-import { ApiProps } from '@polkadot/ui-api/types';
-import { I18nProps } from '@polkadot/ui-app/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
 
 import Section from '@polkadot/joy-utils/Section';
 import translate from './translate';
@@ -11,7 +11,7 @@ import { MemberId } from '@joystream/types/members';
 
 type Props = ApiProps & I18nProps & {
   firstMemberId: BN,
-  nextMemberId: BN
+  membersCreated: BN
 };
 
 type State = {};
@@ -23,15 +23,14 @@ class Component extends React.PureComponent<Props, State> {
   render () {
     const {
       firstMemberId,
-      nextMemberId
+      membersCreated
     } = this.props;
 
-    const membersCount = nextMemberId.sub(firstMemberId).toNumber();
+    const membersCount = membersCreated.toNumber();
     const ids: MemberId[] = [];
     if (membersCount > 0) {
       const firstId = firstMemberId.toNumber();
-      const lastId = nextMemberId.toNumber();
-      for (let i = firstId; i < lastId; i++) {
+      for (let i = firstId; i < membersCount; i++) {
         ids.push(new MemberId(i));
       }
     }

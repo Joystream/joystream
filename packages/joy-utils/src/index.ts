@@ -1,8 +1,10 @@
 import BN from 'bn.js';
+import { Text, Option } from '@polkadot/types';
+import { OptionalText } from '@joystream/types/content-working-group';
 
 export const ZERO = new BN(0);
 
-export function bnToStr (bn?: BN, dflt: string = ''): string {
+export function bnToStr(bn?: BN, dflt: string = ''): string {
   return bn ? bn.toString() : dflt;
 }
 
@@ -48,26 +50,28 @@ export const nonEmptyArr = (x: any): boolean =>
 export const isEmptyArr = (x: any): boolean =>
   !nonEmptyArr(x);
 
-// Keyring stuff:
-// --------------------------------------
-
 import keyring from '@polkadot/ui-keyring';
 
-export function findNameByAddress (address: string): string | undefined {
+export function findNameByAddress(address: string): string | undefined {
+  let keyring_address;
   try {
-    return keyring.getAccount(address).getMeta().name;
+    keyring_address = keyring.getAccount(address);
   } catch (error) {
     try {
-      return keyring.getAddress(address).getMeta().name;
+      keyring_address = keyring.getAddress(address);
     } catch (error) {
-      // ok, we don't have account or address
-      return undefined;
     }
   }
+  return keyring_address ? keyring_address.meta.name : undefined;
 }
 
-export function isKnownAddress (address: string): boolean {
+export function isKnownAddress(address: string): boolean {
   return isDefined(findNameByAddress(address));
+}
+
+export function newOptionalText(str?: string): OptionalText {
+  const text = isEmptyStr(str) ? null : str;
+  return new Option(Text, text);
 }
 
 // Joystream Stake utils
@@ -75,7 +79,7 @@ export function isKnownAddress (address: string): boolean {
 
 import { Stake, Backer } from '@joystream/types/';
 
-export function calcTotalStake (stakes: Stake | Stake[] | undefined): BN {
+export function calcTotalStake(stakes: Stake | Stake[] | undefined): BN {
   if (typeof stakes === 'undefined') {
     return ZERO;
   }
@@ -94,7 +98,7 @@ export function calcTotalStake (stakes: Stake | Stake[] | undefined): BN {
   }
 }
 
-export function calcBackersStake (backers: Backer[]): BN {
+export function calcBackersStake(backers: Backer[]): BN {
   return backers.map(b => b.stake).reduce((accum, stake) => {
     return accum.add(stake);
   }, ZERO);
@@ -103,13 +107,13 @@ export function calcBackersStake (backers: Backer[]): BN {
 // Substrate/Polkadot API utils
 // --------------------------------------
 
-import { Options as QueryOptions } from '@polkadot/ui-api/with/types';
+import { Options as QueryOptions } from '@polkadot/react-api/with/types';
 
 /** Example of apiQuery: 'query.councilElection.round' */
-export function queryToProp (
+export function queryToProp(
   apiQuery: string,
   paramNameOrOpts?: string | QueryOptions
-): [ string, QueryOptions ] {
+): [string, QueryOptions] {
 
   let paramName: string | undefined;
   let propName: string | undefined;
@@ -126,15 +130,73 @@ export function queryToProp (
     propName = apiQuery.split('.').slice(-1)[0];
   }
 
-  return [ apiQuery, { paramName, propName } ];
+  return [apiQuery, { paramName, propName }];
 }
+
+import { APIQueryCache } from './APIQueryCache' 
+export { APIQueryCache }
 
 // Parse URLs
 // --------------------------------------
 
 import queryString from 'query-string';
 
-export function getUrlParam (location: Location, paramName: string, deflt: string | undefined = undefined): string | undefined {
+export function getUrlParam(location: Location, paramName: string, deflt: string | null = null): string | null {
   const params = queryString.parse(location.search);
   return params[paramName] ? params[paramName] as string : deflt;
+}
+
+// Business logic middleware
+// --------------------------------------
+import { MultipleLinkedMapEntry, SingleLinkedMapEntry } from './LinkedMapEntry'
+export { MultipleLinkedMapEntry, SingleLinkedMapEntry }
+
+// Business logic middleware
+// --------------------------------------
+
+import { Controller } from './Controller';
+import { Loadable } from './Loadable';
+import { Observable } from './Observable'
+import { Observer, Subscribable, Subscription } from './Subscribable'
+import { Transport } from './Transport';
+import { View, ViewComponent, Params } from './View';
+
+export {
+  Controller,
+  Loadable,
+  Observer, Observable,
+  Subscribable, Subscription,
+  Transport,
+  View, ViewComponent, Params,
+};
+
+// Memoization
+// --------------------------------------
+
+import { memoize } from "./memoize"
+export { memoize }
+
+// Substrate events
+// --------------------------------------
+
+import { SubmittableResult } from '@polkadot/api';
+import { Codec } from '@polkadot/types/types';
+
+export function filterSubstrateEventsAndExtractData(txResult: SubmittableResult, eventName: string): Codec[][] {
+  let res: Codec[][] = []
+  txResult.events.forEach((event) => {
+    const { event: { method, data } } = event
+    if (method === eventName) {
+      res.push(data.toArray())
+    }
+  })
+  return res
+}
+
+export function findFirstParamOfSubstrateEvent<T extends Codec>(txResult: SubmittableResult, eventName: string): T | undefined {
+  const data = filterSubstrateEventsAndExtractData(txResult, eventName)
+  if (data && data.length) {
+    return data[0][0] as T
+  }
+  return undefined
 }

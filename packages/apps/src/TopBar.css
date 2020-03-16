@@ -2,7 +2,6 @@
   padding: .5rem .5rem;
   background-color: #3f3f3f;
   border-bottom: 1px solid #d4d4d5;
-  color: #fff;
   text-align: right;
   margin: 0 -2rem;
 
@@ -10,5 +9,9 @@
     background-color: #ffeb83;
     color: #000;
     text-align: center;
+  }
+
+  .ui--InputAddress {
+    display: inline-block;
   }
 }

@@ -102,6 +102,7 @@ export function MyAccountProvider (props: React.PropsWithChildren<{}>) {
     set: (address: string) => dispatch({ type: 'set', address }),
     forget: (address: string) => dispatch({ type: 'forget', address })
   };
+
   return (
     <MyAccountContext.Provider value={contextValue}>
       {props.children}

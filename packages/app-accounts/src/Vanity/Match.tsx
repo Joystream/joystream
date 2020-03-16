@@ -2,83 +2,103 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { BareProps } from '@polkadot/ui-app/types';
+import { BareProps } from '@polkadot/react-components/types';
 
-import React from 'react';
-import { Button, IdentityIcon } from '@polkadot/ui-app';
+import React, { useEffect, useState } from 'react';
+import styled from 'styled-components';
+import { Button, IdentityIcon } from '@polkadot/react-components';
 import { u8aToHex } from '@polkadot/util';
 
-type Props = BareProps & {
+interface Props extends BareProps {
   address: string;
   count: number;
   offset: number;
-  onCreateToggle: (passthrough: string) => void,
-  onRemove: (address: string) => void,
+  onCreateToggle: (seed: string) => void;
+  onRemove: (address: string) => void;
   seed: Uint8Array;
-};
+}
 
-type State = {
-  hexSeed: string
-};
+function Match ({ address, className, count, offset, onCreateToggle, onRemove, seed }: Props): React.ReactElement<Props> {
+  const [hexSeed, setHexSeed] = useState('');
+  const _onCreate = (): void => onCreateToggle(hexSeed);
+  const _onRemove = (): void => onRemove(address);
 
-export default class Match extends React.PureComponent<Props, State> {
-  state: State = {} as State;
+  useEffect((): void => {
+    setHexSeed(u8aToHex(seed));
+  }, [seed]);
 
-  static getDerivedStateFromProps ({ seed }: Props): State {
-    return {
-      hexSeed: u8aToHex(seed)
-    };
-  }
-
-  render () {
-    const { address, count, offset } = this.props;
-    const { hexSeed } = this.state;
-
-    return (
-      <div className='vanity--Match'>
-        <div className='vanity--Match-item'>
-          <IdentityIcon
-            className='vanity--Match-icon'
-            size={48}
-            value={address}
-          />
-          <div className='vanity--Match-data'>
-            <div className='vanity--Match-addr'>
-              <span className='no'>{address.slice(0, offset)}</span><span className='yes'>{address.slice(offset, count + offset)}</span><span className='no'>{address.slice(count + offset)}</span>
-            </div>
-            <div className='vanity--Match-seed'>
-              {hexSeed}
-            </div>
+  return (
+    <div className={className}>
+      <div className='vanity--Match-item'>
+        <IdentityIcon
+          className='vanity--Match-icon'
+          size={48}
+          value={address}
+        />
+        <div className='vanity--Match-data'>
+          <div className='vanity--Match-addr'>
+            <span className='no'>{address.slice(0, offset)}</span><span className='yes'>{address.slice(offset, count + offset)}</span><span className='no'>{address.slice(count + offset)}</span>
           </div>
-          <div className='vanity--Match-buttons'>
-            <Button
-              icon='plus'
-              isPrimary
-              onClick={this.onCreate}
-              size='tiny'
-            />
-            <Button
-              icon='close'
-              isNegative
-              onClick={this.onRemove}
-              size='tiny'
-            />
+          <div className='vanity--Match-seed'>
+            {hexSeed}
           </div>
         </div>
+        <div className='vanity--Match-buttons'>
+          <Button
+            icon='plus'
+            isPrimary
+            onClick={_onCreate}
+            size='tiny'
+          />
+          <Button
+            icon='close'
+            isNegative
+            onClick={_onRemove}
+            size='tiny'
+          />
+        </div>
       </div>
-    );
-  }
-
-  onCreate = (): void => {
-    const { onCreateToggle } = this.props;
-    const { hexSeed } = this.state;
-
-    onCreateToggle(hexSeed);
-  }
-
-  onRemove = (): void => {
-    const { address, onRemove } = this.props;
-
-    onRemove(address);
-  }
+    </div>
+  );
 }
+
+export default styled(Match)`
+  text-align: center;
+
+  &:hover {
+    background: #f9f9f9;
+  }
+
+  .vanity--Match-addr {
+    font-size: 1.5rem;
+    padding: 0 1rem;
+
+    .no {
+      color: inherit;
+    }
+
+    .yes {
+      color: red;
+    }
+  }
+
+  .vanity--Match-buttons,
+  .vanity--Match-data,
+  .vanity--Match-icon {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .vanity--Match-item {
+    display: inline-block;
+    font-family: monospace;
+    margin: 0 auto;
+    padding: 0.5em;
+    position: relative;
+  }
+
+  .vanity--Match-seed {
+    opacity: 0.45;
+    padding: 0 1rem;
+  }
+`;

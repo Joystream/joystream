@@ -1,37 +1,37 @@
 import React from 'react';
-import { Labelled } from '@polkadot/ui-app/index';
+import { Labelled } from '@polkadot/react-components/index';
 
 import MemoEdit from '@polkadot/joy-utils/memo/MemoEdit';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
-import { nonEmptyStr } from '@polkadot/joy-utils/index';
+import { Text } from '@polkadot/types';
 
 type Props = MyAccountProps & {};
 
 type State = {
   memo: string,
-  isMemoValid: boolean
+  modified: boolean,
 };
 
 class Component extends React.PureComponent<Props, State> {
 
   state: State = {
     memo: '',
-    isMemoValid: false
+    modified: false,
   };
 
   render () {
     const { myAddress } = this.props;
-    const { memo, isMemoValid } = this.state;
+    const { memo, modified } = this.state;
     return (
       <>
-        <MemoEdit accountId={myAddress || ''} onChange={this.onChangeMemo} />
+        <MemoEdit accountId={myAddress || ''} onChange={this.onChangeMemo} onReset={this.onResetMemo} />
         <Labelled style={{ marginTop: '.5rem' }}>
           <TxButton
             size='large'
-            isDisabled={!isMemoValid}
+            isDisabled={!modified}
             label='Update memo'
-            params={[memo.trim()]}
+            params={[new Text(memo)]}
             tx='memo.updateMemo'
           />
         </Labelled>
@@ -40,8 +40,11 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   onChangeMemo = (memo: string): void => {
-    const isMemoValid = nonEmptyStr(memo);
-    this.setState({ memo, isMemoValid });
+    this.setState({ memo, modified: true });
+  }
+
+  onResetMemo = (memo: string): void => {
+    this.setState({ memo, modified: false });
   }
 }
 

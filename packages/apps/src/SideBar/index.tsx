@@ -2,24 +2,33 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { I18nProps } from '@polkadot/ui-app/types';
+import { I18nProps } from '@polkadot/react-components/types';
 import { SIDEBAR_MENU_THRESHOLD } from '../constants';
 
 import './SideBar.css';
 
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Responsive } from 'semantic-ui-react';
-import { Button, Icon, Menu, media } from '@polkadot/ui-app';
-import { classes } from '@polkadot/ui-app/util';
-import { logoBackground, logoPadding } from '@polkadot/ui-app/styles/theme';
+import routing from '@polkadot/apps-routing';
+import { Button, ChainImg, Icon, Menu, media } from '@polkadot/react-components';
+import { classes } from '@polkadot/react-components/util';
 
-import routing from '../routing';
 import translate from '../translate';
 import Item from './Item';
 import NodeInfo from './NodeInfo';
-import getLogo from './logos';
-import { SemanticICONS } from 'semantic-ui-react/dist/commonjs';
+import NetworkModal from '../modals/Network';
+
+import { SemanticICONS } from 'semantic-ui-react';
+
+interface Props extends I18nProps /*ApiProps,*/ {
+  className?: string;
+  collapse: () => void;
+  handleResize: () => void;
+  isCollapsed: boolean;
+  menuOpen: boolean;
+  toggleMenu: () => void;
+}
 
 type OuterLinkProps = {
   url: string,
@@ -38,55 +47,45 @@ function OuterLink ({ url, title, icon = 'external alternate' }: OuterLinkProps)
   );
 }
 
-type Props = I18nProps & {
-  collapse: () => void,
-  handleResize: () => void,
-  isCollapsed: boolean,
-  menuOpen: boolean,
-  toggleMenu: () => void
-};
+/*
+interface State {
+  modals: Record<string, boolean>;
+}
 
-const Toggle = styled.img`
-  background: ${logoBackground};
-  padding: ${logoPadding};
-  border-radius: 50%;
-  cursor: pointer;
-  left: 0.9rem;
-  opacity: 0;
-  position: absolute;
-  top: 0px;
-  transition: opacity 0.2s ease-in, top 0.2s ease-in;
-  width: 2.8rem;
+class SideBar extends React.PureComponent<Props, State> {
+  public state: State;
 
-  &.delayed {
-    transition-delay: 0.4s;
-  }
-  &.open {
-    opacity: 1;
-    top: 0.9rem;
+  public constructor (props: Props) {
+    super(props);
+
+    // setup modals for each of the actual modal routes
+    this.state = {
+      modals: routing.routes.reduce((result, route): Record<string, boolean> => {
+        if (route && route.Modal) {
+          result[route.name] = false;
+        }
+
+        return result;
+      }, { network: false } as unknown as Record<string, boolean>)
+    };
   }
 
-  ${media.DESKTOP`
-    opacity: 0 !important;
-    top: -2.9rem !important;
-  `}
-`;
-
-class SideBar extends React.PureComponent<Props> {
-  render () {
-    const { isCollapsed } = this.props;
+  public render (): React.ReactNode {
+    const { className, handleResize, isCollapsed, toggleMenu, menuOpen } = this.props;
 
     return (
       <Responsive
-        onUpdate={this.props.handleResize}
-        className={
-          classes(
-            'apps-SideBar-Wrapper',
-              isCollapsed ? 'collapsed' : 'expanded'
-            )
-        }
+        onUpdate={handleResize}
+        className={classes(className, 'apps-SideBar-Wrapper', isCollapsed ? 'collapsed' : 'expanded')}
       >
-        {this.renderMenuToggle()}
+        <ChainImg
+          className={`toggleImg ${menuOpen ? 'closed' : 'open delayed'}`}
+          onClick={toggleMenu}
+        />
+        {this.renderModals()}
+        {this.state.modals.network && (
+          <NetworkModal onClose={this.toggleNetworkModal}/>
+        )}
         <div className='apps--SideBar'>
           <Menu
             secondary
@@ -102,114 +101,152 @@ class SideBar extends React.PureComponent<Props> {
               <Menu.Divider hidden />
               {
                 isCollapsed
-                  ? null
+                  ? undefined
                   : <NodeInfo />
               }
             </div>
             {this.renderCollapse()}
           </Menu>
-          {this.renderToggleBar()}
-        </div>
-      </Responsive>
-    );
-  }
+          <Responsive minWidth={SIDEBAR_MENU_THRESHOLD}>
+*/
+function SideBar ({ className, collapse, handleResize, isCollapsed, toggleMenu, menuOpen }: Props): React.ReactElement<Props> {
+  const [modals, setModals] = useState<Record<string, boolean>>(
+    routing.routes.reduce((result: Record<string, boolean>, route): Record<string, boolean> => {
+      if (route && route.Modal) {
+        result[route.name] = false;
+      }
 
-  private renderCollapse () {
-    const { isCollapsed } = this.props;
+      return result;
+    }, { network: false })
+  );
 
-    return (
-      <Responsive
-        minWidth={SIDEBAR_MENU_THRESHOLD}
-        className={`apps--SideBar-collapse ${isCollapsed ? 'collapsed' : 'expanded'}`}
-      >
-        <Button
-          icon={`angle double ${isCollapsed ? 'right' : 'left'}`}
-          isBasic
-          isCircular
-          onClick={this.props.collapse}
-        />
-      </Responsive>
-    );
-  }
+  const _toggleModal = (name: string): () => void =>
+    (): void => setModals({ ...modals, [name]: !modals[name] });
 
-  // @ts-ignore is declared but its value is never read
-  private renderLogo () {
-    const { isCollapsed } = this.props;
-    const logo = getLogo(isCollapsed);
-
-    return (
-      <img
-        alt='polkadot'
-        className='apps--SideBar-logo'
-        src={logo}
-      />
-    );
-  }
-
-  private renderJoystreamLogo () {
-    const { isCollapsed } = this.props;
-    const logo = isCollapsed
-      ? 'images/logo-j.svg'
-      : 'images/logo-joytream.svg';
-
-    return (
-      <img
-        alt='Joystream'
-        className='apps--SideBar-logo'
-        src={logo}
-      />
-    );
-  }
-
-  private renderRoutes () {
-    const { isCollapsed } = this.props;
-    const { t } = this.props;
-
-    return routing.routes.map((route, index) => (
-      route
-        ? (
-          <Item
-            isCollapsed={isCollapsed}
-            key={route.name}
-            route={route}
-            onClick={this.props.handleResize}
-            t={t}
-          />
-        )
-        : (
-          <Menu.Divider
-            hidden
-            key={index}
-          />
-        )
-    ));
-  }
-
-  private renderToggleBar () {
-    return (
-      <Responsive minWidth={SIDEBAR_MENU_THRESHOLD}>
-        <div
-          className='apps--SideBar-toggle'
-          onClick={this.props.collapse}
-        >
-        </div>
-      </Responsive>
-    );
-  }
-
-  private renderMenuToggle () {
-    const logo = getLogo(true);
-    const { toggleMenu, menuOpen } = this.props;
-
-    return (
-      <Toggle
-        alt='logo'
-        className={menuOpen ? 'closed' : 'open delayed'}
+  return (
+    <Responsive
+      onUpdate={handleResize}
+      className={classes(className, 'apps-SideBar-Wrapper', isCollapsed ? 'collapsed' : 'expanded')}
+    >
+      <ChainImg
+        className={`toggleImg ${menuOpen ? 'closed' : 'open delayed'}`}
         onClick={toggleMenu}
-        src={logo}
       />
-    );
-  }
+      {routing.routes.map((route): React.ReactNode => (
+        route && route.Modal
+          ? route.Modal && modals[route.name]
+            ? (
+              <route.Modal
+                key={route.name}
+                onClose={_toggleModal(route.name)}
+              />
+            )
+            : <div key={route.name} />
+          : null
+      ))}
+      {modals.network && (
+        <NetworkModal onClose={_toggleModal('network')}/>
+      )}
+      <div className='apps--SideBar'>
+        <Menu
+          secondary
+          vertical
+        >
+          <div className='apps-SideBar-Scroll'>
+            {JoystreamLogo(isCollapsed)}
+            {routing.routes.map((route, index): React.ReactNode => (
+              route
+                ? (
+                  <Item
+                    isCollapsed={isCollapsed}
+                    key={route.name}
+                    route={route}
+                    onClick={
+                      route.Modal
+                        ? _toggleModal(route.name)
+                        : handleResize
+                    }
+                  />
+                )
+                : (
+                  <Menu.Divider
+                    hidden
+                    key={index}
+                  />
+                )
+            ))}
+            <Menu.Divider hidden />
+            <OuterLink url='https://testnet.joystream.org/faucet' title='Free Tokens' />
+            <OuterLink url='https://blog.joystream.org/acropolis-incentives/' title='Earn Monero' />
+            <Menu.Divider hidden />
+            {
+              isCollapsed
+                ? undefined
+                : <NodeInfo />
+            }
+          </div>
+          <Responsive
+            minWidth={SIDEBAR_MENU_THRESHOLD}
+            className={`apps--SideBar-collapse ${isCollapsed ? 'collapsed' : 'expanded'}`}
+          >
+            <Button
+              icon={`angle double ${isCollapsed ? 'right' : 'left'}`}
+              isBasic
+              isCircular
+              onClick={collapse}
+            />
+          </Responsive>
+        </Menu>
+        <Responsive minWidth={SIDEBAR_MENU_THRESHOLD}>
+          <div
+            className='apps--SideBar-toggle'
+            onClick={collapse}
+          />
+        </Responsive>
+      </div>
+    </Responsive>
+  );
 }
 
-export default translate(SideBar);
+export default translate(
+  styled(SideBar)`
+    .toggleImg {
+      cursor: pointer;
+      height: 2.75rem;
+      left: 0.9rem;
+      opacity: 0;
+      position: absolute;
+      top: 0px;
+      transition: opacity 0.2s ease-in, top 0.2s ease-in;
+      width: 2.75rem;
+
+      &.delayed {
+        transition-delay: 0.4s;
+      }
+
+      &.open {
+        opacity: 1;
+        top: 0.9rem;
+      }
+
+      ${media.DESKTOP`
+        opacity: 0 !important;
+        top: -2.9rem !important;
+      `}
+    }
+  `
+);
+
+
+function JoystreamLogo (isCollapsed: boolean) {
+  const logo = isCollapsed
+  ? 'images/logo-j.svg'
+  : 'images/logo-joytream.svg';
+  return (
+  <img
+    alt='Joystream'
+    className='apps--SideBar-logo'
+    src={logo}
+  />
+  );
+}

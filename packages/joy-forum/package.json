@@ -7,8 +7,10 @@
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@babel/runtime": "^7.4.3",
-    "@polkadot/ui-app": "^0.31.0-beta.18",
-    "@polkadot/joy-utils": "^0.1.1"
+    "@babel/runtime": "^7.7.1",
+    "@polkadot/joy-utils": "^0.1.1",
+    "@polkadot/react-components": "0.37.0-beta.63",
+    "@polkadot/react-query": "0.37.0-beta.63",
+    "lodash": "^4.17.15"
   }
 }

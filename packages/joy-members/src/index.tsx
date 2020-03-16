@@ -3,10 +3,10 @@ import BN from 'bn.js';
 import React from 'react';
 import { Route, Switch } from 'react-router';
 
-import { AppProps, I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
-import Tabs, { TabItem } from '@polkadot/ui-app/Tabs';
+import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { withCalls, withMulti } from '@polkadot/react-api/with';
+import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
 
 import './index.css';
 
@@ -17,23 +17,21 @@ import List from './List';
 import DetailsByHandle from './DetailsByHandle';
 import EditForm from './EditForm';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
+import {FIRST_MEMBER_ID} from './constants';
 
 // define out internal types
 type Props = AppProps & ApiProps & I18nProps & MyAccountProps & {
-  firstMemberId?: BN,
-  nextMemberId?: BN
+  membersCreated?: BN
 };
 
 class App extends React.PureComponent<Props> {
 
   private buildTabs (): TabItem[] {
-    const { t, nextMemberId, firstMemberId, iAmMember } = this.props;
-    let memberCount = 0;
-    if (nextMemberId && firstMemberId) {
-      memberCount = nextMemberId.sub(firstMemberId).toNumber();
-    }
+    const { t, membersCreated: memberCount, iAmMember } = this.props;
+
     return [
       {
+        isRoot: true,
         name: 'members',
         text: t('All members') + ` (${memberCount})`
       },
@@ -49,9 +47,9 @@ class App extends React.PureComponent<Props> {
   }
 
   private renderList () {
-    const { firstMemberId, nextMemberId, ...otherProps } = this.props;
-    return firstMemberId && nextMemberId
-      ? <List firstMemberId={firstMemberId} nextMemberId={nextMemberId} {...otherProps} />
+    const { membersCreated, ...otherProps } = this.props;
+    return membersCreated ?
+      <List firstMemberId={FIRST_MEMBER_ID} membersCreated={membersCreated} {...otherProps} />
       : <em>Loading...</em>;
   }
 
@@ -81,7 +79,6 @@ export default withMulti(
   translate,
   withMyAccount,
   withCalls<Props>(
-    queryMembershipToProp('firstMemberId'),
-    queryMembershipToProp('nextMemberId')
+    queryMembershipToProp('membersCreated')
   )
 );

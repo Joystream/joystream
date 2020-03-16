@@ -2,26 +2,32 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-export type Generator$Calculation = {
-  count: number,
-  offset: number
-};
+import { KeypairType } from '@polkadot/util-crypto/types';
 
-export type Generator$Match = Generator$Calculation & {
-  address: string,
-  seed: Uint8Array
-};
+export interface GeneratorCalculation {
+  count: number;
+  offset: number;
+}
 
-export type Generator$Matches = Array<Generator$Match>;
+export interface GeneratorMatch extends GeneratorCalculation {
+  address: string;
+  mnemonic?: string;
+  seed: Uint8Array;
+}
 
-export type Generator$Options = {
-  atOffset?: number,
-  match: string,
-  runs?: number,
-  withCase?: boolean
-};
+export type GeneratorMatches = GeneratorMatch[];
 
-export type Generator$Result = {
-  elapsed: number,
-  found: Generator$Matches
+export interface GeneratorOptions {
+  atOffset?: number;
+  match: string;
+  network?: string;
+  runs: number;
+  type: KeypairType;
+  withCase?: boolean;
+  withHex?: boolean;
+}
+
+export interface GeneratorResult {
+  elapsed: number;
+  found: GeneratorMatches;
 }

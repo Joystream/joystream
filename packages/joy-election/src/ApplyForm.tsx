@@ -1,11 +1,11 @@
 import BN from 'bn.js';
 import React from 'react';
 
-import { I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
-import { Labelled } from '@polkadot/ui-app/index';
-import { Balance } from '@polkadot/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { withCalls, withMulti } from '@polkadot/react-api/with';
+import { Labelled } from '@polkadot/react-components/index';
+import { Balance } from '@polkadot/types/interfaces';
 
 import translate from './translate';
 import TxButton from '@polkadot/joy-utils/TxButton';
@@ -55,7 +55,7 @@ class ApplyForm extends React.PureComponent<Props, State> {
             isDisabled={!isStakeValid}
             label={buttonLabel}
             params={[stake]}
-            tx='election.apply'
+            tx='councilElection.apply'
           />
         </Labelled>
       </div>

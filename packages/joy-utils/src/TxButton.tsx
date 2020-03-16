@@ -1,31 +1,51 @@
-import { BareProps, ApiProps } from '@polkadot/ui-api/types';
-import { QueueTx$ExtrinsicAdd, PartialQueueTx$Extrinsic } from '@polkadot/ui-app/Status/types';
-
 import React from 'react';
-import { Button } from '@polkadot/ui-app/index';
-import { QueueConsumer } from '@polkadot/ui-app/Status/Context';
-import { withApi } from '@polkadot/ui-api/index';
+import { BareProps, ApiProps } from '@polkadot/react-api/types';
+import { QueueTxExtrinsicAdd, PartialQueueTxExtrinsic, TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
+import { Button } from '@polkadot/react-components/index';
+import { QueueConsumer } from '@polkadot/react-components/Status/Context';
+import { withApi } from '@polkadot/react-api/index';
 import { assert } from '@polkadot/util';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
+import { useTransportContext } from '@polkadot/joy-media/TransportContext';
+import { MockTransport } from '@polkadot/joy-media/transport.mock';
+import { Button$Sizes } from '@polkadot/react-components/Button/types';
+import { SemanticShorthandItem, IconProps } from 'semantic-ui-react'
 
 type InjectedProps = {
-  queueExtrinsic: QueueTx$ExtrinsicAdd;
+  queueExtrinsic: QueueTxExtrinsicAdd;
 };
 
-type Props = BareProps & ApiProps & MyAccountProps & PartialQueueTx$Extrinsic & {
+export type OnTxButtonClick = (sendTx: () => void) => void;
+
+type BasicButtonProps = {
   accountId?: string,
   type?: 'submit' | 'button',
+  size?: Button$Sizes,
+  isBasic?: boolean,
   isPrimary?: boolean,
   isDisabled?: boolean,
-  label: React.ReactNode,
+  label?: React.ReactNode,
   params: Array<any>,
   tx: string,
-  onClick?: (sendTx: () => void) => void
+
+  className?: string,
+  style?: Record<string, string | number>,
+  children?: React.ReactNode,
+  compact?: boolean,
+  icon?: boolean | SemanticShorthandItem<IconProps>,
+
+  onClick?: OnTxButtonClick,
+  txFailedCb?: TxFailedCallback,
+  txSuccessCb?: TxCallback,
+  txStartCb?: () => void,
+  txUpdateCb?: TxCallback
 };
 
-class TxButtonInner extends React.PureComponent<Props & InjectedProps> {
+type PropsWithApi = BareProps & ApiProps & MyAccountProps & PartialQueueTxExtrinsic & BasicButtonProps
+
+class TxButtonInner extends React.PureComponent<PropsWithApi & InjectedProps> {
   render () {
-    const { myAddress, accountId, isPrimary = true, isDisabled, label, onClick } = this.props;
+    const { myAddress, accountId, isPrimary = true, isDisabled, icon = '', onClick } = this.props;
     const origin = accountId || myAddress;
 
     return (
@@ -33,7 +53,7 @@ class TxButtonInner extends React.PureComponent<Props & InjectedProps> {
         {...this.props}
         isDisabled={isDisabled || !origin}
         isPrimary={isPrimary}
-        label={label}
+        icon={icon as string}
         onClick={() => {
           if (onClick) onClick(this.send);
           else this.send();
@@ -45,10 +65,10 @@ class TxButtonInner extends React.PureComponent<Props & InjectedProps> {
   private send = (): void => {
     const {
       myAddress, accountId, api, params, queueExtrinsic, tx,
-      txFailedCb, txSuccessCb, txSentCb, txCancelledCb,
+      txFailedCb, txSuccessCb, txStartCb, txUpdateCb,
     } = this.props;
     const origin = accountId || myAddress;
-    const [section, method] = tx.split('.');
+    const [ section, method ] = tx.split('.');
 
     assert(api.tx[section] && api.tx[section][method], `Unable to find api.tx.${section}.${method}`);
 
@@ -57,13 +77,13 @@ class TxButtonInner extends React.PureComponent<Props & InjectedProps> {
       extrinsic: api.tx[section][method](...params) as any, // ???
       txFailedCb,
       txSuccessCb,
-      txSentCb,
-      txCancelledCb,
+      txStartCb,
+      txUpdateCb,
     });
   }
 }
 
-class TxButton extends React.PureComponent<Props> {
+class TxButton extends React.PureComponent<PropsWithApi> {
   render () {
     return (
       <QueueConsumer>
@@ -78,4 +98,41 @@ class TxButton extends React.PureComponent<Props> {
   }
 }
 
-export default withApi(withMyAccount(TxButton));
+const SubstrateTxButton = withApi(withMyAccount(TxButton))
+
+const mockSendTx = () => {
+  const msg = 'Cannot send a Substrate tx in a mock mode'
+  if (typeof window !== 'undefined') {
+    window.alert(`WARN: ${msg}`)
+  } else if (typeof console.warn === 'function') {
+    console.warn(msg)
+  } else {
+    console.log(`WARN: ${msg}`)
+  }
+}
+
+function MockTxButton (props: BasicButtonProps) {
+  const { isPrimary = true, icon = '', onClick } = props
+
+  return (
+    <Button
+      {...props}
+      isPrimary={isPrimary}
+      icon={icon as string}
+      onClick={() => {
+        if (onClick) onClick(mockSendTx)
+        else mockSendTx()
+      }}
+    />
+  )
+}
+
+function ResolvedButton (props: BasicButtonProps) {
+  const isMock = useTransportContext() instanceof MockTransport;
+
+  return isMock 
+    ? <MockTxButton {...props} />
+    : <SubstrateTxButton {...props} />
+}
+
+export default ResolvedButton

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Grid } from 'semantic-ui-react';
 
-import { I18nProps } from '@polkadot/ui-app/types';
+import { I18nProps } from '@polkadot/react-components/types';
 
 // our app-specific styles
 import './index.css';

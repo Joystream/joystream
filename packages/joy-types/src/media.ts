@@ -1,12 +1,12 @@
-import { Enum, Struct, Option, Vector } from '@polkadot/types/codec';
-import { getTypeRegistry, u64, Bool, Text, BlockNumber, Moment, AccountId, Hash } from '@polkadot/types';
-import { OptionText } from './';
+import { Enum, Struct, Option, Vec as Vector, H256 } from '@polkadot/types';
+import { getTypeRegistry, u32, u64, bool, Text, GenericAccountId } from '@polkadot/types';
+import { BlockNumber, Moment, AccountId } from '@polkadot/types/interfaces';
 
 import { randomAsU8a } from '@polkadot/util-crypto';
 import { encodeAddress, decodeAddress } from '@polkadot/keyring';
 // import { u8aToString, stringToU8a } from '@polkadot/util';
 
-export class ContentId extends Hash {
+export class ContentId extends H256 {
   static generate (): ContentId {
     // randomAsU8a uses https://www.npmjs.com/package/tweetnacl#random-bytes-generation
     return new ContentId(randomAsU8a());
@@ -39,8 +39,8 @@ export type BlockAndTimeType = {
 export class BlockAndTime extends Struct {
   constructor (value?: BlockAndTimeType) {
     super({
-      block: BlockNumber,
-      time: Moment
+      block: u32, // BlockNumber
+      time: u64, // Moment
     }, value);
   }
 
@@ -67,76 +67,9 @@ export class ContentVisibility extends Enum {
 
 export class VecContentId extends Vector.with(ContentId) {}
 
-export type ContentMetadataJsonV1 = {
-  name: string,
-  description?: string,
-  thumbnail?: string,
-  keywords?: string
-};
-
-export class ContentMetadata extends Struct {
-  constructor (value?: any) {
-    super({
-      owner: AccountId,
-      added_at: BlockAndTime,
-      children_ids: VecContentId,
-      visibility: ContentVisibility,
-      schema: SchemaId,
-      json: Text
-    }, value);
-  }
-
-  get owner (): AccountId {
-    return this.get('owner') as AccountId;
-  }
-
-  get added_at (): BlockAndTime {
-    return this.get('added_at') as BlockAndTime;
-  }
-
-  get children_ids (): VecContentId {
-    return this.get('children_ids') as VecContentId;
-  }
-
-  get visibility (): ContentVisibility {
-    return this.get('visibility') as ContentVisibility;
-  }
-
-  get schema (): SchemaId {
-    return this.get('schema') as SchemaId;
-  }
-
-  get json (): Text {
-    return this.get('json') as Text;
-  }
-
-  parseJson (): ContentMetadataJsonV1 {
-    return JSON.parse(this.json.toString());
-  }
-}
-
 export class OptionVecContentId extends Option.with(VecContentId) {}
 export class OptionSchemaId extends Option.with(SchemaId) {}
 export class OptionContentVisibility extends Option.with(ContentVisibility) {}
-
-export type ContentMetadataUpdateType = {
-  children_ids: OptionVecContentId,
-  visibility: OptionContentVisibility,
-  schema: OptionSchemaId,
-  json: OptionText
-};
-
-export class ContentMetadataUpdate extends Struct {
-  constructor (value?: ContentMetadataUpdateType) {
-    super({
-      children_ids: OptionVecContentId,
-      visibility: OptionContentVisibility,
-      schema: OptionSchemaId,
-      json: OptionText
-    }, value);
-  }
-}
-
 export type LiaisonJudgementKey = 'Pending' | 'Accepted' | 'Rejected';
 
 export class LiaisonJudgement extends Enum {
@@ -152,11 +85,11 @@ export class LiaisonJudgement extends Enum {
 export class DataObject extends Struct {
   constructor (value?: any) {
     super({
-      owner: AccountId,
+      owner: GenericAccountId,
       added_at: BlockAndTime,
       type_id: DataObjectTypeId,
       size: u64,
-      liaison: AccountId,
+      liaison: GenericAccountId,
       liaison_judgement: LiaisonJudgement,
       ipfs_content_id: Text,
     }, value);
@@ -196,8 +129,8 @@ export class DataObjectStorageRelationship extends Struct {
   constructor (value?: any) {
     super({
       content_id: ContentId,
-      storage_provider: AccountId,
-      ready: Bool
+      storage_provider: GenericAccountId,
+      ready: bool
     }, value);
   }
 
@@ -209,8 +142,8 @@ export class DataObjectStorageRelationship extends Struct {
     return this.get('storage_provider') as AccountId;
   }
 
-  get ready (): Bool {
-    return this.get('ready') as Bool;
+  get ready (): bool {
+    return this.get('ready') as bool;
   }
 }
 
@@ -218,7 +151,7 @@ export class DataObjectType extends Struct {
   constructor (value?: any) {
     super({
       description: Text,
-      active: Bool
+      active: bool
     }, value);
   }
 
@@ -226,8 +159,8 @@ export class DataObjectType extends Struct {
     return this.get('description') as Text;
   }
 
-  get active (): Bool {
-    return this.get('active') as Bool;
+  get active (): bool {
+    return this.get('active') as bool;
   }
 }
 
@@ -246,10 +179,10 @@ export class DownloadSession extends Struct {
   constructor (value?: any) {
     super({
       content_id: ContentId,
-      consumer: AccountId,
-      distributor: AccountId,
-      initiated_at_block: BlockNumber,
-      initiated_at_time: Moment,
+      consumer: GenericAccountId,
+      distributor: GenericAccountId,
+      initiated_at_block: u32, // BlockNumber,
+      initiated_at_time: u64, // Moment
       state: DownloadState,
       transmitted_bytes: u64
     }, value);
@@ -289,11 +222,9 @@ export function registerMediaTypes () {
     getTypeRegistry().register({
       '::ContentId': ContentId,
       '::DataObjectTypeId': DataObjectTypeId,
-      SchemaId,
+      // SchemaId, // This isn't required? (its what caused issue with type mismatch in permissions module!)
       ContentId,
       ContentVisibility,
-      ContentMetadata,
-      ContentMetadataUpdate,
       LiaisonJudgement,
       DataObject,
       DataObjectStorageRelationshipId,

@@ -1,36 +1,42 @@
 import BN from 'bn.js';
 import React from 'react';
 
-import { withCalls } from '@polkadot/ui-api/with';
+import { withCalls } from '@polkadot/react-api/with';
 
 import { nonEmptyStr } from '../index';
 import TextArea from '../TextArea';
-import { u8aToString } from '@polkadot/util';
 
 type Props = {
   accountId: string,
   onChange: (memo: string) => void,
+  onReset: (memo: string) => void,
   maxLen?: BN,
-  storedMemo?: Uint8Array
+  storedMemo?: Text,
 };
 
 type State = {
-  memo: string
+  memo: string,
+  loadedMemo: boolean,
 };
 
 class Component extends React.PureComponent<Props, State> {
 
   static getDerivedStateFromProps (props: Props, currentState: State) {
     const { storedMemo } = props;
-    const { memo } = currentState;
-    if (storedMemo && !memo) {
-      return { memo: u8aToString(storedMemo) };
+    const { memo, loadedMemo } = currentState;
+    if (storedMemo && !memo && !loadedMemo) {
+      // only set loaded memo once
+      return {
+        memo: storedMemo.toString(),
+        loadedMemo: true,
+      };
     }
     return null;
   }
 
   state: State = {
-    memo: ''
+    memo: '',
+    loadedMemo: false,
   };
 
   render () {
@@ -48,13 +54,20 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private onChange = (memo: string) => {
-    const { maxLen, onChange } = this.props;
+    const { maxLen, onChange, onReset, storedMemo } = this.props;
     if (maxLen && nonEmptyStr(memo)) {
       memo = memo.substring(0, maxLen.toNumber());
     }
     this.setState({ memo });
-    if (onChange) {
-      onChange(memo);
+
+    if (storedMemo && memo == storedMemo.toString()) {
+      if (onReset) {
+        onReset(memo)
+      }
+    } else {
+      if (onChange) {
+        onChange(memo);
+      }
     }
   }
 }

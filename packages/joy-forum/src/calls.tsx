@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { ApiProps, Subtract } from '@polkadot/ui-api/types';
-import { Options } from '@polkadot/ui-api/with/types';
-import { withApi, withCall as withSubstrateCall } from '@polkadot/ui-api';
+import { ApiProps, SubtractProps } from '@polkadot/react-api/types';
+import { Options } from '@polkadot/react-api/with/types';
+import { withApi, withCall as withSubstrateCall } from '@polkadot/react-api';
 import { Option } from '@polkadot/types/codec';
-import { U64, AccountId } from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
+import { u64 } from '@polkadot/types';
 import { Constructor } from '@polkadot/types/types';
 import { Category, Thread, Reply } from '@joystream/types/forum';
 import { useForum, ForumState } from './Context';
@@ -20,13 +21,13 @@ type EntityMapName = 'categoryById' | 'threadById' | 'replyById';
 const getReactValue = (state: ForumState, endpoint: string, paramValue: any): any => {
 
   const getEntityById = (mapName: EntityMapName, constructor: Constructor): any => {
-    const id = (paramValue as U64).toNumber();
+    const id = (paramValue as u64).toNumber();
     const entity = state[mapName].get(id);
     return new constructor(entity);
   };
 
   switch (endpoint) {
-    case 'forumSudo': return new Option(AccountId, state.sudo);
+    case 'forumSudo': return new Option<AccountId>('AccountId', state.sudo);
     case 'categoryById': return getEntityById(endpoint, Category);
     case 'threadById': return getEntityById(endpoint, Thread);
     case 'replyById': return getEntityById(endpoint, Reply);
@@ -35,7 +36,7 @@ const getReactValue = (state: ForumState, endpoint: string, paramValue: any): an
 };
 
 function withReactCall<P extends ApiProps> (endpoint: string, { paramName, propName }: Options = {}): (Inner: React.ComponentType<ApiProps>) => React.ComponentType<any> {
-  return (Inner: React.ComponentType<ApiProps>): React.ComponentType<Subtract<P, ApiProps>> => {
+  return (Inner: React.ComponentType<ApiProps>): React.ComponentType<SubtractProps<P, ApiProps>> => {
 
     const SetProp = (props: P) => {
       const { state } = useForum();
@@ -66,7 +67,7 @@ function withForumCall<P extends ApiProps> (endpoint: string, opts: Options = {}
 }
 
 // Heavily based on @polkadot/ui-api/src/with/calls.ts
-export function withForumCalls <P> (...calls: Array<Call>): (Component: React.ComponentType<P>) => React.ComponentType<Subtract<P, ApiProps>> {
+export function withForumCalls <P> (...calls: Array<Call>): (Component: React.ComponentType<P>) => React.ComponentType<SubtractProps<P, ApiProps>> {
   return (Component: React.ComponentType<P>): React.ComponentType<any> => {
     // NOTE: Order is reversed so it makes sense in the props, i.e. component
     // after something can use the value of the preceding version

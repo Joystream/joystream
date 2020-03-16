@@ -1,6 +1,6 @@
 import BN from 'bn.js';
 import React from 'react';
-import { I18nProps } from '@polkadot/ui-app/types';
+import { I18nProps } from '@polkadot/react-components/types';
 
 import translate from './translate';
 import Details from './Details';

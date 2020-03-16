@@ -2,10 +2,10 @@ import React from 'react';
 import { Table } from 'semantic-ui-react';
 import BN from 'bn.js';
 
-import { I18nProps } from '@polkadot/ui-app/types';
-import { ApiProps } from '@polkadot/ui-api/types';
-import { withCalls } from '@polkadot/ui-api/with';
-import { AccountId } from '@polkadot/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { ApiProps } from '@polkadot/react-api/types';
+import { withCalls } from '@polkadot/react-api/with';
+import { AccountId } from '@polkadot/types/interfaces';
 import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';

@@ -6,7 +6,7 @@ import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
-import { withMulti } from '@polkadot/ui-api/with';
+import { withMulti } from '@polkadot/react-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Text } from '@polkadot/types';
@@ -18,6 +18,7 @@ import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withOnlyForumSudo } from './ForumSudo';
 import { withForumCalls } from './calls';
 import { ValidationProps, withCategoryValidation } from './validation';
+import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 
 const buildSchema = (props: ValidationProps) => {
   const {
@@ -89,15 +90,15 @@ const InnerForm = (props: FormProps) => {
     if (isValid) sendTx();
   };
 
-  const onTxCancelled = () => {
+  const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
+    if (txResult == null) {
+      // Tx cancelled.
+      return;
+    }
   };
 
-  const onTxFailed = (_txResult: SubmittableResult) => {
-    setSubmitting(false);
-  };
-
-  const onTxSuccess = (_txResult: SubmittableResult) => {
+  const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
     setSubmitting(false);
     if (!history) return;
 
@@ -163,7 +164,6 @@ const InnerForm = (props: FormProps) => {
             : 'forum.updateCategory'
           }
           onClick={onSubmit}
-          txCancelledCb={onTxCancelled}
           txFailedCb={onTxFailed}
           txSuccessCb={onTxSuccess}
         />

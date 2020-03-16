@@ -1,22 +1,18 @@
-import { Enum, Struct } from '@polkadot/types/codec';
-import { getTypeRegistry, BlockNumber, AccountId, Balance, u32 } from '@polkadot/types';
-import { MemberId } from './members';
+import { Struct } from '@polkadot/types/codec';
+import { getTypeRegistry, u32, u128, GenericAccountId } from '@polkadot/types';
+import { BlockNumber, AccountId, Balance } from '@polkadot/types/interfaces';
+import { MemberId, Role } from './members';
 
-export class Role extends Enum {
-  constructor (value?: any) {
-    super([
-      'Storage'
-    ], value);
-  }
-}
+// re-export Role
+export { Role } from './members';
 
 export class Actor extends Struct {
   constructor (value?: any) {
     super({
       member_id: MemberId,
       role: Role,
-      account: AccountId,
-      joined_at: BlockNumber
+      account: GenericAccountId,
+      joined_at: u32, // BlockNumber
     }, value);
   }
 
@@ -42,16 +38,16 @@ export type Requests = Array<Request>;
 export class RoleParameters extends Struct {
   constructor (value?: any) {
     super({
-      min_stake: Balance,
+      min_stake:  u128, // Balance,
       min_actors: u32,
       max_actors: u32,
-      reward: Balance,
-      reward_period: BlockNumber,
-      bonding_period: BlockNumber,
-      unbonding_period: BlockNumber,
-      min_service_period: BlockNumber,
-      startup_grace_period: BlockNumber,
-      entry_request_fee: Balance
+      reward: u128, // Balance,
+      reward_period: u32, // BlockNumber,
+      bonding_period: u32, // BlockNumber,
+      unbonding_period: u32, // BlockNumber,
+      min_service_period: u32, // BlockNumber,
+      startup_grace_period: u32, // BlockNumber,
+      entry_request_fee: u128, // Balance
     }, value);
   }
 
@@ -91,7 +87,6 @@ export function registerRolesTypes () {
   try {
     const typeRegistry = getTypeRegistry();
     typeRegistry.register({
-      Role,
       RoleParameters,
       Request: '(AccountId, MemberId, Role, BlockNumber)',
       Requests: 'Vec<Request>',

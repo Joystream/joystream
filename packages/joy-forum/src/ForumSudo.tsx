@@ -5,19 +5,19 @@ import * as Yup from 'yup';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
-import { InputAddress } from '@polkadot/ui-app/index';
-import { Props as InputAddressProps } from '@polkadot/ui-app/InputAddress';
-import { withMulti } from '@polkadot/ui-api/with';
+import { InputAddress } from '@polkadot/react-components/index';
+import { withMulti } from '@polkadot/react-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Option } from '@polkadot/types/codec';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { withOnlySudo } from '@polkadot/joy-utils/Sudo';
-import { AccountId } from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
 import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
-import { AddressPreview } from '@polkadot/ui-app/AddressMiniJoy';
+import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { withForumCalls } from './calls';
+import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 
 const buildSchema = () => Yup.object().shape({});
 
@@ -58,15 +58,15 @@ const InnerForm = (props: FormProps) => {
     if (isValid) sendTx();
   };
 
-  const onTxCancelled = () => {
+  const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
+    if (txResult == null) {
+      // Tx cancelled.
+      return;
+    }
   };
 
-  const onTxFailed = (_txResult: SubmittableResult) => {
-    setSubmitting(false);
-  };
-
-  const onTxSuccess = (_txResult: SubmittableResult) => {
+  const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
     setSubmitting(false);
     resetForm();
   };
@@ -75,23 +75,22 @@ const InnerForm = (props: FormProps) => {
 
   const buildTxParams = () => {
     if (!isValid) return [];
-
-    return [ new Option(AccountId, sudo) ];
+    return [ new Option('AccountId', sudo) ];
   };
 
-  type SudoInputAddressProps = FieldProps<FormValues> & InputAddressProps;
+  type SudoInputAddressProps = FieldProps<FormValues>; /* & InputAddressProps*/;
 
   const SudoInputAddress = ({ field, form, ...props }: SudoInputAddressProps) => {
     const { name, value } = field;
 
-    const onChange = (address: string) => {
+    const onChange = (address: string | null) => {
       address !== value && form.setFieldValue(name, address);
     };
 
     return (
       <InputAddress
         {...props}
-        name={name}
+        // name={name}
         value={value}
         onChange={onChange}
         withLabel={false}
@@ -118,7 +117,6 @@ const InnerForm = (props: FormProps) => {
           params={buildTxParams()}
           tx={`forum.setForumSudo`}
           onClick={onSubmit}
-          txCancelledCb={onTxCancelled}
           txFailedCb={onTxFailed}
           txSuccessCb={onTxSuccess}
         />
@@ -140,7 +138,7 @@ const InnerForm = (props: FormProps) => {
       </Section>
     )
     : (<>
-      {currentSudo && <p><AddressPreview address={currentSudo} /></p>}
+      {currentSudo && <p><AddressMini value={currentSudo} /></p>}
       <Button
         type='button'
         size='large'
@@ -216,7 +214,7 @@ function innerWithOnlyForumSudo<P extends LoadStructProps> (Component: React.Com
       return (
         <JoyWarn title={`Only forum sudo can access this functionality.`}>
           <div>Current forum sudo:</div>
-          <div>{sudo ? <AddressPreview address={sudo} /> : 'UNDEFINED'}</div>
+          <div>{sudo ? <AddressMini value={sudo} /> : 'UNDEFINED'}</div>
         </JoyWarn>
       );
     }

@@ -5,7 +5,7 @@ import * as Yup from 'yup';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
-import { withMulti } from '@polkadot/ui-api/with';
+import { withMulti } from '@polkadot/react-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Text } from '@polkadot/types';
@@ -13,6 +13,7 @@ import { ReplyId, ThreadId } from '@joystream/types/forum';
 import Section from '@polkadot/joy-utils/Section';
 import { withOnlyForumSudo } from './ForumSudo';
 import { ValidationProps, withPostModerationValidation } from './validation';
+import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 
 const buildSchema = (props: ValidationProps) => {
   const {
@@ -70,15 +71,15 @@ const InnerForm = (props: FormProps) => {
     if (isValid) sendTx();
   };
 
-  const onTxCancelled = () => {
+  const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
+    if (txResult == null) {
+      // Tx cancelled.
+      return;
+    }
   };
 
-  const onTxFailed = (_txResult: SubmittableResult) => {
-    setSubmitting(false);
-  };
-
-  const onTxSuccess = (_txResult: SubmittableResult) => {
+  const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
     setSubmitting(false);
     closeForm();
   };
@@ -115,7 +116,6 @@ const InnerForm = (props: FormProps) => {
             : 'forum.moderatePost'
           }
           onClick={onSubmit}
-          txCancelledCb={onTxCancelled}
           txFailedCb={onTxFailed}
           txSuccessCb={onTxSuccess}
         />

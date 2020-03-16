@@ -2,79 +2,50 @@
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { Balance, HeaderExtended } from '@polkadot/types';
-import { BareProps } from '@polkadot/ui-app/types';
+import { BareProps } from '@polkadot/react-components/types';
 import { ComponentProps } from '../types';
 
-import './index.css';
-
-import React from 'react';
-import { withCalls, withMulti } from '@polkadot/ui-api/with';
-import { formatNumber } from '@polkadot/util';
+import React, { useContext, useEffect, useState } from 'react';
+import { ApiContext } from '@polkadot/react-api';
+import { BlockAuthorsContext } from '@polkadot/react-query';
 
 import CurrentList from './CurrentList';
 import Summary from './Summary';
 
-type Props = BareProps & ComponentProps & {
-  chain_subscribeNewHead?: HeaderExtended
-};
+interface Props extends BareProps, ComponentProps {}
 
-const ZERO = new Balance(0);
+export default function Overview ({ allControllers, allStashes, recentlyOnline, stakingOverview }: Props): React.ReactElement<Props> {
+  const { isSubstrateV2 } = useContext(ApiContext);
+  const { byAuthor, lastBlockAuthors, lastBlockNumber } = useContext(BlockAuthorsContext);
+  const [next, setNext] = useState<string[]>([]);
+  const validators = stakingOverview && stakingOverview.validators;
 
-class Overview extends React.PureComponent<Props> {
-  render () {
-    const { balances, chain_subscribeNewHead, controllers, recentlyOffline, validators } = this.props;
-    const nextSorted = this.sortByBalance(
-      controllers.filter((address) =>
-        !validators.includes(address)
-      )
+  useEffect((): void => {
+    validators && setNext(
+      isSubstrateV2
+        // this is a V2 node currentValidators is a list of stashes
+        ? allStashes.filter((address): boolean => !validators.includes(address as any))
+        // this is a V1 node currentValidators is a list of controllers
+        : allControllers.filter((address): boolean => !validators.includes(address as any))
     );
-    const validatorsSorted = this.sortByBalance(validators);
+  }, [allControllers, allStashes, validators]);
 
-    let lastBlock: string = '—';
-    let lastAuthor: string | undefined;
-
-    if (chain_subscribeNewHead) {
-      lastBlock = formatNumber(chain_subscribeNewHead.blockNumber);
-      lastAuthor = (chain_subscribeNewHead.author || '').toString();
-    }
-
-    return (
-      <div className='staking--Overview'>
-        <Summary
-          balances={balances}
-          controllers={controllers}
-          lastBlock={lastBlock}
-          lastAuthor={lastAuthor}
-          validators={validators}
-        />
-        <CurrentList
-          balances={balances}
-          current={validatorsSorted}
-          lastBlock={lastBlock}
-          lastAuthor={lastAuthor}
-          next={nextSorted}
-          recentlyOffline={recentlyOffline}
-        />
-      </div>
-    );
-  }
-
-  private sortByBalance (list: Array<string>): Array<string> {
-    const { balances } = this.props;
-
-    return list.sort((a, b) => {
-      const balanceA = balances[a] || { stakingBalance: ZERO };
-      const balanceB = balances[b] || { stakingBalance: ZERO };
-
-      return balanceB.stakingBalance.cmp(balanceA.stakingBalance);
-    });
-  }
+  return (
+    <div className='staking--Overview'>
+      <Summary
+        allControllers={allControllers}
+        lastBlock={lastBlockNumber}
+        lastAuthors={lastBlockAuthors}
+        next={next}
+        stakingOverview={stakingOverview}
+      />
+      <CurrentList
+        authorsMap={byAuthor}
+        lastAuthors={lastBlockAuthors}
+        next={next}
+        recentlyOnline={recentlyOnline}
+        stakingOverview={stakingOverview}
+      />
+    </div>
+  );
 }
-
-export default withMulti(
-  Overview,
-  withCalls<Props>(
-    'derive.chain.subscribeNewHead'
-  )
-);

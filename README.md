@@ -18,16 +18,15 @@ The repo is split into a number of packages, each representing an application. T
 - [app-js](packages/app-js/) An online code editor with [@polkadot-js/api](https://github.com/polkadot-js/api/tree/master/packages/api) access to the currently connected node.
 - [app-settings](packages/app-settings/) A basic settings management app, allowing choice of language, node to connect to, and theme
 - [app-staking](packages/app-staking/) A basic staking management app, allowing staking and nominations.
-- [app-nodeinfo](packages/app-nodeinfo/) Node information and status
 - [app-storage](packages/app-storage/) A simple node storage query application. Multiple queries can be queued and updates as new values become available.
-- [app-toolbox](packages/app-toolbox/) Sumission of raw data to RPC endpoints and utility hashing functions.
-- [app-transfer](packages/app-transfer/) A basic account management app, allowing transfer of DOTs between accounts.
+- [app-toolbox](packages/app-toolbox/) Submission of raw data to RPC endpoints and utility hashing functions.
+- [app-transfer](packages/app-transfer/) A basic account management app, allowing transfer of Units/DOTs between accounts.
 
 In addition the following libraries are also included in the repo. These are to be moved to the [@polkadot/ui](https://github.com/polkadot-js/ui/) repository once it reaches a base level of stability and usability. (At this point with the framework being tested on the apps above, it makes development easier having it close)
 
-- [ui-app](packages/ui-app/) A reactive (using RxJS) application framework with a number of useful shared components.
-- [ui-signer](packages/ui-signer/) Signer implementation for apps.
-- [ui-react-rx](packages/ui-react-rx) Base components that use the RxJS Observable APIs
+- [react-components](packages/react-components/) A reactive (using RxJS) application framework with a number of useful shared components.
+- [react-signer](packages/react-signer/) Signer implementation for apps.
+- [react-query](packages/react-query) Base components that use the RxJS Observable APIs
 
 ## development
 
@@ -43,3 +42,13 @@ To get started -
 4. Install the dependencies by running `yarn`
 5. Ready! Now you can launch the UI (assuming you have a local Polkadot Node running), via `yarn run start`
 6. Access the UI via [http://localhost:3000](http://localhost:3000)
+
+### Storybook
+
+There is a [StoryBook](https://storybook.js.org) implementation, the UI for which can be started with `yarn storybook` and then accessed in a browser via http://localhost:3001 (and the server will open a new browser tab by default when it starts).
+
+Story code can be placed anywhere in the `packages` directory, and will be detected as long as the file name ends in `.stories.tsx. Stories should be defined in the [Component Story Format (CSF)](https://storybook.js.org/docs/formats/component-story-format) for consistency.
+
+There are several StoryBook addons available, the most useful of which is [Knobs](https://www.npmjs.com/package/@storybook/addon-knobs), which allows props to be altered in real time.
+
+Note that currently StoryBook only allows for stateless components; it has no connection to polkadot.js or any Substrate node. This means that existing components, which are often tightly coupled with the Polkadot API, cannot be used in storybook.
