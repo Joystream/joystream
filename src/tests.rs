@@ -317,6 +317,29 @@ fn post_creation_body_too_long() {
 }
 
 #[test]
+fn post_creation_limit_reached() {
+    ExtBuilder::default()
+    .build().execute_with(|| {
+        // Create blog for future posts
+        let mut post_count = 0;
+        TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
+        loop {
+            if let Err(create_post_err) = create_post(FIRST_OWNER_ORIGIN, FISRT_ID, PostType::Valid) {
+                assert_eq!(create_post_err, POSTS_LIMIT_REACHED);
+                assert_eq!(post_count, PostsMaxNumber::get());
+                break
+            } else {
+                post_count+=1;
+            }
+        }
+        // Check if related runtime storage left unchanged
+        assert!(post_storage_unchanged(FISRT_ID, FISRT_ID));
+        // Event absence checked
+        assert!(post_creation_event_failure(FISRT_ID, FISRT_ID))
+    })
+}
+
+#[test]
 fn post_locking_success() {
     ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
