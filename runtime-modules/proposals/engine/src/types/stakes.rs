@@ -5,6 +5,7 @@ use rstd::marker::PhantomData;
 use rstd::rc::Rc;
 use runtime_primitives::traits::Zero;
 use srml_support::traits::{Currency, ExistenceRequirement, Imbalance, WithdrawReasons};
+use srml_support::StorageMap;
 
 // Mocking dependencies for testing
 #[cfg(test)]
@@ -25,9 +26,13 @@ impl<T: Trait> stake::StakingEventsHandler<T> for StakingEventsHandler<T> {
         _unstaked_amount: BalanceOf<T>,
         remaining_imbalance: NegativeImbalance<T>,
     ) -> NegativeImbalance<T> {
-        <crate::Module<T>>::refund_proposal_stake(*id, remaining_imbalance);
+        if <crate::StakesProposals<T>>::exists(id) {
+            <crate::Module<T>>::refund_proposal_stake(*id, remaining_imbalance);
 
-        <NegativeImbalance<T>>::zero() // all imbalance was consumed
+          return  <NegativeImbalance<T>>::zero() // imbalance was consumed
+        }
+
+        remaining_imbalance
     }
 
     /// Empty handler for slashing
