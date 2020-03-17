@@ -44,7 +44,7 @@ mod tests;
 use rstd::prelude::*;
 
 use runtime_primitives::traits::Zero;
-use srml_support::traits::{Get, Currency};
+use srml_support::traits::{Currency, Get};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
 };
@@ -574,7 +574,10 @@ impl<T: Trait> Module<T> {
 
                 if let Some(stake_data) = proposal.stake_data {
                     //TODO: handle the result
-                    let _ = CurrencyOf::<T>::resolve_into_existing(&stake_data.source_account_id, imbalance);
+                    let _ = CurrencyOf::<T>::resolve_into_existing(
+                        &stake_data.source_account_id,
+                        imbalance,
+                    );
                 }
             }
         }

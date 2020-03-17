@@ -181,8 +181,6 @@ impl timestamp::Trait for Test {
     type MinimumPeriod = MinimumPeriod;
 }
 
-// TODO add a Hook type to capture TriggerElection and CouncilElected hooks
-
 pub fn initial_test_ext() -> runtime_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
