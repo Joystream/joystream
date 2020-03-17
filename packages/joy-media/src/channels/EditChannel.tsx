@@ -12,7 +12,7 @@ import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { ChannelId, ChannelContentType, ChannelPublicationStatus, OptionalText } from '@joystream/types/content-working-group';
 import { newOptionalText, findFirstParamOfSubstrateEvent } from '@polkadot/joy-utils/';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
-import { ChannelPublicationStatusDropdownOptions } from './ChannelHelpers';
+import { ChannelPublicationStatusDropdownOptions, isAccountAChannelOwner } from './ChannelHelpers';
 import { TxCallback } from '@polkadot/react-components/Status/types';
 import { SubmittableResult } from '@polkadot/api';
 import { ChannelValidationConstraints } from '../transport';
@@ -53,7 +53,12 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     resetForm
   } = props;
 
-  const { myAddress, myMemberId } = useMyMembership();
+  const { myAccountId, myMemberId } = useMyMembership();
+
+  if (entity && !isAccountAChannelOwner(entity, myAccountId)) {
+    return <em>ERROR: Only owner can edit channel</em>
+  }
+
   const { avatar } = values;
   const isNew = !entity;
 
@@ -86,7 +91,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       // Create a new channel
 
       const channelOwner = myMemberId;
-      const roleAccount = myAddress;
+      const roleAccount = myAccountId;
       const contentType = new ChannelContentType(values.content);
 
       return [
