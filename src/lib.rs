@@ -24,11 +24,11 @@ type MaxConsecutiveRepliesNumber = u16;
 
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait {
-    // TODO: Add other types and constants required configure this pallet.
 
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
+    //Security/configuration constraints
     type PostTitleMaxLength: Get<MaxLength>;
 
     type PostBodyMaxLength: Get<MaxLength>;
@@ -217,7 +217,7 @@ decl_module! {
                 }
                 _ => return Err(BLOG_OWNERSHIP_ERROR)
             }
-            // Blog locking default status
+            // Post locking default status
             <PostLockedStatus<T>>::insert((blog_id, posts_count), false);
             <PostsCount<T>>::mutate(blog_id, |count| *count += T::PostId::one());
             Self::deposit_event(RawEvent::PostCreated(blog_id, posts_count));

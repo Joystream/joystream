@@ -2,7 +2,7 @@
 
 use crate::mock::*;
 use crate::*;
-use srml_support::{assert_err, assert_ok};
+use srml_support::assert_ok;
 
 //Blog, post or reply id
 const FIRST_ID: u32 = 0;
@@ -1104,8 +1104,9 @@ fn direct_reply_creation_event_failure(
     reply_id: <Runtime as Trait>::ReplyId,
     child_reply_id: <Runtime as Trait>::ReplyId,
 ) -> bool {
+    let invalid_owner_id = ensure_signed(Origin::signed(invalid_owner_origin)).unwrap();
     let post_edited_event = TestEvent::test_events(RawEvent::DirectReplyCreated(
-        invalid_owner_origin,
+        invalid_owner_id,
         blog_id,
         post_id,
         reply_id,
