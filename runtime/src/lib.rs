@@ -582,7 +582,10 @@ parameter_types! {
 impl stake::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
-    type StakingEventsHandler = (ContentWorkingGroupStakingEventHandler, proposals_engine::StakingEventsHandler<Self>);
+    type StakingEventsHandler = (
+        ContentWorkingGroupStakingEventHandler,
+        proposals_engine::StakingEventsHandler<Self>,
+    );
     type StakeId = u64;
     type SlashId = u64;
 }
@@ -848,7 +851,6 @@ parameter_types! {
     pub const TextProposalMaxLength: u32 = 60_000;
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 2_000_000;
 }
-
 
 impl proposals_codex::Trait for Runtime {
     type TextProposalMaxLength = TextProposalMaxLength;

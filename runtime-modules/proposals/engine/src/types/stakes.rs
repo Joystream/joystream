@@ -29,7 +29,7 @@ impl<T: Trait> stake::StakingEventsHandler<T> for StakingEventsHandler<T> {
         if <crate::StakesProposals<T>>::exists(id) {
             <crate::Module<T>>::refund_proposal_stake(*id, remaining_imbalance);
 
-          return  <NegativeImbalance<T>>::zero() // imbalance was consumed
+            return <NegativeImbalance<T>>::zero(); // imbalance was consumed
         }
 
         remaining_imbalance

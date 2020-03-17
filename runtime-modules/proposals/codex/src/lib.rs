@@ -19,9 +19,10 @@ use codec::Encode;
 use rstd::clone::Clone;
 use rstd::marker::PhantomData;
 use rstd::prelude::*;
+use rstd::str::from_utf8;
 use rstd::vec::Vec;
-use srml_support::{decl_error, decl_module, decl_storage, ensure};
-use system::RawOrigin;
+use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
+use system::{ensure_root, RawOrigin};
 
 use proposal_engine::*;
 pub use proposal_types::{ProposalType, RuntimeUpgradeProposalExecutable, TextProposalExecutable};
@@ -61,6 +62,23 @@ decl_error! {
 
         /// Provided WASM code for the runtime upgrade proposal is empty
         RuntimeProposalIsEmpty,
+
+        /// Require root origin in extrinsics
+        RequireRootOrigin,
+    }
+}
+
+impl From<system::Error> for Error {
+    fn from(error: system::Error) -> Self {
+        match error {
+            system::Error::Other(msg) => Error::Other(msg),
+            system::Error::CannotLookup => Error::Other("CannotLookup"),
+            system::Error::BadSignature => Error::Other("BadSignature"),
+            system::Error::BlockFull => Error::Other("BlockFull"),
+            system::Error::RequireSignedOrigin => Error::Other("RequireSignedOrigin"),
+            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
+            system::Error::RequireNoOrigin => Error::Other("RequireNoOrigin"),
+        }
     }
 }
 
@@ -166,6 +184,41 @@ decl_module! {
             )?;
 
             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
+        }
+
+        /// Text proposal extrinsic. Should be used as callable object to pass to the engine module.
+        fn text_proposal(
+            origin,
+            title: Vec<u8>,
+            _description: Vec<u8>,
+            _text: Vec<u8>,
+        ) {
+            ensure_root(origin)?;
+            print("Text proposal: ");
+            let title_string_result = from_utf8(title.as_slice());
+            if let Ok(title_string) = title_string_result{
+                print(title_string);
+            }
+        }
+
+        /// Runtime upgrade proposal extrinsic.
+        /// Should be used as callable object to pass to the engine module.
+        fn runtime_upgrade_proposal(
+            origin,
+            title: Vec<u8>,
+            _description: Vec<u8>,
+            wasm: Vec<u8>,
+        ) {
+            let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
+            ensure_root(cloned_origin1)?;
+
+            print("Runtime upgrade proposal: ");
+            let title_string_result = from_utf8(title.as_slice());
+            if let Ok(title_string) = title_string_result{
+                print(title_string);
+            }
+
+            <system::Module<T>>::set_code(cloned_origin2, wasm)?;
         }
     }
 }
