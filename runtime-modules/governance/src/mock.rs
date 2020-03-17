@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use super::{council, election, proposals};
+pub use super::{council, election};
 pub use common::currency::GovernanceCurrency;
 pub use system;
 

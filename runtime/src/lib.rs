@@ -399,7 +399,7 @@ impl finality_tracker::Trait for Runtime {
 }
 
 pub use forum;
-use governance::{council, election, proposals};
+use governance::{council, election};
 use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use versioned_store;
@@ -660,10 +660,6 @@ impl common::currency::GovernanceCurrency for Runtime {
     type Currency = balances::Module<Self>;
 }
 
-impl governance::proposals::Trait for Runtime {
-    type Event = Event;
-}
-
 impl governance::election::Trait for Runtime {
     type Event = Event;
     type CouncilElected = (Council,);
@@ -828,7 +824,6 @@ construct_runtime!(
         RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
         Sudo: sudo,
         // Joystream
-        Proposals: proposals::{Module, Call, Storage, Event<T>, Config<T>},
         CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
