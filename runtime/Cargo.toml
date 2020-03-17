@@ -353,3 +353,21 @@ default_features = false
 package = 'substrate-storage-module'
 path = '../runtime-modules/storage'
 version = '1.0.0'
+
+[dependencies.proposals_engine]
+default_features = false
+package = 'substrate-proposals-engine-module'
+path = '../runtime-modules/proposals/engine'
+version = '2.0.0'
+
+[dependencies.proposals_discussion]
+default_features = false
+package = 'substrate-proposals-discussion-module'
+path = '../runtime-modules/proposals/discussion'
+version = '2.0.0'
+
+[dependencies.proposals_codex]
+default_features = false
+package = 'substrate-proposals-codex-module'
+path = '../runtime-modules/proposals/codex'
+version = '2.0.0'

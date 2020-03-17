@@ -54,6 +54,8 @@ pub use srml_support::{
 pub use staking::StakerStatus;
 pub use timestamp::Call as TimestampCall;
 
+use membership::origin_validator::MembershipOriginValidator;
+
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -800,6 +802,59 @@ impl discovery::Trait for Runtime {
     type Roles = LookupRoles;
 }
 
+parameter_types! {
+    pub const ProposalCancellationFee: u64 = 5;
+    pub const ProposalRejectionFee: u64 = 3;
+    pub const ProposalTitleMaxLength: u32 = 100;
+    pub const ProposalDescriptionMaxLength: u32 = 10000;
+    pub const ProposalMaxActiveProposalLimit: u32 = 100;
+}
+
+impl proposals_engine::Trait for Runtime {
+    type Event = Event;
+    type ProposerOriginValidator = MembershipOriginValidator<Self>;
+    type VoterOriginValidator = proposals_engine::CouncilManager<Self>;
+    type TotalVotersCounter = proposals_engine::CouncilManager<Self>;
+    type ProposalCodeDecoder = proposals_codex::ProposalType;
+    type ProposalId = u32;
+    type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
+    type CancellationFee = ProposalCancellationFee;
+    type RejectionFee = ProposalRejectionFee;
+    type TitleMaxLength = ProposalTitleMaxLength;
+    type DescriptionMaxLength = ProposalDescriptionMaxLength;
+    type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
+}
+
+parameter_types! {
+    pub const ProposalMaxPostEditionNumber: u32 = 5;
+    pub const ProposalMaxThreadInARowNumber: u32 = 3;
+    pub const ProposalThreadTitleLengthLimit: u32 = 200;
+    pub const ProposalPostLengthLimit: u32 = 2000;
+}
+
+impl proposals_discussion::Trait for Runtime {
+    type Event = Event;
+    type ThreadAuthorOriginValidator = MembershipOriginValidator<Self>;
+    type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
+    type ThreadId = u32;
+    type PostId = u32;
+    type MaxPostEditionNumber = ProposalMaxPostEditionNumber;
+    type ThreadTitleLengthLimit = ProposalThreadTitleLengthLimit;
+    type PostLengthLimit = ProposalPostLengthLimit;
+    type MaxThreadInARowNumber = ProposalMaxThreadInARowNumber;
+}
+
+parameter_types! {
+    pub const TextProposalMaxLength: u32 = 60_000;
+    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 2_000_000;
+}
+
+
+impl proposals_codex::Trait for Runtime {
+    type TextProposalMaxLength = TextProposalMaxLength;
+    type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -842,6 +897,11 @@ construct_runtime!(
         RecurringRewards: recurringrewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
         ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
+        // --- Proposals
+        ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
+        ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
+        ProposalsCodex: proposals_codex::{Module, Call, Storage, Error},
+        // ---
 	}
 );
 
