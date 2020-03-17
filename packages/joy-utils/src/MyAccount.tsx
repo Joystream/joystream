@@ -308,6 +308,7 @@ export function withMembershipRequired<P extends {}> (Component: React.Component
   };
 }
 
+// TODO (minor) this HOC should be renamed from 'withOnlyMembers' to 'withMyAccountAndMembersOnly'
 export const withOnlyMembers = <P extends MyAccountProps> (Component: React.ComponentType<P>): React.ComponentType<P> =>
 withMulti(
   Component,

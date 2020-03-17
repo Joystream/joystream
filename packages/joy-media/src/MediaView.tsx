@@ -3,6 +3,7 @@ import { MediaTransport } from './transport';
 import { MemberId } from '@joystream/types/members';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 import { useTransportContext } from './TransportContext';
+import { withMembershipRequired } from '@polkadot/joy-utils/MyAccount';
 
 type InitialPropsWithMembership<A> = A & {
   myAddress?: string
@@ -23,6 +24,9 @@ type BaseProps<A, B> = {
    * if values of such properties changed. 
    */
   triggers?: (keyof A)[]
+
+  /** Set `true` if only members should have access to this component. `false` by default. */
+  membersOnly?: boolean
 }
 
 function serializeTrigger(val: any): any {
@@ -36,7 +40,8 @@ function serializeTrigger(val: any): any {
 }
 
 export function MediaView<A = {}, B = {}> (baseProps: BaseProps<A, B>) {
-  return function (initialProps: A & B) {
+
+  function InnerView (initialProps: A & B) {
     const { component: Component, resolveProps, triggers = [], unresolvedView = null } = baseProps;
 
     const transport = useTransportContext();
@@ -83,4 +88,10 @@ export function MediaView<A = {}, B = {}> (baseProps: BaseProps<A, B>) {
       ? <Component {...initialProps} {...resolvedProps} />
       : renderResolving()
   }
+
+  const { membersOnly = false } = baseProps
+
+  return membersOnly
+    ? withMembershipRequired(InnerView)
+    : InnerView
 }
