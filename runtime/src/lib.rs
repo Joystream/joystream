@@ -582,7 +582,7 @@ parameter_types! {
 impl stake::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ContentWorkingGroupStakingEventHandler;
+    type StakingEventsHandler = (ContentWorkingGroupStakingEventHandler, proposals_engine::StakingEventsHandler<Self>);
     type StakeId = u64;
     type SlashId = u64;
 }
