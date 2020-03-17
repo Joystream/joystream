@@ -51,7 +51,7 @@ export type MusicAlbumFormValues = {
   theme: number
   tracks: number[]
   language: number
-  link: string[]
+  links: string[]
   lyrics: string
   composerOrSongwriter: string
   reviews: string[]
@@ -77,7 +77,7 @@ export type MusicAlbumType = {
   theme?: MusicThemeType
   tracks?: MusicTrackType[]
   language?: LanguageType
-  link?: string[]
+  links?: string[]
   lyrics?: string
   composerOrSongwriter?: string
   reviews?: string[]
@@ -104,7 +104,7 @@ export function MusicAlbumToFormValues(entity?: MusicAlbumType): MusicAlbumFormV
     theme: entity && entity.theme?.id || 0,
     tracks: entity && entity.tracks?.map(x => x.id) || [],
     language: entity && entity.language?.id || 0,
-    link: entity && entity.link || [],
+    links: entity && entity.links || [],
     lyrics: entity && entity.lyrics || '',
     composerOrSongwriter: entity && entity.composerOrSongwriter || '',
     reviews: entity && entity.reviews || [],
@@ -128,7 +128,7 @@ export type MusicAlbumPropId =
   'theme' |
   'tracks' |
   'language' |
-  'link' |
+  'links' |
   'lyrics' |
   'composerOrSongwriter' |
   'reviews' |
@@ -232,10 +232,10 @@ export const MusicAlbumClass: MusicAlbumClassType = {
     "type": "Internal",
     "classId": "Language"
   },
-  link: {
-    "id": "link",
-    "name": "Link",
-    "description": "Links to the artist or album site or social media pages.",
+  links: {
+    "id": "links",
+    "name": "Links",
+    "description": "Links to the artist or album site, or social media pages.",
     "type": "TextVec",
     "maxItems": 5,
     "maxTextLength": 255
@@ -302,7 +302,7 @@ export const MusicAlbumClass: MusicAlbumClassType = {
   channelId: {
     "id": "channelId",
     "name": "Channel Id",
-    "description": "Id of the channel this music album is published to.",
+    "description": "Id of the channel this album is published under.",
     "type": "Uint64"
   }
 };

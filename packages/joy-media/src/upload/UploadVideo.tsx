@@ -336,7 +336,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   const additionalTab = () => <Tab.Pane as='div'>
     <MediaDropdown field={Fields.category} options={opts.videoCategoryOptions} {...props} />
-    <MediaText field={Fields.link} {...props} />
+    <MediaText field={Fields.links} {...props} />
     <MediaText field={Fields.attribution} {...props} />
   </Tab.Pane>
 
@@ -360,7 +360,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       render: additionalTab,
       fields: [
         Fields.category,
-        Fields.link,
+        Fields.links,
         Fields.attribution,
       ]
     }
