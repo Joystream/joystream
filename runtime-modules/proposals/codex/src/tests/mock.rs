@@ -7,7 +7,7 @@ pub use runtime_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
     traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
     weights::Weight,
-    BuildStorage, Perbill,
+    BuildStorage, DispatchError, Perbill,
 };
 
 use proposal_engine::VotersParameters;
@@ -93,7 +93,6 @@ impl proposal_engine::Trait for Test {
     type ProposerOriginValidator = ();
     type VoterOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
-    type ProposalCodeDecoder = crate::ProposalType;
     type ProposalId = u32;
     type StakeHandlerProvider = proposal_engine::DefaultStakeHandlerProvider;
     type CancellationFee = CancellationFee;
@@ -101,6 +100,13 @@ impl proposal_engine::Trait for Test {
     type TitleMaxLength = TitleMaxLength;
     type DescriptionMaxLength = DescriptionMaxLength;
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
+    type ProposalCode = crate::Call<Test>;
+}
+
+impl Default for crate::Call<Test> {
+    fn default() -> Self {
+        panic!("shouldn't call default for Call");
+    }
 }
 
 impl governance::council::Trait for Test {

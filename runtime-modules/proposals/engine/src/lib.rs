@@ -44,7 +44,6 @@ mod tests;
 use codec::Decode;
 use rstd::prelude::*;
 use sr_primitives::traits::Zero;
-use sr_primitives::DispatchError;
 use srml_support::traits::{Currency, Get};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
@@ -101,9 +100,7 @@ pub trait Trait:
     type MaxActiveProposalLimit: Get<u32>;
 
     /// Proposals executable code. Can be instantiated by external module Call enum members.
-    type ProposalCode: Parameter
-        + Dispatchable<Origin = Self::Origin, Error = DispatchError>
-        + Default;
+    type ProposalCode: Parameter + Dispatchable<Origin = Self::Origin> + Default;
 }
 
 decl_event!(
@@ -374,7 +371,7 @@ impl<T: Trait> Module<T> {
                 Ok(proposal_code) => {
                     if let Err(error) = proposal_code.dispatch(T::Origin::from(RawOrigin::Root)) {
                         ApprovedProposalStatus::failed_execution(
-                            error.message.unwrap_or("Dispatch error"),
+                            error.into().message.unwrap_or("Dispatch error"),
                         )
                     } else {
                         ApprovedProposalStatus::Executed

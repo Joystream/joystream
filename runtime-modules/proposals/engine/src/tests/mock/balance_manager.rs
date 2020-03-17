@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use runtime_primitives::traits::Zero;
+pub use sr_primitives::traits::Zero;
 use srml_support::traits::{Currency, Imbalance};
 
 use super::*;

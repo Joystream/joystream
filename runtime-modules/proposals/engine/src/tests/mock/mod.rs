@@ -8,17 +8,17 @@
 
 #![cfg(test)]
 pub use primitives::{Blake2Hasher, H256};
-pub use runtime_primitives::{
+pub use sr_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
     traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize, Zero},
     weights::Weight,
-    BuildStorage, Perbill,
+    BuildStorage, DispatchError, Perbill,
 };
 use srml_support::{impl_outer_dispatch, impl_outer_event, impl_outer_origin, parameter_types};
 pub use system;
 
 mod balance_manager;
-mod proposals;
+pub(crate) mod proposals;
 mod stakes;
 
 use balance_manager::*;
@@ -33,12 +33,6 @@ impl_outer_origin! {
     pub enum Origin for Test {}
 }
 
-impl_outer_dispatch! {
-    pub enum Call for Test where origin: Origin {
-        proposals::ProposalsEngine,
-    }
-}
-
 mod engine {
     pub use crate::Event;
 }
@@ -50,6 +44,12 @@ mod membership_mod {
 mod council_mod {
     pub use governance::council::Event;
 }
+
+// impl_outer_dispatch! {
+//     pub enum Call for Test where origin: Origin {
+//         engine::ProposalsEngine,
+//     }
+// }
 
 impl_outer_event! {
     pub enum TestEvent for Test {
@@ -74,10 +74,10 @@ impl balances::Trait for Test {
     /// What to do if a new account is created.
     type OnNewAccount = ();
 
-    type Event = TestEvent;
+    type TransferPayment = ();
 
     type DustRemoval = ();
-    type TransferPayment = ();
+    type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type TransferFee = TransferFee;
     type CreationFee = CreationFee;
@@ -91,6 +91,8 @@ impl governance::council::Trait for Test {
     type Event = TestEvent;
     type CouncilTermEnded = ();
 }
+
+impl proposals::Trait for Test {}
 
 impl stake::Trait for Test {
     type Currency = Balances;
@@ -122,7 +124,6 @@ impl crate::Trait for Test {
     type ProposerOriginValidator = ();
     type VoterOriginValidator = ();
     type TotalVotersCounter = ();
-    type ProposalCodeDecoder = ProposalType;
     type ProposalId = u32;
     type StakeHandlerProvider = stakes::TestStakeHandlerProvider;
     type CancellationFee = CancellationFee;
@@ -130,6 +131,13 @@ impl crate::Trait for Test {
     type TitleMaxLength = TitleMaxLength;
     type DescriptionMaxLength = DescriptionMaxLength;
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
+    type ProposalCode = proposals::Call<Test>;
+}
+
+impl Default for proposals::Call<Test> {
+    fn default() -> Self {
+        panic!("shouldn't call default for Call");
+    }
 }
 
 impl common::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
@@ -159,9 +167,9 @@ parameter_types! {
 
 impl system::Trait for Test {
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
