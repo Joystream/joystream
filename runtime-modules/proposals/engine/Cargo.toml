@@ -12,12 +12,16 @@ std = [
     'rstd/std',
     'srml-support/std',
     'primitives/std',
-    'runtime-primitives/std',
     'system/std',
     'timestamp/std',
     'serde',
     'stake/std',
     'balances/std',
+    'sr-primitives/std',
+    'governance/std',
+    'membership/std',
+    'common/std',
+
 ]
 
 
@@ -48,12 +52,6 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-std'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
-[dependencies.runtime-primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-primitives'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
 [dependencies.srml-support]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
@@ -76,6 +74,12 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 package = 'srml-balances'
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
+
+[dependencies.sr-primitives]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'sr-primitives'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [dependencies.stake]

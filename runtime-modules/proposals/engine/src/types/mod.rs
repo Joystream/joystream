@@ -131,9 +131,6 @@ pub struct StakeData<StakeId, AccountId> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId> {
-    /// Proposal type id
-    pub proposal_type: u32,
-
     /// Proposals parameter, characterize different proposal types.
     pub parameters: ProposalParameters<BlockNumber, Balance>,
 

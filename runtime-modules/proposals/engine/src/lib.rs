@@ -41,17 +41,19 @@ pub(crate) mod types;
 #[cfg(test)]
 mod tests;
 
+use codec::Decode;
 use rstd::prelude::*;
-
-use runtime_primitives::traits::Zero;
+use sr_primitives::traits::Zero;
+use sr_primitives::DispatchError;
 use srml_support::traits::{Currency, Get};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
 };
-use system::ensure_root;
+use system::{ensure_root, RawOrigin};
 
 use common::origin_validator::ActorOriginValidator;
 use membership::origin_validator::MemberId;
+use srml_support::dispatch::Dispatchable;
 
 /// Proposals engine trait.
 pub trait Trait:
@@ -77,9 +79,6 @@ pub trait Trait:
     /// Provides data for voting. Defines maximum voters count for the proposal.
     type TotalVotersCounter: VotersParameters;
 
-    /// Converts proposal code binary to executable representation
-    type ProposalCodeDecoder: ProposalCodeDecoder<Self>;
-
     /// Proposal Id type
     type ProposalId: From<u32> + Parameter + Default + Copy;
 
@@ -100,6 +99,11 @@ pub trait Trait:
 
     /// Defines max simultaneous active proposals number.
     type MaxActiveProposalLimit: Get<u32>;
+
+    /// Proposals executable code. Can be instantiated by external module Call enum members.
+    type ProposalCode: Parameter
+        + Dispatchable<Origin = Self::Origin, Error = DispatchError>
+        + Default;
 }
 
 decl_event!(
@@ -262,7 +266,6 @@ impl<T: Trait> Module<T> {
         title: Vec<u8>,
         description: Vec<u8>,
         stake_balance: Option<types::BalanceOf<T>>,
-        proposal_type: u32,
         proposal_code: Vec<u8>,
     ) -> Result<T::ProposalId, &'static str> {
         let account_id =
@@ -306,7 +309,6 @@ impl<T: Trait> Module<T> {
             title,
             description,
             proposer_id: proposer_id.clone(),
-            proposal_type,
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
             stake_data,
@@ -366,18 +368,19 @@ impl<T: Trait> Module<T> {
         if let ProposalStatus::Finalized(finalized_status) = proposal.status.clone() {
             let proposal_code = Self::proposal_codes(proposal_id);
 
-            let proposal_code_result =
-                T::ProposalCodeDecoder::decode_proposal(proposal.proposal_type, proposal_code);
+            let proposal_code_result = T::ProposalCode::decode(&mut &proposal_code[..]);
 
             let approved_proposal_status = match proposal_code_result {
                 Ok(proposal_code) => {
-                    if let Err(error) = proposal_code.execute() {
-                        ApprovedProposalStatus::failed_execution(error)
+                    if let Err(error) = proposal_code.dispatch(T::Origin::from(RawOrigin::Root)) {
+                        ApprovedProposalStatus::failed_execution(
+                            error.message.unwrap_or("Dispatch error"),
+                        )
                     } else {
                         ApprovedProposalStatus::Executed
                     }
                 }
-                Err(error) => ApprovedProposalStatus::failed_execution(error),
+                Err(error) => ApprovedProposalStatus::failed_execution(error.what()),
             };
 
             let proposal_execution_status =

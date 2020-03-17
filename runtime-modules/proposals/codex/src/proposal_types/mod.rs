@@ -1,53 +1,31 @@
-use codec::Decode;
-use num_enum::{IntoPrimitive, TryFromPrimitive};
-use rstd::convert::TryFrom;
-use rstd::prelude::*;
+pub(crate) mod parameters {
+    use crate::{BalanceOf, ProposalParameters};
 
-use crate::{ProposalCodeDecoder, ProposalExecutable};
-
-pub mod parameters;
-mod runtime_upgrade;
-mod text_proposal;
-
-pub use runtime_upgrade::RuntimeUpgradeProposalExecutable;
-pub use text_proposal::TextProposalExecutable;
-
-/// Defines allowed proposals types. Integer value serves as proposal_type_id.
-#[derive(Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
-#[repr(u32)]
-pub enum ProposalType {
-    /// Text(signal) proposal type
-    Text = 1,
-
-    /// Runtime upgrade proposal type
-    RuntimeUpgrade = 2,
-}
-
-impl ProposalType {
-    fn compose_executable<T: system::Trait>(
-        &self,
-        proposal_data: Vec<u8>,
-    ) -> Result<Box<dyn ProposalExecutable>, &'static str> {
-        match self {
-            ProposalType::Text => TextProposalExecutable::decode(&mut &proposal_data[..])
-                .map_err(|err| err.what())
-                .map(|obj| Box::new(obj) as Box<dyn ProposalExecutable>),
-            ProposalType::RuntimeUpgrade => {
-                <RuntimeUpgradeProposalExecutable<T>>::decode(&mut &proposal_data[..])
-                    .map_err(|err| err.what())
-                    .map(|obj| Box::new(obj) as Box<dyn ProposalExecutable>)
-            }
+    // Proposal parameters for the upgrade runtime proposal
+    pub(crate) fn upgrade_runtime<T: crate::Trait>(
+    ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
+        ProposalParameters {
+            voting_period: T::BlockNumber::from(50000u32),
+            grace_period: T::BlockNumber::from(10000u32),
+            approval_quorum_percentage: 80,
+            approval_threshold_percentage: 80,
+            slashing_quorum_percentage: 80,
+            slashing_threshold_percentage: 80,
+            required_stake: Some(<BalanceOf<T>>::from(50000u32)),
         }
     }
-}
 
-impl<T: system::Trait> ProposalCodeDecoder<T> for ProposalType {
-    fn decode_proposal(
-        proposal_type: u32,
-        proposal_code: Vec<u8>,
-    ) -> Result<Box<dyn ProposalExecutable>, &'static str> {
-        Self::try_from(proposal_type)
-            .map_err(|_| "Unsupported proposal type")?
-            .compose_executable::<T>(proposal_code)
+    // Proposal parameters for the text proposal
+    pub(crate) fn text_proposal<T: crate::Trait>(
+    ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
+        ProposalParameters {
+            voting_period: T::BlockNumber::from(50000u32),
+            grace_period: T::BlockNumber::from(10000u32),
+            approval_quorum_percentage: 40,
+            approval_threshold_percentage: 51,
+            slashing_quorum_percentage: 80,
+            slashing_threshold_percentage: 80,
+            required_stake: Some(<BalanceOf<T>>::from(500u32)),
+        }
     }
 }

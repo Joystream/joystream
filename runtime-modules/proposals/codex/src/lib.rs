@@ -17,7 +17,6 @@ mod tests;
 
 use codec::Encode;
 use rstd::clone::Clone;
-use rstd::marker::PhantomData;
 use rstd::prelude::*;
 use rstd::str::from_utf8;
 use rstd::vec::Vec;
@@ -25,7 +24,6 @@ use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, RawOrigin};
 
 use proposal_engine::*;
-pub use proposal_types::{ProposalType, RuntimeUpgradeProposalExecutable, TextProposalExecutable};
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
@@ -112,12 +110,7 @@ decl_module! {
             ensure!(text.len() as u32 <=  T::TextProposalMaxLength::get(),
                 Error::TextProposalSizeExceeded);
 
-            let text_proposal = TextProposalExecutable{
-                title: title.clone(),
-                description: description.clone(),
-                text,
-               };
-            let proposal_code = text_proposal.encode();
+            let proposal_code = <Call<T>>::text_proposal(title.clone(), description.clone(), text);
 
             let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
 
@@ -134,8 +127,7 @@ decl_module! {
                 title,
                 description,
                 stake_balance,
-                text_proposal.proposal_type(),
-                proposal_code,
+                proposal_code.encode(),
             )?;
 
              <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
@@ -156,13 +148,7 @@ decl_module! {
             ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
                 Error::RuntimeProposalSizeExceeded);
 
-            let proposal = RuntimeUpgradeProposalExecutable{
-                title: title.clone(),
-                description: description.clone(),
-                wasm,
-                marker : PhantomData::<T>
-               };
-            let proposal_code = proposal.encode();
+            let proposal_code = <Call<T>>::text_proposal(title.clone(), description.clone(), wasm);
 
             let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
 
@@ -179,12 +165,13 @@ decl_module! {
                 title,
                 description,
                 stake_balance,
-                proposal.proposal_type(),
-                proposal_code,
+                proposal_code.encode(),
             )?;
 
             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         }
+
+// *************** Extrinsic to execute
 
         /// Text proposal extrinsic. Should be used as callable object to pass to the engine module.
         fn text_proposal(

@@ -818,7 +818,6 @@ impl proposals_engine::Trait for Runtime {
     type ProposerOriginValidator = MembershipOriginValidator<Self>;
     type VoterOriginValidator = proposals_engine::CouncilManager<Self>;
     type TotalVotersCounter = proposals_engine::CouncilManager<Self>;
-    type ProposalCodeDecoder = proposals_codex::ProposalType;
     type ProposalId = u32;
     type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
     type CancellationFee = ProposalCancellationFee;
@@ -826,6 +825,12 @@ impl proposals_engine::Trait for Runtime {
     type TitleMaxLength = ProposalTitleMaxLength;
     type DescriptionMaxLength = ProposalDescriptionMaxLength;
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
+    type ProposalCode = Call;
+}
+impl Default for Call {
+    fn default() -> Self {
+        panic!("shouldn't call default for Call");
+    }
 }
 
 parameter_types! {

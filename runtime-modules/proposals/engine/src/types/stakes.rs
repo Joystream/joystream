@@ -3,7 +3,7 @@ use crate::Trait;
 use rstd::convert::From;
 use rstd::marker::PhantomData;
 use rstd::rc::Rc;
-use runtime_primitives::traits::Zero;
+use sr_primitives::traits::Zero;
 use srml_support::traits::{Currency, ExistenceRequirement, Imbalance, WithdrawReasons};
 use srml_support::StorageMap;
 

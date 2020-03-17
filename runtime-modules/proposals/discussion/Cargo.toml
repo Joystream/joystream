@@ -16,6 +16,8 @@ std = [
     'system/std',
     'timestamp/std',
     'serde',
+    'membership/std',
+    'common/std',
 ]
 
 
