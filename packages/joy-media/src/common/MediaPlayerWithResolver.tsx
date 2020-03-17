@@ -13,6 +13,7 @@ import { DiscoveryProviderProps, withDiscoveryProvider } from '../DiscoveryProvi
 import { DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '@joystream/types/media';
 import { Message } from 'semantic-ui-react';
 import { MediaPlayerView, RequiredMediaPlayerProps } from './MediaPlayerView';
+import { JoyInfo } from '@polkadot/joy-utils/JoyWarn';
 
 type Props = ApiProps & I18nProps & DiscoveryProviderProps & RequiredMediaPlayerProps;
 
@@ -125,7 +126,7 @@ function InnerComponent(props: Props) {
   }
 
   if (!resolvedAssetUrl) {
-    return <em>Resolving media content...</em>
+    return <JoyInfo title={`Please wait...`}>Resolving media content.</JoyInfo>
   }
 
   const playerProps = { ...props, contentType, resolvedAssetUrl }

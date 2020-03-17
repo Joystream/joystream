@@ -8,6 +8,7 @@ import { Vec } from '@polkadot/types';
 import { Url } from '@joystream/types/discovery'
 import ApiContext from '@polkadot/react-api/ApiContext';
 import { ApiProps } from '@polkadot/react-api/types';
+import { JoyInfo } from '@polkadot/joy-utils/JoyWarn';
 
 export type BootstrapNodes = {
   bootstrapNodes?: Url[],
@@ -155,7 +156,7 @@ export function withDiscoveryProvider(Component: React.ComponentType<DiscoveryPr
   return (props: React.PropsWithChildren<{}>) => {
     const discoveryProvider = useDiscoveryProvider()
     if (!discoveryProvider) {
-      return <em>Loading discovery provider. Please wait...</em>
+      return <JoyInfo title={`Please wait...`}>Loading discovery provider.</JoyInfo>
     }
 
     return (

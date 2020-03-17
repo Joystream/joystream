@@ -4,6 +4,7 @@ import { MediaView } from '../MediaView';
 import { OuterProps, EditForm } from './UploadVideo';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { ChannelId } from '@joystream/types/content-working-group';
+import { JoyError } from '@polkadot/joy-utils/JoyWarn';
 
 type Props = OuterProps;
 
@@ -35,7 +36,7 @@ export const UploadVideoWithRouter = (props: WithRouterProps) => {
     }
   }
 
-  return <em>ERROR: Invalid channel id in URL: ${channelId}</em>;
+  return <JoyError title={`Invalid channel id in URL`}>{channelId}</JoyError>
 }
 
 export const EditVideoWithRouter = (props: WithRouterProps) => {
@@ -49,7 +50,7 @@ export const EditVideoWithRouter = (props: WithRouterProps) => {
     }
   }
 
-  return <em>ERROR: Invalid video id in URL: ${id}</em>;
+  return <JoyError title={`Invalid video id in URL`}>{id}</JoyError>
 }
 
 export default EditVideoView;

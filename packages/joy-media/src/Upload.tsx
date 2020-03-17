@@ -22,6 +22,7 @@ import TxButton from '@polkadot/joy-utils/TxButton';
 import IpfsHash from 'ipfs-only-hash';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { EditVideoView } from './upload/EditVideo.view';
+import { JoyInfo } from '@polkadot/joy-utils/JoyWarn';
 
 const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -110,7 +111,7 @@ class Component extends React.PureComponent<Props, State> {
 
   private renderUploading () {
     const { file_name, newContentId, progress, error } = this.state;
-    if (!file_name) return <em>Loading...</em>;
+    if (!file_name) return <JoyInfo title='Loading...' />
 
     const success = !error && progress >= 100;
     const { history, match: { params: { channelId } } } = this.props
@@ -129,7 +130,7 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private renderDiscovering () {
-    return <em>Contacting Storage Provider...</em>;
+    return <JoyInfo title={`Please wait...`}>Contacting storage provider.</JoyInfo>;
   }
 
   private renderProgress () {

@@ -12,6 +12,7 @@ import { printExplicit, printReleaseDate, printLanguage } from '../entities/Enti
 import { MediaObjectType } from '../schemas/general/MediaObject';
 import { MediaPlayerWithResolver } from '../common/MediaPlayerWithResolver';
 import { ContentId } from '@joystream/types/media';
+import { JoyError } from '@polkadot/joy-utils/JoyWarn';
 
 export type PlayVideoProps = {
   channel?: ChannelEntity
@@ -37,11 +38,11 @@ export function PlayVideo (props: PlayVideoProps) {
   const { channel, mediaObject, video, moreChannelVideos = [], featuredVideos = [] } = props;
 
   if (!mediaObject || !video) {
-    return <em>Video was not found</em>
+    return <JoyError title={`Video was not found`} />
   }
 
   if (!channel) {
-    return <em>Channel was not found</em>
+    return <JoyError title={`Channel was not found`} />
   }
 
   const metaField = (field: VideoGenericProp, value: React.ReactNode | string) => (

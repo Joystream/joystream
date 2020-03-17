@@ -3,6 +3,7 @@ import { RouteComponentProps } from 'react-router';
 import { MediaView } from '../MediaView';
 import { ViewChannelProps, ViewChannel } from './ViewChannel';
 import { ChannelId } from '@joystream/types/content-working-group';
+import { JoyError } from '@polkadot/joy-utils/JoyWarn';
 
 type Props = ViewChannelProps;
 
@@ -28,5 +29,5 @@ export const ViewChannelWithRouter = (props: Props & RouteComponentProps<any>) =
     }
   }
 
-  return <em>ERROR: Invalid channel id in URL: ${id}</em>;
+  return <JoyError title={`Invalid channel id in URL`}>{id}</JoyError>
 }

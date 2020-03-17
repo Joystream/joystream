@@ -16,6 +16,7 @@ import { ChannelPublicationStatusDropdownOptions, isAccountAChannelOwner } from 
 import { TxCallback } from '@polkadot/react-components/Status/types';
 import { SubmittableResult } from '@polkadot/api';
 import { ChannelValidationConstraints } from '../transport';
+import { JoyError } from '@polkadot/joy-utils/JoyWarn';
 
 export type OuterProps = {
   history?: History,
@@ -56,7 +57,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const { myAccountId, myMemberId } = useMyMembership();
 
   if (entity && !isAccountAChannelOwner(entity, myAccountId)) {
-    return <em>ERROR: Only owner can edit channel</em>
+    return <JoyError title={`Only owner can edit channel`} />
   }
 
   const { avatar } = values;

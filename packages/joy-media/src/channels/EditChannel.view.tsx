@@ -3,6 +3,7 @@ import { RouteComponentProps } from 'react-router';
 import { MediaView } from '../MediaView';
 import { OuterProps, EditForm } from './EditChannel';
 import { ChannelId } from '@joystream/types/content-working-group';
+import { JoyError } from '@polkadot/joy-utils/JoyWarn';
 
 type Props = OuterProps;
 
@@ -31,5 +32,5 @@ export const EditChannelWithRouter = (props: WithRouterProps) => {
     }
   }
 
-  return <em>ERROR: Invalid channel id in URL: ${id}</em>;
+  return <JoyError title={`Invalid channel id in URL`}>{id}</JoyError>
 }
