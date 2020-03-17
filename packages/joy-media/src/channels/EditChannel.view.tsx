@@ -3,10 +3,11 @@ import { RouteComponentProps } from 'react-router';
 import { MediaView } from '../MediaView';
 import { OuterProps, EditForm } from './EditChannel';
 import { ChannelId } from '@joystream/types/content-working-group';
+import { withMembershipRequired } from '@polkadot/joy-utils/MyAccount';
 
 type Props = OuterProps;
 
-export const EditChannelView = MediaView<Props>({
+export const EditChannelView = withMembershipRequired(MediaView<Props>({
   component: EditForm,
   triggers: [ 'id' ],
   resolveProps: async (props) => {
@@ -15,9 +16,11 @@ export const EditChannelView = MediaView<Props>({
     const constraints = await transport.channelValidationConstraints()
     return { entity, constraints };
   }
-});
+}))
 
-export const EditChannelWithRouter = (props: Props & RouteComponentProps<any>) => {
+type WithRouterProps = Props & RouteComponentProps<any>
+
+export const EditChannelWithRouter = withMembershipRequired((props: WithRouterProps) => {
   const { match: { params: { id }}} = props;
 
   if (id) {
@@ -29,4 +32,4 @@ export const EditChannelWithRouter = (props: Props & RouteComponentProps<any>) =
   }
 
   return <em>ERROR: Invalid channel id in URL: ${id}</em>;
-}
+})
