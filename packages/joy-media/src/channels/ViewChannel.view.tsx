@@ -3,7 +3,7 @@ import { RouteComponentProps } from 'react-router';
 import { MediaView } from '../MediaView';
 import { ViewChannelProps, ViewChannel } from './ViewChannel';
 import { ChannelId } from '@joystream/types/content-working-group';
-import { JoyError } from '@polkadot/joy-utils/JoyWarn';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 type Props = ViewChannelProps;
 

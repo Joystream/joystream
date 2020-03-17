@@ -16,7 +16,7 @@ import { ChannelPublicationStatusDropdownOptions, isAccountAChannelOwner } from 
 import { TxCallback } from '@polkadot/react-components/Status/types';
 import { SubmittableResult } from '@polkadot/api';
 import { ChannelValidationConstraints } from '../transport';
-import { JoyError } from '@polkadot/joy-utils/JoyWarn';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 export type OuterProps = {
   history?: History,

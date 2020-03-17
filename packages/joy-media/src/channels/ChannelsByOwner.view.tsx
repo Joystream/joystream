@@ -4,7 +4,7 @@ import { RouteComponentProps } from 'react-router';
 import { GenericAccountId } from '@polkadot/types';
 import { MediaView } from '../MediaView';
 import { ChannelsByOwnerProps, ChannelsByOwner } from './ChannelsByOwner';
-import { JoyError } from '@polkadot/joy-utils/JoyWarn';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 type Props = ChannelsByOwnerProps;
 

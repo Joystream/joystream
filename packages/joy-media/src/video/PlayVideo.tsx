@@ -12,7 +12,7 @@ import { printExplicit, printReleaseDate, printLanguage } from '../entities/Enti
 import { MediaObjectType } from '../schemas/general/MediaObject';
 import { MediaPlayerWithResolver } from '../common/MediaPlayerWithResolver';
 import { ContentId } from '@joystream/types/media';
-import { JoyError } from '@polkadot/joy-utils/JoyWarn';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 export type PlayVideoProps = {
   channel?: ChannelEntity

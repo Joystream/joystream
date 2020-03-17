@@ -5,7 +5,7 @@ import { Segment, Button } from 'semantic-ui-react';
 
 import { Post, Category, Thread } from '@joystream/types/forum';
 import { Moderate } from './Moderate';
-import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
+import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { IfIAmForumSudo } from './ForumSudo';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';

@@ -15,7 +15,7 @@ import { VideoType } from '../schemas/video/Video';
 import { isAccountAChannelOwner } from '../channels/ChannelHelpers';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
-import { JoyError } from '@polkadot/joy-utils/JoyWarn';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 const PLAYER_COMMON_PARAMS = {
   lang: 'en',

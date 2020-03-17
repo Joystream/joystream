@@ -8,7 +8,7 @@ import { ViewVideoChannel } from './ViewVideoChannel';
 import { ViewMusicChannel } from './ViewMusicChannel';
 import { toVideoPreviews } from '../video/VideoPreview';
 import { isVideoChannel, isMusicChannel } from './ChannelHelpers';
-import { JoyError } from '@polkadot/joy-utils/JoyWarn';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 export type ViewChannelProps = {
   id: ChannelId,

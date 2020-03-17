@@ -13,7 +13,7 @@ import { DiscoveryProviderProps, withDiscoveryProvider } from '../DiscoveryProvi
 import { DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '@joystream/types/media';
 import { Message } from 'semantic-ui-react';
 import { MediaPlayerView, RequiredMediaPlayerProps } from './MediaPlayerView';
-import { JoyInfo } from '@polkadot/joy-utils/JoyWarn';
+import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
 
 type Props = ApiProps & I18nProps & DiscoveryProviderProps & RequiredMediaPlayerProps;
 

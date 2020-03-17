@@ -22,7 +22,7 @@ import TxButton from '@polkadot/joy-utils/TxButton';
 import IpfsHash from 'ipfs-only-hash';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { EditVideoView } from './upload/EditVideo.view';
-import { JoyInfo } from '@polkadot/joy-utils/JoyWarn';
+import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
 
 const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;

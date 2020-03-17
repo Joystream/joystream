@@ -30,7 +30,7 @@ import { ParametrizedPropertyValue } from '@joystream/types/versioned-store/perm
 import { ParameterizedClassPropertyValues } from '@joystream/types/versioned-store/permissions/batching/operations';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 import { isAccountAChannelOwner } from '../channels/ChannelHelpers';
-import { JoyError } from '@polkadot/joy-utils/JoyWarn';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 /** Example: "2019-01-23" -> 1548201600 */
 function humanDateToUnixTs(humanFriendlyDate: string): number | undefined {
