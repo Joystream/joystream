@@ -20,7 +20,7 @@
 
 const debug = require('debug')('joystream:runtime:roles');
 
-const { Null, U64 } = require('@polkadot/types/primitive');
+const { Null, u64 } = require('@polkadot/types');
 
 const { _ } = require('lodash');
 
@@ -42,7 +42,7 @@ class RolesApi
     debug('Init');
 
     // Constants
-    this.ROLE_STORAGE = new U64(0x00);
+    this.ROLE_STORAGE = 'StorageProvider'; // new u64(0x00);
   }
 
   /*
@@ -75,7 +75,7 @@ class RolesApi
   async requiredBalanceForRoleStaking(role)
   {
     const params = await this.base.api.query.actors.parameters(role);
-    if (_.isEqual(params.raw, new Null())) {
+    if (params.isNone) {
       throw new Error(`Role ${role} is not defined!`);
     }
     const result = params.raw.min_stake
@@ -138,13 +138,12 @@ class RolesApi
    */
   async applyForRole(roleAccountId, role, memberAccountId)
   {
-    const memberId = await this.base.identities.memberIdOf(memberAccountId);
-    if (_.isEqual(memberId.raw, new Null())) {
+    const memberId = await this.base.identities.firstMemberIdOf(memberAccountId);
+    if (memberId == undefined) {
       throw new Error('Account is not a member!');
     }
-    const converted = memberId.raw;
 
-    const tx = this.base.api.tx.actors.roleEntryRequest(role, converted);
+    const tx = this.base.api.tx.actors.roleEntryRequest(role, memberId);
     return await this.base.signAndSend(roleAccountId, tx);
   }
 

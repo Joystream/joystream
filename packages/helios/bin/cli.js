@@ -12,8 +12,8 @@ const stripEndingSlash = require('@joystream/util/stripEndingSlash');
   const api  = runtime.api;
 
   // get current blockheight
-  const currentBlock = await api.rpc.chain.getHeader();
-  const currentHeight = currentBlock.blockNumber;
+  const currentHeader = await api.rpc.chain.getHeader();
+  const currentHeight = currentHeader.number.toBn();
 
   // get all providers
   const storageProviders = await api.query.actors.accountIdsByRole(0);

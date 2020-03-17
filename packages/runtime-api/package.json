@@ -14,9 +14,8 @@
   "license": "GPL-3.0",
   "contributors": [
     {
-      "name": "Jens Finkhaeuser",
-      "email": "jens@finkhaeuser.de",
-      "url": "https://finkhaeuser.de/"
+      "name": "Joystream",
+      "url": "https://joystream.org/"
     }
   ],
   "keywords": [
@@ -45,9 +44,8 @@
     "temp": "^0.9.0"
   },
   "dependencies": {
-    "@joystream/crypto": "^0.1.0",
-    "@joystream/types": "^0.3.1",
-    "@polkadot/api": "^0.77.1",
+    "@joystream/types": "^0.6.0",
+    "@polkadot/api": "^0.96.1",
     "async-lock": "^1.2.0",
     "lodash": "^4.17.11",
     "password-prompt": "^1.1.2"

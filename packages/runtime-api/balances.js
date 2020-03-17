@@ -60,15 +60,15 @@ class BalancesApi
   async freeBalance(accountId)
   {
     const decoded = this.base.identities.keyring.decodeAddress(accountId, true);
-    return await this.base.api.query.balances.freeBalance(decoded);
+    return this.base.api.query.balances.freeBalance(decoded);
   }
 
   /*
    * Return the base transaction fee.
    */
-  async baseTransactionFee()
+  baseTransactionFee()
   {
-    return await this.base.api.query.balances.transactionBaseFee();
+    return this.base.api.consts.transactionPayment.transactionBaseFee;
   }
 
   /*
@@ -77,11 +77,11 @@ class BalancesApi
    */
   async transfer(from, to, amount)
   {
-    const decode = require('@polkadot/keyring/address/decode').default;
+    const decode = require('@polkadot/keyring').decodeAddress;
     const to_decoded = decode(to, true);
 
     const tx = this.base.api.tx.balances.transfer(to_decoded, amount);
-    return await this.base.signAndSend(from, tx);
+    return this.base.signAndSend(from, tx);
   }
 }
 

@@ -90,7 +90,7 @@ const commands = {
 
     // Create Data Object
     const data_object = await runtime_api.assets.createDataObject(
-      runtime_api.identities.key.address(), cid, do_type_id, size);
+      runtime_api.identities.key.address, cid, do_type_id, size);
     console.log('Data object created.');
 
     // TODO in future, optionally contact liaison here?

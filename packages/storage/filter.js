@@ -20,7 +20,7 @@
 
 const debug = require('debug')('joystream:storage:filter');
 
-const DEFAULT_MAX_FILE_SIZE = 100 * 1024 * 1024;
+const DEFAULT_MAX_FILE_SIZE = 500 * 1024 * 1024;
 const DEFAULT_ACCEPT_TYPES = [
   'video/*',
   'audio/*',

@@ -34,9 +34,7 @@ describe('Assets', () => {
 
   it('returns DataObjects for a content ID', async () => {
     const obj = await api.assets.getDataObject('foo');
-    const { isNullOption } = require('./common');
-
-    expect(isNullOption(obj)).to.be.true;
+    expect(obj.isNone).to.be.true;
   });
 
   it('can check the liaison for a DataObject', async () => {

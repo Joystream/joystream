@@ -2,11 +2,11 @@
 
 const debug = require('debug')('joystream:runtime:assets');
 
-const { Null, U64 } = require('@polkadot/types/primitive');
+const { Null } = require('@polkadot/types/primitive');
 
 const { _ } = require('lodash');
 
-const { decodeAddress } = require('@polkadot/keyring');
+const { decodeAddress, encodeAddress } = require('@polkadot/keyring');
 
 function parseContentId(contentId) {
   try {
@@ -69,26 +69,20 @@ class AssetsApi
   async checkLiaisonForDataObject(accountId, contentId)
   {
     contentId = parseContentId(contentId)
+
     let obj = await this.getDataObject(contentId);
+
     if (obj.isNone) {
       throw new Error(`No DataObject created for content ID: ${contentId}`);
     }
 
-    const encode = require('@polkadot/keyring/address/encode').default;
-    const encoded = encode(obj.raw.liaison);
+    const encoded = encodeAddress(obj.raw.liaison);
     if (encoded != accountId) {
       throw new Error(`This storage node is not liaison for the content ID: ${contentId}`);
     }
 
-    if (_.isEqual(obj.raw.liaison_judgement, new Null())) {
-      throw new Error('Internal error; liaison_judgement should always be set!');
-    }
-
-    const judge_val = obj.raw.liaison_judgement.raw;
-    const judge_arr = obj.raw.liaison_judgement._enum;
-
-    if (judge_arr[judge_val] != 'Pending') {
-      throw new Error(`Expected Pending judgement, but found: ${judge_arr[judge_val]}`);
+    if (obj.raw.liaison_judgement.type != 'Pending') {
+      throw new Error(`Expected Pending judgement, but found: ${obj.raw.liaison_judgement.type}`);
     }
 
     return obj.unwrap();
