@@ -22,9 +22,9 @@ mod types;
 use rstd::clone::Clone;
 use rstd::prelude::*;
 use rstd::vec::Vec;
-use srml_support::{decl_event, decl_module, decl_error, decl_storage, ensure, Parameter};
+use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 
-use srml_support::traits::{Get};
+use srml_support::traits::Get;
 use types::{Post, Thread, ThreadCounter};
 
 use common::origin_validator::ActorOriginValidator;

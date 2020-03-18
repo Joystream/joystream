@@ -531,8 +531,7 @@ fn vote_fails_with_not_active_proposal() {
         run_to_block_and_finalize(2);
 
         let mut vote_generator_to_fail = VoteGenerator::new(proposal_id);
-        vote_generator_to_fail
-            .vote_and_assert(VoteKind::Approve, Err(Error::ProposalFinalized));
+        vote_generator_to_fail.vote_and_assert(VoteKind::Approve, Err(Error::ProposalFinalized));
     });
 }
 
@@ -554,10 +553,7 @@ fn vote_fails_on_double_voting() {
         vote_generator.auto_increment_voter_id = false;
 
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert(
-            VoteKind::Approve,
-            Err(Error::AlreadyVoted),
-        );
+        vote_generator.vote_and_assert(VoteKind::Approve, Err(Error::AlreadyVoted));
     });
 }
 
@@ -903,7 +899,8 @@ fn create_proposal_fails_on_exceeding_max_active_proposals_count() {
         }
 
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Err(Error::MaxActiveProposalNumberExceeded.into()));
+        dummy_proposal
+            .create_proposal_and_assert(Err(Error::MaxActiveProposalNumberExceeded.into()));
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 100);
     });
@@ -992,7 +989,8 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_stake(required_stake);
 
-        dummy_proposal.create_proposal_and_assert(Err(Error::Other("too few free funds in account")));
+        dummy_proposal
+            .create_proposal_and_assert(Err(Error::Other("too few free funds in account")));
     });
 }
 
@@ -1018,8 +1016,7 @@ fn create_proposal_fais_with_invalid_stake_parameters() {
             .with_parameters(parameters_fixture_stake_300.params())
             .with_stake(200);
 
-        dummy_proposal
-            .create_proposal_and_assert(Err(Error::StakeDiffersFromRequired.into()));
+        dummy_proposal.create_proposal_and_assert(Err(Error::StakeDiffersFromRequired.into()));
     });
 }
 /* TODO: restore after the https://github.com/Joystream/substrate-runtime-joystream/issues/161

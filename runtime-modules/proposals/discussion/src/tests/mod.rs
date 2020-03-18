@@ -164,11 +164,7 @@ impl PostFixture {
         self.post_id
     }
 
-    fn update_post_with_text_and_assert(
-        &mut self,
-        new_text: Vec<u8>,
-        result: Result<(), Error>,
-    ) {
+    fn update_post_with_text_and_assert(&mut self, new_text: Vec<u8>, result: Result<(), Error>) {
         let add_post_result = Discussions::update_post(
             self.origin.clone().into(),
             self.author_id,
@@ -414,8 +410,7 @@ fn add_discussion_thread_fails_because_of_max_thread_by_same_author_in_a_row_lim
                 .unwrap();
         }
 
-        discussion_fixture
-            .create_discussion_and_assert(Err(Error::MaxThreadInARowLimitExceeded));
+        discussion_fixture.create_discussion_and_assert(Err(Error::MaxThreadInARowLimitExceeded));
     });
 }
 

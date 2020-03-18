@@ -23,7 +23,7 @@ use rstd::vec::Vec;
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, RawOrigin};
 
-use proposal_engine::{ProposalParameters};
+use proposal_engine::ProposalParameters;
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
@@ -90,13 +90,13 @@ impl From<proposal_engine::Error> for Error {
 }
 
 impl From<proposal_discussion::Error> for Error {
-	fn from(error: proposal_discussion::Error) -> Self {
+    fn from(error: proposal_discussion::Error) -> Self {
         match error {
             proposal_discussion::Error::Other(msg) => Error::Other(msg),
             proposal_discussion::Error::RequireRootOrigin => Error::RequireRootOrigin,
             _ => Error::Other(error.into()),
         }
-	}
+    }
 }
 
 // Storage for the proposals codex module
