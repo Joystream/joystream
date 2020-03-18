@@ -877,5 +877,12 @@ fn immediate_slashing() {
                 staking_status: StakingStatus::NotStaked
             }
         );
+
+        let outcome = StakePool::slash_immediate(&stake_id, outcome.remaining_stake, false);
+        let outcome_err = outcome.err().unwrap();
+        assert_eq!(
+            outcome_err,
+            StakeActionError::Error(ImmediateSlashingError::NotStaked)
+        );
     });
 }
