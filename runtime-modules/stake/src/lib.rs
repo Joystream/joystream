@@ -243,11 +243,7 @@ where
 
     /// Executes a Slash. If remaining at stake drops below the minimum_balance, it will slash the entire staked amount.
     /// Returns the actual slashed amount.
-    fn apply_slash(
-        &mut self,
-        slash_amount: Balance,
-        minimum_balance: Balance,
-    ) -> Balance {
+    fn apply_slash(&mut self, slash_amount: Balance, minimum_balance: Balance) -> Balance {
         // calculate how much to slash
         let mut slash_amount = if slash_amount > self.staked_amount {
             self.staked_amount
@@ -422,10 +418,7 @@ where
             StakingStatus::Staked(ref mut staked_state) => {
                 // irrespective of wether we are unstaking or not, slash!
 
-                let actually_slashed = staked_state.apply_slash(
-                    slash_amount,
-                    minimum_balance,
-                );
+                let actually_slashed = staked_state.apply_slash(slash_amount, minimum_balance);
 
                 Ok(actually_slashed)
             }
@@ -984,8 +977,10 @@ impl<T: Trait> Module<T> {
         let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         // Get amount at stake before slashing to be used in unstaked event trigger
-        let staked_amount_before_slash =
-            ensure_staked_amount!(stake, ImmediateSlashingError::NotStaked);
+        let staked_amount_before_slash = ensure_staked_amount!(
+            stake,
+            StakeActionError::Error(ImmediateSlashingError::NotStaked)
+        )?;
 
         let actually_slashed_amount =
             stake.slash_immediate(slash_amount, T::Currency::minimum_balance())?;
@@ -994,8 +989,10 @@ impl<T: Trait> Module<T> {
         let slashed_imbalance = Self::withdraw_funds_from_stake_pool(actually_slashed_amount);
 
         // What remains at stake?
-        let staked_amount_after_slash =
-            ensure_staked_amount!(stake, ImmediateSlashingError::NotStaked);
+        let staked_amount_after_slash = ensure_staked_amount!(
+            stake,
+            StakeActionError::Error(ImmediateSlashingError::NotStaked)
+        )?;
 
         if staked_amount_after_slash == BalanceOf::<T>::zero() {
             // Set NotStaked status
