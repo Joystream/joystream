@@ -8,31 +8,32 @@ import reactDom from "react-dom";
 import pkg from "./package.json";
 
 export default {
-  input: pkg.main,
+  input: "./src/index.js",
   output: [
     {
+      file: pkg.main,
       format: "cjs",
-      file: "./dist/index.cjs.js",
     },
     {
+      file: pkg.module,
       format: "es",
-      file: "./dist/index.es.js",
     },
   ],
   plugins: [
     resolve({
       extensions: [".js", ".jsx", ".ts", ".tsx"],
+      preferBuiltins: true,
+    }),
+    babel({
+      exclude: "../../node_modules",
+      extensions: [...DEFAULT_EXTENSIONS, ".ts", ".tsx"],
     }),
     commonjs({
+      exclude: "../../node_modules",
       namedExports: {
         react: Object.keys(react),
         "react-dom": Object.keys(reactDom),
       },
-    }),
-    babel({
-      runtimeHelpers: true,
-      exclude: "../../node_modules/**",
-      extensions: [...DEFAULT_EXTENSIONS, ".ts", ".tsx"],
     }),
   ],
 };

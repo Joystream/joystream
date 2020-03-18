@@ -5,7 +5,8 @@
   "author": "Gamaranto <gamarantor@gmail.com>",
   "homepage": "https://github.com/Joystream/atlas#readme",
   "license": "ISC",
-  "main": "src/index.js",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
   "directories": {
     "src": "src",
     "test": "__tests__"
