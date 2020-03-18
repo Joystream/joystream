@@ -1,3 +1,0 @@
-export const TODOS_REQUESTED = 'TODOS_REQUESTED';
-export const TODOS_FAILED = 'TODOS_FAILED';
-export const TODOS_SUCCESS = 'TODOS_SUCCESS';
