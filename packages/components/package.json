@@ -1,0 +1,35 @@
+{
+  "name": "components",
+  "version": "1.0.0",
+  "description": "\"React Components for the Atlas Project\"",
+  "author": "Gamaranto <gamarantor@gmail.com>",
+  "homepage": "https://github.com/Joystream/atlas#readme",
+  "license": "ISC",
+  "main": "src/index.js",
+  "directories": {
+    "src": "src",
+    "test": "__tests__"
+  },
+  "files": [
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Joystream/atlas.git"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "storybook": "start-storybook -p 6006",
+    "now-build": "build-storybook",
+    "test": "echo \"Error: run tests from root\" && exit 1"
+  },
+  "bugs": {
+    "url": "https://github.com/Joystream/atlas/issues"
+  },
+  "dependencies": {
+    "@emotion/babel-preset-css-prop": "^10.0.27",
+    "@emotion/core": "^10.0.28",
+    "react": "^16.13.0",
+    "react-dom": "^16.13.0"
+  }
+}
