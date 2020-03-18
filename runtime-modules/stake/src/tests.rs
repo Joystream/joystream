@@ -802,3 +802,80 @@ fn unstake() {
         assert_eq!(StakePool::stake_pool_balance(), starting_stake_fund_balance);
     });
 }
+
+#[test]
+fn immediate_slashing() {
+    build_test_externalities().execute_with(|| {
+        let staked_amount = Balances::minimum_balance() + 10000;
+        let _ = Balances::deposit_creating(&StakePool::stake_pool_account_id(), staked_amount);
+
+        // NegativeImbalance doesn't impl Debug so we cannot use this macro
+        // assert_err!(
+        //     StakePool::slash_immediate(&100, 5000, false),
+        //     StakeActionError::StakeNotFound
+        // );
+
+        // Cannot slash non-existant stake
+        let outcome = StakePool::slash_immediate(&100, 5000, false);
+        assert!(outcome.is_err());
+        let error = outcome.err().unwrap();
+        assert_eq!(error, StakeActionError::StakeNotFound);
+
+        let stake_id = StakePool::create_stake();
+        let created_at = System::block_number();
+        let initial_stake_state = Stake {
+            created: created_at,
+            staking_status: StakingStatus::Staked(StakedState {
+                staked_amount,
+                staked_status: StakedStatus::Normal,
+                next_slash_id: 0,
+                ongoing_slashes: BTreeMap::new(),
+            }),
+        };
+        <Stakes<Test>>::insert(&stake_id, initial_stake_state);
+
+        let slash_amount = 5000;
+
+        let outcome = StakePool::slash_immediate(&stake_id, slash_amount, false);
+        assert!(outcome.is_ok());
+        let outcome = outcome.ok().unwrap();
+
+        assert_eq!(outcome.caused_unstake, false);
+        assert_eq!(outcome.actually_slashed, slash_amount);
+        assert_eq!(outcome.remaining_stake, staked_amount - slash_amount);
+        // Default handler destroys imbalance
+        assert_eq!(outcome.remaining_imbalance.peek(), 0);
+
+        assert_eq!(
+            <Stakes<Test>>::get(stake_id),
+            Stake {
+                created: created_at,
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount: outcome.remaining_stake,
+                    staked_status: StakedStatus::Normal,
+                    next_slash_id: 0,
+                    ongoing_slashes: BTreeMap::new()
+                }),
+            }
+        );
+
+        // Slash and unstake by making slash go to zero
+        let slash_amount = outcome.remaining_stake;
+        let outcome = StakePool::slash_immediate(&stake_id, outcome.remaining_stake, true)
+            .ok()
+            .unwrap();
+        assert_eq!(outcome.caused_unstake, true);
+        assert_eq!(outcome.actually_slashed, slash_amount);
+        assert_eq!(outcome.remaining_stake, 0);
+        // Default handler destroys imbalance
+        assert_eq!(outcome.remaining_imbalance.peek(), 0);
+        // Should now be unstaked
+        assert_eq!(
+            <Stakes<Test>>::get(stake_id),
+            Stake {
+                created: created_at,
+                staking_status: StakingStatus::NotStaked
+            }
+        );
+    });
+}

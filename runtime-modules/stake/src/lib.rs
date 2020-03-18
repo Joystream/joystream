@@ -704,6 +704,7 @@ where
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct SlashImmediateOutcome<Balance, NegativeImbalance> {
     pub caused_unstake: bool,
     pub actually_slashed: Balance,
