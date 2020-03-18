@@ -245,14 +245,14 @@ where
     /// Returns the actual slashed amount.
     fn apply_slash(
         &mut self,
-        slash: Slash<BlockNumber, Balance>,
+        slash_amount: Balance,
         minimum_balance: Balance,
     ) -> Balance {
         // calculate how much to slash
-        let mut slash_amount = if slash.slash_amount > self.staked_amount {
+        let mut slash_amount = if slash_amount > self.staked_amount {
             self.staked_amount
         } else {
-            slash.slash_amount
+            slash_amount
         };
 
         // apply the slashing
@@ -274,7 +274,7 @@ where
 
         for (slash_id, slash) in self.get_slashes_to_finalize().iter() {
             // apply the slashing and get back actual amount slashed
-            let slashed_amount = self.apply_slash(*slash, minimum_balance);
+            let slashed_amount = self.apply_slash(slash.slash_amount, minimum_balance);
 
             finalized_slashes.push((*slash_id, slashed_amount, self.staked_amount));
         }
@@ -423,13 +423,7 @@ where
                 // irrespective of wether we are unstaking or not, slash!
 
                 let actually_slashed = staked_state.apply_slash(
-                    Slash {
-                        slash_amount,
-                        // below values are irrelevant
-                        is_active: true,
-                        blocks_remaining_in_active_period_for_slashing: BlockNumber::zero(),
-                        started_at_block: BlockNumber::zero(),
-                    },
+                    slash_amount,
                     minimum_balance,
                 );
 
