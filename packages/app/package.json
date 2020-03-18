@@ -18,6 +18,7 @@
     "url": "git+https://github.com/Joystream/atlas.git"
   },
   "scripts": {
+    "start": "parcel public/index.html",
     "test": "echo \"Error: run tests from root\" && exit 1"
   },
   "bugs": {
