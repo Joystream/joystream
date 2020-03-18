@@ -707,9 +707,9 @@ where
 }
 
 pub struct SlashImmediateOutcome<Balance, Imbalance> {
-    caused_unstake: bool,
-    slashed_amount: Imbalance,
-    remaining_stake: Balance,
+    pub caused_unstake: bool,
+    pub slashed_amount: Imbalance,
+    pub remaining_stake: Balance,
 }
 
 decl_storage! {
