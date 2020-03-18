@@ -73,6 +73,8 @@ pub trait StakingEventsHandler<T: Trait> {
     /// NB: actually_slashed can be less than amount of the slash itself if the
     /// claim amount on the stake cannot cover it fully.
     /// The SlashId is optional, as slashing may not be associated with a slashing that was initiated, but was an immediate slashing.
+    /// For Immediate slashes, the stake may have transitioned to NotStaked so handler should not assume the state
+    /// is still in staked status.
     fn slashed(
         id: &T::StakeId,
         slash_id: Option<T::SlashId>,
@@ -409,7 +411,7 @@ where
         &mut self,
         slash_amount: Balance,
         minimum_balance: Balance,
-    ) -> Result<Balance, ImmediateSlashingError> {
+    ) -> Result<(Balance, Balance), ImmediateSlashingError> {
         ensure!(
             slash_amount > Zero::zero(),
             ImmediateSlashingError::SlashAmountShouldBeGreaterThanZero
@@ -421,7 +423,9 @@ where
 
                 let actually_slashed = staked_state.apply_slash(slash_amount, minimum_balance);
 
-                Ok(actually_slashed)
+                let remaining_stake = staked_state.staked_amount;
+
+                Ok((actually_slashed, remaining_stake))
             }
             // can't slash if not staked
             _ => Err(ImmediateSlashingError::NotStaked),
@@ -965,13 +969,13 @@ impl<T: Trait> Module<T> {
         Ok(staked_amount)
     }
 
-    /// Slashes a stake with immediate effect, returns actual slashed amount as an imbalance.
-    /// If attempt to slash more than staked amount, actual slashed amount may be less than requested amount to slash.
-    /// Slashing adheres to system minimum balance, so if slashing results in amount at staked going below the
-    /// minimum balance, the entire stake will be slashed, and the state of the stake will change to Unstaked.
+    /// Slashes a stake with immediate effect, returns the outcome of the slashing.
+    /// Can optionally specify if slashing can result in immediate unstaking if staked amount
+    /// after slashing goes to zero.
     pub fn slash_immediate(
         stake_id: &T::StakeId,
         slash_amount: BalanceOf<T>,
+        unstake_on_zero_staked: bool,
     ) -> Result<
         SlashImmediateOutcome<BalanceOf<T>, NegativeImbalance<T>>,
         StakeActionError<ImmediateSlashingError>,
@@ -984,27 +988,20 @@ impl<T: Trait> Module<T> {
             StakeActionError::Error(ImmediateSlashingError::NotStaked)
         )?;
 
-        let actually_slashed =
+        let (actually_slashed, remaining_stake) =
             stake.slash_immediate(slash_amount, T::Currency::minimum_balance())?;
 
-        // Remove the slashed amount from the pool
-        let slashed_imbalance = Self::withdraw_funds_from_stake_pool(actually_slashed);
+        let caused_unstake = unstake_on_zero_staked && remaining_stake == BalanceOf::<T>::zero();
 
-        // What remains at stake?
-        let remaining_stake = ensure_staked_amount!(
-            stake,
-            StakeActionError::Error(ImmediateSlashingError::NotStaked)
-        )?;
-
-        let caused_unstake = remaining_stake == BalanceOf::<T>::zero();
-
-        // Set state to NotStaked if immediate slashing removed all the staked amount
         if caused_unstake {
             stake.staking_status = StakingStatus::NotStaked;
         }
 
         // Update state before calling handlers!
         <Stakes<T>>::insert(stake_id, stake);
+
+        // Remove the slashed amount from the pool
+        let slashed_imbalance = Self::withdraw_funds_from_stake_pool(actually_slashed);
 
         // Notify slashing event handler before unstaked handler.
         let remaining_imbalance_after_slash_handler = T::StakingEventsHandler::slashed(
@@ -1016,7 +1013,8 @@ impl<T: Trait> Module<T> {
         );
 
         let remaining_imbalance = if caused_unstake {
-            // Notify unstaked handler with any remaining unused imbalance from the slashing event handler
+            // Notify unstaked handler with any remaining unused imbalance
+            // from the slashing event handler
             T::StakingEventsHandler::unstaked(
                 &stake_id,
                 staked_amount_before_slash,
