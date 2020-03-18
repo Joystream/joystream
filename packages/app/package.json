@@ -18,7 +18,7 @@
     "url": "git+https://github.com/Gamaranto/atlas.git"
   },
   "scripts": {
-    "dev": "parcel src/index.html",
+    "dev": "parcel public/index.html",
     "test": "echo \"Error: run tests from root\" && exit 1"
   },
   "bugs": {
