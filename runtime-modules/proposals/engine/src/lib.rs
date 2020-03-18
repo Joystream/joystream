@@ -35,7 +35,6 @@ pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider}
 pub use types::{ProposalCodeDecoder, ProposalExecutable};
 pub use types::{VoteKind, VotersParameters};
 
-mod errors;
 pub(crate) mod types;
 
 #[cfg(test)]
@@ -43,10 +42,10 @@ mod tests;
 
 use codec::Decode;
 use rstd::prelude::*;
-use sr_primitives::traits::Zero;
+use sr_primitives::traits::{DispatchResult, Zero};
 use srml_support::traits::{Currency, Get};
 use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, Parameter, StorageDoubleMap,
+    decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
 };
 use system::{ensure_root, RawOrigin};
 
@@ -132,6 +131,72 @@ decl_event!(
     }
 );
 
+decl_error! {
+    pub enum Error {
+        /// Proposal cannot have an empty title"
+        EmptyTitleProvided,
+
+        /// Proposal cannot have an empty body
+        EmptyDescriptionProvided,
+
+        /// Title is too long
+        TitleIsTooLong,
+
+        /// Description is too long
+        DescriptionIsTooLong,
+
+        /// The proposal does not exist
+        ProposalNotFound,
+
+        /// Proposal is finalized already
+        ProposalFinalized,
+
+        /// The proposal have been already voted on
+        AlreadyVoted,
+
+        /// Not an author
+        NotAuthor,
+
+        /// Max active proposals number exceeded
+        MaxActiveProposalNumberExceeded,
+
+        /// Stake cannot be empty with this proposal
+        EmptyStake,
+
+        /// Stake should be empty for this proposal
+        StakeShouldBeEmpty,
+
+        /// Stake differs from the proposal requirements
+        StakeDiffersFromRequired,
+
+        /// Approval threshold cannot be zero
+        InvalidParameterApprovalThreshold,
+
+        /// Slashing threshold cannot be zero
+        InvalidParameterSlashingThreshold,
+
+        /// Require signed origin in extrinsics
+        RequireSignedOrigin,
+
+        /// Require root origin in extrinsics
+        RequireRootOrigin,
+    }
+}
+
+impl From<system::Error> for Error {
+    fn from(error: system::Error) -> Self {
+        match error {
+            system::Error::Other(msg) => Error::Other(msg),
+            system::Error::CannotLookup => Error::Other("CannotLookup"),
+            system::Error::BadSignature => Error::Other("BadSignature"),
+            system::Error::BlockFull => Error::Other("BlockFull"),
+            system::Error::RequireSignedOrigin => Error::RequireSignedOrigin,
+            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
+            system::Error::RequireNoOrigin => Error::Other("RequireNoOrigin"),
+        }
+    }
+}
+
 // Storage for the proposals engine module
 decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalEngine{
@@ -165,6 +230,8 @@ decl_storage! {
 decl_module! {
     /// 'Proposal engine' substrate module
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        /// Predefined errors
+        type Error = Error;
 
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
@@ -176,17 +243,17 @@ decl_module! {
                 voter_id.clone(),
             )?;
 
-            ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
+            ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
             let mut proposal = Self::proposals(proposal_id);
 
-            ensure!(proposal.status == ProposalStatus::Active, errors::MSG_PROPOSAL_FINALIZED);
+            ensure!(proposal.status == ProposalStatus::Active, Error::ProposalFinalized);
 
             let did_not_vote_before = !<VoteExistsByProposalByVoter<T>>::exists(
                 proposal_id,
                 voter_id.clone(),
             );
 
-            ensure!(did_not_vote_before, errors::MSG_YOU_ALREADY_VOTED);
+            ensure!(did_not_vote_before, Error::AlreadyVoted);
 
             proposal.voting_results.add_vote(vote.clone());
 
@@ -204,11 +271,11 @@ decl_module! {
                 proposer_id.clone(),
             )?;
 
-            ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
+            ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
-            ensure!(proposer_id == proposal.proposer_id, errors::MSG_YOU_DONT_OWN_THIS_PROPOSAL);
-            ensure!(proposal.status == ProposalStatus::Active, errors::MSG_PROPOSAL_FINALIZED);
+            ensure!(proposer_id == proposal.proposer_id, Error::NotAuthor);
+            ensure!(proposal.status == ProposalStatus::Active, Error::ProposalFinalized);
 
             // mutation
 
@@ -219,10 +286,10 @@ decl_module! {
         pub fn veto_proposal(origin, proposal_id: T::ProposalId) {
             ensure_root(origin)?;
 
-            ensure!(<Proposals<T>>::exists(proposal_id), errors::MSG_PROPOSAL_NOT_FOUND);
+            ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
-            ensure!(proposal.status == ProposalStatus::Active, errors::MSG_PROPOSAL_FINALIZED);
+            ensure!(proposal.status == ProposalStatus::Active, Error::ProposalFinalized);
 
             // mutation
 
@@ -512,34 +579,34 @@ impl<T: Trait> Module<T> {
     fn ensure_create_proposal_parameters_are_valid(
         parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
         title: &[u8],
-        body: &[u8],
+        description: &[u8],
         stake_balance: Option<types::BalanceOf<T>>,
-    ) -> dispatch::Result {
-        ensure!(!title.is_empty(), errors::MSG_EMPTY_TITLE_PROVIDED);
+    ) -> DispatchResult<Error> {
+        ensure!(!title.is_empty(), Error::EmptyTitleProvided);
         ensure!(
             title.len() as u32 <= T::TitleMaxLength::get(),
-            errors::MSG_TOO_LONG_TITLE
+            Error::TitleIsTooLong
         );
 
-        ensure!(!body.is_empty(), errors::MSG_EMPTY_BODY_PROVIDED);
+        ensure!(!description.is_empty(), Error::EmptyDescriptionProvided);
         ensure!(
-            body.len() as u32 <= T::DescriptionMaxLength::get(),
-            errors::MSG_TOO_LONG_BODY
+            description.len() as u32 <= T::DescriptionMaxLength::get(),
+            Error::DescriptionIsTooLong
         );
 
         ensure!(
             (Self::active_proposal_count()) < T::MaxActiveProposalLimit::get(),
-            errors::MSG_MAX_ACTIVE_PROPOSAL_NUMBER_EXCEEDED
+            Error::MaxActiveProposalNumberExceeded
         );
 
         ensure!(
             parameters.approval_threshold_percentage > 0,
-            errors::MSG_INVALID_PARAMETER_APPROVAL_THRESHOLD
+            Error::InvalidParameterApprovalThreshold
         );
 
         ensure!(
             parameters.slashing_threshold_percentage > 0,
-            errors::MSG_INVALID_PARAMETER_SLASHING_THRESHOLD
+            Error::InvalidParameterSlashingThreshold
         );
 
         // check stake parameters
@@ -547,15 +614,15 @@ impl<T: Trait> Module<T> {
             if let Some(staked_balance) = stake_balance {
                 ensure!(
                     required_stake == staked_balance,
-                    errors::MSG_STAKE_DIFFERS_FROM_REQUIRED
+                    Error::StakeDiffersFromRequired
                 );
             } else {
-                return Err(errors::MSG_STAKE_IS_EMPTY);
+                return Err(Error::EmptyStake);
             }
         }
 
         if stake_balance.is_some() && parameters.required_stake.is_none() {
-            return Err(errors::MSG_STAKE_SHOULD_BE_EMPTY);
+            return Err(Error::StakeShouldBeEmpty);
         }
 
         Ok(())

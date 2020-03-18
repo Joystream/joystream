@@ -14,7 +14,7 @@ pub use sr_primitives::{
     weights::Weight,
     BuildStorage, DispatchError, Perbill,
 };
-use srml_support::{impl_outer_dispatch, impl_outer_event, impl_outer_origin, parameter_types};
+use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 pub use system;
 
 mod balance_manager;

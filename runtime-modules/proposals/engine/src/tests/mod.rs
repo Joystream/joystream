@@ -5,8 +5,8 @@ use mock::*;
 
 use codec::Encode;
 use rstd::rc::Rc;
-use sr_primitives::traits::{OnFinalize, OnInitialize};
-use srml_support::{dispatch, StorageMap, StorageValue};
+use sr_primitives::traits::{DispatchResult, OnFinalize, OnInitialize};
+use srml_support::{StorageMap, StorageValue};
 use system::RawOrigin;
 use system::{EventRecord, Phase};
 
@@ -70,10 +70,8 @@ impl Default for DummyProposalFixture {
     fn default() -> Self {
         let title = b"title".to_vec();
         let description = b"description".to_vec();
-        let dummy_proposal = mock::proposals::Call::<Test>::dummy_proposal(
-            title.clone(),
-            description.clone(),
-        );
+        let dummy_proposal =
+            mock::proposals::Call::<Test>::dummy_proposal(title.clone(), description.clone());
 
         DummyProposalFixture {
             parameters: ProposalParameters {
@@ -168,7 +166,7 @@ impl CancelProposalFixture {
         }
     }
 
-    fn cancel_and_assert(self, expected_result: dispatch::Result) {
+    fn cancel_and_assert(self, expected_result: DispatchResult<Error>) {
         assert_eq!(
             ProposalsEngine::cancel_proposal(
                 self.origin.into(),
@@ -196,7 +194,7 @@ impl VetoProposalFixture {
         VetoProposalFixture { origin, ..self }
     }
 
-    fn veto_and_assert(self, expected_result: dispatch::Result) {
+    fn veto_and_assert(self, expected_result: DispatchResult<Error>) {
         assert_eq!(
             ProposalsEngine::veto_proposal(self.origin.into(), self.proposal_id,),
             expected_result
@@ -224,11 +222,11 @@ impl VoteGenerator {
         self.vote_and_assert(vote_kind, Ok(()));
     }
 
-    fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: dispatch::Result) {
+    fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: DispatchResult<Error>) {
         assert_eq!(self.vote(vote_kind.clone()), expected_result);
     }
 
-    fn vote(&mut self, vote_kind: VoteKind) -> dispatch::Result {
+    fn vote(&mut self, vote_kind: VoteKind) -> DispatchResult<Error> {
         if self.auto_increment_voter_id {
             self.current_account_id += 1;
             self.current_voter_id += 1;
@@ -289,7 +287,7 @@ fn create_dummy_proposal_succeeds() {
 fn create_dummy_proposal_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default().with_origin(RawOrigin::None);
-        dummy_proposal.create_proposal_and_assert(Err("RequireSignedOrigin"));
+        dummy_proposal.create_proposal_and_assert(Err(Error::RequireSignedOrigin.into()));
     });
 }
 
@@ -309,7 +307,7 @@ fn vote_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         assert_eq!(
             ProposalsEngine::vote(system::RawOrigin::None.into(), 1, 1, VoteKind::Approve),
-            Err("RequireSignedOrigin")
+            Err(Error::Other("RequireSignedOrigin"))
         );
     });
 }
@@ -487,21 +485,21 @@ fn create_proposal_fails_with_invalid_body_or_title() {
     initial_test_ext().execute_with(|| {
         let mut dummy_proposal =
             DummyProposalFixture::default().with_title_and_body(Vec::new(), b"body".to_vec());
-        dummy_proposal.create_proposal_and_assert(Err("Proposal cannot have an empty title"));
+        dummy_proposal.create_proposal_and_assert(Err(Error::EmptyTitleProvided.into()));
 
         dummy_proposal =
             DummyProposalFixture::default().with_title_and_body(b"title".to_vec(), Vec::new());
-        dummy_proposal.create_proposal_and_assert(Err("Proposal cannot have an empty body"));
+        dummy_proposal.create_proposal_and_assert(Err(Error::EmptyDescriptionProvided.into()));
 
         let too_long_title = vec![0; 200];
         dummy_proposal =
             DummyProposalFixture::default().with_title_and_body(too_long_title, b"body".to_vec());
-        dummy_proposal.create_proposal_and_assert(Err("Title is too long"));
+        dummy_proposal.create_proposal_and_assert(Err(Error::TitleIsTooLong.into()));
 
         let too_long_body = vec![0; 11000];
         dummy_proposal =
             DummyProposalFixture::default().with_title_and_body(b"title".to_vec(), too_long_body);
-        dummy_proposal.create_proposal_and_assert(Err("Body is too long"));
+        dummy_proposal.create_proposal_and_assert(Err(Error::DescriptionIsTooLong.into()));
     });
 }
 
@@ -514,7 +512,7 @@ fn vote_fails_with_expired_voting_period() {
         run_to_block_and_finalize(6);
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
-        vote_generator.vote_and_assert(VoteKind::Approve, Err("Proposal is finalized already"));
+        vote_generator.vote_and_assert(VoteKind::Approve, Err(Error::ProposalFinalized));
     });
 }
 
@@ -534,7 +532,7 @@ fn vote_fails_with_not_active_proposal() {
 
         let mut vote_generator_to_fail = VoteGenerator::new(proposal_id);
         vote_generator_to_fail
-            .vote_and_assert(VoteKind::Approve, Err("Proposal is finalized already"));
+            .vote_and_assert(VoteKind::Approve, Err(Error::ProposalFinalized));
     });
 }
 
@@ -542,7 +540,7 @@ fn vote_fails_with_not_active_proposal() {
 fn vote_fails_with_absent_proposal() {
     initial_test_ext().execute_with(|| {
         let mut vote_generator = VoteGenerator::new(2);
-        vote_generator.vote_and_assert(VoteKind::Approve, Err("This proposal does not exist"));
+        vote_generator.vote_and_assert(VoteKind::Approve, Err(Error::ProposalNotFound));
     });
 }
 
@@ -558,7 +556,7 @@ fn vote_fails_on_double_voting() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert(
             VoteKind::Approve,
-            Err("You have already voted on this proposal"),
+            Err(Error::AlreadyVoted),
         );
     });
 }
@@ -601,7 +599,7 @@ fn cancel_proposal_fails_with_not_active_proposal() {
         run_to_block_and_finalize(6);
 
         let cancel_proposal = CancelProposalFixture::new(proposal_id);
-        cancel_proposal.cancel_and_assert(Err("Proposal is finalized already"));
+        cancel_proposal.cancel_and_assert(Err(Error::ProposalFinalized));
     });
 }
 
@@ -609,7 +607,7 @@ fn cancel_proposal_fails_with_not_active_proposal() {
 fn cancel_proposal_fails_with_not_existing_proposal() {
     initial_test_ext().execute_with(|| {
         let cancel_proposal = CancelProposalFixture::new(2);
-        cancel_proposal.cancel_and_assert(Err("This proposal does not exist"));
+        cancel_proposal.cancel_and_assert(Err(Error::ProposalNotFound));
     });
 }
 
@@ -622,7 +620,7 @@ fn cancel_proposal_fails_with_insufficient_rights() {
         let cancel_proposal = CancelProposalFixture::new(proposal_id)
             .with_origin(RawOrigin::Signed(2))
             .with_proposer(2);
-        cancel_proposal.cancel_and_assert(Err("You do not own this proposal"));
+        cancel_proposal.cancel_and_assert(Err(Error::NotAuthor));
     });
 }
 
@@ -673,7 +671,7 @@ fn veto_proposal_fails_with_not_active_proposal() {
         run_to_block_and_finalize(6);
 
         let veto_proposal = VetoProposalFixture::new(proposal_id);
-        veto_proposal.veto_and_assert(Err("Proposal is finalized already"));
+        veto_proposal.veto_and_assert(Err(Error::ProposalFinalized));
     });
 }
 
@@ -681,7 +679,7 @@ fn veto_proposal_fails_with_not_active_proposal() {
 fn veto_proposal_fails_with_not_existing_proposal() {
     initial_test_ext().execute_with(|| {
         let veto_proposal = VetoProposalFixture::new(2);
-        veto_proposal.veto_and_assert(Err("This proposal does not exist"));
+        veto_proposal.veto_and_assert(Err(Error::ProposalNotFound));
     });
 }
 
@@ -692,7 +690,7 @@ fn veto_proposal_fails_with_insufficient_rights() {
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let veto_proposal = VetoProposalFixture::new(proposal_id).with_origin(RawOrigin::Signed(2));
-        veto_proposal.veto_and_assert(Err("RequireRootOrigin"));
+        veto_proposal.veto_and_assert(Err(Error::RequireRootOrigin));
     });
 }
 
@@ -905,7 +903,7 @@ fn create_proposal_fails_on_exceeding_max_active_proposals_count() {
         }
 
         let dummy_proposal = DummyProposalFixture::default();
-        dummy_proposal.create_proposal_and_assert(Err("Max active proposals number exceeded"));
+        dummy_proposal.create_proposal_and_assert(Err(Error::MaxActiveProposalNumberExceeded.into()));
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 100);
     });
@@ -1007,13 +1005,13 @@ fn create_proposal_fais_with_invalid_stake_parameters() {
             .with_parameters(parameters_fixture.params())
             .with_stake(200);
 
-        dummy_proposal.create_proposal_and_assert(Err("Stake should be empty for this proposal"));
+        dummy_proposal.create_proposal_and_assert(Err(Error::StakeShouldBeEmpty.into()));
 
         let parameters_fixture_stake_200 = parameters_fixture.with_required_stake(200);
         dummy_proposal =
             DummyProposalFixture::default().with_parameters(parameters_fixture_stake_200.params());
 
-        dummy_proposal.create_proposal_and_assert(Err("Stake cannot be empty with this proposal"));
+        dummy_proposal.create_proposal_and_assert(Err(Error::EmptyStake.into()));
 
         let parameters_fixture_stake_300 = parameters_fixture.with_required_stake(300);
         dummy_proposal = DummyProposalFixture::default()
@@ -1021,7 +1019,7 @@ fn create_proposal_fais_with_invalid_stake_parameters() {
             .with_stake(200);
 
         dummy_proposal
-            .create_proposal_and_assert(Err("Stake differs from the proposal requirements"));
+            .create_proposal_and_assert(Err(Error::StakeDiffersFromRequired.into()));
     });
 }
 /* TODO: restore after the https://github.com/Joystream/substrate-runtime-joystream/issues/161
