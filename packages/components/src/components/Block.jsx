@@ -12,12 +12,7 @@ export default function Block({
   return (
     <article
       css={css`
-        border: 1px solid rgb(242, 242, 242);
-        border-radius: 0.25rem;
-        padding: 1.25rem;
         text-align: left;
-        font-family: --apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
       `}
     >
       <header

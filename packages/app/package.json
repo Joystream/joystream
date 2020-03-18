@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "> TODO: description",
   "author": "Gamaranto <gamarantor@gmail.com>",
-  "homepage": "https://github.com/Joystream/atlas#readme",
+  "homepage": "https://github.com/Gamaranto/atlas#readme",
   "license": "ISC",
   "main": "src/app.js",
   "directories": {
@@ -15,13 +15,18 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Joystream/atlas.git"
+    "url": "git+https://github.com/Gamaranto/atlas.git"
   },
   "scripts": {
     "start": "parcel public/index.html",
+    "dev": "parcel public/index.html",
     "test": "echo \"Error: run tests from root\" && exit 1"
   },
   "bugs": {
-    "url": "https://github.com/Joystream/atlas/issues"
+    "url": "https://github.com/Gamaranto/atlas/issues"
+  },
+  "dependencies": {
+    "react": "^16.13.0",
+    "react-dom": "^16.13.0"
   }
 }
