@@ -124,7 +124,7 @@ impl DummyProposalFixture {
         }
     }
 
-    fn create_proposal_and_assert(self, result: Result<u32, &'static str>) -> Option<u32> {
+    fn create_proposal_and_assert(self, result: Result<u32, Error>) -> Option<u32> {
         let proposal_id_result = ProposalsEngine::create_proposal(
             self.origin.into(),
             self.proposer_id,
@@ -287,7 +287,7 @@ fn create_dummy_proposal_succeeds() {
 fn create_dummy_proposal_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         let dummy_proposal = DummyProposalFixture::default().with_origin(RawOrigin::None);
-        dummy_proposal.create_proposal_and_assert(Err(Error::RequireSignedOrigin.into()));
+        dummy_proposal.create_proposal_and_assert(Err(Error::Other("RequireSignedOrigin")));
     });
 }
 
@@ -992,7 +992,7 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_stake(required_stake);
 
-        dummy_proposal.create_proposal_and_assert(Err("too few free funds in account"));
+        dummy_proposal.create_proposal_and_assert(Err(Error::Other("too few free funds in account")));
     });
 }
 

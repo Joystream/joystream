@@ -175,9 +175,6 @@ decl_error! {
         /// Slashing threshold cannot be zero
         InvalidParameterSlashingThreshold,
 
-        /// Require signed origin in extrinsics
-        RequireSignedOrigin,
-
         /// Require root origin in extrinsics
         RequireRootOrigin,
     }
@@ -187,12 +184,8 @@ impl From<system::Error> for Error {
     fn from(error: system::Error) -> Self {
         match error {
             system::Error::Other(msg) => Error::Other(msg),
-            system::Error::CannotLookup => Error::Other("CannotLookup"),
-            system::Error::BadSignature => Error::Other("BadSignature"),
-            system::Error::BlockFull => Error::Other("BlockFull"),
-            system::Error::RequireSignedOrigin => Error::RequireSignedOrigin,
             system::Error::RequireRootOrigin => Error::RequireRootOrigin,
-            system::Error::RequireNoOrigin => Error::Other("RequireNoOrigin"),
+            _ => Error::Other(error.into()),
         }
     }
 }
@@ -331,7 +324,7 @@ impl<T: Trait> Module<T> {
         description: Vec<u8>,
         stake_balance: Option<types::BalanceOf<T>>,
         proposal_code: Vec<u8>,
-    ) -> Result<T::ProposalId, &'static str> {
+    ) -> Result<T::ProposalId, Error> {
         let account_id =
             T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id.clone())?;
 

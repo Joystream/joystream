@@ -2,7 +2,6 @@ mod mock;
 
 use mock::*;
 
-use crate::errors::*;
 use crate::*;
 use system::RawOrigin;
 use system::{EventRecord, Phase};
@@ -93,7 +92,7 @@ impl DiscussionFixture {
         }
     }
 
-    fn create_discussion_and_assert(&self, result: Result<u32, &'static str>) -> Option<u32> {
+    fn create_discussion_and_assert(&self, result: Result<u32, Error>) -> Option<u32> {
         let create_discussion_result = Discussions::create_thread(
             self.origin.clone().into(),
             self.author_id,
@@ -148,7 +147,7 @@ impl PostFixture {
         }
     }
 
-    fn add_post_and_assert(&mut self, result: Result<(), &'static str>) -> Option<u32> {
+    fn add_post_and_assert(&mut self, result: Result<(), Error>) -> Option<u32> {
         let add_post_result = Discussions::add_post(
             self.origin.clone().into(),
             self.author_id,
@@ -168,7 +167,7 @@ impl PostFixture {
     fn update_post_with_text_and_assert(
         &mut self,
         new_text: Vec<u8>,
-        result: Result<(), &'static str>,
+        result: Result<(), Error>,
     ) {
         let add_post_result = Discussions::update_post(
             self.origin.clone().into(),
@@ -181,7 +180,7 @@ impl PostFixture {
         assert_eq!(add_post_result, result);
     }
 
-    fn update_post_and_assert(&mut self, result: Result<(), &'static str>) {
+    fn update_post_and_assert(&mut self, result: Result<(), Error>) {
         self.update_post_with_text_and_assert(self.text.clone(), result);
     }
 }
@@ -249,7 +248,7 @@ fn update_post_call_failes_because_of_post_edition_limit() {
             post_fixture.update_post_and_assert(Ok(()));
         }
 
-        post_fixture.update_post_and_assert(Err(MSG_POST_EDITION_NUMBER_EXCEEDED));
+        post_fixture.update_post_and_assert(Err(Error::PostEditionNumberExceeded));
     });
 }
 
@@ -268,11 +267,11 @@ fn update_post_call_failes_because_of_the_wrong_author() {
 
         post_fixture = post_fixture.with_author(2);
 
-        post_fixture.update_post_and_assert(Err("Invalid author"));
+        post_fixture.update_post_and_assert(Err(Error::Other("Invalid author")));
 
         post_fixture = post_fixture.with_origin(RawOrigin::None).with_author(2);
 
-        post_fixture.update_post_and_assert(Err(MSG_NOT_AUTHOR));
+        post_fixture.update_post_and_assert(Err(Error::NotAuthor));
     });
 }
 
@@ -317,10 +316,10 @@ fn thread_content_check_succeeded() {
 fn create_discussion_call_with_bad_title_failed() {
     initial_test_ext().execute_with(|| {
         let mut discussion_fixture = DiscussionFixture::default().with_title(Vec::new());
-        discussion_fixture.create_discussion_and_assert(Err(MSG_EMPTY_TITLE_PROVIDED));
+        discussion_fixture.create_discussion_and_assert(Err(Error::EmptyTitleProvided));
 
         discussion_fixture = DiscussionFixture::default().with_title([0; 201].to_vec());
-        discussion_fixture.create_discussion_and_assert(Err(MSG_TOO_LONG_TITLE));
+        discussion_fixture.create_discussion_and_assert(Err(Error::TitleIsTooLong));
     });
 }
 
@@ -333,7 +332,7 @@ fn add_post_call_with_invalid_thread_failed() {
             .unwrap();
 
         let mut post_fixture = PostFixture::default_for_thread(2);
-        post_fixture.add_post_and_assert(Err(MSG_THREAD_DOESNT_EXIST));
+        post_fixture.add_post_and_assert(Err(Error::ThreadDoesntExist));
     });
 }
 
@@ -349,7 +348,7 @@ fn update_post_call_with_invalid_post_failed() {
         post_fixture1.add_post_and_assert(Ok(())).unwrap();
 
         let mut post_fixture2 = post_fixture1.change_post_id(2);
-        post_fixture2.update_post_and_assert(Err(MSG_POST_DOESNT_EXIST));
+        post_fixture2.update_post_and_assert(Err(Error::PostDoesntExist));
     });
 }
 
@@ -365,7 +364,7 @@ fn update_post_call_with_invalid_thread_failed() {
         post_fixture1.add_post_and_assert(Ok(())).unwrap();
 
         let mut post_fixture2 = post_fixture1.change_thread_id(2);
-        post_fixture2.update_post_and_assert(Err(MSG_THREAD_DOESNT_EXIST));
+        post_fixture2.update_post_and_assert(Err(Error::ThreadDoesntExist));
     });
 }
 
@@ -378,11 +377,11 @@ fn add_post_call_with_invalid_text_failed() {
             .unwrap();
 
         let mut post_fixture1 = PostFixture::default_for_thread(thread_id).with_text(Vec::new());
-        post_fixture1.add_post_and_assert(Err(MSG_EMPTY_POST_PROVIDED));
+        post_fixture1.add_post_and_assert(Err(Error::EmptyPostProvided));
 
         let mut post_fixture2 =
             PostFixture::default_for_thread(thread_id).with_text([0; 2001].to_vec());
-        post_fixture2.add_post_and_assert(Err(MSG_TOO_LONG_POST));
+        post_fixture2.add_post_and_assert(Err(Error::PostIsTooLong));
     });
 }
 
@@ -398,10 +397,10 @@ fn update_post_call_with_invalid_text_failed() {
         post_fixture1.add_post_and_assert(Ok(()));
 
         let mut post_fixture2 = post_fixture1.with_text(Vec::new());
-        post_fixture2.update_post_and_assert(Err(MSG_EMPTY_POST_PROVIDED));
+        post_fixture2.update_post_and_assert(Err(Error::EmptyPostProvided));
 
         let mut post_fixture3 = post_fixture2.with_text([0; 2001].to_vec());
-        post_fixture3.update_post_and_assert(Err(MSG_TOO_LONG_POST));
+        post_fixture3.update_post_and_assert(Err(Error::PostIsTooLong));
     });
 }
 
@@ -416,7 +415,7 @@ fn add_discussion_thread_fails_because_of_max_thread_by_same_author_in_a_row_lim
         }
 
         discussion_fixture
-            .create_discussion_and_assert(Err(MSG_MAX_THREAD_IN_A_ROW_LIMIT_EXCEEDED));
+            .create_discussion_and_assert(Err(Error::MaxThreadInARowLimitExceeded));
     });
 }
 
@@ -424,11 +423,11 @@ fn add_discussion_thread_fails_because_of_max_thread_by_same_author_in_a_row_lim
 fn add_discussion_thread_fails_because_of_invalid_author_origin() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default().with_author(2);
-        discussion_fixture.create_discussion_and_assert(Err("Invalid author"));
+        discussion_fixture.create_discussion_and_assert(Err(Error::Other("Invalid author")));
 
         let discussion_fixture = DiscussionFixture::default()
             .with_origin(RawOrigin::Signed(3))
             .with_author(2);
-        discussion_fixture.create_discussion_and_assert(Err("Invalid author"));
+        discussion_fixture.create_discussion_and_assert(Err(Error::Other("Invalid author")));
     });
 }

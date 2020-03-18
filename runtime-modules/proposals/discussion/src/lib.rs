@@ -15,7 +15,6 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-mod errors;
 #[cfg(test)]
 mod tests;
 mod types;
@@ -23,15 +22,13 @@ mod types;
 use rstd::clone::Clone;
 use rstd::prelude::*;
 use rstd::vec::Vec;
-use srml_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
+use srml_support::{decl_event, decl_module, decl_error, decl_storage, ensure, Parameter};
 
-use srml_support::traits::Get;
+use srml_support::traits::{Get};
 use types::{Post, Thread, ThreadCounter};
 
 use common::origin_validator::ActorOriginValidator;
 use membership::origin_validator::MemberId;
-
-// TODO: move errors to decl_error macro (after substrate version upgrade)
 
 decl_event!(
     /// Proposals engine events
@@ -90,6 +87,53 @@ pub trait Trait: system::Trait + membership::members::Trait {
     type MaxThreadInARowNumber: Get<u32>;
 }
 
+decl_error! {
+    pub enum Error {
+        /// The size of the provided text for text proposal exceeded the limit
+        TextProposalSizeExceeded,
+
+        /// Author should match the post creator
+        NotAuthor,
+
+        ///  Post edition limit reached
+        PostEditionNumberExceeded,
+
+        /// Discussion cannot have an empty title
+        EmptyTitleProvided,
+
+        /// Title is too long
+        TitleIsTooLong,
+
+        /// Thread doesn't exist
+        ThreadDoesntExist,
+
+        /// Post doesn't exist
+        PostDoesntExist,
+
+        /// Post cannot be empty
+        EmptyPostProvided,
+
+        /// Post is too long
+        PostIsTooLong,
+
+        /// Max number of threads by same author in a row limit exceeded
+        MaxThreadInARowLimitExceeded,
+
+        /// Require root origin in extrinsics
+        RequireRootOrigin,
+    }
+}
+
+impl From<system::Error> for Error {
+    fn from(error: system::Error) -> Self {
+        match error {
+            system::Error::Other(msg) => Error::Other(msg),
+            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
+            _ => Error::Other(error.into()),
+        }
+    }
+}
+
 // Storage for the proposals discussion module
 decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalDiscussion {
@@ -116,6 +160,8 @@ decl_storage! {
 decl_module! {
     /// 'Proposal discussion' substrate module
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        /// Predefined errors
+        type Error = Error;
 
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
@@ -131,12 +177,12 @@ decl_module! {
                 origin,
                 post_author_id.clone(),
             )?;
-            ensure!(<ThreadById<T>>::exists(thread_id), errors::MSG_THREAD_DOESNT_EXIST);
+            ensure!(<ThreadById<T>>::exists(thread_id), Error::ThreadDoesntExist);
 
-            ensure!(!text.is_empty(), errors::MSG_EMPTY_POST_PROVIDED);
+            ensure!(!text.is_empty(),Error::EmptyPostProvided);
             ensure!(
                 text.len() as u32 <= T::PostLengthLimit::get(),
-                errors::MSG_TOO_LONG_POST
+                Error::PostIsTooLong
             );
 
             // mutation
@@ -172,20 +218,20 @@ decl_module! {
                 post_author_id.clone(),
             )?;
 
-            ensure!(<ThreadById<T>>::exists(thread_id), errors::MSG_THREAD_DOESNT_EXIST);
-            ensure!(<PostThreadIdByPostId<T>>::exists(thread_id, post_id), errors::MSG_POST_DOESNT_EXIST);
+            ensure!(<ThreadById<T>>::exists(thread_id), Error::ThreadDoesntExist);
+            ensure!(<PostThreadIdByPostId<T>>::exists(thread_id, post_id), Error::PostDoesntExist);
 
-            ensure!(!text.is_empty(), errors::MSG_EMPTY_POST_PROVIDED);
+            ensure!(!text.is_empty(), Error::EmptyPostProvided);
             ensure!(
                 text.len() as u32 <= T::PostLengthLimit::get(),
-                errors::MSG_TOO_LONG_POST
+                Error::PostIsTooLong
             );
 
             let post = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id);
 
-            ensure!(post.author_id == post_author_id, errors::MSG_NOT_AUTHOR);
+            ensure!(post.author_id == post_author_id, Error::NotAuthor);
             ensure!(post.edition_number < T::MaxPostEditionNumber::get(),
-                errors::MSG_POST_EDITION_NUMBER_EXCEEDED);
+                Error::PostEditionNumberExceeded);
 
             let new_post = Post {
                 text,
@@ -214,13 +260,13 @@ impl<T: Trait> Module<T> {
         origin: T::Origin,
         thread_author_id: MemberId<T>,
         title: Vec<u8>,
-    ) -> Result<T::ThreadId, &'static str> {
+    ) -> Result<T::ThreadId, Error> {
         T::ThreadAuthorOriginValidator::ensure_actor_origin(origin, thread_author_id.clone())?;
 
-        ensure!(!title.is_empty(), errors::MSG_EMPTY_TITLE_PROVIDED);
+        ensure!(!title.is_empty(), Error::EmptyTitleProvided);
         ensure!(
             title.len() as u32 <= T::ThreadTitleLengthLimit::get(),
-            errors::MSG_TOO_LONG_TITLE
+            Error::TitleIsTooLong
         );
 
         // get new 'threads in a row' counter for the author
@@ -228,7 +274,7 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             current_thread_counter.counter as u32 <= T::MaxThreadInARowNumber::get(),
-            errors::MSG_MAX_THREAD_IN_A_ROW_LIMIT_EXCEEDED
+            Error::MaxThreadInARowLimitExceeded
         );
 
         let next_thread_count_value = Self::thread_count() + 1;

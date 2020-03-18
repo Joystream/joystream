@@ -12,14 +12,13 @@ std = [
     'rstd/std',
     'srml-support/std',
     'primitives/std',
-    'runtime-primitives/std',
+    'sr-primitives/std',
     'system/std',
     'timestamp/std',
     'serde',
     'membership/std',
     'common/std',
 ]
-
 
 [dependencies.num_enum]
 default_features = false
@@ -48,7 +47,7 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-std'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
-[dependencies.runtime-primitives]
+[dependencies.sr-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-primitives'
