@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.build.json",
+
+  "compilerOptions": {
+    "baseUrl": "./packages",
+    "noImplicitAny": true,
+    "jsx": "react",
+    "esModuleInterop": true,
+    "paths": {
+      "@atlas/*": ["*/src"]
+    }
+  }
+}
