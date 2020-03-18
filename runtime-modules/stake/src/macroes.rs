@@ -17,3 +17,15 @@ macro_rules! ensure_stake_exists {
         ensure_map_has_mapping_with_key!(Stakes, $runtime_trait, $stake_id, $error)
     }};
 }
+
+#[macro_export]
+macro_rules! ensure_staked_amount {
+    ($stake:expr, $error:expr) => {{
+        match $stake.staking_status {
+            StakingStatus::Staked(ref staked_state) => staked_state.staked_amount,
+            _ => {
+                return Err(StakeActionError::Error(ImmediateSlashingError::NotStaked));
+            }
+        }
+    }};
+}

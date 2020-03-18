@@ -307,7 +307,7 @@ pub struct Stake<BlockNumber, Balance, SlashId: Ord> {
 
 impl<BlockNumber, Balance, SlashId> Stake<BlockNumber, Balance, SlashId>
 where
-    BlockNumber: Copy + SimpleArithmetic,
+    BlockNumber: Copy + SimpleArithmetic + Zero,
     Balance: Copy + SimpleArithmetic,
     SlashId: Copy + Ord + Zero + One,
 {
@@ -405,6 +405,38 @@ where
             Ok(())
         } else {
             Err(StakingError::AlreadyStaked)
+        }
+    }
+
+    fn slash_immediate(
+        &mut self,
+        slash_amount: Balance,
+        minimum_balance: Balance,
+    ) -> Result<Balance, ImmediateSlashingError> {
+        ensure!(
+            slash_amount > Zero::zero(),
+            ImmediateSlashingError::SlashAmountShouldBeGreaterThanZero
+        );
+
+        match self.staking_status {
+            StakingStatus::Staked(ref mut staked_state) => {
+                // irrespective of wether we are unstaking or not, slash!
+
+                let actually_slashed = staked_state.apply_slash(
+                    Slash {
+                        slash_amount,
+                        // below values are irrelevant
+                        is_active: true,
+                        blocks_remaining_in_active_period_for_slashing: BlockNumber::zero(),
+                        started_at_block: BlockNumber::zero(),
+                    },
+                    minimum_balance,
+                );
+
+                Ok(actually_slashed)
+            }
+            // can't slash if not staked
+            _ => Err(ImmediateSlashingError::NotStaked),
         }
     }
 
@@ -680,6 +712,12 @@ where
     }
 }
 
+pub struct SlashImmediateOutcome<Balance, Imbalance> {
+    caused_unstake: bool,
+    slashed_amount: Imbalance,
+    remaining_stake: Balance,
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as StakePool {
         /// Maps identifiers to a stake.
@@ -938,7 +976,66 @@ impl<T: Trait> Module<T> {
         Ok(staked_amount)
     }
 
-    /// Initiate a new slashing of a staked stake.
+    /// Slashes a stake with immediate effect, returns actual slashed amount as an imbalance.
+    /// If attempt to slash more than staked amount, actual slashed amount may be less than requested amount to slash.
+    /// Slashing adheres to system minimum balance, so if slashing results in amount at staked going below the
+    /// minimum balance, the entire stake will be slashed, and the state of the stake will change to Unstaked.
+    pub fn slash_immediate(
+        stake_id: &T::StakeId,
+        slash_amount: BalanceOf<T>,
+    ) -> Result<
+        SlashImmediateOutcome<BalanceOf<T>, NegativeImbalance<T>>,
+        StakeActionError<ImmediateSlashingError>,
+    > {
+        let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
+
+        // Get amount at stake before slashing to be used in unstaked event trigger
+        let staked_amount_before_slash =
+            ensure_staked_amount!(stake, ImmediateSlashingError::NotStaked);
+
+        let actually_slashed_amount =
+            stake.slash_immediate(slash_amount, T::Currency::minimum_balance())?;
+
+        // Remove the slashed amount from the pool
+        let slashed_imbalance = Self::withdraw_funds_from_stake_pool(actually_slashed_amount);
+
+        // What remains at stake?
+        let staked_amount_after_slash =
+            ensure_staked_amount!(stake, ImmediateSlashingError::NotStaked);
+
+        if staked_amount_after_slash == BalanceOf::<T>::zero() {
+            // Set NotStaked status
+            stake.staking_status = StakingStatus::NotStaked;
+
+            <Stakes<T>>::insert(stake_id, stake);
+
+            // Trigger the event handler but since we are returning the imbalance in the result
+            // we pass a zero negative imbalance to the event handler to indicate someone else
+            // has already handled the unstaked amount.
+            let _ = T::StakingEventsHandler::unstaked(
+                &stake_id,
+                staked_amount_before_slash,
+                NegativeImbalance::<T>::zero(),
+            );
+
+            Ok(SlashImmediateOutcome {
+                caused_unstake: true,
+                slashed_amount: slashed_imbalance,
+                remaining_stake: BalanceOf::<T>::zero(),
+            })
+        } else {
+            // Update the state of the stake
+            <Stakes<T>>::insert(stake_id, stake);
+
+            Ok(SlashImmediateOutcome {
+                caused_unstake: false,
+                slashed_amount: slashed_imbalance,
+                remaining_stake: staked_amount_after_slash,
+            })
+        }
+    }
+
+    /// Initiate a new slashing of a staked stake. Slashing begins at next block.
     pub fn initiate_slashing(
         stake_id: &T::StakeId,
         slash_amount: BalanceOf<T>,
