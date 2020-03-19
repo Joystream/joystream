@@ -4,7 +4,7 @@ use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter, StorageLinkedMap, StorageMap, StorageValue,
+    decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter, StorageDoubleMap, StorageLinkedMap, StorageMap, StorageValue,
 };
 use system::{self, ensure_signed};
 
@@ -219,7 +219,7 @@ decl_storage! {
 
         BlogById get(fn blog_by_id): map T::BlogId => Option<Blog<T>>;
 
-        PostById get(fn post_by_id): map (T::BlogId, T::PostId) => Option<Post<T>>;
+        PostById: double_map hasher(blake2_256) T::BlogId, blake2_256(T::PostId) => Option<Post<T>>;
 
         ReplyById get (fn reply_by_id): linked_map (T::BlogId, T::PostId, T::ReplyId) => Option<Reply<T>>;
 
@@ -343,7 +343,7 @@ decl_module! {
             
             // New post creation
             let post = Post::new(title, body);
-            <PostById<T>>::insert((blog_id, posts_count), post);
+            <PostById<T>>::insert(blog_id, posts_count, post);
 
             // Increment blog posts counter, associated with given blog
             blog.increment_posts_counter();
@@ -373,7 +373,7 @@ decl_module! {
             post.lock();
 
             // Update post lock status, associated with given id
-            <PostById<T>>::mutate((blog_id, post_id), |new_post| *new_post = Some(post));
+            <PostById<T>>::mutate(blog_id, post_id, |new_post| *new_post = Some(post));
 
             // Trigger event
             Self::deposit_event(RawEvent::PostLocked(blog_id, post_id));
@@ -399,7 +399,7 @@ decl_module! {
             post.unlock();
 
             // Update post lock status, associated with given id
-            <PostById<T>>::mutate((blog_id, post_id), |new_post| *new_post = Some(post));
+            <PostById<T>>::mutate(blog_id, post_id, |new_post| *new_post = Some(post));
 
             // Trigger event
             Self::deposit_event(RawEvent::PostUnlocked(blog_id, post_id));
@@ -453,7 +453,7 @@ decl_module! {
 
             // Update post with new text 
             post.update(new_title, new_body);
-            <PostById<T>>::mutate((blog_id, post_id), |inner_post|  *inner_post = Some(post));
+            <PostById<T>>::mutate(blog_id, post_id, |inner_post|  *inner_post = Some(post));
 
             // Trigger event
             Self::deposit_event(RawEvent::PostEdited(blog_id, post_id));
@@ -508,7 +508,7 @@ decl_module! {
             post.increment_replies_counter();
 
             // Update post related runtime storage 
-            <PostById<T>>::mutate((blog_id, post_id), |new_post| *new_post = Some(post));
+            <PostById<T>>::mutate(blog_id, post_id, |new_post| *new_post = Some(post));
 
             // Trigger event
             if let Some(reply_id) = reply_id {
@@ -572,7 +572,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_post_exists(blog_id: T::BlogId, post_id: T::PostId) -> Result<Post<T>, &'static str>  {
-        Self::post_by_id((blog_id, post_id)).ok_or(POST_NOT_FOUND)
+        <PostById<T>>::get(blog_id, post_id).ok_or(POST_NOT_FOUND)
     }
 
     fn ensure_reply_exists(blog_id: T::BlogId, post_id: T::PostId, reply_id: T::ReplyId) -> Result<Reply<T>, &'static str>  {
@@ -644,6 +644,7 @@ impl<T: Trait> Module<T> {
         
         // Calculate direct replies count, iterating through all post
         // related replies and checking if reply parent is given reply
+
         let direct_replies_count = <ReplyById<T>>::enumerate()
             .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
             .filter(|(_, reply)| reply.is_parent(&Parent::Reply(reply_id)))
@@ -665,10 +666,12 @@ impl<T: Trait> Module<T> {
             .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
             .filter(|(_, reply)| reply.is_parent(&Parent::Post(post_id)))
             .count() as u32;
+
         ensure!(
             replies_count < T::RepliesMaxNumber::get().into(),  
             REPLIES_LIMIT_REACHED
         );
+        
         Ok(())
     }
 
