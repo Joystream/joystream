@@ -226,7 +226,7 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private hashComputationComplete(ipfs_cid: string | undefined, error?: string) {
-    if(!error) {
+    if (!error) {
       console.log('Computed IPFS hash:', ipfs_cid)
     }
 
