@@ -139,8 +139,9 @@ impl<T: Trait> StakeHandler<T> for DefaultStakeHandler<T> {
         stake_id: <T as stake::Trait>::StakeId,
         slash_balance: BalanceOf<T>,
     ) -> Result<(), &'static str> {
-        let _slash_id =
-            stake::Module::<T>::initiate_slashing(&stake_id, slash_balance, T::BlockNumber::zero())
+
+        let _ignored_successful_result =
+            stake::Module::<T>::slash_immediate(&stake_id, slash_balance, false)
                 .map_err(WrappedError)?;
 
         Ok(())
@@ -260,6 +261,23 @@ impl From<WrappedError<stake::StakeActionError<stake::InitiateSlashingError>>> f
                         "SlashAmountShouldBeGreaterThanZero"
                     }
                 },
+            }
+        }
+    }
+}
+
+// error conversion for the Wrapped StakeActionError with the inner ImmediateSlashingError
+impl From<WrappedError<stake::StakeActionError<stake::ImmediateSlashingError>>> for &str {
+    fn from(wrapper: WrappedError<stake::StakeActionError<stake::ImmediateSlashingError>>) -> Self {
+        {
+            match wrapper.0 {
+                stake::StakeActionError::StakeNotFound => "StakeNotFound",
+                stake::StakeActionError::Error(err) => match err {
+                    stake::ImmediateSlashingError::NotStaked => "NotStaked",
+                    stake::ImmediateSlashingError::SlashAmountShouldBeGreaterThanZero => {
+                        "SlashAmountShouldBeGreaterThanZero"
+                    }
+                }
             }
         }
     }
