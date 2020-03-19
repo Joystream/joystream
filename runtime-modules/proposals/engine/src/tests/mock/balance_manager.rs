@@ -23,7 +23,7 @@ impl stake::StakingEventsHandler<Test> for BalanceManagerStakingEventsHandler {
 
     fn slashed(
         _id: &u64,
-        _slash_id: &u64,
+        _slash_id: Option<<Test as stake::Trait>::SlashId>,
         slashed_amount: stake::BalanceOf<Test>,
         _remaining_stake: stake::BalanceOf<Test>,
         _imbalance: stake::NegativeImbalance<Test>,
