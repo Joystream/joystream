@@ -3,7 +3,7 @@ import React from "react";
 import { css } from "@emotion/core";
 
 type ColumnProps = {
-  children: React.ElementType;
+  children: JSX.Element | JSX.Element[];
   span: string | number;
 };
 
